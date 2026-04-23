@@ -1,8 +1,4 @@
-import type {
-  SessionVisibilitySettings,
-  LayoutNode,
-  FuelLapData,
-} from '@irdashies/types';
+import type { LayoutNode, FuelLapData } from '@irdashies/types';
 export type { FuelLapData };
 
 /**
@@ -83,7 +79,6 @@ export interface FuelCalculation {
  * Fuel calculator widget settings
  */
 export interface FuelCalculatorSettings {
-  showOnlyWhenOnTrack: boolean;
   /** Fuel units to display */
   fuelUnits: 'L' | 'gal';
   /** Layout style */
@@ -135,7 +130,6 @@ export interface FuelCalculatorSettings {
   useGeneralFontSize?: boolean;
   useGeneralCompactMode?: boolean;
 
-  sessionVisibility: SessionVisibilitySettings;
   /**
    * Box Layout Configuration
    * Defines the structure of boxes and which widgets they contain

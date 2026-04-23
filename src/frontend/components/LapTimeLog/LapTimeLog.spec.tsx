@@ -31,14 +31,6 @@ const mockSettings = (
       enabled: true,
       count: 10,
     },
-    sessionVisibility: {
-      race: true,
-      loneQualify: true,
-      openQualify: true,
-      practice: true,
-      offlineTesting: true,
-    },
-    showOnlyWhenOnTrack: true,
   };
 
   return {

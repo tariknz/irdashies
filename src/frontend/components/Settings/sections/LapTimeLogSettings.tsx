@@ -1,58 +1,26 @@
-import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import {
-  LapTimeLogWidgetSettings,
-  SettingsTabType,
-  getWidgetDefaultConfig,
-} from '@irdashies/types';
-import { useDashboard } from '@irdashies/context';
-import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
-import { SettingDivider } from '../components/SettingDivider';
-
-const SETTING_ID = 'laptimelog';
-
-const defaultConfig = getWidgetDefaultConfig('laptimelog');
+import { useWidgetSettingsSection } from '../hooks/useWidgetSettingsSection';
+import { SettingVisibilitySection } from '../components/SettingVisibilitySection';
 
 export const LapTimeLogSettings = () => {
-  const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
-  ) as LapTimeLogWidgetSettings | undefined;
-  const [settings, setSettings] = useState<LapTimeLogWidgetSettings>({
-    enabled: savedSettings?.enabled ?? false,
-    config:
-      (savedSettings?.config as LapTimeLogWidgetSettings['config']) ??
-      defaultConfig,
-  });
-
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('lapTimeTab') as SettingsTabType) || 'options'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('lapTimeTab', activeTab);
-  }, [activeTab]);
-
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
+  const { settings, setSettings, activeTab, setActiveTab } =
+    useWidgetSettingsSection('laptimelog');
 
   return (
     <BaseSettingsSection
       title="Lap Timer"
+      widgetType={'laptimelog'}
       description="Configure settings for the Lap Timer widget. Select the lap times you want to see and the display options."
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId={SETTING_ID}
     >
-      {(handleConfigChange) => (
+      {(handleConfigChange, handleVisibilityConfigChange) => (
         <div className="space-y-4">
           {/* Tabs */}
           <div className="flex border-b border-slate-700/50">
@@ -279,23 +247,10 @@ export const LapTimeLogSettings = () => {
 
             {/* VISIBILITY TAB */}
             {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-
-                <SettingDivider />
-
-                <SettingToggleRow
-                  title="Show only when on track"
-                  description="If enabled, lap times will only be shown when driving"
-                  enabled={settings.config.showOnlyWhenOnTrack ?? true}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                  }
-                />
-              </SettingsSection>
+              <SettingVisibilitySection
+                config={settings.visibilityConfig}
+                handleConfigChange={handleVisibilityConfigChange}
+              />
             )}
           </div>
         </div>

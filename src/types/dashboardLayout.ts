@@ -25,6 +25,8 @@ export interface DashboardWidget {
   layout: WidgetLayout;
   /** Configuration for the widget. */
   config?: Record<string, unknown>;
+  /** Configuration for the visibility of the widget */
+  visibilityConfig?: Record<string, unknown>;
 }
 
 export interface TagGroup {
@@ -125,7 +127,6 @@ export interface GeneralSettingsType {
     | 'rose'
     | 'zinc'
     | 'stone';
-  showOnlyWhenOnTrack?: boolean;
   highlightColor?: number;
   skipTaskbar?: boolean;
   disableHardwareAcceleration?: boolean;

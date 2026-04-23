@@ -1,38 +1,18 @@
-import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import type { TwitchChatWidgetSettings } from '@irdashies/types';
-import { getWidgetDefaultConfig } from '@irdashies/types';
-import { useDashboard } from '@irdashies/context';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingsSection } from '../components/SettingSection';
-
-const SETTING_ID = 'twitchchat';
-
-const defaultConfig = getWidgetDefaultConfig('twitchchat');
+import { useWidgetSettingsSection } from '../hooks/useWidgetSettingsSection';
 
 export const TwitchChatSettings = () => {
-  const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
-  ) as TwitchChatWidgetSettings | undefined;
-  const [settings, setSettings] = useState<TwitchChatWidgetSettings>({
-    enabled: savedSettings?.enabled ?? false,
-    config:
-      (savedSettings?.config as TwitchChatWidgetSettings['config']) ??
-      defaultConfig,
-  });
-
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
+  const { settings, setSettings } = useWidgetSettingsSection('twitchchat');
 
   return (
     <BaseSettingsSection
       title="Twitch Chat"
       description="Configure Twitch chat overlay settings."
+      widgetType={'twitchchat'}
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
         <>

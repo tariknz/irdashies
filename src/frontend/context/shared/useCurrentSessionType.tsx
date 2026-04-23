@@ -1,6 +1,11 @@
 import { useSessionType, useTelemetryValue } from '@irdashies/context';
 
-type SessionType = 'Race' | 'Lone Qualify' | 'Open Qualify' | 'Practice' | 'Offline Testing';
+export type SessionType =
+  | 'Race'
+  | 'Lone Qualify'
+  | 'Open Qualify'
+  | 'Practice'
+  | 'Offline Testing';
 
 /**
  * @returns The current session type. Undefined if sessionNum is unknown.

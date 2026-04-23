@@ -4,6 +4,7 @@ import type { WidgetLayout } from '@irdashies/types';
 import { WidgetContainer } from '../WidgetContainer';
 import { WIDGET_MAP } from '../../WidgetIndex';
 import { XIcon } from '@phosphor-icons/react';
+import { WidgetVisibilityContainer } from '../SessionVisibilityContainer/WidgetVisibilityContainer';
 
 export const OverlayContainer = memo(() => {
   const {
@@ -98,7 +99,11 @@ export const OverlayContainer = memo(() => {
             onLayoutChange={handleLayoutChange}
           >
             {running || widget.alwaysEnabled ? (
-              <WidgetComponent {...widget.config} />
+              <WidgetVisibilityContainer
+                visibilityConfig={widget.visibilityConfig}
+              >
+                <WidgetComponent {...widget.config} />
+              </WidgetVisibilityContainer>
             ) : null}
           </WidgetContainer>
         );

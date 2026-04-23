@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { useTelemetryValue, useSessionVisibility } from '@irdashies/context';
+import { useTelemetryValue } from '@irdashies/context';
 import { useFlagSettings } from './hooks/useFlagSettings';
 import { useBlinkState } from './hooks/useBlinkState';
 import { getLedColor } from './hooks/getLedColor';
@@ -8,16 +8,8 @@ import { getFlag } from '@irdashies/utils/getFlag';
 
 export const Flag = () => {
   const settings = useFlagSettings();
-
   const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
-  const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
-  const isVisibleInSession = useSessionVisibility(settings.sessionVisibility);
-
   const blinkOn = useBlinkState(settings.animate, settings.blinkPeriod);
-
-  if (!isVisibleInSession) return null;
-  if (settings.showOnlyWhenOnTrack && !isPlayerOnTrack) return null;
-
   const flagInfo = getFlag(sessionFlags);
 
   const visibleLabel =

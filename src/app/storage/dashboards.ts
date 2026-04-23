@@ -73,9 +73,15 @@ export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
             defaultWidget.config as Record<string, unknown>,
             widget.config
           ),
+          visibilityConfig: deepMergeConfig(
+            defaultWidget.visibilityConfig as Record<string, unknown>,
+            widget.visibilityConfig
+          ),
         };
       }),
     };
+
+    applyVisibilityConfigMigration(updatedDashboard);
 
     saveDashboard(profileId, updatedDashboard);
     return updatedDashboard;
@@ -84,6 +90,27 @@ export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
   saveDashboard(profileId, defaultDashboard);
 
   return defaultDashboard;
+};
+
+export const applyVisibilityConfigMigration = (dashboard: DashboardLayout) => {
+  // Visibility was moved from widget.config.sessionVisibility to widget.visibilityConfig, so copy that
+  // configuration across so it is not lost when updating
+
+  dashboard.widgets.forEach((w) => {
+    if (w.visibilityConfig == undefined) {
+      w.visibilityConfig = {};
+    }
+
+    if (w.config?.sessionVisibility !== undefined) {
+      w.visibilityConfig['sessionVisibility'] = w.config.sessionVisibility;
+      delete w.config.sessionVisibility;
+    }
+
+    if (w.config?.showOnlyWhenOnTrack !== undefined) {
+      w.visibilityConfig['showOnlyWhenOnTrack'] = w.config.showOnlyWhenOnTrack;
+      delete w.config.showOnlyWhenOnTrack;
+    }
+  });
 };
 
 export const listDashboards = () => {
@@ -186,6 +213,8 @@ export const resetDashboard = (
         return {
           ...widget,
           config: defaultWidget?.config || widget.config,
+          visibilityConfig:
+            defaultWidget?.visibilityConfig || widget.visibilityConfig,
         };
       }),
       generalSettings: {

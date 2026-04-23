@@ -1,24 +1,17 @@
-import { useDashboard } from '@irdashies/context';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { SortableList } from '../../SortableList';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
-import {
-  InputWidgetSettings,
-  SettingsTabType,
-  getWidgetDefaultConfig,
-} from '@irdashies/types';
-import { SettingDivider } from '../components/SettingDivider';
+import { InputWidgetSettings } from '@irdashies/types';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingActionButton } from '../components/SettingActionButton';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
-
-const SETTING_ID = 'input';
+import { useWidgetSettingsSection } from '../hooks/useWidgetSettingsSection';
+import { SettingVisibilitySection } from '../components/SettingVisibilitySection';
 
 interface SortableSetting {
   id: string;
@@ -33,8 +26,6 @@ const sortableSettings: SortableSetting[] = [
   { id: 'abs', label: 'ABS', configKey: 'abs' },
   { id: 'steer', label: 'Steer', configKey: 'steer' },
 ];
-
-const defaultConfig = getWidgetDefaultConfig('input');
 
 interface DisplaySettingsListProps {
   itemsOrder: string[];
@@ -87,45 +78,24 @@ const DisplaySettingsList = ({
 };
 
 export const InputSettings = () => {
-  const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
-  ) as InputWidgetSettings | undefined;
-  const [settings, setSettings] = useState<InputWidgetSettings>({
-    enabled: savedSettings?.enabled ?? false,
-    config:
-      (savedSettings?.config as InputWidgetSettings['config']) ?? defaultConfig,
-  });
+  const { settings, setSettings, activeTab, setActiveTab } =
+    useWidgetSettingsSection('input');
+
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
-
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('inputTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('inputTab', activeTab);
-  }, [activeTab]);
-
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
 
   return (
     <BaseSettingsSection
       title="Input Traces"
       description="Configure the input traces display settings for throttle, brake, and clutch."
+      widgetType={'input'}
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId="input"
     >
-      {(handleConfigChange) => {
+      {(handleConfigChange, handleVisibilityConfigChange) => {
         const handleDisplayOrderChange = (newOrder: string[]) => {
           setItemsOrder(newOrder);
           handleConfigChange({ displayOrder: newOrder });
         };
-
-        const config = settings.config;
 
         return (
           <div className="space-y-4">
@@ -169,7 +139,6 @@ export const InputSettings = () => {
                     label="Reset to Default Order"
                     onClick={() => {
                       const defaultOrder = sortableSettings.map((s) => s.id);
-                      setItemsOrder(defaultOrder);
                       handleConfigChange({ displayOrder: defaultOrder });
                     }}
                   />
@@ -183,7 +152,7 @@ export const InputSettings = () => {
                     <SettingToggleRow
                       title="Use Raw Inputs"
                       description="Disables iRacing's automated input processing, showing direct pedal telemetry without assists like auto-clutch or anti-stall."
-                      enabled={config.useRawValues}
+                      enabled={settings.config.useRawValues}
                       onToggle={(enabled) =>
                         handleConfigChange({
                           useRawValues: enabled,
@@ -207,23 +176,23 @@ export const InputSettings = () => {
                   <SettingsSection title="Trace">
                     <SettingToggleRow
                       title="Enable Trace Display"
-                      enabled={config.trace.enabled}
+                      enabled={settings.config.trace.enabled}
                       onToggle={(enabled) =>
                         handleConfigChange({
-                          trace: { ...config.trace, enabled },
+                          trace: { ...settings.config.trace, enabled },
                         })
                       }
                     />
 
-                    {config.trace.enabled && (
+                    {settings.config.trace.enabled && (
                       <SettingsSection>
                         <SettingToggleRow
                           title="Show Clutch Trace"
-                          enabled={config.trace.includeClutch}
+                          enabled={settings.config.trace.includeClutch}
                           onToggle={(enabled) =>
                             handleConfigChange({
                               trace: {
-                                ...config.trace,
+                                ...settings.config.trace,
                                 includeClutch: enabled,
                               },
                             })
@@ -232,11 +201,11 @@ export const InputSettings = () => {
 
                         <SettingToggleRow
                           title="Show Throttle Trace"
-                          enabled={config.trace.includeThrottle}
+                          enabled={settings.config.trace.includeThrottle}
                           onToggle={(enabled) =>
                             handleConfigChange({
                               trace: {
-                                ...config.trace,
+                                ...settings.config.trace,
                                 includeThrottle: enabled,
                               },
                             })
@@ -245,11 +214,11 @@ export const InputSettings = () => {
 
                         <SettingToggleRow
                           title="Show Brake Trace"
-                          enabled={config.trace.includeBrake}
+                          enabled={settings.config.trace.includeBrake}
                           onToggle={(enabled) =>
                             handleConfigChange({
                               trace: {
-                                ...config.trace,
+                                ...settings.config.trace,
                                 includeBrake: enabled,
                               },
                             })
@@ -258,11 +227,11 @@ export const InputSettings = () => {
 
                         <SettingToggleRow
                           title="Show ABS"
-                          enabled={config.trace.includeAbs}
+                          enabled={settings.config.trace.includeAbs}
                           onToggle={(enabled) =>
                             handleConfigChange({
                               trace: {
-                                ...config.trace,
+                                ...settings.config.trace,
                                 includeAbs: enabled,
                               },
                             })
@@ -271,11 +240,11 @@ export const InputSettings = () => {
 
                         <SettingToggleRow
                           title="Show Steering Trace"
-                          enabled={config.trace.includeSteer ?? true}
+                          enabled={settings.config.trace.includeSteer ?? true}
                           onToggle={(enabled) =>
                             handleConfigChange({
                               trace: {
-                                ...config.trace,
+                                ...settings.config.trace,
                                 includeSteer: enabled,
                               },
                             })
@@ -284,7 +253,7 @@ export const InputSettings = () => {
 
                         <SettingSliderRow
                           title="Stroke Width"
-                          value={config.trace.strokeWidth ?? 3}
+                          value={settings.config.trace.strokeWidth ?? 3}
                           units="px"
                           min={0}
                           max={10}
@@ -292,7 +261,7 @@ export const InputSettings = () => {
                           onChange={(v) =>
                             handleConfigChange({
                               trace: {
-                                ...config.trace,
+                                ...settings.config.trace,
                                 strokeWidth: v,
                               },
                             })
@@ -301,7 +270,7 @@ export const InputSettings = () => {
 
                         <SettingSliderRow
                           title="Max Samples"
-                          value={config.trace.maxSamples ?? 40}
+                          value={settings.config.trace.maxSamples ?? 40}
                           units=" samples"
                           min={40}
                           max={1000}
@@ -309,7 +278,7 @@ export const InputSettings = () => {
                           onChange={(v) =>
                             handleConfigChange({
                               trace: {
-                                ...config.trace,
+                                ...settings.config.trace,
                                 maxSamples: v,
                               },
                             })
@@ -323,21 +292,23 @@ export const InputSettings = () => {
                   <SettingsSection title="Bar">
                     <SettingToggleRow
                       title="Enable Bar Display"
-                      enabled={config.bar.enabled}
+                      enabled={settings.config.bar.enabled}
                       onToggle={(enabled) =>
-                        handleConfigChange({ bar: { ...config.bar, enabled } })
+                        handleConfigChange({
+                          bar: { ...settings.config.bar, enabled },
+                        })
                       }
                     />
 
-                    {config.bar.enabled && (
+                    {settings.config.bar.enabled && (
                       <SettingsSection>
                         <SettingToggleRow
                           title="Show Clutch Bar"
-                          enabled={config.bar.includeClutch}
+                          enabled={settings.config.bar.includeClutch}
                           onToggle={(enabled) =>
                             handleConfigChange({
                               bar: {
-                                ...config.bar,
+                                ...settings.config.bar,
                                 includeClutch: enabled,
                               },
                             })
@@ -346,11 +317,11 @@ export const InputSettings = () => {
 
                         <SettingToggleRow
                           title="Show Throttle Bar"
-                          enabled={config.bar.includeThrottle}
+                          enabled={settings.config.bar.includeThrottle}
                           onToggle={(enabled) =>
                             handleConfigChange({
                               bar: {
-                                ...config.bar,
+                                ...settings.config.bar,
                                 includeThrottle: enabled,
                               },
                             })
@@ -359,11 +330,11 @@ export const InputSettings = () => {
 
                         <SettingToggleRow
                           title="Show Brake Bar"
-                          enabled={config.bar.includeBrake}
+                          enabled={settings.config.bar.includeBrake}
                           onToggle={(enabled) =>
                             handleConfigChange({
                               bar: {
-                                ...config.bar,
+                                ...settings.config.bar,
                                 includeBrake: enabled,
                               },
                             })
@@ -372,11 +343,11 @@ export const InputSettings = () => {
 
                         <SettingToggleRow
                           title="Show ABS Indicator"
-                          enabled={config.bar.includeAbs}
+                          enabled={settings.config.bar.includeAbs}
                           onToggle={(enabled) =>
                             handleConfigChange({
                               bar: {
-                                ...config.bar,
+                                ...settings.config.bar,
                                 includeAbs: enabled,
                               },
                             })
@@ -390,10 +361,10 @@ export const InputSettings = () => {
                   <SettingsSection title="ABS Indicator">
                     <SettingToggleRow
                       title="Enable ABS Indicator"
-                      enabled={config.abs?.enabled ?? false}
+                      enabled={settings.config.abs?.enabled ?? false}
                       onToggle={(newValue) =>
                         handleConfigChange({
-                          abs: { ...config.abs, enabled: newValue },
+                          abs: { ...settings.config.abs, enabled: newValue },
                         })
                       }
                     />
@@ -403,21 +374,26 @@ export const InputSettings = () => {
                   <SettingsSection title="Steer">
                     <SettingToggleRow
                       title="Enable Steer Display"
-                      enabled={config.steer.enabled}
+                      enabled={settings.config.steer.enabled}
                       onToggle={(newValue) =>
                         handleConfigChange({
-                          steer: { ...config.steer, enabled: newValue },
+                          steer: {
+                            ...settings.config.steer,
+                            enabled: newValue,
+                          },
                         })
                       }
                     />
 
-                    {config.steer.enabled && (
+                    {settings.config.steer.enabled && (
                       <SettingsSection>
                         <SettingSelectRow<
                           'default' | 'formula' | 'lmp' | 'nascar' | 'ushape'
                         >
                           title="Wheel Style"
-                          value={config.steer.config.style ?? 'default'}
+                          value={
+                            settings.config.steer.config.style ?? 'default'
+                          }
                           options={[
                             { label: 'Default', value: 'default' },
                             { label: 'Formula', value: 'formula' },
@@ -428,8 +404,11 @@ export const InputSettings = () => {
                           onChange={(v) =>
                             handleConfigChange({
                               steer: {
-                                ...config.steer,
-                                config: { ...config.steer.config, style: v },
+                                ...settings.config.steer,
+                                config: {
+                                  ...settings.config.steer.config,
+                                  style: v,
+                                },
                               },
                             })
                           }
@@ -437,7 +416,7 @@ export const InputSettings = () => {
 
                         <SettingSelectRow<'dark' | 'light'>
                           title="Wheel Color"
-                          value={config.steer.config.color ?? 'light'}
+                          value={settings.config.steer.config.color ?? 'light'}
                           options={[
                             { label: 'Light', value: 'light' },
                             { label: 'Dark', value: 'dark' },
@@ -445,8 +424,11 @@ export const InputSettings = () => {
                           onChange={(v) =>
                             handleConfigChange({
                               steer: {
-                                ...config.steer,
-                                config: { ...config.steer.config, color: v },
+                                ...settings.config.steer,
+                                config: {
+                                  ...settings.config.steer.config,
+                                  color: v,
+                                },
                               },
                             })
                           }
@@ -459,15 +441,15 @@ export const InputSettings = () => {
                   <SettingsSection title="Gear">
                     <SettingToggleRow
                       title="Enable Gear Display"
-                      enabled={config.gear.enabled}
+                      enabled={settings.config.gear.enabled}
                       onToggle={(newValue) =>
                         handleConfigChange({
-                          gear: { ...config.gear, enabled: newValue },
+                          gear: { ...settings.config.gear, enabled: newValue },
                         })
                       }
                     />
 
-                    {config.gear.enabled && (
+                    {settings.config.gear.enabled && (
                       <SettingsSection>
                         <SettingSliderRow
                           title="Gear Display Scale"
@@ -479,7 +461,7 @@ export const InputSettings = () => {
                           step={1}
                           onChange={(v) =>
                             handleConfigChange({
-                              gear: { ...config.gear, size: v },
+                              gear: { ...settings.config.gear, size: v },
                             })
                           }
                         />
@@ -487,19 +469,22 @@ export const InputSettings = () => {
                         <SettingToggleRow
                           title="Show Speed"
                           description="Show the current speed beneath the gear number"
-                          enabled={config.gear.showspeed}
+                          enabled={settings.config.gear.showspeed}
                           onToggle={(newValue) =>
                             handleConfigChange({
-                              gear: { ...config.gear, showspeed: newValue },
+                              gear: {
+                                ...settings.config.gear,
+                                showspeed: newValue,
+                              },
                             })
                           }
                         />
 
-                        {config.gear.showspeed && (
+                        {settings.config.gear.showspeed && (
                           <SettingsSection>
                             <SettingButtonGroupRow<'auto' | 'mph' | 'km/h'>
                               title="Speed Unit"
-                              value={config.gear.unit ?? 'auto'}
+                              value={settings.config.gear.unit ?? 'auto'}
                               options={[
                                 { label: 'Auto', value: 'auto' },
                                 { label: 'MPH', value: 'mph' },
@@ -507,18 +492,18 @@ export const InputSettings = () => {
                               ]}
                               onChange={(v) =>
                                 handleConfigChange({
-                                  gear: { ...config.gear, unit: v },
+                                  gear: { ...settings.config.gear, unit: v },
                                 })
                               }
                             />
 
                             <SettingToggleRow
                               title="Show Speed Unit Label"
-                              enabled={config.gear.showspeedunit}
+                              enabled={settings.config.gear.showspeedunit}
                               onToggle={(newValue) =>
                                 handleConfigChange({
                                   gear: {
-                                    ...config.gear,
+                                    ...settings.config.gear,
                                     showspeedunit: newValue,
                                   },
                                 })
@@ -534,23 +519,10 @@ export const InputSettings = () => {
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
-                  <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
-
-                  <SettingDivider />
-
-                  <SettingToggleRow
-                    title="Show only when on track"
-                    description="If enabled, inputs will only be shown when driving"
-                    enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                    }
-                  />
-                </SettingsSection>
+                <SettingVisibilitySection
+                  config={settings.visibilityConfig}
+                  handleConfigChange={handleVisibilityConfigChange}
+                />
               )}
             </div>
           </div>

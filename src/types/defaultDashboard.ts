@@ -1,5 +1,9 @@
 import type { GeneralSettingsType } from './dashboardLayout';
-import type { TypedDashboardWidget, WidgetConfigMap } from './widgetConfigs';
+import type {
+  TypedDashboardWidget,
+  WidgetConfigMap,
+  WidgetSettingsMap,
+} from './widgetConfigs';
 
 export const defaultDashboard: {
   widgets: TypedDashboardWidget[];
@@ -220,7 +224,6 @@ export const defaultDashboard: {
             'trackName',
           ],
         },
-        showOnlyWhenOnTrack: false,
         displayOrder: [
           'position',
           'carNumber',
@@ -242,6 +245,9 @@ export const defaultDashboard: {
           'avgLapTime',
         ],
         driverTag: { enabled: false },
+      },
+      visibilityConfig: {
+        showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -262,7 +268,6 @@ export const defaultDashboard: {
       },
       config: {
         enabled: true,
-        showOnlyWhenOnTrack: false,
         showLabel: true,
         animate: true,
         blinkPeriod: 0.5,
@@ -270,6 +275,9 @@ export const defaultDashboard: {
         showNoFlagState: true,
         enableGlow: true,
         doubleFlag: false,
+      },
+      visibilityConfig: {
+        showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -327,8 +335,10 @@ export const defaultDashboard: {
         background: {
           opacity: 80,
         },
-        showOnlyWhenOnTrack: true,
         displayOrder: ['trace', 'bar', 'gear', 'steer'],
+      },
+      visibilityConfig: {
+        showOnlyWhenOnTrack: true,
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -357,6 +367,8 @@ export const defaultDashboard: {
           carConfigs: {},
         },
         background: { opacity: 80 },
+      },
+      visibilityConfig: {
         showOnlyWhenOnTrack: true,
         sessionVisibility: {
           race: true,
@@ -577,6 +589,8 @@ export const defaultDashboard: {
             'trackName',
           ],
         },
+      },
+      visibilityConfig: {
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
@@ -611,6 +625,9 @@ export const defaultDashboard: {
         trackLineWidth: 20,
         trackOutlineWidth: 40,
         useHighlightColor: false,
+        styling: { isMinimalTrack: false, isMinimalCar: false },
+      },
+      visibilityConfig: {
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
@@ -619,7 +636,6 @@ export const defaultDashboard: {
           practice: true,
           offlineTesting: true,
         },
-        styling: { isMinimalTrack: false, isMinimalCar: false },
       },
     },
     {
@@ -641,6 +657,8 @@ export const defaultDashboard: {
         trackOutlineWidth: 40,
         invertTrackColors: false,
         useHighlightColor: false,
+      },
+      visibilityConfig: {
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
@@ -695,6 +713,8 @@ export const defaultDashboard: {
         wind: {
           enabled: true,
         },
+      },
+      visibilityConfig: {
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
@@ -717,7 +737,6 @@ export const defaultDashboard: {
       config: {
         distanceThreshold: -1.5,
         onlyShowFasterClasses: true,
-        showOnlyWhenOnTrack: false,
         numberDriversBehind: 3,
         alignDriverBoxes: 'Top',
         closestDriverBox: 'Top',
@@ -725,6 +744,9 @@ export const defaultDashboard: {
         removeNumbersFromName: false,
         showDistance: true,
         showBadge: false,
+      },
+      visibilityConfig: {
+        showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
           loneQualify: false,
@@ -744,7 +766,6 @@ export const defaultDashboard: {
         height: 520,
       },
       config: {
-        showOnlyWhenOnTrack: true,
         fuelUnits: 'L',
         layout: 'vertical',
         showConsumption: true,
@@ -777,13 +798,6 @@ export const defaultDashboard: {
         economyPredictMode: 'live',
         useGeneralFontSize: false,
         useGeneralCompactMode: false,
-        sessionVisibility: {
-          race: true,
-          loneQualify: true,
-          openQualify: true,
-          practice: true,
-          offlineTesting: true,
-        },
         layoutConfig: [],
         layoutTree: {
           id: 'root-fuel-default',
@@ -848,6 +862,16 @@ export const defaultDashboard: {
           },
         },
       },
+      visibilityConfig: {
+        showOnlyWhenOnTrack: true,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
     },
     {
       id: 'blindspotmonitor',
@@ -859,7 +883,6 @@ export const defaultDashboard: {
         height: 500,
       },
       config: {
-        showOnlyWhenOnTrack: false,
         distAhead: 4.5,
         distBehind: 4.5,
         background: {
@@ -868,6 +891,9 @@ export const defaultDashboard: {
         width: 20,
         borderSize: 1,
         indicatorColor: 16096779,
+      },
+      visibilityConfig: {
+        showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -889,6 +915,7 @@ export const defaultDashboard: {
       config: {
         imageFilename: '',
       },
+      visibilityConfig: {},
     },
     {
       id: 'rejoin',
@@ -905,6 +932,8 @@ export const defaultDashboard: {
         careGap: 2,
         stopGap: 1,
         width: 20,
+      },
+      visibilityConfig: {
         sessionVisibility: {
           race: true,
           loneQualify: false,
@@ -945,6 +974,8 @@ export const defaultDashboard: {
         foreground: {
           opacity: 70,
         },
+      },
+      visibilityConfig: {
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -969,6 +1000,8 @@ export const defaultDashboard: {
         slowSpeedThreshold: 50,
         stoppedSpeedThreshold: 5,
         barThickness: 10,
+      },
+      visibilityConfig: {
         showOnlyWhenOnTrack: true,
         sessionVisibility: {
           race: true,
@@ -997,6 +1030,7 @@ export const defaultDashboard: {
           { source: 'telemetry', path: 'SessionTime', label: 'Session Time' },
         ],
       },
+      visibilityConfig: {},
     },
     {
       id: 'pitlanehelper',
@@ -1027,6 +1061,8 @@ export const defaultDashboard: {
         pitExitInputs: { throttle: true, clutch: false },
         showInputsPhase: 'atPitbox',
         background: { opacity: 80 },
+      },
+      visibilityConfig: {
         sessionVisibility: {
           race: true,
           loneQualify: false,
@@ -1053,6 +1089,7 @@ export const defaultDashboard: {
           opacity: 30,
         },
       },
+      visibilityConfig: {},
     },
     {
       id: 'infobar',
@@ -1084,14 +1121,6 @@ export const defaultDashboard: {
         wind: { enabled: false, speedPosition: 'right' },
         trackName: { enabled: false },
         background: { opacity: 80 },
-        showOnlyWhenOnTrack: false,
-        sessionVisibility: {
-          race: true,
-          loneQualify: true,
-          openQualify: true,
-          practice: true,
-          offlineTesting: true,
-        },
         displayOrder: [
           'sessionName',
           'sessionTime',
@@ -1108,6 +1137,16 @@ export const defaultDashboard: {
           'trackName',
         ],
       },
+      visibilityConfig: {
+        showOnlyWhenOnTrack: false,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
     },
   ],
   generalSettings: {
@@ -1115,7 +1154,6 @@ export const defaultDashboard: {
     fontSize: 'sm',
     fontWeight: 'normal',
     colorPalette: 'black',
-    showOnlyWhenOnTrack: true,
     highlightColor: 960745,
     skipTaskbar: true,
     disableHardwareAcceleration: false,
@@ -1135,7 +1173,17 @@ export function getWidgetDefaultConfig<K extends keyof WidgetConfigMap>(
     | TypedDashboardWidget<K>
     | undefined;
   if (!widget) throw new Error(`No default config found for widget: ${id}`);
-  return widget.config;
+  return widget.config as WidgetConfigMap[K];
+}
+
+export function getWidgetDefaultSettings<K extends keyof WidgetSettingsMap>(
+  id: K
+): WidgetSettingsMap[K] {
+  const widget = defaultDashboard.widgets.find((w) => w.id === id) as
+    | TypedDashboardWidget<K>
+    | undefined;
+  if (!widget) throw new Error(`No default settings found for widget: ${id}`);
+  return widget as unknown as WidgetSettingsMap[K];
 }
 
 /**

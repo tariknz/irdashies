@@ -1,9 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import {
-  useSessionVisibility,
-  useTelemetryValue,
-  useDashboard,
-} from '@irdashies/context';
+import { useTelemetryValue, useDashboard } from '@irdashies/context';
 import { useFuelCalculation } from './useFuelCalculation';
 import {
   FuelCalculatorHeader,
@@ -53,7 +49,7 @@ const EMPTY_DATA: FuelCalculation = {
 
 export const FuelCalculator = (props: FuelCalculatorProps) => {
   // Visual Edit Mode & Demo Mode
-  const { editMode, currentDashboard } = useDashboard();
+  const { currentDashboard } = useDashboard();
   const generalSettings = currentDashboard?.generalSettings;
 
   // Read config from dashboard context (handles site preview where no props are passed)
@@ -68,8 +64,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
   } as FuelCalculatorSettings;
 
   const { fuelUnits, safetyMargin } = settings;
-
-  const isSessionVisible = useSessionVisibility(settings.sessionVisibility);
 
   // Derived Settings based on General linkage
   // Use the full string so compact vs ultra can be distinguished downstream
@@ -145,8 +139,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     return DEFAULT_FUEL_LAYOUT_TREE;
   }, [settings.layoutTree]);
 
-  const isOnTrack = useTelemetryValue('IsOnTrack');
-
   const fuelData = useFuelCalculation(safetyMargin, settings);
 
   const currentFuelLevel = useTelemetryValue('FuelLevel');
@@ -209,9 +201,6 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
   // Safety fallback
   if (!hasSettings) return <div className="text-red-500">Missing Settings</div>;
-
-  if (!editMode && settings?.showOnlyWhenOnTrack && !isOnTrack) return null;
-  if (!editMode && !isSessionVisible) return <></>;
 
   const renderWidget = (widgetId: string) => {
     const widgetStyles = derivedFontStyles[widgetId] || derivedFontStyles; // Proxy or direct

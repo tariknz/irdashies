@@ -7,7 +7,6 @@ import { TelemetryDecorator } from '@irdashies/storybook';
 
 // Mock the settings hook for stories
 const mockSettings = {
-  showOnlyWhenOnTrack: true,
   distanceThreshold: -1.5,
   numberDriversBehind: 3,
   alignDriverBoxes: 'Top' as const,

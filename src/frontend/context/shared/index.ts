@@ -5,7 +5,6 @@ export * from './useCurrentSessionType';
 export * from './useDrivingState';
 export * from './useFocusCarIdx';
 export * from './useResetOnDisconnect';
-export * from './useSessionVisibility';
 export * from './useThrottledWeather';
 export * from './useTotalRaceLaps';
 export * from './useTotalRaceTime';

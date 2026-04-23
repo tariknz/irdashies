@@ -10,6 +10,7 @@ const DEFAULT_CONFIG: TwitchChatWidgetSettings = {
       opacity: 30,
     },
   },
+  visibilityConfig: {},
 };
 
 export const useTwitchChatSettings = () => {

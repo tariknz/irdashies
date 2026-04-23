@@ -1,27 +1,12 @@
-import {
-  useGeneralSettings,
-  useDrivingState,
-  useSessionVisibility,
-} from '@irdashies/context';
+import { useGeneralSettings } from '@irdashies/context';
 import { SessionBar } from '../Standings/components/SessionBar/SessionBar';
-import { useInformationBarSettings } from '../Standings/hooks/useInformationBarSettings';
+import { useInformationBarSettings } from '../Standings/hooks';
 
 export const InformationBar = () => {
   const settings = useInformationBarSettings();
   const generalSettings = useGeneralSettings();
-  const { isDriving } = useDrivingState();
-  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
   if (!settings?.enabled) {
-    return null;
-  }
-
-  if (!isSessionVisible) {
-    return null;
-  }
-
-  // Show only when on track setting
-  if (settings?.showOnlyWhenOnTrack && !isDriving) {
     return null;
   }
 

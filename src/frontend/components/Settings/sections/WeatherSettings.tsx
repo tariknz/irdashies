@@ -1,23 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import {
-  WeatherWidgetSettings,
-  SettingsTabType,
-  getWidgetDefaultConfig,
-} from '@irdashies/types';
-import { useDashboard } from '@irdashies/context';
+import { WeatherWidgetSettings } from '@irdashies/types';
 import { TabButton } from '../components/TabButton';
 import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
-import { SessionVisibility } from '../components/SessionVisibility';
-import { SettingToggleRow } from '../components/SettingToggleRow';
-import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingActionButton } from '../components/SettingActionButton';
-
-const SETTING_ID = 'weather';
+import { useWidgetSettingsSection } from '../hooks/useWidgetSettingsSection';
+import { SettingVisibilitySection } from '../components/SettingVisibilitySection';
 
 interface SortableSetting {
   id: string;
@@ -42,8 +34,6 @@ const sortableSettings: SortableSetting[] = [
   { id: 'wetness', label: 'Wetness', configKey: 'wetness' },
   { id: 'trackState', label: 'Track State', configKey: 'trackState' },
 ];
-
-const defaultConfig = getWidgetDefaultConfig('weather');
 
 const DisplaySettingsList = ({
   itemsOrder,
@@ -89,31 +79,10 @@ const DisplaySettingsList = ({
 };
 
 export const WeatherSettings = () => {
-  const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
-  ) as WeatherWidgetSettings | undefined;
-  const [settings, setSettings] = useState<WeatherWidgetSettings>({
-    enabled: savedSettings?.enabled ?? false,
-    config:
-      (savedSettings?.config as WeatherWidgetSettings['config']) ??
-      defaultConfig,
-  });
+  const { settings, setSettings, activeTab, setActiveTab } =
+    useWidgetSettingsSection('weather');
 
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
-
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('weatherTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('weatherTab', activeTab);
-  }, [activeTab]);
-
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
 
   // Render settings using the BaseSettingsSection helper.
   // Children is provided as a function which receives `handleConfigChange`.
@@ -121,11 +90,11 @@ export const WeatherSettings = () => {
     <BaseSettingsSection
       title="Weather"
       description="Show weather related readings (air/track temperature, wind, wetness, track state)."
+      widgetType={'weather'}
       settings={settings}
-      onSettingsChange={(s) => setSettings(s)}
-      widgetId={SETTING_ID}
+      onSettingsChange={setSettings}
     >
-      {(handleConfigChange) => {
+      {(handleConfigChange, handleVisibilityConfigChange) => {
         const handleDisplayOrderChange = (newOrder: string[]) => {
           setItemsOrder(newOrder);
           handleConfigChange({ displayOrder: newOrder });
@@ -173,7 +142,6 @@ export const WeatherSettings = () => {
                     label="Reset to Default Order"
                     onClick={() => {
                       const defaultOrder = sortableSettings.map((s) => s.id);
-                      setItemsOrder(defaultOrder);
                       handleConfigChange({ displayOrder: defaultOrder });
                     }}
                   />
@@ -210,23 +178,10 @@ export const WeatherSettings = () => {
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
-                  <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
-
-                  <SettingDivider />
-
-                  <SettingToggleRow
-                    title="Show only when on track"
-                    description="If enabled, weather will only be shown when driving"
-                    enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                    }
-                  />
-                </SettingsSection>
+                <SettingVisibilitySection
+                  config={settings.visibilityConfig}
+                  handleConfigChange={handleVisibilityConfigChange}
+                />
               )}
             </div>
           </div>

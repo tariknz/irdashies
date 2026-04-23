@@ -3,7 +3,6 @@ import { useDriverProgress } from './hooks/useDriverProgress';
 import { useTrackMapSettings } from './hooks/useTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
 import { TrackCanvas } from './TrackCanvas';
-import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
 
 const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 
@@ -12,14 +11,6 @@ export const TrackMap = () => {
   const { drivers: driversTrackData, identities } = useDriverProgress();
   const settings = useTrackMapSettings();
   const highlightColor = useHighlightColor();
-  const isOnTrack = useTelemetryValue('IsOnTrack');
-
-  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
-
-  // Hide if showOnlyWhenOnTrack is enabled and player is not on track
-  if (settings?.showOnlyWhenOnTrack && !isOnTrack) {
-    return <></>;
-  }
 
   if (!trackId) return <></>;
 

@@ -15,10 +15,8 @@ import {
   useGeneralSettings,
   useLapTimesStoreUpdater,
   usePitLapStoreUpdater,
-  useDrivingState,
   useWeekendInfoNumCarClasses,
   useWeekendInfoTeamRacing,
-  useSessionVisibility,
   useCarIdxRollingAvgLapTime,
 } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
@@ -26,8 +24,6 @@ import { useIsSingleMake } from './hooks/useIsSingleMake';
 export const Standings = () => {
   const settings = useStandingsSettings();
   const generalSettings = useGeneralSettings();
-  const { isDriving } = useDrivingState();
-  const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
   // Update lap times store with telemetry data (only for this overlay)
   useLapTimesStoreUpdater();
@@ -66,13 +62,6 @@ export const Standings = () => {
   const tableBorderSpacing = isCompact
     ? 'border-spacing-y-0'
     : 'border-spacing-y-0.5';
-
-  if (!isSessionVisible) return <></>;
-
-  // Show only when on track setting
-  if (settings?.showOnlyWhenOnTrack && !isDriving) {
-    return <></>;
-  }
 
   return (
     <div

@@ -2,22 +2,11 @@
 import { SlowCarAheadConfig } from '@irdashies/types';
 import { useSlowCarAheadSettings } from './hooks/useSlowCarAheadSettings';
 import { useSlowCarAheadDemo } from './hooks/useSlowCarAheadDemo';
-import { useDrivingState, useSessionVisibility } from '@irdashies/context';
 
 export const SlowCarAhead = () => {
   const slowCarAhead = useSlowCarAhead();
   const demoSlowCarAhead = useSlowCarAheadDemo();
   const settings = useSlowCarAheadSettings();
-  const { isDriving } = useDrivingState();
-  const isVisible = useSessionVisibility(settings.sessionVisibility);
-
-  if (!isVisible) {
-    return null;
-  }
-
-  if (settings.showOnlyWhenOnTrack && !isDriving) {
-    return null;
-  }
 
   const data = demoSlowCarAhead != null ? demoSlowCarAhead : slowCarAhead;
   if (data === null) {

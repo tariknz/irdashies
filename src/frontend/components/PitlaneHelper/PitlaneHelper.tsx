@@ -4,11 +4,7 @@ import { usePitboxPosition } from './hooks/usePitboxPosition';
 import { usePitlaneVisibility } from './hooks/usePitlaneVisibility';
 import { usePitLimiterWarning } from './hooks/usePitLimiterWarning';
 import { usePitlaneTraffic } from './hooks/usePitlaneTraffic';
-import {
-  useTelemetryValue,
-  useDashboard,
-  useSessionVisibility,
-} from '@irdashies/context';
+import { useTelemetryValue, useDashboard } from '@irdashies/context';
 import {
   getDemoPitlaneData,
   PitSpeedResult,
@@ -33,8 +29,6 @@ export const PitlaneHelper = () => {
   const { isDemoMode } = useDashboard();
   const config = usePitlaneHelperSettings();
 
-  const isSessionVisible = useSessionVisibility(config?.sessionVisibility);
-
   const surface = (useTelemetryValue('PlayerTrackSurface') ?? 3) as number;
   const onPitRoadTelemetry = useTelemetryValue<boolean>('OnPitRoad') ?? false;
   const displayUnits = useTelemetryValue('DisplayUnits') as number | undefined;
@@ -56,7 +50,7 @@ export const PitlaneHelper = () => {
   }
 
   // Don't render if not visible
-  if (!isVisible || !isSessionVisible) {
+  if (!isVisible) {
     return null;
   }
 

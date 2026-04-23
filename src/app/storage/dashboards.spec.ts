@@ -377,22 +377,4 @@ describe('dashboards', () => {
       });
     });
   });
-
-  describe('defaultDashboard widgets', () => {
-    it('should have showOnlyWhenOnTrack property in Track Map widget', () => {
-      const mapWidget = defaultDashboard.widgets.find((w) => w.id === 'map');
-
-      expect(mapWidget).toBeDefined();
-      expect(mapWidget?.config?.showOnlyWhenOnTrack).toBe(false);
-    });
-
-    it('should have showOnlyWhenOnTrack property in Flat Track Map widget', () => {
-      const flatMapWidget = defaultDashboard.widgets.find(
-        (w) => w.id === 'flatmap'
-      );
-
-      expect(flatMapWidget).toBeDefined();
-      expect(flatMapWidget?.config?.showOnlyWhenOnTrack).toBe(false);
-    });
-  });
 });

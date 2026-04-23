@@ -13,8 +13,9 @@ import { getWidgetName } from '../../constants/widgetNames';
 import { ResizeIcon, XIcon } from '@phosphor-icons/react';
 import type { DashboardWidget } from '@irdashies/types';
 import { useDragWidget, useResizeWidget } from '../WidgetContainer';
-import { ResizeHandles } from '../WidgetContainer/ResizeHandle';
+import { ResizeHandles } from '../WidgetContainer';
 import logger from '@irdashies/utils/logger';
+import { WidgetVisibilityContainer } from '../SessionVisibilityContainer/WidgetVisibilityContainer';
 
 interface WidgetPosition {
   x: number;
@@ -164,7 +165,11 @@ const DashboardWidgetItem = memo(
               }
             `}</style>
             <div className="widget-content w-full h-full">
-              <WidgetComponent {...widget.config} />
+              <WidgetVisibilityContainer
+                visibilityConfig={widget.visibilityConfig}
+              >
+                <WidgetComponent {...widget.config} />
+              </WidgetVisibilityContainer>
             </div>
           </div>
         </div>

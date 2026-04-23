@@ -83,16 +83,8 @@ const RandomTraces = () => {
           },
         },
         displayOrder: ['trace', 'bar', 'gear', 'steer'],
-        showOnlyWhenOnTrack: true,
         background: {
           opacity: 80,
-        },
-        sessionVisibility: {
-          race: true,
-          loneQualify: true,
-          openQualify: true,
-          practice: true,
-          offlineTesting: true,
         },
       }}
     />

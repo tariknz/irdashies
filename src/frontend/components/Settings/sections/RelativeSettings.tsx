@@ -1,18 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { useDashboard } from '@irdashies/context';
-import {
-  RelativeWidgetSettings,
-  SettingsTabType,
-  getWidgetDefaultConfig,
-} from '@irdashies/types';
+import { RelativeWidgetSettings } from '@irdashies/types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
 import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
 import { DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
-import { SessionVisibility } from '../components/SessionVisibility';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
@@ -20,12 +14,12 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingActionButton } from '../components/SettingActionButton';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
+import { useWidgetSettingsSection } from '../hooks/useWidgetSettingsSection';
+import { SettingVisibilitySection } from '../components/SettingVisibilitySection';
 import {
-  SessionBarItemsList,
   SessionBarItemConfig,
+  SessionBarItemsList,
 } from '../components/SessionBarItemsList';
-
-const SETTING_ID = 'relative';
 
 interface SortableSetting {
   id: string;
@@ -65,8 +59,6 @@ const sortableSettings: SortableSetting[] = [
   { id: 'lastTime', label: 'Last Time', configKey: 'lastTime' },
   { id: 'compound', label: 'Tire Compound', configKey: 'compound' },
 ];
-
-const defaultConfig = getWidgetDefaultConfig('relative');
 
 interface DisplaySettingsListProps {
   itemsOrder: string[];
@@ -372,40 +364,20 @@ const DisplaySettingsList = ({
 };
 
 export const RelativeSettings = () => {
-  const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
-  ) as RelativeWidgetSettings | undefined;
-  const [settings, setSettings] = useState<RelativeWidgetSettings>({
-    enabled: savedSettings?.enabled ?? true,
-    config:
-      (savedSettings?.config as RelativeWidgetSettings['config']) ??
-      defaultConfig,
-  });
+  const { settings, setSettings, activeTab, setActiveTab } =
+    useWidgetSettingsSection('relative');
+
   const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
-
-  // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('relativeTab') as SettingsTabType) || 'display'
-  );
-
-  useEffect(() => {
-    localStorage.setItem('relativeTab', activeTab);
-  }, [activeTab]);
-
-  if (!currentDashboard) {
-    return <>Loading...</>;
-  }
 
   return (
     <BaseSettingsSection
       title="Relative"
       description="Configure the relative timing display settings."
+      widgetType={'relative'}
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId="relative"
     >
-      {(handleConfigChange) => {
+      {(handleConfigChange, handleVisibilityConfigChange) => {
         const handleDisplayOrderChange = (newOrder: string[]) => {
           setItemsOrder(newOrder);
           handleConfigChange({ displayOrder: newOrder });
@@ -474,7 +446,6 @@ export const RelativeSettings = () => {
                     label="Reset to Default Order"
                     onClick={() => {
                       const defaultOrder = sortableSettings.map((s) => s.id);
-                      setItemsOrder(defaultOrder);
                       handleConfigChange({ displayOrder: defaultOrder });
                     }}
                   />
@@ -500,8 +471,8 @@ export const RelativeSettings = () => {
                     <SettingToggleRow
                       title="Use Live Position Standings"
                       description="If enabled, live telemetry will be used to compute driver
-                          positions. This may be less stable but will update live and
-                          not only on start/finish line."
+                            positions. This may be less stable but will update live and
+                            not only on start/finish line."
                       enabled={settings.config.useLivePosition ?? false}
                       onToggle={(newValue) =>
                         handleConfigChange({ useLivePosition: newValue })
@@ -845,23 +816,10 @@ export const RelativeSettings = () => {
 
               {/* VISIBILITY TAB */}
               {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
-                  <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
-
-                  <SettingDivider />
-
-                  <SettingToggleRow
-                    title="Show only when on track"
-                    description="If enabled, relatives will only be shown when driving"
-                    enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                    }
-                  />
-                </SettingsSection>
+                <SettingVisibilitySection
+                  config={settings.visibilityConfig}
+                  handleConfigChange={handleVisibilityConfigChange}
+                />
               )}
             </div>
           </div>

@@ -13,7 +13,6 @@ import {
   useLapTimesStoreUpdater,
   useLapTimesStore,
   usePitLapStoreUpdater,
-  useDrivingState,
   useWeekendInfoNumCarClasses,
   useTelemetryValue,
   useSessionName,
@@ -86,7 +85,6 @@ const createMockBridgeWithCompactUltraMode = (): DashboardBridge => ({
 // Custom component that renders standings without header/footer session bars
 const StandingsWithoutHeaderFooter = () => {
   const settings = useStandingsSettings();
-  const { isDriving } = useDrivingState();
 
   // Update lap times store with telemetry data (only for this overlay)
   useLapTimesStoreUpdater();
@@ -99,11 +97,6 @@ const StandingsWithoutHeaderFooter = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
-
-  // Show only when on track setting
-  if (settings?.showOnlyWhenOnTrack && !isDriving) {
-    return <></>;
-  }
 
   return (
     <div
@@ -380,7 +373,6 @@ export const TeamSession: Story = {
 // Component that renders standings without header bar but with footer
 const StandingsWithoutHeader = () => {
   const settings = useStandingsSettings();
-  const { isDriving } = useDrivingState();
 
   // Update lap times store with telemetry data (only for this overlay)
   useLapTimesStoreUpdater();
@@ -393,11 +385,6 @@ const StandingsWithoutHeader = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
-
-  // Show only when on track setting
-  if (settings?.showOnlyWhenOnTrack && !isDriving) {
-    return <></>;
-  }
 
   return (
     <div
@@ -538,7 +525,6 @@ export const NoHeader: Story = {
 // Component that renders standings without footer but with header bar
 const StandingsWithoutFooter = () => {
   const settings = useStandingsSettings();
-  const { isDriving } = useDrivingState();
 
   // Update lap times store with telemetry data (only for this overlay)
   useLapTimesStoreUpdater();
@@ -551,11 +537,6 @@ const StandingsWithoutFooter = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
-
-  // Show only when on track setting
-  if (settings?.showOnlyWhenOnTrack && !isDriving) {
-    return <></>;
-  }
 
   return (
     <div
@@ -795,7 +776,6 @@ const FullHeaderBar = () => {
 // Component that renders standings with all header bar options visible, no footer
 const StandingsWithFullHeader = () => {
   const settings = useStandingsSettings();
-  const { isDriving } = useDrivingState();
 
   // Update lap times store with telemetry data (only for this overlay)
   useLapTimesStoreUpdater();
@@ -808,11 +788,6 @@ const StandingsWithFullHeader = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
-
-  // Show only when on track setting
-  if (settings?.showOnlyWhenOnTrack && !isDriving) {
-    return <></>;
-  }
 
   return (
     <div

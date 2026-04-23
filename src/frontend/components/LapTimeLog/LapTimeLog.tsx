@@ -6,7 +6,6 @@ import React, { useMemo } from 'react';
 import {
   useFocusCarIdx,
   useDrivingState,
-  useSessionVisibility,
   useDashboard,
   useGeneralSettings,
 } from '@irdashies/context';
@@ -24,17 +23,8 @@ export const LapTimeLog = () => {
   const { isDriving } = useDrivingState();
   const playerIndex = useFocusCarIdx();
   const data = useLapTimeLog();
-  const isSessionVisible = useSessionVisibility(
-    data.settings?.sessionVisibility
-  );
 
-  // session visible?
-  if (!data.settings || playerIndex === undefined || !isSessionVisible) {
-    return null;
-  }
-
-  // Show only when on track setting
-  if (data.settings?.showOnlyWhenOnTrack && !isDriving) {
+  if (!data.settings || playerIndex === undefined || !isDriving) {
     return null;
   }
 
