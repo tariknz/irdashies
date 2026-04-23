@@ -17,7 +17,9 @@ export const useSectorTiming = (): SectorColor[] => {
   const sectors = useSessionStore((s) => s.session?.SplitTimeInfo?.Sectors);
   const setSectors = useSectorTimingStore((s) => s.setSectors);
   const tick = useSectorTimingStore((s) => s.tick);
-  const invalidateLap = useSectorTimingStore((s) => s.invalidateLap);
+  const markCurrentSectorUnclean = useSectorTimingStore(
+    (s) => s.markCurrentSectorUnclean
+  );
 
   const lapDistPct = useTelemetryValue('LapDistPct');
   const sessionTime = useTelemetryValue('SessionTime');
@@ -30,17 +32,16 @@ export const useSectorTiming = (): SectorColor[] => {
     }
   }, [sectors, setSectors]);
 
-  // Invalidate lap tracking when the player goes off-track (pits, reset to box).
-  // This forces a S/F crossing before timing resumes, preventing mid-track
-  // rejoins from producing misleading sector times.
+  // Mark the current sector unclean when the player goes off-track. This keeps
+  // the real elapsed sector time while letting the widget flag the incident.
   const prevIsOnTrack = useRef<boolean | null>(null);
   useEffect(() => {
     const current = !!isOnTrack;
     if (prevIsOnTrack.current === true && !current) {
-      invalidateLap();
+      markCurrentSectorUnclean();
     }
     prevIsOnTrack.current = current;
-  }, [isOnTrack, invalidateLap]);
+  }, [isOnTrack, markCurrentSectorUnclean]);
 
   // Feed each telemetry tick into the store
   useEffect(() => {

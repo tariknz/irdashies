@@ -505,6 +505,26 @@ describe('SectorTimingStore.tick', () => {
     expect(state.previousLapSectorTimes[1]).toBeCloseTo(15);
     expect(state.previousLapSectorTimes[2]).toBeCloseTo(20);
   });
+
+  it('records an unclean sector and keeps its incident flag', () => {
+    useSectorTimingStore.getState().setSectors([
+      { SectorNum: 0, SectorStartPct: 0 },
+      { SectorNum: 1, SectorStartPct: 0.4 },
+      { SectorNum: 2, SectorStartPct: 0.7 },
+    ]);
+    useSectorTimingStore.getState().resetLap();
+
+    useSectorTimingStore.getState().tick(0.01, 100, true);
+    useSectorTimingStore.getState().markCurrentSectorUnclean();
+    useSectorTimingStore.getState().tick(0.4, 120, true); // sector 0 = 20s
+
+    const state = useSectorTimingStore.getState();
+    expect(state.currentLapSectorTimes[0]).toBeCloseTo(20);
+    expect(state.previousLapSectorTimes[0]).toBeCloseTo(20);
+    expect(state.currentLapSectorUnclean[0]).toBe(true);
+    expect(state.previousLapSectorUnclean[0]).toBe(true);
+    expect(state.sectorEntryUnclean).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -589,6 +609,33 @@ describe('SectorTimingStore.invalidateLap', () => {
     expect(state.sessionBestSectorTimes[2]).toBeNull();
     // sectorEntryValid is now true (crossing sets it true)
     expect(state.sectorEntryValid).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SectorTimingStore — markCurrentSectorUnclean
+// ---------------------------------------------------------------------------
+
+describe('SectorTimingStore.markCurrentSectorUnclean', () => {
+  it('marks a valid in-progress sector as unclean', () => {
+    useSectorTimingStore.getState().setSectors(MOCK_SECTORS);
+    useSectorTimingStore.getState().resetLap();
+    useSectorTimingStore.getState().tick(0.01, 100, true);
+
+    useSectorTimingStore.getState().markCurrentSectorUnclean();
+
+    expect(useSectorTimingStore.getState().sectorEntryUnclean).toBe(true);
+    expect(useSectorTimingStore.getState().sectorEntryValid).toBe(true);
+  });
+
+  it('does nothing when the current sector is invalid', () => {
+    useSectorTimingStore.getState().setSectors(MOCK_SECTORS);
+    useSectorTimingStore.getState().invalidateLap();
+
+    useSectorTimingStore.getState().markCurrentSectorUnclean();
+
+    expect(useSectorTimingStore.getState().sectorEntryUnclean).toBe(false);
+    expect(useSectorTimingStore.getState().sectorEntryValid).toBe(false);
   });
 });
 

@@ -73,9 +73,12 @@ interface SectorTimingState {
    * already completed on the current lap retain their recorded times.
    */
   sectorEntryValid: boolean;
+  sectorEntryUnclean: boolean;
 
   // Per-sector timing results (null = not yet completed)
   sessionBestSectorTimes: (number | null)[];
+  currentLapSectorUnclean: boolean[];
+  previousLapSectorUnclean: boolean[];
 
   // Colors to display for each sector (index = sector number)
   sectorColors: SectorColor[];
@@ -98,6 +101,7 @@ interface SectorTimingState {
   // Mark current sector as invalid — next crossing must be entered normally.
   // Call when the player goes off-track or rejoins mid-track.
   invalidateLap: () => void;
+  markCurrentSectorUnclean: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -214,10 +218,13 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
   lastLapDistPct: -1,
   lastSessionTime: -1,
   sectorEntryValid: false,
+  sectorEntryUnclean: false,
   sessionBestSectorTimes: [],
   sectorColors: [],
   currentLapSectorTimes: [],
   previousLapSectorTimes: [],
+  currentLapSectorUnclean: [],
+  previousLapSectorUnclean: [],
   greenThreshold: DEFAULT_GREEN_THRESHOLD,
   yellowThreshold: DEFAULT_YELLOW_THRESHOLD,
 
@@ -240,11 +247,14 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       sessionBestSectorTimes: sorted.map(() => null),
       currentLapSectorTimes: sorted.map(() => null),
       previousLapSectorTimes: sorted.map(() => null),
+      currentLapSectorUnclean: sorted.map(() => false),
+      previousLapSectorUnclean: sorted.map(() => false),
       currentSectorIdx: 0,
       sectorEntryTime: 0,
       lastLapDistPct: -1,
       lastSessionTime: -1,
       sectorEntryValid: false,
+      sectorEntryUnclean: false,
     });
   },
 
@@ -291,6 +301,7 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       const newSessionBests = [...state.sessionBestSectorTimes];
       const newColors = [...state.sectorColors];
       const newPreviousTimes = [...state.previousLapSectorTimes];
+      const newPreviousUnclean = [...state.previousLapSectorUnclean];
 
       // Interpolate the exact moment the S/F line was crossed.
       // currPct + 1.0 normalises the wrap-around so the direction is correct.
@@ -321,10 +332,12 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
         );
         // Update previousLapSectorTimes immediately for the completed sector.
         newPreviousTimes[completedIdx] = sectorTime;
+        newPreviousUnclean[completedIdx] = state.sectorEntryUnclean;
       }
 
       set({
         sectorEntryValid: true, // S/F crossing is always a valid entry to sector 0
+        sectorEntryUnclean: false,
         currentSectorIdx: 0,
         sectorEntryTime: crossingTime,
         lastLapDistPct: lapDistPct,
@@ -332,7 +345,9 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
         sessionBestSectorTimes: newSessionBests,
         sectorColors: newColors,
         previousLapSectorTimes: newPreviousTimes,
+        previousLapSectorUnclean: newPreviousUnclean,
         currentLapSectorTimes: sectors.map(() => null),
+        currentLapSectorUnclean: sectors.map(() => false),
       });
       return;
     }
@@ -361,6 +376,7 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       newCurrentLapTimes[newSectorIdx] = null;
       set({
         sectorEntryValid: false,
+        sectorEntryUnclean: false,
         lastLapDistPct: lapDistPct,
         lastSessionTime: sessionTime,
         currentSectorIdx: newSectorIdx,
@@ -382,6 +398,8 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
     // Crossed into a new sector via normal forward progression.
     const newCurrentLapTimes = [...state.currentLapSectorTimes];
     const newPreviousTimes = [...state.previousLapSectorTimes];
+    const newCurrentLapUnclean = [...state.currentLapSectorUnclean];
+    const newPreviousUnclean = [...state.previousLapSectorUnclean];
     const newSessionBests = [...state.sessionBestSectorTimes];
     const newColors = [...state.sectorColors];
 
@@ -415,13 +433,16 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
 
       newColors[completedIdx] = color;
       newCurrentLapTimes[completedIdx] = sectorTime;
+      newCurrentLapUnclean[completedIdx] = state.sectorEntryUnclean;
       // Update previousLapSectorTimes immediately so the reference is always
       // current regardless of resets or incomplete laps.
       newPreviousTimes[completedIdx] = sectorTime;
+      newPreviousUnclean[completedIdx] = state.sectorEntryUnclean;
     }
 
     set({
       sectorEntryValid: true, // entered new sector via normal crossing
+      sectorEntryUnclean: false,
       currentSectorIdx: newSectorIdx,
       sectorEntryTime: crossingTime,
       lastSessionTime: sessionTime,
@@ -429,6 +450,8 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       sectorColors: newColors,
       currentLapSectorTimes: newCurrentLapTimes,
       previousLapSectorTimes: newPreviousTimes,
+      currentLapSectorUnclean: newCurrentLapUnclean,
+      previousLapSectorUnclean: newPreviousUnclean,
     });
   },
 
@@ -459,10 +482,13 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       lastLapDistPct: -1,
       lastSessionTime: -1,
       sectorEntryValid: false,
+      sectorEntryUnclean: false,
       sessionBestSectorTimes: state.sectors.map(() => null),
       sectorColors: state.sectors.map(() => 'default' as SectorColor),
       currentLapSectorTimes: state.sectors.map(() => null),
       previousLapSectorTimes: state.sectors.map(() => null),
+      currentLapSectorUnclean: state.sectors.map(() => false),
+      previousLapSectorUnclean: state.sectors.map(() => false),
     })),
 
   resetLap: () =>
@@ -472,17 +498,30 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       lastLapDistPct: -1,
       lastSessionTime: -1,
       sectorEntryValid: true,
+      sectorEntryUnclean: false,
       sectorColors: state.sectors.map(() => 'default' as SectorColor),
       currentLapSectorTimes: state.sectors.map(() => null),
       previousLapSectorTimes: state.sectors.map(() => null),
+      currentLapSectorUnclean: state.sectors.map(() => false),
+      previousLapSectorUnclean: state.sectors.map(() => false),
     })),
 
   invalidateLap: () =>
     set({
       sectorEntryValid: false,
+      sectorEntryUnclean: false,
       lastLapDistPct: -1,
       lastSessionTime: -1,
     }),
+
+  markCurrentSectorUnclean: () =>
+    set((state) =>
+      state.sectorEntryValid
+        ? {
+            sectorEntryUnclean: true,
+          }
+        : {}
+    ),
 }));
 
 // ---------------------------------------------------------------------------
@@ -500,6 +539,8 @@ export const useSectorDeltas = () =>
       sectorColors: s.sectorColors,
       currentLapSectorTimes: s.currentLapSectorTimes,
       previousLapSectorTimes: s.previousLapSectorTimes,
+      currentLapSectorUnclean: s.currentLapSectorUnclean,
+      previousLapSectorUnclean: s.previousLapSectorUnclean,
       sessionBestSectorTimes: s.sessionBestSectorTimes,
       currentSectorIdx: s.currentSectorIdx,
     }),

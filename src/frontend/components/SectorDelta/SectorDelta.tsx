@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { GhostIcon } from '@phosphor-icons/react';
+import { GhostIcon, WarningIcon } from '@phosphor-icons/react';
 import { useSectorDeltas, useSectorTimingStore } from '@irdashies/context';
 import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
 import { useReferenceLapSectorTimes } from '@irdashies/context';
@@ -77,7 +77,9 @@ export const SectorDelta = ({
     sectors,
     sectorColors,
     currentLapSectorTimes,
+    currentLapSectorUnclean,
     previousLapSectorTimes,
+    previousLapSectorUnclean,
     sessionBestSectorTimes,
     currentSectorIdx,
   } = useSectorDeltas();
@@ -126,6 +128,11 @@ export const SectorDelta = ({
         const displayTime = isCurrent
           ? (previousLapSectorTimes[i] ?? null)
           : (currentLapSectorTimes[i] ?? previousLapSectorTimes[i] ?? null);
+        const isUnclean = isCurrent
+          ? previousLapSectorUnclean[i]
+          : currentLapSectorTimes[i] != null
+            ? currentLapSectorUnclean[i]
+            : previousLapSectorUnclean[i];
 
         const colorKey: SectorColor = useGhost
           ? computeGhostSectorColor(
@@ -160,12 +167,19 @@ export const SectorDelta = ({
             </span>
             <span
               className={[
-                'text-sm font-bold leading-none tabular-nums',
+                'inline-flex items-center gap-1 text-sm font-bold leading-none tabular-nums',
                 card.text,
                 isCurrent ? 'opacity-70' : '',
               ].join(' ')}
             >
-              {delta}
+              <span>{delta}</span>
+              {isUnclean && (
+                <WarningIcon
+                  size={10}
+                  weight="fill"
+                  className="text-amber-300 shrink-0"
+                />
+              )}
             </span>
             {isCurrent && (
               <>
