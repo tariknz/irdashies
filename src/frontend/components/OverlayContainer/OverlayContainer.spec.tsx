@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { OverlayContainer } from './OverlayContainer';
 
+vi.mock('../../WidgetIndex', () => ({
+  WIDGET_MAP: {},
+}));
 vi.mock('@irdashies/context', () => ({
   useDashboard: vi.fn(),
   useRunningState: vi.fn(),
