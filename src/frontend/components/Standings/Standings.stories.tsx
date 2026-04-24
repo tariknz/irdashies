@@ -1158,6 +1158,128 @@ const LapHistorySeeder = () => {
   return null;
 };
 
+const baseConfig = {
+  badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
+  driverName: {
+    enabled: true,
+    showStatusBadges: true,
+    removeNumbersFromName: false,
+  },
+  carNumber: { enabled: true },
+  position: { enabled: true },
+  delta: { enabled: true },
+  gap: { enabled: false },
+  interval: { enabled: false },
+  fastestTime: { enabled: false },
+  lastTime: { enabled: false },
+} as import('@irdashies/types').StandingsWidgetSettings['config'];
+
+const baseDriverProps = {
+  classColor: 0x4488ff,
+  isPlayer: false,
+  hasFastestTime: false,
+  delta: 1.2,
+  position: 1,
+  lap: 10,
+  license: 'A 4.50',
+  rating: 4500,
+  onPitRoad: false,
+  onTrack: true,
+  radioActive: false,
+  isMultiClass: false,
+  currentSessionType: 'Race' as const,
+  dnf: false,
+  repair: false,
+  penalty: false,
+  slowdown: false,
+  config: baseConfig,
+};
+
+const WithFlagsComponent = () => (
+  <div className="w-full bg-slate-800/70 rounded-sm p-2 text-white">
+    <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+      <tbody>
+        <DriverInfoRow
+          {...baseDriverProps}
+          carIdx={10}
+          carNumber="4"
+          name="Alex Martin"
+          position={1}
+          delta={0}
+        />
+        <DriverInfoRow
+          {...baseDriverProps}
+          carIdx={11}
+          carNumber="77"
+          name="Sophie Williams"
+          position={2}
+          delta={-1.4}
+          hasFastestTime={true}
+        />
+        <DriverInfoRow
+          {...baseDriverProps}
+          carIdx={1}
+          carNumber="14"
+          name="James Black"
+          position={3}
+          delta={2.1}
+          penalty={true}
+        />
+        <DriverInfoRow
+          {...baseDriverProps}
+          carIdx={2}
+          carNumber="27"
+          name="Mark Slowdown"
+          position={4}
+          delta={3.5}
+          slowdown={true}
+        />
+        <DriverInfoRow
+          {...baseDriverProps}
+          carIdx={3}
+          carNumber="88"
+          name="Tom Repair"
+          position={5}
+          delta={4.2}
+          repair={true}
+        />
+        <DriverInfoRow
+          {...baseDriverProps}
+          carIdx={4}
+          carNumber="33"
+          name="David Pit"
+          position={6}
+          delta={5.8}
+          repair={true}
+          onPitRoad={true}
+          onTrack={false}
+          carTrackSurface={2}
+        />
+        <DriverInfoRow
+          {...baseDriverProps}
+          carIdx={5}
+          carNumber="55"
+          name="Chris Outlap"
+          position={7}
+          delta={9.1}
+          lastPitLap={10}
+          lastLap={10}
+          carTrackSurface={1}
+        />
+      </tbody>
+    </table>
+  </div>
+);
+
+export const WithFlags: Story = {
+  name: 'With Flags as badges',
+  decorators: [TelemetryDecorator()],
+  render: () => <WithFlagsComponent />,
+  parameters: {
+    layout: 'padded',
+  },
+};
+
 export const AvgLapTime: Story = {
   name: 'Avg Lap Time Column',
   render: () => (
