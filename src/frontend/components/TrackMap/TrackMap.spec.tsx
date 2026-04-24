@@ -57,6 +57,7 @@ describe('TrackMap', () => {
       trackLineWidth: 20,
       trackOutlineWidth: 40,
       useHighlightColor: false,
+      invertLeaderColor: false,
       showOnlyWhenOnTrack: false,
       sessionVisibility: {
         race: true,
@@ -90,6 +91,7 @@ describe('TrackMap', () => {
       trackLineWidth: 20,
       trackOutlineWidth: 40,
       useHighlightColor: false,
+      invertLeaderColor: false,
       showOnlyWhenOnTrack: true,
       sessionVisibility: {
         race: true,
@@ -123,6 +125,7 @@ describe('TrackMap', () => {
       trackLineWidth: 20,
       trackOutlineWidth: 40,
       useHighlightColor: false,
+      invertLeaderColor: false,
       showOnlyWhenOnTrack: true,
       sessionVisibility: {
         race: true,
@@ -156,6 +159,7 @@ describe('TrackMap', () => {
       trackLineWidth: 20,
       trackOutlineWidth: 40,
       useHighlightColor: false,
+      invertLeaderColor: false,
       showOnlyWhenOnTrack: false,
       sessionVisibility: {
         race: true,
@@ -190,6 +194,7 @@ describe('TrackMap', () => {
       trackLineWidth: 20,
       trackOutlineWidth: 40,
       useHighlightColor: false,
+      invertLeaderColor: false,
       showOnlyWhenOnTrack: false,
       sessionVisibility: {
         race: true,
@@ -224,6 +229,7 @@ describe('TrackMap', () => {
       trackLineWidth: 20,
       trackOutlineWidth: 40,
       useHighlightColor: false,
+      invertLeaderColor: false,
       showOnlyWhenOnTrack: false,
       sessionVisibility: {
         race: true,
