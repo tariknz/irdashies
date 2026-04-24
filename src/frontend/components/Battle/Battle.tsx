@@ -172,7 +172,10 @@ const BattleRow = memo(
             className={`w-auto text-center px-2 whitespace-nowrap ${positionBg} ${positionText}`}
             style={highlightStyle}
           >
-            {liveClassPosition ?? entry?.classPosition ?? '—'}
+            {(() => {
+              const p = liveClassPosition ?? entry?.classPosition;
+              return p !== undefined && isFinite(p) ? p : '—';
+            })()}
           </td>
         );
       } else if (key === 'carNumber' && settings?.carNumber?.enabled) {
@@ -347,11 +350,12 @@ export const Battle = () => {
       (s) => s.carIdx !== paceCarIdx && s.carClass?.id === playerClassId
     );
 
-    const positionFor = (carIdx: number) =>
-      hasLivePositions
+    const positionFor = (carIdx: number): number | undefined => {
+      const pos = hasLivePositions
         ? liveClassPositions[carIdx]
-        : (sameClass.find((s) => s.carIdx === carIdx)?.classPosition ??
-          Infinity);
+        : sameClass.find((s) => s.carIdx === carIdx)?.classPosition;
+      return pos !== undefined && isFinite(pos) ? pos : undefined;
+    };
 
     sameClass.sort((a, b) => {
       const pa = positionFor(a.carIdx) ?? Infinity;
