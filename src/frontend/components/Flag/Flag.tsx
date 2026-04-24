@@ -224,11 +224,23 @@ export const FlagDisplay = ({
     </div>
   );
 
+  const labelFontSize = flagWidth
+    ? Math.max(10, Math.round(flagWidth * 0.1))
+    : 14;
+  const labelSidePadding = Math.round(labelFontSize * 0.9);
+
   const label_el = showLabel && (
-    <div className="w-full h-6 flex items-center justify-center shrink-0">
+    <div
+      className="w-full flex items-center justify-center shrink-0"
+      style={{ paddingLeft: labelSidePadding, paddingRight: labelSidePadding }}
+    >
       <span
-        className={`text-sm font-black px-3 py-1 uppercase rounded-md bg-black/(--bg-opacity) ${textColorClass} ${shortLabel === 'NO' ? 'opacity-0' : ''}`}
-        style={bgOpacityStyle}
+        className={`font-black uppercase rounded-md ${textColorClass} ${shortLabel === 'NO' ? 'opacity-0' : ''}`}
+        style={{
+          fontSize: labelFontSize,
+          padding: `${Math.round(labelFontSize * 0.25)}px ${Math.round(labelFontSize * 0.6)}px`,
+          backgroundColor: `rgb(0 0 0 / ${backgroundOpacity}%)`,
+        }}
       >
         {shortLabel === 'NO' ? 'NO' : shortLabel}
       </span>
