@@ -1,10 +1,10 @@
 import { memo } from 'react';
 
 export interface PitSpeedBarProps {
-  /** Current speed in km/h */
-  speedKph: number;
-  /** Pit speed limit in km/h */
-  limitKph: number;
+  /** Current speed in display units */
+  speed: number;
+  /** Pit speed limit in display units */
+  limit: number;
   /** orientation */
   orientation: 'horizontal' | 'vertical' | undefined;
 }
@@ -14,23 +14,23 @@ export interface PitSpeedBarProps {
  * The limit is marked at the midpoint of the bar. The fill grows upward
  * from zero and changes colour based on proximity to the limit.
  *
- * - Green:  more than 5 km/h below limit
- * - Amber:  within 5 km/h below limit
+ * - Green:  more than 5 units below limit
+ * - Amber:  within 5 units below limit
  * - Red:    at or above limit
  */
 export const PitSpeedBar = memo(
-  ({ speedKph, limitKph, orientation }: PitSpeedBarProps) => {
+  ({ speed, limit, orientation }: PitSpeedBarProps) => {
     // The bar represents 0 → 2× the limit. The midpoint (50%) = limit.
-    const maxSpeed = limitKph * 2;
-    const clampedSpeed = Math.max(0, Math.min(speedKph, maxSpeed));
+    const maxSpeed = limit * 2;
+    const clampedSpeed = Math.max(0, Math.min(speed, maxSpeed));
     const fillPercent = (clampedSpeed / maxSpeed) * 100;
 
-    const deltaKph = speedKph - limitKph;
+    const delta = speed - limit;
 
     let fillColor = 'rgb(34, 197, 94)'; // green-500
-    if (deltaKph >= 0) {
+    if (delta >= 0) {
       fillColor = 'rgb(239, 68, 68)'; // red-500
-    } else if (deltaKph > -5) {
+    } else if (delta > -5) {
       fillColor = 'rgb(234, 179, 8)'; // yellow-500
     }
 
@@ -38,7 +38,7 @@ export const PitSpeedBar = memo(
       return (
         <div className="h-full flex flex-col flex-1 relative items-center gap-1">
           <span className="text-sm text-white font-medium tabular-nums leading-none">
-            {speedKph.toFixed(1)}
+            {speed.toFixed(1)}
           </span>
 
           {/* Bar */}
@@ -67,7 +67,7 @@ export const PitSpeedBar = memo(
         <div className="flex justify-between items-center text-xs">
           <span className="text-slate-400">Speed</span>
           <span className="text-white font-medium tabular-nums">
-            {speedKph.toFixed(1)}
+            {speed.toFixed(1)}
           </span>
         </div>
         {/* Horizontal bar */}
@@ -79,7 +79,6 @@ export const PitSpeedBar = memo(
           {/* Midpoint marker */}
           <div className="absolute left-1/2 top-0 h-full border-l-2 border-white/70" />
         </div>
-        
       </div>
     );
   }

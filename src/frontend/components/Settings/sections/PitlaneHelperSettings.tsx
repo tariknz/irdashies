@@ -140,6 +140,17 @@ export const PitlaneHelperSettings = () => {
                           handleConfigChange({ speedLimitStyle: v })
                         }
                       />
+
+                      <SettingButtonGroupRow<'mph' | 'km/h' | 'auto'>
+                        title="Speed Unit"
+                        value={settings.config.speedUnit ?? 'auto'}
+                        options={[
+                          { label: 'Auto', value: 'auto' },
+                          { label: 'MPH', value: 'mph' },
+                          { label: 'KM/H', value: 'km/h' },
+                        ]}
+                        onChange={(v) => handleConfigChange({ speedUnit: v })}
+                      />
                     </SettingsSection>
                   )}
 

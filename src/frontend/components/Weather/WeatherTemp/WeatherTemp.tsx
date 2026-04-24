@@ -1,18 +1,20 @@
-import { ThermometerIcon } from '@phosphor-icons/react';
 import { memo } from 'react';
 
 export interface WeatherTempProps {
   title: string;
   value: string;
+  icon: React.ElementType;
 }
 
-export const WeatherTemp = memo(({ title, value }: WeatherTempProps) => {
+export const WeatherTemp = memo(({ title, value, icon: Icon }: WeatherTempProps) => {
   return (
-    <div className="bg-slate-800/70 p-2 rounded-sm w-full">
+    <div className="bg-slate-800/70 p-2 rounded-sm w-full min-w-0">
       <div className="flex flex-row gap-x-2 items-center text-sm">
-        <ThermometerIcon />
-        <span className="grow">{title}</span>
-        <div className="text-center">{value}</div>
+        <Icon className="flex-none" />
+        <span className="truncate min-w-0 flex-1 @max-[120px]:hidden">
+          {title}
+        </span>
+        <div className="flex-none whitespace-nowrap text-right">{value}</div>
       </div>
     </div>
   );

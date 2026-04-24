@@ -11,13 +11,16 @@ import { WindDirection } from './WindDirection/WindDirection';
 import { useTrackRubberedState } from './hooks/useTrackRubberedState';
 import { useWeatherSettings } from './hooks/useWeatherSettings';
 import { WeatherHumidity } from './WeatherHumidity/WeatherHumidity';
+import { WeatherPrecipitation } from './WeatherPrecipitation/WeatherPrecipitation';
 import { useMemo } from 'react';
+import { RoadHorizonIcon, ThermometerIcon } from '@phosphor-icons/react';
 
 type WeatherColumnId =
   | 'trackTemp'
   | 'airTemp'
   | 'wind'
   | 'humidity'
+  | 'precipitation'
   | 'wetness'
   | 'trackState';
 
@@ -56,7 +59,10 @@ export const Weather = () => {
       { id: 'trackTemp', enabled: settings?.trackTemp?.enabled ?? true },
       { id: 'airTemp', enabled: settings?.airTemp?.enabled ?? true },
       { id: 'wind', enabled: settings?.wind?.enabled ?? true },
-      { id: 'humidity', enabled: settings?.humidity?.enabled ?? true },
+      {
+        id: 'precipitation',
+        enabled: settings?.precipitation?.enabled ?? true,
+      },
       { id: 'wetness', enabled: settings?.wetness?.enabled ?? true },
       { id: 'trackState', enabled: settings?.trackState?.enabled ?? true },
     ];
@@ -80,7 +86,7 @@ export const Weather = () => {
     settings?.trackTemp?.enabled,
     settings?.airTemp?.enabled,
     settings?.wind?.enabled,
-    settings?.humidity?.enabled,
+    settings?.precipitation?.enabled,
     settings?.wetness?.enabled,
     settings?.trackState?.enabled,
     displayOrder,
@@ -92,9 +98,23 @@ export const Weather = () => {
   const renderColumn = (id: WeatherColumnId) => {
     switch (id) {
       case 'trackTemp':
-        return <WeatherTemp key={id} title="Track" value={trackTemp} />;
+        return (
+          <WeatherTemp
+            key={id}
+            title="Track"
+            value={trackTemp}
+            icon={RoadHorizonIcon}
+          />
+        );
       case 'airTemp':
-        return <WeatherTemp key={id} title="Air" value={airTemp} />;
+        return (
+          <WeatherTemp
+            key={id}
+            title="Air"
+            value={airTemp}
+            icon={ThermometerIcon}
+          />
+        );
       case 'wind':
         return (
           <WindDirection
@@ -106,6 +126,13 @@ export const Weather = () => {
         );
       case 'humidity':
         return <WeatherHumidity key={id} humidity={weather.humidity} />;
+      case 'precipitation':
+        return (
+          <WeatherPrecipitation
+            key={id}
+            precipitation={weather.precipitation}
+          />
+        );
       case 'wetness':
         return (
           <WeatherTrackWetness key={id} trackMoisture={weather.trackMoisture} />
@@ -124,7 +151,7 @@ export const Weather = () => {
 
   return (
     <div
-      className="w-full rounded-sm p-2 bg-slate-800/(--bg-opacity)"
+      className="@container w-full rounded-sm p-2 bg-slate-800/(--bg-opacity)"
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
       }}
