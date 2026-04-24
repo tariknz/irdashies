@@ -322,6 +322,7 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
     trackLineWidth: number;
     trackOutlineWidth: number;
     useHighlightColor: boolean;
+    invertLeaderColor: boolean;
     showOnlyWhenOnTrack: boolean;
     sessionVisibility: SessionVisibilitySettings;
   };
@@ -566,6 +567,7 @@ export interface FlatTrackMapWidgetSettings extends BaseWidgetSettings {
     trackOutlineWidth: number;
     invertTrackColors: boolean;
     useHighlightColor: boolean;
+    invertLeaderColor: boolean;
     showOnlyWhenOnTrack: boolean;
     sessionVisibility: SessionVisibilitySettings;
   };

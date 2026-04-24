@@ -219,6 +219,7 @@ export interface TrackMapConfig {
   trackLineWidth: number;
   trackOutlineWidth: number;
   useHighlightColor: boolean;
+  invertLeaderColor: boolean;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
   styling?: { isMinimalTrack?: boolean; isMinimalCar?: boolean };
@@ -234,6 +235,7 @@ export interface FlatTrackMapConfig {
   trackOutlineWidth: number;
   invertTrackColors: boolean;
   useHighlightColor: boolean;
+  invertLeaderColor: boolean;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }
