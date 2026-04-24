@@ -216,7 +216,7 @@ export const useDriverStandings = () => {
         if (livePosition !== undefined) classPosition = livePosition;
       }
 
-      if (classPosition <= 0) {
+      if (!classPosition || !isFinite(classPosition) || classPosition <= 0) {
         // Class position can become 0 or negative in some edge cases
         // Before race start it seems to be fine to default to qualifying position
         // During the race class position should be available
