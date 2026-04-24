@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { useTelemetryValue, useSessionVisibility } from '@irdashies/context';
+import type { GeneralSettingsType } from '@irdashies/types';
 import { useFlagSettings } from './hooks/useFlagSettings';
 import { useBlinkState } from './hooks/useBlinkState';
 import { getLedColor } from './hooks/getLedColor';
@@ -42,6 +43,7 @@ export const Flag = () => {
           }
           enableGlow={settings.enableGlow ?? true}
           backgroundOpacity={settings.backgroundOpacity}
+          compactMode={settings.compactMode}
         />
       </div>
     );
@@ -63,6 +65,7 @@ export const Flag = () => {
           }
           enableGlow={settings.enableGlow ?? true}
           backgroundOpacity={settings.backgroundOpacity}
+          compactMode={settings.compactMode}
         />
       </div>
 
@@ -79,6 +82,7 @@ export const Flag = () => {
           }
           enableGlow={settings.enableGlow ?? true}
           backgroundOpacity={settings.backgroundOpacity}
+          compactMode={settings.compactMode}
         />
       </div>
     </div>
@@ -93,6 +97,7 @@ export const FlagDisplay = ({
   fullBleed = false,
   enableGlow = true,
   backgroundOpacity = 100,
+  compactMode = 'off',
 }: {
   label: string;
   showLabel?: boolean;
@@ -101,6 +106,7 @@ export const FlagDisplay = ({
   fullBleed?: boolean;
   enableGlow?: boolean;
   backgroundOpacity?: number;
+  compactMode?: GeneralSettingsType['compactMode'];
 }) => {
   const isUniform = matrixSize === 1;
   const cols = isUniform ? 1 : matrixSize;
@@ -115,6 +121,8 @@ export const FlagDisplay = ({
   const gap = isUniform ? 0 : '1.2%';
   const cellRadius = isUniform ? 16 : 4;
   const aspect = cols / rows;
+  const containerPadding =
+    compactMode === 'ultra' ? '0%' : compactMode === 'compact' ? '2%' : '4%';
 
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [flagWidth, setFlagWidth] = useState<number | null>(null);
@@ -252,9 +260,10 @@ export const FlagDisplay = ({
       className="w-full h-full flex items-center justify-center"
     >
       <div
-        className="flex flex-col items-center gap-[3%] p-[4%] bg-slate-900/(--bg-opacity) rounded-2xl border-4 border-slate-800/(--bg-opacity) shadow-2xl"
+        className="flex flex-col items-center gap-[3%] bg-slate-900/(--bg-opacity) rounded-2xl border-4 border-slate-800/(--bg-opacity) shadow-2xl"
         style={{
           ...bgOpacityStyle,
+          padding: containerPadding,
           width: flagWidth ? `${flagWidth}px` : '100%',
           height: flagHeight ? `${flagHeight}px` : '100%',
         }}

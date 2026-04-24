@@ -1,8 +1,9 @@
-import { useDashboard } from '@irdashies/context';
+import { useDashboard, useGeneralSettings } from '@irdashies/context';
 import { FlagWidgetSettings } from '@irdashies/types';
 
 export const useFlagSettings = () => {
   const { currentDashboard } = useDashboard();
+  const generalSettings = useGeneralSettings();
   const saved = currentDashboard?.widgets.find((w) => w.id === 'flag') as
     | FlagWidgetSettings
     | undefined;
@@ -19,6 +20,7 @@ export const useFlagSettings = () => {
     enableGlow: saved?.config?.enableGlow ?? true,
     doubleFlag: saved?.config?.doubleFlag ?? false,
     backgroundOpacity: saved?.config?.background?.opacity ?? 30,
+    compactMode: generalSettings?.compactMode ?? 'off',
     sessionVisibility: saved?.config?.sessionVisibility ?? {
       race: true,
       loneQualify: true,
