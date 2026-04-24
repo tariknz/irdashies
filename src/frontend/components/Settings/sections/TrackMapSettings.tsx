@@ -255,7 +255,7 @@ export const TrackMapSettings = () => {
                   value={settings.config.playerCircleSize ?? 40}
                   units="px"
                   min={10}
-                  max={100}
+                  max={80}
                   step={1}
                   onChange={(v) => handleConfigChange({ playerCircleSize: v })}
                 />
@@ -278,6 +278,16 @@ export const TrackMapSettings = () => {
                   enabled={settings.config.useHighlightColor ?? false}
                   onToggle={(newValue) =>
                     handleConfigChange({ useHighlightColor: newValue })
+                  }
+                />
+
+                <SettingToggleRow
+                  title="Use Inverted Color for the Leader"
+                  description="Use an alternate color for the leader car instead of
+                      class color"
+                  enabled={settings.config.invertLeaderColor ?? false}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ invertLeaderColor: newValue })
                   }
                 />
               </SettingsSection>

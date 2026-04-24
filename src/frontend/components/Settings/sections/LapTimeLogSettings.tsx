@@ -13,6 +13,7 @@ import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
+import { SettingDivider } from '../components/SettingDivider';
 
 const SETTING_ID = 'laptimelog';
 
@@ -46,7 +47,7 @@ export const LapTimeLogSettings = () => {
   return (
     <BaseSettingsSection
       title="Lap Timer"
-      description="Configure settings for the Lap Timer widget. Note: The widget automatically hides while you're in the garage, in a pit stall, or on pit road."
+      description="Configure settings for the Lap Timer widget. Select the lap times you want to see and the display options."
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -282,6 +283,17 @@ export const LapTimeLogSettings = () => {
                 <SessionVisibility
                   sessionVisibility={settings.config.sessionVisibility}
                   handleConfigChange={handleConfigChange}
+                />
+
+                <SettingDivider />
+
+                <SettingToggleRow
+                  title="Show only when on track"
+                  description="If enabled, lap times will only be shown when driving"
+                  enabled={settings.config.showOnlyWhenOnTrack ?? true}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
+                  }
                 />
               </SettingsSection>
             )}

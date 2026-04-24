@@ -138,10 +138,11 @@ export function calculateReferenceDelta(
 
   let calculatedDelta = timeOpponent - timePlayer;
   const lapTime = referenceLap.finishTime - referenceLap.startTime;
+  const trackPctDiff = opponentTrackPct - playerTrackPct;
 
-  if (calculatedDelta <= -lapTime / 2) {
+  if (trackPctDiff <= -0.5) {
     calculatedDelta += lapTime;
-  } else if (calculatedDelta >= lapTime / 2) {
+  } else if (trackPctDiff >= 0.5) {
     calculatedDelta -= lapTime;
   }
 

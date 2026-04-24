@@ -56,6 +56,7 @@ const mockConfig = (
       practice: true,
       offlineTesting: true,
     },
+    showOnlyWhenOnTrack: true,
   };
 
   return {
@@ -150,7 +151,7 @@ export const DirtyLap: Story = {
     ...baseArgs,
     dirty: true,
     settings: mockConfig({
-      delta: { enabled: true, method: 'lastlap' },      
+      delta: { enabled: true, method: 'lastlap' },
       showLastLap: false,
       showBestLap: false,
       history: { enabled: false, count: 5 },

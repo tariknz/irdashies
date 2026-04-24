@@ -44,6 +44,7 @@ export interface TrackProps {
   trackLineWidth?: number;
   trackOutlineWidth?: number;
   highlightColor?: number;
+  invertLeaderColor?: boolean;
   debug?: boolean;
   isMinimalTrack?: boolean;
   isMinimalCar?: boolean;
@@ -108,6 +109,7 @@ export const TrackCanvas = ({
   trackLineWidth = 20,
   trackOutlineWidth = 40,
   highlightColor,
+  invertLeaderColor = false,
   debug,
   isMinimalTrack = false,
   isMinimalCar = false,
@@ -459,6 +461,7 @@ export const TrackCanvas = ({
       ctx,
       calculatePositions,
       driverColors,
+      invertLeaderColor,
       driversOffTrack,
       driverCircleSize,
       playerCircleSize,
@@ -482,6 +485,7 @@ export const TrackCanvas = ({
     trackmapFontSize,
     turnLabels,
     driverColors,
+    invertLeaderColor,
     isMinimalCar,
     isMinimalTrack,
   ]);

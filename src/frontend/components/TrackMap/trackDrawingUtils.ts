@@ -156,6 +156,7 @@ export const drawDrivers = (
     }
   >,
   driverColors: Record<number, { fill: string; text: string }>,
+  invertLeaderColor: boolean,
   driversOffTrack: boolean[],
   driverCircleSize: number,
   playerCircleSize: number,
@@ -166,14 +167,28 @@ export const drawDrivers = (
   carIdxIsOnPitRoad?: number[]
 ) => {
   Object.values(calculatePositions)
-    .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)) // draws player last to be on top
+    .sort((a, b) => {
+      if (a.isPlayer !== b.isPlayer) {
+        return Number(a.isPlayer) - Number(b.isPlayer); // draws player last to be on top
+      }
+      return (b.sessionPosition ?? 0) - (a.sessionPosition ?? 0); // draws leader on top
+    })
     .forEach(({ driver, position, isPlayer, sessionPosition }) => {
       let color = driverColors[driver.CarIdx];
       if (!color) return;
 
       const circleRadius = isPlayer ? playerCircleSize : driverCircleSize;
       const fontSize = circleRadius * (trackmapFontSize / 100);
+      const originalColor = color.fill;
+      const livePosition =
+        driverLivePositions[driver.CarIdx] ?? sessionPosition;
 
+      // highlight leader?
+      if (!isPlayer && invertLeaderColor && livePosition === 1) {
+        color = { fill: 'white', text: originalColor };
+      }
+
+      // on pit road?
       const onPitRoad = !!carIdxIsOnPitRoad?.[driver.CarIdx];
       if (onPitRoad) {
         color = { fill: '#999999', text: 'white' };
@@ -184,9 +199,19 @@ export const drawDrivers = (
       ctx.arc(position.x, position.y, circleRadius, 0, 2 * Math.PI);
       ctx.fill();
 
+      // draw a border?
       if (driversOffTrack[driver.CarIdx]) {
         ctx.strokeStyle = getColor('yellow', 400);
-        ctx.lineWidth = 10;
+        ctx.lineWidth = 12;
+        ctx.stroke();
+      } else if (
+        !isPlayer &&
+        !onPitRoad &&
+        invertLeaderColor &&
+        livePosition === 1
+      ) {
+        ctx.strokeStyle = originalColor;
+        ctx.lineWidth = 4;
         ctx.stroke();
       }
 
@@ -199,8 +224,6 @@ export const drawDrivers = (
         if (onPitRoad) {
           displayText = 'P';
         } else if (displayMode === 'livePosition') {
-          const livePosition =
-            driverLivePositions[driver.CarIdx] ?? sessionPosition;
           displayText =
             livePosition && livePosition > 0 ? livePosition.toString() : '';
         } else if (displayMode === 'sessionPosition') {

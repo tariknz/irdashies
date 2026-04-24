@@ -611,6 +611,7 @@ export const defaultDashboard: {
         trackLineWidth: 20,
         trackOutlineWidth: 40,
         useHighlightColor: false,
+        invertLeaderColor: false,
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
@@ -642,6 +643,7 @@ export const defaultDashboard: {
         trackOutlineWidth: 40,
         invertTrackColors: false,
         useHighlightColor: false,
+        invertLeaderColor: false,
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
@@ -671,6 +673,7 @@ export const defaultDashboard: {
           'airTemp',
           'wind',
           'humidity',
+          'precipitation',
           'wetness',
           'trackState',
         ],
@@ -688,6 +691,9 @@ export const defaultDashboard: {
         },
         humidity: {
           enabled: true,
+        },
+        precipitation: {
+          enabled: false,
         },
         wind: {
           enabled: true,
@@ -944,11 +950,12 @@ export const defaultDashboard: {
         },
         sessionVisibility: {
           race: true,
-          loneQualify: false,
+          loneQualify: true,
           openQualify: true,
           practice: true,
           offlineTesting: true,
         },
+        showOnlyWhenOnTrack: true,
       },
     },
     {
@@ -1013,6 +1020,7 @@ export const defaultDashboard: {
         showPastPitBox: false,
         showSpeedSummary: true,
         showSpeedDelta: true,
+        speedUnit: 'auto',
         speedLimitStyle: 'text',
         progressBarOrientation: 'horizontal',
         speedBarOrientation: 'horizontal',
