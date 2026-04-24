@@ -41,6 +41,7 @@ export const Flag = () => {
                 : 1
           }
           enableGlow={settings.enableGlow ?? true}
+          backgroundOpacity={settings.backgroundOpacity}
         />
       </div>
     );
@@ -61,6 +62,7 @@ export const Flag = () => {
                 : 1
           }
           enableGlow={settings.enableGlow ?? true}
+          backgroundOpacity={settings.backgroundOpacity}
         />
       </div>
 
@@ -76,6 +78,7 @@ export const Flag = () => {
                 : 1
           }
           enableGlow={settings.enableGlow ?? true}
+          backgroundOpacity={settings.backgroundOpacity}
         />
       </div>
     </div>
@@ -89,6 +92,7 @@ export const FlagDisplay = ({
   matrixSize = 16,
   fullBleed = false,
   enableGlow = true,
+  backgroundOpacity = 100,
 }: {
   label: string;
   showLabel?: boolean;
@@ -96,6 +100,7 @@ export const FlagDisplay = ({
   matrixSize?: number;
   fullBleed?: boolean;
   enableGlow?: boolean;
+  backgroundOpacity?: number;
 }) => {
   const isUniform = matrixSize === 1;
   const cols = isUniform ? 1 : matrixSize;
@@ -189,10 +194,15 @@ export const FlagDisplay = ({
     );
   });
 
+  const bgOpacityStyle = {
+    ['--bg-opacity' as string]: `${backgroundOpacity}%`,
+  };
+
   const grid = (
     <div
-      className="grid bg-black box-border"
+      className="grid bg-black/(--bg-opacity) box-border"
       style={{
+        ...bgOpacityStyle,
         gridTemplateColumns: `repeat(${cols}, 1fr)`,
         gap,
         aspectRatio: `${cols} / ${rows}`,
@@ -209,7 +219,8 @@ export const FlagDisplay = ({
   const label_el = showLabel && (
     <div className="w-full h-6 flex items-center justify-center shrink-0">
       <span
-        className={`text-sm font-black px-3 py-1 uppercase rounded-md bg-black ${textColorClass} ${shortLabel === 'NO' ? 'opacity-0' : ''}`}
+        className={`text-sm font-black px-3 py-1 uppercase rounded-md bg-black/(--bg-opacity) ${textColorClass} ${shortLabel === 'NO' ? 'opacity-0' : ''}`}
+        style={bgOpacityStyle}
       >
         {shortLabel === 'NO' ? 'NO' : shortLabel}
       </span>
@@ -218,7 +229,10 @@ export const FlagDisplay = ({
 
   if (fullBleed) {
     return (
-      <div className="flex flex-col items-stretch gap-0 bg-slate-900 border-4 border-slate-800 shadow-2xl w-full h-full box-border m-0 p-0">
+      <div
+        className="flex flex-col items-stretch gap-0 bg-slate-900/(--bg-opacity) border-4 border-slate-800/(--bg-opacity) shadow-2xl w-full h-full box-border m-0 p-0"
+        style={bgOpacityStyle}
+      >
         <div
           ref={gridWrapRef}
           className="flex-1 w-full flex items-center justify-center min-h-0"
@@ -238,8 +252,9 @@ export const FlagDisplay = ({
       className="w-full h-full flex items-center justify-center"
     >
       <div
-        className="flex flex-col items-center gap-[3%] p-[4%] bg-slate-900 rounded-2xl border-4 border-slate-800 shadow-2xl"
+        className="flex flex-col items-center gap-[3%] p-[4%] bg-slate-900/(--bg-opacity) rounded-2xl border-4 border-slate-800/(--bg-opacity) shadow-2xl"
         style={{
+          ...bgOpacityStyle,
           width: flagWidth ? `${flagWidth}px` : '100%',
           height: flagHeight ? `${flagHeight}px` : '100%',
         }}

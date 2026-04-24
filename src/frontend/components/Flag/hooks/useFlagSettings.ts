@@ -18,6 +18,7 @@ export const useFlagSettings = () => {
     blinkPeriod: saved?.config?.blinkPeriod ?? 0.5,
     enableGlow: saved?.config?.enableGlow ?? true,
     doubleFlag: saved?.config?.doubleFlag ?? false,
+    backgroundOpacity: saved?.config?.background?.opacity ?? 30,
     sessionVisibility: saved?.config?.sessionVisibility ?? {
       race: true,
       loneQualify: true,
