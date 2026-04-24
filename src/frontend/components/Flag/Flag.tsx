@@ -205,6 +205,7 @@ export const FlagDisplay = ({
   const bgOpacityStyle = {
     ['--bg-opacity' as string]: `${backgroundOpacity}%`,
   };
+  const containerShadow = `0 25px 50px -12px rgb(0 0 0 / ${backgroundOpacity * 0.25}%)`;
 
   const grid = (
     <div
@@ -239,7 +240,6 @@ export const FlagDisplay = ({
         style={{
           fontSize: labelFontSize,
           padding: `${Math.round(labelFontSize * 0.25)}px ${Math.round(labelFontSize * 0.6)}px`,
-          backgroundColor: `rgb(0 0 0 / ${backgroundOpacity}%)`,
         }}
       >
         {shortLabel === 'NO' ? 'NO' : shortLabel}
@@ -250,8 +250,8 @@ export const FlagDisplay = ({
   if (fullBleed) {
     return (
       <div
-        className="flex flex-col items-stretch gap-0 bg-slate-900/(--bg-opacity) border-4 border-slate-800/(--bg-opacity) shadow-2xl w-full h-full box-border m-0 p-0"
-        style={bgOpacityStyle}
+        className="flex flex-col items-stretch gap-0 bg-slate-900/(--bg-opacity) border-4 border-slate-800/(--bg-opacity) w-full h-full box-border m-0 p-0"
+        style={{ ...bgOpacityStyle, boxShadow: containerShadow }}
       >
         <div
           ref={gridWrapRef}
@@ -272,9 +272,10 @@ export const FlagDisplay = ({
       className="w-full h-full flex items-center justify-center"
     >
       <div
-        className="flex flex-col items-center gap-[3%] bg-slate-900/(--bg-opacity) rounded-2xl border-4 border-slate-800/(--bg-opacity) shadow-2xl"
+        className="flex flex-col items-center gap-[3%] bg-slate-900/(--bg-opacity) rounded-2xl border-4 border-slate-800/(--bg-opacity)"
         style={{
           ...bgOpacityStyle,
+          boxShadow: containerShadow,
           padding: containerPadding,
           width: flagWidth ? `${flagWidth}px` : '100%',
           height: flagHeight ? `${flagHeight}px` : '100%',
