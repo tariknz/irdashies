@@ -49,6 +49,7 @@ export const FlatTrackMap = () => {
         highlightColor={
           settings?.useHighlightColor ? highlightColor : undefined
         }
+        invertLeaderColor={settings?.invertLeaderColor ?? false}
         showCarNumbers={settings?.showCarNumbers ?? true}
         displayMode={settings?.displayMode ?? 'carNumber'}
         driverCircleSize={settings?.driverCircleSize ?? 40}

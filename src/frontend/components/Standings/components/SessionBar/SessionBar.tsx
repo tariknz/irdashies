@@ -255,9 +255,9 @@ export const SessionBar = ({
         const lapValue =
           lapsMode === 'Remaining'
             ? Math.min(
-              Math.max(Math.ceil(effectiveTotal) - lapDisplay + 1, 0),
-              Math.ceil(effectiveTotal)
-            )
+                Math.max(Math.ceil(effectiveTotal) - lapDisplay + 1, 0),
+                Math.ceil(effectiveTotal)
+              )
             : lapDisplay;
         if (state >= SessionState.Checkered)
           return (
@@ -422,20 +422,20 @@ export const SessionBar = ({
     effectiveBarSettings?.displayOrder ||
     (position === 'header'
       ? [
-        'sessionName',
-        'sessionTime',
-        'sessionLaps',
-        'localTime',
-        'brakeBias',
-        'incidentCount',
-      ]
+          'sessionName',
+          'sessionTime',
+          'sessionLaps',
+          'localTime',
+          'brakeBias',
+          'incidentCount',
+        ]
       : [
-        'localTime',
-        'trackWetness',
-        'sessionLaps',
-        'airTemperature',
-        'trackTemperature',
-      ]);
+          'localTime',
+          'trackWetness',
+          'sessionLaps',
+          'airTemperature',
+          'trackTemperature',
+        ]);
 
   // Filter and order items based on settings
   const itemsToRender = displayOrder
@@ -485,7 +485,7 @@ export const SessionBar = ({
 
   return (
     <div
-      className={`${pxClass} ${pyClass} flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
+      className={`bg-slate-900/70 ${pxClass} ${pyClass} flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
     >
       {itemsToRender}
     </div>

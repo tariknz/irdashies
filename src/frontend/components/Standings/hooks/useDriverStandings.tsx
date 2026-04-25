@@ -15,6 +15,7 @@ import {
   usePitLap,
   usePrevCarTrackSurface,
   useLapTimeHistory,
+  useWeekendInfoEventType,
 } from '@irdashies/context';
 import {
   createDriverStandings,
@@ -99,6 +100,7 @@ export const useDriverStandings = (
   const carIdxTireCompound = useTelemetryValues<number[]>('CarIdxTireCompound');
   const carIdxSessionFlags = useTelemetryValues<number[]>('CarIdxSessionFlags');
   const isOfficial = useSessionIsOfficial();
+  const eventType = useWeekendInfoEventType();
   const lastPitLap = usePitLap();
   const lastLap = useCarLap();
   const prevCarTrackSurface = usePrevCarTrackSurface();
@@ -166,9 +168,9 @@ export const useDriverStandings = (
         ? augmentStandingsWithPositionChange(groupedByClass, qualifyingResults)
         : groupedByClass;
 
-    // Calculate iRating changes for race sessions
+    // Calculate iRating changes for official race weekends
     const iratingAugmentedGroupedByClass =
-      sessionType === 'Race' && isOfficial
+      eventType === 'Race' && isOfficial
         ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
         : positionChangeAugmentedGroupedByClass;
 
@@ -218,6 +220,7 @@ export const useDriverStandings = (
     lapDeltasForCalc,
     useLivePositionStandings,
     isOfficial,
+    eventType,
     gapEnabled,
     intervalEnabled,
     carIdxLap,

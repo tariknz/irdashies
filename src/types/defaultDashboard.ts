@@ -611,6 +611,7 @@ export const defaultDashboard: {
         trackLineWidth: 20,
         trackOutlineWidth: 40,
         useHighlightColor: false,
+        invertLeaderColor: false,
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
@@ -620,6 +621,7 @@ export const defaultDashboard: {
           offlineTesting: true,
         },
         styling: { isMinimalTrack: false, isMinimalCar: false },
+        sectorColoring: { enabled: false },
       },
     },
     {
@@ -641,6 +643,7 @@ export const defaultDashboard: {
         trackOutlineWidth: 40,
         invertTrackColors: false,
         useHighlightColor: false,
+        invertLeaderColor: false,
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
@@ -1144,6 +1147,29 @@ export const defaultDashboard: {
           'wind',
           'trackName',
         ],
+      },
+    },
+    {
+      id: 'sectordelta',
+      enabled: false,
+      layout: {
+        x: 6,
+        y: 800,
+        width: 300,
+        height: 60,
+      },
+      config: {
+        background: { opacity: 80 },
+        timeFormat: 'full',
+        ghostComparison: 'prefer-ghost',
+        showOnlyWhenOnTrack: true,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
       },
     },
   ],

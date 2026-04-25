@@ -11,7 +11,11 @@ import {
   drawStartFinishLine,
   drawTurnNames,
   drawDrivers,
+  drawSectorColors,
+  drawSectorDividers,
 } from './trackDrawingUtils';
+import type { SectorColor } from '@irdashies/context';
+import type { Sector } from '@irdashies/types';
 import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
 import { useTelemetryValues, useCarIdxOffTrack } from '@irdashies/context';
 
@@ -40,9 +44,13 @@ export interface TrackProps {
   trackLineWidth?: number;
   trackOutlineWidth?: number;
   highlightColor?: number;
+  invertLeaderColor?: boolean;
   debug?: boolean;
   isMinimalTrack?: boolean;
   isMinimalCar?: boolean;
+  sectors?: Sector[];
+  sectorColors?: SectorColor[];
+  currentSectorIdx?: number;
 }
 
 export interface TrackDriver {
@@ -101,9 +109,13 @@ export const TrackCanvas = ({
   trackLineWidth = 20,
   trackOutlineWidth = 40,
   highlightColor,
+  invertLeaderColor = false,
   debug,
   isMinimalTrack = false,
   isMinimalCar = false,
+  sectors,
+  sectorColors,
+  currentSectorIdx,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -124,6 +136,11 @@ export const TrackCanvas = ({
   // Memoize Path2D objects to avoid re-creating them on every render
   const insidePath = trackDrawing?.active?.inside;
   const startFinishLinePath = trackDrawing?.startFinish?.line;
+  // Stable refs for sector color drawing (only change when track changes)
+  const trackPathPoints = trackDrawing?.active?.trackPathPoints;
+  const totalLength = trackDrawing?.active?.totalLength;
+  const sfDirection = trackDrawing?.startFinish?.direction;
+  const sfIntersectionLength = trackDrawing?.startFinish?.point?.length;
   const path2DObjects = useMemo(() => {
     if (!insidePath || !startFinishLinePath) return null;
 
@@ -348,8 +365,41 @@ export const TrackCanvas = ({
       trackOutlineWidth,
       isMinimalTrack
     );
+
+    if (
+      sectors &&
+      trackPathPoints &&
+      totalLength &&
+      sfIntersectionLength !== undefined &&
+      sfDirection
+    ) {
+      if (sectorColors) {
+        drawSectorColors(
+          cacheCtx,
+          trackPathPoints,
+          totalLength,
+          sfIntersectionLength,
+          sfDirection,
+          sectors,
+          sectorColors,
+          trackLineWidth,
+          currentSectorIdx
+        );
+      }
+      drawSectorDividers(
+        cacheCtx,
+        trackPathPoints,
+        totalLength,
+        sfIntersectionLength,
+        sfDirection,
+        sectors,
+        trackLineWidth
+      );
+    }
+
     drawStartFinishLine(cacheCtx, startFinishLine);
     drawTurnNames(cacheCtx, trackDrawing.turns, turnLabels);
+
     cacheCtx.restore();
 
     // Blit to main canvas so static-only changes are visible immediately
@@ -374,6 +424,13 @@ export const TrackCanvas = ({
     driverCircleSize,
     playerCircleSize,
     isMinimalTrack,
+    sectors,
+    sectorColors,
+    currentSectorIdx,
+    trackPathPoints,
+    totalLength,
+    sfDirection,
+    sfIntersectionLength,
   ]);
 
   // Dynamic layer — runs on every position tick, blits static cache then draws drivers
@@ -404,6 +461,7 @@ export const TrackCanvas = ({
       ctx,
       calculatePositions,
       driverColors,
+      invertLeaderColor,
       driversOffTrack,
       driverCircleSize,
       playerCircleSize,
@@ -427,6 +485,7 @@ export const TrackCanvas = ({
     trackmapFontSize,
     turnLabels,
     driverColors,
+    invertLeaderColor,
     isMinimalCar,
     isMinimalTrack,
   ]);

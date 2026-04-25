@@ -18,6 +18,7 @@ import { LapTimeLog } from './components/LapTimeLog/LapTimeLog';
 import { InformationBar } from './components/InformationBar/InformationBar';
 import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
 import { Battle } from './components/Battle/Battle';
+import { SectorDelta } from './components/SectorDelta/SectorDelta';
 
 // TODO: type this better, right now the config comes from settings
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -46,6 +47,7 @@ export const WIDGET_MAP: Record<
   infobar: InformationBar,
   slowcarahead: SlowCarAhead,
   battle: Battle,
+  sectordelta: SectorDelta,
 };
 
 export type WidgetId = keyof typeof WIDGET_MAP;

@@ -146,6 +146,12 @@ const widgetItems: MenuItem[] = [
   },
   { to: '/settings/map', path: '/map', label: 'Track Map', widgetType: 'map' },
   {
+    to: '/settings/sectordelta',
+    path: '/sectordelta',
+    label: 'Sector Delta',
+    widgetType: 'sectordelta',
+  },
+  {
     to: '/settings/twitchchat',
     path: '/twitchchat',
     label: 'Twitch Chat',

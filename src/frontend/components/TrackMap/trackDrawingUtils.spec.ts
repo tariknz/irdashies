@@ -38,6 +38,8 @@ describe('trackDrawingUtils', () => {
       2: { fill: '#0000FF', text: 'white' },
     };
 
+    const invertLeaderColor = false;
+
     const driversOffTrack = [false, false, false];
 
     const driverLivePositions = {
@@ -75,6 +77,7 @@ describe('trackDrawingUtils', () => {
         ctx,
         calculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
@@ -94,6 +97,7 @@ describe('trackDrawingUtils', () => {
         ctx,
         calculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
@@ -113,6 +117,7 @@ describe('trackDrawingUtils', () => {
         ctx,
         calculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
@@ -139,6 +144,7 @@ describe('trackDrawingUtils', () => {
         ctx,
         positionsWithUndefined,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
@@ -158,6 +164,7 @@ describe('trackDrawingUtils', () => {
         ctx,
         calculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
@@ -177,6 +184,7 @@ describe('trackDrawingUtils', () => {
         ctx,
         calculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrackArray,
         40,
         40,
@@ -194,6 +202,7 @@ describe('trackDrawingUtils', () => {
         ctx,
         calculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         30,
         50,
@@ -214,6 +223,7 @@ describe('trackDrawingUtils', () => {
         ctx,
         calculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
@@ -257,6 +267,7 @@ describe('trackDrawingUtils', () => {
         ctx,
         multiClassCalculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
@@ -302,6 +313,7 @@ describe('trackDrawingUtils', () => {
         ctx,
         multiClassCalculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
@@ -345,6 +357,7 @@ describe('trackDrawingUtils', () => {
         ctx,
         multiClassCalculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
