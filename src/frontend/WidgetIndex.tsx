@@ -17,6 +17,7 @@ import { TwitchChat } from './components/TwitchChat/TwitchChat';
 import { LapTimeLog } from './components/LapTimeLog/LapTimeLog';
 import { InformationBar } from './components/InformationBar/InformationBar';
 import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
+import { Battle } from './components/Battle/Battle';
 import { SectorDelta } from './components/SectorDelta/SectorDelta';
 
 // TODO: type this better, right now the config comes from settings
@@ -45,6 +46,7 @@ export const WIDGET_MAP: Record<
   laptimelog: LapTimeLog,
   infobar: InformationBar,
   slowcarahead: SlowCarAhead,
+  battle: Battle,
   sectordelta: SectorDelta,
 };
 

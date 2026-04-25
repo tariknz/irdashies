@@ -37,7 +37,7 @@ export const PositionCell = memo(
         data-column="position"
         className={`w-auto text-center ${pxClass} whitespace-nowrap ${positionColor} ${textColor}`}
       >
-        {position}
+        {position !== undefined && isFinite(position) ? position : ''}
       </td>
     );
   }

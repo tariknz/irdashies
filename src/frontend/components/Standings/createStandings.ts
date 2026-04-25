@@ -262,7 +262,9 @@ export const createDriverStandings = (
       return {
         carIdx: result.CarIdx,
         position: result.Position,
-        classPosition: result.ClassPosition + 1,
+        classPosition: isFinite(result.ClassPosition)
+          ? result.ClassPosition + 1
+          : undefined,
         delta: calculateDelta(
           result.CarIdx,
           result.FastestTime,

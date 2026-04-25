@@ -25,6 +25,7 @@ import { LapTimeLogSettings } from './sections/LapTimeLogSettings';
 import { InformationBarSettings } from './sections/InformationBarSettings';
 import { useDashboard } from '@irdashies/context';
 import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
+import { BattleSettings } from './sections/BattleSettings';
 import { SectorDeltaSettings } from './sections/SectorDeltaSettings';
 
 interface SettingsLoaderProps {
@@ -86,6 +87,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <InformationBarSettings />;
     case 'slowcarahead':
       return <SlowCarAheadSettings />;
+    case 'battle':
+      return <BattleSettings />;
     case 'sectordelta':
       return <SectorDeltaSettings />;
     default:

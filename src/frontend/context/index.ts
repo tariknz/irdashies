@@ -14,5 +14,7 @@ export * from './ReferenceLapStore/ReferenceLapStoreProvider';
 export { useReferenceLapStore } from './ReferenceLapStore/ReferenceLapStore';
 export * from './LapTimesStore/LapTimesStore';
 export * from './LapTimesStore/LapTimesStoreUpdater';
+export * from './BattleGapStore/BattleGapStore';
+export * from './BattleGapStore/BattleGapStoreUpdater';
 export * from './SectorTimingStore/SectorTimingStore';
 export * from './shared';
