@@ -4,7 +4,7 @@ import {
   useSessionStore,
   useDriverCarIdx,
   useReferenceLapStore,
-  useTelemetryValue,
+  useTelemetryValueRounded,
 } from '@irdashies/context';
 import { calculateReferenceDelta } from '../../Standings/relativeGapHelpers';
 
@@ -23,8 +23,10 @@ import { calculateReferenceDelta } from '../../Standings/relativeGapHelpers';
  * is invalid (reset/teleport).
  */
 export const useLiveSectorDelta = (useGhostFile: boolean): number | null => {
-  const lapDistPct = useTelemetryValue('LapDistPct') ?? 0;
-  const sessionTime = useTelemetryValue('SessionTime') ?? 0;
+  // 4dp matches the reference-lap interpolation step (REFERENCE_INTERVAL = 0.0025);
+  // 2dp on SessionTime gives 10ms resolution which exceeds the 0.1s display.
+  const lapDistPct = useTelemetryValueRounded('LapDistPct', 4) ?? 0;
+  const sessionTime = useTelemetryValueRounded('SessionTime', 2) ?? 0;
 
   const sectorEntryTime = useSectorTimingStore((s) => s.sectorEntryTime);
   const sectorEntryValid = useSectorTimingStore((s) => s.sectorEntryValid);
