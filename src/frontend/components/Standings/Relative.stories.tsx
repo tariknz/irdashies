@@ -266,6 +266,14 @@ const RelativeWithoutHeaderFooter = () => {
           repair={result.repair}
           penalty={result.penalty}
           slowdown={result.slowdown}
+          lapTimeDeltas={
+            settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined
+          }
+          numLapDeltasToShow={
+            settings?.lapTimeDeltas?.enabled
+              ? settings.lapTimeDeltas.numLaps
+              : undefined
+          }
         />
       );
     });
@@ -483,6 +491,18 @@ export const WithTyresEnabled: Story = {
   ],
 };
 
+export const WithLapDeltasEnabled: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(undefined, {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+        lapTimeDeltas: { enabled: true, numLaps: 3 },
+      },
+    }),
+  ],
+};
+
 export const SuzukaGT3EnduranceRace: Story = {
   decorators: [
     TelemetryDecoratorWithConfig('/test-data/1763227688917', {
@@ -515,6 +535,7 @@ export const TeamSession: Story = {
           'delta',
           'fastestTime',
           'lastTime',
+          'lapTimeDeltas',
         ],
       },
     }),
@@ -692,6 +713,14 @@ const RelativeWithoutHeader = () => {
           repair={result.repair}
           penalty={result.penalty}
           slowdown={result.slowdown}
+          lapTimeDeltas={
+            settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined
+          }
+          numLapDeltasToShow={
+            settings?.lapTimeDeltas?.enabled
+              ? settings.lapTimeDeltas.numLaps
+              : undefined
+          }
         />
       );
     });
@@ -927,6 +956,14 @@ const RelativeWithoutFooter = () => {
           repair={result.repair}
           penalty={result.penalty}
           slowdown={result.slowdown}
+          lapTimeDeltas={
+            settings?.lapTimeDeltas?.enabled ? result.lapTimeDeltas : undefined
+          }
+          numLapDeltasToShow={
+            settings?.lapTimeDeltas?.enabled
+              ? settings.lapTimeDeltas.numLaps
+              : undefined
+          }
         />
       );
     });
