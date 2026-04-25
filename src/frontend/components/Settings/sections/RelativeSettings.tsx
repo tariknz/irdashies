@@ -848,32 +848,22 @@ export const RelativeSettings = () => {
                       title="Show Flag Contour"
                       description="Draw a colored border around the widget when a session flag is active"
                       enabled={
-                        typeof settings.config.stylingOptions?.flagContour ===
-                        'boolean'
-                          ? settings.config.stylingOptions.flagContour
-                          : (settings.config.stylingOptions?.flagContour
-                              ?.enabled ?? false)
+                        settings.config.stylingOptions?.flagContour?.enabled ??
+                        false
                       }
                       onToggle={(newValue) =>
                         handleConfigChange({
                           stylingOptions: {
                             ...settings.config.stylingOptions,
                             flagContour: {
-                              ...(typeof settings.config.stylingOptions
-                                ?.flagContour === 'object'
-                                ? settings.config.stylingOptions.flagContour
-                                : {}),
+                              ...settings.config.stylingOptions?.flagContour,
                               enabled: newValue,
                             },
                           },
                         })
                       }
                     />
-                    {(typeof settings.config.stylingOptions?.flagContour ===
-                    'boolean'
-                      ? settings.config.stylingOptions.flagContour
-                      : settings.config.stylingOptions?.flagContour
-                          ?.enabled) && (
+                    {settings.config.stylingOptions?.flagContour?.enabled && (
                       <SettingSliderRow
                         title="Border Width"
                         description="Width of the flag contour border in pixels"
@@ -881,21 +871,15 @@ export const RelativeSettings = () => {
                         max={10}
                         step={1}
                         value={
-                          typeof settings.config.stylingOptions?.flagContour ===
-                          'object'
-                            ? (settings.config.stylingOptions.flagContour
-                                .borderWidth ?? 5)
-                            : 5
+                          settings.config.stylingOptions?.flagContour
+                            .borderWidth ?? 5
                         }
                         onChange={(newValue) =>
                           handleConfigChange({
                             stylingOptions: {
                               ...settings.config.stylingOptions,
                               flagContour: {
-                                ...(typeof settings.config.stylingOptions
-                                  ?.flagContour === 'object'
-                                  ? settings.config.stylingOptions.flagContour
-                                  : {}),
+                                ...settings.config.stylingOptions?.flagContour,
                                 borderWidth: newValue,
                               },
                             },

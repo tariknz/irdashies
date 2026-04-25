@@ -39,13 +39,8 @@ export const Relative = () => {
   const flagInfo = getFlag(sessionFlags);
   const flagContourSetting = settings?.stylingOptions?.flagContour;
   const flagContourEnabled =
-    (typeof flagContourSetting === 'boolean'
-      ? flagContourSetting
-      : (flagContourSetting?.enabled ?? false)) && flagInfo.label !== 'NO FLAG';
-  const borderWidth =
-    typeof flagContourSetting === 'object'
-      ? (flagContourSetting.borderWidth ?? 5)
-      : 5;
+    (flagContourSetting?.enabled ?? false) && flagInfo.label !== 'NO FLAG';
+  const borderWidth = flagContourSetting?.borderWidth ?? 5;
 
   const flagColor = getFlagColor(getFlag(sessionFlags).label);
 
