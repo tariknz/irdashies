@@ -422,6 +422,19 @@ export class OverlayManager {
       this.updateOverlayBounds();
     }
 
+    // Raise settings window to layer 2 during edit mode so it appears above
+    // overlay windows (layer 1); revert to normal layering when not editing.
+    if (
+      this.currentSettingsWindow &&
+      !this.currentSettingsWindow.isDestroyed()
+    ) {
+      if (!this.isLocked) {
+        this.currentSettingsWindow.setAlwaysOnTop(true, 'screen-saver', 2);
+      } else {
+        this.currentSettingsWindow.setAlwaysOnTop(false);
+      }
+    }
+
     return this.isLocked;
   }
 
@@ -720,8 +733,11 @@ export class OverlayManager {
 
     this.currentSettingsWindow = browserWindow;
 
-    // Keep settings window above overlay windows (overlays are at screen-saver level 1)
-    browserWindow.setAlwaysOnTop(true, 'screen-saver', 2);
+    // During edit mode, raise settings window above overlay windows (layer 1).
+    // Outside edit mode, use normal window layering.
+    if (!this.isLocked) {
+      browserWindow.setAlwaysOnTop(true, 'screen-saver', 2);
+    }
 
     // Track window movement and resizing to save bounds
     trackSettingsWindowMovement(browserWindow);
