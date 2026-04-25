@@ -1,7 +1,11 @@
 import { useEffect } from 'react';
 import { GhostIcon, WarningIcon } from '@phosphor-icons/react';
 import { useSectorDeltas, useSectorTimingStore } from '@irdashies/context';
-import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
+import {
+  useSessionVisibility,
+  useTelemetryValue,
+  useTelemetryValueRounded,
+} from '@irdashies/context';
 import { useReferenceLapSectorTimes } from '@irdashies/context';
 import type { SectorDeltaConfig } from '@irdashies/types';
 import type { TimeFormat } from '@irdashies/types';
@@ -84,7 +88,8 @@ export const SectorDelta = ({
     currentSectorIdx,
   } = useSectorDeltas();
   const isOnTrack = useTelemetryValue('IsOnTrack');
-  const lapDistPct = useTelemetryValue('LapDistPct') ?? 0;
+  // 3dp ≈ 5m on a 5km track — sub-pixel for the sector progress bar.
+  const lapDistPct = useTelemetryValueRounded('LapDistPct', 3) ?? 0;
   const { refSectorTimes, hasGhostLap } = useReferenceLapSectorTimes();
 
   const useGhost = ghostComparison === 'prefer-ghost' && hasGhostLap;
