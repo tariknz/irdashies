@@ -164,12 +164,14 @@ export const drawDrivers = (
   driverLivePositions: Record<number, number>,
   carIdxIsOnPitRoad?: number[]
 ) => {
+  const safePosition = (pos: number | undefined): number =>
+    pos !== undefined && isFinite(pos) ? pos : 0;
   Object.values(calculatePositions)
     .sort((a, b) => {
       if (a.isPlayer !== b.isPlayer) {
         return Number(a.isPlayer) - Number(b.isPlayer); // draws player last to be on top
       }
-      return (b.sessionPosition ?? 0) - (a.sessionPosition ?? 0); // draws leader on top
+      return safePosition(b.sessionPosition) - safePosition(a.sessionPosition); // draws leader on top
     })
     .forEach(({ driver, position, isPlayer, sessionPosition }) => {
       let color = driverColors[driver.CarIdx];

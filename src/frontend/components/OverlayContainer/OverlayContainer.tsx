@@ -4,6 +4,7 @@ import type { WidgetLayout } from '@irdashies/types';
 import { WidgetContainer } from '../WidgetContainer';
 import { WIDGET_MAP } from '../../WidgetIndex';
 import { XIcon } from '@phosphor-icons/react';
+import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 
 export const OverlayContainer = memo(() => {
   const {
@@ -98,7 +99,12 @@ export const OverlayContainer = memo(() => {
             onLayoutChange={handleLayoutChange}
           >
             {running || widget.alwaysEnabled ? (
-              <WidgetComponent {...widget.config} />
+              <ErrorBoundary
+                label={`widget:${widget.type || widget.id}`}
+                resetAfterMs={2000}
+              >
+                <WidgetComponent {...widget.config} />
+              </ErrorBoundary>
             ) : null}
           </WidgetContainer>
         );
