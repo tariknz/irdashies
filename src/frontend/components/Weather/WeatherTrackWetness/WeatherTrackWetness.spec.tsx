@@ -44,6 +44,6 @@ describe('WeatherTrackWetness', () => {
   it('renders Sun and Drop icons', () => {
     const { container } = render(<WeatherTrackWetness />);
     // Since Phosphor icons are rendered as SVGs, we can check for their presence
-    expect(container.querySelectorAll('svg')).toHaveLength(2);
+    expect(container.querySelectorAll('svg')).toHaveLength(3);
   });
 }); 

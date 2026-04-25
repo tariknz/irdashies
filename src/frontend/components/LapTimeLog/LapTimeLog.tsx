@@ -28,12 +28,13 @@ export const LapTimeLog = () => {
     data.settings?.sessionVisibility
   );
 
-  if (
-    !data.settings ||
-    playerIndex === undefined ||
-    !isSessionVisible ||
-    !isDriving
-  ) {
+  // session visible?
+  if (!data.settings || playerIndex === undefined || !isSessionVisible) {
+    return null;
+  }
+
+  // Show only when on track setting
+  if (data.settings?.showOnlyWhenOnTrack && !isDriving) {
     return null;
   }
 
@@ -58,7 +59,7 @@ export const LapTimeLog = () => {
   return (
     <LapTimeLogDisplay
       settings={data.settings}
-      current={data.current}
+      current={isDriving ? data.current : undefined}
       lastlap={data.lastlap}
       bestlap={data.bestlap}
       reference={data.reference}
@@ -204,7 +205,7 @@ export const LapTimeLogDisplay = ({
               </div>
               {settings.delta.enabled && (
                 <div
-                  className={`absolute right-2 text-center tabular-nums ${
+                  className={`absolute right-2 text-[0.9em] text-center tabular-nums ${
                     !dirty && delta && deltaIsGreen
                       ? 'text-green-400'
                       : !dirty && delta && deltaIsRed

@@ -122,6 +122,23 @@ export const TrackMapSettings = () => {
                   }
                 />
 
+                <SettingDivider />
+
+                <SettingToggleRow
+                  title="Sector Colors"
+                  description="Color each sector based on your session performance (purple: session best, green: within 0.5%, yellow: within 1%, red: 1%+ off pace)"
+                  enabled={settings.config.sectorColoring?.enabled ?? false}
+                  onToggle={(newValue) =>
+                    handleConfigChange({
+                      sectorColoring: {
+                        enabled: newValue,
+                      },
+                    })
+                  }
+                />
+
+                <SettingDivider />
+
                 <SettingToggleRow
                   title="Enable Turn Labels"
                   description="Show turn numbers and names on the track map"
@@ -238,7 +255,7 @@ export const TrackMapSettings = () => {
                   value={settings.config.playerCircleSize ?? 40}
                   units="px"
                   min={10}
-                  max={100}
+                  max={80}
                   step={1}
                   onChange={(v) => handleConfigChange({ playerCircleSize: v })}
                 />
@@ -261,6 +278,16 @@ export const TrackMapSettings = () => {
                   enabled={settings.config.useHighlightColor ?? false}
                   onToggle={(newValue) =>
                     handleConfigChange({ useHighlightColor: newValue })
+                  }
+                />
+
+                <SettingToggleRow
+                  title="Use Inverted Color for the Leader"
+                  description="Use an alternate color for the leader car instead of
+                      class color"
+                  enabled={settings.config.invertLeaderColor ?? false}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ invertLeaderColor: newValue })
                   }
                 />
               </SettingsSection>

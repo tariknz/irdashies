@@ -1175,7 +1175,7 @@ export function useFuelCalculation(
     // Guard against invalid lapsRemaining - SOLUTION 5
     // Sanity check para lapsRemaining
     if (lapsRemaining > 1000) {
-      logger.warn(
+      logger.debug(
         `[FuelCalculator] Unrealistic lapsRemaining (${lapsRemaining}) capped at 1000`
       );
       lapsRemaining = 1000;

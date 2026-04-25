@@ -13,6 +13,7 @@ import {
 import { PRESET_DRIVER_TAGS } from '../../../constants/driverTagBadges';
 import { renderDriverIcon } from '@irdashies/utils/driverIcons';
 import { IconPicker } from '../IconPicker';
+import { GroupSelect } from './GroupSelect';
 import { useDriverTagGlobalSettings } from './useDriverTagGlobalSettings';
 
 type IconMode = 'name' | 'image';
@@ -136,11 +137,12 @@ export const DriverTagsSettings = () => {
     const key = `new-${Date.now()}`;
     const firstGroup =
       PRESET_DRIVER_TAGS[0]?.id ?? settings.groups[0]?.id ?? '';
+    const defaultGroup = activeGroupFilter ?? firstGroup;
     setEntryDrafts((prev) => [
       ...prev,
-      { uiKey: key, id: '', name: '', label: '', groupId: firstGroup },
+      { uiKey: key, id: '', name: '', label: '', groupId: defaultGroup },
     ]);
-  }, [settings.groups]);
+  }, [settings.groups, activeGroupFilter]);
 
   const updateEntryDraft = useCallback(
     (key: string, field: 'id' | 'name' | 'label', value: string) => {
@@ -1031,22 +1033,13 @@ export const DriverTagsSettings = () => {
                   placeholder="Badge label"
                   className="px-2 py-1 bg-slate-700 rounded w-full"
                 />
-                <select
+                <GroupSelect
                   value={row.groupId}
-                  onChange={(e) => updateEntryGroup(row.uiKey, e.target.value)}
-                  className="px-2 py-1 bg-slate-700 rounded w-full"
-                >
-                  {PRESET_DRIVER_TAGS.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                  {(settings.groups ?? []).map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => updateEntryGroup(row.uiKey, value)}
+                  groups={allGroups}
+                  displayStyle={settings.display?.displayStyle}
+                  iconWeight={settings.display?.iconWeight}
+                />
                 <button
                   onClick={() => removeEntry(row.uiKey)}
                   className="w-full px-2 py-1 bg-red-600 rounded"
