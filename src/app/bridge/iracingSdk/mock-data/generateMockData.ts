@@ -45,6 +45,44 @@ export function generateMockData(sessionData?: {
     sessionLapsRemain: 12,
   };
 
+  // Animate all cars around the track — seed initial positions from mock telemetry
+  const PLAYER_CAR_IDX = 4; // DriverInfo.DriverCarIdx from mock session
+  const carLapDistPcts = [
+    ...(prevTelemetry.CarIdxLapDistPct.value as number[]),
+  ];
+  // Per-car speed multipliers: 1-3% variation so gaps are realistic
+  const carSpeedMultipliers = carLapDistPcts.map((pct, idx) => {
+    if (pct < 0) return 0; // not on track
+    return 1 + (((idx * 7) % 7) - 3) / 100; // -3% to +3% variation
+  });
+
+  // Sector boundaries from the mock session (mirrors session.json SplitTimeInfo).
+  // Used to pick a per-sector speed multiplier for the player so sector times
+  // vary by up to ±1% each lap, producing realistic delta variance in the widget.
+  const MOCK_SECTOR_STARTS = [
+    0, 0.184456, 0.337214, 0.504637, 0.734279, 0.829332,
+  ];
+
+  /** Return the sector index (0-based) for a given lapDistPct. */
+  function getPlayerSectorIdx(lapDistPct: number): number {
+    let idx = 0;
+    for (let i = MOCK_SECTOR_STARTS.length - 1; i >= 0; i--) {
+      if (lapDistPct >= MOCK_SECTOR_STARTS[i]) {
+        idx = i;
+        break;
+      }
+    }
+    return idx;
+  }
+
+  /** Generate a fresh set of per-sector multipliers, each ±1% of baseline. */
+  function newSectorMultipliers(): number[] {
+    return MOCK_SECTOR_STARTS.map(() => 0.99 + Math.random() * 0.02);
+  }
+
+  let playerSectorMultipliers = newSectorMultipliers();
+  let playerCurrentSectorIdx = getPlayerSectorIdx(mockState.lapDistPct);
+
   // Demo mode: Simulate RPM and gear changes for Mazda MX-5
   let demoRpm = 2000;
   let demoGear = 1;
@@ -103,8 +141,15 @@ export function generateMockData(sessionData?: {
             const LAP_DISTANCE_INC = 0.0007; // Increment per tick for ~24s lap at 60Hz (fast mock lap)
             const SESSION_TIME_INC = 1 / 60; // Seconds per tick
 
-            // Update Lap Distance
-            mockState.lapDistPct += LAP_DISTANCE_INC;
+            // Update Lap Distance — apply this sector's speed multiplier so
+            // sector times vary by ±1% of baseline, changing each lap.
+            const newSectorIdx = getPlayerSectorIdx(mockState.lapDistPct);
+            if (newSectorIdx !== playerCurrentSectorIdx) {
+              playerCurrentSectorIdx = newSectorIdx;
+            }
+            mockState.lapDistPct +=
+              LAP_DISTANCE_INC *
+              playerSectorMultipliers[playerCurrentSectorIdx];
 
             // Handle Lap Completion
             if (mockState.lapDistPct >= 1.0) {
@@ -114,6 +159,9 @@ export function generateMockData(sessionData?: {
                 0,
                 mockState.sessionLapsRemain - 1
               );
+              // Pick new per-sector multipliers for the next lap
+              playerSectorMultipliers = newSectorMultipliers();
+              playerCurrentSectorIdx = 0;
             }
 
             // Update Fuel (consume based on distance)
@@ -129,6 +177,19 @@ export function generateMockData(sessionData?: {
             mockState.sessionTime += SESSION_TIME_INC;
 
             // --- Fuel Calculator Mock Logic End ---
+
+            // Animate all on-track cars forward; sync player car with mockState
+            for (let i = 0; i < carLapDistPcts.length; i++) {
+              if (carLapDistPcts[i] < 0) continue; // not on track
+              if (i === PLAYER_CAR_IDX) {
+                carLapDistPcts[i] = mockState.lapDistPct;
+              } else {
+                carLapDistPcts[i] =
+                  (carLapDistPcts[i] +
+                    LAP_DISTANCE_INC * carSpeedMultipliers[i]) %
+                  1;
+              }
+            }
 
             const state = mockState;
 
@@ -175,6 +236,10 @@ export function generateMockData(sessionData?: {
               LapDistPct: {
                 ...prevTelemetry.LapDistPct,
                 value: [state.lapDistPct],
+              },
+              CarIdxLapDistPct: {
+                ...prevTelemetry.CarIdxLapDistPct,
+                value: [...carLapDistPcts],
               },
               SessionTime: {
                 ...prevTelemetry.SessionTime,

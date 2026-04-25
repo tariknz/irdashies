@@ -22,7 +22,12 @@ import {
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
 import type { DashboardBridge, StandingsConfig } from '@irdashies/types';
 import { defaultDashboard } from '@irdashies/types';
-import { useState, useEffect, Fragment } from 'react';
+import {
+  calculateIRatingGain,
+  type CalculationResult,
+  type RaceResult,
+} from '@irdashies/utils/iratingGain';
+import { useState, useEffect, Fragment, useMemo } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import type { ResolvedDriverTag } from './hooks/useDriverTagMap';
@@ -267,6 +272,175 @@ export const MultiClassPCCWithClio: Story = {
   decorators: [TelemetryDecorator('/test-data/1731637331038')],
 };
 
+// Component that calculates irating change for the standings (demo only)
+const StandingsWithIRatingCalculation = () => {
+  const settings = useStandingsSettings();
+  const { isDriving } = useDrivingState();
+  const standings = useDriverStandings(settings);
+  const classStats = useCarClassStats();
+  const numCarClasses = useWeekendInfoNumCarClasses();
+  const isMultiClass = (numCarClasses ?? 0) > 1;
+  const highlightColor = useHighlightColor();
+
+  useLapTimesStoreUpdater();
+  usePitLapStoreUpdater();
+
+  // Manually apply irating calculation for demo purposes
+  const standingsWithIRating = useMemo(() => {
+    const grouped = standings.map(([classId, classStandings]) => {
+      const raceResultsInput: RaceResult<number>[] = classStandings
+        .filter((s) => !!s.classPosition)
+        .map((driverStanding) => ({
+          driver: driverStanding.carIdx,
+          finishRank: driverStanding.classPosition ?? 0,
+          startIRating: driverStanding.driver.rating,
+          started: true,
+        }));
+
+      if (raceResultsInput.length === 0) {
+        return [classId, classStandings] as [string, typeof classStandings];
+      }
+
+      const iratingResults = calculateIRatingGain(raceResultsInput);
+      const iratingMap = new Map<number, number>();
+      iratingResults.forEach((result: CalculationResult<number>) => {
+        iratingMap.set(result.raceResult.driver, result.iratingChange);
+      });
+
+      const augmented = classStandings.map((s) => ({
+        ...s,
+        iratingChange: iratingMap.get(s.carIdx),
+      }));
+      return [classId, augmented] as [string, typeof augmented];
+    });
+    return grouped;
+  }, [standings]);
+
+  if (settings?.showOnlyWhenOnTrack && !isDriving) {
+    return <></>;
+  }
+
+  return (
+    <div
+      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm p-2 text-white overflow-hidden`}
+      style={{
+        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
+      }}
+    >
+      <TitleBar titleBarSettings={settings?.titleBar} />
+      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+        <tbody>
+          {standingsWithIRating.map(([classId, classStandings]) =>
+            classStandings.length > 0 ? (
+              <Fragment key={classId}>
+                <DriverClassHeader
+                  key={classId}
+                  className={classStats?.[classId]?.shortName}
+                  classColor={
+                    isMultiClass ? classStats?.[classId]?.color : highlightColor
+                  }
+                  totalDrivers={classStats?.[classId]?.total}
+                  sof={classStats?.[classId]?.sof}
+                  highlightColor={highlightColor}
+                  isMultiClass={isMultiClass}
+                  colSpan={100}
+                />
+                {classStandings.map((result) => (
+                  <DriverInfoRow
+                    key={result.carIdx}
+                    carIdx={result.carIdx}
+                    classColor={result.carClass.color}
+                    carNumber={
+                      (settings?.carNumber?.enabled ?? true)
+                        ? result.driver?.carNum || ''
+                        : undefined
+                    }
+                    name={result.driver?.name || ''}
+                    isPlayer={result.isPlayer}
+                    hasFastestTime={result.hasFastestTime}
+                    delta={settings?.delta?.enabled ? result.delta : undefined}
+                    gap={settings?.gap?.enabled ? result.gap : undefined}
+                    interval={
+                      settings?.interval?.enabled ? result.interval : undefined
+                    }
+                    position={result.classPosition}
+                    lap={result.lap}
+                    iratingChangeValue={
+                      settings?.iratingChange?.enabled
+                        ? result.iratingChange
+                        : undefined
+                    }
+                    lastTime={
+                      settings?.lastTime?.enabled ? result.lastTime : undefined
+                    }
+                    fastestTime={
+                      settings?.fastestTime?.enabled
+                        ? result.fastestTime
+                        : undefined
+                    }
+                    lastTimeState={
+                      settings?.lastTime?.enabled
+                        ? result.lastTimeState
+                        : undefined
+                    }
+                    onPitRoad={result.onPitRoad}
+                    onTrack={result.onTrack}
+                    radioActive={result.radioActive}
+                    isMultiClass={isMultiClass}
+                    flairId={
+                      (settings?.countryFlags?.enabled ?? true)
+                        ? result.driver?.flairId
+                        : undefined
+                    }
+                    tireCompound={
+                      (settings?.compound?.enabled ?? true)
+                        ? result.tireCompound
+                        : undefined
+                    }
+                    carId={result.carId}
+                    lastPitLap={result.lastPitLap}
+                    lastLap={result.lastLap}
+                    carTrackSurface={result.carTrackSurface}
+                    prevCarTrackSurface={result.prevCarTrackSurface}
+                    license={
+                      settings?.badge?.enabled
+                        ? result.driver?.license
+                        : undefined
+                    }
+                    rating={
+                      settings?.badge?.enabled
+                        ? result.driver?.rating
+                        : undefined
+                    }
+                    lapTimeDeltas={
+                      settings?.lapTimeDeltas?.enabled
+                        ? result.lapTimeDeltas
+                        : undefined
+                    }
+                    numLapDeltasToShow={
+                      settings?.lapTimeDeltas?.enabled
+                        ? settings.lapTimeDeltas.numLaps
+                        : undefined
+                    }
+                    displayOrder={settings?.displayOrder}
+                    currentSessionType={result.currentSessionType}
+                    config={settings}
+                    highlightColor={highlightColor}
+                    dnf={result.dnf}
+                    repair={result.repair}
+                    penalty={result.penalty}
+                    slowdown={result.slowdown}
+                  />
+                ))}
+              </Fragment>
+            ) : null
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 export const MultiClassPlayground: Story = {
   argTypes: {
     numNonClassDrivers: {
@@ -282,6 +456,7 @@ export const MultiClassPlayground: Story = {
     numNonClassDrivers: 3,
     numTopDrivers: 3,
   },
+  render: () => <StandingsWithIRatingCalculation />,
   decorators: [
     (Story, context) => {
       const { numNonClassDrivers, numTopDrivers } = context.args as {
@@ -295,6 +470,7 @@ export const MultiClassPlayground: Story = {
       return TelemetryDecoratorWithConfig('/test-data/1731637331038', {
         standings: {
           ...standingsConfig,
+          iratingChange: { enabled: true },
           driverStandings: {
             ...standingsConfig?.driverStandings,
             numNonClassDrivers,

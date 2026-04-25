@@ -1,3 +1,2 @@
 npx lint-staged
-# Increase heap size to prevent OOM on large codebases
 NODE_OPTIONS="--max-old-space-size=4096" npx tsc --noEmit
