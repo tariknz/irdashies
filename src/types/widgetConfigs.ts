@@ -223,9 +223,13 @@ export interface TrackMapConfig {
   trackLineWidth: number;
   trackOutlineWidth: number;
   useHighlightColor: boolean;
+  invertLeaderColor: boolean;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
   styling?: { isMinimalTrack?: boolean; isMinimalCar?: boolean };
+  sectorColoring?: {
+    enabled: boolean;
+  };
 }
 
 export interface FlatTrackMapConfig {
@@ -238,6 +242,7 @@ export interface FlatTrackMapConfig {
   trackOutlineWidth: number;
   invertTrackColors: boolean;
   useHighlightColor: boolean;
+  invertLeaderColor: boolean;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }
@@ -508,6 +513,29 @@ export interface SlowCarAheadConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
+export interface SectorDeltaConfig {
+  background: { opacity: number };
+  timeFormat: TimeFormat;
+  /**
+   * Whether to compare against the ghost lap (when loaded) or always use
+   * session best.
+   *
+   * 'prefer-ghost'      – use ghost lap when available, fall back to session best
+   * 'session-best-only' – always compare against session best
+   */
+  ghostComparison: 'prefer-ghost' | 'session-best-only';
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+  /**
+   * Custom color thresholds as percentages of session best.
+   * Omit to use defaults (green: 0.5%, yellow: 1.0%).
+   */
+  thresholds?: {
+    green: number; // e.g. 0.5 means within 0.5% → green
+    yellow: number; // e.g. 1.0 means within 1.0% → yellow; above = red
+  };
+}
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
@@ -538,6 +566,7 @@ export interface WidgetConfigMap {
   laptimelog: LapTimeLogConfig;
   infobar: InformationBarConfig;
   slowcarahead: SlowCarAheadConfig;
+  sectordelta: SectorDeltaConfig;
 }
 
 export type TypedDashboardWidget<
@@ -633,3 +662,4 @@ export type LapTimeLogWidgetSettings = BaseWidgetSettings<LapTimeLogConfig>;
 export type InformationBarWidgetSettings =
   BaseWidgetSettings<InformationBarConfig>;
 export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;
+export type SectorDeltaWidgetSettings = BaseWidgetSettings<SectorDeltaConfig>;

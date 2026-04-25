@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatTime } from './time';
+import { formatTime, formatGap } from './time';
 
 describe('time', () => {
   describe('formatTime', () => {
@@ -217,6 +217,37 @@ describe('time', () => {
     it('should return empty string or negative seconds in all formats', () => {
       expect(formatTime(-1, 'mixed')).toBe('');
       expect(formatTime(undefined, 'minutes')).toBe('');
+    });
+  });
+
+  describe('formatGap', () => {
+    it('should return an empty string for undefined seconds', () => {
+      expect(formatGap(undefined)).toBe('');
+    });
+
+    it('should format seconds with decimals if under 60s', () => {
+      expect(formatGap(59.123)).toBe('59.12');
+      expect(formatGap(59.123, 3)).toBe('59.123');
+      expect(formatGap(1.5)).toBe('1.50');
+      expect(formatGap(0)).toBe('0.00');
+    });
+
+    it('should format as MM:SS if 60s or more', () => {
+      expect(formatGap(60)).toBe('1:00');
+      expect(formatGap(61)).toBe('1:01');
+      expect(formatGap(125)).toBe('2:05');
+      expect(formatGap(3665)).toBe('61:05');
+    });
+
+    it('should handle negative values correctly', () => {
+      expect(formatGap(-59.123)).toBe('-59.12');
+      expect(formatGap(-60)).toBe('-1:00');
+      expect(formatGap(-125)).toBe('-2:05');
+    });
+
+    it('should round seconds when formatting as MM:SS', () => {
+      expect(formatGap(65.43)).toBe('1:05');
+      expect(formatGap(65.99)).toBe('1:05');
     });
   });
 });
