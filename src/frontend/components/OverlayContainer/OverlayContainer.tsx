@@ -4,6 +4,7 @@ import type { WidgetLayout } from '@irdashies/types';
 import { WidgetContainer } from '../WidgetContainer';
 import { WIDGET_MAP } from '../../WidgetIndex';
 import { XIcon } from '@phosphor-icons/react';
+import { SectorTimingUpdater } from './SectorTimingUpdater';
 
 export const OverlayContainer = memo(() => {
   const {
@@ -83,6 +84,7 @@ export const OverlayContainer = memo(() => {
         editMode ? 'bg-blue-900/20' : '',
       ].join(' ')}
     >
+      <SectorTimingUpdater />
       {widgetsForThisDisplay.map((widget, index) => {
         const WidgetComponent = WIDGET_MAP[widget.type || widget.id];
         if (!WidgetComponent) {

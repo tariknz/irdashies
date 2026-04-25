@@ -1,6 +1,9 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { TrackMap } from './TrackMap';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import {
+  TelemetryDecorator,
+  TelemetryDecoratorWithConfig,
+} from '@irdashies/storybook';
 
 export default {
   component: TrackMap,
@@ -43,4 +46,24 @@ export const PCCRaceWithMicUse: Story = {
 
 export const PCCPacing: Story = {
   decorators: [TelemetryDecorator('/test-data/1735296198162')],
+};
+
+export const SectorColoring: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(undefined, {
+      map: {
+        sectorColoring: { enabled: true },
+      },
+    }),
+  ],
+};
+
+export const SectorColoringGT3: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1732355190142', {
+      map: {
+        sectorColoring: { enabled: true },
+      },
+    }),
+  ],
 };
