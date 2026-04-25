@@ -180,6 +180,16 @@ export function exposeBridge() {
       ipcRenderer.on('containerBoundsInfo', handler);
       return () => ipcRenderer.removeListener('containerBoundsInfo', handler);
     },
+    openWidgetSettings: (widgetType: string) => {
+      return ipcRenderer.invoke('openWidgetSettings', widgetType);
+    },
+    onNavigateToSettings: (callback: (widgetType: string) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, widgetType: string) => {
+        callback(widgetType);
+      };
+      ipcRenderer.on('navigateToSettings', handler);
+      return () => ipcRenderer.removeListener('navigateToSettings', handler);
+    },
   } as DashboardBridge);
 
   contextBridge.exposeInMainWorld('fuelCalculatorBridge', {

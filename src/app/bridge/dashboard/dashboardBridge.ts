@@ -195,6 +195,9 @@ export const dashboardBridge: DashboardBridge = {
   saveDriverTagSettings: async (settings: DriverTagSettings) => {
     saveDriverTagSettings(settings);
   },
+  openWidgetSettings: async () => {
+    // Not used by component server
+  },
 };
 
 export async function publishDashboardUpdates(
@@ -254,6 +257,10 @@ export async function publishDashboardUpdates(
 
   ipcMain.handle('toggleLockOverlays', () => {
     return overlayManager.toggleLockOverlays();
+  });
+
+  ipcMain.handle('openWidgetSettings', (_, widgetType: string) => {
+    overlayManager.focusSettingsWindow(widgetType);
   });
 
   ipcMain.handle('getAppVersion', () => {

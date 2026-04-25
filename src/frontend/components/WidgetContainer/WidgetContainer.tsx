@@ -11,7 +11,7 @@ import { useDragWidget } from './useDragWidget';
 import { useResizeWidget } from './useResizeWidget';
 import { ResizeHandles } from './ResizeHandle';
 import { getWidgetName } from '../../constants/widgetNames';
-import { ResizeIcon } from '@phosphor-icons/react';
+import { ResizeIcon, GearIcon, XIcon } from '@phosphor-icons/react';
 import { useContainerOffset } from '@irdashies/context';
 
 export interface WidgetContainerProps {
@@ -19,6 +19,8 @@ export interface WidgetContainerProps {
   editMode: boolean;
   zIndex: number;
   onLayoutChange: (widgetId: string, layout: WidgetLayout) => void;
+  onDisable?: (widgetId: string) => void;
+  onOpenSettings?: (widgetId: string) => void;
   children: React.ReactNode;
 }
 
@@ -28,6 +30,8 @@ export const WidgetContainer = memo(
     editMode,
     zIndex,
     onLayoutChange,
+    onDisable,
+    onOpenSettings,
     children,
   }: WidgetContainerProps) => {
     const { id, layout } = widget;
@@ -166,6 +170,26 @@ export const WidgetContainer = memo(
               <div className="absolute top-0 right-0 py-1 px-2 bg-sky-500 text-white text-sm flex items-center gap-1 cursor-move">
                 <ResizeIcon size={14} />
                 <span>{widgetName}</span>
+                {onOpenSettings && (
+                  <button
+                    className="p-0.5 hover:bg-sky-600 rounded"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => onOpenSettings(id)}
+                    title="Widget settings"
+                  >
+                    <GearIcon size={14} />
+                  </button>
+                )}
+                {onDisable && (
+                  <button
+                    className="p-0.5 hover:bg-sky-600 rounded"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => onDisable(id)}
+                    title="Disable widget"
+                  >
+                    <XIcon size={14} />
+                  </button>
+                )}
               </div>
             </div>
 

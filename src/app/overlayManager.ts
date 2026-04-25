@@ -422,6 +422,19 @@ export class OverlayManager {
       this.updateOverlayBounds();
     }
 
+    // Raise settings window to layer 2 during edit mode so it appears above
+    // overlay windows (layer 1); revert to normal layering when not editing.
+    if (
+      this.currentSettingsWindow &&
+      !this.currentSettingsWindow.isDestroyed()
+    ) {
+      if (!this.isLocked) {
+        this.currentSettingsWindow.setAlwaysOnTop(true, 'screen-saver', 2);
+      } else {
+        this.currentSettingsWindow.setAlwaysOnTop(false);
+      }
+    }
+
     return this.isLocked;
   }
 
@@ -597,19 +610,22 @@ export class OverlayManager {
     }
   }
 
-  public focusSettingsWindow(): void {
+  public focusSettingsWindow(widgetType?: string): void {
     if (
       !this.currentSettingsWindow ||
       this.currentSettingsWindow.isDestroyed()
     ) {
-      this.currentSettingsWindow = this.createSettingsWindow();
-    } else {
-      const win = this.currentSettingsWindow;
-      if (win.isMinimized()) {
-        win.restore();
-      }
-      win.show();
-      win.focus();
+      this.currentSettingsWindow = this.createSettingsWindow(widgetType);
+      return;
+    }
+    const win = this.currentSettingsWindow;
+    if (win.isMinimized()) {
+      win.restore();
+    }
+    win.show();
+    win.focus();
+    if (widgetType) {
+      win.webContents.send('navigateToSettings', widgetType);
     }
   }
 
@@ -684,7 +700,7 @@ export class OverlayManager {
     return this.hasSingleInstanceLock;
   }
 
-  public createSettingsWindow(): BrowserWindow {
+  public createSettingsWindow(widgetType?: string): BrowserWindow {
     if (this.currentSettingsWindow) {
       if (this.currentSettingsWindow.isMinimized()) {
         this.currentSettingsWindow.restore();
@@ -717,16 +733,23 @@ export class OverlayManager {
 
     this.currentSettingsWindow = browserWindow;
 
+    // During edit mode, raise settings window above overlay windows (layer 1).
+    // Outside edit mode, use normal window layering.
+    if (!this.isLocked) {
+      browserWindow.setAlwaysOnTop(true, 'screen-saver', 2);
+    }
+
     // Track window movement and resizing to save bounds
     trackSettingsWindowMovement(browserWindow);
 
     // and load the index.html of the app.
+    const hash = widgetType ? `/settings/${widgetType}` : `/settings`;
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-      browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/settings`);
+      browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#${hash}`);
     } else {
       browserWindow.loadFile(
         path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-        { hash: `/settings` }
+        { hash }
       );
     }
 
