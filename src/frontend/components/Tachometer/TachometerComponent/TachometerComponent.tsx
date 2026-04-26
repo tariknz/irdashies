@@ -317,7 +317,7 @@ export const Tachometer = ({
           {shouldShowRpmBox && rpmOrientation === 'horizontal' && (
             <div
               id="rpm-text"
-              className={`bg-slate-800/(--bg-opacity) text-[30cqmin] absolute right-[-8em] flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
+              className={`bg-slate-800/(--bg-opacity) text-base absolute right-[-8em] flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
               style={{
                 ...getRpmBoxStyle(),
                 height: '2em',
@@ -347,7 +347,7 @@ export const Tachometer = ({
         {shouldShowRpmBox && rpmOrientation !== 'horizontal' && (
           <div
             id="rpm-text"
-            className={`bg-slate-800/(--bg-opacity) text-[20cqmin] flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
+            className={`bg-slate-800/(--bg-opacity) text-base flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
             style={{
               ...getRpmBoxStyle(),
               height: '1.5em',
