@@ -4,6 +4,7 @@ import type { WidgetLayout } from '@irdashies/types';
 import { WidgetContainer } from '../WidgetContainer';
 import { WIDGET_MAP } from '../../WidgetIndex';
 import { XIcon } from '@phosphor-icons/react';
+import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { SectorTimingUpdater } from './SectorTimingUpdater';
 
 export const OverlayContainer = memo(() => {
@@ -30,6 +31,27 @@ export const OverlayContainer = memo(() => {
   useEffect(() => {
     onDashboardUpdatedRef.current = onDashboardUpdated;
   }, [onDashboardUpdated]);
+
+  const handleDisableWidget = useCallback((widgetId: string) => {
+    const dashboard = dashboardRef.current;
+    const updateFn = onDashboardUpdatedRef.current;
+    if (!dashboard || !updateFn) return;
+
+    const updatedWidgets = dashboard.widgets.map((w) =>
+      w.id === widgetId ? { ...w, enabled: false } : w
+    );
+    updateFn({ ...dashboard, widgets: updatedWidgets });
+  }, []);
+
+  const handleOpenWidgetSettings = useCallback(
+    (widgetId: string) => {
+      const dashboard = dashboardRef.current;
+      const widget = dashboard?.widgets.find((w) => w.id === widgetId);
+      const widgetType = widget?.type || widgetId;
+      bridge.openWidgetSettings?.(widgetType);
+    },
+    [bridge]
+  );
 
   const handleLayoutChange = useCallback(
     (widgetId: string, layout: WidgetLayout) => {
@@ -98,9 +120,16 @@ export const OverlayContainer = memo(() => {
             editMode={editMode}
             zIndex={index + 1}
             onLayoutChange={handleLayoutChange}
+            onDisable={handleDisableWidget}
+            onOpenSettings={handleOpenWidgetSettings}
           >
             {running || widget.alwaysEnabled ? (
-              <WidgetComponent {...widget.config} />
+              <ErrorBoundary
+                label={`widget:${widget.type || widget.id}`}
+                resetAfterMs={2000}
+              >
+                <WidgetComponent {...widget.config} />
+              </ErrorBoundary>
             ) : null}
           </WidgetContainer>
         );

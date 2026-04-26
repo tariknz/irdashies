@@ -4,7 +4,13 @@ import {
   LockIcon,
   PresentationChartIcon,
 } from '@phosphor-icons/react';
-import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import {
+  Route,
+  Routes,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import { useDashboard } from '@irdashies/context';
 import { SettingsLoader } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
@@ -18,6 +24,7 @@ export const SettingsLayout = () => {
     currentProfile,
   } = useDashboard();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [editModeAccelerator, setEditModeAccelerator] = useState('F6');
 
   useEffect(() => {
@@ -25,6 +32,15 @@ export const SettingsLayout = () => {
       setEditModeAccelerator(bindings['toggle-edit-mode'].accelerator);
     });
   }, [pathname]);
+
+  useEffect(() => {
+    const unsub = window.dashboardBridge?.onNavigateToSettings?.(
+      (widgetType) => {
+        navigate(`/settings/${widgetType}`);
+      }
+    );
+    return () => unsub?.();
+  }, [navigate]);
 
   const handleToggleLock = async () => {
     await bridge.toggleLockOverlays();

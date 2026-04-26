@@ -1087,6 +1087,20 @@ export const MinimalStyling: Story = {
   ],
 };
 
+export const WithFlagContour: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(undefined, {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+        stylingOptions: {
+          flagContour: { enabled: true, borderWidth: 5 },
+        },
+      },
+    }),
+  ],
+};
+
 const singleDriverTagRelative: ResolvedDriverTag = {
   id: 'friend',
   name: 'Friend',

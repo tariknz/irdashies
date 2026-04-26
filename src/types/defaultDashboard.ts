@@ -590,6 +590,16 @@ export const defaultDashboard: {
           practice: true,
           offlineTesting: true,
         },
+        stylingOptions: {
+          badge: false,
+          statusBadges: false,
+          driverPosition: { background: true },
+          driverNumber: { background: true, border: true },
+          flagContour: {
+            enabled: false,
+            borderWidth: 5,
+          },
+        },
       },
     },
     {

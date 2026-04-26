@@ -361,7 +361,7 @@ export const createDriverStandings = (
         !mappedCarIdxs.has(driver.CarIdx)
     )
     .sort(sortByCarNumber)
-    .map((driver) => {
+    .map((driver, index) => {
       // Assign per-class position: count of drivers in their class + 1
       const classId = driver.CarClassID;
       const classPosition = (classPositionCounts.get(classId) ?? 0) + 1;
@@ -369,7 +369,7 @@ export const createDriverStandings = (
 
       return {
         carIdx: driver.CarIdx,
-        position: mapped.length + classPositionCounts.size,
+        position: mapped.length + index + 1,
         classPosition,
         isPlayer: driver.CarIdx === session.playerIdx,
         driver: {
