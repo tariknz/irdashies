@@ -7,6 +7,7 @@ import {
   useSessionVisibility,
   useGeneralSettings,
   usePitLapStoreUpdater,
+  useTelemetryValue,
 } from '@irdashies/context';
 import {
   useRelativeSettings,
@@ -18,6 +19,9 @@ import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
+import { FlagContour } from '@irdashies/utils/FlagContour';
+import { getFlag } from '@irdashies/utils/getFlag';
+import { getFlagColor } from '@irdashies/utils/getFlagColor';
 
 export const Relative = () => {
   const settings = useRelativeSettings();
@@ -30,6 +34,15 @@ export const Relative = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
+
+  const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
+  const flagInfo = getFlag(sessionFlags);
+  const flagContourSetting = settings?.stylingOptions?.flagContour;
+  const flagContourEnabled =
+    (flagContourSetting?.enabled ?? false) && flagInfo.label !== 'NO FLAG';
+  const borderWidth = flagContourSetting?.borderWidth ?? 5;
+
+  const flagColor = getFlagColor(getFlag(sessionFlags).label);
 
   usePitLapStoreUpdater();
 
@@ -250,7 +263,13 @@ export const Relative = () => {
   // If no player found, render empty table with consistent height
   if (playerIndex === -1) {
     return (
-      <div className="w-full h-full">
+      <FlagContour
+        compactMode={isCompact}
+        flags={{ enabled: flagContourEnabled }}
+        flagColor={flagColor}
+        backgroundOpacity={settings?.background?.opacity ?? 0}
+        borderWidth={borderWidth}
+      >
         <TitleBar titleBarSettings={settings?.titleBar} />
         {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
           <SessionBar settings={settings.headerBar} position="header" />
@@ -263,16 +282,17 @@ export const Relative = () => {
         {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
           <SessionBar settings={settings.footerBar} position="footer" />
         )}
-      </div>
+      </FlagContour>
     );
   }
 
   return (
-    <div
-      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!isCompact ? 'p-2' : ''} overflow-hidden`}
-      style={{
-        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
-      }}
+    <FlagContour
+      compactMode={isCompact}
+      flags={{ enabled: flagContourEnabled }}
+      flagColor={flagColor}
+      backgroundOpacity={settings?.background?.opacity ?? 0}
+      borderWidth={borderWidth}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
@@ -286,6 +306,6 @@ export const Relative = () => {
       {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
         <SessionBar settings={settings.footerBar} position="footer" />
       )}
-    </div>
+    </FlagContour>
   );
 };
