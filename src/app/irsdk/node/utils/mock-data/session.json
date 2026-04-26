@@ -3251,7 +3251,8 @@
         "DivisionName": "Division 1",
         "DivisionID": 0,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 2
       },
       {
         "CarIdx": 1,
@@ -4350,7 +4351,8 @@
         "DivisionName": "Rookie",
         "DivisionID": 10,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 23,
@@ -4399,7 +4401,8 @@
         "DivisionName": "Rookie",
         "DivisionID": 10,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 39
       },
       {
         "CarIdx": 24,
@@ -4448,7 +4451,8 @@
         "DivisionName": "Rookie",
         "DivisionID": 10,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 39
       },
       {
         "CarIdx": 25,
@@ -4497,7 +4501,8 @@
         "DivisionName": "Division 9",
         "DivisionID": 8,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 26,
@@ -4546,7 +4551,8 @@
         "DivisionName": "Division 6",
         "DivisionID": 5,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 27,
@@ -4795,7 +4801,8 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 39
       },
       {
         "CarIdx": 32,
@@ -4844,7 +4851,8 @@
         "DivisionName": "Division 5",
         "DivisionID": 4,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 2
       },
       {
         "CarIdx": 33,
@@ -4993,7 +5001,8 @@
         "DivisionName": "Division 4",
         "DivisionID": 3,
         "CurDriverIncidentCount": -1,
-        "TeamIncidentCount": -1
+        "TeamIncidentCount": -1,
+        "FlairID": 223
       },
       {
         "CarIdx": 36,
