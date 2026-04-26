@@ -29,6 +29,9 @@ const StatusBadge = ({
   );
 };
 
+// Shared classes for penalty / slowdown / meatball — matches original penalty badge dimensions
+const flagBadgeClasses = 'bg-black/80 inline-block min-w-6';
+
 interface DriverStatusBadgesProps {
   repair?: boolean;
   penalty?: boolean;
@@ -104,28 +107,32 @@ export const DriverStatusBadges = memo(
           <StatusBadge
             textColor="text-orange-500"
             borderColorClass="border-gray-500"
-            additionalClasses="bg-black/80 inline-block min-w-6"
+            additionalClasses={flagBadgeClasses}
           >
-            {'\u00A0'}
+            {' '}
           </StatusBadge>
         )}
         {slowdown && (
-          <StatusBadge
-            textColor="text-orange-500"
-            borderColorClass="border-gray-500"
-            animate
-            additionalClasses="bg-black/80 inline-block min-w-6"
+          <span
+            className={`text-orange-500 text-xs border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight border-gray-500 animate-pulse ${flagBadgeClasses}`}
+            style={{
+              background:
+                'linear-gradient(to bottom right, black calc(50% - 1px), white calc(50% + 1px))',
+            }}
           >
-            {'\u00A0'}
-          </StatusBadge>
+            {' '}
+          </span>
         )}
         {repair && (
           <StatusBadge
             textColor="text-orange-500"
             borderColorClass="border-gray-500"
-            additionalClasses="bg-black/80 items-center justify-center"
+            additionalClasses={`${flagBadgeClasses} relative`}
           >
-            <span className="inline-block w-[0.8em] h-[0.8em] bg-orange-500 rounded-full" />
+            {' '}
+            <span className="absolute inset-0 flex items-center justify-center">
+              <span className="w-[0.8em] h-[0.8em] bg-orange-500 rounded-full" />
+            </span>
           </StatusBadge>
         )}
         {dnf && (
