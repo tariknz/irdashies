@@ -41,6 +41,8 @@ export const mockDashboardBridge: DashboardBridge = {
   },
   saveGarageCoverImage: () => Promise.resolve(''),
   getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
+  savePlayerIconImage: () => Promise.resolve(''),
+  getPlayerIconImageAsDataUrl: () => Promise.resolve(null),
   getAnalyticsOptOut: () => Promise.resolve(false),
   setAnalyticsOptOut: () => Promise.resolve(),
   // Profile management mocks

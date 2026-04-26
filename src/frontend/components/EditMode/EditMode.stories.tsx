@@ -54,6 +54,8 @@ const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
   saveGarageCoverImage: () => Promise.resolve(''),
   getGarageCoverImage: () => Promise.resolve(null),
   getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
+  savePlayerIconImage: () => Promise.resolve(''),
+  getPlayerIconImageAsDataUrl: () => Promise.resolve(null),
   // Profile management methods
   listProfiles: () =>
     Promise.resolve([

@@ -18,6 +18,8 @@ const mockBridge: DashboardBridge = {
   getCurrentDashboard: vi.fn().mockResolvedValue({}),
   saveGarageCoverImage: vi.fn(),
   getGarageCoverImageAsDataUrl: vi.fn(),
+  savePlayerIconImage: vi.fn(),
+  getPlayerIconImageAsDataUrl: vi.fn(),
   getAnalyticsOptOut: vi.fn().mockResolvedValue(false),
   setAnalyticsOptOut: vi.fn(),
   listProfiles: vi.fn().mockResolvedValue([]),
