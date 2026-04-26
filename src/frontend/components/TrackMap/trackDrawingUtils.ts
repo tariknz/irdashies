@@ -172,6 +172,9 @@ export const drawDrivers = (
     pos !== undefined && isFinite(pos) ? pos : 0;
   Object.values(calculatePositions)
     .sort((a, b) => {
+      const aOnPit = !!carIdxIsOnPitRoad?.[a.driver.CarIdx];
+      const bOnPit = !!carIdxIsOnPitRoad?.[b.driver.CarIdx];
+      if (aOnPit !== bOnPit) return aOnPit ? -1 : 1; // pit cars drawn first (under track drivers)
       if (a.isPlayer !== b.isPlayer) {
         return Number(a.isPlayer) - Number(b.isPlayer); // draws player last to be on top
       }
