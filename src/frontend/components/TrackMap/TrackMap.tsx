@@ -2,6 +2,7 @@ import { useTrackId } from './hooks/useTrackId';
 import { useDriverProgress } from './hooks/useDriverProgress';
 import { useTrackMapSettings } from './hooks/useTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
+import { usePlayerIconImage } from './hooks/usePlayerIconImage';
 import { TrackCanvas } from './TrackCanvas';
 import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
 
@@ -13,6 +14,7 @@ export const TrackMap = () => {
   const settings = useTrackMapSettings();
   const highlightColor = useHighlightColor();
   const isOnTrack = useTelemetryValue('IsOnTrack');
+  const playerIconDataUrl = usePlayerIconImage(settings?.playerIcon?.fileName);
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
@@ -48,8 +50,8 @@ export const TrackMap = () => {
         }
         isMinimalTrack={settings?.styling?.isMinimalTrack ?? true}
         isMinimalCar={settings?.styling?.isMinimalCar ?? true}
-        playerIconEnabled={settings?.playerIconEnabled ?? false}
-        playerIconDataUrl={settings?.playerIconDataUrl ?? ''}
+        playerIconEnabled={settings?.playerIcon?.enabled ?? false}
+        playerIconDataUrl={playerIconDataUrl ?? ''}
         debug={debug}
       />
     </div>

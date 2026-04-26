@@ -4,6 +4,7 @@ import tracks from './tracks/tracks.json';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
 import { shouldShowTrack } from './tracks/brokenTracks';
 import { TrackDebug } from './TrackDebug';
+import { TrackPlayerIcon } from './TrackPlayerIcon';
 import { useStartFinishLine } from './hooks/useStartFinishLine';
 import {
   setupCanvasContext,
@@ -488,19 +489,10 @@ export const TrackCanvas = ({
           className="will-change-transform w-full h-full"
           ref={canvasRef}
         ></canvas>
-        {playerOverlay && (
-          <div
-            className="absolute pointer-events-none"
-            style={playerOverlay.style}
-          >
-            <img src={playerIconDataUrl} alt="" className="w-full h-full" />
-            {playerOverlay.onPitRoad && (
-              <span className="absolute inset-0 flex items-center justify-center font-bold text-white">
-                P
-              </span>
-            )}
-          </div>
-        )}
+        <TrackPlayerIcon
+          overlay={playerOverlay}
+          iconDataUrl={playerIconDataUrl}
+        />
       </div>
     );
   }
@@ -514,19 +506,10 @@ export const TrackCanvas = ({
         className="will-change-transform w-full h-full"
         ref={canvasRef}
       ></canvas>
-      {playerOverlay && (
-        <div
-          className="absolute pointer-events-none"
-          style={playerOverlay.style}
-        >
-          <img src={playerIconDataUrl} alt="" className="w-full h-full" />
-          {playerOverlay.onPitRoad && (
-            <span className="absolute inset-0 flex items-center justify-center font-bold text-white">
-              PIT
-            </span>
-          )}
-        </div>
-      )}
+      <TrackPlayerIcon
+        overlay={playerOverlay}
+        iconDataUrl={playerIconDataUrl}
+      />
     </div>
   );
 };

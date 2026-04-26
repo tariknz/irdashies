@@ -17,6 +17,8 @@ import {
   resetDashboard,
   saveGarageCoverImage,
   getGarageCoverImageAsDataUrl,
+  savePlayerIconImage,
+  getPlayerIconImageAsDataUrl,
   listDashboards,
   listProfiles,
   createProfile,
@@ -180,6 +182,12 @@ export const dashboardBridge: DashboardBridge = {
   getGarageCoverImageAsDataUrl: (imagePath: string) => {
     return getGarageCoverImageAsDataUrl(imagePath);
   },
+  savePlayerIconImage: (buffer: Uint8Array) => {
+    return savePlayerIconImage(buffer);
+  },
+  getPlayerIconImageAsDataUrl: (imagePath: string) => {
+    return getPlayerIconImageAsDataUrl(imagePath);
+  },
   exportDashboardToFile: async () => false,
   importDashboardFromFile: async () => null,
   openLogFolder: async () => undefined,
@@ -263,8 +271,7 @@ export async function publishDashboardUpdates(
   ipcMain.handle('saveGarageCoverImage', async (_, buffer: number[]) => {
     try {
       const uint8Array = new Uint8Array(buffer);
-      const imagePath = await saveGarageCoverImage(uint8Array);
-      return imagePath;
+      return await saveGarageCoverImage(uint8Array);
     } catch (err) {
       logger.error('[Bridge] Error saving garage cover image:', err);
       throw err;
@@ -275,10 +282,31 @@ export async function publishDashboardUpdates(
     'getGarageCoverImageAsDataUrl',
     async (_, imagePath: string) => {
       try {
-        const dataUrl = await getGarageCoverImageAsDataUrl(imagePath);
-        return dataUrl;
+        return await getGarageCoverImageAsDataUrl(imagePath);
       } catch (err) {
         logger.error('Error loading garage cover image as data URL:', err);
+        throw err;
+      }
+    }
+  );
+
+  ipcMain.handle('savePlayerIconImage', async (_, buffer: number[]) => {
+    try {
+      const uint8Array = new Uint8Array(buffer);
+      return await savePlayerIconImage(uint8Array);
+    } catch (err) {
+      logger.error('[Bridge] Error saving player icon image:', err);
+      throw err;
+    }
+  });
+
+  ipcMain.handle(
+    'getPlayerIconImageAsDataUrl',
+    async (_, imagePath: string) => {
+      try {
+        return await getPlayerIconImageAsDataUrl(imagePath);
+      } catch (err) {
+        logger.error('Error loading player icon image as data URL:', err);
         throw err;
       }
     }

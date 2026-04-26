@@ -222,8 +222,7 @@ export interface TrackMapConfig {
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
   styling?: { isMinimalTrack?: boolean; isMinimalCar?: boolean };
-  playerIconEnabled?: boolean;
-  playerIconDataUrl?: string;
+  playerIcon?: { enabled: boolean; fileName: string };
 }
 
 export interface FlatTrackMapConfig {
