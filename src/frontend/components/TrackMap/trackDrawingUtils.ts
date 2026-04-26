@@ -242,20 +242,19 @@ export const drawDrivers = (
         ctx.textBaseline = 'middle';
         ctx.fillStyle = color.text;
         ctx.font = `${fontSize}px sans-serif`;
-        let displayText = '';
-        if (onPitRoad) {
-          displayText = 'P';
-        } else if (displayMode === 'livePosition') {
-          displayText =
-            livePosition && livePosition > 0 ? livePosition.toString() : '';
-        } else if (displayMode === 'sessionPosition') {
-          displayText =
-            sessionPosition && sessionPosition > 0
-              ? sessionPosition.toString()
-              : '';
-        } else {
-          displayText = driver.CarNumber;
-        }
+        const livePosition =
+          driverLivePositions[driver.CarIdx] ?? sessionPosition;
+        const displayText = onPitRoad
+          ? 'P'
+          : displayMode === 'livePosition'
+            ? livePosition && livePosition > 0
+              ? livePosition.toString()
+              : ''
+            : displayMode === 'sessionPosition'
+              ? sessionPosition && sessionPosition > 0
+                ? sessionPosition.toString()
+                : ''
+              : driver.CarNumber;
         if (displayText) {
           const m = ctx.measureText(displayText);
           const visualOffset =
