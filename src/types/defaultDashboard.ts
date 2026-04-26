@@ -433,6 +433,10 @@ export const defaultDashboard: {
         compound: {
           enabled: false,
         },
+        lapTimeDeltas: {
+          enabled: false,
+          numLaps: 3,
+        },
         displayOrder: [
           'position',
           'carNumber',
@@ -449,6 +453,7 @@ export const defaultDashboard: {
           'fastestTime',
           'lastTime',
           'compound',
+          'lapTimeDeltas',
         ],
         driverTag: { enabled: false },
         titleBar: {
