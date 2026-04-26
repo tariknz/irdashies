@@ -8,12 +8,11 @@ export const usePlayerIconImage = (
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!imageFilename || !bridge) {
-      setImageUrl(null);
-      return;
-    }
-
     const loadImage = async () => {
+      if (!imageFilename || !bridge) {
+        setImageUrl(null);
+        return;
+      }
       const dataUrl = await bridge.getPlayerIconImageAsDataUrl(imageFilename);
       setImageUrl(dataUrl);
     };

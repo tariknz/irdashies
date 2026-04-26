@@ -1,5 +1,5 @@
 import type { DashboardBridge } from '@irdashies/types';
-import { defaultDashboard } from '../src/app/storage/defaultDashboard';
+import { defaultDashboard } from '@irdashies/types';
 
 export const mockDashboardBridge: DashboardBridge = {
   reloadDashboard: () => {
