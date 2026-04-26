@@ -186,6 +186,20 @@ export function createBridgeProxy(
             );
             break;
           }
+          case 'getPlayerIconImageAsDataUrl': {
+            const { requestId, data } = parsed;
+            const result = await dashboardBridge?.getPlayerIconImageAsDataUrl(
+              data.imagePath
+            );
+            ws.send(
+              JSON.stringify({
+                type: 'getPlayerIconImageAsDataUrl',
+                requestId,
+                data: result,
+              })
+            );
+            break;
+          }
           case 'getCurrentProfile': {
             const { requestId } = parsed;
             const result = await dashboardBridge?.getCurrentProfile();

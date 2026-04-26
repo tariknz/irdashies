@@ -303,6 +303,110 @@ export const getGarageCoverImageAsDataUrl = async (
   }
 };
 
+export const savePlayerIconImage = async (
+  buffer: Uint8Array
+): Promise<string> => {
+  try {
+    const userDataPath = app.getPath('userData');
+    const assetsPath = resolve(userDataPath, 'frontend', 'assets', 'img');
+
+    await mkdir(assetsPath, { recursive: true });
+
+    let extension = 'png';
+
+    if (buffer.length >= 4) {
+      if (
+        buffer[0] === 0x89 &&
+        buffer[1] === 0x50 &&
+        buffer[2] === 0x4e &&
+        buffer[3] === 0x47
+      ) {
+        extension = 'png';
+      } else if (
+        buffer[0] === 0xff &&
+        buffer[1] === 0xd8 &&
+        buffer[2] === 0xff
+      ) {
+        extension = 'jpg';
+      } else if (
+        buffer[0] === 0x47 &&
+        buffer[1] === 0x49 &&
+        buffer[2] === 0x46
+      ) {
+        extension = 'gif';
+      } else if (
+        buffer[0] === 0x52 &&
+        buffer[1] === 0x49 &&
+        buffer[2] === 0x46 &&
+        buffer[3] === 0x46 &&
+        buffer.length >= 12 &&
+        buffer[8] === 0x57 &&
+        buffer[9] === 0x45 &&
+        buffer[10] === 0x42 &&
+        buffer[11] === 0x50
+      ) {
+        extension = 'webp';
+      } else if (buffer[0] === 0x3c) {
+        extension = 'svg';
+      }
+    }
+
+    const imagePath = resolve(assetsPath, `player-icon.${extension}`);
+    logger.info(
+      '[PlayerIcon] Writing to:',
+      imagePath,
+      'Extension detected:',
+      extension
+    );
+    await writeFile(imagePath, buffer);
+    logger.info('[PlayerIcon] File written successfully');
+
+    return imagePath;
+  } catch (err) {
+    logger.error('[PlayerIcon] Error saving image:', err);
+    throw err;
+  }
+};
+
+export const getPlayerIconImageAsDataUrl = async (
+  imageFilenameOrPath: string
+): Promise<string | null> => {
+  try {
+    let imagePath = imageFilenameOrPath;
+    if (
+      !imageFilenameOrPath.includes('/') &&
+      !imageFilenameOrPath.includes('\\')
+    ) {
+      const userDataPath = app.getPath('userData');
+      imagePath = resolve(
+        userDataPath,
+        'frontend',
+        'assets',
+        'img',
+        imageFilenameOrPath
+      );
+    }
+
+    const buffer = await readFile(imagePath);
+    const extension = imagePath.toLowerCase().split('.').pop() || 'png';
+    const mimeTypeMap: Record<string, string> = {
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      svg: 'image/svg+xml',
+    };
+    const mimeType = mimeTypeMap[extension] || 'image/png';
+    const base64 = Buffer.from(buffer).toString('base64');
+
+    return `data:${mimeType};base64,${base64}`;
+  } catch (err) {
+    logger.error('Error reading player icon image:', err);
+    return null;
+  }
+};
+
 // ============================================
 // Profile Management Functions
 // ============================================
