@@ -7,6 +7,7 @@ import {
   useSessionVisibility,
   useGeneralSettings,
   usePitLapStoreUpdater,
+  useLapTimesStoreUpdater,
   useLapTimeHistory,
   useFocusCarIdx,
 } from '@irdashies/context';
@@ -36,6 +37,7 @@ export const Relative = () => {
   usePitLapStoreUpdater();
 
   const lapTimeDeltasEnabled = settings?.lapTimeDeltas?.enabled ?? false;
+  useLapTimesStoreUpdater(lapTimeDeltasEnabled);
   const numLapDeltas = settings?.lapTimeDeltas?.numLaps ?? 3;
   const focusCarIdx = useFocusCarIdx();
   const lapTimeHistory = useLapTimeHistory();
