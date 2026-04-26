@@ -4,6 +4,7 @@ import {
   TrackMapWidgetSettings,
   SettingsTabType,
   getWidgetDefaultConfig,
+  DashboardBridge,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
@@ -26,11 +27,12 @@ const SUPPORTED_IMAGE_TYPES = [
 ];
 
 const SETTING_ID = 'map';
+const LOCALSTORAGE_KEY = 'trackmap-player-icon';
 
 const defaultConfig = getWidgetDefaultConfig('map');
 
 export const TrackMapSettings = () => {
-  const { currentDashboard } = useDashboard();
+  const { currentDashboard, bridge } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as TrackMapWidgetSettings | undefined;
@@ -45,6 +47,7 @@ export const TrackMapSettings = () => {
 
   const [imageError, setImageError] = useState<string | null>(null);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const configChangeHandlerRef = useRef<
     ((newConfig: Partial<TrackMapWidgetSettings['config']>) => void) | null
   >(null);
@@ -57,6 +60,35 @@ export const TrackMapSettings = () => {
   useEffect(() => {
     localStorage.setItem('trackMapTab', activeTab);
   }, [activeTab]);
+
+  const loadPreview = (imageFilename: string) => {
+    if (!imageFilename) {
+      setTimeout(() => setPreviewUrl(null), 0);
+      return;
+    }
+
+    const dashboardBridge = (
+      window as unknown as { dashboardBridge?: DashboardBridge }
+    ).dashboardBridge;
+    if (dashboardBridge && 'getPlayerIconImageAsDataUrl' in dashboardBridge) {
+      dashboardBridge
+        .getPlayerIconImageAsDataUrl(imageFilename)
+        .then((dataUrl: string | null) => {
+          setPreviewUrl(dataUrl);
+        })
+        .catch(() => {
+          const dataUrl = localStorage.getItem(LOCALSTORAGE_KEY);
+          setTimeout(() => setPreviewUrl(dataUrl), 0);
+        });
+    } else {
+      const dataUrl = localStorage.getItem(LOCALSTORAGE_KEY);
+      setTimeout(() => setPreviewUrl(dataUrl), 0);
+    }
+  };
+
+  useEffect(() => {
+    loadPreview(settings.config.playerIcon?.fileName ?? '');
+  }, [settings.config.playerIcon?.fileName]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -86,17 +118,45 @@ export const TrackMapSettings = () => {
           setImageError(null);
           const reader = new FileReader();
           reader.onload = (e) => {
-            const dataUrl = e.target?.result as string;
-            const img = new Image();
-            img.onload = () => {
-              configChangeHandlerRef.current?.({ playerIconDataUrl: dataUrl });
-            };
-            img.onerror = () => {
-              setImageError(
-                'Could not load image. Please use a supported format (PNG, JPG, GIF, WebP, SVG, AVIF).'
-              );
-            };
-            img.src = dataUrl;
+            const imageData = e.target?.result as string;
+            const imageBuffer = Uint8Array.from(
+              atob(imageData.split(',')[1]),
+              (c) => c.charCodeAt(0)
+            );
+
+            if ('savePlayerIconImage' in bridge) {
+              (
+                bridge.savePlayerIconImage as (
+                  buffer: Uint8Array
+                ) => Promise<string>
+              )(imageBuffer)
+                .then((filePath) => {
+                  const fileName = filePath.split(/[\\/]/).pop() || '';
+                  configChangeHandlerRef.current?.({
+                    playerIcon: {
+                      enabled: settings.config.playerIcon?.enabled ?? false,
+                      fileName,
+                    },
+                  });
+                })
+                .catch(() => {
+                  localStorage.setItem(LOCALSTORAGE_KEY, imageData);
+                  configChangeHandlerRef.current?.({
+                    playerIcon: {
+                      enabled: settings.config.playerIcon?.enabled ?? false,
+                      fileName: 'browser-mode',
+                    },
+                  });
+                });
+            } else {
+              localStorage.setItem(LOCALSTORAGE_KEY, imageData);
+              configChangeHandlerRef.current?.({
+                playerIcon: {
+                  enabled: settings.config.playerIcon?.enabled ?? false,
+                  fileName: 'browser-mode',
+                },
+              });
+            }
           };
           reader.readAsDataURL(file);
         };
@@ -135,20 +195,20 @@ export const TrackMapSettings = () => {
               </TabButton>
             </div>
 
-          <div>
-            {/* TRACK TAB */}
-            {activeTab === 'track' && (
-              <SettingsSection title="Track Settings">
-                <SettingSliderRow
-                  title="Track Line Width"
-                  description="Thickness of the track line (matches curved track map scale)"
-                  value={settings.config.trackLineWidth ?? 20}
-                  units="px"
-                  min={5}
-                  max={40}
-                  step={1}
-                  onChange={(v) => handleConfigChange({ trackLineWidth: v })}
-                />
+            <div>
+              {/* TRACK TAB */}
+              {activeTab === 'track' && (
+                <SettingsSection title="Track Settings">
+                  <SettingSliderRow
+                    title="Track Line Width"
+                    description="Thickness of the track line (matches curved track map scale)"
+                    value={settings.config.trackLineWidth ?? 20}
+                    units="px"
+                    min={5}
+                    max={40}
+                    step={1}
+                    onChange={(v) => handleConfigChange({ trackLineWidth: v })}
+                  />
 
                   <SettingSliderRow
                     title="Track Outline Width"
@@ -203,25 +263,25 @@ export const TrackMapSettings = () => {
                   }
                 />
 
-                {settings.config.turnLabels?.enabled && (
-                  <SettingsSection>
-                    <SettingButtonGroupRow<'numbers' | 'names' | 'both'>
-                      title="Display Mode"
-                      value={settings.config.turnLabels.labelType ?? 'both'}
-                      options={[
-                        { label: 'Numbers', value: 'numbers' },
-                        { label: 'Names', value: 'names' },
-                        { label: 'Both', value: 'both' },
-                      ]}
-                      onChange={(v) =>
-                        handleConfigChange({
-                          turnLabels: {
-                            ...settings.config.turnLabels,
-                            labelType: v,
-                          },
-                        })
-                      }
-                    />
+                  {settings.config.turnLabels?.enabled && (
+                    <SettingsSection>
+                      <SettingButtonGroupRow<'numbers' | 'names' | 'both'>
+                        title="Display Mode"
+                        value={settings.config.turnLabels.labelType ?? 'both'}
+                        options={[
+                          { label: 'Numbers', value: 'numbers' },
+                          { label: 'Names', value: 'names' },
+                          { label: 'Both', value: 'both' },
+                        ]}
+                        onChange={(v) =>
+                          handleConfigChange({
+                            turnLabels: {
+                              ...settings.config.turnLabels,
+                              labelType: v,
+                            },
+                          })
+                        }
+                      />
 
                       <SettingToggleRow
                         title="High Contrast Labels"
@@ -239,27 +299,27 @@ export const TrackMapSettings = () => {
                         }
                       />
 
-                    <SettingSliderRow
-                      title="Relative Label Size"
-                      description="Relative font size of the turn labels"
-                      value={settings.config.turnLabels.labelFontSize ?? 100}
-                      units="%"
-                      min={50}
-                      max={300}
-                      step={1}
-                      onChange={(v) =>
-                        handleConfigChange({
-                          turnLabels: {
-                            ...settings.config.turnLabels,
-                            labelFontSize: v,
-                          },
-                        })
-                      }
-                    />
-                  </SettingsSection>
-                )}
-              </SettingsSection>
-            )}
+                      <SettingSliderRow
+                        title="Relative Label Size"
+                        description="Relative font size of the turn labels"
+                        value={settings.config.turnLabels.labelFontSize ?? 100}
+                        units="%"
+                        min={50}
+                        max={300}
+                        step={1}
+                        onChange={(v) =>
+                          handleConfigChange({
+                            turnLabels: {
+                              ...settings.config.turnLabels,
+                              labelFontSize: v,
+                            },
+                          })
+                        }
+                      />
+                    </SettingsSection>
+                  )}
+                </SettingsSection>
+              )}
 
               {/* DRIVERS TAB */}
               {activeTab === 'drivers' && (
@@ -267,15 +327,20 @@ export const TrackMapSettings = () => {
                   <SettingToggleRow
                     title="Use custom icon for player"
                     description="Replace the player circle with a custom image"
-                    enabled={settings.config.playerIconEnabled ?? false}
+                    enabled={settings.config.playerIcon?.enabled ?? false}
                     onToggle={(newValue) => {
-                      handleConfigChange({ playerIconEnabled: newValue });
+                      handleConfigChange({
+                        playerIcon: {
+                          enabled: newValue,
+                          fileName: settings.config.playerIcon?.fileName ?? '',
+                        },
+                      });
                       setShowRemoveConfirm(false);
                       setImageError(null);
                     }}
                   />
 
-                  {(settings.config.playerIconEnabled ?? false) && (
+                  {(settings.config.playerIcon?.enabled ?? false) && (
                     <div className="ml-4 space-y-2">
                       <div
                         onDrop={(e) => {
@@ -305,10 +370,10 @@ export const TrackMapSettings = () => {
                           htmlFor="player-icon-input"
                           className="block cursor-pointer"
                         >
-                          {settings.config.playerIconDataUrl ? (
+                          {previewUrl ? (
                             <div className="flex items-center gap-3">
                               <img
-                                src={settings.config.playerIconDataUrl}
+                                src={previewUrl}
                                 alt="Player icon"
                                 className="w-10 h-10 rounded object-contain bg-slate-700"
                               />
@@ -334,7 +399,7 @@ export const TrackMapSettings = () => {
                         <p className="text-sm text-red-400">{imageError}</p>
                       )}
 
-                      {settings.config.playerIconDataUrl &&
+                      {settings.config.playerIcon?.fileName &&
                         (showRemoveConfirm ? (
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-slate-300">
@@ -342,7 +407,15 @@ export const TrackMapSettings = () => {
                             </span>
                             <button
                               onClick={() => {
-                                handleConfigChange({ playerIconDataUrl: '' });
+                                localStorage.removeItem(LOCALSTORAGE_KEY);
+                                handleConfigChange({
+                                  playerIcon: {
+                                    enabled:
+                                      settings.config.playerIcon?.enabled ??
+                                      false,
+                                    fileName: '',
+                                  },
+                                });
                                 setShowRemoveConfirm(false);
                               }}
                               className="px-3 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
