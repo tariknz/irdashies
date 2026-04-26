@@ -119,7 +119,12 @@ export const SessionBar = ({
 
   const session = useCurrentSessionType();
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
-  const { incidentLimit, incidents } = useDriverIncidents();
+  const {
+    incidentLimit,
+    incidents,
+    incidentWarningInitialLimit,
+    incidentWarningSubsequentLimit,
+  } = useDriverIncidents();
   const {
     currentLap,
     time,
@@ -143,6 +148,63 @@ export const SessionBar = ({
   const { totalRaceLaps, isFixedLapRace } = useTotalRaceLaps();
   const { totalRaceTime, adjustedRaceTime } = useTotalRaceTime();
   const trackDisplayName = useTrackDisplayName();
+
+  // Helper to format incident display with penalties
+  const getIncidentDisplay = (
+    incidents: number,
+    initial: number | string | undefined,
+    subsequent: number | string | undefined,
+    limit: number | string | undefined
+  ): string => {
+    // If limit is unlimited, show infinity
+    if (limit === 'unlimited' || !limit) {
+      return `${incidents} / ∞ x`;
+    }
+
+    // If initial penalty >= limit, it's irrelevant (DQ happens first)
+    if (
+      initial &&
+      initial !== 'unlimited' &&
+      (initial as number) >= (limit as number)
+    ) {
+      initial = undefined;
+    }
+
+    // If no initial penalty configured, show basic display
+    if (!initial || initial === 'unlimited') {
+      return `${incidents} / ${limit} x`;
+    }
+
+    // We have initial penalty, check for subsequent
+    if (!subsequent || subsequent === 'unlimited') {
+      // Only initial penalty, no recurrence
+      if (incidents < (initial as number)) {
+        return `${incidents} / ${initial} / ${limit} x`;
+      } else {
+        return `${incidents} / ${limit} x`;
+      }
+    }
+
+    // Full subsequent penalty tracking
+    if (incidents < (initial as number)) {
+      return `${incidents} / ${initial} / ${limit} x`;
+    }
+
+    const initialNum = initial as number;
+    const subsequentNum = subsequent as number;
+
+    // Which round of subsequent penalties?
+    const roundsCompleted = Math.floor(
+      (incidents - initialNum) / subsequentNum
+    );
+    const nextPenalty = initialNum + (roundsCompleted + 1) * subsequentNum;
+
+    if (nextPenalty >= (limit as number)) {
+      return `${incidents} / ${limit} x`;
+    }
+
+    return `${incidents} / ${nextPenalty} / ${limit} x`;
+  };
 
   // Define all possible items with their render functions
   const itemDefinitions = {
@@ -287,9 +349,13 @@ export const SessionBar = ({
         effectiveBarSettings?.incidentCount?.enabled ??
         (position === 'header' ? true : false),
       render: () => (
-        <div className="flex justify-end">
-          {incidents}
-          {incidentLimit ? ' / ' + incidentLimit : ''} x
+        <div className="flex justify-end tabular-nums">
+          {getIncidentDisplay(
+            incidents,
+            incidentWarningInitialLimit,
+            incidentWarningSubsequentLimit,
+            incidentLimit
+          )}
         </div>
       ),
     },
