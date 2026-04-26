@@ -245,8 +245,6 @@ export const drawDrivers = (
         ctx.textBaseline = 'middle';
         ctx.fillStyle = color.text;
         ctx.font = `${fontSize}px sans-serif`;
-        const livePosition =
-          driverLivePositions[driver.CarIdx] ?? sessionPosition;
         const displayText = onPitRoad
           ? 'P'
           : displayMode === 'livePosition'
