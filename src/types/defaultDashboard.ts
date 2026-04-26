@@ -270,6 +270,7 @@ export const defaultDashboard: {
         showNoFlagState: true,
         enableGlow: true,
         doubleFlag: false,
+        background: { opacity: 30 },
         sessionVisibility: {
           race: true,
           loneQualify: true,

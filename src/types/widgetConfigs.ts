@@ -418,6 +418,7 @@ export interface FlagConfig {
   showNoFlagState: boolean;
   enableGlow: boolean;
   doubleFlag?: boolean;
+  background?: { opacity: number };
   sessionVisibility: SessionVisibilitySettings;
 }
 
