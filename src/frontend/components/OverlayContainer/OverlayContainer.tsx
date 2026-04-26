@@ -5,6 +5,7 @@ import { WidgetContainer } from '../WidgetContainer';
 import { WIDGET_MAP } from '../../WidgetIndex';
 import { XIcon } from '@phosphor-icons/react';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
+import { SectorTimingUpdater } from './SectorTimingUpdater';
 
 export const OverlayContainer = memo(() => {
   const {
@@ -30,6 +31,27 @@ export const OverlayContainer = memo(() => {
   useEffect(() => {
     onDashboardUpdatedRef.current = onDashboardUpdated;
   }, [onDashboardUpdated]);
+
+  const handleDisableWidget = useCallback((widgetId: string) => {
+    const dashboard = dashboardRef.current;
+    const updateFn = onDashboardUpdatedRef.current;
+    if (!dashboard || !updateFn) return;
+
+    const updatedWidgets = dashboard.widgets.map((w) =>
+      w.id === widgetId ? { ...w, enabled: false } : w
+    );
+    updateFn({ ...dashboard, widgets: updatedWidgets });
+  }, []);
+
+  const handleOpenWidgetSettings = useCallback(
+    (widgetId: string) => {
+      const dashboard = dashboardRef.current;
+      const widget = dashboard?.widgets.find((w) => w.id === widgetId);
+      const widgetType = widget?.type || widgetId;
+      bridge.openWidgetSettings?.(widgetType);
+    },
+    [bridge]
+  );
 
   const handleLayoutChange = useCallback(
     (widgetId: string, layout: WidgetLayout) => {
@@ -84,6 +106,7 @@ export const OverlayContainer = memo(() => {
         editMode ? 'bg-blue-900/20' : '',
       ].join(' ')}
     >
+      <SectorTimingUpdater />
       {widgetsForThisDisplay.map((widget, index) => {
         const WidgetComponent = WIDGET_MAP[widget.type || widget.id];
         if (!WidgetComponent) {
@@ -97,6 +120,8 @@ export const OverlayContainer = memo(() => {
             editMode={editMode}
             zIndex={index + 1}
             onLayoutChange={handleLayoutChange}
+            onDisable={handleDisableWidget}
+            onOpenSettings={handleOpenWidgetSettings}
           >
             {running || widget.alwaysEnabled ? (
               <ErrorBoundary

@@ -52,3 +52,19 @@ export const arrayCompareRounded = (
   }
   return true;
 };
+
+/**
+ * Compares two scalars for equality within a given decimal precision.
+ * Use for high-frequency scalar telemetry (e.g. LapDistPct, SessionTime) where
+ * sub-threshold changes don't produce meaningful UI updates.
+ */
+export const scalarCompareRounded = (
+  precision: number,
+  a?: number,
+  b?: number
+) => {
+  if (a === undefined && b === undefined) return true;
+  if (a === undefined || b === undefined) return false;
+  const factor = Math.pow(10, precision);
+  return Math.round(a * factor) === Math.round(b * factor);
+};
