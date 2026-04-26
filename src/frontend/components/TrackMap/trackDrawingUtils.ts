@@ -166,7 +166,12 @@ export const drawDrivers = (
   hidePlayer?: boolean
 ) => {
   Object.values(calculatePositions)
-    .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)) // draws player last to be on top
+    .sort((a, b) => {
+      const aOnPit = !!carIdxIsOnPitRoad?.[a.driver.CarIdx];
+      const bOnPit = !!carIdxIsOnPitRoad?.[b.driver.CarIdx];
+      if (aOnPit !== bOnPit) return aOnPit ? -1 : 1; // pit cars drawn first (under track drivers)
+      return Number(a.isPlayer) - Number(b.isPlayer); // player drawn last (on top)
+    })
     .forEach(({ driver, position, isPlayer, sessionPosition }) => {
       let color = driverColors[driver.CarIdx];
       if (!color) return;
@@ -213,22 +218,19 @@ export const drawDrivers = (
         ctx.textBaseline = 'middle';
         ctx.fillStyle = color.text;
         ctx.font = `${fontSize}px sans-serif`;
-        let displayText = '';
-        if (onPitRoad) {
-          displayText = 'P';
-        } else if (displayMode === 'livePosition') {
-          const livePosition =
-            driverLivePositions[driver.CarIdx] ?? sessionPosition;
-          displayText =
-            livePosition && livePosition > 0 ? livePosition.toString() : '';
-        } else if (displayMode === 'sessionPosition') {
-          displayText =
-            sessionPosition && sessionPosition > 0
-              ? sessionPosition.toString()
-              : '';
-        } else {
-          displayText = driver.CarNumber;
-        }
+        const livePosition =
+          driverLivePositions[driver.CarIdx] ?? sessionPosition;
+        const displayText = onPitRoad
+          ? 'P'
+          : displayMode === 'livePosition'
+            ? livePosition && livePosition > 0
+              ? livePosition.toString()
+              : ''
+            : displayMode === 'sessionPosition'
+              ? sessionPosition && sessionPosition > 0
+                ? sessionPosition.toString()
+                : ''
+              : driver.CarNumber;
         if (displayText) {
           const m = ctx.measureText(displayText);
           const visualOffset =
