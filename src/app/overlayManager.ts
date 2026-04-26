@@ -199,6 +199,39 @@ export class OverlayManager {
       this.displayBoundsInfo.delete(display.id);
     });
 
+    browserWindow.webContents.on('render-process-gone', (_event, details) => {
+      logger.error(
+        `[OverlayManager] Renderer process gone for display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}: reason=${details.reason}, exitCode=${details.exitCode}`
+      );
+
+      if (this.isQuitting) return;
+
+      // Clean up stale entry so recreate doesn't early-return
+      this.displayWindows.delete(display.id);
+      this.displayBoundsInfo.delete(display.id);
+
+      // Small delay so Electron can fully clean up before a new window is created
+      setTimeout(() => {
+        if (this.isQuitting) return;
+        logger.info(
+          `[OverlayManager] Recreating renderer for display ${display.id}`
+        );
+        this.createWindowForDisplay(display, isPrimary);
+      }, 1000);
+    });
+
+    browserWindow.on('unresponsive', () => {
+      logger.warn(
+        `[OverlayManager] Renderer unresponsive for display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}`
+      );
+    });
+
+    browserWindow.on('responsive', () => {
+      logger.info(
+        `[OverlayManager] Renderer responsive again for display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}`
+      );
+    });
+
     // Track readiness of both events to avoid race condition
     let boundsReady = false;
     let pageLoaded = false;
