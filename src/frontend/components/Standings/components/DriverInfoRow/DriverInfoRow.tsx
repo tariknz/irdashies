@@ -552,6 +552,11 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             emptyLapDeltaPlaceholders={emptyLapDeltaPlaceholders}
             isPlayer={isPlayer}
             compactMode={compactMode}
+            decimalPlaces={
+              config && 'lapTimeDeltas' in config
+                ? (config.lapTimeDeltas.decimalPlaces ?? 1)
+                : 1
+            }
           />
         ),
       },

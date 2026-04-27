@@ -156,7 +156,7 @@ export interface StandingsConfig {
   };
   compound: { enabled: boolean };
   carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
-  lapTimeDeltas: { enabled: boolean; numLaps: number };
+  lapTimeDeltas: { enabled: boolean; numLaps: number; decimalPlaces: number };
   avgLapTime: { enabled: boolean; numLaps: number; timeFormat: TimeFormat };
   titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
   headerBar: SessionBarConfig;
@@ -196,7 +196,7 @@ export interface RelativeConfig {
   teamName: { enabled: boolean };
   pitStatus: PitStatusConfig;
   driverTag: { enabled: boolean; widthPx?: number };
-  lapTimeDeltas: { enabled: boolean; numLaps: number };
+  lapTimeDeltas: { enabled: boolean; numLaps: number; decimalPlaces: number };
   displayOrder: string[];
   useLivePosition?: boolean;
   sessionVisibility: SessionVisibilitySettings;
