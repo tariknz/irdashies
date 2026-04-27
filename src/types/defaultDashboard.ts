@@ -1138,8 +1138,9 @@ export const defaultDashboard: {
       },
       config: {
         background: { opacity: 80 },
-        timeFormat: 'full',
+        timeFormat: 'seconds-full',
         ghostComparison: 'prefer-ghost',
+        trackIncidentSectors: true,
         showOnlyWhenOnTrack: true,
         sessionVisibility: {
           race: true,

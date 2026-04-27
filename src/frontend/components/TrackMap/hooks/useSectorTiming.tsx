@@ -2,13 +2,20 @@ import { useEffect, useRef } from 'react';
 import {
   useSectorTimingStore,
   useSectorColors,
+  useDashboard,
   type SectorColor,
 } from '@irdashies/context';
 import { useTelemetryValue, useSessionStore } from '@irdashies/context';
+import type { SectorDeltaConfig } from '@irdashies/types';
+import { getSectorDeltaThresholdFractions } from '../../SectorDelta/sectorColorUtils';
 
 /**
  * Feeds player telemetry into the SectorTimingStore each tick and returns
  * the current per-sector performance colors.
+ *
+ * Also syncs SectorDelta threshold settings so the TrackMap sector coloring
+ * always uses the same thresholds as the SectorDelta widget, even when the
+ * SectorDelta widget is not mounted.
  *
  * Call this hook once at the overlay-container level so any widget can consume
  * sector timing state, even when the track map is not mounted.
@@ -20,6 +27,23 @@ export const useSectorTiming = (): SectorColor[] => {
   const markCurrentSectorUnclean = useSectorTimingStore(
     (s) => s.markCurrentSectorUnclean
   );
+  const setThresholds = useSectorTimingStore((s) => s.setThresholds);
+
+  const { currentDashboard } = useDashboard();
+  const sectorDeltaThresholds = (
+    currentDashboard?.widgets.find((w) => w.id === 'sectordelta')?.config as
+      | SectorDeltaConfig
+      | undefined
+  )?.thresholds;
+
+  // Keep the store thresholds in sync with the SectorDelta widget config so
+  // the TrackMap sector coloring matches the SectorDelta widget.
+  useEffect(() => {
+    const { green, yellow } = getSectorDeltaThresholdFractions(
+      sectorDeltaThresholds
+    );
+    setThresholds(green, yellow);
+  }, [sectorDeltaThresholds, setThresholds]);
 
   const lapDistPct = useTelemetryValue('LapDistPct');
   const sessionTime = useTelemetryValue('SessionTime');
