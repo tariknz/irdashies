@@ -61,12 +61,16 @@ export const useDriverProgress = () => {
     }
     // Build carIdx -> effective class position map
     const effectivePosition: Record<number, number> = {};
+    const isRankedPosition = (carIdx: number): boolean => {
+      const pos = carIdxClassPosition?.[carIdx];
+      return pos !== undefined && isFinite(pos) && pos > 0;
+    };
     for (const classDrivers of Object.values(byClass)) {
-      const numRanked = classDrivers.filter(
-        (d) => (carIdxClassPosition?.[d.CarIdx] ?? 0) > 0
+      const numRanked = classDrivers.filter((d) =>
+        isRankedPosition(d.CarIdx)
       ).length;
       const unranked = classDrivers
-        .filter((d) => (carIdxClassPosition?.[d.CarIdx] ?? 0) <= 0)
+        .filter((d) => !isRankedPosition(d.CarIdx))
         .sort((a, b) => {
           const qA = qualifyingPositionByCarIdx.get(a.CarIdx);
           const qB = qualifyingPositionByCarIdx.get(b.CarIdx);
@@ -87,10 +91,9 @@ export const useDriverProgress = () => {
       .map((driver) => ({
         driver,
         isPlayer: driver.CarIdx === driverIdx,
-        classPosition:
-          (carIdxClassPosition?.[driver.CarIdx] ?? 0) > 0
-            ? carIdxClassPosition?.[driver.CarIdx]
-            : effectivePosition[driver.CarIdx],
+        classPosition: isRankedPosition(driver.CarIdx)
+          ? carIdxClassPosition?.[driver.CarIdx]
+          : effectivePosition[driver.CarIdx],
       }));
   }, [drivers, driverIdx, paceCarIdx, carIdxClassPosition, qualifyingResults]);
 

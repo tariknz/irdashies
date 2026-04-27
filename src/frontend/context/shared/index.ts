@@ -11,3 +11,4 @@ export * from './useTotalRaceLaps';
 export * from './useTotalRaceTime';
 export * from './useCarIdxOffTrack';
 export * from './useCarIdxRollingAvgLapTime';
+export * from './useReferenceLapSectorTimes';

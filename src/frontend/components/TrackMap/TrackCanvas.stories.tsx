@@ -459,7 +459,7 @@ export const TurnNumbersOnly: Story = {
       labelType: 'numbers',
       highContrast: true,
       labelFontSize: 100,
-    },   
+    },
   },
 };
 
@@ -667,6 +667,56 @@ export const AllTracksGrid: Story = {
         </div>
       </div>
     );
+  },
+};
+
+// Mock sector data matching the mock session (6 sectors for track 1)
+const mockSectors = [
+  { SectorNum: 0, SectorStartPct: 0 },
+  { SectorNum: 1, SectorStartPct: 0.184456 },
+  { SectorNum: 2, SectorStartPct: 0.337214 },
+  { SectorNum: 3, SectorStartPct: 0.504637 },
+  { SectorNum: 4, SectorStartPct: 0.734279 },
+  { SectorNum: 5, SectorStartPct: 0.829332 },
+];
+
+export const SectorColorsAllTypes: Story = {
+  args: {
+    trackId: 1,
+    drivers: sampleData,
+    sectors: mockSectors,
+    sectorColors: ['purple', 'green', 'yellow', 'red', 'default', 'green'],
+    turnLabels: {
+      enabled: false,
+      labelType: 'both',
+      highContrast: true,
+      labelFontSize: 100,
+    },
+    showCarNumbers: false,
+    invertTrackColors: false,
+    driverCircleSize: 40,
+    playerCircleSize: 40,
+    trackmapFontSize: 100,
+    trackLineWidth: 20,
+    trackOutlineWidth: 40,
+  },
+};
+
+export const SectorColorsAllPurple: Story = {
+  args: {
+    trackId: 1,
+    drivers: sampleData,
+    sectors: mockSectors,
+    sectorColors: ['purple', 'purple', 'purple', 'purple', 'purple', 'purple'],
+    showCarNumbers: false,
+    turnLabels: {
+      enabled: false,
+      labelType: 'both',
+      highContrast: true,
+      labelFontSize: 100,
+    },
+    trackLineWidth: 20,
+    trackOutlineWidth: 40,
   },
 };
 

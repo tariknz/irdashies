@@ -3,6 +3,7 @@ import {
   telemetryCompare,
   arrayCompare,
   arrayCompareRounded,
+  scalarCompareRounded,
 } from './telemetryCompare';
 import type { TelemetryVar } from '@irdashies/types';
 
@@ -121,5 +122,38 @@ describe('arrayCompareRounded', () => {
     // 0.005 rounds to 0.01 at precision 2, 0.004 rounds to 0.00
     expect(arrayCompareRounded(2, [0.004], [0.005])).toBe(false);
     expect(arrayCompareRounded(2, [0.004], [0.004])).toBe(true);
+  });
+});
+
+describe('scalarCompareRounded', () => {
+  it('should return true if both are undefined', () => {
+    expect(scalarCompareRounded(2, undefined, undefined)).toBe(true);
+  });
+
+  it('should return false if only one is undefined', () => {
+    expect(scalarCompareRounded(2, 1.0, undefined)).toBe(false);
+    expect(scalarCompareRounded(2, undefined, 1.0)).toBe(false);
+  });
+
+  it('should return true for values equal at given precision', () => {
+    expect(scalarCompareRounded(2, 1.001, 1.002)).toBe(true);
+  });
+
+  it('should return false for values differing beyond precision', () => {
+    expect(scalarCompareRounded(2, 1.001, 1.014)).toBe(false);
+  });
+
+  it('should return true for exactly equal values', () => {
+    expect(scalarCompareRounded(4, 0.1234, 0.1234)).toBe(true);
+  });
+
+  it('should respect precision boundary correctly', () => {
+    expect(scalarCompareRounded(2, 0.004, 0.005)).toBe(false);
+    expect(scalarCompareRounded(2, 0.004, 0.004)).toBe(true);
+  });
+
+  it('should handle zero correctly', () => {
+    expect(scalarCompareRounded(2, 0, 0)).toBe(true);
+    expect(scalarCompareRounded(2, 0, undefined)).toBe(false);
   });
 });

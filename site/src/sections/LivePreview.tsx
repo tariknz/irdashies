@@ -1,10 +1,49 @@
 import {
-  useState,
   useCallback,
   useEffect,
   useRef,
+  useState,
   useSyncExternalStore,
 } from 'react';
+
+// Frontend widget components
+import {
+  BlindSpotMonitor,
+  FasterCarsFromBehind,
+  Flag,
+  FlatTrackMap,
+  FuelCalculator,
+  InformationBar,
+  Input,
+  LapTimeLog,
+  PitlaneHelper,
+  Relative,
+  RejoinIndicator,
+  SectorDelta,
+  SlowCarAhead,
+  Standings,
+  Tachometer,
+  TrackMap,
+  Weather,
+} from '../../../src/frontend/WidgetIndex';
+import { SectorTimingUpdater } from '../../../src/frontend/components/OverlayContainer/SectorTimingUpdater';
+import { defaultDashboard } from '../../../src/types/defaultDashboard';
+
+// Site-local components and utilities
+import { DashboardReady } from '../components/DashboardReady';
+import { PreviewSettingsButton } from '../components/PreviewSettingsPanel';
+import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
+import { LivePreviewProvider } from '../utils/mockSetup';
+
+// Sibling sections
+import { ActiveWidgetSync } from './ActiveWidgetSync';
+import { CoachMarks } from './CoachMarks';
+import {
+  PreviewWidgetItem,
+  WidgetFrame,
+  useWidgetConfig,
+  type WidgetPosition,
+} from './PreviewWidgetItem';
 
 const MOBILE_QUERY = '(max-width: 639px)';
 const mobileMedia =
@@ -21,34 +60,31 @@ function getSnapshotMobile() {
 function useIsMobile() {
   return useSyncExternalStore(subscribeMobile, getSnapshotMobile);
 }
-import { LivePreviewProvider } from '../utils/mockSetup';
-import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
-import { DashboardReady } from '../components/DashboardReady';
-import { Standings } from '../../../src/frontend/components/Standings/Standings';
-import { Relative } from '../../../src/frontend/components/Standings/Relative';
-import { Input } from '../../../src/frontend/components/Input';
-import { Tachometer } from '../../../src/frontend/components/Tachometer/Tachometer';
-import { Weather } from '../../../src/frontend/components/Weather';
-import { Flag } from '../../../src/frontend/components/Flag';
-import { InformationBar } from '../../../src/frontend/components/InformationBar/InformationBar';
-import { TrackMap } from '../../../src/frontend/components/TrackMap/TrackMap';
-import { FlatTrackMap } from '../../../src/frontend/components/TrackMap/FlatTrackMap';
-import { FasterCarsFromBehind } from '../../../src/frontend/components/FasterCarsFromBehind/FasterCarsFromBehind';
-import { FuelCalculator } from '../../../src/frontend/components/FuelCalculator';
-import { BlindSpotMonitor } from '../../../src/frontend/components/BlindSpotMonitor/BlindSpotMonitor';
-import { RejoinIndicator } from '../../../src/frontend/components/RejoinIndicator/RejoinIndicator';
-import { PitlaneHelper } from '../../../src/frontend/components/PitlaneHelper/PitlaneHelper';
-import { LapTimeLog } from '../../../src/frontend/components/LapTimeLog/LapTimeLog';
-import { SlowCarAhead } from '../../../src/frontend/components/SlowCarAhead/SlowCarAhead';
-import { PreviewSettingsButton } from '../components/PreviewSettingsPanel';
-import { defaultDashboard } from '../../../src/types/defaultDashboard';
-import { CoachMarks } from './CoachMarks';
-import {
-  PreviewWidgetItem,
-  WidgetFrame,
-  type WidgetPosition,
-} from './PreviewWidgetItem';
-import { ActiveWidgetSync } from './ActiveWidgetSync';
+
+/**
+ * Static widget rendering used by the mobile path — needs a real component so
+ * `useWidgetConfig` (a hook) can run.
+ */
+function MobileWidget({
+  widgetId,
+  label,
+  component: Component,
+}: {
+  widgetId: string;
+  label: string;
+  component: React.ComponentType<unknown>;
+}) {
+  const config = useWidgetConfig(widgetId);
+  return (
+    <div className="relative w-full h-full">
+      <WidgetFrame>
+        <WidgetErrorBoundary widgetName={label}>
+          <Component {...config} />
+        </WidgetErrorBoundary>
+      </WidgetFrame>
+    </div>
+  );
+}
 
 /** Look up a widget's default layout size from the project's defaultDashboard. */
 function getDefaultSize(widgetId: string): { width: number; height: number } {
@@ -59,7 +95,20 @@ function getDefaultSize(widgetId: string): { width: number; height: number } {
   };
 }
 
-const AVAILABLE_WIDGETS = [
+/**
+ * Component is typed as `ComponentType<unknown>` so widgets that take config
+ * as direct props (e.g. SectorDelta) fit alongside widgets that take none.
+ * Config is read from the dashboard at render time and spread onto the
+ * component, mirroring OverlayContainer in the real app.
+ */
+interface AvailableWidget {
+  id: string;
+  label: string;
+  component: React.ComponentType<unknown>;
+  defaultOn: boolean;
+}
+
+const AVAILABLE_WIDGETS: readonly AvailableWidget[] = [
   {
     id: 'standings',
     label: 'Standings',
@@ -98,7 +147,7 @@ const AVAILABLE_WIDGETS = [
   {
     id: 'fuel',
     label: 'Fuel Calculator',
-    component: FuelCalculator,
+    component: FuelCalculator as React.ComponentType<unknown>,
     defaultOn: false,
   },
   {
@@ -131,7 +180,13 @@ const AVAILABLE_WIDGETS = [
     component: SlowCarAhead,
     defaultOn: false,
   },
-] as const;
+  {
+    id: 'sectordelta',
+    label: 'Sector Delta',
+    component: SectorDelta as React.ComponentType<unknown>,
+    defaultOn: false,
+  },
+];
 
 // Default-on widgets: relative (top-left), track map (top-right),
 // input (bottom-center). Positions are computed once the canvas is measured.
@@ -277,6 +332,7 @@ export function LivePreview() {
         }}
       >
         <ActiveWidgetSync activeWidgets={activeWidgets} />
+        <SectorTimingUpdater />
         {/* Preview frame */}
         <div className="mx-auto w-full max-w-450 flex-1 flex flex-col min-h-0">
           <div className="relative rounded-sm border border-slate-700/50 overflow-hidden carbon-fiber flex-1 flex flex-col">
@@ -361,15 +417,12 @@ export function LivePreview() {
                         activeWidgets.has(w.id)
                       );
                       if (!active) return null;
-                      const Component = active.component;
                       return (
-                        <div className="relative w-full h-full">
-                          <WidgetFrame>
-                            <WidgetErrorBoundary widgetName={active.label}>
-                              <Component />
-                            </WidgetErrorBoundary>
-                          </WidgetFrame>
-                        </div>
+                        <MobileWidget
+                          widgetId={active.id}
+                          label={active.label}
+                          component={active.component}
+                        />
                       );
                     })()
                   : // Desktop: draggable/resizable widgets

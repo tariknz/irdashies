@@ -29,6 +29,15 @@ interface ReferenceRegistryState {
   trackLength: number | null;
   interval: number;
   pointsCount: number;
+  /** Incremented each time persisted laps finish loading so subscribers re-run. */
+  persistedLapsVersion: number;
+  /**
+   * Class IDs for which a ghost lap was loaded from disk during initialize().
+   * In-session laps promoted to persistedLaps are NOT included here. Used by
+   * useReferenceLapSectorTimes to show the ghost icon only when a saved file
+   * is present, not for newly-completed in-session laps.
+   */
+  fileLoadedClassIds: Set<number>;
 
   initialize: (
     bridge: ReferenceLapBridge,
@@ -64,6 +73,8 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
     trackLength: null,
     interval: 0,
     pointsCount: 0,
+    persistedLapsVersion: 0,
+    fileLoadedClassIds: new Set<number>(),
 
     initialize: async (bridge, seriesId, trackId, trackLength, classList) => {
       const pointsCount = Math.ceil(trackLength / TARGET_SPACING_METERS);
@@ -92,10 +103,21 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
         })
       );
 
-      // Mutate in place to avoid triggering Zustand subscriptions
+      // Mutate persistedLaps in place to avoid triggering Zustand subscriptions
+      // on each lap, then fire a single notification so hooks re-run once all
+      // laps are ready. Build a new Set for fileLoadedClassIds so selectors
+      // that depend on it re-run after initialization completes.
+      const newFileLoadedClassIds = new Set<number>();
       results.forEach(({ classId, lap }) => {
-        if (lap) persistedLaps.set(classId, lap);
+        if (lap) {
+          persistedLaps.set(classId, lap);
+          newFileLoadedClassIds.add(classId);
+        }
       });
+      set((s) => ({
+        persistedLapsVersion: s.persistedLapsVersion + 1,
+        fileLoadedClassIds: newFileLoadedClassIds,
+      }));
     },
 
     collectLapData: (
@@ -257,6 +279,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
         trackLength: null,
         interval: 0,
         pointsCount: 0,
+        fileLoadedClassIds: new Set<number>(),
       });
     },
   })

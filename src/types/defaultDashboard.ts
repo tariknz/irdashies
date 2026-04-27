@@ -433,6 +433,10 @@ export const defaultDashboard: {
         compound: {
           enabled: false,
         },
+        lapTimeDeltas: {
+          enabled: false,
+          numLaps: 3,
+        },
         displayOrder: [
           'position',
           'carNumber',
@@ -449,6 +453,7 @@ export const defaultDashboard: {
           'fastestTime',
           'lastTime',
           'compound',
+          'lapTimeDeltas',
         ],
         driverTag: { enabled: false },
         titleBar: {
@@ -585,6 +590,16 @@ export const defaultDashboard: {
           practice: true,
           offlineTesting: true,
         },
+        stylingOptions: {
+          badge: false,
+          statusBadges: false,
+          driverPosition: { background: true },
+          driverNumber: { background: true, border: true },
+          flagContour: {
+            enabled: false,
+            borderWidth: 5,
+          },
+        },
       },
     },
     {
@@ -621,6 +636,7 @@ export const defaultDashboard: {
           offlineTesting: true,
         },
         styling: { isMinimalTrack: false, isMinimalCar: false },
+        sectorColoring: { enabled: false },
       },
     },
     {
@@ -1109,6 +1125,29 @@ export const defaultDashboard: {
           'wind',
           'trackName',
         ],
+      },
+    },
+    {
+      id: 'sectordelta',
+      enabled: false,
+      layout: {
+        x: 6,
+        y: 800,
+        width: 300,
+        height: 60,
+      },
+      config: {
+        background: { opacity: 80 },
+        timeFormat: 'full',
+        ghostComparison: 'prefer-ghost',
+        showOnlyWhenOnTrack: true,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
       },
     },
   ],

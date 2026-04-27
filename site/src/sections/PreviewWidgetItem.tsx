@@ -8,7 +8,10 @@ import {
   type CSSProperties,
 } from 'react';
 import { ArrowsOutCardinal, X } from '@phosphor-icons/react';
-import { useGeneralSettings } from '../../../src/frontend/context/DashboardContext/DashboardContext';
+import {
+  useDashboard,
+  useGeneralSettings,
+} from '../../../src/frontend/context/DashboardContext/DashboardContext';
 import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import {
   useDragWidget,
@@ -52,6 +55,17 @@ export function WidgetFrame({ children }: { children: ReactNode }) {
 }
 
 /**
+ * Look up a widget's config from the dashboard. Mirrors how OverlayContainer
+ * spreads `widget.config` as props onto the registered widget component, so
+ * widgets that take config as direct props (e.g. SectorDelta) get it here too.
+ */
+export function useWidgetConfig(widgetId: string): Record<string, unknown> {
+  const { currentDashboard } = useDashboard();
+  const widget = currentDashboard?.widgets?.find((w) => w.id === widgetId);
+  return (widget?.config ?? {}) as Record<string, unknown>;
+}
+
+/**
  * A single draggable/resizable widget in the preview canvas.
  */
 export const PreviewWidgetItem = memo(function PreviewWidgetItem({
@@ -67,7 +81,7 @@ export const PreviewWidgetItem = memo(function PreviewWidgetItem({
 }: {
   widgetId: string;
   label: string;
-  component: React.ComponentType;
+  component: React.ComponentType<unknown>;
   position: WidgetPosition;
   isSelected: boolean;
   onPositionChange: (id: string, pos: WidgetPosition) => void;
@@ -75,6 +89,7 @@ export const PreviewWidgetItem = memo(function PreviewWidgetItem({
   onDeselect: () => void;
   onDoubleClick: (id: string) => void;
 }) {
+  const config = useWidgetConfig(widgetId);
   const [localLayout, setLocalLayout] = useState(position);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
@@ -173,7 +188,7 @@ export const PreviewWidgetItem = memo(function PreviewWidgetItem({
         {/* Widget content */}
         <WidgetFrame>
           <WidgetErrorBoundary widgetName={label}>
-            <Component />
+            <Component {...config} />
           </WidgetErrorBoundary>
         </WidgetFrame>
       </div>

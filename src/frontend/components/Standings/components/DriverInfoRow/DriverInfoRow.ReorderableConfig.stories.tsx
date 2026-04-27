@@ -366,6 +366,7 @@ const RelativeWithReorderableConfig = () => {
       compound: { enabled: true },
       brakeBias: { enabled: false },
       driverTag: { enabled: false },
+      lapTimeDeltas: { enabled: false, numLaps: 3 },
       displayOrder: displayOrder,
       titleBar: { enabled: true, progressBar: { enabled: true } },
       headerBar: {
