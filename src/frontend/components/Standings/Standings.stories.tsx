@@ -94,7 +94,7 @@ const StandingsWithoutHeaderFooter = () => {
   const { isDriving } = useDrivingState();
 
   // Update lap times store with telemetry data (only for this overlay)
-  useLapTimesStoreUpdater();
+  useLapTimesStoreUpdater(true);
 
   // Update pit laps
   usePitLapStoreUpdater();
@@ -282,7 +282,7 @@ const StandingsWithIRatingCalculation = () => {
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
 
-  useLapTimesStoreUpdater();
+  useLapTimesStoreUpdater(true);
   usePitLapStoreUpdater();
 
   // Manually apply irating calculation for demo purposes
@@ -559,7 +559,7 @@ const StandingsWithoutHeader = () => {
   const { isDriving } = useDrivingState();
 
   // Update lap times store with telemetry data (only for this overlay)
-  useLapTimesStoreUpdater();
+  useLapTimesStoreUpdater(true);
 
   // Update pit laps
   usePitLapStoreUpdater();
@@ -717,7 +717,7 @@ const StandingsWithoutFooter = () => {
   const { isDriving } = useDrivingState();
 
   // Update lap times store with telemetry data (only for this overlay)
-  useLapTimesStoreUpdater();
+  useLapTimesStoreUpdater(true);
 
   // Update pit laps
   usePitLapStoreUpdater();
@@ -974,7 +974,7 @@ const StandingsWithFullHeader = () => {
   const { isDriving } = useDrivingState();
 
   // Update lap times store with telemetry data (only for this overlay)
-  useLapTimesStoreUpdater();
+  useLapTimesStoreUpdater(true);
 
   // Update pit laps
   usePitLapStoreUpdater();

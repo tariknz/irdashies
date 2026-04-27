@@ -32,6 +32,10 @@ git cherry-pick <hash>              # Full commit
 git cherry-pick -n <hash>           # Partial: then reset/checkout unwanted files
 ```
 
+### Pull Requests
+
+When opening a PR, follow `.github/pull_request_template.md` exactly. Fill in the **Description** and **Screenshots** (Before / After) sections, tick the matching **Type of Change** box, and only check **Checklist** items you've actually done — don't tick iRacing testing if you only verified in Storybook.
+
 ---
 
 ## Project Structure

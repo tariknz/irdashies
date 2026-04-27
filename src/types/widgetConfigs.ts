@@ -187,6 +187,7 @@ export interface RelativeConfig {
   teamName: { enabled: boolean };
   pitStatus: PitStatusConfig;
   driverTag: { enabled: boolean; widthPx?: number };
+  lapTimeDeltas: { enabled: boolean; numLaps: number };
   displayOrder: string[];
   useLivePosition?: boolean;
   sessionVisibility: SessionVisibilitySettings;

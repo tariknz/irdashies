@@ -7,6 +7,9 @@ import {
   useSessionVisibility,
   useGeneralSettings,
   usePitLapStoreUpdater,
+  useLapTimesStoreUpdater,
+  useLapTimeHistory,
+  useFocusCarIdx,
   useTelemetryValue,
 } from '@irdashies/context';
 import {
@@ -16,9 +19,9 @@ import {
   useDriverTagMap,
 } from './hooks';
 import { SessionBar } from './components/SessionBar/SessionBar';
-
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
+import { calculateLapDeltas } from './hooks/useDriverStandings';
 import { FlagContour } from '@irdashies/utils/FlagContour';
 import { getFlag } from '@irdashies/utils/getFlag';
 import { getFlagColor } from '@irdashies/utils/getFlagColor';
@@ -45,6 +48,16 @@ export const Relative = () => {
   const flagColor = getFlagColor(getFlag(sessionFlags).label);
 
   usePitLapStoreUpdater();
+
+  const lapTimeDeltasEnabled = settings?.lapTimeDeltas?.enabled ?? false;
+  useLapTimesStoreUpdater(lapTimeDeltasEnabled);
+  const numLapDeltas = settings?.lapTimeDeltas?.numLaps ?? 3;
+  const focusCarIdx = useFocusCarIdx();
+  const lapTimeHistory = useLapTimeHistory();
+  const lapDeltasByCarIdx = useMemo(
+    () => calculateLapDeltas(lapTimeHistory, focusCarIdx, lapTimeDeltasEnabled),
+    [lapTimeHistory, focusCarIdx, lapTimeDeltasEnabled]
+  );
 
   const isSingleMake = useIsSingleMake();
   const hideCarManufacturer = !!(
@@ -106,6 +119,7 @@ export const Relative = () => {
           onTrack={true}
           radioActive={false}
           tireCompound={settings?.compound?.enabled ? 0 : undefined}
+          numLapDeltasToShow={lapTimeDeltasEnabled ? numLapDeltas : undefined}
           highlightColor={highlightColor}
           dnf={false}
           repair={false}
@@ -160,6 +174,7 @@ export const Relative = () => {
             radioActive={false}
             tireCompound={settings?.compound?.enabled ? 0 : undefined}
             lastLap={undefined}
+            numLapDeltasToShow={lapTimeDeltasEnabled ? numLapDeltas : undefined}
             highlightColor={highlightColor}
             dnf={false}
             repair={false}
@@ -226,6 +241,12 @@ export const Relative = () => {
           rating={result.driver?.rating}
           iratingChangeValue={result.iratingChange}
           delta={(settings?.delta?.enabled ?? true) ? result.delta : undefined}
+          lapTimeDeltas={
+            lapTimeDeltasEnabled
+              ? (lapDeltasByCarIdx?.[result.carIdx] ?? [])
+              : undefined
+          }
+          numLapDeltasToShow={lapTimeDeltasEnabled ? numLapDeltas : undefined}
           displayOrder={settings?.displayOrder}
           config={settings}
           highlightColor={highlightColor}
@@ -251,6 +272,9 @@ export const Relative = () => {
     tagMap,
     hasAnyTag,
     generalSettings?.compactMode,
+    lapTimeDeltasEnabled,
+    numLapDeltas,
+    lapDeltasByCarIdx,
   ]);
 
   if (!isSessionVisible) return <></>;
