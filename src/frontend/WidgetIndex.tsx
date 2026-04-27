@@ -19,6 +19,29 @@ import { InformationBar } from './components/InformationBar/InformationBar';
 import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
 import { SectorDelta } from './components/SectorDelta/SectorDelta';
 
+export {
+  Standings,
+  Input,
+  Relative,
+  TrackMap,
+  FlatTrackMap,
+  Weather,
+  FasterCarsFromBehind,
+  FuelCalculator,
+  BlindSpotMonitor,
+  GarageCover,
+  RejoinIndicator,
+  TelemetryInspector,
+  PitlaneHelper,
+  Tachometer,
+  Flag,
+  TwitchChat,
+  LapTimeLog,
+  InformationBar,
+  SlowCarAhead,
+  SectorDelta,
+};
+
 // TODO: type this better, right now the config comes from settings
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const WIDGET_MAP: Record<
