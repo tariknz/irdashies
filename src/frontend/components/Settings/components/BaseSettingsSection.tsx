@@ -145,9 +145,9 @@ export const BaseSettingsSection = <T,>({
           <div className="flex justify-between items-center mb-1">
             <h2 className="text-xl">{title}</h2>
             <ToggleSwitch
-              enabled={settings.enabled}
+              enabled={localSettings.enabled}
               onToggle={(enabled) =>
-                handleSettingsChange({ ...settings, enabled })
+                handleSettingsChange({ ...localSettings, enabled })
               }
             />
           </div>
