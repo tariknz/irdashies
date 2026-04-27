@@ -2,8 +2,15 @@ import { useTrackId } from './hooks/useTrackId';
 import { useDriverProgress } from './hooks/useDriverProgress';
 import { useTrackMapSettings } from './hooks/useTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
+import { useGhostSectorColors } from './hooks/useGhostSectorColors';
 import { TrackCanvas } from './TrackCanvas';
-import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
+import {
+  useSessionVisibility,
+  useTelemetryValue,
+  useSessionStore,
+  useSectorColors,
+  useSectorTimingStore,
+} from '@irdashies/context';
 
 const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 
@@ -13,6 +20,12 @@ export const TrackMap = () => {
   const settings = useTrackMapSettings();
   const highlightColor = useHighlightColor();
   const isOnTrack = useTelemetryValue('IsOnTrack');
+  const sessionSectorColors = useSectorColors();
+  const ghostColors = useGhostSectorColors();
+  const sectorColors = ghostColors ?? sessionSectorColors;
+  const sectors =
+    useSessionStore((s) => s.session?.SplitTimeInfo?.Sectors) ?? [];
+  const currentSectorIdx = useSectorTimingStore((s) => s.currentSectorIdx);
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
@@ -49,6 +62,13 @@ export const TrackMap = () => {
         invertLeaderColor={settings?.invertLeaderColor ?? false}
         isMinimalTrack={settings?.styling?.isMinimalTrack ?? true}
         isMinimalCar={settings?.styling?.isMinimalCar ?? true}
+        sectors={settings?.sectorColoring?.enabled ? sectors : undefined}
+        sectorColors={
+          settings?.sectorColoring?.enabled ? sectorColors : undefined
+        }
+        currentSectorIdx={
+          settings?.sectorColoring?.enabled ? currentSectorIdx : undefined
+        }
         debug={debug}
       />
     </div>

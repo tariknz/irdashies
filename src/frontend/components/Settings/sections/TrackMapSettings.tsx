@@ -122,6 +122,23 @@ export const TrackMapSettings = () => {
                   }
                 />
 
+                <SettingDivider />
+
+                <SettingToggleRow
+                  title="Sector Colors"
+                  description="Color each sector based on your session performance (purple: session best, green: within 0.5%, yellow: within 1%, red: 1%+ off pace)"
+                  enabled={settings.config.sectorColoring?.enabled ?? false}
+                  onToggle={(newValue) =>
+                    handleConfigChange({
+                      sectorColoring: {
+                        enabled: newValue,
+                      },
+                    })
+                  }
+                />
+
+                <SettingDivider />
+
                 <SettingToggleRow
                   title="Enable Turn Labels"
                   description="Show turn numbers and names on the track map"

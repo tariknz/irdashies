@@ -286,34 +286,38 @@ export const Tachometer = ({
         {/* LED lights */}
         <div
           id="ledcontainer"
-          className={`bg-slate-800/(--bg-opacity) h-full flex ${rpmOrientation === 'horizontal' ? 'relative' : 'flex-2'} items-center justify-center rounded-full px-4`}
+          className={`bg-slate-800/(--bg-opacity) flex ${rpmOrientation === 'horizontal' ? 'relative' : ''} items-center justify-center rounded-full`}
           style={{
             ['--bg-opacity' as string]: `${opacity ?? 80}%`,
+            padding: `4px min(40cqh, ${(42.5 / effectiveNumLights).toFixed(2)}cqw)`,
           }}
         >
           {Array.from({ length: effectiveNumLights }, (_, i) => (
-            <>
-              <div className="h-[80%] aspect-square p-0.5">
-                <div
-                  key={i}
-                  className="rounded-full w-full h-full border border-gray-600 transition-all duration-300"
-                  style={{
-                    backgroundColor: getLedColor(i),
-                    boxShadow: isLedActive(i)
-                      ? `0 0 4px ${getLedColor(i)}`
-                      : 'none',
-                  }}
-                  aria-label={`LED ${i + 1}`}
-                />
-              </div>
-            </>
+            <div
+              key={i}
+              className="aspect-square p-0.5"
+              style={{
+                width: `min(80cqh, ${(85 / effectiveNumLights).toFixed(2)}cqw)`,
+              }}
+            >
+              <div
+                className="rounded-full w-full h-full border border-gray-600 transition-all duration-300"
+                style={{
+                  backgroundColor: getLedColor(i),
+                  boxShadow: isLedActive(i)
+                    ? `0 0 4px ${getLedColor(i)}`
+                    : 'none',
+                }}
+                aria-label={`LED ${i + 1}`}
+              />
+            </div>
           ))}
 
           {/* RPM display - Horinztonal - shows when showRpmText is true OR when custom shift points exist */}
           {shouldShowRpmBox && rpmOrientation === 'horizontal' && (
             <div
               id="rpm-text"
-              className={`bg-slate-800/(--bg-opacity) text-[30cqh] absolute right-[-8em] flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
+              className={`bg-slate-800/(--bg-opacity) text-base absolute right-[-8em] flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
               style={{
                 ...getRpmBoxStyle(),
                 height: '2em',
@@ -343,7 +347,7 @@ export const Tachometer = ({
         {shouldShowRpmBox && rpmOrientation !== 'horizontal' && (
           <div
             id="rpm-text"
-            className={`bg-slate-800/(--bg-opacity) text-[20cqh] flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
+            className={`bg-slate-800/(--bg-opacity) text-base flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
             style={{
               ...getRpmBoxStyle(),
               height: '1.5em',

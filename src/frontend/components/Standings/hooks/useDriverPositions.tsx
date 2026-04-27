@@ -16,7 +16,12 @@ import {
   useTelemetryValuesRounded,
 } from '@irdashies/context';
 
-import { Standings, augmentStandingsWithIRating, groupStandingsByClass, type LastTimeState } from '../createStandings';
+import {
+  Standings,
+  augmentStandingsWithIRating,
+  groupStandingsByClass,
+  type LastTimeState,
+} from '../createStandings';
 import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useRelativeSettings } from './useRelativeSettings';
@@ -228,7 +233,7 @@ export const useDriverStandings = () => {
             driver.carIdx
           );
           classPosition = qualifyingPosition
-            ? qualifyingPosition.Position + 1
+            ? qualifyingPosition.ClassPosition + 1
             : undefined;
         } else {
           const sessionPosition = sessionPositionsMap.get(driver.carIdx);
