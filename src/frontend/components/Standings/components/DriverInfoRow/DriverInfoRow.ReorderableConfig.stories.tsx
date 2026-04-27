@@ -346,6 +346,7 @@ const RelativeWithReorderableConfig = () => {
     () => ({
       buffer: 3,
       background: { opacity: 0 },
+      foreground: { opacity: 70 },
       position: { enabled: true },
       carNumber: { enabled: true },
       countryFlags: { enabled: true },

@@ -68,6 +68,7 @@ export interface SessionBarConfig {
   wind?: { enabled: boolean; speedPosition?: 'left' | 'right' };
   trackName: { enabled: boolean };
   displayOrder: string[];
+  foreground?: { opacity: number };
 }
 
 // ===========================
@@ -136,6 +137,7 @@ export interface StandingsConfig {
   lastTime: { enabled: boolean; timeFormat: TimeFormat };
   fastestTime: { enabled: boolean; timeFormat: TimeFormat };
   background: { opacity: number };
+  foreground: { opacity: number };
   countryFlags: { enabled: boolean };
   carNumber: { enabled: boolean };
   driverStandings: {
@@ -168,6 +170,7 @@ export interface StandingsConfig {
 export interface RelativeConfig {
   buffer: number;
   background: { opacity: number };
+  foreground: { opacity: number };
   countryFlags: { enabled: boolean };
   carNumber: { enabled: boolean };
   lastTime: { enabled: boolean; timeFormat: TimeFormat };
@@ -543,6 +546,7 @@ export interface SectorDeltaConfig {
 
 export interface InformationBarConfig extends SessionBarConfig {
   background: { opacity: number };
+  foreground: { opacity: number };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }

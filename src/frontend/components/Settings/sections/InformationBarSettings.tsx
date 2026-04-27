@@ -147,6 +147,20 @@ export const InformationBarSettings = () => {
                     handleConfigChange({ background: { opacity: v } })
                   }
                 />
+
+                <SettingSliderRow
+                  title="Session Bar Opacity"
+                  value={settings.config.foreground?.opacity ?? 30}
+                  units="%"
+                  min={0}
+                  max={100}
+                  step={1}
+                  onChange={(v) =>
+                    handleConfigChange({
+                      foreground: { opacity: v },
+                    })
+                  }
+                />
               </SettingsSection>
             )}
 

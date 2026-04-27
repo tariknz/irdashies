@@ -49,6 +49,9 @@ export const defaultDashboard: {
         background: {
           opacity: 80,
         },
+        foreground: { 
+          opacity: 70, 
+        },
         countryFlags: {
           enabled: true,
         },
@@ -381,6 +384,9 @@ export const defaultDashboard: {
         useLivePosition: false,
         background: {
           opacity: 80,
+        },
+        foreground: { 
+          opacity: 70, 
         },
         position: {
           enabled: true,
@@ -1102,6 +1108,7 @@ export const defaultDashboard: {
         wind: { enabled: false, speedPosition: 'right' },
         trackName: { enabled: false },
         background: { opacity: 80 },
+        foreground: { opacity: 70 },
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,

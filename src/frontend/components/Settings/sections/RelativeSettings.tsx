@@ -542,6 +542,8 @@ export const RelativeSettings = () => {
                     />
                   </SettingsSection>
 
+                  <SettingDivider />
+
                   <SettingsSection title="Title Bar">
                     <SettingToggleRow
                       title="Show Title Bar"
@@ -574,6 +576,8 @@ export const RelativeSettings = () => {
                     )}
                   </SettingsSection>
 
+                  <SettingDivider />
+
                   <SettingsSection title="Background">
                     <SettingSliderRow
                       title="Background Opacity"
@@ -586,7 +590,21 @@ export const RelativeSettings = () => {
                         handleConfigChange({ background: { opacity: v } })
                       }
                     />
+
+                    <SettingSliderRow
+                      title="Session Bar Opacity"
+                      value={settings.config.foreground.opacity ?? 70}
+                      units="%"
+                      min={0}
+                      max={100}
+                      step={1}
+                      onChange={(v) =>
+                        handleConfigChange({ foreground: { opacity: v } })
+                      }
+                    />
                   </SettingsSection>
+
+                  <SettingDivider />
 
                   <SettingsSection title="Relative Time">
                     <SettingSelectRow
