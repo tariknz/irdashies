@@ -1,5 +1,5 @@
 import type { DashboardBridge } from '@irdashies/types';
-import { defaultDashboard } from '../src/app/storage/defaultDashboard';
+import { defaultDashboard } from '@irdashies/types';
 
 export const mockDashboardBridge: DashboardBridge = {
   reloadDashboard: () => {
@@ -41,6 +41,8 @@ export const mockDashboardBridge: DashboardBridge = {
   },
   saveGarageCoverImage: () => Promise.resolve(''),
   getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
+  savePlayerIconImage: () => Promise.resolve(''),
+  getPlayerIconImageAsDataUrl: () => Promise.resolve(null),
   getAnalyticsOptOut: () => Promise.resolve(false),
   setAnalyticsOptOut: () => Promise.resolve(),
   // Profile management mocks

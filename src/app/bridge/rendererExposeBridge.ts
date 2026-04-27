@@ -98,6 +98,12 @@ export function exposeBridge() {
     getGarageCoverImageAsDataUrl: (imagePath: string) => {
       return ipcRenderer.invoke('getGarageCoverImageAsDataUrl', imagePath);
     },
+    savePlayerIconImage: (buffer: Uint8Array) => {
+      return ipcRenderer.invoke('savePlayerIconImage', Array.from(buffer));
+    },
+    getPlayerIconImageAsDataUrl: (imagePath: string) => {
+      return ipcRenderer.invoke('getPlayerIconImageAsDataUrl', imagePath);
+    },
     getAnalyticsOptOut: () => {
       return ipcRenderer.invoke('getAnalyticsOptOut');
     },

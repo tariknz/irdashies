@@ -637,6 +637,7 @@ export const defaultDashboard: {
         },
         styling: { isMinimalTrack: false, isMinimalCar: false },
         sectorColoring: { enabled: false },
+        playerIcon: { enabled: false, fileName: '' },
       },
     },
     {
