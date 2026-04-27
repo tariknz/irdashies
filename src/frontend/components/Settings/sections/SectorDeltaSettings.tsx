@@ -92,15 +92,12 @@ export const SectorDeltaSettings = () => {
                   />
                   <SettingSelectRow
                     title="Time Format"
-                    description="Format for displaying sector times and deltas."
-                    value={settings.config.timeFormat ?? 'full'}
+                    description="Decimal precision for sector times and deltas. Always shown as total seconds."
+                    value={settings.config.timeFormat ?? 'seconds-full'}
                     options={[
-                      { label: '1:42.123', value: 'full' },
-                      { label: '1:42.1', value: 'mixed' },
-                      { label: '1:42', value: 'minutes' },
                       { label: '42.123', value: 'seconds-full' },
+                      { label: '42.12', value: 'seconds-2' },
                       { label: '42.1', value: 'seconds-mixed' },
-                      { label: '42', value: 'seconds' },
                     ]}
                     onChange={(v) => handleConfigChange({ timeFormat: v })}
                   />
@@ -117,6 +114,43 @@ export const SectorDeltaSettings = () => {
                     ]}
                     onChange={(v) => handleConfigChange({ ghostComparison: v })}
                   />
+                  <SettingToggleRow
+                    title="Track incident sectors"
+                    description="When enabled, sectors with incidents are recorded and shown with a warning icon. When disabled, sectors with incidents are discarded."
+                    enabled={settings.config.trackIncidentSectors ?? true}
+                    onToggle={(v) =>
+                      handleConfigChange({ trackIncidentSectors: v })
+                    }
+                  />
+                  <SettingToggleRow
+                    title="Always scroll"
+                    description="Keep the strip continuously scrolling with your position pinned to the center, even when all sectors fit in the widget."
+                    enabled={settings.config.alwaysScroll ?? false}
+                    onToggle={(v) => handleConfigChange({ alwaysScroll: v })}
+                  />
+                  <SettingToggleRow
+                    title="Limit visible sectors"
+                    description="Show only a fixed number of sectors at once. On tracks with more sectors, the widget becomes a sliding carousel centered on your current sector."
+                    enabled={settings.config.maxSectorsShown != null}
+                    onToggle={(v) =>
+                      handleConfigChange({
+                        maxSectorsShown: v ? 5 : undefined,
+                      })
+                    }
+                  />
+                  {settings.config.maxSectorsShown != null && (
+                    <SettingSliderRow
+                      title="Max Sectors Shown"
+                      description="Number of sector cards visible at once. The current sector is centered in the window."
+                      value={settings.config.maxSectorsShown}
+                      min={3}
+                      max={12}
+                      step={1}
+                      onChange={(v) =>
+                        handleConfigChange({ maxSectorsShown: v })
+                      }
+                    />
+                  )}
                 </SettingsSection>
 
                 <SettingDivider />

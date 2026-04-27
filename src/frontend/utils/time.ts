@@ -3,6 +3,7 @@ export type TimeFormat =
   | 'mixed'
   | 'minutes'
   | 'seconds-full'
+  | 'seconds-2'
   | 'seconds-mixed'
   | 'seconds'
   | 'duration'
