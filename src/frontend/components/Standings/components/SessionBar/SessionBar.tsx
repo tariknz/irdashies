@@ -489,7 +489,7 @@ export const SessionBar = ({
     <div
       className={`${pxClass} ${pyClass} bg-slate-900/(--fg-opacity) flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
       style={{
-          ['--fg-opacity' as string]: `${opacity ?? 70}%`,
+          ['--fg-opacity' as string]: `${opacity}%`,
         }}
       >
       {itemsToRender}

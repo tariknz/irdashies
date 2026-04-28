@@ -780,7 +780,7 @@ export const StandingsSettings = () => {
 
                     <SettingSliderRow
                       title="Session Bar Opacity"
-                      value={settings.config.foreground.opacity ?? 70}
+                      value={settings.config.foreground?.opacity ?? 70}
                       units="%"
                       min={0}
                       max={100}
