@@ -117,12 +117,9 @@ export const TrackMapSettings = () => {
         configChangeHandlerRef.current = handleConfigChange;
 
         const handleIconFile = (file: File) => {
-          if (
-            !SUPPORTED_IMAGE_TYPES.includes(file.type) &&
-            !file.type.startsWith('image/')
-          ) {
+          if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
             setImageError(
-              'Unsupported format. Please use PNG, JPG, GIF, WebP, SVG, or AVIF.'
+              'Unsupported format. Please use PNG, JPG, GIF, WebP, SVG or AVIF.'
             );
             return;
           }

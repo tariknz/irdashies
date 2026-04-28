@@ -188,6 +188,16 @@ export function createBridgeProxy(
           }
           case 'getPlayerIconImageAsDataUrl': {
             const { requestId, data } = parsed;
+            if (!data || typeof data.imagePath !== 'string') {
+              ws.send(
+                JSON.stringify({
+                  type: 'getPlayerIconImageAsDataUrl',
+                requestId,
+                data: null,
+                })
+              );
+              break;
+            }
             const result = await dashboardBridge?.getPlayerIconImageAsDataUrl(
               data.imagePath
             );
