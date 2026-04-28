@@ -243,7 +243,7 @@ export const Relative = () => {
           delta={(settings?.delta?.enabled ?? true) ? result.delta : undefined}
           lapTimeDeltas={
             lapTimeDeltasEnabled
-              ? (lapDeltasByCarIdx?.[result.carIdx] ?? [])
+              ? (lapDeltasByCarIdx?.[result.carIdx]?.slice(-numLapDeltas) ?? [])
               : undefined
           }
           numLapDeltasToShow={lapTimeDeltasEnabled ? numLapDeltas : undefined}
