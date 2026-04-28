@@ -273,6 +273,7 @@ export const defaultDashboard: {
         showNoFlagState: true,
         enableGlow: true,
         doubleFlag: false,
+        background: { opacity: 30 },
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -1145,8 +1146,9 @@ export const defaultDashboard: {
       },
       config: {
         background: { opacity: 80 },
-        timeFormat: 'full',
+        timeFormat: 'seconds-full',
         ghostComparison: 'prefer-ghost',
+        trackIncidentSectors: true,
         showOnlyWhenOnTrack: true,
         sessionVisibility: {
           race: true,
