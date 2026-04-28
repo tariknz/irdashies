@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   TrackMapWidgetSettings,
@@ -58,7 +58,10 @@ export const TrackMapSettings = () => {
 
   const [imageError, setImageError] = useState<string | null>(null);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [asyncPreviewUrl, setAsyncPreviewUrl] = useState<{
+    filename: string;
+    url: string | null;
+  } | null>(null);
   const configChangeHandlerRef = useRef<
     ((newConfig: Partial<TrackMapWidgetSettings['config']>) => void) | null
   >(null);
@@ -72,34 +75,50 @@ export const TrackMapSettings = () => {
     localStorage.setItem('trackMapTab', activeTab);
   }, [activeTab]);
 
-  const loadPreview = (imageFilename: string) => {
-    if (!imageFilename) {
-      setTimeout(() => setPreviewUrl(null), 0);
-      return;
-    }
+  const imageFilename = settings.config.playerIcon?.fileName ?? '';
 
-    const dashboardBridge = (
-      window as unknown as { dashboardBridge?: DashboardBridge }
-    ).dashboardBridge;
-    if (dashboardBridge && 'getPlayerIconImageAsDataUrl' in dashboardBridge) {
-      dashboardBridge
-        .getPlayerIconImageAsDataUrl(imageFilename)
-        .then((dataUrl: string | null) => {
-          setPreviewUrl(dataUrl);
-        })
-        .catch(() => {
-          const dataUrl = localStorage.getItem(LOCALSTORAGE_KEY);
-          setTimeout(() => setPreviewUrl(dataUrl), 0);
-        });
-    } else {
-      const dataUrl = localStorage.getItem(LOCALSTORAGE_KEY);
-      setTimeout(() => setPreviewUrl(dataUrl), 0);
-    }
-  };
+  const dashboardBridge = (
+    window as unknown as { dashboardBridge?: DashboardBridge }
+  ).dashboardBridge;
+  const hasBridge =
+    !!dashboardBridge && 'getPlayerIconImageAsDataUrl' in dashboardBridge;
 
+  // Synchronous cases derived without an effect; async bridge result tracked separately
+  const previewUrl = useMemo(() => {
+    if (!imageFilename) return null;
+    if (imageFilename === 'browser-mode' || !hasBridge) {
+      return localStorage.getItem(LOCALSTORAGE_KEY);
+    }
+    return asyncPreviewUrl?.filename === imageFilename
+      ? asyncPreviewUrl.url
+      : null;
+  }, [imageFilename, hasBridge, asyncPreviewUrl]);
+
+  // Effect only for the async bridge call — no synchronous setState
   useEffect(() => {
-    loadPreview(settings.config.playerIcon?.fileName ?? '');
-  }, [settings.config.playerIcon?.fileName]);
+    if (!imageFilename || imageFilename === 'browser-mode') return;
+
+    const bridge = (window as unknown as { dashboardBridge?: DashboardBridge })
+      .dashboardBridge;
+    if (!bridge || !('getPlayerIconImageAsDataUrl' in bridge)) return;
+
+    let cancelled = false;
+    bridge
+      .getPlayerIconImageAsDataUrl(imageFilename)
+      .then((url: string | null) => {
+        if (!cancelled) setAsyncPreviewUrl({ filename: imageFilename, url });
+      })
+      .catch(() => {
+        if (!cancelled)
+          setAsyncPreviewUrl({
+            filename: imageFilename,
+            url: localStorage.getItem(LOCALSTORAGE_KEY),
+          });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [imageFilename]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -240,36 +259,36 @@ export const TrackMapSettings = () => {
                     }
                   />
 
-                <SettingDivider />
+                  <SettingDivider />
 
-                <SettingToggleRow
-                  title="Sector Colors"
-                  description={`Color each sector based on your session performance (purple: session best, green: within ${greenPct}%, yellow: within ${yellowPct}%, red: ${yellowPct}%+ off pace). Thresholds are set in Sector Delta settings.`}
-                  enabled={settings.config.sectorColoring?.enabled ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({
-                      sectorColoring: {
-                        enabled: newValue,
-                      },
-                    })
-                  }
-                />
+                  <SettingToggleRow
+                    title="Sector Colors"
+                    description={`Color each sector based on your session performance (purple: session best, green: within ${greenPct}%, yellow: within ${yellowPct}%, red: ${yellowPct}%+ off pace). Thresholds are set in Sector Delta settings.`}
+                    enabled={settings.config.sectorColoring?.enabled ?? false}
+                    onToggle={(newValue) =>
+                      handleConfigChange({
+                        sectorColoring: {
+                          enabled: newValue,
+                        },
+                      })
+                    }
+                  />
 
-                <SettingDivider />
+                  <SettingDivider />
 
-                <SettingToggleRow
-                  title="Enable Turn Labels"
-                  description="Show turn numbers and names on the track map"
-                  enabled={settings.config.turnLabels?.enabled ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({
-                      turnLabels: {
-                        ...(settings.config.turnLabels ?? {}),
-                        enabled: newValue,
-                      },
-                    })
-                  }
-                />
+                  <SettingToggleRow
+                    title="Enable Turn Labels"
+                    description="Show turn numbers and names on the track map"
+                    enabled={settings.config.turnLabels?.enabled ?? false}
+                    onToggle={(newValue) =>
+                      handleConfigChange({
+                        turnLabels: {
+                          ...(settings.config.turnLabels ?? {}),
+                          enabled: newValue,
+                        },
+                      })
+                    }
+                  />
 
                   {settings.config.turnLabels?.enabled && (
                     <SettingsSection>
@@ -522,23 +541,23 @@ export const TrackMapSettings = () => {
                     title="Use Highlight Color for Player"
                     description="Use your custom highlight color for the player car instead of
                       class color"
-                  enabled={settings.config.useHighlightColor ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ useHighlightColor: newValue })
-                  }
-                />
+                    enabled={settings.config.useHighlightColor ?? false}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ useHighlightColor: newValue })
+                    }
+                  />
 
-                <SettingToggleRow
-                  title="Use Inverted Color for the Leader"
-                  description="Use an alternate color for the leader car instead of
+                  <SettingToggleRow
+                    title="Use Inverted Color for the Leader"
+                    description="Use an alternate color for the leader car instead of
                       class color"
-                  enabled={settings.config.invertLeaderColor ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ invertLeaderColor: newValue })
-                  }
-                />
-              </SettingsSection>
-            )}
+                    enabled={settings.config.invertLeaderColor ?? false}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ invertLeaderColor: newValue })
+                    }
+                  />
+                </SettingsSection>
+              )}
 
               {/* STYLING TAB */}
               {activeTab === 'styling' && (
