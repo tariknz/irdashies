@@ -23,9 +23,6 @@ const SUPPORTED_IMAGE_TYPES = [
   'image/gif',
   'image/webp',
   'image/svg+xml',
-  'image/avif',
-  'image/apng',
-  'image/bmp',
 ];
 
 const SETTING_ID = 'map';
@@ -60,8 +57,10 @@ export const TrackMapSettings = () => {
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [asyncPreviewUrl, setAsyncPreviewUrl] = useState<{
     filename: string;
+    version: number;
     url: string | null;
   } | null>(null);
+  const [previewVersion, setPreviewVersion] = useState(0);
   const configChangeHandlerRef = useRef<
     ((newConfig: Partial<TrackMapWidgetSettings['config']>) => void) | null
   >(null);
@@ -89,10 +88,11 @@ export const TrackMapSettings = () => {
     if (imageFilename === 'browser-mode' || !hasBridge) {
       return localStorage.getItem(LOCALSTORAGE_KEY);
     }
-    return asyncPreviewUrl?.filename === imageFilename
+    return asyncPreviewUrl?.filename === imageFilename &&
+      asyncPreviewUrl.version === previewVersion
       ? asyncPreviewUrl.url
       : null;
-  }, [imageFilename, hasBridge, asyncPreviewUrl]);
+  }, [imageFilename, hasBridge, asyncPreviewUrl, previewVersion]);
 
   // Effect only for the async bridge call — no synchronous setState
   useEffect(() => {
@@ -106,19 +106,25 @@ export const TrackMapSettings = () => {
     bridge
       .getPlayerIconImageAsDataUrl(imageFilename)
       .then((url: string | null) => {
-        if (!cancelled) setAsyncPreviewUrl({ filename: imageFilename, url });
+        if (!cancelled)
+          setAsyncPreviewUrl({
+            filename: imageFilename,
+            version: previewVersion,
+            url,
+          });
       })
       .catch(() => {
         if (!cancelled)
           setAsyncPreviewUrl({
             filename: imageFilename,
+            version: previewVersion,
             url: localStorage.getItem(LOCALSTORAGE_KEY),
           });
       });
     return () => {
       cancelled = true;
     };
-  }, [imageFilename]);
+  }, [imageFilename, previewVersion]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -138,7 +144,7 @@ export const TrackMapSettings = () => {
         const handleIconFile = (file: File) => {
           if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
             setImageError(
-              'Unsupported format. Please use PNG, JPG, GIF, WebP, SVG or AVIF.'
+              'Unsupported format. Please use PNG, JPG, GIF, WebP or SVG.'
             );
             return;
           }
@@ -159,6 +165,7 @@ export const TrackMapSettings = () => {
               )(imageBuffer)
                 .then((filePath) => {
                   const fileName = filePath.split(/[\\/]/).pop() || '';
+                  setPreviewVersion((v) => v + 1);
                   configChangeHandlerRef.current?.({
                     playerIcon: {
                       enabled: settings.config.playerIcon?.enabled ?? false,
