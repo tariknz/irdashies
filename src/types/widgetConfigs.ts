@@ -138,7 +138,7 @@ export interface StandingsConfig {
   lastTime: { enabled: boolean; timeFormat: TimeFormat };
   fastestTime: { enabled: boolean; timeFormat: TimeFormat };
   background: { opacity: number };
-  foreground: { opacity: number };
+  foreground?: { opacity: number };
   countryFlags: { enabled: boolean };
   carNumber: { enabled: boolean };
   driverStandings: {
@@ -171,7 +171,7 @@ export interface StandingsConfig {
 export interface RelativeConfig {
   buffer: number;
   background: { opacity: number };
-  foreground: { opacity: number };
+  foreground?: { opacity: number };
   countryFlags: { enabled: boolean };
   carNumber: { enabled: boolean };
   lastTime: { enabled: boolean; timeFormat: TimeFormat };
