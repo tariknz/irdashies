@@ -7,7 +7,7 @@ import { emitDashboardUpdated } from './dashboardEvents';
 import { defaultDashboard, deepMergeConfig } from '@irdashies/types';
 import { readData, writeData } from './storage';
 import { writeFile, mkdir, readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { resolve, basename, sep } from 'node:path';
 import { app } from 'electron';
 import { randomUUID } from 'node:crypto';
 import logger from '../logger';
@@ -266,20 +266,12 @@ export const getGarageCoverImageAsDataUrl = async (
   imageFilenameOrPath: string
 ): Promise<string | null> => {
   try {
-    // If it's just a filename, construct the full path
-    let imagePath = imageFilenameOrPath;
-    if (
-      !imageFilenameOrPath.includes('/') &&
-      !imageFilenameOrPath.includes('\\')
-    ) {
-      const userDataPath = app.getPath('userData');
-      imagePath = resolve(
-        userDataPath,
-        'frontend',
-        'assets',
-        'img',
-        imageFilenameOrPath
-      );
+    const userDataPath = app.getPath('userData');
+    const allowedBase = resolve(userDataPath, 'frontend', 'assets', 'img');
+    const imagePath = resolve(allowedBase, basename(imageFilenameOrPath));
+    if (!imagePath.startsWith(allowedBase + sep)) {
+      logger.warn('Blocked path traversal attempt in getGarageCoverImageAsDataUrl:', imageFilenameOrPath);
+      return null;
     }
 
     const buffer = await readFile(imagePath);
@@ -372,19 +364,12 @@ export const getPlayerIconImageAsDataUrl = async (
   imageFilenameOrPath: string
 ): Promise<string | null> => {
   try {
-    let imagePath = imageFilenameOrPath;
-    if (
-      !imageFilenameOrPath.includes('/') &&
-      !imageFilenameOrPath.includes('\\')
-    ) {
-      const userDataPath = app.getPath('userData');
-      imagePath = resolve(
-        userDataPath,
-        'frontend',
-        'assets',
-        'img',
-        imageFilenameOrPath
-      );
+    const userDataPath = app.getPath('userData');
+    const allowedBase = resolve(userDataPath, 'frontend', 'assets', 'img');
+    const imagePath = resolve(allowedBase, basename(imageFilenameOrPath));
+    if (!imagePath.startsWith(allowedBase + sep)) {
+      logger.warn('Blocked path traversal attempt in getPlayerIconImageAsDataUrl:', imageFilenameOrPath);
+      return null;
     }
 
     const buffer = await readFile(imagePath);
