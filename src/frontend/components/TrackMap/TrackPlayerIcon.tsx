@@ -2,12 +2,12 @@ import { memo } from 'react';
 
 interface TrackPlayerIconProps {
   overlay: { style: React.CSSProperties; onPitRoad: boolean } | null;
-  iconDataUrl: string;
+  iconDataUrl: string | null;
 }
 
 export const TrackPlayerIcon = memo(
   ({ overlay, iconDataUrl }: TrackPlayerIconProps) => {
-    if (!overlay) return null;
+    if (!overlay || !iconDataUrl) return null;
 
     return (
       <div className="absolute pointer-events-none" style={overlay.style}>
