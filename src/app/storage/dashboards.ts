@@ -338,7 +338,9 @@ export const savePlayerIconImage = async (
         buffer[11] === 0x50
       ) {
         extension = 'webp';
-      } else if (buffer[0] === 0x3c) {
+      } else if (
+        Buffer.from(buffer.slice(0, 1024)).toString('utf8').includes('<svg')
+      ) {
         extension = 'svg';
       }
     }
