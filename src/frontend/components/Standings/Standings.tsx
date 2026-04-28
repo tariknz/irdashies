@@ -29,8 +29,9 @@ export const Standings = () => {
   const { isDriving } = useDrivingState();
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
-  // Update lap times store with telemetry data (only for this overlay)
-  useLapTimesStoreUpdater();
+  useLapTimesStoreUpdater(
+    !!(settings?.lapTimeDeltas?.enabled || settings?.avgLapTime?.enabled)
+  );
 
   // Update pit laps
   usePitLapStoreUpdater();

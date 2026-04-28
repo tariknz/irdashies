@@ -3,6 +3,7 @@ export type TimeFormat =
   | 'mixed'
   | 'minutes'
   | 'seconds-full'
+  | 'seconds-2'
   | 'seconds-mixed'
   | 'seconds'
   | 'duration'
@@ -101,6 +102,26 @@ export const formatTime = (
   }
 
   return formattedTime;
+};
+
+/**
+ * Formats a time gap (delta, gap, or interval) in seconds.
+ * If the gap is 60 seconds or more, it is formatted as MM:SS.
+ * Otherwise, it is formatted as a number with the specified decimal places.
+ */
+export const formatGap = (
+  seconds: number | undefined,
+  decimalPlaces = 2
+): string => {
+  if (seconds === undefined) return '';
+  const isNegative = seconds < 0;
+  const absSeconds = Math.abs(seconds);
+  if (absSeconds >= 60) {
+    const minutes = Math.floor(absSeconds / 60);
+    const remainingSeconds = Math.floor(absSeconds % 60);
+    return `${isNegative ? '-' : ''}${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+  }
+  return seconds.toFixed(decimalPlaces);
 };
 
 // Format delta with forced sign

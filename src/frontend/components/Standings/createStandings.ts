@@ -1,5 +1,9 @@
 import { SessionResults, Driver, TrackLocation } from '@irdashies/types';
-import {} from '@irdashies/utils/iratingGain';
+import {
+  calculateIRatingGain,
+  RaceResult,
+  CalculationResult,
+} from '@irdashies/utils/iratingGain';
 import { GlobalFlags } from '@irdashies/types';
 import { useReferenceLapStore } from '@irdashies/context';
 import {
@@ -338,6 +342,17 @@ export const createDriverStandings = (
   // they complete a lap. Drivers yet to set a time won't be in results at all.
   // Keep them visible at the bottom, sorted by car number.
   const mappedCarIdxs = new Set(mapped.map((s) => s.carIdx));
+
+  // Build per-class position counts from drivers who have completed laps
+  const classPositionCounts = new Map<number, number>();
+  mapped.forEach((standing) => {
+    const classId = standing.carClass.id;
+    classPositionCounts.set(
+      classId,
+      (classPositionCounts.get(classId) ?? 0) + 1
+    );
+  });
+
   const notYetInResults = (session.drivers ?? [])
     .filter(
       (driver) =>
@@ -346,50 +361,57 @@ export const createDriverStandings = (
         !mappedCarIdxs.has(driver.CarIdx)
     )
     .sort(sortByCarNumber)
-    .map((driver, index) => ({
-      carIdx: driver.CarIdx,
-      position: mapped.length + index + 1,
-      classPosition: mapped.length + index + 1,
-      isPlayer: driver.CarIdx === session.playerIdx,
-      driver: {
-        name: driver.UserName,
-        carNum: driver.CarNumber,
-        license: driver.LicString,
-        rating: driver.IRating,
-        flairId: driver.FlairID,
-        teamName: driver.TeamName,
-      },
-      fastestTime: -1,
-      hasFastestTime: false,
-      lastTime: -1,
-      lastTimeState: undefined as LastTimeState,
-      onPitRoad: telemetry?.carIdxOnPitRoadValue?.[driver.CarIdx] ?? false,
-      onTrack:
-        (telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ??
-          TrackLocation.NotInWorld) > TrackLocation.NotInWorld,
-      tireCompound: telemetry?.carIdxTireCompoundValue?.[driver.CarIdx] ?? 0,
-      carClass: {
-        id: driver.CarClassID,
-        color: driver.CarClassColor,
-        name: driver.CarClassShortName,
-        relativeSpeed: driver.CarClassRelSpeed,
-        estLapTime: driver.CarClassEstLapTime,
-      },
-      radioActive: telemetry.radioTransmitCarIdx?.includes(driver.CarIdx),
-      carId: driver.CarID,
-      lapTimeDeltas: undefined,
-      lastPitLap: lastPitLap[driver.CarIdx] ?? undefined,
-      lastLap: lastLap[driver.CarIdx] ?? undefined,
-      prevCarTrackSurface: prevCarTrackSurface[driver.CarIdx] ?? undefined,
-      carTrackSurface:
-        telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ?? undefined,
-      currentSessionType: currentSession.sessionType,
-      dnf: false,
-      repair: false,
-      penalty: false,
-      slowdown: false,
-      relativePct: 0,
-    }));
+    .map((driver, index) => {
+      // Assign per-class position: count of drivers in their class + 1
+      const classId = driver.CarClassID;
+      const classPosition = (classPositionCounts.get(classId) ?? 0) + 1;
+      classPositionCounts.set(classId, classPosition);
+
+      return {
+        carIdx: driver.CarIdx,
+        position: mapped.length + index + 1,
+        classPosition,
+        isPlayer: driver.CarIdx === session.playerIdx,
+        driver: {
+          name: driver.UserName,
+          carNum: driver.CarNumber,
+          license: driver.LicString,
+          rating: driver.IRating,
+          flairId: driver.FlairID,
+          teamName: driver.TeamName,
+        },
+        fastestTime: -1,
+        hasFastestTime: false,
+        lastTime: -1,
+        lastTimeState: undefined as LastTimeState,
+        onPitRoad: telemetry?.carIdxOnPitRoadValue?.[driver.CarIdx] ?? false,
+        onTrack:
+          (telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ??
+            TrackLocation.NotInWorld) > TrackLocation.NotInWorld,
+        tireCompound: telemetry?.carIdxTireCompoundValue?.[driver.CarIdx] ?? 0,
+        carClass: {
+          id: driver.CarClassID,
+          color: driver.CarClassColor,
+          name: driver.CarClassShortName,
+          relativeSpeed: driver.CarClassRelSpeed,
+          estLapTime: driver.CarClassEstLapTime,
+        },
+        radioActive: telemetry.radioTransmitCarIdx?.includes(driver.CarIdx),
+        carId: driver.CarID,
+        lapTimeDeltas: undefined,
+        lastPitLap: lastPitLap[driver.CarIdx] ?? undefined,
+        lastLap: lastLap[driver.CarIdx] ?? undefined,
+        prevCarTrackSurface: prevCarTrackSurface[driver.CarIdx] ?? undefined,
+        carTrackSurface:
+          telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ?? undefined,
+        currentSessionType: currentSession.sessionType,
+        dnf: false,
+        repair: false,
+        penalty: false,
+        slowdown: false,
+        relativePct: 0,
+      };
+    });
 
   return [...mapped, ...notYetInResults];
 };
@@ -416,6 +438,46 @@ export const groupStandingsByClass = (standings: Standings[]) => {
     ([, a], [, b]) => b[0].carClass.relativeSpeed - a[0].carClass.relativeSpeed
   );
   return sorted;
+};
+
+/**
+ * This method will augment the standings with iRating changes
+ */
+export const augmentStandingsWithIRating = (
+  groupedStandings: [string, Standings[]][]
+): [string, Standings[]][] => {
+  return groupedStandings.map(([classId, classStandings]) => {
+    const raceResultsInput: RaceResult<number>[] = classStandings
+      .filter((s) => !!s.classPosition) // Only include drivers with a class position, should not happen in races
+      .map((driverStanding) => ({
+        driver: driverStanding.carIdx,
+        finishRank: driverStanding.classPosition ?? 0,
+        startIRating: driverStanding.driver.rating,
+        started: true, // This is a critical assumption.
+      }));
+
+    if (raceResultsInput.length === 0) {
+      return [classId, classStandings];
+    }
+
+    const iratingCalculationResults = calculateIRatingGain(raceResultsInput);
+
+    const iratingChangeMap = new Map<number, number>();
+    iratingCalculationResults.forEach(
+      (calcResult: CalculationResult<number>) => {
+        iratingChangeMap.set(
+          calcResult.raceResult.driver,
+          calcResult.iratingChange
+        );
+      }
+    );
+
+    const augmentedClassStandings = classStandings.map((driverStanding) => ({
+      ...driverStanding,
+      iratingChange: iratingChangeMap.get(driverStanding.carIdx),
+    }));
+    return [classId, augmentedClassStandings];
+  });
 };
 
 /**
@@ -684,5 +746,46 @@ export const sliceRelevantDrivers = <T extends { isPlayer?: boolean }>(
     );
 
     return [classIdx, sortedDrivers];
+  });
+};
+
+/**
+ * Augments standings with the number of positions gained or lost compared to
+ * the driver's qualifying grid position. Positive = gained positions,
+ * negative = lost positions. Only meaningful for race sessions.
+ */
+export const augmentStandingsWithPositionChange = (
+  groupedStandings: [string, Standings[]][],
+  qualifyingResults: SessionResults[] | undefined
+): [string, Standings[]][] => {
+  if (!qualifyingResults || qualifyingResults.length === 0) {
+    return groupedStandings;
+  }
+
+  // Build a map of carIdx -> qualifying class position (1-based)
+  const qualifyingClassPositionByCarIdx = new Map<number, number>();
+  qualifyingResults.forEach((result) => {
+    qualifyingClassPositionByCarIdx.set(
+      result.CarIdx,
+      result.ClassPosition + 1
+    );
+  });
+
+  return groupedStandings.map(([classId, classStandings]) => {
+    const augmented = classStandings.map((standing) => {
+      const qualifyingClassPos = qualifyingClassPositionByCarIdx.get(
+        standing.carIdx
+      );
+      if (
+        qualifyingClassPos === undefined ||
+        standing.classPosition === undefined
+      ) {
+        return standing;
+      }
+      // Positive = moved up (e.g. started P5, now P3 → +2)
+      const positionChange = qualifyingClassPos - standing.classPosition;
+      return { ...standing, positionChange };
+    });
+    return [classId, augmented];
   });
 };

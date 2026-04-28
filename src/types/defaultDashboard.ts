@@ -293,6 +293,7 @@ export const defaultDashboard: {
         showNoFlagState: true,
         enableGlow: true,
         doubleFlag: false,
+        background: { opacity: 30 },
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -456,6 +457,10 @@ export const defaultDashboard: {
         compound: {
           enabled: false,
         },
+        lapTimeDeltas: {
+          enabled: false,
+          numLaps: 3,
+        },
         displayOrder: [
           'position',
           'carNumber',
@@ -472,6 +477,7 @@ export const defaultDashboard: {
           'fastestTime',
           'lastTime',
           'compound',
+          'lapTimeDeltas',
         ],
         driverTag: { enabled: false },
         titleBar: {
@@ -628,6 +634,16 @@ export const defaultDashboard: {
           practice: true,
           offlineTesting: true,
         },
+        stylingOptions: {
+          badge: false,
+          statusBadges: false,
+          driverPosition: { background: true },
+          driverNumber: { background: true, border: true },
+          flagContour: {
+            enabled: false,
+            borderWidth: 5,
+          },
+        },
       },
     },
     {
@@ -654,6 +670,7 @@ export const defaultDashboard: {
         trackLineWidth: 20,
         trackOutlineWidth: 40,
         useHighlightColor: false,
+        invertLeaderColor: false,
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
@@ -663,6 +680,7 @@ export const defaultDashboard: {
           offlineTesting: true,
         },
         styling: { isMinimalTrack: false, isMinimalCar: false },
+        sectorColoring: { enabled: false },
       },
     },
     {
@@ -684,6 +702,7 @@ export const defaultDashboard: {
         trackOutlineWidth: 40,
         invertTrackColors: false,
         useHighlightColor: false,
+        invertLeaderColor: false,
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
@@ -713,6 +732,7 @@ export const defaultDashboard: {
           'airTemp',
           'wind',
           'humidity',
+          'precipitation',
           'wetness',
           'trackState',
         ],
@@ -730,6 +750,9 @@ export const defaultDashboard: {
         },
         humidity: {
           enabled: true,
+        },
+        precipitation: {
+          enabled: false,
         },
         wind: {
           enabled: true,
@@ -986,11 +1009,12 @@ export const defaultDashboard: {
         },
         sessionVisibility: {
           race: true,
-          loneQualify: false,
+          loneQualify: true,
           openQualify: true,
           practice: true,
           offlineTesting: true,
         },
+        showOnlyWhenOnTrack: true,
       },
     },
     {
@@ -1055,6 +1079,7 @@ export const defaultDashboard: {
         showPastPitBox: false,
         showSpeedSummary: true,
         showSpeedDelta: true,
+        speedUnit: 'auto',
         speedLimitStyle: 'text',
         progressBarOrientation: 'horizontal',
         speedBarOrientation: 'horizontal',
@@ -1153,6 +1178,30 @@ export const defaultDashboard: {
           'classDrivers',
           'trackName',
         ],
+      },
+    },
+    {
+      id: 'sectordelta',
+      enabled: false,
+      layout: {
+        x: 6,
+        y: 800,
+        width: 300,
+        height: 60,
+      },
+      config: {
+        background: { opacity: 80 },
+        timeFormat: 'seconds-full',
+        ghostComparison: 'prefer-ghost',
+        trackIncidentSectors: true,
+        showOnlyWhenOnTrack: true,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
       },
     },
   ],

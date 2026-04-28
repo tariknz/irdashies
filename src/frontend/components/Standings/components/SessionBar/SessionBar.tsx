@@ -22,18 +22,17 @@ import { useCurrentTime } from '../../hooks/useCurrentTime';
 import {
   ClockIcon,
   ClockUserIcon,
-  CloudRainIcon,
-  DropIcon,
-  DropHalfIcon,
-  RoadHorizonIcon,
-  ThermometerIcon,
-  TireIcon,
+  CloudRain as CloudRainIcon,
+  DropHalf as DropHalfIcon,
+  RoadHorizon as RoadHorizonIcon,
+  Thermometer as ThermometerIcon,
+  Tire as TireIcon,
   Barbell as BarbellIcon,
   Users as UsersIcon,
+  Waves as WavesIcon,
 } from '@phosphor-icons/react';
 import { SessionBarConfig } from '@irdashies/types';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
-import { usePrecipitation } from '../../hooks/usePrecipitation';
 import { SessionState } from '@irdashies/types';
 import { WindArrow } from '../../../shared/WindArrow';
 import { DriverRatingBadge } from '../DriverRatingBadge/DriverRatingBadge';
@@ -140,8 +139,7 @@ export const SessionBar = ({
   } = useSessionLapCount();
   const brakeBias = useBrakeBias();
   const { trackWetness } = useTrackWetness();
-  const { precipitation } = usePrecipitation();
-  const { windDirection, windVelocity, windYaw, humidity } =
+  const { windDirection, windVelocity, windYaw, precipitation, humidity } =
     useThrottledWeather();
   const relativeWindDirection = (windDirection ?? 0) - (windYaw ?? 0);
   const drivers = useSessionDrivers();
@@ -355,7 +353,7 @@ export const SessionBar = ({
         (position === 'header' ? false : true),
       render: () => (
         <div className="flex justify-center gap-1 items-center text-nowrap">
-          <DropIcon />
+          <WavesIcon />
           <span>{trackWetness}</span>
         </div>
       ),
@@ -364,12 +362,19 @@ export const SessionBar = ({
       enabled:
         effectiveBarSettings?.precipitation?.enabled ??
         (position === 'header' ? false : false),
-      render: () => (
-        <div className="flex justify-center gap-1 items-center text-nowrap">
-          <CloudRainIcon />
-          <span>{precipitation}</span>
-        </div>
-      ),
+      render: () => {
+        const hasPrecipitation =
+          precipitation !== undefined && precipitation !== null;
+        const precipitationPercent = hasPrecipitation
+          ? Math.round(precipitation * 100)
+          : 0;
+        return (
+          <div className="flex justify-center gap-1 items-center text-nowrap">
+            <CloudRainIcon />
+            <span>{hasPrecipitation ? `${precipitationPercent}%` : '- %'}</span>
+          </div>
+        );
+      },
     },
     airTemperature: {
       enabled:

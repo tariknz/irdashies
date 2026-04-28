@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { ThermometerIcon } from '@phosphor-icons/react';
 import { WeatherTemp } from './WeatherTemp';
 
 export default {
@@ -12,5 +13,6 @@ export const Primary: Story = {
   args: {
     title: 'Air Temp',
     value: '19°C',
+    icon: ThermometerIcon,
   },
 };

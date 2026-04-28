@@ -241,7 +241,7 @@ const DisplaySettingsList = ({
                       });
                     }}
                   />
-                  <span className="textP-sm text-slate-300">
+                  <span className="text-sm text-slate-300">
                     Pitlap display mode
                   </span>
                   <select
@@ -657,7 +657,7 @@ export const StandingsSettings = () => {
                     <SettingSelectRow
                       title="Drivers to show in other classes"
                       value={settings.config.driverStandings.numNonClassDrivers.toString()}
-                      options={Array.from({ length: 11 }, (_, i) => {
+                      options={Array.from({ length: 64 }, (_, i) => {
                         return { label: i.toString(), value: i.toString() };
                       })}
                       onChange={(v) =>
@@ -673,7 +673,7 @@ export const StandingsSettings = () => {
                     <SettingSelectRow
                       title="Minimum drivers in player's class"
                       value={settings.config.driverStandings.minPlayerClassDrivers.toString()}
-                      options={Array.from({ length: 10 }, (_, i) => {
+                      options={Array.from({ length: 63 }, (_, i) => {
                         const num = i + 1;
                         return { label: num.toString(), value: num.toString() };
                       })}
@@ -690,7 +690,7 @@ export const StandingsSettings = () => {
                     <SettingSelectRow
                       title="Top drivers to always show in player's class"
                       value={settings.config.driverStandings.numTopDrivers.toString()}
-                      options={Array.from({ length: 11 }, (_, i) => {
+                      options={Array.from({ length: 64 }, (_, i) => {
                         return { label: i.toString(), value: i.toString() };
                       })}
                       onChange={(v) =>

@@ -17,6 +17,30 @@ import { TwitchChat } from './components/TwitchChat/TwitchChat';
 import { LapTimeLog } from './components/LapTimeLog/LapTimeLog';
 import { InformationBar } from './components/InformationBar/InformationBar';
 import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
+import { SectorDelta } from './components/SectorDelta/SectorDelta';
+
+export {
+  Standings,
+  Input,
+  Relative,
+  TrackMap,
+  FlatTrackMap,
+  Weather,
+  FasterCarsFromBehind,
+  FuelCalculator,
+  BlindSpotMonitor,
+  GarageCover,
+  RejoinIndicator,
+  TelemetryInspector,
+  PitlaneHelper,
+  Tachometer,
+  Flag,
+  TwitchChat,
+  LapTimeLog,
+  InformationBar,
+  SlowCarAhead,
+  SectorDelta,
+};
 
 // TODO: type this better, right now the config comes from settings
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -44,6 +68,7 @@ export const WIDGET_MAP: Record<
   laptimelog: LapTimeLog,
   infobar: InformationBar,
   slowcarahead: SlowCarAhead,
+  sectordelta: SectorDelta,
 };
 
 export type WidgetId = keyof typeof WIDGET_MAP;

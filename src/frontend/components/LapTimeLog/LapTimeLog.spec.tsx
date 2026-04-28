@@ -38,6 +38,7 @@ const mockSettings = (
       practice: true,
       offlineTesting: true,
     },
+    showOnlyWhenOnTrack: true,
   };
 
   return {

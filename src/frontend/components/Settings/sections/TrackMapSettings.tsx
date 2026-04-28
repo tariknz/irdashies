@@ -5,7 +5,9 @@ import {
   SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
+import type { SectorDeltaConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
+import { getSectorDeltaThresholdPercentages } from '../../SectorDelta/sectorColorUtils';
 import { TabButton } from '../components/TabButton';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingsSection } from '../components/SettingSection';
@@ -20,6 +22,15 @@ const defaultConfig = getWidgetDefaultConfig('map');
 
 export const TrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
+
+  const sectorDeltaThresholds = (
+    currentDashboard?.widgets.find((w) => w.id === 'sectordelta')?.config as
+      | SectorDeltaConfig
+      | undefined
+  )?.thresholds;
+  const { green: greenPct, yellow: yellowPct } =
+    getSectorDeltaThresholdPercentages(sectorDeltaThresholds);
+
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as TrackMapWidgetSettings | undefined;
@@ -121,6 +132,23 @@ export const TrackMapSettings = () => {
                     handleConfigChange({ invertTrackColors: newValue })
                   }
                 />
+
+                <SettingDivider />
+
+                <SettingToggleRow
+                  title="Sector Colors"
+                  description={`Color each sector based on your session performance (purple: session best, green: within ${greenPct}%, yellow: within ${yellowPct}%, red: ${yellowPct}%+ off pace). Thresholds are set in Sector Delta settings.`}
+                  enabled={settings.config.sectorColoring?.enabled ?? false}
+                  onToggle={(newValue) =>
+                    handleConfigChange({
+                      sectorColoring: {
+                        enabled: newValue,
+                      },
+                    })
+                  }
+                />
+
+                <SettingDivider />
 
                 <SettingToggleRow
                   title="Enable Turn Labels"
@@ -238,7 +266,7 @@ export const TrackMapSettings = () => {
                   value={settings.config.playerCircleSize ?? 40}
                   units="px"
                   min={10}
-                  max={100}
+                  max={80}
                   step={1}
                   onChange={(v) => handleConfigChange({ playerCircleSize: v })}
                 />
@@ -261,6 +289,16 @@ export const TrackMapSettings = () => {
                   enabled={settings.config.useHighlightColor ?? false}
                   onToggle={(newValue) =>
                     handleConfigChange({ useHighlightColor: newValue })
+                  }
+                />
+
+                <SettingToggleRow
+                  title="Use Inverted Color for the Leader"
+                  description="Use an alternate color for the leader car instead of
+                      class color"
+                  enabled={settings.config.invertLeaderColor ?? false}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ invertLeaderColor: newValue })
                   }
                 />
               </SettingsSection>

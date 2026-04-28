@@ -4,6 +4,7 @@ import {
   useTelemetry,
   useSessionDrivers,
   useSessionQualifyingResults,
+  useSessionIsOfficial,
   useCurrentSessionType,
   useCarLap,
   usePitLap,
@@ -16,7 +17,12 @@ import {
   useDriverStatsStore,
 } from '@irdashies/context';
 
-import { Standings, type LastTimeState } from '../createStandings';
+import {
+  Standings,
+  augmentStandingsWithIRating,
+  groupStandingsByClass,
+  type LastTimeState,
+} from '../createStandings';
 import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useRelativeSettings } from './useRelativeSettings';
@@ -165,6 +171,7 @@ export const useDriverStandings = () => {
   const iratingChanges = useDriverStatsStore((s) => s.iratingChanges);
   const positionChanges = useDriverStatsStore((s) => s.positionChanges);
   const fastestLapCarIdx = sessionFastestLaps?.[0]?.CarIdx;
+  const isOfficial = useSessionIsOfficial();
 
   const driverStandings: Standings[] = useMemo(() => {
     // Create Map lookups for O(1) access instead of O(n) find() calls
@@ -229,7 +236,7 @@ export const useDriverStandings = () => {
             driver.carIdx
           );
           classPosition = qualifyingPosition
-            ? qualifyingPosition.Position + 1
+            ? qualifyingPosition.ClassPosition + 1
             : undefined;
         } else {
           const sessionPosition = sessionPositionsMap.get(driver.carIdx);
@@ -287,7 +294,17 @@ export const useDriverStandings = () => {
       };
     });
 
-    return standings.filter((s) => !!s).sort((a, b) => a.position - b.position);
+    const filteredStandings = standings
+      .filter((s) => !!s)
+      .sort((a, b) => a.position - b.position);
+
+    if (sessionType !== 'Race' || !isOfficial) {
+      return filteredStandings;
+    }
+
+    return augmentStandingsWithIRating(groupStandingsByClass(filteredStandings))
+      .flatMap(([, classStandings]) => classStandings)
+      .sort((a, b) => (a?.position ?? 0) - (b?.position ?? 0));
   }, [
     sessionPositions,
     sessionState,
@@ -303,6 +320,7 @@ export const useDriverStandings = () => {
     fastestLapCarIdx,
     iratingChanges,
     positionChanges,
+    isOfficial,
   ]);
 
   return driverStandings;

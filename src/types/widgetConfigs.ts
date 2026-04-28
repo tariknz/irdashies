@@ -17,6 +17,7 @@ export type TimeFormat =
   | 'mixed'
   | 'minutes'
   | 'seconds-full'
+  | 'seconds-2'
   | 'seconds-mixed'
   | 'seconds';
 
@@ -87,6 +88,10 @@ export interface StylingOptions {
   statusBadges?: boolean;
   driverPosition?: { background?: boolean };
   driverNumber?: { background?: boolean; border?: boolean };
+  flagContour?: {
+    enabled?: boolean;
+    borderWidth?: number;
+  };
 }
 
 export interface ClassHeaderStyle {
@@ -191,6 +196,7 @@ export interface RelativeConfig {
   teamName: { enabled: boolean };
   pitStatus: PitStatusConfig;
   driverTag: { enabled: boolean; widthPx?: number };
+  lapTimeDeltas: { enabled: boolean; numLaps: number };
   displayOrder: string[];
   useLivePosition?: boolean;
   sessionVisibility: SessionVisibilitySettings;
@@ -205,7 +211,7 @@ export interface WeatherConfig {
   trackTemp: { enabled: boolean };
   wetness: { enabled: boolean };
   trackState: { enabled: boolean };
-  humidity: { enabled: boolean };
+  precipitation: { enabled: boolean };
   wind: { enabled: boolean };
   units: 'auto' | 'Metric' | 'Imperial';
   sessionVisibility: SessionVisibilitySettings;
@@ -227,9 +233,13 @@ export interface TrackMapConfig {
   trackLineWidth: number;
   trackOutlineWidth: number;
   useHighlightColor: boolean;
+  invertLeaderColor: boolean;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
   styling?: { isMinimalTrack?: boolean; isMinimalCar?: boolean };
+  sectorColoring?: {
+    enabled: boolean;
+  };
 }
 
 export interface FlatTrackMapConfig {
@@ -242,6 +252,7 @@ export interface FlatTrackMapConfig {
   trackOutlineWidth: number;
   invertTrackColors: boolean;
   useHighlightColor: boolean;
+  invertLeaderColor: boolean;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }
@@ -421,6 +432,7 @@ export interface FlagConfig {
   showNoFlagState: boolean;
   enableGlow: boolean;
   doubleFlag?: boolean;
+  background?: { opacity: number };
   sessionVisibility: SessionVisibilitySettings;
 }
 
@@ -467,6 +479,7 @@ export interface PitlaneHelperConfig {
   showSpeedBar?: boolean;
   showSpeedSummary: boolean;
   showSpeedDelta: boolean;
+  speedUnit?: 'mph' | 'km/h' | 'auto';
   speedLimitStyle?: 'none' | 'text' | 'european' | 'american';
   showPitExitInputs?: boolean;
   pitExitInputs?: { throttle: boolean; clutch: boolean };
@@ -499,6 +512,7 @@ export interface LapTimeLogConfig {
   background: { opacity: number };
   foreground: { opacity: number };
   sessionVisibility: SessionVisibilitySettings;
+  showOnlyWhenOnTrack: boolean;
 }
 
 export interface SlowCarAheadConfig {
@@ -508,6 +522,47 @@ export interface SlowCarAheadConfig {
   barThickness: number;
   showOnlyWhenOnTrack?: boolean;
   sessionVisibility: SessionVisibilitySettings;
+}
+
+export interface SectorDeltaConfig {
+  background: { opacity: number };
+  timeFormat: TimeFormat;
+  /**
+   * Whether to compare against the ghost lap (when loaded) or always use
+   * session best.
+   *
+   * 'prefer-ghost'      – use ghost lap when available, fall back to session best
+   * 'session-best-only' – always compare against session best
+   */
+  ghostComparison: 'prefer-ghost' | 'session-best-only';
+  /**
+   * Whether to record and display sectors that contained an incident (x).
+   * true  – record the sector time and show a warning icon
+   * false – discard the sector time entirely (keeps previous best)
+   * Defaults to true when omitted.
+   */
+  trackIncidentSectors?: boolean;
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+  /**
+   * Custom color thresholds as percentages of session best.
+   * Omit to use defaults (green: 0.5%, yellow: 1.0%).
+   */
+  thresholds?: {
+    green: number; // e.g. 0.5 means within 0.5% → green
+    yellow: number; // e.g. 1.0 means within 1.0% → yellow; above = red
+  };
+  /**
+   * Maximum number of sector cards to show at once. When the track has more
+   * sectors than this, the widget becomes a sliding carousel centered on the
+   * current sector. Omit (or undefined) to always show all sectors.
+   */
+  maxSectorsShown?: number;
+  /**
+   * Always use the continuous-scroll mode, even when all sectors fit in the
+   * widget. The center line stays pinned to your exact track position.
+   */
+  alwaysScroll?: boolean;
 }
 
 // ===========================
@@ -540,6 +595,7 @@ export interface WidgetConfigMap {
   laptimelog: LapTimeLogConfig;
   infobar: InformationBarConfig;
   slowcarahead: SlowCarAheadConfig;
+  sectordelta: SectorDeltaConfig;
 }
 
 export type TypedDashboardWidget<
@@ -635,3 +691,4 @@ export type LapTimeLogWidgetSettings = BaseWidgetSettings<LapTimeLogConfig>;
 export type InformationBarWidgetSettings =
   BaseWidgetSettings<InformationBarConfig>;
 export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;
+export type SectorDeltaWidgetSettings = BaseWidgetSettings<SectorDeltaConfig>;

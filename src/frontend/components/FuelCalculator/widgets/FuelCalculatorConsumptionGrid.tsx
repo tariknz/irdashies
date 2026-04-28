@@ -265,26 +265,25 @@ export const FuelCalculatorConsumptionGrid: React.FC<
 
   // Helper for Refuel color
 
-  const rowPadding =
-    compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-2' : 'p-3';
+  const rowPadding = compactMode === 'ultra' ? '' : 'px-1 py-0.5';
   const rowGap = compactMode !== 'off' ? '' : 'gap-y-0.5';
   const divideCls =
     compactMode !== 'off'
       ? 'divide-x divide-slate-500/40'
       : 'divide-x-2 divide-slate-500/40';
-  const rowCls = `grid grid-cols-5 ${divideCls} odd:bg-slate-800/70 even:bg-slate-900/70`;
+  const rowCls = `col-span-5 grid grid-cols-subgrid ${divideCls} odd:bg-slate-800/70 even:bg-slate-900/70`;
 
   return (
     <div
       style={containerStyle}
-      className={`flex flex-col select-none overflow-hidden w-full ${rowGap}`}
+      className={`grid grid-cols-[auto_auto_auto_auto_auto] select-none overflow-hidden w-full ${rowGap}`}
     >
       {/* Grid Header */}
       <div
-        className={`grid grid-cols-5 ${divideCls} bg-slate-900 border-b border-slate-500/40`}
+        className={`col-span-5 grid grid-cols-subgrid ${divideCls} bg-slate-900 border-b border-slate-500/40`}
       >
         <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2'}`}
+          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
           style={{ fontSize: labelFontSize }}
         >
           <div style={{ fontSize: '0.8em', opacity: 0.7 }}>IN RACE</div>
@@ -296,25 +295,25 @@ export const FuelCalculatorConsumptionGrid: React.FC<
           </div>
         </div>
         <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2'}`}
+          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
           style={{ fontSize: labelFontSize }}
         >
           USE
         </div>
         <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2'}`}
+          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
           style={{ fontSize: labelFontSize }}
         >
           LAPS
         </div>
         <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2'}`}
+          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
           style={{ fontSize: labelFontSize }}
         >
           REFUEL
         </div>
         <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2'}`}
+          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
           style={{ fontSize: labelFontSize }}
         >
           TOTAL

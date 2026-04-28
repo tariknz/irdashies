@@ -6,16 +6,41 @@ export interface TailwindStyles {
   borderColor: string;
 }
 
+// iRacing car class decimals to color names (6 known tiers)
+const IRACING_CLASS_COLOR_MAP: Record<number, string> = {
+  16767577: 'yellow', // Class 1 - fastest
+  3395327: 'blue', // Class 2
+  16734344: 'red', // Class 3
+  11430911: 'cyan', // Class 4
+  5504887: 'pink', // Class 5
+  13849600: 'purple', // Class 6 - slowest
+};
+
+// Color names to hex values for classColorMap lookup
+const COLOR_NAME_TO_HEX: Record<string, string> = {
+  yellow: '#ffda59',
+  blue: '#33ceff',
+  red: '#ef4444',
+  cyan: '#06b6d4',
+  pink: '#ff5888',
+  purple: '#ae6bff',
+};
+
 export const getTailwindStyle = (
   color?: number,
   highlightColor?: number,
   isMultiClass = false
 ): TailwindStyles => {
-  if (!isMultiClass) {
-    color = highlightColor;
+  let hex: string | undefined;
+
+  if (isMultiClass && color !== undefined) {
+    const colorName = IRACING_CLASS_COLOR_MAP[color];
+    if (colorName) {
+      hex = COLOR_NAME_TO_HEX[colorName];
+    }
+  } else if (highlightColor !== undefined) {
+    hex = `#${highlightColor.toString(16).padStart(6, '0')}`;
   }
-  const hex =
-    color !== undefined ? `#${color.toString(16).padStart(6, '0')}` : 0;
   const classColorMap: Record<string, TailwindStyles> = {
     '#ffda59': {
       driverIcon: 'bg-yellow-800 border-yellow-500',
@@ -160,7 +185,7 @@ export const getTailwindStyle = (
   };
 
   return (
-    classColorMap[hex] ??
+    (hex ? classColorMap[hex] : undefined) ??
     classColorMap['#ffffff'] ?? {
       driverIcon: 'bg-sky-800 border-sky-500',
       classHeader: 'bg-sky-500 border-sky-500',

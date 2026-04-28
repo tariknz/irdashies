@@ -199,6 +199,39 @@ export class OverlayManager {
       this.displayBoundsInfo.delete(display.id);
     });
 
+    browserWindow.webContents.on('render-process-gone', (_event, details) => {
+      logger.error(
+        `[OverlayManager] Renderer process gone for display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}: reason=${details.reason}, exitCode=${details.exitCode}`
+      );
+
+      if (this.isQuitting) return;
+
+      // Clean up stale entry so recreate doesn't early-return
+      this.displayWindows.delete(display.id);
+      this.displayBoundsInfo.delete(display.id);
+
+      // Small delay so Electron can fully clean up before a new window is created
+      setTimeout(() => {
+        if (this.isQuitting) return;
+        logger.info(
+          `[OverlayManager] Recreating renderer for display ${display.id}`
+        );
+        this.createWindowForDisplay(display, isPrimary);
+      }, 1000);
+    });
+
+    browserWindow.on('unresponsive', () => {
+      logger.warn(
+        `[OverlayManager] Renderer unresponsive for display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}`
+      );
+    });
+
+    browserWindow.on('responsive', () => {
+      logger.info(
+        `[OverlayManager] Renderer responsive again for display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}`
+      );
+    });
+
     // Track readiness of both events to avoid race condition
     let boundsReady = false;
     let pageLoaded = false;
@@ -422,6 +455,19 @@ export class OverlayManager {
       this.updateOverlayBounds();
     }
 
+    // Raise settings window to layer 2 during edit mode so it appears above
+    // overlay windows (layer 1); revert to normal layering when not editing.
+    if (
+      this.currentSettingsWindow &&
+      !this.currentSettingsWindow.isDestroyed()
+    ) {
+      if (!this.isLocked) {
+        this.currentSettingsWindow.setAlwaysOnTop(true, 'screen-saver', 2);
+      } else {
+        this.currentSettingsWindow.setAlwaysOnTop(false);
+      }
+    }
+
     return this.isLocked;
   }
 
@@ -597,19 +643,22 @@ export class OverlayManager {
     }
   }
 
-  public focusSettingsWindow(): void {
+  public focusSettingsWindow(widgetType?: string): void {
     if (
       !this.currentSettingsWindow ||
       this.currentSettingsWindow.isDestroyed()
     ) {
-      this.currentSettingsWindow = this.createSettingsWindow();
-    } else {
-      const win = this.currentSettingsWindow;
-      if (win.isMinimized()) {
-        win.restore();
-      }
-      win.show();
-      win.focus();
+      this.currentSettingsWindow = this.createSettingsWindow(widgetType);
+      return;
+    }
+    const win = this.currentSettingsWindow;
+    if (win.isMinimized()) {
+      win.restore();
+    }
+    win.show();
+    win.focus();
+    if (widgetType) {
+      win.webContents.send('navigateToSettings', widgetType);
     }
   }
 
@@ -684,7 +733,7 @@ export class OverlayManager {
     return this.hasSingleInstanceLock;
   }
 
-  public createSettingsWindow(): BrowserWindow {
+  public createSettingsWindow(widgetType?: string): BrowserWindow {
     if (this.currentSettingsWindow) {
       if (this.currentSettingsWindow.isMinimized()) {
         this.currentSettingsWindow.restore();
@@ -717,16 +766,23 @@ export class OverlayManager {
 
     this.currentSettingsWindow = browserWindow;
 
+    // During edit mode, raise settings window above overlay windows (layer 1).
+    // Outside edit mode, use normal window layering.
+    if (!this.isLocked) {
+      browserWindow.setAlwaysOnTop(true, 'screen-saver', 2);
+    }
+
     // Track window movement and resizing to save bounds
     trackSettingsWindowMovement(browserWindow);
 
     // and load the index.html of the app.
+    const hash = widgetType ? `/settings/${widgetType}` : `/settings`;
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-      browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/settings`);
+      browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#${hash}`);
     } else {
       browserWindow.loadFile(
         path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-        { hash: `/settings` }
+        { hash }
       );
     }
 

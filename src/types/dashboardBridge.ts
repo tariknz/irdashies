@@ -80,4 +80,8 @@ export interface DashboardBridge {
   getDriverTagSettings?: () => Promise<DriverTagSettings | undefined>;
   saveDriverTagSettings?: (settings: DriverTagSettings) => Promise<void>;
   getComponentServerPort?: () => Promise<number>;
+  openWidgetSettings?: (widgetType: string) => Promise<void>;
+  onNavigateToSettings?: (
+    callback: (widgetType: string) => void
+  ) => (() => void) | undefined;
 }

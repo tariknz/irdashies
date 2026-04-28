@@ -6,10 +6,16 @@ vi.mock('./hooks/useTrackId');
 vi.mock('./hooks/useDriverProgress');
 vi.mock('./hooks/useTrackMapSettings');
 vi.mock('./hooks/useHighlightColor');
+vi.mock('./hooks/useGhostSectorColors', () => ({
+  useGhostSectorColors: vi.fn(() => null),
+}));
 vi.mock('@irdashies/context', () => ({
   useDashboard: vi.fn(),
   useSessionVisibility: vi.fn(),
   useTelemetryValue: vi.fn(),
+  useSessionStore: vi.fn(() => []),
+  useSectorColors: vi.fn(() => []),
+  useSectorTimingStore: vi.fn(() => 0),
 }));
 vi.mock('./TrackCanvas', () => ({
   TrackCanvas: () => <div>Track Canvas</div>,
@@ -57,6 +63,7 @@ describe('TrackMap', () => {
       trackLineWidth: 20,
       trackOutlineWidth: 40,
       useHighlightColor: false,
+      invertLeaderColor: false,
       showOnlyWhenOnTrack: false,
       sessionVisibility: {
         race: true,
@@ -90,6 +97,7 @@ describe('TrackMap', () => {
       trackLineWidth: 20,
       trackOutlineWidth: 40,
       useHighlightColor: false,
+      invertLeaderColor: false,
       showOnlyWhenOnTrack: true,
       sessionVisibility: {
         race: true,
@@ -123,6 +131,7 @@ describe('TrackMap', () => {
       trackLineWidth: 20,
       trackOutlineWidth: 40,
       useHighlightColor: false,
+      invertLeaderColor: false,
       showOnlyWhenOnTrack: true,
       sessionVisibility: {
         race: true,
@@ -156,6 +165,7 @@ describe('TrackMap', () => {
       trackLineWidth: 20,
       trackOutlineWidth: 40,
       useHighlightColor: false,
+      invertLeaderColor: false,
       showOnlyWhenOnTrack: false,
       sessionVisibility: {
         race: true,
@@ -190,6 +200,7 @@ describe('TrackMap', () => {
       trackLineWidth: 20,
       trackOutlineWidth: 40,
       useHighlightColor: false,
+      invertLeaderColor: false,
       showOnlyWhenOnTrack: false,
       sessionVisibility: {
         race: true,
@@ -224,6 +235,7 @@ describe('TrackMap', () => {
       trackLineWidth: 20,
       trackOutlineWidth: 40,
       useHighlightColor: false,
+      invertLeaderColor: false,
       showOnlyWhenOnTrack: false,
       sessionVisibility: {
         race: true,

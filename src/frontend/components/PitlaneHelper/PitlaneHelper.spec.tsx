@@ -364,7 +364,11 @@ describe('PitlaneHelper', () => {
   });
 
   describe('Speed Display', () => {
-    it('displays speed delta in km/h when limitKph > limitMph', () => {
+    it('displays speed delta in km/h when speedUnit is km/h', () => {
+      vi.mocked(usePitlaneHelperSettings).mockReturnValue({
+        ...defaultConfig,
+        speedUnit: 'km/h',
+      });
       vi.mocked(usePitSpeed).mockReturnValue({
         limitKph: 72,
         limitMph: 45,
@@ -386,7 +390,11 @@ describe('PitlaneHelper', () => {
       expect(getByText('72')).toBeInTheDocument();
     });
 
-    it('displays speed delta in mph when limitMph > limitKph', () => {
+    it('displays speed delta in mph when speedUnit is mph', () => {
+      vi.mocked(usePitlaneHelperSettings).mockReturnValue({
+        ...defaultConfig,
+        speedUnit: 'mph',
+      });
       vi.mocked(usePitSpeed).mockReturnValue({
         limitKph: 45,
         limitMph: 72,
@@ -406,6 +414,62 @@ describe('PitlaneHelper', () => {
       expect(getByText('-5.0')).toBeInTheDocument();
       expect(getByText('mph')).toBeInTheDocument();
       expect(getByText('72')).toBeInTheDocument();
+    });
+
+    it('displays speed delta in km/h when speedUnit is auto and DisplayUnits is metric', () => {
+      vi.mocked(usePitlaneHelperSettings).mockReturnValue({
+        ...defaultConfig,
+        speedUnit: 'auto',
+      });
+      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+        if (key === 'DisplayUnits') return 1; // metric
+        return undefined;
+      });
+      vi.mocked(usePitSpeed).mockReturnValue({
+        limitKph: 72,
+        limitMph: 45,
+        speedKph: 67,
+        speedMph: 41.6,
+        deltaKph: -5.0,
+        deltaMph: -3.1,
+        colorClass: 'text-green-500',
+        isPulsing: false,
+        isSpeeding: false,
+        isSeverelyOver: false,
+      });
+
+      const { getByText } = render(<PitlaneHelper />);
+
+      expect(getByText('-5.0')).toBeInTheDocument();
+      expect(getByText('km/h')).toBeInTheDocument();
+    });
+
+    it('displays speed delta in mph when speedUnit is auto and DisplayUnits is imperial', () => {
+      vi.mocked(usePitlaneHelperSettings).mockReturnValue({
+        ...defaultConfig,
+        speedUnit: 'auto',
+      });
+      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+        if (key === 'DisplayUnits') return 0; // imperial
+        return undefined;
+      });
+      vi.mocked(usePitSpeed).mockReturnValue({
+        limitKph: 72,
+        limitMph: 45,
+        speedKph: 67,
+        speedMph: 41.6,
+        deltaKph: -5.0,
+        deltaMph: -3.1,
+        colorClass: 'text-green-500',
+        isPulsing: false,
+        isSpeeding: false,
+        isSeverelyOver: false,
+      });
+
+      const { getByText } = render(<PitlaneHelper />);
+
+      expect(getByText('-3.1')).toBeInTheDocument();
+      expect(getByText('mph')).toBeInTheDocument();
     });
 
     it('shows green color when under speed limit', () => {
