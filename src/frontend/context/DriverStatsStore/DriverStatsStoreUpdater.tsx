@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 import {
   useSessionDrivers,
   useSessionPositions,
@@ -10,7 +10,7 @@ import {
 import { calculateIRatingGain, RaceResult } from '@irdashies/utils/iratingGain';
 import { useDriverStatsStore } from './DriverStatsStore';
 
-export const DriverStatsStoreUpdater = () => {
+export const DriverStatsStoreUpdater = memo(() => {
   const drivers = useSessionDrivers();
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionPositions = useSessionPositions(sessionNum);
@@ -93,4 +93,6 @@ export const DriverStatsStoreUpdater = () => {
   ]);
 
   return null;
-};
+});
+
+DriverStatsStoreUpdater.displayName = 'DriverStatsStoreUpdater';

@@ -209,7 +209,7 @@ export const useCarClassStats = () => {
         !driver.IsSpectator && !driver.CarIsPaceCar && driver.IRating > 0
     );
 
-    const intermediate = raceDrivers?.reduce(
+    const intermediate = raceDrivers.reduce(
       (acc, driver) => {
         const expValue = Math.pow(2, -driver.IRating / 1600);
 
@@ -234,24 +234,22 @@ export const useCarClassStats = () => {
       >
     );
 
-    return intermediate
-      ? Object.fromEntries(
-          Object.entries(intermediate).map(([classId, stats]) => {
-            const sof = Math.round(
-              (1600 / Math.log(2)) * Math.log(stats.total / stats.sumExp)
-            );
+    return Object.fromEntries(
+      Object.entries(intermediate).map(([classId, stats]) => {
+        const sof = Math.round(
+          (1600 / Math.log(2)) * Math.log(stats.total / stats.sumExp)
+        );
 
-            return [
-              classId,
-              {
-                shortName: stats.shortName,
-                color: stats.color,
-                total: stats.total,
-                sof,
-              } as CarClassStats,
-            ];
-          })
-        )
-      : undefined;
+        return [
+          classId,
+          {
+            shortName: stats.shortName,
+            color: stats.color,
+            total: stats.total,
+            sof,
+          } as CarClassStats,
+        ];
+      })
+    );
   }, [drivers]);
 };
