@@ -1,10 +1,14 @@
-import { SessionResults, Driver, TrackLocation } from '@irdashies/types';
+import {
+  SessionResults,
+  Driver,
+  TrackLocation,
+  GlobalFlags,
+} from '@irdashies/types';
 import {
   calculateIRatingGain,
   RaceResult,
   CalculationResult,
 } from '@irdashies/utils/iratingGain';
-import { GlobalFlags } from '@irdashies/types';
 import { useReferenceLapStore } from '@irdashies/context';
 import {
   calculateClassEstimatedGap,

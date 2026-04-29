@@ -66,6 +66,7 @@ const DEFAULT_CONFIG: SessionBarConfig = {
   humidity: { enabled: false },
   sof: { enabled: false },
   classDrivers: { enabled: false },
+  driverBadge: { enabled: false },
   trackName: { enabled: false },
   displayOrder: ALL_ITEMS,
 };

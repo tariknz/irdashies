@@ -1,4 +1,4 @@
-import { render, fireEvent } from '@testing-library/react';
+import { render, fireEvent, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { BadgeFormatPreview } from './BadgeFormatPreview';
 
@@ -51,18 +51,16 @@ describe('BadgeFormatPreview', () => {
 
   it('calls onClick when button is clicked', () => {
     const onClick = vi.fn();
-    const { container } = render(
+    render(
       <BadgeFormatPreview
         format="license-color-rating-bw"
         selected={false}
         onClick={onClick}
       />
     );
-    const button = container.querySelector('button');
-    if (button) {
-      fireEvent.click(button);
-      expect(onClick).toHaveBeenCalledOnce();
-    }
+    const button = screen.getByRole('button');
+    fireEvent.click(button);
+    expect(onClick).toHaveBeenCalledOnce();
   });
 
   it('forwards positive iratingChange to DriverRatingBadge', () => {

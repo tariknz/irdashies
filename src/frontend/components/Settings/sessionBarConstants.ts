@@ -17,8 +17,6 @@ export const VALID_SESSION_BAR_ITEM_KEYS = [
   'sof',
   'classDrivers',
   'trackName',
-  'sof',
-  'classDrivers',
 ] as const;
 
 // Labels for session bar items

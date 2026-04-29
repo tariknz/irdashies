@@ -106,7 +106,7 @@ export const DriverRatingBadge = ({
       case 'license-color-fullrating-bw':
         // License = colored badge, full irating (no 1.4k approx), rating in B&W
         return (
-          <div className="flex gap-1 items-center">
+          <div className={`flex gap-1 items-center ${marginClass}`}>
             <div
               className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.6em] ${color}`}
             >

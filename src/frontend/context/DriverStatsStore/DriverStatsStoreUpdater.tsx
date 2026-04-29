@@ -20,7 +20,10 @@ export const DriverStatsStoreUpdater = () => {
   const setStats = useDriverStatsStore((s) => s.setStats);
 
   useEffect(() => {
-    if (!drivers || !sessionPositions) return;
+    if (!drivers || !sessionPositions) {
+      setStats({}, {});
+      return;
+    }
 
     const isRace = sessionType === 'Race';
     const iratingChanges: Record<number, number> = {};
@@ -60,18 +63,15 @@ export const DriverStatsStoreUpdater = () => {
       );
 
       driversByClass.forEach((classDrivers) => {
-        const raceResultsInput: RaceResult<number>[] = classDrivers
-          .map((d) => {
-            const classPos = sessionPosMap.get(d.CarIdx);
-            if (classPos === undefined) return null;
-            return {
-              driver: d.CarIdx,
-              finishRank: classPos,
-              startIRating: d.IRating,
-              started: true,
-            };
-          })
-          .filter((r): r is RaceResult<number> => r !== null);
+        const raceResultsInput: RaceResult<number>[] = classDrivers.map((d) => {
+          const classPos = sessionPosMap.get(d.CarIdx);
+          return {
+            driver: d.CarIdx,
+            finishRank: classPos ?? 0,
+            startIRating: d.IRating,
+            started: classPos !== undefined,
+          };
+        });
 
         if (raceResultsInput.length > 0) {
           const results = calculateIRatingGain(raceResultsInput);
