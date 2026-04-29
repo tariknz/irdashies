@@ -63,13 +63,28 @@ export const DriverStatsStoreUpdater = memo(() => {
       );
 
       driversByClass.forEach((classDrivers) => {
+        const startersCount = classDrivers.filter((d) =>
+          sessionPosMap.has(d.CarIdx)
+        ).length;
+
+        let nonStarterIndex = 0;
         const raceResultsInput: RaceResult<number>[] = classDrivers.map((d) => {
           const classPos = sessionPosMap.get(d.CarIdx);
+          const started = classPos !== undefined;
+
+          let finishRank: number;
+          if (started) {
+            finishRank = classPos;
+          } else {
+            finishRank = startersCount + nonStarterIndex + 1;
+            nonStarterIndex++;
+          }
+
           return {
             driver: d.CarIdx,
-            finishRank: classPos ?? 0,
+            finishRank,
             startIRating: d.IRating,
-            started: classPos !== undefined,
+            started,
           };
         });
 

@@ -157,11 +157,7 @@ export const useTrackLength = () =>
  * @returns The car index and car class estimated lap time for each driver
  */
 export const useCarIdxClassEstLapTime = () => {
-  const drivers = useStoreWithEqualityFn(
-    useSessionStore,
-    (state) => state.session?.DriverInfo?.Drivers,
-    Object.is
-  );
+  const drivers = useSessionDrivers();
 
   return useMemo(() => {
     if (!drivers) return undefined;
@@ -195,50 +191,58 @@ export const useCarSetup = () =>
  * @returns The stats for each car class in the session (ShortName, Color, Total Drivers, SOF)
  */
 export const useCarClassStats = () => {
-  const drivers = useStoreWithEqualityFn(
-    useSessionStore,
-    (state) => state.session?.DriverInfo?.Drivers,
-    Object.is
-  );
+  const drivers = useSessionDrivers();
 
   return useMemo(() => {
     if (!drivers) return undefined;
 
     const raceDrivers = drivers.filter(
-      (driver) =>
-        !driver.IsSpectator && !driver.CarIsPaceCar && driver.IRating > 0
+      (driver) => !driver.IsSpectator && !driver.CarIsPaceCar
     );
 
     const intermediate = raceDrivers.reduce(
       (acc, driver) => {
-        const expValue = Math.pow(2, -driver.IRating / 1600);
-
-        if (acc[driver.CarClassID]) {
-          acc[driver.CarClassID].total += 1;
-          acc[driver.CarClassID].sumExp += expValue;
-          return acc;
+        if (!acc[driver.CarClassID]) {
+          acc[driver.CarClassID] = {
+            total: 0,
+            raceDrivers: 0,
+            sumExp: 0,
+            color: driver.CarClassColor,
+            shortName: driver.CarClassShortName,
+          };
         }
 
-        acc[driver.CarClassID] = {
-          total: 1,
-          sumExp: expValue,
-          color: driver.CarClassColor,
-          shortName: driver.CarClassShortName,
-        };
+        acc[driver.CarClassID].total += 1;
+
+        if (driver.IRating > 0) {
+          const expValue = Math.pow(2, -driver.IRating / 1600);
+          acc[driver.CarClassID].raceDrivers += 1;
+          acc[driver.CarClassID].sumExp += expValue;
+        }
 
         return acc;
       },
       {} as Record<
         string,
-        { shortName: string; color: number; total: number; sumExp: number }
+        {
+          shortName: string;
+          color: number;
+          total: number;
+          raceDrivers: number;
+          sumExp: number;
+        }
       >
     );
 
     return Object.fromEntries(
       Object.entries(intermediate).map(([classId, stats]) => {
-        const sof = Math.round(
-          (1600 / Math.log(2)) * Math.log(stats.total / stats.sumExp)
-        );
+        const sof =
+          stats.raceDrivers > 0
+            ? Math.round(
+                (1600 / Math.log(2)) *
+                  Math.log(stats.raceDrivers / stats.sumExp)
+              )
+            : 0;
 
         return [
           classId,
