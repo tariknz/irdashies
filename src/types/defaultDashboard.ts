@@ -263,14 +263,14 @@ export const defaultDashboard: {
       config: {
         enabled: true,
         showOnlyWhenOnTrack: false,
-        showLabel: true,
+        showLabel: false,
         animate: true,
         blinkPeriod: 0.5,
         matrixMode: '16x16',
         showNoFlagState: true,
         enableGlow: true,
         doubleFlag: false,
-        background: { opacity: 30 },
+        background: { opacity: 80 },
         sessionVisibility: {
           race: true,
           loneQualify: true,
