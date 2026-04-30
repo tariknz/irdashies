@@ -1,5 +1,8 @@
-import { useTelemetryStore, useDashboard } from '@irdashies/context';
-import { useSessionStore } from '../../context/SessionStore/SessionStore';
+import {
+  useTelemetryStore,
+  useDashboard,
+  useSessionStore,
+} from '@irdashies/context';
 import { useMemo } from 'react';
 import type { DashboardWidget } from '@irdashies/types';
 

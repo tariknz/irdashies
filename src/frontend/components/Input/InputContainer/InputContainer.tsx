@@ -1,5 +1,5 @@
-import { Fragment, useMemo } from 'react';
-import { InputWidgetSettings } from '../../Settings/types';
+import { useCallback, useMemo } from 'react';
+import { InputWidgetSettings } from '@irdashies/types';
 import { InputAbsIndicator } from '../InputAbsIndicator/InputAbsIndicator';
 import { InputBar } from '../InputBar/InputBar';
 import { InputGear } from '../InputGear/InputGear';
@@ -15,7 +15,7 @@ export interface InputProps {
   unit?: number;
   steer?: number;
   brakeAbsActive?: boolean;
-  settings?: InputWidgetSettings['config'];
+  settings: InputWidgetSettings['config'];
 }
 
 type InputSection = 'trace' | 'bar' | 'gear' | 'abs' | 'steer';
@@ -31,122 +31,114 @@ export const InputContainer = ({
   brakeAbsActive,
   settings,
 }: InputProps) => {
-  const displayOrder = settings?.displayOrder as InputSection[] | undefined;
+  const displayOrder = settings.displayOrder as InputSection[] | undefined;
 
-  const columnDefinitions = useMemo(() => {
-    const columns = [
-      {
-        id: 'trace' as const,
-        shouldRender: settings?.trace?.enabled ?? true,
-        component: (
-          <div className="flex flex-4">
-            <InputTrace
-              key="trace"
-              input={{ brake, throttle, clutch, brakeAbsActive, steer }}
-              settings={settings?.trace}
-            />
-          </div>
-        ),
-      },
-      {
-        id: 'bar' as const,
-        shouldRender: settings?.bar?.enabled ?? true,
-        component: (
-          <div className="flex flex-1 min-w-0">
-            <InputBar
-              key="bar"
-              brake={brake}
-              brakeAbsActive={brakeAbsActive}
-              throttle={throttle}
-              clutch={clutch}
-              settings={settings?.bar}
-            />
-          </div>
-        ),
-      },
-      {
-        id: 'gear' as const,
-        shouldRender: settings?.gear?.enabled ?? true,
-        component: (
-          <div className="flex flex-1 min-w-0">
-            <InputGear
-              key="gear"
-              gear={gear}
-              speedMs={speed}
-              unit={unit}
-              settings={settings?.gear}
-            />
-          </div>
-        ),
-      },
-      {
-        id: 'abs' as const,
-        shouldRender: settings?.abs?.enabled ?? false,
-        component: (
-          <div className="flex flex-1 min-w-0 items-center justify-center p-2">
-            <InputAbsIndicator
-              key="abs"
-              absActive={brakeAbsActive ?? false}
-              className="w-full h-full aspect-[512/357.25]"
-            />
-          </div>
-        ),
-      },
-      {
-        id: 'steer' as const,
-        shouldRender: settings?.steer?.enabled ?? true,
-        component: (
-          <div className="flex flex-1 min-w-0">
-            <InputSteer
-              key="steer"
-              angleRad={steer}
-              wheelStyle={settings?.steer?.config?.style}
-              wheelColor={settings?.steer?.config?.color}
-            />
-          </div>
-        ),
-      },
+  // Only recompute section order when settings change (not every telemetry frame)
+  const orderedSections = useMemo(() => {
+    const allSections: { id: InputSection; enabled: boolean }[] = [
+      { id: 'trace', enabled: settings.trace.enabled },
+      { id: 'bar', enabled: settings.bar.enabled },
+      { id: 'gear', enabled: settings.gear.enabled },
+      { id: 'abs', enabled: settings.abs.enabled },
+      { id: 'steer', enabled: settings.steer.enabled },
     ];
 
+    const enabledSections = allSections.filter((s) => s.enabled);
+
     if (!displayOrder) {
-      return columns.filter((column) => column.shouldRender);
+      return enabledSections.map((s) => s.id);
     }
 
-    const orderedColumns = displayOrder
-      .map((orderId) => columns.find((column) => column.id === orderId))
-      .filter(
-        (column): column is NonNullable<typeof column> =>
-          column !== undefined && column.shouldRender
-      );
-
-    const remainingColumns = columns.filter(
-      (column) => column.shouldRender && !displayOrder.includes(column.id)
+    const ordered = displayOrder.filter((id) =>
+      enabledSections.some((s) => s.id === id)
     );
+    const remaining = enabledSections
+      .filter((s) => !displayOrder.includes(s.id))
+      .map((s) => s.id);
 
-    return [...orderedColumns, ...remainingColumns];
-  }, [
-    brake,
-    throttle,
-    clutch,
-    gear,
-    speed,
-    unit,
-    brakeAbsActive,
-    steer,
-    settings,
-    displayOrder,
-  ]);
+    return [...ordered, ...remaining];
+  }, [settings, displayOrder]);
+
+  const renderSection = useCallback(
+    (id: InputSection) => {
+      switch (id) {
+        case 'trace':
+          return (
+            <div key="trace" className="flex flex-4">
+              <InputTrace
+                input={{ brake, throttle, clutch, brakeAbsActive, steer }}
+                settings={settings.trace}
+              />
+            </div>
+          );
+        case 'bar':
+          return (
+            <div key="bar" className="flex flex-1 min-w-0">
+              <InputBar
+                brake={brake}
+                brakeAbsActive={brakeAbsActive}
+                throttle={throttle}
+                clutch={clutch}
+                settings={settings.bar}
+              />
+            </div>
+          );
+        case 'gear':
+          return (
+            <div key="gear" className="flex flex-1 min-w-0">
+              <InputGear
+                gear={gear}
+                speedMs={speed}
+                unit={unit}
+                settings={settings.gear}
+              />
+            </div>
+          );
+        case 'abs':
+          return (
+            <div
+              key="abs"
+              className="flex flex-1 min-w-0 items-center justify-center p-2"
+            >
+              <InputAbsIndicator
+                absActive={brakeAbsActive ?? false}
+                className="w-full h-full aspect-[512/357.25]"
+              />
+            </div>
+          );
+        case 'steer':
+          return (
+            <div key="steer" className="flex flex-1 min-w-0">
+              <InputSteer
+                angleRad={steer}
+                wheelStyle={settings.steer.config?.style}
+                wheelColor={settings.steer.config?.color}
+              />
+            </div>
+          );
+      }
+    },
+    [
+      brake,
+      throttle,
+      clutch,
+      gear,
+      speed,
+      steer,
+      unit,
+      brakeAbsActive,
+      settings,
+    ]
+  );
 
   return (
     <div
-      className="w-full h-full inline-flex gap-1 p-2 flex-row bg-slate-800/(--bg-opacity)"
+      className="w-full h-full inline-flex gap-1 p-2 rounded-md flex-row bg-slate-800/(--bg-opacity)"
       style={{
-        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
+        ['--bg-opacity' as string]: `${settings.background?.opacity ?? 80}%`,
       }}
     >
-      {columnDefinitions.map((column) => (
-        <Fragment key={column.id}>{column.component}</Fragment>
-      ))}
+      {orderedSections.map(renderSection)}
     </div>
   );
 };

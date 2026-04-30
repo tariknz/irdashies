@@ -11,12 +11,18 @@ export const WeatherHumidity = memo(({ humidity }: Props) => {
   const humidityPercent = humidityValue * 100;
 
   return (
-    <div className="bg-slate-800/70 p-2 rounded-sm w-full">
+    <div className="bg-slate-800/70 p-2 rounded-sm w-full min-w-0">
       <div className="flex flex-row gap-x-2 items-center text-sm">
         {hasHumidity &&
-          (humidityPercent <= 50 ? <DropIcon /> : <DropHalfIcon />)}
-        <span className="grow">Humidity</span>
-        <div className="text-center">
+          (humidityPercent <= 50 ? (
+            <DropIcon className="flex-none" />
+          ) : (
+            <DropHalfIcon className="flex-none" />
+          ))}
+        <span className="truncate min-w-0 flex-1 @max-[120px]:hidden">
+          Humidity
+        </span>
+        <div className="flex-none whitespace-nowrap text-right">
           {hasHumidity ? `${Math.round(humidityPercent)}%` : '- %'}
         </div>
       </div>

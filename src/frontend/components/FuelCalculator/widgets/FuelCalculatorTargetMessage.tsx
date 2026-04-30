@@ -14,7 +14,7 @@ interface FuelCalculatorWidgetProps {
     valueFontSize?: number;
     barFontSize?: number;
   };
-  isCompact?: boolean;
+  compactMode?: 'off' | 'compact' | 'ultra';
 }
 
 export const FuelCalculatorTargetMessage: React.FC<
@@ -25,7 +25,7 @@ export const FuelCalculatorTargetMessage: React.FC<
   settings,
   widgetId,
   customStyles,
-  isCompact,
+  compactMode,
 }) => {
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionType = useSessionType(sessionNum);
@@ -92,9 +92,11 @@ export const FuelCalculatorTargetMessage: React.FC<
 
   return (
     <div
-      className={`py-1 px-2 bg-purple-500/20 border border-purple-500/50 rounded flex items-center justify-between ${isCompact ? 'mb-0.5' : 'mb-2'}`}
+      className={`${compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2'} bg-purple-500/20 border border-purple-500/50 rounded flex items-center justify-between ${compactMode !== 'off' ? 'mb-0.5' : 'mb-2'}`}
     >
-      <div className={`flex items-center ${isCompact ? 'gap-1' : 'gap-2'}`}>
+      <div
+        className={`flex items-center ${compactMode !== 'off' ? 'gap-1' : 'gap-2'}`}
+      >
         <span
           className="text-purple-400 font-medium"
           style={{ fontSize: labelFontSize }}

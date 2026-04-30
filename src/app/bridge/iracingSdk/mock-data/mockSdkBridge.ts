@@ -1,12 +1,8 @@
 import { generateMockData } from './generateMockData';
-import { TelemetrySink } from '../telemetrySink';
 import { OverlayManager } from 'src/app/overlayManager';
 import { TelemetryPerfMetrics } from '../../../perfMetrics';
 
-export async function publishIRacingSDKEvents(
-  telemetrySink: TelemetrySink,
-  overlayManager: OverlayManager
-) {
+export async function publishIRacingSDKEvents(overlayManager: OverlayManager) {
   const perfMetrics = new TelemetryPerfMetrics();
   perfMetrics.startReporting();
 
@@ -14,7 +10,6 @@ export async function publishIRacingSDKEvents(
 
   bridge.onSessionData((session) => {
     overlayManager.publishMessage('sessionData', session);
-    telemetrySink.addSession(session);
   });
 
   bridge.onTelemetry((telemetry) => {
@@ -22,7 +17,6 @@ export async function publishIRacingSDKEvents(
     perfMetrics.markStart('broadcast');
     overlayManager.publishMessage('telemetry', telemetry);
     perfMetrics.markEnd('broadcast');
-    telemetrySink.addTelemetry(telemetry);
     perfMetrics.markEnd('processTelemetry');
     perfMetrics.tick();
   });

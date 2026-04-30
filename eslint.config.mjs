@@ -7,7 +7,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import storybook from "eslint-plugin-storybook";
 
 export default defineConfig([
-  { ignores: ['**/.vite/**', '**/out/**', '**/coverage/**'] },
+  { ignores: ['**/.vite/**', '**/out/**', '**/coverage/**', 'storybook-static/**', '**/dist/**'] },
   { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"] },
   { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"], languageOptions: { globals: { ...globals.browser, ...globals.node } } },
   js.configs.recommended,
@@ -30,6 +30,27 @@ export default defineConfig([
         }]
       }]
     }
+  },
+  // Enforce context namespace: imports from context subdirectories must go via @irdashies/context
+  {
+    files: ['src/frontend/**/*.{ts,tsx}'],
+    ignores: ['src/frontend/context/**'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['**/context/**'],
+          message: "Import from '@irdashies/context' instead of importing context internals directly."
+        }]
+      }]
+    }
+  },
+  // Disallow console.* — use logger utilities instead
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/frontend/utils/logger.ts'],
+    rules: {
+      'no-console': 'error',
+    },
   },
   {
     files: ['src/app/**/*.{ts,tsx}'],

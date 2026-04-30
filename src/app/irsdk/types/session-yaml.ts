@@ -19,5 +19,5 @@ export interface SessionData {
   DriverInfo: DriverInfo;
   SplitTimeInfo: SplitTimeInfo;
   CarSetup: CarSetupInfo;
-  QualifyResultsInfo?: { Results: SessionResultsPosition[] };
+  QualifyResultsInfo?: { Results: SessionResultsPosition[] | null };
 }

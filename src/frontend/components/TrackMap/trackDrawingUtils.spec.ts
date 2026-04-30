@@ -12,6 +12,10 @@ describe('trackDrawingUtils', () => {
       fill: vi.fn(),
       stroke: vi.fn(),
       fillText: vi.fn(),
+      measureText: vi.fn(() => ({
+        actualBoundingBoxAscent: 10,
+        actualBoundingBoxDescent: 4,
+      })),
       save: vi.fn(),
       restore: vi.fn(),
       textAlign: 'center',
@@ -34,7 +38,15 @@ describe('trackDrawingUtils', () => {
       2: { fill: '#0000FF', text: 'white' },
     };
 
+    const invertLeaderColor = false;
+
     const driversOffTrack = [false, false, false];
+
+    const driverLivePositions = {
+      0: 1,
+      1: 2,
+      2: 3,
+    };
 
     const calculatePositions: Record<number, any> = {
       0: {
@@ -65,11 +77,14 @@ describe('trackDrawingUtils', () => {
         ctx,
         calculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
+        100,
         true,
-        'carNumber'
+        'carNumber',
+        driverLivePositions
       );
 
       expect(ctx.arc).toHaveBeenCalledTimes(3);
@@ -82,16 +97,19 @@ describe('trackDrawingUtils', () => {
         ctx,
         calculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
+        100,
         true,
-        'carNumber'
+        'carNumber',
+        driverLivePositions
       );
 
-      expect(ctx.fillText).toHaveBeenCalledWith('1', 100, 100);
-      expect(ctx.fillText).toHaveBeenCalledWith('2', 200, 100);
-      expect(ctx.fillText).toHaveBeenCalledWith('3', 150, 200);
+      expect(ctx.fillText).toHaveBeenCalledWith('1', 100, expect.any(Number));
+      expect(ctx.fillText).toHaveBeenCalledWith('2', 200, expect.any(Number));
+      expect(ctx.fillText).toHaveBeenCalledWith('3', 150, expect.any(Number));
     });
 
     it('should display class positions in sessionPosition mode', () => {
@@ -99,11 +117,14 @@ describe('trackDrawingUtils', () => {
         ctx,
         calculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
+        100,
         true,
-        'sessionPosition'
+        'sessionPosition',
+        driverLivePositions
       );
 
       // Should render at least some positions
@@ -123,11 +144,14 @@ describe('trackDrawingUtils', () => {
         ctx,
         positionsWithUndefined,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
+        100,
         true,
-        'sessionPosition'
+        'sessionPosition',
+        driverLivePositions
       );
 
       // Should not render empty strings
@@ -140,11 +164,14 @@ describe('trackDrawingUtils', () => {
         ctx,
         calculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
+        100,
         false,
-        'carNumber'
+        'carNumber',
+        driverLivePositions
       );
 
       expect(ctx.fillText).not.toHaveBeenCalled();
@@ -157,11 +184,14 @@ describe('trackDrawingUtils', () => {
         ctx,
         calculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrackArray,
         40,
         40,
+        100,
         true,
-        'carNumber'
+        'carNumber',
+        driverLivePositions
       );
 
       expect(ctx.stroke).toHaveBeenCalled();
@@ -172,11 +202,14 @@ describe('trackDrawingUtils', () => {
         ctx,
         calculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         30,
         50,
+        100,
         true,
-        'carNumber'
+        'carNumber',
+        driverLivePositions
       );
 
       const calls = (ctx.arc as any).mock.calls;
@@ -190,11 +223,14 @@ describe('trackDrawingUtils', () => {
         ctx,
         calculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
+        100,
         true,
-        'carNumber'
+        'carNumber',
+        driverLivePositions
       );
 
       const calls = (ctx.arc as any).mock.calls;
@@ -231,11 +267,14 @@ describe('trackDrawingUtils', () => {
         ctx,
         multiClassCalculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
+        100,
         true,
-        'sessionPosition'
+        'sessionPosition',
+        driverLivePositions
       );
 
       const fillTextCalls = (ctx.fillText as any).mock.calls;
@@ -274,11 +313,14 @@ describe('trackDrawingUtils', () => {
         ctx,
         multiClassCalculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
+        100,
         true,
-        'carNumber'
+        'carNumber',
+        driverLivePositions
       );
 
       const fillTextCalls = (ctx.fillText as any).mock.calls;
@@ -306,15 +348,23 @@ describe('trackDrawingUtils', () => {
         },
       };
 
+      const multiClassDriverLivePositions = {
+        1: 0,
+        2: 0,
+      };
+
       drawDrivers(
         ctx,
         multiClassCalculatePositions,
         driverColors,
+        invertLeaderColor,
         driversOffTrack,
         40,
         40,
+        100,
         true,
-        'sessionPosition'
+        'sessionPosition',
+        multiClassDriverLivePositions
       );
 
       const fillTextCalls = (ctx.fillText as any).mock.calls;

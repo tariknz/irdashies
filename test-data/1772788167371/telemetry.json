@@ -1,0 +1,3403 @@
+{
+  "SessionTime": {
+    "value": [
+      82.80000000347351
+    ]
+  },
+  "SessionTick": {
+    "value": [
+      206603
+    ]
+  },
+  "SessionNum": {
+    "value": [
+      2
+    ]
+  },
+  "SessionState": {
+    "value": [
+      1
+    ]
+  },
+  "SessionUniqueID": {
+    "value": [
+      3
+    ]
+  },
+  "SessionFlags": {
+    "value": [
+      268698112
+    ]
+  },
+  "SessionTimeRemain": {
+    "value": [
+      36.21666666319315
+    ]
+  },
+  "SessionLapsRemain": {
+    "value": [
+      30
+    ]
+  },
+  "SessionLapsRemainEx": {
+    "value": [
+      30
+    ]
+  },
+  "SessionTimeTotal": {
+    "value": [
+      1200
+    ]
+  },
+  "SessionLapsTotal": {
+    "value": [
+      30
+    ]
+  },
+  "SessionJokerLapsRemain": {
+    "value": [
+      0
+    ]
+  },
+  "SessionOnJokerLap": {
+    "value": [
+      false
+    ]
+  },
+  "SessionTimeOfDay": {
+    "value": [
+      43200
+    ]
+  },
+  "RadioTransmitCarIdx": {
+    "value": [
+      -1
+    ]
+  },
+  "RadioTransmitRadioIdx": {
+    "value": [
+      0
+    ]
+  },
+  "RadioTransmitFrequencyIdx": {
+    "value": [
+      1
+    ]
+  },
+  "DisplayUnits": {
+    "value": [
+      1
+    ]
+  },
+  "DriverMarker": {
+    "value": [
+      false
+    ]
+  },
+  "PushToTalk": {
+    "value": [
+      false
+    ]
+  },
+  "PushToPass": {
+    "value": [
+      false
+    ]
+  },
+  "ManualBoost": {
+    "value": [
+      false
+    ]
+  },
+  "ManualNoBoost": {
+    "value": [
+      false
+    ]
+  },
+  "IsOnTrack": {
+    "value": [
+      true
+    ]
+  },
+  "IsReplayPlaying": {
+    "value": [
+      false
+    ]
+  },
+  "ReplayFrameNum": {
+    "value": [
+      0
+    ]
+  },
+  "ReplayFrameNumEnd": {
+    "value": [
+      143336
+    ]
+  },
+  "IsDiskLoggingEnabled": {
+    "value": [
+      true
+    ]
+  },
+  "IsDiskLoggingActive": {
+    "value": [
+      true
+    ]
+  },
+  "FrameRate": {
+    "value": [
+      65.78219604492188
+    ]
+  },
+  "CpuUsageFG": {
+    "value": [
+      0.2620540261268616
+    ]
+  },
+  "GpuUsage": {
+    "value": [
+      0.8050928711891174
+    ]
+  },
+  "ChanAvgLatency": {
+    "value": [
+      0.06673228740692139
+    ]
+  },
+  "ChanLatency": {
+    "value": [
+      0.06666667014360428
+    ]
+  },
+  "ChanQuality": {
+    "value": [
+      0.998643696308136
+    ]
+  },
+  "ChanPartnerQuality": {
+    "value": [
+      1
+    ]
+  },
+  "CpuUsageBG": {
+    "value": [
+      0.22800110280513763
+    ]
+  },
+  "ChanClockSkew": {
+    "value": [
+      0
+    ]
+  },
+  "MemPageFaultSec": {
+    "value": [
+      0
+    ]
+  },
+  "MemSoftPageFaultSec": {
+    "value": [
+      3405
+    ]
+  },
+  "PlayerCarPosition": {
+    "value": [
+      0
+    ]
+  },
+  "PlayerCarClassPosition": {
+    "value": [
+      0
+    ]
+  },
+  "PlayerCarClass": {
+    "value": [
+      0
+    ]
+  },
+  "PlayerTrackSurface": {
+    "value": [
+      3
+    ]
+  },
+  "PlayerTrackSurfaceMaterial": {
+    "value": [
+      1
+    ]
+  },
+  "PlayerCarIdx": {
+    "value": [
+      26
+    ]
+  },
+  "PlayerCarTeamIncidentCount": {
+    "value": [
+      0
+    ]
+  },
+  "PlayerCarMyIncidentCount": {
+    "value": [
+      0
+    ]
+  },
+  "PlayerCarDriverIncidentCount": {
+    "value": [
+      0
+    ]
+  },
+  "PlayerCarWeightPenalty": {
+    "value": [
+      0
+    ]
+  },
+  "PlayerCarPowerAdjust": {
+    "value": [
+      0
+    ]
+  },
+  "PlayerCarDryTireSetLimit": {
+    "value": [
+      0
+    ]
+  },
+  "PlayerCarTowTime": {
+    "value": [
+      0
+    ]
+  },
+  "PlayerCarInPitStall": {
+    "value": [
+      false
+    ]
+  },
+  "PlayerCarPitSvStatus": {
+    "value": [
+      0
+    ]
+  },
+  "PlayerTireCompound": {
+    "value": [
+      0
+    ]
+  },
+  "PlayerFastRepairsUsed": {
+    "value": [
+      0
+    ]
+  },
+  "CarIdxLap": {
+    "value": [
+      0,
+      0,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      -1,
+      0,
+      -1,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      0,
+      0,
+      0,
+      -1,
+      0,
+      -1,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      0,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxLapCompleted": {
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxLapDistPct": {
+    "value": [
+      0.07627006620168686,
+      0.9879716038703918,
+      0.9968381524085999,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0.9681169986724854,
+      -1,
+      0.979048490524292,
+      -1,
+      0.9658443331718445,
+      -1,
+      -1,
+      -1,
+      -1,
+      0.9701859354972839,
+      0.9835204482078552,
+      0.950429379940033,
+      0.9857673645019531,
+      -1,
+      0.9990507960319519,
+      -1,
+      0.9813451766967773,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0.9901885390281677,
+      0.9946190118789673,
+      0.9769351482391357,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxTrackSurface": {
+    "value": [
+      2,
+      3,
+      3,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      3,
+      -1,
+      3,
+      -1,
+      3,
+      -1,
+      -1,
+      -1,
+      -1,
+      3,
+      3,
+      3,
+      3,
+      -1,
+      3,
+      -1,
+      3,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      3,
+      3,
+      3,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxTrackSurfaceMaterial": {
+    "value": [
+      1,
+      1,
+      1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1,
+      -1,
+      1,
+      -1,
+      1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1,
+      1,
+      1,
+      1,
+      -1,
+      1,
+      -1,
+      1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1,
+      1,
+      1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxOnPitRoad": {
+    "value": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "CarIdxPosition": {
+    "value": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CarIdxClassPosition": {
+    "value": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CarIdxClass": {
+    "value": [
+      11,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0
+    ]
+  },
+  "CarIdxF2Time": {
+    "value": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CarIdxEstTime": {
+    "value": [
+      4.629754543304443,
+      76.20332336425781,
+      76.7670669555664,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      74.87208557128906,
+      0,
+      75.61870574951172,
+      0,
+      74.71166229248047,
+      0,
+      0,
+      0,
+      0,
+      75.01641082763672,
+      75.91410064697266,
+      73.55906677246094,
+      76.06066131591797,
+      0,
+      76.90550231933594,
+      0,
+      75.77107238769531,
+      0,
+      0,
+      0,
+      0,
+      0,
+      76.34571838378906,
+      76.62738037109375,
+      75.47724151611328,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CarIdxLastLapTime": {
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxBestLapTime": {
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxBestLapNum": {
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxTireCompound": {
+    "value": [
+      -1,
+      0,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      -1,
+      0,
+      -1,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      0,
+      0,
+      0,
+      -1,
+      0,
+      -1,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      0,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxQualTireCompound": {
+    "value": [
+      -1,
+      0,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      -1,
+      0,
+      -1,
+      0,
+      -1,
+      0,
+      -1,
+      -1,
+      0,
+      -1,
+      -1,
+      0,
+      0,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxQualTireCompoundLocked": {
+    "value": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "CarIdxFastRepairsUsed": {
+    "value": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CarIdxSessionFlags": {
+    "value": [
+      262144,
+      262144,
+      262144,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      262144,
+      0,
+      262144,
+      0,
+      262144,
+      0,
+      0,
+      0,
+      0,
+      262144,
+      262144,
+      262144,
+      262144,
+      0,
+      262144,
+      0,
+      262144,
+      0,
+      0,
+      262144,
+      0,
+      262144,
+      262144,
+      262144,
+      262144,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "PaceMode": {
+    "value": [
+      1
+    ]
+  },
+  "CarIdxPaceLine": {
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxPaceRow": {
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxPaceFlags": {
+    "value": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "OnPitRoad": {
+    "value": [
+      false
+    ]
+  },
+  "CarIdxSteer": {
+    "value": [
+      -3.237232530650669e-12,
+      -3.0595548317080556e-9,
+      0.00003901239688275382,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0.000001003267357191362,
+      0,
+      -1.2920110814551578e-10,
+      0,
+      -1.3197953840915488e-9,
+      0,
+      0,
+      0,
+      0,
+      0.000001538540232104424,
+      -7.408347642012814e-7,
+      5.566104164245189e-7,
+      -1.5049176349535287e-9,
+      0,
+      -9.37428135117102e-10,
+      0,
+      0.1884622573852539,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3.2354958989788685e-11,
+      1.7869031809780722e-9,
+      3.0594222266699944e-8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "CarIdxRPM": {
+    "value": [
+      2000,
+      1303.17724609375,
+      1347.73583984375,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1297.726318359375,
+      -1,
+      1297.726318359375,
+      -1,
+      1297.726318359375,
+      -1,
+      -1,
+      -1,
+      -1,
+      1312.264404296875,
+      3176.71435546875,
+      1297.7261962890625,
+      1297.7264404296875,
+      -1,
+      1472.7259521484375,
+      -1,
+      1299.9725341796875,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1297.7264404296875,
+      1297.7261962890625,
+      1297.726318359375,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "CarIdxGear": {
+    "value": [
+      1,
+      0,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      -1,
+      0,
+      -1,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      0,
+      0,
+      0,
+      -1,
+      0,
+      -1,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      0,
+      0,
+      0,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "SteeringWheelAngle": {
+    "value": [
+      0.1884622573852539
+    ]
+  },
+  "Throttle": {
+    "value": [
+      0
+    ]
+  },
+  "Brake": {
+    "value": [
+      1
+    ]
+  },
+  "Clutch": {
+    "value": [
+      0
+    ]
+  },
+  "Gear": {
+    "value": [
+      0
+    ]
+  },
+  "RPM": {
+    "value": [
+      1299.9725341796875
+    ]
+  },
+  "PlayerCarSLFirstRPM": {
+    "value": [
+      8500
+    ]
+  },
+  "PlayerCarSLShiftRPM": {
+    "value": [
+      10000
+    ]
+  },
+  "PlayerCarSLLastRPM": {
+    "value": [
+      10300
+    ]
+  },
+  "PlayerCarSLBlinkRPM": {
+    "value": [
+      10750
+    ]
+  },
+  "Lap": {
+    "value": [
+      0
+    ]
+  },
+  "LapCompleted": {
+    "value": [
+      -1
+    ]
+  },
+  "LapDist": {
+    "value": [
+      3543.062744140625
+    ]
+  },
+  "LapDistPct": {
+    "value": [
+      0.9813451766967773
+    ]
+  },
+  "RaceLaps": {
+    "value": [
+      0
+    ]
+  },
+  "CarDistAhead": {
+    "value": [
+      7.853515625
+    ]
+  },
+  "CarDistBehind": {
+    "value": [
+      8.2919921875
+    ]
+  },
+  "LapBestLap": {
+    "value": [
+      0
+    ]
+  },
+  "LapBestLapTime": {
+    "value": [
+      0
+    ]
+  },
+  "LapLastLapTime": {
+    "value": [
+      0
+    ]
+  },
+  "LapCurrentLapTime": {
+    "value": [
+      0
+    ]
+  },
+  "LapLasNLapSeq": {
+    "value": [
+      0
+    ]
+  },
+  "LapLastNLapTime": {
+    "value": [
+      0
+    ]
+  },
+  "LapBestNLapLap": {
+    "value": [
+      0
+    ]
+  },
+  "LapBestNLapTime": {
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToBestLap": {
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToBestLap_DD": {
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToBestLap_OK": {
+    "value": [
+      false
+    ]
+  },
+  "LapDeltaToOptimalLap": {
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToOptimalLap_DD": {
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToOptimalLap_OK": {
+    "value": [
+      false
+    ]
+  },
+  "LapDeltaToSessionBestLap": {
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToSessionBestLap_DD": {
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToSessionBestLap_OK": {
+    "value": [
+      false
+    ]
+  },
+  "LapDeltaToSessionOptimalLap": {
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToSessionOptimalLap_DD": {
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToSessionOptimalLap_OK": {
+    "value": [
+      false
+    ]
+  },
+  "LapDeltaToSessionLastlLap": {
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToSessionLastlLap_DD": {
+    "value": [
+      0
+    ]
+  },
+  "LapDeltaToSessionLastlLap_OK": {
+    "value": [
+      false
+    ]
+  },
+  "Speed": {
+    "value": [
+      0.00005444763519335538
+    ]
+  },
+  "Yaw": {
+    "value": [
+      -3.139216899871826
+    ]
+  },
+  "YawNorth": {
+    "value": [
+      5.024332046508789
+    ]
+  },
+  "Pitch": {
+    "value": [
+      0.02699040248990059
+    ]
+  },
+  "Roll": {
+    "value": [
+      0.027146033942699432
+    ]
+  },
+  "EnterExitReset": {
+    "value": [
+      1
+    ]
+  },
+  "TrackTemp": {
+    "value": [
+      47.22222900390625
+    ]
+  },
+  "TrackTempCrew": {
+    "value": [
+      47.22222900390625
+    ]
+  },
+  "AirTemp": {
+    "value": [
+      26.111112594604492
+    ]
+  },
+  "TrackWetness": {
+    "value": [
+      1
+    ]
+  },
+  "Skies": {
+    "value": [
+      0
+    ]
+  },
+  "AirDensity": {
+    "value": [
+      1.1612364053726196
+    ]
+  },
+  "AirPressure": {
+    "value": [
+      100326.6953125
+    ]
+  },
+  "WindVel": {
+    "value": [
+      0.8940799236297607
+    ]
+  },
+  "WindDir": {
+    "value": [
+      0
+    ]
+  },
+  "RelativeHumidity": {
+    "value": [
+      0.45000001788139343
+    ]
+  },
+  "FogLevel": {
+    "value": [
+      0
+    ]
+  },
+  "Precipitation": {
+    "value": [
+      0
+    ]
+  },
+  "SolarAltitude": {
+    "value": [
+      0.9400052428245544
+    ]
+  },
+  "SolarAzimuth": {
+    "value": [
+      2.628910541534424
+    ]
+  },
+  "WeatherDeclaredWet": {
+    "value": [
+      false
+    ]
+  },
+  "SteeringFFBEnabled": {
+    "value": [
+      true
+    ]
+  },
+  "DCLapStatus": {
+    "value": [
+      2
+    ]
+  },
+  "DCDriversSoFar": {
+    "value": [
+      1
+    ]
+  },
+  "OkToReloadTextures": {
+    "value": [
+      true
+    ]
+  },
+  "LoadNumTextures": {
+    "value": [
+      false
+    ]
+  },
+  "CarLeftRight": {
+    "value": [
+      1
+    ]
+  },
+  "PitsOpen": {
+    "value": [
+      true
+    ]
+  },
+  "VidCapEnabled": {
+    "value": [
+      false
+    ]
+  },
+  "VidCapActive": {
+    "value": [
+      false
+    ]
+  },
+  "PlayerIncidents": {
+    "value": [
+      0
+    ]
+  },
+  "PitRepairLeft": {
+    "value": [
+      0
+    ]
+  },
+  "PitOptRepairLeft": {
+    "value": [
+      0
+    ]
+  },
+  "PitstopActive": {
+    "value": [
+      false
+    ]
+  },
+  "FastRepairUsed": {
+    "value": [
+      0
+    ]
+  },
+  "FastRepairAvailable": {
+    "value": [
+      255
+    ]
+  },
+  "LFTiresUsed": {
+    "value": [
+      1
+    ]
+  },
+  "RFTiresUsed": {
+    "value": [
+      1
+    ]
+  },
+  "LRTiresUsed": {
+    "value": [
+      1
+    ]
+  },
+  "RRTiresUsed": {
+    "value": [
+      1
+    ]
+  },
+  "LeftTireSetsUsed": {
+    "value": [
+      1
+    ]
+  },
+  "RightTireSetsUsed": {
+    "value": [
+      1
+    ]
+  },
+  "FrontTireSetsUsed": {
+    "value": [
+      1
+    ]
+  },
+  "RearTireSetsUsed": {
+    "value": [
+      1
+    ]
+  },
+  "TireSetsUsed": {
+    "value": [
+      1
+    ]
+  },
+  "LFTiresAvailable": {
+    "value": [
+      1
+    ]
+  },
+  "RFTiresAvailable": {
+    "value": [
+      1
+    ]
+  },
+  "LRTiresAvailable": {
+    "value": [
+      1
+    ]
+  },
+  "RRTiresAvailable": {
+    "value": [
+      1
+    ]
+  },
+  "LeftTireSetsAvailable": {
+    "value": [
+      1
+    ]
+  },
+  "RightTireSetsAvailable": {
+    "value": [
+      1
+    ]
+  },
+  "FrontTireSetsAvailable": {
+    "value": [
+      1
+    ]
+  },
+  "RearTireSetsAvailable": {
+    "value": [
+      1
+    ]
+  },
+  "TireSetsAvailable": {
+    "value": [
+      1
+    ]
+  },
+  "CamCarIdx": {
+    "value": [
+      26
+    ]
+  },
+  "CamCameraNumber": {
+    "value": [
+      1
+    ]
+  },
+  "CamGroupNumber": {
+    "value": [
+      9
+    ]
+  },
+  "CamCameraState": {
+    "value": [
+      80
+    ]
+  },
+  "IsOnTrackCar": {
+    "value": [
+      true
+    ]
+  },
+  "IsInGarage": {
+    "value": [
+      false
+    ]
+  },
+  "SteeringWheelAngleMax": {
+    "value": [
+      8.217001914978027
+    ]
+  },
+  "ShiftPowerPct": {
+    "value": [
+      0
+    ]
+  },
+  "ShiftGrindRPM": {
+    "value": [
+      0
+    ]
+  },
+  "ThrottleRaw": {
+    "value": [
+      0
+    ]
+  },
+  "BrakeRaw": {
+    "value": [
+      0
+    ]
+  },
+  "ClutchRaw": {
+    "value": [
+      1
+    ]
+  },
+  "HandbrakeRaw": {
+    "value": [
+      0
+    ]
+  },
+  "BrakeABSactive": {
+    "value": [
+      false
+    ]
+  },
+  "Shifter": {
+    "value": [
+      0
+    ]
+  },
+  "EngineWarnings": {
+    "value": [
+      0
+    ]
+  },
+  "FuelLevelPct": {
+    "value": [
+      0.6874562501907349
+    ]
+  },
+  "PitSvFlags": {
+    "value": [
+      95
+    ]
+  },
+  "PitSvLFP": {
+    "value": [
+      134.37762451171875
+    ]
+  },
+  "PitSvRFP": {
+    "value": [
+      134.37762451171875
+    ]
+  },
+  "PitSvLRP": {
+    "value": [
+      130.9320068359375
+    ]
+  },
+  "PitSvRRP": {
+    "value": [
+      130.9320068359375
+    ]
+  },
+  "PitSvFuel": {
+    "value": [
+      80.05332946777344
+    ]
+  },
+  "PitSvTireCompound": {
+    "value": [
+      0
+    ]
+  },
+  "CarIdxP2P_Status": {
+    "value": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "CarIdxP2P_Count": {
+    "value": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "P2P_Status": {
+    "value": [
+      false
+    ]
+  },
+  "P2P_Count": {
+    "value": [
+      0
+    ]
+  },
+  "SteeringWheelPctTorque": {
+    "value": [
+      0.04768412932753563
+    ]
+  },
+  "SteeringWheelPctTorqueSign": {
+    "value": [
+      0.04768412932753563
+    ]
+  },
+  "SteeringWheelPctTorqueSignStops": {
+    "value": [
+      0.015735788270831108
+    ]
+  },
+  "SteeringWheelPctIntensity": {
+    "value": [
+      0.5
+    ]
+  },
+  "SteeringWheelPctSmoothing": {
+    "value": [
+      0
+    ]
+  },
+  "SteeringWheelPctDamper": {
+    "value": [
+      0
+    ]
+  },
+  "SteeringWheelLimiter": {
+    "value": [
+      0
+    ]
+  },
+  "SteeringWheelMaxForceNm": {
+    "value": [
+      64.82669067382812
+    ]
+  },
+  "SteeringWheelPeakForceNm": {
+    "value": [
+      -1
+    ]
+  },
+  "SteeringWheelUseLinear": {
+    "value": [
+      true
+    ]
+  },
+  "ShiftIndicatorPct": {
+    "value": [
+      0
+    ]
+  },
+  "IsGarageVisible": {
+    "value": [
+      false
+    ]
+  },
+  "ReplayPlaySpeed": {
+    "value": [
+      1
+    ]
+  },
+  "ReplayPlaySlowMotion": {
+    "value": [
+      false
+    ]
+  },
+  "ReplaySessionTime": {
+    "value": [
+      0
+    ]
+  },
+  "ReplaySessionNum": {
+    "value": [
+      -1
+    ]
+  },
+  "TireLF_RumblePitch": {
+    "value": [
+      0
+    ]
+  },
+  "TireRF_RumblePitch": {
+    "value": [
+      0
+    ]
+  },
+  "TireLR_RumblePitch": {
+    "value": [
+      0
+    ]
+  },
+  "TireRR_RumblePitch": {
+    "value": [
+      0
+    ]
+  },
+  "SteeringWheelTorque_ST": {
+    "value": [
+      3.09674072265625,
+      3.0909571647644043,
+      3.1009232997894287,
+      3.1269006729125977,
+      3.0953145027160645,
+      3.0912044048309326
+    ]
+  },
+  "SteeringWheelTorque": {
+    "value": [
+      3.0912044048309326
+    ]
+  },
+  "VelocityZ_ST": {
+    "value": [
+      -0.0000014428362646867754,
+      -0.0000022428532702178927,
+      -0.0000040574441300123,
+      -0.0000047129760787356645,
+      -0.000004155126589466818,
+      -0.0000035548173400457017
+    ]
+  },
+  "VelocityY_ST": {
+    "value": [
+      -0.00000221634309127694,
+      -0.000001744563746797212,
+      8.862319305080746e-7,
+      0.000006809981186961522,
+      0.000007075794201227836,
+      0.00000924244613997871
+    ]
+  },
+  "VelocityX_ST": {
+    "value": [
+      0.000009210866664943751,
+      -0.000007904961421445478,
+      -0.000045896322262706235,
+      -0.00006394285446731374,
+      -0.00006524079799419269,
+      -0.00005365745164453983
+    ]
+  },
+  "VelocityZ": {
+    "value": [
+      -0.0000035548173400457017
+    ]
+  },
+  "VelocityY": {
+    "value": [
+      0.00000924244613997871
+    ]
+  },
+  "VelocityX": {
+    "value": [
+      -0.00005365745164453983
+    ]
+  },
+  "YawRate_ST": {
+    "value": [
+      -0.00012685316323768348,
+      -0.00012692439486272633,
+      -0.00010322194430045784,
+      -0.00004833613274968229,
+      -0.000028270225811866112,
+      8.088811114248529e-7
+    ]
+  },
+  "PitchRate_ST": {
+    "value": [
+      0.0000013663375284522772,
+      -0.0000018215026784673682,
+      0.000013513614248950034,
+      0.000028455127903725952,
+      0.000034345692256465554,
+      0.000027415862859925255
+    ]
+  },
+  "RollRate_ST": {
+    "value": [
+      0.000034930824767798185,
+      0.00003036848283954896,
+      0.000027480171411298215,
+      0.000032862611988093704,
+      0.000017413252862752415,
+      0.000013118200513417833
+    ]
+  },
+  "YawRate": {
+    "value": [
+      8.088811114248529e-7
+    ]
+  },
+  "PitchRate": {
+    "value": [
+      0.000027415862859925255
+    ]
+  },
+  "RollRate": {
+    "value": [
+      0.000013118200513417833
+    ]
+  },
+  "VertAccel_ST": {
+    "value": [
+      9.7994966506958,
+      9.799177169799805,
+      9.798811912536621,
+      9.799229621887207,
+      9.799665451049805,
+      9.7996826171875
+    ]
+  },
+  "LatAccel_ST": {
+    "value": [
+      0.2659601867198944,
+      0.26624923944473267,
+      0.2670271694660187,
+      0.26821333169937134,
+      0.2661772072315216,
+      0.26686200499534607
+    ]
+  },
+  "LongAccel_ST": {
+    "value": [
+      -0.2630983591079712,
+      -0.2708123028278351,
+      -0.27832767367362976,
+      -0.2711482048034668,
+      -0.26511961221694946,
+      -0.2604832649230957
+    ]
+  },
+  "VertAccel": {
+    "value": [
+      9.7996826171875
+    ]
+  },
+  "LatAccel": {
+    "value": [
+      0.26686200499534607
+    ]
+  },
+  "LongAccel": {
+    "value": [
+      -0.2604832649230957
+    ]
+  },
+  "dcStarter": {
+    "value": [
+      false
+    ]
+  },
+  "dcPitSpeedLimiterToggle": {
+    "value": [
+      false
+    ]
+  },
+  "dcTearOffVisor": {
+    "value": [
+      false
+    ]
+  },
+  "dpRFTireChange": {
+    "value": [
+      1
+    ]
+  },
+  "dpLFTireChange": {
+    "value": [
+      1
+    ]
+  },
+  "dpRRTireChange": {
+    "value": [
+      1
+    ]
+  },
+  "dpLRTireChange": {
+    "value": [
+      1
+    ]
+  },
+  "dpFuelFill": {
+    "value": [
+      1
+    ]
+  },
+  "dpFuelAutoFillEnabled": {
+    "value": [
+      0
+    ]
+  },
+  "dpFuelAutoFillActive": {
+    "value": [
+      0
+    ]
+  },
+  "dpFuelAddKg": {
+    "value": [
+      80.05332946777344
+    ]
+  },
+  "dpFastRepair": {
+    "value": [
+      1
+    ]
+  },
+  "dcBrakeBias": {
+    "value": [
+      54.5
+    ]
+  },
+  "dpLFTireColdPress": {
+    "value": [
+      134.37762451171875
+    ]
+  },
+  "dpRFTireColdPress": {
+    "value": [
+      134.37762451171875
+    ]
+  },
+  "dpLRTireColdPress": {
+    "value": [
+      130.9320068359375
+    ]
+  },
+  "dpRRTireColdPress": {
+    "value": [
+      130.9320068359375
+    ]
+  },
+  "FuelUsePerHour": {
+    "value": [
+      50.56261444091797
+    ]
+  },
+  "Voltage": {
+    "value": [
+      12
+    ]
+  },
+  "WaterTemp": {
+    "value": [
+      77.70828247070312
+    ]
+  },
+  "WaterLevel": {
+    "value": [
+      8
+    ]
+  },
+  "FuelPress": {
+    "value": [
+      3
+    ]
+  },
+  "OilTemp": {
+    "value": [
+      79.59269714355469
+    ]
+  },
+  "OilPress": {
+    "value": [
+      3.3750007152557373
+    ]
+  },
+  "OilLevel": {
+    "value": [
+      6
+    ]
+  },
+  "ManifoldPress": {
+    "value": [
+      0.44782522320747375
+    ]
+  },
+  "FuelLevel": {
+    "value": [
+      55.03316116333008
+    ]
+  },
+  "Engine0_RPM": {
+    "value": [
+      1299.97314453125
+    ]
+  },
+  "RRcoldPressure": {
+    "value": [
+      130.9320068359375
+    ]
+  },
+  "RRodometer": {
+    "value": [
+      0
+    ]
+  },
+  "RRtempCL": {
+    "value": [
+      91.76022338867188
+    ]
+  },
+  "RRtempCM": {
+    "value": [
+      85.9755859375
+    ]
+  },
+  "RRtempCR": {
+    "value": [
+      75.41131591796875
+    ]
+  },
+  "RRwearL": {
+    "value": [
+      0.9762296080589294
+    ]
+  },
+  "RRwearM": {
+    "value": [
+      0.9783745408058167
+    ]
+  },
+  "RRwearR": {
+    "value": [
+      0.9861159920692444
+    ]
+  },
+  "LRcoldPressure": {
+    "value": [
+      130.9320068359375
+    ]
+  },
+  "LRodometer": {
+    "value": [
+      0
+    ]
+  },
+  "LRtempCL": {
+    "value": [
+      82.02099609375
+    ]
+  },
+  "LRtempCM": {
+    "value": [
+      89.13800048828125
+    ]
+  },
+  "LRtempCR": {
+    "value": [
+      93.67327880859375
+    ]
+  },
+  "LRwearL": {
+    "value": [
+      0.9775108695030212
+    ]
+  },
+  "LRwearM": {
+    "value": [
+      0.973906934261322
+    ]
+  },
+  "LRwearR": {
+    "value": [
+      0.9728607535362244
+    ]
+  },
+  "RFcoldPressure": {
+    "value": [
+      134.37762451171875
+    ]
+  },
+  "RFodometer": {
+    "value": [
+      0
+    ]
+  },
+  "RFtempCL": {
+    "value": [
+      85.50640869140625
+    ]
+  },
+  "RFtempCM": {
+    "value": [
+      75.96432495117188
+    ]
+  },
+  "RFtempCR": {
+    "value": [
+      68.1781005859375
+    ]
+  },
+  "RFwearL": {
+    "value": [
+      0.9624485373497009
+    ]
+  },
+  "RFwearM": {
+    "value": [
+      0.9755654335021973
+    ]
+  },
+  "RFwearR": {
+    "value": [
+      0.9849631786346436
+    ]
+  },
+  "LFcoldPressure": {
+    "value": [
+      134.37762451171875
+    ]
+  },
+  "LFodometer": {
+    "value": [
+      0
+    ]
+  },
+  "LFtempCL": {
+    "value": [
+      75.44583129882812
+    ]
+  },
+  "LFtempCM": {
+    "value": [
+      82.403076171875
+    ]
+  },
+  "LFtempCR": {
+    "value": [
+      88.98739624023438
+    ]
+  },
+  "LFwearL": {
+    "value": [
+      0.9597246646881104
+    ]
+  },
+  "LFwearM": {
+    "value": [
+      0.9498027563095093
+    ]
+  },
+  "LFwearR": {
+    "value": [
+      0.9426820874214172
+    ]
+  },
+  "LFshockDefl": {
+    "value": [
+      0.027886448428034782
+    ]
+  },
+  "LFshockDefl_ST": {
+    "value": [
+      0.027885301038622856,
+      0.027885496616363525,
+      0.027885759249329567,
+      0.027886055409908295,
+      0.027886219322681427,
+      0.027886448428034782
+    ]
+  },
+  "LFshockVel": {
+    "value": [
+      0.00008380203507840633
+    ]
+  },
+  "LFshockVel_ST": {
+    "value": [
+      0.00005848743239766918,
+      0.00007684880256420001,
+      0.00012706908455584198,
+      0.00007582690886920318,
+      0.00010279310663463548,
+      0.00008380203507840633
+    ]
+  },
+  "RFshockDefl": {
+    "value": [
+      0.026653923094272614
+    ]
+  },
+  "RFshockDefl_ST": {
+    "value": [
+      0.026654118672013283,
+      0.026653988286852837,
+      0.026653824374079704,
+      0.026653660461306572,
+      0.02665385603904724,
+      0.026653923094272614
+    ]
+  },
+  "RFshockVel": {
+    "value": [
+      0.00003255683623137884
+    ]
+  },
+  "RFshockVel_ST": {
+    "value": [
+      -0.000050343776820227504,
+      -0.00006338181992759928,
+      -0.000042896448576357216,
+      0.00004025238013127819,
+      0.000020343930373201147,
+      0.00003255683623137884
+    ]
+  },
+  "LRshockDefl": {
+    "value": [
+      0.028964774683117867
+    ]
+  },
+  "LRshockDefl_ST": {
+    "value": [
+      0.028964433819055557,
+      0.028964350000023842,
+      0.028964433819055557,
+      0.0289645753800869,
+      0.028964661061763763,
+      0.028964774683117867
+    ]
+  },
+  "LRshockVel": {
+    "value": [
+      0.00004253326551406644
+    ]
+  },
+  "LRshockVel_ST": {
+    "value": [
+      -0.00002451958971505519,
+      0.000008067875569395255,
+      0.00003520607060636394,
+      0.00003479487349977717,
+      0.00004143062687944621,
+      0.00004253326551406644
+    ]
+  },
+  "RRshockDefl": {
+    "value": [
+      0.02917000837624073
+    ]
+  },
+  "RRshockDefl_ST": {
+    "value": [
+      0.02916986681520939,
+      0.029169896617531776,
+      0.029169980436563492,
+      0.02917000837624073,
+      0.02917000837624073,
+      0.02917000837624073
+    ]
+  },
+  "RRshockVel": {
+    "value": [
+      0.000004504861863097176
+    ]
+  },
+  "RRshockVel_ST": {
+    "value": [
+      0.00001698498090263456,
+      0.00002570593096606899,
+      0.000015610965419909917,
+      0.000009203267836710438,
+      -0.0000020363695512060076,
+      0.000004504861863097176
+    ]
+  }
+}

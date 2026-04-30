@@ -15,7 +15,7 @@ export interface FuelCalculatorWidgetProps {
     valueFontSize?: number;
     barFontSize?: number;
   };
-  isCompact?: boolean;
+  compactMode?: 'off' | 'compact' | 'ultra';
 }
 
 export const FuelCalculatorConfidence: React.FC<FuelCalculatorWidgetProps> = ({
@@ -23,7 +23,7 @@ export const FuelCalculatorConfidence: React.FC<FuelCalculatorWidgetProps> = ({
   settings,
   widgetId,
   customStyles,
-  isCompact,
+  compactMode,
 }) => {
   if (!fuelData) return null;
 
@@ -45,21 +45,29 @@ export const FuelCalculatorConfidence: React.FC<FuelCalculatorWidgetProps> = ({
       ? `${widgetStyle.fontSize}px`
       : '12px';
 
-  const containerPadding = isCompact
-    ? 'py-0.5 px-2 mb-0.5'
-    : 'py-1.5 px-2 mb-2';
+  const paddingPart =
+    compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2';
+  const containerPadding = `${paddingPart} ${compactMode !== 'off' ? 'mb-0.5' : 'mb-2'}`;
 
   if (confidence === 'low' || confidence === 'very-low') {
     return (
       <div
         className={`${containerPadding} bg-red-500/10 border border-red-500/30 rounded`}
       >
-        <div className="text-center" style={{ fontSize: labelFontSize }}>
+        <div
+          className={`text-center ${paddingPart}`}
+          style={{ fontSize: labelFontSize }}
+        >
           <span className="text-red-400">
-            {confidence === 'very-low' ? '⚠ Not enough data' : '⚠ Low confidence'}
+            {confidence === 'very-low'
+              ? '⚠ Not enough data'
+              : '⚠ Low confidence'}
           </span>
         </div>
-        <div className="text-center mt-0.5" style={{ fontSize: valueFontSize }}>
+        <div
+          className={`text-center ${paddingPart} mt-0.5`}
+          style={{ fontSize: valueFontSize }}
+        >
           <span className="text-slate-400">
             Fuelling for{' '}
             <span className="text-white font-medium">{fuelForLaps}</span> laps

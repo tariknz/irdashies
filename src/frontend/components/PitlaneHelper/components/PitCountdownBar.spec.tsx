@@ -30,8 +30,8 @@ describe('PitCountdownBar', () => {
       expect(getByText('150m')).toBeInTheDocument();
     });
 
-    it('displays target name when distance is 0', () => {
-      const { getAllByText } = render(
+    it('displays "here" when distance is 0', () => {
+      const { getByText } = render(
         <PitCountdownBar
           distance={0}
           maxDistance={200}
@@ -40,9 +40,8 @@ describe('PitCountdownBar', () => {
           targetName="Pit Entry"
         />
       );
-      // When distance is 0, target name appears in both top label and bottom label
-      const labels = getAllByText('Pit Entry');
-      expect(labels.length).toBe(2);
+      // When distance is 0, value label shows "here"
+      expect(getByText('here')).toBeInTheDocument();
     });
 
     it('displays target label at bottom', () => {
@@ -69,7 +68,9 @@ describe('PitCountdownBar', () => {
           targetName="Pit Entry"
         />
       );
-      const progressBar = container.querySelector('.absolute.bottom-0') as HTMLElement;
+      const progressBar = container.querySelector(
+        '.absolute.bottom-0'
+      ) as HTMLElement;
       expect(progressBar).toBeInTheDocument();
       expect(progressBar.style.height).toBe('50%');
     });
@@ -84,7 +85,9 @@ describe('PitCountdownBar', () => {
           targetName="Pit Entry"
         />
       );
-      const progressBar = container.querySelector('.absolute.bottom-0') as HTMLElement;
+      const progressBar = container.querySelector(
+        '.absolute.bottom-0'
+      ) as HTMLElement;
       expect(progressBar).toBeInTheDocument();
       expect(progressBar.style.height).toBe('25%');
     });
@@ -99,7 +102,9 @@ describe('PitCountdownBar', () => {
           targetName="Pit Entry"
         />
       );
-      const progressBar = container.querySelector('.absolute.bottom-0') as HTMLElement;
+      const progressBar = container.querySelector(
+        '.absolute.bottom-0'
+      ) as HTMLElement;
       expect(progressBar.style.backgroundColor).toBe('rgb(59, 130, 246)');
     });
 
@@ -113,7 +118,9 @@ describe('PitCountdownBar', () => {
           targetName="Pit Entry"
         />
       );
-      const progressBar = container.querySelector('.absolute.bottom-0') as HTMLElement;
+      const progressBar = container.querySelector(
+        '.absolute.bottom-0'
+      ) as HTMLElement;
       expect(progressBar.style.height).toBe('0%');
     });
 
@@ -127,7 +134,9 @@ describe('PitCountdownBar', () => {
           targetName="Pit Entry"
         />
       );
-      const progressBar = container.querySelector('.absolute.bottom-0') as HTMLElement;
+      const progressBar = container.querySelector(
+        '.absolute.bottom-0'
+      ) as HTMLElement;
       expect(progressBar.style.height).toBe('100%');
     });
   });
@@ -159,7 +168,7 @@ describe('PitCountdownBar', () => {
       expect(getByText('150m')).toBeInTheDocument();
     });
 
-    it('displays "At Target" when distance is 0', () => {
+    it('displays "here" when distance is 0', () => {
       const { getByText } = render(
         <PitCountdownBar
           distance={0}
@@ -169,7 +178,7 @@ describe('PitCountdownBar', () => {
           targetName="Pit Entry"
         />
       );
-      expect(getByText('At Target')).toBeInTheDocument();
+      expect(getByText('here')).toBeInTheDocument();
     });
 
     it('displays target label on left', () => {
@@ -195,7 +204,9 @@ describe('PitCountdownBar', () => {
           targetName="Pit Entry"
         />
       );
-      const progressBar = container.querySelector('.absolute.left-0') as HTMLElement;
+      const progressBar = container.querySelector(
+        '.absolute.left-0'
+      ) as HTMLElement;
       expect(progressBar).toBeInTheDocument();
       expect(progressBar.style.width).toBe('50%');
     });
@@ -210,7 +221,9 @@ describe('PitCountdownBar', () => {
           targetName="Pit Entry"
         />
       );
-      const progressBar = container.querySelector('.absolute.left-0') as HTMLElement;
+      const progressBar = container.querySelector(
+        '.absolute.left-0'
+      ) as HTMLElement;
       expect(progressBar.style.backgroundColor).toBe('rgb(234, 179, 8)');
     });
 
@@ -224,7 +237,9 @@ describe('PitCountdownBar', () => {
           targetName="Pit Entry"
         />
       );
-      const progressBar = container.querySelector('.absolute.left-0') as HTMLElement;
+      const progressBar = container.querySelector(
+        '.absolute.left-0'
+      ) as HTMLElement;
       expect(progressBar.style.width).toBe('0%');
     });
 
@@ -238,7 +253,9 @@ describe('PitCountdownBar', () => {
           targetName="Pit Entry"
         />
       );
-      const progressBar = container.querySelector('.absolute.left-0') as HTMLElement;
+      const progressBar = container.querySelector(
+        '.absolute.left-0'
+      ) as HTMLElement;
       expect(progressBar.style.width).toBe('100%');
     });
   });

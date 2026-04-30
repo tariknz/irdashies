@@ -28,7 +28,6 @@
 
 import './frontend/index.css';
 import './frontend/App';
+import logger from './frontend/utils/logger';
 
-console.log(
-  '👋 This message is being logged by "renderer.ts", included via Vite'
-);
+logger.info('This message is being logged by "renderer.ts", included via Vite');

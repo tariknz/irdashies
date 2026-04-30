@@ -1,21 +1,32 @@
-import type { DashboardLayout, DashboardWidget, DashboardProfile } from '@irdashies/types';
+import type {
+  DashboardLayout,
+  DashboardWidget,
+  DashboardProfile,
+} from '@irdashies/types';
 import { emitDashboardUpdated } from './dashboardEvents';
-import { defaultDashboard } from './defaultDashboard';
+import { defaultDashboard, deepMergeConfig } from '@irdashies/types';
 import { readData, writeData } from './storage';
 import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { app } from 'electron';
 import { randomUUID } from 'node:crypto';
+import logger from '../logger';
 
 const DASHBOARDS_KEY = 'dashboards';
 const PROFILES_KEY = 'profiles';
 const CURRENT_PROFILE_KEY = 'currentProfile';
 
-const isDashboardChanged = (oldDashboard: DashboardLayout | undefined, newDashboard: DashboardLayout): boolean => {
+const isDashboardChanged = (
+  oldDashboard: DashboardLayout | undefined,
+  newDashboard: DashboardLayout
+): boolean => {
   if (!oldDashboard) return true;
 
   // Compare generalSettings
-  if (JSON.stringify(oldDashboard.generalSettings) !== JSON.stringify(newDashboard.generalSettings)) {
+  if (
+    JSON.stringify(oldDashboard.generalSettings) !==
+    JSON.stringify(newDashboard.generalSettings)
+  ) {
     return true;
   }
 
@@ -52,12 +63,17 @@ export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
         ...dashboard.generalSettings,
       },
       widgets: [...dashboard.widgets, ...missingWidgets].map((widget) => {
-        // add missing default widget config
-        const defaultWidget = defaultDashboard.widgets.find((w) => w.id === widget.id);
-        if (!widget.config && defaultWidget?.config) {
-          return { ...widget, config: defaultWidget.config };
-        }
-        return widget;
+        const defaultWidget = defaultDashboard.widgets.find(
+          (w) => w.id === widget.id
+        );
+        if (!defaultWidget?.config) return widget;
+        return {
+          ...widget,
+          config: deepMergeConfig(
+            defaultWidget.config as Record<string, unknown>,
+            widget.config
+          ),
+        };
       }),
     };
 
@@ -79,13 +95,9 @@ export const listDashboards = () => {
 
 export const getDashboard = (id: string) => {
   const dashboards = readData<Record<string, DashboardLayout>>(DASHBOARDS_KEY);
-  console.log('[getDashboard] Looking for profile:', id);
-  console.log('[getDashboard] Available dashboard keys:', dashboards ? Object.keys(dashboards) : 'null');
   if (!dashboards) return null;
 
-  const dashboard = dashboards[id];
-  console.log('[getDashboard] Found dashboard for', id, ':', dashboard ? 'yes' : 'no');
-  return dashboard;
+  return dashboards[id] ?? null;
 };
 
 export const updateDashboardWidget = (
@@ -111,8 +123,6 @@ export const saveDashboard = (
   id: string | 'default',
   value: DashboardLayout
 ) => {
-
-
   const dashboards = listDashboards();
   const existingDashboard = dashboards[id];
 
@@ -124,14 +134,14 @@ export const saveDashboard = (
     generalSettings: {
       ...existingDashboard?.generalSettings,
       ...value.generalSettings,
-    }
+    },
   };
   // Only save and emit if there are actual changes
   if (isDashboardChanged(existingDashboard, mergedDashboard)) {
     dashboards[id] = mergedDashboard;
-    console.log('[saveDashboard] Writing to storage for profile:', id);
+    logger.info('[saveDashboard] Writing to storage for profile:', id);
     writeData(DASHBOARDS_KEY, dashboards);
-    console.log('[saveDashboard] Saved successfully to storage');
+    logger.info('[saveDashboard] Saved successfully to storage');
 
     // Only emit dashboard updated event if this is the currently active profile
     // This prevents overlay refreshes when creating/modifying non-active profiles
@@ -139,14 +149,23 @@ export const saveDashboard = (
     if (id === currentProfileId) {
       emitDashboardUpdated(mergedDashboard);
     } else {
-      console.log('[saveDashboard] Not emitting update - not current profile (saved:', id, ', current:', currentProfileId, ')');
+      logger.info(
+        '[saveDashboard] Not emitting update - not current profile (saved:',
+        id,
+        ', current:',
+        currentProfileId,
+        ')'
+      );
     }
   } else {
-    console.log('[saveDashboard] Dashboard unchanged, not saving');
+    logger.info('[saveDashboard] Dashboard unchanged, not saving');
   }
 };
 
-export const resetDashboard = (resetEverything = false, dashboardId = 'default') => {
+export const resetDashboard = (
+  resetEverything = false,
+  dashboardId = 'default'
+) => {
   const dashboard = getDashboard(dashboardId);
   if (!dashboard) {
     throw new Error('Dashboard not found');
@@ -161,7 +180,9 @@ export const resetDashboard = (resetEverything = false, dashboardId = 'default')
     const resetDashboard: DashboardLayout = {
       ...dashboard,
       widgets: dashboard.widgets.map((widget) => {
-        const defaultWidget = defaultDashboard.widgets.find((w) => w.id === widget.id);
+        const defaultWidget = defaultDashboard.widgets.find(
+          (w) => w.id === widget.id
+        );
         return {
           ...widget,
           config: defaultWidget?.config || widget.config,
@@ -177,7 +198,9 @@ export const resetDashboard = (resetEverything = false, dashboardId = 'default')
   }
 };
 
-export const saveGarageCoverImage = async (buffer: Uint8Array): Promise<string> => {
+export const saveGarageCoverImage = async (
+  buffer: Uint8Array
+): Promise<string> => {
   try {
     const userDataPath = app.getPath('userData');
     const assetsPath = resolve(userDataPath, 'frontend', 'assets', 'img');
@@ -189,11 +212,16 @@ export const saveGarageCoverImage = async (buffer: Uint8Array): Promise<string> 
 
     if (buffer.length >= 4) {
       // Check PNG signature: 89 50 4E 47
-      if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+      if (
+        buffer[0] === 0x89 &&
+        buffer[1] === 0x50 &&
+        buffer[2] === 0x4e &&
+        buffer[3] === 0x47
+      ) {
         extension = 'png';
       }
       // Check JPEG signature: FF D8 FF
-      else if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+      else if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
         extension = 'jpg';
       }
       // Check GIF signature: 47 49 46
@@ -201,32 +229,57 @@ export const saveGarageCoverImage = async (buffer: Uint8Array): Promise<string> 
         extension = 'gif';
       }
       // Check WebP signature: RIFF...WEBP
-      else if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
-        buffer.length >= 12 && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+      else if (
+        buffer[0] === 0x52 &&
+        buffer[1] === 0x49 &&
+        buffer[2] === 0x46 &&
+        buffer[3] === 0x46 &&
+        buffer.length >= 12 &&
+        buffer[8] === 0x57 &&
+        buffer[9] === 0x45 &&
+        buffer[10] === 0x42 &&
+        buffer[11] === 0x50
+      ) {
         extension = 'webp';
       }
     }
 
     const imagePath = resolve(assetsPath, `custom-cover.${extension}`);
-    console.log('[GarageCover] Writing to:', imagePath, 'Extension detected:', extension);
+    logger.info(
+      '[GarageCover] Writing to:',
+      imagePath,
+      'Extension detected:',
+      extension
+    );
     await writeFile(imagePath, buffer);
-    console.log('[GarageCover] File written successfully');
+    logger.info('[GarageCover] File written successfully');
 
     // Return the file path so it can be persisted in the dashboard
     return imagePath;
   } catch (err) {
-    console.error('[GarageCover] Error saving image:', err);
+    logger.error('[GarageCover] Error saving image:', err);
     throw err;
   }
 };
 
-export const getGarageCoverImageAsDataUrl = async (imageFilenameOrPath: string): Promise<string | null> => {
+export const getGarageCoverImageAsDataUrl = async (
+  imageFilenameOrPath: string
+): Promise<string | null> => {
   try {
     // If it's just a filename, construct the full path
     let imagePath = imageFilenameOrPath;
-    if (!imageFilenameOrPath.includes('/') && !imageFilenameOrPath.includes('\\')) {
+    if (
+      !imageFilenameOrPath.includes('/') &&
+      !imageFilenameOrPath.includes('\\')
+    ) {
       const userDataPath = app.getPath('userData');
-      imagePath = resolve(userDataPath, 'frontend', 'assets', 'img', imageFilenameOrPath);
+      imagePath = resolve(
+        userDataPath,
+        'frontend',
+        'assets',
+        'img',
+        imageFilenameOrPath
+      );
     }
 
     const buffer = await readFile(imagePath);
@@ -235,17 +288,17 @@ export const getGarageCoverImageAsDataUrl = async (imageFilenameOrPath: string):
     // Detect MIME type from file extension
     const extension = imagePath.toLowerCase().split('.').pop() || 'png';
     const mimeTypeMap: Record<string, string> = {
-      'png': 'image/png',
-      'jpg': 'image/jpeg',
-      'jpeg': 'image/jpeg',
-      'gif': 'image/gif',
-      'webp': 'image/webp'
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      gif: 'image/gif',
+      webp: 'image/webp',
     };
     const mimeType = mimeTypeMap[extension] || 'image/png';
 
     return `data:${mimeType};base64,${base64}`;
   } catch (err) {
-    console.error('Error reading garage cover image:', err);
+    logger.error('Error reading garage cover image:', err);
     return null;
   }
 };
@@ -258,7 +311,8 @@ export const getGarageCoverImageAsDataUrl = async (imageFilenameOrPath: string):
  * Get or create the Default if it doesn't exist
  */
 const getOrCreateDefaultProfile = (): DashboardProfile => {
-  const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY) || {};
+  const profiles =
+    readData<Record<string, DashboardProfile>>(PROFILES_KEY) || {};
 
   if (!profiles['default']) {
     profiles['default'] = {
@@ -303,7 +357,8 @@ export const getProfile = (profileId: string): DashboardProfile | null => {
  * Create a new profile with a given name
  */
 export const createProfile = (name: string): DashboardProfile => {
-  const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY) || {};
+  const profiles =
+    readData<Record<string, DashboardProfile>>(PROFILES_KEY) || {};
   const profileId = randomUUID();
 
   const newProfile: DashboardProfile = {
@@ -362,8 +417,16 @@ export const deleteProfile = (profileId: string): void => {
 /**
  * Update profile theme settings
  */
-export const updateProfileTheme = (profileId: string, themeSettings?: DashboardProfile['themeSettings']): void => {
-  console.log('[updateProfileTheme] Updating profile:', profileId, 'with themeSettings:', themeSettings);
+export const updateProfileTheme = (
+  profileId: string,
+  themeSettings?: DashboardProfile['themeSettings']
+): void => {
+  logger.info(
+    '[updateProfileTheme] Updating profile:',
+    profileId,
+    'with themeSettings:',
+    themeSettings
+  );
   const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY);
   if (!profiles || !profiles[profileId]) {
     throw new Error(`Profile ${profileId} not found`);
@@ -376,24 +439,66 @@ export const updateProfileTheme = (profileId: string, themeSettings?: DashboardP
   };
 
   writeData(PROFILES_KEY, profiles);
-  console.log('[updateProfileTheme] Saved profile, checking if current...');
+  logger.info('[updateProfileTheme] Saved profile, checking if current...');
 
   // Get the current profile ID and emit dashboard update if this is the active profile
   const currentProfileId = getCurrentProfileId();
-  console.log('[updateProfileTheme] Current profile ID:', currentProfileId, 'Updated profile ID:', profileId);
+  logger.info(
+    '[updateProfileTheme] Current profile ID:',
+    currentProfileId,
+    'Updated profile ID:',
+    profileId
+  );
   if (profileId === currentProfileId) {
     const dashboard = getDashboard(profileId);
-    console.log('[updateProfileTheme] This is the current profile, emitting dashboard update');
+    logger.info(
+      '[updateProfileTheme] This is the current profile, emitting dashboard update'
+    );
     if (dashboard) {
       emitDashboardUpdated(dashboard);
-      console.log('[updateProfileTheme] Dashboard update emitted');
+      logger.info('[updateProfileTheme] Dashboard update emitted');
     } else {
-      console.log('[updateProfileTheme] No dashboard found for profile');
+      logger.info('[updateProfileTheme] No dashboard found for profile');
     }
   } else {
-    console.log('[updateProfileTheme] Not the current profile, skipping emit');
+    logger.info('[updateProfileTheme] Not the current profile, skipping emit');
   }
 };
+/**
+ * Clone an existing profile and its dashboard configuration
+ */
+export const cloneProfile = (sourceProfileId: string): DashboardProfile => {
+  const sourceProfile = getProfile(sourceProfileId);
+  if (!sourceProfile) {
+    throw new Error(`Profile ${sourceProfileId} not found`);
+  }
+
+  const profileId = randomUUID();
+  const clonedName = `${sourceProfile.name} - cloned`;
+
+  const profiles =
+    readData<Record<string, DashboardProfile>>(PROFILES_KEY) || {};
+
+  const newProfile: DashboardProfile = {
+    id: profileId,
+    name: clonedName,
+    createdAt: new Date().toISOString(),
+    lastModified: new Date().toISOString(),
+    themeSettings: sourceProfile.themeSettings
+      ? { ...sourceProfile.themeSettings }
+      : undefined,
+  };
+
+  profiles[profileId] = newProfile;
+  writeData(PROFILES_KEY, profiles);
+
+  // Copy the source dashboard to the new profile
+  const sourceDashboard = getDashboard(sourceProfileId) || defaultDashboard;
+  saveDashboard(profileId, structuredClone(sourceDashboard));
+
+  return newProfile;
+};
+
 export const renameProfile = (profileId: string, newName: string): void => {
   const profiles = readData<Record<string, DashboardProfile>>(PROFILES_KEY);
   if (!profiles || !profiles[profileId]) {

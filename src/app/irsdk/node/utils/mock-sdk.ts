@@ -1,9 +1,22 @@
 import type { INativeSDK } from '../../native';
 import type {
-  TelemetryVarList, TelemetryVariable, BroadcastMessages, CameraState, ReplayPositionCommand, ReplaySearchCommand, ReplayStateCommand, ReloadTexturesCommand, ChatCommand, PitCommand, TelemetryCommand, FFBCommand, VideoCaptureCommand,
+  TelemetryVarList,
+  TelemetryVariable,
+  BroadcastMessages,
+  CameraState,
+  ReplayPositionCommand,
+  ReplaySearchCommand,
+  ReplayStateCommand,
+  ReloadTexturesCommand,
+  ChatCommand,
+  PitCommand,
+  TelemetryCommand,
+  FFBCommand,
+  VideoCaptureCommand,
 } from '../../types';
 
 import { loadMockSessionData, loadMockTelemetry } from './mock-data/loader';
+import logger from '../../../logger';
 
 let mockTelemetry: TelemetryVarList | null = null;
 let MOCK_SESSION: string | null = null;
@@ -20,9 +33,9 @@ export class MockSDK implements INativeSDK {
     this.enableLogging = false;
     this._isRunning = false;
     void this._loadMockData();
-    console.warn(
+    logger.warn(
       'Attempting to access iRacing SDK on unsupported platform!',
-      '\nReturning mock SDK for testing purposes. (Only win32 supported)',
+      '\nReturning mock SDK for testing purposes. (Only win32 supported)'
     );
   }
 
@@ -62,51 +75,91 @@ export class MockSDK implements INativeSDK {
     return mockTelemetry!;
   }
 
-  public getTelemetryVariable<T extends boolean | number | string>(index: number): TelemetryVariable<T[]>;
-
-  // eslint-disable-next-line @typescript-eslint/unified-signatures
-  public getTelemetryVariable<T extends boolean | number | string>(name: keyof TelemetryVarList): TelemetryVariable<T[]>;
-
-  // Really need to fix the types here.
-  public getTelemetryVariable<T extends boolean | number | string>(name: keyof TelemetryVarList | number): TelemetryVariable<T[]> {
+  public getTelemetryVariable<T extends boolean | number | string>(
+    name: number | string
+  ): TelemetryVariable<T[]> {
     if (typeof name === 'number') {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       return Object.values(mockTelemetry!)[name] as TelemetryVariable<T[]>;
     }
-    return mockTelemetry?.[name] as TelemetryVariable<T[]>;
+    return mockTelemetry?.[name as keyof TelemetryVarList] as TelemetryVariable<
+      T[]
+    >;
   }
 
-  public broadcast(message: BroadcastMessages.CameraSwitchPos, pos: number, group: number, camera: number): void;
+  public broadcast(
+    message:
+      | BroadcastMessages.CameraSwitchPos
+      | BroadcastMessages.CameraSwitchNum,
+    driverOrPos: number,
+    group: number,
+    camera: number
+  ): void;
 
-  // eslint-disable-next-line @typescript-eslint/unified-signatures
-  public broadcast(message: BroadcastMessages.CameraSwitchNum, driver: number, group: number, camera: number): void;
+  public broadcast(
+    message: BroadcastMessages.CameraSetState,
+    state: CameraState
+  ): void;
 
-  public broadcast(message: BroadcastMessages.CameraSetState, state: CameraState): void;
+  public broadcast(
+    message: BroadcastMessages.ReplaySetPlayPosition,
+    pos: ReplayPositionCommand,
+    frame: number
+  ): void;
 
-  public broadcast(message: BroadcastMessages.ReplaySetPlaySpeed, speed: number, slowMotion: number): void;
+  public broadcast(
+    message: BroadcastMessages.ReplaySearch,
+    mode: ReplaySearchCommand
+  ): void;
 
-  public broadcast(message: BroadcastMessages.ReplaySetPlayPosition, pos: ReplayPositionCommand, frame: number): void;
+  public broadcast(
+    message: BroadcastMessages.ReplaySetState,
+    state: ReplayStateCommand
+  ): void;
 
-  public broadcast(message: BroadcastMessages.ReplaySearch, mode: ReplaySearchCommand): void;
+  public broadcast(
+    message: BroadcastMessages.ReloadTextures,
+    command: ReloadTexturesCommand,
+    carIndex?: number
+  ): void;
 
-  public broadcast(message: BroadcastMessages.ReplaySetState, state: ReplayStateCommand): void;
+  public broadcast(
+    message: BroadcastMessages.ChatCommand,
+    command: ChatCommand,
+    macro?: number
+  ): void;
 
-  public broadcast(message: BroadcastMessages.ReloadTextures, command: ReloadTexturesCommand, carIndex?: number): void;
+  public broadcast(
+    message: BroadcastMessages.PitCommand,
+    command: PitCommand,
+    param?: number
+  ): void;
 
-  public broadcast(message: BroadcastMessages.ChatCommand, command: ChatCommand, macro?: number): void;
+  public broadcast(
+    message: BroadcastMessages.TelemCommand,
+    command: TelemetryCommand
+  ): void;
 
-  public broadcast(message: BroadcastMessages.PitCommand, command: PitCommand, param?: number): void;
+  public broadcast(
+    message: BroadcastMessages.FFBCommand,
+    command: FFBCommand,
+    value: number
+  ): void;
 
-  public broadcast(message: BroadcastMessages.TelemCommand, command: TelemetryCommand): void;
+  public broadcast(
+    message:
+      | BroadcastMessages.ReplaySearchSessionTime
+      | BroadcastMessages.ReplaySetPlaySpeed,
+    session: number,
+    time: number
+  ): void;
 
-  public broadcast(message: BroadcastMessages.FFBCommand, command: FFBCommand, value: number): void;
-
-  // eslint-disable-next-line @typescript-eslint/unified-signatures
-  public broadcast(message: BroadcastMessages.ReplaySearchSessionTime, session: number, time: number): void;
-
-  public broadcast(message: BroadcastMessages.VideoCapture, command: VideoCaptureCommand): void;
+  public broadcast(
+    message: BroadcastMessages.VideoCapture,
+    command: VideoCaptureCommand
+  ): void;
 
   public broadcast(...args: number[]): void {
-    console.log('Pretending to trigger SDK call:', ...args);
+    logger.info('Pretending to trigger SDK call:', ...args);
   }
 }

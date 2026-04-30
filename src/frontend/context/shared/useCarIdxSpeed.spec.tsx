@@ -1,9 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useCarIdxSpeed } from './useCarIdxSpeed';
-import { useTelemetryStore } from '../TelemetryStore/TelemetryStore';
-import { useCarSpeedsStore, useCarSpeeds } from '../CarSpeedStore/CarSpeedsStore';
-import { useSessionStore } from '../SessionStore/SessionStore';
+import { useTelemetryStore } from '@irdashies/context';
+import {
+  useCarSpeedsStore,
+  useCarSpeeds,
+} from '../CarSpeedStore/CarSpeedsStore';
+import { useTrackLength } from '@irdashies/context';
 import type { Telemetry } from '@irdashies/types';
 
 // Mock the stores
@@ -17,7 +20,7 @@ vi.mock('../CarSpeedStore/CarSpeedsStore', () => ({
 }));
 
 vi.mock('../SessionStore/SessionStore', () => ({
-  useSessionStore: vi.fn(),
+  useTrackLength: vi.fn(),
 }));
 
 function makeTelemetry(speeds: number[]): Telemetry {
@@ -43,8 +46,7 @@ describe('useCarIdxSpeed', () => {
   it('should return empty array when no telemetry data', () => {
     // Mock store values
     vi.mocked(useTelemetryStore).mockReturnValue({ telemetry: null });
-    vi.mocked(useSessionStore).mockReturnValue({ WeekendInfo: { TrackLength: '5 km' } });
-    vi.mocked(useCarSpeedsStore).mockImplementation((selector) => 
+    vi.mocked(useCarSpeedsStore).mockImplementation((selector) =>
       selector(mockCarSpeedsState)
     );
     vi.mocked(useCarSpeeds).mockReturnValue([]);
@@ -58,8 +60,7 @@ describe('useCarIdxSpeed', () => {
 
     // Mock store values
     vi.mocked(useTelemetryStore).mockReturnValue({ telemetry });
-    vi.mocked(useSessionStore).mockReturnValue({ WeekendInfo: { TrackLength: '' } });
-    vi.mocked(useCarSpeedsStore).mockImplementation((selector) => 
+    vi.mocked(useCarSpeedsStore).mockImplementation((selector) =>
       selector(mockCarSpeedsState)
     );
     vi.mocked(useCarSpeeds).mockReturnValue([]);
@@ -74,14 +75,14 @@ describe('useCarIdxSpeed', () => {
 
     // Mock store values
     vi.mocked(useTelemetryStore).mockReturnValue(telemetry);
-    vi.mocked(useSessionStore).mockReturnValue({ WeekendInfo: { TrackLength: '5 km' } });
-    vi.mocked(useCarSpeedsStore).mockImplementation((selector) => 
+    vi.mocked(useTrackLength).mockReturnValue(5000);
+    vi.mocked(useCarSpeedsStore).mockImplementation((selector) =>
       selector({ ...mockCarSpeedsState, updateCarSpeeds })
     );
     vi.mocked(useCarSpeeds).mockReturnValue([100, 120]);
 
     renderHook(() => useCarIdxSpeed());
-    expect(updateCarSpeeds).toHaveBeenCalledWith(telemetry, 5000); // 5 km = 5000 meters
+    expect(updateCarSpeeds).toHaveBeenCalledWith(telemetry, 5000);
   });
 
   it('should return cached car speeds after initial update', () => {
@@ -90,8 +91,8 @@ describe('useCarIdxSpeed', () => {
 
     // Mock store values
     vi.mocked(useTelemetryStore).mockReturnValue({ telemetry });
-    vi.mocked(useSessionStore).mockReturnValue({ WeekendInfo: { TrackLength: '5 km' } });
-    vi.mocked(useCarSpeedsStore).mockImplementation((selector) => 
+    vi.mocked(useTrackLength).mockReturnValue(5000);
+    vi.mocked(useCarSpeedsStore).mockImplementation((selector) =>
       selector({ ...mockCarSpeedsState, updateCarSpeeds })
     );
     vi.mocked(useCarSpeeds).mockReturnValue([100, 120]);

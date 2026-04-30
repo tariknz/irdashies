@@ -167,20 +167,13 @@ export const generateTrackJsonForTrack = (
 export const generateTrackJson = () => {
   const tracks = fs.readdirSync(`./asset-data`);
 
-  const json = tracks.reduce(
-    (acc, trackId) => {
-      // check if its a folder
-      if (!fs.lstatSync(`./asset-data/${trackId}`).isDirectory()) {
-        return acc;
-      }
-
-      return {
-        ...acc,
-        [parseInt(trackId)]: generateTrackJsonForTrack(trackId),
-      };
-    },
-    {} as Record<number, TrackDrawing | undefined>
-  );
+  const json: Record<number, TrackDrawing | undefined> = {};
+  for (const trackId of tracks) {
+    if (!fs.lstatSync(`./asset-data/${trackId}`).isDirectory()) {
+      continue;
+    }
+    json[parseInt(trackId)] = generateTrackJsonForTrack(trackId);
+  }
 
   fs.writeFileSync(
     `./src/frontend/components/TrackMap/tracks/tracks.json`,

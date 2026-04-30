@@ -1,25 +1,31 @@
 import { useEffect } from 'react';
-import { useTelemetryValue, useTelemetryValues } from '../TelemetryStore/TelemetryStore';
+import {
+  useTelemetryValue,
+  useTelemetryValues,
+} from '../TelemetryStore/TelemetryStore';
 import { useLapTimesStore } from './LapTimesStore';
-import { useStandingsSettings } from '../../components/Standings/hooks/useStandingsSettings';
-import { useFocusCarIdx } from '../shared/useFocusCarIdx';
 
 /**
  * Hook that automatically updates the LapTimesStore with telemetry data.
- * This ensures lap time history is always up-to-date without manual updates in components.
- *
- * Use this hook in components that need lap time history tracking (e.g., Standings overlay).
+ * Pass `enabled: true` when any lap-time-dependent feature (deltas, avg lap)
+ * is active in the consuming widget. Multiple widgets can call this safely —
+ * the store update is idempotent and cheap.
  */
-export const useLapTimesStoreUpdater = () => {
+export const useLapTimesStoreUpdater = (enabled: boolean) => {
   const sessionNum = useTelemetryValue('SessionNum');
   const carIdxLastLapTime = useTelemetryValues('CarIdxLastLapTime');
-  const playerCarIdx = useFocusCarIdx();
-  const updateLapTimes = useLapTimesStore(state => state.updateLapTimes);
-  const standingsSettings = useStandingsSettings();
+  const updateLapTimes = useLapTimesStore((state) => state.updateLapTimes);
+  const reset = useLapTimesStore((state) => state.reset);
+
+  // Reset immediately when session changes so stale data is cleared
+  // before any new telemetry arrives
+  useEffect(() => {
+    reset();
+  }, [sessionNum, reset]);
 
   useEffect(() => {
-    if (carIdxLastLapTime && standingsSettings?.lapTimeDeltas?.enabled) {
-      updateLapTimes(carIdxLastLapTime, sessionNum ?? null, playerCarIdx ?? null);
+    if (carIdxLastLapTime && enabled) {
+      updateLapTimes(carIdxLastLapTime, sessionNum ?? null);
     }
-  }, [carIdxLastLapTime, sessionNum, playerCarIdx, updateLapTimes, standingsSettings?.lapTimeDeltas?.enabled]);
+  }, [carIdxLastLapTime, sessionNum, updateLapTimes, enabled]);
 };

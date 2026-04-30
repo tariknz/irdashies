@@ -5,6 +5,7 @@ import { useCarSpeedsStore } from '../CarSpeedStore/CarSpeedsStore';
 import { useLapTimesStore } from '../LapTimesStore/LapTimesStore';
 import { usePitLapStore } from '../PitLapStore/PitLapStore';
 import { useFuelStore } from '../../components/FuelCalculator/FuelStore';
+import logger from '@irdashies/utils/logger';
 
 /**
  * Resets all session-related stores when the iRacing sim disconnects.
@@ -16,7 +17,7 @@ export const useResetOnDisconnect = (running: boolean) => {
 
   useEffect(() => {
     if (prevRunning.current && !running) {
-      console.log(
+      logger.info(
         '[useResetOnDisconnect] Sim disconnected, resetting all stores'
       );
       useSessionStore.getState().resetSession();

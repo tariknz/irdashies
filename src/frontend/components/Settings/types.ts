@@ -16,21 +16,26 @@ export interface SessionVisibilitySettings {
 export interface StandingsWidgetSettings extends BaseWidgetSettings {
   config: {
     iratingChange: { enabled: boolean };
+    positionChange: { enabled: boolean };
     badge: {
       enabled: boolean;
       badgeFormat:
+        | 'license-color-fullrating-combo'
+        | 'fullrating-color-no-license'
+        | 'rating-color-no-license'
         | 'license-color-fullrating-bw'
         | 'license-color-rating-bw'
+        | 'rating-only-color-rating-bw'
         | 'license-color-rating-bw-no-license'
-        | 'rating-color-no-license'
         | 'license-bw-rating-bw'
         | 'rating-only-bw-rating-bw'
         | 'license-bw-rating-bw-no-license'
-        | 'rating-bw-no-license';
+        | 'rating-bw-no-license'
+        | 'fullrating-bw-no-license';
     };
     delta: { enabled: boolean };
-    gap: { enabled: boolean };
-    interval: { enabled: boolean };
+    gap: { enabled: boolean; decimalPlaces: number };
+    interval: { enabled: boolean; decimalPlaces: number };
     lastTime: {
       enabled: boolean;
       timeFormat:
@@ -59,6 +64,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       numNonClassDrivers: number;
       minPlayerClassDrivers: number;
       numTopDrivers: number;
+      topDriverDivider?: 'none' | 'theme' | 'highlight';
     };
     compound: { enabled: boolean };
     carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
@@ -67,8 +73,13 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     headerBar: {
       enabled: boolean;
       sessionName: { enabled: boolean };
-      sessionTime: { enabled: boolean; mode: 'Remaining' | 'Elapsed' };
-      sessionLaps: { enabled: boolean };
+      sessionTime: {
+        enabled: boolean;
+        mode: 'Remaining' | 'Elapsed';
+        totalFormat: 'hh:mm' | 'minimal';
+        labelStyle: 'none' | 'short' | 'minimal';
+      };
+      sessionLaps: { enabled: boolean; mode: 'Elapsed' | 'Remaining' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
@@ -77,13 +88,23 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       precipitation: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
+      wind: {
+        enabled: boolean;
+        speedPosition: 'left' | 'right';
+      };
+      trackName: { enabled: boolean };
       displayOrder: string[];
     };
     footerBar: {
       enabled: boolean;
       sessionName: { enabled: boolean };
-      sessionTime: { enabled: boolean; mode: 'Remaining' | 'Elapsed' };
-      sessionLaps: { enabled: boolean };
+      sessionTime: {
+        enabled: boolean;
+        mode: 'Remaining' | 'Elapsed';
+        totalFormat: 'hh:mm' | 'minimal';
+        labelStyle: 'none' | 'short' | 'minimal';
+      };
+      sessionLaps: { enabled: boolean; mode: 'Elapsed' | 'Remaining' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
@@ -92,6 +113,11 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       precipitation: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
+      wind: {
+        enabled: boolean;
+        speedPosition: 'left' | 'right';
+      };
+      trackName: { enabled: boolean };
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
@@ -100,6 +126,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     driverName: {
       enabled: boolean;
       showStatusBadges: boolean;
+      removeNumbersFromName: boolean;
       nameFormat:
         | 'name-middlename-surname'
         | 'name-m.-surname'
@@ -116,6 +143,11 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
     };
     displayOrder: string[];
     sessionVisibility: SessionVisibilitySettings;
+    driverTag?: {
+      enabled: boolean;
+      position: 'before-name' | 'after-name';
+      widthPx: number;
+    };
   };
 }
 
@@ -151,8 +183,13 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     headerBar: {
       enabled: boolean;
       sessionName: { enabled: boolean };
-      sessionTime: { enabled: boolean; mode: 'Remaining' | 'Elapsed' };
-      sessionLaps: { enabled: boolean };
+      sessionTime: {
+        enabled: boolean;
+        mode: 'Remaining' | 'Elapsed';
+        totalFormat: 'hh:mm' | 'minimal';
+        labelStyle: 'none' | 'short' | 'minimal';
+      };
+      sessionLaps: { enabled: boolean; mode: 'Elapsed' | 'Remaining' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
@@ -161,13 +198,23 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       precipitation: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
+      wind: {
+        enabled: boolean;
+        speedPosition: 'left' | 'right';
+      };
+      trackName: { enabled: boolean };
       displayOrder: string[];
     };
     footerBar: {
       enabled: boolean;
       sessionName: { enabled: boolean };
-      sessionTime: { enabled: boolean; mode: 'Remaining' | 'Elapsed' };
-      sessionLaps: { enabled: boolean };
+      sessionTime: {
+        enabled: boolean;
+        mode: 'Remaining' | 'Elapsed';
+        totalFormat: 'hh:mm' | 'minimal';
+        labelStyle: 'none' | 'short' | 'minimal';
+      };
+      sessionLaps: { enabled: boolean; mode: 'Elapsed' | 'Remaining' };
       incidentCount: { enabled: boolean };
       brakeBias: { enabled: boolean };
       localTime: { enabled: boolean };
@@ -176,12 +223,19 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
       precipitation: { enabled: boolean };
       airTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
       trackTemperature: { enabled: boolean; unit: 'Metric' | 'Imperial' };
+      wind: {
+        enabled: boolean;
+        speedPosition: 'left' | 'right';
+      };
+      trackName: { enabled: boolean };
       displayOrder: string[];
     };
     showOnlyWhenOnTrack: boolean;
     badge: {
       enabled: boolean;
       badgeFormat:
+        | 'license-color-fullrating-combo'
+        | 'fullrating-color-no-license'
         | 'license-color-fullrating-bw'
         | 'license-color-rating-bw'
         | 'license-color-rating-bw-no-license'
@@ -189,7 +243,8 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
         | 'license-bw-rating-bw'
         | 'rating-only-bw-rating-bw'
         | 'license-bw-rating-bw-no-license'
-        | 'rating-bw-no-license';
+        | 'rating-bw-no-license'
+        | 'fullrating-bw-no-license';
     };
     iratingChange: { enabled: boolean };
     delta: {
@@ -200,6 +255,7 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     driverName: {
       enabled: boolean;
       showStatusBadges: boolean;
+      removeNumbersFromName: boolean;
       nameFormat:
         | 'name-middlename-surname'
         | 'name-m.-surname'
@@ -217,6 +273,11 @@ export interface RelativeWidgetSettings extends BaseWidgetSettings {
     displayOrder: string[];
     useLivePosition: boolean;
     sessionVisibility: SessionVisibilitySettings;
+    driverTag?: {
+      enabled: boolean;
+      position: 'before-name' | 'after-name';
+      widthPx: number;
+    };
   };
 }
 
@@ -252,13 +313,16 @@ export interface TrackMapWidgetSettings extends BaseWidgetSettings {
   config: {
     enableTurnNames: boolean;
     showCarNumbers: boolean;
-    displayMode: 'carNumber' | 'sessionPosition';
+    displayMode: 'carNumber' | 'sessionPosition' | 'livePosition';
     invertTrackColors: boolean;
+    highContrastTurns: boolean;
     driverCircleSize: number;
     playerCircleSize: number;
+    trackmapFontSize: number;
     trackLineWidth: number;
     trackOutlineWidth: number;
     useHighlightColor: boolean;
+    invertLeaderColor: boolean;
     showOnlyWhenOnTrack: boolean;
     sessionVisibility: SessionVisibilitySettings;
   };
@@ -440,6 +504,20 @@ export type FuelWidgetType =
   | 'confidence'
   | 'keyInfo';
 
+/** Available widgets for the Fuel Calculator */
+export type SettingsTabType =
+  | 'display'
+  | 'options'
+  | 'visibility'
+  | 'track'
+  | 'drivers'
+  | 'layout'
+  | 'header'
+  | 'footer'
+  | 'history'
+  | 'telemetry'
+  | 'dashboard';
+
 export interface BlindSpotMonitorWidgetSettings extends BaseWidgetSettings {
   config: {
     showOnlyWhenOnTrack: boolean;
@@ -481,13 +559,15 @@ export interface FlagWidgetSettings extends BaseWidgetSettings {
 export interface FlatTrackMapWidgetSettings extends BaseWidgetSettings {
   config: {
     showCarNumbers: boolean;
-    displayMode: 'carNumber' | 'sessionPosition';
+    displayMode: 'carNumber' | 'sessionPosition' | 'livePosition';
     driverCircleSize: number;
     playerCircleSize: number;
+    trackmapFontSize: number;
     trackLineWidth: number;
     trackOutlineWidth: number;
     invertTrackColors: boolean;
     useHighlightColor: boolean;
+    invertLeaderColor: boolean;
     showOnlyWhenOnTrack: boolean;
     sessionVisibility: SessionVisibilitySettings;
   };
@@ -518,6 +598,7 @@ export interface FasterCarsFromBehindWidgetSettings extends BaseWidgetSettings {
     alignDriverBoxes: 'Top' | 'Bottom';
     closestDriverBox: 'Top' | 'Reverse';
     showName: boolean;
+    removeNumbersFromName: boolean;
     showDistance: boolean;
     showBadge: boolean;
     badgeFormat: string;
@@ -536,12 +617,25 @@ export interface PitlaneHelperWidgetSettings extends BaseWidgetSettings {
     showPitlaneTraffic: boolean;
     background: { opacity: number };
     progressBarOrientation: 'horizontal' | 'vertical';
+    speedBarOrientation: 'horizontal' | 'vertical';
+    showPastPitBox: boolean;
+    showProgressBar: boolean;
+    showSpeedBar: boolean;
     showPitExitInputs: boolean;
     pitExitInputs: {
       throttle: boolean;
       clutch: boolean;
     };
     showInputsPhase: 'atPitbox' | 'afterPitbox' | 'always';
+    sessionVisibility: SessionVisibilitySettings;
+  };
+}
+
+export interface TwitchChatWidgetSettings extends BaseWidgetSettings {
+  config: {
+    fontSize: number;
+    channel: string;
+    background: { opacity: number };
   };
 }
 

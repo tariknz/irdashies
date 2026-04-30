@@ -4,16 +4,25 @@ import {
   useTelemetry,
   useSessionDrivers,
   useSessionQualifyingResults,
+  useSessionIsOfficial,
   useCurrentSessionType,
   useCarLap,
   usePitLap,
   usePrevCarTrackSurface,
   useFocusCarIdx,
   useSessionPositions,
+  useSessionFastestLaps,
   useTelemetryValues,
+  useTelemetryValuesRounded,
+  useDriverStatsStore,
 } from '@irdashies/context';
 
-import { Standings, type LastTimeState } from '../createStandings';
+import {
+  Standings,
+  augmentStandingsWithIRating,
+  groupStandingsByClass,
+  type LastTimeState,
+} from '../createStandings';
 import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useRelativeSettings } from './useRelativeSettings';
@@ -38,7 +47,7 @@ export const useDriverPositions = () => {
   const carIdxClassPosition = useTelemetry('CarIdxClassPosition');
   const carIdxBestLap = useTelemetry('CarIdxBestLapTime');
   const carIdxLastLapTime = useTelemetry('CarIdxLastLapTime');
-  const carIdxF2Time = useTelemetry('CarIdxF2Time');
+  const carIdxF2Time = useTelemetryValuesRounded('CarIdxF2Time', 2);
   const carIdxLapNum = useTelemetry('CarIdxLap');
   const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
   const prevCarTrackSurface = usePrevCarTrackSurface();
@@ -52,7 +61,7 @@ export const useDriverPositions = () => {
         carIdx,
         position,
         classPosition: carIdxClassPosition?.value?.[carIdx],
-        delta: carIdxF2Time?.value?.[carIdx], // only to leader currently, need to handle non-race sessions
+        delta: carIdxF2Time[carIdx], // only to leader currently, need to handle non-race sessions
         bestLap: carIdxBestLap?.value?.[carIdx],
         lastLap: lastLap[carIdx] ?? -1,
         lastLapTime: carIdxLastLapTime?.value?.[carIdx] ?? -1,
@@ -69,7 +78,7 @@ export const useDriverPositions = () => {
     carIdxBestLap?.value,
     carIdxLastLapTime?.value,
     lastLap,
-    carIdxF2Time?.value,
+    carIdxF2Time,
     carIdxLapNum?.value,
     carIdxLapDstPct,
     lastPitLap,
@@ -143,9 +152,11 @@ export const useCarState = () => {
 // currently there's still a few bugs to handle but is only used in relative right now
 export const useDriverStandings = () => {
   const driverPositions = useDriverPositions();
-  const driverLivePositions = useDriverLivePositions();
   const relativeSettings = useRelativeSettings();
   const useLivePositionStandings = relativeSettings?.useLivePosition ?? false;
+  const driverLivePositions = useDriverLivePositions({
+    enabled: useLivePositionStandings,
+  });
   const drivers = useDrivers();
   const radioTransmitCarIdx = useTelemetryValue('RadioTransmitCarIdx');
   const carStates = useCarState();
@@ -156,20 +167,13 @@ export const useDriverStandings = () => {
   const sessionState = useTelemetryValue('SessionState') ?? 0;
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionPositions = useSessionPositions(sessionNum);
+  const sessionFastestLaps = useSessionFastestLaps(sessionNum);
+  const iratingChanges = useDriverStatsStore((s) => s.iratingChanges);
+  const positionChanges = useDriverStatsStore((s) => s.positionChanges);
+  const fastestLapCarIdx = sessionFastestLaps?.[0]?.CarIdx;
+  const isOfficial = useSessionIsOfficial();
 
   const driverStandings: Standings[] = useMemo(() => {
-    const fastestTime = driverPositions.reduce(
-      (fastest, pos) => {
-        if (pos.bestLap !== undefined && pos.bestLap > 0) {
-          return fastest === undefined || pos.bestLap < fastest
-            ? pos.bestLap
-            : fastest;
-        }
-        return fastest;
-      },
-      undefined as number | undefined
-    );
-
     // Create Map lookups for O(1) access instead of O(n) find() calls
     const driverPositionsByCarIdx = new Map(
       driverPositions.map((pos) => [pos.carIdx, pos])
@@ -232,7 +236,7 @@ export const useDriverStandings = () => {
             driver.carIdx
           );
           classPosition = qualifyingPosition
-            ? qualifyingPosition.Position + 1
+            ? qualifyingPosition.ClassPosition + 1
             : undefined;
         } else {
           const sessionPosition = sessionPositionsMap.get(driver.carIdx);
@@ -243,9 +247,7 @@ export const useDriverStandings = () => {
       }
 
       const hasFastestTime =
-        driverPos.bestLap !== undefined &&
-        fastestTime !== undefined &&
-        driverPos.bestLap === fastestTime;
+        fastestLapCarIdx !== undefined && driver.carIdx === fastestLapCarIdx;
 
       return {
         carIdx: driver.carIdx,
@@ -287,10 +289,22 @@ export const useDriverStandings = () => {
         penalty: carState?.penalty ?? false,
         slowdown: carState?.slowdown ?? false,
         relativePct: 0,
+        iratingChange: iratingChanges[driver.carIdx],
+        positionChange: positionChanges[driver.carIdx],
       };
     });
 
-    return standings.filter((s) => !!s).sort((a, b) => a.position - b.position);
+    const filteredStandings = standings
+      .filter((s) => !!s)
+      .sort((a, b) => a.position - b.position);
+
+    if (sessionType !== 'Race' || !isOfficial) {
+      return filteredStandings;
+    }
+
+    return augmentStandingsWithIRating(groupStandingsByClass(filteredStandings))
+      .flatMap(([, classStandings]) => classStandings)
+      .sort((a, b) => (a?.position ?? 0) - (b?.position ?? 0));
   }, [
     sessionPositions,
     sessionState,
@@ -303,6 +317,10 @@ export const useDriverStandings = () => {
     useLivePositionStandings,
     radioTransmitCarIdx,
     driverLivePositions,
+    fastestLapCarIdx,
+    iratingChanges,
+    positionChanges,
+    isOfficial,
   ]);
 
   return driverStandings;

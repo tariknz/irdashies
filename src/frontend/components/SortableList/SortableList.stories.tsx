@@ -37,7 +37,6 @@ const SortableListDemo = () => {
       <SortableList
         items={items}
         onReorder={setItems}
-        className="space-y-2"
         renderItem={(item, { dragHandleProps, itemProps }) => (
           <div
             key={item.id}
@@ -134,7 +133,6 @@ const StringArrayDemo = () => {
       <SortableList
         items={wrappedItems}
         onReorder={(newItems) => setItems(newItems.map((i) => i.id))}
-        className="space-y-2"
         renderItem={(item, { dragHandleProps, itemProps }) => (
           <div
             key={item.id}

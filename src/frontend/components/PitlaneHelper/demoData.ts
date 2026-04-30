@@ -40,6 +40,13 @@ export interface PitlaneHelperSettings {
   showMode: 'approaching' | 'onPitRoad';
   approachDistance: number;
   progressBarOrientation: 'vertical' | 'horizontal';
+  speedBarOrientation: 'vertical' | 'horizontal';
+  showProgressBar: boolean;
+  showPastPitBox: boolean;
+  showSpeedSummary: boolean;
+  showSpeedDelta: boolean;
+  speedLimitStyle: 'none' | 'text' | 'european' | 'american';
+  showSpeedBar: boolean;
   showPitExitInputs: boolean;
   pitExitInputs: {
     throttle: boolean;
@@ -84,7 +91,7 @@ export const getDemoPitlaneData = (): PitlaneHelperDemoData => {
       progressPercent: 75,
       isApproaching: true,
       pitboxPct: 0.85,
-      playerPct: 0.80,
+      playerPct: 0.8,
       isEarlyPitbox: false,
     },
     isVisible: true,

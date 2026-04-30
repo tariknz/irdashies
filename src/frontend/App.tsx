@@ -7,11 +7,14 @@ import {
   RunningStateProvider,
   SessionProvider,
   PitLaneProvider,
+  ReferenceStoreProvider,
+  DriverStatsStoreUpdater,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
 import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
 import { OverlayContainer } from './components/OverlayContainer';
+import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 
 /**
  * Check if this window is the settings window based on URL hash
@@ -49,15 +52,29 @@ const OverlayApp = () => {
 const App = () => {
   const isSettings = isSettingsWindow();
 
+  if (isSettings) {
+    return (
+      <ErrorBoundary label="settings" resetAfterMs={2000}>
+        <DashboardProvider bridge={window.dashboardBridge}>
+          <SettingsApp />
+        </DashboardProvider>
+      </ErrorBoundary>
+    );
+  }
+
   return (
-    <DashboardProvider bridge={window.dashboardBridge}>
-      <RunningStateProvider bridge={window.irsdkBridge}>
-        <SessionProvider bridge={window.irsdkBridge} />
-        <TelemetryProvider bridge={window.irsdkBridge} />
-        <PitLaneProvider bridge={window.pitLaneBridge} />
-        {isSettings ? <SettingsApp /> : <OverlayApp />}
-      </RunningStateProvider>
-    </DashboardProvider>
+    <ErrorBoundary label="overlay" resetAfterMs={2000}>
+      <DashboardProvider bridge={window.dashboardBridge}>
+        <RunningStateProvider bridge={window.irsdkBridge}>
+          <SessionProvider bridge={window.irsdkBridge} />
+          <TelemetryProvider bridge={window.irsdkBridge} />
+          <PitLaneProvider bridge={window.pitLaneBridge} />
+          <ReferenceStoreProvider bridge={window.referenceLapsBridge} />
+          <DriverStatsStoreUpdater />
+          <OverlayApp />
+        </RunningStateProvider>
+      </DashboardProvider>
+    </ErrorBoundary>
   );
 };
 

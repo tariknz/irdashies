@@ -1,6 +1,8 @@
-import type { SessionVisibilitySettings, LayoutNode } from '../Settings/types';
-import type { FuelLapData } from '../../../types';
-
+import type {
+  SessionVisibilitySettings,
+  LayoutNode,
+  FuelLapData,
+} from '@irdashies/types';
 export type { FuelLapData };
 
 /**

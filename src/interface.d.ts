@@ -1,4 +1,12 @@
-import type { DashboardBridge, IrSdkBridge, PitLaneBridge, FuelCalculatorBridge } from '@irdashies/types';
+import type {
+  DashboardBridge,
+  IrSdkBridge,
+  PitLaneBridge,
+  FuelCalculatorBridge,
+  ReferenceLapBridge,
+  LogBridge,
+  KeybindingsBridge,
+} from '@irdashies/types';
 
 declare global {
   interface Window {
@@ -6,5 +14,8 @@ declare global {
     dashboardBridge: DashboardBridge;
     pitLaneBridge: PitLaneBridge;
     fuelCalculatorBridge: FuelCalculatorBridge;
+    referenceLapsBridge: ReferenceLapBridge;
+    logBridge: LogBridge;
+    keybindingsBridge: KeybindingsBridge;
   }
 }

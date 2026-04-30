@@ -10,6 +10,10 @@ import type {
   ContainerBoundsInfo,
   FuelCalculatorBridge,
   FuelLapData,
+  ReferenceLap,
+  ReferenceLapBridge,
+  KeybindingsBridge,
+  KeybindingActionId,
 } from '@irdashies/types';
 
 export function exposeBridge() {
@@ -107,6 +111,9 @@ export function exposeBridge() {
     createProfile: (name: string) => {
       return ipcRenderer.invoke('createProfile', name);
     },
+    cloneProfile: (profileId: string) => {
+      return ipcRenderer.invoke('cloneProfile', profileId);
+    },
     deleteProfile: (profileId: string) => {
       return ipcRenderer.invoke('deleteProfile', profileId);
     },
@@ -122,7 +129,10 @@ export function exposeBridge() {
     getDashboardForProfile: (profileId: string) => {
       return ipcRenderer.invoke('getDashboardForProfile', profileId);
     },
-    updateProfileTheme: (profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
+    updateProfileTheme: (
+      profileId: string,
+      themeSettings: DashboardProfile['themeSettings']
+    ) => {
       return ipcRenderer.invoke('updateProfileTheme', profileId, themeSettings);
     },
     stop: () => {
@@ -133,6 +143,27 @@ export function exposeBridge() {
     },
     setAutoStart: (enabled: boolean) => {
       return ipcRenderer.invoke('autostart:set', enabled);
+    },
+    getDriverTagSettings: () => {
+      return ipcRenderer.invoke('getDriverTagSettings');
+    },
+    saveDriverTagSettings: (settings: unknown) => {
+      return ipcRenderer.invoke('saveDriverTagSettings', settings);
+    },
+    getComponentServerPort: () => {
+      return ipcRenderer.invoke('getComponentServerPort');
+    },
+    exportDashboardToFile: (dashboard: DashboardLayout) => {
+      return ipcRenderer.invoke('exportDashboardToFile', dashboard);
+    },
+    importDashboardFromFile: () => {
+      return ipcRenderer.invoke('importDashboardFromFile');
+    },
+    openLogFolder: () => {
+      return ipcRenderer.invoke('openLogFolder');
+    },
+    exportLogFile: () => {
+      return ipcRenderer.invoke('exportLogFile');
     },
     getCurrentDashboard: () => {
       // This is a synchronous getter used in overlay container mode
@@ -148,6 +179,16 @@ export function exposeBridge() {
       };
       ipcRenderer.on('containerBoundsInfo', handler);
       return () => ipcRenderer.removeListener('containerBoundsInfo', handler);
+    },
+    openWidgetSettings: (widgetType: string) => {
+      return ipcRenderer.invoke('openWidgetSettings', widgetType);
+    },
+    onNavigateToSettings: (callback: (widgetType: string) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, widgetType: string) => {
+        callback(widgetType);
+      };
+      ipcRenderer.on('navigateToSettings', handler);
+      return () => ipcRenderer.removeListener('navigateToSettings', handler);
     },
   } as DashboardBridge);
 
@@ -176,4 +217,35 @@ export function exposeBridge() {
       return ipcRenderer.invoke('fuel:logData', data);
     },
   } as FuelCalculatorBridge);
+
+  contextBridge.exposeInMainWorld('referenceLapsBridge', {
+    getReferenceLap: (seriesId: number, trackId: number, classId: number) => {
+      return ipcRenderer.invoke('reference:get', seriesId, trackId, classId);
+    },
+    saveReferenceLap: (
+      seriesId: number,
+      trackId: number,
+      classId: number,
+      lap: ReferenceLap
+    ) => {
+      return ipcRenderer.invoke(
+        'reference:save',
+        seriesId,
+        trackId,
+        classId,
+        lap
+      );
+    },
+  } as ReferenceLapBridge);
+
+  contextBridge.exposeInMainWorld('keybindingsBridge', {
+    getKeybindings: () => ipcRenderer.invoke('keybindings:get'),
+    updateKeybinding: (actionId: KeybindingActionId, accelerator: string) =>
+      ipcRenderer.invoke('keybindings:update', actionId, accelerator),
+    resetKeybinding: (actionId: KeybindingActionId) =>
+      ipcRenderer.invoke('keybindings:reset', actionId),
+    resetAllKeybindings: () => ipcRenderer.invoke('keybindings:resetAll'),
+    startRecording: () => ipcRenderer.invoke('keybindings:startRecording'),
+    stopRecording: () => ipcRenderer.invoke('keybindings:stopRecording'),
+  } as KeybindingsBridge);
 }

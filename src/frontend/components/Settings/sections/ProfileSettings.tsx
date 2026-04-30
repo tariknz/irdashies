@@ -1,60 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useDashboard } from '@irdashies/context';
-import type {
-  DashboardProfile,
-  GeneralSettingsType,
-  FontSize,
-} from '@irdashies/types';
+import type { DashboardProfile } from '@irdashies/types';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-
-const FONT_SIZE_OPTIONS: { value: FontSize; label: string }[] = [
-  { value: 'xs', label: 'Extra Small' },
-  { value: 'sm', label: 'Small' },
-  { value: 'md', label: 'Medium' },
-  { value: 'lg', label: 'Large' },
-  { value: 'xl', label: 'Extra Large' },
-  { value: '2xl', label: '2X Large' },
-  { value: '3xl', label: '3X Large' },
-];
-
-const COLOR_PALETTES: {
-  value: GeneralSettingsType['colorPalette'];
-  label: string;
-}[] = [
-  { value: undefined, label: 'Use Dashboard Default' },
-  { value: 'default', label: 'Slate (default)' },
-  { value: 'black', label: 'Black' },
-  { value: 'red', label: 'Red' },
-  { value: 'orange', label: 'Orange' },
-  { value: 'amber', label: 'Amber' },
-  { value: 'yellow', label: 'Yellow' },
-  { value: 'lime', label: 'Lime' },
-  { value: 'green', label: 'Green' },
-  { value: 'emerald', label: 'Emerald' },
-  { value: 'teal', label: 'Teal' },
-  { value: 'cyan', label: 'Cyan' },
-  { value: 'sky', label: 'Sky' },
-  { value: 'blue', label: 'Blue' },
-  { value: 'indigo', label: 'Indigo' },
-  { value: 'violet', label: 'Violet' },
-  { value: 'purple', label: 'Purple' },
-  { value: 'fuchsia', label: 'Fuchsia' },
-  { value: 'pink', label: 'Pink' },
-  { value: 'rose', label: 'Rose' },
-  { value: 'zinc', label: 'Zinc' },
-  { value: 'stone', label: 'Stone' },
-];
+import {
+  CopySimpleIcon,
+  PencilSimpleIcon,
+  CaretDownIcon,
+  TrashIcon,
+} from '@phosphor-icons/react';
 
 export const ProfileSettings = () => {
   const {
     currentProfile,
     profiles,
     createProfile,
+    cloneProfile,
     deleteProfile,
     renameProfile,
     switchProfile,
     refreshProfiles,
-    bridge,
   } = useDashboard();
 
   const [newProfileName, setNewProfileName] = useState('');
@@ -63,90 +28,45 @@ export const ProfileSettings = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [serverIP, setServerIP] = useState<string>('localhost');
+  const [serverPort, setServerPort] = useState<number>(3000);
   const [confirmDelete, setConfirmDelete] = useState<{
     isOpen: boolean;
     profileId: string;
     profileName: string;
   }>({ isOpen: false, profileId: '', profileName: '' });
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{
+    top: number;
+    right: number;
+  } | null>(null);
+  const dropdownButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
-  // Debounce state for theme settings
-  const [pendingFontSize, setPendingFontSize] = useState<
-    FontSize | '' | undefined
-  >(currentProfile?.themeSettings?.fontSize);
-  const [pendingColorPalette, setPendingColorPalette] = useState<
-    GeneralSettingsType['colorPalette'] | ''
-  >(currentProfile?.themeSettings?.colorPalette ?? '');
+  useEffect(() => {
+    const close = () => setOpenDropdownId(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, []);
 
   useEffect(() => {
     refreshProfiles();
-    // Fetch server IP
-    fetch('http://localhost:3000/api/server-ip')
-      .then((res) => res.json())
-      .catch(() => ({ ip: 'localhost' }))
-      .then((data) => {
-        if (data.ip) {
-          setServerIP(data.ip);
-        }
+    // Fetch server port and IP via IPC
+    const bridge = window.dashboardBridge;
+    if (bridge?.getComponentServerPort) {
+      bridge.getComponentServerPort().then((port) => {
+        setServerPort(port);
+        // Fetch server IP using the actual port
+        fetch(`http://localhost:${port}/api/server-ip`)
+          .then((res) => res.json())
+          .catch(() => ({ ip: 'localhost' }))
+          .then((data) => {
+            if (data.ip) {
+              setServerIP(data.ip);
+            }
+          });
       });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Sync pending values when profile changes
-  useEffect(() => {
-    if (currentProfile) {
-      setPendingFontSize(currentProfile.themeSettings?.fontSize);
-      setPendingColorPalette(currentProfile.themeSettings?.colorPalette ?? '');
-    }
-  }, [currentProfile]);
-
-  // Debounce font size updates (500ms delay)
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (
-        currentProfile &&
-        bridge.updateProfileTheme &&
-        pendingFontSize !== currentProfile.themeSettings?.fontSize
-      ) {
-        try {
-          await bridge.updateProfileTheme(currentProfile.id, {
-            ...currentProfile.themeSettings,
-            fontSize: pendingFontSize || undefined,
-          });
-          await refreshProfiles();
-        } catch (error) {
-          console.error('Failed to update font size:', error);
-          setError('Failed to update font size');
-        }
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [pendingFontSize, currentProfile, bridge, refreshProfiles]);
-
-  // Debounce color palette updates (500ms delay)
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (
-        currentProfile &&
-        bridge.updateProfileTheme &&
-        pendingColorPalette !==
-          (currentProfile.themeSettings?.colorPalette ?? '')
-      ) {
-        try {
-          await bridge.updateProfileTheme(currentProfile.id, {
-            ...currentProfile.themeSettings,
-            colorPalette:
-              (pendingColorPalette as GeneralSettingsType['colorPalette']) ||
-              undefined,
-          });
-          await refreshProfiles();
-        } catch (error) {
-          console.error('Failed to update color palette:', error);
-          setError('Failed to update color palette');
-        }
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [pendingColorPalette, currentProfile, bridge, refreshProfiles]);
 
   const handleCreateProfile = async () => {
     if (!newProfileName.trim()) {
@@ -198,6 +118,17 @@ export const ProfileSettings = () => {
     setConfirmDelete({ isOpen: false, profileId: '', profileName: '' });
   };
 
+  const handleCloneProfile = async (profile: DashboardProfile) => {
+    setError(null);
+    try {
+      const cloned = await cloneProfile(profile.id);
+      setEditingProfileId(cloned.id);
+      setEditingProfileName(cloned.name);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to clone profile');
+    }
+  };
+
   const handleStartEdit = (profile: DashboardProfile) => {
     setEditingProfileId(profile.id);
     setEditingProfileName(profile.name);
@@ -236,18 +167,16 @@ export const ProfileSettings = () => {
   };
 
   return (
-    <div className="h-full max-h-screen overflow-y-auto">
-      <div className="p-6 space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-2">
-            Configuration Profiles
-          </h2>
-          <p className="text-gray-400 text-sm">
-            Manage different dashboard configurations for various scenarios.
-            Each profile stores separate widget configurations and layouts.
-          </p>
-        </div>
+    <div className="flex flex-col h-full">
+      <div className="flex-none p-4 bg-slate-700 rounded">
+        <h2 className="text-xl mb-1">Configuration Profiles</h2>
+        <p className="text-slate-400">
+          Manage different dashboard configurations for various scenarios. Each
+          profile stores separate widget configurations and layouts.
+        </p>
+      </div>
 
+      <div className="flex-1 overflow-y-auto min-h-0 space-y-6 p-4 mt-4">
         {error && (
           <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded">
             {error}
@@ -367,22 +296,8 @@ export const ProfileSettings = () => {
                           )}
 
                           <button
-                            onClick={() => handleStartEdit(profile)}
-                            className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
-                          >
-                            Rename
-                          </button>
-                          {profile.id !== 'default' && (
-                            <button
-                              onClick={() => handleDeleteProfile(profile.id)}
-                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
-                            >
-                              Delete
-                            </button>
-                          )}
-                          <button
                             onClick={() => {
-                              const url = `http://${serverIP}:3000/dashboard?profile=${profile.id}`;
+                              const url = `http://${serverIP}:${serverPort}/dashboard?profile=${profile.id}`;
                               navigator.clipboard.writeText(url);
                             }}
                             className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
@@ -390,6 +305,90 @@ export const ProfileSettings = () => {
                           >
                             Copy URL
                           </button>
+
+                          {/* Actions dropdown */}
+                          <div className="relative">
+                            <button
+                              ref={(el) => {
+                                if (el)
+                                  dropdownButtonRefs.current.set(
+                                    profile.id,
+                                    el
+                                  );
+                                else
+                                  dropdownButtonRefs.current.delete(profile.id);
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (openDropdownId === profile.id) {
+                                  setOpenDropdownId(null);
+                                  setDropdownPos(null);
+                                } else {
+                                  const rect = dropdownButtonRefs.current
+                                    .get(profile.id)
+                                    ?.getBoundingClientRect();
+                                  if (rect) {
+                                    setDropdownPos({
+                                      top: rect.bottom + 4,
+                                      right: window.innerWidth - rect.right,
+                                    });
+                                  }
+                                  setOpenDropdownId(profile.id);
+                                }
+                              }}
+                              className="bg-slate-600 hover:bg-slate-500 text-white px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-1"
+                            >
+                              Actions
+                              <CaretDownIcon size={12} />
+                            </button>
+                          </div>
+                          {openDropdownId === profile.id &&
+                            dropdownPos &&
+                            createPortal(
+                              <div
+                                style={{
+                                  position: 'fixed',
+                                  top: dropdownPos.top,
+                                  right: dropdownPos.right,
+                                  zIndex: 9999,
+                                }}
+                                className="bg-slate-700 border border-slate-600 rounded shadow-lg min-w-[130px]"
+                              >
+                                <button
+                                  onClick={() => {
+                                    setOpenDropdownId(null);
+                                    handleCloneProfile(profile);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-600 transition-colors text-left"
+                                >
+                                  <CopySimpleIcon size={14} />
+                                  Clone
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setOpenDropdownId(null);
+                                    handleStartEdit(profile);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-600 transition-colors text-left"
+                                >
+                                  <PencilSimpleIcon size={14} />
+                                  Rename
+                                </button>
+                                {profile.id !== 'default' && (
+                                  <button
+                                    onClick={() => {
+                                      setOpenDropdownId(null);
+                                      handleDeleteProfile(profile.id);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-600 transition-colors text-left"
+                                  >
+                                    <TrashIcon size={14} />
+                                    Delete
+                                  </button>
+                                )}
+                              </div>,
+                              document.body
+                            )}
                         </>
                       )}
                     </div>
@@ -399,69 +398,6 @@ export const ProfileSettings = () => {
             )}
           </div>
         </div>
-
-        {/* Theme Override Settings for Current Profile */}
-        {currentProfile && (
-          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Theme Overrides for &quot;{currentProfile.name}&quot;
-              </h3>
-              <p className="text-sm text-gray-400">
-                Customize theme settings for this profile. Leave unset to use
-                dashboard defaults.
-              </p>
-            </div>
-
-            {/* Font Size Override */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-300">
-                Font Size
-              </label>
-              <select
-                value={pendingFontSize ?? ''}
-                onChange={(e) => {
-                  const value = e.target.value as FontSize | '';
-                  setPendingFontSize(value || undefined);
-                }}
-                className="w-full bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
-              >
-                <option value="">Use Dashboard Default</option>
-                {FONT_SIZE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Color Palette Override */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-300">
-                Color Palette
-              </label>
-              <select
-                value={pendingColorPalette ?? ''}
-                onChange={(e) => {
-                  const value = e.target.value as
-                    | GeneralSettingsType['colorPalette']
-                    | '';
-                  setPendingColorPalette(value);
-                }}
-                className="w-full bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
-              >
-                {COLOR_PALETTES.map((opt, idx) => (
-                  <option
-                    key={opt.value ?? `unset-${idx}`}
-                    value={opt.value ?? ''}
-                  >
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        )}
 
         {/* OBS Browser Source URL */}
         {currentProfile && (
@@ -484,13 +420,13 @@ export const ProfileSettings = () => {
                 <input
                   type="text"
                   readOnly
-                  value={`http://localhost:3000/dashboard?profile=${currentProfile.id}`}
+                  value={`http://localhost:${serverPort}/dashboard?profile=${currentProfile.id}`}
                   className="flex-1 bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm font-mono"
                 />
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(
-                      `http://localhost:3000/dashboard?profile=${currentProfile.id}`
+                      `http://localhost:${serverPort}/dashboard?profile=${currentProfile.id}`
                     );
                   }}
                   className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap"

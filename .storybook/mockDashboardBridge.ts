@@ -44,26 +44,45 @@ export const mockDashboardBridge: DashboardBridge = {
   getAnalyticsOptOut: () => Promise.resolve(false),
   setAnalyticsOptOut: () => Promise.resolve(),
   // Profile management mocks
-  listProfiles: () => Promise.resolve([
-    { id: 'default', name: 'Default', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() }
-  ]),
-  createProfile: (name: string) => Promise.resolve({
-    id: 'mock-id',
-    name,
-    createdAt: new Date().toISOString(),
-    lastModified: new Date().toISOString()
-  }),
+  listProfiles: () =>
+    Promise.resolve([
+      {
+        id: 'default',
+        name: 'Default',
+        createdAt: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+      },
+    ]),
+  createProfile: (name: string) =>
+    Promise.resolve({
+      id: 'mock-id',
+      name,
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+    }),
+  cloneProfile: (profileId: string) =>
+    Promise.resolve({
+      id: 'mock-clone-id',
+      name: `${profileId} - cloned`,
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+    }),
   deleteProfile: () => Promise.resolve(),
   renameProfile: () => Promise.resolve(),
   switchProfile: () => Promise.resolve(),
-  getCurrentProfile: () => Promise.resolve({
-    id: 'default',
-    name: 'Default',
-    createdAt: new Date().toISOString(),
-    lastModified: new Date().toISOString()
-  }),
+  getCurrentProfile: () =>
+    Promise.resolve({
+      id: 'default',
+      name: 'Default',
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+    }),
   updateProfileTheme: async () => undefined,
   getDashboardForProfile: async () => null,
+  exportDashboardToFile: async () => false,
+  importDashboardFromFile: async () => null,
   stop: () => undefined,
-  setAutoStart:() => Promise.resolve()
+  setAutoStart: () => Promise.resolve(),
+  openLogFolder: async () => undefined,
+  exportLogFile: async () => false,
 };

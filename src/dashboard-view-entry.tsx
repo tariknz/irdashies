@@ -1,5 +1,6 @@
 import './frontend/index.css';
 import './frontend/theme.css';
+import logger from './frontend/utils/logger';
 import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import { DashboardView } from './frontend/components/DashboardView/DashboardView';
@@ -15,7 +16,7 @@ import type { DashboardBridge } from '@irdashies/types';
 // Get profileId from URL params
 const urlParams = new URLSearchParams(window.location.search);
 const profileId = urlParams.get('profile') || undefined;
-console.log('[DashboardView] URL profile parameter:', profileId);
+logger.info('[DashboardView] URL profile parameter:', profileId);
 const wsUrl = urlParams.get('wsUrl') || 'http://localhost:3000';
 const debugMode = urlParams.get('debug') === 'true';
 
@@ -38,7 +39,10 @@ async function initializeDashboardView() {
 
   root.render(
     <HashRouter>
-      <DashboardProvider bridge={bridge as DashboardBridge} profileId={profileId}>
+      <DashboardProvider
+        bridge={bridge as DashboardBridge}
+        profileId={profileId}
+      >
         <RunningStateProvider bridge={bridge}>
           <SessionProvider bridge={bridge} />
           <TelemetryProvider bridge={bridge} />
@@ -51,4 +55,4 @@ async function initializeDashboardView() {
   );
 }
 
-initializeDashboardView().catch(console.error);
+initializeDashboardView().catch(logger.error);

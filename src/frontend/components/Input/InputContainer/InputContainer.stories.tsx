@@ -47,6 +47,7 @@ const RandomTraces = () => {
       speed={speed}
       steer={steer}
       settings={{
+        useRawValues: false,
         trace: {
           enabled: true,
           includeThrottle: true,
@@ -66,6 +67,9 @@ const RandomTraces = () => {
         },
         gear: {
           enabled: true,
+          size: 100,
+          showspeed: true,
+          showspeedunit: true,
           unit: 'auto',
         },
         abs: {
@@ -77,10 +81,6 @@ const RandomTraces = () => {
             style: 'formula',
             color: 'light',
           },
-        },
-        tachometer: {
-          enabled: true,
-          showRpmText: true,
         },
         displayOrder: ['trace', 'bar', 'gear', 'steer'],
         showOnlyWhenOnTrack: true,

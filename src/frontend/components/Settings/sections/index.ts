@@ -9,3 +9,7 @@ export * from './TelemetryInspectorSettings';
 export * from './AdvancedSettings';
 export * from './ProfileSettings';
 export * from './PitlaneHelperSettings';
+export * from './TachometerSettings';
+export * from './TwitchChatSettings';
+export * from './LapTimeLogSettings';
+export * from './SectorDeltaSettings';

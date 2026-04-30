@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { getColor } from '@irdashies/utils/colors';
 
 const BRAKE_COLOR = getColor('red');
@@ -27,6 +27,15 @@ export interface InputTraceProps {
   };
 }
 
+// Pre-allocated indices array (reused across renders)
+let cachedIndices: number[] = [];
+function getIndices(bufferSize: number): number[] {
+  if (cachedIndices.length !== bufferSize) {
+    cachedIndices = Array.from({ length: bufferSize }, (_, i) => i);
+  }
+  return cachedIndices;
+}
+
 export const InputTrace = ({ input, settings }: InputTraceProps) => {
   const {
     includeClutch = true,
@@ -37,11 +46,17 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
     strokeWidth = 3,
     maxSamples = 400,
   } = settings ?? {};
-  const svgRef = useRef<SVGSVGElement>(null);
-  const rafRef = useRef<number | null>(null);
-  const { width, height } = { width: 400, height: 100 };
 
+  const { width, height } = { width: 400, height: 100 };
   const bufferSize = maxSamples;
+
+  // Refs for persistent SVG path elements
+  const throttlePathRef = useRef<SVGPathElement>(null);
+  const brakePathRef = useRef<SVGPathElement>(null);
+  const brakeAbsPathRef = useRef<SVGPathElement>(null);
+  const clutchPathRef = useRef<SVGPathElement>(null);
+  const steerPathRef = useRef<SVGPathElement>(null);
+  const rafRef = useRef<number | null>(null);
 
   // Circular buffers - pre-allocated arrays that are reused
   const brakeArray = useRef<number[]>(
@@ -62,6 +77,27 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
 
   // Write index for circular buffer (oldest data point position)
   const writeIndex = useRef<number>(0);
+
+  // Pre-compute scales (only change if dimensions change)
+  const { xScale, yScale } = useMemo(() => {
+    const scaleMargin = 0.05;
+    return {
+      xScale: d3
+        .scaleLinear()
+        .domain([0, bufferSize - 1])
+        .range([0, width]),
+      yScale: d3
+        .scaleLinear()
+        .domain([0 - scaleMargin, 1 + scaleMargin])
+        .range([height, 0]),
+    };
+  }, [bufferSize, width, height]);
+
+  // Pre-compute gridline Y positions
+  const gridlines = useMemo(
+    () => [0, 0.25, 0.5, 0.75, 1].map((tick) => ({ tick, y: yScale(tick) })),
+    [yScale]
+  );
 
   useEffect(() => {
     if (rafRef.current) {
@@ -95,43 +131,89 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
 
       // Move write index forward (circular)
       writeIndex.current = (idx + 1) % bufferSize;
+      const wi = writeIndex.current;
+      const indices = getIndices(bufferSize);
 
-      // Draw immediately in the same RAF callback
-      const valueArrayWithColors = [];
-      if (includeSteer) {
-        valueArrayWithColors.push({
-          values: steerArray.current,
-          color: STEER_COLOR,
-          isCentered: true,
-        });
+      // Helper to generate path d string for a standard line
+      const generatePathD = (values: number[]) => {
+        const line = d3
+          .line<number>()
+          .x((i) => xScale(i))
+          .y((i) => {
+            const pi = (wi + i) % bufferSize;
+            return yScale(Math.max(0, Math.min(1, values[pi])));
+          })
+          .curve(d3.curveBasis);
+        return line(indices) ?? '';
+      };
+
+      // Helper for centered line (steering)
+      const generateCenteredPathD = (values: number[]) => {
+        const centerY = height / 2;
+        const line = d3
+          .line<number>()
+          .x((i) => xScale(i))
+          .y((i) => {
+            const pi = (wi + i) % bufferSize;
+            const d = values[pi];
+            return centerY - (d - 0.5) * height;
+          })
+          .curve(d3.curveBasis);
+        return line(indices) ?? '';
+      };
+
+      // Update path d attributes directly on persistent DOM elements
+      if (includeSteer && steerPathRef.current) {
+        steerPathRef.current.setAttribute(
+          'd',
+          generateCenteredPathD(steerArray.current)
+        );
       }
-      if (includeClutch)
-        valueArrayWithColors.push({
-          values: clutchArray.current,
-          color: CLUTCH_COLOR,
-        });
-      if (includeThrottle)
-        valueArrayWithColors.push({
-          values: throttleArray.current,
-          color: THROTTLE_COLOR,
-        });
+      if (includeClutch && clutchPathRef.current) {
+        clutchPathRef.current.setAttribute(
+          'd',
+          generatePathD(clutchArray.current)
+        );
+      }
+      if (includeThrottle && throttlePathRef.current) {
+        throttlePathRef.current.setAttribute(
+          'd',
+          generatePathD(throttleArray.current)
+        );
+      }
       if (includeBrake) {
-        valueArrayWithColors.push({
-          values: brakeArray.current,
-          color: BRAKE_COLOR,
-          absStates: includeAbs ? brakeABSArray.current : undefined,
-          absColor: includeAbs ? BRAKE_ABS_COLOR : undefined,
-        });
+        if (includeAbs) {
+          // Draw full brake line in normal color, ABS segments overlay on top
+          if (brakePathRef.current) {
+            brakePathRef.current.setAttribute(
+              'd',
+              generatePathD(brakeArray.current)
+            );
+          }
+          if (brakeAbsPathRef.current) {
+            const absLine = d3
+              .line<number>()
+              .x((i) => xScale(i))
+              .y((i) => {
+                const pi = (wi + i) % bufferSize;
+                return yScale(Math.max(0, Math.min(1, brakeArray.current[pi])));
+              })
+              .defined((i) => {
+                const pi = (wi + i) % bufferSize;
+                return brakeABSArray.current[pi];
+              })
+              .curve(d3.curveBasis);
+            brakeAbsPathRef.current.setAttribute('d', absLine(indices) ?? '');
+          }
+        } else {
+          if (brakePathRef.current) {
+            brakePathRef.current.setAttribute(
+              'd',
+              generatePathD(brakeArray.current)
+            );
+          }
+        }
       }
-      drawGraph(
-        svgRef.current,
-        valueArrayWithColors,
-        width,
-        height,
-        strokeWidth,
-        bufferSize,
-        writeIndex.current
-      );
     });
 
     return () => {
@@ -150,267 +232,71 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
     width,
     height,
     strokeWidth,
+    xScale,
+    yScale,
   ]);
 
   return (
     <svg
-      ref={svgRef}
       width={'100%'}
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="none"
-    ></svg>
+    >
+      {/* Static gridlines - rendered once by React */}
+      {gridlines.map(({ tick, y }) => (
+        <line
+          key={tick}
+          x1={0}
+          x2={width}
+          y1={y}
+          y2={y}
+          stroke="#666"
+          strokeDasharray="2,2"
+        />
+      ))}
+      {/* Persistent path elements - only d attribute is updated each frame */}
+      {includeSteer && (
+        <path
+          ref={steerPathRef}
+          fill="none"
+          stroke={STEER_COLOR}
+          strokeWidth={1}
+        />
+      )}
+      {includeClutch && (
+        <path
+          ref={clutchPathRef}
+          fill="none"
+          stroke={CLUTCH_COLOR}
+          strokeWidth={strokeWidth}
+        />
+      )}
+      {includeThrottle && (
+        <path
+          ref={throttlePathRef}
+          fill="none"
+          stroke={THROTTLE_COLOR}
+          strokeWidth={strokeWidth}
+        />
+      )}
+      {includeBrake && (
+        <>
+          <path
+            ref={brakePathRef}
+            fill="none"
+            stroke={BRAKE_COLOR}
+            strokeWidth={strokeWidth}
+          />
+          {includeAbs && (
+            <path
+              ref={brakeAbsPathRef}
+              fill="none"
+              stroke={BRAKE_ABS_COLOR}
+              strokeWidth={Math.round(strokeWidth * 1.67)}
+            />
+          )}
+        </>
+      )}
+    </svg>
   );
 };
-
-// Helper to read from circular buffer at logical index
-function getCircularValue<T>(
-  array: T[],
-  logicalIndex: number,
-  writeIndex: number,
-  bufferSize: number
-): T {
-  const physicalIndex = (writeIndex + logicalIndex) % bufferSize;
-  return array[physicalIndex];
-}
-
-// Pre-allocated indices array (reused across renders)
-let cachedIndices: number[] = [];
-function getIndices(bufferSize: number): number[] {
-  if (cachedIndices.length !== bufferSize) {
-    cachedIndices = Array.from({ length: bufferSize }, (_, i) => i);
-  }
-  return cachedIndices;
-}
-
-function drawGraph(
-  svgElement: SVGSVGElement | null,
-  valueArrayWithColors: {
-    values: number[] | boolean[];
-    color: string;
-    absStates?: boolean[];
-    absColor?: string;
-    isCentered?: boolean;
-  }[],
-  width: number,
-  height: number,
-  strokeWidth: number,
-  bufferSize: number,
-  writeIndex: number
-) {
-  if (!svgElement || valueArrayWithColors.length === 0) return;
-
-  const svg = d3.select(svgElement);
-
-  svg.selectAll('*').remove();
-
-  const scaleMargin = 0.05;
-  const xScale = d3
-    .scaleLinear()
-    .domain([0, bufferSize - 1])
-    .range([0, width]);
-  const yScale = d3
-    .scaleLinear()
-    .domain([0 - scaleMargin, 1 + scaleMargin])
-    .range([height, 0]);
-
-  drawYAxis(svg, yScale, width);
-
-  // Draw directly from circular buffers using index mapper
-  valueArrayWithColors.forEach(
-    ({ values, color, absStates, absColor, isCentered }) => {
-      if (absStates && absColor) {
-        drawABSAwareLine(
-          svg,
-          values as number[],
-          absStates,
-          xScale,
-          yScale,
-          color,
-          absColor,
-          strokeWidth,
-          writeIndex,
-          bufferSize
-        );
-      } else if (isCentered) {
-        drawCenteredLine(
-          svg,
-          values as number[],
-          xScale,
-          yScale,
-          color,
-          height,
-          writeIndex,
-          bufferSize
-        );
-      } else {
-        drawLine(
-          svg,
-          values as number[],
-          xScale,
-          yScale,
-          color,
-          strokeWidth,
-          writeIndex,
-          bufferSize
-        );
-      }
-    }
-  );
-}
-
-function drawYAxis(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-  yScale: d3.ScaleLinear<number, number>,
-  width: number
-) {
-  const yAxis = d3
-    .axisLeft(yScale)
-    .tickValues(d3.range(0, 1.25, 0.25))
-    .tickFormat(() => '');
-
-  svg
-    .append('g')
-    .call(yAxis)
-    .selectAll('line')
-    .attr('x2', width)
-    .attr('stroke', '#666')
-    .attr('stroke-dasharray', '2,2');
-
-  svg.select('.domain').remove();
-}
-
-function drawLine(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-  valueArray: number[],
-  xScale: d3.ScaleLinear<number, number>,
-  yScale: d3.ScaleLinear<number, number>,
-  color: string,
-  strokeWidth: number,
-  writeIndex: number,
-  bufferSize: number
-) {
-  const line = d3
-    .line<number>()
-    .x((i) => xScale(i))
-    .y((i) => {
-      const value = getCircularValue(valueArray, i, writeIndex, bufferSize);
-      return yScale(Math.max(0, Math.min(1, value)));
-    })
-    .curve(d3.curveBasis);
-
-  svg
-    .append('g')
-    .append('path')
-    .datum(getIndices(bufferSize))
-    .attr('fill', 'none')
-    .attr('stroke', color)
-    .attr('stroke-width', strokeWidth)
-    .attr('d', line);
-}
-
-function drawCenteredLine(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-  valueArray: number[],
-  xScale: d3.ScaleLinear<number, number>,
-  yScale: d3.ScaleLinear<number, number>,
-  color: string,
-  height: number,
-  writeIndex: number,
-  bufferSize: number
-) {
-  // For centered lines (steering), normalizedValue 0.5 = center (height/2)
-  // normalizedValue 0 = top (left turn), normalizedValue 1 = bottom (right turn)
-  const line = d3
-    .line<number>()
-    .x((i) => xScale(i))
-    .y((i) => {
-      const d = getCircularValue(valueArray, i, writeIndex, bufferSize);
-      // Map normalized value (0-1 where 0.5 = center) to y position
-      // When d = 0.5: y = height/2 (center)
-      // When d = 0: y = height (top)
-      // When d = 1: y = 0 (bottom)
-      const centerY = height / 2;
-      const offset = (d - 0.5) * height;
-      return centerY - offset;
-    })
-    .curve(d3.curveBasis);
-
-  svg
-    .append('g')
-    .append('path')
-    .datum(getIndices(bufferSize))
-    .attr('fill', 'none')
-    .attr('stroke', color)
-    .attr('stroke-width', 1)
-    .attr('d', line);
-}
-
-function drawABSAwareLine(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-  valueArray: number[],
-  absStates: boolean[],
-  xScale: d3.ScaleLinear<number, number>,
-  yScale: d3.ScaleLinear<number, number>,
-  normalColor: string,
-  absColor: string,
-  strokeWidth: number,
-  writeIndex: number,
-  bufferSize: number
-) {
-  // Group consecutive points by ABS state, reading from circular buffer
-  const segments: {
-    values: { value: number; index: number }[];
-    isABS: boolean;
-  }[] = [];
-  let currentSegment: { value: number; index: number }[] = [];
-  let currentIsABS = getCircularValue(absStates, 0, writeIndex, bufferSize);
-
-  for (let i = 0; i < bufferSize; i++) {
-    const isABS = getCircularValue(absStates, i, writeIndex, bufferSize);
-    const value = getCircularValue(valueArray, i, writeIndex, bufferSize);
-
-    if (i === 0 || isABS === currentIsABS) {
-      currentSegment.push({ value, index: i });
-    } else {
-      // ABS state changed, finish current segment
-      if (currentSegment.length > 0) {
-        segments.push({ values: [...currentSegment], isABS: currentIsABS });
-      }
-
-      // Start new segment with overlap point for continuity
-      currentSegment = [
-        currentSegment[currentSegment.length - 1],
-        { value, index: i },
-      ];
-      currentIsABS = isABS;
-    }
-  }
-
-  // Add the final segment
-  if (currentSegment.length > 0) {
-    segments.push({ values: currentSegment, isABS: currentIsABS });
-  }
-
-  // Draw each segment with appropriate color
-  segments.forEach((segment) => {
-    if (segment.values.length > 1) {
-      const line = d3
-        .line<{ value: number; index: number }>()
-        .x((d) => xScale(d.index))
-        .y((d) => yScale(Math.max(0, Math.min(1, d.value))))
-        .curve(d3.curveBasis);
-
-      const segmentStrokeWidth = segment.isABS
-        ? Math.round(strokeWidth * 1.67)
-        : strokeWidth;
-      svg
-        .append('g')
-        .append('path')
-        .datum(segment.values)
-        .attr('fill', 'none')
-        .attr('stroke', segment.isABS ? absColor : normalColor)
-        .attr('stroke-width', segmentStrokeWidth)
-        .attr('d', line);
-    }
-  });
-}

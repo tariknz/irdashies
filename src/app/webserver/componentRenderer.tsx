@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { IrSdkBridge } from '../../types';
+import logger from '../../frontend/utils/logger';
 
 const isDebugMode = () =>
   typeof window !== 'undefined' && (window as any).__DEBUG_MODE__ === true;
 
 const debugLog = (...args: any[]) => {
   if (isDebugMode()) {
-    console.log(...args);
+    logger.info(...args);
   }
 };
 
@@ -68,7 +69,7 @@ export class WebSocketBridge implements IrSdkBridge {
               try {
                 cb(state.telemetry);
               } catch (e) {
-                console.error('Error in telemetry callback:', e);
+                logger.error('Error in telemetry callback:', e);
               }
             });
           }
@@ -77,7 +78,7 @@ export class WebSocketBridge implements IrSdkBridge {
               try {
                 cb(state.sessionData);
               } catch (e) {
-                console.error('Error in session callback:', e);
+                logger.error('Error in session callback:', e);
               }
             });
           }
@@ -87,7 +88,7 @@ export class WebSocketBridge implements IrSdkBridge {
               try {
                 cb(state.dashboard);
               } catch (e) {
-                console.error('Error in dashboard callback:', e);
+                logger.error('Error in dashboard callback:', e);
               }
             });
           }
@@ -96,7 +97,7 @@ export class WebSocketBridge implements IrSdkBridge {
               try {
                 cb(state.isRunning);
               } catch (e) {
-                console.error('Error in running state callback:', e);
+                logger.error('Error in running state callback:', e);
               }
             });
           }
@@ -106,7 +107,7 @@ export class WebSocketBridge implements IrSdkBridge {
               try {
                 cb(state.isDemoMode);
               } catch (e) {
-                console.error('Error in demo mode callback:', e);
+                logger.error('Error in demo mode callback:', e);
               }
             });
           }
@@ -117,7 +118,7 @@ export class WebSocketBridge implements IrSdkBridge {
             try {
               cb(data);
             } catch (e) {
-              console.error('Error in telemetry callback:', e);
+              logger.error('Error in telemetry callback:', e);
             }
           });
           break;
@@ -126,7 +127,7 @@ export class WebSocketBridge implements IrSdkBridge {
             try {
               cb(data);
             } catch (e) {
-              console.error('Error in session callback:', e);
+              logger.error('Error in session callback:', e);
             }
           });
           break;
@@ -135,7 +136,7 @@ export class WebSocketBridge implements IrSdkBridge {
             try {
               cb(data);
             } catch (e) {
-              console.error('Error in running state callback:', e);
+              logger.error('Error in running state callback:', e);
             }
           });
           break;
@@ -148,7 +149,7 @@ export class WebSocketBridge implements IrSdkBridge {
               try {
                 cb(updatedDashboard, updatedProfileId);
               } catch (e) {
-                console.error('Error in dashboard update callback:', e);
+                logger.error('Error in dashboard update callback:', e);
               }
             });
           }
@@ -160,7 +161,7 @@ export class WebSocketBridge implements IrSdkBridge {
             try {
               cb(data);
             } catch (e) {
-              console.error('Error in demo mode callback:', e);
+              logger.error('Error in demo mode callback:', e);
             }
           });
           break;
@@ -170,19 +171,19 @@ export class WebSocketBridge implements IrSdkBridge {
             try {
               cb(data);
             } catch (e) {
-              console.error('Error in dashboard callback:', e);
+              logger.error('Error in dashboard callback:', e);
             }
           });
           break;
       }
     } catch (error) {
-      console.error('Error parsing WebSocket message:', error);
+      logger.error('Error parsing WebSocket message:', error);
     }
   }
 
   private attemptReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
+      logger.error('Max reconnection attempts reached');
       return;
     }
 
@@ -202,7 +203,7 @@ export class WebSocketBridge implements IrSdkBridge {
 
     this.reconnectTimer = setTimeout(() => {
       this.connect(this.wsUrl).catch((err) => {
-        console.error('Reconnection failed:', err);
+        logger.error('Reconnection failed:', err);
         this.attemptReconnect();
       });
     }, delay);
@@ -244,7 +245,7 @@ export class WebSocketBridge implements IrSdkBridge {
         };
 
         ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
+          logger.error('WebSocket error:', error);
           if (this.isConnecting) {
             this.isConnecting = false;
             this.connectionPromise = null;
@@ -291,7 +292,9 @@ export class WebSocketBridge implements IrSdkBridge {
     return () => this.sessionCallbacks.delete(callback);
   }
 
-  onRunningState(callback: (running: boolean) => void): (() => void) | undefined {
+  onRunningState(
+    callback: (running: boolean) => void
+  ): (() => void) | undefined {
     if (!callback) return undefined;
     this.runningCallbacks.add(callback);
     return () => this.runningCallbacks.delete(callback);
@@ -337,7 +340,7 @@ export class WebSocketBridge implements IrSdkBridge {
           callback(this.lastDashboard);
         }
       } catch (e) {
-        console.error('Error in dashboard callback:', e);
+        logger.error('Error in dashboard callback:', e);
       }
     } else if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify({ type: 'getDashboard' }));
@@ -359,9 +362,29 @@ export class WebSocketBridge implements IrSdkBridge {
     }
   }
 
+  exportDashboardToFile(): Promise<boolean> {
+    // Not supported by component browser
+    return Promise.resolve(false);
+  }
+
+  importDashboardFromFile(): Promise<null> {
+    // Not supported by component browser
+    return Promise.resolve(null);
+  }
+
   setAutoStart(): Promise<void> {
     // Not supported by component browser
     return new Promise<void>((resolve) => resolve());
+  }
+
+  openLogFolder(): Promise<void> {
+    // Not supported by component browser
+    return Promise.resolve();
+  }
+
+  exportLogFile(): Promise<boolean> {
+    // Not supported by component browser
+    return Promise.resolve(false);
   }
 
   async resetDashboard(resetEverything: boolean): Promise<any> {
@@ -380,7 +403,7 @@ export class WebSocketBridge implements IrSdkBridge {
               resolve(message.data);
             }
           } catch (e) {
-            console.error('Error in resetDashboard callback:', e);
+            logger.error('Error in resetDashboard callback:', e);
           }
         };
         const timeout = setTimeout(() => {
@@ -417,7 +440,7 @@ export class WebSocketBridge implements IrSdkBridge {
               resolve(message.data);
             }
           } catch (e) {
-            console.error('Error in toggleLockOverlays callback:', e);
+            logger.error('Error in toggleLockOverlays callback:', e);
           }
         };
         const timeout = setTimeout(() => {
@@ -450,7 +473,7 @@ export class WebSocketBridge implements IrSdkBridge {
               resolve(message.data);
             }
           } catch (e) {
-            console.error('Error in getAppVersion callback:', e);
+            logger.error('Error in getAppVersion callback:', e);
           }
         };
         const timeout = setTimeout(() => {
@@ -483,7 +506,7 @@ export class WebSocketBridge implements IrSdkBridge {
               resolve(message.data);
             }
           } catch (e) {
-            console.error('Error in getGarageCoverImageAsDataUrl callback:', e);
+            logger.error('Error in getGarageCoverImageAsDataUrl callback:', e);
           }
         };
         const timeout = setTimeout(() => {
@@ -510,13 +533,15 @@ export class WebSocketBridge implements IrSdkBridge {
     }
   }
 
-  onDemoModeChanged(callback: (value: boolean) => void): (() => void) | undefined {
+  onDemoModeChanged(
+    callback: (value: boolean) => void
+  ): (() => void) | undefined {
     this.demoModeCallbacks.add(callback);
     if (this.currentIsDemoMode !== undefined) {
       try {
         callback(this.currentIsDemoMode);
       } catch (e) {
-        console.error('Error in demo mode callback:', e);
+        logger.error('Error in demo mode callback:', e);
       }
     }
     return () => this.demoModeCallbacks.delete(callback);
@@ -539,7 +564,7 @@ export class WebSocketBridge implements IrSdkBridge {
               resolve(message.data || []);
             }
           } catch (e) {
-            console.error('Error in listProfiles callback:', e);
+            logger.error('Error in listProfiles callback:', e);
           }
         };
         const timeout = setTimeout(() => {
@@ -556,6 +581,10 @@ export class WebSocketBridge implements IrSdkBridge {
 
   async createProfile(): Promise<any> {
     return { id: 'new', name: 'New Profile' };
+  }
+
+  async cloneProfile(): Promise<any> {
+    return { id: 'new-clone', name: 'New Profile - cloned' };
   }
 
   async deleteProfile(): Promise<void> {
@@ -586,7 +615,7 @@ export class WebSocketBridge implements IrSdkBridge {
               resolve(message.data);
             }
           } catch (e) {
-            console.error('Error in getCurrentProfile callback:', e);
+            logger.error('Error in getCurrentProfile callback:', e);
           }
         };
         const timeout = setTimeout(() => {
@@ -622,7 +651,7 @@ export class WebSocketBridge implements IrSdkBridge {
               resolve();
             }
           } catch (e) {
-            console.error('Error in updateProfileTheme callback:', e);
+            logger.error('Error in updateProfileTheme callback:', e);
           }
         };
         const timeout = setTimeout(() => {
@@ -659,7 +688,7 @@ export class WebSocketBridge implements IrSdkBridge {
               resolve(message.data);
             }
           } catch (e) {
-            console.error('Error in getDashboardForProfile callback:', e);
+            logger.error('Error in getDashboardForProfile callback:', e);
           }
         };
         const timeout = setTimeout(() => {
@@ -701,7 +730,7 @@ export class WebSocketBridge implements IrSdkBridge {
               resolve(message.data);
             }
           } catch (e) {
-            console.error('Error in saveGarageCoverImage callback:', e);
+            logger.error('Error in saveGarageCoverImage callback:', e);
           }
         };
         const timeout = setTimeout(() => {
@@ -738,7 +767,7 @@ export class WebSocketBridge implements IrSdkBridge {
               resolve(message.data);
             }
           } catch (e) {
-            console.error('Error in getAnalyticsOptOut callback:', e);
+            logger.error('Error in getAnalyticsOptOut callback:', e);
           }
         };
         const timeout = setTimeout(() => {
@@ -771,7 +800,7 @@ export class WebSocketBridge implements IrSdkBridge {
               resolve();
             }
           } catch (e) {
-            console.error('Error in setAnalyticsOptOut callback:', e);
+            logger.error('Error in setAnalyticsOptOut callback:', e);
           }
         };
         const timeout = setTimeout(() => {

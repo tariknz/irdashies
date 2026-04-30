@@ -42,6 +42,32 @@ export const AllRatings: Story = {
   ),
 };
 
+export const AllRatingsMinimal: Story = {
+  args: {
+    format: 'license-color-rating-bw',
+    isMinimal: true,
+  },
+  render: (args) => (
+    <div className="flex flex-col gap-1">
+      <DriverRatingBadge {...args} license="W 4.99" rating={12999} />
+      <DriverRatingBadge {...args} license="P 4.99" rating={11999} />
+      <DriverRatingBadge {...args} license="A 4.99" rating={4999} />
+      <DriverRatingBadge {...args} license="B 3.99" rating={3999} />
+      <DriverRatingBadge {...args} license="C 2.99" rating={2999} />
+      <DriverRatingBadge {...args} license="D 1.99" rating={1999} />
+      <DriverRatingBadge {...args} license="R 0.99" rating={999} />
+    </div>
+  ),
+};
+
+export const FormatLicenseColorRatingCombined: Story = {
+  args: {
+    license: 'A 4.99',
+    rating: 4999,
+    format: 'license-color-fullrating-combo',
+  },
+};
+
 export const FormatLicenseColorRatingBw: Story = {
   args: {
     license: 'A 4.99',
@@ -63,6 +89,14 @@ export const FormatRatingColorNoLicense: Story = {
     license: 'A 4.99',
     rating: 4999,
     format: 'rating-color-no-license',
+  },
+};
+
+export const FormatFullRatingColorNoLicense: Story = {
+  args: {
+    license: 'A 4.99',
+    rating: 4999,
+    format: 'fullrating-color-no-license',
   },
 };
 
@@ -98,6 +132,14 @@ export const FormatRatingBwNoLicense: Story = {
   },
 };
 
+export const FormatFullRatingBwNoLicense: Story = {
+  args: {
+    license: 'A 4.99',
+    rating: 4999,
+    format: 'fullrating-bw-no-license',
+  },
+};
+
 export const FormatRatingOnlyColorRatingBw: Story = {
   args: {
     license: 'A 4.99',
@@ -112,4 +154,76 @@ export const FormatLicenseColorFullRatingBw: Story = {
     rating: 4999,
     format: 'license-color-fullrating-bw',
   },
+};
+
+export const WithiRatingGain: Story = {
+  args: {
+    license: 'A 4.99',
+    rating: 4999,
+    format: 'license-color-rating-bw',
+    iratingChange: 150,
+    noMargin: true,
+  },
+};
+
+export const WithiRatingLoss: Story = {
+  args: {
+    license: 'A 4.99',
+    rating: 4999,
+    format: 'license-color-rating-bw',
+    iratingChange: -87,
+    noMargin: true,
+  },
+};
+
+export const WithiRatingNoChange: Story = {
+  args: {
+    license: 'A 4.99',
+    rating: 4999,
+    format: 'license-color-rating-bw',
+    iratingChange: 0,
+    noMargin: true,
+  },
+};
+
+export const AllRatingsWithIRatingChange: Story = {
+  render: () => (
+    <div className="flex flex-col gap-1">
+      <DriverRatingBadge
+        license="A 4.99"
+        rating={4999}
+        format="license-color-rating-bw"
+        iratingChange={150}
+        noMargin={true}
+      />
+      <DriverRatingBadge
+        license="B 3.99"
+        rating={3999}
+        format="license-color-rating-bw"
+        iratingChange={-87}
+        noMargin={true}
+      />
+      <DriverRatingBadge
+        license="C 2.99"
+        rating={2999}
+        format="license-color-rating-bw"
+        iratingChange={0}
+        noMargin={true}
+      />
+      <DriverRatingBadge
+        license="D 1.99"
+        rating={1999}
+        format="license-color-fullrating-bw"
+        iratingChange={230}
+        noMargin={true}
+      />
+      <DriverRatingBadge
+        license="R 0.99"
+        rating={999}
+        format="license-color-fullrating-bw"
+        iratingChange={-12}
+        noMargin={true}
+      />
+    </div>
+  ),
 };

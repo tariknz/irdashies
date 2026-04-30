@@ -37,4 +37,18 @@ export const NotANumber: Story = {
   args: {
     value: Number.NaN,
   },
-}; 
+};
+
+export const PositiveLeftAligned: Story = {
+  args: {
+    value: 42,
+    justify: 'start',
+  },
+};
+
+export const NegativeLeftAligned: Story = {
+  args: {
+    value: -15,
+    justify: 'start',
+  },
+};

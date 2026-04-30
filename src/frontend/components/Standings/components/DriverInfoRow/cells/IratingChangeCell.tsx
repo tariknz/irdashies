@@ -11,10 +11,9 @@ export const IratingChangeCell = memo(
       data-column="iratingChange"
       className="w-auto px-2 text-center whitespace-nowrap"
     >
-      <RatingChange value={iratingChangeValue} />
+      <RatingChange value={iratingChangeValue} showZero />
     </td>
   )
 );
 
 IratingChangeCell.displayName = 'IratingChangeCell';
-

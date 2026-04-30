@@ -1,15 +1,33 @@
-
+import { RatingChange } from '../RatingChange/RatingChange';
 
 export interface DriverRatingBadgeProps {
   license?: string;
   rating?: number;
-  format?: 'license-color-fullrating-bw' |'license-color-rating-bw' | 'license-color-rating-bw-no-license' | 'rating-color-no-license' | 'license-bw-rating-bw' | 'rating-only-bw-rating-bw' | 'license-bw-rating-bw-no-license' | 'rating-bw-no-license' | 'rating-only-color-rating-bw';
+  isMinimal?: boolean;
+  format?:
+    | 'license-color-fullrating-combo'
+    | 'fullrating-color-no-license'
+    | 'license-color-fullrating-bw'
+    | 'license-color-rating-bw'
+    | 'license-color-rating-bw-no-license'
+    | 'rating-color-no-license'
+    | 'license-bw-rating-bw'
+    | 'rating-only-bw-rating-bw'
+    | 'license-bw-rating-bw-no-license'
+    | 'rating-bw-no-license'
+    | 'fullrating-bw-no-license'
+    | 'rating-only-color-rating-bw';
+  iratingChange?: number;
+  noMargin?: boolean;
 }
 
 export const DriverRatingBadge = ({
   license = 'R 0.0',
   rating = 0,
+  isMinimal = false,
   format = 'license-color-rating-bw',
+  iratingChange,
+  noMargin = false,
 }: DriverRatingBadgeProps) => {
   const licenseLevel = license?.charAt(0) || 'R';
   const colorMap: Record<string, string> = {
@@ -21,155 +39,234 @@ export const DriverRatingBadge = ({
     D: 'border-orange-500 bg-orange-700',
     R: 'border-red-500 bg-red-800',
   };
-  const color = colorMap[licenseLevel] ?? '';
+  const minimalColorMap: Record<string, string> = {
+    W: 'border-zinc-700 bg-zinc-700',
+    P: 'border-purple-900 bg-purple-900',
+    A: 'border-blue-900 bg-blue-900',
+    B: 'border-green-900 bg-green-900',
+    C: 'border-yellow-900 bg-yellow-900',
+    D: 'border-orange-900 bg-orange-900',
+    R: 'border-red-900 bg-red-900',
+  };
+  const color = (isMinimal ? minimalColorMap : colorMap)[licenseLevel] ?? '';
 
   const decimal = String(rating / 1000);
   const dotIndex = decimal.indexOf('.') > -1 ? decimal.indexOf('.') : 0;
-  const simplifiedRating = Number(decimal.substring(0, dotIndex + 2)).toFixed(1);
+  const simplifiedRating = Number(decimal.substring(0, dotIndex + 2)).toFixed(
+    1
+  );
 
   // Extract safety rating number from license string
   const safetyRatingMatch = license?.match(/([A-Z])\s*(\d+\.\d+)/);
-  const safetyRating = safetyRatingMatch ? (Math.floor(parseFloat(safetyRatingMatch[2]) * 10) / 10).toFixed(1) : '';
-  const formattedLicense = license?.replace(/([A-Z])\s*(\d+)\.(\d+)/, (_, level) => {
-    return `${level}`;
-  }) || license || 'R 0.0';
+  const safetyRating = safetyRatingMatch
+    ? (Math.floor(parseFloat(safetyRatingMatch[2]) * 10) / 10).toFixed(1)
+    : '';
+  const formattedLicense =
+    license?.replace(/([A-Z])\s*(\d+)\.(\d+)/, (_, level) => {
+      return `${level}`;
+    }) ||
+    license ||
+    'R 0.0';
 
-  switch (format) {
-    case 'license-color-fullrating-bw':
-      // License = colored badge, full irating (no 1.4k approx), rating in B&W
-      return (
-        <div className="flex gap-1 items-center">
+  const marginClass = noMargin ? '' : 'mx-2';
+
+  const badge = (() => {
+    switch (format) {
+      case 'license-color-fullrating-combo':
+        // License = colored badge, full irating combined
+        return (
           <div
-            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight ${color}`}
+            className={`flex gap-1 items-center justify-center ${marginClass}`}
           >
-            {formattedLicense} {safetyRating}
+            <div
+              className={`flex justify-between items-center text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[6.4em] ${color}`}
+            >
+              <span>
+                {formattedLicense} {safetyRating}{' '}
+              </span>
+              <span>{rating}</span>
+            </div>
           </div>
-          <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
-            {rating}
-          </div>
-        </div>
-      );
+        );
 
-    case 'license-color-rating-bw':
-      // Default format: License + colored badge, rating in B&W
-      return (
-        <div className="flex gap-1 items-center mx-2">
+      case 'fullrating-color-no-license':
+        // Full rating only in white
+        return (
           <div
-            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight ${color}`}
+            className={`flex gap-1 items-center justify-center ${marginClass}`}
           >
-            {formattedLicense} {safetyRating}
+            <div
+              className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.6em] ${color}`}
+            >
+              {rating}
+            </div>
           </div>
-          <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
-            {simplifiedRating}k
-          </div>
-        </div>
-      );
+        );
 
-    case 'rating-only-color-rating-bw':
-      // Rating only in colored badge, rating in B&W
-      return (
-        <div className="flex gap-1 items-center mx-2">
+      case 'license-color-fullrating-bw':
+        // License = colored badge, full irating (no 1.4k approx), rating in B&W
+        return (
+          <div className={`flex gap-1 items-center ${marginClass}`}>
+            <div
+              className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.6em] ${color}`}
+            >
+              {formattedLicense} {safetyRating}
+            </div>
+            <div className="flex-1 flex justify-center">
+              <div className="bg-white/10 text-white text-center border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+                {rating}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'license-color-rating-bw':
+        // Default format: License + colored badge, rating in B&W
+        return (
+          <div className={`flex gap-1 items-center ${marginClass}`}>
+            <div
+              className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.6em] ${color}`}
+            >
+              {formattedLicense} {safetyRating}
+            </div>
+            <div className="bg-white/10 text-white text-center border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              {simplifiedRating}k
+            </div>
+          </div>
+        );
+
+      case 'rating-only-color-rating-bw':
+        // Rating only in colored badge, rating in B&W
+        return (
+          <div className={`flex gap-1 items-center ${marginClass}`}>
+            <div
+              className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[2.4em] ${color}`}
+            >
+              {safetyRating}
+            </div>
+            <div className="bg-white/10 text-white text-center border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              {simplifiedRating}k
+            </div>
+          </div>
+        );
+
+      case 'license-color-rating-bw-no-license':
+        // License without safety rating + colored badge, rating in B&W
+        return (
+          <div className={`flex gap-1 items-center ${marginClass}`}>
+            <div
+              className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[1.8em] ${color}`}
+            >
+              {formattedLicense}
+            </div>
+            <div className="bg-white/10 text-white text-center border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              {simplifiedRating}k
+            </div>
+          </div>
+        );
+
+      case 'rating-color-no-license':
+        // Rating only in colored badge, no license
+        return (
           <div
-            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight ${color}`}
+            className={`flex gap-1 items-center justify-center ${marginClass}`}
           >
-            {safetyRating}
+            <div
+              className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight ${color}`}
+            >
+              {simplifiedRating}k
+            </div>
           </div>
-          <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
-            {simplifiedRating}k
-          </div>
-        </div>
-      );
+        );
 
-    case 'license-color-rating-bw-no-license':
-      // License without safety rating + colored badge, rating in B&W
-      return (
-        <div className="flex gap-1 items-center mx-2">
+      case 'license-bw-rating-bw':
+        // All B&W badges - license without safety rating (like current but B&W)
+        return (
+          <div className={`flex gap-1 items-center ${marginClass}`}>
+            <div className="bg-white/10 text-white text-center border-2 border-transparent px-1 rounded-md text-xs leading-tight min-w-[3.6em]">
+              {formattedLicense} {safetyRating}
+            </div>
+            <div className="bg-white/10 text-white text-center border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              {simplifiedRating}k
+            </div>
+          </div>
+        );
+
+      case 'rating-only-bw-rating-bw':
+        // Rating only in colored badge, rating in B&W
+        return (
+          <div className={`flex gap-1 items-center ${marginClass}`}>
+            <div className="bg-white/10 text-white text-center border-2 border-transparent px-1 rounded-md text-xs leading-tight min-w-[2.4em]">
+              {safetyRating}
+            </div>
+            <div className="bg-white/10 text-white text-center border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              {simplifiedRating}k
+            </div>
+          </div>
+        );
+
+      case 'license-bw-rating-bw-no-license':
+        // All B&W badges - license without safety rating
+        return (
+          <div className={`flex gap-1 items-center ${marginClass}`}>
+            <div className="bg-white/10 text-white text-center border-2 border-transparent px-1 rounded-md text-xs leading-tight min-w-[1.8em]">
+              {formattedLicense}
+            </div>
+            <div className="bg-white/10 text-white text-center border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              {simplifiedRating}k
+            </div>
+          </div>
+        );
+
+      case 'rating-bw-no-license':
+        // Rating only in B&W
+        return (
           <div
-            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight ${color}`}
+            className={`flex gap-1 items-center justify-center ${marginClass}`}
           >
-            {formattedLicense}
+            <div className="text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white/10 border-transparent">
+              {simplifiedRating}k
+            </div>
           </div>
-          <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
-            {simplifiedRating}k
-          </div>
-        </div>
-      );
+        );
 
-    case 'rating-color-no-license':
-      // Rating only in colored badge, no license
-      return (
-        <div className="flex gap-1 items-center mx-2">
-          <div className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight ${color}`}>
-            {simplifiedRating}k
-          </div>
-        </div>
-        
-      );
-
-    case 'license-bw-rating-bw':
-      // All B&W badges - license without safety rating (like current but B&W)
-      return (
-        <div className="flex gap-1 items-center mx-2">
-          <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
-            {formattedLicense} {safetyRating}
-          </div>
-          <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
-            {simplifiedRating}k
-          </div>
-        </div>
-      );
-
-    case 'rating-only-bw-rating-bw':
-      // Rating only in colored badge, rating in B&W
-      return (
-        <div className="flex gap-1 items-center mx-2">
+      case 'fullrating-bw-no-license':
+        // Full rating only in B&W
+        return (
           <div
-            className={`bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight`}
+            className={`flex gap-1 items-center justify-center ${marginClass}`}
           >
-            {safetyRating}
+            <div className="text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white/10 border-transparent">
+              {rating}
+            </div>
           </div>
-          <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
-            {simplifiedRating}k
-          </div>
-        </div>
-      );
+        );
 
-    case 'license-bw-rating-bw-no-license':
-      // All B&W badges - license without safety rating
-      return (
-        <div className="flex gap-1 items-center mx-2">
-          <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
-            {formattedLicense}
+      default:
+        // Fallback to default format
+        return (
+          <div className={`flex gap-1 items-center ${marginClass}`}>
+            <div
+              className={`text-white text-center text-nowrap border-2 px-1 rounded-md text-xs leading-tight min-w-[3.6em] ${color}`}
+            >
+              {formattedLicense} {safetyRating}
+            </div>
+            <div className="bg-white/10 text-white text-center border-2 border-transparent px-1 rounded-md text-xs leading-tight">
+              {simplifiedRating}k
+            </div>
           </div>
-          <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
-            {simplifiedRating}k
-          </div>
-        </div>
-      );
+        );
+    }
+  })();
 
-    case 'rating-bw-no-license':
-      // Rating only in B&W
-      return (
-        <div className="flex gap-1 items-center mx-2">
-          <div className="text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight bg-white/10 border-transparent">
-            {simplifiedRating}k
-          </div>
+  return (
+    <div className="flex items-center">
+      {badge}
+      {iratingChange !== undefined && (
+        <div className="ml-1 text-xs">
+          <RatingChange value={iratingChange} showZero={false} />
         </div>
-      );
-
-    default:
-      // Fallback to default format
-      return (
-        <div className="flex gap-1 items-center mx-2">
-          <div
-            className={`text-white text-nowrap border-2 px-1 rounded-md text-xs leading-tight ${color}`}
-          >
-            {formattedLicense} {safetyRating}
-          </div>
-          <div className="bg-white/10 text-white border-2 border-transparent px-1 rounded-md text-xs leading-tight">
-            {simplifiedRating}k
-          </div>
-        </div>
-      );
-  }
+      )}
+    </div>
+  );
 };

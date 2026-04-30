@@ -1,8 +1,12 @@
 import type { Telemetry, TelemetryVar } from '@irdashies/types';
 import { create, useStore } from 'zustand';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { useMemo } from 'react';
-import { arrayCompare, telemetryCompare } from './telemetryCompare';
+import {
+  arrayCompare,
+  arrayCompareRounded,
+  scalarCompareRounded,
+  telemetryCompare,
+} from './telemetryCompare';
 
 interface TelemetryState {
   telemetry: Telemetry | null;
@@ -53,17 +57,33 @@ export const useTelemetryValues = <T extends number[] | boolean[] = number[]>(
   );
 
 /**
- * Returns the first telemetry value for a given key plus a mapping function.
- * @param key the key of the telemetry value to retrieve
- * @param mapFn the mapping function to apply to the value
- * @returns the first telemetry value
+ * Returns telemetry values for a given key, only triggering re-renders when
+ * values change beyond the given decimal precision. Use for high-frequency
+ * array telemetry (e.g. CarIdxLapDistPct) where sub-threshold changes don't
+ * produce meaningful UI updates.
  */
-export const useTelemetryValuesMapped = <
-  T extends number[] | boolean[], // Ensure T is an array of numbers or booleans
->(
+export const useTelemetryValuesRounded = (
   key: keyof Telemetry,
-  mapFn: (val: T[number]) => T[number]
-): T => {
-  const rawValues = useTelemetryValues<T>(key);
-  return useMemo(() => rawValues.map(mapFn) as T, [rawValues, mapFn]);
-};
+  precision: number
+): number[] =>
+  useStoreWithEqualityFn(
+    useTelemetryStore,
+    (state) => (state.telemetry?.[key]?.value ?? []) as number[],
+    (a, b) => arrayCompareRounded(precision, a, b)
+  );
+
+/**
+ * Returns the first telemetry value for a given key, only triggering re-renders
+ * when the value changes beyond the given decimal precision. Use for
+ * high-frequency scalar telemetry (e.g. LapDistPct, SessionTime) where
+ * sub-threshold changes don't produce meaningful UI updates.
+ */
+export const useTelemetryValueRounded = (
+  key: keyof Telemetry,
+  precision: number
+): number | undefined =>
+  useStoreWithEqualityFn(
+    useTelemetryStore,
+    (state) => state.telemetry?.[key]?.value?.[0] as number | undefined,
+    (a, b) => scalarCompareRounded(precision, a, b)
+  );

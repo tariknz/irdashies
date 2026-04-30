@@ -1,11 +1,11 @@
 import { useDashboard } from '@irdashies/context';
-import { BlindSpotMonitorWidgetSettings } from '../../Settings/types';
+import { BlindSpotMonitorWidgetSettings } from '@irdashies/types';
 
 export const useBlindSpotMonitorSettings = () => {
   const { currentDashboard } = useDashboard();
 
   const settings = currentDashboard?.widgets.find(
-    (widget) => widget.id === 'blindspotmonitor',
+    (widget) => widget.id === 'blindspotmonitor'
   )?.config;
 
   if (
@@ -14,9 +14,8 @@ export const useBlindSpotMonitorSettings = () => {
     'distAhead' in settings &&
     'distBehind' in settings
   ) {
-    return settings as BlindSpotMonitorWidgetSettings['config'];
+    return settings as unknown as BlindSpotMonitorWidgetSettings['config'];
   }
 
   return undefined;
 };
-

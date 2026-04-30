@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useDashboard } from '@irdashies/context';
-import { WeatherWidgetSettings } from '../../Settings/types';
+import { WeatherWidgetSettings } from '@irdashies/types';
 
 export const useWeatherSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -8,7 +8,7 @@ export const useWeatherSettings = () => {
   return useMemo(
     () =>
       currentDashboard?.widgets.find((w) => w.id === 'weather')
-        ?.config as WeatherWidgetSettings['config'],
+        ?.config as unknown as WeatherWidgetSettings['config'],
     [currentDashboard]
   );
 };

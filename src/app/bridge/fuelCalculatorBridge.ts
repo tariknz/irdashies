@@ -3,53 +3,79 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { FuelDatabase } from '../storage/fuelDatabase';
 import type { FuelLapData } from '@irdashies/types';
+import logger from '../logger';
 
 export const setupFuelCalculatorBridge = () => {
   // Initialize Fuel Database
   const fuelDb = new FuelDatabase();
 
-  ipcMain.handle('fuel:getHistoricalLaps', (_, trackId: string | number, carName: string) => {
-    console.log(`[Main] Fetching historical laps for ${carName} at track ${trackId}`);
-    return fuelDb.getLaps(trackId, carName);
-  });
+  ipcMain.handle(
+    'fuel:getHistoricalLaps',
+    (_, trackId: string | number, carName: string) => {
+      logger.info(
+        `[Main] Fetching historical laps for ${carName} at track ${trackId}`
+      );
+      return fuelDb.getLaps(trackId, carName);
+    }
+  );
 
-  ipcMain.handle('fuel:saveLap', (_, trackId: string | number, carName: string, lap: FuelLapData) => {
-    console.log(`[Main] Saving lap ${lap.lapNumber} for ${carName} at track ${trackId}`);
-    return fuelDb.saveLap(trackId, carName, lap);
-  });
+  ipcMain.handle(
+    'fuel:saveLap',
+    (_, trackId: string | number, carName: string, lap: FuelLapData) => {
+      logger.info(
+        `[Main] Saving lap ${lap.lapNumber} for ${carName} at track ${trackId}`
+      );
+      return fuelDb.saveLap(trackId, carName, lap);
+    }
+  );
 
-  ipcMain.handle('fuel:clearHistory', (_, trackId: string | number, carName: string) => {
-    console.log(`[Main] Clearing history for ${carName} at track ${trackId}`);
-    return fuelDb.clearLaps(trackId, carName);
-  });
+  ipcMain.handle(
+    'fuel:clearHistory',
+    (_, trackId: string | number, carName: string) => {
+      logger.info(`[Main] Clearing history for ${carName} at track ${trackId}`);
+      return fuelDb.clearLaps(trackId, carName);
+    }
+  );
 
   ipcMain.handle('fuel:clearAllHistory', () => {
-    console.log('[Main] Received fuel:clearAllHistory request');
+    logger.info('[Main] Received fuel:clearAllHistory request');
     try {
       fuelDb.clearAllLaps();
-      console.log('[Main] fuel:clearAllHistory successful');
+      logger.info('[Main] fuel:clearAllHistory successful');
       return true;
     } catch (e) {
-      console.error('[Main] fuel:clearAllHistory failed:', e);
+      logger.error('[Main] fuel:clearAllHistory failed:', e);
       throw e;
     }
   });
 
-  ipcMain.handle('fuel:getQualifyMax', (_, trackId: string | number, carName: string) => {
-    console.log(`[Main] Fetching QualifyMax for ${carName} at track ${trackId}`);
-    return fuelDb.getQualifyMax(trackId, carName);
-  });
+  ipcMain.handle(
+    'fuel:getQualifyMax',
+    (_, trackId: string | number, carName: string) => {
+      logger.info(
+        `[Main] Fetching QualifyMax for ${carName} at track ${trackId}`
+      );
+      return fuelDb.getQualifyMax(trackId, carName);
+    }
+  );
 
-  ipcMain.handle('fuel:saveQualifyMax', (_, trackId: string | number, carName: string, val: number | null) => {
-    console.log(`[Main] Saving QualifyMax (${val}) for ${carName} at track ${trackId}`);
-    return fuelDb.saveQualifyMax(trackId, carName, val);
-  });
+  ipcMain.handle(
+    'fuel:saveQualifyMax',
+    (_, trackId: string | number, carName: string, val: number | null) => {
+      logger.info(
+        `[Main] Saving QualifyMax (${val}) for ${carName} at track ${trackId}`
+      );
+      return fuelDb.saveQualifyMax(trackId, carName, val);
+    }
+  );
 
   let currentLogPath: string | null = null;
 
   ipcMain.handle('fuel:startNewLog', () => {
     currentLogPath = null;
-    console.log('[Main] Log rotation requested. Next log will be in a new file.');
+    logger.info(
+      '[Main] Log rotation requested. Next log will be in a new file.'
+    );
     return Promise.resolve();
   });
 
@@ -60,32 +86,39 @@ export const setupFuelCalculatorBridge = () => {
         try {
           fs.mkdirSync(logsDir, { recursive: true });
         } catch (e) {
-          console.error('[Main] Failed to create logs dir:', e);
+          logger.error('[Main] Failed to create logs dir:', e);
           return;
         }
       }
 
       const now = new Date();
       // Format: fuel_YYYY-MM-DD_HH-mm-ss-ms.log
-      const dateStr = now.getFullYear() + '-' +
-                      String(now.getMonth() + 1).padStart(2, '0') + '-' +
-                      String(now.getDate()).padStart(2, '0') + '_' +
-                      String(now.getHours()).padStart(2, '0') + '-' +
-                      String(now.getMinutes()).padStart(2, '0') + '-' +
-                      String(now.getSeconds()).padStart(2, '0') + '-' +
-                      String(now.getMilliseconds()).padStart(3, '0');
+      const dateStr =
+        now.getFullYear() +
+        '-' +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        '-' +
+        String(now.getDate()).padStart(2, '0') +
+        '_' +
+        String(now.getHours()).padStart(2, '0') +
+        '-' +
+        String(now.getMinutes()).padStart(2, '0') +
+        '-' +
+        String(now.getSeconds()).padStart(2, '0') +
+        '-' +
+        String(now.getMilliseconds()).padStart(3, '0');
 
       let potentialPath = path.join(logsDir, `fuel_${dateStr}.log`);
 
       // Ensure uniqueness (though ms precision makes collision extremely unlikely)
       let counter = 1;
       while (fs.existsSync(potentialPath)) {
-          potentialPath = path.join(logsDir, `fuel_${dateStr}_${counter}.log`);
-          counter++;
+        potentialPath = path.join(logsDir, `fuel_${dateStr}_${counter}.log`);
+        counter++;
       }
 
       currentLogPath = potentialPath;
-      console.log(`[Main] Starting new fuel log: ${currentLogPath}`);
+      logger.info(`[Main] Starting new fuel log: ${currentLogPath}`);
     }
 
     const timestamp = new Date().toISOString();
@@ -94,7 +127,7 @@ export const setupFuelCalculatorBridge = () => {
     try {
       fs.appendFileSync(currentLogPath, logEntry);
     } catch (err) {
-      console.error('Failed to write to fuel log:', err);
+      logger.error('Failed to write to fuel log:', err);
     }
   });
 };

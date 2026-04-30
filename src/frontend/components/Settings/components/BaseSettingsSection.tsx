@@ -1,8 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { ToggleSwitch } from './ToggleSwitch';
-import { BaseWidgetSettings } from '../types';
+import { BaseWidgetSettings } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
-import { Copy, Check } from '@phosphor-icons/react';
 
 interface BaseSettingsSectionProps<T> {
   title: string;
@@ -30,19 +29,6 @@ export const BaseSettingsSection = <T,>({
   const { currentDashboard, onDashboardUpdated } = useDashboard();
   const [localSettings, setLocalSettings] =
     useState<BaseWidgetSettings<T>>(settings);
-  const [copied, setCopied] = useState(false);
-
-  const browserSourceUrl = `http://localhost:3000/component/${widgetId}`;
-
-  const handleCopyUrl = async () => {
-    try {
-      await navigator.clipboard.writeText(browserSourceUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy URL:', err);
-    }
-  };
 
   // Clean synchronization pattern: track what we last synced to detect external changes
   const updatedWidget = currentDashboard?.widgets.find(
@@ -83,6 +69,40 @@ export const BaseSettingsSection = <T,>({
     onConfigChange?.(newConfig);
   };
 
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  const handleResetPosition = () => {
+    setShowResetConfirm(true);
+  };
+
+  const confirmResetPosition = () => {
+    setShowResetConfirm(false);
+    if (currentDashboard && onDashboardUpdated) {
+      const updatedWidgets = currentDashboard.widgets.map((widget) => {
+        if (widget.id !== widgetId) return widget;
+
+        return {
+          ...widget,
+          layout: {
+            ...widget.layout,
+            x: 0,
+            y: 0,
+          },
+          config: {
+            ...widget.config,
+            browserPosition: undefined,
+          },
+        };
+      });
+
+      const updatedDashboard = {
+        ...currentDashboard,
+        widgets: updatedWidgets,
+      };
+      onDashboardUpdated(updatedDashboard);
+    }
+  };
+
   const updateDashboard = (newSettings: BaseWidgetSettings<T>) => {
     if (currentDashboard && onDashboardUpdated) {
       const widgetExists = currentDashboard.widgets.some(
@@ -93,30 +113,10 @@ export const BaseSettingsSection = <T,>({
         ? currentDashboard.widgets.map((widget) => {
             if (widget.id !== widgetId) return widget;
 
-            // Check if widget is being newly enabled
-            const isBeingEnabled = !widget.enabled && newSettings.enabled;
-
-            // If being enabled, center it in the viewport
-            let layout = widget.layout;
-            if (isBeingEnabled) {
-              const centerX = Math.round(
-                (window.innerWidth - widget.layout.width) / 2
-              );
-              const centerY = Math.round(
-                (window.innerHeight - widget.layout.height) / 2
-              );
-              layout = {
-                ...widget.layout,
-                x: Math.max(0, centerX),
-                y: Math.max(0, centerY),
-              };
-            }
-
             return {
               ...widget,
               enabled: newSettings.enabled,
               config: newSettings.config as unknown as Record<string, unknown>,
-              layout,
             };
           })
         : [
@@ -149,27 +149,9 @@ export const BaseSettingsSection = <T,>({
               onToggle={(enabled) =>
                 handleSettingsChange({ ...settings, enabled })
               }
-              label="Enable Widget"
             />
           </div>
           <p className="text-slate-400 text-sm">{description}</p>
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-slate-400 text-xs">Browser Source:</span>
-            <code className="text-xs bg-slate-800 px-2 py-1 rounded font-mono text-slate-300">
-              {browserSourceUrl}
-            </code>
-            <button
-              onClick={handleCopyUrl}
-              className="p-1 rounded hover:bg-slate-600 transition-colors"
-              title="Copy URL"
-            >
-              {copied ? (
-                <Check size={14} className="text-green-400" />
-              ) : (
-                <Copy size={14} className="text-slate-400" />
-              )}
-            </button>
-          </div>
         </div>
       </div>
 
@@ -177,10 +159,50 @@ export const BaseSettingsSection = <T,>({
         className={`${disableInternalScroll ? '' : 'flex-1 overflow-y-auto min-h-0'} mt-4`}
       >
         {children && (
-          <div className="space-y-4 p-4">
+          <div className="space-y-4">
             {typeof children === 'function'
               ? children(handleConfigChange)
               : children}
+          </div>
+        )}
+
+        <div className="flex justify-center p-4 pt-2 mt-2">
+          <button
+            type="button"
+            onClick={handleResetPosition}
+            className="px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
+          >
+            Reset Position
+          </button>
+        </div>
+
+        {showResetConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="bg-slate-800 rounded-lg border border-slate-600 p-5 w-80 shadow-xl">
+              <h3 className="text-base font-semibold text-white mb-2">
+                Reset Position
+              </h3>
+              <p className="text-sm text-slate-300 mb-4">
+                This will reset the position for both the on-screen overlay and
+                the browser/URL source version.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={confirmResetPosition}
+                  className="flex-1 px-3 py-1.5 text-sm bg-red-700 hover:bg-red-600 text-white rounded-md transition-colors"
+                >
+                  Reset Position
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowResetConfirm(false)}
+                  className="flex-1 px-3 py-1.5 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

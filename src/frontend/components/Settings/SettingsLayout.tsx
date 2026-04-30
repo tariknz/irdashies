@@ -1,62 +1,49 @@
+import { useEffect, useState } from 'react';
 import {
   GearIcon,
   LockIcon,
-  LockOpenIcon,
   PresentationChartIcon,
 } from '@phosphor-icons/react';
 import {
-  Link,
   Route,
   Routes,
-  useLocation,
   Navigate,
-  useParams,
+  useLocation,
+  useNavigate,
 } from 'react-router-dom';
-import { getWidgetName } from '../../constants/widgetNames';
-import { StandingsSettings } from './sections/StandingsSettings';
-import { RelativeSettings } from './sections/RelativeSettings';
-import { WeatherSettings } from './sections/WeatherSettings';
-import { TrackMapSettings } from './sections/TrackMapSettings';
-import { FlatTrackMapSettings } from './sections/FlatTrackMapSettings';
-import { AdvancedSettings } from './sections/AdvancedSettings';
-import { InputSettings } from './sections/InputSettings';
-import { AboutSettings } from './sections/AboutSettings';
-import { FasterCarsFromBehindSettings } from './sections/FasterCarsFromBehindSettings';
-import { FuelSettings } from './sections/FuelSettings';
-import { RejoinIndicatorSettings } from './sections/RejoinIndicatorSettings';
-import { PitlaneHelperSettings } from './sections/PitlaneHelperSettings';
-import { GeneralSettings } from './sections/GeneralSettings';
-import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
-import { GarageCoverSettings } from './sections/GarageCoverSettings';
-import { ProfileSettings } from './sections/ProfileSettings';
-import { FlagSettings } from './sections/FlagSettings';
 import { useDashboard } from '@irdashies/context';
-import { useState } from 'react';
+import { SettingsLoader } from './SettingsLoader';
+import { SettingsMenu } from './SettingsMenu';
 
 export const SettingsLayout = () => {
-  const location = useLocation();
   const {
     bridge,
-    editMode,
     isDemoMode,
     toggleDemoMode,
     currentDashboard,
     currentProfile,
   } = useDashboard();
-  const [isLocked, setIsLocked] = useState(!editMode);
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const [editModeAccelerator, setEditModeAccelerator] = useState('F6');
 
-  const isActive = (path: string) => {
-    return location.pathname === `/settings${path}`;
-  };
+  useEffect(() => {
+    window.keybindingsBridge?.getKeybindings().then((bindings) => {
+      setEditModeAccelerator(bindings['toggle-edit-mode'].accelerator);
+    });
+  }, [pathname]);
 
-  const menuItemClass = (path: string) =>
-    `block w-full p-2 rounded cursor-pointer ${
-      isActive(path) ? 'bg-slate-700' : 'hover:bg-slate-700'
-    }`;
+  useEffect(() => {
+    const unsub = window.dashboardBridge?.onNavigateToSettings?.(
+      (widgetType) => {
+        navigate(`/settings/${widgetType}`);
+      }
+    );
+    return () => unsub?.();
+  }, [navigate]);
 
   const handleToggleLock = async () => {
-    const locked = await bridge.toggleLockOverlays();
-    setIsLocked(locked);
+    await bridge.toggleLockOverlays();
   };
 
   if (!currentDashboard) {
@@ -71,8 +58,8 @@ export const SettingsLayout = () => {
           <div>
             <h1 className="text-2xl font-bold">Overlay Settings</h1>
             {currentProfile && (
-              <p className="text-sm text-gray-400">
-                {currentProfile.name} Active
+              <p className="text-sm text-slate-300">
+                {currentProfile.name} Profile
               </p>
             )}
           </div>
@@ -80,7 +67,7 @@ export const SettingsLayout = () => {
         <div className="flex flex-row gap-2">
           <button
             onClick={toggleDemoMode}
-            className="flex flex-row gap-2 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
+            className="flex flex-row gap-1.5 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
           >
             {isDemoMode ? (
               <>
@@ -96,127 +83,19 @@ export const SettingsLayout = () => {
           </button>
           <button
             onClick={handleToggleLock}
-            className="flex flex-row gap-2 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
+            className="flex flex-row gap-1.5 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
           >
-            {isLocked ? (
-              <>
-                <LockIcon size={20} weight="bold" />
-                <span>Edit Layout (F6)</span>
-              </>
-            ) : (
-              <>
-                <LockOpenIcon size={20} weight="bold" />
-                <span>Editing Layout (F6)</span>
-              </>
-            )}
+            <LockIcon size={20} weight="bold" />
+            <span>Edit Layout</span>
+            <kbd className="ml-1 text-xs bg-black/20 px-1 rounded">
+              {editModeAccelerator}
+            </kbd>
           </button>
         </div>
       </div>
       <div className="flex flex-row gap-4 flex-1 min-h-0 text-sm">
         {/* Left Column - Widget Menu */}
-        <div className="w-1/4 bg-slate-800 p-4 rounded-md flex flex-col overflow-y-auto">
-          <ul className="flex flex-col gap-2 mb-2 border-b border-slate-700 pb-2">
-            <li>
-              <Link
-                to="/settings/general"
-                className={menuItemClass('/general')}
-              >
-                General
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings/profiles"
-                className={menuItemClass('/profiles')}
-              >
-                Profiles
-              </Link>
-            </li>
-          </ul>
-          <ul className="flex flex-col gap-2 flex-1 mb-2">
-            {(() => {
-              // Define widget order priority (lower = higher priority)
-              const widgetOrder: Record<string, number> = {
-                standings: 1,
-                fuel: 2,
-              };
-
-              // Sort widgets: prioritized ones first, then by original order
-              const sortedWidgets = [...currentDashboard.widgets].sort(
-                (a, b) => {
-                  const typeA = a.type || a.id;
-                  const typeB = b.type || b.id;
-                  const orderA = widgetOrder[typeA] ?? 100;
-                  const orderB = widgetOrder[typeB] ?? 100;
-                  return orderA - orderB;
-                }
-              );
-
-              // Deduplicate fuel widgets - only keep the first one in sidebar
-              // Others are managed via internal dropdown in FuelSettings
-              const seenTypes = new Set<string>();
-              const deduplicatedWidgets = sortedWidgets.filter((widget) => {
-                const type = widget.type || widget.id;
-                if (type === 'fuel') {
-                  if (seenTypes.has('fuel')) return false;
-                  seenTypes.add('fuel');
-                }
-                return true;
-              });
-
-              return deduplicatedWidgets.map((widget) => {
-                const type = widget.type || widget.id;
-                let label = widget.id; // Default fallback
-
-                const name = getWidgetName(type);
-                label = name;
-
-                // Need to handle the case where the widget id is not the same as the type
-                // This is the case for fuel widgets, where the id is "fuel-1", "fuel-2", etc.
-                // and the type is "fuel"
-                if (widget.id !== type && type !== 'fuel') {
-                  label += ` (${widget.id})`;
-                }
-
-                // Fuel Calculator gets special path handling
-                const linkPath =
-                  type === 'fuel' ? '/settings/fuel' : `/settings/${widget.id}`;
-
-                const isActive =
-                  type === 'fuel'
-                    ? location.pathname.includes('/settings/fuel')
-                    : location.pathname === `/settings/${widget.id}`;
-
-                return (
-                  <li key={widget.id}>
-                    <Link
-                      to={linkPath}
-                      className={`block w-full p-2 rounded cursor-pointer ${isActive ? 'bg-slate-700' : 'hover:bg-slate-700'}`}
-                    >
-                      {label}
-                    </Link>
-                  </li>
-                );
-              });
-            })()}
-          </ul>
-          {/* Advanced settings pushed to bottom */}
-          <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col gap-2">
-            <li>
-              <Link
-                to="/settings/advanced"
-                className={menuItemClass('/advanced')}
-              >
-                Advanced
-              </Link>
-            </li>
-            <li>
-              <Link to="/settings/about" className={menuItemClass('/about')}>
-                About
-              </Link>
-            </li>
-          </ul>
-        </div>
+        <SettingsMenu />
 
         {/* Right Column - Widget Settings */}
         <div className="w-3/4 bg-slate-800 p-4 rounded-md flex flex-col overflow-hidden">
@@ -231,71 +110,4 @@ export const SettingsLayout = () => {
       </div>
     </div>
   );
-};
-
-const SettingsLoader = () => {
-  const { widgetId } = useParams<{ widgetId: string }>();
-  const { currentDashboard } = useDashboard();
-
-  // 1. Handle non-widget pages
-  if (widgetId === 'general') return <GeneralSettings />;
-  if (widgetId === 'profiles') return <ProfileSettings />;
-  if (widgetId === 'advanced') return <AdvancedSettings />;
-  if (widgetId === 'about') return <AboutSettings />;
-
-  // 2. Special Manager Pages
-  // FuelSettings handles its own creation/selection logic, so we always render it
-  // if the route is /settings/fuel, even if no widget with id='fuel' exists.
-  if (widgetId === 'fuel') {
-    // If a widget explicitly named 'fuel' exists, we could pass it,
-    // but FuelSettings defaults to selecting the first fuel widget anyway.
-    // Passing widgetId="fuel" specifically might be safer if it exists.
-    const hasFuelWidget = currentDashboard?.widgets.some(
-      (w) => w.id === 'fuel'
-    );
-    return <FuelSettings widgetId={hasFuelWidget ? 'fuel' : undefined} />;
-  }
-
-  // 3. Find specific widget instance
-  const widget = currentDashboard?.widgets.find((w) => w.id === widgetId);
-
-  if (!widget) {
-    return <div className="text-slate-400">Select a widget to edit</div>;
-  }
-
-  const type = widget.type || widget.id;
-
-  switch (type) {
-    case 'standings':
-      return <StandingsSettings />;
-    case 'relative':
-      return <RelativeSettings />;
-    case 'weather':
-      return <WeatherSettings />;
-    case 'fuel':
-      return <FuelSettings widgetId={widget.id} />;
-    case 'map':
-      return <TrackMapSettings />;
-    case 'flatmap':
-      return <FlatTrackMapSettings />;
-    case 'input':
-      return <InputSettings />;
-    case 'pitlanehelper':
-      return <PitlaneHelperSettings />;
-    case 'rejoin':
-      return <RejoinIndicatorSettings />;
-    case 'faster-cars':
-    case 'fastercarsfrombehind':
-      return <FasterCarsFromBehindSettings />;
-    case 'blindspotmonitor':
-      return <BlindSpotMonitorSettings />;
-    case 'garagecover':
-      return <GarageCoverSettings />;
-    case 'flag':
-      return <FlagSettings />;
-    default:
-      return (
-        <div className="text-red-400">No settings available for {type}</div>
-      );
-  }
 };

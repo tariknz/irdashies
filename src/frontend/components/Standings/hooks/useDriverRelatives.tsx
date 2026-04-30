@@ -1,34 +1,28 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   useSessionStore,
   useTelemetryValues,
+  useTelemetryValuesRounded,
   useFocusCarIdx,
-  useTelemetryValue,
+  useReferenceLapStore,
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
-import { useReferenceRegistry } from './useReferenceRegistry';
 import {
-  calculateClassEstimatedGap,
+  calculateClassEstimatedDelta,
   calculateReferenceDelta,
   getStats,
-  TRACK_SURFACES,
 } from '../relativeGapHelpers';
 import { Standings } from '../createStandings';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();
-  const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
+  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 4);
   const carIdxIsOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
-  // const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface');
-  // CarIdxEstTime - iRacing's native estimated time gap calculation
-  const carIdxEstTime = useTelemetryValues('CarIdxEstTime');
+  const carIdxEstTime = useTelemetryValuesRounded('CarIdxEstTime', 2);
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
   const focusCarIdx = useFocusCarIdx();
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
-  const { collectLapData, getReferenceLap, resetLaps } = useReferenceRegistry();
-  const sessionTime = useTelemetryValue<number>('SessionTime') ?? 0;
-  const sessionNum = useTelemetryValue('SessionNum') ?? -1;
 
   // Driver lookup map
   const driverMap = useMemo(
@@ -75,7 +69,12 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       const isOnPitRoadBehind = carIdxIsOnPitRoad[behindIdx] === 1;
       const isAnyoneOnPitRoad = isOnPitRoadAhead || isOnPitRoadBehind;
 
-      const refLap = getReferenceLap(behindIdx);
+      const behindDriver = driverMap.get(behindIdx);
+      const classId = behindDriver?.carClass.id ?? -1;
+      const isStartingLap = (behindDriver?.lap ?? -1) <= 1;
+      const refLap = useReferenceLapStore
+        .getState()
+        .getReferenceLap(behindIdx, classId, isStartingLap);
 
       const isInPitOrHasNoData = isAnyoneOnPitRoad || refLap.finishTime < 0;
 
@@ -86,9 +85,8 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
         const aheadDriver = driverMap.get(aheadIdx);
 
         const behindEstTime = carIdxEstTime[behindIdx];
-        const behindDriver = driverMap.get(behindIdx);
 
-        calculatedDelta = calculateClassEstimatedGap(
+        calculatedDelta = calculateClassEstimatedDelta(
           getStats(aheadEstTime, aheadDriver),
           getStats(behindEstTime, behindDriver),
           isTargetAhead
@@ -106,14 +104,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
       return calculatedDelta;
     },
-    [
-      carIdxEstTime,
-      carIdxIsOnPitRoad,
-      carIdxLapDistPct,
-      driverMap,
-      focusCarIdx,
-      getReferenceLap,
-    ]
+    [carIdxEstTime, carIdxIsOnPitRoad, carIdxLapDistPct, driverMap, focusCarIdx]
   );
 
   const isValidDriver = useCallback(
@@ -130,52 +121,21 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     [focusCarIdx, paceCarIdx]
   );
 
-  useEffect(() => {
-    resetLaps();
-  }, [resetLaps, sessionNum]);
-
-  // ===========================================================================
-  // 1. DATA COLLECTION PHASE (Side Effect)
-  // Run this in an Effect so it happens reliably after every frame update.
-  // ===========================================================================
-  useEffect(() => {
-    drivers.forEach((d) => {
-      if (isValidDriver(d)) {
-        const idx = d.carIdx;
-        collectLapData(
-          idx,
-          carIdxLapDistPct[idx],
-          sessionTime,
-          TRACK_SURFACES.OnTrack,
-          // carIdxTrackSurface[idx],
-          carIdxIsOnPitRoad[idx] === 1
-        );
-      }
-    });
-  }, [
-    sessionTime,
-    drivers,
-    focusCarIdx,
-    paceCarIdx,
-    carIdxLapDistPct,
-    // carIdxTrackSurface,
-    carIdxIsOnPitRoad,
-    collectLapData,
-    isValidDriver,
-  ]);
-
-  // ===========================================================================
-  // 2. VIEW PROJECTION PHASE (Pure Calculation)
-  // ===========================================================================
   const standings = useMemo(() => {
     // A. Filter & Map (Calculate Relative Pct immutably)
-    const processed = drivers
-      .filter(isValidDriver)
-      .map((d) => ({
-        ...d,
-        relativePct: calculateRelativePct(d.carIdx),
-      }))
-      .filter((d) => !isNaN(d.relativePct));
+    const processed = [] as Standings[];
+    for (const d of drivers) {
+      if (isValidDriver(d)) {
+        const relativePct = calculateRelativePct(d.carIdx);
+
+        if (!isNaN(relativePct)) {
+          processed.push({
+            ...d,
+            relativePct,
+          });
+        }
+      }
+    }
 
     // B. Sort (Descending)
     processed.sort((a, b) => b.relativePct - a.relativePct);
@@ -195,9 +155,9 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       delta: calculateDelta(d.carIdx, d.relativePct),
     }));
   }, [
+    buffer,
     drivers,
     isValidDriver,
-    buffer,
     calculateRelativePct,
     focusCarIdx,
     calculateDelta,

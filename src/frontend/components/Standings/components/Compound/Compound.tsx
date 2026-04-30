@@ -1,33 +1,37 @@
 import { useStore } from 'zustand';
-import { useSessionStore } from '../../../../context/SessionStore/SessionStore';
+import { useSessionStore } from '@irdashies/context';
 
 interface CompoundProps {
   tireCompound: number;
   mockTires?: { TireIndex: number; TireCompoundType: string }[];
 }
 
-export const Compound = ({
-  tireCompound, mockTires
-}: CompoundProps) => {
+export const Compound = ({ tireCompound, mockTires }: CompoundProps) => {
   const session = useStore(useSessionStore, (state) => state.session);
   const driverTires = mockTires || session?.DriverInfo?.DriverTires;
 
-  const tireCompoundNameRaw = driverTires?.find(t => t.TireIndex === tireCompound)?.TireCompoundType;
+  const tireCompoundNameRaw = driverTires?.find(
+    (t) => t.TireIndex === tireCompound
+  )?.TireCompoundType;
   let tireCompoundName = tireCompoundNameRaw;
   if (driverTires && driverTires.length === 2) {
-    const tireTypes = driverTires.map(t => t.TireCompoundType);
-    if (tireTypes.includes('Hard') && tireTypes.includes('Wet') && tireCompoundNameRaw === 'Hard') {
+    const tireTypes = driverTires.map((t) => t.TireCompoundType);
+    if (
+      tireTypes.includes('Hard') &&
+      tireTypes.includes('Wet') &&
+      tireCompoundNameRaw === 'Hard'
+    ) {
       tireCompoundName = 'Dry';
     }
   }
   const tireCompoundColors: Record<string, string> = {
-    'Hard': '#ffffff',
-    'Primary': '#ffffff',
-    'Medium': '#f0d700',
-    'Soft': '#d40000',
-    'Alternate': '#d40000',
-    'Wet': '#078cd1',
-    'Dry': '#4d4d4d'
+    Hard: '#ffffff',
+    Primary: '#ffffff',
+    Medium: '#f0d700',
+    Soft: '#d40000',
+    Alternate: '#d40000',
+    Wet: '#078cd1',
+    Dry: '#4d4d4d',
   };
   const fillColor = tireCompoundColors[tireCompoundName ?? ''] || '#4d4d4d'; // default
   if (tireCompound < 0) {
@@ -41,11 +45,40 @@ export const Compound = ({
       width="100%"
       height="100%"
     >
-      <circle cx="50" cy="50" r="46" stroke="#cccccc" strokeWidth="6" fill="none" opacity="0.5"/>
-      <circle cx="50" cy="50" r="34" stroke="#333333" strokeWidth="20" fill="none"/>
-      <circle cx="50" cy="50" r="20" stroke={fillColor} strokeWidth="12" fill="none"/>
-      <circle cx="50" cy="50" r="10" stroke="#333333" strokeWidth="8" fill="none"/>
-      <circle cx="50" cy="50" r="2" fill="none"/>
+      <circle
+        cx="50"
+        cy="50"
+        r="46"
+        stroke="#cccccc"
+        strokeWidth="6"
+        fill="none"
+        opacity="0.5"
+      />
+      <circle
+        cx="50"
+        cy="50"
+        r="34"
+        stroke="#333333"
+        strokeWidth="20"
+        fill="none"
+      />
+      <circle
+        cx="50"
+        cy="50"
+        r="20"
+        stroke={fillColor}
+        strokeWidth="12"
+        fill="none"
+      />
+      <circle
+        cx="50"
+        cy="50"
+        r="10"
+        stroke="#333333"
+        strokeWidth="8"
+        fill="none"
+      />
+      <circle cx="50" cy="50" r="2" fill="none" />
     </svg>
   );
 };

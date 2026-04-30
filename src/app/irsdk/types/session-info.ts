@@ -22,6 +22,14 @@ export interface SessionResultsFastestLap {
   FastestTime: number;
 }
 
+export interface SessionQualifyPosition {
+  Position: number;
+  ClassPosition: number;
+  CarIdx: number;
+  FastestLap: number;
+  FastestTime: number;
+}
+
 export interface SessionInfo {
   SessionNum: number;
   SessionLaps: string;
@@ -33,8 +41,9 @@ export interface SessionInfo {
   SessionSubType: string | null;
   SessionSkipped: number;
   SessionRunGroupsUsed: number;
-  ResultsPositions: SessionResultsPosition[];
+  ResultsPositions: SessionResultsPosition[] | null;
   ResultsFastestLap: SessionResultsFastestLap[];
+  QualifyPositions?: SessionQualifyPosition[];
   ResultsAverageLapTime: number;
   ResultsNumCautionFlags: number;
   ResultsNumCautionLaps: number;

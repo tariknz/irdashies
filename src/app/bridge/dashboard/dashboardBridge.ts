@@ -2,10 +2,15 @@ import type {
   DashboardBridge,
   DashboardLayout,
   DashboardProfile,
+  DriverTagSettings,
   SaveDashboardOptions,
 } from '@irdashies/types';
 import { app, ipcMain } from 'electron';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
+import {
+  getDriverTagSettings,
+  saveDriverTagSettings,
+} from '../../storage/driverTagSettings';
 import {
   getDashboard,
   saveDashboard,
@@ -15,6 +20,7 @@ import {
   listDashboards,
   listProfiles,
   createProfile,
+  cloneProfile,
   deleteProfile,
   renameProfile,
   getCurrentProfileId,
@@ -30,6 +36,26 @@ import {
   setAnalyticsOptOut as setAnalyticsOptOutStorage,
 } from '../../storage/analytics';
 import { Analytics } from '../../analytics';
+import logger from '../../logger';
+
+/**
+ * Injects global driver tag settings into a dashboard layout before broadcasting.
+ * Overlays read from generalSettings.driverTagSettings, so merging here keeps them
+ * compatible without requiring any changes to overlay components.
+ */
+const mergeDriverTagsIntoLayout = (
+  dashboard: DashboardLayout,
+  tagSettings: DriverTagSettings | undefined
+): DashboardLayout => {
+  if (!tagSettings) return dashboard;
+  return {
+    ...dashboard,
+    generalSettings: {
+      ...dashboard.generalSettings,
+      driverTagSettings: tagSettings,
+    },
+  };
+};
 
 // Store callbacks for dashboard updates
 const dashboardUpdateCallbacks = new Set<
@@ -45,7 +71,9 @@ export const dashboardBridge: DashboardBridge = {
     // Not used by component server, but required by interface
     return undefined;
   },
-  dashboardUpdated: (callback: (dashboard: DashboardLayout, profileId?: string) => void) => {
+  dashboardUpdated: (
+    callback: (dashboard: DashboardLayout, profileId?: string) => void
+  ) => {
     dashboardUpdateCallbacks.add(callback);
     return () => dashboardUpdateCallbacks.delete(callback);
   },
@@ -63,7 +91,7 @@ export const dashboardBridge: DashboardBridge = {
         try {
           callback(dashboard, targetProfileId);
         } catch (err) {
-          console.error('Error in dashboard update callback:', err);
+          logger.error('Error in dashboard update callback:', err);
         }
       });
     }
@@ -85,13 +113,14 @@ export const dashboardBridge: DashboardBridge = {
   getCurrentDashboard: () => {
     const currentProfileId = getCurrentProfileId();
     const dashboard = getDashboard(currentProfileId);
-    return dashboard;
+    if (!dashboard) return dashboard;
+    return mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
   },
   getDashboardForProfile: async (profileId: string) => {
     // Check if profile exists first
     const profile = getProfile(profileId);
     if (!profile) {
-      console.log('[dashboardBridge] Profile not found:', profileId);
+      logger.info('[dashboardBridge] Profile not found:', profileId);
       return null;
     }
 
@@ -102,7 +131,7 @@ export const dashboardBridge: DashboardBridge = {
       dashboard = getOrCreateDefaultDashboardForProfile(profileId);
     }
 
-    return dashboard;
+    return mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
   },
   toggleDemoMode: () => {
     return;
@@ -120,6 +149,9 @@ export const dashboardBridge: DashboardBridge = {
   createProfile: async (name: string) => {
     return createProfile(name);
   },
+  cloneProfile: async (profileId: string) => {
+    return cloneProfile(profileId);
+  },
   deleteProfile: async (profileId: string) => {
     deleteProfile(profileId);
   },
@@ -133,7 +165,10 @@ export const dashboardBridge: DashboardBridge = {
     const currentProfileId = getCurrentProfileId();
     return getProfile(currentProfileId);
   },
-  updateProfileTheme: async (profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
+  updateProfileTheme: async (
+    profileId: string,
+    themeSettings: DashboardProfile['themeSettings']
+  ) => {
     updateProfileTheme(profileId, themeSettings);
   },
   stop: () => {
@@ -145,10 +180,23 @@ export const dashboardBridge: DashboardBridge = {
   getGarageCoverImageAsDataUrl: (imagePath: string) => {
     return getGarageCoverImageAsDataUrl(imagePath);
   },
+  exportDashboardToFile: async () => false,
+  importDashboardFromFile: async () => null,
+  openLogFolder: async () => undefined,
+  exportLogFile: async () => false,
   setAutoStart: async (enabled: boolean) => {
     app.setLoginItemSettings({
       openAtLogin: enabled,
     });
+  },
+  getDriverTagSettings: async () => {
+    return getDriverTagSettings();
+  },
+  saveDriverTagSettings: async (settings: DriverTagSettings) => {
+    saveDriverTagSettings(settings);
+  },
+  openWidgetSettings: async () => {
+    // Not used by component server
   },
 };
 
@@ -157,15 +205,16 @@ export async function publishDashboardUpdates(
   analytics: Analytics
 ) {
   onDashboardUpdated((dashboard) => {
-    overlayManager.closeOrCreateWindows(dashboard);
-    overlayManager.publishMessage('dashboardUpdated', dashboard);
+    const merged = mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
+    const profileId = getCurrentProfileId();
+    overlayManager.closeOrCreateWindows(merged);
+    overlayManager.publishMessage('dashboardUpdated', merged);
     // Notify component server bridge subscribers
     dashboardUpdateCallbacks.forEach((callback) => {
       try {
-        // We don't know the profileId here, so we pass undefined
-        callback(dashboard, undefined);
+        callback(merged, profileId);
       } catch (err) {
-        console.error('Error in dashboard update callback:', err);
+        logger.error('Error in dashboard update callback:', err);
       }
     });
   });
@@ -177,6 +226,8 @@ export async function publishDashboardUpdates(
       const existingDashboards = listDashboards();
       existingDashboards[currentProfileId] = dashboard;
       writeData('dashboards', existingDashboards);
+      // Create windows for any new displays the widget may have been dragged to
+      overlayManager.ensureDisplayWindows(dashboard);
       // Still notify renderer of the update
       overlayManager.publishMessage('dashboardUpdated', dashboard);
       return;
@@ -192,8 +243,9 @@ export async function publishDashboardUpdates(
     const currentProfileId = getCurrentProfileId();
     const dashboard = getDashboard(currentProfileId);
     if (!dashboard) return;
-    overlayManager.closeOrCreateWindows(dashboard);
-    overlayManager.publishMessage('dashboardUpdated', dashboard);
+    const merged = mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
+    overlayManager.closeOrCreateWindows(merged);
+    overlayManager.publishMessage('dashboardUpdated', merged);
   });
 
   ipcMain.handle('resetDashboard', (_, resetEverything: boolean) => {
@@ -207,6 +259,10 @@ export async function publishDashboardUpdates(
     return overlayManager.toggleLockOverlays();
   });
 
+  ipcMain.handle('openWidgetSettings', (_, widgetType: string) => {
+    overlayManager.focusSettingsWindow(widgetType);
+  });
+
   ipcMain.handle('getAppVersion', () => {
     return overlayManager.getVersion();
   });
@@ -217,7 +273,7 @@ export async function publishDashboardUpdates(
       const imagePath = await saveGarageCoverImage(uint8Array);
       return imagePath;
     } catch (err) {
-      console.error('[Bridge] Error saving garage cover image:', err);
+      logger.error('[Bridge] Error saving garage cover image:', err);
       throw err;
     }
   });
@@ -229,7 +285,7 @@ export async function publishDashboardUpdates(
         const dataUrl = await getGarageCoverImageAsDataUrl(imagePath);
         return dataUrl;
       } catch (err) {
-        console.error('Error loading garage cover image as data URL:', err);
+        logger.error('Error loading garage cover image as data URL:', err);
         throw err;
       }
     }
@@ -257,6 +313,10 @@ export async function publishDashboardUpdates(
     return createProfile(name);
   });
 
+  ipcMain.handle('cloneProfile', (_, profileId: string) => {
+    return cloneProfile(profileId);
+  });
+
   ipcMain.handle('deleteProfile', (_, profileId: string) => {
     deleteProfile(profileId);
   });
@@ -280,20 +340,89 @@ export async function publishDashboardUpdates(
   });
 
   ipcMain.handle('getDashboardForProfile', async (_, profileId: string) => {
-    return dashboardBridge.getDashboardForProfile(profileId);
+    const dashboard = await dashboardBridge.getDashboardForProfile(profileId);
+    if (!dashboard) return dashboard;
+    return mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
   });
 
-  ipcMain.handle('updateProfileTheme', (_, profileId: string, themeSettings: DashboardProfile['themeSettings']) => {
-    updateProfileTheme(profileId, themeSettings);
+  ipcMain.handle(
+    'updateProfileTheme',
+    (
+      _,
+      profileId: string,
+      themeSettings: DashboardProfile['themeSettings']
+    ) => {
+      updateProfileTheme(profileId, themeSettings);
 
-    // If updating the current profile, force refresh overlays
-    const currentProfileId = getCurrentProfileId();
-    if (profileId === currentProfileId) {
-      const dashboard = getDashboard(profileId);
-      if (dashboard) {
-        overlayManager.forceRefreshOverlays(dashboard);
+      // If updating the current profile, force refresh overlays
+      const currentProfileId = getCurrentProfileId();
+      if (profileId === currentProfileId) {
+        const dashboard = getDashboard(profileId);
+        if (dashboard) {
+          overlayManager.forceRefreshOverlays(dashboard);
+        }
       }
     }
+  );
+
+  ipcMain.handle(
+    'exportDashboardToFile',
+    async (_, dashboard: DashboardLayout) => {
+      const { dialog } = await import('electron');
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: 'Export Dashboard',
+        defaultPath: 'dashboard.json',
+        filters: [{ name: 'JSON', extensions: ['json'] }],
+      });
+      if (canceled || !filePath) return false;
+      const { writeFile } = await import('node:fs/promises');
+      await writeFile(filePath, JSON.stringify(dashboard, null, 2), 'utf-8');
+      return true;
+    }
+  );
+
+  ipcMain.handle('openLogFolder', async () => {
+    const { shell } = await import('electron');
+    const logsDir = app.getPath('logs');
+    await shell.openPath(logsDir);
+  });
+
+  ipcMain.handle('exportLogFile', async () => {
+    const { dialog } = await import('electron');
+    const path = await import('node:path');
+    const fs = await import('node:fs/promises');
+
+    const mainLog = path.join(app.getPath('logs'), 'main.log');
+
+    try {
+      await fs.access(mainLog);
+    } catch {
+      logger.warn('No log file found at', mainLog);
+      return false;
+    }
+
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: 'Export Log File',
+      defaultPath: 'irdashies.log',
+      filters: [{ name: 'Log Files', extensions: ['log', 'txt'] }],
+    });
+    if (canceled || !filePath) return false;
+
+    await fs.copyFile(mainLog, filePath);
+    return true;
+  });
+
+  ipcMain.handle('importDashboardFromFile', async () => {
+    const { dialog } = await import('electron');
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Import Dashboard',
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+      properties: ['openFile'],
+    });
+    if (canceled || !filePaths[0]) return null;
+    const { readFile } = await import('node:fs/promises');
+    const content = await readFile(filePaths[0], 'utf-8');
+    return JSON.parse(content) as DashboardLayout;
   });
 
   ipcMain.handle('autostart:set', (_event, enabled: boolean) => {
@@ -307,23 +436,53 @@ export async function publishDashboardUpdates(
   ipcMain.handle('autostart:get', () => {
     return app.getLoginItemSettings().openAtLogin;
   });
-};
+
+  ipcMain.handle('getDriverTagSettings', () => {
+    return getDriverTagSettings();
+  });
+
+  ipcMain.handle('saveDriverTagSettings', (_, settings: DriverTagSettings) => {
+    saveDriverTagSettings(settings);
+
+    // Refresh Electron overlay windows (active profile only)
+    const currentProfileId = getCurrentProfileId();
+    const currentDashboard = getDashboard(currentProfileId);
+    if (currentDashboard) {
+      const merged = mergeDriverTagsIntoLayout(currentDashboard, settings);
+      overlayManager.publishMessage('dashboardUpdated', merged);
+    }
+
+    // Notify all profiles' browser views (e.g. OBS stream overlays).
+    // Driver tag settings are global, so every profile's view needs refreshing.
+    listProfiles().forEach((profile) => {
+      const dashboard = getDashboard(profile.id);
+      if (!dashboard) return;
+      const merged = mergeDriverTagsIntoLayout(dashboard, settings);
+      dashboardUpdateCallbacks.forEach((callback) => {
+        try {
+          callback(merged, profile.id);
+        } catch {
+          // ignore
+        }
+      });
+    });
+  });
+}
 
 /**
  * Notify all registered callbacks that demo mode has changed
  * Called from iracingSdk setup when demo mode is toggled
  */
 export function notifyDemoModeChanged(isDemoMode: boolean) {
-  console.log(
-    '🎭 Notifying dashboard bridge callbacks of demo mode change:',
+  logger.info(
+    'Notifying dashboard bridge callbacks of demo mode change:',
     isDemoMode
   );
   demoModeCallbacks.forEach((callback) => {
     try {
       callback(isDemoMode);
     } catch (err) {
-      console.error('Error in demo mode callback:', err);
+      logger.error('Error in demo mode callback:', err);
     }
   });
 }
-

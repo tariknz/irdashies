@@ -5,7 +5,6 @@ import {
   useTelemetry,
   useTelemetryValue,
   useTelemetryValues,
-  useTelemetryValuesMapped,
 } from './TelemetryStore';
 import type { Telemetry } from '@irdashies/types';
 
@@ -71,27 +70,4 @@ describe('TelemetryStore', () => {
       expect(result.current).toEqual([]);
     });
   });
-
-  describe('useTelemetryValuesMapped', () => {
-    it('should map all values for a key', () => {
-      useTelemetryStore.getState().setTelemetry(mockTelemetry);
-      const { result } = renderHook(() =>
-        useTelemetryValuesMapped<number[]>(
-          'RPM',
-          (v: number) => v / 1000
-        )
-      );
-      expect(result.current).toEqual([9, 9.1, 9.2]);
-    });
-    it('should return empty array if value is empty', () => {
-      useTelemetryStore.getState().setTelemetry(emptyTelemetry);
-      const { result } = renderHook(() =>
-        useTelemetryValuesMapped<number[]>(
-          'RPM',
-          (v: number) => v / 1000
-        )
-      );
-      expect(result.current).toEqual([]);
-    });
-  });
-}); 
+});

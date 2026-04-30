@@ -1,20 +1,20 @@
-import {
-  useBlindSpotMonitor,
-  BlindSpotState,
-} from './hooks/useBlindSpotMonitor';
+import { useBlindSpotMonitor } from './hooks/useBlindSpotMonitor';
 import { useBlindSpotMonitorSettings } from './hooks/useBlindSpotMonitorSettings';
 import { BlindSpotMonitorIndicator } from './components/BlindSpotMonitorIndicator';
 import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
+import { CarLeftRight } from '@irdashies/types';
 
 export interface BlindSpotMonitorDisplayProps {
   show: boolean;
-  leftState: BlindSpotState;
-  rightState: BlindSpotState;
+  leftState: CarLeftRight;
+  rightState: CarLeftRight;
   leftPercent: number;
   rightPercent: number;
   disableTransition?: boolean;
   bgOpacity?: number;
   width?: number;
+  borderSize?: number;
+  indicatorColor?: number;
 }
 
 export const BlindSpotMonitorDisplay = ({
@@ -26,11 +26,17 @@ export const BlindSpotMonitorDisplay = ({
   disableTransition = false,
   bgOpacity,
   width,
+  borderSize,
+  indicatorColor,
 }: BlindSpotMonitorDisplayProps) => {
   const showLeft =
-    show && (leftState === 'CarLeft' || leftState === 'Cars2Left');
+    show &&
+    (leftState === CarLeftRight.CarLeft ||
+      leftState === CarLeftRight.Cars2Left);
   const showRight =
-    show && (rightState === 'CarRight' || rightState === 'Cars2Right');
+    show &&
+    (rightState === CarLeftRight.CarRight ||
+      rightState === CarLeftRight.Cars2Right);
 
   return (
     <div className="w-full h-full relative">
@@ -40,6 +46,8 @@ export const BlindSpotMonitorDisplay = ({
         percent={leftPercent}
         state={leftState}
         width={width}
+        borderSize={borderSize}
+        indicatorColor={indicatorColor}
         visible={showLeft}
         disableTransition={disableTransition}
       />
@@ -49,6 +57,8 @@ export const BlindSpotMonitorDisplay = ({
         percent={rightPercent}
         state={rightState}
         width={width}
+        borderSize={borderSize}
+        indicatorColor={indicatorColor}
         visible={showRight}
         disableTransition={disableTransition}
       />
@@ -74,6 +84,8 @@ export const BlindSpotMonitor = () => {
       disableTransition={state.disableTransition}
       bgOpacity={settings?.background?.opacity}
       width={settings?.width}
+      borderSize={settings?.borderSize}
+      indicatorColor={settings?.indicatorColor}
     />
   );
 };

@@ -1,30 +1,34 @@
-import { useSessionName, useTelemetryValue, useWeekendInfoSeriesID } from '@irdashies/context';
-import { useDashboard } from '@irdashies/context';
+import {
+  useCurrentSessionType,
+  useTotalRaceLaps,
+  useTelemetryValue,
+  useWeekendInfoSeriesID,
+} from '@irdashies/context';
+import { SessionState } from '@irdashies/types';
 import { useMemo } from 'react';
 import { seriesMapping } from '../../../../utils/seriesMapping';
+import { useHighlightColor } from '../../hooks/useHighlightColor';
+import { useSessionLapCount } from '../../hooks/useSessionLapCount';
 
 interface TitleBarProps {
   titleBarSettings?: { enabled: boolean; progressBar: { enabled: boolean } };
 }
 
 export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
-  const sessionNum = useTelemetryValue('SessionNum');
   const seriesId = useWeekendInfoSeriesID();
-  const sessionName = useSessionName(sessionNum);
+  const sessionType = useCurrentSessionType();
 
-  // Use series name if available, otherwise fall back to session name
-  const displayText = seriesId ? (seriesMapping[seriesId.toString()] || sessionName) : (sessionName || 'Unknown Session');
+  // Use series name if available, otherwise fall back to session type
+  const displayText = seriesId
+    ? seriesMapping[seriesId.toString()] || sessionType
+    : sessionType || 'Unknown Session';
 
-  // Get telemetry data for progress calculation
-  const sessionTimeRemain = useTelemetryValue('SessionTimeRemain');
-  const sessionTimeTotal = useTelemetryValue('SessionTimeTotal');
-  const sessionLapsTotal = useTelemetryValue('SessionLapsTotal');
-  const raceLaps = useTelemetryValue('RaceLaps');
+  const { state: sessionState, currentLap } = useSessionLapCount();
+  const { totalRaceLaps } = useTotalRaceLaps();
   const lapDistPct = useTelemetryValue('LapDistPct');
 
-  // Get highlight color from dashboard
-  const { currentDashboard } = useDashboard();
-  const highlightColor = currentDashboard?.generalSettings?.highlightColor ?? 960745;
+  // Get highlight color from dashboard settings
+  const highlightColor = useHighlightColor();
 
   // Computed colors for gradient stripes
   const r = (highlightColor >> 16) & 255;
@@ -34,34 +38,25 @@ export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
   const color2 = `rgba(${r}, ${g}, ${b}, 0.9)`;
 
   const progressPercentage = useMemo(() => {
+    // Once checkered flag waves or cool-down begins, race is complete
+    if (sessionState >= SessionState.Checkered) return 100;
+
     // Only calculate progress for racing sessions
-    if (sessionName?.toLowerCase() !== "race" || !sessionTimeRemain || !sessionTimeTotal || !raceLaps) {
-      return 0;
-    }
+    if (sessionType !== 'Race') return 0;
 
-    const isUnlimitedLaps = !sessionLapsTotal || sessionLapsTotal === 32767; // 32767 seems to indicate unlimited
+    // Before racing starts (warmup, parade laps)
+    if (sessionState < SessionState.Racing) return 0;
 
-    if (isUnlimitedLaps) {
-      // Time-based calculation for unlimited lap sessions
-      const remainingPct = (sessionTimeRemain / sessionTimeTotal) * 100;
-      const progressPct = Math.min(100, Math.max(0, 100 - remainingPct));
-      return progressPct;
-    } else {
-      // Lap-based calculation for fixed lap sessions
-      if (raceLaps === 0 && (lapDistPct || 0) < 1) {
-        // Haven't completed any laps and still on first lap
-        return 0;
-      }
+    // Hooks still initializing or timed race with no lap estimate yet
+    if (totalRaceLaps <= 0) return 0;
 
-      const completedLaps = raceLaps || 0;
-      const currentLapProgress = Math.max(0, Math.min(100, (lapDistPct || 0) * 100)) / 100;
+    // currentLap is 1-indexed: currentLap - 1 = completed laps
+    const completedLaps = Math.max(0, currentLap - 1);
+    const currentLapProgress = Math.max(0, Math.min(1, lapDistPct ?? 0));
+    const totalProgress = (completedLaps + currentLapProgress) / totalRaceLaps;
 
-      const totalProgress = (completedLaps / sessionLapsTotal) + (currentLapProgress / sessionLapsTotal);
-      const progressPct = Math.min(100, Math.max(0, totalProgress * 100));
-
-      return progressPct;
-    }
-  }, [sessionName, sessionTimeRemain, sessionTimeTotal, sessionLapsTotal, raceLaps, lapDistPct]);
+    return Math.min(100, Math.max(0, totalProgress * 100));
+  }, [sessionState, sessionType, currentLap, lapDistPct, totalRaceLaps]);
 
   // Don't render title bar if disabled in settings
   if (!titleBarSettings?.enabled) {
@@ -71,22 +66,22 @@ export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
   return (
     <div className="relative bg-slate-900/70 text-sm px-3 py-2 flex justify-center items-center">
       {/* Background progress bar - only show for racing sessions and if enabled in settings */}
-      {sessionName?.toLowerCase() === "race" && progressPercentage > 0 && titleBarSettings?.progressBar?.enabled && (
-        <div className="absolute inset-x-3 inset-y-2">
-          <div
-            className="h-full rounded-sm"
-            style={{
-              width: `${progressPercentage}%`,
-              backgroundImage: `repeating-linear-gradient(-45deg, ${color1} 0px, ${color1} 10px, ${color2} 10px, ${color2} 20px)`,
-            }}
-          />
-        </div>
-      )}
+      {sessionType === 'Race' &&
+        progressPercentage > 0 &&
+        titleBarSettings?.progressBar?.enabled && (
+          <div className="absolute inset-x-3 inset-y-2">
+            <div
+              className="h-full rounded-sm"
+              style={{
+                width: `${progressPercentage}%`,
+                backgroundImage: `repeating-linear-gradient(-45deg, ${color1} 0px, ${color1} 10px, ${color2} 10px, ${color2} 20px)`,
+              }}
+            />
+          </div>
+        )}
 
       {/* Centered series/session name text */}
-      <div className="relative z-10 font-medium">
-        {displayText}
-      </div>
+      <div className="relative z-10 font-medium">{displayText}</div>
     </div>
   );
 };

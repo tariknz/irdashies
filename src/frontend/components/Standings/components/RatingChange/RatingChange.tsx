@@ -2,13 +2,21 @@ import { CaretUpIcon, CaretDownIcon, MinusIcon } from '@phosphor-icons/react';
 
 interface RatingChangeProps {
   value?: number;
+  justify?: 'start' | 'center';
+  showZero?: boolean;
 }
 
-export const RatingChange = ({ value }: RatingChangeProps) => {
+export const RatingChange = ({
+  value,
+  justify = 'center',
+  showZero = false,
+}: RatingChangeProps) => {
   if (value === undefined || isNaN(value)) {
-    return <span className="text-gray-400">
-      <MinusIcon size={10} />
-    </span>;
+    return (
+      <span className="text-gray-400">
+        <MinusIcon size={10} />
+      </span>
+    );
   }
 
   const roundedChange = Math.round(value);
@@ -24,15 +32,21 @@ export const RatingChange = ({ value }: RatingChangeProps) => {
     text = `${Math.abs(roundedChange)}`;
     color = 'text-red-400';
     icon = <CaretDownIcon size={10} />;
-  } else {
-    text = `${roundedChange}`;
+  } else if (showZero) {
+    text = '0';
     icon = <MinusIcon size={10} />;
+  } else {
+    justify = 'center';
+    text = '';
+    icon = <MinusIcon size={10} className="ml-1" />;
   }
 
+  const justifyClass = justify === 'start' ? 'justify-start' : 'justify-center';
+
   return (
-    <span className={`flex items-center justify-center gap-0.5 ${color}`}>
+    <span className={`flex items-center ${justifyClass} gap-0.5 ${color}`}>
       {icon}
       {text}
     </span>
   );
-}; 
+};

@@ -13,6 +13,14 @@ interface PitStatusCellProps {
   pitStopDuration?: number | null;
   showPitTime?: boolean;
   pitLapDisplayMode?: string;
+  /**
+   * True when the pit lane exit is in the last 15% of the lap, meaning the
+   * start/finish line is reached very shortly after exiting pits. When true,
+   * OUT persists for one extra lap count so it remains visible for a full lap.
+   */
+  pitExitAfterSF?: boolean;
+  isMinimal?: boolean;
+  compactMode?: string;
 }
 
 export const PitStatusCell = memo(
@@ -27,9 +35,13 @@ export const PitStatusCell = memo(
     dnf,
     pitStopDuration,
     showPitTime = false,
-    pitLapDisplayMode
+    pitLapDisplayMode,
+    pitExitAfterSF,
+    isMinimal,
+    compactMode,
   }: PitStatusCellProps) => {
     const widthClass = showPitTime ? 'w-[7rem]' : 'w-[4.5rem]';
+    const pxClass = compactMode === 'ultra' ? '' : 'px-1';
     const tow =
       carTrackSurface == 1 &&
       prevCarTrackSurface != undefined &&
@@ -43,20 +55,18 @@ export const PitStatusCell = memo(
         prevCarTrackSurface == undefined ||
         currentSessionType != 'Race');
     const lastPit =
-      !onPitRoad &&
-      !!lastPitLap &&
-      lastPitLap > 1 &&
-      carTrackSurface != -1;
+      !onPitRoad && !!lastPitLap && lastPitLap > 1 && carTrackSurface != -1;
     const out =
       !onPitRoad &&
       !!lastPitLap &&
-      lastPitLap == lastLap &&
+      (lastPitLap == lastLap ||
+        (!!pitExitAfterSF && lastPitLap + 1 == lastLap)) &&
       carTrackSurface != -1;
 
     return (
       <td
         data-column="pitStatus"
-        className={`${widthClass} px-1 text-center align-middle whitespace-nowrap`}
+        className={`${widthClass} ${pxClass} text-center align-middle whitespace-nowrap`}
       >
         <DriverStatusBadges
           dnf={dnf}
@@ -69,6 +79,8 @@ export const PitStatusCell = memo(
           pitStopDuration={pitStopDuration}
           showPitTime={showPitTime}
           pitLapDisplayMode={pitLapDisplayMode}
+          pitExitAfterSF={pitExitAfterSF}
+          isMinimal={isMinimal}
         />
       </td>
     );

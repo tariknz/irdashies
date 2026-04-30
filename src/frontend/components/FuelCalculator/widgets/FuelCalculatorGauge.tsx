@@ -14,7 +14,7 @@ interface FuelCalculatorWidgetProps {
     valueFontSize?: number;
     barFontSize?: number;
   };
-  isCompact?: boolean;
+  compactMode?: 'off' | 'compact' | 'ultra';
 }
 
 export const getFuelStatusColors = (
@@ -63,7 +63,7 @@ export const FuelCalculatorGauge: React.FC<FuelCalculatorWidgetProps> = ({
   settings,
   widgetId,
   customStyles,
-  isCompact,
+  compactMode = 'off',
 }) => {
   // Custom style handling for separate label/value sizes
   const widgetStyle =
@@ -96,10 +96,15 @@ export const FuelCalculatorGauge: React.FC<FuelCalculatorWidgetProps> = ({
   const lapsString = displayData.lapsWithFuel.toFixed(1);
   const tankString = formatFuel(tankCapacity, fuelUnits, 0);
 
+  const paddingClass =
+    compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2';
+
   return (
-    <div className={isCompact ? 'mb-1' : 'mb-4'}>
+    <div
+      className={`${paddingClass} ${compactMode !== 'off' ? 'mb-1' : 'mb-4'}`}
+    >
       <div
-        className={`flex justify-between text-[0.75em] text-slate-400 font-medium items-end ${isCompact ? 'mb-0.5' : 'mb-2'}`}
+        className={`flex justify-between text-[0.75em] text-slate-400 font-medium items-end ${compactMode !== 'off' ? 'mb-0.5' : 'mb-2'}`}
       >
         <span className="mb-0.5" style={{ fontSize: labelFontSize }}>
           E
