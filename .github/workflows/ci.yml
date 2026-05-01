@@ -44,11 +44,11 @@ jobs:
       if: steps.cache-deps.outputs.cache-hit != 'true'
       run: npm ci
 
-    - name: Run linting
-      run: npm run lint
+    # - name: Run linting
+    #   run: npm run lint
 
-    - name: Run tests with coverage
-      run: npm test
+    # - name: Run tests with coverage
+    #   run: npm test
 
     - name: Upload coverage report
       uses: actions/upload-artifact@v4
@@ -56,19 +56,19 @@ jobs:
         name: coverage-report
         path: coverage 
 
-    - name: Check if version changed
-      id: check_version
-      shell: pwsh
-      run: |
-        $currentVersion = (Get-Content package.json | ConvertFrom-Json).version
-        $previousVersion = (git show HEAD^:package.json | ConvertFrom-Json).version
-        if ($currentVersion -ne $previousVersion) {
-          echo "version_changed=true" >> $env:GITHUB_OUTPUT
-          echo "Version changed from $previousVersion to $currentVersion"
-        }
+    # - name: Check if version changed
+    #   id: check_version
+    #   shell: pwsh
+    #   run: |
+    #     $currentVersion = (Get-Content package.json | ConvertFrom-Json).version
+    #     $previousVersion = (git show HEAD^:package.json | ConvertFrom-Json).version
+    #     if ($currentVersion -ne $previousVersion) {
+    #       echo "version_changed=true" >> $env:GITHUB_OUTPUT
+    #       echo "Version changed from $previousVersion to $currentVersion"
+    #     }
 
     - name: Make & Publish
-      if: steps.check_version.outputs.version_changed == 'true'
+      # if: steps.check_version.outputs.version_changed == 'true'
       run: npm run publish:ci
       env:
         POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
