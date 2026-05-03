@@ -78,6 +78,11 @@ export type WidgetId = keyof WidgetConfigMap;
  * Looks up a widget component by id. Accepts a raw string because dashboard
  * config is user-supplied and may contain unknown ids; returns undefined
  * when no widget is registered for that id.
+ *
+ * Uses Object.hasOwn so prototype-chain keys (e.g. "__proto__", "toString")
+ * never resolve to truthy non-component values that React would try to render.
  */
 export const getWidget = (id: string) =>
-  WIDGET_MAP[id as WidgetId] as (typeof WIDGET_MAP)[WidgetId] | undefined;
+  Object.hasOwn(WIDGET_MAP, id)
+    ? (WIDGET_MAP[id as WidgetId] as (typeof WIDGET_MAP)[WidgetId])
+    : undefined;
