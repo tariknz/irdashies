@@ -1,17 +1,14 @@
 import { useEffect } from 'react';
 import { GhostIcon, WarningIcon } from '@phosphor-icons/react';
 import { useSectorDeltas, useSectorTimingStore } from '@irdashies/context';
-import {
-  useSessionVisibility,
-  useTelemetryValue,
-  useTelemetryValueRounded,
-} from '@irdashies/context';
+import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
 import { useReferenceLapSectorTimes } from '@irdashies/context';
 import type { SectorDeltaConfig } from '@irdashies/types';
 import type { TimeFormat } from '@irdashies/types';
 import type { SectorColor } from '@irdashies/context';
-import { useLiveSectorDelta } from './hooks/useLiveSectorDelta';
 import { useCarouselWindow } from './hooks/useCarouselWindow';
+import { LiveDelta } from './components/LiveDelta';
+import { SectorProgressIndicator } from './components/SectorProgressIndicator';
 import {
   computeGhostSectorColor,
   getSectorDeltaThresholdFractions,
@@ -93,21 +90,9 @@ export const SectorDelta = ({
     currentSectorIdx,
   } = useSectorDeltas();
   const isOnTrack = useTelemetryValue('IsOnTrack');
-  const lapDistPct = useTelemetryValueRounded('LapDistPct', 3) ?? 0;
   const { refSectorTimes, hasGhostLap } = useReferenceLapSectorTimes();
 
   const useGhost = ghostComparison === 'prefer-ghost' && hasGhostLap;
-  const liveSectorDelta = useLiveSectorDelta(useGhost);
-
-  const sectorStart = sectors[currentSectorIdx]?.SectorStartPct ?? 0;
-  const sectorEnd = sectors[currentSectorIdx + 1]?.SectorStartPct ?? 1;
-  const sectorProgress =
-    sectorEnd > sectorStart
-      ? Math.max(
-          0,
-          Math.min(1, (lapDistPct - sectorStart) / (sectorEnd - sectorStart))
-        )
-      : 0;
 
   const setThresholds = useSectorTimingStore((s) => s.setThresholds);
   useEffect(() => {
@@ -127,11 +112,11 @@ export const SectorDelta = ({
     extendedIndices,
     slotWidth,
     containerRef,
-    stripStyle,
+    stripRef,
     centerSlot,
   } = useCarouselWindow(
     currentSectorIdx,
-    sectorProgress,
+    sectors,
     sectors.length,
     maxSectorsShown,
     alwaysScroll
@@ -142,8 +127,9 @@ export const SectorDelta = ({
   if (sectors.length === 0) return null;
 
   const opacity = (background?.opacity ?? 80) / 100;
+  const dp = timeFormatToDecimalPlaces(timeFormat);
 
-  /** Renders the card content for a given sector index. */
+  /** Renders a sector card. */
   const renderCard = (
     i: number,
     cardKey: string | number,
@@ -175,12 +161,11 @@ export const SectorDelta = ({
         ? (previousSessionBestSectorTimes[i] ?? null)
         : (sessionBestSectorTimes[i] ?? null);
 
-    const dp = timeFormatToDecimalPlaces(timeFormat);
-    const delta =
-      isCurrent && liveSectorDelta !== null
-        ? `${liveSectorDelta >= 0 ? '+' : ''}${liveSectorDelta.toFixed(dp)}`
-        : formatDelta(displayTime, refTime, timeFormat);
+    const fallback = formatDelta(displayTime, refTime, timeFormat);
     const cardStyle = SECTOR_CARD[colorKey];
+
+    const sectorStart = sector.SectorStartPct;
+    const sectorEnd = sectors[i + 1]?.SectorStartPct ?? 1;
 
     return (
       <div
@@ -203,7 +188,13 @@ export const SectorDelta = ({
             isCurrent ? 'opacity-70' : '',
           ].join(' ')}
         >
-          <span>{delta}</span>
+          <span>
+            {isCurrent ? (
+              <LiveDelta useGhost={useGhost} dp={dp} fallback={fallback} />
+            ) : (
+              fallback
+            )}
+          </span>
           {isUnclean && (
             <WarningIcon
               size={10}
@@ -213,32 +204,11 @@ export const SectorDelta = ({
           )}
         </span>
         {isCurrent && (
-          <>
-            <div
-              className={
-                isWindowed
-                  ? 'absolute top-0 left-0 bottom-0'
-                  : 'absolute top-0 left-0 bottom-0 transition-[width] duration-200 ease-linear'
-              }
-              style={{
-                width: `${sectorProgress * 100}%`,
-                backgroundColor: 'rgba(56, 189, 248, 0.4)',
-              }}
-            />
-            {!isWindowed && (
-              <>
-                <div className="absolute top-0 left-0 bottom-0 w-[2px] bg-sky-400" />
-                <div
-                  className="absolute top-0 left-0 h-[2px] bg-sky-400 transition-[width] duration-200 ease-linear"
-                  style={{ width: `${sectorProgress * 100}%` }}
-                />
-                <div
-                  className="absolute bottom-0 left-0 h-[2px] bg-sky-400 transition-[width] duration-200 ease-linear"
-                  style={{ width: `${sectorProgress * 100}%` }}
-                />
-              </>
-            )}
-          </>
+          <SectorProgressIndicator
+            sectorStart={sectorStart}
+            sectorEnd={sectorEnd}
+            isWindowed={isWindowed}
+          />
         )}
       </div>
     );
@@ -256,11 +226,8 @@ export const SectorDelta = ({
       )}
 
       {isWindowed ? (
-        // Continuous scroll mode: strip translates every frame to keep the
-        // player's exact track position pinned to the horizontal center.
-        // Partial cards are visible on both edges.
         <div ref={containerRef} className="flex-1 overflow-hidden relative">
-          <div className="flex flex-row gap-1" style={stripStyle}>
+          <div ref={stripRef} className="flex flex-row gap-1">
             {extendedIndices.map((sectorIdx, slotPosition) =>
               renderCard(sectorIdx, slotPosition, slotPosition === centerSlot)
             )}
@@ -268,7 +235,6 @@ export const SectorDelta = ({
           <div className="absolute inset-y-0 left-1/2 w-px bg-sky-400/60 pointer-events-none" />
         </div>
       ) : (
-        // Normal mode: all sectors visible, each card expands to fill width
         sectors.map((sector, i) =>
           renderCard(i, sector.SectorNum, i === currentSectorIdx)
         )

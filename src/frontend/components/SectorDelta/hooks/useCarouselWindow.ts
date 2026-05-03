@@ -1,7 +1,11 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type React from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useTelemetryStore } from '@irdashies/context';
 
 const GAP = 4; // gap-1 = 4px
+
+interface SectorLike {
+  SectorStartPct: number;
+}
 
 /**
  * Builds an extended sector index list with buffer sectors on each side:
@@ -22,15 +26,15 @@ function buildExtendedIndices(
 
 /**
  * Drives a continuously scrolling sector strip centered on the player's
- * exact track position. The strip translates every time sectorProgress
- * changes (i.e. every lapDistPct update), so the current position is
- * always pinned to the horizontal center of the viewport.
+ * exact track position.
  *
- * Partial sector cards are visible on both edges at all times.
+ * The strip transform is updated imperatively from the telemetry store
+ * (~60×/sec) so the React tree does not re-render every frame — only the
+ * `style.transform` of the strip element mutates.
  */
 export function useCarouselWindow(
   currentSectorIdx: number,
-  sectorProgress: number,
+  sectors: SectorLike[],
   totalSectors: number,
   maxSectorsShown: number | null | undefined,
   alwaysScroll: boolean | null | undefined = false
@@ -42,8 +46,8 @@ export function useCarouselWindow(
 
   const [slotWidth, setSlotWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
 
-  // When alwaysScroll is on but maxSectorsShown is unset, fit all sectors.
   const effectiveMaxShown =
     maxSectorsShown ?? (isWindowed ? totalSectors : undefined);
 
@@ -64,8 +68,6 @@ export function useCarouselWindow(
     return () => ro.disconnect();
   }, [isWindowed, effectiveMaxShown]);
 
-  // Extra sectors rendered before sector 0 and after the last sector.
-  // Enough to fill half the visible window so the edges are always covered.
   const bufferExtra =
     isWindowed && effectiveMaxShown ? Math.ceil(effectiveMaxShown / 2) + 1 : 0;
 
@@ -77,31 +79,53 @@ export function useCarouselWindow(
     [isWindowed, effectiveMaxShown, totalSectors, bufferExtra]
   );
 
-  // Pixel width of one slot (card + trailing gap), and total container width
   const step = slotWidth + GAP;
   const containerWidth = effectiveMaxShown ? effectiveMaxShown * step - GAP : 0;
-
-  // Position in the strip of the player's exact track point.
-  // Uses whole-card steps for completed sectors, then fractional slotWidth
-  // within the current card (gap is not traversed mid-card).
-  const stripPosition =
-    (bufferExtra + currentSectorIdx) * step + sectorProgress * slotWidth;
-
-  const stripStyle: React.CSSProperties = isWindowed
-    ? { transform: `translateX(${containerWidth / 2 - stripPosition}px)` }
-    : {};
-
-  // Slot position in extendedIndices that represents the player's current
-  // sector for *this* cycle. Buffer copies of the same sectorIdx are not
-  // current — they represent past/future cycles and should not show progress.
   const centerSlot = isWindowed ? bufferExtra + currentSectorIdx : -1;
+
+  useEffect(() => {
+    if (!isWindowed || slotWidth === 0) return;
+
+    const apply = () => {
+      const node = stripRef.current;
+      if (!node) return;
+      const lapDistPct =
+        useTelemetryStore.getState().telemetry?.LapDistPct?.value?.[0] ?? 0;
+      const sectorStart = sectors[currentSectorIdx]?.SectorStartPct ?? 0;
+      const sectorEnd = sectors[currentSectorIdx + 1]?.SectorStartPct ?? 1;
+      const progress =
+        sectorEnd > sectorStart
+          ? Math.max(
+              0,
+              Math.min(
+                1,
+                (lapDistPct - sectorStart) / (sectorEnd - sectorStart)
+              )
+            )
+          : 0;
+      const stripPosition =
+        (bufferExtra + currentSectorIdx) * step + progress * slotWidth;
+      node.style.transform = `translateX(${containerWidth / 2 - stripPosition}px)`;
+    };
+
+    apply();
+    return useTelemetryStore.subscribe(apply);
+  }, [
+    isWindowed,
+    slotWidth,
+    step,
+    bufferExtra,
+    containerWidth,
+    currentSectorIdx,
+    sectors,
+  ]);
 
   return {
     isWindowed,
     extendedIndices,
     slotWidth,
     containerRef,
-    stripStyle,
+    stripRef,
     centerSlot,
   };
 }
