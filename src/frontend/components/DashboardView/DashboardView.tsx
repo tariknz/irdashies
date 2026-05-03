@@ -8,7 +8,7 @@ import {
   CSSProperties,
 } from 'react';
 import { useDashboard } from '@irdashies/context';
-import { WIDGET_MAP } from '../../WidgetIndex';
+import { getWidget } from '../../WidgetIndex';
 import { getWidgetName } from '../../constants/widgetNames';
 import { ResizeIcon, XIcon } from '@phosphor-icons/react';
 import type { DashboardWidget } from '@irdashies/types';
@@ -106,7 +106,7 @@ const DashboardWidgetItem = memo(
       };
     }, []);
 
-    const WidgetComponent = WIDGET_MAP[widget.type || widget.id];
+    const WidgetComponent = getWidget(widget.type || widget.id);
     if (!WidgetComponent) {
       return null;
     }
