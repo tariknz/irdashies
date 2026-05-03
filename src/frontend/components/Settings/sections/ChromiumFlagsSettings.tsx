@@ -24,11 +24,19 @@ const PLACEHOLDER = `# One switch per line, no leading "--"
 # force-color-profile=srgb`;
 
 export const ChromiumFlagsSettings = () => {
-  const [flags, setFlags] = useState<ChromiumFlagsType | null>(null);
+  const [flags, setFlags] = useState<ChromiumFlagsType | null>(() => {
+    if (!window.chromiumFlagsBridge) {
+      logger.warn('chromiumFlagsBridge unavailable; using defaults');
+      return { ...DEFAULT_CHROMIUM_FLAGS };
+    }
+    return null;
+  });
 
   useEffect(() => {
+    if (!window.chromiumFlagsBridge) return;
+
     window.chromiumFlagsBridge
-      ?.getFlags()
+      .getFlags()
       .then((loaded) => setFlags({ ...DEFAULT_CHROMIUM_FLAGS, ...loaded }))
       .catch((err) => {
         logger.error('Failed to load chromium flags', err);
