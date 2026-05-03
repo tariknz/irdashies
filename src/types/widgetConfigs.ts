@@ -546,18 +546,18 @@ export interface SectorDeltaConfig {
   sessionVisibility: SessionVisibilitySettings;
   /**
    * Custom color thresholds as percentages of session best.
-   * Omit to use defaults (green: 0.5%, yellow: 1.0%).
+   * Set to null to use defaults (green: 0.5%, yellow: 1.0%).
    */
   thresholds?: {
     green: number; // e.g. 0.5 means within 0.5% → green
     yellow: number; // e.g. 1.0 means within 1.0% → yellow; above = red
-  };
+  } | null;
   /**
    * Maximum number of sector cards to show at once. When the track has more
    * sectors than this, the widget becomes a sliding carousel centered on the
-   * current sector. Omit (or undefined) to always show all sectors.
+   * current sector. Set to null to always show all sectors.
    */
-  maxSectorsShown?: number;
+  maxSectorsShown?: number | null;
   /**
    * Always use the continuous-scroll mode, even when all sectors fit in the
    * widget. The center line stays pinned to your exact track position.

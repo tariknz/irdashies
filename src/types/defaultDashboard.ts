@@ -1194,6 +1194,9 @@ export const defaultDashboard: {
         timeFormat: 'seconds-full',
         ghostComparison: 'prefer-ghost',
         trackIncidentSectors: true,
+        alwaysScroll: false,
+        maxSectorsShown: null,
+        thresholds: null,
         showOnlyWhenOnTrack: true,
         sessionVisibility: {
           race: true,

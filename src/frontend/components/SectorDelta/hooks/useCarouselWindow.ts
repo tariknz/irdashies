@@ -32,11 +32,13 @@ export function useCarouselWindow(
   currentSectorIdx: number,
   sectorProgress: number,
   totalSectors: number,
-  maxSectorsShown: number | undefined,
-  alwaysScroll = false
+  maxSectorsShown: number | null | undefined,
+  alwaysScroll: boolean | null | undefined = false
 ) {
+  const effectiveAlwaysScroll = alwaysScroll ?? false;
   const isWindowed =
-    alwaysScroll || (maxSectorsShown != null && totalSectors > maxSectorsShown);
+    effectiveAlwaysScroll ||
+    (maxSectorsShown != null && totalSectors > maxSectorsShown);
 
   const [slotWidth, setSlotWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -89,11 +91,17 @@ export function useCarouselWindow(
     ? { transform: `translateX(${containerWidth / 2 - stripPosition}px)` }
     : {};
 
+  // Slot position in extendedIndices that represents the player's current
+  // sector for *this* cycle. Buffer copies of the same sectorIdx are not
+  // current — they represent past/future cycles and should not show progress.
+  const centerSlot = isWindowed ? bufferExtra + currentSectorIdx : -1;
+
   return {
     isWindowed,
     extendedIndices,
     slotWidth,
     containerRef,
     stripStyle,
+    centerSlot,
   };
 }

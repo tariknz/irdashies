@@ -122,14 +122,20 @@ export const SectorDelta = ({
     setTrackIncidentSectors(trackIncidentSectors);
   }, [trackIncidentSectors, setTrackIncidentSectors]);
 
-  const { isWindowed, extendedIndices, slotWidth, containerRef, stripStyle } =
-    useCarouselWindow(
-      currentSectorIdx,
-      sectorProgress,
-      sectors.length,
-      maxSectorsShown,
-      alwaysScroll
-    );
+  const {
+    isWindowed,
+    extendedIndices,
+    slotWidth,
+    containerRef,
+    stripStyle,
+    centerSlot,
+  } = useCarouselWindow(
+    currentSectorIdx,
+    sectorProgress,
+    sectors.length,
+    maxSectorsShown,
+    alwaysScroll
+  );
 
   if (!useSessionVisibility(sessionVisibility)) return null;
   if (showOnlyWhenOnTrack && !isOnTrack) return null;
@@ -138,11 +144,14 @@ export const SectorDelta = ({
   const opacity = (background?.opacity ?? 80) / 100;
 
   /** Renders the card content for a given sector index. */
-  const renderCard = (i: number, cardKey: string | number) => {
+  const renderCard = (
+    i: number,
+    cardKey: string | number,
+    isCurrent: boolean
+  ) => {
     const sector = sectors[i];
     if (!sector) return null;
 
-    const isCurrent = i === currentSectorIdx;
     const displayTime = isCurrent
       ? (previousLapSectorTimes[i] ?? null)
       : (currentLapSectorTimes[i] ?? previousLapSectorTimes[i] ?? null);
@@ -253,14 +262,16 @@ export const SectorDelta = ({
         <div ref={containerRef} className="flex-1 overflow-hidden relative">
           <div className="flex flex-row gap-1" style={stripStyle}>
             {extendedIndices.map((sectorIdx, slotPosition) =>
-              renderCard(sectorIdx, slotPosition)
+              renderCard(sectorIdx, slotPosition, slotPosition === centerSlot)
             )}
           </div>
           <div className="absolute inset-y-0 left-1/2 w-px bg-sky-400/60 pointer-events-none" />
         </div>
       ) : (
         // Normal mode: all sectors visible, each card expands to fill width
-        sectors.map((sector, i) => renderCard(i, sector.SectorNum))
+        sectors.map((sector, i) =>
+          renderCard(i, sector.SectorNum, i === currentSectorIdx)
+        )
       )}
     </div>
   );
