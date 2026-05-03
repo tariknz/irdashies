@@ -738,6 +738,8 @@ export const StandingsSettings = () => {
                     />
                   </SettingsSection>
 
+                  <SettingDivider />
+
                   <SettingsSection title="Title Bar">
                     <SettingToggleRow
                       title="Show Title Bar"
@@ -770,6 +772,8 @@ export const StandingsSettings = () => {
                     )}
                   </SettingsSection>
 
+                  <SettingDivider />
+
                   <SettingsSection title="Background">
                     <SettingSliderRow
                       title="Background Opacity"
@@ -780,6 +784,18 @@ export const StandingsSettings = () => {
                       step={1}
                       onChange={(v) =>
                         handleConfigChange({ background: { opacity: v } })
+                      }
+                    />
+
+                    <SettingSliderRow
+                      title="Session Bar Opacity"
+                      value={settings.config.foreground?.opacity ?? 70}
+                      units="%"
+                      min={0}
+                      max={100}
+                      step={1}
+                      onChange={(v) =>
+                        handleConfigChange({ foreground: { opacity: v } })
                       }
                     />
                   </SettingsSection>
