@@ -1,7 +1,8 @@
+import { memo } from 'react';
 import { UsersIcon } from '@phosphor-icons/react';
 import { useFocusedDriver, useCarClassStats } from '@irdashies/context';
 
-export const ClassDriversItem = () => {
+export const ClassDriversItem = memo(() => {
   const focusedDriver = useFocusedDriver();
   const classStats = useCarClassStats();
   const classId = focusedDriver?.carClassID;
@@ -13,4 +14,5 @@ export const ClassDriversItem = () => {
       <span>{stats.total}</span>
     </div>
   );
-};
+});
+ClassDriversItem.displayName = 'ClassDriversItem';

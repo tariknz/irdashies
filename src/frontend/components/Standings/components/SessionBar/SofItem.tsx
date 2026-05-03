@@ -1,7 +1,8 @@
+import { memo } from 'react';
 import { BarbellIcon } from '@phosphor-icons/react';
 import { useFocusedDriver, useCarClassStats } from '@irdashies/context';
 
-export const SofItem = () => {
+export const SofItem = memo(() => {
   const focusedDriver = useFocusedDriver();
   const classStats = useCarClassStats();
   const classId = focusedDriver?.carClassID;
@@ -13,4 +14,5 @@ export const SofItem = () => {
       <span>{stats.sof}</span>
     </div>
   );
-};
+});
+SofItem.displayName = 'SofItem';
