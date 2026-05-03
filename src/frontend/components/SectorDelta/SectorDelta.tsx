@@ -94,6 +94,9 @@ export const SectorDelta = ({
 
   const useGhost = ghostComparison === 'prefer-ghost' && hasGhostLap;
 
+  const currentSectorStart = sectors[currentSectorIdx]?.SectorStartPct ?? 0;
+  const currentSectorEnd = sectors[currentSectorIdx + 1]?.SectorStartPct ?? 1;
+
   const setThresholds = useSectorTimingStore((s) => s.setThresholds);
   useEffect(() => {
     const { green, yellow } = getSectorDeltaThresholdFractions(thresholds);
@@ -116,7 +119,8 @@ export const SectorDelta = ({
     centerSlot,
   } = useCarouselWindow(
     currentSectorIdx,
-    sectors,
+    currentSectorStart,
+    currentSectorEnd,
     sectors.length,
     maxSectorsShown,
     alwaysScroll
@@ -164,9 +168,6 @@ export const SectorDelta = ({
     const fallback = formatDelta(displayTime, refTime, timeFormat);
     const cardStyle = SECTOR_CARD[colorKey];
 
-    const sectorStart = sector.SectorStartPct;
-    const sectorEnd = sectors[i + 1]?.SectorStartPct ?? 1;
-
     return (
       <div
         key={cardKey}
@@ -205,8 +206,8 @@ export const SectorDelta = ({
         </span>
         {isCurrent && (
           <SectorProgressIndicator
-            sectorStart={sectorStart}
-            sectorEnd={sectorEnd}
+            sectorStart={currentSectorStart}
+            sectorEnd={currentSectorEnd}
             isWindowed={isWindowed}
           />
         )}

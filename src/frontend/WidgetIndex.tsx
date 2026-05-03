@@ -73,3 +73,11 @@ export const WIDGET_MAP: Record<
 };
 
 export type WidgetId = keyof WidgetConfigMap;
+
+/**
+ * Looks up a widget component by id. Accepts a raw string because dashboard
+ * config is user-supplied and may contain unknown ids; returns undefined
+ * when no widget is registered for that id.
+ */
+export const getWidget = (id: string) =>
+  WIDGET_MAP[id as WidgetId] as (typeof WIDGET_MAP)[WidgetId] | undefined;
