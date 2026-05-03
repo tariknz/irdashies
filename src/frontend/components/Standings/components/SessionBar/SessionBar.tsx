@@ -6,10 +6,6 @@ import {
   useTotalRaceLaps,
   useTotalRaceTime,
   useTrackDisplayName,
-  useSessionDrivers,
-  useFocusCarIdx,
-  useCarClassStats,
-  useDriverStatsStore,
 } from '@irdashies/context';
 import {
   useDriverIncidents,
@@ -27,15 +23,15 @@ import {
   RoadHorizon as RoadHorizonIcon,
   Thermometer as ThermometerIcon,
   Tire as TireIcon,
-  Barbell as BarbellIcon,
-  Users as UsersIcon,
   Waves as WavesIcon,
 } from '@phosphor-icons/react';
 import { SessionBarConfig } from '@irdashies/types';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 import { SessionState } from '@irdashies/types';
 import { WindArrow } from '../../../shared/WindArrow';
-import { DriverRatingBadge } from '../DriverRatingBadge/DriverRatingBadge';
+import { DriverBadgeItem } from './DriverBadgeItem';
+import { SofItem } from './SofItem';
+import { ClassDriversItem } from './ClassDriversItem';
 
 // compact=true (total time): trims trailing zero components, never shows seconds
 // compact=false (elapsed/remaining): always shows full HH:MM:SS
@@ -104,7 +100,7 @@ interface SessionBarProps {
 
 export const SessionBar = ({
   settings: effectiveBarSettings,
-  position = 'header',  
+  position = 'header',
   opacity = 70,
   standalone = false,
 }: SessionBarProps) => {
@@ -144,9 +140,6 @@ export const SessionBar = ({
   const { windDirection, windVelocity, windYaw, precipitation, humidity } =
     useThrottledWeather();
   const relativeWindDirection = (windDirection ?? 0) - (windYaw ?? 0);
-  const drivers = useSessionDrivers();
-  const focusedCarIdx = useFocusCarIdx();
-  const focusedDriver = drivers?.find((d) => d.CarIdx === focusedCarIdx);
   const { trackTemp, airTemp } = useTrackTemperature({
     airTempUnit: effectiveBarSettings?.airTemperature?.unit ?? 'Metric',
     trackTempUnit: effectiveBarSettings?.trackTemperature?.unit ?? 'Metric',
@@ -156,8 +149,6 @@ export const SessionBar = ({
   const { totalRaceLaps, isFixedLapRace } = useTotalRaceLaps();
   const { totalRaceTime, adjustedRaceTime } = useTotalRaceTime();
   const trackDisplayName = useTrackDisplayName();
-  const classStats = useCarClassStats();
-  const iratingChanges = useDriverStatsStore((s) => s.iratingChanges);
 
   // Define all possible items with their render functions
   const itemDefinitions = {
@@ -444,54 +435,17 @@ export const SessionBar = ({
     },
     driverBadge: {
       enabled: effectiveBarSettings?.driverBadge?.enabled ?? false,
-      render: () => {
-        const showIRatingChange =
-          effectiveBarSettings?.driverBadge?.showIRatingChange ?? false;
-        return (
-          <DriverRatingBadge
-            license={focusedDriver?.LicString}
-            rating={focusedDriver?.IRating}
-            iratingChange={
-              showIRatingChange && focusedCarIdx !== undefined
-                ? iratingChanges[focusedCarIdx]
-                : undefined
-            }
-            format={
-              effectiveBarSettings?.driverBadge?.badgeFormat ??
-              'license-color-rating-bw'
-            }
-            noMargin={true}
-          />
-        );
-      },
+      render: () => (
+        <DriverBadgeItem settings={effectiveBarSettings?.driverBadge} />
+      ),
     },
     sof: {
       enabled: effectiveBarSettings?.sof?.enabled ?? false,
-      render: () => {
-        const classId = focusedDriver?.CarClassID;
-        const stats = classId !== undefined ? classStats?.[classId] : undefined;
-        if (!stats?.sof) return null;
-        return (
-          <div className="flex justify-center gap-1 items-center">
-            <BarbellIcon className="text-white/60" />
-            <span>{stats.sof}</span>
-          </div>
-        );
-      },
+      render: () => <SofItem />,
     },
     classDrivers: {
       enabled: effectiveBarSettings?.classDrivers?.enabled ?? false,
-      render: () => {
-        const classId = focusedDriver?.CarClassID;
-        const stats = classId !== undefined ? classStats?.[classId] : undefined;
-        if (!stats?.total) return null;
-        return (
-          <div className="flex justify-center gap-1 items-center">
-            <UsersIcon className="text-white/60" />
-            <span>{stats.total}</span>
-          </div>
-        );
-      },
+      render: () => <ClassDriversItem />,
     },
   };
 
@@ -565,9 +519,9 @@ export const SessionBar = ({
     <div
       className={`${pxClass} ${pyClass} bg-slate-900/(--fg-opacity) flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
       style={{
-          ['--fg-opacity' as string]: `${opacity}%`,
-        }}
-      >
+        ['--fg-opacity' as string]: `${opacity}%`,
+      }}
+    >
       {itemsToRender}
     </div>
   );

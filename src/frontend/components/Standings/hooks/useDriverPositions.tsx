@@ -4,7 +4,6 @@ import {
   useTelemetry,
   useSessionDrivers,
   useSessionQualifyingResults,
-  useSessionIsOfficial,
   useCurrentSessionType,
   useCarLap,
   usePitLap,
@@ -17,12 +16,7 @@ import {
   useDriverStatsStore,
 } from '@irdashies/context';
 
-import {
-  Standings,
-  augmentStandingsWithIRating,
-  groupStandingsByClass,
-  type LastTimeState,
-} from '../createStandings';
+import { Standings, type LastTimeState } from '../createStandings';
 import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useRelativeSettings } from './useRelativeSettings';
@@ -91,26 +85,28 @@ export const useDriverPositions = () => {
 
 export const useDrivers = () => {
   const sessionDrivers = useSessionDrivers();
-  const drivers =
-    sessionDrivers?.map((driver) => ({
-      carIdx: driver.CarIdx,
-      name: driver.UserName,
-      carNum: driver.CarNumber,
-      carNumRaw: driver.CarNumberRaw,
-      license: driver.LicString,
-      rating: driver.IRating,
-      flairId: driver.FlairID,
-      teamName: driver.TeamName,
-      carClass: {
-        id: driver.CarClassID,
-        color: driver.CarClassColor,
-        name: driver.CarClassShortName,
-        relativeSpeed: driver.CarClassRelSpeed,
-        estLapTime: driver.CarClassEstLapTime,
-      },
-      carId: driver.CarID,
-    })) ?? [];
-  return drivers;
+  return useMemo(
+    () =>
+      sessionDrivers?.map((driver) => ({
+        carIdx: driver.CarIdx,
+        name: driver.UserName,
+        carNum: driver.CarNumber,
+        carNumRaw: driver.CarNumberRaw,
+        license: driver.LicString,
+        rating: driver.IRating,
+        flairId: driver.FlairID,
+        teamName: driver.TeamName,
+        carClass: {
+          id: driver.CarClassID,
+          color: driver.CarClassColor,
+          name: driver.CarClassShortName,
+          relativeSpeed: driver.CarClassRelSpeed,
+          estLapTime: driver.CarClassEstLapTime,
+        },
+        carId: driver.CarID,
+      })) ?? [],
+    [sessionDrivers]
+  );
 };
 
 export const useCarState = () => {
@@ -171,7 +167,6 @@ export const useDriverStandings = () => {
   const iratingChanges = useDriverStatsStore((s) => s.iratingChanges);
   const positionChanges = useDriverStatsStore((s) => s.positionChanges);
   const fastestLapCarIdx = sessionFastestLaps?.[0]?.CarIdx;
-  const isOfficial = useSessionIsOfficial();
 
   const driverStandings: Standings[] = useMemo(() => {
     // Create Map lookups for O(1) access instead of O(n) find() calls
@@ -294,17 +289,7 @@ export const useDriverStandings = () => {
       };
     });
 
-    const filteredStandings = standings
-      .filter((s) => !!s)
-      .sort((a, b) => a.position - b.position);
-
-    if (sessionType !== 'Race' || !isOfficial) {
-      return filteredStandings;
-    }
-
-    return augmentStandingsWithIRating(groupStandingsByClass(filteredStandings))
-      .flatMap(([, classStandings]) => classStandings)
-      .sort((a, b) => (a?.position ?? 0) - (b?.position ?? 0));
+    return standings.filter((s) => !!s).sort((a, b) => a.position - b.position);
   }, [
     sessionPositions,
     sessionState,
@@ -320,7 +305,6 @@ export const useDriverStandings = () => {
     fastestLapCarIdx,
     iratingChanges,
     positionChanges,
-    isOfficial,
   ]);
 
   return driverStandings;

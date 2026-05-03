@@ -4,6 +4,7 @@ export * from './useContainerOffset';
 export * from './useCurrentSessionType';
 export * from './useDrivingState';
 export * from './useFocusCarIdx';
+export * from './useFocusedDriver';
 export * from './useResetOnDisconnect';
 export * from './useSessionVisibility';
 export * from './useThrottledWeather';
