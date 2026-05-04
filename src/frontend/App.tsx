@@ -28,11 +28,14 @@ const isSettingsWindow = () => {
  */
 const SettingsApp = () => {
   return (
-    <HashRouter>
-      <Routes>
-        <Route path="/settings/*" element={<Settings />} />
-      </Routes>
-    </HashRouter>
+    <RunningStateProvider bridge={window.irsdkBridge}>
+      <SessionProvider bridge={window.irsdkBridge} />
+      <HashRouter>
+        <Routes>
+          <Route path="/settings/*" element={<Settings />} />
+        </Routes>
+      </HashRouter>
+    </RunningStateProvider>
   );
 };
 

@@ -476,11 +476,7 @@ export class OverlayManager {
    * Send a message to the container window and settings window
    */
   // High-frequency messages that only the overlay container needs
-  private static readonly OVERLAY_ONLY_MESSAGES = new Set([
-    'telemetry',
-    'sessionData',
-    'runningState',
-  ]);
+  private static readonly OVERLAY_ONLY_MESSAGES = new Set(['telemetry']);
 
   public publishMessage(key: string, value: unknown): void {
     // Send to all display overlay windows
