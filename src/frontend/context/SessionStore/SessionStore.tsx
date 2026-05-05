@@ -8,7 +8,41 @@ import { create, useStore } from 'zustand';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { arrayShallowCompare } from './arrayShallowCompare';
 import { shallow } from 'zustand/shallow';
-import { useMemo } from 'react';
+
+const recordEqual = <V,>(
+  a: Record<string | number, V> | undefined,
+  b: Record<string | number, V> | undefined,
+  valueEqual: (x: V, y: V) => boolean
+): boolean => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const aKeys = Object.keys(a);
+  if (aKeys.length !== Object.keys(b).length) return false;
+  for (const k of aKeys) {
+    if (!(k in b)) return false;
+    if (!valueEqual(a[k], b[k])) return false;
+  }
+  return true;
+};
+
+const carIdxClassEstLapTimeEqual = (
+  a: Record<number, number> | undefined,
+  b: Record<number, number> | undefined
+) => recordEqual(a, b, (x, y) => x === y);
+
+const carClassStatsEqual = (
+  a: Record<string, CarClassStats> | undefined,
+  b: Record<string, CarClassStats> | undefined
+) =>
+  recordEqual(
+    a,
+    b,
+    (x, y) =>
+      x.shortName === y.shortName &&
+      x.color === y.color &&
+      x.total === y.total &&
+      x.sof === y.sof
+  );
 
 interface SessionState {
   session: Session | null;
@@ -155,22 +189,28 @@ export const useTrackLength = () =>
 
 /**
  * @returns The car index and car class estimated lap time for each driver
+ *
+ * The selector recomputes whenever the session changes, but the custom
+ * equality function preserves the prior result identity when values are
+ * unchanged — so consumer memos hold across session pushes that only
+ * mutate driver fields irrelevant to this map.
  */
-export const useCarIdxClassEstLapTime = () => {
-  const drivers = useSessionDrivers();
-
-  return useMemo(() => {
-    if (!drivers) return undefined;
-
-    return drivers.reduce(
-      (acc, driver) => {
-        acc[driver.CarIdx] = driver.CarClassEstLapTime;
-        return acc;
-      },
-      {} as Record<number, number>
-    );
-  }, [drivers]);
-};
+export const useCarIdxClassEstLapTime = () =>
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state): Record<number, number> | undefined => {
+      const drivers = state.session?.DriverInfo?.Drivers;
+      if (!drivers) return undefined;
+      return drivers.reduce(
+        (acc, driver) => {
+          acc[driver.CarIdx] = driver.CarClassEstLapTime;
+          return acc;
+        },
+        {} as Record<number, number>
+      );
+    },
+    carIdxClassEstLapTimeEqual
+  );
 
 export const useGreenFlagTimestamp = () =>
   useStore(useSessionStore, (state) => state.greenFlagTimestamp);
@@ -189,71 +229,79 @@ export const useCarSetup = () =>
 
 /**
  * @returns The stats for each car class in the session (ShortName, Color, Total Drivers, SOF)
+ *
+ * The selector recomputes whenever the session changes, but the custom
+ * equality function preserves the prior result identity when SOF/total
+ * values are unchanged — so consumer memos hold across session pushes
+ * that only mutate driver fields irrelevant to this calc (e.g. incident
+ * counts).
  */
-export const useCarClassStats = () => {
-  const drivers = useSessionDrivers();
+export const useCarClassStats = () =>
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state): Record<string, CarClassStats> | undefined => {
+      const drivers = state.session?.DriverInfo?.Drivers;
+      if (!drivers) return undefined;
 
-  return useMemo(() => {
-    if (!drivers) return undefined;
+      const raceDrivers = drivers.filter(
+        (driver) => !driver.IsSpectator && !driver.CarIsPaceCar
+      );
 
-    const raceDrivers = drivers.filter(
-      (driver) => !driver.IsSpectator && !driver.CarIsPaceCar
-    );
+      const intermediate = raceDrivers.reduce(
+        (acc, driver) => {
+          if (!acc[driver.CarClassID]) {
+            acc[driver.CarClassID] = {
+              total: 0,
+              raceDrivers: 0,
+              sumExp: 0,
+              color: driver.CarClassColor,
+              shortName: driver.CarClassShortName,
+            };
+          }
 
-    const intermediate = raceDrivers.reduce(
-      (acc, driver) => {
-        if (!acc[driver.CarClassID]) {
-          acc[driver.CarClassID] = {
-            total: 0,
-            raceDrivers: 0,
-            sumExp: 0,
-            color: driver.CarClassColor,
-            shortName: driver.CarClassShortName,
-          };
-        }
+          acc[driver.CarClassID].total += 1;
 
-        acc[driver.CarClassID].total += 1;
+          if (driver.IRating > 0) {
+            const expValue = Math.pow(2, -driver.IRating / 1600);
+            acc[driver.CarClassID].raceDrivers += 1;
+            acc[driver.CarClassID].sumExp += expValue;
+          }
 
-        if (driver.IRating > 0) {
-          const expValue = Math.pow(2, -driver.IRating / 1600);
-          acc[driver.CarClassID].raceDrivers += 1;
-          acc[driver.CarClassID].sumExp += expValue;
-        }
-
-        return acc;
-      },
-      {} as Record<
-        string,
-        {
-          shortName: string;
-          color: number;
-          total: number;
-          raceDrivers: number;
-          sumExp: number;
-        }
-      >
-    );
-
-    return Object.fromEntries(
-      Object.entries(intermediate).map(([classId, stats]) => {
-        const sof =
-          stats.raceDrivers > 0
-            ? Math.round(
-                (1600 / Math.log(2)) *
-                  Math.log(stats.raceDrivers / stats.sumExp)
-              )
-            : 0;
-
-        return [
-          classId,
+          return acc;
+        },
+        {} as Record<
+          string,
           {
-            shortName: stats.shortName,
-            color: stats.color,
-            total: stats.total,
-            sof,
-          } as CarClassStats,
-        ];
-      })
-    );
-  }, [drivers]);
-};
+            shortName: string;
+            color: number;
+            total: number;
+            raceDrivers: number;
+            sumExp: number;
+          }
+        >
+      );
+
+      return Object.fromEntries(
+        Object.entries(intermediate).map(([classId, stats]) => {
+          const sof =
+            stats.raceDrivers > 0
+              ? Math.round(
+                  (1600 / Math.log(2)) *
+                    Math.log(stats.raceDrivers / stats.sumExp)
+                )
+              : 0;
+
+          return [
+            classId,
+            {
+              shortName: stats.shortName,
+              color: stats.color,
+              total: stats.total,
+              sof,
+            } as CarClassStats,
+          ];
+        })
+      );
+    },
+    carClassStatsEqual
+  );
