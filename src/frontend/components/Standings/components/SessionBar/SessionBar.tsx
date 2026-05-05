@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useGeneralSettings } from '@irdashies/context';
 import type { SessionBarConfig } from '@irdashies/types';
 import { DriverBadgeItem } from './DriverBadgeItem';
@@ -153,69 +154,72 @@ const renderItem = (
   }
 };
 
-export const SessionBar = ({
-  settings: effectiveBarSettings,
-  position = 'header',
-  opacity = 70,
-  standalone = false,
-}: SessionBarProps) => {
-  const generalSettings = useGeneralSettings();
+export const SessionBar = memo(
+  ({
+    settings: effectiveBarSettings,
+    position = 'header',
+    opacity = 70,
+    standalone = false,
+  }: SessionBarProps) => {
+    const generalSettings = useGeneralSettings();
 
-  const isUltra = generalSettings?.compactMode === 'ultra';
-  const isCompact = generalSettings?.compactMode === 'compact';
+    const isUltra = generalSettings?.compactMode === 'ultra';
+    const isCompact = generalSettings?.compactMode === 'compact';
 
-  const pyClass = isUltra ? 'py-0' : isCompact ? 'py-1' : 'py-2';
-  const gapClass = isUltra ? 'gap-x-2' : isCompact ? 'gap-x-4' : 'gap-x-6';
-  const pxClass = standalone
-    ? isUltra
-      ? 'px-2'
-      : isCompact
-        ? 'px-3'
-        : 'px-4'
-    : isUltra
-      ? 'px-1'
-      : isCompact
+    const pyClass = isUltra ? 'py-0' : isCompact ? 'py-1' : 'py-2';
+    const gapClass = isUltra ? 'gap-x-2' : isCompact ? 'gap-x-4' : 'gap-x-6';
+    const pxClass = standalone
+      ? isUltra
         ? 'px-2'
-        : 'px-3';
+        : isCompact
+          ? 'px-3'
+          : 'px-4'
+      : isUltra
+        ? 'px-1'
+        : isCompact
+          ? 'px-2'
+          : 'px-3';
 
-  const displayOrder =
-    effectiveBarSettings?.displayOrder ||
-    (position === 'header' ? DEFAULT_HEADER_ORDER : DEFAULT_FOOTER_ORDER);
+    const displayOrder =
+      effectiveBarSettings?.displayOrder ||
+      (position === 'header' ? DEFAULT_HEADER_ORDER : DEFAULT_FOOTER_ORDER);
 
-  const enabledKeys = displayOrder.filter((key) =>
-    isItemEnabled(key, effectiveBarSettings, position)
-  );
+    const enabledKeys = displayOrder.filter((key) =>
+      isItemEnabled(key, effectiveBarSettings, position)
+    );
 
-  return (
-    <div
-      className={`${pxClass} ${pyClass} bg-slate-900/(--fg-opacity) flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
-      style={{
-        ['--fg-opacity' as string]: `${opacity}%`,
-      }}
-    >
-      {enabledKeys.map((key, index) => {
-        const node = renderItem(key, effectiveBarSettings);
-        if (!node) return null;
+    return (
+      <div
+        className={`${pxClass} ${pyClass} bg-slate-900/(--fg-opacity) flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
+        style={{
+          ['--fg-opacity' as string]: `${opacity}%`,
+        }}
+      >
+        {enabledKeys.map((key, index) => {
+          const node = renderItem(key, effectiveBarSettings);
+          if (!node) return null;
 
-        if (standalone) {
-          const isFirst = index === 0;
-          const isLast = index === enabledKeys.length - 1;
+          if (standalone) {
+            const isFirst = index === 0;
+            const isLast = index === enabledKeys.length - 1;
+            return (
+              <div
+                key={key}
+                className={`whitespace-nowrap shrink-0 ${isFirst ? 'text-left' : isLast ? 'text-right' : 'text-center'}`}
+              >
+                {node}
+              </div>
+            );
+          }
+
           return (
-            <div
-              key={key}
-              className={`whitespace-nowrap shrink-0 ${isFirst ? 'text-left' : isLast ? 'text-right' : 'text-center'}`}
-            >
+            <div key={key} className="whitespace-nowrap">
               {node}
             </div>
           );
-        }
-
-        return (
-          <div key={key} className="whitespace-nowrap">
-            {node}
-          </div>
-        );
-      })}
-    </div>
-  );
-};
+        })}
+      </div>
+    );
+  }
+);
+SessionBar.displayName = 'SessionBar';

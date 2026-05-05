@@ -3,8 +3,12 @@ import { RoadHorizonIcon } from '@phosphor-icons/react';
 import type { TemperatureUnit } from '@irdashies/types';
 import { useTrackTemperature } from '../../hooks/useTrackTemperature';
 
+interface TrackTemperatureItemProps {
+  unit: TemperatureUnit;
+}
+
 export const TrackTemperatureItem = memo(
-  ({ unit }: { unit: TemperatureUnit }) => {
+  ({ unit }: TrackTemperatureItemProps) => {
     const { trackTemp } = useTrackTemperature({ trackTempUnit: unit });
     return (
       <div className="flex justify-center gap-1 items-center">
