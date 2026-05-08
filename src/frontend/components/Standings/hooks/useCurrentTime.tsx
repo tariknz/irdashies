@@ -13,12 +13,17 @@ export const useCurrentTime = () => {
   );
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      // only hour / minutes
-      setTime(new Date().toLocaleTimeString([], options));
-    }, 60000);
+    let timeoutId: ReturnType<typeof setTimeout>;
 
-    return () => clearInterval(interval);
+    const tick = () => {
+      setTime(new Date().toLocaleTimeString([], options));
+      // align next tick to the next wall-clock minute boundary
+      timeoutId = setTimeout(tick, 60_000 - (Date.now() % 60_000));
+    };
+
+    timeoutId = setTimeout(tick, 60_000 - (Date.now() % 60_000));
+
+    return () => clearTimeout(timeoutId);
   }, [options]);
 
   return time;
