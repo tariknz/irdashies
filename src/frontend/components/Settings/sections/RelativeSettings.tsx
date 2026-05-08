@@ -143,15 +143,6 @@ const DisplaySettingsList = ({
                       <BadgeFormatPreview
                         key={format}
                         format={format}
-                        iratingChange={
-                          (
-                            settings.config.iratingChange as {
-                              enabled: boolean;
-                            }
-                          ).enabled
-                            ? 18
-                            : undefined
-                        }
                         selected={
                           (
                             configValue as {
@@ -677,29 +668,28 @@ export const RelativeSettings = () => {
                           ) {
                             return item as SessionBarItemConfig;
                           }
-                          // Fallback for new items
-                          if (id === 'sof' || id === 'classDrivers') {
-                            return { enabled: false };
-                          }
-                          if (id === 'driverBadge') {
-                            return { enabled: false, showIRatingChange: false };
-                          }
                           return undefined;
                         }}
                         updateItemConfig={(id, config) => {
                           const item =
                             settings.config.headerBar[
                               id as keyof typeof settings.config.headerBar
-                            ] ?? {};
-                          handleConfigChange({
-                            headerBar: {
-                              ...settings.config.headerBar,
-                              [id]: {
-                                ...(item as SessionBarItemConfig),
-                                ...config,
+                            ];
+                          if (
+                            typeof item === 'object' &&
+                            item !== null &&
+                            'enabled' in item
+                          ) {
+                            handleConfigChange({
+                              headerBar: {
+                                ...settings.config.headerBar,
+                                [id]: {
+                                  ...(item as SessionBarItemConfig),
+                                  ...config,
+                                },
                               },
-                            },
-                          });
+                            });
+                          }
                         }}
                       />
 
@@ -761,29 +751,28 @@ export const RelativeSettings = () => {
                           ) {
                             return item as SessionBarItemConfig;
                           }
-                          // Fallback for new items
-                          if (id === 'sof' || id === 'classDrivers') {
-                            return { enabled: false };
-                          }
-                          if (id === 'driverBadge') {
-                            return { enabled: false, showIRatingChange: false };
-                          }
                           return undefined;
                         }}
                         updateItemConfig={(id, config) => {
                           const item =
                             settings.config.footerBar[
                               id as keyof typeof settings.config.footerBar
-                            ] ?? {};
-                          handleConfigChange({
-                            footerBar: {
-                              ...settings.config.footerBar,
-                              [id]: {
-                                ...(item as SessionBarItemConfig),
-                                ...config,
+                            ];
+                          if (
+                            typeof item === 'object' &&
+                            item !== null &&
+                            'enabled' in item
+                          ) {
+                            handleConfigChange({
+                              footerBar: {
+                                ...settings.config.footerBar,
+                                [id]: {
+                                  ...(item as SessionBarItemConfig),
+                                  ...config,
+                                },
                               },
-                            },
-                          });
+                            });
+                          }
                         }}
                       />
 
