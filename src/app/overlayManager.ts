@@ -478,7 +478,6 @@ export class OverlayManager {
   // High-frequency messages that only the overlay container needs
   private static readonly OVERLAY_ONLY_MESSAGES = new Set([
     'telemetry',
-    'sessionData',
     'runningState',
   ]);
 
