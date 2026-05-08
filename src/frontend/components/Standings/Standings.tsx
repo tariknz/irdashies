@@ -5,6 +5,7 @@ import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
 import {
+  useCarClassStats,
   useDriverStandings,
   useStandingsSettings,
   useHighlightColor,
@@ -19,7 +20,6 @@ import {
   useWeekendInfoTeamRacing,
   useSessionVisibility,
   useCarIdxRollingAvgLapTime,
-  useCarClassStats,
 } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 

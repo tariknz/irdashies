@@ -144,15 +144,6 @@ export const defaultDashboard: {
           wind: {
             enabled: false,
           },
-          humidity: {
-            enabled: false,
-          },
-          driverBadge: {
-            enabled: false,
-            showIRatingChange: false,
-          },
-          sof: { enabled: false },
-          classDrivers: { enabled: false },
           trackName: {
             enabled: false,
           },
@@ -169,10 +160,6 @@ export const defaultDashboard: {
             'airTemperature',
             'trackTemperature',
             'wind',
-            'humidity',
-            'driverBadge',
-            'sof',
-            'classDrivers',
             'trackName',
           ],
         },
@@ -217,12 +204,6 @@ export const defaultDashboard: {
           wind: {
             enabled: false,
           },
-          driverBadge: {
-            enabled: false,
-            showIRatingChange: false,
-          },
-          sof: { enabled: false },
-          classDrivers: { enabled: false },
           trackName: {
             enabled: false,
           },
@@ -239,10 +220,6 @@ export const defaultDashboard: {
             'airTemperature',
             'trackTemperature',
             'wind',
-            'humidity',
-            'driverBadge',
-            'sof',
-            'classDrivers',
             'trackName',
           ],
         },
@@ -533,12 +510,6 @@ export const defaultDashboard: {
           wind: {
             enabled: false,
           },
-          driverBadge: {
-            enabled: false,
-            showIRatingChange: false,
-          },
-          sof: { enabled: false },
-          classDrivers: { enabled: false },
           trackName: {
             enabled: false,
           },
@@ -555,10 +526,6 @@ export const defaultDashboard: {
             'airTemperature',
             'trackTemperature',
             'wind',
-            'humidity',
-            'driverBadge',
-            'sof',
-            'classDrivers',
             'trackName',
           ],
         },
@@ -603,12 +570,6 @@ export const defaultDashboard: {
           wind: {
             enabled: false,
           },
-          driverBadge: {
-            enabled: false,
-            showIRatingChange: false,
-          },
-          sof: { enabled: false },
-          classDrivers: { enabled: false },
           trackName: {
             enabled: false,
           },
@@ -625,10 +586,6 @@ export const defaultDashboard: {
             'airTemperature',
             'trackTemperature',
             'wind',
-            'humidity',
-            'driverBadge',
-            'sof',
-            'classDrivers',
             'trackName',
           ],
         },
@@ -1150,12 +1107,6 @@ export const defaultDashboard: {
         airTemperature: { enabled: false, unit: 'Metric' },
         trackTemperature: { enabled: true, unit: 'Metric' },
         wind: { enabled: false, speedPosition: 'right' },
-        driverBadge: {
-          enabled: false,
-          showIRatingChange: false,
-        },
-        sof: { enabled: false },
-        classDrivers: { enabled: false },
         trackName: { enabled: false },
         background: { opacity: 80 },
         foreground: { opacity: 70 },
@@ -1180,9 +1131,6 @@ export const defaultDashboard: {
           'airTemperature',
           'trackTemperature',
           'wind',
-          'driverBadge',
-          'sof',
-          'classDrivers',
           'trackName',
         ],
       },
@@ -1307,29 +1255,12 @@ function mergeDisplayOrder(
   for (const missingId of missing) {
     const defaultIdx = defaultOrder.indexOf(missingId);
     let insertAt = merged.length;
-    let foundPredecessor = false;
 
-    // Look BACKWARD first: insert after the closest preceding neighbor
-    for (let i = defaultIdx - 1; i >= 0; i--) {
-      const beforeIdx = merged.indexOf(defaultOrder[i]);
-      if (beforeIdx !== -1) {
-        insertAt = beforeIdx + 1; // Insert right after that neighbor
-        foundPredecessor = true;
+    for (let i = defaultIdx + 1; i < defaultOrder.length; i++) {
+      const afterIdx = merged.indexOf(defaultOrder[i]);
+      if (afterIdx !== -1) {
+        insertAt = afterIdx;
         break;
-      }
-    }
-
-    // Fall back to forward-looking: insert before the next item in default order
-    if (!foundPredecessor) {
-      // FORWARD SEARCH:
-      // Search for any *subsequent* neighbor from defaultOrder that exists in merged.
-      // If found, insert new element *before* that neighbor.
-      for (let i = defaultIdx + 1; i < defaultOrder.length; i++) {
-        const afterIdx = merged.indexOf(defaultOrder[i]);
-        if (afterIdx !== -1) {
-          insertAt = afterIdx;
-          break;
-        }
       }
     }
 

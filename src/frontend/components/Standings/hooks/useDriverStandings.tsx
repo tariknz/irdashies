@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import {
   useSessionDrivers,
   useSessionFastestLaps,
+  useSessionIsOfficial,
   useSessionPositions,
   useSessionQualifyingResults,
   useSessionQualifyPositions,
@@ -14,16 +15,17 @@ import {
   usePitLap,
   usePrevCarTrackSurface,
   useLapTimeHistory,
-  useDriverStatsStore,
+  useWeekendInfoEventType,
 } from '@irdashies/context';
 import {
   createDriverStandings,
   groupStandingsByClass,
   sliceRelevantDrivers,
-  augmentStandingsWithInterval,
+  augmentStandingsWithIRating,
   augmentStandingsWithGap,
+  augmentStandingsWithInterval,
+  augmentStandingsWithPositionChange,
 } from '../createStandings';
-import { Standings } from '../createStandings';
 import type { StandingsWidgetSettings } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useStandingsSettings } from './useStandingsSettings';
@@ -32,7 +34,7 @@ import type { SessionResults } from '@irdashies/types';
 
 export const useDriverStandings = (
   settings?: StandingsWidgetSettings['config']
-): [string, Standings[]][] => {
+) => {
   const {
     driverStandings: {
       buffer,
@@ -97,6 +99,8 @@ export const useDriverStandings = (
   );
   const carIdxTireCompound = useTelemetryValues<number[]>('CarIdxTireCompound');
   const carIdxSessionFlags = useTelemetryValues<number[]>('CarIdxSessionFlags');
+  const isOfficial = useSessionIsOfficial();
+  const eventType = useWeekendInfoEventType();
   const lastPitLap = usePitLap();
   const lastLap = useCarLap();
   const prevCarTrackSurface = usePrevCarTrackSurface();
@@ -105,8 +109,6 @@ export const useDriverStandings = (
       ?.CarClassID;
   }, [sessionDrivers, driverCarIdx]);
   const lapTimeHistory = useLapTimeHistory();
-  const iratingChanges = useDriverStatsStore((s) => s.iratingChanges);
-  const positionChanges = useDriverStatsStore((s) => s.positionChanges);
 
   const lapDeltasForCalc = useMemo(
     () =>
@@ -149,7 +151,7 @@ export const useDriverStandings = (
       });
     }
 
-    // Group and sort drivers inside each class by classPosition (this respects live positions)
+    // Group and *sort drivers inside each class by classPosition* (this respects live positions)
     let groupedByClass = groupStandingsByClass(initialStandings);
     if (useLivePositionStandings) {
       groupedByClass = groupedByClass.map(([classId, classStandings]) => [
@@ -157,18 +159,20 @@ export const useDriverStandings = (
         classStandings
           .slice()
           .sort((a, b) => (a.classPosition ?? 999) - (b.classPosition ?? 999)),
-      ]);
+      ]) as [string, typeof initialStandings][];
     }
 
-    // Apply centralized iRating and position changes to the correctly sorted groups
-    groupedByClass.forEach(([, classStandings]) => {
-      classStandings.forEach((standing) => {
-        standing.iratingChange = iratingChanges[standing.carIdx];
-        standing.positionChange = positionChanges[standing.carIdx];
-      });
-    });
+    // Calculate position changes vs qualifying grid for race sessions
+    const positionChangeAugmentedGroupedByClass =
+      sessionType === 'Race'
+        ? augmentStandingsWithPositionChange(groupedByClass, qualifyingResults)
+        : groupedByClass;
 
-    const iratingAugmentedGroupedByClass = groupedByClass;
+    // Calculate iRating changes for official race weekends
+    const iratingAugmentedGroupedByClass =
+      eventType === 'Race' && isOfficial
+        ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
+        : positionChangeAugmentedGroupedByClass;
 
     // Calculate gap to class leader when enabled OR when interval is enabled (interval needs gap data)
     const gapAugmentedGroupedByClass =
@@ -215,6 +219,8 @@ export const useDriverStandings = (
     numLapDeltas,
     lapDeltasForCalc,
     useLivePositionStandings,
+    isOfficial,
+    eventType,
     gapEnabled,
     intervalEnabled,
     carIdxLap,
@@ -226,8 +232,6 @@ export const useDriverStandings = (
     minPlayerClassDrivers,
     numTopDrivers,
     driverLivePositions,
-    iratingChanges,
-    positionChanges,
   ]);
 
   return standingsWithGain;
