@@ -415,7 +415,16 @@ export const RelativeSettings = () => {
       (savedSettings?.config as RelativeWidgetSettings['config']) ??
       defaultConfig,
   });
-  const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
+  const [itemsOrder, setItemsOrder] = useState(() => {
+    const validIds = new Set(sortableSettings.map((s) => s.id));
+    const saved = settings.config.displayOrder ?? [];
+    const filtered = saved.filter((id) => validIds.has(id));
+    const present = new Set(filtered);
+    const missing = sortableSettings
+      .filter((s) => !present.has(s.id))
+      .map((s) => s.id);
+    return [...filtered, ...missing];
+  });
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
