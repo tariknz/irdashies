@@ -121,6 +121,12 @@ const widgetItems: MenuItem[] = [
     widgetType: 'relative',
   },
   {
+    to: '/settings/sectordelta',
+    path: '/sectordelta',
+    label: 'Sector Delta',
+    widgetType: 'sectordelta',
+  },
+  {
     to: '/settings/slowcarahead',
     path: '/slowcarahead',
     label: 'Slow Car Ahead',
@@ -139,12 +145,6 @@ const widgetItems: MenuItem[] = [
     widgetType: 'tachometer',
   },
   { to: '/settings/map', path: '/map', label: 'Track Map', widgetType: 'map' },
-  {
-    to: '/settings/sectordelta',
-    path: '/sectordelta',
-    label: 'Sector Delta',
-    widgetType: 'sectordelta',
-  },
   {
     to: '/settings/twitchchat',
     path: '/twitchchat',

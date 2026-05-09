@@ -13,6 +13,7 @@ import { SettingsSection } from '../components/SettingSection';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingNumberRow } from '../components/SettingNumberRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
+import { SettingSliderRow } from '../components/SettingSliderRow';
 
 const SETTING_ID = 'flag';
 
@@ -75,6 +76,18 @@ export const FlagSettings = () => {
             {/* OPTIONS TAB */}
             {activeTab === 'options' && (
               <SettingsSection title="Display">
+                <SettingSliderRow
+                  title="Background Opacity"
+                  value={settings.config.background?.opacity ?? 30}
+                  units="%"
+                  min={0}
+                  max={100}
+                  step={1}
+                  onChange={(v) =>
+                    handleConfigChange({ background: { opacity: v } })
+                  }
+                />
+
                 <SettingToggleRow
                   title="Double Flag"
                   description="When enabled two flags will be displayed"

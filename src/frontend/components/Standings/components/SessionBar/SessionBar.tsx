@@ -91,11 +91,13 @@ interface SessionBarProps {
   settings: SessionBarConfig;
   position?: 'header' | 'footer';
   standalone?: boolean;
+  opacity?: number;
 }
 
 export const SessionBar = ({
   settings: effectiveBarSettings,
-  position = 'header',
+  position = 'header',  
+  opacity = 70,
   standalone = false,
 }: SessionBarProps) => {
   const generalSettings = useGeneralSettings();
@@ -485,8 +487,11 @@ export const SessionBar = ({
 
   return (
     <div
-      className={`bg-slate-900/70 ${pxClass} ${pyClass} flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
-    >
+      className={`${pxClass} ${pyClass} bg-slate-900/(--fg-opacity) flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
+      style={{
+          ['--fg-opacity' as string]: `${opacity}%`,
+        }}
+      >
       {itemsToRender}
     </div>
   );

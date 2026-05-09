@@ -5,7 +5,9 @@ import {
   SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
+import type { SectorDeltaConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
+import { getSectorDeltaThresholdPercentages } from '../../SectorDelta/sectorColorUtils';
 import { TabButton } from '../components/TabButton';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingsSection } from '../components/SettingSection';
@@ -20,6 +22,15 @@ const defaultConfig = getWidgetDefaultConfig('map');
 
 export const TrackMapSettings = () => {
   const { currentDashboard } = useDashboard();
+
+  const sectorDeltaThresholds = (
+    currentDashboard?.widgets.find((w) => w.id === 'sectordelta')?.config as
+      | SectorDeltaConfig
+      | undefined
+  )?.thresholds;
+  const { green: greenPct, yellow: yellowPct } =
+    getSectorDeltaThresholdPercentages(sectorDeltaThresholds);
+
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as TrackMapWidgetSettings | undefined;
@@ -126,7 +137,7 @@ export const TrackMapSettings = () => {
 
                 <SettingToggleRow
                   title="Sector Colors"
-                  description="Color each sector based on your session performance (purple: session best, green: within 0.5%, yellow: within 1%, red: 1%+ off pace)"
+                  description={`Color each sector based on your session performance (purple: session best, green: within ${greenPct}%, yellow: within ${yellowPct}%, red: ${yellowPct}%+ off pace). Thresholds are set in Sector Delta settings.`}
                   enabled={settings.config.sectorColoring?.enabled ?? false}
                   onToggle={(newValue) =>
                     handleConfigChange({

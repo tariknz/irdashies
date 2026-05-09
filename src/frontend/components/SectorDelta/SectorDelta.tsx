@@ -1,17 +1,14 @@
 import { useEffect } from 'react';
 import { GhostIcon, WarningIcon } from '@phosphor-icons/react';
 import { useSectorDeltas, useSectorTimingStore } from '@irdashies/context';
-import {
-  useSessionVisibility,
-  useTelemetryValue,
-  useTelemetryValueRounded,
-} from '@irdashies/context';
+import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
 import { useReferenceLapSectorTimes } from '@irdashies/context';
 import type { SectorDeltaConfig } from '@irdashies/types';
 import type { TimeFormat } from '@irdashies/types';
 import type { SectorColor } from '@irdashies/context';
-import { formatTime } from '@irdashies/utils/time';
-import { useLiveSectorDelta } from './hooks/useLiveSectorDelta';
+import { useCarouselWindow } from './hooks/useCarouselWindow';
+import { LiveDelta } from './components/LiveDelta';
+import { SectorProgressIndicator } from './components/SectorProgressIndicator';
 import {
   computeGhostSectorColor,
   getSectorDeltaThresholdFractions,
@@ -51,8 +48,9 @@ const SECTOR_CARD: Record<
 };
 
 function timeFormatToDecimalPlaces(timeFormat: TimeFormat): number {
-  if (timeFormat === 'full' || timeFormat === 'seconds-full') return 3;
-  if (timeFormat === 'mixed' || timeFormat === 'seconds-mixed') return 1;
+  if (timeFormat === 'seconds-full' || timeFormat === 'full') return 3;
+  if (timeFormat === 'seconds-2') return 2;
+  if (timeFormat === 'seconds-mixed' || timeFormat === 'mixed') return 1;
   return 0;
 }
 
@@ -62,10 +60,10 @@ function formatDelta(
   timeFormat: TimeFormat
 ): string {
   if (lapTime === null) return '--';
-  if (bestTime === null) return formatTime(lapTime, timeFormat);
+  const dp = timeFormatToDecimalPlaces(timeFormat);
+  if (bestTime === null) return lapTime.toFixed(dp);
   const delta = lapTime - bestTime;
   const sign = delta >= 0 ? '+' : '';
-  const dp = timeFormatToDecimalPlaces(timeFormat);
   return `${sign}${delta.toFixed(dp)}`;
 }
 
@@ -73,9 +71,12 @@ export const SectorDelta = ({
   background,
   showOnlyWhenOnTrack,
   sessionVisibility,
-  timeFormat = 'full',
+  timeFormat = 'seconds-full',
   ghostComparison = 'prefer-ghost',
+  trackIncidentSectors = true,
   thresholds,
+  maxSectorsShown,
+  alwaysScroll = false,
 }: SectorDeltaProps) => {
   const {
     sectors,
@@ -85,26 +86,16 @@ export const SectorDelta = ({
     previousLapSectorTimes,
     previousLapSectorUnclean,
     sessionBestSectorTimes,
+    previousSessionBestSectorTimes,
     currentSectorIdx,
   } = useSectorDeltas();
   const isOnTrack = useTelemetryValue('IsOnTrack');
-  // 3dp ≈ 5m on a 5km track — sub-pixel for the sector progress bar.
-  const lapDistPct = useTelemetryValueRounded('LapDistPct', 3) ?? 0;
   const { refSectorTimes, hasGhostLap } = useReferenceLapSectorTimes();
 
   const useGhost = ghostComparison === 'prefer-ghost' && hasGhostLap;
-  const liveSectorDelta = useLiveSectorDelta(useGhost);
 
-  // How far (0–1) through the current sector the player is
-  const sectorStart = sectors[currentSectorIdx]?.SectorStartPct ?? 0;
-  const sectorEnd = sectors[currentSectorIdx + 1]?.SectorStartPct ?? 1;
-  const sectorProgress =
-    sectorEnd > sectorStart
-      ? Math.max(
-          0,
-          Math.min(1, (lapDistPct - sectorStart) / (sectorEnd - sectorStart))
-        )
-      : 0;
+  const currentSectorStart = sectors[currentSectorIdx]?.SectorStartPct ?? 0;
+  const currentSectorEnd = sectors[currentSectorIdx + 1]?.SectorStartPct ?? 1;
 
   const setThresholds = useSectorTimingStore((s) => s.setThresholds);
   useEffect(() => {
@@ -112,11 +103,117 @@ export const SectorDelta = ({
     setThresholds(green, yellow);
   }, [thresholds, setThresholds]);
 
+  const setTrackIncidentSectors = useSectorTimingStore(
+    (s) => s.setTrackIncidentSectors
+  );
+  useEffect(() => {
+    setTrackIncidentSectors(trackIncidentSectors);
+  }, [trackIncidentSectors, setTrackIncidentSectors]);
+
+  const {
+    isWindowed,
+    extendedIndices,
+    slotWidth,
+    containerRef,
+    stripRef,
+    centerSlot,
+  } = useCarouselWindow(
+    currentSectorIdx,
+    currentSectorStart,
+    currentSectorEnd,
+    sectors.length,
+    maxSectorsShown,
+    alwaysScroll
+  );
+
   if (!useSessionVisibility(sessionVisibility)) return null;
   if (showOnlyWhenOnTrack && !isOnTrack) return null;
   if (sectors.length === 0) return null;
 
   const opacity = (background?.opacity ?? 80) / 100;
+  const dp = timeFormatToDecimalPlaces(timeFormat);
+
+  /** Renders a sector card. */
+  const renderCard = (
+    i: number,
+    cardKey: string | number,
+    isCurrent: boolean
+  ) => {
+    const sector = sectors[i];
+    if (!sector) return null;
+
+    const displayTime = isCurrent
+      ? (previousLapSectorTimes[i] ?? null)
+      : (currentLapSectorTimes[i] ?? previousLapSectorTimes[i] ?? null);
+    const isUnclean = isCurrent
+      ? previousLapSectorUnclean[i]
+      : currentLapSectorTimes[i] != null
+        ? currentLapSectorUnclean[i]
+        : previousLapSectorUnclean[i];
+
+    const colorKey: SectorColor = useGhost
+      ? computeGhostSectorColor(
+          displayTime,
+          refSectorTimes[i] ?? null,
+          thresholds
+        )
+      : (sectorColors[i] ?? 'default');
+
+    const refTime = useGhost
+      ? (refSectorTimes[i] ?? null)
+      : colorKey === 'purple'
+        ? (previousSessionBestSectorTimes[i] ?? null)
+        : (sessionBestSectorTimes[i] ?? null);
+
+    const fallback = formatDelta(displayTime, refTime, timeFormat);
+    const cardStyle = SECTOR_CARD[colorKey];
+
+    return (
+      <div
+        key={cardKey}
+        className={[
+          'relative flex flex-col items-center justify-center rounded-sm px-2 py-1 overflow-hidden',
+          isWindowed ? 'flex-none' : 'flex-1 min-w-0',
+          cardStyle.bg,
+          cardStyle.accent,
+        ].join(' ')}
+        style={isWindowed ? { width: slotWidth } : undefined}
+      >
+        <span className="text-xs font-semibold text-slate-400 leading-none mb-0.5">
+          S{sector.SectorNum + 1}
+        </span>
+        <span
+          className={[
+            'inline-flex items-center gap-1 text-sm font-bold leading-none tabular-nums',
+            cardStyle.text,
+            isCurrent ? 'opacity-70' : '',
+          ].join(' ')}
+        >
+          <span>
+            {isCurrent ? (
+              <LiveDelta useGhost={useGhost} dp={dp} fallback={fallback} />
+            ) : (
+              fallback
+            )}
+          </span>
+          {isUnclean && (
+            <WarningIcon
+              size={10}
+              weight="fill"
+              className="text-amber-300 shrink-0"
+            />
+          )}
+        </span>
+        {isCurrent && (
+          <SectorProgressIndicator
+            sectorStart={currentSectorStart}
+            sectorEnd={currentSectorEnd}
+            isWindowed={isWindowed}
+          />
+        )}
+      </div>
+    );
+  };
 
   return (
     <div
@@ -128,87 +225,21 @@ export const SectorDelta = ({
           <GhostIcon size={14} weight="fill" />
         </div>
       )}
-      {sectors.map((sector, i) => {
-        const isCurrent = i === currentSectorIdx;
-        const displayTime = isCurrent
-          ? (previousLapSectorTimes[i] ?? null)
-          : (currentLapSectorTimes[i] ?? previousLapSectorTimes[i] ?? null);
-        const isUnclean = isCurrent
-          ? previousLapSectorUnclean[i]
-          : currentLapSectorTimes[i] != null
-            ? currentLapSectorUnclean[i]
-            : previousLapSectorUnclean[i];
 
-        const colorKey: SectorColor = useGhost
-          ? computeGhostSectorColor(
-              displayTime,
-              refSectorTimes[i] ?? null,
-              thresholds
-            )
-          : (sectorColors[i] ?? 'default');
-
-        const refTime = useGhost
-          ? (refSectorTimes[i] ?? null)
-          : (sessionBestSectorTimes[i] ?? null);
-
-        const dp = timeFormatToDecimalPlaces(timeFormat);
-        const delta =
-          isCurrent && liveSectorDelta !== null
-            ? `${liveSectorDelta >= 0 ? '+' : ''}${liveSectorDelta.toFixed(dp)}`
-            : formatDelta(displayTime, refTime, timeFormat);
-        const card = SECTOR_CARD[colorKey];
-
-        return (
-          <div
-            key={sector.SectorNum}
-            className={[
-              'relative flex flex-col items-center justify-center rounded-sm px-2 py-1 flex-1 min-w-0 overflow-hidden',
-              card.bg,
-              card.accent,
-            ].join(' ')}
-          >
-            <span className="text-xs font-semibold text-slate-400 leading-none mb-0.5">
-              S{sector.SectorNum + 1}
-            </span>
-            <span
-              className={[
-                'inline-flex items-center gap-1 text-sm font-bold leading-none tabular-nums',
-                card.text,
-                isCurrent ? 'opacity-70' : '',
-              ].join(' ')}
-            >
-              <span>{delta}</span>
-              {isUnclean && (
-                <WarningIcon
-                  size={10}
-                  weight="fill"
-                  className="text-amber-300 shrink-0"
-                />
-              )}
-            </span>
-            {isCurrent && (
-              <>
-                <div
-                  className="absolute top-0 left-0 bottom-0 transition-[width] duration-200 ease-linear"
-                  style={{
-                    width: `${sectorProgress * 100}%`,
-                    backgroundColor: 'rgba(56, 189, 248, 0.4)',
-                  }}
-                />
-                <div className="absolute top-0 left-0 bottom-0 w-[2px] bg-sky-400" />
-                <div
-                  className="absolute top-0 left-0 h-[2px] bg-sky-400 transition-[width] duration-200 ease-linear"
-                  style={{ width: `${sectorProgress * 100}%` }}
-                />
-                <div
-                  className="absolute bottom-0 left-0 h-[2px] bg-sky-400 transition-[width] duration-200 ease-linear"
-                  style={{ width: `${sectorProgress * 100}%` }}
-                />
-              </>
+      {isWindowed ? (
+        <div ref={containerRef} className="flex-1 overflow-hidden relative">
+          <div ref={stripRef} className="flex flex-row gap-1">
+            {extendedIndices.map((sectorIdx, slotPosition) =>
+              renderCard(sectorIdx, slotPosition, slotPosition === centerSlot)
             )}
           </div>
-        );
-      })}
+          <div className="absolute inset-y-0 left-1/2 w-px bg-sky-400/60 pointer-events-none" />
+        </div>
+      ) : (
+        sectors.map((sector, i) =>
+          renderCard(i, sector.SectorNum, i === currentSectorIdx)
+        )
+      )}
     </div>
   );
 };
