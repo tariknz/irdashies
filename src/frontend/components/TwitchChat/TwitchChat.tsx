@@ -37,7 +37,7 @@ export const ChatMessageList = ({
           fontSize: `${fontSize}px`,
         }}
       >
-        <strong style={{ color: '#a970ff' }}>{m.user}</strong>:{' '}
+        <strong style={{ color: m.color ?? '#a970ff' }}>{m.user}</strong>:{' '}
         <MessageWithEmotes
           text={m.text}
           emotes={m.emotes}

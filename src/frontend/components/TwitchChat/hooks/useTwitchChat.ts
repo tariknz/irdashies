@@ -20,12 +20,14 @@ export function useTwitchChat(channel: string | undefined) {
       const username = event.user.display || event.user.login || 'Unknown';
       const messageText = event.message.text || '';
       const emotes = event.message.emotes ?? [];
+      const color = event.user.color || undefined;
 
       if (messageText && username !== 'Unknown') {
         setMessages((prev) => [
           ...prev,
           {
             user: username,
+            color,
             text: messageText,
             id: crypto.randomUUID(),
             emotes,
