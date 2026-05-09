@@ -38,7 +38,6 @@ export const ChatMessageList = ({
     if (!autoHide?.enabled) {
       timeoutsRef.current.forEach(clearTimeout);
       timeoutsRef.current.clear();
-      setFadingIds(new Set());
       return;
     }
 
@@ -61,8 +60,9 @@ export const ChatMessageList = ({
   }, [messages, autoHide?.enabled, autoHide?.intervalSeconds]);
 
   useEffect(() => {
+    const timeouts = timeoutsRef.current;
     return () => {
-      timeoutsRef.current.forEach(clearTimeout);
+      timeouts.forEach(clearTimeout);
     };
   }, []);
 
@@ -76,7 +76,7 @@ export const ChatMessageList = ({
       }
     >
       {messages.map((m) => {
-        const fading = fadingIds.has(m.id);
+        const fading = (autoHide?.enabled ?? false) && fadingIds.has(m.id);
         return (
           <div
             key={m.id}
