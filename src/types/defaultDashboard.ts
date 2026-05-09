@@ -49,6 +49,9 @@ export const defaultDashboard: {
         background: {
           opacity: 80,
         },
+        foreground: { 
+          opacity: 70, 
+        },
         countryFlags: {
           enabled: true,
         },
@@ -263,14 +266,14 @@ export const defaultDashboard: {
       config: {
         enabled: true,
         showOnlyWhenOnTrack: false,
-        showLabel: true,
+        showLabel: false,
         animate: true,
         blinkPeriod: 0.5,
         matrixMode: '16x16',
         showNoFlagState: true,
         enableGlow: true,
         doubleFlag: false,
-        background: { opacity: 30 },
+        background: { opacity: 80 },
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -382,6 +385,9 @@ export const defaultDashboard: {
         useLivePosition: false,
         background: {
           opacity: 80,
+        },
+        foreground: { 
+          opacity: 70, 
         },
         position: {
           enabled: true,
@@ -1104,6 +1110,7 @@ export const defaultDashboard: {
         wind: { enabled: false, speedPosition: 'right' },
         trackName: { enabled: false },
         background: { opacity: 80 },
+        foreground: { opacity: 70 },
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
@@ -1143,6 +1150,9 @@ export const defaultDashboard: {
         timeFormat: 'seconds-full',
         ghostComparison: 'prefer-ghost',
         trackIncidentSectors: true,
+        alwaysScroll: false,
+        maxSectorsShown: null,
+        thresholds: null,
         showOnlyWhenOnTrack: true,
         sessionVisibility: {
           race: true,

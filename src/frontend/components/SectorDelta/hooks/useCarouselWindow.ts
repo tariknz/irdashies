@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type React from 'react';
+import { useTelemetryStore } from '@irdashies/context';
 
 const GAP = 4; // gap-1 = 4px
 
@@ -22,24 +22,28 @@ function buildExtendedIndices(
 
 /**
  * Drives a continuously scrolling sector strip centered on the player's
- * exact track position. The strip translates every time sectorProgress
- * changes (i.e. every lapDistPct update), so the current position is
- * always pinned to the horizontal center of the viewport.
+ * exact track position.
  *
- * Partial sector cards are visible on both edges at all times.
+ * The strip transform is updated imperatively from the telemetry store
+ * (~60×/sec) so the React tree does not re-render every frame — only the
+ * `style.transform` of the strip element mutates.
  */
 export function useCarouselWindow(
   currentSectorIdx: number,
-  sectorProgress: number,
+  currentSectorStart: number,
+  currentSectorEnd: number,
   totalSectors: number,
-  maxSectorsShown: number | undefined,
-  alwaysScroll = false
+  maxSectorsShown: number | null | undefined,
+  alwaysScroll: boolean | null | undefined = false
 ) {
+  const effectiveAlwaysScroll = alwaysScroll ?? false;
   const isWindowed =
-    alwaysScroll || (maxSectorsShown != null && totalSectors > maxSectorsShown);
+    effectiveAlwaysScroll ||
+    (maxSectorsShown != null && totalSectors > maxSectorsShown);
 
   const [slotWidth, setSlotWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
 
   // When alwaysScroll is on but maxSectorsShown is unset, fit all sectors.
   const effectiveMaxShown =
@@ -75,25 +79,53 @@ export function useCarouselWindow(
     [isWindowed, effectiveMaxShown, totalSectors, bufferExtra]
   );
 
-  // Pixel width of one slot (card + trailing gap), and total container width
+  // Pixel width of one slot (card + trailing gap), and total container width.
   const step = slotWidth + GAP;
   const containerWidth = effectiveMaxShown ? effectiveMaxShown * step - GAP : 0;
+  const centerSlot = isWindowed ? bufferExtra + currentSectorIdx : -1;
 
-  // Position in the strip of the player's exact track point.
-  // Uses whole-card steps for completed sectors, then fractional slotWidth
-  // within the current card (gap is not traversed mid-card).
-  const stripPosition =
-    (bufferExtra + currentSectorIdx) * step + sectorProgress * slotWidth;
+  // Drive the strip transform imperatively. useLayoutEffect so the initial
+  // apply runs before paint — avoids a one-frame flash at translateX(0) on
+  // mount or whenever the layout (slotWidth, currentSectorIdx) changes.
+  useLayoutEffect(() => {
+    if (!isWindowed || slotWidth === 0) return;
 
-  const stripStyle: React.CSSProperties = isWindowed
-    ? { transform: `translateX(${containerWidth / 2 - stripPosition}px)` }
-    : {};
+    const apply = () => {
+      const node = stripRef.current;
+      if (!node) return;
+      const lapDistPct =
+        useTelemetryStore.getState().telemetry?.LapDistPct?.value?.[0] ?? 0;
+      const span = currentSectorEnd - currentSectorStart;
+      const progress =
+        span > 0
+          ? Math.max(0, Math.min(1, (lapDistPct - currentSectorStart) / span))
+          : 0;
+      // Whole-card steps for completed sectors, then fractional slotWidth
+      // within the current card (gap is not traversed mid-card).
+      const stripPosition =
+        (bufferExtra + currentSectorIdx) * step + progress * slotWidth;
+      node.style.transform = `translateX(${containerWidth / 2 - stripPosition}px)`;
+    };
+
+    apply();
+    return useTelemetryStore.subscribe(apply);
+  }, [
+    isWindowed,
+    slotWidth,
+    step,
+    bufferExtra,
+    containerWidth,
+    currentSectorIdx,
+    currentSectorStart,
+    currentSectorEnd,
+  ]);
 
   return {
     isWindowed,
     extendedIndices,
     slotWidth,
     containerRef,
-    stripStyle,
+    stripRef,
+    centerSlot,
   };
 }

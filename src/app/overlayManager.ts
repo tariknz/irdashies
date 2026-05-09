@@ -9,6 +9,7 @@ import path from 'node:path';
 import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
 import { getDashboard } from './storage/dashboards';
+import { getChromiumFlags } from './storage/chromiumFlags';
 import { trackSettingsWindowMovement } from './trackWindowMovement';
 import logger from './logger';
 
@@ -477,7 +478,6 @@ export class OverlayManager {
   // High-frequency messages that only the overlay container needs
   private static readonly OVERLAY_ONLY_MESSAGES = new Set([
     'telemetry',
-    'sessionData',
     'runningState',
   ]);
 
@@ -671,6 +671,57 @@ export class OverlayManager {
     if (dashboard?.generalSettings?.disableHardwareAcceleration) {
       app.disableHardwareAcceleration();
     }
+  }
+
+  /**
+   * Apply user-configured Chromium command-line switches.
+   * Must be called before the app is ready, as Chromium reads switches
+   * during GPU process initialization.
+   */
+  public setupChromiumFlags(): void {
+    const flags = getChromiumFlags();
+
+    const disableFeatures = new Set<string>(flags.disableFeatures ?? []);
+    if (flags.disableNativeWinOcclusion) {
+      disableFeatures.add('CalculateNativeWinOcclusion');
+    }
+    if (disableFeatures.size > 0) {
+      app.commandLine.appendSwitch(
+        'disable-features',
+        Array.from(disableFeatures).join(',')
+      );
+    }
+
+    const enableFeatures = flags.enableFeatures ?? [];
+    if (enableFeatures.length > 0) {
+      app.commandLine.appendSwitch('enable-features', enableFeatures.join(','));
+    }
+
+    if (flags.angleBackend && flags.angleBackend !== 'default') {
+      app.commandLine.appendSwitch('use-angle', flags.angleBackend);
+    }
+
+    if (flags.disableDirectComposition) {
+      app.commandLine.appendSwitch('disable-direct-composition');
+    }
+
+    const customSwitches = flags.customSwitches?.trim();
+    if (customSwitches) {
+      for (const rawLine of customSwitches.split(/\r?\n/)) {
+        const line = rawLine.trim().replace(/^--/, '');
+        if (!line || line.startsWith('#')) continue;
+        const eq = line.indexOf('=');
+        if (eq === -1) {
+          app.commandLine.appendSwitch(line);
+        } else {
+          const name = line.slice(0, eq).trim();
+          const value = line.slice(eq + 1).trim();
+          if (name) app.commandLine.appendSwitch(name, value);
+        }
+      }
+    }
+
+    logger.info('[OverlayManager] Applied Chromium flags', flags);
   }
 
   public setupAutoStart(): void {

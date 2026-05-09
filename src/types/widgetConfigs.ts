@@ -69,6 +69,7 @@ export interface SessionBarConfig {
   wind?: { enabled: boolean; speedPosition?: 'left' | 'right' };
   trackName: { enabled: boolean };
   displayOrder: string[];
+  foreground?: { opacity: number };
 }
 
 // ===========================
@@ -137,6 +138,7 @@ export interface StandingsConfig {
   lastTime: { enabled: boolean; timeFormat: TimeFormat };
   fastestTime: { enabled: boolean; timeFormat: TimeFormat };
   background: { opacity: number };
+  foreground?: { opacity: number };
   countryFlags: { enabled: boolean };
   carNumber: { enabled: boolean };
   driverStandings: {
@@ -169,6 +171,7 @@ export interface StandingsConfig {
 export interface RelativeConfig {
   buffer: number;
   background: { opacity: number };
+  foreground?: { opacity: number };
   countryFlags: { enabled: boolean };
   carNumber: { enabled: boolean };
   lastTime: { enabled: boolean; timeFormat: TimeFormat };
@@ -539,18 +542,18 @@ export interface SectorDeltaConfig {
   sessionVisibility: SessionVisibilitySettings;
   /**
    * Custom color thresholds as percentages of session best.
-   * Omit to use defaults (green: 0.5%, yellow: 1.0%).
+   * Set to null to use defaults (green: 0.5%, yellow: 1.0%).
    */
   thresholds?: {
     green: number; // e.g. 0.5 means within 0.5% → green
     yellow: number; // e.g. 1.0 means within 1.0% → yellow; above = red
-  };
+  } | null;
   /**
    * Maximum number of sector cards to show at once. When the track has more
    * sectors than this, the widget becomes a sliding carousel centered on the
-   * current sector. Omit (or undefined) to always show all sectors.
+   * current sector. Set to null to always show all sectors.
    */
-  maxSectorsShown?: number;
+  maxSectorsShown?: number | null;
   /**
    * Always use the continuous-scroll mode, even when all sectors fit in the
    * widget. The center line stays pinned to your exact track position.
@@ -564,6 +567,7 @@ export interface SectorDeltaConfig {
 
 export interface InformationBarConfig extends SessionBarConfig {
   background: { opacity: number };
+  foreground: { opacity: number };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }
@@ -624,7 +628,8 @@ export type SettingsTabType =
   | 'footer'
   | 'history'
   | 'telemetry'
-  | 'dashboard';
+  | 'dashboard'
+  | 'chromium';
 
 /** Available widgets for the Fuel Calculator */
 export type FuelWidgetType =

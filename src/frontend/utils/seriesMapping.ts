@@ -38,6 +38,7 @@ export const seriesMapping: Record<string, string> = {
   '259': 'NASCAR Pickup Cup',
   '260': 'Formula A - Cosworth Cup Grand Prix',
   '275': 'Nurburgring Endurance Championship',
+  '279': '24 Hours of Nurburgring',
   '285': 'IMSA Vintage Series',
   '291': 'DIRTcar Limited Late Model Series',
   '292': 'DIRTcar 305 Sprint Car Series by Fanatec',
@@ -86,6 +87,7 @@ export const seriesMapping: Record<string, string> = {
   '464': 'Pro 2 Off-Road Series - Fixed by Trak Racer',
   '466': 'DIRTcar 358 Modified Series',
   '471': 'Dallara DW12 Dash',
+  '472': 'Porsche Esports Supercup Global Open Qualifiers',
   '476': 'iRacing Porsche Cup - Fixed by CONSPIT',
   '483': 'Rookie Legends Cup by Simshop',
   '484': 'Formula A - Cosworth Cup Grand Prix - Fixed',
@@ -149,5 +151,5 @@ export const seriesMapping: Record<string, string> = {
   '599': 'FIA Cross Car Championship',
   '601': 'eNASCAR Coca Cola iRacing Qualifying Series',
   '616': 'Indy NXT iRacing Series',
-  '618': 'IMSA Classic 500',
+  '619': 'iRacing DTM Series ',
 };

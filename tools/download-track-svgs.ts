@@ -13,7 +13,16 @@ export const downloadTrackSvgs = async () => {
 
   const allTracks: Record<string, TrackAsset> = JSON.parse(tracks);
 
-  await Promise.all(Object.values(allTracks).map(downloadTrackSvgs));
+  const queue = Object.values(allTracks);
+  const CONCURRENCY = 10;
+  let cursor = 0;
+  const workers = Array.from({ length: CONCURRENCY }, async () => {
+    while (cursor < queue.length) {
+      const track = queue[cursor++];
+      await downloadTrackSvgs(track);
+    }
+  });
+  await Promise.all(workers);
 
   async function downloadTrackSvgs(track: TrackAsset) {
     for (const [, layer] of Object.entries(track.track_map_layers)) {
