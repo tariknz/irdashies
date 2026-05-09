@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import { useTwitchChatSettings } from './hooks/useTwitchChatSettings';
 import { useTwitchChat } from './hooks/useTwitchChat';
+import {
+  useThirdPartyEmotes,
+  type ThirdPartyEmoteMap,
+} from './hooks/useThirdPartyEmotes';
 import { MessageWithEmotes } from './components/MessageWithEmotes';
 import { DEMO_MESSAGES, DEMO_MESSAGE_INTERVAL_MS } from './demoData';
 import type { ChatMessage } from './types';
@@ -15,6 +19,7 @@ export interface ChatMessageListProps {
   fontSize: number;
   background: { opacity: number };
   autoHide?: { enabled: boolean; intervalSeconds: number };
+  thirdPartyEmotes?: ThirdPartyEmoteMap;
 }
 
 export const ChatMessageList = ({
@@ -22,6 +27,7 @@ export const ChatMessageList = ({
   fontSize,
   background,
   autoHide,
+  thirdPartyEmotes,
 }: ChatMessageListProps) => {
   const [fadingIds, setFadingIds] = useState<Set<string>>(new Set());
   const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
@@ -86,6 +92,7 @@ export const ChatMessageList = ({
               text={m.text}
               emotes={m.emotes}
               fontSize={fontSize}
+              thirdPartyEmotes={thirdPartyEmotes}
             />
           </div>
         );
@@ -97,9 +104,11 @@ export const ChatMessageList = ({
 const DemoChatMessages = ({
   background,
   autoHide,
+  thirdPartyEmotes,
 }: {
   background: { opacity: number };
   autoHide?: { enabled: boolean; intervalSeconds: number };
+  thirdPartyEmotes?: ThirdPartyEmoteMap;
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const indexRef = useRef(0);
@@ -123,6 +132,7 @@ const DemoChatMessages = ({
       fontSize={16}
       background={background}
       autoHide={autoHide}
+      thirdPartyEmotes={thirdPartyEmotes}
     />
   );
 };
@@ -132,15 +142,17 @@ export const TwitchChat = ({
 }: TwitchChatDisplayProps) => {
   const { isDemoMode } = useDashboard();
   const settings = useTwitchChatSettings();
-  const messages = useTwitchChat(
+  const { messages, roomId } = useTwitchChat(
     isDemoMode ? undefined : settings?.config.channel
   );
+  const thirdPartyEmotes = useThirdPartyEmotes(isDemoMode ? undefined : roomId);
 
   if (isDemoMode) {
     return (
       <DemoChatMessages
         background={background}
         autoHide={settings?.config.autoHide}
+        thirdPartyEmotes={thirdPartyEmotes}
       />
     );
   }
@@ -154,6 +166,7 @@ export const TwitchChat = ({
       fontSize={settings.config.fontSize}
       background={background}
       autoHide={settings.config.autoHide}
+      thirdPartyEmotes={thirdPartyEmotes}
     />
   );
 };
