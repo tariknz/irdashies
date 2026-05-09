@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Client } from '@tmi.js/chat';
+import type { RoomState } from '@tmi.js/chat';
 import type { ChatMessage, TwitchMessageEvent } from '../types';
 
 export function useTwitchChat(channel: string | undefined) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [roomId, setRoomId] = useState<string | undefined>();
 
   useEffect(() => {
     if (!channel) return;
@@ -13,6 +15,12 @@ export function useTwitchChat(channel: string | undefined) {
     });
 
     client.connect();
+
+    client.on('roomState', (event: RoomState.Event) => {
+      if (event.tags.roomId) {
+        setRoomId(event.tags.roomId);
+      }
+    });
 
     client.on('message', (msg) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,5 +49,5 @@ export function useTwitchChat(channel: string | undefined) {
     };
   }, [channel]);
 
-  return messages;
+  return { messages, roomId };
 }
