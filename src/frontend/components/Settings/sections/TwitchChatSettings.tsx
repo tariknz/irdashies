@@ -4,6 +4,7 @@ import type { TwitchChatWidgetSettings } from '@irdashies/types';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SettingSliderRow } from '../components/SettingSliderRow';
+import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingsSection } from '../components/SettingSection';
 
 const SETTING_ID = 'twitchchat';
@@ -66,6 +67,40 @@ export const TwitchChatSettings = () => {
                 })
               }
             />
+          </SettingsSection>
+
+          <SettingsSection title="Automatic message disappearance">
+            <SettingToggleRow
+              title="Automatic message disappearance"
+              description="Messages will automatically disappear after the set time."
+              enabled={settings.config.autoHide?.enabled ?? false}
+              onToggle={(v) =>
+                handleConfigChange({
+                  autoHide: {
+                    ...settings.config.autoHide,
+                    enabled: v,
+                  },
+                })
+              }
+            />
+            {(settings.config.autoHide?.enabled ?? false) && (
+              <SettingSliderRow
+                title="Disappearance interval"
+                value={settings.config.autoHide?.intervalSeconds ?? 20}
+                units="s"
+                min={10}
+                max={90}
+                step={1}
+                onChange={(v) =>
+                  handleConfigChange({
+                    autoHide: {
+                      ...settings.config.autoHide,
+                      intervalSeconds: v,
+                    },
+                  })
+                }
+              />
+            )}
           </SettingsSection>
 
           <SettingsSection title="Channel">
