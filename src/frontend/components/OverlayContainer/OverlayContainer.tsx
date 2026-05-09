@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useRef } from 'react';
 import { useDashboard, useRunningState } from '@irdashies/context';
 import type { WidgetLayout } from '@irdashies/types';
 import { WidgetContainer } from '../WidgetContainer';
-import { WIDGET_MAP } from '../../WidgetIndex';
+import { getWidget } from '../../WidgetIndex';
 import { XIcon } from '@phosphor-icons/react';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { SectorTimingUpdater } from './SectorTimingUpdater';
@@ -108,7 +108,7 @@ export const OverlayContainer = memo(() => {
     >
       <SectorTimingUpdater />
       {widgetsForThisDisplay.map((widget, index) => {
-        const WidgetComponent = WIDGET_MAP[widget.type || widget.id];
+        const WidgetComponent = getWidget(widget.type || widget.id);
         if (!WidgetComponent) {
           return null;
         }

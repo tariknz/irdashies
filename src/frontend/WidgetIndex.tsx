@@ -18,6 +18,7 @@ import { LapTimeLog } from './components/LapTimeLog/LapTimeLog';
 import { InformationBar } from './components/InformationBar/InformationBar';
 import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
 import { SectorDelta } from './components/SectorDelta/SectorDelta';
+import type { WidgetConfigMap } from '@irdashies/types';
 
 export {
   Standings,
@@ -45,7 +46,7 @@ export {
 // TODO: type this better, right now the config comes from settings
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const WIDGET_MAP: Record<
-  string,
+  keyof WidgetConfigMap,
   (config?: any) => React.JSX.Element | null
 > = {
   /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -71,4 +72,17 @@ export const WIDGET_MAP: Record<
   sectordelta: SectorDelta,
 };
 
-export type WidgetId = keyof typeof WIDGET_MAP;
+export type WidgetId = keyof WidgetConfigMap;
+
+/**
+ * Looks up a widget component by id. Accepts a raw string because dashboard
+ * config is user-supplied and may contain unknown ids; returns undefined
+ * when no widget is registered for that id.
+ *
+ * Uses Object.hasOwn so prototype-chain keys (e.g. "__proto__", "toString")
+ * never resolve to truthy non-component values that React would try to render.
+ */
+export const getWidget = (id: string) =>
+  Object.hasOwn(WIDGET_MAP, id)
+    ? (WIDGET_MAP[id as WidgetId] as (typeof WIDGET_MAP)[WidgetId])
+    : undefined;

@@ -243,7 +243,7 @@ export const Relative = () => {
           delta={(settings?.delta?.enabled ?? true) ? result.delta : undefined}
           lapTimeDeltas={
             lapTimeDeltasEnabled
-              ? (lapDeltasByCarIdx?.[result.carIdx] ?? [])
+              ? (lapDeltasByCarIdx?.[result.carIdx]?.slice(-numLapDeltas) ?? [])
               : undefined
           }
           numLapDeltasToShow={lapTimeDeltasEnabled ? numLapDeltas : undefined}
@@ -296,7 +296,7 @@ export const Relative = () => {
       >
         <TitleBar titleBarSettings={settings?.titleBar} />
         {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
-          <SessionBar settings={settings.headerBar} position="header" />
+          <SessionBar settings={settings.headerBar} opacity={settings?.foreground?.opacity} position="header" />
         )}
         <table
           className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
@@ -304,7 +304,7 @@ export const Relative = () => {
           <tbody>{rows}</tbody>
         </table>
         {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
-          <SessionBar settings={settings.footerBar} position="footer" />
+          <SessionBar settings={settings.footerBar} opacity={settings?.foreground?.opacity} position="footer" />
         )}
       </FlagContour>
     );
@@ -320,7 +320,7 @@ export const Relative = () => {
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
-        <SessionBar settings={settings.headerBar} position="header" />
+        <SessionBar settings={settings.headerBar} opacity={settings?.foreground?.opacity} position="header" />
       )}
       <table
         className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
@@ -328,7 +328,7 @@ export const Relative = () => {
         <tbody>{rows}</tbody>
       </table>
       {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
-        <SessionBar settings={settings.footerBar} position="footer" />
+        <SessionBar settings={settings.footerBar} opacity={settings?.foreground?.opacity} position="footer" />
       )}
     </FlagContour>
   );
