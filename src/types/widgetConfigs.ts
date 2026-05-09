@@ -486,6 +486,7 @@ export interface TwitchChatConfig {
   fontSize: number;
   channel: string;
   background: { opacity: number };
+  autoHide: { enabled: boolean; intervalSeconds: number };
 }
 
 export interface LapTimeLogConfig {

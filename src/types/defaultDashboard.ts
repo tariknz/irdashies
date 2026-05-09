@@ -1077,6 +1077,10 @@ export const defaultDashboard: {
         background: {
           opacity: 30,
         },
+        autoHide: {
+          enabled: false,
+          intervalSeconds: 20,
+        },
       },
     },
     {
