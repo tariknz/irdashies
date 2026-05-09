@@ -11,7 +11,7 @@ export const REFERENCE_INTERVAL = 0.0025;
 const DECIMAL_PLACES = REFERENCE_INTERVAL.toString().split('.')[1]?.length || 0;
 
 /**
- * Snaps a track percentage to the nearest reference interval and ensures it
+ * Snaps a track percentage down to the current reference interval and ensures it
  * stays within the valid range [0, 1].
  * @param key The track percentage (0.0-1.0)
  */
