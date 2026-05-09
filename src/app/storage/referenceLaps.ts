@@ -3,9 +3,34 @@ import { app } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import logger from '../logger';
+import { readData, writeData } from './storage';
 
 const dataPath = app.getPath('userData');
 const filePath = path.join(dataPath, 'referenceLaps.json');
+
+/**
+ * One-time migration to clear old reference lap data.
+ * This should be removed in a future version.
+ */
+export const migrateReferenceLaps = () => {
+  const MIGRATION_KEY = 'referenceLapsCleared_2026_5';
+  const isMigrated = readData<boolean>(MIGRATION_KEY);
+
+  if (!isMigrated) {
+    if (fs.existsSync(filePath)) {
+      try {
+        fs.unlinkSync(filePath);
+        logger.info('One-time cleanup of referenceLaps.json performed');
+      } catch (error) {
+        logger.error(
+          'Failed to delete referenceLaps.json during migration:',
+          error
+        );
+      }
+    }
+    writeData(MIGRATION_KEY, true);
+  }
+};
 
 /**
  * Generates a unique composite key for storage.
