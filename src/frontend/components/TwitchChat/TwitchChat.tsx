@@ -22,6 +22,8 @@ export interface ChatMessageListProps {
   thirdPartyEmotes?: ThirdPartyEmoteMap;
 }
 
+const FADE_DURATION_MS = 1000;
+
 export const ChatMessageList = ({
   messages,
   fontSize,
@@ -30,7 +32,11 @@ export const ChatMessageList = ({
   thirdPartyEmotes,
 }: ChatMessageListProps) => {
   const [fadingIds, setFadingIds] = useState<Set<string>>(new Set());
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
   const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map()
+  );
+  const removeTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map()
   );
 
@@ -38,6 +44,8 @@ export const ChatMessageList = ({
     if (!autoHide?.enabled) {
       timeoutsRef.current.forEach(clearTimeout);
       timeoutsRef.current.clear();
+      removeTimeoutsRef.current.forEach(clearTimeout);
+      removeTimeoutsRef.current.clear();
       return;
     }
 
@@ -45,6 +53,10 @@ export const ChatMessageList = ({
       if (!timeoutsRef.current.has(m.id)) {
         const t = setTimeout(() => {
           setFadingIds((prev) => new Set([...prev, m.id]));
+          const rt = setTimeout(() => {
+            setRemovedIds((prev) => new Set([...prev, m.id]));
+          }, FADE_DURATION_MS);
+          removeTimeoutsRef.current.set(m.id, rt);
         }, autoHide.intervalSeconds * 1000);
         timeoutsRef.current.set(m.id, t);
       }
@@ -61,8 +73,10 @@ export const ChatMessageList = ({
 
   useEffect(() => {
     const timeouts = timeoutsRef.current;
+    const removeTimeouts = removeTimeoutsRef.current;
     return () => {
       timeouts.forEach(clearTimeout);
+      removeTimeouts.forEach(clearTimeout);
     };
   }, []);
 
@@ -75,7 +89,7 @@ export const ChatMessageList = ({
         } as React.CSSProperties
       }
     >
-      {messages.map((m) => {
+      {messages.filter((m) => !removedIds.has(m.id)).map((m) => {
         const fading = (autoHide?.enabled ?? false) && fadingIds.has(m.id);
         return (
           <div
@@ -84,7 +98,9 @@ export const ChatMessageList = ({
               marginBottom: 8,
               fontSize: `${fontSize}px`,
               opacity: fading ? 0 : 1,
-              transition: fading ? 'opacity 1s linear' : undefined,
+              transition: fading
+                ? `opacity ${FADE_DURATION_MS}ms linear`
+                : undefined,
             }}
           >
             <strong style={{ color: m.color ?? '#a970ff' }}>{m.user}</strong>:{' '}
