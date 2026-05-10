@@ -145,6 +145,17 @@ export function getTimeAtPosition(refLap: ReferenceLap, trackPct: number) {
   return prevPosRef.timeElapsedSinceStart + fraction * timeDiff;
 }
 
+/**
+ * Calculates the signed time delta between an opponent and the player.
+ *
+ * The delta is the shortest time distance between the two cars. Will wrap around if distance between cars is more than or equal to half a lap.
+ * A positive value indicates the opponent is ahead of the player.
+ *
+ * @param referenceLap - The performance profile used for interpolation (should be from the chasing car).
+ * @param opponentTrackPct - The opponent's current track position (0.0 - 1.0).
+ * @param playerTrackPct - The player's current track position (0.0 - 1.0).
+ * @returns The time delta in seconds.
+ */
 export function calculateReferenceDelta(
   referenceLap: ReferenceLap,
   opponentTrackPct: number,
@@ -166,6 +177,17 @@ export function calculateReferenceDelta(
   return calculatedDelta;
 }
 
+/**
+ * Calculates the forward time gap from the player to an opponent.
+ *
+ * This calculates the time it would take to reach the opponent's current position
+ * based on the provided reference lap, always looking forward along the track.
+ *
+ * @param referenceLap - The performance profile used for interpolation (should be from the chasing car).
+ * @param opponentTrackPct - The opponent's current normalized track position (0.0 - 1.0).
+ * @param playerTrackPct - The player's current normalized track position (0.0 - 1.0).
+ * @returns The forward time gap in seconds.
+ */
 export function calculateReferenceGap(
   referenceLap: ReferenceLap,
   opponentTrackPct: number,

@@ -28,6 +28,7 @@ import { SessionBarConfig } from '@irdashies/types';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 import { SessionState } from '@irdashies/types';
 import { WindArrow } from '../../../shared/WindArrow';
+import { getIncidentDisplay } from './getIncidentDisplay';
 
 // compact=true (total time): trims trailing zero components, never shows seconds
 // compact=false (elapsed/remaining): always shows full HH:MM:SS
@@ -121,7 +122,12 @@ export const SessionBar = ({
 
   const session = useCurrentSessionType();
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
-  const { incidentLimit, incidents } = useDriverIncidents();
+  const {
+    incidentLimit,
+    incidents,
+    incidentWarningInitialLimit,
+    incidentWarningSubsequentLimit,
+  } = useDriverIncidents();
   const {
     currentLap,
     time,
@@ -289,9 +295,13 @@ export const SessionBar = ({
         effectiveBarSettings?.incidentCount?.enabled ??
         (position === 'header' ? true : false),
       render: () => (
-        <div className="flex justify-end">
-          {incidents}
-          {incidentLimit ? ' / ' + incidentLimit : ''} x
+        <div className="flex justify-end tabular-nums">
+          {getIncidentDisplay(
+            incidents,
+            incidentWarningInitialLimit,
+            incidentWarningSubsequentLimit,
+            incidentLimit
+          )}
         </div>
       ),
     },

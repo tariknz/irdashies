@@ -39,6 +39,10 @@ interface ReferenceRegistryState {
    */
   fileLoadedClassIds: Set<number>;
 
+  /**
+   * Bootstraps the store at the start of a session by loading previously saved
+   * reference laps from disk for the specific track and car classes.
+   */
   initialize: (
     bridge: ReferenceLapBridge,
     seriesId: number,
@@ -46,6 +50,12 @@ interface ReferenceRegistryState {
     trackLength: number,
     classList: number[]
   ) => Promise<void>;
+
+  /**
+   * The primary high-frequency hook for telemetry ingestion. Records
+   * time-stamped positions along the track and promotes completed laps to
+   * "best" or "persisted" if they are clean and fast.
+   */
   collectLapData: (
     bridge: ReferenceLapBridge,
     carIdx: number,
@@ -55,14 +65,30 @@ interface ReferenceRegistryState {
     trackSurface: number,
     isOnPitRoad: boolean
   ) => void;
+
+  /**
+   * Retrieves the best available lap for comparison. Prefers the car's own
+   * in-session best, falling back to the class-wide persisted best.
+   * @param carIdx The car index to get the best lap for
+   * @param classId The class ID of the car
+   * @param usePersistence If true, strictly returns the persisted class-best.
+   */
   getReferenceLap: (
     carIdx: number,
     classId: number,
     usePersistence: boolean
   ) => ReferenceLap;
+
+  /**
+   * Resets the store state, clearing all maps and identifiers.
+   */
   completeSession: () => void;
 }
 
+/**
+ * Manages the collection, retrieval, and persistence of reference laps (ghost
+ * laps) during an iRacing session.
+ */
 export const useReferenceLapStore = create<ReferenceRegistryState>(
   (set, get) => ({
     activeLaps: new Map<number, ReferenceLap>(),

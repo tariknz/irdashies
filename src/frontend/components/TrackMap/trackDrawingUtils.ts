@@ -164,12 +164,16 @@ export const drawDrivers = (
   showCarNumbers: boolean,
   displayMode: 'carNumber' | 'sessionPosition' | 'livePosition' = 'carNumber',
   driverLivePositions: Record<number, number>,
-  carIdxIsOnPitRoad?: number[]
+  carIdxIsOnPitRoad?: number[],
+  hidePlayer?: boolean
 ) => {
   const safePosition = (pos: number | undefined): number =>
     pos !== undefined && isFinite(pos) ? pos : 0;
   Object.values(calculatePositions)
     .sort((a, b) => {
+      const aOnPit = !!carIdxIsOnPitRoad?.[a.driver.CarIdx];
+      const bOnPit = !!carIdxIsOnPitRoad?.[b.driver.CarIdx];
+      if (aOnPit !== bOnPit) return aOnPit ? -1 : 1; // pit cars drawn first (under track drivers)
       if (a.isPlayer !== b.isPlayer) {
         return Number(a.isPlayer) - Number(b.isPlayer); // draws player last to be on top
       }
@@ -178,6 +182,8 @@ export const drawDrivers = (
     .forEach(({ driver, position, isPlayer, sessionPosition }) => {
       let color = driverColors[driver.CarIdx];
       if (!color) return;
+
+      if (isPlayer && hidePlayer) return;
 
       const circleRadius = isPlayer ? playerCircleSize : driverCircleSize;
       const fontSize = circleRadius * (trackmapFontSize / 100);
@@ -204,7 +210,7 @@ export const drawDrivers = (
       // draw a border?
       if (driversOffTrack[driver.CarIdx]) {
         ctx.strokeStyle = getColor('yellow', 400);
-        ctx.lineWidth = 12;
+        ctx.lineWidth = 10;
         ctx.stroke();
       } else if (
         !isPlayer &&
@@ -222,20 +228,17 @@ export const drawDrivers = (
         ctx.textBaseline = 'middle';
         ctx.fillStyle = color.text;
         ctx.font = `${fontSize}px sans-serif`;
-        let displayText = '';
-        if (onPitRoad) {
-          displayText = 'P';
-        } else if (displayMode === 'livePosition') {
-          displayText =
-            livePosition && livePosition > 0 ? livePosition.toString() : '';
-        } else if (displayMode === 'sessionPosition') {
-          displayText =
-            sessionPosition && sessionPosition > 0
-              ? sessionPosition.toString()
-              : '';
-        } else {
-          displayText = driver.CarNumber;
-        }
+        const displayText = onPitRoad
+          ? 'P'
+          : displayMode === 'livePosition'
+            ? livePosition && livePosition > 0
+              ? livePosition.toString()
+              : ''
+            : displayMode === 'sessionPosition'
+              ? sessionPosition && sessionPosition > 0
+                ? sessionPosition.toString()
+                : ''
+              : driver.CarNumber;
         if (displayText) {
           const m = ctx.measureText(displayText);
           const visualOffset =
