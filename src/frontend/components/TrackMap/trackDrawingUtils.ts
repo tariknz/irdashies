@@ -165,7 +165,7 @@ export const drawDrivers = (
   displayMode: 'carNumber' | 'sessionPosition' | 'livePosition' = 'carNumber',
   driverLivePositions: Record<number, number>,
   carIdxIsOnPitRoad?: number[],
-  playerIconImage?: HTMLImageElement | null
+  hidePlayer?: boolean
 ) => {
   const safePosition = (pos: number | undefined): number =>
     pos !== undefined && isFinite(pos) ? pos : 0;
@@ -182,6 +182,8 @@ export const drawDrivers = (
     .forEach(({ driver, position, isPlayer, sessionPosition }) => {
       let color = driverColors[driver.CarIdx];
       if (!color) return;
+
+      if (isPlayer && hidePlayer) return;
 
       const circleRadius = isPlayer ? playerCircleSize : driverCircleSize;
       const fontSize = circleRadius * (trackmapFontSize / 100);
@@ -200,31 +202,15 @@ export const drawDrivers = (
         color = { fill: '#999999', text: 'white' };
       }
 
-      const useIcon = isPlayer && !!playerIconImage;
-
-      if (useIcon) {
-        ctx.drawImage(
-          playerIconImage as HTMLImageElement,
-          position.x - circleRadius,
-          position.y - circleRadius,
-          circleRadius * 2,
-          circleRadius * 2
-        );
-      } else {
-        ctx.fillStyle = color.fill;
-        ctx.beginPath();
-        ctx.arc(position.x, position.y, circleRadius, 0, 2 * Math.PI);
-        ctx.fill();
-      }
+      ctx.fillStyle = color.fill;
+      ctx.beginPath();
+      ctx.arc(position.x, position.y, circleRadius, 0, 2 * Math.PI);
+      ctx.fill();
 
       // draw a border?
       if (driversOffTrack[driver.CarIdx]) {
         ctx.strokeStyle = getColor('yellow', 400);
         ctx.lineWidth = 10;
-        if (useIcon) {
-          ctx.beginPath();
-          ctx.arc(position.x, position.y, circleRadius, 0, 2 * Math.PI);
-        }
         ctx.stroke();
       } else if (
         !isPlayer &&
@@ -237,24 +223,7 @@ export const drawDrivers = (
         ctx.stroke();
       }
 
-      // Player icon on pit road: show "P" badge over the icon so it's still
-      // obvious the car is in the pits without losing the icon.
-      if (useIcon && onPitRoad) {
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = `${fontSize}px sans-serif`;
-        const m = ctx.measureText('P');
-        const visualOffset =
-          (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        ctx.beginPath();
-        ctx.arc(position.x, position.y, circleRadius * 0.7, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.fillStyle = 'white';
-        ctx.fillText('P', position.x, position.y + visualOffset);
-      }
-
-      if (showCarNumbers && !useIcon) {
+      if (showCarNumbers) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = color.text;

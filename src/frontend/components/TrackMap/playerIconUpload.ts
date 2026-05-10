@@ -1,6 +1,5 @@
-// Biggest player circle radius supported by the slider is 100px (200px
-// diameter), drawn into a HiDPI canvas (~2x). 512 gives that headroom while
-// still being small enough that ctx.drawImage stays cheap on every tick.
+// Caps the icon at a size that comfortably covers the largest configurable
+// circle (100px radius => 200px diameter) on a HiDPI display.
 export const MAX_ICON_DIMENSION = 512;
 
 export const dataUrlToBuffer = (dataUrl: string): Uint8Array =>
@@ -29,17 +28,9 @@ const blobToDataUrl = (blob: Blob): Promise<string> =>
   });
 
 /**
- * Shrinks an uploaded icon to MAX_ICON_DIMENSION before it's persisted, so the
- * canvas drawImage hot path stays fast on cheap GPUs.
- *
- * Pass-through cases:
- * - SVG: vector, scales for free.
- * - GIF: rasterising would collapse the animation to a single frame, so we
- *   leave it alone and trust the user to upload a sensibly-sized GIF.
- * - Already-small rasters: nothing to gain from re-encoding.
- *
- * Returns the buffer to upload and a data URL suitable for the localStorage
- * fallback. Reuses the original data when no resize is needed.
+ * Shrinks an uploaded icon to MAX_ICON_DIMENSION so big sources (e.g. 4K PNGs)
+ * don't melt the GPU when the icon is drawn every frame. SVGs scale for free
+ * and GIFs would lose their animation if rasterised, so both pass through.
  */
 export const prepareIconForUpload = async (
   file: File,

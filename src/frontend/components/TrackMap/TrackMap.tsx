@@ -74,8 +74,7 @@ export const TrackMap = () => {
         currentSectorIdx={
           settings?.sectorColoring?.enabled ? currentSectorIdx : undefined
         }
-        playerIconImage={playerIcon?.image ?? null}
-        playerIconAnimated={playerIcon?.isAnimated ?? false}
+        playerIconDataUrl={playerIcon?.dataUrl ?? null}
         debug={debug}
       />
     </div>

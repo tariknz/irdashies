@@ -2,22 +2,10 @@ import { useState, useEffect } from 'react';
 import { useDashboard } from '@irdashies/context';
 
 export interface PlayerIconImage {
-  image: HTMLImageElement;
-  /**
-   * True when the source is an animated format (currently GIF). The TrackMap
-   * canvas needs to redraw every frame for the GIF to advance — without this
-   * flag, ctx.drawImage just keeps capturing whatever frame happens to be
-   * current at draw time and the icon appears frozen.
-   */
+  dataUrl: string;
   isAnimated: boolean;
 }
 
-/**
- * Loads the player icon as an HTMLImageElement so the TrackMap canvas can
- * draw it in a single ctx.drawImage call. Returning a decoded image (rather
- * than a data URL) keeps the hot path off React/DOM and lets drawDrivers do
- * the work alongside every other driver marker.
- */
 export const usePlayerIconImage = (
   imageFilename: string | undefined
 ): PlayerIconImage | null => {
@@ -26,7 +14,6 @@ export const usePlayerIconImage = (
 
   useEffect(() => {
     let cancelled = false;
-    let img: HTMLImageElement | null = null;
 
     const load = async () => {
       if (!imageFilename || !bridge) {
@@ -39,22 +26,24 @@ export const usePlayerIconImage = (
         setResult(null);
         return;
       }
-      img = new Image();
-      img.src = dataUrl;
+
+      // Pre-decode so the overlay doesn't flash a broken image on first paint.
+      const probe = new Image();
+      probe.src = dataUrl;
       try {
-        await img.decode();
+        await probe.decode();
       } catch {
-        // Some animated formats (e.g. some GIFs) don't support decode();
-        // fall back to onload.
         await new Promise<void>((resolve) => {
-          if (!img) return resolve();
-          img.onload = () => resolve();
-          img.onerror = () => resolve();
+          probe.onload = () => resolve();
+          probe.onerror = () => resolve();
         });
       }
-      if (!cancelled && img) {
-        const isAnimated = dataUrl.startsWith('data:image/gif');
-        setResult({ image: img, isAnimated });
+
+      if (!cancelled) {
+        setResult({
+          dataUrl,
+          isAnimated: dataUrl.startsWith('data:image/gif'),
+        });
       }
     };
 

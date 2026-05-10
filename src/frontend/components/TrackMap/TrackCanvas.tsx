@@ -51,14 +51,7 @@ export interface TrackProps {
   sectors?: Sector[];
   sectorColors?: SectorColor[];
   currentSectorIdx?: number;
-  playerIconImage?: HTMLImageElement | null;
-  /**
-   * When true, force a per-frame canvas redraw so animated formats (GIF) keep
-   * advancing. ctx.drawImage on its own only captures whatever frame is
-   * current at call time, so the icon would otherwise look frozen unless some
-   * other state happened to tick on every animation frame.
-   */
-  playerIconAnimated?: boolean;
+  playerIconDataUrl?: string | null;
 }
 
 export interface TrackDriver {
@@ -124,8 +117,7 @@ export const TrackCanvas = ({
   sectors,
   sectorColors,
   currentSectorIdx,
-  playerIconImage = null,
-  playerIconAnimated = false,
+  playerIconDataUrl = null,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -133,20 +125,8 @@ export const TrackCanvas = ({
     undefined
   );
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
-  // Increments every animation frame while an animated icon is loaded, used
-  // purely to nudge the dynamic redraw effect so GIF frames advance.
-  const [iconFrameTick, setIconFrameTick] = useState(0);
-
-  useEffect(() => {
-    if (!playerIconAnimated || !playerIconImage) return;
-    let raf = 0;
-    const tick = () => {
-      setIconFrameTick((n) => (n + 1) % 1_000_000);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [playerIconAnimated, playerIconImage]);
+  const playerIconElRef = useRef<HTMLImageElement>(null);
+  const playerPitBadgeRef = useRef<HTMLDivElement>(null);
 
   const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
@@ -481,6 +461,7 @@ export const TrackCanvas = ({
     const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
 
     setupCanvasContext(ctx, scale, offsetX, offsetY, isMinimalCar);
+    const hasIconOverlay = !!playerIconDataUrl;
     drawDrivers(
       ctx,
       calculatePositions,
@@ -494,9 +475,49 @@ export const TrackCanvas = ({
       displayMode,
       driverLivePositions,
       carIdxIsOnPitRoad,
-      playerIconImage
+      hasIconOverlay
     );
     ctx.restore();
+
+    // Position the icon overlay imperatively — mutating transform/dimensions
+    // directly avoids a React render on every position tick.
+    const iconEl = playerIconElRef.current;
+    const pitEl = playerPitBadgeRef.current;
+    if (!hasIconOverlay) {
+      if (iconEl) iconEl.style.display = 'none';
+      if (pitEl) pitEl.style.display = 'none';
+      return;
+    }
+    const playerEntry = Object.values(calculatePositions).find(
+      (e) => e.isPlayer
+    );
+    if (!playerEntry) {
+      if (iconEl) iconEl.style.display = 'none';
+      if (pitEl) pitEl.style.display = 'none';
+      return;
+    }
+    const radius = playerCircleSize * scale;
+    const screenX = playerEntry.position.x * scale + offsetX - radius;
+    const screenY = playerEntry.position.y * scale + offsetY - radius;
+    const size = radius * 2;
+    if (iconEl) {
+      iconEl.style.transform = `translate(${screenX}px, ${screenY}px)`;
+      iconEl.style.width = `${size}px`;
+      iconEl.style.height = `${size}px`;
+      iconEl.style.display = '';
+    }
+    const onPitRoad = !!carIdxIsOnPitRoad?.[playerEntry.driver.CarIdx];
+    if (pitEl) {
+      if (onPitRoad) {
+        pitEl.style.transform = `translate(${screenX}px, ${screenY}px)`;
+        pitEl.style.width = `${size}px`;
+        pitEl.style.height = `${size}px`;
+        pitEl.style.fontSize = `${size * 0.6}px`;
+        pitEl.style.display = '';
+      } else {
+        pitEl.style.display = 'none';
+      }
+    }
   }, [
     calculatePositions,
     canvasSize,
@@ -513,9 +534,32 @@ export const TrackCanvas = ({
     invertLeaderColor,
     isMinimalCar,
     isMinimalTrack,
-    playerIconImage,
-    iconFrameTick,
+    playerIconDataUrl,
   ]);
+
+  const renderIconOverlay = () =>
+    playerIconDataUrl ? (
+      <>
+        <img
+          ref={playerIconElRef}
+          src={playerIconDataUrl}
+          alt=""
+          className="absolute top-0 left-0 pointer-events-none origin-top-left will-change-transform"
+          style={{ display: 'none' }}
+        />
+        <div
+          ref={playerPitBadgeRef}
+          className="absolute top-0 left-0 pointer-events-none flex items-center justify-center font-bold text-white origin-top-left will-change-transform"
+          style={{
+            display: 'none',
+            background: 'rgba(0, 0, 0, 0.6)',
+            borderRadius: '50%',
+          }}
+        >
+          P
+        </div>
+      </>
+    ) : null;
 
   // Development/Storybook mode - show debug info and canvas
   if (debug) {
@@ -526,6 +570,7 @@ export const TrackCanvas = ({
           className="will-change-transform w-full h-full"
           ref={canvasRef}
         ></canvas>
+        {renderIconOverlay()}
       </div>
     );
   }
@@ -539,6 +584,7 @@ export const TrackCanvas = ({
         className="will-change-transform w-full h-full"
         ref={canvasRef}
       ></canvas>
+      {renderIconOverlay()}
     </div>
   );
 };

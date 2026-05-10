@@ -24,16 +24,6 @@ const SAMPLE_ICON_DATA_URL =
     </svg>
   `);
 
-const useSampleIcon = (): HTMLImageElement | null => {
-  const [img, setImg] = useState<HTMLImageElement | null>(null);
-  useEffect(() => {
-    const i = new Image();
-    i.src = SAMPLE_ICON_DATA_URL;
-    i.onload = () => setImg(i);
-  }, []);
-  return img;
-};
-
 export default {
   component: TrackCanvas,
   title: 'widgets/TrackMap/components/TrackCanvas',
@@ -821,7 +811,6 @@ const playerOnlyDrivers = [
 
 export const WithPlayerIcon: Story = {
   render: (args) => {
-    const playerIconImage = useSampleIcon();
     const [drivers, setDrivers] = useState(playerOnlyDrivers);
     useEffect(() => {
       const interval = setInterval(() => {
@@ -845,7 +834,7 @@ export const WithPlayerIcon: Story = {
         trackLineWidth={args.trackLineWidth ?? 20}
         trackOutlineWidth={args.trackOutlineWidth ?? 40}
         highlightColor={args.highlightColor}
-        playerIconImage={playerIconImage}
+        playerIconDataUrl={SAMPLE_ICON_DATA_URL}
       />
     );
   },
@@ -857,7 +846,6 @@ export const WithPlayerIcon: Story = {
 
 export const WithPlayerIconMultiClass: Story = {
   render: (args) => {
-    const playerIconImage = useSampleIcon();
     const [drivers, setDrivers] = useState(sampleData);
     useEffect(() => {
       const interval = setInterval(() => {
@@ -881,7 +869,7 @@ export const WithPlayerIconMultiClass: Story = {
         trackLineWidth={args.trackLineWidth ?? 20}
         trackOutlineWidth={args.trackOutlineWidth ?? 40}
         highlightColor={args.highlightColor}
-        playerIconImage={playerIconImage}
+        playerIconDataUrl={SAMPLE_ICON_DATA_URL}
       />
     );
   },
@@ -898,8 +886,6 @@ export const WithPlayerIconMultiClass: Story = {
  */
 export const WithPlayerIconOnPitRoad: Story = {
   render: (args) => {
-    const playerIconImage = useSampleIcon();
-
     // Inject a fake telemetry payload directly into the global store so
     // useTelemetryValues('CarIdxOnPitRoad') reports the player as in the pits.
     // CarIdx 24 is the player in playerOnlyDrivers.
@@ -929,7 +915,7 @@ export const WithPlayerIconOnPitRoad: Story = {
         trackLineWidth={args.trackLineWidth ?? 20}
         trackOutlineWidth={args.trackOutlineWidth ?? 40}
         highlightColor={args.highlightColor}
-        playerIconImage={playerIconImage}
+        playerIconDataUrl={SAMPLE_ICON_DATA_URL}
       />
     );
   },
