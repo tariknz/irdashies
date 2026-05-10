@@ -30,15 +30,16 @@ const blobToDataUrl = (blob: Blob): Promise<string> =>
 
 /**
  * Shrinks an uploaded icon to MAX_ICON_DIMENSION before it's persisted, so the
- * canvas drawImage hot path stays fast on cheap GPUs. SVGs are vector and
- * already-small rasters (e.g. small animated GIFs) pass through untouched.
+ * canvas drawImage hot path stays fast on cheap GPUs.
+ *
+ * Pass-through cases:
+ * - SVG: vector, scales for free.
+ * - GIF: rasterising would collapse the animation to a single frame, so we
+ *   leave it alone and trust the user to upload a sensibly-sized GIF.
+ * - Already-small rasters: nothing to gain from re-encoding.
  *
  * Returns the buffer to upload and a data URL suitable for the localStorage
  * fallback. Reuses the original data when no resize is needed.
- *
- * Animated GIFs above the cap collapse to a single frame here — that's the
- * only practical way to fix the perf issue at the source without pulling in a
- * GIF re-encoder.
  */
 export const prepareIconForUpload = async (
   file: File,
@@ -49,7 +50,7 @@ export const prepareIconForUpload = async (
     dataUrl: originalDataUrl,
   });
 
-  if (file.type === 'image/svg+xml') {
+  if (file.type === 'image/svg+xml' || file.type === 'image/gif') {
     return passthrough();
   }
 
