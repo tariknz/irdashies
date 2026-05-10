@@ -4,7 +4,6 @@ import tracks from './tracks/tracks.json';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
 import { shouldShowTrack } from './tracks/brokenTracks';
 import { TrackDebug } from './TrackDebug';
-import { TrackPlayerIcon } from './TrackPlayerIcon';
 import { useStartFinishLine } from './hooks/useStartFinishLine';
 import {
   setupCanvasContext,
@@ -52,8 +51,7 @@ export interface TrackProps {
   sectors?: Sector[];
   sectorColors?: SectorColor[];
   currentSectorIdx?: number;
-  playerIconEnabled?: boolean;
-  playerIconDataUrl?: string;
+  playerIconImage?: HTMLImageElement | null;
 }
 
 export interface TrackDriver {
@@ -119,8 +117,7 @@ export const TrackCanvas = ({
   sectors,
   sectorColors,
   currentSectorIdx,
-  playerIconEnabled = false,
-  playerIconDataUrl = '',
+  playerIconImage = null,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -264,46 +261,6 @@ export const TrackCanvas = ({
     trackDrawing?.startFinish?.point?.length,
     trackDrawing?.startFinish?.direction,
     trackDrawing?.active?.totalLength,
-  ]);
-
-  const playerOverlay = useMemo(() => {
-    if (!playerIconEnabled || !playerIconDataUrl) return null;
-
-    const playerEntry = Object.values(calculatePositions).find(
-      (e) => e.isPlayer
-    );
-    if (!playerEntry) return null;
-
-    const onPitRoad = !!carIdxIsOnPitRoad?.[playerEntry.driver.CarIdx];
-
-    const maxCircleSize = Math.max(driverCircleSize, playerCircleSize);
-    const scaleX = canvasSize.width / (TRACK_DRAWING_WIDTH + 2 * maxCircleSize);
-    const scaleY =
-      canvasSize.height / (TRACK_DRAWING_HEIGHT + 2 * maxCircleSize);
-    const scale = Math.min(scaleX, scaleY);
-    const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
-    const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
-
-    const { position } = playerEntry;
-    const radius = playerCircleSize * scale;
-
-    return {
-      style: {
-        left: position.x * scale + offsetX - radius,
-        top: position.y * scale + offsetY - radius,
-        width: radius * 2,
-        height: radius * 2,
-      },
-      onPitRoad,
-    };
-  }, [
-    calculatePositions,
-    playerIconEnabled,
-    playerIconDataUrl,
-    canvasSize,
-    driverCircleSize,
-    playerCircleSize,
-    carIdxIsOnPitRoad,
   ]);
 
   // Canvas setup and resize handling
@@ -515,8 +472,7 @@ export const TrackCanvas = ({
       displayMode,
       driverLivePositions,
       carIdxIsOnPitRoad,
-      null,
-      playerIconEnabled && !!playerIconDataUrl // hide player circle when overlay is active
+      playerIconImage
     );
     ctx.restore();
   }, [
@@ -535,8 +491,7 @@ export const TrackCanvas = ({
     invertLeaderColor,
     isMinimalCar,
     isMinimalTrack,
-    playerIconEnabled,
-    playerIconDataUrl,
+    playerIconImage,
   ]);
 
   // Development/Storybook mode - show debug info and canvas
@@ -548,10 +503,6 @@ export const TrackCanvas = ({
           className="will-change-transform w-full h-full"
           ref={canvasRef}
         ></canvas>
-        <TrackPlayerIcon
-          overlay={playerOverlay}
-          iconDataUrl={playerIconDataUrl}
-        />
       </div>
     );
   }
@@ -565,10 +516,6 @@ export const TrackCanvas = ({
         className="will-change-transform w-full h-full"
         ref={canvasRef}
       ></canvas>
-      <TrackPlayerIcon
-        overlay={playerOverlay}
-        iconDataUrl={playerIconDataUrl}
-      />
     </div>
   );
 };

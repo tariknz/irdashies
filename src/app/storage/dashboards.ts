@@ -6,10 +6,10 @@ import type {
 import { emitDashboardUpdated } from './dashboardEvents';
 import { defaultDashboard, deepMergeConfig } from '@irdashies/types';
 import { readData, writeData } from './storage';
-import { writeFile, mkdir, readFile } from 'node:fs/promises';
+import { writeFile, mkdir, readFile, readdir, unlink } from 'node:fs/promises';
 import { resolve, basename, sep } from 'node:path';
 import { app } from 'electron';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import logger from '../logger';
 
 const DASHBOARDS_KEY = 'dashboards';
@@ -270,7 +270,10 @@ export const getGarageCoverImageAsDataUrl = async (
     const allowedBase = resolve(userDataPath, 'frontend', 'assets', 'img');
     const imagePath = resolve(allowedBase, basename(imageFilenameOrPath));
     if (!imagePath.startsWith(allowedBase + sep)) {
-      logger.warn('Blocked path traversal attempt in getGarageCoverImageAsDataUrl:', imageFilenameOrPath);
+      logger.warn(
+        'Blocked path traversal attempt in getGarageCoverImageAsDataUrl:',
+        imageFilenameOrPath
+      );
       return null;
     }
 
@@ -345,7 +348,34 @@ export const savePlayerIconImage = async (
       }
     }
 
-    const imagePath = resolve(assetsPath, `player-icon.${extension}`);
+    // Hash the contents so each unique upload gets a unique filename. This
+    // makes replacements visible to the live map (the hook keys off the
+    // filename) and avoids orphaning a different-extension file with the same
+    // base name.
+    const hash = createHash('sha1').update(buffer).digest('hex').slice(0, 10);
+    const imagePath = resolve(assetsPath, `player-icon-${hash}.${extension}`);
+
+    // Remove any previous player-icon-*.* files so we don't accumulate stale
+    // assets when the user replaces the icon.
+    try {
+      const existing = await readdir(assetsPath);
+      await Promise.all(
+        existing
+          .filter(
+            (name) =>
+              name.startsWith('player-icon-') &&
+              name !== `player-icon-${hash}.${extension}`
+          )
+          .map((name) =>
+            unlink(resolve(assetsPath, name)).catch((err) => {
+              logger.warn('[PlayerIcon] Failed to remove old icon:', name, err);
+            })
+          )
+      );
+    } catch (cleanupErr) {
+      logger.warn('[PlayerIcon] Failed to clean up old icons:', cleanupErr);
+    }
+
     logger.info(
       '[PlayerIcon] Writing to:',
       imagePath,
@@ -370,7 +400,10 @@ export const getPlayerIconImageAsDataUrl = async (
     const allowedBase = resolve(userDataPath, 'frontend', 'assets', 'img');
     const imagePath = resolve(allowedBase, basename(imageFilenameOrPath));
     if (!imagePath.startsWith(allowedBase + sep)) {
-      logger.warn('Blocked path traversal attempt in getPlayerIconImageAsDataUrl:', imageFilenameOrPath);
+      logger.warn(
+        'Blocked path traversal attempt in getPlayerIconImageAsDataUrl:',
+        imageFilenameOrPath
+      );
       return null;
     }
 

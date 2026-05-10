@@ -192,8 +192,8 @@ export function createBridgeProxy(
               ws.send(
                 JSON.stringify({
                   type: 'getPlayerIconImageAsDataUrl',
-                requestId,
-                data: null,
+                  requestId,
+                  data: null,
                 })
               );
               break;
@@ -208,6 +208,42 @@ export function createBridgeProxy(
                 data: result,
               })
             );
+            break;
+          }
+          case 'savePlayerIconImage': {
+            const { requestId, data } = parsed;
+            const buffer = Array.isArray(data?.buffer)
+              ? new Uint8Array(data.buffer)
+              : null;
+            if (!buffer) {
+              ws.send(
+                JSON.stringify({
+                  type: 'savePlayerIconImage',
+                  requestId,
+                  data: '',
+                })
+              );
+              break;
+            }
+            try {
+              const result = await dashboardBridge?.savePlayerIconImage(buffer);
+              ws.send(
+                JSON.stringify({
+                  type: 'savePlayerIconImage',
+                  requestId,
+                  data: result ?? '',
+                })
+              );
+            } catch (err) {
+              logger.error('[bridgeProxy] savePlayerIconImage failed:', err);
+              ws.send(
+                JSON.stringify({
+                  type: 'savePlayerIconImage',
+                  requestId,
+                  data: '',
+                })
+              );
+            }
             break;
           }
           case 'getCurrentProfile': {

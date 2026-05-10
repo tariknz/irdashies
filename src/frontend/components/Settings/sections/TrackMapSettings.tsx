@@ -16,6 +16,10 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingDivider } from '../components/SettingDivider';
+import {
+  dataUrlToBuffer,
+  prepareIconForUpload,
+} from '../../TrackMap/playerIconUpload';
 
 const SUPPORTED_IMAGE_TYPES = [
   'image/png',
@@ -150,20 +154,46 @@ export const TrackMapSettings = () => {
           }
           setImageError(null);
           const reader = new FileReader();
-          reader.onload = (e) => {
-            const imageData = e.target?.result as string;
-            const imageBuffer = Uint8Array.from(
-              atob(imageData.split(',')[1]),
-              (c) => c.charCodeAt(0)
-            );
+          reader.onload = async (e) => {
+            const originalDataUrl = e.target?.result as string;
+            let buffer: Uint8Array;
+            let storedDataUrl: string;
+            try {
+              const prepared = await prepareIconForUpload(
+                file,
+                originalDataUrl
+              );
+              buffer = prepared.buffer;
+              storedDataUrl = prepared.dataUrl;
+            } catch {
+              buffer = dataUrlToBuffer(originalDataUrl);
+              storedDataUrl = originalDataUrl;
+            }
+
+            const fallbackToLocalStorage = () => {
+              localStorage.setItem(LOCALSTORAGE_KEY, storedDataUrl);
+              configChangeHandlerRef.current?.({
+                playerIcon: {
+                  enabled: settings.config.playerIcon?.enabled ?? false,
+                  fileName: 'browser-mode',
+                },
+              });
+            };
 
             if ('savePlayerIconImage' in bridge) {
               (
                 bridge.savePlayerIconImage as (
-                  buffer: Uint8Array
+                  buf: Uint8Array
                 ) => Promise<string>
-              )(imageBuffer)
+              )(buffer)
                 .then((filePath) => {
+                  // Empty filePath signals failure (e.g. ws timeout in browser
+                  // mode). Treat it the same as a thrown error so we don't
+                  // clear the fileName and lose the user's selection.
+                  if (!filePath) {
+                    fallbackToLocalStorage();
+                    return;
+                  }
                   const fileName = filePath.split(/[\\/]/).pop() || '';
                   setPreviewVersion((v) => v + 1);
                   configChangeHandlerRef.current?.({
@@ -173,23 +203,9 @@ export const TrackMapSettings = () => {
                     },
                   });
                 })
-                .catch(() => {
-                  localStorage.setItem(LOCALSTORAGE_KEY, imageData);
-                  configChangeHandlerRef.current?.({
-                    playerIcon: {
-                      enabled: settings.config.playerIcon?.enabled ?? false,
-                      fileName: 'browser-mode',
-                    },
-                  });
-                });
+                .catch(fallbackToLocalStorage);
             } else {
-              localStorage.setItem(LOCALSTORAGE_KEY, imageData);
-              configChangeHandlerRef.current?.({
-                playerIcon: {
-                  enabled: settings.config.playerIcon?.enabled ?? false,
-                  fileName: 'browser-mode',
-                },
-              });
+              fallbackToLocalStorage();
             }
           };
           reader.readAsDataURL(file);
@@ -421,8 +437,7 @@ export const TrackMapSettings = () => {
                                 Drag and drop an image here
                               </p>
                               <p className="text-xs">
-                                or click to select (PNG, JPG, GIF, WebP, SVG,
-                                AVIF)
+                                or click to select (PNG, JPG, GIF, WebP, SVG)
                               </p>
                             </div>
                           )}

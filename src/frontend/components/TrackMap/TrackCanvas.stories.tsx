@@ -1,8 +1,38 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { TrackCanvas, TrackDriver } from './TrackCanvas';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import tracks from './tracks/tracks.json';
 import { BROKEN_TRACKS } from './tracks/brokenTracks';
+import { useTelemetryStore } from '@irdashies/context';
+import type { Telemetry } from '@irdashies/types';
+
+// Inline data URL for a recognisable car-shaped icon. Embedding it inline keeps
+// the story self-contained — no bridge or filesystem access required.
+const SAMPLE_ICON_DATA_URL =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+      <defs>
+        <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#fde047"/>
+          <stop offset="1" stop-color="#f97316"/>
+        </linearGradient>
+      </defs>
+      <circle cx="32" cy="32" r="30" fill="url(#g)" stroke="#1f2937" stroke-width="3"/>
+      <path d="M16 38 L32 14 L48 38 Z" fill="#1f2937"/>
+      <circle cx="32" cy="42" r="4" fill="#1f2937"/>
+    </svg>
+  `);
+
+const useSampleIcon = (): HTMLImageElement | null => {
+  const [img, setImg] = useState<HTMLImageElement | null>(null);
+  useEffect(() => {
+    const i = new Image();
+    i.src = SAMPLE_ICON_DATA_URL;
+    i.onload = () => setImg(i);
+  }, []);
+  return img;
+};
 
 export default {
   component: TrackCanvas,
@@ -768,5 +798,143 @@ export const BrokenTracksGrid: Story = {
         </div>
       </div>
     );
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Player icon stories
+// ---------------------------------------------------------------------------
+
+const playerOnlyDrivers = [
+  {
+    driver: {
+      CarIdx: 24,
+      CarNumber: '24',
+      CarClassID: 2,
+      CarClassColor: 16734344,
+      CarClassEstLapTime: 126.9374,
+    },
+    progress: 0.42,
+    isPlayer: true,
+  },
+] as TrackDriver[];
+
+export const WithPlayerIcon: Story = {
+  render: (args) => {
+    const playerIconImage = useSampleIcon();
+    const [drivers, setDrivers] = useState(playerOnlyDrivers);
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setDrivers((prev) =>
+          prev.map((d) => ({ ...d, progress: (d.progress + 0.003) % 1 }))
+        );
+      }, 50);
+      return () => clearInterval(interval);
+    }, []);
+
+    return (
+      <TrackCanvas
+        trackId={args.trackId}
+        drivers={drivers}
+        turnLabels={args.turnLabels}
+        showCarNumbers={args.showCarNumbers ?? true}
+        invertTrackColors={args.invertTrackColors ?? false}
+        driverCircleSize={args.driverCircleSize ?? 40}
+        playerCircleSize={args.playerCircleSize ?? 60}
+        trackmapFontSize={args.trackmapFontSize ?? 100}
+        trackLineWidth={args.trackLineWidth ?? 20}
+        trackOutlineWidth={args.trackOutlineWidth ?? 40}
+        highlightColor={args.highlightColor}
+        playerIconImage={playerIconImage}
+      />
+    );
+  },
+  args: {
+    trackId: 1,
+    playerCircleSize: 60,
+  },
+};
+
+export const WithPlayerIconMultiClass: Story = {
+  render: (args) => {
+    const playerIconImage = useSampleIcon();
+    const [drivers, setDrivers] = useState(sampleData);
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setDrivers((prev) =>
+          prev.map((d) => ({ ...d, progress: (d.progress + 0.003) % 1 }))
+        );
+      }, 50);
+      return () => clearInterval(interval);
+    }, []);
+
+    return (
+      <TrackCanvas
+        trackId={args.trackId}
+        drivers={drivers}
+        turnLabels={args.turnLabels}
+        showCarNumbers={args.showCarNumbers ?? true}
+        invertTrackColors={args.invertTrackColors ?? false}
+        driverCircleSize={args.driverCircleSize ?? 40}
+        playerCircleSize={args.playerCircleSize ?? 50}
+        trackmapFontSize={args.trackmapFontSize ?? 100}
+        trackLineWidth={args.trackLineWidth ?? 20}
+        trackOutlineWidth={args.trackOutlineWidth ?? 40}
+        highlightColor={args.highlightColor}
+        playerIconImage={playerIconImage}
+      />
+    );
+  },
+  args: {
+    trackId: 1,
+    playerCircleSize: 50,
+  },
+};
+
+/**
+ * Demonstrates the pit-road behaviour with a player icon: the icon stays drawn
+ * at the player's track position but a darkened "P" badge is overlaid so the
+ * pit-road state remains obvious.
+ */
+export const WithPlayerIconOnPitRoad: Story = {
+  render: (args) => {
+    const playerIconImage = useSampleIcon();
+
+    // Inject a fake telemetry payload directly into the global store so
+    // useTelemetryValues('CarIdxOnPitRoad') reports the player as in the pits.
+    // CarIdx 24 is the player in playerOnlyDrivers.
+    useEffect(() => {
+      const onPitRoad = new Array(64).fill(false);
+      onPitRoad[24] = true;
+      const fakeTelemetry: Partial<Telemetry> = {
+        CarIdxOnPitRoad: { value: onPitRoad },
+      };
+      const setTelemetry = useTelemetryStore.getState().setTelemetry;
+      setTelemetry(fakeTelemetry as Telemetry);
+      return () => useTelemetryStore.getState().resetTelemetry();
+    }, []);
+
+    const drivers = useMemo(() => playerOnlyDrivers, []);
+
+    return (
+      <TrackCanvas
+        trackId={args.trackId}
+        drivers={drivers}
+        turnLabels={args.turnLabels}
+        showCarNumbers={args.showCarNumbers ?? true}
+        invertTrackColors={args.invertTrackColors ?? false}
+        driverCircleSize={args.driverCircleSize ?? 40}
+        playerCircleSize={args.playerCircleSize ?? 60}
+        trackmapFontSize={args.trackmapFontSize ?? 100}
+        trackLineWidth={args.trackLineWidth ?? 20}
+        trackOutlineWidth={args.trackOutlineWidth ?? 40}
+        highlightColor={args.highlightColor}
+        playerIconImage={playerIconImage}
+      />
+    );
+  },
+  args: {
+    trackId: 1,
+    playerCircleSize: 60,
   },
 };
