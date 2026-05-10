@@ -54,7 +54,7 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
   }, [seriesId, trackId, sessionNum, trackLength, subSessionId]);
 
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
-  const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
+  const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
   const sessionTime = useTelemetryValue('SessionTime');
 
   useEffect(() => {
@@ -64,7 +64,7 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
       const idx = driver.CarIdx;
       const trackPct = carIdxLapDistPct[idx];
       const classId = driver.CarClassID ?? 0;
-      const isOnPitRoad = (carIdxOnPitRoad?.[idx] ?? 0) === 1;
+      const isOnPitRoad = carIdxOnPitRoad[idx] ?? false;
 
       if (trackPct > -1) {
         collectLapData(
