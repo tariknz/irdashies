@@ -186,6 +186,66 @@ export function createBridgeProxy(
             );
             break;
           }
+          case 'getPlayerIconImageAsDataUrl': {
+            const { requestId, data } = parsed;
+            if (!data || typeof data.imagePath !== 'string') {
+              ws.send(
+                JSON.stringify({
+                  type: 'getPlayerIconImageAsDataUrl',
+                  requestId,
+                  data: null,
+                })
+              );
+              break;
+            }
+            const result = await dashboardBridge?.getPlayerIconImageAsDataUrl(
+              data.imagePath
+            );
+            ws.send(
+              JSON.stringify({
+                type: 'getPlayerIconImageAsDataUrl',
+                requestId,
+                data: result,
+              })
+            );
+            break;
+          }
+          case 'savePlayerIconImage': {
+            const { requestId, data } = parsed;
+            const buffer = Array.isArray(data?.buffer)
+              ? new Uint8Array(data.buffer)
+              : null;
+            if (!buffer) {
+              ws.send(
+                JSON.stringify({
+                  type: 'savePlayerIconImage',
+                  requestId,
+                  data: '',
+                })
+              );
+              break;
+            }
+            try {
+              const result = await dashboardBridge?.savePlayerIconImage(buffer);
+              ws.send(
+                JSON.stringify({
+                  type: 'savePlayerIconImage',
+                  requestId,
+                  data: result ?? '',
+                })
+              );
+            } catch (err) {
+              logger.error('[bridgeProxy] savePlayerIconImage failed:', err);
+              ws.send(
+                JSON.stringify({
+                  type: 'savePlayerIconImage',
+                  requestId,
+                  data: '',
+                })
+              );
+            }
+            break;
+          }
           case 'getCurrentProfile': {
             const { requestId } = parsed;
             const result = await dashboardBridge?.getCurrentProfile();
