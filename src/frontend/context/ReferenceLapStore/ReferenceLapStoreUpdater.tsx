@@ -64,7 +64,7 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
       const idx = driver.CarIdx;
       const trackPct = carIdxLapDistPct[idx];
       const classId = driver.CarClassID ?? 0;
-      const isOnPitRoad = carIdxOnPitRoad[idx];
+      const isOnPitRoad = carIdxOnPitRoad[idx] ?? false;
 
       if (trackPct > -1) {
         collectLapData(
