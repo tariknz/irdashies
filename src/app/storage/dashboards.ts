@@ -6,10 +6,10 @@ import type {
 import { emitDashboardUpdated } from './dashboardEvents';
 import { defaultDashboard, deepMergeConfig } from '@irdashies/types';
 import { readData, writeData } from './storage';
-import { writeFile, mkdir, readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { writeFile, mkdir, readFile, readdir, unlink } from 'node:fs/promises';
+import { resolve, basename, sep } from 'node:path';
 import { app } from 'electron';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import logger from '../logger';
 
 const DASHBOARDS_KEY = 'dashboards';
@@ -266,20 +266,15 @@ export const getGarageCoverImageAsDataUrl = async (
   imageFilenameOrPath: string
 ): Promise<string | null> => {
   try {
-    // If it's just a filename, construct the full path
-    let imagePath = imageFilenameOrPath;
-    if (
-      !imageFilenameOrPath.includes('/') &&
-      !imageFilenameOrPath.includes('\\')
-    ) {
-      const userDataPath = app.getPath('userData');
-      imagePath = resolve(
-        userDataPath,
-        'frontend',
-        'assets',
-        'img',
+    const userDataPath = app.getPath('userData');
+    const allowedBase = resolve(userDataPath, 'frontend', 'assets', 'img');
+    const imagePath = resolve(allowedBase, basename(imageFilenameOrPath));
+    if (!imagePath.startsWith(allowedBase + sep)) {
+      logger.warn(
+        'Blocked path traversal attempt in getGarageCoverImageAsDataUrl:',
         imageFilenameOrPath
       );
+      return null;
     }
 
     const buffer = await readFile(imagePath);
@@ -299,6 +294,135 @@ export const getGarageCoverImageAsDataUrl = async (
     return `data:${mimeType};base64,${base64}`;
   } catch (err) {
     logger.error('Error reading garage cover image:', err);
+    return null;
+  }
+};
+
+export const savePlayerIconImage = async (
+  buffer: Uint8Array
+): Promise<string> => {
+  try {
+    const userDataPath = app.getPath('userData');
+    const assetsPath = resolve(userDataPath, 'frontend', 'assets', 'img');
+
+    await mkdir(assetsPath, { recursive: true });
+
+    let extension = 'png';
+
+    if (buffer.length >= 4) {
+      if (
+        buffer[0] === 0x89 &&
+        buffer[1] === 0x50 &&
+        buffer[2] === 0x4e &&
+        buffer[3] === 0x47
+      ) {
+        extension = 'png';
+      } else if (
+        buffer[0] === 0xff &&
+        buffer[1] === 0xd8 &&
+        buffer[2] === 0xff
+      ) {
+        extension = 'jpg';
+      } else if (
+        buffer[0] === 0x47 &&
+        buffer[1] === 0x49 &&
+        buffer[2] === 0x46
+      ) {
+        extension = 'gif';
+      } else if (
+        buffer[0] === 0x52 &&
+        buffer[1] === 0x49 &&
+        buffer[2] === 0x46 &&
+        buffer[3] === 0x46 &&
+        buffer.length >= 12 &&
+        buffer[8] === 0x57 &&
+        buffer[9] === 0x45 &&
+        buffer[10] === 0x42 &&
+        buffer[11] === 0x50
+      ) {
+        extension = 'webp';
+      } else if (
+        Buffer.from(buffer.slice(0, 1024)).toString('utf8').includes('<svg')
+      ) {
+        extension = 'svg';
+      }
+    }
+
+    // Hash the contents so each unique upload gets a unique filename. This
+    // makes replacements visible to the live map (the hook keys off the
+    // filename) and avoids orphaning a different-extension file with the same
+    // base name.
+    const hash = createHash('sha1').update(buffer).digest('hex').slice(0, 10);
+    const imagePath = resolve(assetsPath, `player-icon-${hash}.${extension}`);
+
+    // Remove any previous player-icon-*.* files so we don't accumulate stale
+    // assets when the user replaces the icon.
+    try {
+      const existing = await readdir(assetsPath);
+      await Promise.all(
+        existing
+          .filter(
+            (name) =>
+              name.startsWith('player-icon-') &&
+              name !== `player-icon-${hash}.${extension}`
+          )
+          .map((name) =>
+            unlink(resolve(assetsPath, name)).catch((err) => {
+              logger.warn('[PlayerIcon] Failed to remove old icon:', name, err);
+            })
+          )
+      );
+    } catch (cleanupErr) {
+      logger.warn('[PlayerIcon] Failed to clean up old icons:', cleanupErr);
+    }
+
+    logger.info(
+      '[PlayerIcon] Writing to:',
+      imagePath,
+      'Extension detected:',
+      extension
+    );
+    await writeFile(imagePath, buffer);
+    logger.info('[PlayerIcon] File written successfully');
+
+    return imagePath;
+  } catch (err) {
+    logger.error('[PlayerIcon] Error saving image:', err);
+    throw err;
+  }
+};
+
+export const getPlayerIconImageAsDataUrl = async (
+  imageFilenameOrPath: string
+): Promise<string | null> => {
+  try {
+    const userDataPath = app.getPath('userData');
+    const allowedBase = resolve(userDataPath, 'frontend', 'assets', 'img');
+    const imagePath = resolve(allowedBase, basename(imageFilenameOrPath));
+    if (!imagePath.startsWith(allowedBase + sep)) {
+      logger.warn(
+        'Blocked path traversal attempt in getPlayerIconImageAsDataUrl:',
+        imageFilenameOrPath
+      );
+      return null;
+    }
+
+    const buffer = await readFile(imagePath);
+    const extension = imagePath.toLowerCase().split('.').pop() || 'png';
+    const mimeTypeMap: Record<string, string> = {
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      svg: 'image/svg+xml',
+    };
+    const mimeType = mimeTypeMap[extension] || 'image/png';
+    const base64 = Buffer.from(buffer).toString('base64');
+
+    return `data:${mimeType};base64,${base64}`;
+  } catch (err) {
+    logger.error('Error reading player icon image:', err);
     return null;
   }
 };

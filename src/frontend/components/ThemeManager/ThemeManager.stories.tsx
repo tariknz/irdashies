@@ -86,6 +86,8 @@ const createMockBridge = (
   },
   saveGarageCoverImage: () => Promise.resolve(''),
   getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
+  savePlayerIconImage: () => Promise.resolve(''),
+  getPlayerIconImageAsDataUrl: () => Promise.resolve(null),
   // Profile management mocks
   listProfiles: () =>
     Promise.resolve([
