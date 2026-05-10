@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   TrackMapWidgetSettings,
@@ -59,12 +59,6 @@ export const TrackMapSettings = () => {
 
   const [imageError, setImageError] = useState<string | null>(null);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
-  const [asyncPreviewUrl, setAsyncPreviewUrl] = useState<{
-    filename: string;
-    version: number;
-    url: string | null;
-  } | null>(null);
-  const [previewVersion, setPreviewVersion] = useState(0);
   const configChangeHandlerRef = useRef<
     ((newConfig: Partial<TrackMapWidgetSettings['config']>) => void) | null
   >(null);
@@ -85,50 +79,43 @@ export const TrackMapSettings = () => {
   ).dashboardBridge;
   const hasBridge =
     !!dashboardBridge && 'getPlayerIconImageAsDataUrl' in dashboardBridge;
+  const useBrowserMode = imageFilename === 'browser-mode' || !hasBridge;
 
-  // Synchronous cases derived without an effect; async bridge result tracked separately
-  const previewUrl = useMemo(() => {
-    if (!imageFilename) return null;
-    if (imageFilename === 'browser-mode' || !hasBridge) {
-      return localStorage.getItem(LOCALSTORAGE_KEY);
-    }
-    return asyncPreviewUrl?.filename === imageFilename &&
-      asyncPreviewUrl.version === previewVersion
-      ? asyncPreviewUrl.url
-      : null;
-  }, [imageFilename, hasBridge, asyncPreviewUrl, previewVersion]);
+  // Keyed by filename so that, between an imageFilename change and the new
+  // bridge result arriving, we don't briefly show the previous icon.
+  const [bridgePreview, setBridgePreview] = useState<{
+    filename: string;
+    url: string | null;
+  } | null>(null);
 
-  // Effect only for the async bridge call — no synchronous setState
+  const previewUrl = !imageFilename
+    ? null
+    : useBrowserMode
+      ? localStorage.getItem(LOCALSTORAGE_KEY)
+      : bridgePreview?.filename === imageFilename
+        ? bridgePreview.url
+        : null;
+
   useEffect(() => {
-    if (!imageFilename || imageFilename === 'browser-mode') return;
-
-    const bridge = (window as unknown as { dashboardBridge?: DashboardBridge })
-      .dashboardBridge;
-    if (!bridge || !('getPlayerIconImageAsDataUrl' in bridge)) return;
+    if (!imageFilename || useBrowserMode || !dashboardBridge) return;
 
     let cancelled = false;
-    bridge
+    dashboardBridge
       .getPlayerIconImageAsDataUrl(imageFilename)
       .then((url: string | null) => {
-        if (!cancelled)
-          setAsyncPreviewUrl({
-            filename: imageFilename,
-            version: previewVersion,
-            url,
-          });
+        if (!cancelled) setBridgePreview({ filename: imageFilename, url });
       })
       .catch(() => {
         if (!cancelled)
-          setAsyncPreviewUrl({
+          setBridgePreview({
             filename: imageFilename,
-            version: previewVersion,
             url: localStorage.getItem(LOCALSTORAGE_KEY),
           });
       });
     return () => {
       cancelled = true;
     };
-  }, [imageFilename, previewVersion]);
+  }, [imageFilename, useBrowserMode, dashboardBridge]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
@@ -195,7 +182,6 @@ export const TrackMapSettings = () => {
                     return;
                   }
                   const fileName = filePath.split(/[\\/]/).pop() || '';
-                  setPreviewVersion((v) => v + 1);
                   configChangeHandlerRef.current?.({
                     playerIcon: {
                       enabled: settings.config.playerIcon?.enabled ?? false,

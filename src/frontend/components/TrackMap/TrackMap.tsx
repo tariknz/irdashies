@@ -28,7 +28,7 @@ export const TrackMap = () => {
     useSessionStore((s) => s.session?.SplitTimeInfo?.Sectors) ?? [];
   const currentSectorIdx = useSectorTimingStore((s) => s.currentSectorIdx);
   const playerIconEnabled = settings?.playerIcon?.enabled ?? false;
-  const playerIcon = usePlayerIconImage(
+  const playerIconDataUrl = usePlayerIconImage(
     playerIconEnabled ? settings?.playerIcon?.fileName : undefined
   );
 
@@ -74,7 +74,7 @@ export const TrackMap = () => {
         currentSectorIdx={
           settings?.sectorColoring?.enabled ? currentSectorIdx : undefined
         }
-        playerIconDataUrl={playerIcon?.dataUrl ?? null}
+        playerIconDataUrl={playerIconDataUrl}
         debug={debug}
       />
     </div>

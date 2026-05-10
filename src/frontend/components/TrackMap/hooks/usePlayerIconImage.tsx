@@ -1,35 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useDashboard } from '@irdashies/context';
 
-export interface PlayerIconImage {
-  dataUrl: string;
-  isAnimated: boolean;
-}
-
 export const usePlayerIconImage = (
   imageFilename: string | undefined
-): PlayerIconImage | null => {
+): string | null => {
   const { bridge } = useDashboard();
-  const [result, setResult] = useState<PlayerIconImage | null>(null);
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
       if (!imageFilename || !bridge) {
-        if (!cancelled) setResult(null);
+        if (!cancelled) setDataUrl(null);
         return;
       }
-      const dataUrl = await bridge.getPlayerIconImageAsDataUrl(imageFilename);
+      const url = await bridge.getPlayerIconImageAsDataUrl(imageFilename);
       if (cancelled) return;
-      if (!dataUrl) {
-        setResult(null);
+      if (!url) {
+        setDataUrl(null);
         return;
       }
 
       // Pre-decode so the overlay doesn't flash a broken image on first paint.
       const probe = new Image();
-      probe.src = dataUrl;
+      probe.src = url;
       try {
         await probe.decode();
       } catch {
@@ -39,12 +34,7 @@ export const usePlayerIconImage = (
         });
       }
 
-      if (!cancelled) {
-        setResult({
-          dataUrl,
-          isAnimated: dataUrl.startsWith('data:image/gif'),
-        });
-      }
+      if (!cancelled) setDataUrl(url);
     };
 
     load();
@@ -53,5 +43,5 @@ export const usePlayerIconImage = (
     };
   }, [bridge, imageFilename]);
 
-  return result;
+  return dataUrl;
 };
