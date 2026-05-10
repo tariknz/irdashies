@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTelemetryStore } from '@irdashies/context';
 
 const GAP = 4; // gap-1 = 4px
@@ -42,7 +42,14 @@ export function useCarouselWindow(
     (maxSectorsShown != null && totalSectors > maxSectorsShown);
 
   const [slotWidth, setSlotWidth] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Callback ref so the measure effect re-runs when the container element
+  // actually attaches. The parent returns null while sectors are empty, so
+  // a plain useRef would still be null on the first render where layout
+  // params (isWindowed, effectiveMaxShown) are stable, leaving slotWidth=0.
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+  const containerRef = useCallback((node: HTMLDivElement | null) => {
+    setContainer(node);
+  }, []);
   const stripRef = useRef<HTMLDivElement>(null);
 
   // When alwaysScroll is on but maxSectorsShown is unset, fit all sectors.
@@ -50,21 +57,20 @@ export function useCarouselWindow(
     maxSectorsShown ?? (isWindowed ? totalSectors : undefined);
 
   useLayoutEffect(() => {
-    if (!isWindowed || !effectiveMaxShown || !containerRef.current) return;
+    if (!isWindowed || !effectiveMaxShown || !container) return;
 
     const measure = () => {
-      if (!containerRef.current) return;
       setSlotWidth(
-        (containerRef.current.offsetWidth - (effectiveMaxShown - 1) * GAP) /
+        (container.offsetWidth - (effectiveMaxShown - 1) * GAP) /
           effectiveMaxShown
       );
     };
 
     measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(containerRef.current);
+    ro.observe(container);
     return () => ro.disconnect();
-  }, [isWindowed, effectiveMaxShown]);
+  }, [isWindowed, effectiveMaxShown, container]);
 
   // Extra sectors rendered before sector 0 and after the last sector.
   // Enough to fill half the visible window so the edges are always covered.
