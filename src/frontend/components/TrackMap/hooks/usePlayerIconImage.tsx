@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useDashboard } from '@irdashies/context';
 
+export interface PlayerIconImage {
+  image: HTMLImageElement;
+  /**
+   * True when the source is an animated format (currently GIF). The TrackMap
+   * canvas needs to redraw every frame for the GIF to advance — without this
+   * flag, ctx.drawImage just keeps capturing whatever frame happens to be
+   * current at draw time and the icon appears frozen.
+   */
+  isAnimated: boolean;
+}
+
 /**
  * Loads the player icon as an HTMLImageElement so the TrackMap canvas can
  * draw it in a single ctx.drawImage call. Returning a decoded image (rather
@@ -9,9 +20,9 @@ import { useDashboard } from '@irdashies/context';
  */
 export const usePlayerIconImage = (
   imageFilename: string | undefined
-): HTMLImageElement | null => {
+): PlayerIconImage | null => {
   const { bridge } = useDashboard();
-  const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [result, setResult] = useState<PlayerIconImage | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -19,13 +30,13 @@ export const usePlayerIconImage = (
 
     const load = async () => {
       if (!imageFilename || !bridge) {
-        if (!cancelled) setImage(null);
+        if (!cancelled) setResult(null);
         return;
       }
       const dataUrl = await bridge.getPlayerIconImageAsDataUrl(imageFilename);
       if (cancelled) return;
       if (!dataUrl) {
-        setImage(null);
+        setResult(null);
         return;
       }
       img = new Image();
@@ -41,7 +52,10 @@ export const usePlayerIconImage = (
           img.onerror = () => resolve();
         });
       }
-      if (!cancelled) setImage(img);
+      if (!cancelled && img) {
+        const isAnimated = dataUrl.startsWith('data:image/gif');
+        setResult({ image: img, isAnimated });
+      }
     };
 
     load();
@@ -50,5 +64,5 @@ export const usePlayerIconImage = (
     };
   }, [bridge, imageFilename]);
 
-  return image;
+  return result;
 };

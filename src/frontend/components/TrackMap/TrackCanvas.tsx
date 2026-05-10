@@ -52,6 +52,13 @@ export interface TrackProps {
   sectorColors?: SectorColor[];
   currentSectorIdx?: number;
   playerIconImage?: HTMLImageElement | null;
+  /**
+   * When true, force a per-frame canvas redraw so animated formats (GIF) keep
+   * advancing. ctx.drawImage on its own only captures whatever frame is
+   * current at call time, so the icon would otherwise look frozen unless some
+   * other state happened to tick on every animation frame.
+   */
+  playerIconAnimated?: boolean;
 }
 
 export interface TrackDriver {
@@ -118,6 +125,7 @@ export const TrackCanvas = ({
   sectorColors,
   currentSectorIdx,
   playerIconImage = null,
+  playerIconAnimated = false,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -125,6 +133,20 @@ export const TrackCanvas = ({
     undefined
   );
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  // Increments every animation frame while an animated icon is loaded, used
+  // purely to nudge the dynamic redraw effect so GIF frames advance.
+  const [iconFrameTick, setIconFrameTick] = useState(0);
+
+  useEffect(() => {
+    if (!playerIconAnimated || !playerIconImage) return;
+    let raf = 0;
+    const tick = () => {
+      setIconFrameTick((n) => (n + 1) % 1_000_000);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [playerIconAnimated, playerIconImage]);
 
   const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
@@ -492,6 +514,7 @@ export const TrackCanvas = ({
     isMinimalCar,
     isMinimalTrack,
     playerIconImage,
+    iconFrameTick,
   ]);
 
   // Development/Storybook mode - show debug info and canvas
