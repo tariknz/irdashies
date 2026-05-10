@@ -37,23 +37,19 @@ export function interpolateAtPoint(
     trackPct: p1pos,
   };
 
-  // Handle Edge Case: Wrapping or End of Lap
-  // If we are at the very end (e.g., 0.9975 -> 0.0000), p1 might be the start point.
-  // We cannot interpolate PCHIP across the finish line without extra logic for the X-axis wrap.
-  // For now, if p1 is missing or wrapped inappropriately, we fall back to p0 (clamping).
-  if (!p0) {
-    logger.debug('P1 is missing!');
-    return null; // Off-track or sparse map gap
+  if (p0.timeElapsedSinceStart === undefined || p0.trackPct === undefined) {
+    logger.debug('Point 0 data is missing.');
+    return null;
   }
 
-  if (!p1) {
-    logger.debug('P2 is missing!');
-    return p0.timeElapsedSinceStart; // End of data, return last known time
+  if (p1.timeElapsedSinceStart === undefined || p1.trackPct === undefined) {
+    logger.debug('Point 1 data is missing, falling back to Point 0.');
+    return p0.timeElapsedSinceStart;
   }
 
   // 4. Validate Tangents
   if (p0.tangent === undefined || p1.tangent === undefined) {
-    logger.debug('Missing tangents for PCHIP interpolation');
+    logger.debug('Missing tangents for PCHIP interpolation.');
     return null;
   }
 

@@ -28,7 +28,11 @@ export const migrateReferenceLaps = () => {
         );
       }
     }
-    writeData(MIGRATION_KEY, true);
+    try {
+      writeData(MIGRATION_KEY, true);
+    } catch (error) {
+      logger.error('Failed to persist migration flag:', error);
+    }
   }
 };
 

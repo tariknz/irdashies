@@ -51,7 +51,7 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
     initialize(bridge, seriesId, trackId, trackLength, classList);
     // INFO: reset session only if the below change, i.e we moved from practice -> quali or we switched series
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seriesId, trackId, sessionNum, subSessionId]);
+  }, [seriesId, trackId, sessionNum, trackLength, subSessionId]);
 
   const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
   const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
