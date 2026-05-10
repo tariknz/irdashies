@@ -1,5 +1,5 @@
 import { ReferenceLap } from '@irdashies/types';
-import { normalizeKey, REFERENCE_INTERVAL } from '@irdashies/context';
+import { getBucketIndex } from '@irdashies/context';
 import { Standings } from './createStandings';
 import { interpolateAtPoint } from './interpolation';
 
@@ -102,18 +102,35 @@ export function calculateClassEstimatedGap(
 }
 
 export function getTimeAtPosition(refLap: ReferenceLap, trackPct: number) {
-  const prevPosKey = normalizeKey(trackPct);
-  const nextKey =
-    trackPct + REFERENCE_INTERVAL > 1 ? 0 : trackPct + REFERENCE_INTERVAL;
-  const nextPosKey = normalizeKey(nextKey);
+  // 1. Normalize the target to find the exact grid key (p0)
+  const prevPosKey = getBucketIndex(trackPct, refLap.pointsCount);
 
-  const prevPosRef = refLap.refPoints.get(prevPosKey) ?? {
-    timeElapsedSinceStart: 0,
-    trackPct,
+  // 2. Calculate the next key (p1)
+  // We manually add the interval and re-normalize to handle floating point math
+  const nextPosKey = getBucketIndex(
+    trackPct + refLap.interval,
+    refLap.pointsCount
+  );
+
+  // 3. Fast Lookup
+  const p0time = refLap.times[prevPosKey];
+  const p0tangent = refLap.tangents[prevPosKey];
+  const p0pos = refLap.pointPos[prevPosKey];
+
+  const prevPosRef = {
+    timeElapsedSinceStart: p0time,
+    tangent: p0tangent,
+    trackPct: p0pos,
   };
-  const nextPosRef = refLap.refPoints.get(nextPosKey) ?? {
-    timeElapsedSinceStart: 0,
-    trackPct,
+
+  const p1time = refLap.times[nextPosKey];
+  const p1tangent = refLap.tangents[nextPosKey];
+  const p1pos = refLap.pointPos[nextPosKey];
+
+  const nextPosRef = {
+    timeElapsedSinceStart: p1time,
+    tangent: p1tangent,
+    trackPct: p1pos,
   };
 
   const sectorDistance = nextPosRef.trackPct - prevPosRef.trackPct;

@@ -24,6 +24,7 @@ import { Analytics } from './app/analytics';
 import { setupReferenceLapsBridge } from './app/bridge/referenceLapsBridge';
 import { setupKeybindingsBridge } from './app/bridge/keybindingsBridge';
 import { setupLogBridge } from './app/bridge/logBridge';
+import { migrateReferenceLaps } from './app/storage/referenceLaps';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -48,6 +49,9 @@ app.on('ready', async () => {
   }
 
   await iRacingSDKSetup(overlayManager);
+
+  // Perform one-time cleanup of old reference laps
+  migrateReferenceLaps();
 
   const dashboard = getOrCreateDefaultDashboard();
   const bridge = getCurrentBridge();
