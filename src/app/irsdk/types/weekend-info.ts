@@ -27,6 +27,8 @@ export interface WeekendOptions {
   HardcoreLevel: number;
   NumJokerLaps: number;
   IncidentLimit: string;
+  IncidentWarningInitialLimit: number;
+  IncidentWarningSubsequentLimit: number;
   FastRepairsLimit: number;
   GreenWhiteCheckeredLimit: number;
 }
