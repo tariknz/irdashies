@@ -3,8 +3,10 @@ import { Client } from '@tmi.js/chat';
 import type { RoomState } from '@tmi.js/chat';
 import type { ChatMessage, TwitchMessageEvent } from '../types';
 
+type TaggedMessage = ChatMessage & { channel: string };
+
 export function useTwitchChat(channel: string | undefined) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<TaggedMessage[]>([]);
   const [roomId, setRoomId] = useState<string | undefined>();
 
   useEffect(() => {
@@ -32,8 +34,9 @@ export function useTwitchChat(channel: string | undefined) {
 
       if (messageText && username !== 'Unknown') {
         setMessages((prev) => [
-          ...prev,
+          ...prev.filter((m) => m.channel === channel),
           {
+            channel,
             user: username,
             color,
             text: messageText,
@@ -46,8 +49,9 @@ export function useTwitchChat(channel: string | undefined) {
 
     return () => {
       client.close();
+      setRoomId(undefined);
     };
   }, [channel]);
 
-  return { messages, roomId };
+  return { messages: messages.filter((m) => m.channel === channel), roomId };
 }

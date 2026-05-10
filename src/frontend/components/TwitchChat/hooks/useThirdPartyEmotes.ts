@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export type ThirdPartyEmoteMap = Map<string, string>;
 
@@ -37,9 +37,7 @@ async function fetchBttvChannel(roomId: string): Promise<ThirdPartyEmoteMap> {
       ...(data.channelEmotes ?? []),
       ...(data.sharedEmotes ?? []),
     ];
-    return new Map(
-      emotes.map((e) => [e.code, `${BTTV_CDN}/${e.id}/1x.webp`])
-    );
+    return new Map(emotes.map((e) => [e.code, `${BTTV_CDN}/${e.id}/1x.webp`]));
   } catch {
     return new Map();
   }
@@ -58,7 +56,9 @@ async function fetchSevenTvGlobal(): Promise<ThirdPartyEmoteMap> {
   }
 }
 
-async function fetchSevenTvChannel(roomId: string): Promise<ThirdPartyEmoteMap> {
+async function fetchSevenTvChannel(
+  roomId: string
+): Promise<ThirdPartyEmoteMap> {
   try {
     const res = await fetch(`${SEVENTV_API}/users/twitch/${roomId}`);
     if (!res.ok) return new Map();
@@ -77,7 +77,12 @@ async function fetchSevenTvChannel(roomId: string): Promise<ThirdPartyEmoteMap> 
 export function useThirdPartyEmotes(
   roomId: string | undefined
 ): ThirdPartyEmoteMap {
-  const [emoteMap, setEmoteMap] = useState<ThirdPartyEmoteMap>(new Map());
+  const [globalEmotes, setGlobalEmotes] = useState<ThirdPartyEmoteMap>(
+    new Map()
+  );
+  const [channelEmotes, setChannelEmotes] = useState<ThirdPartyEmoteMap>(
+    new Map()
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -85,7 +90,7 @@ export function useThirdPartyEmotes(
         fetchBttvGlobal(),
         fetchSevenTvGlobal(),
       ]);
-      setEmoteMap(new Map([...bttv, ...stv]));
+      setGlobalEmotes(new Map([...bttv, ...stv]));
     };
     void load();
   }, []);
@@ -97,10 +102,17 @@ export function useThirdPartyEmotes(
         fetchBttvChannel(roomId),
         fetchSevenTvChannel(roomId),
       ]);
-      setEmoteMap((prev) => new Map([...prev, ...bttv, ...stv]));
+      setChannelEmotes(new Map([...bttv, ...stv]));
     };
     void load();
+
+    return () => {
+      setChannelEmotes(new Map());
+    };
   }, [roomId]);
 
-  return emoteMap;
+  return useMemo(
+    () => new Map([...globalEmotes, ...channelEmotes]),
+    [globalEmotes, channelEmotes]
+  );
 }
