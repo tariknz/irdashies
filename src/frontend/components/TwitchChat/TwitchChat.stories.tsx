@@ -4,6 +4,43 @@ import type { ChatMessage } from './types';
 import { ChatMessageList } from './TwitchChat';
 import { DEMO_MESSAGES, DEMO_MESSAGE_INTERVAL_MS } from './demoData';
 
+const MAX_VISIBLE_MESSAGES = 10;
+
+const DisappearingChatDemo = ({
+  fontSize,
+  background,
+}: {
+  fontSize: number;
+  background: { opacity: number };
+}) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const indexRef = useRef(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const template = DEMO_MESSAGES[indexRef.current % DEMO_MESSAGES.length];
+      setMessages((prev) => [
+        ...prev.slice(-(MAX_VISIBLE_MESSAGES - 1)),
+        { ...template, id: crypto.randomUUID() },
+      ]);
+      indexRef.current++;
+    }, DEMO_MESSAGE_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{ width: '100%', height: '100%' }}>
+      <ChatMessageList
+        messages={messages}
+        fontSize={fontSize}
+        background={background}
+        autoHide={{ enabled: true, intervalSeconds: 10 }}
+      />
+    </div>
+  );
+};
+
 const LiveChatDemo = ({
   fontSize,
   background,
@@ -78,4 +115,10 @@ export const LargeFont: Story = {
     fontSize: 24,
     background: { opacity: 85 },
   },
+};
+
+export const DisappearingMessages: Story = {
+  render: () => (
+    <DisappearingChatDemo fontSize={16} background={{ opacity: 85 }} />
+  ),
 };
