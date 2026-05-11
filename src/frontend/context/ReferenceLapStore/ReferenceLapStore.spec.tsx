@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useReferenceLapStore, getBucketIndex } from './ReferenceLapStore';
-import { ReferenceLap, TrackLocation } from '@irdashies/types';
+import { ReferenceLap } from '@irdashies/types';
 import { precomputePCHIPTangents } from './pchipTangents';
 import { ReferenceLapBridge } from '@irdashies/types';
 
@@ -70,9 +70,10 @@ describe('ReferenceLapStore', () => {
     });
   });
 
-  describe('collectLapData', () => {
+  describe('collectBulkData', () => {
     const carIdx = 5;
     const classId = 1;
+    const drivers = [{ CarIdx: carIdx, CarClassID: classId }];
 
     beforeEach(() => {
       // Initialize store with some dimensions
@@ -85,27 +86,27 @@ describe('ReferenceLapStore', () => {
     it('should initialize a new active lap on first data point', () => {
       const store = useReferenceLapStore.getState();
       const trackPct = 0.005;
+      const dists = [];
+      dists[carIdx] = trackPct;
+      const pits = [];
+      pits[carIdx] = false;
 
       // 1. First call initializes
-      store.collectLapData(
+      store.collectBulkData(
         mockBridge as ReferenceLapBridge,
-        carIdx,
-        classId,
-        trackPct,
-        1000,
-        TrackLocation.OnTrack,
-        false
+        drivers,
+        dists,
+        pits,
+        1000
       );
 
       // 2. Second call (same bucket) should store if clean
-      store.collectLapData(
+      store.collectBulkData(
         mockBridge as ReferenceLapBridge,
-        carIdx,
-        classId,
-        trackPct,
-        1001,
-        TrackLocation.OnTrack,
-        false
+        drivers,
+        dists,
+        pits,
+        1001
       );
 
       const activeLap = useReferenceLapStore.getState().activeLaps.get(carIdx);
@@ -118,16 +119,19 @@ describe('ReferenceLapStore', () => {
     });
 
     it('should initialize a clean active lap if started near start line', () => {
+      const dists = [];
+      dists[carIdx] = 0.005;
+      const pits = [];
+      pits[carIdx] = false;
+
       useReferenceLapStore
         .getState()
-        .collectLapData(
+        .collectBulkData(
           mockBridge as ReferenceLapBridge,
-          carIdx,
-          classId,
-          0.005,
-          1000,
-          TrackLocation.OnTrack,
-          false
+          drivers,
+          dists,
+          pits,
+          1000
         );
 
       const activeLap = useReferenceLapStore.getState().activeLaps.get(carIdx);
@@ -135,30 +139,35 @@ describe('ReferenceLapStore', () => {
     });
 
     it('should mark lap as dirty if car goes to pit road', () => {
+      const dists1 = [];
+      dists1[carIdx] = 0.005;
+      const dists2 = [];
+      dists2[carIdx] = 0.31;
+      const pits1 = [];
+      pits1[carIdx] = false;
+      const pits2 = [];
+      pits2[carIdx] = true;
+
       // 1. Initial clean point
       useReferenceLapStore
         .getState()
-        .collectLapData(
+        .collectBulkData(
           mockBridge as ReferenceLapBridge,
-          carIdx,
-          classId,
-          0.005,
-          1000,
-          TrackLocation.OnTrack,
-          false
+          drivers,
+          dists1,
+          pits1,
+          1000
         );
 
       // 2. Go to Pit Road
       useReferenceLapStore
         .getState()
-        .collectLapData(
+        .collectBulkData(
           mockBridge as ReferenceLapBridge,
-          carIdx,
-          classId,
-          0.31,
-          1001,
-          TrackLocation.OnTrack,
-          true
+          drivers,
+          dists2,
+          pits2,
+          1001
         );
 
       const activeLap = useReferenceLapStore.getState().activeLaps.get(carIdx);
@@ -169,37 +178,40 @@ describe('ReferenceLapStore', () => {
       useReferenceLapStore.setState({ seriesId: 1, trackId: 1 });
       const store = useReferenceLapStore.getState();
 
+      const dists1 = [];
+      dists1[carIdx] = 0.005;
+      const dists2 = [];
+      dists2[carIdx] = 0.96;
+      const dists3 = [];
+      dists3[carIdx] = 0.01;
+      const pits = [];
+      pits[carIdx] = false;
+
       // 1. Start a lap near the start
-      store.collectLapData(
+      store.collectBulkData(
         mockBridge as ReferenceLapBridge,
-        carIdx,
-        classId,
-        0.005,
-        1000,
-        TrackLocation.OnTrack,
-        false
+        drivers,
+        dists1,
+        pits,
+        1000
       );
 
       // 2. Get near the end
-      store.collectLapData(
+      store.collectBulkData(
         mockBridge as ReferenceLapBridge,
-        carIdx,
-        classId,
-        0.96,
-        1050,
-        TrackLocation.OnTrack,
-        false
+        drivers,
+        dists2,
+        pits,
+        1050
       );
 
       // 3. Cross the line (0.96 -> 0.01)
-      store.collectLapData(
+      store.collectBulkData(
         mockBridge as ReferenceLapBridge,
-        carIdx,
-        classId,
-        0.01,
-        1060,
-        TrackLocation.OnTrack,
-        false
+        drivers,
+        dists3,
+        pits,
+        1060
       );
 
       expect(precomputePCHIPTangents).toHaveBeenCalled();
@@ -212,37 +224,40 @@ describe('ReferenceLapStore', () => {
     it('should not save lap if it is not clean', () => {
       const store = useReferenceLapStore.getState();
 
+      const dists1 = [];
+      dists1[carIdx] = 0.5;
+      const dists2 = [];
+      dists2[carIdx] = 0.96;
+      const dists3 = [];
+      dists3[carIdx] = 0.01;
+      const pits = [];
+      pits[carIdx] = false;
+
       // Start dirty (far from start line)
-      store.collectLapData(
+      store.collectBulkData(
         mockBridge as ReferenceLapBridge,
-        carIdx,
-        classId,
-        0.5,
-        1000,
-        TrackLocation.OnTrack,
-        false
+        drivers,
+        dists1,
+        pits,
+        1000
       );
 
       // Get near the end
-      store.collectLapData(
+      store.collectBulkData(
         mockBridge as ReferenceLapBridge,
-        carIdx,
-        classId,
-        0.96,
-        1050,
-        TrackLocation.OnTrack,
-        false
+        drivers,
+        dists2,
+        pits,
+        1050
       );
 
       // Complete lap
-      store.collectLapData(
+      store.collectBulkData(
         mockBridge as ReferenceLapBridge,
-        carIdx,
-        classId,
-        0.01,
-        1060,
-        TrackLocation.OnTrack,
-        false
+        drivers,
+        dists3,
+        pits,
+        1060
       );
 
       expect(store.bestLaps.has(carIdx)).toBe(false);
