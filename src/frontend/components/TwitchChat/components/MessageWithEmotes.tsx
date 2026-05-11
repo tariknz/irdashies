@@ -1,65 +1,89 @@
 import { useState } from 'react';
 import type { TwitchEmote } from '../types';
+import type { ThirdPartyEmoteMap } from '../hooks/useThirdPartyEmotes';
 
 function getTwitchEmoteUrl(emoteId: string): string {
   return `https://static-cdn.jtvnw.net/emoticons/v2/${emoteId}/default/dark/1.0`;
 }
 
 interface MessagePart {
-  type: 'text' | 'emote';
+  type: 'text' | 'emote' | 'third-party-emote';
   content: string;
   emoteId?: string;
+  emoteUrl?: string;
 }
 
-function parseMessageParts(text: string, emotes: TwitchEmote[]): MessagePart[] {
-  if (!emotes.length) return [{ type: 'text', content: text }];
+function expandTextWithThirdParty(
+  text: string,
+  emoteMap: ThirdPartyEmoteMap
+): MessagePart[] {
+  if (!emoteMap.size) return [{ type: 'text', content: text }];
+  return text.split(/(\s+)/).map((token) => {
+    const url = emoteMap.get(token);
+    if (url) return { type: 'third-party-emote', content: token, emoteUrl: url };
+    return { type: 'text', content: token };
+  });
+}
 
-  const positions = emotes
-    .flatMap((emote) =>
-      emote.indices.map(([start, end]) => ({
-        start,
-        end: end + 1,
-        id: emote.id,
-      }))
-    )
-    .sort((a, b) => a.start - b.start);
+function parseMessageParts(
+  text: string,
+  emotes: TwitchEmote[],
+  thirdPartyEmotes: ThirdPartyEmoteMap
+): MessagePart[] {
+  const nativeParts: MessagePart[] = [];
 
-  const parts: MessagePart[] = [];
-  let cursor = 0;
+  if (!emotes.length) {
+    nativeParts.push({ type: 'text', content: text });
+  } else {
+    const positions = emotes
+      .flatMap((emote) =>
+        emote.indices.map(([start, end]) => ({
+          start,
+          end: end + 1,
+          id: emote.id,
+        }))
+      )
+      .sort((a, b) => a.start - b.start);
 
-  for (const pos of positions) {
-    if (cursor < pos.start) {
-      parts.push({ type: 'text', content: text.slice(cursor, pos.start) });
+    let cursor = 0;
+    for (const pos of positions) {
+      if (cursor < pos.start) {
+        nativeParts.push({ type: 'text', content: text.slice(cursor, pos.start) });
+      }
+      nativeParts.push({
+        type: 'emote',
+        content: text.slice(pos.start, pos.end),
+        emoteId: pos.id,
+      });
+      cursor = pos.end;
     }
-    parts.push({
-      type: 'emote',
-      content: text.slice(pos.start, pos.end),
-      emoteId: pos.id,
-    });
-    cursor = pos.end;
+    if (cursor < text.length) {
+      nativeParts.push({ type: 'text', content: text.slice(cursor) });
+    }
   }
 
-  if (cursor < text.length) {
-    parts.push({ type: 'text', content: text.slice(cursor) });
-  }
-
-  return parts;
+  return nativeParts.flatMap((part) => {
+    if (part.type === 'text') {
+      return expandTextWithThirdParty(part.content, thirdPartyEmotes);
+    }
+    return [part];
+  });
 }
 
 interface EmoteImageProps {
-  emoteId: string;
+  src: string;
   name: string;
   fontSize: number;
 }
 
-const EmoteImage = ({ emoteId, name, fontSize }: EmoteImageProps) => {
+const EmoteImage = ({ src, name, fontSize }: EmoteImageProps) => {
   const [failed, setFailed] = useState(false);
 
   if (failed) return <span>{name}</span>;
 
   return (
     <img
-      src={getTwitchEmoteUrl(emoteId)}
+      src={src}
       alt={name}
       title={name}
       onError={() => setFailed(true)}
@@ -76,29 +100,42 @@ interface MessageWithEmotesProps {
   text: string;
   emotes: TwitchEmote[];
   fontSize: number;
+  thirdPartyEmotes?: ThirdPartyEmoteMap;
 }
 
 export const MessageWithEmotes = ({
   text,
   emotes,
   fontSize,
+  thirdPartyEmotes = new Map(),
 }: MessageWithEmotesProps) => {
-  const parts = parseMessageParts(text, emotes);
+  const parts = parseMessageParts(text, emotes, thirdPartyEmotes);
 
   return (
     <>
-      {parts.map((part, i) =>
-        part.type === 'emote' && part.emoteId ? (
-          <EmoteImage
-            key={i}
-            emoteId={part.emoteId}
-            name={part.content}
-            fontSize={fontSize}
-          />
-        ) : (
-          <span key={i}>{part.content}</span>
-        )
-      )}
+      {parts.map((part, i) => {
+        if (part.type === 'emote' && part.emoteId) {
+          return (
+            <EmoteImage
+              key={i}
+              src={getTwitchEmoteUrl(part.emoteId)}
+              name={part.content}
+              fontSize={fontSize}
+            />
+          );
+        }
+        if (part.type === 'third-party-emote' && part.emoteUrl) {
+          return (
+            <EmoteImage
+              key={i}
+              src={part.emoteUrl}
+              name={part.content}
+              fontSize={fontSize}
+            />
+          );
+        }
+        return <span key={i}>{part.content}</span>;
+      })}
     </>
   );
 };
