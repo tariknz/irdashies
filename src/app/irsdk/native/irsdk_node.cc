@@ -179,22 +179,32 @@ Napi::Value iRacingSdkNode::BroadcastMessage(const Napi::CallbackInfo &info)
 {
   auto env = info.Env();
 
-  // Determine message type
-  if (info.Length() <= 2 || !info[0].IsNumber()) {
+  // S2 hardening: validate all args up front. The previous guard
+  // accepted info.Length() == 3 but then read info[3] out of bounds via
+  // .As<Napi::Number>() on the absent slot, and never type-checked
+  // info[1] or info[2]. The minimum required is msg + arg1 + arg2
+  // (every switch case below uses at least three positions). arg3 is
+  // read defensively below — only the two camera-switch variants need
+  // it, and those reject when it's missing.
+  if (info.Length() < 3 ||
+      !info[0].IsNumber() ||
+      !info[1].IsNumber() ||
+      !info[2].IsNumber()) {
     return Napi::Boolean::New(env, false);
   }
 
-  if (info.Length() == 4 && !info[2].IsNumber()) {
-    return Napi::Boolean::New(env, false);
-  }
-
-  int msgEnumIndex = info[0].As<Napi::Number>();
+  int msgEnumIndex = info[0].As<Napi::Number>().Int32Value();
   irsdk_BroadcastMsg msgType = static_cast<irsdk_BroadcastMsg>(msgEnumIndex);
 
   // Args
-  int arg1 = info[1].As<Napi::Number>();
+  int arg1 = info[1].As<Napi::Number>().Int32Value();
   auto arg2 = info[2].As<Napi::Number>();
-  auto arg3 = info[3].As<Napi::Number>();
+
+  // arg3 is only required by the camera-switch variants. Read it
+  // defensively so the other variants (which currently pass 3 args from
+  // TS — see irsdk-node.ts) continue to work.
+  bool hasArg3 = info.Length() > 3 && info[3].IsNumber();
+  auto arg3 = hasArg3 ? info[3].As<Napi::Number>() : Napi::Number::New(env, -1);
 
   // these defs are in irsdk_defines.cpp
   switch (msgType)
@@ -202,10 +212,11 @@ Napi::Value iRacingSdkNode::BroadcastMessage(const Napi::CallbackInfo &info)
   // irsdk_BroadcastMsg msg, int arg1, int arg2, int var3
   case irsdk_BroadcastCamSwitchPos: // @todo we need to use irsdk_padCarNum for arg1
   case irsdk_BroadcastCamSwitchNum:
+    if (!hasArg3) return Napi::Boolean::New(env, false);
     printf("BroadcastMessage(msgType: %d, arg1: %d, arg2: %d, arg3: %d)\n", msgType, arg1, arg2.Int32Value(), arg3.Int32Value());
     irsdk_broadcastMsg(msgType, arg1, arg2, arg3);
     break;
-  
+
   // irsdk_BroadcastMsg msg, int arg1, int unused, int unused
   case irsdk_BroadcastReplaySearch: // arg1 == irsdk_RpySrchMode
   case irsdk_BroadcastReplaySetState: // arg1 == irsdk_RpyStateMode
@@ -223,7 +234,7 @@ Napi::Value iRacingSdkNode::BroadcastMessage(const Napi::CallbackInfo &info)
     printf("BroadcastMessage(msgType: %d, arg1: %d, arg2: %d, arg3: -1)\n", msgType, arg1, arg2.Int32Value());
     irsdk_broadcastMsg(msgType, arg1, arg2, -1);
     break;
-  
+
   // irsdk_BroadcastMsg msg, int arg1, float arg2
   case irsdk_BroadcastPitCommand: // arg1 == irsdk_PitCommandMode
   case irsdk_BroadcastFFBCommand: // arg1 == irsdk_FFBCommandMode
@@ -421,15 +432,21 @@ Napi::Value iRacingSdkNode::GetTelemetryVar(const Napi::CallbackInfo &info)
 {
   Napi::Env env = info.Env();
 
-  int varIndex;
-  if (info.Length() <= 0) {
-    varIndex = 0;
-  } else if (!info[0].IsNumber()) {
+  // S2 hardening: varIndex was previously uninitialised when the common
+  // numeric-arg path was taken, leaving a garbage value on the stack
+  // that flowed into GetTelemetryVarByIndex. Initialise to 0 and extract
+  // the actual value from info[0] when it's a valid number; out-of-range
+  // values are caught defensively by GetTelemetryVarByIndex below.
+  int varIndex = 0;
+  if (info.Length() > 0) {
     if (info[0].IsString()) {
       const char *name = info[0].As<Napi::String>().Utf8Value().c_str();
       return this->GetTelemetryVar(env, name);
     }
-    varIndex = 0;
+    if (info[0].IsNumber()) {
+      varIndex = info[0].As<Napi::Number>().Int32Value();
+    }
+    // Any other type falls through with varIndex = 0.
   }
 
   return this->GetTelemetryVarByIndex(env, varIndex);
@@ -437,10 +454,19 @@ Napi::Value iRacingSdkNode::GetTelemetryVar(const Napi::CallbackInfo &info)
 
 Napi::Value iRacingSdkNode::GetTelemetryData(const Napi::CallbackInfo &info)
 {
-  const irsdk_header* header = irsdk_getHeader();
   auto env = info.Env();
   auto telemVars = Napi::Object::New(env);
-  
+
+  // S2 hardening: irsdk_getHeader() returns NULL when the SDK has not yet
+  // mapped the shared-memory header (i.e. iRacing isn't running). Reading
+  // header->numVars unguarded would crash the main process. Return an
+  // empty object instead — the JS caller already handles the empty case
+  // (no telemetry yet).
+  const irsdk_header* header = irsdk_getHeader();
+  if (header == nullptr) {
+    return telemVars;
+  }
+
   int count = header->numVars;
   for (int i = 0; i < count; i++) {
     auto telemVariable = this->GetTelemetryVarByIndex(env, i);
@@ -501,8 +527,25 @@ double iRacingSdkNode::GetTelemetryDouble(int entry, int index)
 
 Napi::Object iRacingSdkNode::GetTelemetryVarByIndex(const Napi::Env env, int index)
 {
-  auto headerVar = irsdk_getVarHeaderEntry(index);
   auto telemVar = Napi::Object::New(env);
+
+  // S2 hardening: irsdk_getVarHeaderEntry() returns NULL for indices
+  // outside [0, numVars) or when the SDK is not yet initialised. _data
+  // is NULL until the first successful telemetry read. Either condition
+  // would crash the process on the field reads or memcpy below — return
+  // an empty object instead. The JS-side TelemetryStore tolerates
+  // missing keys, so callers degrade gracefully.
+  auto headerVar = irsdk_getVarHeaderEntry(index);
+  if (headerVar == nullptr || this->_data == nullptr) {
+    return telemVar;
+  }
+
+  // Defensive bound on the type-byte-size lookup: headerVar->type is
+  // attacker-influenced via shared memory in principle. Drop the entry
+  // if the type is outside the known enum range.
+  if (headerVar->type < 0 || headerVar->type >= irsdk_ETCount) {
+    return telemVar;
+  }
 
   // Create entry object
   telemVar.Set("countAsTime", headerVar->countAsTime);
@@ -523,6 +566,13 @@ Napi::Object iRacingSdkNode::GetTelemetryVarByIndex(const Napi::Env env, int ind
 Napi::Object iRacingSdkNode::GetTelemetryVar(const Napi::Env env, const char *varName)
 {
   int varIndex = irsdk_varNameToIndex(varName);
+  // S2 hardening: irsdk_varNameToIndex returns -1 when the name is
+  // unknown or the SDK is not yet initialised. Passing -1 into
+  // GetTelemetryVarByIndex would have crashed before its null-guard
+  // was added; the guard now catches it, but reject early for clarity.
+  if (varIndex < 0) {
+    return Napi::Object::New(env);
+  }
   return this->GetTelemetryVarByIndex(env, varIndex);
 }
 
