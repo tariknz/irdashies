@@ -24,6 +24,8 @@ import { Analytics } from './app/analytics';
 import { setupReferenceLapsBridge } from './app/bridge/referenceLapsBridge';
 import { setupKeybindingsBridge } from './app/bridge/keybindingsBridge';
 import { setupLogBridge } from './app/bridge/logBridge';
+import { migrateReferenceLaps } from './app/storage/referenceLaps';
+import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -34,6 +36,7 @@ const overlayManager = new OverlayManager();
 const analytics = new Analytics();
 analytics.setupLogTransport();
 
+overlayManager.setupChromiumFlags();
 overlayManager.setupHardwareAcceleration();
 overlayManager.setupSingleInstanceLock();
 overlayManager.setupAutoStart();
@@ -47,6 +50,9 @@ app.on('ready', async () => {
 
   await iRacingSDKSetup(overlayManager);
 
+  // Perform one-time cleanup of old reference laps
+  migrateReferenceLaps();
+
   const dashboard = getOrCreateDefaultDashboard();
   const bridge = getCurrentBridge();
 
@@ -55,6 +61,7 @@ app.on('ready', async () => {
   setupFuelCalculatorBridge();
   setupPitLaneBridge();
   setupReferenceLapsBridge();
+  setupChromiumFlagsBridge();
 
   // Start component server for browser components
   await startComponentServer(bridge, dashboardBridge);

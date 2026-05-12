@@ -6,6 +6,7 @@ import type {
   ReferenceLapBridge,
   LogBridge,
   KeybindingsBridge,
+  ChromiumFlagsBridge,
 } from '@irdashies/types';
 
 declare global {
@@ -17,5 +18,6 @@ declare global {
     referenceLapsBridge: ReferenceLapBridge;
     logBridge: LogBridge;
     keybindingsBridge: KeybindingsBridge;
+    chromiumFlagsBridge: ChromiumFlagsBridge;
   }
 }

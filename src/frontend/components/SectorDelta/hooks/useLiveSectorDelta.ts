@@ -56,8 +56,7 @@ export const useLiveSectorDelta = (useGhostFile: boolean): number | null => {
       ? state.getReferenceLap(playerCarIdx, playerClassId, true)
       : state.bestLaps.get(playerCarIdx);
 
-    if (!refLap || refLap.startTime < 0 || refLap.refPoints.size === 0)
-      return null;
+    if (!refLap || refLap.finishTime < 0) return null;
 
     const sectorStart = sectors[currentSectorIdx]?.SectorStartPct ?? 0;
     const ghostElapsed = calculateReferenceDelta(

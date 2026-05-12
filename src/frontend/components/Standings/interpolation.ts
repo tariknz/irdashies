@@ -1,4 +1,4 @@
-import { normalizeKey, REFERENCE_INTERVAL } from '@irdashies/context';
+import { getBucketIndex } from '@irdashies/context';
 import { ReferenceLap } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
 
@@ -10,33 +10,46 @@ export function interpolateAtPoint(
   targetPct: number
 ): number | null {
   // 1. Normalize the target to find the exact grid key (p0)
-  const key0 = normalizeKey(targetPct);
+  const key0 = getBucketIndex(targetPct, lap.pointsCount);
 
   // 2. Calculate the next key (p1)
   // We manually add the interval and re-normalize to handle floating point math
-  const key1 = normalizeKey(targetPct + REFERENCE_INTERVAL);
+  const key1 = getBucketIndex(targetPct + lap.interval, lap.pointsCount);
 
   // 3. Fast Lookup
-  const p0 = lap.refPoints.get(key0);
-  const p1 = lap.refPoints.get(key1);
+  const p0time = lap.times[key0];
+  const p0tangent = lap.tangents[key0];
+  const p0pos = lap.pointPos[key0];
 
-  // Handle Edge Case: Wrapping or End of Lap
-  // If we are at the very end (e.g., 0.9975 -> 0.0000), p1 might be the start point.
-  // We cannot interpolate PCHIP across the finish line without extra logic for the X-axis wrap.
-  // For now, if p1 is missing or wrapped inappropriately, we fall back to p0 (clamping).
-  if (!p0) {
-    logger.debug('P1 is missing!');
-    return null; // Off-track or sparse map gap
+  const p0 = {
+    timeElapsedSinceStart: p0time,
+    tangent: p0tangent,
+    trackPct: p0pos,
+  };
+
+  const p1time = lap.times[key1];
+  const p1tangent = lap.tangents[key1];
+  const p1pos = lap.pointPos[key1];
+
+  const p1 = {
+    timeElapsedSinceStart: p1time,
+    tangent: p1tangent,
+    trackPct: p1pos,
+  };
+
+  if (p0.timeElapsedSinceStart === undefined || p0.trackPct === undefined) {
+    logger.debug('Point 0 data is missing.');
+    return null;
   }
 
-  if (!p1) {
-    logger.debug('P2 is missing!');
-    return p0.timeElapsedSinceStart; // End of data, return last known time
+  if (p1.timeElapsedSinceStart === undefined || p1.trackPct === undefined) {
+    logger.debug('Point 1 data is missing, falling back to Point 0.');
+    return p0.timeElapsedSinceStart;
   }
 
   // 4. Validate Tangents
   if (p0.tangent === undefined || p1.tangent === undefined) {
-    logger.debug('Missing tangents for PCHIP interpolation');
+    logger.debug('Missing tangents for PCHIP interpolation.');
     return null;
   }
 

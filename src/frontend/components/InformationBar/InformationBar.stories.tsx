@@ -37,10 +37,6 @@ const ALL_ITEMS = [
   'airTemperature',
   'trackTemperature',
   'wind',
-  'humidity',
-  'sof',
-  'classDrivers',
-  'driverBadge',
   'trackName',
 ];
 
@@ -63,10 +59,6 @@ const DEFAULT_CONFIG: SessionBarConfig = {
   airTemperature: { enabled: false, unit: 'Metric' },
   trackTemperature: { enabled: true, unit: 'Metric' },
   wind: { enabled: false, speedPosition: 'right' },
-  humidity: { enabled: false },
-  sof: { enabled: false },
-  classDrivers: { enabled: false },
-  driverBadge: { enabled: false },
   trackName: { enabled: false },
   displayOrder: ALL_ITEMS,
 };
@@ -101,10 +93,6 @@ type PlaygroundArgs = ComponentProps<typeof SessionBar> & {
   showAirTemp: boolean;
   showTrackTemp: boolean;
   showWind: boolean;
-  showHumidity: boolean;
-  showSof: boolean;
-  showClassDrivers: boolean;
-  showDriverBadge: boolean;
   showTrackName: boolean;
 };
 
@@ -128,10 +116,6 @@ export const Playground: StoryObj<PlaygroundArgs> = {
     showAirTemp: { control: 'boolean', name: 'Air Temp' },
     showTrackTemp: { control: 'boolean', name: 'Track Temp' },
     showWind: { control: 'boolean', name: 'Wind' },
-    showHumidity: { control: 'boolean', name: 'Humidity' },
-    showSof: { control: 'boolean', name: 'Strength of Field' },
-    showClassDrivers: { control: 'boolean', name: 'Class Drivers' },
-    showDriverBadge: { control: 'boolean', name: 'Driver Badge' },
     showTrackName: { control: 'boolean', name: 'Track Name' },
   },
   args: {
@@ -150,10 +134,6 @@ export const Playground: StoryObj<PlaygroundArgs> = {
     showAirTemp: true,
     showTrackTemp: true,
     showWind: false,
-    showHumidity: false,
-    showSof: true,
-    showClassDrivers: true,
-    showDriverBadge: true,
     showTrackName: false,
   },
   render: (args) => {
@@ -188,10 +168,6 @@ export const Playground: StoryObj<PlaygroundArgs> = {
       wind: DEFAULT_CONFIG.wind
         ? { ...DEFAULT_CONFIG.wind, enabled: args.showWind }
         : undefined,
-      humidity: { enabled: args.showHumidity },
-      sof: { enabled: args.showSof },
-      classDrivers: { enabled: args.showClassDrivers },
-      driverBadge: { enabled: args.showDriverBadge },
       trackName: { enabled: args.showTrackName },
     };
 

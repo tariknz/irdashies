@@ -22,6 +22,9 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   flag: 'Flag',
   twitchchat: 'Twitch Chat',
   laptimelog: 'Lap Timer',
+  infobar: 'Information Bar',
+  slowcarahead: 'Slow Car Ahead',
+  sectordelta: 'Sector Delta',
 };
 
 /**
@@ -30,5 +33,5 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
  * @returns The friendly display name, or the ID itself if not found
  */
 export function getWidgetName(widgetId: string): string {
-  return WIDGET_NAMES[widgetId] || widgetId;
+  return WIDGET_NAMES[widgetId as WidgetId] || widgetId;
 }

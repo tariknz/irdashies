@@ -5,6 +5,7 @@ export interface TwitchEmote {
 
 export interface ChatMessage {
   user: string;
+  color?: string;
   text: string;
   id: string;
   emotes: TwitchEmote[];

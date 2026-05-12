@@ -356,15 +356,6 @@ const DisplaySettingsList = ({
                       <BadgeFormatPreview
                         key={format}
                         format={format}
-                        iratingChange={
-                          (
-                            settings.config.iratingChange as {
-                              enabled: boolean;
-                            }
-                          ).enabled
-                            ? 18
-                            : undefined
-                        }
                         selected={
                           (
                             configValue as {
@@ -534,7 +525,16 @@ export const StandingsSettings = () => {
       (savedSettings?.config as StandingsWidgetSettings['config']) ??
       defaultConfig,
   });
-  const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
+  const [itemsOrder, setItemsOrder] = useState(() => {
+    const validIds = new Set(sortableSettings.map((s) => s.id));
+    const saved = settings.config.displayOrder ?? [];
+    const filtered = saved.filter((id) => validIds.has(id));
+    const present = new Set(filtered);
+    const missing = sortableSettings
+      .filter((s) => !present.has(s.id))
+      .map((s) => s.id);
+    return [...filtered, ...missing];
+  });
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
@@ -738,6 +738,8 @@ export const StandingsSettings = () => {
                     />
                   </SettingsSection>
 
+                  <SettingDivider />
+
                   <SettingsSection title="Title Bar">
                     <SettingToggleRow
                       title="Show Title Bar"
@@ -770,6 +772,8 @@ export const StandingsSettings = () => {
                     )}
                   </SettingsSection>
 
+                  <SettingDivider />
+
                   <SettingsSection title="Background">
                     <SettingSliderRow
                       title="Background Opacity"
@@ -780,6 +784,18 @@ export const StandingsSettings = () => {
                       step={1}
                       onChange={(v) =>
                         handleConfigChange({ background: { opacity: v } })
+                      }
+                    />
+
+                    <SettingSliderRow
+                      title="Session Bar Opacity"
+                      value={settings.config.foreground?.opacity ?? 70}
+                      units="%"
+                      min={0}
+                      max={100}
+                      step={1}
+                      onChange={(v) =>
+                        handleConfigChange({ foreground: { opacity: v } })
                       }
                     />
                   </SettingsSection>
@@ -826,29 +842,28 @@ export const StandingsSettings = () => {
                           ) {
                             return item as SessionBarItemConfig;
                           }
-                          // Fallback for new items
-                          if (id === 'sof' || id === 'classDrivers') {
-                            return { enabled: false };
-                          }
-                          if (id === 'driverBadge') {
-                            return { enabled: false, showIRatingChange: false };
-                          }
                           return undefined;
                         }}
                         updateItemConfig={(id, config) => {
                           const item =
                             settings.config.headerBar[
                               id as keyof typeof settings.config.headerBar
-                            ] ?? {};
-                          handleConfigChange({
-                            headerBar: {
-                              ...settings.config.headerBar,
-                              [id]: {
-                                ...(item as SessionBarItemConfig),
-                                ...config,
+                            ];
+                          if (
+                            typeof item === 'object' &&
+                            item !== null &&
+                            'enabled' in item
+                          ) {
+                            handleConfigChange({
+                              headerBar: {
+                                ...settings.config.headerBar,
+                                [id]: {
+                                  ...(item as SessionBarItemConfig),
+                                  ...config,
+                                },
                               },
-                            },
-                          });
+                            });
+                          }
                         }}
                       />
 
@@ -910,29 +925,28 @@ export const StandingsSettings = () => {
                           ) {
                             return item as SessionBarItemConfig;
                           }
-                          // Fallback for new items
-                          if (id === 'sof' || id === 'classDrivers') {
-                            return { enabled: false };
-                          }
-                          if (id === 'driverBadge') {
-                            return { enabled: false, showIRatingChange: false };
-                          }
                           return undefined;
                         }}
                         updateItemConfig={(id, config) => {
                           const item =
                             settings.config.footerBar[
                               id as keyof typeof settings.config.footerBar
-                            ] ?? {};
-                          handleConfigChange({
-                            footerBar: {
-                              ...settings.config.footerBar,
-                              [id]: {
-                                ...(item as SessionBarItemConfig),
-                                ...config,
+                            ];
+                          if (
+                            typeof item === 'object' &&
+                            item !== null &&
+                            'enabled' in item
+                          ) {
+                            handleConfigChange({
+                              footerBar: {
+                                ...settings.config.footerBar,
+                                [id]: {
+                                  ...(item as SessionBarItemConfig),
+                                  ...config,
+                                },
                               },
-                            },
-                          });
+                            });
+                          }
                         }}
                       />
 

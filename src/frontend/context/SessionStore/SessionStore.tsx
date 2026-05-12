@@ -2,13 +2,11 @@ import type {
   Session,
   SessionQualifyPosition,
   SessionResults,
-  CarClassStats,
 } from '@irdashies/types';
 import { create, useStore } from 'zustand';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { arrayShallowCompare } from './arrayShallowCompare';
 import { shallow } from 'zustand/shallow';
-import { useMemo } from 'react';
 
 interface SessionState {
   session: Session | null;
@@ -156,21 +154,26 @@ export const useTrackLength = () =>
 /**
  * @returns The car index and car class estimated lap time for each driver
  */
-export const useCarIdxClassEstLapTime = () => {
-  const drivers = useSessionDrivers();
-
-  return useMemo(() => {
-    if (!drivers) return undefined;
-
-    return drivers.reduce(
-      (acc, driver) => {
-        acc[driver.CarIdx] = driver.CarClassEstLapTime;
-        return acc;
-      },
-      {} as Record<number, number>
-    );
-  }, [drivers]);
-};
+let cachedEstLapTime: Record<number, number> | undefined;
+let cachedEstLapTimeDrivers: unknown;
+export const useCarIdxClassEstLapTime = () =>
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state) => {
+      const drivers = state.session?.DriverInfo?.Drivers;
+      if (drivers === cachedEstLapTimeDrivers) return cachedEstLapTime;
+      cachedEstLapTimeDrivers = drivers;
+      cachedEstLapTime = drivers?.reduce(
+        (acc, driver) => {
+          acc[driver.CarIdx] = driver.CarClassEstLapTime;
+          return acc;
+        },
+        {} as Record<number, number>
+      );
+      return cachedEstLapTime;
+    },
+    shallow
+  );
 
 export const useGreenFlagTimestamp = () =>
   useStore(useSessionStore, (state) => state.greenFlagTimestamp);
@@ -186,74 +189,3 @@ export const useSetCheckeredLap = () =>
 
 export const useCarSetup = () =>
   useStore(useSessionStore, (state) => state.session?.CarSetup);
-
-/**
- * @returns The stats for each car class in the session (ShortName, Color, Total Drivers, SOF)
- */
-export const useCarClassStats = () => {
-  const drivers = useSessionDrivers();
-
-  return useMemo(() => {
-    if (!drivers) return undefined;
-
-    const raceDrivers = drivers.filter(
-      (driver) => !driver.IsSpectator && !driver.CarIsPaceCar
-    );
-
-    const intermediate = raceDrivers.reduce(
-      (acc, driver) => {
-        if (!acc[driver.CarClassID]) {
-          acc[driver.CarClassID] = {
-            total: 0,
-            raceDrivers: 0,
-            sumExp: 0,
-            color: driver.CarClassColor,
-            shortName: driver.CarClassShortName,
-          };
-        }
-
-        acc[driver.CarClassID].total += 1;
-
-        if (driver.IRating > 0) {
-          const expValue = Math.pow(2, -driver.IRating / 1600);
-          acc[driver.CarClassID].raceDrivers += 1;
-          acc[driver.CarClassID].sumExp += expValue;
-        }
-
-        return acc;
-      },
-      {} as Record<
-        string,
-        {
-          shortName: string;
-          color: number;
-          total: number;
-          raceDrivers: number;
-          sumExp: number;
-        }
-      >
-    );
-
-    return Object.fromEntries(
-      Object.entries(intermediate).map(([classId, stats]) => {
-        const sof =
-          stats.raceDrivers > 0
-            ? Math.round(
-                (1600 / Math.log(2)) *
-                  Math.log(stats.raceDrivers / stats.sumExp)
-              )
-            : 0;
-
-        return [
-          classId,
-          {
-            shortName: stats.shortName,
-            color: stats.color,
-            total: stats.total,
-            sof,
-          } as CarClassStats,
-        ];
-      })
-    );
-  }, [drivers]);
-};

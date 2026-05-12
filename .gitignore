@@ -121,3 +121,6 @@ storybook-static/
 site/dist/
 site/node_modules/
 .gstack/
+docs/dashboard.json
+ka-local/register-task.ps1
+ka-local/update-and-launch.ps1

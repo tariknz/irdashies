@@ -8,7 +8,6 @@ import {
   SessionProvider,
   PitLaneProvider,
   ReferenceStoreProvider,
-  DriverStatsStoreUpdater,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
@@ -28,11 +27,14 @@ const isSettingsWindow = () => {
  */
 const SettingsApp = () => {
   return (
-    <HashRouter>
-      <Routes>
-        <Route path="/settings/*" element={<Settings />} />
-      </Routes>
-    </HashRouter>
+    <>
+      <SessionProvider bridge={window.irsdkBridge} />
+      <HashRouter>
+        <Routes>
+          <Route path="/settings/*" element={<Settings />} />
+        </Routes>
+      </HashRouter>
+    </>
   );
 };
 
@@ -70,7 +72,6 @@ const App = () => {
           <TelemetryProvider bridge={window.irsdkBridge} />
           <PitLaneProvider bridge={window.pitLaneBridge} />
           <ReferenceStoreProvider bridge={window.referenceLapsBridge} />
-          <DriverStatsStoreUpdater />
           <OverlayApp />
         </RunningStateProvider>
       </DashboardProvider>

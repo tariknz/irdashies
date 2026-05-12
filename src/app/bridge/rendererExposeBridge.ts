@@ -14,6 +14,8 @@ import type {
   ReferenceLapBridge,
   KeybindingsBridge,
   KeybindingActionId,
+  ChromiumFlagsBridge,
+  ChromiumFlagsType,
 } from '@irdashies/types';
 
 export function exposeBridge() {
@@ -97,6 +99,12 @@ export function exposeBridge() {
     },
     getGarageCoverImageAsDataUrl: (imagePath: string) => {
       return ipcRenderer.invoke('getGarageCoverImageAsDataUrl', imagePath);
+    },
+    savePlayerIconImage: (buffer: Uint8Array) => {
+      return ipcRenderer.invoke('savePlayerIconImage', Array.from(buffer));
+    },
+    getPlayerIconImageAsDataUrl: (imagePath: string) => {
+      return ipcRenderer.invoke('getPlayerIconImageAsDataUrl', imagePath);
     },
     getAnalyticsOptOut: () => {
       return ipcRenderer.invoke('getAnalyticsOptOut');
@@ -248,4 +256,10 @@ export function exposeBridge() {
     startRecording: () => ipcRenderer.invoke('keybindings:startRecording'),
     stopRecording: () => ipcRenderer.invoke('keybindings:stopRecording'),
   } as KeybindingsBridge);
+
+  contextBridge.exposeInMainWorld('chromiumFlagsBridge', {
+    getFlags: () => ipcRenderer.invoke('chromiumFlags:get'),
+    saveFlags: (flags: ChromiumFlagsType) =>
+      ipcRenderer.invoke('chromiumFlags:save', flags),
+  } as ChromiumFlagsBridge);
 }

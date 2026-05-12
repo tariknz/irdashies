@@ -5,6 +5,7 @@ import { SessionBar } from './components/SessionBar/SessionBar';
 
 import { TitleBar } from './components/TitleBar/TitleBar';
 import {
+  useCarClassStats,
   useDriverStandings,
   useStandingsSettings,
   useHighlightColor,
@@ -19,7 +20,6 @@ import {
   useWeekendInfoTeamRacing,
   useSessionVisibility,
   useCarIdxRollingAvgLapTime,
-  useCarClassStats,
 } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 
@@ -84,7 +84,7 @@ export const Standings = () => {
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {settings?.headerBar && (settings.headerBar.enabled ?? true) && (
-        <SessionBar settings={settings.headerBar} position="header" />
+        <SessionBar settings={settings.headerBar} opacity={settings?.foreground?.opacity} position="header" />
       )}
       <table
         className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
@@ -262,7 +262,7 @@ export const Standings = () => {
         </tbody>
       </table>
       {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
-        <SessionBar settings={settings.footerBar} position="footer" />
+        <SessionBar settings={settings.footerBar} opacity={settings?.foreground?.opacity} position="footer" />
       )}
     </div>
   );
