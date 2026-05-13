@@ -1,0 +1,9107 @@
+{
+  "version": "1.0",
+  "timestamp": 1778657782241,
+  "tracks": {
+    "adelaide": {
+      "name": "Adelaide Street Circuit",
+      "trackId": "adelaide",
+      "turn": [
+        {
+          "start": 0.055,
+          "end": 0.083,
+          "name": "T1"
+        },
+        {
+          "start": 0.083,
+          "end": 0.113,
+          "name": "T2"
+        },
+        {
+          "start": 0.113,
+          "end": 0.16,
+          "name": "T3"
+        },
+        {
+          "start": 0.19,
+          "end": 0.245,
+          "name": "T4"
+        },
+        {
+          "start": 0.245,
+          "end": 0.293,
+          "name": "T5"
+        },
+        {
+          "start": 0.293,
+          "end": 0.338,
+          "name": "T6"
+        },
+        {
+          "start": 0.338,
+          "end": 0.39,
+          "name": "T7"
+        },
+        {
+          "start": 0.53,
+          "end": 0.59,
+          "name": "T8"
+        },
+        {
+          "start": 0.66,
+          "end": 0.71,
+          "name": "T9"
+        },
+        {
+          "start": 0.71,
+          "end": 0.75,
+          "name": "T10"
+        },
+        {
+          "start": 0.75,
+          "end": 0.798,
+          "name": "T11"
+        },
+        {
+          "start": 0.798,
+          "end": 0.853,
+          "name": "T12"
+        },
+        {
+          "start": 0.853,
+          "end": 0.9,
+          "name": "T13"
+        },
+        {
+          "start": 0.9,
+          "end": 0.935,
+          "name": "T14"
+        }
+      ],
+      "sector": [
+        {
+          "name": "S1",
+          "marker": 0.328407
+        },
+        {
+          "name": "S2",
+          "marker": 0.634463
+        }
+      ],
+      "pitentry": 0.995,
+      "pitexit": 0.001
+    },
+    "algarve gp": {
+      "name": "Autodromo Internacional do Algarve",
+      "trackId": "algarve gp",
+      "country": "PT",
+      "length": 4580,
+      "pitentry": 0.95,
+      "pitexit": 0.09,
+      "turn": [
+        {
+          "start": 0.124,
+          "end": 0.166,
+          "name": "Primeira"
+        },
+        {
+          "start": 0.167,
+          "end": 0.193,
+          "name": "Turn 2"
+        },
+        {
+          "start": 0.194,
+          "end": 0.228,
+          "name": "Lagos"
+        },
+        {
+          "start": 0.229,
+          "end": 0.274,
+          "name": "Turn 4"
+        },
+        {
+          "start": 0.049,
+          "end": 0.118,
+          "name": "Turn 4"
+        },
+        {
+          "start": 0.355,
+          "end": 0.392,
+          "name": "Turn 5"
+        },
+        {
+          "start": 0.4,
+          "end": 0.449,
+          "name": "Turn 6"
+        },
+        {
+          "start": 0.45,
+          "end": 0.486,
+          "name": "Turn 7"
+        },
+        {
+          "start": 0.487,
+          "end": 0.537,
+          "name": "Samsung"
+        },
+        {
+          "start": 0.558,
+          "end": 0.617,
+          "name": "Turn 9"
+        },
+        {
+          "start": 0.618,
+          "end": 0.669,
+          "name": "Portimao"
+        },
+        {
+          "start": 0.67,
+          "end": 0.723,
+          "name": "Turn 12"
+        },
+        {
+          "start": 0.728,
+          "end": 0.77,
+          "name": "Turn 13"
+        },
+        {
+          "start": 0.775,
+          "end": 0.833,
+          "name": "Sagres"
+        },
+        {
+          "start": 0.85,
+          "end": 0.945,
+          "name": "Galp"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.316,
+          "name": "1"
+        },
+        {
+          "marker": 0.675,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "barcelona gp": {
+      "name": "Circuit de Barcelona-Catalunya - GP",
+      "trackId": "barcelona gp",
+      "country": "ES",
+      "year": 1995,
+      "length": 4670,
+      "pitentry": 0.915,
+      "pitexit": 0.098,
+      "turn": [
+        {
+          "name": "Elf",
+          "start": 0.167,
+          "end": 0.213,
+          "marker": 0.195
+        },
+        {
+          "name": "Renault",
+          "start": 0.226,
+          "end": 0.31,
+          "marker": 0.263
+        },
+        {
+          "name": "Repsol",
+          "start": 0.345,
+          "end": 0.409,
+          "marker": 0.373
+        },
+        {
+          "name": "Seat",
+          "start": 0.425,
+          "end": 0.472,
+          "marker": 0.453
+        },
+        {
+          "name": "T6",
+          "start": 0.427,
+          "end": 0.525,
+          "marker": 0.48
+        },
+        {
+          "name": "Wuerth",
+          "start": 0.525,
+          "end": 0.569,
+          "marker": 0.544
+        },
+        {
+          "name": "Campsa",
+          "start": 0.595,
+          "end": 0.637,
+          "marker": 0.614
+        },
+        {
+          "name": "La Caixa",
+          "start": 0.731,
+          "end": 0.789,
+          "marker": 0.771
+        },
+        {
+          "name": "Banc Sabadell",
+          "start": 0.795,
+          "end": 0.842,
+          "marker": 0.825
+        },
+        {
+          "name": "Europcar",
+          "start": 0.85,
+          "end": 0.875
+        },
+        {
+          "name": "Chicane RACC",
+          "start": 0.877,
+          "end": 0.915
+        },
+        {
+          "name": "New Holland",
+          "start": 0.916,
+          "end": 0.954,
+          "marker": 0.942
+        }
+      ],
+      "straight": [
+        {
+          "name": "Grid Lane",
+          "start": 0,
+          "end": 0.166,
+          "marker": 0.083
+        }
+      ],
+      "sector": [
+        {
+          "name": "1",
+          "marker": 0.344
+        },
+        {
+          "name": "2",
+          "marker": 0.723
+        },
+        {
+          "name": "3",
+          "marker": 1
+        }
+      ]
+    },
+    "barcelona historic": {
+      "name": "Barcelona Historic",
+      "trackId": "barcelona historic",
+      "country": "ES",
+      "year": 1995,
+      "length": 4680,
+      "pitentry": 0.922,
+      "pitexit": 0.098,
+      "turn": [
+        {
+          "name": "Elf",
+          "start": 0.167,
+          "end": 0.213,
+          "marker": 0.195
+        },
+        {
+          "name": "Renault",
+          "start": 0.226,
+          "end": 0.31,
+          "marker": 0.263
+        },
+        {
+          "name": "Repsol",
+          "start": 0.345,
+          "end": 0.409,
+          "marker": 0.373
+        },
+        {
+          "name": "Seat",
+          "start": 0.425,
+          "end": 0.472,
+          "marker": 0.453
+        },
+        {
+          "name": "T6",
+          "start": 0.427,
+          "end": 0.525,
+          "marker": 0.48
+        },
+        {
+          "name": "Wuerth",
+          "start": 0.525,
+          "end": 0.569,
+          "marker": 0.544
+        },
+        {
+          "name": "Campsa",
+          "start": 0.595,
+          "end": 0.637,
+          "marker": 0.614
+        },
+        {
+          "name": "La Caixa",
+          "start": 0.731,
+          "end": 0.789,
+          "marker": 0.771
+        },
+        {
+          "name": "Banc Sabadell",
+          "start": 0.795,
+          "end": 0.842,
+          "marker": 0.825
+        },
+        {
+          "name": "Europcar",
+          "start": 0.866,
+          "end": 0.894,
+          "marker": 0.883
+        },
+        {
+          "name": "New Holland",
+          "start": 0.921,
+          "end": 0.954,
+          "marker": 0.942
+        }
+      ],
+      "straight": [
+        {
+          "name": "Grid Lane",
+          "start": 0,
+          "end": 0.166,
+          "marker": 0.083
+        }
+      ],
+      "sector": [
+        {
+          "name": "1",
+          "marker": 0.336
+        },
+        {
+          "name": "2",
+          "marker": 0.707
+        },
+        {
+          "name": "3",
+          "marker": 1
+        }
+      ]
+    },
+    "bathurst": {
+      "name": "Mount Panorama Circuit",
+      "trackId": "bathurst",
+      "country": "AU",
+      "length": 6140,
+      "pitentry": 0.95,
+      "pitexit": 0.072,
+      "turn": [
+        {
+          "start": 0.046,
+          "end": 0.075,
+          "name": "Hell Corner"
+        },
+        {
+          "start": 0.22,
+          "end": 0.267,
+          "name": "Quarry Bend"
+        },
+        {
+          "start": 0.3,
+          "end": 0.33,
+          "name": "The Cutting"
+        },
+        {
+          "start": 0.334,
+          "end": 0.356,
+          "name": "Griffin's Mount"
+        },
+        {
+          "start": 0.365,
+          "end": 0.384,
+          "name": "Reid Park"
+        },
+        {
+          "start": 0.39,
+          "end": 0.458,
+          "name": "Sulman Park"
+        },
+        {
+          "start": 0.463,
+          "end": 0.507,
+          "name": "McPhillamy Park"
+        },
+        {
+          "start": 0.517,
+          "end": 0.55,
+          "name": "Skyline"
+        },
+        {
+          "start": 0.551,
+          "end": 0.599,
+          "name": "The Esses"
+        },
+        {
+          "start": 0.6,
+          "end": 0.614,
+          "name": "The Dipper"
+        },
+        {
+          "start": 0.616,
+          "end": 0.67,
+          "name": "Forest's Elbow"
+        },
+        {
+          "start": 0.87,
+          "end": 0.926,
+          "name": "The Chase"
+        },
+        {
+          "start": 0.965,
+          "end": 0.993,
+          "name": "Murray's Corner"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0,
+          "marker": 0.022,
+          "end": 0.045,
+          "name": "Pit Straight"
+        },
+        {
+          "start": 0.076,
+          "marker": 0.14,
+          "end": 0.219,
+          "name": "Mountain Straight"
+        },
+        {
+          "start": 0.67,
+          "marker": 0.75,
+          "end": 0.82,
+          "name": "Conrod Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.182,
+          "name": "1"
+        },
+        {
+          "marker": 0.36,
+          "name": "2"
+        },
+        {
+          "marker": 0.521,
+          "name": "3"
+        },
+        {
+          "marker": 0.594,
+          "name": "4"
+        },
+        {
+          "marker": 0.629,
+          "name": "5"
+        },
+        {
+          "marker": 1,
+          "name": "6"
+        }
+      ]
+    },
+    "brandshatch grandprix": {
+      "name": "Brands Hatch GP",
+      "trackId": "brandshatch grandprix",
+      "country": "UK",
+      "length": 3890,
+      "pitentry": 0.902,
+      "pitexit": 0.025,
+      "turn": [
+        {
+          "start": 0.035,
+          "end": 0.1,
+          "name": "Paddock Hill Bend"
+        },
+        {
+          "start": 0.136,
+          "end": 0.181,
+          "name": "Druids"
+        },
+        {
+          "start": 0.206,
+          "end": 0.255,
+          "name": "Graham Hill Bend"
+        },
+        {
+          "start": 0.295,
+          "end": 0.352,
+          "name": "Surtees"
+        },
+        {
+          "start": 0.49,
+          "end": 0.55,
+          "name": "Hawthorn Bend"
+        },
+        {
+          "start": 0.591,
+          "end": 0.647,
+          "name": "Westfield Bend"
+        },
+        {
+          "start": 0.664,
+          "end": 0.69,
+          "name": "Dingle Dell"
+        },
+        {
+          "start": 0.691,
+          "end": 0.726,
+          "name": "Sheene's"
+        },
+        {
+          "start": 0.749,
+          "end": 0.793,
+          "name": "Stirling's"
+        },
+        {
+          "start": 0.863,
+          "end": 0.954,
+          "name": "Clark Curve"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.101,
+          "marker": 0.115,
+          "end": 0.135,
+          "name": "Pilgrim's Rise"
+        },
+        {
+          "start": 0.256,
+          "marker": 0.28,
+          "end": 0.294,
+          "name": "Cooper Straight"
+        },
+        {
+          "start": 0.353,
+          "marker": 0.41,
+          "end": 0.489,
+          "name": "Pilgrim's Drop"
+        },
+        {
+          "start": 0.551,
+          "marker": 0.57,
+          "end": 0.59,
+          "name": "Derek Minter Straight"
+        },
+        {
+          "start": 0.797,
+          "marker": 0.82,
+          "end": 0.862,
+          "name": "Clearways"
+        },
+        {
+          "start": 0.955,
+          "marker": 0.975,
+          "end": 1,
+          "name": "Brabham Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.121,
+          "name": "1"
+        },
+        {
+          "marker": 0.279,
+          "name": "2"
+        },
+        {
+          "marker": 0.474,
+          "name": "3"
+        },
+        {
+          "marker": 0.675,
+          "name": "4"
+        },
+        {
+          "marker": 0.846,
+          "name": "5"
+        },
+        {
+          "marker": 1,
+          "name": "6"
+        }
+      ]
+    },
+    "cadwell club": {
+      "name": "Cadwell Park Circuit - Club",
+      "trackId": "cadwell club",
+      "country": "GB",
+      "length": 2360,
+      "sector": [
+        {
+          "marker": 0.556,
+          "name": "1"
+        },
+        {
+          "marker": 1,
+          "name": "2"
+        }
+      ]
+    },
+    "cadwell full": {
+      "name": "Cadwell Park Circuit - Full",
+      "trackId": "cadwell full",
+      "country": "GB",
+      "length": 2360,
+      "sector": [
+        {
+          "marker": 0.36,
+          "name": "1"
+        },
+        {
+          "marker": 0.718,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "cadwell moto": {
+      "name": "Cadwell Park Circuit - Moto",
+      "trackId": "cadwell moto",
+      "country": "GB",
+      "length": 3500,
+      "sector": [
+        {
+          "marker": 0.359,
+          "name": "1"
+        },
+        {
+          "marker": 0.719,
+          "name": "2"
+        },
+        {
+          "marker": 0.1,
+          "name": "3"
+        }
+      ]
+    },
+    "cadwell woodlands": {
+      "name": "Cadwell Park Circuit - Woodlands",
+      "trackId": "cadwell woodlands",
+      "country": "GB",
+      "length": 1360,
+      "sector": [
+        {
+          "marker": 0.471,
+          "name": "1"
+        },
+        {
+          "marker": 1,
+          "name": "2"
+        }
+      ]
+    },
+    "charlotte 2018 2019 roval": {
+      "name": "Charlotte Motor Speedway - Roval",
+      "trackId": "charlotte 2018 2019 roval",
+      "country": "US",
+      "year": 2019,
+      "length": 3600,
+      "pitentry": 0.91,
+      "pitexit": 0.11,
+      "turn": [
+        {
+          "start": 0.03,
+          "end": 0.08,
+          "name": "Turn 1"
+        },
+        {
+          "start": 0.081,
+          "end": 0.13,
+          "name": "Turn 2"
+        },
+        {
+          "start": 0.15,
+          "end": 0.184,
+          "name": "Turn 3"
+        },
+        {
+          "start": 0.19,
+          "end": 0.23,
+          "name": "Turn 4"
+        },
+        {
+          "start": 0.28,
+          "end": 0.315,
+          "name": "Turn 5"
+        },
+        {
+          "start": 0.316,
+          "end": 0.354,
+          "name": "Turn 6"
+        },
+        {
+          "start": 0.355,
+          "end": 0.4,
+          "name": "Turn 7"
+        },
+        {
+          "start": 0.401,
+          "end": 0.439,
+          "name": "Turn 8"
+        },
+        {
+          "start": 0.44,
+          "end": 0.505,
+          "name": "Turn 9"
+        },
+        {
+          "start": 0.506,
+          "end": 0.6,
+          "name": "Turn 10"
+        },
+        {
+          "start": 0.66,
+          "end": 0.709,
+          "name": "Turn 11"
+        },
+        {
+          "start": 0.71,
+          "end": 0.75,
+          "name": "Turn 12"
+        },
+        {
+          "start": 0.751,
+          "end": 0.825,
+          "name": "Turn 13"
+        },
+        {
+          "start": 0.826,
+          "end": 0.905,
+          "name": "Turn 14"
+        },
+        {
+          "start": 0.91,
+          "end": 0.944,
+          "name": "Turn 15"
+        },
+        {
+          "start": 0.945,
+          "end": 0.965,
+          "name": "Turn 16"
+        },
+        {
+          "start": 0.966,
+          "end": 0.99,
+          "name": "Turn 17"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.146,
+          "name": "1"
+        },
+        {
+          "marker": 0.277,
+          "name": "2"
+        },
+        {
+          "marker": 0.616,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "cota-gp": {
+      "name": "Circuit of the Americas",
+      "trackId": "cota-gp",
+      "country": "US",
+      "length": 5794,
+      "turn": [
+        {
+          "start": 0.105,
+          "end": 0.14,
+          "name": "T1"
+        },
+        {
+          "start": 0.14,
+          "end": 0.185,
+          "name": "T2"
+        },
+        {
+          "start": 0.185,
+          "end": 0.22,
+          "name": "T3"
+        },
+        {
+          "start": 0.22,
+          "end": 0.238,
+          "name": "T4"
+        },
+        {
+          "start": 0.238,
+          "end": 0.263,
+          "name": "T5"
+        },
+        {
+          "start": 0.263,
+          "end": 0.298,
+          "name": "T6"
+        },
+        {
+          "start": 0.298,
+          "end": 0.328,
+          "name": "T7"
+        },
+        {
+          "start": 0.328,
+          "end": 0.35,
+          "name": "T8"
+        },
+        {
+          "start": 0.35,
+          "end": 0.38,
+          "name": "T9"
+        },
+        {
+          "start": 0.38,
+          "end": 0.43,
+          "name": "T10"
+        },
+        {
+          "start": 0.44,
+          "end": 0.5,
+          "name": "T11"
+        },
+        {
+          "start": 0.66,
+          "end": 0.708,
+          "name": "T12"
+        },
+        {
+          "start": 0.708,
+          "end": 0.738,
+          "name": "T13"
+        },
+        {
+          "start": 0.738,
+          "end": 0.76,
+          "name": "T14"
+        },
+        {
+          "start": 0.76,
+          "end": 0.775,
+          "name": "T15"
+        },
+        {
+          "start": 0.775,
+          "end": 0.803,
+          "name": "T16"
+        },
+        {
+          "start": 0.803,
+          "end": 0.848,
+          "name": "T17"
+        },
+        {
+          "start": 0.848,
+          "end": 0.893,
+          "name": "T18"
+        },
+        {
+          "start": 0.893,
+          "end": 0.945,
+          "name": "T19"
+        },
+        {
+          "start": 0.945,
+          "end": 0.99,
+          "name": "T20"
+        }
+      ],
+      "sector": [
+        {
+          "name": "S1",
+          "marker": 0.191735
+        },
+        {
+          "name": "S2",
+          "marker": 0.425991
+        },
+        {
+          "name": "S3",
+          "marker": 0.649928
+        }
+      ]
+    },
+    "daytona 2011 road": {
+      "name": "Daytona",
+      "trackId": "daytona 2011 road",
+      "country": "US",
+      "turn": [
+        {
+          "name": "T1",
+          "marker": 0.085
+        },
+        {
+          "name": "T2",
+          "marker": 0.115
+        },
+        {
+          "name": "T3",
+          "marker": 0.169
+        },
+        {
+          "name": "T4",
+          "marker": 0.255
+        },
+        {
+          "name": "T5",
+          "marker": 0.309
+        },
+        {
+          "name": "T6",
+          "marker": 0.376
+        },
+        {
+          "name": "T7",
+          "marker": 0.451
+        },
+        {
+          "name": "T8",
+          "marker": 0.67
+        },
+        {
+          "name": "T9",
+          "marker": 0.68
+        },
+        {
+          "name": "T10",
+          "marker": 0.692
+        },
+        {
+          "name": "T11",
+          "marker": 0.703
+        },
+        {
+          "name": "T12",
+          "marker": 0.81
+        }
+      ],
+      "sector": [
+        {
+          "name": "1",
+          "marker": 0.14
+        },
+        {
+          "name": "2",
+          "marker": 0.272
+        },
+        {
+          "name": "3",
+          "marker": 0.355
+        },
+        {
+          "name": "4",
+          "marker": 0.63
+        },
+        {
+          "name": "5",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "sg30",
+              "time": 73
+            },
+            {
+              "name": "dt",
+              "time": 40
+            }
+          ]
+        }
+      ],
+      "companion": [
+        {
+          "top": -100,
+          "left": -200,
+          "rotation": 52,
+          "scale": 1.5
+        }
+      ]
+    },
+    "donington gp": {
+      "name": "Donington Park Racing Circuit - GP",
+      "trackId": "donington gp",
+      "country": "UK",
+      "length": 3940,
+      "pitentry": 0.96,
+      "pitexit": 0.05,
+      "turn": [
+        {
+          "start": 0.066,
+          "end": 0.127,
+          "name": "Redgate"
+        },
+        {
+          "start": 0.133,
+          "end": 0.195,
+          "name": "Hollywood"
+        },
+        {
+          "start": 0.2,
+          "end": 0.245,
+          "name": "Craner Curves"
+        },
+        {
+          "start": 0.26,
+          "end": 0.308,
+          "name": "Old Hairpin"
+        },
+        {
+          "start": 0.32,
+          "end": 0.365,
+          "name": "Starkey's Bridge"
+        },
+        {
+          "start": 0.375,
+          "end": 0.413,
+          "name": "Schwantz Curve"
+        },
+        {
+          "start": 0.42,
+          "end": 0.475,
+          "name": "McLeans"
+        },
+        {
+          "start": 0.495,
+          "end": 0.584,
+          "name": "Coppice"
+        },
+        {
+          "start": 0.696,
+          "end": 0.75,
+          "name": "Fogarty Esses"
+        },
+        {
+          "start": 0.815,
+          "end": 0.86,
+          "name": "Melbourne Hairpin"
+        },
+        {
+          "start": 0.915,
+          "end": 0.965,
+          "name": "Goddards"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.001,
+          "marker": 0.03,
+          "end": 0.065,
+          "name": "Wheatcroft Straight"
+        },
+        {
+          "start": 0.585,
+          "marker": 0.65,
+          "end": 0.695,
+          "name": "Starkey's Straight"
+        },
+        {
+          "start": 0.966,
+          "marker": 0.98,
+          "end": 1,
+          "name": "Wheatcroft Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.238,
+          "name": "1"
+        },
+        {
+          "marker": 0.495,
+          "name": "2"
+        },
+        {
+          "marker": 0.795,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "donington national": {
+      "name": "Donington Park Racing Circuit - National",
+      "trackId": "donington national",
+      "country": "UK",
+      "length": 3160,
+      "pitentry": 0.95,
+      "pitexit": 0.054,
+      "turn": [
+        {
+          "start": 0.085,
+          "end": 0.159,
+          "name": "Redgate"
+        },
+        {
+          "start": 0.185,
+          "end": 0.245,
+          "name": "Hollywood"
+        },
+        {
+          "start": 0.255,
+          "end": 0.308,
+          "name": "Craner Curves"
+        },
+        {
+          "start": 0.326,
+          "end": 0.387,
+          "name": "Old Hairpin"
+        },
+        {
+          "start": 0.405,
+          "end": 0.451,
+          "name": "Starkey's Bridge"
+        },
+        {
+          "start": 0.475,
+          "end": 0.517,
+          "name": "Schwantz Curve"
+        },
+        {
+          "start": 0.52,
+          "end": 0.595,
+          "name": "McLeans"
+        },
+        {
+          "start": 0.625,
+          "end": 0.725,
+          "name": "Coppice"
+        },
+        {
+          "start": 0.865,
+          "end": 0.929,
+          "name": "Roberts"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.001,
+          "marker": 0.03,
+          "end": 0.084,
+          "name": "Wheatcroft Straight"
+        },
+        {
+          "start": 0.726,
+          "marker": 0.79,
+          "end": 0.86,
+          "name": "Starkey's Straight"
+        },
+        {
+          "start": 0.93,
+          "marker": 0.98,
+          "end": 1,
+          "name": "Wheatcroft Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.298,
+          "name": "1"
+        },
+        {
+          "marker": 0.619,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "hockenheim gp": {
+      "name": "Hockenheimring - GP",
+      "trackId": "hockenheim gp",
+      "country": "DE",
+      "length": 4530,
+      "pitentry": 0.92,
+      "pitexit": 0.068,
+      "turn": [
+        {
+          "start": 0.03,
+          "end": 0.084,
+          "name": "Nordkurve"
+        },
+        {
+          "start": 0.16,
+          "end": 0.225,
+          "name": "Einfahrt Parabolika"
+        },
+        {
+          "start": 0.226,
+          "end": 0.39,
+          "name": "Parabolika"
+        },
+        {
+          "start": 0.43,
+          "end": 0.48,
+          "name": "Spitzkehre"
+        },
+        {
+          "start": 0.57,
+          "end": 0.64,
+          "name": "Mercedes"
+        },
+        {
+          "start": 0.725,
+          "end": 0.788,
+          "name": "Mobil 1 Kurve"
+        },
+        {
+          "start": 0.806,
+          "end": 0.873,
+          "name": "Sachs-Kurve"
+        },
+        {
+          "start": 0.891,
+          "end": 0.964,
+          "name": "Suedkurve"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.225,
+          "name": "1"
+        },
+        {
+          "marker": 0.708,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "hockenheim nationala": {
+      "name": "Hockenheimring Baden-Württemberg - National A",
+      "trackId": "hockenheim nationala",
+      "country": "DE",
+      "length": 3680,
+      "sector": [
+        {
+          "marker": 0.34,
+          "name": "1"
+        },
+        {
+          "marker": 0.756,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "hockenheim nationalb": {
+      "name": "Hockenheimring Baden-Württemberg - National B",
+      "trackId": "hockenheim nationalb",
+      "country": "DE",
+      "length": 3680,
+      "sector": [
+        {
+          "marker": 0.337,
+          "name": "1"
+        },
+        {
+          "marker": 0.759,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "hockenheim outer": {
+      "name": "Hockenheimring Baden-Württemberg - Outer",
+      "trackId": "hockenheim outer",
+      "country": "DE",
+      "length": 4370,
+      "sector": [
+        {
+          "marker": 0.25,
+          "name": "1"
+        },
+        {
+          "marker": 0.5,
+          "name": "2"
+        },
+        {
+          "marker": 0.75,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "hockenheim pec peceast": {
+      "name": "Hockenheimring Baden-Württemberg - Porsche Experience Center - East",
+      "trackId": "hockenheim pec peceast",
+      "country": "DE",
+      "lenght": 1680,
+      "sector": [
+        {
+          "marker": 0.583,
+          "name": "1"
+        },
+        {
+          "marker": 1,
+          "name": "2"
+        }
+      ]
+    },
+    "hockenheim pec pechandling": {
+      "name": "Hockenheimring Baden-Württemberg - Porsche Experience Center - Handling",
+      "trackId": "hockenheim pec pechandling",
+      "country": "DE",
+      "length": 2620,
+      "sector": [
+        {
+          "marker": 0.377,
+          "name": "1"
+        },
+        {
+          "marker": 0.657,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "hockenheim pec pecouter": {
+      "name": "Hockenheimring Baden-Württemberg - Porsche Experience Center - Outer",
+      "trackId": "hockenheim pec pecouter",
+      "country": "DE",
+      "length": 1460,
+      "sector": [
+        {
+          "marker": 0.64,
+          "name": "1"
+        },
+        {
+          "marker": 1,
+          "name": "2"
+        }
+      ]
+    },
+    "hockenheim pec pecwest": {
+      "name": "Hockenheimring Baden-Württemberg - Porsche Experience Center - West",
+      "trackId": "hockenheim pec pecwest",
+      "country": "DE",
+      "length": 980,
+      "sector": [
+        {
+          "marker": 0.533,
+          "name": "1"
+        },
+        {
+          "marker": 1,
+          "name": "2"
+        }
+      ]
+    },
+    "hockenheim shorta": {
+      "name": "Hockenheimring Baden-Württemberg - Short A",
+      "trackId": "hockenheim shorta",
+      "country": "DE",
+      "length": 2630,
+      "sector": [
+        {
+          "marker": 0.378,
+          "name": "1"
+        },
+        {
+          "marker": 0.843,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "hockenheim shortb": {
+      "name": "Hockenheimring Baden-Württemberg - Short B",
+      "trackId": "hockenheim shortb",
+      "country": "DE",
+      "length": 2600,
+      "sector": [
+        {
+          "marker": 0.38,
+          "name": "1"
+        },
+        {
+          "marker": 0.657,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "imola gp": {
+      "name": "Imola",
+      "trackId": "imola gp",
+      "country": "IT",
+      "pitentry": 0.908,
+      "pitexit": 0.068,
+      "length": 4909,
+      "year": 2021,
+      "turn": [
+        {
+          "name": "T1",
+          "marker": 0.025
+        },
+        {
+          "name": "Variante Tamburello",
+          "marker": 0.144,
+          "start": 0.115,
+          "end": 0.15
+        },
+        {
+          "name": "Variante Tamburello",
+          "marker": 0.159,
+          "start": 0.151,
+          "end": 0.165
+        },
+        {
+          "name": "T4",
+          "marker": 0.186
+        },
+        {
+          "name": "Variante Villeneuve",
+          "marker": 0.274,
+          "start": 0.252,
+          "end": 0.28
+        },
+        {
+          "name": "Variante Villeneuve",
+          "marker": 0.292,
+          "start": 0.281,
+          "end": 0.302
+        },
+        {
+          "name": "Tosa",
+          "marker": 0.349,
+          "start": 0.325,
+          "end": 0.37
+        },
+        {
+          "name": "T8",
+          "marker": 0.432
+        },
+        {
+          "name": "Piratella",
+          "marker": 0.476,
+          "start": 0.448,
+          "end": 0.508
+        },
+        {
+          "name": "T10",
+          "marker": 0.519
+        },
+        {
+          "name": "Acque Minerali",
+          "marker": 0.557,
+          "start": 0.54,
+          "end": 0.575
+        },
+        {
+          "name": "Acque Minerali",
+          "marker": 0.584,
+          "start": 0.575,
+          "end": 0.598
+        },
+        {
+          "name": "T13",
+          "marker": 0.607
+        },
+        {
+          "name": "GRESINI",
+          "marker": 0.683,
+          "start": 0.655,
+          "end": 0.69
+        },
+        {
+          "name": "GRESINI",
+          "marker": 0.697,
+          "start": 0.69,
+          "end": 0.705
+        },
+        {
+          "name": "T16",
+          "marker": 0.806
+        },
+        {
+          "name": "T17",
+          "marker": 0.846
+        },
+        {
+          "name": "Rivazza",
+          "marker": 0.874,
+          "start": 0.818,
+          "end": 0.887
+        },
+        {
+          "name": "T20",
+          "marker": 0.939
+        }
+      ],
+      "sector": [
+        {
+          "name": "1",
+          "marker": 0.241
+        },
+        {
+          "name": "2",
+          "marker": 0.424
+        },
+        {
+          "name": "3",
+          "marker": 0.65
+        },
+        {
+          "name": "4",
+          "marker": 0.782
+        },
+        {
+          "name": "5",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 43
+            }
+          ]
+        }
+      ],
+      "companion": [
+        {
+          "top": 20,
+          "left": 5,
+          "rotation": 15,
+          "scale": 1
+        }
+      ]
+    },
+    "indianapolis 2022 road": {
+      "name": "Indianapolis Motor Speedway - Road Course",
+      "trackId": "indianapolis 2022 road",
+      "year": 2022,
+      "country": "US",
+      "length": 3850,
+      "pitentry": 0.833,
+      "pitexit": 0.107,
+      "turn": [
+        {
+          "start": 0.15,
+          "end": 0.183,
+          "name": "Turn 1"
+        },
+        {
+          "start": 0.184,
+          "end": 0.209,
+          "name": "Turn 2"
+        },
+        {
+          "start": 0.21,
+          "end": 0.254,
+          "name": "Turn 3"
+        },
+        {
+          "start": 0.255,
+          "end": 0.3,
+          "name": "Turn 4"
+        },
+        {
+          "start": 0.309,
+          "end": 0.326,
+          "name": "Turn 5"
+        },
+        {
+          "start": 0.327,
+          "end": 0.351,
+          "name": "Turn 6"
+        },
+        {
+          "start": 0.51,
+          "end": 0.549,
+          "name": "Turn 7"
+        },
+        {
+          "start": 0.55,
+          "end": 0.579,
+          "name": "Turn 8"
+        },
+        {
+          "start": 0.58,
+          "end": 0.604,
+          "name": "Turn 9"
+        },
+        {
+          "start": 0.605,
+          "end": 0.655,
+          "name": "Turn 10"
+        },
+        {
+          "start": 0.675,
+          "end": 0.733,
+          "name": "Turn 11"
+        },
+        {
+          "start": 0.77,
+          "end": 0.805,
+          "name": "Turn 12"
+        },
+        {
+          "start": 0.81,
+          "end": 0.843,
+          "name": "Turn 13"
+        },
+        {
+          "start": 0.85,
+          "end": 0.934,
+          "name": "Turn 14"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.261,
+          "name": "1"
+        },
+        {
+          "marker": 0.505,
+          "name": "2"
+        },
+        {
+          "marker": 0.662,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "interlagos gp": {
+      "name": "Interlagos GP",
+      "trackId": "interlagos gp",
+      "country": "BR",
+      "year": 2017,
+      "length": 4220,
+      "pitentry": 0.95,
+      "pitexit": 0.195,
+      "turn": [
+        {
+          "start": 0.045,
+          "end": 0.113,
+          "name": "S do Senna"
+        },
+        {
+          "start": 0.114,
+          "end": 0.196,
+          "name": "Curva do Sol"
+        },
+        {
+          "start": 0.298,
+          "end": 0.403,
+          "name": "Descida do Lago"
+        },
+        {
+          "start": 0.456,
+          "end": 0.487,
+          "name": "Ferradura"
+        },
+        {
+          "start": 0.488,
+          "end": 0.517,
+          "name": "Laranjinha"
+        },
+        {
+          "start": 0.525,
+          "end": 0.556,
+          "name": "Esse"
+        },
+        {
+          "start": 0.557,
+          "end": 0.594,
+          "name": "Pinheirinho"
+        },
+        {
+          "start": 0.622,
+          "end": 0.657,
+          "name": "Bico de Pato"
+        },
+        {
+          "start": 0.659,
+          "end": 0.715,
+          "name": "Mergulho"
+        },
+        {
+          "start": 0.734,
+          "end": 0.77,
+          "name": "Juncao"
+        },
+        {
+          "start": 0.771,
+          "end": 0.8,
+          "name": "T13"
+        },
+        {
+          "start": 0.815,
+          "end": 0.874,
+          "name": "T14"
+        },
+        {
+          "start": 0.9,
+          "end": 0.955,
+          "name": "T15"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.197,
+          "marker": 0.24,
+          "end": 0.297,
+          "name": "Reta Oposta"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.278,
+          "name": "1"
+        },
+        {
+          "marker": 0.432,
+          "name": "2"
+        },
+        {
+          "marker": 0.609,
+          "name": "3"
+        },
+        {
+          "marker": 0.726,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "jerez gp": {
+      "name": "Circuito de Jerez - GP",
+      "trackId": "jerez gp",
+      "country": "ES",
+      "length": 4370,
+      "pitentry": 0.884,
+      "pitexit": 0.055,
+      "turn": [
+        {
+          "start": 0.03,
+          "end": 0.088,
+          "name": "Expo 92"
+        },
+        {
+          "start": 0.095,
+          "end": 0.14,
+          "name": "Michelin"
+        },
+        {
+          "start": 0.25,
+          "end": 0.35,
+          "name": "Sito Pons"
+        },
+        {
+          "start": 0.435,
+          "end": 0.49,
+          "name": "Dry Sack"
+        },
+        {
+          "start": 0.47,
+          "end": 0.649,
+          "name": "Aspar"
+        },
+        {
+          "start": 0.65,
+          "end": 0.695,
+          "name": "Angel Nieto"
+        },
+        {
+          "start": 0.696,
+          "end": 0.735,
+          "name": "Peluqui"
+        },
+        {
+          "start": 0.752,
+          "end": 0.813,
+          "name": "Ayrton Senna Chicane"
+        },
+        {
+          "start": 0.817,
+          "end": 0.855,
+          "name": "Ferrari"
+        },
+        {
+          "start": 0.872,
+          "end": 0.93,
+          "name": "Lorenzo"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.253,
+          "name": "1"
+        },
+        {
+          "marker": 0.418,
+          "name": "2"
+        },
+        {
+          "marker": 0.697,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "jerez moto": {
+      "name": "Circuito de Jerez - Moto",
+      "trackId": "jerez moto",
+      "country": "ES",
+      "length": 4370,
+      "pitentry": 0.884,
+      "pitexit": 0.055,
+      "turn": [
+        {
+          "start": 0.03,
+          "end": 0.088,
+          "name": "Expo 92"
+        },
+        {
+          "start": 0.095,
+          "end": 0.14,
+          "name": "Michelin"
+        },
+        {
+          "start": 0.25,
+          "end": 0.35,
+          "name": "Sito Pons"
+        },
+        {
+          "start": 0.435,
+          "end": 0.49,
+          "name": "Dry Sack"
+        },
+        {
+          "start": 0.47,
+          "end": 0.649,
+          "name": "Aspar"
+        },
+        {
+          "start": 0.65,
+          "end": 0.695,
+          "name": "Angel Nieto"
+        },
+        {
+          "start": 0.696,
+          "end": 0.735,
+          "name": "Peluqui"
+        },
+        {
+          "start": 0.752,
+          "end": 0.805,
+          "name": "Alex Criville"
+        },
+        {
+          "start": 0.817,
+          "end": 0.855,
+          "name": "Ferrari"
+        },
+        {
+          "start": 0.872,
+          "end": 0.93,
+          "name": "Lorenzo"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.253,
+          "name": "1"
+        },
+        {
+          "marker": 0.418,
+          "name": "2"
+        },
+        {
+          "marker": 0.697,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "lagunaseca school": {
+      "name": "Laguna Seca - School",
+      "trackId": "lagunaseca school",
+      "country": "AU",
+      "year": 1996,
+      "length": 3602,
+      "pitentry": 0.87,
+      "pitexit": 0.154,
+      "turn": [
+        {
+          "start": 0.045,
+          "end": 0.08,
+          "name": "Turn 1"
+        },
+        {
+          "start": 0.1,
+          "end": 0.173,
+          "name": "Andretti Hairpin"
+        },
+        {
+          "start": 0.191,
+          "end": 0.245,
+          "name": "Turn 3"
+        },
+        {
+          "start": 0.265,
+          "end": 0.321,
+          "name": "Turn 4"
+        },
+        {
+          "start": 0.4,
+          "end": 0.465,
+          "name": "Turn 5"
+        },
+        {
+          "start": 0.52,
+          "end": 0.575,
+          "name": "Turn 6"
+        },
+        {
+          "start": 0.661,
+          "end": 0.72,
+          "name": "The Corkscrew"
+        },
+        {
+          "start": 0.725,
+          "end": 0.79,
+          "name": "Turn 9"
+        },
+        {
+          "start": 0.805,
+          "end": 0.855,
+          "name": "Turn 10"
+        },
+        {
+          "start": 0.89,
+          "end": 0.94,
+          "name": "Turn 11"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.576,
+          "marker": 0.61,
+          "end": 0.66,
+          "name": "Rahal Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.184,
+          "name": "1"
+        },
+        {
+          "marker": 0.377,
+          "name": "2"
+        },
+        {
+          "marker": 0.643,
+          "name": "3"
+        },
+        {
+          "marker": 0.804,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "lagunaseca": {
+      "name": "Laguna Seca - Full Course",
+      "trackId": "lagunaseca",
+      "country": "AU",
+      "year": 1996,
+      "length": 3570,
+      "pitentry": 0.87,
+      "pitexit": 0.154,
+      "turn": [
+        {
+          "start": 0.045,
+          "end": 0.08,
+          "name": "Turn 1"
+        },
+        {
+          "start": 0.1,
+          "end": 0.173,
+          "name": "Andretti Hairpin"
+        },
+        {
+          "start": 0.191,
+          "end": 0.245,
+          "name": "Turn 3"
+        },
+        {
+          "start": 0.265,
+          "end": 0.321,
+          "name": "Turn 4"
+        },
+        {
+          "start": 0.4,
+          "end": 0.465,
+          "name": "Turn 5"
+        },
+        {
+          "start": 0.52,
+          "end": 0.575,
+          "name": "Turn 6"
+        },
+        {
+          "start": 0.661,
+          "end": 0.72,
+          "name": "The Corkscrew"
+        },
+        {
+          "start": 0.725,
+          "end": 0.79,
+          "name": "Turn 9"
+        },
+        {
+          "start": 0.805,
+          "end": 0.855,
+          "name": "Turn 10"
+        },
+        {
+          "start": 0.89,
+          "end": 0.94,
+          "name": "Turn 11"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.576,
+          "marker": 0.61,
+          "end": 0.66,
+          "name": "Rahal Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.184,
+          "name": "1"
+        },
+        {
+          "marker": 0.377,
+          "name": "2"
+        },
+        {
+          "marker": 0.643,
+          "name": "3"
+        },
+        {
+          "marker": 0.804,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "ledenon": {
+      "name": "Circuit de Ledenon",
+      "trackId": "ledenon",
+      "country": "FR",
+      "length": 3080,
+      "pitentry": 0.891,
+      "pitexit": 0.062,
+      "turn": [
+        {
+          "start": 0.047,
+          "end": 0.188,
+          "name": "Triple Gauche"
+        },
+        {
+          "start": 0.231,
+          "end": 0.3,
+          "name": "Virage du Pont"
+        },
+        {
+          "start": 0.348,
+          "end": 0.398,
+          "name": "La Carrierasse"
+        },
+        {
+          "start": 0.399,
+          "end": 0.467,
+          "name": "La Courmelle"
+        },
+        {
+          "start": 0.484,
+          "end": 0.53,
+          "name": "Virage du Camion"
+        },
+        {
+          "start": 0.531,
+          "end": 0.595,
+          "name": "Le Cavalet"
+        },
+        {
+          "start": 0.675,
+          "end": 0.75,
+          "name": "La servie"
+        },
+        {
+          "start": 0.827,
+          "end": 0.88,
+          "name": "La cuvette"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.335,
+          "name": "1"
+        },
+        {
+          "marker": 0.618,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "lemans full": {
+      "name": "Circuit des 24 Heures du Mans",
+      "trackId": "lemans full",
+      "country": "FR",
+      "length": 13550,
+      "pitentry": 0.962,
+      "pitexit": 0.03,
+      "turn": [
+        {
+          "start": 0.04,
+          "end": 0.054,
+          "name": "Courbe Dunlop"
+        },
+        {
+          "start": 0.057,
+          "end": 0.074,
+          "name": "Ralentisseur Dunlop"
+        },
+        {
+          "start": 0.077,
+          "end": 0.085,
+          "name": "Descente de la Chapelle"
+        },
+        {
+          "start": 0.087,
+          "end": 0.121,
+          "name": "S du Tetre Rouge"
+        },
+        {
+          "start": 0.133,
+          "end": 0.165,
+          "name": "Virage du Tertre Rouge"
+        },
+        {
+          "start": 0.182,
+          "end": 0.2,
+          "name": "Courbe d'Antares"
+        },
+        {
+          "start": 0.284,
+          "end": 0.315,
+          "name": "1er Ralentisseur"
+        },
+        {
+          "start": 0.431,
+          "end": 0.463,
+          "name": "2e Ralentisseur"
+        },
+        {
+          "start": 0.468,
+          "end": 0.485,
+          "name": "Courbe des Hunaudieres"
+        },
+        {
+          "start": 0.55,
+          "end": 0.575,
+          "name": "Virage de Mulsanne"
+        },
+        {
+          "start": 0.61,
+          "end": 0.632,
+          "name": "Courbe du Golf"
+        },
+        {
+          "start": 0.695,
+          "end": 0.73,
+          "name": "Esses d'Indianapolis"
+        },
+        {
+          "start": 0.74,
+          "end": 0.753,
+          "name": "Virage d'Arnage"
+        },
+        {
+          "start": 0.77,
+          "end": 0.8,
+          "name": "Courbe du Buisson"
+        },
+        {
+          "start": 0.829,
+          "end": 0.855,
+          "name": "Virage Porsche"
+        },
+        {
+          "start": 0.856,
+          "end": 0.876,
+          "name": "Virage du Pont"
+        },
+        {
+          "start": 0.877,
+          "end": 0.906,
+          "name": "Esses du Karting"
+        },
+        {
+          "start": 0.907,
+          "end": 0.923,
+          "name": "Virage Corvette"
+        },
+        {
+          "start": 0.933,
+          "end": 0.947,
+          "name": "Maison Blanche"
+        },
+        {
+          "start": 0.968,
+          "end": 0.979,
+          "name": "Virage Ford"
+        },
+        {
+          "start": 0.98,
+          "end": 0.994,
+          "name": "Virage du Raccordement"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.202,
+          "marker": 0.24,
+          "end": 0.282,
+          "name": "Hundaudieres"
+        },
+        {
+          "start": 0.316,
+          "marker": 0.38,
+          "end": 0.43,
+          "name": "Hundaudieres"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.13,
+          "name": "1"
+        },
+        {
+          "marker": 0.263,
+          "name": "2"
+        },
+        {
+          "marker": 0.409,
+          "name": "3"
+        },
+        {
+          "marker": 0.53,
+          "name": "4"
+        },
+        {
+          "marker": 0.686,
+          "name": "5"
+        },
+        {
+          "marker": 0.816,
+          "name": "6"
+        },
+        {
+          "marker": 1,
+          "name": "7"
+        }
+      ]
+    },
+    "lemans nochicane": {
+      "name": "Circuit des 24 Heures du Mans",
+      "trackId": "lemans nochicane",
+      "country": "FR",
+      "length": 13500,
+      "pitentry": 0.962,
+      "pitexit": 0.03,
+      "turn": [
+        {
+          "start": 0.04,
+          "end": 0.054,
+          "name": "Courbe Dunlop"
+        },
+        {
+          "start": 0.057,
+          "end": 0.074,
+          "name": "Ralentisseur Dunlop"
+        },
+        {
+          "start": 0.077,
+          "end": 0.085,
+          "name": "Descente de la Chapelle"
+        },
+        {
+          "start": 0.087,
+          "end": 0.121,
+          "name": "S du Tetre Rouge"
+        },
+        {
+          "start": 0.133,
+          "end": 0.165,
+          "name": "Virage du Tertre Rouge"
+        },
+        {
+          "start": 0.182,
+          "end": 0.2,
+          "name": "Courbe d'Antares"
+        },
+        {
+          "start": 0.468,
+          "end": 0.485,
+          "name": "Courbe des Hunaudieres"
+        },
+        {
+          "start": 0.55,
+          "end": 0.575,
+          "name": "Virage de Mulsanne"
+        },
+        {
+          "start": 0.61,
+          "end": 0.632,
+          "name": "Courbe du Golf"
+        },
+        {
+          "start": 0.695,
+          "end": 0.73,
+          "name": "Esses d'Indianapolis"
+        },
+        {
+          "start": 0.74,
+          "end": 0.753,
+          "name": "Virage d'Arnage"
+        },
+        {
+          "start": 0.77,
+          "end": 0.8,
+          "name": "Courbe du Buisson"
+        },
+        {
+          "start": 0.829,
+          "end": 0.855,
+          "name": "Virage Porsche"
+        },
+        {
+          "start": 0.856,
+          "end": 0.876,
+          "name": "Virage du Pont"
+        },
+        {
+          "start": 0.877,
+          "end": 0.906,
+          "name": "Esses du Karting"
+        },
+        {
+          "start": 0.907,
+          "end": 0.923,
+          "name": "Virage Corvette"
+        },
+        {
+          "start": 0.933,
+          "end": 0.947,
+          "name": "Maison Blanche"
+        },
+        {
+          "start": 0.968,
+          "end": 0.979,
+          "name": "Virage Ford"
+        },
+        {
+          "start": 0.98,
+          "end": 0.994,
+          "name": "Virage du Raccordement"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.202,
+          "marker": 0.315,
+          "end": 0.43,
+          "name": "Hundaudieres"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.13,
+          "name": "1"
+        },
+        {
+          "marker": 0.528,
+          "name": "2"
+        },
+        {
+          "marker": 0.685,
+          "name": "3"
+        },
+        {
+          "marker": 0.815,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "limerock 2019 chicanes": {
+      "name": "Lime Rock Park - Chicanes",
+      "trackId": "limerock 2019 chicanes",
+      "country": "US",
+      "length": 2460,
+      "sector": [
+        {
+          "marker": 0.228,
+          "name": "1"
+        },
+        {
+          "marker": 0.472,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "limerock 2019 chicanewestb": {
+      "name": "Lime Rock Park - West Bend Chicane",
+      "trackId": "limerock 2019 chicanewestb",
+      "country": "US",
+      "length": 2460,
+      "sector": [
+        {
+          "marker": 0.226,
+          "name": "1"
+        },
+        {
+          "marker": 0.469,
+          "name": "2"
+        },
+        {
+          "marker": 0.622,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "limerock 2019 classic": {
+      "name": "Limerock GP",
+      "trackId": "limerock 2019 classic",
+      "country": "US",
+      "length": 2350,
+      "pitentry": 0.9,
+      "pitexit": 0.046,
+      "turn": [
+        {
+          "start": 0.077,
+          "end": 0.219,
+          "name": "Big Bend"
+        },
+        {
+          "start": 0.234,
+          "end": 0.384,
+          "name": "Esses"
+        },
+        {
+          "start": 0.48,
+          "end": 0.58,
+          "name": "Uphill"
+        },
+        {
+          "start": 0.649,
+          "end": 0.735,
+          "name": "West Bend"
+        },
+        {
+          "start": 0.788,
+          "end": 0.858,
+          "name": "Diving Turn"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.001,
+          "marker": 0.04,
+          "end": 0.076,
+          "name": "Sam Posey Straight"
+        },
+        {
+          "start": 0.385,
+          "marker": 0.42,
+          "end": 0.479,
+          "name": "No Name Straight"
+        },
+        {
+          "start": 0.581,
+          "marker": 0.62,
+          "end": 0.648,
+          "name": "Back Straight"
+        },
+        {
+          "start": 0.736,
+          "marker": 0.75,
+          "end": 0.787,
+          "name": "Downhill"
+        },
+        {
+          "start": 0.859,
+          "marker": 0.92,
+          "end": 1,
+          "name": "Sam Posey Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.23,
+          "name": "1"
+        },
+        {
+          "marker": 0.476,
+          "name": "2"
+        },
+        {
+          "marker": 0.63,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "limerock 2019 gp": {
+      "name": "Limerock GP",
+      "trackId": "limerock 2019 gp",
+      "country": "US",
+      "length": 2340,
+      "pitentry": 0.9,
+      "pitexit": 0.046,
+      "turn": [
+        {
+          "start": 0.077,
+          "end": 0.219,
+          "name": "Big Bend"
+        },
+        {
+          "start": 0.234,
+          "end": 0.384,
+          "name": "Esses"
+        },
+        {
+          "start": 0.48,
+          "end": 0.595,
+          "name": "Uphill"
+        },
+        {
+          "start": 0.649,
+          "end": 0.735,
+          "name": "West Bend"
+        },
+        {
+          "start": 0.788,
+          "end": 0.858,
+          "name": "Diving Turn"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.001,
+          "marker": 0.04,
+          "end": 0.076,
+          "name": "Sam Posey Straight"
+        },
+        {
+          "start": 0.385,
+          "marker": 0.42,
+          "end": 0.479,
+          "name": "No Name Straight"
+        },
+        {
+          "start": 0.596,
+          "marker": 0.62,
+          "end": 0.648,
+          "name": "Back Straight"
+        },
+        {
+          "start": 0.736,
+          "marker": 0.75,
+          "end": 0.787,
+          "name": "Downhill"
+        },
+        {
+          "start": 0.859,
+          "marker": 0.92,
+          "end": 1,
+          "name": "Sam Posey Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.23,
+          "name": "1"
+        },
+        {
+          "marker": 0.479,
+          "name": "2"
+        },
+        {
+          "marker": 0.628,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "limerock 2019 school": {
+      "name": "Lime Rock Park - School",
+      "trackId": "limerock 2019 school",
+      "country": "US",
+      "length": 2460,
+      "sector": [
+        {
+          "marker": 0.229,
+          "name": "1"
+        },
+        {
+          "marker": 0.476,
+          "name": "2"
+        },
+        {
+          "marker": 0.631,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "longbeach": {
+      "name": "Longbeach",
+      "trackId": "longbeach",
+      "country": "US",
+      "length": 3167,
+      "turn": [
+        {
+          "name": "T1",
+          "marker": 0.223
+        },
+        {
+          "name": "T2",
+          "marker": 0.283
+        },
+        {
+          "name": "T3",
+          "marker": 0.295
+        },
+        {
+          "name": "T4",
+          "marker": 0.331
+        },
+        {
+          "name": "T5",
+          "marker": 0.378
+        },
+        {
+          "name": "T6",
+          "marker": 0.505
+        },
+        {
+          "name": "T7",
+          "marker": 0.536
+        },
+        {
+          "name": "T8",
+          "marker": 0.602
+        },
+        {
+          "name": "T9",
+          "marker": 0.801
+        },
+        {
+          "name": "T10",
+          "marker": 0.842
+        },
+        {
+          "name": "T11",
+          "marker": 0.882
+        }
+      ],
+      "sector": [
+        {
+          "name": "1",
+          "marker": 0.312
+        },
+        {
+          "name": "2",
+          "marker": 0.455
+        },
+        {
+          "name": "3",
+          "marker": 0.726
+        },
+        {
+          "name": "4",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "sg30",
+              "time": 70
+            },
+            {
+              "name": "dt",
+              "time": 31
+            }
+          ]
+        }
+      ]
+    },
+    "magnycours gp": {
+      "name": "Magny-Cours",
+      "trackId": "magnycours gp",
+      "country": "FR",
+      "length": 4410,
+      "pitentry": 0.983,
+      "pitexit": 0.13,
+      "turn": [
+        {
+          "start": 0.074,
+          "end": 0.128,
+          "name": "Grande Courbe"
+        },
+        {
+          "start": 0.129,
+          "end": 0.227,
+          "name": "Estoril"
+        },
+        {
+          "start": 0.285,
+          "end": 0.35,
+          "name": "Golf"
+        },
+        {
+          "start": 0.395,
+          "end": 0.44,
+          "name": "Adelaide"
+        },
+        {
+          "start": 0.51,
+          "end": 0.57,
+          "name": "Nuerburgring"
+        },
+        {
+          "start": 0.59,
+          "end": 0.633,
+          "name": "180°"
+        },
+        {
+          "start": 0.735,
+          "end": 0.795,
+          "name": "Imola"
+        },
+        {
+          "start": 0.805,
+          "end": 0.845,
+          "name": "Chateaou d'Eau"
+        },
+        {
+          "start": 0.88,
+          "end": 0.925,
+          "name": "Chicane"
+        },
+        {
+          "start": 0.94,
+          "end": 1,
+          "name": "Complexe du Lycee"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.38,
+          "name": "1"
+        },
+        {
+          "marker": 0.72,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "misano gp": {
+      "name": "Misano Grand Prix",
+      "trackId": "misano gp",
+      "country": "IT",
+      "length": 4170,
+      "pitentry": 0.905,
+      "pitexit": 0.117,
+      "turn": [
+        {
+          "start": 0.049,
+          "end": 0.118,
+          "name": "Variante del Parco"
+        },
+        {
+          "start": 0.17,
+          "end": 0.265,
+          "name": "Curva del Rio"
+        },
+        {
+          "start": 0.365,
+          "end": 0.445,
+          "name": "Curva Quericia"
+        },
+        {
+          "start": 0.475,
+          "end": 0.557,
+          "name": "Curva Tramonto"
+        },
+        {
+          "start": 0.645,
+          "end": 0.751,
+          "name": "Curvone"
+        },
+        {
+          "start": 0.79,
+          "end": 0.839,
+          "name": "Curva del Carro"
+        },
+        {
+          "start": 0.84,
+          "end": 0.89,
+          "name": "Turn 15"
+        },
+        {
+          "start": 0.9,
+          "end": 0.95,
+          "name": "Curva Misano"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.233,
+          "name": "1"
+        },
+        {
+          "marker": 0.639,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "montreal": {
+      "name": "Circuit Gilles Villeneuve",
+      "trackId": "montreal",
+      "country": "CA",
+      "length": 4310,
+      "pitentry": 0.896,
+      "pitexit": 0.073,
+      "turn": [
+        {
+          "start": 0.037,
+          "end": 0.1,
+          "name": "Virage Senna"
+        },
+        {
+          "start": 0.145,
+          "end": 0.195,
+          "name": "T3/T4"
+        },
+        {
+          "start": 0.206,
+          "end": 0.251,
+          "name": "T5"
+        },
+        {
+          "start": 0.273,
+          "end": 0.33,
+          "name": "T6/T7"
+        },
+        {
+          "start": 0.44,
+          "end": 0.5,
+          "name": "T8/T9"
+        },
+        {
+          "start": 0.595,
+          "end": 0.634,
+          "name": "L'Epingle"
+        },
+        {
+          "start": 0.635,
+          "end": 0.665,
+          "name": "T11"
+        },
+        {
+          "start": 0.71,
+          "end": 0.75,
+          "name": "T12"
+        },
+        {
+          "start": 0.878,
+          "end": 0.899,
+          "name": "T13"
+        },
+        {
+          "start": 0.9,
+          "end": 0.922,
+          "name": "T14 - Wall of Champions"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.751,
+          "marker": 0.81,
+          "end": 0.872,
+          "name": "Droit du Casino"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.253,
+          "name": "1"
+        },
+        {
+          "marker": 0.554,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ],
+      "companion": [
+        {
+          "top": -250,
+          "left": -420,
+          "rotation": -78,
+          "scale": 2
+        }
+      ]
+    },
+    "monza combinedchicanes": {
+      "name": "Autodromo Nazionale Monza - Combined",
+      "trackId": "monza combinedchicanes",
+      "country": "IT",
+      "length": 9.99,
+      "sector": [
+        {
+          "marker": 0.255,
+          "name": "1"
+        },
+        {
+          "marker": 0.518,
+          "name": "2"
+        },
+        {
+          "marker": 0.624,
+          "name": "3"
+        },
+        {
+          "marker": 0.699,
+          "name": "4"
+        },
+        {
+          "marker": 0.803,
+          "name": "5"
+        },
+        {
+          "marker": 0.916,
+          "name": "6"
+        },
+        {
+          "marker": 1,
+          "name": "7"
+        }
+      ]
+    },
+    "monza full": {
+      "name": "Monza Full",
+      "trackId": "monza full",
+      "country": "IT",
+      "length": 5750,
+      "pitentry": 0.966,
+      "pitexit": 0.061,
+      "turn": [
+        {
+          "start": 0.143,
+          "end": 0.206,
+          "name": "Prima Variante"
+        },
+        {
+          "start": 0.218,
+          "end": 0.32,
+          "name": "Curva Biassono"
+        },
+        {
+          "start": 0.35,
+          "end": 0.392,
+          "name": "Seconda Variante"
+        },
+        {
+          "start": 0.423,
+          "end": 0.467,
+          "name": "Prima Curva di Lesmo"
+        },
+        {
+          "start": 0.484,
+          "end": 0.52,
+          "name": "Seconda Curva di Lesmo"
+        },
+        {
+          "start": 0.555,
+          "end": 0.594,
+          "name": "Curva del Serraglio"
+        },
+        {
+          "start": 0.65,
+          "end": 0.73,
+          "name": "Variante Ascari"
+        },
+        {
+          "start": 0.866,
+          "end": 0.96,
+          "name": "Curva Parabolica"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.345,
+          "name": "1"
+        },
+        {
+          "marker": 0.476,
+          "name": "2"
+        },
+        {
+          "marker": 0.658,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "sg30",
+              "time": 48
+            },
+            {
+              "name": "dt",
+              "time": 43
+            }
+          ]
+        }
+      ]
+    },
+    "monza junior": {
+      "name": "Autodromo Nazionale Monza - Junior",
+      "trackId": "monza junior",
+      "country": "IT",
+      "length": 2400,
+      "sector": [
+        {
+          "marker": 0.647,
+          "name": "1"
+        },
+        {
+          "marker": 1,
+          "name": "2"
+        }
+      ]
+    },
+    "monza nochicane": {
+      "name": "Autodromo Nazionale Monza - GP without chicanes",
+      "trackId": "monza nochicane",
+      "country": "IT",
+      "lenght": 5630,
+      "sector": [
+        {
+          "marker": 0.342,
+          "name": "1"
+        },
+        {
+          "marker": 0.473,
+          "name": "2"
+        },
+        {
+          "marker": 0.655,
+          "name": "3"
+        },
+        {
+          "marker": 0.852,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "mugello gp": {
+      "name": "Mugello Grand Prix",
+      "trackId": "mugello gp",
+      "country": "IT",
+      "length": 5190,
+      "pitentry": 0.912,
+      "pitexit": 0.06,
+      "turn": [
+        {
+          "start": 0.116,
+          "end": 0.167,
+          "name": "San Donato"
+        },
+        {
+          "start": 0.17,
+          "end": 0.194,
+          "name": "Luco"
+        },
+        {
+          "start": 0.195,
+          "end": 0.235,
+          "name": "Poggiosecco"
+        },
+        {
+          "start": 0.268,
+          "end": 0.294,
+          "name": "Materassi"
+        },
+        {
+          "start": 0.295,
+          "end": 0.32,
+          "name": "Borgo San Lorenzo"
+        },
+        {
+          "start": 0.355,
+          "end": 0.384,
+          "name": "Casanova"
+        },
+        {
+          "start": 0.39,
+          "end": 0.42,
+          "name": "Savelli"
+        },
+        {
+          "start": 0.436,
+          "end": 0.485,
+          "name": "Arrabbiata 1"
+        },
+        {
+          "start": 0.495,
+          "end": 0.535,
+          "name": "Arrabbiata 2"
+        },
+        {
+          "start": 0.57,
+          "end": 0.59,
+          "name": "Scarperia"
+        },
+        {
+          "start": 0.592,
+          "end": 0.625,
+          "name": "Palagio"
+        },
+        {
+          "start": 0.666,
+          "end": 0.722,
+          "name": "Correntaio"
+        },
+        {
+          "start": 0.73,
+          "end": 0.753,
+          "name": "Biondetti 1"
+        },
+        {
+          "start": 0.755,
+          "end": 0.77,
+          "name": "Biondetti 2"
+        },
+        {
+          "start": 0.83,
+          "end": 0.9,
+          "name": "Bucine"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.356,
+          "name": "1"
+        },
+        {
+          "marker": 0.645,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "mugello short": {
+      "name": "Autodromo Internazionale del Mugello - Short",
+      "trackId": "mugello short",
+      "country": "IT",
+      "length": 1400,
+      "pitentry": 0.771,
+      "pitexit": 0.212,
+      "turn": [
+        {
+          "start": 0.249,
+          "end": 0.329
+        },
+        {
+          "start": 0.352,
+          "end": 0.401
+        },
+        {
+          "start": 0.402,
+          "end": 0.462
+        },
+        {
+          "start": 0.562,
+          "end": 0.61
+        },
+        {
+          "start": 0.611,
+          "end": 0.662
+        },
+        {
+          "start": 0.735,
+          "end": 0.785
+        },
+        {
+          "start": 0.812,
+          "end": 0.885
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.728,
+          "name": "1"
+        },
+        {
+          "marker": 1,
+          "name": "2"
+        }
+      ]
+    },
+    "navarra speedlong": {
+      "name": "Circuito de Navarra Speed Circuit Long",
+      "trackId": "navarra speedlong",
+      "country": "ES",
+      "length": 3890,
+      "pitentry": 0.802,
+      "pitexit": 0.029,
+      "turn": [
+        {
+          "start": 0.089,
+          "end": 0.125,
+          "name": "Turn 1"
+        },
+        {
+          "start": 0.126,
+          "end": 0.16,
+          "name": "Turn 2"
+        },
+        {
+          "start": 0.161,
+          "end": 0.201,
+          "name": "Turn 3"
+        },
+        {
+          "start": 0.202,
+          "end": 0.26,
+          "name": "Turn 4"
+        },
+        {
+          "start": 0.29,
+          "end": 0.345,
+          "name": "Turn 5"
+        },
+        {
+          "start": 0.346,
+          "end": 0.385,
+          "name": "Turn 6"
+        },
+        {
+          "start": 0.386,
+          "end": 0.43,
+          "name": "Turn 7"
+        },
+        {
+          "start": 0.435,
+          "end": 0.477,
+          "name": "Turn 8"
+        },
+        {
+          "start": 0.565,
+          "end": 0.605,
+          "name": "Turn 9"
+        },
+        {
+          "start": 0.606,
+          "end": 0.641,
+          "name": "Turn 10"
+        },
+        {
+          "start": 0.646,
+          "end": 0.687,
+          "name": "Turn 11"
+        },
+        {
+          "start": 0.69,
+          "end": 0.727,
+          "name": "Turn 12"
+        },
+        {
+          "start": 0.75,
+          "end": 0.795,
+          "name": "Turn 13"
+        },
+        {
+          "start": 0.815,
+          "end": 0.855,
+          "name": "Turn 14"
+        },
+        {
+          "start": 0.868,
+          "end": 0.915,
+          "name": "Turn 15"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.27,
+          "name": "1"
+        },
+        {
+          "marker": 0.568,
+          "name": "2"
+        },
+        {
+          "marker": 0.735,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "navara speedmedium": {
+      "name": "Circuito de Navarra - Speed Circuit - Medium",
+      "trackId": "navara speedmedium",
+      "country": "ES",
+      "length": 2670,
+      "sector": [
+        {
+          "marker": 0.608,
+          "name": "1"
+        },
+        {
+          "marker": 1,
+          "name": "2"
+        }
+      ]
+    },
+    "navarra speedshort": {
+      "name": "Circuito de Navarra - Speed Circuit - Short",
+      "trackId": "navarra speedshort",
+      "country": "ES",
+      "length": 1330,
+      "sector": [
+        {
+          "marker": 0.623,
+          "name": "1"
+        },
+        {
+          "marker": 1,
+          "name": "2"
+        }
+      ]
+    },
+    "nurburgring combined": {
+      "name": "Nuerburgring Gesamtstrecke 24h",
+      "trackId": "nurburgring combined",
+      "country": "DE",
+      "length": 25180,
+      "pitentry": 0.99,
+      "pitexit": 0.012,
+      "turn": [
+        {
+          "start": 0.021,
+          "end": 0.033,
+          "name": "Yokohama-S"
+        },
+        {
+          "start": 0.042,
+          "end": 0.05,
+          "name": "Valvoline Kurve"
+        },
+        {
+          "start": 0.051,
+          "end": 0.058,
+          "name": "Ford-Kurve"
+        },
+        {
+          "start": 0.071,
+          "end": 0.082,
+          "name": "Dunlop-Kehre"
+        },
+        {
+          "start": 0.087,
+          "end": 0.102,
+          "name": "Michael-Schumacher-S"
+        },
+        {
+          "start": 0.11,
+          "end": 0.117,
+          "name": "Michelin-Kurve"
+        },
+        {
+          "start": 0.118,
+          "end": 0.128,
+          "name": "Warsteiner-Kurve"
+        },
+        {
+          "start": 0.135,
+          "end": 0.145,
+          "name": "ADVAN-Bogen"
+        },
+        {
+          "start": 0.153,
+          "end": 0.164,
+          "name": "NGK-Schikane"
+        },
+        {
+          "start": 0.165,
+          "end": 0.173,
+          "name": "T13"
+        },
+        {
+          "name": "Hatzenbach",
+          "start": 0.183,
+          "end": 0.224
+        },
+        {
+          "name": "Hoheneichen",
+          "start": 0.226,
+          "end": 0.25
+        },
+        {
+          "name": "Quiddelbacher Hoehe",
+          "start": 0.251,
+          "end": 0.264
+        },
+        {
+          "name": "Flugplatz",
+          "start": 0.252,
+          "end": 0.301
+        },
+        {
+          "name": "Schwedenkreuz",
+          "start": 0.304,
+          "end": 0.316
+        },
+        {
+          "name": "Aremberg",
+          "start": 0.317,
+          "end": 0.341
+        },
+        {
+          "name": "Fuchsroehre",
+          "start": 0.342,
+          "end": 0.365
+        },
+        {
+          "name": "Adenauer Forst",
+          "start": 0.368,
+          "end": 0.397
+        },
+        {
+          "name": "Metzgesfeld",
+          "start": 0.398,
+          "end": 0.415
+        },
+        {
+          "name": "Kallenhard",
+          "start": 0.417,
+          "end": 0.429
+        },
+        {
+          "name": "Spiegelkurve",
+          "start": 0.43,
+          "end": 0.437
+        },
+        {
+          "name": "Dreifach-Rechts",
+          "start": 0.438,
+          "end": 0.454
+        },
+        {
+          "name": "Wehrseifen",
+          "start": 0.455,
+          "end": 0.472
+        },
+        {
+          "name": "ExMuehle",
+          "start": 0.487,
+          "end": 0.505
+        },
+        {
+          "name": "Bergwerk",
+          "start": 0.514,
+          "end": 0.535
+        },
+        {
+          "name": "Kesselchen",
+          "start": 0.56,
+          "end": 0.575
+        },
+        {
+          "name": "Klostertal",
+          "start": 0.576,
+          "end": 0.586
+        },
+        {
+          "name": "Mutkurve",
+          "start": 0.587,
+          "end": 0.605
+        },
+        {
+          "name": "Caracciola-Karussell",
+          "start": 0.639,
+          "end": 0.65
+        },
+        {
+          "name": "Hohe Acht",
+          "start": 0.675,
+          "end": 0.685
+        },
+        {
+          "name": "Hedwigshoehe",
+          "start": 0.686,
+          "end": 0.702
+        },
+        {
+          "name": "Wippermann",
+          "start": 0.703,
+          "end": 0.716
+        },
+        {
+          "name": "Eschbach",
+          "start": 0.717,
+          "end": 0.73
+        },
+        {
+          "name": "Bruennchen",
+          "start": 0.731,
+          "end": 0.76
+        },
+        {
+          "name": "Pflanzgarten",
+          "start": 0.761,
+          "end": 0.798
+        },
+        {
+          "name": "Stefan-Bellof-S",
+          "start": 0.799,
+          "end": 0.82
+        },
+        {
+          "name": "Schwalbenschwanz",
+          "start": 0.821,
+          "end": 0.845
+        },
+        {
+          "name": "Galgenkopf",
+          "start": 0.848,
+          "end": 0.865
+        },
+        {
+          "name": "Doettinger Hoehe",
+          "start": 0.866,
+          "end": 0.936
+        },
+        {
+          "name": "Antoniusbuche",
+          "start": 0.94,
+          "end": 0.955
+        },
+        {
+          "name": "Tiergarten",
+          "start": 0.959,
+          "end": 0.965
+        },
+        {
+          "name": "Hohenrain",
+          "start": 0.966,
+          "end": 0.989
+        }
+      ],
+      "sector": [
+        {
+          "name": "1",
+          "marker": 0.037
+        },
+        {
+          "name": "2",
+          "marker": 0.067
+        },
+        {
+          "name": "3",
+          "marker": 0.108
+        },
+        {
+          "name": "4",
+          "marker": 0.15
+        },
+        {
+          "name": "5",
+          "marker": 0.251
+        },
+        {
+          "name": "6",
+          "marker": 0.358
+        },
+        {
+          "name": "7",
+          "marker": 0.421
+        },
+        {
+          "name": "8",
+          "marker": 0.504
+        },
+        {
+          "name": "9",
+          "marker": 0.582
+        },
+        {
+          "name": "10",
+          "marker": 0.66
+        },
+        {
+          "name": "11",
+          "marker": 0.734
+        },
+        {
+          "name": "12",
+          "marker": 0.814
+        },
+        {
+          "name": "13",
+          "marker": 0.989
+        },
+        {
+          "name": "14",
+          "marker": 1
+        }
+      ]
+    },
+    "nurburgring gp": {
+      "name": "Nuerburgring Grand-Prix-Strecke - Grand Prix",
+      "trackId": "nurburgring gp",
+      "country": "DE",
+      "length": 5140,
+      "pitentry": 0.912,
+      "pitexit": 0.112,
+      "sector": [
+        {
+          "marker": 0.283,
+          "name": "1"
+        },
+        {
+          "marker": 0.432,
+          "name": "2"
+        },
+        {
+          "marker": 0.636,
+          "name": "3"
+        },
+        {
+          "marker": 0.43,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "nurburgring gpnochicane": {
+      "name": "Nuerburgring Grand-Prix-Strecke - BES/WEC",
+      "trackId": "nurburgring gpnochicane",
+      "country": "DE",
+      "length": 5060,
+      "pitentry": 0.91,
+      "pitexit": 0.112,
+      "sector": [
+        {
+          "marker": 0.184,
+          "name": "1"
+        },
+        {
+          "marker": 0.432,
+          "name": "2"
+        },
+        {
+          "marker": 0.637,
+          "name": "3"
+        },
+        {
+          "marker": 0.844,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "nurburgring gpshort": {
+      "name": "Nuerburgring Grand-Prix-Strecke - Grand Prix w/out Arena",
+      "trackId": "nurburgring gpshort",
+      "country": "DE",
+      "length": 4570,
+      "pitentry": 0.901,
+      "pitexit": 0.125,
+      "sector": [
+        {
+          "marker": 0.204,
+          "name": "1"
+        },
+        {
+          "marker": 0.368,
+          "name": "2"
+        },
+        {
+          "marker": 0.596,
+          "name": "3"
+        },
+        {
+          "marker": 0.825,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "nurburgring nordschleife": {
+      "name": "Nuerburgring Nordschleife",
+      "trackId": "nurburgring nordschleife",
+      "country": "DE",
+      "length": 20640,
+      "pitentry": 0.993,
+      "pitexit": 0.006,
+      "turn": [
+        {
+          "name": "Hatzenbach",
+          "start": 0.02,
+          "marker": 0.045,
+          "end": 0.071
+        },
+        {
+          "name": "Hoheneichen",
+          "start": 0.072,
+          "marker": 0.08,
+          "end": 0.09
+        },
+        {
+          "name": "Quiddelbacher Hoehe",
+          "start": 0.09,
+          "marker": 0.1,
+          "end": 0.11
+        },
+        {
+          "name": "Flugplatz",
+          "start": 0.11,
+          "marker": 0.14,
+          "end": 0.167
+        },
+        {
+          "name": "Schwedenkreuz",
+          "start": 0.167,
+          "marker": 0.175,
+          "end": 0.18
+        },
+        {
+          "name": "Aremberg",
+          "start": 0.18,
+          "marker": 0.185,
+          "end": 0.196
+        },
+        {
+          "name": "Fuchsroehre",
+          "start": 0.198,
+          "marker": 0.225,
+          "end": 0.234
+        },
+        {
+          "name": "Adenauer Forst",
+          "start": 0.235,
+          "marker": 0.245,
+          "end": 0.262
+        },
+        {
+          "name": "Metzgesfeld",
+          "start": 0.269,
+          "marker": 0.28,
+          "end": 0.302
+        },
+        {
+          "name": "Kallenhard",
+          "start": 0.302,
+          "marker": 0.31,
+          "end": 0.32
+        },
+        {
+          "name": "Spiegelkurve",
+          "start": 0.321,
+          "marker": 0.325,
+          "end": 0.329
+        },
+        {
+          "name": "Dreifach-Rechts",
+          "start": 0.33,
+          "marker": 0.345,
+          "end": 0.355
+        },
+        {
+          "name": "Wehrseifen",
+          "start": 0.356,
+          "marker": 0.362,
+          "end": 0.37
+        },
+        {
+          "name": "ExMuehle",
+          "start": 0.371,
+          "marker": 0.385,
+          "end": 0.408
+        },
+        {
+          "name": "Bergwerk",
+          "start": 0.42,
+          "marker": 0.43,
+          "end": 0.45
+        },
+        {
+          "name": "Kesselchen",
+          "start": 0.451,
+          "marker": 0.48,
+          "end": 0.514
+        },
+        {
+          "name": "Mutkurve",
+          "start": 0.515,
+          "marker": 0.52,
+          "end": 0.527
+        },
+        {
+          "name": "Klostertal",
+          "start": 0.528,
+          "marker": 0.557,
+          "end": 0.572
+        },
+        {
+          "name": "Caracciola-Karussell",
+          "start": 0.576,
+          "marker": 0.57,
+          "end": 0.588
+        },
+        {
+          "name": "Hohe Acht",
+          "start": 0.616,
+          "marker": 0.624,
+          "end": 0.632
+        },
+        {
+          "name": "Hedwigshoehe",
+          "start": 0.633,
+          "marker": 0.64,
+          "end": 0.652
+        },
+        {
+          "name": "Wippermann",
+          "start": 0.653,
+          "marker": 0.66,
+          "end": 0.668
+        },
+        {
+          "name": "Eschbach",
+          "start": 0.669,
+          "marker": 0.68,
+          "end": 0.686
+        },
+        {
+          "name": "Bruennchen",
+          "start": 0.688,
+          "marker": 0.695,
+          "end": 0.72
+        },
+        {
+          "name": "Pflanzgarten",
+          "start": 0.729,
+          "marker": 0.645,
+          "end": 0.77
+        },
+        {
+          "name": "Stefan-Bellof-S",
+          "start": 0.772,
+          "marker": 0.78,
+          "end": 0.79
+        },
+        {
+          "name": "Schwalbenschwanz",
+          "start": 0.792,
+          "marker": 0.81,
+          "end": 0.825
+        },
+        {
+          "name": "Galgenkopf",
+          "start": 0.832,
+          "marker": 0.84,
+          "end": 0.852
+        },
+        {
+          "name": "Doettinger Hoehe",
+          "start": 0.855,
+          "marker": 0.9,
+          "end": 0.94
+        },
+        {
+          "name": "Antoniusbuche",
+          "start": 0.945,
+          "marker": 0.952,
+          "end": 0.961
+        },
+        {
+          "name": "Tiergarten",
+          "start": 0.962,
+          "marker": 0.97,
+          "end": 0.972
+        },
+        {
+          "name": "Tiergarten",
+          "start": 0.973,
+          "marker": 0.99,
+          "end": 1
+        }
+      ],
+      "sector": [
+        {
+          "name": "1",
+          "marker": 0.104
+        },
+        {
+          "name": "2",
+          "marker": 0.232
+        },
+        {
+          "name": "3",
+          "marker": 0.309
+        },
+        {
+          "name": "4",
+          "marker": 0.41
+        },
+        {
+          "name": "5",
+          "marker": 0.506
+        },
+        {
+          "name": "6",
+          "marker": 0.599
+        },
+        {
+          "name": "7",
+          "marker": 0.69
+        },
+        {
+          "name": "8",
+          "marker": 0.789
+        },
+        {
+          "name": "9",
+          "marker": 0.953
+        },
+        {
+          "name": "10",
+          "marker": 1
+        }
+      ]
+    },
+    "okayama full": {
+      "name": "Okayama Full Course",
+      "trackId": "okayama full",
+      "country": "JP",
+      "length": 3650,
+      "pitentry": 0.824,
+      "pitexit": 0.006,
+      "turn": [
+        {
+          "start": 0.038,
+          "end": 0.098,
+          "name": "First Corner"
+        },
+        {
+          "start": 0.115,
+          "end": 0.175,
+          "name": "Williams"
+        },
+        {
+          "start": 0.19,
+          "end": 0.267,
+          "name": "Moss S"
+        },
+        {
+          "start": 0.28,
+          "end": 0.36,
+          "name": "Attwood Curve"
+        },
+        {
+          "start": 0.525,
+          "end": 0.58,
+          "name": "Hairpin Corner"
+        },
+        {
+          "start": 0.585,
+          "end": 0.619,
+          "name": "Revolver Corner"
+        },
+        {
+          "start": 0.622,
+          "end": 0.67,
+          "name": "Piper Corner"
+        },
+        {
+          "start": 0.705,
+          "end": 0.75,
+          "name": "Redman Corner"
+        },
+        {
+          "start": 0.755,
+          "end": 0.8,
+          "name": "Hobbs Corner"
+        },
+        {
+          "start": 0.82,
+          "end": 0.858,
+          "name": "Mike Knight Corner"
+        },
+        {
+          "start": 0.859,
+          "end": 0.92,
+          "name": "Last Corner"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.26,
+          "name": "1"
+        },
+        {
+          "marker": 0.51,
+          "name": "2"
+        },
+        {
+          "marker": 0.695,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "okayama short": {
+      "name": "Okayama International Circuit - Short",
+      "trackId": "okayama short",
+      "country": "JP",
+      "length": 2090,
+      "sector": [
+        {
+          "marker": 0.206,
+          "name": "1"
+        },
+        {
+          "marker": 0.422,
+          "name": "2"
+        },
+        {
+          "marker": 0.738,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "oran gp": {
+      "name": "Oran Park Raceway - GP",
+      "trackId": "oran gp",
+      "country": "AU",
+      "length": 2600,
+      "pitentry": 0.965,
+      "pitexit": 0.138,
+      "turn": [
+        {
+          "start": 0.147,
+          "end": 0.195,
+          "name": "The Sweeper"
+        },
+        {
+          "start": 0.196,
+          "end": 0.268,
+          "name": "Coca-Cola Corner"
+        },
+        {
+          "start": 0.32,
+          "end": 0.38,
+          "name": "Shell Corner"
+        },
+        {
+          "start": 0.414,
+          "end": 0.475,
+          "name": "Champion Curve"
+        },
+        {
+          "start": 0.478,
+          "end": 0.55,
+          "name": "Yokohama Bridge"
+        },
+        {
+          "start": 0.575,
+          "end": 0.65,
+          "name": "Foster's Dip"
+        },
+        {
+          "start": 0.67,
+          "end": 0.73,
+          "name": "Momo Corner"
+        },
+        {
+          "start": 0.755,
+          "end": 0.83,
+          "name": "O'Brien Aluminium Dogleg"
+        },
+        {
+          "start": 0.85,
+          "end": 0.93,
+          "name": "Recaro Corner"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.304,
+          "name": "1"
+        },
+        {
+          "marker": 0.481,
+          "name": "2"
+        },
+        {
+          "marker": 0.659,
+          "name": "3"
+        },
+        {
+          "marker": 0.84,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "oran moto": {
+      "name": "Oran Park Raceway - Moto",
+      "trackId": "oran moto",
+      "country": "AU",
+      "length": 2600,
+      "sector": [
+        {
+          "marker": 0.303,
+          "name": "1"
+        },
+        {
+          "marker": 0.432,
+          "name": "2"
+        },
+        {
+          "marker": 0.66,
+          "name": "3"
+        },
+        {
+          "marker": 0.84,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "oran north": {
+      "name": "Oran Park Raceway - North",
+      "trackId": "oran north",
+      "country": "AU",
+      "length": 1060,
+      "sector": [
+        {
+          "marker": 0.253,
+          "name": "1"
+        },
+        {
+          "marker": 0.742,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "oran northa": {
+      "name": "Oran Park Raceway - North A",
+      "trackId": "oran northa",
+      "country": "AU",
+      "length": 1060,
+      "sector": [
+        {
+          "marker": 0.197,
+          "name": "1"
+        },
+        {
+          "marker": 0.539,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "oran northb": {
+      "name": "Oran Park Raceway - North B",
+      "trackId": "oran northb",
+      "country": "AU",
+      "length": 1060,
+      "sector": [
+        {
+          "marker": 0.239,
+          "name": "1"
+        },
+        {
+          "marker": 0.553,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "oran south": {
+      "name": "Oran Park Raceway - South",
+      "trackId": "oran south",
+      "country": "AU",
+      "length": 1960,
+      "sector": [
+        {
+          "marker": 0.458,
+          "name": "1"
+        },
+        {
+          "marker": 0.746,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "oschersleben alt": {
+      "name": "Motorsport Arena Oschersleben - Alternate",
+      "trackId": "oschersleben alt",
+      "country": "DE",
+      "length": 3660,
+      "pitentry": 0.895,
+      "pitexit": 0.169,
+      "turn": [
+        {
+          "start": 0.125,
+          "end": 0.138
+        },
+        {
+          "start": 0.139,
+          "end": 0.213,
+          "name": "Hotel"
+        },
+        {
+          "start": 0.25,
+          "end": 0.32,
+          "name": "Hasseroeder"
+        },
+        {
+          "start": 0.375,
+          "end": 0.415
+        },
+        {
+          "start": 0.416,
+          "end": 0.441,
+          "name": "Triple"
+        },
+        {
+          "start": 0.442,
+          "end": 0.462
+        },
+        {
+          "start": 0.463,
+          "end": 0.529
+        },
+        {
+          "start": 0.544,
+          "end": 0.559
+        },
+        {
+          "start": 0.56,
+          "end": 0.575
+        },
+        {
+          "start": 0.578,
+          "end": 0.63,
+          "name": "McDonald's"
+        },
+        {
+          "start": 0.73,
+          "end": 0.77,
+          "name": "Shell Kurve"
+        },
+        {
+          "start": 0.771,
+          "end": 0.814,
+          "name": "Amman Kurve"
+        },
+        {
+          "start": 0.841,
+          "end": 0.88,
+          "name": "Bauer Kurve"
+        },
+        {
+          "start": 0.895,
+          "end": 0.95,
+          "name": "Zeppelin Kurve"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.365,
+          "name": "1"
+        },
+        {
+          "marker": 0.718,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "oschersleben bcourse": {
+      "name": "Motorsport Arena Oschersleben - B Course",
+      "trackId": "oschersleben bcourse",
+      "country": "DE",
+      "length": 2390,
+      "pitentry": 0.841,
+      "pitexit": 0.249,
+      "turn": [
+        {
+          "start": 0.156,
+          "end": 0.207
+        },
+        {
+          "start": 0.208,
+          "end": 0.318,
+          "name": "Hotel"
+        },
+        {
+          "start": 0.387,
+          "end": 0.471,
+          "name": "Hasseröder"
+        },
+        {
+          "start": 0.488,
+          "end": 0.546
+        },
+        {
+          "start": 0.604,
+          "end": 0.658,
+          "name": "Shell Kurve"
+        },
+        {
+          "start": 0.659,
+          "end": 0.721,
+          "name": "Amman Kurve"
+        },
+        {
+          "start": 0.766,
+          "end": 0.825,
+          "name": "Bauer Kurve"
+        },
+        {
+          "start": 0.841,
+          "end": 0.931,
+          "name": "Zeppelin Kurve"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.601,
+          "name": "1"
+        },
+        {
+          "marker": 1,
+          "name": "2"
+        }
+      ]
+    },
+    "oschersleben ccourse": {
+      "name": "Motorsport Arena Oschersleben - C Course",
+      "trackId": "oschersleben ccourse",
+      "country": "DE",
+      "length": 1070,
+      "pitentry": 0.721,
+      "pitexit": 0.764,
+      "turn": [
+        {
+          "start": 0.015,
+          "end": 0.075
+        },
+        {
+          "start": 0.076,
+          "end": 0.303
+        },
+        {
+          "start": 0.335,
+          "end": 0.402
+        },
+        {
+          "start": 0.403,
+          "end": 0.445
+        },
+        {
+          "start": 0.446,
+          "end": 0.601
+        },
+        {
+          "start": 0.685,
+          "end": 0.797
+        },
+        {
+          "start": 0.821,
+          "end": 0.914
+        },
+        {
+          "start": 0.915,
+          "end": 0.9
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.25,
+          "name": "1"
+        },
+        {
+          "marker": 0.5,
+          "name": "2"
+        },
+        {
+          "marker": 0.75,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "oschersleben gp": {
+      "name": "Motorsport Arena Oschersleben - Grand Prix",
+      "trackId": "oschersleben gp",
+      "country": "DE",
+      "length": 3610,
+      "pitentry": 0.89,
+      "pitexit": 0.144,
+      "turn": [
+        {
+          "start": 0.1,
+          "end": 0.21,
+          "name": "Hotel"
+        },
+        {
+          "start": 0.25,
+          "end": 0.32,
+          "name": "Hasseroeder"
+        },
+        {
+          "start": 0.375,
+          "end": 0.46,
+          "name": "Triple"
+        },
+        {
+          "start": 0.463,
+          "end": 0.529,
+          "name": "Turn 7"
+        },
+        {
+          "start": 0.544,
+          "end": 0.577,
+          "name": "Schikane"
+        },
+        {
+          "start": 0.578,
+          "end": 0.63,
+          "name": "McDonald's"
+        },
+        {
+          "start": 0.73,
+          "end": 0.77,
+          "name": "Shell Kurve"
+        },
+        {
+          "start": 0.771,
+          "end": 0.814,
+          "name": "Amman Kurve"
+        },
+        {
+          "start": 0.841,
+          "end": 0.88,
+          "name": "Bauer Kurve"
+        },
+        {
+          "start": 0.895,
+          "end": 0.95,
+          "name": "Zeppelin Kurve"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.633,
+          "marker": 0.69,
+          "end": 0.725,
+          "name": "Stadiongerade"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.362,
+          "name": "1"
+        },
+        {
+          "marker": 0.717,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "oulton fosters": {
+      "name": "Oulton Park Circuit - Fosters",
+      "trackId": "oulton fosters",
+      "country": "GB",
+      "length": 2670,
+      "sector": [
+        {
+          "marker": 0.223,
+          "name": "1"
+        },
+        {
+          "marker": 0.574,
+          "name": "2"
+        },
+        {
+          "marker": 0.804,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "oulton fosterswithhislop": {
+      "name": "Oulton Park Circuit - Intl w/out Hislop",
+      "trackId": "oulton fosterswithhislop",
+      "country": "GB",
+      "length": 4330,
+      "sector": [
+        {
+          "marker": 0.221,
+          "name": "1"
+        },
+        {
+          "marker": 0.557,
+          "name": "2"
+        },
+        {
+          "marker": 0.806,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "outlon intbrittens": {
+      "name": "Oulton Park Circuit - Intl w/out Brittens",
+      "trackId": "outlon intbrittens",
+      "country": "GB",
+      "length": 4330,
+      "sector": [
+        {
+          "marker": 0.138,
+          "name": "1"
+        },
+        {
+          "marker": 0.28,
+          "name": "2"
+        },
+        {
+          "marker": 0.452,
+          "name": "3"
+        },
+        {
+          "marker": 0.563,
+          "name": "4"
+        },
+        {
+          "marker": 0.737,
+          "name": "5"
+        },
+        {
+          "marker": 0.879,
+          "name": "6"
+        },
+        {
+          "marker": 1,
+          "name": "7"
+        }
+      ]
+    },
+    "oulton international": {
+      "name": "Oulton Park Circuit - International",
+      "trackId": "oulton international",
+      "country": "UK",
+      "length": 4290,
+      "pitentry": 0.968,
+      "pitexit": 0.081,
+      "turn": [
+        {
+          "name": "Old Hall Corner",
+          "start": 0.043,
+          "end": 0.089
+        },
+        {
+          "name": "Denton's",
+          "start": 0.137,
+          "end": 0.151
+        },
+        {
+          "name": "Cascades",
+          "start": 0.162,
+          "end": 0.212
+        },
+        {
+          "name": "Island Bend",
+          "start": 0.303,
+          "end": 0.36
+        },
+        {
+          "name": "Shell Oils Corner",
+          "start": 0.365,
+          "end": 0.418
+        },
+        {
+          "name": "Britten's",
+          "start": 0.464,
+          "end": 0.499
+        },
+        {
+          "name": "Hislop's",
+          "start": 0.592,
+          "end": 0.624
+        },
+        {
+          "name": "Knickerbrook",
+          "start": 0.635,
+          "end": 0.663
+        },
+        {
+          "name": "Clay Hill",
+          "start": 0.686,
+          "end": 0.726
+        },
+        {
+          "name": "Water Tower",
+          "start": 0.746,
+          "end": 0.767
+        },
+        {
+          "name": "Druids Corner",
+          "start": 0.78,
+          "end": 0.824
+        },
+        {
+          "name": "Lodge Corner",
+          "start": 0.903,
+          "end": 0.941
+        },
+        {
+          "name": "Deer Leap",
+          "start": 0.956,
+          "end": 0.995
+        }
+      ],
+      "straight": [
+        {
+          "name": "The Avenue",
+          "start": 0.09,
+          "end": 0.136
+        },
+        {
+          "name": "Lakeside",
+          "start": 0.213,
+          "end": 0.303
+        },
+        {
+          "name": "Hilltop",
+          "start": 0.502,
+          "end": 0.581
+        },
+        {
+          "name": "Warwick Bridge",
+          "start": 0.835,
+          "end": 0.87
+        }
+      ],
+      "sector": [
+        {
+          "name": "1",
+          "marker": 0.138
+        },
+        {
+          "name": "2",
+          "marker": 0.279
+        },
+        {
+          "name": "3",
+          "marker": 0.452
+        },
+        {
+          "name": "4",
+          "marker": 0.561
+        },
+        {
+          "name": "5",
+          "marker": 0.737
+        },
+        {
+          "name": "6",
+          "marker": 0.879
+        },
+        {
+          "name": "7",
+          "marker": 1
+        }
+      ]
+    },
+    "oulton inthislop": {
+      "name": "Oulton Park intl w/out Brittens",
+      "trackId": "oulton inthislop",
+      "country": "UK",
+      "length": 4280,
+      "pitentry": 0.971,
+      "pitexit": 0.081,
+      "turn": [
+        {
+          "name": "Old Hall Corner",
+          "start": 0.043,
+          "end": 0.089
+        },
+        {
+          "name": "Denton's",
+          "start": 0.137,
+          "end": 0.151
+        },
+        {
+          "name": "Cascades",
+          "start": 0.162,
+          "end": 0.212
+        },
+        {
+          "name": "Island Bend",
+          "start": 0.303,
+          "end": 0.36
+        },
+        {
+          "name": "Shell Oils Corner",
+          "start": 0.365,
+          "end": 0.418
+        },
+        {
+          "name": "Hislop's",
+          "start": 0.592,
+          "end": 0.624
+        },
+        {
+          "name": "Knickerbrook",
+          "start": 0.635,
+          "end": 0.663
+        },
+        {
+          "name": "Clay Hill",
+          "start": 0.686,
+          "end": 0.726
+        },
+        {
+          "name": "Water Tower",
+          "start": 0.746,
+          "end": 0.767
+        },
+        {
+          "name": "Druids Corner",
+          "start": 0.781,
+          "end": 0.824
+        },
+        {
+          "name": "Lodge Corner",
+          "start": 0.903,
+          "end": 0.941
+        },
+        {
+          "name": "Deer Leap",
+          "start": 0.956,
+          "end": 0.995
+        }
+      ],
+      "straight": [
+        {
+          "name": "The Avenue",
+          "start": 0.09,
+          "end": 0.136
+        },
+        {
+          "name": "Lakeside",
+          "start": 0.213,
+          "end": 0.303
+        },
+        {
+          "name": "Hilltop",
+          "start": 0.487,
+          "end": 0.581
+        },
+        {
+          "name": "Warwick Bridge",
+          "start": 0.839,
+          "end": 0.87
+        }
+      ],
+      "sector": [
+        {
+          "name": "1",
+          "marker": 0.138
+        },
+        {
+          "name": "2",
+          "marker": 0.28
+        },
+        {
+          "name": "3",
+          "marker": 0.452
+        },
+        {
+          "name": "4",
+          "marker": 0.561
+        },
+        {
+          "name": "5",
+          "marker": 0.737
+        },
+        {
+          "name": "6",
+          "marker": 0.88
+        },
+        {
+          "name": "7",
+          "marker": 1
+        }
+      ]
+    },
+    "oulton intnochicane": {
+      "name": "Oulton Park Circuit - Intl w/no Chicanes",
+      "trackId": "oulton intnochicane",
+      "country": "GB",
+      "length": 4330,
+      "sector": [
+        {
+          "marker": 0.138,
+          "name": "1"
+        },
+        {
+          "marker": 0.281,
+          "name": "2"
+        },
+        {
+          "marker": 0.453,
+          "name": "3"
+        },
+        {
+          "marker": 0.563,
+          "name": "4"
+        },
+        {
+          "marker": 0.736,
+          "name": "5"
+        },
+        {
+          "marker": 0.879,
+          "name": "6"
+        },
+        {
+          "marker": 1,
+          "name": "7"
+        }
+      ]
+    },
+    "oulton islandhistoric": {
+      "name": "Oulton Park Circuit - Island Historic",
+      "trackId": "oulton islandhistoric",
+      "country": "GB",
+      "length": 3630,
+      "sector": [
+        {
+          "marker": 0.167,
+          "name": "1"
+        },
+        {
+          "marker": 0.314,
+          "name": "2"
+        },
+        {
+          "marker": 0.472,
+          "name": "3"
+        },
+        {
+          "marker": 0.682,
+          "name": "4"
+        },
+        {
+          "marker": 0.854,
+          "name": "5"
+        },
+        {
+          "marker": 1,
+          "name": "6"
+        }
+      ]
+    },
+    "oulton island": {
+      "name": "Oulton Park Circuit - Island",
+      "trackId": "oulton island",
+      "country": "GB",
+      "length": 3630,
+      "sector": [
+        {
+          "marker": 0.166,
+          "name": "1"
+        },
+        {
+          "marker": 0.313,
+          "name": "2"
+        },
+        {
+          "marker": 0.469,
+          "name": "3"
+        },
+        {
+          "marker": 0.682,
+          "name": "4"
+        },
+        {
+          "marker": 0.854,
+          "name": "5"
+        },
+        {
+          "marker": 1,
+          "name": "6"
+        }
+      ]
+    },
+    "phillipisland": {
+      "name": "Phillip Island Circuit",
+      "trackId": "phillipisland",
+      "country": "AU",
+      "length": 4440,
+      "pitentry": 0.834,
+      "pitexit": 0.024,
+      "turn": [
+        {
+          "start": 0.1,
+          "end": 0.16
+        },
+        {
+          "start": 0.178,
+          "end": 0.267
+        },
+        {
+          "start": 0.324,
+          "end": 0.384
+        },
+        {
+          "start": 0.415,
+          "end": 0.448
+        },
+        {
+          "start": 0.456,
+          "end": 0.47
+        },
+        {
+          "start": 0.472,
+          "end": 0.525
+        },
+        {
+          "start": 0.546,
+          "end": 0.574
+        },
+        {
+          "start": 0.584,
+          "end": 0.632
+        },
+        {
+          "start": 0.648,
+          "end": 0.735
+        },
+        {
+          "start": 0.74,
+          "end": 0.768
+        },
+        {
+          "start": 0.77,
+          "end": 0.813
+        },
+        {
+          "start": 0.83,
+          "end": 0.913
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.371,
+          "name": "1"
+        },
+        {
+          "marker": 0.629,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "roadamerica bend": {
+      "name": "Road America Bend",
+      "trackId": "roadamerica bend",
+      "country": "US",
+      "length": 6480,
+      "pitentry": 0.926,
+      "pitexit": 0.055,
+      "turn": [
+        {
+          "start": 0.079,
+          "end": 0.117,
+          "name": "Turn 1"
+        },
+        {
+          "start": 0.153,
+          "end": 0.188,
+          "name": "Turn 3"
+        },
+        {
+          "start": 0.252,
+          "end": 0.297,
+          "name": "Moraine Sweep"
+        },
+        {
+          "start": 0.331,
+          "end": 0.366,
+          "name": "Turn 5"
+        },
+        {
+          "start": 0.386,
+          "end": 0.411,
+          "name": "Turn 6"
+        },
+        {
+          "start": 0.425,
+          "end": 0.445,
+          "name": "Turn 7"
+        },
+        {
+          "start": 0.479,
+          "end": 0.509,
+          "name": "Turn 8"
+        },
+        {
+          "start": 0.524,
+          "end": 0.608,
+          "name": "The Carousel"
+        },
+        {
+          "start": 0.624,
+          "end": 0.652,
+          "name": "The Bend"
+        },
+        {
+          "start": 0.713,
+          "end": 0.763,
+          "name": "Kettle Bottoms"
+        },
+        {
+          "start": 0.777,
+          "end": 0.808,
+          "name": "Canada Corner"
+        },
+        {
+          "start": 0.826,
+          "end": 0.857,
+          "name": "Bill Mitchell Bend"
+        },
+        {
+          "start": 0.872,
+          "end": 0.911,
+          "name": "Turn 14"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.446,
+          "marker": 0.46,
+          "end": 0.475,
+          "name": "Hurry Downs"
+        },
+        {
+          "start": 0.809,
+          "marker": 0.817,
+          "end": 0.825,
+          "name": "Thunder Valley"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.141,
+          "name": "1"
+        },
+        {
+          "marker": 0.323,
+          "name": "2"
+        },
+        {
+          "marker": 0.473,
+          "name": "3"
+        },
+        {
+          "marker": 0.763,
+          "name": "4"
+        },
+        {
+          "marker": 0.867,
+          "name": "5"
+        },
+        {
+          "marker": 1,
+          "name": "6"
+        }
+      ]
+    },
+    "roadamerica full": {
+      "name": "Road America Full Course",
+      "trackId": "roadamerica full",
+      "country": "US",
+      "length": 6410,
+      "pitentry": 0.925,
+      "pitexit": 0.056,
+      "turn": [
+        {
+          "start": 0.08,
+          "end": 0.118,
+          "name": "Turn 1"
+        },
+        {
+          "start": 0.155,
+          "end": 0.19,
+          "name": "Turn 3"
+        },
+        {
+          "start": 0.255,
+          "end": 0.3,
+          "name": "Moraine Sweep"
+        },
+        {
+          "start": 0.335,
+          "end": 0.37,
+          "name": "Turn 5"
+        },
+        {
+          "start": 0.39,
+          "end": 0.415,
+          "name": "Turn 6"
+        },
+        {
+          "start": 0.43,
+          "end": 0.45,
+          "name": "Turn 7"
+        },
+        {
+          "start": 0.484,
+          "end": 0.515,
+          "name": "Turn 8"
+        },
+        {
+          "start": 0.53,
+          "end": 0.615,
+          "name": "The Carousel"
+        },
+        {
+          "start": 0.64,
+          "end": 0.68,
+          "name": "The Kink"
+        },
+        {
+          "start": 0.71,
+          "end": 0.76,
+          "name": "Kettle Bottoms"
+        },
+        {
+          "start": 0.775,
+          "end": 0.806,
+          "name": "Canada Corner"
+        },
+        {
+          "start": 0.824,
+          "end": 0.855,
+          "name": "Bill Mitchell Bend"
+        },
+        {
+          "start": 0.871,
+          "end": 0.91,
+          "name": "Turn 14"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.451,
+          "marker": 0.465,
+          "end": 0.48,
+          "name": "Hurry Downs"
+        },
+        {
+          "start": 0.807,
+          "marker": 0.815,
+          "end": 0.823,
+          "name": "Thunder Valley"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.143,
+          "name": "1"
+        },
+        {
+          "marker": 0.327,
+          "name": "2"
+        },
+        {
+          "marker": 0.478,
+          "name": "3"
+        },
+        {
+          "marker": 0.76,
+          "name": "4"
+        },
+        {
+          "marker": 0.866,
+          "name": "5"
+        },
+        {
+          "marker": 1,
+          "name": "6"
+        }
+      ]
+    },
+    "roadatlanta full": {
+      "name": "Road Atlanta - Full Course",
+      "trackId": "roadatlanta full",
+      "country": "US",
+      "year": 2017,
+      "length": 4060,
+      "pitentry": 0.94,
+      "pitexit": 0.131,
+      "turn": [
+        {
+          "start": 0.049,
+          "end": 0.155,
+          "name": "Turn 1"
+        },
+        {
+          "start": 0.156,
+          "end": 0.195,
+          "name": "Turn 2"
+        },
+        {
+          "start": 0.196,
+          "end": 0.213,
+          "name": "Turn 3"
+        },
+        {
+          "start": 0.214,
+          "end": 0.249,
+          "name": "Turn 4"
+        },
+        {
+          "start": 0.26,
+          "end": 0.332,
+          "name": "The Esses"
+        },
+        {
+          "start": 0.333,
+          "end": 0.373,
+          "name": "Turn 5"
+        },
+        {
+          "start": 0.466,
+          "end": 0.505,
+          "name": "Turn 6"
+        },
+        {
+          "start": 0.515,
+          "end": 0.545,
+          "name": "Turn 7"
+        },
+        {
+          "start": 0.56,
+          "end": 0.63,
+          "name": "Turn 8"
+        },
+        {
+          "start": 0.729,
+          "end": 0.79,
+          "name": "Turn 9"
+        },
+        {
+          "start": 0.825,
+          "end": 0.866,
+          "name": "Turn 10A"
+        },
+        {
+          "start": 0.867,
+          "end": 0.897,
+          "name": "Turn 10B"
+        },
+        {
+          "start": 0.908,
+          "end": 0.941,
+          "name": "Turn 11"
+        },
+        {
+          "start": 0.959,
+          "end": 1,
+          "name": "Turn 12"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.168,
+          "name": "1"
+        },
+        {
+          "marker": 0.443,
+          "name": "2"
+        },
+        {
+          "marker": 0.787,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "rudskogen": {
+      "name": "Rudskogen Motorsenter",
+      "trackId": "rudskogen",
+      "country": "NO",
+      "year": 2012,
+      "length": 3150,
+      "pitentry": 0.907,
+      "pitexit": 0.132,
+      "turn": [
+        {
+          "start": 0.092,
+          "end": 0.125,
+          "name": "Turn 1"
+        },
+        {
+          "start": 0.132,
+          "end": 0.22,
+          "name": "Turn 2"
+        },
+        {
+          "start": 0.324,
+          "end": 0.407,
+          "name": "Turn 3"
+        },
+        {
+          "start": 0.408,
+          "end": 0.456,
+          "name": "Turn 4"
+        },
+        {
+          "start": 0.47,
+          "end": 0.499,
+          "name": "Turn 5"
+        },
+        {
+          "start": 0.5,
+          "end": 0.527,
+          "name": "Turn 6"
+        },
+        {
+          "start": 0.528,
+          "end": 0.552,
+          "name": "Turn 7"
+        },
+        {
+          "start": 0.553,
+          "end": 0.598,
+          "name": "Turn 8"
+        },
+        {
+          "start": 0.599,
+          "end": 0.642,
+          "name": "Turn 9"
+        },
+        {
+          "start": 0.671,
+          "end": 0.729,
+          "name": "Turn 10"
+        },
+        {
+          "start": 0.739,
+          "end": 0.774,
+          "name": "Turn 11"
+        },
+        {
+          "start": 0.775,
+          "end": 0.819,
+          "name": "Turn 12"
+        },
+        {
+          "start": 0.82,
+          "end": 0.854,
+          "name": "Turn 13"
+        },
+        {
+          "start": 0.855,
+          "end": 0.95,
+          "name": "Turn 14"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.336,
+          "name": "1"
+        },
+        {
+          "marker": 0.672,
+          "name": "2"
+        },
+        {
+          "marker": 0.822,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "sachsenring": {
+      "name": "Sachsenring",
+      "trackId": "sachsenring",
+      "country": "DE",
+      "length": 3590,
+      "pitentry": 0.974,
+      "pitexit": 0.147,
+      "turn": [
+        {
+          "start": 0.129,
+          "end": 0.181,
+          "name": "auto motor und sport-Kurve"
+        },
+        {
+          "start": 0.19,
+          "end": 0.307,
+          "name": "Omega-Kurve"
+        },
+        {
+          "start": 0.308,
+          "end": 0.383,
+          "name": "Kleine Kuppe-Kurve"
+        },
+        {
+          "start": 0.41,
+          "end": 0.453,
+          "name": "Karthallen-Kurve"
+        },
+        {
+          "start": 0.51,
+          "end": 0.555,
+          "name": "Volkswagen-Kurve"
+        },
+        {
+          "start": 0.58,
+          "end": 0.615,
+          "name": "Grosse Kuppe-Kurve"
+        },
+        {
+          "start": 0.62,
+          "end": 0.665,
+          "name": "Nordkurve "
+        },
+        {
+          "start": 0.668,
+          "end": 0.749,
+          "name": "Ralf-Waldmann-Kurve"
+        },
+        {
+          "start": 0.797,
+          "end": 0.876,
+          "name": "Sachsen Kurve"
+        },
+        {
+          "start": 0.915,
+          "end": 0.98,
+          "name": "Queckenberg Kurve"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.75,
+          "marker": 0.775,
+          "end": 0.796,
+          "name": "Wasserfall"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.458,
+          "name": "1"
+        },
+        {
+          "marker": 0.724,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "sebring club": {
+      "name": "Sebring International Raceway - Club",
+      "trackId": "sebring club",
+      "country": "US",
+      "length": 2810,
+      "pitentry": 0.981,
+      "pitexit": 0.168,
+      "sector": [
+        {
+          "marker": 0.32,
+          "name": "1"
+        },
+        {
+          "marker": 0.705,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "sebring international": {
+      "name": "Sebring Int. Raceway",
+      "trackId": "sebring international",
+      "country": "US",
+      "length": 5954,
+      "pitentry": 0.962,
+      "pitexit": 0.08,
+      "turn": [
+        {
+          "name": "Turn One",
+          "start": 0.053,
+          "end": 0.117,
+          "marker": 0.094
+        },
+        {
+          "name": "Turn Two",
+          "start": 0.125,
+          "end": 0.151,
+          "marker": 0.143
+        },
+        {
+          "name": "T3",
+          "start": 0.152,
+          "end": 0.17,
+          "marker": 0.164
+        },
+        {
+          "name": "T4",
+          "start": 0.171,
+          "end": 0.185,
+          "marker": 0.183
+        },
+        {
+          "name": "T5",
+          "start": 0.186,
+          "end": 0.213,
+          "marker": 0.197
+        },
+        {
+          "name": "Gurney Bend",
+          "start": 0.214,
+          "end": 0.287,
+          "marker": 0.236
+        },
+        {
+          "name": "Hairpin Turn",
+          "start": 0.329,
+          "end": 0.373,
+          "marker": 0.346
+        },
+        {
+          "name": "Fangio Chicane",
+          "start": 0.374,
+          "end": 0.402,
+          "marker": 0.387
+        },
+        {
+          "name": "Fangio Chicane",
+          "start": 0.403,
+          "end": 0.447,
+          "marker": 0.429
+        },
+        {
+          "name": "Cunningham",
+          "start": 0.466,
+          "end": 0.489,
+          "marker": 0.478
+        },
+        {
+          "name": "T11",
+          "start": 0.493,
+          "end": 0.524,
+          "marker": 0.508
+        },
+        {
+          "name": "T12",
+          "start": 0.53,
+          "end": 0.548,
+          "marker": 0.539
+        },
+        {
+          "name": "Tower Turn",
+          "start": 0.552,
+          "end": 0.581,
+          "marker": 0.563
+        },
+        {
+          "name": "Bishop Bend",
+          "start": 0.62,
+          "end": 0.675,
+          "marker": 0.638
+        },
+        {
+          "name": "Gendebien Bend",
+          "start": 0.68,
+          "end": 0.707,
+          "marker": 0.698
+        },
+        {
+          "name": "Le Mans Curve",
+          "start": 0.712,
+          "end": 0.753,
+          "marker": 0.736
+        },
+        {
+          "name": "Sunset Bend",
+          "start": 0.881,
+          "end": 0.972,
+          "marker": 0.93
+        }
+      ],
+      "straight": [
+        {
+          "name": "Flying Fortress Straight",
+          "start": 0.582,
+          "end": 0.619,
+          "marker": 0.604
+        },
+        {
+          "name": "Ulmann Straight",
+          "start": 0.754,
+          "end": 0.88,
+          "marker": 0.82
+        }
+      ],
+      "sector": [
+        {
+          "name": "1",
+          "marker": 0.132
+        },
+        {
+          "name": "2",
+          "marker": 0.308
+        },
+        {
+          "name": "3",
+          "marker": 0.443
+        },
+        {
+          "name": "4",
+          "marker": 0.531
+        },
+        {
+          "name": "5",
+          "marker": 0.659
+        },
+        {
+          "name": "6",
+          "marker": 0.876
+        },
+        {
+          "name": "7",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 25
+            }
+          ]
+        }
+      ],
+      "companion": [
+        {
+          "top": -5,
+          "left": 10,
+          "rotation": 0,
+          "scale": 1
+        }
+      ]
+    },
+    "sebring modified": {
+      "name": "Sebring International Raceway - Modified",
+      "trackId": "sebring modified",
+      "country": "US",
+      "length": 3170,
+      "pitentry": 0.921,
+      "pitexit": 0.143,
+      "sector": [
+        {
+          "marker": 0.358,
+          "name": "1"
+        },
+        {
+          "marker": 0.741,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "silverstone 2019 gp": {
+      "name": "Silverstone Circuit - Arena Grand Prix",
+      "trackId": "silverstone 2019 gp",
+      "country": "UK",
+      "year": 2021,
+      "length": 5800,
+      "pitentry": 0.905,
+      "pitexit": 0.02,
+      "turn": [
+        {
+          "start": 0.05,
+          "end": 0.089,
+          "name": "Abbey"
+        },
+        {
+          "start": 0.092,
+          "end": 0.123,
+          "name": "Farm Curve"
+        },
+        {
+          "start": 0.141,
+          "end": 0.167,
+          "name": "Village"
+        },
+        {
+          "start": 0.168,
+          "end": 0.191,
+          "name": "The Loop"
+        },
+        {
+          "start": 0.195,
+          "end": 0.232,
+          "name": "Aintree"
+        },
+        {
+          "start": 0.313,
+          "end": 0.352,
+          "name": "Brooklands"
+        },
+        {
+          "start": 0.353,
+          "end": 0.397,
+          "name": "Luffield"
+        },
+        {
+          "start": 0.407,
+          "end": 0.455,
+          "name": "Woodcote"
+        },
+        {
+          "start": 0.5,
+          "end": 0.559,
+          "name": "Copse"
+        },
+        {
+          "start": 0.604,
+          "end": 0.643,
+          "name": "Maggots"
+        },
+        {
+          "start": 0.644,
+          "end": 0.671,
+          "name": "Becketts"
+        },
+        {
+          "start": 0.672,
+          "end": 0.723,
+          "name": "Chapel"
+        },
+        {
+          "start": 0.836,
+          "end": 0.888,
+          "name": "Stowe"
+        },
+        {
+          "start": 0.924,
+          "end": 0.947,
+          "name": "Vale"
+        },
+        {
+          "start": 0.948,
+          "end": 1,
+          "name": "Club"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0,
+          "marker": 0.025,
+          "end": 0.049,
+          "name": "Hamilton Straight"
+        },
+        {
+          "start": 0.233,
+          "marker": 0.274,
+          "end": 0.309,
+          "name": "Wellington Straight"
+        },
+        {
+          "start": 0.724,
+          "marker": 0.78,
+          "end": 0.835,
+          "name": "Hangar Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.135,
+          "name": "1"
+        },
+        {
+          "marker": 0.293,
+          "name": "2"
+        },
+        {
+          "marker": 0.609,
+          "name": "3"
+        },
+        {
+          "marker": 0.83,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "snetterton 100": {
+      "name": "Snetterton Circuit - 100",
+      "trackId": "snetterton 100",
+      "country": "GB",
+      "length": 1570,
+      "sector": [
+        {
+          "marker": 0.53,
+          "name": "1"
+        },
+        {
+          "marker": 1,
+          "name": "2"
+        }
+      ]
+    },
+    "snetterton 200": {
+      "name": "Snetterton Circuit - 200",
+      "trackId": "snetterton 200",
+      "country": "GB",
+      "length": 3210,
+      "sector": [
+        {
+          "marker": 0.495,
+          "name": "1"
+        },
+        {
+          "marker": 0.704,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "snetterton 300": {
+      "name": "Snetterton 300 Circuit",
+      "trackId": "snetterton 300",
+      "country": "UK",
+      "length": 4740,
+      "pitentry": 0.94,
+      "pitexit": 0.02,
+      "turn": [
+        {
+          "start": 0.049,
+          "end": 0.118,
+          "name": "Riches"
+        },
+        {
+          "start": 0.15,
+          "end": 0.189,
+          "name": "Wilson"
+        },
+        {
+          "start": 0.221,
+          "end": 0.271,
+          "name": "Palmer"
+        },
+        {
+          "start": 0.325,
+          "end": 0.377,
+          "name": "Agostini"
+        },
+        {
+          "start": 0.404,
+          "end": 0.44,
+          "name": "Hamilton"
+        },
+        {
+          "start": 0.456,
+          "end": 0.492,
+          "name": "Oggies"
+        },
+        {
+          "start": 0.504,
+          "end": 0.549,
+          "name": "Williams"
+        },
+        {
+          "start": 0.675,
+          "end": 0.741,
+          "name": "Brundle"
+        },
+        {
+          "start": 0.755,
+          "end": 0.796,
+          "name": "Bomb Hole"
+        },
+        {
+          "start": 0.808,
+          "end": 0.89,
+          "name": "Coram"
+        },
+        {
+          "start": 0.891,
+          "end": 0.913,
+          "name": "Murrays"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0,
+          "marker": 0.022,
+          "end": 0.044,
+          "name": "Senna Straight"
+        },
+        {
+          "start": 0.55,
+          "marker": 0.6,
+          "end": 0.674,
+          "name": "Bentley Straight"
+        },
+        {
+          "start": 0.95,
+          "marker": 0.97,
+          "end": 1,
+          "name": "Senna Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.321,
+          "name": "1"
+        },
+        {
+          "marker": 0.662,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "spa 2024 combined": {
+      "name": "Spa Endurance",
+      "trackId": "spa 2024 combined",
+      "country": "BE",
+      "length": 6930,
+      "pitentry": 0.971,
+      "pitexit": 0.212,
+      "turn": [
+        {
+          "start": 0.046,
+          "end": 0.077,
+          "name": "La Source"
+        },
+        {
+          "start": 0.138,
+          "end": 0.155,
+          "name": "Eau Rouge"
+        },
+        {
+          "start": 0.156,
+          "end": 0.19,
+          "name": "Raidillon"
+        },
+        {
+          "start": 0.216,
+          "end": 0.239,
+          "name": "Kemmel"
+        },
+        {
+          "start": 0.328,
+          "end": 0.365,
+          "name": "Les Combes"
+        },
+        {
+          "start": 0.371,
+          "end": 0.4,
+          "name": "Malmedy"
+        },
+        {
+          "start": 0.42,
+          "end": 0.454,
+          "name": "Bruxelles"
+        },
+        {
+          "start": 0.462,
+          "end": 0.49,
+          "name": "Speaker's Corner"
+        },
+        {
+          "start": 0.532,
+          "end": 0.605,
+          "name": "Double Gauche"
+        },
+        {
+          "start": 0.63,
+          "end": 0.68,
+          "name": "Les Fagnes"
+        },
+        {
+          "start": 0.693,
+          "end": 0.718,
+          "name": "Campus"
+        },
+        {
+          "start": 0.727,
+          "end": 0.754,
+          "name": "Stavelot"
+        },
+        {
+          "start": 0.766,
+          "end": 0.811,
+          "name": "Courbe Paul Frere"
+        },
+        {
+          "start": 0.869,
+          "end": 0.906,
+          "name": "Blanchimont"
+        },
+        {
+          "start": 0.953,
+          "end": 0.986,
+          "name": "Chicane"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.24,
+          "marker": 0.28,
+          "end": 0.32,
+          "name": "Kemmel Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.31,
+          "name": "1"
+        },
+        {
+          "marker": 0.522,
+          "name": "2"
+        },
+        {
+          "marker": 0.693,
+          "name": "3"
+        },
+        {
+          "marker": 0.931,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "spa 2024 low": {
+      "name": "Spa Classic Pits",
+      "trackId": "spa 2024 low",
+      "country": "BE",
+      "length": 6930,
+      "pitentry": 0.966,
+      "pitexit": 0.212,
+      "turn": [
+        {
+          "start": 0.024,
+          "end": 0.042,
+          "name": "Eau Rouge"
+        },
+        {
+          "start": 0.043,
+          "end": 0.084,
+          "name": "Raidillon"
+        },
+        {
+          "start": 0.103,
+          "end": 0.125,
+          "name": "Kemmel"
+        },
+        {
+          "start": 0.211,
+          "end": 0.252,
+          "name": "Les Combes"
+        },
+        {
+          "start": 0.256,
+          "end": 0.277,
+          "name": "Malmedy"
+        },
+        {
+          "start": 0.3,
+          "end": 0.34,
+          "name": "Bruxelles"
+        },
+        {
+          "start": 0.343,
+          "end": 0.372,
+          "name": "Speaker's Corner"
+        },
+        {
+          "start": 0.415,
+          "end": 0.486,
+          "name": "Double Gauche"
+        },
+        {
+          "start": 0.51,
+          "end": 0.567,
+          "name": "Les Fagnes"
+        },
+        {
+          "start": 0.579,
+          "end": 0.601,
+          "name": "Campus"
+        },
+        {
+          "start": 0.611,
+          "end": 0.636,
+          "name": "Stavelot"
+        },
+        {
+          "start": 0.661,
+          "end": 0.73,
+          "name": "Courbe Paul Frere"
+        },
+        {
+          "start": 0.755,
+          "end": 0.8,
+          "name": "Blanchimont"
+        },
+        {
+          "start": 0.835,
+          "end": 0.868,
+          "name": "Chicane"
+        },
+        {
+          "start": 0.93,
+          "end": 0.96,
+          "name": "La Source"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.126,
+          "marker": 0.165,
+          "end": 0.195,
+          "name": "Kemmel Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.193,
+          "name": "1"
+        },
+        {
+          "marker": 0.405,
+          "name": "2"
+        },
+        {
+          "marker": 0.575,
+          "name": "3"
+        },
+        {
+          "marker": 0.814,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "spa 2024 up": {
+      "name": "Spa Grand Prix Pits",
+      "trackId": "spa 2024 up",
+      "country": "BE",
+      "length": 6930,
+      "pitentry": 0.971,
+      "pitexit": 0.065,
+      "turn": [
+        {
+          "start": 0.046,
+          "end": 0.077,
+          "name": "La Source"
+        },
+        {
+          "start": 0.138,
+          "end": 0.155,
+          "name": "Eau Rouge"
+        },
+        {
+          "start": 0.156,
+          "end": 0.19,
+          "name": "Raidillon"
+        },
+        {
+          "start": 0.216,
+          "end": 0.239,
+          "name": "Kemmel"
+        },
+        {
+          "start": 0.328,
+          "end": 0.365,
+          "name": "Les Combes"
+        },
+        {
+          "start": 0.371,
+          "end": 0.4,
+          "name": "Malmedy"
+        },
+        {
+          "start": 0.42,
+          "end": 0.454,
+          "name": "Bruxelles"
+        },
+        {
+          "start": 0.462,
+          "end": 0.49,
+          "name": "Speaker's Corner"
+        },
+        {
+          "start": 0.532,
+          "end": 0.605,
+          "name": "Double Gauche"
+        },
+        {
+          "start": 0.63,
+          "end": 0.68,
+          "name": "Les Fagnes"
+        },
+        {
+          "start": 0.693,
+          "end": 0.718,
+          "name": "Campus"
+        },
+        {
+          "start": 0.727,
+          "end": 0.754,
+          "name": "Stavelot"
+        },
+        {
+          "start": 0.766,
+          "end": 0.811,
+          "name": "Courbe Paul Frere"
+        },
+        {
+          "start": 0.869,
+          "end": 0.906,
+          "name": "Blanchimont"
+        },
+        {
+          "start": 0.953,
+          "end": 0.986,
+          "name": "Chicane"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.24,
+          "marker": 0.28,
+          "end": 0.32,
+          "name": "Kemmel Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.31,
+          "name": "1"
+        },
+        {
+          "marker": 0.522,
+          "name": "2"
+        },
+        {
+          "marker": 0.693,
+          "name": "3"
+        },
+        {
+          "marker": 0.931,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "spa combined": {
+      "name": "Spa Endurance - 2010",
+      "trackId": "spa combined",
+      "country": "BE",
+      "length": 6930,
+      "pitentry": 0.971,
+      "pitexit": 0.212,
+      "turn": [
+        {
+          "start": 0.046,
+          "end": 0.077,
+          "name": "La Source"
+        },
+        {
+          "start": 0.138,
+          "end": 0.155,
+          "name": "Eau Rouge"
+        },
+        {
+          "start": 0.156,
+          "end": 0.19,
+          "name": "Raidillon"
+        },
+        {
+          "start": 0.216,
+          "end": 0.239,
+          "name": "Kemmel"
+        },
+        {
+          "start": 0.328,
+          "end": 0.365,
+          "name": "Les Combes"
+        },
+        {
+          "start": 0.371,
+          "end": 0.4,
+          "name": "Malmedy"
+        },
+        {
+          "start": 0.42,
+          "end": 0.454,
+          "name": "Bruxelles"
+        },
+        {
+          "start": 0.462,
+          "end": 0.49,
+          "name": "Speaker's Corner"
+        },
+        {
+          "start": 0.532,
+          "end": 0.605,
+          "name": "Double Gauche"
+        },
+        {
+          "start": 0.63,
+          "end": 0.68,
+          "name": "Les Fagnes"
+        },
+        {
+          "start": 0.693,
+          "end": 0.718,
+          "name": "Campus"
+        },
+        {
+          "start": 0.727,
+          "end": 0.754,
+          "name": "Stavelot"
+        },
+        {
+          "start": 0.766,
+          "end": 0.811,
+          "name": "Courbe Paul Frere"
+        },
+        {
+          "start": 0.869,
+          "end": 0.906,
+          "name": "Blanchimont"
+        },
+        {
+          "start": 0.953,
+          "end": 0.986,
+          "name": "Chicane"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.24,
+          "marker": 0.28,
+          "end": 0.32,
+          "name": "Kemmel Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.31,
+          "name": "1"
+        },
+        {
+          "marker": 0.522,
+          "name": "2"
+        },
+        {
+          "marker": 0.693,
+          "name": "3"
+        },
+        {
+          "marker": 0.931,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "spa low": {
+      "name": "Spa Classic Pits - 2010",
+      "trackId": "spa low",
+      "country": "BE",
+      "length": 6930,
+      "pitentry": 0.966,
+      "pitexit": 0.212,
+      "turn": [
+        {
+          "start": 0.024,
+          "end": 0.042,
+          "name": "Eau Rouge"
+        },
+        {
+          "start": 0.043,
+          "end": 0.084,
+          "name": "Raidillon"
+        },
+        {
+          "start": 0.103,
+          "end": 0.125,
+          "name": "Kemmel"
+        },
+        {
+          "start": 0.211,
+          "end": 0.252,
+          "name": "Les Combes"
+        },
+        {
+          "start": 0.256,
+          "end": 0.277,
+          "name": "Malmedy"
+        },
+        {
+          "start": 0.3,
+          "end": 0.34,
+          "name": "Bruxelles"
+        },
+        {
+          "start": 0.343,
+          "end": 0.372,
+          "name": "Speaker's Corner"
+        },
+        {
+          "start": 0.415,
+          "end": 0.486,
+          "name": "Double Gauche"
+        },
+        {
+          "start": 0.51,
+          "end": 0.567,
+          "name": "Les Fagnes"
+        },
+        {
+          "start": 0.579,
+          "end": 0.601,
+          "name": "Campus"
+        },
+        {
+          "start": 0.611,
+          "end": 0.636,
+          "name": "Stavelot"
+        },
+        {
+          "start": 0.661,
+          "end": 0.73,
+          "name": "Courbe Paul Frere"
+        },
+        {
+          "start": 0.755,
+          "end": 0.8,
+          "name": "Blanchimont"
+        },
+        {
+          "start": 0.835,
+          "end": 0.868,
+          "name": "Chicane"
+        },
+        {
+          "start": 0.93,
+          "end": 0.96,
+          "name": "La Source"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.126,
+          "marker": 0.165,
+          "end": 0.195,
+          "name": "Kemmel Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.193,
+          "name": "1"
+        },
+        {
+          "marker": 0.405,
+          "name": "2"
+        },
+        {
+          "marker": 0.575,
+          "name": "3"
+        },
+        {
+          "marker": 0.814,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "spa up": {
+      "name": "Spa Grand Prix Pits - 2010",
+      "trackId": "spa up",
+      "country": "BE",
+      "length": 6930,
+      "pitentry": 0.971,
+      "pitexit": 0.065,
+      "turn": [
+        {
+          "start": 0.046,
+          "end": 0.077,
+          "name": "La Source"
+        },
+        {
+          "start": 0.138,
+          "end": 0.155,
+          "name": "Eau Rouge"
+        },
+        {
+          "start": 0.156,
+          "end": 0.19,
+          "name": "Raidillon"
+        },
+        {
+          "start": 0.216,
+          "end": 0.239,
+          "name": "Kemmel"
+        },
+        {
+          "start": 0.328,
+          "end": 0.365,
+          "name": "Les Combes"
+        },
+        {
+          "start": 0.371,
+          "end": 0.4,
+          "name": "Malmedy"
+        },
+        {
+          "start": 0.42,
+          "end": 0.454,
+          "name": "Bruxelles"
+        },
+        {
+          "start": 0.462,
+          "end": 0.49,
+          "name": "Speaker's Corner"
+        },
+        {
+          "start": 0.532,
+          "end": 0.605,
+          "name": "Double Gauche"
+        },
+        {
+          "start": 0.63,
+          "end": 0.68,
+          "name": "Les Fagnes"
+        },
+        {
+          "start": 0.693,
+          "end": 0.718,
+          "name": "Campus"
+        },
+        {
+          "start": 0.727,
+          "end": 0.754,
+          "name": "Stavelot"
+        },
+        {
+          "start": 0.766,
+          "end": 0.811,
+          "name": "Courbe Paul Frere"
+        },
+        {
+          "start": 0.869,
+          "end": 0.906,
+          "name": "Blanchimont"
+        },
+        {
+          "start": 0.953,
+          "end": 0.986,
+          "name": "Chicane"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.24,
+          "marker": 0.28,
+          "end": 0.32,
+          "name": "Kemmel Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.31,
+          "name": "1"
+        },
+        {
+          "marker": 0.522,
+          "name": "2"
+        },
+        {
+          "marker": 0.693,
+          "name": "3"
+        },
+        {
+          "marker": 0.931,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "spielberg gp": {
+      "name": "Red Bull Ring - GP",
+      "trackId": "spielberg gp",
+      "country": "AT",
+      "length": 4280,
+      "pitentry": 0.89,
+      "pitexit": 0.112,
+      "turn": [
+        {
+          "start": 0.075,
+          "end": 0.125,
+          "name": "Niki Lauda Kurve"
+        },
+        {
+          "start": 0.29,
+          "end": 0.345,
+          "name": "Remus"
+        },
+        {
+          "start": 0.47,
+          "end": 0.54,
+          "name": "Schlossgold"
+        },
+        {
+          "start": 0.59,
+          "end": 0.66,
+          "name": "Rauch"
+        },
+        {
+          "start": 0.675,
+          "end": 0.78,
+          "name": "Wuerth"
+        },
+        {
+          "start": 0.83,
+          "end": 0.9,
+          "name": "Rindt"
+        },
+        {
+          "start": 0.905,
+          "end": 0.951,
+          "name": "Red Bull Mobile"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.272,
+          "name": "1"
+        },
+        {
+          "marker": 0.668,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "spielberg national": {
+      "name": "Red Bull Ring - National",
+      "trackId": "spielberg national",
+      "country": "AT",
+      "length": 2336,
+      "pitentry": 0.802,
+      "pitexit": 0.244,
+      "turn": [
+        {
+          "start": 0.168,
+          "end": 0.233
+        },
+        {
+          "start": 0.336,
+          "end": 0.418
+        },
+        {
+          "start": 0.419,
+          "end": 0.495
+        },
+        {
+          "start": 0.496,
+          "end": 0.591
+        },
+        {
+          "start": 0.735,
+          "end": 0.814
+        },
+        {
+          "start": 0.839,
+          "end": 0.904
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.684,
+          "name": "1"
+        },
+        {
+          "marker": 1,
+          "name": "2"
+        }
+      ]
+    },
+    "speilberg north": {
+      "name": "Red Bull Ring - North",
+      "trackId": "speilberg north",
+      "country": "AT",
+      "length": 1830,
+      "pitentry": 0.77,
+      "pitexit": 0.921,
+      "turn": [
+        {
+          "start": 0.045,
+          "end": 0.122
+        },
+        {
+          "start": 0.476,
+          "end": 0.543
+        },
+        {
+          "start": 0.544,
+          "end": 0.681
+        },
+        {
+          "start": 0.763,
+          "end": 0.856
+        },
+        {
+          "start": 0.857,
+          "end": 0.911
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.25,
+          "name": "1"
+        },
+        {
+          "marker": 0.5,
+          "name": "2"
+        },
+        {
+          "marker": 0.75,
+          "name": "3"
+        },
+        {
+          "marker": 0.563,
+          "name": "4"
+        }
+      ]
+    },
+    "summit jefferson rev": {
+      "name": "Summit Point Raceway - Jefferson Circuit Reverse",
+      "trackId": "summit jefferson rev",
+      "country": "US",
+      "length": 1780,
+      "sector": [
+        {
+          "marker": 0.346,
+          "name": "1"
+        },
+        {
+          "marker": 0.525,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "summit jefferson": {
+      "name": "Summit Point Raceway - Jefferson Circuit",
+      "trackId": "summit jefferson",
+      "country": "US",
+      "length": 1780,
+      "sector": [
+        {
+          "marker": 0.528,
+          "name": "1"
+        },
+        {
+          "marker": 0.786,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "summit summit raceway school": {
+      "name": "Summit Point Raceway - School",
+      "trackId": "summit summit raceway school",
+      "country": "US",
+      "length": 3180,
+      "sector": [
+        {
+          "marker": 0.465,
+          "name": "1"
+        },
+        {
+          "marker": 0.804,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "summit summit raceway": {
+      "name": "Summit Point Raceway",
+      "trackId": "summit summit raceway",
+      "country": "US",
+      "year": 2014,
+      "length": 3200,
+      "pitentry": 0.96,
+      "pitexit": 0.02,
+      "turn": [
+        {
+          "start": 0.141,
+          "end": 0.23,
+          "name": "Turn 1"
+        },
+        {
+          "start": 0.307,
+          "end": 0.388,
+          "name": "Wagon Bend"
+        },
+        {
+          "start": 0.455,
+          "end": 0.503,
+          "name": "Chute"
+        },
+        {
+          "start": 0.51,
+          "end": 0.627,
+          "name": "Carousel"
+        },
+        {
+          "start": 0.628,
+          "end": 0.733,
+          "name": "Esses"
+        },
+        {
+          "start": 0.84,
+          "end": 0.905,
+          "name": "Paddock Bend"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.467,
+          "name": "1"
+        },
+        {
+          "marker": 0.804,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "summit summit short": {
+      "name": "Summit Point Raceway - Short",
+      "trackId": "summit summit short",
+      "country": "US",
+      "length": 2340,
+      "sector": [
+        {
+          "marker": 0.28,
+          "name": "1"
+        },
+        {
+          "marker": 0.735,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "suzuka grandprix": {
+      "name": "Suzuka Int Racing Course - GP",
+      "trackId": "suzuka grandprix",
+      "country": "JP",
+      "year": 2009,
+      "length": 5750,
+      "pitentry": 0.962,
+      "pitexit": 0.07,
+      "turn": [
+        {
+          "start": 0.104,
+          "end": 0.169,
+          "name": "First Corner"
+        },
+        {
+          "start": 0.18,
+          "end": 0.249,
+          "name": "Snake"
+        },
+        {
+          "start": 0.254,
+          "end": 0.287,
+          "name": "Anti-Banked Curve"
+        },
+        {
+          "start": 0.29,
+          "end": 0.37,
+          "name": "Dunlop"
+        },
+        {
+          "start": 0.385,
+          "end": 0.438,
+          "name": "Degner"
+        },
+        {
+          "start": 0.49,
+          "end": 0.52,
+          "name": "Hairpin"
+        },
+        {
+          "start": 0.54,
+          "end": 0.625,
+          "name": "200R"
+        },
+        {
+          "start": 0.645,
+          "end": 0.72,
+          "name": "Spoon Curve"
+        },
+        {
+          "start": 0.841,
+          "end": 0.896,
+          "name": "130R"
+        },
+        {
+          "start": 0.915,
+          "end": 0.948,
+          "name": "Casio Triangle"
+        },
+        {
+          "start": 0.949,
+          "end": 1,
+          "name": "Last Curve"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.721,
+          "marker": 0.77,
+          "end": 0.84,
+          "name": "Backstretch"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.175,
+          "name": "1"
+        },
+        {
+          "marker": 0.372,
+          "name": "2"
+        },
+        {
+          "marker": 0.478,
+          "name": "3"
+        },
+        {
+          "marker": 0.625,
+          "name": "4"
+        },
+        {
+          "marker": 0.815,
+          "name": "5"
+        },
+        {
+          "marker": 1,
+          "name": "6"
+        }
+      ]
+    },
+    "tsukuba 1kchicane": {
+      "name": "Tsukuba Circuit - 1000 Chicane",
+      "trackId": "tsukuba 1kchicane",
+      "country": "JP",
+      "length": 1000,
+      "sector": [
+        {
+          "marker": 0.25,
+          "name": "1"
+        },
+        {
+          "marker": 0.5,
+          "name": "2"
+        },
+        {
+          "marker": 0.75,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "tsukuba 1kfull": {
+      "name": "Tsukuba Circuit - 1000 Full",
+      "trackId": "tsukuba 1kfull",
+      "country": "JP",
+      "length": 9900,
+      "turn": [
+        {
+          "start": 0.138,
+          "end": 0.249
+        },
+        {
+          "start": 0.25,
+          "end": 0.37
+        },
+        {
+          "start": 0.395,
+          "end": 0.475
+        },
+        {
+          "start": 0.476,
+          "end": 0.518
+        },
+        {
+          "start": 0.519,
+          "end": 0.592
+        },
+        {
+          "start": 0.593,
+          "end": 0.651
+        },
+        {
+          "start": 0.721,
+          "end": 0.788
+        },
+        {
+          "start": 0.789,
+          "end": 0.834
+        },
+        {
+          "start": 0.835,
+          "end": 0.874
+        },
+        {
+          "start": 0.875,
+          "end": 0.951
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.25,
+          "name": "1"
+        },
+        {
+          "marker": 0.5,
+          "name": "2"
+        },
+        {
+          "marker": 0.75,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "tsukuba 1kfullreverse": {
+      "name": "Tsukuba Circuit - 1000 Full Reverse",
+      "trackId": "tsukuba 1kfullreverse",
+      "country": "JP",
+      "length": 990,
+      "sector": [
+        {
+          "marker": 0.25,
+          "name": "1"
+        },
+        {
+          "marker": 0.5,
+          "name": "2"
+        },
+        {
+          "marker": 0.75,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "tsukuba 1kouter": {
+      "name": "Tsukuba Circuit - 1000 Outer",
+      "trackId": "tsukuba 1kouter",
+      "country": "JP",
+      "length": 800,
+      "sector": [
+        {
+          "marker": 0.25,
+          "name": "1"
+        },
+        {
+          "marker": 0.5,
+          "name": "2"
+        },
+        {
+          "marker": 0.75,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "tsukuba 2kchicane": {
+      "name": "Tsukuba Circuit - 2000 Moto",
+      "trackId": "tsukuba 2kchicane",
+      "country": "JP",
+      "length": 2070,
+      "sector": [
+        {
+          "marker": 0.25,
+          "name": "1"
+        },
+        {
+          "marker": 0.5,
+          "name": "2"
+        },
+        {
+          "marker": 0.75,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "tsukuba 2kfull": {
+      "name": "Tsukuba Circuit - 2000 Full",
+      "trackId": "tsukuba 2kfull",
+      "country": "JP",
+      "length": 2040,
+      "turn": [
+        {
+          "start": 0.091,
+          "end": 0.178
+        },
+        {
+          "start": 0.2,
+          "end": 0.244
+        },
+        {
+          "start": 0.245,
+          "end": 0.278
+        },
+        {
+          "start": 0.279,
+          "end": 0.35
+        },
+        {
+          "start": 0.38,
+          "end": 0.438
+        },
+        {
+          "start": 0.449,
+          "end": 0.507
+        },
+        {
+          "start": 0.508,
+          "end": 0.558
+        },
+        {
+          "start": 0.559,
+          "end": 0.64
+        },
+        {
+          "start": 0.825,
+          "end": 0.99
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.25,
+          "name": "1"
+        },
+        {
+          "marker": 0.5,
+          "name": "2"
+        },
+        {
+          "marker": 0.75,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "tsukuba 2kshort": {
+      "name": "Tsukuba Circuit - 2000 Short",
+      "trackId": "tsukuba 2kshort",
+      "country": "JP",
+      "length": 1600,
+      "sector": [
+        {
+          "marker": 0.25,
+          "name": "1"
+        },
+        {
+          "marker": 0.5,
+          "name": "2"
+        },
+        {
+          "marker": 0.75,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "twinring east": {
+      "name": "Mobility Resort Motegi - East",
+      "trackId": "twinring east",
+      "country": "JP",
+      "length": 3400,
+      "pitentry": 0.871,
+      "pitexit": 0.029,
+      "turn": [
+        {
+          "start": 0.149,
+          "end": 0.186
+        },
+        {
+          "start": 0.205,
+          "end": 0.226
+        },
+        {
+          "start": 0.227,
+          "end": 0.269
+        },
+        {
+          "start": 0.271,
+          "end": 0.293
+        },
+        {
+          "start": 0.294,
+          "end": 0.315
+        },
+        {
+          "start": 0.455,
+          "end": 0.492
+        },
+        {
+          "start": 0.529,
+          "end": 0.589
+        },
+        {
+          "start": 0.632,
+          "end": 0.676
+        },
+        {
+          "start": 0.677,
+          "end": 0.731
+        },
+        {
+          "start": 0.762,
+          "end": 0.809
+        },
+        {
+          "start": 0.899,
+          "end": 0.944
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.407,
+          "name": "1"
+        },
+        {
+          "marker": 0.614,
+          "name": "2"
+        },
+        {
+          "marker": 0.867,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "twinring fullrc": {
+      "name": "Mobility Resort Motegi - Grand Prix",
+      "trackId": "twinring fullrc",
+      "country": "JP",
+      "length": 4796,
+      "pitentry": 0.911,
+      "pitexit": 0.02,
+      "turn": [
+        {
+          "start": 0.04,
+          "end": 0.064
+        },
+        {
+          "start": 0.065,
+          "end": 0.092
+        },
+        {
+          "start": 0.189,
+          "end": 0.207
+        },
+        {
+          "start": 0.208,
+          "end": 0.238
+        },
+        {
+          "start": 0.335,
+          "end": 0.361
+        },
+        {
+          "start": 0.386,
+          "end": 0.425
+        },
+        {
+          "start": 0.463,
+          "end": 0.491
+        },
+        {
+          "start": 0.492,
+          "end": 0.531
+        },
+        {
+          "start": 0.559,
+          "end": 0.586
+        },
+        {
+          "start": 0.648,
+          "end": 0.684
+        },
+        {
+          "start": 0.829,
+          "end": 0.855
+        },
+        {
+          "start": 0.875,
+          "end": 0.891
+        },
+        {
+          "start": 0.899,
+          "end": 0.915
+        },
+        {
+          "start": 0.916,
+          "end": 0.934
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.157,
+          "name": "1"
+        },
+        {
+          "marker": 0.301,
+          "name": "2"
+        },
+        {
+          "marker": 0.449,
+          "name": "3"
+        },
+        {
+          "marker": 0.629,
+          "name": "4"
+        },
+        {
+          "marker": 0.781,
+          "name": "5"
+        },
+        {
+          "marker": 1,
+          "name": "6"
+        }
+      ]
+    },
+    "twinring oval": {
+      "name": "Mobility Resort Motegi - Oval",
+      "trackId": "twinring oval",
+      "country": "JP",
+      "length": 2493,
+      "pitentry": 0.852,
+      "pitexit": 0.44,
+      "turn": [
+        {
+          "start": 0.115,
+          "end": 0.284
+        },
+        {
+          "start": 0.285,
+          "end": 0.452
+        },
+        {
+          "start": 0.641,
+          "end": 0.759
+        },
+        {
+          "start": 0.761,
+          "end": 0.903
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.5,
+          "name": "1"
+        },
+        {
+          "marker": 1,
+          "name": "2"
+        }
+      ]
+    },
+    "twinring west": {
+      "name": "Mobility Resort Motegi - West",
+      "trackId": "twinring west",
+      "country": "JP",
+      "length": 1400,
+      "pitentry": 0.771,
+      "pitexit": 0.079,
+      "turn": [
+        {
+          "start": 0.135,
+          "end": 0.217
+        },
+        {
+          "start": 0.218,
+          "end": 0.281
+        },
+        {
+          "start": 0.562,
+          "end": 0.618
+        },
+        {
+          "start": 0.619,
+          "end": 0.649
+        },
+        {
+          "start": 0.662,
+          "end": 0.704
+        },
+        {
+          "start": 0.715,
+          "end": 0.781
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.507,
+          "name": "1"
+        },
+        {
+          "marker": 1,
+          "name": "2"
+        }
+      ]
+    },
+    "virginia 2022 full": {
+      "name": "Virginia International Raceway - Full Course",
+      "trackId": "virginia 2022 full",
+      "country": "US",
+      "length": 5220,
+      "pitentry": 0.9,
+      "pitexit": 0.015,
+      "turn": [
+        {
+          "start": 0.05,
+          "end": 0.113,
+          "name": "Horseshoe"
+        },
+        {
+          "start": 0.12,
+          "end": 0.148,
+          "name": "Turn 2"
+        },
+        {
+          "start": 0.149,
+          "end": 0.18,
+          "name": "Nascar Bend"
+        },
+        {
+          "start": 0.181,
+          "end": 0.206,
+          "name": "Left Hook"
+        },
+        {
+          "start": 0.207,
+          "end": 0.225,
+          "name": "Turn 4b"
+        },
+        {
+          "start": 0.226,
+          "end": 0.243,
+          "name": "Turn 5a"
+        },
+        {
+          "start": 0.244,
+          "end": 0.308,
+          "name": "Snake"
+        },
+        {
+          "start": 0.347,
+          "end": 0.367,
+          "name": "Turn 7"
+        },
+        {
+          "start": 0.368,
+          "end": 0.386,
+          "name": "Turn 8a"
+        },
+        {
+          "start": 0.387,
+          "end": 0.404,
+          "name": "Turn 8b"
+        },
+        {
+          "start": 0.405,
+          "end": 0.43,
+          "name": "Turn 9"
+        },
+        {
+          "start": 0.44,
+          "end": 0.477,
+          "name": "South Bend"
+        },
+        {
+          "start": 0.502,
+          "end": 0.55,
+          "name": "Oak Tree"
+        },
+        {
+          "start": 0.748,
+          "end": 0.83,
+          "name": "Roller Coaster"
+        },
+        {
+          "start": 0.831,
+          "end": 0.9,
+          "name": "Hog Pen"
+        },
+        {
+          "start": 0.049,
+          "end": 0.118,
+          "name": "Turn 18"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.551,
+          "marker": 0.65,
+          "end": 0.747,
+          "name": "Back Straight"
+        },
+        {
+          "start": 0.901,
+          "marker": 0.945,
+          "end": 0.975,
+          "name": "Front Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.185,
+          "name": "1"
+        },
+        {
+          "marker": 0.337,
+          "name": "2"
+        },
+        {
+          "marker": 0.505,
+          "name": "3"
+        },
+        {
+          "marker": 0.735,
+          "name": "4"
+        },
+        {
+          "marker": 0.829,
+          "name": "5"
+        },
+        {
+          "marker": 1,
+          "name": "6"
+        }
+      ]
+    },
+    "virginia 2022 grand": {
+      "name": "Virginia International Raceway - Grand West Course",
+      "trackId": "virginia 2022 grand",
+      "country": "US",
+      "length": 6598,
+      "pitentry": 0.922,
+      "pitexit": 0.013,
+      "turn": [
+        {
+          "start": 0.051,
+          "end": 0.09,
+          "name": "Horseshoe",
+          "direction": 1
+        },
+        {
+          "start": 0.101,
+          "end": 0.118,
+          "direction": 0
+        },
+        {
+          "start": 0.12,
+          "end": 0.138,
+          "name": "Nascar Bend",
+          "direction": 1
+        },
+        {
+          "start": 0.151,
+          "end": 0.164,
+          "name": "Left Hook",
+          "direction": 0
+        },
+        {
+          "start": 0.165,
+          "end": 0.179,
+          "name": "T4b",
+          "direction": 1
+        },
+        {
+          "start": 0.182,
+          "end": 0.193,
+          "name": "T5a",
+          "direction": 1
+        },
+        {
+          "start": 0.193,
+          "end": 0.205,
+          "name": "T5b",
+          "direction": 0
+        },
+        {
+          "start": 0.205,
+          "end": 0.212,
+          "name": "Snake",
+          "direction": 1
+        },
+        {
+          "start": 0.213,
+          "end": 0.225,
+          "name": "T6b",
+          "direction": 0
+        },
+        {
+          "start": 0.276,
+          "end": 0.293,
+          "name": "T7",
+          "direction": 0
+        },
+        {
+          "start": 0.294,
+          "end": 0.308,
+          "name": "T8a",
+          "direction": 1
+        },
+        {
+          "start": 0.309,
+          "end": 0.324,
+          "name": "T8b",
+          "direction": 0
+        },
+        {
+          "start": 0.325,
+          "end": 0.34,
+          "name": "T9",
+          "direction": 1
+        },
+        {
+          "start": 0.358,
+          "end": 0.383,
+          "name": "South Bend",
+          "direction": 0
+        },
+        {
+          "start": 0.407,
+          "end": 0.419,
+          "name": "T11",
+          "direction": 1
+        },
+        {
+          "start": 0.42,
+          "end": 0.435,
+          "name": "Oak Tree",
+          "direction": 1
+        },
+        {
+          "start": 0.561,
+          "end": 0.588,
+          "name": "Bitch",
+          "direction": 1
+        },
+        {
+          "start": 0.607,
+          "end": 0.617,
+          "name": "T14",
+          "direction": 0
+        },
+        {
+          "start": 0.63,
+          "end": 0.644,
+          "name": "T15a",
+          "direction": 0
+        },
+        {
+          "start": 0.645,
+          "end": 0.652,
+          "name": "T15b",
+          "direction": 1
+        },
+        {
+          "start": 0.653,
+          "end": 0.673,
+          "name": "T16",
+          "direction": 0
+        },
+        {
+          "start": 0.699,
+          "end": 0.706,
+          "name": "T17a",
+          "direction": 1
+        },
+        {
+          "start": 0.706,
+          "end": 0.713,
+          "name": "T17b",
+          "direction": 0
+        },
+        {
+          "start": 0.714,
+          "end": 0.723,
+          "name": "T17c",
+          "direction": 1
+        },
+        {
+          "start": 0.724,
+          "end": 0.749,
+          "name": "T17d",
+          "direction": 0
+        },
+        {
+          "start": 0.75,
+          "end": 0.764,
+          "name": "T18a",
+          "direction": 1
+        },
+        {
+          "start": 0.765,
+          "end": 0.781,
+          "name": "T18b",
+          "direction": 0
+        },
+        {
+          "start": 0.782,
+          "end": 0.805,
+          "name": "T19a",
+          "direction": 1
+        },
+        {
+          "start": 0.783,
+          "end": 0.82,
+          "name": "T19b",
+          "direction": 0
+        },
+        {
+          "start": 0.825,
+          "end": 0.84,
+          "name": "Roller Coaster",
+          "direction": 1
+        },
+        {
+          "start": 0.841,
+          "end": 0.858,
+          "name": "T21",
+          "direction": 0
+        },
+        {
+          "start": 0.87,
+          "end": 0.883,
+          "name": "T22a",
+          "direction": 0
+        },
+        {
+          "start": 0.884,
+          "end": 0.899,
+          "name": "T22b",
+          "direction": 0
+        },
+        {
+          "start": 0.9,
+          "end": 0.915,
+          "name": "T23",
+          "direction": 1
+        },
+        {
+          "start": 0.97,
+          "end": 0.999,
+          "name": "T24",
+          "direction": 1
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.147,
+          "name": "1"
+        },
+        {
+          "marker": 0.268,
+          "name": "2"
+        },
+        {
+          "marker": 0.401,
+          "name": "3"
+        },
+        {
+          "marker": 0.592,
+          "name": "4"
+        },
+        {
+          "marker": 0.743,
+          "name": "5"
+        },
+        {
+          "marker": 0.865,
+          "name": "6"
+        },
+        {
+          "marker": 1,
+          "name": "6"
+        }
+      ]
+    },
+    "virginia 2022 north": {
+      "name": "Virginia International Raceway - North Course",
+      "trackId": "virginia 2022 north",
+      "country": "US",
+      "length": 3621,
+      "pitentry": 0.859,
+      "pitexit": 0.022,
+      "turn": [
+        {
+          "start": 0.1,
+          "end": 0.15,
+          "name": "Horseshoe",
+          "direction": 1
+        },
+        {
+          "start": 0.19,
+          "end": 0.21,
+          "name": "Turn 2",
+          "direction": 0
+        },
+        {
+          "start": 0.22,
+          "end": 0.24,
+          "name": "Nascar Bend",
+          "direction": 0
+        },
+        {
+          "start": 0.265,
+          "end": 0.295,
+          "name": "Left Hook",
+          "direction": 0
+        },
+        {
+          "start": 0.296,
+          "end": 0.32,
+          "name": "Turn 4b",
+          "direction": 1
+        },
+        {
+          "start": 0.33,
+          "end": 0.35,
+          "name": "Turn 5a",
+          "direction": 1
+        },
+        {
+          "start": 0.351,
+          "end": 0.37,
+          "name": "Turn 5b",
+          "direction": 0
+        },
+        {
+          "start": 0.371,
+          "end": 0.384,
+          "name": "Snake",
+          "direction": 1
+        },
+        {
+          "start": 0.385,
+          "end": 0.4,
+          "name": "Turn 6b",
+          "direction": 0
+        },
+        {
+          "start": 0.48,
+          "end": 0.51,
+          "name": "Turn 7",
+          "direction": 1
+        },
+        {
+          "start": 0.52,
+          "end": 0.54,
+          "name": "Turn 8a",
+          "direction": 0
+        },
+        {
+          "start": 0.541,
+          "end": 0.565,
+          "name": "Turn 8b",
+          "direction": 1
+        },
+        {
+          "start": 0.57,
+          "end": 0.6,
+          "name": "Turn 9a",
+          "direction": 0
+        },
+        {
+          "start": 0.61,
+          "end": 0.645,
+          "name": "Turn 9b",
+          "direction": 1
+        },
+        {
+          "start": 0.646,
+          "end": 0.66,
+          "name": "Turn 9c",
+          "direction": 0
+        },
+        {
+          "start": 0.683,
+          "end": 0.71,
+          "name": "Roller Coaster",
+          "direction": 1
+        },
+        {
+          "start": 0.711,
+          "end": 0.74,
+          "name": "Turn 11",
+          "direction": 0
+        },
+        {
+          "start": 0.76,
+          "end": 0.787,
+          "name": "Turn 12a",
+          "direction": 0
+        },
+        {
+          "start": 0.787,
+          "end": 0.812,
+          "name": "Turn 12b",
+          "direction": 1
+        },
+        {
+          "start": 0.825,
+          "end": 0.85,
+          "name": "Turn 13",
+          "direction": 1
+        },
+        {
+          "start": 0.95,
+          "end": 0.999,
+          "name": "Turn 14",
+          "direction": 1
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.813,
+          "end": 0.824,
+          "name": "Front Straight"
+        },
+        {
+          "start": 0.87,
+          "end": 0.945,
+          "name": "Front Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.265,
+          "name": "1"
+        },
+        {
+          "marker": 0.473,
+          "name": "2"
+        },
+        {
+          "marker": 0.754,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "virginia 2022 patriot": {
+      "name": "Virginia International Raceway - Patriot Course",
+      "trackId": "virginia 2022 patriot",
+      "country": "US",
+      "length": 1770,
+      "pitentry": 0.986,
+      "pitexit": 0.095,
+      "turn": [
+        {
+          "start": 0.039,
+          "end": 0.091
+        },
+        {
+          "start": 0.092,
+          "end": 0.175
+        },
+        {
+          "start": 0.175,
+          "end": 0.245
+        },
+        {
+          "start": 0.246,
+          "end": 0.27
+        },
+        {
+          "start": 0.271,
+          "end": 0.348
+        },
+        {
+          "start": 0.52,
+          "end": 0.589
+        },
+        {
+          "start": 0.59,
+          "end": 0.624,
+          "name": "Spiral"
+        },
+        {
+          "start": 0.625,
+          "end": 0.711
+        },
+        {
+          "start": 0.825,
+          "end": 0.95
+        },
+        {
+          "start": 0.951,
+          "end": 0.999
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.37,
+          "name": "1"
+        },
+        {
+          "marker": 0.73,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "virginia 2022 south": {
+      "name": "Virginia International Raceway - South Course",
+      "trackId": "virginia 2022 south",
+      "country": "US",
+      "length": 2655,
+      "pitentry": 0.948,
+      "pitexit": 0.058,
+      "turn": [
+        {
+          "start": 0.233,
+          "end": 0.29,
+          "name": "Bitch"
+        },
+        {
+          "start": 0.348,
+          "end": 0.39
+        },
+        {
+          "start": 0.4,
+          "end": 0.44
+        },
+        {
+          "start": 0.441,
+          "end": 0.465,
+          "naem": "Spiral"
+        },
+        {
+          "start": 0.466,
+          "end": 0.518
+        },
+        {
+          "start": 0.565,
+          "end": 0.607,
+          "name": "Fish Hook"
+        },
+        {
+          "start": 0.63,
+          "end": 0.666
+        },
+        {
+          "start": 0.704,
+          "end": 0.798,
+          "name": "South Bend"
+        },
+        {
+          "start": 0.84,
+          "end": 0.868
+        },
+        {
+          "start": 0.869,
+          "end": 0.915,
+          "name": "Oak Tree"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.392,
+          "name": "1"
+        },
+        {
+          "marker": 0.711,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "watkinsglen 2021 classic": {
+      "name": "Watkins Glen International - Classic",
+      "trackId": "watkinsglen 2021 classic",
+      "country": "US",
+      "length": 3890,
+      "sector": [
+        {
+          "marker": 0.416,
+          "name": "1"
+        },
+        {
+          "marker": 0.776,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "watkinsglen 2021 cupcircuit": {
+      "name": "Watkins Glen International - Cup",
+      "trackId": "watkinsglen 2021 cupcircuit",
+      "country": "US",
+      "length": 3940,
+      "pitentry": 0.928,
+      "pitexit": 0.107,
+      "sector": [
+        {
+          "marker": 0.415,
+          "name": "1"
+        },
+        {
+          "marker": 0.776,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ],
+      "time": [
+        {
+          "SUP": [
+            {
+              "name": "tyres+60L",
+              "time": 38
+            },
+            {
+              "name": "tyres+80L",
+              "time": 46
+            },
+            {
+              "name": "tyres+100L",
+              "time": 66
+            },
+            {
+              "name": "tyres",
+              "time": 35
+            }
+          ]
+        }
+      ]
+    },
+    "watkinsglen 2021 fullcourse": {
+      "name": "Watkins Glen",
+      "trackId": "watkinsglen 2021 fullcourse",
+      "country": "US",
+      "length": 5410,
+      "pitentry": 0.947,
+      "pitexit": 0.078,
+      "turn": [
+        {
+          "start": 0.045,
+          "end": 0.087,
+          "name": "The 90"
+        },
+        {
+          "start": 0.113,
+          "end": 0.254,
+          "name": "Esses"
+        },
+        {
+          "start": 0.341,
+          "end": 0.391,
+          "name": "Inner Loop"
+        },
+        {
+          "start": 0.392,
+          "end": 0.464,
+          "name": "Outer Loop"
+        },
+        {
+          "start": 0.49,
+          "end": 0.54,
+          "name": "Chute"
+        },
+        {
+          "start": 0.58,
+          "end": 0.637,
+          "name": "Toe"
+        },
+        {
+          "start": 0.718,
+          "end": 0.762,
+          "name": "Heel"
+        },
+        {
+          "start": 0.781,
+          "end": 0.82,
+          "name": "Turn 9"
+        },
+        {
+          "start": 0.844,
+          "end": 0.895,
+          "name": "Turn 10"
+        },
+        {
+          "start": 0.913,
+          "end": 0.96,
+          "name": "Turn 11"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.255,
+          "marker": 0.3,
+          "end": 0.34,
+          "name": "Back Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.299,
+          "name": "1"
+        },
+        {
+          "marker": 0.472,
+          "name": "2"
+        },
+        {
+          "marker": 0.686,
+          "name": "3"
+        },
+        {
+          "marker": 0.839,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "sg30",
+              "time": 78
+            },
+            {
+              "name": "dt",
+              "time": 43
+            }
+          ]
+        }
+      ],
+      "companion": [
+        {
+          "top": -180,
+          "left": -330,
+          "rotation": -89,
+          "scale": 1.8
+        }
+      ]
+    },
+    "watkinsglen 2021 fullnoloop": {
+      "name": "Watkins Glen International - Classic Boot",
+      "trackId": "watkinsglen 2021 fullnoloop",
+      "country": "US",
+      "length": 5430,
+      "sector": [
+        {
+          "marker": 0.299,
+          "name": "1"
+        },
+        {
+          "marker": 0.471,
+          "name": "2"
+        },
+        {
+          "marker": 0.684,
+          "name": "3"
+        },
+        {
+          "marker": 0.839,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "winton club": {
+      "name": "Winton Motor Raceway - Club Circuit",
+      "trackId": "winton club",
+      "country": "AU",
+      "length": 2020,
+      "turn": [
+        {
+          "start": 0.061,
+          "end": 0.116,
+          "name": "Honda Corner"
+        },
+        {
+          "start": 0.117,
+          "end": 0.204,
+          "name": "Nissan Corner"
+        },
+        {
+          "start": 0.26,
+          "end": 0.388
+        },
+        {
+          "start": 0.389,
+          "end": 0.44,
+          "name": "Roll-Over Corner"
+        },
+        {
+          "start": 0.441,
+          "end": 0.509,
+          "name": "Penrite Corner"
+        },
+        {
+          "start": 0.51,
+          "end": 0.59
+        },
+        {
+          "start": 0.591,
+          "end": 0.673,
+          "name": "Kitome Corner"
+        },
+        {
+          "start": 0.809,
+          "end": 0.866
+        },
+        {
+          "start": 0.867,
+          "end": 0.909
+        },
+        {
+          "start": 0.91,
+          "end": 0.95
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.25,
+          "name": "1"
+        },
+        {
+          "marker": 0.5,
+          "name": "2"
+        },
+        {
+          "marker": 0.75,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "winton national": {
+      "name": "Winton National",
+      "trackId": "winton national",
+      "country": "AU",
+      "length": 2950,
+      "pitentry": 0.868,
+      "pitexit": 0.038,
+      "turn": [
+        {
+          "start": 0.063,
+          "end": 0.131,
+          "name": "Motorsport News Esses"
+        },
+        {
+          "start": 0.195,
+          "end": 0.244,
+          "name": "Honda Corner"
+        },
+        {
+          "start": 0.245,
+          "end": 0.29,
+          "name": "Nissan Corner"
+        },
+        {
+          "start": 0.321,
+          "end": 0.425,
+          "name": "Turn 5"
+        },
+        {
+          "start": 0.426,
+          "end": 0.459,
+          "name": "Roll-Over Corner"
+        },
+        {
+          "start": 0.46,
+          "end": 0.504,
+          "name": "Penrite Corner"
+        },
+        {
+          "start": 0.505,
+          "end": 0.557,
+          "name": "Turn 8"
+        },
+        {
+          "start": 0.558,
+          "end": 0.614,
+          "name": "Kitome Corner"
+        },
+        {
+          "start": 0.683,
+          "end": 0.73,
+          "name": "Northern BM Corner"
+        },
+        {
+          "start": 0.829,
+          "end": 0.919,
+          "name": "Advanced Petroleum Corner"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.132,
+          "end": 0.194,
+          "name": "BP Ultimate Straight"
+        },
+        {
+          "start": 0.287,
+          "end": 0.32,
+          "name": "Foot Waste Straight"
+        },
+        {
+          "start": 0.614,
+          "end": 0.682,
+          "name": "Shannon's Straight"
+        },
+        {
+          "start": 0.731,
+          "end": 0.828,
+          "name": "Falken Straight"
+        },
+        {
+          "start": 0.92,
+          "end": 1,
+          "name": "Kitome Straight"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.25,
+          "name": "1"
+        },
+        {
+          "marker": 0.5,
+          "name": "2"
+        },
+        {
+          "marker": 0.75,
+          "name": "3"
+        },
+        {
+          "marker": 1,
+          "name": "4"
+        }
+      ]
+    },
+    "zandvoort 2023 gp": {
+      "name": "Circuit Zandvoort - GP",
+      "trackId": "zandvoort 2023 gp",
+      "country": "NL",
+      "length": 4210,
+      "pitentry": 0.965,
+      "pitexit": 0.095,
+      "turn": [
+        {
+          "start": 0.05,
+          "end": 0.118,
+          "name": "Tarzanbocht"
+        },
+        {
+          "start": 0.129,
+          "end": 0.174,
+          "name": "Gerlachbocht"
+        },
+        {
+          "start": 0.175,
+          "end": 0.231,
+          "name": "Hugenholzbocht"
+        },
+        {
+          "start": 0.305,
+          "end": 0.357,
+          "name": "Rob Slotemakerbocht"
+        },
+        {
+          "start": 0.37,
+          "end": 0.438,
+          "name": "Scheivlak"
+        },
+        {
+          "start": 0.46,
+          "end": 0.522,
+          "name": "Mastersbocht"
+        },
+        {
+          "start": 0.523,
+          "end": 0.555,
+          "name": "Bocht 9"
+        },
+        {
+          "start": 0.556,
+          "end": 0.63,
+          "name": "Bocht 10"
+        },
+        {
+          "start": 0.706,
+          "end": 0.772,
+          "name": "Hans Ernst Bocht"
+        },
+        {
+          "start": 0.8,
+          "end": 0.845,
+          "name": "Kumho"
+        },
+        {
+          "start": 0.85,
+          "end": 0.93,
+          "name": "Arie Luyendijk Bocht"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.232,
+          "marker": 0.25,
+          "end": 0.274,
+          "name": "Hunserug"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.356,
+          "name": "1"
+        },
+        {
+          "marker": 0.698,
+          "name": "2"
+        },
+        {
+          "marker": 1,
+          "name": "3"
+        }
+      ]
+    },
+    "zolder alt": {
+      "name": "Zolder Circuit - Alternate",
+      "trackId": "zolder alt",
+      "country": "BE",
+      "year": 2007,
+      "length": 4010,
+      "pitentry": 0.897,
+      "pitexit": 0.147,
+      "turn": [
+        {
+          "start": 0.049,
+          "end": 0.105,
+          "name": "Earste"
+        },
+        {
+          "start": 0.123,
+          "end": 0.175,
+          "name": "Sterrenwachtbocht"
+        },
+        {
+          "start": 0.18,
+          "end": 0.235,
+          "name": "Kanaalbocht"
+        },
+        {
+          "start": 0.26,
+          "end": 0.32,
+          "name": "Lucien Bianchbocht"
+        },
+        {
+          "start": 0.42,
+          "end": 0.466,
+          "name": "Kleine Chicane"
+        },
+        {
+          "start": 0.475,
+          "end": 0.52,
+          "name": "Sacramentshelling"
+        },
+        {
+          "start": 0.521,
+          "end": 0.565,
+          "name": "Butte"
+        },
+        {
+          "start": 0.57,
+          "end": 0.617,
+          "name": "Villeneuve Chicane"
+        },
+        {
+          "start": 0.622,
+          "end": 0.67,
+          "name": "Terlamenbocht"
+        },
+        {
+          "start": 0.74,
+          "end": 0.775,
+          "name": "Bolderbergbocht"
+        },
+        {
+          "start": 0.776,
+          "end": 0.81,
+          "name": "Jochen Rindtbocht"
+        },
+        {
+          "start": 0.88,
+          "end": 0.94,
+          "name": "Jacky Ickxbocht"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.403,
+          "name": "1"
+        },
+        {
+          "marker": 0.545,
+          "name": "2"
+        },
+        {
+          "marker": 0.724,
+          "name": "3"
+        },
+        {
+          "marker": 0.875,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    },
+    "zolder gp": {
+      "name": "Zolder Circuit - Grand Prix",
+      "trackId": "zolder gp",
+      "country": "BE",
+      "year": 2007,
+      "length": 3950,
+      "pitentry": 0.906,
+      "pitexit": 0.124,
+      "turn": [
+        {
+          "start": 0.049,
+          "end": 0.105,
+          "name": "Earste"
+        },
+        {
+          "start": 0.123,
+          "end": 0.175,
+          "name": "Sterrenwachtbocht"
+        },
+        {
+          "start": 0.18,
+          "end": 0.235,
+          "name": "Kanaalbocht"
+        },
+        {
+          "start": 0.26,
+          "end": 0.32,
+          "name": "Lucien Bianchbocht"
+        },
+        {
+          "start": 0.42,
+          "end": 0.466,
+          "name": "Kleine Chicane"
+        },
+        {
+          "start": 0.475,
+          "end": 0.52,
+          "name": "Sacramentshelling"
+        },
+        {
+          "start": 0.521,
+          "end": 0.565,
+          "name": "Butte"
+        },
+        {
+          "start": 0.57,
+          "end": 0.617,
+          "name": "Villeneuve Chicane"
+        },
+        {
+          "start": 0.622,
+          "end": 0.67,
+          "name": "Terlamenbocht"
+        },
+        {
+          "start": 0.74,
+          "end": 0.775,
+          "name": "Bolderbergbocht"
+        },
+        {
+          "start": 0.776,
+          "end": 0.81,
+          "name": "Jochen Rindtbocht"
+        },
+        {
+          "start": 0.88,
+          "end": 0.94,
+          "name": "Jacky Ickxbocht"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.4,
+          "name": "1"
+        },
+        {
+          "marker": 0.542,
+          "name": "2"
+        },
+        {
+          "marker": 0.72,
+          "name": "3"
+        },
+        {
+          "marker": 0.871,
+          "name": "4"
+        },
+        {
+          "marker": 1,
+          "name": "5"
+        }
+      ]
+    }
+  }
+}

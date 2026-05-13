@@ -18,6 +18,7 @@ import { LapTimeLog } from './components/LapTimeLog/LapTimeLog';
 import { InformationBar } from './components/InformationBar/InformationBar';
 import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
 import { SectorDelta } from './components/SectorDelta/SectorDelta';
+import { CornerNameOverlay } from './components/CornerNameOverlay';
 import type { WidgetConfigMap } from '@irdashies/types';
 
 export {
@@ -41,6 +42,7 @@ export {
   InformationBar,
   SlowCarAhead,
   SectorDelta,
+  CornerNameOverlay,
 };
 
 // TODO: type this better, right now the config comes from settings
@@ -70,6 +72,7 @@ export const WIDGET_MAP: Record<
   infobar: InformationBar,
   slowcarahead: SlowCarAhead,
   sectordelta: SectorDelta,
+  cornername: CornerNameOverlay,
 };
 
 export type WidgetId = keyof WidgetConfigMap;
