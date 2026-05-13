@@ -15,7 +15,7 @@ const parseP2PCount = (bits: number, isPlayer: boolean): number => {
   if (isPlayer) return bits;
   const view = new DataView(new ArrayBuffer(4));
   view.setInt32(0, bits, true);
-  return Math.round(view.getFloat32(0, true));
+  return Math.round(view.getFloat32(0, true)*10);
 };
 
 /**

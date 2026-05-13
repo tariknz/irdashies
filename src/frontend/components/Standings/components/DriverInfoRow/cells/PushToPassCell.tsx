@@ -21,22 +21,27 @@ export const PushToPassCell = memo(({ state }: PushToPassCellProps) => {
   const isExhausted = status === 'exhausted';
   const isActive = status === 'active';
   const isCooldown = status === 'cooldown';
+  const isActiveHighCount = isActive && count >= 20;
 
   const bgClass = isExhausted
     ? 'bg-red-500/80 text-white'
     : isCooldown
       ? 'bg-sky-500 text-slate-800'
-      : isActive
-        ? 'bg-lime-500 text-slate-800'
-        : 'bg-lime-200 text-slate-800';
+      : isActiveHighCount
+        ? 'bg-red-500 text-white'
+        : isActive
+          ? 'bg-lime-500 text-slate-800'
+          : 'bg-red-200 text-slate-800';
 
   const pulseClass = isActive || isCooldown ? 'animate-pulse' : '';
 
-  const iconClass = isActive
-    ? 'text-amber-500'
-    : isExhausted
-      ? 'text-white'
-      : 'text-black';
+  const iconClass = isActiveHighCount
+    ? 'text-white'
+    : isActive
+      ? 'text-amber-500'
+      : isExhausted
+        ? 'text-white'
+        : 'text-black';
 
   const icon = isExhausted ? (
     <LightningSlashIcon size={12} weight="fill" />
