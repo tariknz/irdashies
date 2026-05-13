@@ -12,7 +12,6 @@ import {
   useFocusCarIdx,
   useSessionPositions,
   useSessionFastestLaps,
-  useTelemetryValues,
   useTelemetryValuesRounded,
 } from '@irdashies/context';
 
@@ -52,7 +51,7 @@ export const useDriverPositions = () => {
   const prevCarTrackSurface = usePrevCarTrackSurface();
   const lastPitLap = usePitLap();
   const lastLap = useCarLap();
-  const carIdxLapDstPct = useTelemetryValues('CarIdxLapDistPct');
+  const carIdxLapDstPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
 
   const positions = useMemo(() => {
     return (

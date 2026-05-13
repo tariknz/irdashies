@@ -142,6 +142,35 @@ const getDisplayProps = (props: DriverRowInfoProps) => {
   };
 };
 
+const arraysEqual = (a: unknown[] | undefined, b: unknown[] | undefined) => {
+  if (a === b) return true;
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+};
+
+const propsAreEqual = (
+  prev: DriverRowInfoProps,
+  next: DriverRowInfoProps
+): boolean => {
+  const keys = Object.keys(next) as (keyof DriverRowInfoProps)[];
+  for (const key of keys) {
+    const p = prev[key];
+    const n = next[key];
+    if (p === n) continue;
+    if (
+      (key === 'lapTimeDeltas' || key === 'displayOrder') &&
+      Array.isArray(p) &&
+      Array.isArray(n)
+    ) {
+      if (!arraysEqual(p as unknown[], n as unknown[])) return false;
+      continue;
+    }
+    return false;
+  }
+  return true;
+};
+
 export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
   // Transform props for hidden rows
   const displayProps = getDisplayProps(props);
@@ -665,6 +694,6 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       {columnDefinitions.map((column) => column.component)}
     </tr>
   );
-});
+}, propsAreEqual);
 
 DriverInfoRow.displayName = 'DriverInfoRow';

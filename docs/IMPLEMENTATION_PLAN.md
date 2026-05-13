@@ -14,16 +14,16 @@
 
 ## 1. Current status at a glance
 
-| Phase                                           | Status      | Branch / PR | Notes                                                                                                             |
-| ----------------------------------------------- | ----------- | ----------- | ----------------------------------------------------------------------------------------------------------------- |
-| **Phase 0 — Measure**                           | DONE        | —           | Baseline captured in `PERFORMANCE_TEST_SUMMARY.md`; revised 2026-05-12 after Practice 2                           |
-| **Phase 0.5 — Stop the bleeding**               | NOT STARTED | —           | Triggered next once review-doc update lands                                                                       |
-| **Phase 1 — Cheap perf wins + lifecycle bones** | NOT STARTED | —           | Now includes SessionLifecycle skeleton + bridge per-window cleanup (pulled forward from Phase 2 after 2026-05-12) |
-| **Phase 2 — Architectural cleanup**             | NOT STARTED | —           | A2/A3/L5/A7 highest-impact slice moved to Phase 1; the rest remains here                                          |
-| **Phase 3 — Channel-based bridge**              | NOT STARTED | —           |                                                                                                                   |
-| **Phase 4 — Main-process processors**           | NOT STARTED | —           | Depends on Phase 3                                                                                                |
-| **Phase 5 — Worker-thread SDK loop**            | NOT STARTED | —           |                                                                                                                   |
-| **Phase 6 — Native optimisations**              | DEFERRED    | —           | Only if Phase 4 profiling demands                                                                                 |
+| Phase                                           | Status      | Branch / PR                       | Notes                                                                                                             |
+| ----------------------------------------------- | ----------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Phase 0 — Measure**                           | DONE        | —                                 | Baseline captured in `PERFORMANCE_TEST_SUMMARY.md`; revised 2026-05-12 after Practice 2                           |
+| **Phase 0.5 — Stop the bleeding**               | NOT STARTED | —                                 | Triggered next once review-doc update lands                                                                       |
+| **Phase 1 — Cheap perf wins + lifecycle bones** | IN PROGRESS | `feat/phase-1-perf-and-lifecycle` | Now includes SessionLifecycle skeleton + bridge per-window cleanup (pulled forward from Phase 2 after 2026-05-12) |
+| **Phase 2 — Architectural cleanup**             | NOT STARTED | —                                 | A2/A3/L5/A7 highest-impact slice moved to Phase 1; the rest remains here                                          |
+| **Phase 3 — Channel-based bridge**              | NOT STARTED | —                                 |                                                                                                                   |
+| **Phase 4 — Main-process processors**           | NOT STARTED | —                                 | Depends on Phase 3                                                                                                |
+| **Phase 5 — Worker-thread SDK loop**            | NOT STARTED | —                                 |                                                                                                                   |
+| **Phase 6 — Native optimisations**              | DEFERRED    | —                                 | Only if Phase 4 profiling demands                                                                                 |
 
 ---
 
@@ -173,6 +173,7 @@ LLM agents: read this file at the start of any session that touches the architec
 
 Append-only. Newest entries at the top. Format: `YYYY-MM-DD — item — branch — outcome`.
 
+- **2026-05-13** — Phase 1 perf wins + lifecycle bones: P2/P3/P4 CarIdxLapDistPct rounded (3dp/4dp) in 9 files; P5 DriverInfoRow custom memo comparator; P1 interim IPC payload trimmed ~340->~60 keys via TELEMETRY_ALLOWLIST; A2 `src/app/sessionLifecycle/` created + wired to iracingSdkBridge; A3 `useResetOnDisconnect` activated in OverlayContainer; 775/775 tests pass — `feat/phase-1-perf-and-lifecycle` — in progress
 - **2026-05-12** — Practice 2 results incorporated: new finding P7 (driver-join leak, ~5–6 MB/joiner); A2/A3/L5/A7 reclassified CONFIRMED; SessionLifecycle skeleton + leaking-bridge cleanup pulled forward from Phase 2 into Phase 1; Q12 resolved; Q13 added; per-joiner-cost row added to Phase 0 baseline table — `chore/architecture-review-perf-update` — in progress
 - **2026-05-11** — Phase 0 evidence written up; architecture review being updated with empirical findings — `chore/architecture-review-perf-update` — in progress
 - **2026-05-11** — Initial Phase 0 measurement complete — `main` — `docs/PERFORMANCE_TEST_SUMMARY.md` committed

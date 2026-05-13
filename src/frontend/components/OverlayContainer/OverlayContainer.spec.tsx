@@ -8,6 +8,7 @@ vi.mock('../../WidgetIndex', () => ({
 vi.mock('@irdashies/context', () => ({
   useDashboard: vi.fn(),
   useRunningState: vi.fn(),
+  useResetOnDisconnect: vi.fn(),
 }));
 vi.mock('../TrackMap/hooks/useSectorTiming', () => ({
   useSectorTiming: vi.fn(),
