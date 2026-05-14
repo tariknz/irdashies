@@ -14,6 +14,7 @@ import type {
   ReferenceLapBridge,
   KeybindingsBridge,
   KeybindingActionId,
+  PersonalBestLapBridge,
 } from '@irdashies/types';
 
 export function exposeBridge() {
@@ -248,4 +249,15 @@ export function exposeBridge() {
     startRecording: () => ipcRenderer.invoke('keybindings:startRecording'),
     stopRecording: () => ipcRenderer.invoke('keybindings:stopRecording'),
   } as KeybindingsBridge);
+
+  contextBridge.exposeInMainWorld('personalBestBridge', {
+    getPersonalBest: (trackId: string | number, carName: string) =>
+      ipcRenderer.invoke('personalBest:get', trackId, carName),
+    setPersonalBest: (
+      trackId: string | number,
+      carName: string,
+      time: number,
+      lapNumber?: number
+    ) => ipcRenderer.invoke('personalBest:set', trackId, carName, time, lapNumber),  
+  } as PersonalBestLapBridge);
 }

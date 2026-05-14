@@ -488,6 +488,7 @@ export interface LapTimeLogConfig {
   showPredictedLap: boolean;
   showLastLap: boolean;
   showBestLap: boolean;
+  showAllTimeLap: boolean;
   delta: {
     enabled: boolean;
     method: 'lastlap' | 'bestlap';

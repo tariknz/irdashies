@@ -47,6 +47,7 @@ export const LapTimeLog = () => {
         current={demoData.current}
         lastlap={demoData.lastlap}
         bestlap={demoData.bestlap}
+        alltimelap={demoData.alltimelap}
         reference={demoData.reference}
         delta={demoData.delta}
         overall={demoData.overall}
@@ -62,6 +63,7 @@ export const LapTimeLog = () => {
       current={isDriving ? data.current : undefined}
       lastlap={data.lastlap}
       bestlap={data.bestlap}
+      alltimelap={data.alltimelap}
       reference={data.reference}
       delta={data.delta}
       overall={data.overall}
@@ -76,6 +78,7 @@ export const LapTimeLogDisplay = ({
   current,
   lastlap,
   bestlap,
+  alltimelap,
   reference,
   delta,
   overall,
@@ -86,6 +89,7 @@ export const LapTimeLogDisplay = ({
   current?: number;
   lastlap?: number;
   bestlap?: number;
+  alltimelap?: number | undefined;
   reference?: number;
   delta?: number;
   overall?: number;
@@ -121,9 +125,16 @@ export const LapTimeLogDisplay = ({
       bestlap !== undefined &&
       bestlap > 0 &&
       Math.abs(lastlap - bestlap) < 0.001;
+    const isAllTimeBestLap =
+      lastlap !== undefined &&
+      lastlap > 0 &&
+      alltimelap !== undefined &&
+      alltimelap > 0 &&
+      Math.abs(lastlap - alltimelap) < 0.001;
     bgColor = 'bg-slate-900';
     if (isPersonalBest) bgColor = 'bg-green-700';
     if (isSessionBest) bgColor = 'bg-purple-800';
+    if (isAllTimeBestLap) bgColor = 'bg-yellow-600';
   }
 
   const generalSettings = useGeneralSettings();
@@ -214,7 +225,7 @@ export const LapTimeLogDisplay = ({
                   }`}
                 >
                   {formatDelta(
-                    delta && current !== undefined && current > FREEZE_TIME
+                    delta && current !== undefined && current > FREEZE_TIME && (reference ?? 0) > 0
                       ? delta
                       : 0
                   )}
@@ -224,17 +235,21 @@ export const LapTimeLogDisplay = ({
           )}
 
           {/* Main Stats */}
+          {settings.showAllTimeLap && (
+            <LapTimeRow
+              label="PB"
+              time={alltimelap}
+              alltime={alltimelap}
+              settings={settings}
+            />
+          )}
           {settings.showBestLap && (
             <LapTimeRow
               label="BEST"
               time={bestlap}
-              delta={
-                reference !== undefined && reference > 0
-                  ? (bestlap ?? 0) - reference
-                  : 0
-              }
               best={bestlap}
               overall={overall}
+              alltime={alltimelap}
               settings={settings}
             />
           )}
@@ -249,6 +264,7 @@ export const LapTimeLogDisplay = ({
               }
               best={bestlap}
               overall={overall}
+              alltime={alltimelap}
               settings={settings}
             />
           )}
@@ -265,6 +281,7 @@ export const LapTimeLogDisplay = ({
                   dirty={entry.dirty}
                   best={bestlap}
                   overall={overall}
+                  alltime={alltimelap}
                   settings={settings}
                 />
               ))}

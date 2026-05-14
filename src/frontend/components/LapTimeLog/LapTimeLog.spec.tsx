@@ -23,6 +23,7 @@ const mockSettings = (
     showPredictedLap: true,
     showLastLap: true,
     showBestLap: true,
+    showAllTimeLap: false,
     delta: {
       enabled: true,
       method: 'bestlap',

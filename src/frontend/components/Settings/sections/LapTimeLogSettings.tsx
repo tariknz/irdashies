@@ -112,11 +112,20 @@ export const LapTimeLogSettings = () => {
                   />
 
                   <SettingToggleRow
-                    title="Show Best Lap"
-                    description="Show the driver's best lap time."
+                    title="Show Session Best Lap"
+                    description="Show the driver's best lap time this session."
                     enabled={settings.config.showBestLap ?? true}
                     onToggle={(newValue) =>
                       handleConfigChange({ showBestLap: newValue })
+                    }
+                  />
+
+                  <SettingToggleRow
+                    title="Show Personal Best Lap"
+                    description="Shows the best lap time ever recorded by irDashies for the car and track combo."
+                    enabled={settings.config.showAllTimeLap ?? true}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ showAllTimeLap: newValue })
                     }
                   />
 
@@ -176,9 +185,9 @@ export const LapTimeLogSettings = () => {
                       <SettingSelectRow
                         title="Number Of Laps To Show"
                         value={(
-                          settings.config.history?.count ?? 10
+                          settings.config.history?.count ?? 20
                         ).toString()}
-                        options={Array.from({ length: 10 }, (_, i) => {
+                        options={Array.from({ length: 20 }, (_, i) => {
                           const num = i + 1;
                           return {
                             label: num.toString(),

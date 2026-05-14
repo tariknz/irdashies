@@ -9,6 +9,7 @@ interface LapTimeRowProps {
   dirty?: boolean;
   best?: number | undefined;
   overall?: number | undefined;
+  alltime?: number | undefined;
   settings?: LapTimeLogConfig;
 }
 
@@ -19,6 +20,7 @@ export const LapTimeRow = ({
   dirty,
   best,
   overall,
+  alltime,
   settings,
 }: LapTimeRowProps) => {
   const generalSettings = useGeneralSettings();
@@ -28,10 +30,13 @@ export const LapTimeRow = ({
   const isUltra = generalSettings?.compactMode === 'ultra';
 
   const isGreen =
-    time !== undefined && best !== undefined && time > 0 && time <= best;
+    time !== undefined && best !== undefined && time > 0 && time == best;
 
   const isPurple =
-    time !== undefined && overall !== undefined && time > 0 && time <= overall;
+    time !== undefined && overall !== undefined && time > 0 && time == overall;
+
+  const isYellow =
+    time !== undefined && alltime !== undefined && time > 0 && time == alltime;
 
   const isDirty = dirty ?? false;
 
@@ -45,6 +50,7 @@ export const LapTimeRow = ({
 
   const getLapColor = () => {
     if (isDirty) return 'text-zinc-400';
+    if (isYellow) return 'text-yellow-400';
     if (isPurple) return 'text-purple-400';
     if (isGreen) return 'text-green-400';
     return 'text-white';

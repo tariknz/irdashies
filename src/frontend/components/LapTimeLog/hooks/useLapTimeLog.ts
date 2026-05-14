@@ -3,12 +3,15 @@ import {
   useTelemetryValue,
   useTelemetryValues,
   useTelemetryValuesRounded,
+  usePersonalBestStore,
+  useSessionStore,
+  useDriverCarIdx,
 } from '@irdashies/context';
 import type { LapEntry } from '../demoData';
 import { useLapTimeLogSettings } from './useLapTimeLogSettings';
 
 const TRACK_SURFACE_OFF_TRACK = 4;
-const MAX_HISTORY_ENTRIES = 10;
+const MAX_HISTORY_ENTRIES = 20;
 
 export const useLapTimeLog = () => {
 
@@ -27,6 +30,27 @@ export const useLapTimeLog = () => {
 
   // Get settings
   const settings = useLapTimeLogSettings();
+
+  // Get session data for personal best tracking
+  const session = useSessionStore((state) => state.session);
+  const trackId = session?.WeekendInfo?.TrackID?.toString() ?? 0;
+  const drivers = useMemo(
+    () => session?.DriverInfo?.Drivers ?? [],
+    [session?.DriverInfo?.Drivers]
+  );
+  const playerCarIdx = useDriverCarIdx();
+  const playerCarName = useMemo(() => {
+    if (playerCarIdx === null || playerCarIdx === undefined) return 'unknown';
+    const driver = drivers[playerCarIdx];
+    return driver?.CarPath ?? 'unknown';
+  }, [playerCarIdx, drivers]);
+
+  // Get personal best store and load data
+  const personalBestStore = usePersonalBestStore();
+  const currentPersonalBest = useMemo(() => {
+    if (!trackId || !playerCarName) return undefined;
+    return personalBestStore.getPersonalBest(trackId, playerCarName);
+  }, [trackId, playerCarName, personalBestStore]);
 
   // States
   const [history, setHistory] = useState<LapEntry[]>([]);
@@ -173,6 +197,12 @@ export const useLapTimeLog = () => {
     setHistory((prev) =>
       [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES)
     );
+    // Check if this beats current personal best
+    const isBetter = !currentPersonalBest || lastLapTime < currentPersonalBest;
+    if (isBetter && !isDirty) {
+      // Save personal best
+      personalBestStore.setPersonalBest(trackId, playerCarName, lastLapTime, lapCompleted);
+    }
     // reset for new lap
     lastLoggedLap.current = lapCompleted;
     lastLoggedTime.current = lastLapTime;
@@ -180,12 +210,13 @@ export const useLapTimeLog = () => {
     incidentsAtLapStart.current = incidentCount;
     lapTransition.current = false;
     resetLapState();
-  }, [lapCompleted, lastLapTime, isDirty, incidentCount, referenceTime, history]);
+  }, [lapCompleted, lastLapTime, isDirty, incidentCount, referenceTime, history, currentPersonalBest, personalBestStore, trackId, playerCarName]);
 
   return {
     current: displayTime,
     lastlap: lastLapTime,
     bestlap: bestLapTime,
+    alltimelap: currentPersonalBest,
     reference: referenceTime,
     delta: savedDelta,
     overall: sessionBestOverall,
