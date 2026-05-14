@@ -1,11 +1,13 @@
 import { useEffect, useMemo } from 'react';
 import { useStore } from 'zustand';
+import { useStoreWithEqualityFn } from 'zustand/traditional';
 import {
   useTelemetryValues,
   useTelemetryValue,
   useTelemetryStore,
 } from '../TelemetryStore/TelemetryStore';
 import { useDriverCarIdx, useSessionStore } from '../SessionStore/SessionStore';
+import { arrayShallowCompare } from '../SessionStore/arrayShallowCompare';
 import { usePushToPassStore, type P2PDisplayState } from './PushToPassStore';
 
 /**
@@ -59,5 +61,9 @@ export const usePushToPassStoreUpdater = () => {
  * Returns undefined for cars that do not support P2P.
  */
 export const useP2PDisplayStates = (): (P2PDisplayState | undefined)[] => {
-  return usePushToPassStore((s) => s.displayStates);
+  return useStoreWithEqualityFn(
+    usePushToPassStore,
+    (s) => s.displayStates,
+    arrayShallowCompare
+  );
 };
