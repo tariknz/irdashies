@@ -2,12 +2,13 @@ import { create } from 'zustand';
 import { getCarP2PConfig } from './carP2PConfigs';
 
 // Other cars report CarIdxP2P_Count as IEEE-754 float32 bits despite varType=2 (int).
-// The player's own car reports it as a plain integer — no conversion needed.
+// The decoded float is in 0.1s units, so multiply by 10 to get seconds.
+// The player's own car reports it as a plain integer (already in seconds) — no conversion needed.
 const parseP2PCount = (bits: number, isPlayer: boolean): number => {
   if (isPlayer) return bits;
   const view = new DataView(new ArrayBuffer(4));
   view.setInt32(0, bits, true);
-  return Math.round(view.getFloat32(0, true));
+  return Math.round(view.getFloat32(0, true) * 10);
 };
 
 export type P2PStatus = 'inactive' | 'active' | 'cooldown' | 'exhausted';
@@ -24,6 +25,8 @@ interface PushToPassState {
   cooldownEndTimes: (number | null)[];
   /** P2P_Status value from previous update frame per carIdx */
   prevP2PStatus: boolean[];
+  /** Computed display state per carIdx. undefined = car does not support P2P. */
+  displayStates: (P2PDisplayState | undefined)[];
   update: (
     p2pStatus: boolean[],
     p2pCount: number[],
@@ -40,6 +43,7 @@ export const usePushToPassStore = create<PushToPassState>((set, get) => ({
   sessionTime: 0,
   cooldownEndTimes: [],
   prevP2PStatus: [],
+  displayStates: [],
 
   update(
     p2pStatus,
@@ -61,6 +65,7 @@ export const usePushToPassStore = create<PushToPassState>((set, get) => ({
         sessionTime,
         cooldownEndTimes: [],
         prevP2PStatus: [],
+        displayStates: [],
       });
       return;
     }
@@ -100,11 +105,42 @@ export const usePushToPassStore = create<PushToPassState>((set, get) => ({
       newPrevP2PStatus[carIdx] = isActive;
     });
 
+    const maxIdx = Math.max(p2pStatus.length, p2pCount.length);
+    const newDisplayStates: (P2PDisplayState | undefined)[] = [];
+
+    for (let carIdx = 0; carIdx < maxIdx; carIdx++) {
+      const carId = carIdxToCarId[carIdx];
+      const config = carId !== undefined ? getCarP2PConfig(carId) : undefined;
+
+      if (!config) {
+        newDisplayStates[carIdx] = undefined;
+        continue;
+      }
+
+      const count = parseP2PCount(p2pCount[carIdx] ?? 0, carIdx === playerCarIdx);
+      const isActive = p2pStatus[carIdx] ?? false;
+      const cooldownEnd = newCooldownEndTimes[carIdx] ?? null;
+
+      let status: P2PDisplayState['status'];
+      if (count <= 0) {
+        status = 'exhausted';
+      } else if (isActive) {
+        status = 'active';
+      } else if (cooldownEnd !== null && sessionTime < cooldownEnd) {
+        status = 'cooldown';
+      } else {
+        status = 'inactive';
+      }
+
+      newDisplayStates[carIdx] = { status, count };
+    }
+
     set({
       sessionUniqId,
       sessionTime,
       cooldownEndTimes: newCooldownEndTimes,
       prevP2PStatus: newPrevP2PStatus,
+      displayStates: newDisplayStates,
     });
   },
 
@@ -114,6 +150,7 @@ export const usePushToPassStore = create<PushToPassState>((set, get) => ({
       sessionTime: 0,
       cooldownEndTimes: [],
       prevP2PStatus: [],
+      displayStates: [],
     });
   },
 }));
