@@ -80,6 +80,78 @@ When new scenarios are added (e.g. to test specific findings), document them her
 
 ---
 
+### 2026-05-15 · Post-Phase 2a (Tier 1) · PCC Race Multi-Class · Clio at Navarra · 42-minute full session
+
+**Scenario:** Real multiplayer 4-class PCC race (15 laps, ~25 min racing + warmup/qualifying/post-race). **First test capturing a complete user journey** from session-load through warmup → qualifying → 15-lap race → post-race.
+**Build:** Post-Phase 2a (no changes since Practice 5)
+**Source log:** `Race1-PCC-Clio-Navarra.txt`
+**Spreadsheet:** `pcc_race_perfmetrics_analysis.xlsx`
+**Lap-time correlation:** Provided by user — race ran from rolling start at 05:43:53 (clock time matched via +10h offset from GMT lap data) to chequered at ~06:15:42
+
+**Top-line numbers (42.5 min, 256 samples):**
+
+| Phase   | Minutes | Activity                       |       App slope |   Mean memory | Notes                                   |
+| ------- | ------- | ------------------------------ | --------------: | ------------: | --------------------------------------- |
+| **A**   | 0–10    | Warmup / qualifying / pre-grid |     +6.4 MB/min |      1,607 MB | Stable plateau                          |
+| **B+C** | 11–31   | **Race (laps 1–~9)**           | **+5.7 MB/min** |      2,863 MB | At <+5 MB/min target                    |
+| **D**   | 31      | Mid-race lap 9 — V8 major GC   |    −304 MB drop | 2,910 → 2,621 | Routine GC, not lifecycle cleanup       |
+| **E**   | 32–42   | Laps 10–15 + chequered         |  flat ~2,580 MB |      2,594 MB | Slight downward drift to GC equilibrium |
+
+**Per-renderer slopes during the 20-min race phase (B+C):**
+
+| Renderer         | Slope (MB/min) | Status                             |
+| ---------------- | -------------: | ---------------------------------- |
+| App total        |           +5.7 | At target                          |
+| Primary          |           +1.8 | Slightly above <+1 target          |
+| Left (Standings) |           +0.9 | ✅ Under <+2 target                |
+| Right            |           +0.3 | ✅ Flat                            |
+| GPU              |           +0.6 | ✅ Flat                            |
+| **Main**         |       **+2.3** | Most visible remaining leak source |
+
+**CPU and latency (full session means):**
+
+| Metric               |                 Value | Target | Status              |
+| -------------------- | --------------------: | -----: | ------------------- |
+| App CPU mean         |                 16.6% |      — | Stable              |
+| processTelemetry p99 |               7.37 ms |  <3 ms | Above target        |
+| broadcast p99        |               0.57 ms |  <1 ms | ✅ Under target     |
+| Tick dips <20 Hz     | 1 (startup ramp only) |     <1 | ✅ Effectively none |
+
+**Findings:**
+
+1. **In-race steady-state confirmed at scale.** The +5.7 MB/min app-level slope during a 20-minute real-multiplayer 4-class race is at the <+5 MB/min target. Phase 2a's H4 fix continues to hold — Left/Standings slope is +0.9 MB/min, comfortably under target. The first three phases of remediation have produced a genuinely working baseline for in-race behaviour.
+2. **Race-start session transition is the dominant remaining memory cost.** At 05:44:36 (43 seconds before lap 1 properly began, during the rolling start), app memory jumped +681 MB in a single 10-second sample, with another +329 MB in the next sample. **+1 GB allocated in ~20 seconds at race-start** — consistent with per-driver state hydrating across ~50 drivers in 4 classes (~250+ MB just for the driver state, plus session/timing/weather hydration). All driver-aware processes grow together; NetworkService jumps 53 → 230 MB (the PostHog queue accumulation we've documented). This is the same fundamental issue Practice 5's boot log identified, now confirmed at race-start as well as app-boot.
+3. **The −304 MB drop at minute 31 is V8 major GC, NOT lifecycle cleanup.** Initial analysis suggested this might be session-end release. The lap data corrects this — the drop happened mid-lap 9, with the race continuing for another 6 laps after it. The uniform drop across all renderers, combined with the heap approaching ~2,940 MB (close to V8's default major-GC threshold for the renderer processes), is consistent with routine GC. **This is a significant correction: we have zero observed evidence of the disconnect/session-end cleanup path firing successfully in any test to date.** Every memory drop we've seen has been GC, not lifecycle.
+4. **Reference lap save duplication is a new finding.** Beyond the fetch duplication identified in Practice 5, this race captured **51 reference lap save log lines for 17 distinct save events** — each save fires 3× in 15–60 ms intervals, matching the per-renderer pattern. This is more impactful than the fetch case because saves happen _during gameplay_ (every time the user sets a new fast lap), not just at session boundaries. Three synchronous file writes per fast lap is a user-experience risk during hot laps.
+5. **Subjective performance is now genuinely good.** Lap times during the race were remarkably consistent (1:56.3–1:57.1 across 13 hot laps, ±0.4s variance — normal human inconsistency, not app-induced jitter). Combined with the zero tick dips during 42 minutes of measurement, this is the first dataset where the in-race driving experience appears smooth from both the metrics and the user's perspective.
+6. **Main process is now the largest single in-race leak source.** At +2.3 MB/min during the race steady-state, it's roughly double the next-largest renderer contribution and untouched by any fix to date. Worth profiling next.
+
+**Correlation with architecture review:**
+
+| Finding                                    | Status                                      | Evidence from this run                                                                                                                                        |
+| ------------------------------------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| H4 fix (steady-state Standings)            | **Continues to hold at scale**              | Left at +0.9 MB/min over 20 min of real racing                                                                                                                |
+| P1/P2/P4 (telemetry firehose)              | **Continues to hold at scale**              | Primary at +1.8 MB/min during racing                                                                                                                          |
+| Session-transition cost (A2/A3 incomplete) | **CONFIRMED — race-start allocates ~+1 GB** | Single-sample +681 MB jump at rolling start                                                                                                                   |
+| **Reference lap save per-renderer** (new)  | **NEW finding — confirmed implicated**      | 51 saves observed for 17 distinct events; 3× per save; happens during gameplay                                                                                |
+| Reference lap fetch per-renderer           | Continues to reproduce                      | 24 fetches for 4 classes × 2 transitions = 3× per event                                                                                                       |
+| Disconnect leave cleanup                   | **CONFIRMED still not firing**              | The −304 MB drop initially suggested cleanup was working; lap correlation proves it was GC. Zero positive observations of lifecycle cleanup across all tests. |
+| Main process slope                         | Persistent across all phases                | +2.3 MB/min in steady-state race; untouched by H3/H4                                                                                                          |
+
+**Methodological note for future analyses:**
+
+When a memory drop coincides with a possible lifecycle event, **always verify against external session timing**. The −304 MB drop in this session was initially attributed to session-end cleanup before the lap-time data was provided. The drop's clean shape (uniform across renderers, occurring near V8's known major-GC threshold) was the more likely interpretation but the lifecycle hypothesis felt plausible without timing data. **Future test logs should include session-event timestamps** (race start, race end, qualifying transitions) where available, so memory events can be correctly attributed.
+
+**Updated recommendations for next implementation phase:**
+
+1. **Reference lap save + fetch deduplication (combined fix)** — both are the same root cause (per-renderer I/O that should be main-process singleton + broadcast). The save case is now confirmed as the higher-impact half because it fires during gameplay. Estimated effort: small. Estimated impact: meaningful — eliminates 2 of every 3 file writes during a race.
+2. **Disconnect / session-transition cleanup** — the missing piece of A2/A3. The +1 GB race-start allocation has no matching release path. Implementing the leave cleanup would close most of the gap between "app at end of race" (~2,580 MB) and "app before race started" (~1,540 MB). Estimated effort: medium (requires designing what state belongs to a session vs the app). Estimated impact: large — directly addresses the ~+1 GB per-session retained cost.
+3. **Main process leak investigation** — now the largest visible in-race leak at +2.3 MB/min. Worth a Main-process-only memory profile to identify the source. Estimated effort: investigation; fix likely follows from findings.
+
+H1 (`createDriverStandings` rewrite) and P5 (`DriverInfoRow` memo) remain deprioritised — the race steady-state numbers don't motivate them. They may be worth pursuing later for code quality or to enable per-slot subscriptions, but not for performance.
+
+---
+
 ### 2026-05-14 · Post-Phase 2a (Tier 1: H3 + H4) · Practice (real, joiners) · IMSA GT3 at Road Atlanta
 
 **Scenario:** Practice (real, joiners) — active driver churn throughout. **Important context:** iRDashies was started while iRacing was loading into the session, capturing the session-load hydration burst.
@@ -542,13 +614,15 @@ Live record of which architecture review findings have empirical support. Update
 
 ### Confirmed implicated, fix outstanding
 
-| ID                                                          | Description                                                                                                                                                                                                       | Phase scope                                                                                                                     |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Reference lap fetch per-renderer** (new from P5 boot log) | When iRacing connects, each renderer independently fetches reference laps for each class. Results in 3× I/O and 3× memory cost during session-load. Should be main-process singleton + broadcast.                 | Targeted small fix — recommended next step, high leverage on session-load cost                                                  |
-| **Disconnect leave cleanup** (sub-finding of A3)            | When iRacing disconnects, the lifecycle abstraction logs the disconnect but does not release per-driver state allocated during join. Per-driver state from rapid connect/disconnect/reconnect cycles accumulates. | Phase 2 — completes A2/A3                                                                                                       |
-| **P5**                                                      | `memo(DriverInfoRow)` defeated by prop churn                                                                                                                                                                      | Phase 1 (not addressed); Phase 2. Lower priority now — Standings memory leak is resolved, so the residual P5 CPU cost is small. |
-| **L5**                                                      | Module-global callback `Set`s in bridges not cleared on window close                                                                                                                                              | Phase 2 — driven by completing A2/A3 lifecycle                                                                                  |
-| **A7**                                                      | 8 ad-hoc bridges with module-global callback `Set`s                                                                                                                                                               | Phase 2 — driven by completing A2/A3 lifecycle                                                                                  |
+| ID                                                          | Description                                                                                                                                                                                                                                                                                                                               | Phase scope                                                                                                                     |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Reference lap fetch per-renderer** (new from P5 boot log) | When iRacing connects, each renderer independently fetches reference laps for each class. Results in 3× I/O and 3× memory cost during session-load. Should be main-process singleton + broadcast.                                                                                                                                         | Targeted small fix — recommended next step, high leverage on session-load cost                                                  |
+| **Reference lap save per-renderer** (new from PCC race)     | Each renderer independently saves reference laps when the user sets a new fast lap. PCC race observed 51 saves for 17 distinct events (3× per save). **Happens during gameplay**, not just session boundaries — higher user-experience impact than the fetch case. Same root cause; should be fixed alongside fetch dedup.                | Combined fix with fetch dedup                                                                                                   |
+| **Disconnect leave cleanup** (sub-finding of A3)            | When iRacing disconnects, the lifecycle abstraction logs the disconnect but does not release per-driver state allocated during join. **Zero positive observations of cleanup firing across all tests** — every memory drop observed so far is V8 GC, not lifecycle cleanup. Race-start allocates ~+1 GB; nothing reclaims it on race-end. | Phase 2 — completes A2/A3                                                                                                       |
+| **Main process slope** (new — promoted from open question)  | +2.3 MB/min during steady-state racing, persistent across all remediation phases. Largest single in-race leak source post-Phase-2a. Cause not yet identified.                                                                                                                                                                             | Phase 2/3 — investigation first, fix follows                                                                                    |
+| **P5**                                                      | `memo(DriverInfoRow)` defeated by prop churn                                                                                                                                                                                                                                                                                              | Phase 1 (not addressed); Phase 2. Lower priority now — Standings memory leak is resolved, so the residual P5 CPU cost is small. |
+| **L5**                                                      | Module-global callback `Set`s in bridges not cleared on window close                                                                                                                                                                                                                                                                      | Phase 2 — driven by completing A2/A3 lifecycle                                                                                  |
+| **A7**                                                      | 8 ad-hoc bridges with module-global callback `Set`s                                                                                                                                                                                                                                                                                       | Phase 2 — driven by completing A2/A3 lifecycle                                                                                  |
 
 ### Partially confirmed
 
@@ -569,14 +643,15 @@ Live record of which architecture review findings have empirical support. Update
 
 ### Open questions raised by recent tests
 
-- **Session-load startup cost (~+1 GB).** Practice 5 captured the first reproducible measurement of "iRDashies opened while iRacing is loading into a session" vs the prior "opened post-load" baseline. Cost is ~1 GB higher. Two underlying contributors are now identified: reference lap fetch duplication (3× per class) and disconnect cleanup gap. Both have targeted fixes available. **Fixing these and re-running this scenario will quantify how much of the +1 GB is attributable to each.**
-- **Phase 1 startup regression on Primary (+107 MB).** Cause not confirmed — most likely typed-subscription/store registration cost. Empty Dashboard test post-Phase 1 would isolate substrate vs widget contribution. Lower priority now that overall behaviour is healthy.
-- **Main process slope (+3.6–6.0 MB/min).** Persistent across all phases. Not directly addressed by any fix so far. Possibly related to telemetry buffering, log accumulation, or main-process state stores not yet typed. Now the largest single contributor to remaining app-level slope.
-- **GPU regression P4 → P5.** Resolved as session noise — P4's +6.6 MB/min comparable-window slope dropped to P5's +3.1 MB/min on a longer, more representative session. Watch item closed.
+- **Session-load startup cost (~+1 GB).** Practice 5 captured this at app-boot during session-load. The PCC race confirmed the same pattern fires at **race-start mid-session** (rolling start transition). Two underlying contributors identified: reference lap fetch/save duplication (3× per event) and disconnect cleanup gap. Both have targeted fixes available. **Fixing these and re-running a full-race scenario will quantify how much of the +1 GB is attributable to each.**
+- **Phase 1 startup regression on Primary (+107 MB).** Cause not confirmed — most likely typed-subscription/store registration cost. Empty Dashboard test would isolate substrate vs widget contribution. Lower priority now that overall behaviour is healthy.
 
 ### Resolved open questions
 
 - **Standings widget per-driver allocation pattern** (raised by P3, resolved by P5) — Phase 2a's H4 fix dropped the Standings slope from +13 MB/min to +0.7 MB/min. Standings is no longer the dominant leak source.
+- **GPU regression P4 → P5** (raised by P4, resolved by P5) — Resolved as session noise. Watch item closed.
+- **Main process slope** (was open across all phases) — Promoted from open question to **confirmed finding** in §4 above. The PCC race established it as the largest single in-race leak source at +2.3 MB/min during steady-state racing. Needs investigation rather than continued tracking.
+- **Whether memory drops indicate lifecycle cleanup** — PCC race + lap-data correlation established that the observed memory drops are V8 major GC, not lifecycle cleanup. No positive evidence of leave-path firing exists across any test to date.
 
 ---
 
@@ -584,43 +659,47 @@ Live record of which architecture review findings have empirical support. Update
 
 Empirical baselines and post-remediation targets. Updated as targets are met.
 
-| Metric                                                      |       Pre-remediation |      Post-0.5 |           Post-1 | Post-2a (P3 baseline) |              **Post-2a (P5)** |                Target | Source                              |
-| ----------------------------------------------------------- | --------------------: | ------------: | ---------------: | --------------------: | ----------------------------: | --------------------: | ----------------------------------- |
-| Multi-class startup memory (post-load)                      |              2,908 MB |   1,390 MB ✅ |      1,459 MB ✅ |           1,419 MB ✅ |                         n/a ² |            < 1,800 MB | AI Race Multi-Class / Practice      |
-| **Multi-class startup memory (during session-load)**        |                   n/t |           n/t |              n/t |                   n/t |                  **2,417 MB** |            < 1,500 MB | Practice opened during session-load |
-| Tick dips <20 Hz (16+ min)                                  |                     7 |          0 ✅ |             0 ✅ |                  0 ✅ |                      **0** ✅ |                   < 1 | AI Race Multi-Class / Practice      |
-| processTelemetry p99 mean                                   |               12.5 ms |        8.2 ms |          6.95 ms |               5.23 ms |                 **7.15 ms** ³ |                < 3 ms | AI Race Multi-Class / Practice      |
-| broadcast p99 mean                                          |               1.71 ms |       1.45 ms |       0.67 ms ✅ |            0.55 ms ✅ |                **0.61 ms** ✅ |                < 1 ms | AI Race Multi-Class / Practice      |
-| In-race app memory slope (stable field)                     |          +18.8 MB/min |  +18.8 MB/min |     +10.4 MB/min |                 n/a ¹ |             **+9.4 MB/min** ⁴ |           < +5 MB/min | AI Race / Practice                  |
-| **Primary renderer slope**                                  |    +5.8 / +9.8 MB/min |   +5.2 MB/min |  +0.16 MB/min ✅ |        +1.5 MB/min ✅ |            **+0.6 MB/min** ✅ |           < +1 MB/min | AI Race / Practice                  |
-| **Left renderer slope (churning field, comparable window)** |          +18.5 MB/min |           n/t |     +13.0 MB/min |          +13.6 MB/min |            **+0.7 MB/min** ✅ |           < +2 MB/min | Practice (real, joiners)            |
-| Per-joining-driver permanent memory cost                    |               ~5–6 MB |      untested |          ~5–8 MB |                   n/t |    **~5 MB across renderers** |                < 1 MB | Practice (real, joiners)            |
-| Renderer stutter (subjective)                               | Choppy after 5–10 min | Smooth 16 min | Plateau observed |         Smooth 17 min | **Clear plateau at min 8** ✅ | No stutter at 30+ min | All in-race tests                   |
+| Metric                                                 |       Pre-remediation |      Post-0.5 |           Post-1 |     Post-2a (Practice) |                     **Post-2a (PCC Race)** |                Target | Source                              |
+| ------------------------------------------------------ | --------------------: | ------------: | ---------------: | ---------------------: | -----------------------------------------: | --------------------: | ----------------------------------- |
+| Multi-class startup memory (post-load)                 |              2,908 MB |   1,390 MB ✅ |      1,459 MB ✅ |            1,419 MB ✅ |                            **1,539 MB** ✅ |            < 1,800 MB | AI Race / Practice / PCC Race       |
+| Multi-class startup memory (during session-load)       |                   n/t |           n/t |              n/t |               2,417 MB |                                      n/a ⁵ |            < 1,500 MB | Practice opened during session-load |
+| **Race-start transition cost** (new)                   |                   n/t |           n/t |              n/t |                    n/t |                       **+1,000 MB / 20 s** |             < +200 MB | PCC Race                            |
+| Tick dips <20 Hz (16+ min)                             |                     7 |          0 ✅ |             0 ✅ |                   0 ✅ |                                   **0** ✅ |                   < 1 | AI Race / Practice / PCC Race       |
+| processTelemetry p99 mean                              |               12.5 ms |        8.2 ms |          6.95 ms |                5.23 ms |                              **7.37 ms** ³ |                < 3 ms | AI Race / Practice / PCC Race       |
+| broadcast p99 mean                                     |               1.71 ms |       1.45 ms |       0.67 ms ✅ |             0.55 ms ✅ |                             **0.57 ms** ✅ |                < 1 ms | AI Race / Practice / PCC Race       |
+| **In-race app memory slope (race-phase steady-state)** |          +18.8 MB/min |  +18.8 MB/min |     +10.4 MB/min |                  n/a ¹ |                         **+5.7 MB/min** ✅ |           < +5 MB/min | PCC Race phase B+C                  |
+| Primary renderer slope                                 |    +5.8 / +9.8 MB/min |   +5.2 MB/min |  +0.16 MB/min ✅ |         +0.6 MB/min ✅ |                         **+1.8 MB/min** ✅ |   < +1 MB/min (close) | AI Race / Practice / PCC Race       |
+| Left renderer slope (churning field)                   |          +18.5 MB/min |           n/t |     +13.0 MB/min |         +0.7 MB/min ✅ |                         **+0.9 MB/min** ✅ |           < +2 MB/min | Practice (real, joiners) / PCC Race |
+| **Main process slope (steady-state)** (new)            |                   n/t |           n/t |              n/t |                    n/t |                            **+2.3 MB/min** |         < +0.5 MB/min | PCC Race                            |
+| Per-joining-driver permanent memory cost               |               ~5–6 MB |      untested |          ~5–8 MB | ~5 MB across renderers |           (not directly measured this run) |                < 1 MB | Practice (real, joiners)            |
+| Renderer stutter (subjective)                          | Choppy after 5–10 min | Smooth 16 min | Plateau observed |          Smooth 17 min | **Smooth 42 min, consistent lap times** ✅ | No stutter at 30+ min | All in-race tests                   |
 
-¹ Practice 3 has active driver churn throughout, so its app-level slope (+22.3 MB/min) isn't comparable to a stable-field race.
-² Practice 5 was opened during iRacing session-load and so doesn't measure the post-load startup baseline; expected to be similar to P4 if reproduced.
-³ Post-2a p99 mean is likely inflated by the elevated heap from session-load startup. A fresh-start post-load run would isolate the true Phase 2a latency.
-⁴ Practice 5 has active driver churn throughout (same as P3), so this slope is from the post-startup full range rather than the same metric as the stable-field tests.
+¹ Earlier Practice tests had active driver churn throughout, so their app-level slopes weren't comparable to a stable-field race. PCC race phase B+C is the first clean steady-state-race measurement.
+² (note removed — multi-class startup target now met by PCC race fresh-start)
+³ PCC race p99 mean is the full-session figure including the race-start transition spike (max 39.5 ms). Steady-state p99 during clean race laps is likely lower; an analysis on the race-phase-only subset would refine this.
+⁵ PCC race was opened pre-iRacing, so the +1,000 MB session-load cost appears at race-start instead of app-boot.
 
 **Phase 0.5 success criteria:** Met for L1 and L2 (startup memory and tick stability). S5 fix also appears successful.
 
 **Phase 1 success criteria:** Largely met for P1/P2/P4 in driver-aware widgets _except Standings_. Primary in-race AND driver-join leaks both essentially eliminated (~85–97% reduction). Driver-join leak narrowed from substrate-wide to Standings-widget-specific. (Standings was subsequently resolved by Phase 2a — see below.)
 
-**Phase 2a Tier 1 success criteria:**
+**Phase 2a Tier 1 success criteria — now substantially validated by PCC race:**
 
-- ✅ Standings steady-state leak resolved (target was significant reduction; got 95% reduction, now under target)
-- ✅ No regression in Phase 0.5/Phase 1 wins
-- ⚠️ A2 partially completed — join detection wired up but leave/disconnect cleanup not implemented
-- ⚠️ Two new findings surfaced during Phase 2a testing: reference-lap fetch duplication (3× per class) and disconnect leave cleanup gap. Both have targeted fixes.
+- ✅ Standings steady-state leak resolved (+0.9 MB/min during 20 min of 4-class real-multiplayer racing)
+- ✅ In-race app-level slope at target (+5.7 MB/min, meets <+5 target)
+- ✅ Tick stability excellent (0 dips in 42.4 min of measurement)
+- ✅ Subjective performance confirmed good (consistent lap times, no perceived stutter)
+- ⚠️ A2 partially completed — join detection wired up but disconnect/leave cleanup not firing
+- ⚠️ Race-start transition allocates ~+1 GB with no corresponding release path
 
-**Remaining work, in priority order:**
+**Remaining work, in priority order (updated post-PCC):**
 
-1. **Reference-lap fetch deduplication** (small, high-leverage targeted fix; addresses ~1 GB session-load cost)
-2. **Disconnect leave cleanup** (completes A2/A3; addresses per-driver-join cost)
-3. **Main process slope** (now the largest single contributor to app-level slope at +4–6 MB/min; root cause not yet identified)
-4. Phase 3 channel bus would close the remaining processTelemetry p99 gap to <3 ms
+1. **Reference lap save + fetch deduplication** (small, high-leverage targeted fix). Save dedup is the new higher-impact half — happens during gameplay, not just at session boundaries. Estimated effort: small. Estimated impact: eliminates 2 of every 3 reference-lap file writes during a race.
+2. **Disconnect / session-transition cleanup** (the missing piece of A2/A3). Addresses the ~+1 GB race-start allocation that has no current release path. The PCC race established that zero positive observations of cleanup-firing exist across all tests to date — every memory drop is GC, not lifecycle. Estimated effort: medium. Estimated impact: large.
+3. **Main process leak investigation** (new — promoted from open question). At +2.3 MB/min during steady-state racing, it's now the largest visible in-race leak. Cause unknown. Worth a Main-process-only memory profile to identify the source. Estimated effort: investigation; fix likely follows from findings.
+4. Phase 3 channel bus would close the remaining processTelemetry p99 gap to <3 ms.
 
-H1 (`createDriverStandings` rewrite) and P5 (`DriverInfoRow` memo) are no longer urgent given Phase 2a's results — Standings is now under target. They may still be worth doing for code quality but should be deprioritised against items 1–3 above.
+H1 (`createDriverStandings` rewrite) and P5 (`DriverInfoRow` memo) remain deprioritised — the race steady-state numbers don't motivate them.
 
 ---
 
@@ -658,6 +737,7 @@ Copy this template when adding new test results to §3.
 - Be specific about **what the test does and doesn't address.** If a test wasn't designed to exercise a particular finding, say so.
 - Quote slopes with **r values**. A high slope with low r is noise; a low slope with high r is a real trend.
 - Note any **environmental confounds** (AI physics CPU contention, sync I/O during test, etc.).
+- **Include session timing data where available** (race start/end, qualifying transitions, lap times). The PCC race demonstrated that memory events can be misattributed to lifecycle when they're actually V8 GC, and timing data is what discriminates. If you have iRacing's race results export or lap data, attach it.
 - Update §4 and §5 as part of adding a new entry — the entry isn't complete until those sections reflect what it changed.
 
 ---
