@@ -21,7 +21,7 @@ export const PushToPassCell = memo(({ state }: PushToPassCellProps) => {
   const isExhausted = status === 'exhausted';
   const isActive = status === 'active';
   const isCooldown = status === 'cooldown';
-  const isActiveHighCount = isActive && count >= 20;
+  const isActiveHighCount = isActive && count <= 20;
 
   const bgClass = isExhausted
     ? 'bg-red-500/80 text-white'
@@ -31,7 +31,9 @@ export const PushToPassCell = memo(({ state }: PushToPassCellProps) => {
         ? 'bg-red-500 text-white'
         : isActive
           ? 'bg-lime-500 text-slate-800'
-          : 'bg-red-200 text-slate-800';
+          : count <= 20
+            ? 'bg-red-200 text-slate-800'
+            : 'bg-lime-200 text-slate-800';
 
   const pulseClass = isActive || isCooldown ? 'animate-pulse' : '';
 
