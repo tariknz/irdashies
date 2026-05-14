@@ -117,7 +117,13 @@ export const usePushToPassStore = create<PushToPassState>((set, get) => ({
         continue;
       }
 
-      const count = parseP2PCount(p2pCount[carIdx] ?? 0, carIdx === playerCarIdx);
+      const rawCount = p2pCount[carIdx] ?? -1;
+      if (rawCount < 0) {
+        newDisplayStates[carIdx] = undefined;
+        continue;
+      }
+
+      const count = parseP2PCount(rawCount, carIdx === playerCarIdx);
       const isActive = p2pStatus[carIdx] ?? false;
       const cooldownEnd = newCooldownEndTimes[carIdx] ?? null;
 
