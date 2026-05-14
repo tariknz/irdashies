@@ -5,15 +5,13 @@ import { useLiveSectorDelta } from '../hooks/useLiveSectorDelta';
  * don't re-render the whole widget.
  */
 export const LiveDelta = ({
-  useGhost,
   dp,
   fallback,
 }: {
-  useGhost: boolean;
   dp: number;
   fallback: string;
 }) => {
-  const liveSectorDelta = useLiveSectorDelta(useGhost);
+  const liveSectorDelta = useLiveSectorDelta();
   if (liveSectorDelta === null) return <>{fallback}</>;
   const sign = liveSectorDelta >= 0 ? '+' : '';
   return <>{`${sign}${liveSectorDelta.toFixed(dp)}`}</>;

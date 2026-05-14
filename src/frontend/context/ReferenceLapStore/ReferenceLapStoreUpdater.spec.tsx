@@ -17,7 +17,6 @@ describe('useReferenceLapStoreUpdater', () => {
     useReferenceLapStore.getState().completeSession();
     // Initialize store state
     useReferenceLapStore.setState({
-      seriesId: -1,
       trackId: -1,
     });
   });
