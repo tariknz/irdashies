@@ -109,7 +109,17 @@ export function createSessionLifecycle(): SessionLifecycle {
     },
 
     _onDisconnect() {
-      logger.info('[sessionLifecycle] Disconnect detected');
+      logger.info(
+        `[sessionLifecycle] Disconnect detected (${knownDriverCarIdxs.size} known drivers)`
+      );
+      // Emit synthetic leave events for every known driver before clearing
+      // state. Without this, subscribers that release per-driver allocations
+      // on `onDriverLeft` would leak across reconnect cycles — confirmed by
+      // PCC race + Practice 5 boot logs which showed zero leave events firing
+      // and ~+1 GB allocated per session-load without a release path.
+      for (const carIdx of knownDriverCarIdxs) {
+        fire(driverLeftCallbacks, carIdx);
+      }
       knownDriverCarIdxs = new Set();
       lastSessionNum = -1;
       fireAll(disconnectCallbacks);
