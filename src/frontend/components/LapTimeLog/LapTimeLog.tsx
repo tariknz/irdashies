@@ -104,11 +104,21 @@ export const LapTimeLogDisplay = ({
       .slice(0, settings.history.count);
   }, [history, settings.history.count]);
 
+  // predicted lap time
+  const predicted =
+    reference !== undefined && delta !== undefined
+      ? reference + delta
+      : undefined;
+
   // predicted delta
-  const deltaIsGreen =
-    current !== undefined && current > 5 && delta !== undefined && delta < 0;
-  const deltaIsRed =
-    current !== undefined && current > 5 && delta !== undefined && delta > 0;
+  const hasPredictedDelta =
+    current !== undefined &&
+    current > 5 &&
+    predicted !== undefined &&
+    predicted > 0 &&
+    delta !== undefined;
+  const deltaIsGreen = hasPredictedDelta && delta < 0;
+  const deltaIsRed = hasPredictedDelta && delta > 0;
 
   // for the flash
   let bgColor = 'bg-slate-900/[var(--fg-alpha)]';
@@ -210,13 +220,13 @@ export const LapTimeLogDisplay = ({
                   current === undefined
                     ? undefined
                     : current > FREEZE_TIME
-                      ? (reference ?? 0) + (delta ?? 0)
+                      ? predicted
                       : lastlap
                 )}
               </div>
               {settings.delta.enabled && (
                 <div
-                  className={`absolute right-2 text-[0.9em] text-center tabular-nums ${
+                  className={`absolute right-2 text-[0.8em] text-center tabular-nums ${
                     !dirty && delta && deltaIsGreen
                       ? 'text-green-400'
                       : !dirty && delta && deltaIsRed
@@ -225,7 +235,11 @@ export const LapTimeLogDisplay = ({
                   }`}
                 >
                   {formatDelta(
-                    delta && current !== undefined && current > FREEZE_TIME && (reference ?? 0) > 0
+                    delta &&
+                      current !== undefined &&
+                      current > FREEZE_TIME &&
+                      predicted !== undefined &&
+                      predicted > 0
                       ? delta
                       : 0
                   )}
@@ -237,7 +251,7 @@ export const LapTimeLogDisplay = ({
           {/* Main Stats */}
           {settings.showAllTimeLap && (
             <LapTimeRow
-              label="PB"
+              label="P.B."
               time={alltimelap}
               alltime={alltimelap}
               settings={settings}

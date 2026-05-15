@@ -14,7 +14,6 @@ const TRACK_SURFACE_OFF_TRACK = 4;
 const MAX_HISTORY_ENTRIES = 20;
 
 export const useLapTimeLog = () => {
-
   // reset functions
   const resetSessionState = () => {
     setHistory([]);
@@ -45,13 +44,6 @@ export const useLapTimeLog = () => {
     return driver?.CarPath ?? 'unknown';
   }, [playerCarIdx, drivers]);
 
-  // Get personal best store and load data
-  const personalBestStore = usePersonalBestStore();
-  const currentPersonalBest = useMemo(() => {
-    if (!trackId || !playerCarName) return undefined;
-    return personalBestStore.getPersonalBest(trackId, playerCarName);
-  }, [trackId, playerCarName, personalBestStore]);
-
   // States
   const [history, setHistory] = useState<LapEntry[]>([]);
   const [isDirty, setIsDirty] = useState<boolean>(false);
@@ -66,8 +58,10 @@ export const useLapTimeLog = () => {
   const carIdxBestLapTime = useTelemetryValues<number[]>('CarIdxBestLapTime');
   const sessionNum = useTelemetryValue<number>('SessionNum') ?? 0;
   const sessionTime = useTelemetryValuesRounded('SessionTime', 0)[0] ?? 0;
-  const playerTrackSurface = useTelemetryValue<number>('PlayerTrackSurface') ?? 0;
-  const incidentCount = useTelemetryValue<number>('PlayerCarMyIncidentCount') ?? 0;
+  const playerTrackSurface =
+    useTelemetryValue<number>('PlayerTrackSurface') ?? 0;
+  const incidentCount =
+    useTelemetryValue<number>('PlayerCarMyIncidentCount') ?? 0;
 
   // Refs
   const lastLoggedLap = useRef<number>(lapCompleted);
@@ -78,6 +72,14 @@ export const useLapTimeLog = () => {
   const incidentsAtLapStart = useRef<number>(incidentCount);
   const lastDeltaUpdate = useRef<number>(0);
   const lapTransition = useRef<boolean>(false);
+
+  // Get personal best store and load data
+  const personalBestStore = usePersonalBestStore();
+
+  const currentPersonalBest = useMemo(() => {
+    if (!trackId || !playerCarName) return undefined;
+    return personalBestStore.getPersonalBest(trackId, playerCarName);
+  }, [trackId, playerCarName, personalBestStore]);
 
   // Get overall best
   const sessionBestOverall = useMemo(() => {
@@ -108,7 +110,7 @@ export const useLapTimeLog = () => {
     const sessionRestarted = sessionTime < prevSessionTime.current - 5;
     if (sessionChanged || sessionRestarted) {
       lastLoggedLap.current = lapCompleted;
-      lastLoggedTime.current = lastLapTime;      
+      lastLoggedTime.current = lastLapTime;
       incidentsAtLapStart.current = incidentCount;
       referenceAtStartOfLap.current = 0;
       lastDeltaUpdate.current = 0;
@@ -121,7 +123,8 @@ export const useLapTimeLog = () => {
 
   // 2. check for new lap
   useEffect(() => {
-    lapTransition.current = lapCompleted > 0 && lapCompleted != lastLoggedLap.current;
+    lapTransition.current =
+      lapCompleted > 0 && lapCompleted != lastLoggedLap.current;
     // auto reset to prevent stuck timer
     const timeout = setTimeout(() => {
       lapTransition.current = false;
@@ -180,7 +183,8 @@ export const useLapTimeLog = () => {
   // 4. log lap history and reset
   useEffect(() => {
     // wait for new last lap time
-    const isValidTime = lastLapTime > 0 && lastLapTime !== lastLoggedTime.current;
+    const isValidTime =
+      lastLapTime > 0 && lastLapTime !== lastLoggedTime.current;
     if (!lapTransition.current || !isValidTime) return;
     // prevent duplicates
     if (history.some((entry) => entry.lap === lapCompleted)) return;
@@ -194,14 +198,12 @@ export const useLapTimeLog = () => {
           : 0,
       dirty: isDirty,
     };
-    setHistory((prev) =>
-      [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES)
-    );
+    setHistory((prev) => [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES));
     // Check if this beats current personal best
     const isBetter = !currentPersonalBest || lastLapTime < currentPersonalBest;
     if (isBetter && !isDirty) {
       // Save personal best
-      personalBestStore.setPersonalBest(trackId, playerCarName, lastLapTime, lapCompleted);
+      personalBestStore.setPersonalBest(trackId, playerCarName, lastLapTime);
     }
     // reset for new lap
     lastLoggedLap.current = lapCompleted;
@@ -210,7 +212,18 @@ export const useLapTimeLog = () => {
     incidentsAtLapStart.current = incidentCount;
     lapTransition.current = false;
     resetLapState();
-  }, [lapCompleted, lastLapTime, isDirty, incidentCount, referenceTime, history, currentPersonalBest, personalBestStore, trackId, playerCarName]);
+  }, [
+    lapCompleted,
+    lastLapTime,
+    isDirty,
+    incidentCount,
+    referenceTime,
+    history,
+    currentPersonalBest,
+    personalBestStore,
+    trackId,
+    playerCarName,
+  ]);
 
   return {
     current: displayTime,
