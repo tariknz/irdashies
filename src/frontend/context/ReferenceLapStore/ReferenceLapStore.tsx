@@ -14,9 +14,9 @@ function isLapClean(trackSurface: number, isOnPitRoad: boolean): boolean {
 const EMPTY_LAP: ReferenceLap = {
   startTime: -1,
   finishTime: -1,
-  times: new Float32Array(),
+  times: new Float32Array().fill(0),
   pointPos: new Float32Array().fill(-1),
-  tangents: new Float32Array(),
+  tangents: new Float32Array().fill(0),
   interval: -1,
   pointsCount: 0,
   lastTrackedPct: -1,
@@ -69,7 +69,7 @@ export function getBucketIndex(trackPct: number, pointsCount: number): number {
   return Math.min(Math.max(index, 0), pointsCount - 1);
 }
 
-interface ReferenceRegistryState {
+export interface ReferenceRegistryState {
   activeLaps: Map<number, ReferenceLap>;
   bestLaps: Map<number, ReferenceLap>;
   persistedLaps: Map<number, ReferenceLap>;
@@ -253,13 +253,10 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
               : null;
 
             const VALID_THRESHOLD = 0.85;
-
-            // Validates the pace: passes if no persisted lap exists, OR if the new lap meets the threshold
             const isPaceValid =
               !persistedLapTime ||
               persistedLapTime / currentLapTime >= VALID_THRESHOLD;
 
-            // Updates if there is NO session best, OR if the new lap is faster AND the pace is valid
             const bestLap = bestLaps.get(carIdx);
             const bestLapTime = bestLap
               ? bestLap.finishTime - bestLap.startTime
@@ -272,25 +269,29 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
               precomputePCHIPTangents(refLap);
               isPromoted = true;
 
+              // If we have an old best lap that is no longer needed anywhere, recycle it.
+              // NOTE: We check if it's still used by persistedLaps before recycling.
               if (bestLap && bestLap !== refLap) {
-                releaseLapBuffers(bestLap);
+                const isStillPersisted = Array.from(
+                  persistedLaps.values()
+                ).includes(bestLap);
+                if (!isStillPersisted) releaseLapBuffers(bestLap);
               }
 
-              // Mutate in place
               bestLaps.set(carIdx, refLap);
 
               const isCurrentFasterThanPersisted =
                 currentLapTime < (persistedLapTime || Number.MAX_SAFE_INTEGER);
 
               if (isCurrentFasterThanPersisted) {
+                // If old persisted lap is no longer used as any driver's best lap, recycle it.
                 if (persistedLap && persistedLap !== refLap) {
-                  const isUsedByBest = Array.from(bestLaps.values()).includes(
+                  const isStillBest = Array.from(bestLaps.values()).includes(
                     persistedLap
                   );
-                  if (!isUsedByBest) releaseLapBuffers(persistedLap);
+                  if (!isStillBest) releaseLapBuffers(persistedLap);
                 }
 
-                // Mutate in place
                 persistedLaps.set(classId, refLap);
 
                 if (seriesId !== null && trackId !== null) {
@@ -307,10 +308,14 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
             }
           }
 
+          // If not promoted, buffers are safe to recycle now.
+          // If promoted, they are now owned by bestLaps/persistedLaps.
           if (!isPromoted) {
             releaseLapBuffers(refLap);
           }
 
+          // Always start fresh for the next lap.
+          // createReferenceLap will acquire fresh/recycled buffers from the pool.
           const isTrackedFromStart = trackPct <= interval;
           activeLaps.set(
             carIdx,
@@ -362,21 +367,10 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
     },
 
     completeSession: () => {
-      const { activeLaps, bestLaps, persistedLaps } = get();
-
-      // Release all buffers back to the pool
-      activeLaps.forEach((lap) => releaseLapBuffers(lap));
-      bestLaps.forEach((lap) => {
-        // Avoid double-releasing if bestLap was also an activeLap
-        const isActive = Array.from(activeLaps.values()).includes(lap);
-        if (!isActive) releaseLapBuffers(lap);
-      });
-      persistedLaps.forEach((lap) => {
-        // Avoid double-releasing if class-best was also a driver-best
-        const isBest = Array.from(bestLaps.values()).includes(lap);
-        const isActive = Array.from(activeLaps.values()).includes(lap);
-        if (!isBest && !isActive) releaseLapBuffers(lap);
-      });
+      // Clear the buffer pool entirely when the session ends. This ensures that
+      // arrays from one track don't hog memory when switching to
+      // another track.
+      BUFFER_POOL.length = 0;
 
       set({
         activeLaps: new Map<number, ReferenceLap>(),

@@ -1,9 +1,36 @@
-import { describe, it } from 'vitest';
-import { useReferenceLapStore } from './ReferenceLapStore';
+import { describe, it, beforeEach, afterEach } from 'vitest';
+import {
+  ReferenceRegistryState,
+  useReferenceLapStore,
+} from './ReferenceLapStore';
 import { ReferenceLapBridge, Driver } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
 
 describe('ReferenceLapStore Benchmark', () => {
+  let initialState: ReferenceRegistryState;
+
+  beforeEach(() => {
+    // Capture the initial state of the store before any mutations occur in the test.
+    // We only need to serialize the metadata keys as completeSession() handles clearing maps.
+    const state = useReferenceLapStore.getState();
+    initialState = {
+      seriesId: state.seriesId,
+      trackId: state.trackId,
+      trackLength: state.trackLength,
+      pointsCount: state.pointsCount,
+      interval: state.interval,
+      persistedLapsVersion: state.persistedLapsVersion,
+      fileLoadedClassIds: new Set(state.fileLoadedClassIds),
+    } as ReferenceRegistryState;
+  });
+
+  afterEach(() => {
+    // Restore the store to its original state to avoid leaking into other tests.
+    // completeSession() releases buffers and clears active/best/persisted maps.
+    useReferenceLapStore.getState().completeSession();
+    useReferenceLapStore.setState(initialState);
+  });
+
   it('measures performance of collectBulkData with 64 drivers (1 minute simulation)', () => {
     const bridge = {
       saveReferenceLap: () => Promise.resolve(),
