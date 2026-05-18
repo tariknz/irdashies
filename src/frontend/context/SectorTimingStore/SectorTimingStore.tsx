@@ -77,6 +77,9 @@ interface SectorTimingState {
 
   // Per-sector timing results (null = not yet completed)
   sessionBestSectorTimes: (number | null)[];
+  // The session best for each sector before it was most recently beaten.
+  // Used to show the improvement delta when a sector turns purple.
+  previousSessionBestSectorTimes: (number | null)[];
   currentLapSectorUnclean: boolean[];
   previousLapSectorUnclean: boolean[];
 
@@ -87,11 +90,18 @@ interface SectorTimingState {
   greenThreshold: number;
   yellowThreshold: number;
 
+  // Whether to record sectors that contained an incident (x).
+  // false = discard unclean sector times entirely (keeps previous best).
+  trackIncidentSectors: boolean;
+
   // Called each telemetry tick with the player's current position and time
   tick: (lapDistPct: number, sessionTime: number, isOnTrack: boolean) => void;
 
   // Update color thresholds and recompute existing sector colors immediately.
   setThresholds: (green: number, yellow: number) => void;
+
+  // Update incident-tracking setting.
+  setTrackIncidentSectors: (v: boolean) => void;
 
   // Reset all timing data (e.g. on new session or track change)
   reset: () => void;
@@ -220,6 +230,7 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
   sectorEntryValid: false,
   sectorEntryUnclean: false,
   sessionBestSectorTimes: [],
+  previousSessionBestSectorTimes: [],
   sectorColors: [],
   currentLapSectorTimes: [],
   previousLapSectorTimes: [],
@@ -227,6 +238,7 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
   previousLapSectorUnclean: [],
   greenThreshold: DEFAULT_GREEN_THRESHOLD,
   yellowThreshold: DEFAULT_YELLOW_THRESHOLD,
+  trackIncidentSectors: true,
 
   setSectors: (sectors: Sector[]) => {
     const sorted = [...sectors].sort(
@@ -245,6 +257,7 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       sectors: sorted,
       sectorColors: sorted.map(() => 'default' as SectorColor),
       sessionBestSectorTimes: sorted.map(() => null),
+      previousSessionBestSectorTimes: sorted.map(() => null),
       currentLapSectorTimes: sorted.map(() => null),
       previousLapSectorTimes: sorted.map(() => null),
       currentLapSectorUnclean: sorted.map(() => false),
@@ -299,6 +312,7 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
 
     if (isWrapAround) {
       const newSessionBests = [...state.sessionBestSectorTimes];
+      const newPreviousSessionBests = [...state.previousSessionBestSectorTimes];
       const newColors = [...state.sectorColors];
       const newPreviousTimes = [...state.previousLapSectorTimes];
       const newPreviousUnclean = [...state.previousLapSectorUnclean];
@@ -314,25 +328,30 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       );
 
       if (sectorEntryValid) {
-        // Record and color the last sector at the S/F crossing.
-        const sectorTime = crossingTime - sectorEntryTime;
-        const completedIdx = currentSectorIdx;
+        const isUnclean = state.sectorEntryUnclean;
+        const shouldRecord = state.trackIncidentSectors || !isUnclean;
 
-        if (
-          newSessionBests[completedIdx] === null ||
-          sectorTime < (newSessionBests[completedIdx] as number)
-        )
-          newSessionBests[completedIdx] = sectorTime;
+        if (shouldRecord) {
+          // Record and color the last sector at the S/F crossing.
+          const sectorTime = crossingTime - sectorEntryTime;
+          const completedIdx = currentSectorIdx;
 
-        newColors[completedIdx] = computeSectorColor(
-          sectorTime,
-          newSessionBests[completedIdx],
-          greenThreshold,
-          yellowThreshold
-        );
-        // Update previousLapSectorTimes immediately for the completed sector.
-        newPreviousTimes[completedIdx] = sectorTime;
-        newPreviousUnclean[completedIdx] = state.sectorEntryUnclean;
+          const oldBest = newSessionBests[completedIdx];
+          if (oldBest === null || sectorTime < oldBest) {
+            newPreviousSessionBests[completedIdx] = oldBest;
+            newSessionBests[completedIdx] = sectorTime;
+          }
+
+          newColors[completedIdx] = computeSectorColor(
+            sectorTime,
+            newSessionBests[completedIdx],
+            greenThreshold,
+            yellowThreshold
+          );
+          // Update previousLapSectorTimes immediately for the completed sector.
+          newPreviousTimes[completedIdx] = sectorTime;
+          newPreviousUnclean[completedIdx] = isUnclean;
+        }
       }
 
       set({
@@ -343,6 +362,7 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
         lastLapDistPct: lapDistPct,
         lastSessionTime: sessionTime,
         sessionBestSectorTimes: newSessionBests,
+        previousSessionBestSectorTimes: newPreviousSessionBests,
         sectorColors: newColors,
         previousLapSectorTimes: newPreviousTimes,
         previousLapSectorUnclean: newPreviousUnclean,
@@ -401,6 +421,7 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
     const newCurrentLapUnclean = [...state.currentLapSectorUnclean];
     const newPreviousUnclean = [...state.previousLapSectorUnclean];
     const newSessionBests = [...state.sessionBestSectorTimes];
+    const newPreviousSessionBests = [...state.previousSessionBestSectorTimes];
     const newColors = [...state.sectorColors];
 
     // Interpolate the exact moment the sector boundary was crossed.
@@ -414,30 +435,34 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
     );
 
     if (sectorEntryValid) {
-      const sectorTime = crossingTime - sectorEntryTime;
-      const completedIdx = currentSectorIdx;
+      const isUnclean = state.sectorEntryUnclean;
+      const shouldRecord = state.trackIncidentSectors || !isUnclean;
 
-      if (
-        newSessionBests[completedIdx] === null ||
-        sectorTime < (newSessionBests[completedIdx] as number)
-      ) {
-        newSessionBests[completedIdx] = sectorTime;
+      if (shouldRecord) {
+        const sectorTime = crossingTime - sectorEntryTime;
+        const completedIdx = currentSectorIdx;
+
+        const oldBest = newSessionBests[completedIdx];
+        if (oldBest === null || sectorTime < oldBest) {
+          newPreviousSessionBests[completedIdx] = oldBest;
+          newSessionBests[completedIdx] = sectorTime;
+        }
+
+        const color = computeSectorColor(
+          sectorTime,
+          newSessionBests[completedIdx],
+          greenThreshold,
+          yellowThreshold
+        );
+
+        newColors[completedIdx] = color;
+        newCurrentLapTimes[completedIdx] = sectorTime;
+        newCurrentLapUnclean[completedIdx] = isUnclean;
+        // Update previousLapSectorTimes immediately so the reference is always
+        // current regardless of resets or incomplete laps.
+        newPreviousTimes[completedIdx] = sectorTime;
+        newPreviousUnclean[completedIdx] = isUnclean;
       }
-
-      const color = computeSectorColor(
-        sectorTime,
-        newSessionBests[completedIdx],
-        greenThreshold,
-        yellowThreshold
-      );
-
-      newColors[completedIdx] = color;
-      newCurrentLapTimes[completedIdx] = sectorTime;
-      newCurrentLapUnclean[completedIdx] = state.sectorEntryUnclean;
-      // Update previousLapSectorTimes immediately so the reference is always
-      // current regardless of resets or incomplete laps.
-      newPreviousTimes[completedIdx] = sectorTime;
-      newPreviousUnclean[completedIdx] = state.sectorEntryUnclean;
     }
 
     set({
@@ -447,6 +472,7 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       sectorEntryTime: crossingTime,
       lastSessionTime: sessionTime,
       sessionBestSectorTimes: newSessionBests,
+      previousSessionBestSectorTimes: newPreviousSessionBests,
       sectorColors: newColors,
       currentLapSectorTimes: newCurrentLapTimes,
       previousLapSectorTimes: newPreviousTimes,
@@ -475,6 +501,8 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
     });
   },
 
+  setTrackIncidentSectors: (v: boolean) => set({ trackIncidentSectors: v }),
+
   reset: () =>
     set((state) => ({
       currentSectorIdx: 0,
@@ -484,6 +512,7 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
       sectorEntryValid: false,
       sectorEntryUnclean: false,
       sessionBestSectorTimes: state.sectors.map(() => null),
+      previousSessionBestSectorTimes: state.sectors.map(() => null),
       sectorColors: state.sectors.map(() => 'default' as SectorColor),
       currentLapSectorTimes: state.sectors.map(() => null),
       previousLapSectorTimes: state.sectors.map(() => null),
@@ -542,6 +571,7 @@ export const useSectorDeltas = () =>
       currentLapSectorUnclean: s.currentLapSectorUnclean,
       previousLapSectorUnclean: s.previousLapSectorUnclean,
       sessionBestSectorTimes: s.sessionBestSectorTimes,
+      previousSessionBestSectorTimes: s.previousSessionBestSectorTimes,
       currentSectorIdx: s.currentSectorIdx,
     }),
     shallow

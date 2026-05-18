@@ -415,7 +415,16 @@ export const RelativeSettings = () => {
       (savedSettings?.config as RelativeWidgetSettings['config']) ??
       defaultConfig,
   });
-  const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
+  const [itemsOrder, setItemsOrder] = useState(() => {
+    const validIds = new Set(sortableSettings.map((s) => s.id));
+    const saved = settings.config.displayOrder ?? [];
+    const filtered = saved.filter((id) => validIds.has(id));
+    const present = new Set(filtered);
+    const missing = sortableSettings
+      .filter((s) => !present.has(s.id))
+      .map((s) => s.id);
+    return [...filtered, ...missing];
+  });
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
@@ -542,6 +551,8 @@ export const RelativeSettings = () => {
                     />
                   </SettingsSection>
 
+                  <SettingDivider />
+
                   <SettingsSection title="Title Bar">
                     <SettingToggleRow
                       title="Show Title Bar"
@@ -574,6 +585,8 @@ export const RelativeSettings = () => {
                     )}
                   </SettingsSection>
 
+                  <SettingDivider />
+
                   <SettingsSection title="Background">
                     <SettingSliderRow
                       title="Background Opacity"
@@ -586,7 +599,21 @@ export const RelativeSettings = () => {
                         handleConfigChange({ background: { opacity: v } })
                       }
                     />
+
+                    <SettingSliderRow
+                      title="Session Bar Opacity"
+                      value={settings.config.foreground?.opacity ?? 70}
+                      units="%"
+                      min={0}
+                      max={100}
+                      step={1}
+                      onChange={(v) =>
+                        handleConfigChange({ foreground: { opacity: v } })
+                      }
+                    />
                   </SettingsSection>
+
+                  <SettingDivider />
 
                   <SettingsSection title="Relative Time">
                     <SettingSelectRow

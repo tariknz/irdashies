@@ -55,7 +55,7 @@ export const useReferenceLapSectorTimes = (): {
       .getState()
       .getReferenceLap(playerCarIdx, playerClassId, true);
 
-    if (refLap.startTime < 0 || refLap.refPoints.size === 0) {
+    if (refLap.startTime < 0 || refLap.pointsCount === 0) {
       return { refSectorTimes: [], hasGhostLap: false };
     }
 

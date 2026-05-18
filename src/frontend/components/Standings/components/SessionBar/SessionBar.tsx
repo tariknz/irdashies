@@ -28,6 +28,7 @@ import { SessionBarConfig } from '@irdashies/types';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 import { SessionState } from '@irdashies/types';
 import { WindArrow } from '../../../shared/WindArrow';
+import { getIncidentDisplay } from './getIncidentDisplay';
 
 // compact=true (total time): trims trailing zero components, never shows seconds
 // compact=false (elapsed/remaining): always shows full HH:MM:SS
@@ -91,11 +92,13 @@ interface SessionBarProps {
   settings: SessionBarConfig;
   position?: 'header' | 'footer';
   standalone?: boolean;
+  opacity?: number;
 }
 
 export const SessionBar = ({
   settings: effectiveBarSettings,
-  position = 'header',
+  position = 'header',  
+  opacity = 70,
   standalone = false,
 }: SessionBarProps) => {
   const generalSettings = useGeneralSettings();
@@ -119,7 +122,12 @@ export const SessionBar = ({
 
   const session = useCurrentSessionType();
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
-  const { incidentLimit, incidents } = useDriverIncidents();
+  const {
+    incidentLimit,
+    incidents,
+    incidentWarningInitialLimit,
+    incidentWarningSubsequentLimit,
+  } = useDriverIncidents();
   const {
     currentLap,
     time,
@@ -287,9 +295,13 @@ export const SessionBar = ({
         effectiveBarSettings?.incidentCount?.enabled ??
         (position === 'header' ? true : false),
       render: () => (
-        <div className="flex justify-end">
-          {incidents}
-          {incidentLimit ? ' / ' + incidentLimit : ''} x
+        <div className="flex justify-end tabular-nums">
+          {getIncidentDisplay(
+            incidents,
+            incidentWarningInitialLimit,
+            incidentWarningSubsequentLimit,
+            incidentLimit
+          )}
         </div>
       ),
     },
@@ -485,8 +497,11 @@ export const SessionBar = ({
 
   return (
     <div
-      className={`bg-slate-900/70 ${pxClass} ${pyClass} flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
-    >
+      className={`${pxClass} ${pyClass} bg-slate-900/(--fg-opacity) flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
+      style={{
+          ['--fg-opacity' as string]: `${opacity}%`,
+        }}
+      >
       {itemsToRender}
     </div>
   );

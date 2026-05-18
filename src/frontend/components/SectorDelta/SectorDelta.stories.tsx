@@ -5,10 +5,9 @@ import {
   useSectorTimingStore,
   useReferenceLapStore,
   useSessionStore,
-  REFERENCE_INTERVAL,
 } from '@irdashies/context';
 import { TelemetryDecorator } from '@irdashies/storybook';
-import type { ReferenceLap, ReferencePoint } from '@irdashies/types';
+import type { ReferenceLap } from '@irdashies/types';
 
 export default {
   component: SectorDelta,
@@ -69,10 +68,7 @@ function SectorStoreSeeder({
  * Builds a mock ghost lap with per-sector time distribution.
  *
  * Each sector is modelled as piecewise-linear: within a sector the elapsed
- * time increases proportionally to the distance covered in that sector, and
- * the PCHIP tangent at every point is set to that sector's slope
- * (time / width). This makes `interpolateAtPoint` return exact sector-boundary
- * times with no overshoot, which is ideal for visual story demos.
+ * time increases proportionally to the distance covered in that sector.
  *
  * @param sectorBoundaries - SectorStartPct values in ascending order (e.g. [0, 0.33, 0.67])
  * @param sectorTimes - Ghost lap time (seconds) for each sector
@@ -81,9 +77,8 @@ function buildMockGhostLap(
   sectorBoundaries: number[],
   sectorTimes: number[]
 ): ReferenceLap {
-  const DECIMAL_PLACES =
-    REFERENCE_INTERVAL.toString().split('.')[1]?.length ?? 4;
-
+  const pointsCount = 400; // 0.25% resolution
+  const interval = 1 / pointsCount;
   const lapTime = sectorTimes.reduce((a, b) => a + b, 0);
 
   // Cumulative elapsed time at the start of each sector
@@ -98,10 +93,13 @@ function buildMockGhostLap(
     return nextPct - startPct;
   });
 
-  const refPoints = new Map<number, ReferencePoint>();
+  const times = new Float32Array(pointsCount);
+  const pointPos = new Float32Array(pointsCount);
+  const tangents = new Float32Array(pointsCount);
 
-  for (let pct = 0; pct < 1; pct += REFERENCE_INTERVAL) {
-    const key = parseFloat(pct.toFixed(DECIMAL_PLACES));
+  for (let i = 0; i < pointsCount; i++) {
+    const pct = i * interval;
+    pointPos[i] = pct;
 
     // Determine which sector this point belongs to
     let sectorIdx = 0;
@@ -117,19 +115,22 @@ function buildMockGhostLap(
     const timeElapsedSinceStart =
       sectorStartTimes[sectorIdx] + (offset / width) * sectorTimes[sectorIdx];
 
-    // Tangent = slope for this sector (constant within sector = exact PCHIP)
-    const tangent = sectorTimes[sectorIdx] / width;
+    times[i] = timeElapsedSinceStart;
 
-    refPoints.set(key, { trackPct: key, timeElapsedSinceStart, tangent });
+    // Tangent = slope for this sector (constant within sector)
+    tangents[i] = sectorTimes[sectorIdx] / width;
   }
 
   return {
-    classId: PLAYER_CLASS_ID,
     startTime: 0,
     finishTime: lapTime,
     lastTrackedPct: 0.9975,
     isCleanLap: true,
-    refPoints,
+    times,
+    pointPos,
+    tangents,
+    interval,
+    pointsCount,
   };
 }
 
@@ -169,6 +170,8 @@ function GhostLapSeeder() {
     useReferenceLapStore.setState({
       seriesId: 1,
       trackId: 1,
+      pointsCount: ghostLap.pointsCount,
+      interval: ghostLap.interval,
       persistedLaps: new Map([[PLAYER_CLASS_ID, ghostLap]]),
     });
   }, []);
