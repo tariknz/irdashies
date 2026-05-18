@@ -16,6 +16,7 @@ import { TimerIcon, TargetIcon, XIcon } from '@phosphor-icons/react';
 import { LapTimeRow } from './components/LapTimeRow';
 import type { LapTimeLogConfig } from '@irdashies/types';
 import { formatTime, formatDelta } from '@irdashies/utils/time';
+import { LapTimeCell } from './components/LapTimeCell';
 
 const FREEZE_TIME = 5;
 
@@ -249,18 +250,19 @@ export const LapTimeLogDisplay = ({
           )}
 
           {/* Main Stats */}
+          <div className="flex w-full gap-1">
           {settings.showAllTimeLap && (
-            <LapTimeRow
-              label="P.B."
-              time={alltimelap}
+            <LapTimeCell
+              label="PERSONAL"
+              time={alltimelap}             
               alltime={alltimelap}
               settings={settings}
             />
           )}
           {settings.showBestLap && (
-            <LapTimeRow
-              label="BEST"
-              time={bestlap}
+            <LapTimeCell
+              label="SESSION"
+              time={bestlap}             
               best={bestlap}
               overall={overall}
               alltime={alltimelap}
@@ -268,20 +270,16 @@ export const LapTimeLogDisplay = ({
             />
           )}
           {settings.showLastLap && (
-            <LapTimeRow
-              label="LAST"
-              time={lastlap}
-              delta={
-                reference !== undefined && reference > 0
-                  ? (lastlap ?? 0) - reference
-                  : 0
-              }
+            <LapTimeCell
+              label="LAST LAP"
+              time={lastlap}             
               best={bestlap}
               overall={overall}
               alltime={alltimelap}
               settings={settings}
             />
           )}
+          </div>
 
           {/* History List */}
           {settings.history.enabled && (
