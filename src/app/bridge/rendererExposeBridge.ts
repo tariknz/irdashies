@@ -256,8 +256,7 @@ export function exposeBridge() {
     setPersonalBest: (
       trackId: string | number,
       carName: string,
-      time: number,
-      lapNumber?: number
-    ) => ipcRenderer.invoke('personalBest:set', trackId, carName, time, lapNumber),  
+      time: number
+    ) => ipcRenderer.invoke('personalBest:set', trackId, carName, time),  
   } as PersonalBestLapBridge);
 }
