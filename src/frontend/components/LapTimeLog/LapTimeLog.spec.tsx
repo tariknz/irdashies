@@ -159,8 +159,8 @@ describe('LapTimeLogDisplay', () => {
     expect(screen.getByText('0:10.500')).toBeInTheDocument(); // Current
     expect(screen.getByText('1:31.300')).toBeInTheDocument(); // Predicted
     expect(screen.getByText('-0.20')).toBeInTheDocument(); // Predicted Delta
-    expect(screen.getByText('LAST')).toBeInTheDocument();
-    expect(screen.getByText('BEST')).toBeInTheDocument();
+    expect(screen.getByText('LAST LAP')).toBeInTheDocument();
+    expect(screen.getByText('SESSIONq')).toBeInTheDocument();
     expect(screen.getByText('LAP 10')).toBeInTheDocument();
   });
 
