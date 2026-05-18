@@ -1,10 +1,52 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DownloadSimple, CaretDown } from '@phosphor-icons/react';
 
 const SPEED_LINE_WIDTHS = [112, 167, 93, 185, 140, 158];
 
+const RELEASES_PAGE_URL = 'https://github.com/tariknz/irdashies/releases';
+const LATEST_RELEASE_API_URL =
+  'https://api.github.com/repos/tariknz/irdashies/releases/latest';
+const DOWNLOAD_URL_CACHE_KEY = 'irdashies:latest-setup-url';
+
+function useLatestSetupUrl() {
+  const [url, setUrl] = useState<string>(() => {
+    if (typeof window === 'undefined') return RELEASES_PAGE_URL;
+    return (
+      window.sessionStorage.getItem(DOWNLOAD_URL_CACHE_KEY) ?? RELEASES_PAGE_URL
+    );
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(LATEST_RELEASE_API_URL);
+        if (!res.ok) return;
+        const data: {
+          assets?: { name: string; browser_download_url: string }[];
+        } = await res.json();
+        const setup = data.assets?.find((a) => a.name.endsWith('.Setup.exe'));
+        if (!setup || cancelled) return;
+        setUrl(setup.browser_download_url);
+        window.sessionStorage.setItem(
+          DOWNLOAD_URL_CACHE_KEY,
+          setup.browser_download_url
+        );
+      } catch {
+        // Keep fallback URL.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return url;
+}
+
 export function Hero() {
   const speedLineWidths = useMemo(() => SPEED_LINE_WIDTHS, []);
+  const downloadUrl = useLatestSetupUrl();
 
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
@@ -66,7 +108,7 @@ export function Hero() {
         <div className="flex flex-col items-center gap-2">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
-              href="https://github.com/tariknz/irdashies/releases/download/v0.3.0/irdashies-0.3.0.Setup.exe"
+              href={downloadUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wide text-sm rounded-sm transition-colors"
@@ -83,7 +125,7 @@ export function Hero() {
             </a>
           </div>
           <a
-            href="https://github.com/tariknz/irdashies/releases"
+            href={RELEASES_PAGE_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-slate-500 hover:text-slate-300 underline transition-colors"
