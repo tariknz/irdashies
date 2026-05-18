@@ -11,6 +11,18 @@ function isLapClean(trackSurface: number, isOnPitRoad: boolean): boolean {
   return trackSurface === TrackLocation.OnTrack && !isOnPitRoad;
 }
 
+const EMPTY_LAP: ReferenceLap = {
+  startTime: -1,
+  finishTime: -1,
+  times: new Float32Array(),
+  pointPos: new Float32Array().fill(-1),
+  tangents: new Float32Array(),
+  interval: -1,
+  pointsCount: 0,
+  lastTrackedPct: -1,
+  isCleanLap: false,
+};
+
 const TARGET_SPACING_METERS = 10;
 
 const BUFFER_POOL: Float32Array[] = [];
@@ -158,7 +170,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
               `[RefLapStore] Failed to load reference lap for class ${classId}:`,
               error
             );
-            return { classId, lap: null };
+            return { classId, lap: EMPTY_LAP };
           }
         })
       );
@@ -199,6 +211,8 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
       } = get();
 
       for (const driver of drivers) {
+        if (!driver) continue;
+
         const carIdx = driver.CarIdx;
         const trackPct = carIdxLapDistPct[carIdx];
 
@@ -317,12 +331,23 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
           refLap.isCleanLap = false;
         }
 
-        if (refLap.pointPos[key] === -1 && refLap.isCleanLap) {
-          refLap.times[key] = sessionTime - refLap.startTime;
-          refLap.pointPos[key] = trackPct;
-        }
+        if (refLap.pointPos[key] === -1) {
+          if (refLap.isCleanLap) {
+            // Check for continuity: every bucket must be visited for a clean reference lap.
+            const prevKey = key === 0 ? undefined : key - 1;
 
-        refLap.lastTrackedPct = trackPct;
+            if (prevKey !== undefined && refLap.pointPos[prevKey] === -1) {
+              refLap.isCleanLap = false;
+            }
+
+            if (refLap.isCleanLap) {
+              refLap.times[key] = sessionTime - refLap.startTime;
+              refLap.pointPos[key] = trackPct;
+            }
+          }
+
+          refLap.lastTrackedPct = trackPct;
+        }
       }
     },
 
@@ -331,19 +356,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
       const bestLap = bestLaps.get(carIdx);
 
       if (usePersistence || !bestLap) {
-        return (
-          persistedLaps.get(classId) ?? {
-            startTime: -1,
-            finishTime: -1,
-            times: new Float32Array(),
-            pointPos: new Float32Array(),
-            tangents: new Float32Array(),
-            interval: -1,
-            pointsCount: 0,
-            lastTrackedPct: -1,
-            isCleanLap: false,
-          }
-        );
+        return persistedLaps.get(classId) ?? EMPTY_LAP;
       }
       return bestLap;
     },

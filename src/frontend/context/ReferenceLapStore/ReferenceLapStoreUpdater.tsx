@@ -7,7 +7,7 @@ import { Driver } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
 
 function getClassList(drivers: Driver[], paceCarIdx: number): number[] {
-  const paceCarClassId = drivers[paceCarIdx].CarClassID ?? -1;
+  const paceCarClassId = drivers[paceCarIdx]?.CarClassID ?? -1;
   const classList = Array.from(new Set(drivers.map((d) => d.CarClassID)))
     .filter((id) => id !== paceCarClassId)
     .sort((a, b) => a - b);
@@ -104,7 +104,12 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
       const pits = telemetry.CarIdxOnPitRoad?.value || ([] as boolean[]);
       const time = telemetry.SessionTime?.value?.[0] ?? -1;
 
-      if (dists && pits && time && s.drivers.length > 0) {
+      if (
+        dists.length > 0 &&
+        pits.length > 0 &&
+        time > -1 &&
+        s.drivers.length > 0
+      ) {
         collectBulkData(bridge, s.drivers, dists, pits, time);
       }
     });
