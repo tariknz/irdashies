@@ -51,6 +51,7 @@ export interface TrackProps {
   sectors?: Sector[];
   sectorColors?: SectorColor[];
   currentSectorIdx?: number;
+  playerIconDataUrl?: string | null;
 }
 
 export interface TrackDriver {
@@ -116,6 +117,7 @@ export const TrackCanvas = ({
   sectors,
   sectorColors,
   currentSectorIdx,
+  playerIconDataUrl = null,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -123,6 +125,8 @@ export const TrackCanvas = ({
     undefined
   );
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const playerIconElRef = useRef<HTMLImageElement>(null);
+  const playerPitBadgeRef = useRef<HTMLDivElement>(null);
 
   const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
@@ -457,6 +461,7 @@ export const TrackCanvas = ({
     const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
 
     setupCanvasContext(ctx, scale, offsetX, offsetY, isMinimalCar);
+    const hasIconOverlay = !!playerIconDataUrl;
     drawDrivers(
       ctx,
       calculatePositions,
@@ -469,9 +474,50 @@ export const TrackCanvas = ({
       showCarNumbers,
       displayMode,
       driverLivePositions,
-      carIdxIsOnPitRoad
+      carIdxIsOnPitRoad,
+      hasIconOverlay
     );
     ctx.restore();
+
+    // Position the icon overlay imperatively — mutating transform/dimensions
+    // directly avoids a React render on every position tick.
+    const iconEl = playerIconElRef.current;
+    const pitEl = playerPitBadgeRef.current;
+    if (!hasIconOverlay) {
+      if (iconEl) iconEl.style.display = 'none';
+      if (pitEl) pitEl.style.display = 'none';
+      return;
+    }
+    const playerEntry = Object.values(calculatePositions).find(
+      (e) => e.isPlayer
+    );
+    if (!playerEntry) {
+      if (iconEl) iconEl.style.display = 'none';
+      if (pitEl) pitEl.style.display = 'none';
+      return;
+    }
+    const radius = playerCircleSize * scale;
+    const screenX = playerEntry.position.x * scale + offsetX - radius;
+    const screenY = playerEntry.position.y * scale + offsetY - radius;
+    const size = radius * 2;
+    if (iconEl) {
+      iconEl.style.transform = `translate(${screenX}px, ${screenY}px)`;
+      iconEl.style.width = `${size}px`;
+      iconEl.style.height = `${size}px`;
+      iconEl.style.display = '';
+    }
+    const onPitRoad = !!carIdxIsOnPitRoad?.[playerEntry.driver.CarIdx];
+    if (pitEl) {
+      if (onPitRoad) {
+        pitEl.style.transform = `translate(${screenX}px, ${screenY}px)`;
+        pitEl.style.width = `${size}px`;
+        pitEl.style.height = `${size}px`;
+        pitEl.style.fontSize = `${size * 0.6}px`;
+        pitEl.style.display = '';
+      } else {
+        pitEl.style.display = 'none';
+      }
+    }
   }, [
     calculatePositions,
     canvasSize,
@@ -488,17 +534,43 @@ export const TrackCanvas = ({
     invertLeaderColor,
     isMinimalCar,
     isMinimalTrack,
+    playerIconDataUrl,
   ]);
+
+  const renderIconOverlay = () =>
+    playerIconDataUrl ? (
+      <>
+        <img
+          ref={playerIconElRef}
+          src={playerIconDataUrl}
+          alt=""
+          className="absolute top-0 left-0 pointer-events-none origin-top-left will-change-transform"
+          style={{ display: 'none' }}
+        />
+        <div
+          ref={playerPitBadgeRef}
+          className="absolute top-0 left-0 pointer-events-none flex items-center justify-center font-bold text-white origin-top-left will-change-transform"
+          style={{
+            display: 'none',
+            background: 'rgba(0, 0, 0, 0.6)',
+            borderRadius: '50%',
+          }}
+        >
+          P
+        </div>
+      </>
+    ) : null;
 
   // Development/Storybook mode - show debug info and canvas
   if (debug) {
     return (
-      <div className="overflow-hidden w-full h-full">
+      <div className="overflow-hidden w-full h-full relative">
         <TrackDebug trackId={trackId} trackDrawing={trackDrawing} />
         <canvas
           className="will-change-transform w-full h-full"
           ref={canvasRef}
         ></canvas>
+        {renderIconOverlay()}
       </div>
     );
   }
@@ -507,11 +579,12 @@ export const TrackCanvas = ({
   if (!shouldShow) return null;
 
   return (
-    <div className="overflow-hidden w-full h-full">
+    <div className="overflow-hidden w-full h-full relative">
       <canvas
         className="will-change-transform w-full h-full"
         ref={canvasRef}
       ></canvas>
+      {renderIconOverlay()}
     </div>
   );
 };

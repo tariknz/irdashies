@@ -6,14 +6,11 @@ import { ReferenceLap } from '@irdashies/types';
  */
 export function precomputePCHIPTangents(lap: ReferenceLap): void {
   // 1. Extract and sort to ensure monotonic X order for the algorithm
-  const sorted = Array.from(lap.refPoints.values()).sort(
-    (a, b) => a.trackPct - b.trackPct
-  );
 
-  if (sorted.length < 2) return;
+  if (lap.times.length < 2) return;
 
-  const x = sorted.map((p) => p.trackPct);
-  const y = sorted.map((p) => p.timeElapsedSinceStart);
+  const x = lap.pointPos;
+  const y = lap.times;
 
   const lapTime = lap.finishTime - lap.startTime;
   // 2. Compute tangents
@@ -22,19 +19,19 @@ export function precomputePCHIPTangents(lap: ReferenceLap): void {
   // 3. Assign back to the objects.
   // Since 'sorted' contains references to the objects in the Map,
   // this mutation directly updates the Map values.
-  for (let i = 0; i < sorted.length; i++) {
-    sorted[i].tangent = tangents[i];
+  for (let i = 0; i < lap.times.length; i++) {
+    lap.tangents[i] = tangents[i];
   }
 }
 
 function computePCHIPTangents(
-  x: number[],
-  y: number[],
+  x: Float32Array,
+  y: Float32Array,
   lapTime: number
-): number[] {
+): Float32Array {
   const n = x.length;
-  const tangents = new Array<number>(n);
-  const deltas = new Array<number>(n - 1);
+  const tangents = new Float32Array(n);
+  const deltas = new Float32Array(n - 1);
 
   // Calculate deltas for interior points
   for (let k = 0; k < n - 1; k++) {
