@@ -251,34 +251,33 @@ export const LapTimeLogDisplay = ({
 
           {/* Main Stats */}
           <div className="flex w-full gap-1">
-          {settings.showAllTimeLap && (
-            <LapTimeCell
-              label="PERSONAL"
-              time={alltimelap}             
-              alltime={alltimelap}
-              settings={settings}
-            />
-          )}
-          {settings.showBestLap && (
-            <LapTimeCell
-              label="SESSION"
-              time={bestlap}             
-              best={bestlap}
-              overall={overall}
-              alltime={alltimelap}
-              settings={settings}
-            />
-          )}
-          {settings.showLastLap && (
-            <LapTimeCell
-              label="LAST LAP"
-              time={lastlap}             
-              best={bestlap}
-              overall={overall}
-              alltime={alltimelap}
-              settings={settings}
-            />
-          )}
+            {settings.showAllTimeLap && (
+              <LapTimeCell
+                label="PERSONAL"
+                time={alltimelap}
+                alltime={alltimelap}
+                settings={settings}
+              />
+            )}
+            {settings.showBestLap && (
+              <LapTimeCell
+                label="SESSION"
+                time={bestlap}
+                best={bestlap}
+                overall={overall}
+                settings={settings}
+              />
+            )}
+            {settings.showLastLap && (
+              <LapTimeCell
+                label="LAST LAP"
+                time={lastlap}
+                best={bestlap}
+                overall={overall}
+                alltime={alltimelap}
+                settings={settings}
+              />
+            )}
           </div>
 
           {/* History List */}
