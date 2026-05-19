@@ -51,7 +51,7 @@ export const usePersonalBestStore = create<PersonalBestStore>((set, get) => {
         carName
       );
       shouldMarkLoaded = true;
-      if (time != null) {
+      if (typeof time === 'number' && Number.isFinite(time)) {
         set({
           personalBests: {
             ...get().personalBests,
