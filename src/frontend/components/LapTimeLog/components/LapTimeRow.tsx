@@ -1,6 +1,7 @@
 import type { LapTimeLogConfig } from '@irdashies/types';
 import { formatTime, formatDelta } from '@irdashies/utils/time';
 import { useGeneralSettings } from '@irdashies/context';
+import { memo } from 'react';
 
 interface LapTimeRowProps {
   label: string;
@@ -13,7 +14,7 @@ interface LapTimeRowProps {
   settings?: LapTimeLogConfig;
 }
 
-export const LapTimeRow = ({
+export const LapTimeRow = memo(({
   label,
   time,
   delta,
@@ -85,4 +86,6 @@ export const LapTimeRow = ({
       </div>
     </div>
   );
-};
+});
+
+LapTimeRow.displayName = 'LapTimeRow';
