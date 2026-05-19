@@ -41,34 +41,33 @@ export const usePersonalBestStore = create<PersonalBestStore>((set, get) => {
     carName: string,
     key: string
   ) => {
+    let shouldMarkLoaded = false;
     try {
-      let shouldMarkLoaded = false;
-      try {
-        if (!window.personalBestBridge) {
-          return;
-        }
-        const time = await window.personalBestBridge.getPersonalBest(
-          trackId,
-          carName
-        );
-        shouldMarkLoaded = true;
-        if (time != null) {
-          set({
-            personalBests: {
-              ...get().personalBests,
-              [key]: time,
-            },
-          });
-        }
-      } catch (error) {
-        logger.error(
-          `[PersonalBestStore] Failed to load personal best for ${carName} at track ${trackId}:`,
-          error
-        );
-      } finally {
-        pendingPersonalBestLoads.delete(key);
-        if (shouldMarkLoaded) loadedPersonalBestKeys.add(key);
+      if (!window.personalBestBridge) {
+        return;
       }
+      const time = await window.personalBestBridge.getPersonalBest(
+        trackId,
+        carName
+      );
+      shouldMarkLoaded = true;
+      if (time != null) {
+        set({
+          personalBests: {
+            ...get().personalBests,
+            [key]: time,
+          },
+        });
+      }
+    } catch (error) {
+      logger.error(
+        `[PersonalBestStore] Failed to load personal best for ${carName} at track ${trackId}:`,
+        error
+      );
+    } finally {
+      pendingPersonalBestLoads.delete(key);
+      if (shouldMarkLoaded) loadedPersonalBestKeys.add(key);
+    }
   };
 
   return {
@@ -119,7 +118,7 @@ export const usePersonalBestStore = create<PersonalBestStore>((set, get) => {
         set((state) => {
           const currentBest = state.personalBests[key];
           // Only update if it's a new PB (lower time)
-          if (!currentBest || time < currentBest) {
+          if (currentBest == null || time < currentBest) {
             return {
               personalBests: {
                 ...state.personalBests,

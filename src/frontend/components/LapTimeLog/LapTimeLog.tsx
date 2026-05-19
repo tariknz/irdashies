@@ -265,6 +265,7 @@ export const LapTimeLogDisplay = ({
                 time={bestlap}
                 best={bestlap}
                 overall={overall}
+                alltime={alltimelap}
                 settings={settings}
               />
             )}

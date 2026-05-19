@@ -34,11 +34,13 @@ class PersonalBestLapTimesDatabase {
       if (fs.existsSync(this.filePath)) {
         const fileContent = fs.readFileSync(this.filePath, 'utf-8');
         const loaded = JSON.parse(fileContent) as Partial<PersonalBestData>;
+        
         const isValid =
           loaded?.version === DATA_VERSION &&
           loaded?.bests != null &&
           typeof loaded.bests === 'object' &&
           !Array.isArray(loaded.bests);
+
         if (!isValid) {
           logger.warn(
             `[PersonalBestDatabase] Invalid or mismatched data, resetting`
@@ -46,6 +48,7 @@ class PersonalBestLapTimesDatabase {
           return this.createEmptyData();
         }
         return loaded as PersonalBestData;
+      }
     } catch (error) {
       logger.error(
         `[PersonalBestDatabase] Failed to load personal best data`,
@@ -70,6 +73,7 @@ class PersonalBestLapTimesDatabase {
         `[PersonalBestDatabase] Failed to save personal best data`,
         error
       );
+      throw error;
     }
   }
 
@@ -97,7 +101,7 @@ class PersonalBestLapTimesDatabase {
     const currentBest = this.data.bests[key];
 
     // Only update if it's a new PB (lower time)
-    if (!currentBest || time < currentBest) {
+    if (currentBest == null || time < currentBest) {
       this.data.bests[key] = time;
 
       this.save();

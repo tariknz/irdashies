@@ -25,8 +25,7 @@ export const setupPersonalBestLapTimesBridge = () => {
         `[Main] Saving personal best for track: ${trackId}, car: ${carName}, time: ${time.toFixed(3)}s`
       );
       try {
-        personalBestDatabase.setPersonalBest(trackId, carName, time);
-        return true;
+        personalBestDatabase.setPersonalBest(trackId, carName, time);        
       } catch (e) {
         logger.error('[Main] Failed to save personal best:', e);
         throw e;

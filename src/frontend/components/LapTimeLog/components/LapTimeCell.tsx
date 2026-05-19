@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { LapTimeLogConfig } from '@irdashies/types';
 import { formatTime } from '@irdashies/utils/time';
 import { useGeneralSettings } from '@irdashies/context';
@@ -11,7 +12,7 @@ interface LapTimeCellProps {
   settings?: LapTimeLogConfig;
 }
 
-export const LapTimeCell = ({
+export const LapTimeCell = memo(({
   label,
   time,
   best,
@@ -55,4 +56,6 @@ export const LapTimeCell = ({
       </div>
     </div>
   );
-};
+});
+
+LapTimeCell.displayName = 'LapTimeCell';

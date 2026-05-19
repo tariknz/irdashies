@@ -123,7 +123,7 @@ export const LapTimeLogSettings = () => {
                   <SettingToggleRow
                     title="Show Personal Best Lap"
                     description="Shows the best lap time ever recorded by irDashies for the car and track combo."
-                    enabled={settings.config.showAllTimeLap ?? true}
+                    enabled={settings.config.showAllTimeLap ?? false}
                     onToggle={(newValue) =>
                       handleConfigChange({ showAllTimeLap: newValue })
                     }
@@ -185,7 +185,7 @@ export const LapTimeLogSettings = () => {
                       <SettingSelectRow
                         title="Number Of Laps To Show"
                         value={(
-                          settings.config.history?.count ?? 20
+                          settings.config.history?.count ?? 10
                         ).toString()}
                         options={Array.from({ length: 20 }, (_, i) => {
                           const num = i + 1;

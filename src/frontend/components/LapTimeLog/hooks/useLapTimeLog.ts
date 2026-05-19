@@ -74,12 +74,14 @@ export const useLapTimeLog = () => {
   const lapTransition = useRef<boolean>(false);
 
   // Get personal best store and load data
-  const personalBestStore = usePersonalBestStore();
-
-  const currentPersonalBest = useMemo(() => {
-    if (!trackId || !playerCarName) return undefined;
-    return personalBestStore.getPersonalBest(trackId, playerCarName);
-  }, [trackId, playerCarName, personalBestStore]);
+  const currentPersonalBest = usePersonalBestStore((state) =>
+    !trackId || !playerCarName
+      ? undefined
+      : state.getPersonalBest(trackId, playerCarName)
+  );
+  const setPersonalBest = usePersonalBestStore(
+    (state) => state.setPersonalBest
+  );
 
   // Get overall best
   const sessionBestOverall = useMemo(() => {
@@ -200,10 +202,11 @@ export const useLapTimeLog = () => {
     };
     setHistory((prev) => [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES));
     // Check if this beats current personal best
+    const hasResolvedPersonalBestKey = Boolean(trackId) && playerCarName !== 'unknown';
     const isBetter = !currentPersonalBest || lastLapTime < currentPersonalBest;
-    if (isBetter && !isDirty) {
+    if (hasResolvedPersonalBestKey && isBetter && !isDirty) {
       // Save personal best
-      personalBestStore.setPersonalBest(trackId, playerCarName, lastLapTime);
+      setPersonalBest(trackId, playerCarName, lastLapTime);
     }
     // reset for new lap
     lastLoggedLap.current = lapCompleted;
@@ -220,7 +223,7 @@ export const useLapTimeLog = () => {
     referenceTime,
     history,
     currentPersonalBest,
-    personalBestStore,
+    setPersonalBest,
     trackId,
     playerCarName,
   ]);
