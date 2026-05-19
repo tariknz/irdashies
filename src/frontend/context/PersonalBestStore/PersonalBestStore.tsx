@@ -114,15 +114,21 @@ export const usePersonalBestStore = create<PersonalBestStore>((set, get) => {
           throw new Error('Personal best bridge not available');
         }
         await window.personalBestBridge.setPersonalBest(trackId, carName, time);
-        // Update local store
+        const persistedBest = await window.personalBestBridge.getPersonalBest(
+          trackId,
+          carName
+        );
+        if (typeof persistedBest !== 'number' || !Number.isFinite(persistedBest)) {
+          return;
+        }
+        // Update local store from authoritative persisted value
         set((state) => {
           const currentBest = state.personalBests[key];
-          // Only update if it's a new PB (lower time)
-          if (currentBest == null || time < currentBest) {
+          if (currentBest == null || persistedBest < currentBest) {
             return {
               personalBests: {
                 ...state.personalBests,
-                [key]: time,
+                [key]: persistedBest,
               },
             };
           }

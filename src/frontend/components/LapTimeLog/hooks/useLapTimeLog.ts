@@ -228,6 +228,26 @@ export const useLapTimeLog = () => {
     playerCarName,
   ]);
 
+  // 5. check personal best
+  useEffect(() => {
+    // wait for new best lap time
+    const isValidTime = bestLapTime > 0;
+    if (!isValidTime) return;    
+    // Check if this beats current personal best
+    const hasResolvedPersonalBestKey = Boolean(trackId) && playerCarName !== 'unknown';
+    const isBetter = !currentPersonalBest || bestLapTime < currentPersonalBest;
+    if (hasResolvedPersonalBestKey && isBetter) {
+      // Save personal best
+      setPersonalBest(trackId, playerCarName, bestLapTime);
+    }    
+  }, [
+    bestLapTime,
+    currentPersonalBest,
+    trackId,
+    playerCarName,
+    setPersonalBest,
+  ]);
+
   return {
     current: displayTime,
     lastlap: lastLapTime,

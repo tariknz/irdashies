@@ -3,9 +3,15 @@ import { personalBestDatabase } from '../storage/personalBestLapTimes';
 import logger from '../logger';
 
 export const setupPersonalBestLapTimesBridge = () => {
+
+  const isTrackId = (value: unknown): value is string | number => typeof value === 'string' || typeof value === 'number';
+
   ipcMain.handle(
     'personalBest:get',
-    (_, trackId: string | number, carName: string) => {
+    (_, trackId: unknown, carName: unknown) => {
+      if (!isTrackId(trackId) || typeof carName !== 'string') {
+        throw new TypeError('Invalid payload for personalBest:get');
+      }
       logger.debug(
         `[Main] Fetching personal best for track: ${trackId}, car: ${carName}`
       );
@@ -15,12 +21,15 @@ export const setupPersonalBestLapTimesBridge = () => {
 
   ipcMain.handle(
     'personalBest:set',
-    (
-      _,
-      trackId: string | number,
-      carName: string,
-      time: number,
-    ) => {
+      (_, trackId: unknown, carName: unknown, time: unknown) => {
+      if (
+        !isTrackId(trackId) ||
+        typeof carName !== 'string' ||
+        typeof time !== 'number' ||
+        !Number.isFinite(time)
+      ) {
+        throw new TypeError('Invalid payload for personalBest:set');
+      }
       logger.info(
         `[Main] Saving personal best for track: ${trackId}, car: ${carName}, time: ${time.toFixed(3)}s`
       );
