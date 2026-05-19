@@ -241,4 +241,35 @@ describe('referenceLaps storage', () => {
       expect(mockLoggerError).toHaveBeenCalled();
     });
   });
+
+  describe('overlapping writes', () => {
+    it('serialises flushes so the newest snapshot wins when a write is in flight', async () => {
+      let resolveFirst: (() => void) | undefined;
+      const firstWrite = new Promise<void>((resolve) => {
+        resolveFirst = resolve;
+      });
+      mockWriteFile.mockImplementationOnce(() => firstWrite);
+      mockWriteFile.mockResolvedValue(undefined);
+
+      saveReferenceLap(1, 2, 3, makeLap(60));
+      const firstAwait = __awaitPendingWrite();
+
+      await new Promise((resolve) => setImmediate(resolve));
+
+      saveReferenceLap(1, 2, 3, makeLap(57));
+      const secondAwait = __awaitPendingWrite();
+
+      resolveFirst?.();
+      await firstAwait;
+      await secondAwait;
+
+      expect(mockWriteFile).toHaveBeenCalledTimes(2);
+      const finalPayload = JSON.parse(
+        mockWriteFile.mock.calls[
+          mockWriteFile.mock.calls.length - 1
+        ][1] as string
+      );
+      expect(finalPayload['1_2_3'].finishTime).toBe(57);
+    });
+  });
 });

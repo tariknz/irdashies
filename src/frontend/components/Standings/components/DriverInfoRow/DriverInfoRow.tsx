@@ -153,7 +153,10 @@ const propsAreEqual = (
   prev: DriverRowInfoProps,
   next: DriverRowInfoProps
 ): boolean => {
-  const keys = Object.keys(next) as (keyof DriverRowInfoProps)[];
+  const keys = new Set<keyof DriverRowInfoProps>([
+    ...(Object.keys(prev) as (keyof DriverRowInfoProps)[]),
+    ...(Object.keys(next) as (keyof DriverRowInfoProps)[]),
+  ]);
   for (const key of keys) {
     const p = prev[key];
     const n = next[key];

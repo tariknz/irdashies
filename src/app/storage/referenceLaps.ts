@@ -148,15 +148,26 @@ const flushSync = (): void => {
  * Schedule a debounced async write. Multiple calls within WRITE_DEBOUNCE_MS
  * collapse into a single write.
  */
+const enqueueFlush = (): void => {
+  const previous = writeInFlight ?? Promise.resolve();
+  const tracked = previous
+    .catch(() => undefined)
+    .then(() => flushAsync())
+    .finally(() => {
+      if (writeInFlight === tracked) {
+        writeInFlight = null;
+      }
+    });
+  writeInFlight = tracked;
+};
+
 const scheduleWrite = (): void => {
   if (writeTimer) {
     clearTimeout(writeTimer);
   }
   writeTimer = setTimeout(() => {
     writeTimer = null;
-    writeInFlight = flushAsync().finally(() => {
-      writeInFlight = null;
-    });
+    enqueueFlush();
   }, WRITE_DEBOUNCE_MS);
 };
 
@@ -222,19 +233,13 @@ export const flushReferenceLapsOnShutdown = (): void => {
  */
 export const __awaitPendingWrite = async (): Promise<void> => {
   if (writeTimer) {
-    await new Promise<void>((resolve) => {
-      const t = writeTimer;
-      writeTimer = setTimeout(() => {
-        if (t) clearTimeout(t);
-        writeTimer = null;
-        writeInFlight = flushAsync().finally(() => {
-          writeInFlight = null;
-          resolve();
-        });
-      }, 0);
-    });
+    clearTimeout(writeTimer);
+    writeTimer = null;
+    enqueueFlush();
   }
-  if (writeInFlight) await writeInFlight;
+  while (writeInFlight) {
+    await writeInFlight;
+  }
 };
 
 /**

@@ -440,8 +440,8 @@ Napi::Value iRacingSdkNode::GetTelemetryVar(const Napi::CallbackInfo &info)
   int varIndex = 0;
   if (info.Length() > 0) {
     if (info[0].IsString()) {
-      const char *name = info[0].As<Napi::String>().Utf8Value().c_str();
-      return this->GetTelemetryVar(env, name);
+      std::string nameStr = info[0].As<Napi::String>().Utf8Value();
+      return this->GetTelemetryVar(env, nameStr.c_str());
     }
     if (info[0].IsNumber()) {
       varIndex = info[0].As<Napi::Number>().Int32Value();
