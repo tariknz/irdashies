@@ -3,6 +3,18 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const mockReadData = vi.hoisted(() => vi.fn());
 const mockWriteData = vi.hoisted(() => vi.fn());
 
+const mockLoggerInfo = vi.hoisted(() => vi.fn());
+const mockLoggerError = vi.hoisted(() => vi.fn());
+
+vi.mock('../logger', () => ({
+  default: {
+    info: mockLoggerInfo,
+    warn: vi.fn(),
+    error: mockLoggerError,
+    debug: vi.fn(),
+  },
+}));
+
 vi.mock('./storage', () => ({
   readData: mockReadData,
   writeData: mockWriteData,
@@ -67,7 +79,8 @@ describe('referenceLaps storage', () => {
     mockWriteFileSync.mockReset();
     mockWriteFile.mockReset();
     mockWriteFile.mockResolvedValue(undefined);
-    // Default: no existing file
+    mockLoggerInfo.mockReset();
+    mockLoggerError.mockReset();
     mockReadFileSync.mockImplementation(() => {
       throw new Error('ENOENT');
     });
@@ -180,6 +193,52 @@ describe('referenceLaps storage', () => {
     it('is a no-op when no save has happened (cache never loaded)', () => {
       flushReferenceLapsOnShutdown();
       expect(mockWriteFileSync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('post-debounce write log', () => {
+    it('logs exactly once per actual file write, regardless of save count', async () => {
+      saveReferenceLap(1, 2, 3, makeLap(60));
+      saveReferenceLap(1, 2, 3, makeLap(58));
+      saveReferenceLap(1, 2, 3, makeLap(57));
+
+      await __awaitPendingWrite();
+
+      const writeLogs = mockLoggerInfo.mock.calls.filter((call) =>
+        (call[0] as string).startsWith('[Main] Reference laps written to disk')
+      );
+      expect(writeLogs).toHaveLength(1);
+      expect(writeLogs[0][0]).toBe(
+        '[Main] Reference laps written to disk (1 entries)'
+      );
+    });
+
+    it('reports the number of cache entries written', async () => {
+      saveReferenceLap(1, 2, 3, makeLap(60));
+      saveReferenceLap(1, 2, 4, makeLap(70));
+      saveReferenceLap(9, 9, 9, makeLap(80));
+
+      await __awaitPendingWrite();
+
+      const writeLogs = mockLoggerInfo.mock.calls.filter((call) =>
+        (call[0] as string).startsWith('[Main] Reference laps written to disk')
+      );
+      expect(writeLogs[0][0]).toBe(
+        '[Main] Reference laps written to disk (3 entries)'
+      );
+    });
+
+    it('does not log a write line when the underlying writeFile fails', async () => {
+      mockWriteFile.mockRejectedValueOnce(new Error('disk full'));
+      saveReferenceLap(1, 2, 3, makeLap(60));
+
+      await __awaitPendingWrite();
+
+      const writeLogs = mockLoggerInfo.mock.calls.filter((call) =>
+        (call[0] as string).startsWith('[Main] Reference laps written to disk')
+      );
+      expect(writeLogs).toHaveLength(0);
+      expect(mockLoggerError).toHaveBeenCalled();
     });
   });
 });

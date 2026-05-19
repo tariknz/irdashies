@@ -110,17 +110,16 @@ const loadCache = (): Map<string, ReferenceLap> => {
   return cache;
 };
 
-/**
- * Serialise the cache to disk asynchronously. Errors are logged but not
- * propagated — saves are best-effort persistence; the in-memory cache is the
- * source of truth during the session.
- */
 const flushAsync = async (): Promise<void> => {
   if (!cache) return;
   try {
     const obj = Object.fromEntries(cache);
     const jsonString = JSON.stringify(obj, replacer, 2);
+    const entryCount = cache.size;
     await fsp.writeFile(filePath, jsonString);
+    logger.info(
+      `[Main] Reference laps written to disk (${entryCount} entries)`
+    );
   } catch (error) {
     logger.error('Failed to write reference lap data:', error);
   }
