@@ -90,7 +90,7 @@ export const LapTimeLogDisplay = ({
   current?: number;
   lastlap?: number;
   bestlap?: number;
-  alltimelap?: number | undefined;
+  alltimelap?: number;
   reference?: number;
   delta?: number;
   overall?: number;
@@ -114,7 +114,7 @@ export const LapTimeLogDisplay = ({
   // predicted delta
   const hasPredictedDelta =
     current !== undefined &&
-    current > 5 &&
+    current > FREEZE_TIME &&
     predicted !== undefined &&
     predicted > 0 &&
     delta !== undefined;
@@ -227,11 +227,7 @@ export const LapTimeLogDisplay = ({
                   }`}
                 >
                   {formatDelta(
-                    delta &&
-                      current !== undefined &&
-                      current > FREEZE_TIME &&
-                      predicted !== undefined &&
-                      predicted > 0
+                    hasPredictedDelta
                       ? delta
                       : 0
                   )}
