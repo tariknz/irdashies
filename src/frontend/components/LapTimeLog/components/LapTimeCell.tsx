@@ -22,6 +22,7 @@ export const LapTimeCell = memo(({
 }: LapTimeCellProps) => {
   const generalSettings = useGeneralSettings();
 
+  const isCompact = generalSettings?.compactMode === 'compact';
   const isUltra = generalSettings?.compactMode === 'ultra';
 
   const isSameLapTime = (left?: number, right?: number) =>
@@ -46,13 +47,13 @@ export const LapTimeCell = memo(({
   return (
     <div className="flex-1 flex @container">
       <div 
-      className={`flex w-full flex-col @[9em]:flex-row ${isUltra ? 'p-0' : 'p-1'} items-center justify-top @[9em]:justify-center bg-slate-800/[var(--fg-alpha)]`} 
+      className={`flex w-full flex-col @[10em]:flex-row ${isUltra ? 'p-0' : (isCompact ? 'p-1' : 'p-2')} items-center justify-top @[10em]:justify-center bg-slate-800/[var(--fg-alpha)]`} 
       style={
           {
             '--fg-alpha': `${opacity / 2}%`,
           } as React.CSSProperties
         }>
-        <span className="text-[0.6em] mx-2">{label}</span>
+        <span className="text-[0.6em] @[10em]:text-[0.8em] mx-2">{label}</span>
         <span className={`text-[1em] ${getLapColor()}`}>{formatTime(time)}</span>
       </div>
     </div>
