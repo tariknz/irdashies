@@ -124,28 +124,19 @@ export const LapTimeLogDisplay = ({
   // for the flash
   let bgColor = 'bg-slate-900/[var(--fg-alpha)]';
   if (current !== undefined && current <= FREEZE_TIME) {
-    const isSessionBest =
+    const isMatchingLap = (value?: number) =>
       lastlap !== undefined &&
       lastlap > 0 &&
-      overall !== undefined &&
-      overall > 0 &&
-      Math.abs(lastlap - overall) < 0.001;
-    const isPersonalBest =
-      lastlap !== undefined &&
-      lastlap > 0 &&
-      bestlap !== undefined &&
-      bestlap > 0 &&
-      Math.abs(lastlap - bestlap) < 0.001;
-    const isAllTimeBestLap =
-      lastlap !== undefined &&
-      lastlap > 0 &&
-      alltimelap !== undefined &&
-      alltimelap > 0 &&
-      Math.abs(lastlap - alltimelap) < 0.001;
+      value !== undefined &&
+      value > 0 &&
+      Math.abs(lastlap - value) < 0.001;
+    const isSessionBest = isMatchingLap(bestlap);
+    const isOverallBest = isMatchingLap(overall);    
+    const isPersonalBest = isMatchingLap(alltimelap);
     bgColor = 'bg-slate-900';
-    if (isPersonalBest) bgColor = 'bg-green-700';
-    if (isSessionBest) bgColor = 'bg-purple-800';
-    if (isAllTimeBestLap) bgColor = 'bg-yellow-600';
+    if (isSessionBest) bgColor = 'bg-green-700';
+    if (isOverallBest) bgColor = 'bg-purple-800';
+    if (isPersonalBest) bgColor = 'bg-yellow-600';
   }
 
   const generalSettings = useGeneralSettings();
