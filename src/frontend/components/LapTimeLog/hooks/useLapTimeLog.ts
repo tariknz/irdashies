@@ -75,7 +75,7 @@ export const useLapTimeLog = () => {
 
   // Get personal best store and load data
   const currentPersonalBest = usePersonalBestStore((state) =>
-    !trackId || !playerCarName
+    !trackId || !playerCarName || playerCarName === 'unknown'
       ? undefined
       : state.getPersonalBest(trackId, playerCarName)
   );
