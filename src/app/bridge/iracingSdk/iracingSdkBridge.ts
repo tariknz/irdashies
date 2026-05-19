@@ -208,6 +208,12 @@ export async function publishIRacingSDKEvents(
         logger.info(
           '[iracingSdkBridge] iRacing is no longer publishing telemetry'
         );
+        // Release the last telemetry/session snapshots so new overlay windows
+        // opened during a disconnect don't get re-seeded with stale data, and
+        // so the references don't sit in main-process memory indefinitely.
+        // They get repopulated on the next successful waitForData tick.
+        latestTelemetry = null;
+        latestSession = null;
         lifecycle?._onDisconnect();
       }
 

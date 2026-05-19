@@ -82,14 +82,23 @@ export function createSessionLifecycle(): SessionLifecycle {
     },
 
     _onSession(session) {
-      const drivers = session?.DriverInfo?.Drivers ?? [];
+      const drivers = session?.DriverInfo?.Drivers;
+
+      if (!drivers || drivers.length === 0) {
+        if (knownDriverCarIdxs.size > 0) {
+          logger.warn(
+            `[sessionLifecycle] Session published with no drivers; ignoring (${knownDriverCarIdxs.size} still tracked)`
+          );
+        }
+        return;
+      }
+
       const currentCarIdxs = new Set<number>(
         drivers
           .filter((d) => !d.CarIsPaceCar && !d.IsSpectator)
           .map((d) => d.CarIdx)
       );
 
-      // Detect joins
       for (const carIdx of currentCarIdxs) {
         if (!knownDriverCarIdxs.has(carIdx)) {
           logger.info(`[sessionLifecycle] Driver joined: carIdx=${carIdx}`);
@@ -97,7 +106,6 @@ export function createSessionLifecycle(): SessionLifecycle {
         }
       }
 
-      // Detect leaves
       for (const carIdx of knownDriverCarIdxs) {
         if (!currentCarIdxs.has(carIdx)) {
           logger.info(`[sessionLifecycle] Driver left: carIdx=${carIdx}`);
@@ -109,16 +117,20 @@ export function createSessionLifecycle(): SessionLifecycle {
     },
 
     _onDisconnect() {
+      const knownCount = knownDriverCarIdxs.size;
       logger.info(
-        `[sessionLifecycle] Disconnect detected (${knownDriverCarIdxs.size} known drivers)`
+        `[sessionLifecycle] Disconnect detected (${knownCount} known drivers)`
       );
-      // Emit synthetic leave events for every known driver before clearing
-      // state. Without this, subscribers that release per-driver allocations
-      // on `onDriverLeft` would leak across reconnect cycles — confirmed by
-      // PCC race + Practice 5 boot logs which showed zero leave events firing
-      // and ~+1 GB allocated per session-load without a release path.
       for (const carIdx of knownDriverCarIdxs) {
+        logger.info(
+          `[sessionLifecycle] Driver left (disconnect): carIdx=${carIdx}`
+        );
         fire(driverLeftCallbacks, carIdx);
+      }
+      if (knownCount > 0) {
+        logger.info(
+          `[sessionLifecycle] Released ${knownCount} per-driver slots on disconnect`
+        );
       }
       knownDriverCarIdxs = new Set();
       lastSessionNum = -1;
