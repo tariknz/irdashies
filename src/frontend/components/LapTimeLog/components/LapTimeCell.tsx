@@ -24,14 +24,15 @@ export const LapTimeCell = memo(({
 
   const isUltra = generalSettings?.compactMode === 'ultra';
 
-  const isGreen =
-    time !== undefined && best !== undefined && time > 0 && time == best;
+  const isSameLapTime = (left?: number, right?: number) =>
+    left !== undefined &&
+    right !== undefined &&
+    left > 0 &&
+    Math.abs(left - right) < 0.001;
 
-  const isPurple =
-    time !== undefined && overall !== undefined && time > 0 && time == overall;
-
-  const isYellow =
-    time !== undefined && alltime !== undefined && time > 0 && time == alltime;
+  const isGreen = isSameLapTime(time, best);
+  const isPurple = isSameLapTime(time, overall);
+  const isYellow = isSameLapTime(time, alltime);
 
   const opacity = settings?.foreground?.opacity ?? 0;
 
