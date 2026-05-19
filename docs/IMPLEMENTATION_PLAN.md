@@ -14,20 +14,23 @@
 
 ## 1. Current status at a glance
 
-| Phase                                                | Status           | Branch / PR                              | Notes                                                                                                                                                                                                                                                           |
-| ---------------------------------------------------- | ---------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Phase 0 — Measure**                                | DONE             | —                                        | Baseline captured in `PERFORMANCE_TEST_SUMMARY.md`; revised 2026-05-12 after Practice 2                                                                                                                                                                         |
-| **Phase 0.5 — Stop the bleeding**                    | LANDED (partial) | merged on `main`                         | S1/S2 landed; S3/S4/L1/L2/L3/P6 still open                                                                                                                                                                                                                      |
-| **Phase 1 — Cheap perf wins + lifecycle bones**      | LANDED           | merged on `main`                         | P1/P2/P4 typed subs, P5 propsAreEqual, IPC allowlist, SessionLifecycle skeleton, useResetOnDisconnect activated. Practice 3: Primary slope −85%; Standings became the sole remaining leak source                                                                |
-| **Phase 2a Tier 1 — PitLapStore + LapTimes hygiene** | LANDED           | `feat/phase-2a-tier1-allocations`        | H3 + H4. Practice 5: Left renderer slope dropped from +13.0 → +0.7 MB/min (95% reduction, under target). PCC race confirms +5.7 MB/min app slope during 20-min race phase (under <+5 target).                                                                   |
-| **Phase 2a H1 — createStandings rewrite**            | IN REVIEW        | `feat/phase-2a-h1-standings-rewrite`     | O(N²) → O(N) `find()` removal; `groupStandingsByClass` Map-based; `useReferenceLapStore.getState()` hoisted out of inner loop. 775/775 tests pass. Awaiting in-game functional test                                                                             |
-| **Phase 2a Tier 2 — Disconnect leave cleanup**       | IN REVIEW        | `feat/phase-2a-tier2-disconnect-cleanup` | `sessionLifecycle._onDisconnect` now emits synthetic per-driver leaves before clearing state; `useDriverLivePositions` clears its driver-keyed refs on `running` true→false. 785/785 tests pass (10 new sessionLifecycle tests). Awaiting in-game test          |
-| **Phase 2a Tier 2 — Reference-lap dedup**            | IN REVIEW        | `feat/phase-2a-tier2-reflap-dedup`       | Main-process in-memory cache + debounced async write. Collapses 3× per-renderer save bursts into one async write; first `getReferenceLap` lazy-loads, subsequent reads are O(1). Sync flush on `before-quit`. 784/784 tests pass (9 new). Awaiting in-game test |
-| **Phase 2b — Architectural cleanup (remaining)**     | NOT STARTED      | —                                        | A1, A4, A5, A6, A7 completion, A9. Lower urgency now Standings memory issue is resolved                                                                                                                                                                         |
-| **Phase 3 — Channel-based bridge**                   | NOT STARTED      | —                                        | Would close remaining processTelemetry p99 gap to <3 ms                                                                                                                                                                                                         |
-| **Phase 4 — Main-process processors**                | NOT STARTED      | —                                        | Depends on Phase 3                                                                                                                                                                                                                                              |
-| **Phase 5 — Worker-thread SDK loop**                 | NOT STARTED      | —                                        |                                                                                                                                                                                                                                                                 |
-| **Phase 6 — Native optimisations**                   | DEFERRED         | —                                        | Only if Phase 4 profiling demands                                                                                                                                                                                                                               |
+| Phase                                                 | Status                   | Branch / PR                              | Notes                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------------------------------- | ------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 0 — Measure**                                 | DONE                     | —                                        | Baseline captured in `PERFORMANCE_TEST_SUMMARY.md`; revised 2026-05-12 after Practice 2                                                                                                                                                                                                                                                                                   |
+| **Phase 0.5 — Stop the bleeding**                     | LANDED (partial)         | merged on `main`                         | S1/S2 landed; S3/S4/L1/L2/L3/P6 still open                                                                                                                                                                                                                                                                                                                                |
+| **Phase 1 — Cheap perf wins + lifecycle bones**       | LANDED                   | merged on `main`                         | P1/P2/P4 typed subs, P5 propsAreEqual, IPC allowlist, SessionLifecycle skeleton, useResetOnDisconnect activated. Practice 3: Primary slope −85%; Standings became the sole remaining leak source                                                                                                                                                                          |
+| **Phase 2a Tier 1 — PitLapStore + LapTimes hygiene**  | LANDED                   | `feat/phase-2a-tier1-allocations`        | H3 + H4. Practice 5: Left renderer slope dropped from +13.0 → +0.7 MB/min (95% reduction, under target). PCC race confirms +5.7 MB/min app slope during 20-min race phase (under <+5 target).                                                                                                                                                                             |
+| **Phase 2a H1 — createStandings rewrite**             | LANDED                   | `feat/phase-2a-h1-standings-rewrite`     | O(N²) → O(N) `find()` removal; `groupStandingsByClass` Map-based; `useReferenceLapStore.getState()` hoisted out of inner loop. 2026-05-16 Clio Cup VIR test: no regression vs Tier 1, Standings CPU 2.3% vs 3.1% baseline. Memory benefit not isolable.                                                                                                                   |
+| **Phase 2a Tier 2a — Disconnect leave cleanup**       | LANDED                   | `feat/phase-2a-tier2-disconnect-cleanup` | `sessionLifecycle._onDisconnect` emits synthetic per-driver leaves; `useDriverLivePositions` clears driver-keyed refs on `running` true→false. **GR86 Miami 2026-05-18 validated**: 196 `Driver left (disconnect)` lines symmetric with 196 joins, 4 `Released N per-driver slots` summaries match 4 disconnect events.                                                   |
+| **Phase 2a Tier 2b — Reference-lap dedup**            | LANDED                   | `feat/phase-2a-tier2-reflap-dedup`       | Main-process in-memory cache + debounced async write. Collapses 3× per-renderer save bursts into one async write. **Note**: PCC, SFL, combined PR, and Miami tests all still show 3× clusters in renderer-side log lines — filesystem-level write count verification still needed to confirm debounce is engaging at the FS layer.                                        |
+| **Phase 2a integration PR**                           | READY TO MERGE           | `feat/phase-2a-integration`              | Cherry-picks of Tier 1 + H1 + Tier 2a + Tier 2b + post-test docs + 2026-05-17 follow-ups (disconnect log line, empty-Drivers guard, bridge stale-state nulling) + 2026-05-19 R1+R2 (reference-lap fetch dedup, post-debounce write log). Combined PR test 2026-05-17 owner-confirmed good; spectated PCC 2026-05-18 confirms architectural state. **809/809 tests pass.** |
+| **Phase 2a mid-session leave detection** (2026-05-18) | DECLINED & REVERTED      | —                                        | Identity-key approach was implemented and tested 2026-05-18, then declined the same day after cost/benefit review (see [`PERFORMANCE_TEST_LOG.md`](./PERFORMANCE_TEST_LOG.md) §4 "Declined for fix"). Working-tree changes reverted 2026-05-19 before any commit landed on the integration branch. Preserved here for institutional memory; no further action.            |
+| **Phase 2a remaining items**                          | R1+R2 LANDED, R3 PENDING | `feat/phase-2a-integration` for R1+R2    | R1 (reference-lap fetch dedup) + R2 (post-debounce write log) landed 2026-05-19. R3 (Empty Dashboard substrate baseline test) is a test run, not code work — pending.                                                                                                                                                                                                     |
+| **Phase 2b — Architectural cleanup (remaining)**      | NOT STARTED              | —                                        | A1, A4, A5, A6, A7 completion, A9. Lower urgency now Standings memory issue is resolved                                                                                                                                                                                                                                                                                   |
+| **Phase 3 — Channel-based bridge**                    | NOT STARTED              | —                                        | Would close remaining processTelemetry p99 gap to <3 ms. Also the layer where per-widget rate throttling lives and where renderer subscribers can wire to sessionLifecycle leave events.                                                                                                                                                                                  |
+| **Phase 4 — Main-process processors**                 | NOT STARTED              | —                                        | Depends on Phase 3                                                                                                                                                                                                                                                                                                                                                        |
+| **Phase 5 — Worker-thread SDK loop**                  | NOT STARTED              | —                                        |                                                                                                                                                                                                                                                                                                                                                                           |
+| **Phase 6 — Native optimisations**                    | DEFERRED                 | —                                        | Only if Phase 4 profiling demands                                                                                                                                                                                                                                                                                                                                         |
 
 ---
 
@@ -95,7 +98,7 @@ _Independent fixes that should not be carried forward into the new architecture.
 
 ### Phase 2a H1 — createStandings rewrite
 
-**Status: IN REVIEW on `feat/phase-2a-h1-standings-rewrite`.** Awaiting in-game functional test. Per-tick CPU / gen0 pressure reduction rather than a memory-leak fix (Standings is already under target after Tier 1).
+**Status: LANDED on `feat/phase-2a-h1-standings-rewrite`, cherry-picked into integration branch.** Per-tick CPU / gen0 pressure reduction rather than a memory-leak fix (Standings is already under target after Tier 1).
 
 - [x] Replace 3× `session.drivers.find(...)` calls with a single precomputed `Map<carIdx, Driver>` — eliminates O(N²) lookups (~4,800 array iterations → ~80 per `createDriverStandings` call for a 40-driver field)
 - [x] Tighten `groupStandingsByClass` — replace `reduce → Object.entries → sort` with a single Map-based grouping that builds the output array directly. Same output contract
@@ -103,31 +106,97 @@ _Independent fixes that should not be carried forward into the new architecture.
 - [skipped] Augment-chain mutation rewrite — high risk, marginal benefit per Practice 5 results. Documented as deliberate non-goal
 - [referred] Per-driver fallback allocation in `ReferenceLapStore.getReferenceLap()` (3× `Float32Array(0)` per call) — owned by the ReferenceLapStore contributor
 
+**Test result (2026-05-16 Clio Cup VIR race, 35.1 min, race steady-state phase minutes 15–31):** No regression vs Tier 1-only baseline. App slope +5.2 MB/min (under target), Standings CPU 2.3% vs 3.1% Tier-1 baseline (small CPU win). Memory advantage over Tier 1 alone is not directly demonstrable — Tier 1's H4 already achieved the bulk of the Standings memory fix. **H1 is justified primarily on code-quality grounds** (O(N²) → O(N), simpler grouping); the gen0 pressure reduction is real but small.
+
 ### Phase 2a Tier 2 — Session-load cost fixes
 
-**Status: BOTH BRANCHES IN REVIEW**, on top of Tier 1. Two findings surfaced by Practice 5 / PCC race that together explain a reproducible ~+1 GB session-load baseline cost (and a ~+1 GB race-start transition cost). Each shipped as a separate branch so test deltas can be attributed independently.
+**Status: BOTH BRANCHES LANDED on individual branches, cherry-picked into `feat/phase-2a-integration`.** Two findings surfaced by Practice 5 / PCC race that together explain a reproducible ~+1 GB session-load baseline cost (and a ~+1 GB race-start transition cost). Each shipped as a separate branch so test deltas can be attributed independently.
 
-#### Tier 2a — Disconnect leave cleanup (`feat/phase-2a-tier2-disconnect-cleanup`)
+#### Tier 2a — Disconnect leave cleanup (`feat/phase-2a-tier2-disconnect-cleanup`) — VALIDATED
 
 - [x] **`sessionLifecycle._onDisconnect`** emits synthetic `onDriverLeft(carIdx)` for every known driver before firing `onDisconnect()`. Previously `knownDriverCarIdxs` was cleared silently — the PCC race + Practice 5 boot logs showed zero leave events firing across all tests. Infrastructure fix: no current renderer subscribers (that channel is Phase 3/4), but main-process consumers and future renderer subscribers need this contract to hold
 - [x] **`useDriverLivePositions`** clears its driver-keyed refs (`lastProgressRef`, `prevTrackSurfaceRef`, `lastLapSnapshotRef`, `p1LapCompletedRef`, `p1CarRef`) when `useRunningState` transitions true → false. These component-level Maps aren't Zustand stores so Phase 1's `useResetOnDisconnect` didn't cover them
 - [x] Added `sessionLifecycle.spec.ts` (10 tests): join, leave, disconnect ordering (leaves fire before disconnect), idempotent repeated disconnect, sessionNum change semantics, unsubscribe disposer, error isolation
-- [ ] **Re-run Practice (real, joiners)** to confirm driver-slot accumulation no longer occurs across reconnect cycles
 
-#### Tier 2b — Reference-lap save/fetch dedup (`feat/phase-2a-tier2-reflap-dedup`)
+**Tier 2a follow-up fixes (2026-05-17, prompted by SFL Hungary test):**
+
+- [x] **Disconnect log line** — `_onDisconnect` now logs `Driver left (disconnect): carIdx=N` per synthetic leave + `Released N per-driver slots on disconnect` summary. Before this, the leave callbacks fired but produced no log evidence, making validation impossible.
+- [x] **Empty-Drivers guard** — `_onSession` ignores a session payload with empty `DriverInfo.Drivers` while drivers are known, with a `Session published with no drivers; ignoring (N still tracked)` warn. Prevents false-positive leave storms during transient SDK/YAML races.
+- [x] **Bridge stale-state nulling** — `iracingSdkBridge` nulls `latestTelemetry` / `latestSession` on disconnect so new overlay windows opened during a disconnect don't get re-seeded with stale data, and the references are released for GC.
+- [x] Spec coverage expanded to 16 tests (added 6: disconnect log assertions, no Released-0 summary, empty-Drivers guard, missing-Drivers guard).
+
+**Tier 2a mid-session leave detection (2026-05-18, DECLINED 2026-05-18, REVERTED 2026-05-19):**
+
+Identity-key implementation was written and tested 2026-05-18, then declined the same day after cost/benefit review. Working tree reverted to HEAD on 2026-05-19 before any commit landed on the integration branch. Full rationale in [`PERFORMANCE_TEST_LOG.md`](./PERFORMANCE_TEST_LOG.md) §4 "Declined for fix"; summarised here:
+
+- The dominant real-world case (driver leaves, iRacing keeps the slot populated as a "ghost" with the original identity) is **not detectable from SessionInfo alone** — confirmed by GR86 Miami (196 joins, 0 mid-session leaves over 10 min despite confirmed departures) and the spectated PCC race (zero mid-session leaves over 20 min).
+- The partial fix the working-tree code did deliver — slot-reuse detection via identity change — carries non-trivial false-positive risk because real iRacing SessionInfo updates have transient driver-entry omissions during qualifying-to-race transitions and driver swaps.
+- The empirical memory cost is already small post-H4. Bridge-disconnect cleanup catches everything eventually. The user-visible "ghost driver in Standings" symptom is mild and arguably matches iRacing's own behaviour.
+- Remaining engineering effort better spent on the reference-lap fetch dedup (R1) and Tier 2b verification (R2), both of which landed 2026-05-19.
+
+#### Tier 2b — Reference-lap save/fetch dedup (`feat/phase-2a-tier2-reflap-dedup`) — PARTIALLY VALIDATED
 
 - [x] **In-memory cache** in `src/app/storage/referenceLaps.ts`. Lazy-loaded on first access, subsequent `getReferenceLap()` calls are O(1) Map lookups instead of full file read+parse+revive
 - [x] **Debounced async write** (250 ms window) via `fs.promises.writeFile`. Multiple `saveReferenceLap()` calls within the window collapse into one write — collapses the PCC race's 51-saves-for-17-events pattern (3× per save per renderer) into 1 write per fast lap. Also removes `fs.writeFileSync` from the save path
 - [x] **`flushReferenceLapsOnShutdown()`** wired to `app.on('before-quit')` so the last save before close is never lost
 - [x] Added `referenceLaps.spec.ts` (9 tests): cache hit, Float32Array revival, immediate read-after-save, debounce coalescing, latest-value-wins, separate keys, shutdown flush, no-cache no-op
 - [x] Renderer surface unchanged — `bridge.getReferenceLap` / `saveReferenceLap` signatures preserved. `ReferenceLapStore` (other contributor's lane) untouched
+- [ ] **Filesystem-level verification** — PCC race, SFL Hungary, combined PR test, and GR86 Miami **all still show 3× save log clusters**. The renderer-side log fires before the main-process debounce, so the log evidence is misleading. Need either (a) an additional log line on the actual post-debounce file write, or (b) a test that counts `.json` writes in the reference-lap directory during a fast-lap burst, to confirm the debounce is engaging at the FS layer.
+
+#### Phase 2a Integration PR (`feat/phase-2a-integration`)
+
+**Status: READY TO MERGE after reverting the declined mid-session-leave working-tree changes.** Cherry-picks of all the above branches plus follow-up fixes into a single PR off `irdashies-fork/main`. Lets project owner test one branch instead of four.
+
+Includes:
+
+- Tier 1 (`ce3d0f30`) — PitLapStore + LapTimes hygiene
+- Post-PCC docs (`f79b55d2`)
+- Plan-update for Tier 2 branches (`0ab10a31`)
+- H1 (`5329db8a`) — createStandings rewrite
+- Tier 2a (`502a197c`) — disconnect leave cleanup
+- Tier 2b (`5e937eca`) — reference-lap dedup
+- Practice 3 docs (`82b2c96a`)
+- Follow-up commits on the integration branch:
+  - 2026-05-17: disconnect log line + empty-Drivers guard + bridge stale-state nulling (committed)
+
+Working-tree (uncommitted, **to be reverted**):
+
+- 2026-05-18: mid-session leave detection via identity key — declined; see §4 of the test log
 
 **Exit criteria for Phase 2a Tier 2:**
 
-- "Opened during session-load" startup memory closer to "opened post-load" baseline (target ≤ +200 MB delta vs ~+1 GB today)
-- No driver-slot accumulation across reconnect cycles (boot log shows join/leave counts match)
-- Reference-lap save log lines match save events 1:1 (was 3:1) in race scenario
-- App-level slope on Practice (real, joiners) under +5 MB/min
+- ✅ "Opened during session-load" startup memory closer to "opened post-load" baseline — Combined PR test shows peak memory −40% vs Tier 1-alone baseline (1,777 MB vs 2,914 MB)
+- ✅ No driver-slot accumulation across reconnect cycles — GR86 Miami shows 196 joins matched by 196 `Driver left (disconnect)` lines
+- ⚠️ Reference-lap save log lines still show 3× clusters; filesystem-level verification still required (tracked as a remaining item below)
+- ✅ App-level slope on Practice (real, joiners) under +5 MB/min — SFL Hungary steady-state +1.30 MB/min
+
+### Phase 2a remaining items
+
+**Status: R1 + R2 LANDED 2026-05-19 on `feat/phase-2a-integration`; R3 still pending (test run, not code).**
+
+#### R1 — Reference-lap fetch dedup — LANDED 2026-05-19
+
+Each renderer independently called `bridge.getReferenceLap` on connect and SessionNum transitions, producing 3× IPC invokes per class per event. The 2026-05-18 spectated PCC race captured the misleading log signal: **24 `[Main] Fetching reference lap` lines in 30 seconds at session-load** (4 classes × 3 renderers × 2 transitions) where 4 would suffice.
+
+Implementation: `ipcMain.handle('reference:get', ...)` in [`src/app/bridge/referenceLapsBridge.ts`](../src/app/bridge/referenceLapsBridge.ts) now keeps a small `Map<key, timestamp>` of recent invokes with a 5s TTL. The first invoke per key logs the `[Main] Fetching reference lap ...` INFO line; subsequent invokes within the TTL log `[Main] Reference lap fetch dedup'd ...` at DEBUG level. The underlying storage-layer cache already prevents duplicate disk reads (Tier 2b); R1 just cleans up the misleading log signal that the test author was counting. 6 new spec tests in [`src/app/bridge/referenceLapsBridge.spec.ts`](../src/app/bridge/referenceLapsBridge.spec.ts).
+
+#### R2 — Tier 2b debounce filesystem verification — LANDED 2026-05-19
+
+Save log clusters of 3 had persisted across all Phase 2a tests. The renderer-side log line fires before the main-process debounce, so log evidence was misleading. R2 adds an explicit log line on the actual post-debounce `fs.promises.writeFile` call.
+
+Implementation: `flushAsync` in [`src/app/storage/referenceLaps.ts`](../src/app/storage/referenceLaps.ts) now logs `[Main] Reference laps written to disk (N entries)` after each successful write. The ratio of pre-log (`[Main] Saving reference lap`) to post-log lines is the dedup factor visible in test analysis. 3 new spec tests covering once-per-write log, entry count in message, no-log-on-write-failure.
+
+#### R3 — Empty Dashboard substrate baseline test
+
+Long-standing test backlog item (originally Q6, now restated as a concrete deliverable).
+
+- [ ] Configure iRDashies with all widgets disabled
+- [ ] Run a solo practice for ~20 minutes with PerfMetrics enabled
+- [ ] Record the substrate slope (app-level + per-renderer + per-process)
+- [ ] Add the result to `PERFORMANCE_TEST_LOG.md` and update §5 targets with the substrate baseline
+
+**Estimated effort:** small (configuration change + one test run)
+**Estimated impact:** diagnostic — useful baseline for future regression detection. Specifically isolates whether residual slope is widget-attributable or substrate-attributable. Also informs the long-pending +107 MB Primary startup question.
 
 ### Phase 2b — Architectural cleanup (remaining)
 
@@ -144,11 +213,10 @@ _The highest-impact slices of A2/A3/L5/A7 landed in Phase 1 + Phase 2a Tier 1 + 
 
 ### Phase 2c — Outstanding investigations
 
-These were raised but not actioned during Phase 2a. Lower urgency now, but kept on the plan to avoid losing them.
+Lower-urgency investigations kept on the plan to avoid losing them. The Empty Dashboard test that used to live here has been promoted to Phase 2a remaining item R3.
 
-- [ ] **Empty Dashboard test post-Phase 1** — characterise substrate baseline; isolate the +107 MB Primary startup regression. Q6
 - [ ] **Single-Widget isolation tests** — per-widget leak rate, identifies heaviest widget(s). Q7
-- [ ] **Main process slope investigation** — persistent +4–6 MB/min across all phases; now the largest single contributor to app-level slope. Untouched by any fix so far. Candidates: telemetry buffering, log accumulation, main-process state stores not yet typed
+- [ ] **Main process slope investigation** — was +4–6 MB/min across early phases, now at or near target after Phase 2a side effects. Watch item only — re-investigate if it re-elevates in a future test.
 - [ ] **P5 / `DriverInfoRow` memo follow-up** — Phase 1's `propsAreEqual` is in place but Left CPU is only marginally lower than pre-Phase-1. If CPU becomes the next constraint after memory is solved, revisit whether the comparator is being hit or whether parent re-renders pass new objects (e.g. inline `style={...}`)
 
 ### Phase 3 — Channel-based bridge
@@ -236,17 +304,20 @@ These block specific phases. They are duplicated from `ARCHITECTURE_REVIEW.md` �
 
 ### From the performance summary (still requires investigation)
 
-6. **Empty-dashboard baseline test** _(MEDIUM, downgraded after Phase 2a)_ — does the leak persist with zero widgets? Original gating role for Phase 1 success criteria; less urgent now that the dominant leaks are resolved
+6. **Empty-dashboard baseline test** _(SCOPED 2026-05-19 — now tracked as Phase 2a remaining item R3)_ — substrate baseline measurement with all widgets disabled. Promoted from open question to concrete deliverable.
 7. **Single-widget isolation tests** _(MEDIUM, downgraded after Practice 5)_ — per-widget leak rate, identifies heaviest widget(s). Standings was the suspected heaviest and is now resolved; this is now an exploratory rather than gating test
 8. ~~Reference-lap A/B~~ — **ADDRESSED by Phase 2a Tier 2b** (`feat/phase-2a-tier2-reflap-dedup`). Main-process cache + debounced write collapses 3× per-renderer save bursts into 1 write
 9. **PCC dashboard config delta** _(MEDIUM)_ — which widget(s) explain PCC's much lower leak rate?
 10. **NetworkService allocation** _(MEDIUM)_ — is the multi-class 178 MB jump PostHog? _Partly addressed by Phase 0.5 S5; NetworkService back to baseline_
 11. **Sync-I/O tick-dip correlation** _(RESOLVED by Phase 0.5)_ — L1 fix eliminated tick dips; correlation confirmed
 12. ~~Early-session step-change cause~~ — **RESOLVED 2026-05-12 by Practice 2**: driver joins are the cause; produced finding P7
-13. **Cumulative driver-join cost in long sessions** _(MEDIUM, partially resolved)_ — per-joiner cost is bounded by SDK array length (64 slots), confirmed by Practice 5 not growing unboundedly. Disconnect cleanup gap (now Phase 2a Tier 2) is the remaining mechanism for unbounded growth across reconnect cycles
-14. **Session-load vs post-load startup gap** _(HIGH, new from Practice 5)_ — opening iRDashies during iRacing session-load costs ~+1 GB baseline vs opening post-load. Phase 2a Tier 2 (R1 + disconnect cleanup) directly targets both contributing mechanisms; re-test should quantify each
-15. **Main process slope** _(MEDIUM, new from Practice 5)_ — persistent +4–6 MB/min across all phases, now the largest single contributor to app-level slope. Root cause not yet identified; candidates: telemetry buffering, log accumulation, main-process state stores not yet typed
+13. **Cumulative driver-join cost in long sessions** _(RESOLVED)_ — per-joiner cost is bounded by SDK array length (64 slots), confirmed by Practice 5. Disconnect cleanup gap addressed by Phase 2a Tier 2a and validated by GR86 Miami (196 leave events match 196 joins on bridge disconnects).
+14. **Session-load vs post-load startup gap** _(HIGH → SUBSTANTIALLY ADDRESSED, 2026-05-17)_ — opening iRDashies during iRacing session-load originally cost ~+1 GB baseline vs opening post-load. Combined PR test 2026-05-17 shows peak memory −40% vs Tier 1-alone baseline (1,777 MB vs 2,914 MB) and session-load delta −72%. The dominant fix turned out to be Tier 2a's session-boundary cleanup rather than Tier 2b's reference-lap dedup. **Remaining cost** is concentrated in the reference-lap fetch storm at session-load (now scoped as R1); see §2 "Phase 2a remaining items".
+15. **Main process slope** _(MEDIUM → SUBSTANTIALLY ADDRESSED, 2026-05-17)_ — previously +4–6 MB/min, the largest single contributor. Combined PR test 2026-05-17 shows +0.5 MB/min (at target). The Phase 2a session-boundary cleanup picked this up as a side effect. **Watch item**: still elevated in some scenarios (PCC race standalone Tier 1 showed +2.3); needs further investigation if it re-emerges.
 16. **Per-widget rate-throttling mechanism** _(HIGH, new 2026-05-15 — blocks Phase 3 rate-throttling sub-task)_ — Per-widget property (`WidgetDefinition.updateRateHz`), named-group preset (`driverFocused` / `gapTiming` / `informational` / `static`), or both? Plus where the default bucket assignment lives (widget code, dashboard config, or both). User preference (2026-05-15): "I'd like it configurable for developers... through a grouping mechanism or as a property in the configuration of the widget." Leaning toward both — group preset as the default with per-widget override
+17. ~~Mid-session per-driver leave detection~~ — **RESOLVED BY DECLINE 2026-05-18.** Cost/benefit review concluded the architectural completeness isn't worth the implementation risk: the dominant case (ghost slots) is undetectable from SessionInfo alone, the partial fix (slot-reuse detection) carries false-positive risk, and per-driver allocation is already small post-H4. See [`PERFORMANCE_TEST_LOG.md`](./PERFORMANCE_TEST_LOG.md) §4 "Declined for fix" for the full rationale.
+18. **Reference-lap save debounce filesystem verification** _(SCOPED 2026-05-19 — now tracked as Phase 2a remaining item R2)_ — every Phase 2a test (PCC, SFL, combined PR, GR86 Miami, spectated PCC) shows save log lines in 3× clusters despite the Tier 2b debounce. The renderer-side log line fires _before_ the main-process debounce, so log evidence is misleading. Promoted from open question to concrete deliverable.
+19. **Reference-lap fetch dedup** _(NEW 2026-05-19 — tracked as Phase 2a remaining item R1)_ — spectated PCC race captured the cost clearly: 24 fetches in 30 seconds at session-load (4 classes × 3 renderers × 2 transitions) where 4 would suffice. Highest-priority remaining performance item; pattern established by Tier 2b's save work. Promoted from observation to concrete deliverable.
 
 ---
 
@@ -268,6 +339,16 @@ LLM agents: read this file at the start of any session that touches the architec
 
 Append-only. Newest entries at the top. Format: `YYYY-MM-DD — item — branch — outcome`.
 
+- **2026-05-19** — R1 reference-lap fetch dedup + R2 post-debounce write log landed on integration branch. R1: 5s-TTL invoke dedup in `referenceLapsBridge.ts` collapses 3× per-renderer `[Main] Fetching reference lap` log lines to 1 per class per transition; subsequent invokes log at DEBUG level. R2: `flushAsync` in `referenceLaps.ts` logs `[Main] Reference laps written to disk (N entries)` after each successful `fs.promises.writeFile`, giving ground-truth save-count evidence to discriminate against the misleading renderer-side log clusters. 9 new spec tests (6 new bridge spec file + 3 in referenceLaps spec). 809/809 tests pass — `feat/phase-2a-integration` — landed
+- **2026-05-19** — Working-tree identity-key implementation for mid-session leave detection reverted to HEAD on `feat/phase-2a-integration`. Decline decision from 2026-05-18 enacted before any commit landed; sessionLifecycle.ts and its spec match the post-2026-05-17 state again. The 2026-05-17 follow-up work (empty-Drivers guard, disconnect log line, Released summary, bridge stale-state nulling) was also still uncommitted and got re-applied cleanly in the same revert+restore operation, then committed separately
+- **2026-05-18** — Spectated PCC race at GR86 Navarra (23.5 min, 4-class spectated race): zero `Driver left (session-update)` events in 20 min despite genuine driver departures. Mid-session per-driver leave detection **declined for fix** after cost/benefit review — see PERFORMANCE_TEST_LOG.md §4 "Declined for fix". Reference-lap fetch storm at session-load captured: 24 fetches in 30s where 4 would suffice — promoted to highest-priority remaining performance item (R1, landed 2026-05-19)
+- **2026-05-18** — Mid-session per-driver leave detection IMPLEMENTED (working tree only): identity-key approach using `knownDrivers: Map<carIdx, identityString>` with UserID/UserName fallback. Declined the same day after cost/benefit review; reverted 2026-05-19 — `feat/phase-2a-integration` — declined, reverted
+- **2026-05-18** — Q17 added (mid-session leave detection limitations); Q18 added (reference-lap save debounce filesystem verification); Q14 and Q15 marked substantially addressed by combined PR test results
+- **2026-05-17** — Phase 2a Tier 2a follow-up fixes (prompted by SFL Hungary test, log+memory audit). (1) `_onDisconnect` now logs `Driver left (disconnect): carIdx=N` per synthetic leave + `Released N per-driver slots on disconnect` summary — previously callbacks fired silently, making validation impossible. (2) Empty-Drivers guard in `_onSession` ignores transient SDK/YAML races with a warn log. (3) `iracingSdkBridge` nulls `latestTelemetry`/`latestSession` on disconnect. 6 new spec tests (16 total). Validated by GR86 Miami test 2026-05-18: 196 joins, 196 `Driver left (disconnect)` lines, 4 `Released N per-driver slots` summaries match 4 disconnect events — `feat/phase-2a-integration` — committed
+- **2026-05-17** — Integration PR test (Practice → Ghost Race · PCup at Spa, 24.4 min): peak memory −40% vs Tier 1-alone baseline (1,777 MB vs 2,914 MB), processTelemetry p99 4.6 ms (target <3 ms, closest yet), broadcast p99 0.45 ms (under target), Main process slope +0.5 MB/min (at target, down from +2.3). Session-load delta −72%. Standings −0.4 MB/min (actively declining) — `feat/phase-2a-integration` — owner-tested, performance confirmed good
+- **2026-05-17** — Phase 2a integration PR created off `irdashies-fork/main`: 7 commits cherry-picked (Tier 1, post-PCC docs, plan update, H1, Tier 2a, Tier 2b, Practice 3 docs). Linear history, no merge commits. 794/794 tests pass at integration time — `feat/phase-2a-integration` — pushed to fork
+- **2026-05-16** — Phase 2a H1 standalone test (Race · Clio Cup at VIR, 35.1 min): no regression vs Tier 1-only baseline. App slope +5.2 MB/min, Standings CPU 2.3% vs 3.1% baseline (small CPU win). H1 justified on code-quality grounds rather than measurable memory impact — `feat/phase-2a-h1-standings-rewrite` — landed
+- **2026-05-16** — Phase 2a Tier 2 standalone test (Practice · TCR at Watkins Glen): new `Disconnect detected (N known drivers)` diagnostic infrastructure validated. Per-driver leave callbacks still unverified (6 disconnect events logged but no `Driver left` lines — fixed in the 2026-05-17 follow-up). Main process slope dropped to +0.3 MB/min. Standings elevated in single-class scenarios (+6.4 MB/min) — `feat/phase-2a-tier2-disconnect-cleanup` — landed
 - **2026-05-15** — Phase 2a Tier 2b reference-lap dedup: main-process in-memory cache + 250ms debounced async write via `fs.promises.writeFile`. Collapses 3× per-renderer save bursts (51-for-17 pattern from PCC race) into 1 write. `getReferenceLap` lazy-loads once then O(1) cache hits. `flushReferenceLapsOnShutdown()` wired to `before-quit`. Renderer surface unchanged; `ReferenceLapStore` (other contributor's lane) untouched. 9 new tests; 784/784 pass — `feat/phase-2a-tier2-reflap-dedup` — in review (commit cb5aaa08)
 - **2026-05-15** — Phase 2a Tier 2a disconnect leave cleanup: `sessionLifecycle._onDisconnect` now emits synthetic per-driver leaves before clearing state; `useDriverLivePositions` clears driver-keyed refs on running true→false. Added `sessionLifecycle.spec.ts` covering join/leave/disconnect ordering/idempotent disconnect/sessionNum change/unsubscribe/error isolation. 10 new tests; 785/785 pass — `feat/phase-2a-tier2-disconnect-cleanup` — in review (commit 3abe70a7)
 - **2026-05-15** — Phase 3 plan expanded: added per-widget update-rate throttling as a sub-task on the channel-bus work, with developer-configurable rates via either per-widget property or named-group preset (`driverFocused` / `gapTiming` / `informational` / `static`). Added Q16 to track mechanism-design decision — `docs/IMPLEMENTATION_PLAN.md` — planning

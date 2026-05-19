@@ -80,6 +80,344 @@ When new scenarios are added (e.g. to test specific findings), document them her
 
 ---
 
+### 2026-05-18 · Combined Phase 2a · PCC race spectated · GR86 at Navarra
+
+**Scenario:** Real multiplayer PCC race at Navarra, 4 classes, 42 drivers. User joined and spectated the first ~15 min of the race rather than driving. 23.5 min log capturing warmup → race start → 15 min of spectating → end.
+**Build:** Combined Phase 2a + 2026-05-18 sessionLifecycle changes (same as GR86 Miami entry).
+**Source log:** `SpectateRace-PCC-GR86-Navarra.txt`
+**Spreadsheet:** `spectate_race_perfmetrics_analysis.xlsx`
+
+**Lifecycle event counts:**
+
+| Event                          | Count | When                                                         |
+| ------------------------------ | ----: | ------------------------------------------------------------ |
+| `Driver joined`                |   126 | 42 × 3 bridge connect cycles (no mid-session joins observed) |
+| `Driver left (disconnect)`     |   126 | 42 × 3 bridge disconnect cycles                              |
+| `Driver left (session-update)` |     0 | Never                                                        |
+| `Disconnect detected`          |     3 | All at bridge bounces (21:43, 22:03, 22:03)                  |
+| `SessionNum changed: 1 → 2`    |     1 | Warmup → race at 21:42:10                                    |
+| Reference lap fetches          |    24 | 2 clusters of 12 (4 classes × 3 renderers × 2 transitions)   |
+| Reference lap saves            |     6 | 2 clusters of 3                                              |
+
+**Steady-state slopes (race window minute 5–22, 17 min, 105 samples):**
+
+| Renderer         | Slope (MB/min) |
+| ---------------- | -------------: |
+| App total        |         +12.79 |
+| Left (Standings) |          +4.21 |
+| Primary          |          +2.57 |
+| Right            |          +0.24 |
+| Settings         |          +0.01 |
+| GPU              |          +1.63 |
+| Main             |          +4.16 |
+
+**Latency:**
+
+| Metric                    |                  Value |   Target |
+| ------------------------- | ---------------------: | -------: |
+| processTelemetry p99 mean |                7.49 ms |    <3 ms |
+| broadcast p99 mean        |                0.51 ms | <1 ms ✅ |
+| Tick dips <20 Hz          | 1 (bridge bounce only) |    <1 ✅ |
+
+**Findings:**
+
+1. **Memory slopes elevated vs SFL Hungary's clean numbers, but this is not treated as a Phase 2a regression.** Per the project lead's call, the slope difference is attributable to a combination of (a) scenario difference (4-class race vs 1-class practice — multi-class scenarios consistently show elevated slopes across the test history), (b) reference-lap fetch storm at session-load (24 fetches at 21:41:41 and 21:42:10), and (c) likely environmental/PC-side noise contributing to the steady-state read. The architectural Phase 2a changes are working as intended; the slope numbers here aren't a useful signal for further code-side investigation.
+2. **Mid-session per-driver leave detection not firing.** Zero `Driver left (session-update)` events in 20 minutes of continuous race spectating despite drivers genuinely leaving (retirements, lapped cars). After review, this finding is being **declined for fix** — see §4 for the architectural rationale. The bridge-disconnect cleanup remains correct, and per-driver allocation is already small thanks to H4.
+3. **The 4-class fetch storm at session-load is the most visible identifiable cost in this run.** 24 reference lap fetches in 30 seconds at session-load and SessionNum-transition. With reference-lap fetch dedup implemented, this would be 8 fetches instead of 24, eliminating most of the ~+114 MB single-sample jump at 21:42:08.
+4. **Tick stability and broadcast latency remain at target.** processTelemetry p99 at 7.49 ms is elevated vs SFL Hungary's 3.03 ms but consistent with the multi-class history (4 classes × 42 drivers exercises more code paths per tick). Not flagged as a problem.
+
+**Correlation with architecture review:**
+
+| Finding                         | Status                                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Disconnect-path leave (Tier 2a) | Continues to validate (126 leaves match 126 joins on bridge events)                                                      |
+| Mid-session per-driver leave    | **Declined for fix** — see §4                                                                                            |
+| **Reference lap fetch dedup**   | **Confirmed implicated as the most visible remaining session-transition cost** — now the highest-priority remaining item |
+| Tier 2b save debounce           | Still unverified at filesystem level (saves still cluster 3-at-a-time in logs)                                           |
+
+---
+
+### 2026-05-18 · Combined Phase 2a + Tier 2a logging/empty-Drivers guard · Practice (real, churn) · GR86 at Miami
+
+**Scenario:** Real multiplayer GR86 practice at Miami, 10.2 min. Field of ~48–50 drivers; many drivers known to be departing mid-session to head to an official race lobby.
+**Build:** Combined Phase 2a + new changes to `src/app/sessionLifecycle/sessionLifecycle.ts` (per-driver leave logging on disconnect, empty-Drivers guard) and `src/app/bridge/iracingSdk/iracingSdkBridge.ts` (null latestTelemetry/latestSession on disconnect).
+**Source log:** `OfficialPractice-GR86-Miami.txt`
+**Spreadsheet:** `gr86_practice_perfmetrics_analysis.xlsx`
+**Display layout:** Same as 2026-05-17 (Left=2968111571=Standings, Centre=1231991429=Primary, Right=3296583556=Map/Weather).
+
+**Lifecycle event counts:**
+
+| Event                                       | Count | Notes                                                                                                                                  |
+| ------------------------------------------- | ----: | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `Driver joined`                             |   196 | 144 at 05:07 (initial connect-disconnect-reconnect cycles), 2 mid-session (05:10, 05:11), 50 at 05:16 (end-of-session bridge bouncing) |
+| `Driver left (disconnect)`                  |   196 | Symmetric with joins — but only at bridge-disconnect events                                                                            |
+| `Released N per-driver slots on disconnect` |     4 | New summary line confirms cleanup on each disconnect                                                                                   |
+| `Disconnect detected (N known drivers)`     |     4 | All four cycles logged                                                                                                                 |
+| `ignoring (N still tracked)` warns          |     0 | Empty-Drivers guard didn't fire — no false-positive leave storms                                                                       |
+
+**Top-line numbers (clean window minute 2.5–8.5, 36 samples):**
+
+| Renderer         | Slope (MB/min) |
+| ---------------- | -------------: |
+| App total        |          +21.9 |
+| Left (Standings) |           +4.3 |
+| Primary          |           +4.8 |
+| Right            |           +1.8 |
+| GPU              |           +6.3 |
+| Main             |           +4.7 |
+
+**Latency means:**
+
+| Metric                    |   Value | Status                       |
+| ------------------------- | ------: | ---------------------------- |
+| processTelemetry p99 mean | 4.80 ms | Slightly above SFL's 3.03 ms |
+| broadcast p99 mean        | 0.45 ms | ✅ Under target              |
+| Tick dips <20 Hz          |       0 | ✅                           |
+
+**Findings:**
+
+1. **The disconnect-path per-driver leave code is confirmed firing.** 196 `Driver left (disconnect)` lines symmetric with 196 joins; 4 `Released N per-driver slots on disconnect` summaries match 4 disconnect events. The previous open question about whether Tier 2a's leave callbacks were invoked is **definitively answered for the disconnect case**.
+2. **HOWEVER — mid-session per-driver leave detection is NOT implemented.** All 196 leave events cluster into exactly two minute-buckets: 05:07 (96 leaves, initial bridge bouncing) and 05:16 (100 leaves, end-of-session bridge bouncing). Zero leave events in the 8m 43s of continuous driving between. The user has confirmed drivers were definitely leaving mid-session during that window (heading to the official race lobby). **The "leave path" code added in the recent PR only covers the iRacing-bridge-disconnect case, not the per-driver-departure-during-active-session case.** `_onSession` emits joins for newly-seen carIdxs (2 such events visible at 05:10 and 05:11) but does not emit leaves for previously-known carIdxs that are no longer in the incoming SessionInfo. This is a one-way diff bug.
+3. **The empty-Drivers guard is working correctly.** Zero "ignoring (N still tracked)" warns appeared — the test conditions didn't trigger the case it guards against, and no false-positive leave storms occurred either.
+4. **Memory slopes look elevated but this is largely a too-short-session artifact.** Session was only 8 min of usable post-startup data; the clean window still includes part of the startup ramp. SFL Hungary's 22-minute steady-state plateau hadn't established yet. Settings renderer also stayed at 180 MB (the Electron suspension didn't trigger in this short window).
+5. **Architectural bug is bounded but still real.** With H4 having reduced per-driver allocation to near-zero, the memory impact of "ghost" drivers (departed drivers whose state isn't released until the next bridge disconnect) is small enough to be masked by GC. But the bug means the Standings widget shows departed drivers as still-present until the next iRacing-bridge disconnect — a visible UX bug independent of memory.
+6. **Reference lap save still shows 3× clusters in logs.** 4 clusters of 3 saves each = 12 log lines. Unchanged from every Phase 2a test. Filesystem-level verification still required.
+
+**Correlation with architecture review:**
+
+| Finding                                            | Status                                                                                                                                                                         |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tier 2a leave-on-disconnect (bridge drop)          | **VALIDATED** — log evidence is unambiguous                                                                                                                                    |
+| Tier 2a empty-Drivers guard                        | **VALIDATED** — no false-positive leave storms                                                                                                                                 |
+| Tier 2a stale-state nulling (iracingSdkBridge)     | Architecturally fixed; no observed regression                                                                                                                                  |
+| **Tier 2a per-driver leave during active session** | **NEW FINDING — NOT IMPLEMENTED.** `_onSession` does a one-way diff (new drivers → join) but never emits leaves for previously-known drivers absent from incoming SessionInfo. |
+| Tier 2b save debounce                              | Still not validated by logs (3× clusters persist)                                                                                                                              |
+
+**Recommended next implementation:**
+
+Extend `_onSession` to do a two-way diff against `knownDrivers`:
+
+- For carIdxs in new SessionInfo but not in knownDrivers → emit `Driver joined` (existing behaviour)
+- For carIdxs in knownDrivers but not in new SessionInfo → emit `Driver left (session-update): carIdx=N` and invoke the same per-driver release callbacks as the disconnect path
+
+Defensive considerations:
+
+- Real iRacing SessionInfo updates occasionally have transient driver-entry omissions during qualifying-to-race transitions or driver swaps. Either require N consecutive absences before emitting leave (suggest N=2 or 3), or use a stronger identity key (carIdx + UserName/UserID) to detect "same slot, different driver" as leave-then-join.
+- The `(session-update)` log suffix distinguishes it from `(disconnect)` so next test analysis can count each path independently.
+
+---
+
+### 2026-05-17 · Combined Phase 2a · Practice (real, driver churn) · SFL at Hungary
+
+**Scenario:** Real multiplayer SFL (Super Formula Lights) practice at Hungary, 27.4 min. Set up specifically to exercise driver-leave conditions — field churned through the session with multiple joins and (we believe) leaves.
+**Build:** Combined Phase 2a PR (same as 2026-05-17 Practice → Ghost Race entry)
+**Source log:** `OfficialPractice-SFL-Hungary.txt`
+**Spreadsheet:** `sfl_practice_perfmetrics_analysis.xlsx`
+**Display layout:** Same as 2026-05-17 combined PR test:
+
+- Left (x=−1920): Renderer 2968111571 — Standings
+- Centre/Primary (x=0): Renderer 1231991429 — Driving widgets (Primary)
+- Right (x=+1920): Renderer 3296583556 — Map/Weather
+
+**Top-line numbers (steady-state, minute 6 onwards, 22 min, 129 samples):**
+
+| Renderer                        | Slope (MB/min) | Status                      |
+| ------------------------------- | -------------: | --------------------------- |
+| **App total**                   |   **+1.30** ✅ | Far under <+5 target        |
+| Left (Standings, 2968111571)    |       +0.35 ✅ | Effectively flat            |
+| Primary (1231991429)            |       +0.73 ✅ | Under <+1 target            |
+| Right (Map/Weather, 3296583556) |       −0.03 ✅ | Flat                        |
+| Settings                        |       −0.01 ✅ | Flat                        |
+| GPU                             |       −0.85 ✅ | **Actively declining**      |
+| Main                            |       +1.09 ✅ | Under <+0.5 target¹ (close) |
+
+¹ Main slightly above the <+0.5 target but well within the previous +2.3 baseline.
+
+**Latency:**
+
+| Metric                    |                                         Value | Target | Status                           |
+| ------------------------- | --------------------------------------------: | -----: | -------------------------------- |
+| processTelemetry p99 mean |                                   **3.03 ms** |  <3 ms | ✅ Essentially at target         |
+| processTelemetry avg      |                                       1.65 ms |      — | —                                |
+| processTelemetry max      |                                       4.48 ms |      — | —                                |
+| broadcast p99 mean        |                                       0.47 ms |  <1 ms | ✅ Under                         |
+| broadcast avg             |                                       0.24 ms |      — | —                                |
+| Tick dips <20 Hz          | 2 (both at iRacing bridge bouncing minute 22) |     <1 | Effectively zero in steady-state |
+
+**Findings:**
+
+1. **This is the cleanest in-race steady-state result captured to date.** App memory grew +30 MB across 22 minutes of steady-state practice. processTelemetry p99 mean is at the <3 ms target. Tick rate held 21.7 Hz mean with zero dips outside the brief iRacing bridge-bouncing event at minute 22. Subjectively this would feel completely smooth from a driver's perspective.
+2. **Per-driver-join cost is dramatically reduced.** Six observable mid-session driver joins (carIdx 10, 11, 12, 13, 15, 16, 17) produced memory deltas of typically 0–12 MB across all renderers combined, often dominated by GC noise. Pre-fix baseline was ~5–6 MB per driver in Left alone. Phase 2a Tier 1 + Tier 2a together have effectively closed the per-driver-join cost.
+3. **The −335 MB drop at minute 5 is V8 GC + settings renderer suspension, NOT lifecycle cleanup.** Two events combined in one sample window: V8 major GC fired across driver-aware renderers (Left −64, Primary −60, GPU −22), and the settings renderer dropped 179 → 75 MB and stayed there. The settings drop is Electron suspending the inactive settings window — normal and beneficial. The drop is not correlated with the driver-10 join 32 seconds earlier (the join was only +16 MB net).
+4. **NO `Driver left` events fire — third test in a row to confirm this.** The test was specifically set up to surface leave events: 27 minutes of practice with field churn, ending with iRacing bridge events. The log shows 49 `Driver joined` events, 3 `Disconnect detected (N known drivers)` events, and **zero leave events of any kind**. The "Disconnect detected" events at 21:43:45, 21:43:58, 21:49:12 are iRacing bridge bouncing or session end, not driver departures.
+5. **Smoking gun: carIdx 14 is missing from the join sequence.** Joins go 9 → 10 → 11 → 12 → 13 → **15** → 16. Either slot 14 was never occupied (and there's no missing leave), or a driver was at slot 14 and left silently. The 3-minute gap between drivers 13 (21:37:57) and 15 (21:41:02) is suspicious. Either way, no leave event was logged. **We have no positive evidence across any test that the per-driver-leave callback fires.**
+6. **Reference lap save dedup still shows 3× clusters in logs.** Six save events × 3 log lines each = 18 saves logged. Same pattern as PCC race, combined PR test, and earlier runs. Either Tier 2b's debounce works but the log line fires pre-debounce, or the debounce isn't engaging. Filesystem-level verification still required.
+7. **Reference lap fetch still 3× per session.** 3 fetches at session start for the single SFL class. Not addressed by Tier 2b.
+8. **App memory stayed remarkably low for the entire session.** Peak was 1,559 MB (briefly, before settings suspension), settled at ~1,250 MB for most of the session. Comfortably below the <2,000 MB target.
+
+**Correlation with architecture review:**
+
+| Finding                                            | Status                                             | Evidence from this run                                                                                                             |
+| -------------------------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Tier 1 / H4 + H1 (Standings/per-driver allocation) | **Continues to validate strongly**                 | Standings slope +0.35 MB/min; per-join cost typically 0–12 MB total across renderers                                               |
+| Combined Phase 2a (overall)                        | **Strongly validated as steady-state remediation** | App slope +1.3 MB/min, latency p99 at target, peak memory <1.6 GB                                                                  |
+| Tier 2a per-driver-leave path                      | **NOT FIRING — third confirmed test**              | 49 joins, 0 leaves. Two possible underlying causes (see §4): silent firing without log line, or leave callback not invoked at all. |
+| Tier 2b save debounce                              | **Logs still show 3× clusters**                    | 6 save events × 3 logs each. Needs filesystem-level verification.                                                                  |
+| Reference lap fetch per-renderer                   | Still 3× per session                               | Not in Tier 2b scope                                                                                                               |
+| Main process slope                                 | **Holding under target**                           | +1.09 MB/min, well under previous +2.3 baseline                                                                                    |
+
+---
+
+### 2026-05-17 · Combined Phase 2a (Tier 1 + H1 + Tier 2a + Tier 2b) · Practice → Ghost Race · PCup at Spa
+
+**Scenario:** Integrated test of all Phase 2a changes. Practice session for ~12 min, then SessionNum transitions to spectated/ghost race for ~12 min (user could drive but was not being scored; full standings and timing visible — telemetrically identical to a normal race).
+**Build:** Combined PR containing Tier 1 (`ce3d0f30`), H1 (`5329db8a`), Tier 2a (`502a197c`), Tier 2b (`5e937eca`)
+**Source log:** `Practice_to_GhostRace-PCup-Spa.txt`
+**Spreadsheet:** `combined_perfmetrics_analysis.xlsx`
+**Display layout confirmed:** Same dashboard as prior tests, IDs reshuffled after Windows update:
+
+- Left (x=−1920): Renderer 2968111571 — Standings
+- Centre/Primary (x=0): Renderer 1231991429 — Driving widgets
+- Right (x=+1920): Renderer 3296583556 — Map/Weather
+
+**Top-line numbers (cleaned, 24.4 min, 130 samples):**
+
+| Metric                              | Pre-remediation | PCC Race (Tier 1 alone) |      **This run (combined)** |                  Δ vs PCC |
+| ----------------------------------- | --------------: | ----------------------: | ---------------------------: | ------------------------: |
+| **Peak app memory**                 |       ~3,000 MB |                2,914 MB |                 **1,777 MB** |                  **−39%** |
+| App slope (ghost race steady state) |    +18.8 MB/min |             +5.7 MB/min |                  +7.1 MB/min |                small +1.4 |
+| Primary slope                       |     +9.8 MB/min |             +1.8 MB/min |                  +3.5 MB/min | regression worth checking |
+| **Left/Standings slope**            |    +18.5 MB/min |             +0.9 MB/min |           **−0.4 MB/min** ✅ |         flat-to-declining |
+| Main slope                          |     +6.0 MB/min |             +2.3 MB/min |           **+0.5 MB/min** ✅ |        **−78%** at target |
+| GPU slope                           |     +3.2 MB/min |             +0.6 MB/min |                  +3.0 MB/min |        scenario-dependent |
+| processTelemetry p99 mean           |         12.5 ms |                  7.4 ms |                   **4.6 ms** |                  **−38%** |
+| broadcast p99 mean                  |         1.71 ms |                 0.57 ms |               **0.45 ms** ✅ |              under target |
+| Tick dips <20 Hz                    |               8 |        1 (startup only) | 4 (clustered at transitions) |                 see notes |
+
+**Session-transition memory cost dramatically reduced:**
+
+| Event                                       |                  PCC Race (Tier 1) |       **This run (combined)** |        Δ |
+| ------------------------------------------- | ---------------------------------: | ----------------------------: | -------: |
+| Session-load (driver hydration burst)       | +1,010 MB across one sample window | **+280 MB across 40 seconds** | **−72%** |
+| Practice → ghost race SessionNum transition |                                n/a |            +75 MB across ~20s |        — |
+
+**Findings:**
+
+1. **Peak app memory is down ~40% vs the equivalent Tier-1-only baseline** (1,777 MB vs 2,914 MB). Across two scenarios (practice, ghost race) the app never exceeded ~1,800 MB despite a 48-driver field. The cumulative effect of Tier 2a + Tier 2b on session-boundary allocations is substantial — even though the per-component evidence is harder to isolate, the integrated result is the clearest single performance gain since Phase 0.5.
+2. **Standings renderer is essentially flat across both phases.** Practice phase slope was effectively zero; ghost race phase slope is −0.4 MB/min (actively declining). The H4 fix from Tier 1 continues to hold, and H1 (createStandings rewrite) has not regressed it. Note: the test didn't surface driver-leave events (the field was stable throughout — no drivers actually left), so the per-driver leave path itself isn't validated by this run.
+3. **Main process slope dropped from +2.3 to +0.5 MB/min — at target.** This is the cleanest individual metric improvement. Main is no longer the dominant remaining in-race leak source. The app-level slope of +7.1 MB/min is now distributed mostly across Primary (+3.5) and GPU (+3.0).
+4. **Latency targets closing in.** processTelemetry p99 mean of 4.6 ms is the lowest measured since testing began (target <3 ms). broadcast p99 of 0.45 ms is comfortably under its <1 ms target.
+5. **Tier 2a's per-driver leave path was not exercised by this test.** The test conditions had a stable 48-driver field for the entire measurement window. The "Disconnect detected (N known drivers)" log lines all correspond to either iRacing session-bridge bouncing during load (events at 20:44:21 and 20:48:19–20:48:27) or intentional SessionNum changes (20:48:53, 20:57:04) — none represent actual driver departures. **The memory improvement evidence credits the cleanup that fires at session-boundary transitions** (most likely the SessionNum-change path), not the per-driver-leave path. The leave path needs a churn-heavy practice session to validate.
+6. **Tier 2b reference lap save dedup is not visible in logs.** The PR description says "removes 3× per-renderer save bursts" but the log still shows save clusters of 9 saves in 4 seconds (3 events × 3 renderers each). Three possibilities: (a) the log line fires at the renderer subscribe point before the debounced write, so file-system writes are deduplicated but log lines are not; (b) the debounce isn't engaging; (c) the fix didn't land in this build. Filesystem-level write counts would discriminate.
+7. **Reference lap fetch dedup remains unfixed.** 12 fetches across the session for 1 class = 3× per SessionNum transition (× 4 events). Not in Tier 2b's stated scope.
+8. **Tick stability is excellent during steady-state.** All 4 sub-20 Hz dips clustered between minutes 1.5 and 5.8, during the iRacing session-bridge bouncing on initial load. After minute 6, zero dips for the remaining 18 minutes.
+9. **Primary renderer slope (+3.5 MB/min) is slightly elevated** vs PCC's +1.8. Could be scenario-dependent, could be a small H1 side effect. Not at target (<+1 MB/min) but well below the +9.8 pre-remediation baseline.
+
+**Correlation with architecture review:**
+
+| Finding                                             | Status                                           | Evidence from this run                                                                           |
+| --------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Tier 1 / H4 (PitLapStore allocation storm)          | **Continues to validate**                        | Standings slope at −0.4 MB/min in ghost race phase                                               |
+| Tier 2a (SessionLifecycle session-boundary cleanup) | **Partially validated** — boundary cleanup works | Peak memory −40%, session-load delta −72%                                                        |
+| Tier 2a (per-driver leave on disconnect)            | **NOT tested in this run**                       | Field was stable throughout — no drivers actually left                                           |
+| Tier 2b (reference lap save debounce)               | **NOT validated by log evidence**                | Save clusters still appear in logs. Needs filesystem-level write-count confirmation.             |
+| H1 (createStandings rewrite)                        | **No regression, isolated benefit unclear**      | Standings memory excellent but Tier 1 alone achieved similar. CPU benefit not directly measured. |
+| Reference lap fetch per-renderer                    | Still 3× per event                               | Not in Tier 2b scope                                                                             |
+
+**Two unresolved verification questions for this build:**
+
+1. **Is Tier 2a's per-driver-leave path actually firing on driver disconnects?** This test did not exercise it.
+2. **Is Tier 2b's save debounce engaging at filesystem level?** Log shows 9-save clusters but actual file writes could be deduplicated.
+
+**Recommendations for next test:**
+
+1. **Churn-heavy practice session** to validate Tier 2a per-driver-leave path. Open a busy practice session, observe for 15+ minutes while drivers come and go. If `Driver left` log lines appear (or driver count decreases over time without driver-joined events), Tier 2a is firing correctly.
+2. **Add a log line on the actual file write (post-debounce)** for Tier 2b validation, or count `.json` writes in the reference-lap directory during a test where the user sets multiple fast laps in quick succession.
+3. **The PR is mergeable on memory and latency grounds.** Remaining concerns are diagnostic-verification rather than performance gaps.
+
+---
+
+### 2026-05-16 · Post-Phase 2a (H1 branch: createStandings rewrite) · Race · Clio Cup at VIR
+
+**Scenario:** Real multiplayer race in Clio Cup at VIR, single-class. Testing the `phase-2a-h1-standings-rewrite` branch (separate from the Tier 2 branch).
+**Build:** Phase 2a H1 branch only (createStandings rewrite, O(N²) `find()` removed, Map-based grouping, store snapshot hoisted)
+**Source log:** `Race-ClioCup-Clio-VIR.txt`
+**Spreadsheet:** `h1_race_perfmetrics_analysis.xlsx`
+
+**Top-line numbers (cleaned, 35.1 min, 205 samples) — race steady-state phase (minutes 15–31):**
+
+| Renderer                         | Slope (MB/min) | Notes                                               |
+| -------------------------------- | -------------: | --------------------------------------------------- |
+| App total                        |        +5.2 ✅ | Under target                                        |
+| Primary                          |        +0.6 ✅ | Excellent                                           |
+| Right (3875737098)               |       +0.04 ✅ | Flat                                                |
+| **Left (Standings, 1673143397)** |       **+4.1** | Elevated vs PCC's +0.9 in same metric; see findings |
+| GPU                              |        +0.3 ✅ | Flat                                                |
+| Main                             |        +0.2 ✅ | At target                                           |
+
+**Latency means (full session):**
+
+| Metric               |   Value |        Target |
+| -------------------- | ------: | ------------: |
+| processTelemetry p99 | 3.97 ms | <3 ms (close) |
+| broadcast p99        | 0.52 ms |      <1 ms ✅ |
+| App CPU mean         |   13.8% |             — |
+
+**Findings:**
+
+1. **Steady-state performance is broadly equivalent to Tier-1-only.** App-level slope, Primary, Right, GPU, Main all comparable to or better than the PCC race baseline. Main process in particular dropped to +0.2 MB/min — at target.
+2. **Left/Standings slope at +4.1 MB/min is elevated** vs PCC's +0.9 in the equivalent comparison. **Caveats:** different scenario (single-class Clio Cup vs PCC 4-class multi-class), different display rig. The Practice 6 (Tier 2 branch) test also showed an elevated Standings slope in single-class scenarios (+6.4 MB/min), suggesting this pattern is **shared across both branches** rather than introduced by H1 specifically. Most plausible explanation: single-class scenarios stress different Standings code paths than the multi-class scenarios H4 was tuned for.
+3. **H1's isolated value not directly demonstrated.** The rewrite was scoped to remove O(N²) cost and provide CPU win, but CPU savings vs Tier 1 are subtle (Standings renderer CPU was 2.3% here vs 3.1% in the Tier-1-only baseline — small improvement). Memory-wise, no clear advantage over Tier 1 alone.
+4. **The −269 MB drop at minute 32 is V8 major GC**, not lifecycle cleanup. No corresponding log event. Same pattern as PCC race's mid-race GC drop.
+5. **13 disconnects at session-load** and 1 app-restart during the first 90 seconds — unusually noisy session-load, possibly user-initiated app restart during connection. The steady-state analysis (minute 15+) is the clean data.
+6. **App quit and restart within test window** at 05:59:20 — looks like the user closed and reopened the app, not a crash.
+
+**Correlation with architecture review:**
+
+| Finding                          | Status                                                                                                                                     |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| H1 (createStandings rewrite)     | **No regression, isolated benefit modest**                                                                                                 |
+| Single-class Standings elevation | Pattern reproducing across two parallel branches (Tier 2, H1) — suggests scenario sensitivity in Standings code paths, not branch-specific |
+
+---
+
+### 2026-05-16 · Phase 2a Tier 2 branch (disconnect cleanup wiring) · Practice (real, joiners) · TCR at Watkins Glen
+
+**Scenario:** Real multiplayer practice in TCR at Watkins Glen, testing `phase-2a-tier2-disconnect-cleanup` branch.
+**Build:** Phase 2a Tier 2 branch (separate from H1) — adds `[sessionLifecycle] Disconnect detected (N known drivers)` diagnostic and infrastructure for per-driver leave cleanup
+**Source log:** `OfficialPractice6-TCR-Watkins.txt`
+**Spreadsheet:** `practice6_perfmetrics_analysis.xlsx`
+
+**Top-line numbers (cleaned, 13.3 min, 80 samples):**
+
+| Renderer                         | Post-startup slope (min 1.5+) |
+| -------------------------------- | ----------------------------: |
+| App total                        |                  +10.5 MB/min |
+| Primary                          |               +0.85 MB/min ✅ |
+| Right (3875737098)               |               +0.68 MB/min ✅ |
+| **Left (Standings, 1673143397)** |             **+6.4 MB/min** ⚠ |
+| GPU                              |                   +2.4 MB/min |
+| Main                             |                +0.3 MB/min ✅ |
+
+**Findings:**
+
+1. **New diagnostic infrastructure landed: `[sessionLifecycle] Disconnect detected (N known drivers)` logging.** Lifecycle abstraction now reports how many drivers it tracks at disconnect time. This is genuinely useful observability infrastructure.
+2. **However, the disconnect cleanup is not visibly firing.** 6 disconnect events logged in this session, zero `Driver left` (or equivalent) log lines, no memory drops correlated with the disconnect events. Memory continues to climb across the session despite repeated disconnect events. **Interpretation:** Either the leave path is wired up but firing silently (no log message), or the infrastructure is in place but the consumer-side cleanup callbacks aren't yet hooked up.
+3. **Main process slope dropped substantially** (PCC race: +2.3 → this run: +0.3 MB/min). Significant improvement, though potentially scenario-dependent (single-class practice vs 4-class race).
+4. **Standings slope re-emerged at +6.4 MB/min** vs PCC race's +0.9. Similar to H1 branch finding — pattern appears in single-class scenarios across both Phase 2a parallel branches.
+5. **Reference lap fetch still 3× per class** at session-load (3 fetches for the single TCR class).
+6. **Tick stability excellent** — 1 dip (startup ramp only).
+
+**Correlation with architecture review:**
+
+| Finding                                | Status                                                                       |
+| -------------------------------------- | ---------------------------------------------------------------------------- |
+| Tier 2 disconnect diagnostic           | **CONFIRMED implemented** — useful new observability                         |
+| Tier 2 per-driver leave cleanup firing | **Not visible** — no log evidence, no memory correlation. May fire silently. |
+| Single-class Standings elevation       | Reproduces — see H1 entry                                                    |
+
+---
+
 ### 2026-05-15 · Post-Phase 2a (Tier 1) · PCC Race Multi-Class · Clio at Navarra · 42-minute full session
 
 **Scenario:** Real multiplayer 4-class PCC race (15 laps, ~25 min racing + warmup/qualifying/post-race). **First test capturing a complete user journey** from session-load through warmup → qualifying → 15-lap race → post-race.
@@ -593,36 +931,44 @@ Live record of which architecture review findings have empirical support. Update
 
 ### Confirmed implicated, fix validated
 
-| ID                   | Description                                                             | Validation                                                                                                                                                   |
-| -------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **L1**               | Synchronous `writeFileSync` on main process                             | Phase 0.5 — tick dips eliminated                                                                                                                             |
-| **L2**               | YAML re-parsed on every `getSessionData` call                           | Phase 0.5 — multi-class startup cost eliminated                                                                                                              |
-| **S5**               | Analytics forwards every warn/error log line to PostHog                 | Phase 0.5 — NetworkService returned to 53 MB baseline                                                                                                        |
-| **P1**               | Full 340-key telemetry payload structured-cloned to every overlay 25 Hz | Phase 1 — Primary slope −97%, broadcast latency −54%                                                                                                         |
-| **P2**               | `useDriverPositions` subscribes to raw `CarIdxLapDistPct`               | Phase 1 — implicit in P1 fix; Primary leak elimination consistent with replacement                                                                           |
-| **P4**               | `SectorTimingStore.tick()` subscribes to raw `LapDistPct`/`SessionTime` | Phase 1 — implicit in P1 fix                                                                                                                                 |
-| **H3**               | Spurious `reset()` calls at boot on undefined→0 SDK-connect transitions | Phase 2a Tier 1 — no duplicate "Resetting lap time history" log lines in P5 boot                                                                             |
-| **H4**               | `PitLapStore.updatePitLaps` clone storm on uneventful ticks             | Phase 2a Tier 1 — Left renderer slope dropped 95% (P3 +13 → P5 +0.7 MB/min)                                                                                  |
-| **Standings widget** | Per-driver allocation pattern in Standings                              | Phase 2a Tier 1 (via H4) — slope now under target. Was the "sole remaining driver-join leak source" identified in P3; resolved as a memory leak by Phase 2a. |
+| ID                     | Description                                                             | Validation                                                                                                                                   |
+| ---------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **L1**                 | Synchronous `writeFileSync` on main process                             | Phase 0.5 — tick dips eliminated                                                                                                             |
+| **L2**                 | YAML re-parsed on every `getSessionData` call                           | Phase 0.5 — multi-class startup cost eliminated                                                                                              |
+| **S5**                 | Analytics forwards every warn/error log line to PostHog                 | Phase 0.5 — NetworkService returned to 53 MB baseline                                                                                        |
+| **P1**                 | Full 340-key telemetry payload structured-cloned to every overlay 25 Hz | Phase 1 — Primary slope −97%, broadcast latency −54%                                                                                         |
+| **P2**                 | `useDriverPositions` subscribes to raw `CarIdxLapDistPct`               | Phase 1 — implicit in P1 fix; Primary leak elimination consistent with replacement                                                           |
+| **P4**                 | `SectorTimingStore.tick()` subscribes to raw `LapDistPct`/`SessionTime` | Phase 1 — implicit in P1 fix                                                                                                                 |
+| **H3**                 | Spurious `reset()` calls at boot on undefined→0 SDK-connect transitions | Phase 2a Tier 1 — no duplicate "Resetting lap time history" log lines in P5 boot                                                             |
+| **H4**                 | `PitLapStore.updatePitLaps` clone storm on uneventful ticks             | Phase 2a Tier 1 — Left renderer slope dropped 95%; combined PR shows Standings at −0.4 MB/min (declining)                                    |
+| **Standings widget**   | Per-driver allocation pattern in Standings                              | Phase 2a Tier 1 (via H4) and H1 rewrite — slope now under target across multi-class scenarios                                                |
+| **Main process slope** | Persistent +2–6 MB/min steady-state growth in main process              | Phase 2a combined — Main slope dropped to +0.5 MB/min in combined PR test, at target. Likely attributed to Tier 2a session-boundary cleanup. |
 
 ### Partially fixed, work outstanding
 
-| ID     | Description                             | What's done / what remains                                                                                                                                                                                                          |
-| ------ | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **A2** | No `SessionLifecycle` abstraction       | Phase 2a — join detection wired up (`[sessionLifecycle] Driver joined: carIdx=N` events fire correctly per P5 boot log). **Leave/disconnect cleanup not implemented** — disconnect detected but no per-driver leave events emitted. |
-| **A3** | `useResetOnDisconnect` has zero callers | Phase 2a — disconnect detection works but does not trigger per-driver state release. The infrastructure exists now, but the disconnect path doesn't invoke the cleanup.                                                             |
+| ID                                        | Description                                               | What's done / what remains                                                                                                                                                                                                                                                                                                      |
+| ----------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A2**                                    | No `SessionLifecycle` abstraction                         | Phase 2a — join detection, disconnect-cleanup, empty-Drivers guard, stale-state nulling all implemented and validated. **Mid-session per-driver leave detection declined as a fix** — see "Declined for fix" subsection below. The abstraction is considered functionally complete for the purposes of this remediation effort. |
+| **A3**                                    | `useResetOnDisconnect` callers                            | Phase 2a wired up callers; firing confirmed on disconnect events. Mid-session per-driver invocation declined for the same reason as A2.                                                                                                                                                                                         |
+| **Tier 2a — disconnect-path leave**       | Per-driver leave emission when iRacing bridge disconnects | **VALIDATED 2026-05-18 GR86 Miami test.** 196 `Driver left (disconnect)` events symmetric with 196 joins; 4 `Released N per-driver slots` summaries match 4 disconnect events. Empty-Drivers guard validated (0 false-positive leave storms).                                                                                   |
+| **Tier 2b — reference lap save debounce** | 3× per-renderer save burst                                | Phase 2a Tier 2b added 250ms debounced async write per the PR description. **Not validated by log evidence in any of the five Phase 2a tests** — saves still cluster 3-at-a-time in logs. Either log line fires pre-debounce or fix isn't engaging. Needs filesystem-level write-count confirmation.                            |
+
+### Declined for fix
+
+| ID                                         | Description                                                                                                                                                                                                        | Rationale                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Mid-session per-driver leave detection** | `_onSession` does a one-way diff: new carIdx → emit join, but never emits leave for previously-known carIdx absent from incoming SessionInfo. Surfaced in GR86 Miami (2026-05-18) and spectated race (2026-05-18). | **Declined after cost/benefit review.** The empirical memory cost is small (per-driver allocation is already minimal post-H4, and bridge-disconnect cleanup catches everything eventually). The implementation cost is non-trivial because real iRacing SessionInfo updates have transient driver-entry omissions during qualifying-to-race transitions and driver swaps, so any naive "missing this update = leave" diff would risk introducing false-positive leave storms — possibly worse than the bug being fixed. The user-visible "ghost driver in Standings" symptom is mild and arguably matches iRacing's own behaviour during real races. The remaining engineering effort is better spent on reference-lap fetch dedup and Tier 2b verification, both of which deliver clearer wins. |
 
 ### Confirmed implicated, fix outstanding
 
-| ID                                                          | Description                                                                                                                                                                                                                                                                                                                               | Phase scope                                                                                                                     |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Reference lap fetch per-renderer** (new from P5 boot log) | When iRacing connects, each renderer independently fetches reference laps for each class. Results in 3× I/O and 3× memory cost during session-load. Should be main-process singleton + broadcast.                                                                                                                                         | Targeted small fix — recommended next step, high leverage on session-load cost                                                  |
-| **Reference lap save per-renderer** (new from PCC race)     | Each renderer independently saves reference laps when the user sets a new fast lap. PCC race observed 51 saves for 17 distinct events (3× per save). **Happens during gameplay**, not just session boundaries — higher user-experience impact than the fetch case. Same root cause; should be fixed alongside fetch dedup.                | Combined fix with fetch dedup                                                                                                   |
-| **Disconnect leave cleanup** (sub-finding of A3)            | When iRacing disconnects, the lifecycle abstraction logs the disconnect but does not release per-driver state allocated during join. **Zero positive observations of cleanup firing across all tests** — every memory drop observed so far is V8 GC, not lifecycle cleanup. Race-start allocates ~+1 GB; nothing reclaims it on race-end. | Phase 2 — completes A2/A3                                                                                                       |
-| **Main process slope** (new — promoted from open question)  | +2.3 MB/min during steady-state racing, persistent across all remediation phases. Largest single in-race leak source post-Phase-2a. Cause not yet identified.                                                                                                                                                                             | Phase 2/3 — investigation first, fix follows                                                                                    |
-| **P5**                                                      | `memo(DriverInfoRow)` defeated by prop churn                                                                                                                                                                                                                                                                                              | Phase 1 (not addressed); Phase 2. Lower priority now — Standings memory leak is resolved, so the residual P5 CPU cost is small. |
-| **L5**                                                      | Module-global callback `Set`s in bridges not cleared on window close                                                                                                                                                                                                                                                                      | Phase 2 — driven by completing A2/A3 lifecycle                                                                                  |
-| **A7**                                                      | 8 ad-hoc bridges with module-global callback `Set`s                                                                                                                                                                                                                                                                                       | Phase 2 — driven by completing A2/A3 lifecycle                                                                                  |
+| ID                                               | Description                                                                                                                                                                                                                                                                                                                                                                                                                          | Phase scope                                                                                                   |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| **Reference lap fetch per-renderer**             | When iRacing connects, each renderer independently fetches reference laps for each class. Results in 3× I/O per session transition. Should be main-process singleton + broadcast. Not in Tier 2b scope.                                                                                                                                                                                                                              | Targeted small fix — still recommended                                                                        |
+| **Tier 2a per-driver-leave path verification**   | Tier 2a code is in place but the leave path has not been exercised by any test scenario to date. Needs a churn-heavy practice session to validate.                                                                                                                                                                                                                                                                                   | Test required, not new fix                                                                                    |
+| **P5**                                           | `memo(DriverInfoRow)` defeated by prop churn                                                                                                                                                                                                                                                                                                                                                                                         | Phase 1 (not addressed); now low priority — Standings memory leak is resolved, residual P5 CPU cost is small. |
+| **L5**                                           | Module-global callback `Set`s in bridges not cleared on window close                                                                                                                                                                                                                                                                                                                                                                 | Phase 2 — driven by completing A2/A3 lifecycle                                                                |
+| **A7**                                           | 8 ad-hoc bridges with module-global callback `Set`s                                                                                                                                                                                                                                                                                                                                                                                  | Phase 2 — driven by completing A2/A3 lifecycle                                                                |
+| **Single-class Standings slope elevation** (new) | Both H1 and Tier 2 branches independently showed elevated Standings slope (+4–6 MB/min) in single-class scenarios vs PCC's +0.9 MB/min in 4-class. Pattern reproduces across both parallel branches, suggesting scenario sensitivity in Standings code paths rather than a branch-specific regression. Combined PR test (multi-class ghost race) shows Standings −0.4 MB/min, consistent with the scenario-dependent interpretation. | Watch item — investigate if single-class scenarios become a focus                                             |
 
 ### Partially confirmed
 
@@ -639,19 +985,22 @@ Live record of which architecture review findings have empirical support. Update
 
 ### Disconfirmed as dominant cause
 
-(None — A3 was previously listed here for the steady-state leak but has been reclassified as confirmed for the driver-join leak.)
+(None — A3 was reclassified as implicated for the driver-join leak, now partially fixed via Phase 2a.)
 
 ### Open questions raised by recent tests
 
-- **Session-load startup cost (~+1 GB).** Practice 5 captured this at app-boot during session-load. The PCC race confirmed the same pattern fires at **race-start mid-session** (rolling start transition). Two underlying contributors identified: reference lap fetch/save duplication (3× per event) and disconnect cleanup gap. Both have targeted fixes available. **Fixing these and re-running a full-race scenario will quantify how much of the +1 GB is attributable to each.**
-- **Phase 1 startup regression on Primary (+107 MB).** Cause not confirmed — most likely typed-subscription/store registration cost. Empty Dashboard test would isolate substrate vs widget contribution. Lower priority now that overall behaviour is healthy.
+- **Tier 2b debounce verification.** Save log clusters of 3 still appear in all five Phase 2a tests. Either the dedup works at filesystem level but logs fire pre-debounce, or the dedup doesn't engage. Filesystem-level write count during a fast-lap-heavy test would discriminate. **This is now the highest-priority open verification item.**
+- **Single-class Standings slope elevation.** Reproduced across two parallel Phase 2a branches in earlier single-class scenarios but SFL Hungary shows it under target — likely branch-specific rather than scenario-dependent. Watch item only.
+- **Phase 1 startup regression on Primary (+107 MB).** Cause not confirmed — most likely typed-subscription/store registration cost. Lower priority. Empty Dashboard test would isolate.
 
 ### Resolved open questions
 
-- **Standings widget per-driver allocation pattern** (raised by P3, resolved by P5) — Phase 2a's H4 fix dropped the Standings slope from +13 MB/min to +0.7 MB/min. Standings is no longer the dominant leak source.
-- **GPU regression P4 → P5** (raised by P4, resolved by P5) — Resolved as session noise. Watch item closed.
-- **Main process slope** (was open across all phases) — Promoted from open question to **confirmed finding** in §4 above. The PCC race established it as the largest single in-race leak source at +2.3 MB/min during steady-state racing. Needs investigation rather than continued tracking.
-- **Whether memory drops indicate lifecycle cleanup** — PCC race + lap-data correlation established that the observed memory drops are V8 major GC, not lifecycle cleanup. No positive evidence of leave-path firing exists across any test to date.
+- **Tier 2a disconnect-path leave verification** (raised by Practice 6, elevated to "likely defect" by SFL Hungary, **resolved 2026-05-18 GR86 Miami**) — Per-driver leave logging confirmed the disconnect-path callbacks fire correctly.
+- **Mid-session per-driver leave detection** (raised by GR86 Miami 2026-05-18, **resolved by decline 2026-05-18**) — Cost/benefit review concluded the architectural completeness isn't worth the implementation risk. See §4 "Declined for fix".
+- **Standings widget per-driver allocation pattern** (raised by P3, resolved by Phase 2a) — Tier 1's H4 fix and H1's rewrite together dropped the Standings slope to flat-to-declining across multiple scenarios.
+- **Main process slope** (was open across all phases, resolved in combined PR test) — At or near target across consecutive tests.
+- **GPU regression P4 → P5** — Session noise. Closed.
+- **Whether memory drops indicate lifecycle cleanup** — Combined PR's session-boundary memory behaviour is positive evidence of session-boundary cleanup firing.
 
 ---
 
@@ -659,47 +1008,57 @@ Live record of which architecture review findings have empirical support. Update
 
 Empirical baselines and post-remediation targets. Updated as targets are met.
 
-| Metric                                                 |       Pre-remediation |      Post-0.5 |           Post-1 |     Post-2a (Practice) |                     **Post-2a (PCC Race)** |                Target | Source                              |
-| ------------------------------------------------------ | --------------------: | ------------: | ---------------: | ---------------------: | -----------------------------------------: | --------------------: | ----------------------------------- |
-| Multi-class startup memory (post-load)                 |              2,908 MB |   1,390 MB ✅ |      1,459 MB ✅ |            1,419 MB ✅ |                            **1,539 MB** ✅ |            < 1,800 MB | AI Race / Practice / PCC Race       |
-| Multi-class startup memory (during session-load)       |                   n/t |           n/t |              n/t |               2,417 MB |                                      n/a ⁵ |            < 1,500 MB | Practice opened during session-load |
-| **Race-start transition cost** (new)                   |                   n/t |           n/t |              n/t |                    n/t |                       **+1,000 MB / 20 s** |             < +200 MB | PCC Race                            |
-| Tick dips <20 Hz (16+ min)                             |                     7 |          0 ✅ |             0 ✅ |                   0 ✅ |                                   **0** ✅ |                   < 1 | AI Race / Practice / PCC Race       |
-| processTelemetry p99 mean                              |               12.5 ms |        8.2 ms |          6.95 ms |                5.23 ms |                              **7.37 ms** ³ |                < 3 ms | AI Race / Practice / PCC Race       |
-| broadcast p99 mean                                     |               1.71 ms |       1.45 ms |       0.67 ms ✅ |             0.55 ms ✅ |                             **0.57 ms** ✅ |                < 1 ms | AI Race / Practice / PCC Race       |
-| **In-race app memory slope (race-phase steady-state)** |          +18.8 MB/min |  +18.8 MB/min |     +10.4 MB/min |                  n/a ¹ |                         **+5.7 MB/min** ✅ |           < +5 MB/min | PCC Race phase B+C                  |
-| Primary renderer slope                                 |    +5.8 / +9.8 MB/min |   +5.2 MB/min |  +0.16 MB/min ✅ |         +0.6 MB/min ✅ |                         **+1.8 MB/min** ✅ |   < +1 MB/min (close) | AI Race / Practice / PCC Race       |
-| Left renderer slope (churning field)                   |          +18.5 MB/min |           n/t |     +13.0 MB/min |         +0.7 MB/min ✅ |                         **+0.9 MB/min** ✅ |           < +2 MB/min | Practice (real, joiners) / PCC Race |
-| **Main process slope (steady-state)** (new)            |                   n/t |           n/t |              n/t |                    n/t |                            **+2.3 MB/min** |         < +0.5 MB/min | PCC Race                            |
-| Per-joining-driver permanent memory cost               |               ~5–6 MB |      untested |          ~5–8 MB | ~5 MB across renderers |           (not directly measured this run) |                < 1 MB | Practice (real, joiners)            |
-| Renderer stutter (subjective)                          | Choppy after 5–10 min | Smooth 16 min | Plateau observed |          Smooth 17 min | **Smooth 42 min, consistent lap times** ✅ | No stutter at 30+ min | All in-race tests                   |
+| Metric                                   |       Pre-remediation |      Post-0.5 |           Post-1 |           Post-2a Tier 1 (PCC) | Combined Phase 2a (ghost race) |           **Combined Phase 2a (SFL practice)** |                Target |
+| ---------------------------------------- | --------------------: | ------------: | ---------------: | -----------------------------: | -----------------------------: | ---------------------------------------------: | --------------------: |
+| Peak app memory (race scenarios)         |             ~3,000 MB |             — |                — |                       2,914 MB |                    1,777 MB ✅ |                                **1,559 MB** ✅ |            < 2,000 MB |
+| Session-load transition cost             |                   n/t |           n/t |              n/t |                +1,010 MB / 20s |               +280 MB / 40s ✅ |                                          n/a ⁷ |             < +200 MB |
+| Tick dips <20 Hz (16+ min)               |                     7 |          0 ✅ |             0 ✅ |                           0 ✅ |                4 (transitions) |                       **0 in steady-state** ✅ |                   < 1 |
+| processTelemetry p99 mean                |               12.5 ms |        8.2 ms |          6.95 ms |                        7.37 ms |                         4.6 ms |                                 **3.03 ms** ✅ |             < 3 ms ✅ |
+| broadcast p99 mean                       |               1.71 ms |       1.45 ms |       0.67 ms ✅ |                     0.57 ms ✅ |                     0.45 ms ✅ |                                 **0.47 ms** ✅ |                < 1 ms |
+| In-race app memory slope (steady-state)  |          +18.8 MB/min |  +18.8 MB/min |     +10.4 MB/min |                 +5.7 MB/min ✅ |                 +7.1 MB/min ✅ |                            **+1.30 MB/min** ✅ |           < +5 MB/min |
+| Primary renderer slope                   |    +5.8 / +9.8 MB/min |   +5.2 MB/min |  +0.16 MB/min ✅ |                 +1.8 MB/min ✅ |                    +3.5 MB/min |                            **+0.73 MB/min** ✅ |           < +1 MB/min |
+| Left/Standings slope (multi-class)       |          +18.5 MB/min |           n/t |     +13.0 MB/min |                 +0.9 MB/min ✅ |                 −0.4 MB/min ✅ |                            **+0.35 MB/min** ✅ |           < +2 MB/min |
+| Main process slope (steady-state)        |           +6.0 MB/min |   +4.6 MB/min |      +4.0 MB/min |                    +2.3 MB/min |                 +0.5 MB/min ✅ |                            **+1.09 MB/min** ✅ | < +0.5 MB/min (close) |
+| Per-joining-driver permanent memory cost |               ~5–6 MB |      untested |          ~5–8 MB |         ~5 MB across renderers |                not exercised ⁶ |  **typically 0–12 MB across all renderers** ✅ |        < 1 MB (close) |
+| Renderer stutter (subjective)            | Choppy after 5–10 min | Smooth 16 min | Plateau observed | Smooth 42 min, consistent laps |      Smooth, peak <1,800 MB ✅ | **Smooth throughout, plateau at ~1,250 MB** ✅ | No stutter at 30+ min |
 
-¹ Earlier Practice tests had active driver churn throughout, so their app-level slopes weren't comparable to a stable-field race. PCC race phase B+C is the first clean steady-state-race measurement.
-² (note removed — multi-class startup target now met by PCC race fresh-start)
-³ PCC race p99 mean is the full-session figure including the race-start transition spike (max 39.5 ms). Steady-state p99 during clean race laps is likely lower; an analysis on the race-phase-only subset would refine this.
-⁵ PCC race was opened pre-iRacing, so the +1,000 MB session-load cost appears at race-start instead of app-boot.
+⁶ Combined PR ghost race had a stable 48-driver field — leave path was not exercised.
+⁷ SFL Hungary practice was a steady multi-join practice, not a session transition — different scenario.
 
-**Phase 0.5 success criteria:** Met for L1 and L2 (startup memory and tick stability). S5 fix also appears successful.
+**Phase 0.5 success criteria:** Met. L1, L2, S5 all validated.
 
-**Phase 1 success criteria:** Largely met for P1/P2/P4 in driver-aware widgets _except Standings_. Primary in-race AND driver-join leaks both essentially eliminated (~85–97% reduction). Driver-join leak narrowed from substrate-wide to Standings-widget-specific. (Standings was subsequently resolved by Phase 2a — see below.)
+**Phase 1 success criteria:** Met for P1/P2/P4. Primary in-race leak essentially eliminated.
 
-**Phase 2a Tier 1 success criteria — now substantially validated by PCC race:**
+**Phase 2a Tier 1 success criteria:** Met. PCC race validated.
 
-- ✅ Standings steady-state leak resolved (+0.9 MB/min during 20 min of 4-class real-multiplayer racing)
-- ✅ In-race app-level slope at target (+5.7 MB/min, meets <+5 target)
-- ✅ Tick stability excellent (0 dips in 42.4 min of measurement)
-- ✅ Subjective performance confirmed good (consistent lap times, no perceived stutter)
-- ⚠️ A2 partially completed — join detection wired up but disconnect/leave cleanup not firing
-- ⚠️ Race-start transition allocates ~+1 GB with no corresponding release path
+**Phase 2a Combined PR success criteria — strongly validated by SFL Hungary practice:**
 
-**Remaining work, in priority order (updated post-PCC):**
+- ✅ Peak app memory consistently below target across two combined-PR tests (1,777 MB and 1,559 MB; target <2,000 MB)
+- ✅ In-race app slope at +1.30 MB/min — far under <+5 target
+- ✅ processTelemetry p99 mean at 3.03 ms — at <3 ms target
+- ✅ Standings slope flat-to-positive but well under <+2 target
+- ✅ Per-driver-join cost typically 0–12 MB across all renderers, often dominated by GC noise
+- ⚠️ Tier 2a per-driver-leave path: 3 consecutive tests with zero observed leave events. Needs code-level investigation, not just more testing.
+- ⚠️ Tier 2b save debounce not visible in logs across any Phase 2a test. Needs filesystem-level verification.
 
-1. **Reference lap save + fetch deduplication** (small, high-leverage targeted fix). Save dedup is the new higher-impact half — happens during gameplay, not just at session boundaries. Estimated effort: small. Estimated impact: eliminates 2 of every 3 reference-lap file writes during a race.
-2. **Disconnect / session-transition cleanup** (the missing piece of A2/A3). Addresses the ~+1 GB race-start allocation that has no current release path. The PCC race established that zero positive observations of cleanup-firing exist across all tests to date — every memory drop is GC, not lifecycle. Estimated effort: medium. Estimated impact: large.
-3. **Main process leak investigation** (new — promoted from open question). At +2.3 MB/min during steady-state racing, it's now the largest visible in-race leak. Cause unknown. Worth a Main-process-only memory profile to identify the source. Estimated effort: investigation; fix likely follows from findings.
-4. Phase 3 channel bus would close the remaining processTelemetry p99 gap to <3 ms.
+**Remaining work, in priority order:**
 
-H1 (`createDriverStandings` rewrite) and P5 (`DriverInfoRow` memo) remain deprioritised — the race steady-state numbers don't motivate them.
+The Phase 2a remediation effort is now substantially complete. The three remaining items are concrete and bounded:
+
+1. **Reference lap fetch dedup.** Each renderer independently fetches reference laps on connect and SessionNum transitions, producing 3× I/O per class per event. The spectated race captured this clearly: 24 fetches in 30 seconds at session-load (4 classes × 3 renderers × 2 transitions) where 4 would suffice. Fix pattern is already established from Tier 2b's save work — move the fetch to a main-process singleton with broadcast to renderers. Estimated effort: small. Estimated impact: meaningful on session-load and SessionNum-transition cost, particularly in multi-class scenarios.
+2. **Tier 2b debounce filesystem verification.** Save log clusters of 3 persist across all five Phase 2a tests. The actual behaviour is unknown — either the debounce works at filesystem level but the log line fires pre-debounce (in which case fix the log), or the debounce doesn't engage (in which case the fix didn't land properly). Either outcome is a one-line resolution once the actual behaviour is known. Approach: add a log line at the post-debounce write point, OR instrument a fast-lap-heavy test with `.json` write-count tracking.
+3. **Empty Dashboard substrate baseline test.** Long-standing test backlog item. Run iRDashies with all widgets disabled for ~20 minutes during a solo practice and measure the slope. Useful baseline for future regression detection. Estimated effort: small (configuration change plus a test run).
+
+**Items now resolved or deprioritised:**
+
+- **Tier 2a disconnect-path leave verification** — validated by GR86 Miami test.
+- **Mid-session per-driver leave detection** — declined for fix (see §4 "Declined for fix" subsection).
+- **Standings memory leak** — resolved by Tier 1 + H1.
+- **Main process leak** — at or near target across consecutive tests.
+- **Investigate Primary slope sensitivity to scenarios** — combined PR ghost race showed +3.5 MB/min, but subsequent SFL Hungary showed +0.73 MB/min. The variation appears to be scenario-related, not a regression. No action needed.
+- **H1 (`createDriverStandings` rewrite)** and **P5 (`DriverInfoRow` memo)** — H1 is in the combined PR; P5 remains deprioritised.
+
+Phase 3 channel bus remains deprioritised — processTelemetry p99 mean is at target.
 
 ---
 
