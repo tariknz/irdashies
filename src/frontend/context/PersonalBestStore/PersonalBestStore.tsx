@@ -42,30 +42,33 @@ export const usePersonalBestStore = create<PersonalBestStore>((set, get) => {
     key: string
   ) => {
     try {
-      if (!window.personalBestBridge) {
-        return;
+      let shouldMarkLoaded = false;
+      try {
+        if (!window.personalBestBridge) {
+          return;
+        }
+        const time = await window.personalBestBridge.getPersonalBest(
+          trackId,
+          carName
+        );
+        shouldMarkLoaded = true;
+        if (time != null) {
+          set({
+            personalBests: {
+              ...get().personalBests,
+              [key]: time,
+            },
+          });
+        }
+      } catch (error) {
+        logger.error(
+          `[PersonalBestStore] Failed to load personal best for ${carName} at track ${trackId}:`,
+          error
+        );
+      } finally {
+        pendingPersonalBestLoads.delete(key);
+        if (shouldMarkLoaded) loadedPersonalBestKeys.add(key);
       }
-      const time = await window.personalBestBridge.getPersonalBest(
-        trackId,
-        carName
-      );
-      if (time != null) {
-        set({
-          personalBests: {
-            ...get().personalBests,
-            [key]: time,
-          },
-        });
-      }
-    } catch (error) {
-      logger.error(
-        `[PersonalBestStore] Failed to load personal best for ${carName} at track ${trackId}:`,
-        error
-      );
-    } finally {
-      pendingPersonalBestLoads.delete(key);
-      loadedPersonalBestKeys.add(key);
-    }
   };
 
   return {
