@@ -1,5 +1,9 @@
 import { memo, useCallback, useEffect, useRef } from 'react';
-import { useDashboard, useRunningState } from '@irdashies/context';
+import {
+  useDashboard,
+  useRunningState,
+  useResetOnDisconnect,
+} from '@irdashies/context';
 import type { WidgetLayout } from '@irdashies/types';
 import { WidgetContainer } from '../WidgetContainer';
 import { getWidget } from '../../WidgetIndex';
@@ -16,6 +20,7 @@ export const OverlayContainer = memo(() => {
     containerBoundsInfo,
   } = useDashboard();
   const { running } = useRunningState();
+  useResetOnDisconnect(running);
 
   const handleExitEditMode = useCallback(() => {
     bridge.toggleLockOverlays();

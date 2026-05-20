@@ -1,6 +1,7 @@
 import { useMemo, useRef, useEffect } from 'react';
 import {
   useCurrentSessionType,
+  useRunningState,
   useSessionPositions,
   useSessionStore,
   useTelemetryValue,
@@ -51,6 +52,24 @@ export const useDriverLivePositions = ({
   const p1CarRef = useRef<number | undefined>(undefined);
   const lastProgressRef = useRef<Map<number, number>>(new Map());
   const prevTrackSurfaceRef = useRef<Map<number, number>>(new Map());
+
+  // Clear driver-keyed refs when the sim disconnects so per-driver state
+  // doesn't carry across reconnect cycles. Zustand stores are reset by
+  // useResetOnDisconnect at the OverlayContainer level; component-level
+  // refs need their own cleanup hook.
+  const { running } = useRunningState();
+  const prevRunningRef = useRef(running);
+  useEffect(() => {
+    if (prevRunningRef.current && !running) {
+      lastProgressRef.current.clear();
+      prevTrackSurfaceRef.current.clear();
+      lastLapSnapshotRef.current = undefined;
+      p1LapCompletedRef.current = undefined;
+      p1CarRef.current = undefined;
+    }
+    prevRunningRef.current = running;
+  }, [running]);
+
   const sessionType = useCurrentSessionType();
   const sessionNum = useTelemetryValue('SessionNum');
   const sessionPositions = useSessionPositions(sessionNum);

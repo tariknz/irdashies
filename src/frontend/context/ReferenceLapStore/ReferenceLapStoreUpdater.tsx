@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import {
   useTelemetryValues,
+  useTelemetryValuesRounded,
   useTelemetryValue,
 } from '../TelemetryStore/TelemetryStore';
 import { useReferenceLapStore } from './ReferenceLapStore';
@@ -53,7 +54,7 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seriesId, trackId, sessionNum, trackLength, subSessionId]);
 
-  const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
+  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 4);
   const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
   const sessionTime = useTelemetryValue('SessionTime');
 

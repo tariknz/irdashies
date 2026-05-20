@@ -5,6 +5,7 @@ import {
   useFocusCarIdx,
   useTelemetryValue,
   useTelemetryValues,
+  useTelemetryValuesRounded,
 } from '@irdashies/context';
 import { useCarIdxAverageLapTime } from './useCarIdxAverageLapTime';
 import { SessionState } from '@irdashies/types';
@@ -19,7 +20,7 @@ export const useTotalRaceLaps = () => {
   const lapDistPct = useTelemetryValue('LapDistPct');
   const carIdxLap = useTelemetryValues('CarIdxLap');
   const carIdxPosition = useTelemetryValues('CarIdxPosition');
-  const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
+  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
   const avgLapTimes = useCarIdxAverageLapTime();
   const avgLapTime = avgLapTimes[carIdx];
   const classEstLapTimes = useCarIdxClassEstLapTime();

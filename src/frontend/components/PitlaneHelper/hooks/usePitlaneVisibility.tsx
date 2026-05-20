@@ -1,5 +1,13 @@
 import { useMemo } from 'react';
-import { useTelemetryValue, useTelemetryValues, useFocusCarIdx, useTrackLength, useSessionStore, usePitLaneStore } from '@irdashies/context';
+import {
+  useTelemetryValue,
+  useTelemetryValues,
+  useTelemetryValuesRounded,
+  useFocusCarIdx,
+  useTrackLength,
+  useSessionStore,
+  usePitLaneStore,
+} from '@irdashies/context';
 import { usePitlaneHelperSettings } from './usePitlaneHelperSettings';
 
 export const usePitlaneVisibility = (): boolean => {
@@ -8,8 +16,10 @@ export const usePitlaneVisibility = (): boolean => {
   const isOnTrack = (useTelemetryValue('IsOnTrack') ?? 0) as number;
   const surface = (useTelemetryValue('PlayerTrackSurface') ?? 3) as number;
   const focusCarIdx = useFocusCarIdx();
-  const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
-  const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad') as boolean[] | undefined;
+  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
+  const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad') as
+    | boolean[]
+    | undefined;
   const trackLength = useTrackLength() ?? 0;
   const pitExitPct = usePitLaneStore((state) => state.pitExitPct);
 
@@ -20,8 +30,12 @@ export const usePitlaneVisibility = (): boolean => {
     }
 
     // Get player's OnPitRoad status and position
-    const playerOnPitRoad = focusCarIdx !== undefined ? (carIdxOnPitRoad?.[focusCarIdx] ?? false) : false;
-    const playerPct = focusCarIdx !== undefined ? (carIdxLapDistPct?.[focusCarIdx] ?? 0) : 0;
+    const playerOnPitRoad =
+      focusCarIdx !== undefined
+        ? (carIdxOnPitRoad?.[focusCarIdx] ?? false)
+        : false;
+    const playerPct =
+      focusCarIdx !== undefined ? (carIdxLapDistPct?.[focusCarIdx] ?? 0) : 0;
 
     // Surface values: 1 = in pitbox, 2 = on pit road, 3 = on track
     const onPitRoad = surface === 2;
@@ -101,5 +115,16 @@ export const usePitlaneVisibility = (): boolean => {
 
     // Show if within approach distance and pitbox is ahead
     return distanceToPitbox > 0 && distanceToPitbox <= config.approachDistance;
-  }, [isOnTrack, surface, config.showMode, config.approachDistance, session, focusCarIdx, carIdxLapDistPct, carIdxOnPitRoad, trackLength, pitExitPct]);
+  }, [
+    isOnTrack,
+    surface,
+    config.showMode,
+    config.approachDistance,
+    session,
+    focusCarIdx,
+    carIdxLapDistPct,
+    carIdxOnPitRoad,
+    trackLength,
+    pitExitPct,
+  ]);
 };
