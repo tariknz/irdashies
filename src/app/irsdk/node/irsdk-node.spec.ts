@@ -112,8 +112,8 @@ WeekendInfo:
 DriverInfo:
   DriverCarIdx: 44
   DriverCarEstLapTime: 494.6636
-  DriverSetupName: Garage 61 - CSRL iR t}m\\NOVA
-LAJFKA LASKY\\HYMO_IMSA_26S2_M4GT3\\HYMO_IMSA_26S2_M4GT3_CEND.sto
+  DriverSetupName: Garage 61 - league\\folderA
+folderB\\carSetupDir\\setup_name.sto
   DriverSetupIsModified: 0
   DriverSetupLoadTypeName: user
 `;
@@ -125,9 +125,7 @@ LAJFKA LASKY\\HYMO_IMSA_26S2_M4GT3\\HYMO_IMSA_26S2_M4GT3_CEND.sto
     expect(result).toBeDefined();
     expect(result?.WeekendInfo?.TrackName).toBe('nurburgring combinedlong');
     expect(result?.DriverInfo?.DriverSetupName).toContain('Garage 61');
-    expect(result?.DriverInfo?.DriverSetupName).toContain(
-      'HYMO_IMSA_26S2_M4GT3_CEND.sto'
-    );
+    expect(result?.DriverInfo?.DriverSetupName).toContain('setup_name.sto');
     expect(result?.DriverInfo?.DriverSetupIsModified).toBe(0);
     expect(result?.DriverInfo?.DriverSetupLoadTypeName).toBe('user');
   });
