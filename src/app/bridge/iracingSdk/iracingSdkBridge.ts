@@ -3,6 +3,93 @@ import { OverlayManager } from '../../overlayManager';
 import { TelemetryPerfMetrics } from '../../perfMetrics';
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 import logger from '../../logger';
+import type { SessionLifecycle } from '../../sessionLifecycle';
+
+// Keys consumed by the renderer. Anything outside this set is dropped before
+// the telemetry object crosses the IPC boundary — reducing structured-clone
+// payload from ~340 keys to ~60 and cutting IPC fanout cost (finding P1).
+const TELEMETRY_ALLOWLIST = new Set<keyof Telemetry>([
+  'AirTemp',
+  'BrakeABSactive',
+  'Brake',
+  'CamCarIdx',
+  'CarIdxBestLapTime',
+  'CarIdxClass',
+  'CarIdxClassPosition',
+  'CarIdxEstTime',
+  'CarIdxF2Time',
+  'CarIdxLap',
+  'CarIdxLapCompleted',
+  'CarIdxLapDistPct',
+  'CarIdxLastLapTime',
+  'CarIdxOnPitRoad',
+  'CarIdxPosition',
+  'CarIdxSessionFlags',
+  'CarIdxTireCompound',
+  'CarIdxTrackSurface',
+  'CarLeftRight',
+  'Clutch',
+  'DisplayUnits',
+  'EngineWarnings',
+  'FuelLevel',
+  'FuelLevelPct',
+  'Gear',
+  'IsGarageVisible',
+  'IsInGarage',
+  'IsOnTrack',
+  'IsReplayPlaying',
+  'Lap',
+  'LapBestLapTime',
+  'LapCompleted',
+  'LapCurrentLapTime',
+  'LapDistPct',
+  'LapLastLapTime',
+  'OnPitRoad',
+  'PitstopActive',
+  'PlayerCarInPitStall',
+  'PlayerCarMyIncidentCount',
+  'PlayerCarTeamIncidentCount',
+  'PlayerCarTowTime',
+  'PlayerTrackSurface',
+  'Precipitation',
+  'RPM',
+  'RadioTransmitCarIdx',
+  'RelativeHumidity',
+  'ReplayFrameNum',
+  'SessionFlags',
+  'SessionLapsRemain',
+  'SessionNum',
+  'SessionState',
+  'SessionTime',
+  'SessionTimeOfDay',
+  'SessionTimeRemain',
+  'SessionTimeTotal',
+  'SessionUniqueID',
+  'ShiftGrindRPM',
+  'Speed',
+  'SteeringWheelAngle',
+  'Throttle',
+  'TrackTempCrew',
+  'TrackWetness',
+  'WindDir',
+  'WindVel',
+  'YawNorth',
+  'dcBrakeBias',
+  'dcPeakBrakeBias',
+  'dcPitSpeedLimiterToggle',
+]);
+
+function trimTelemetry(telemetry: Telemetry): Partial<Telemetry> {
+  const trimmed: Partial<Telemetry> = {};
+  for (const key of TELEMETRY_ALLOWLIST) {
+    if (key in telemetry) {
+      (trimmed as Record<string, unknown>)[key] = (
+        telemetry as Record<string, unknown>
+      )[key];
+    }
+  }
+  return trimmed;
+}
 
 // Short timeout for waitForData to avoid blocking the main thread.
 // The native SDK's WaitForSingleObject blocks synchronously, so keep this
@@ -12,7 +99,8 @@ const WAIT_TIMEOUT = 16;
 const RETRY_INTERVAL = 1000;
 
 export async function publishIRacingSDKEvents(
-  overlayManager: OverlayManager
+  overlayManager: OverlayManager,
+  lifecycle?: SessionLifecycle
 ): Promise<IrSdkBridge> {
   logger.info('[iracingSdkBridge] Loading iRacing SDK bridge...');
 
@@ -40,7 +128,11 @@ export async function publishIRacingSDKEvents(
         lastRunningState
       );
     if (latestTelemetry)
-      overlayManager.publishMessageToOverlay(id, 'telemetry', latestTelemetry);
+      overlayManager.publishMessageToOverlay(
+        id,
+        'telemetry',
+        trimTelemetry(latestTelemetry)
+      );
     if (latestSession)
       overlayManager.publishMessageToOverlay(id, 'sessionData', latestSession);
   });
@@ -81,8 +173,9 @@ export async function publishIRacingSDKEvents(
 
         if (telemetry) {
           latestTelemetry = telemetry;
+          lifecycle?._onTelemetry(telemetry);
           perfMetrics.markStart('broadcast');
-          overlayManager.publishMessage('telemetry', telemetry);
+          overlayManager.publishMessage('telemetry', trimTelemetry(telemetry));
           perfMetrics.markEnd('broadcast');
           telemetryCallbacks.forEach((callback) => callback(telemetry));
         }
@@ -98,6 +191,7 @@ export async function publishIRacingSDKEvents(
             lastSessionVersion = sdk.currDataVersion;
             lastSessionPublishTime = now;
             latestSession = session;
+            lifecycle?._onSession(session);
             overlayManager.publishMessage('sessionData', session);
             sessionCallbacks.forEach((callback) => callback(session));
           }
@@ -114,6 +208,13 @@ export async function publishIRacingSDKEvents(
         logger.info(
           '[iracingSdkBridge] iRacing is no longer publishing telemetry'
         );
+        // Release the last telemetry/session snapshots so new overlay windows
+        // opened during a disconnect don't get re-seeded with stale data, and
+        // so the references don't sit in main-process memory indefinitely.
+        // They get repopulated on the next successful waitForData tick.
+        latestTelemetry = null;
+        latestSession = null;
+        lifecycle?._onDisconnect();
       }
 
       await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL));

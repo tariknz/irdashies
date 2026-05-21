@@ -172,6 +172,49 @@ export class IRacingSDK {
   }
 
   /**
+   * Merges continuation lines back into the preceding key's value. iRacing
+   * occasionally emits values that contain a literal newline (e.g. a
+   * DriverSetupName built from a path with `\n` in a folder name), which
+   * produces YAML that fails to parse. We detect lines that don't look like
+   * a valid key, list item, or document marker and fold them into the prior
+   * key's value as a single-quoted scalar.
+   */
+  private static fixMultilineValues(yamlText: string): string {
+    const lines = yamlText.split('\n');
+    const keyLine = /^\s*(?:-\s+)?\w+:(?:\s|$)/;
+    const otherValid = /^\s*$|^\s*#|^\.\.\.\s*$|^---\s*$|^\s*-\s+\S/;
+
+    let lastKeyIdx = -1;
+    let changed = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (keyLine.test(line)) {
+        lastKeyIdx = i;
+      } else if (otherValid.test(line)) {
+        // structurally valid, nothing to merge
+      } else if (lastKeyIdx >= 0) {
+        const match = lines[lastKeyIdx].match(/^(\s*(?:-\s+)?\w+:\s*)(.*)$/);
+        if (match) {
+          const [, keyPart, existing] = match;
+          const unquoted = existing
+            .replace(/^'(.*)'$/, '$1')
+            .replace(/''/g, "'");
+          const merged = `${unquoted.trimEnd()} ${line.trim()}`.replace(
+            /'/g,
+            "''"
+          );
+          lines[lastKeyIdx] = `${keyPart}'${merged}'`;
+          lines[i] = '';
+          changed = true;
+        }
+      }
+    }
+
+    return changed ? lines.join('\n') : yamlText;
+  }
+
+  /**
    * Starts the native iRacing SDK and begins subscribing for data.
    * @returns {boolean} If the SDK started successfully.
    */
@@ -223,9 +266,13 @@ export class IRacingSDK {
       // Handle leading commas in YAML values.
       // First regex will drop the comma if no values follow (e.g. 'field: ,' => 'field: ')
       // Second regex will put value in quotes, if leading comma is followed by values (e.g. 'field: ,data' => 'field: ",data"')
+      // The multiline-value pass handles iRacing setup names that contain a literal
+      // newline (e.g. corrupted DriverSetupName paths), which YAML would otherwise reject.
       const fixedYaml = seshString
-        ?.replace(/(\w+: ) *, *\n/g, '$1 \n')
-        .replace(/(\w+: )(,.*)/g, '$1"$2" \n');
+        ? IRacingSDK.fixMultilineValues(seshString)
+            .replace(/(\w+: ) *, *\n/g, '$1 \n')
+            .replace(/(\w+: )(,.*)/g, '$1"$2" \n')
+        : seshString;
       this._sessionData = yaml.load(fixedYaml, { json: true }) as SessionData;
       this._dataVer = this.currDataVersion;
       return this._sessionData;

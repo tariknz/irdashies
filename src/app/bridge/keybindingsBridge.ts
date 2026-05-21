@@ -21,6 +21,9 @@ export function setupKeybindingsBridge(
     'keybindings:update',
     (_, actionId: KeybindingActionId, accelerator: string) => {
       try {
+        if (!KeybindingManager.isValidAccelerator(accelerator)) {
+          throw new Error(`"${accelerator}" is not a valid keyboard shortcut`);
+        }
         const result = updateKeybinding(actionId, accelerator);
         keybindingManager.reloadBindings();
         rebuildTaskbarMenu();

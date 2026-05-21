@@ -24,7 +24,10 @@ import { Analytics } from './app/analytics';
 import { setupReferenceLapsBridge } from './app/bridge/referenceLapsBridge';
 import { setupKeybindingsBridge } from './app/bridge/keybindingsBridge';
 import { setupLogBridge } from './app/bridge/logBridge';
-import { migrateReferenceLaps } from './app/storage/referenceLaps';
+import {
+  migrateReferenceLaps,
+  flushReferenceLapsOnShutdown,
+} from './app/storage/referenceLaps';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -102,4 +105,7 @@ app.on('quit', () => {
 
 app.on('before-quit', () => {
   overlayManager.markQuitting();
+  // Synchronous flush so any pending debounced reference-lap write completes
+  // before the process exits.
+  flushReferenceLapsOnShutdown();
 });
