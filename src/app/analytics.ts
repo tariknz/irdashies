@@ -12,6 +12,10 @@ import type { LogMessage } from 'electron-log';
 
 declare const POSTHOG_KEY: string;
 
+const DEDUP_WINDOW_MS = 60 * 60 * 1000;
+const DEDUP_KEY_LENGTH = 30;
+const DEDUP_MAX_ENTRIES = 5000;
+
 export interface AnalyticsProvider {
   capture(event: EventMessage): void;
   identify(message: IdentifyMessage): void;
@@ -99,8 +103,6 @@ export class Analytics {
   setupLogTransport(): void {
     if (!this.provider) return;
 
-    const DEDUP_WINDOW_MS = 60 * 60 * 1000;
-    const DEDUP_KEY_LENGTH = 30;
     const lastSent = new Map<string, number>();
 
     const transport = ((message: LogMessage) => {
@@ -113,6 +115,12 @@ export class Analytics {
       const last = lastSent.get(key);
       if (last !== undefined && now - last < DEDUP_WINDOW_MS) return;
       lastSent.set(key, now);
+
+      if (lastSent.size > DEDUP_MAX_ENTRIES) {
+        for (const [k, t] of lastSent) {
+          if (now - t >= DEDUP_WINDOW_MS) lastSent.delete(k);
+        }
+      }
 
       // Not the nicest way to do this, but avoids having to implement OTEL to get logging in posthog
       this.capture({
