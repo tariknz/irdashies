@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   useTelemetryValue,
   useTelemetryValues,
@@ -16,10 +16,18 @@ export const useLapTimesStoreUpdater = (enabled: boolean) => {
   const carIdxLastLapTime = useTelemetryValues('CarIdxLastLapTime');
   const updateLapTimes = useLapTimesStore((state) => state.updateLapTimes);
   const reset = useLapTimesStore((state) => state.reset);
+  const prevSessionNumRef = useRef<number | undefined | null>(undefined);
 
-  // Reset immediately when session changes so stale data is cleared
-  // before any new telemetry arrives
+  // Reset immediately when the session number transitions to a different
+  // real value. Skip the initial undefined→undefined render and the
+  // undefined→0 SDK-connect transition so we don't log spurious resets.
+  // The store also handles session changes defensively in updateLapTimes.
   useEffect(() => {
+    const prev = prevSessionNumRef.current;
+    prevSessionNumRef.current = sessionNum;
+    if (sessionNum === undefined) return;
+    if (prev === undefined) return;
+    if (prev === sessionNum) return;
     reset();
   }, [sessionNum, reset]);
 

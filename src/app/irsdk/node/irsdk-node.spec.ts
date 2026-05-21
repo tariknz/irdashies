@@ -104,6 +104,32 @@ DriverInfo:
     expect(result?.DriverInfo?.Drivers[0]?.UserID).toBe(1195427);
   });
 
+  it('should handle values containing a literal newline (corrupted DriverSetupName)', () => {
+    const malformedYaml = `
+WeekendInfo:
+  TrackName: nurburgring combinedlong
+  TrackID: 264
+DriverInfo:
+  DriverCarIdx: 44
+  DriverCarEstLapTime: 494.6636
+  DriverSetupName: setupRoot\\folderA
+folderB\\carSetupDir\\setup_name.sto
+  DriverSetupIsModified: 0
+  DriverSetupLoadTypeName: user
+`;
+
+    vi.mocked(mockSdk.getSessionData).mockReturnValue(malformedYaml);
+
+    const result = sdk.getSessionData();
+
+    expect(result).toBeDefined();
+    expect(result?.WeekendInfo?.TrackName).toBe('nurburgring combinedlong');
+    expect(result?.DriverInfo?.DriverSetupName).toContain('setupRoot');
+    expect(result?.DriverInfo?.DriverSetupName).toContain('setup_name.sto');
+    expect(result?.DriverInfo?.DriverSetupIsModified).toBe(0);
+    expect(result?.DriverInfo?.DriverSetupLoadTypeName).toBe('user');
+  });
+
   it('should handle quotes in names', () => {
     const malformedYaml = `
 WeekendInfo:
@@ -124,4 +150,4 @@ DriverInfo:
     expect(result?.DriverInfo?.Drivers[0]?.TeamName).toBe("Mike's Team");
     expect(result?.DriverInfo?.Drivers[0]?.UserName).toBe("Coolio O'Brien");
   });
-}); 
+});

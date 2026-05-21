@@ -209,13 +209,18 @@ export const createDriverStandings = (
       }));
   }
 
+  // O(1) carIdx -> Driver lookup; previously we did session.drivers.find() per
+  // result row, which is O(N) per call and O(N²) overall in driver count.
+  const driversByCarIdx = new Map<number, Driver>();
+  session.drivers?.forEach((d) => driversByCarIdx.set(d.CarIdx, d));
+
   // Build a per-class fastest time map for qualifying/practice delta calculations.
   // resultsFastestLap is session-wide only (no class info), so we derive class
   // leaders from results + driver class info instead.
   const classFastestTimeMap = new Map<number, number>();
   results.forEach((result) => {
     if (result.FastestTime <= 0) return;
-    const driver = session.drivers?.find((d) => d.CarIdx === result.CarIdx);
+    const driver = driversByCarIdx.get(result.CarIdx);
     if (!driver) return;
     const classId = driver.CarClassID;
     const current = classFastestTimeMap.get(classId);
@@ -228,7 +233,7 @@ export const createDriverStandings = (
   const classFastestCarIdxMap = new Map<number, number>();
   results.forEach((result) => {
     if (result.FastestTime <= 0) return;
-    const driver = session.drivers?.find((d) => d.CarIdx === result.CarIdx);
+    const driver = driversByCarIdx.get(result.CarIdx);
     if (!driver) return;
     const classId = driver.CarClassID;
     const classBest = classFastestTimeMap.get(classId);
@@ -251,9 +256,7 @@ export const createDriverStandings = (
 
   const mapped = results
     .map((result) => {
-      const driver = session.drivers?.find(
-        (driver) => driver.CarIdx === result.CarIdx
-      );
+      const driver = driversByCarIdx.get(result.CarIdx);
 
       if (!driver) return null;
       const classLeaderFastestTime = classFastestTimeMap.get(driver.CarClassID);
@@ -417,24 +420,32 @@ export const createDriverStandings = (
 };
 
 /**
- * This method will group the standings by class and sort them by relative speed
+ * This method will group the standings by class and sort them by relative speed.
+ *
+ * Returns `[classId, drivers][]` with string class IDs to preserve the previous
+ * Object.entries-shaped output. Uses a Map internally to avoid hash-map allocation
+ * churn on the high-frequency standings memo run.
  */
-export const groupStandingsByClass = (standings: Standings[]) => {
-  // group by class
-  const groupedStandings = standings.reduce(
-    (acc, result) => {
-      if (!result.carClass) return acc;
-      if (!acc[result.carClass.id]) {
-        acc[result.carClass.id] = [];
-      }
-      acc[result.carClass.id].push(result);
-      return acc;
-    },
-    {} as Record<number, typeof standings>
-  );
+export const groupStandingsByClass = (
+  standings: Standings[]
+): [string, Standings[]][] => {
+  const groupedByClassId = new Map<number, Standings[]>();
+  for (const result of standings) {
+    if (!result.carClass) continue;
+    const classId = result.carClass.id;
+    let bucket = groupedByClassId.get(classId);
+    if (!bucket) {
+      bucket = [];
+      groupedByClassId.set(classId, bucket);
+    }
+    bucket.push(result);
+  }
 
-  // sort class by relative speed
-  const sorted = Object.entries(groupedStandings).sort(
+  const sorted: [string, Standings[]][] = [];
+  for (const [classId, drivers] of groupedByClassId) {
+    sorted.push([String(classId), drivers]);
+  }
+  sorted.sort(
     ([, a], [, b]) => b[0].carClass.relativeSpeed - a[0].carClass.relativeSpeed
   );
   return sorted;
@@ -495,6 +506,14 @@ export const augmentStandingsWithGap = (
 ): [string, Standings[]][] => {
   const isRace = sessionType === 'Race';
 
+  // Snapshot the reference-lap store once instead of calling getState() per
+  // driver per tick. The store's internal getReferenceLap still has its own
+  // allocation cost when no reference lap is available — that's owned by the
+  // ReferenceLapStore and tracked separately.
+  const refLapStore = useLivePositionStandings
+    ? useReferenceLapStore.getState()
+    : null;
+
   return groupedStandings.map(([classId, classStandings]) => {
     // Find class leader (lowest class position)
     const classLeader = classStandings[0];
@@ -530,15 +549,18 @@ export const augmentStandingsWithGap = (
 
         if (
           useLivePositionStandings &&
+          refLapStore &&
           classLeaderTrackPct > -1 &&
           driverTrackPct > -1
         ) {
           const driverClassId = driverStanding.carClass.id;
           const isStartingLap = (driverStanding?.lap ?? -1) <= 1;
 
-          const refLap = useReferenceLapStore
-            .getState()
-            .getReferenceLap(driverIdx, driverClassId, isStartingLap);
+          const refLap = refLapStore.getReferenceLap(
+            driverIdx,
+            driverClassId,
+            isStartingLap
+          );
 
           const isOnPitRoadAhead = carIdxOnPitRoad[classLeader.carIdx];
           const isOnPitRoadBehind = carIdxOnPitRoad[driverIdx];

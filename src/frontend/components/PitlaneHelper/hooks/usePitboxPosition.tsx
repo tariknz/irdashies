@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import {
-  useTelemetryValues,
+  useTelemetryValuesRounded,
   useSessionStore,
   useFocusCarIdx,
   useTrackLength,
@@ -24,7 +24,7 @@ export const usePitboxPosition = (
 ): PitboxPositionResult => {
   const session = useSessionStore((state) => state.session);
   const focusCarIdx = useFocusCarIdx();
-  const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
+  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
   const trackLength = useTrackLength() ?? 0;
   const { pitEntryPct, pitExitPct } = usePitLaneStore();
 

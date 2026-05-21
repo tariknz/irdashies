@@ -80,13 +80,22 @@ export class KeybindingManager {
       const handler = this.actionHandlers.get(actionId as KeybindingActionId);
       if (!handler) continue;
 
-      // Skip if already registered (idempotent — safe to call after reloadBindings)
-      if (globalShortcut.isRegistered(entry.accelerator)) continue;
+      try {
+        // Skip if already registered (idempotent — safe to call after reloadBindings)
+        if (globalShortcut.isRegistered(entry.accelerator)) continue;
 
-      const registered = globalShortcut.register(entry.accelerator, handler);
-      if (!registered) {
+        const registered = globalShortcut.register(entry.accelerator, handler);
+        if (!registered) {
+          logger.error(
+            `Failed to register shortcut "${entry.accelerator}" for action "${actionId}"`
+          );
+        }
+      } catch (err) {
+        // Electron throws a TypeError when the accelerator string is not parseable
+        // (e.g. unsupported keys like "Pause"). Skip the bad binding so the rest still register.
         logger.error(
-          `Failed to register shortcut "${entry.accelerator}" for action "${actionId}"`
+          `Invalid accelerator "${entry.accelerator}" for action "${actionId}", skipping:`,
+          err
         );
       }
     }
@@ -94,9 +103,33 @@ export class KeybindingManager {
 
   public unregisterAll(): void {
     for (const entry of Object.values(this.bindings)) {
-      if (globalShortcut.isRegistered(entry.accelerator)) {
-        globalShortcut.unregister(entry.accelerator);
+      try {
+        if (globalShortcut.isRegistered(entry.accelerator)) {
+          globalShortcut.unregister(entry.accelerator);
+        }
+      } catch (err) {
+        logger.error(
+          `Invalid accelerator "${entry.accelerator}" while unregistering, skipping:`,
+          err
+        );
       }
+    }
+  }
+
+  /**
+   * Verifies an accelerator string is parseable by Electron by attempting a
+   * trial registration. Returns true if valid (and leaves no registration behind).
+   */
+  public static isValidAccelerator(accelerator: string): boolean {
+    try {
+      const noop = () => undefined;
+      const registered = globalShortcut.register(accelerator, noop);
+      if (registered) {
+        globalShortcut.unregister(accelerator);
+      }
+      return registered;
+    } catch {
+      return false;
     }
   }
 

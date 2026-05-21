@@ -9,7 +9,7 @@ import path from 'node:path';
 import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
 import { getDashboard } from './storage/dashboards';
-import { getChromiumFlags } from './storage/chromiumFlags';
+import { getChromiumFlags, parseCustomSwitches } from './storage/chromiumFlags';
 import { trackSettingsWindowMovement } from './trackWindowMovement';
 import logger from './logger';
 
@@ -705,19 +705,17 @@ export class OverlayManager {
       app.commandLine.appendSwitch('disable-direct-composition');
     }
 
-    const customSwitches = flags.customSwitches?.trim();
-    if (customSwitches) {
-      for (const rawLine of customSwitches.split(/\r?\n/)) {
-        const line = rawLine.trim().replace(/^--/, '');
-        if (!line || line.startsWith('#')) continue;
-        const eq = line.indexOf('=');
-        if (eq === -1) {
-          app.commandLine.appendSwitch(line);
-        } else {
-          const name = line.slice(0, eq).trim();
-          const value = line.slice(eq + 1).trim();
-          if (name) app.commandLine.appendSwitch(name, value);
-        }
+    // customSwitches is already allowlist-filtered in getChromiumFlags()
+    // (see docs/ARCHITECTURE_REVIEW.md finding S1). Anything unsafe was
+    // dropped at the storage normalisation step; parsing here is a clean,
+    // structural pass over the safe subset.
+    for (const { name, value } of parseCustomSwitches(
+      flags.customSwitches ?? ''
+    )) {
+      if (value === undefined) {
+        app.commandLine.appendSwitch(name);
+      } else {
+        app.commandLine.appendSwitch(name, value);
       }
     }
 

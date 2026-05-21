@@ -2,10 +2,25 @@ import { OverlayManager } from 'src/app/overlayManager';
 import { ipcMain } from 'electron';
 import type { IrSdkBridge } from '@irdashies/types';
 import logger from '../../logger';
+import {
+  createSessionLifecycle,
+  type SessionLifecycle,
+} from '../../sessionLifecycle';
 
 let isDemoMode = false;
 let currentBridge: IrSdkBridge | undefined;
 const onBridgeChangedCallbacks = new Set<(bridge: IrSdkBridge) => void>();
+
+// Singleton lifecycle — created once; survives bridge restarts so subscribers
+// registered before a demo-mode toggle are preserved.
+let sessionLifecycle: SessionLifecycle | undefined;
+
+export function getSessionLifecycle(): SessionLifecycle {
+  if (!sessionLifecycle) {
+    sessionLifecycle = createSessionLifecycle();
+  }
+  return sessionLifecycle;
+}
 
 export function getCurrentBridge(): IrSdkBridge | undefined {
   return currentBridge;
@@ -52,7 +67,8 @@ async function setupBridge(overlayManager: OverlayManager) {
         : await import('./iracingSdkBridge');
 
     const { publishIRacingSDKEvents } = module;
-    currentBridge = await publishIRacingSDKEvents(overlayManager);
+    const lifecycle = isDemoMode ? undefined : getSessionLifecycle();
+    currentBridge = await publishIRacingSDKEvents(overlayManager, lifecycle);
 
     if (onBridgeChangedCallbacks.size > 0 && currentBridge) {
       const bridge = currentBridge;
