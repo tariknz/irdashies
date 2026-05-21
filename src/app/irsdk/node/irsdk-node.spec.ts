@@ -112,7 +112,7 @@ WeekendInfo:
 DriverInfo:
   DriverCarIdx: 44
   DriverCarEstLapTime: 494.6636
-  DriverSetupName: Garage 61 - league\\folderA
+  DriverSetupName: setupRoot\\folderA
 folderB\\carSetupDir\\setup_name.sto
   DriverSetupIsModified: 0
   DriverSetupLoadTypeName: user
@@ -124,7 +124,7 @@ folderB\\carSetupDir\\setup_name.sto
 
     expect(result).toBeDefined();
     expect(result?.WeekendInfo?.TrackName).toBe('nurburgring combinedlong');
-    expect(result?.DriverInfo?.DriverSetupName).toContain('Garage 61');
+    expect(result?.DriverInfo?.DriverSetupName).toContain('setupRoot');
     expect(result?.DriverInfo?.DriverSetupName).toContain('setup_name.sto');
     expect(result?.DriverInfo?.DriverSetupIsModified).toBe(0);
     expect(result?.DriverInfo?.DriverSetupLoadTypeName).toBe('user');
