@@ -9,7 +9,7 @@ import logger from '@irdashies/utils/logger';
 function getClassList(drivers: Driver[], paceCarIdx: number): number[] {
   const paceCarClassId = drivers[paceCarIdx]?.CarClassID ?? -1;
   const classList = Array.from(new Set(drivers.map((d) => d.CarClassID)))
-    .filter((id) => id !== paceCarClassId)
+    .filter((id) => id !== paceCarClassId && id > 0)
     .sort((a, b) => a - b);
 
   return classList;
@@ -38,6 +38,9 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
 
       const seriesId = session.WeekendInfo.SeriesID;
       const trackId = session.WeekendInfo.TrackID;
+
+      if (!seriesId || seriesId <= 0 || !trackId || trackId <= 0) return;
+
       const subSessionId = session.WeekendInfo.SubSessionID;
       const paceCarIdx = session.DriverInfo.PaceCarIdx;
       const drivers = session.DriverInfo.Drivers || [];

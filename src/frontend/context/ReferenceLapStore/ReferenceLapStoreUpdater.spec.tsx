@@ -97,4 +97,112 @@ describe('useReferenceLapStoreUpdater', () => {
 
     expect(collectBulkDataSpy).not.toHaveBeenCalled();
   });
+
+  it('should not initialize when SeriesID is 0 or negative', () => {
+    const initializeSpy = vi.spyOn(
+      useReferenceLapStore.getState(),
+      'initialize'
+    );
+    renderHook(() => useReferenceLapStoreUpdater(mockBridge));
+
+    // Case: SeriesID is 0
+    useSessionStore.setState({
+      session: {
+        WeekendInfo: {
+          SeriesID: 0,
+          TrackID: 2,
+          SubSessionID: 3,
+          TrackLength: '5 km',
+        },
+        DriverInfo: { PaceCarIdx: -1, Drivers: [] },
+      } as unknown as Session,
+    });
+    expect(initializeSpy).not.toHaveBeenCalled();
+
+    // Case: SeriesID is -2
+    useSessionStore.setState({
+      session: {
+        WeekendInfo: {
+          SeriesID: -2,
+          TrackID: 2,
+          SubSessionID: 3,
+          TrackLength: '5 km',
+        },
+        DriverInfo: { PaceCarIdx: -1, Drivers: [] },
+      } as unknown as Session,
+    });
+    expect(initializeSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not initialize when TrackID is 0 or negative', () => {
+    const initializeSpy = vi.spyOn(
+      useReferenceLapStore.getState(),
+      'initialize'
+    );
+    renderHook(() => useReferenceLapStoreUpdater(mockBridge));
+
+    // Case: TrackID is 0
+    useSessionStore.setState({
+      session: {
+        WeekendInfo: {
+          SeriesID: 1,
+          TrackID: 0,
+          SubSessionID: 3,
+          TrackLength: '5 km',
+        },
+        DriverInfo: { PaceCarIdx: -1, Drivers: [] },
+      } as unknown as Session,
+    });
+    expect(initializeSpy).not.toHaveBeenCalled();
+
+    // Case: TrackID is -2
+    useSessionStore.setState({
+      session: {
+        WeekendInfo: {
+          SeriesID: 1,
+          TrackID: -2,
+          SubSessionID: 3,
+          TrackLength: '5 km',
+        },
+        DriverInfo: { PaceCarIdx: -1, Drivers: [] },
+      } as unknown as Session,
+    });
+    expect(initializeSpy).not.toHaveBeenCalled();
+  });
+
+  it('should filter out class IDs that are 0 or negative', () => {
+    const initializeSpy = vi.spyOn(
+      useReferenceLapStore.getState(),
+      'initialize'
+    );
+    renderHook(() => useReferenceLapStoreUpdater(mockBridge));
+
+    useSessionStore.setState({
+      session: {
+        WeekendInfo: {
+          SeriesID: 1,
+          TrackID: 2,
+          SubSessionID: 3,
+          TrackLength: '5 km',
+        },
+        DriverInfo: {
+          PaceCarIdx: -1,
+          Drivers: [
+            { CarIdx: 1, CarClassID: 10 },
+            { CarIdx: 2, CarClassID: 0 },
+            { CarIdx: 3, CarClassID: -1 },
+            { CarIdx: 4, CarClassID: 20 },
+          ],
+        },
+      } as unknown as Session,
+    });
+
+    expect(initializeSpy).toHaveBeenCalledWith(
+      expect.anything(), // bridge
+      1, // seriesId
+      2, // trackId
+      5000, // trackLength
+      [10, 20] // classList - should only have 10 and 20
+    );
+  });
 });

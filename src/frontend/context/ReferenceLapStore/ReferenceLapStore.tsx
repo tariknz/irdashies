@@ -170,7 +170,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
               `[RefLapStore] Failed to load reference lap for class ${classId}:`,
               error
             );
-            return { classId, lap: EMPTY_LAP };
+            return { classId, lap: null };
           }
         })
       );
@@ -246,7 +246,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
           const currentLapTime = refLap.finishTime - refLap.startTime;
           let isPromoted = false;
 
-          if (currentLapTime > 0) {
+          if (currentLapTime > 0 && classId > 0) {
             const persistedLap = persistedLaps.get(classId);
             const persistedLapTime = persistedLap
               ? persistedLap.finishTime - persistedLap.startTime
