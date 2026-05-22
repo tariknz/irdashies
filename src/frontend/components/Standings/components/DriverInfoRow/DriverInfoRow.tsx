@@ -242,7 +242,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     return formatTime(fastestTime, format as TimeFormat);
   }, [fastestTime, config?.fastestTime?.timeFormat]);
 
-  const offTrack = carTrackSurface === 0 ? true : false;
+  const offTrack = carTrackSurface === 0;
 
   const tailwindStyles = useMemo(() => {
     return getTailwindStyle(classColor, highlightColor, isMultiClass);
