@@ -1,19 +1,22 @@
+import { memo } from 'react';
 import carLogoImage from '../../../../assets/img/car_manufacturer.png';
 import { CAR_ID_TO_CAR_MANUFACTURER } from './carManufacturerMapping';
-import { CAR_MANUFACTURER_SPRITE_POSITIONS, SPRITES_PER_ROW, SPRITES_PER_COLUMN } from './carManufacturerSpritePositions';
+import {
+  CAR_MANUFACTURER_SPRITE_POSITIONS,
+  SPRITES_PER_ROW,
+  SPRITES_PER_COLUMN,
+} from './carManufacturerSpritePositions';
 
 interface CarManufacturerProps {
   carId: number;
   className?: string;
 }
 
-export const CarManufacturer = ({
-  carId,
-}: CarManufacturerProps) => {
+export const CarManufacturer = memo(({ carId }: CarManufacturerProps) => {
   const carData = CAR_ID_TO_CAR_MANUFACTURER[carId];
   const carManufacturer = carData?.manufacturer || 'unknown';
 
-  if (carId < 0 || !Object.keys(CAR_MANUFACTURER_SPRITE_POSITIONS).includes(carManufacturer)) {
+  if (carId < 0 || !(carManufacturer in CAR_MANUFACTURER_SPRITE_POSITIONS)) {
     return null;
   }
 
@@ -30,10 +33,9 @@ export const CarManufacturer = ({
         backgroundSize,
         backgroundPosition,
         imageRendering: 'auto',
-        transform: 'translateZ(0)',
-        backfaceVisibility: 'hidden',
-        willChange: 'transform',
       }}
     />
   );
-};
+});
+
+CarManufacturer.displayName = 'CarManufacturer';
