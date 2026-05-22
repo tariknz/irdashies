@@ -5,6 +5,7 @@ import {
   useTelemetryValue,
   useCarIdxClassEstLapTime,
   useTelemetryValues,
+  useTelemetryValuesRounded,
 } from '@irdashies/context';
 import { useCarIdxAverageLapTime } from './useCarIdxAverageLapTime';
 
@@ -17,7 +18,7 @@ export const useTotalRaceTime = () => {
   const lapDistPct = useTelemetryValue('LapDistPct');
   const carIdxLap = useTelemetryValues('CarIdxLap');
   const carIdxPosition = useTelemetryValues('CarIdxPosition');
-  const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
+  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
   const avgLapTimes = useCarIdxAverageLapTime();
   const classEstLapTimes = useCarIdxClassEstLapTime();
   const isFixedLapRace = totalLaps > 0;

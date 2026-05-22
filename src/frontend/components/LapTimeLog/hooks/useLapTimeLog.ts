@@ -72,6 +72,7 @@ export const useLapTimeLog = () => {
   const incidentsAtLapStart = useRef<number>(incidentCount);
   const lastDeltaUpdate = useRef<number>(0);
   const lapTransition = useRef<boolean>(false);
+  const displayTimeRef = useRef<number | undefined>(undefined);
 
   // Get personal best store and load data
   const currentPersonalBest = usePersonalBestStore((state) =>
@@ -142,13 +143,9 @@ export const useLapTimeLog = () => {
   // 3. live tracking during the lap
   useEffect(() => {
     // 3a. get valid time for current lap
-    setDisplayTime(() => {
-      if (lapTransition.current) {
-        return undefined; // hide for milliseconds during transition
-      } else {
-        return currentLapTime;
-      }
-    });
+    const newDisplayTime = lapTransition.current ? undefined : currentLapTime;
+    displayTimeRef.current = newDisplayTime;
+    setDisplayTime(newDisplayTime);
     // 3b. prediction Logic (throttle to 100ms)
     const now = Date.now();
     if (now - lastDeltaUpdate.current >= 100) {
@@ -156,7 +153,7 @@ export const useLapTimeLog = () => {
         const currentDelta = liveDelta ?? 0;
         if (
           deltaCheck &&
-          displayTime &&
+          displayTimeRef.current &&
           currentLapTime > 5 &&
           !lapTransition.current
         ) {
@@ -177,7 +174,6 @@ export const useLapTimeLog = () => {
     });
   }, [
     currentLapTime,
-    displayTime,
     lapCompleted,
     liveDelta,
     deltaCheck,
@@ -189,7 +185,8 @@ export const useLapTimeLog = () => {
   // 4. log lap history and reset
   useEffect(() => {
     // wait for new last lap time
-    const isValidTime = lastLapTime > 0 && lastLapTime !== lastLoggedTime.current;
+    const isValidTime =
+      lastLapTime > 0 && lastLapTime !== lastLoggedTime.current;
     if (!lapTransition.current || !isValidTime) return;
     // prevent duplicates
     if (history.some((entry) => entry.lap === lapCompleted)) return;

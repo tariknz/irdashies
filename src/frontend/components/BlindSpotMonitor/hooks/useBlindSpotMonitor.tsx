@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import {
-  useTelemetryValues,
+  useTelemetryValuesRounded,
   useTelemetryValue,
   useDriverCarIdx,
   useTrackLength,
@@ -20,7 +20,7 @@ interface BlindSpotMonitorState {
 export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
   const carLeftRight =
     useTelemetryValue<CarLeftRight>('CarLeftRight') ?? CarLeftRight.Off;
-  const lapDistPcts = useTelemetryValues<number[]>('CarIdxLapDistPct');
+  const lapDistPcts = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
   const driverCarIdx = useDriverCarIdx() ?? 0;
   const trackLength = useTrackLength();
   const settings = useBlindSpotMonitorSettings();

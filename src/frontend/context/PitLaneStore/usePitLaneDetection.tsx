@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { usePitLaneStore, detectPitTransitions } from './PitLaneStore';
-import { useTelemetryValues } from '../TelemetryStore/TelemetryStore';
+import {
+  useTelemetryValues,
+  useTelemetryValuesRounded,
+} from '../TelemetryStore/TelemetryStore';
 import { useSessionStore } from '../SessionStore/SessionStore';
 import type { PitLaneBridge } from '@irdashies/types';
 
@@ -8,19 +11,24 @@ import type { PitLaneBridge } from '@irdashies/types';
  * Hook that monitors telemetry and detects pit entry/exit positions.
  * This should be mounted once at the app level to continuously track all cars.
  */
-export const usePitLaneDetection = (bridge: PitLaneBridge | Promise<PitLaneBridge>) => {
-  const trackId = useSessionStore((state) => state.session?.WeekendInfo?.TrackID?.toString() ?? null);
-  const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad') as boolean[] | undefined;
-  const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface') as number[] | undefined;
-  const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct') as number[] | undefined;
+export const usePitLaneDetection = (
+  bridge: PitLaneBridge | Promise<PitLaneBridge>
+) => {
+  const trackId = useSessionStore(
+    (state) => state.session?.WeekendInfo?.TrackID?.toString() ?? null
+  );
+  const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad') as
+    | boolean[]
+    | undefined;
+  const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface') as
+    | number[]
+    | undefined;
+  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3) as
+    | number[]
+    | undefined;
 
-  const {
-    currentTrackId,
-    pitEntryPct,
-    pitExitPct,
-    setCurrentTrack,
-    reset,
-  } = usePitLaneStore();
+  const { currentTrackId, pitEntryPct, pitExitPct, setCurrentTrack, reset } =
+    usePitLaneStore();
 
   // Use refs to track previous values and only call detectPitTransitions when data actually changes
   // This prevents running expensive operations at 60 FPS when nothing has changed
@@ -30,7 +38,11 @@ export const usePitLaneDetection = (bridge: PitLaneBridge | Promise<PitLaneBridg
     carIdxLapDistPct?: number[];
   }>({});
 
-  const persistenceRef = useRef<{ trackId: string; entry: number | null; exit: number | null }>({
+  const persistenceRef = useRef<{
+    trackId: string;
+    entry: number | null;
+    exit: number | null;
+  }>({
     trackId: '',
     entry: null,
     exit: null,
@@ -47,7 +59,8 @@ export const usePitLaneDetection = (bridge: PitLaneBridge | Promise<PitLaneBridg
     // Track changed
     if (trackId !== currentTrackId) {
       const loadData = async () => {
-        const resolvedBridge = bridge instanceof Promise ? await bridge : bridge;
+        const resolvedBridge =
+          bridge instanceof Promise ? await bridge : bridge;
         const data = await resolvedBridge.getPitLaneData(trackId);
         setCurrentTrack(trackId, data);
         prevTelemetryRef.current = {};
@@ -63,7 +76,12 @@ export const usePitLaneDetection = (bridge: PitLaneBridge | Promise<PitLaneBridg
 
   // Detect pit entry/exit transitions
   useEffect(() => {
-    if (!carIdxOnPitRoad || !carIdxTrackSurface || !carIdxLapDistPct || !trackId) {
+    if (
+      !carIdxOnPitRoad ||
+      !carIdxTrackSurface ||
+      !carIdxLapDistPct ||
+      !trackId
+    ) {
       return;
     }
 
@@ -75,7 +93,11 @@ export const usePitLaneDetection = (bridge: PitLaneBridge | Promise<PitLaneBridg
       prev.carIdxTrackSurface !== carIdxTrackSurface ||
       prev.carIdxLapDistPct !== carIdxLapDistPct
     ) {
-      detectPitTransitions(carIdxOnPitRoad, carIdxTrackSurface, carIdxLapDistPct);
+      detectPitTransitions(
+        carIdxOnPitRoad,
+        carIdxTrackSurface,
+        carIdxLapDistPct
+      );
       prevTelemetryRef.current = {
         carIdxOnPitRoad,
         carIdxTrackSurface,
@@ -96,11 +118,13 @@ export const usePitLaneDetection = (bridge: PitLaneBridge | Promise<PitLaneBridg
 
     if (entryChanged || exitChanged) {
       const updates: { pitEntryPct?: number; pitExitPct?: number } = {};
-      if (entryChanged && pitEntryPct !== null) updates.pitEntryPct = pitEntryPct;
+      if (entryChanged && pitEntryPct !== null)
+        updates.pitEntryPct = pitEntryPct;
       if (exitChanged && pitExitPct !== null) updates.pitExitPct = pitExitPct;
 
       const updateData = async () => {
-        const resolvedBridge = bridge instanceof Promise ? await bridge : bridge;
+        const resolvedBridge =
+          bridge instanceof Promise ? await bridge : bridge;
         await resolvedBridge.updatePitLaneData(trackId, updates);
       };
       updateData();

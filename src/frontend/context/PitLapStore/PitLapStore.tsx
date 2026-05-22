@@ -7,8 +7,8 @@ interface PitLapState {
   sessionUniqId: number;
   pitLaps: number[]; // [carIdx]
   carLaps: number[]; // [carIdx]
-  actualCarTrackSurface: number[]
-  prevCarTrackSurface: number[] // [carIdx],
+  actualCarTrackSurface: number[];
+  prevCarTrackSurface: number[]; // [carIdx],
   sessionTime: number;
   sessionState: number;
   pitEntryTime: (number | null)[]; // [carIdx]
@@ -38,39 +38,64 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
   pitExitTime: [],
   prevOnPitRoad: [],
   entryLap: [],
-  updatePitLaps: (carIdxOnPitRoad, carIdxLap, currentSessionUniqId, currentSessionTime, carIdxTrackSurface, sessionState) => {
-    const { sessionUniqId, pitLaps, sessionTime, prevCarTrackSurface, actualCarTrackSurface, pitEntryTime, pitExitTime, prevOnPitRoad, entryLap } = get();
+  updatePitLaps: (
+    carIdxOnPitRoad,
+    carIdxLap,
+    currentSessionUniqId,
+    currentSessionTime,
+    carIdxTrackSurface,
+    sessionState
+  ) => {
+    const {
+      sessionUniqId,
+      pitLaps,
+      sessionTime,
+      prevCarTrackSurface,
+      actualCarTrackSurface,
+      pitEntryTime,
+      pitExitTime,
+      prevOnPitRoad,
+      entryLap,
+    } = get();
 
     // reset store when session was changed
-    if ((sessionUniqId !== 0 && currentSessionUniqId !== sessionUniqId) || sessionTime > currentSessionTime) {
-      set({ sessionUniqId: currentSessionUniqId,
-            pitLaps: [],
-            carLaps: [],
-            actualCarTrackSurface: [],
-            prevCarTrackSurface: [],
-            pitEntryTime: [],
-            pitExitTime: [],
-            prevOnPitRoad: [],
-            entryLap: [],
-            sessionTime: currentSessionTime,
-            sessionState: sessionState
-      })
-      return
+    if (
+      (sessionUniqId !== 0 && currentSessionUniqId !== sessionUniqId) ||
+      sessionTime > currentSessionTime
+    ) {
+      set({
+        sessionUniqId: currentSessionUniqId,
+        pitLaps: [],
+        carLaps: [],
+        actualCarTrackSurface: [],
+        prevCarTrackSurface: [],
+        pitEntryTime: [],
+        pitExitTime: [],
+        prevOnPitRoad: [],
+        entryLap: [],
+        sessionTime: currentSessionTime,
+        sessionState: sessionState,
+      });
+      return;
     }
 
-    const updatedPitEntryTime = [...pitEntryTime];
-    const updatedPitExitTime = [...pitExitTime];
-    const updatedPrevOnPitRoad = [...prevOnPitRoad];
-    const updatedEntryLap = [...entryLap];
+    // Defer cloning — only create new arrays when we actually need to mutate them.
+    // This avoids 4× per-tick allocations of 64-element arrays when nothing changed.
+    let updatedPitEntryTime: (number | null)[] | null = null;
+    let updatedPitExitTime: (number | null)[] | null = null;
+    let updatedPrevOnPitRoad: boolean[] | null = null;
+    let updatedEntryLap: number[] | null = null;
+    let pitLapsChanged = false;
 
     carIdxOnPitRoad.forEach((onPitRoad, idx) => {
-      const wasOnPitRoad = updatedPrevOnPitRoad[idx] ?? false;
+      const wasOnPitRoad = prevOnPitRoad[idx] ?? false;
       const trackSurface = carIdxTrackSurface[idx] ?? -1;
       const currentLap = carIdxLap[idx] ?? -1;
-      const lastEntryLap = updatedEntryLap[idx] ?? -1;
+      const lastEntryLap = entryLap[idx] ?? -1;
 
-      if (onPitRoad) {
+      if (onPitRoad && pitLaps[idx] !== currentLap) {
         pitLaps[idx] = currentLap;
+        pitLapsChanged = true;
       }
 
       if (!wasOnPitRoad && onPitRoad) {
@@ -79,6 +104,9 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
         const lapChanged = currentLap > 0 && currentLap !== lastEntryLap;
 
         if (isRacing && isOnPitRoadSurface && lapChanged) {
+          if (!updatedPitEntryTime) updatedPitEntryTime = [...pitEntryTime];
+          if (!updatedPitExitTime) updatedPitExitTime = [...pitExitTime];
+          if (!updatedEntryLap) updatedEntryLap = [...entryLap];
           updatedPitEntryTime[idx] = currentSessionTime;
           updatedPitExitTime[idx] = null;
           updatedEntryLap[idx] = currentLap;
@@ -90,36 +118,84 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
         const isSessionActive = sessionState < SessionState.Checkered;
 
         if (hasExitedPitRoad && isSessionActive) {
+          if (!updatedPitExitTime) updatedPitExitTime = [...pitExitTime];
           updatedPitExitTime[idx] = currentSessionTime;
         }
       }
 
-      if (sessionState >= SessionState.Checkered && updatedPitEntryTime[idx] !== null && updatedPitExitTime[idx] === null) {
+      const currentEntryTime = (updatedPitEntryTime ?? pitEntryTime)[idx];
+      const currentExitTime = (updatedPitExitTime ?? pitExitTime)[idx];
+      if (
+        sessionState >= SessionState.Checkered &&
+        currentEntryTime !== null &&
+        currentExitTime === null
+      ) {
+        if (!updatedPitEntryTime) updatedPitEntryTime = [...pitEntryTime];
         updatedPitEntryTime[idx] = null;
       }
 
-      updatedPrevOnPitRoad[idx] = onPitRoad;
-    });
-
-    carIdxTrackSurface.forEach((location, idx) => {
-      if (actualCarTrackSurface[idx] !== location && sessionState < SessionState.Checkered && location != -1) {
-        prevCarTrackSurface[idx] = actualCarTrackSurface[idx];
-        actualCarTrackSurface[idx] = location;
+      if (prevOnPitRoad[idx] !== onPitRoad) {
+        if (!updatedPrevOnPitRoad) updatedPrevOnPitRoad = [...prevOnPitRoad];
+        updatedPrevOnPitRoad[idx] = onPitRoad;
       }
     });
 
+    // Clone track-surface arrays only when at least one slot actually changes.
+    // Previously these were mutated in place then re-set with the same reference,
+    // which prevented arrayCompare-based subscribers from detecting changes.
+    let updatedPrevCarTrackSurface: number[] | null = null;
+    let updatedActualCarTrackSurface: number[] | null = null;
+    carIdxTrackSurface.forEach((location, idx) => {
+      if (
+        actualCarTrackSurface[idx] !== location &&
+        sessionState < SessionState.Checkered &&
+        location != -1
+      ) {
+        if (!updatedPrevCarTrackSurface)
+          updatedPrevCarTrackSurface = [...prevCarTrackSurface];
+        if (!updatedActualCarTrackSurface)
+          updatedActualCarTrackSurface = [...actualCarTrackSurface];
+        updatedPrevCarTrackSurface[idx] = actualCarTrackSurface[idx];
+        updatedActualCarTrackSurface[idx] = location;
+      }
+    });
+
+    const prevState = get();
+    const carLapsChanged = carIdxLap !== prevState.carLaps;
+    const sessionTimeChanged = sessionTime !== currentSessionTime;
+    const sessionStateChanged = prevState.sessionState !== sessionState;
+    const sessionUniqIdChanged = sessionUniqId !== currentSessionUniqId;
+
+    const anythingChanged =
+      pitLapsChanged ||
+      updatedPitEntryTime !== null ||
+      updatedPitExitTime !== null ||
+      updatedPrevOnPitRoad !== null ||
+      updatedEntryLap !== null ||
+      updatedPrevCarTrackSurface !== null ||
+      updatedActualCarTrackSurface !== null ||
+      carLapsChanged ||
+      sessionTimeChanged ||
+      sessionStateChanged ||
+      sessionUniqIdChanged;
+
+    if (!anythingChanged) return;
+
     set({
-      pitLaps: pitLaps,
+      // pitLaps is mutated in place above when a car is on pit road; create a new
+      // reference so subscribers using arrayCompare can detect the change.
+      pitLaps: pitLapsChanged ? [...pitLaps] : pitLaps,
       carLaps: carIdxLap,
-      prevCarTrackSurface: prevCarTrackSurface,
-      actualCarTrackSurface: actualCarTrackSurface,
-      pitEntryTime: updatedPitEntryTime,
-      pitExitTime: updatedPitExitTime,
-      prevOnPitRoad: updatedPrevOnPitRoad,
-      entryLap: updatedEntryLap,
+      prevCarTrackSurface: updatedPrevCarTrackSurface ?? prevCarTrackSurface,
+      actualCarTrackSurface:
+        updatedActualCarTrackSurface ?? actualCarTrackSurface,
+      pitEntryTime: updatedPitEntryTime ?? pitEntryTime,
+      pitExitTime: updatedPitExitTime ?? pitExitTime,
+      prevOnPitRoad: updatedPrevOnPitRoad ?? prevOnPitRoad,
+      entryLap: updatedEntryLap ?? entryLap,
       sessionTime: currentSessionTime,
       sessionState: sessionState,
-      sessionUniqId: currentSessionUniqId
+      sessionUniqId: currentSessionUniqId,
     });
   },
   reset: () => {
@@ -150,7 +226,8 @@ function calculatePitStopDuration(
   }
 
   const entry = Math.round(entryTime);
-  const exit = exitTime != null ? Math.round(exitTime) : Math.round(currentSessionTime);
+  const exit =
+    exitTime != null ? Math.round(exitTime) : Math.round(currentSessionTime);
   const duration = Math.max(exit, entry) - entry;
 
   const isSessionEnded = sessionState >= SessionState.Checkered;
@@ -167,9 +244,24 @@ function calculatePitStopDuration(
 /**
  * @returns An array of average lap times for each car in the session by index. Time value in seconds
  */
-export const usePitLap = (): number[] => useStoreWithEqualityFn(usePitLapStore, (state) => state.pitLaps, arrayCompare);
-export const useCarLap = (): number[] => useStoreWithEqualityFn(usePitLapStore, (state) => state.carLaps, arrayCompare);
-export const usePrevCarTrackSurface = (): number[] => useStoreWithEqualityFn(usePitLapStore, (state) => state.prevCarTrackSurface, arrayCompare);
+export const usePitLap = (): number[] =>
+  useStoreWithEqualityFn(
+    usePitLapStore,
+    (state) => state.pitLaps,
+    arrayCompare
+  );
+export const useCarLap = (): number[] =>
+  useStoreWithEqualityFn(
+    usePitLapStore,
+    (state) => state.carLaps,
+    arrayCompare
+  );
+export const usePrevCarTrackSurface = (): number[] =>
+  useStoreWithEqualityFn(
+    usePitLapStore,
+    (state) => state.prevCarTrackSurface,
+    arrayCompare
+  );
 
 /**
  * @returns An array of pit stop durations in seconds for each car by index. Returns null for cars not in pit or with invalid durations.
