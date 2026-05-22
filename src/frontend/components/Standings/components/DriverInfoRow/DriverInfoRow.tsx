@@ -2,7 +2,7 @@ import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
 import { useDashboard } from '@irdashies/context';
-import type { ResolvedDriverTag } from '../../hooks/useDriverTagMap';
+import type { ResolvedDriverTag } from '../../hooks';
 import type { Gap, LastTimeState } from '../../createStandings';
 import type {
   RelativeWidgetSettings,
