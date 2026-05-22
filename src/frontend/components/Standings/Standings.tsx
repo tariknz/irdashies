@@ -20,6 +20,8 @@ import {
   useWeekendInfoTeamRacing,
   useSessionVisibility,
   useCarIdxRollingAvgLapTime,
+  usePitStopDuration,
+  usePitLaneStore,
 } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 
@@ -46,6 +48,10 @@ export const Standings = () => {
   const avgLapTimes = useCarIdxRollingAvgLapTime(
     settings?.avgLapTime?.numLaps ?? 5
   );
+
+  const pitStopDurations = usePitStopDuration();
+  const pitExitPct = usePitLaneStore((s) => s.pitExitPct);
+  const pitExitAfterSF = pitExitPct !== null && pitExitPct > 0.85;
 
   // Determine whether we should hide the car manufacturer column
   const isSingleMake = useIsSingleMake();
@@ -242,6 +248,8 @@ export const Standings = () => {
                         repair={result.repair}
                         penalty={result.penalty}
                         slowdown={result.slowdown}
+                        pitStopDuration={pitStopDurations[result.carIdx]}
+                        pitExitAfterSF={pitExitAfterSF}
                         hideCarManufacturer={hideCarManufacturer}
                         compactMode={generalSettings?.compactMode}
                       />

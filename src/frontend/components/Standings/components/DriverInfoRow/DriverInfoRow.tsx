@@ -1,11 +1,7 @@
 import { memo, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
-import {
-  usePitStopDuration,
-  usePitLaneStore,
-  useDashboard,
-} from '@irdashies/context';
+import { useDashboard } from '@irdashies/context';
 import type { ResolvedDriverTag } from '../../hooks/useDriverTagMap';
 import type { Gap, LastTimeState } from '../../createStandings';
 import type {
@@ -71,6 +67,7 @@ interface DriverRowInfoProps {
   carTrackSurface?: number;
   currentSessionType?: string;
   pitStopDuration?: number | null;
+  pitExitAfterSF?: boolean;
   highlightColor?: number;
   dnf: boolean;
   repair: boolean;
@@ -224,23 +221,16 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     penalty,
     slowdown,
     deltaDecimalPlaces,
-    pitStopDuration: pitStopDurationProp,
+    pitStopDuration,
+    pitExitAfterSF,
     hideCarManufacturer,
     resolvedTag,
     hasAnyDriverTag,
     compactMode,
   } = displayProps;
-  const pitStopDurations = usePitStopDuration();
-  const pitStopDuration =
-    pitStopDurationProp ?? pitStopDurations[carIdx] ?? null;
-
-  const pitExitPct = usePitLaneStore((s) => s.pitExitPct);
 
   const { currentDashboard } = useDashboard();
   const tagSettings = currentDashboard?.generalSettings?.driverTagSettings;
-  // When pit exit is in the last 15% of the lap, the S/F line is reached
-  // very shortly after exiting pits. OUT must persist for one extra lap count.
-  const pitExitAfterSF = pitExitPct !== null && pitExitPct > 0.85;
 
   const lastTimeString = useMemo(() => {
     const format = config?.lastTime?.timeFormat ?? 'full';
