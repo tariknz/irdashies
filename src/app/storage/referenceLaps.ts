@@ -36,26 +36,27 @@ let writeInFlight: Promise<void> | null = null;
  * One-time migration to clear old reference lap data.
  * This should be removed in a future version.
  */
-export const migrateReferenceLaps = () => {
-  const MIGRATION_KEY = 'referenceLapsCleared_2026_5';
-  const isMigrated = readData<boolean>(MIGRATION_KEY);
+export const validateReferenceLapFile = () => {
+  const VERSION = '1.0.0';
+  const VERSION_KEY = 'version';
+  const isCurrent = readData<string>(VERSION_KEY, filePath) === VERSION;
 
-  if (!isMigrated) {
+  if (!isCurrent) {
     if (fs.existsSync(filePath)) {
       try {
         fs.unlinkSync(filePath);
         logger.info('One-time cleanup of referenceLaps.json performed');
       } catch (error) {
         logger.error(
-          'Failed to delete referenceLaps.json during migration:',
+          'Failed to delete referenceLaps.json during initialization:',
           error
         );
       }
     }
     try {
-      writeData(MIGRATION_KEY, true);
+      writeData(VERSION_KEY, VERSION, filePath);
     } catch (error) {
-      logger.error('Failed to persist migration flag:', error);
+      logger.error('Failed to persist version flag:', error);
     }
   }
 };
