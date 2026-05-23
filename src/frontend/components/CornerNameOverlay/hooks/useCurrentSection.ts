@@ -15,12 +15,15 @@ interface CurrentSectionResult {
 export const useCurrentSection = (): CurrentSectionResult => {
   const { sections } = useLovelyTrackData();
   // 3dp ≈ 5m on a 5km track — matches SectorDelta precision
-  const lapDistPct = useTelemetryValueRounded('LapDistPct', 3) ?? 0;
+  const rawLapDistPct = useTelemetryValueRounded('LapDistPct', 3);
 
   return useMemo(() => {
-    if (sections.length === 0) {
+    if (sections.length === 0 || rawLapDistPct == null) {
       return { section: null, progress: 0 };
     }
+
+    // Normalize to [0, 1) — rounded telemetry can land exactly on 1.000.
+    const lapDistPct = ((rawLapDistPct % 1) + 1) % 1;
 
     // Find the section containing the current lap distance
     const current = sections.find(
@@ -45,7 +48,7 @@ export const useCurrentSection = (): CurrentSectionResult => {
             : 1 - wrapping.start_pct + lapDistPct;
         return {
           section: wrapping,
-          progress: width > 0 ? offset / width : 0,
+          progress: width > 0 ? Math.min(1, Math.max(0, offset / width)) : 0,
         };
       }
       return { section: null, progress: 0 };
@@ -56,5 +59,5 @@ export const useCurrentSection = (): CurrentSectionResult => {
     const progress = width > 0 ? Math.min(1, Math.max(0, offset / width)) : 0;
 
     return { section: current, progress };
-  }, [sections, lapDistPct]);
+  }, [sections, rawLapDistPct]);
 };

@@ -99,11 +99,19 @@ const mapTurn = (
   };
 };
 
-const mapStraight = (raw: LovelyStraight): LovelyTrackSection | null => {
+const mapStraight = (
+  raw: LovelyStraight,
+  index: number,
+  usedIds: Set<string>
+): LovelyTrackSection | null => {
   if (raw.start === undefined || raw.end === undefined) return null;
   const name = raw.name ?? 'Straight';
+  const baseId = slugify(name);
+  // Deterministic suffix when repeated (e.g. multiple unnamed "Straight" entries)
+  const section_id = usedIds.has(baseId) ? `${baseId}_${index}` : baseId;
+  usedIds.add(section_id);
   return {
-    section_id: slugify(name),
+    section_id,
     name,
     type: 'straight',
     start_pct: raw.start,
@@ -130,8 +138,9 @@ export const mapLovelyToTrackData = (
   const turns = (raw.turn ?? [])
     .map((t) => mapTurn(t, unnamedIdx))
     .filter((s): s is LovelyTrackSection => s !== null);
+  const usedStraightIds = new Set<string>();
   const straights = (raw.straight ?? [])
-    .map(mapStraight)
+    .map((s, i) => mapStraight(s, i, usedStraightIds))
     .filter((s): s is LovelyTrackSection => s !== null);
 
   // Merge for the overlay; keep straights separately on info too so consumers

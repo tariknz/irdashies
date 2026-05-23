@@ -71,6 +71,9 @@ const FORCE_FETCH = process.argv.includes('--force');
 // Max age: 7 days in milliseconds
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
+// Abort an HTTPS request after this many ms of no progress
+const REQUEST_TIMEOUT_MS = 15_000;
+
 /**
  * Check if the bundle file exists and is recent enough
  */
@@ -105,29 +108,35 @@ function shouldSkipFetch(): boolean {
  */
 function fetchJson<T>(url: string): Promise<T> {
   return new Promise((resolve, reject) => {
-    https
-      .get(url, (res) => {
-        let data = '';
+    const req = https.get(url, (res) => {
+      let data = '';
 
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-
-        res.on('end', () => {
-          try {
-            if (res.statusCode === 200) {
-              resolve(JSON.parse(data));
-            } else {
-              reject(new Error(`HTTP ${res.statusCode}: ${url}`));
-            }
-          } catch (error) {
-            reject(error);
-          }
-        });
-      })
-      .on('error', (error) => {
-        reject(error);
+      res.on('data', (chunk) => {
+        data += chunk;
       });
+
+      res.on('end', () => {
+        try {
+          if (res.statusCode === 200) {
+            resolve(JSON.parse(data));
+          } else {
+            reject(new Error(`HTTP ${res.statusCode}: ${url}`));
+          }
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      reject(error);
+    });
+
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      req.destroy(
+        new Error(`Request timed out after ${REQUEST_TIMEOUT_MS}ms: ${url}`)
+      );
+    });
   });
 }
 
@@ -209,6 +218,18 @@ function createBundle(tracks: LovelyTrack[]): TrackDataBundle {
   };
 
   for (const track of tracks) {
+    if (!track.trackId) {
+      console.warn(
+        `Skipping track with missing trackId: ${track.name ?? '(unnamed)'}`
+      );
+      continue;
+    }
+    if (track.trackId in bundle.tracks) {
+      console.warn(
+        `Duplicate trackId "${track.trackId}" — keeping first ("${bundle.tracks[track.trackId].name}"), dropping later ("${track.name}")`
+      );
+      continue;
+    }
     bundle.tracks[track.trackId] = track;
   }
 
