@@ -1,86 +1,125 @@
-import { useEffect, useMemo } from 'react';
-import {
-  useTelemetryValues,
-  useTelemetryValuesRounded,
-  useTelemetryValue,
-} from '../TelemetryStore/TelemetryStore';
+import { useEffect, useRef } from 'react';
+import { useTelemetryStore } from '../TelemetryStore/TelemetryStore';
 import { useReferenceLapStore } from './ReferenceLapStore';
 import type { ReferenceLapBridge } from '../../../types/referenceLaps';
-import { TrackLocation } from '@irdashies/types';
-import {
-  useSessionDrivers,
-  useSessionStore,
-  useTrackLength,
-} from '../SessionStore/SessionStore';
+import { useSessionStore } from '../SessionStore/SessionStore';
 import { Driver } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
 
-const EMPTY_DRIVER_ARRAY = [] as Driver[];
+function getClassList(drivers: Driver[], paceCarIdx: number): number[] {
+  const paceCarClassId = drivers[paceCarIdx]?.CarClassID ?? -1;
+  const classList = Array.from(new Set(drivers.map((d) => d.CarClassID)))
+    .filter((id) => id !== paceCarClassId && id > 0)
+    .sort((a, b) => a - b);
+
+  return classList;
+}
 
 export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
-  const { collectLapData, initialize, completeSession } =
+  const { initialize, completeSession, collectBulkData } =
     useReferenceLapStore.getState();
-  const seriesId =
-    useSessionStore((s) => s.session?.WeekendInfo.SeriesID) ?? -1;
-  const trackId = useSessionStore((s) => s.session?.WeekendInfo.TrackID) ?? -1;
-  const trackLength = useTrackLength();
-  const drivers = useSessionDrivers() ?? EMPTY_DRIVER_ARRAY;
-  const subSessionId =
-    useSessionStore((s) => s.session?.WeekendInfo.SubSessionID) ?? -1;
-  const paceCarIdx =
-    useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
-  const sessionNum = useTelemetryValue('SessionNum') ?? -1;
 
-  const classIdsString = drivers.map((d) => d.CarClassID).join(',');
-
-  const classList = useMemo(() => {
-    const ids = drivers.map((d) => d.CarClassID);
-    const uniqueIds = Array.from(new Set(ids));
-
-    const paceCarClassId = drivers[paceCarIdx]?.CarClassID;
-    return uniqueIds
-      .filter((classId) => classId !== paceCarClassId)
-      .sort((a, b) => a - b);
-
-    // INFO: only recreate this if actual class list changes and not each time drivers update
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classIdsString]);
+  // Keep track of session state without triggering re-renders
+  const sessionRef = useRef({
+    seriesId: -1,
+    trackId: -1,
+    trackLength: -1,
+    sessionNum: -1,
+    subSessionId: -1,
+    drivers: [] as Driver[],
+    paceCarIdx: -1,
+  });
 
   useEffect(() => {
-    logger.info('Resetting Session!');
-    completeSession();
-    initialize(bridge, seriesId, trackId, trackLength, classList);
-    // INFO: reset session only if the below change, i.e we moved from practice -> quali or we switched series
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seriesId, trackId, sessionNum, trackLength, subSessionId]);
+    // 1. Session Subscription: Handles initialization and reset logic
+    const unsubSession = useSessionStore.subscribe((state) => {
+      const session = state.session;
+      if (!session) return;
 
-  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 4);
-  const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
-  const sessionTime = useTelemetryValue('SessionTime');
+      const seriesId = session.WeekendInfo.SeriesID;
+      const trackId = session.WeekendInfo.TrackID;
 
-  useEffect(() => {
-    if (!carIdxLapDistPct || !sessionTime) return;
+      if (!seriesId || seriesId <= 0 || !trackId || trackId <= 0) return;
 
-    for (const driver of drivers) {
-      const idx = driver.CarIdx;
-      const trackPct = carIdxLapDistPct[idx];
-      const classId = driver.CarClassID ?? 0;
-      const isOnPitRoad = carIdxOnPitRoad[idx] ?? false;
+      const subSessionId = session.WeekendInfo.SubSessionID;
+      const paceCarIdx = session.DriverInfo.PaceCarIdx;
+      const drivers = session.DriverInfo.Drivers || [];
 
-      if (trackPct > -1) {
-        collectLapData(
-          bridge,
-          idx,
-          classId,
-          trackPct,
-          sessionTime,
-          // Not tracking off tracks for now.
-          TrackLocation.OnTrack,
-          isOnPitRoad
-        );
+      // Calculate track length in meters
+      const lengthStr = session.WeekendInfo.TrackLength;
+      const [val, unit] = lengthStr?.split(' ') ?? [];
+      const trackLength =
+        unit === 'km' ? parseFloat(val) * 1000 : parseFloat(val);
+
+      const s = sessionRef.current;
+
+      // If core session identifiers change, re-initialize the store
+      if (
+        seriesId !== s.seriesId ||
+        trackId !== s.trackId ||
+        subSessionId !== s.subSessionId ||
+        trackLength !== s.trackLength
+      ) {
+        logger.info('[RefLapStore] Session changed, initializing...');
+        completeSession();
+
+        const classList = getClassList(drivers, paceCarIdx);
+        initialize(bridge, seriesId, trackId, trackLength, classList);
+
+        // Update ref with new session info
+        Object.assign(s, {
+          seriesId,
+          trackId,
+          subSessionId,
+          trackLength,
+          drivers,
+          paceCarIdx,
+        });
+      } else {
+        // Just update drivers and pace car if session metadata is same
+        s.drivers = drivers;
+        s.paceCarIdx = paceCarIdx;
       }
-    }
-    // INFO: run collection only in this specific case
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [carIdxLapDistPct, carIdxOnPitRoad, sessionTime, drivers]);
+    });
+
+    // 2. Telemetry Subscription: Handles high-frequency lap data collection
+    const unsubTelemetry = useTelemetryStore.subscribe((state) => {
+      const telemetry = state.telemetry;
+      if (!telemetry) return;
+
+      const sessionNum = telemetry.SessionNum?.value?.[0] ?? -1;
+      const s = sessionRef.current;
+
+      // Reset session if we move to a different session number (e.g. Practice -> Qualify)
+      if (sessionNum !== s.sessionNum && s.seriesId !== -1) {
+        logger.info(
+          `[RefLapStore] SessionNum changed to ${sessionNum}, resetting...`
+        );
+        completeSession();
+
+        const classList = getClassList(s.drivers, s.paceCarIdx);
+
+        initialize(bridge, s.seriesId, s.trackId, s.trackLength, classList);
+        s.sessionNum = sessionNum;
+      }
+
+      const dists = telemetry.CarIdxLapDistPct?.value || ([] as number[]);
+      const pits = telemetry.CarIdxOnPitRoad?.value || ([] as boolean[]);
+      const time = telemetry.SessionTime?.value?.[0] ?? -1;
+
+      if (
+        dists.length > 0 &&
+        pits.length > 0 &&
+        time > -1 &&
+        s.drivers.length > 0
+      ) {
+        collectBulkData(bridge, s.drivers, dists, pits, time);
+      }
+    });
+
+    return () => {
+      unsubSession();
+      unsubTelemetry();
+    };
+  }, [bridge, completeSession, initialize, collectBulkData]);
 };
