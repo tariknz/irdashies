@@ -23,6 +23,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const focusCarIdx = useFocusCarIdx();
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
+  const { getReferenceLap } = useReferenceLapStore();
 
   // Driver lookup map
   const driverMap = useMemo(
@@ -72,9 +73,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       const behindDriver = driverMap.get(behindIdx);
       const classId = behindDriver?.carClass.id ?? -1;
       const isFirstThreeLaps = (behindDriver?.lap ?? -1) <= 3;
-      const refLap = useReferenceLapStore
-        .getState()
-        .getReferenceLap(behindIdx, classId, isFirstThreeLaps);
+      const refLap = getReferenceLap(behindIdx, classId, isFirstThreeLaps);
 
       const isInPitOrHasNoData = isAnyoneOnPitRoad || refLap.finishTime < 0;
 
@@ -104,7 +103,14 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
       return calculatedDelta;
     },
-    [carIdxEstTime, carIdxIsOnPitRoad, carIdxLapDistPct, driverMap, focusCarIdx]
+    [
+      carIdxEstTime,
+      carIdxIsOnPitRoad,
+      carIdxLapDistPct,
+      driverMap,
+      focusCarIdx,
+      getReferenceLap,
+    ]
   );
 
   const isValidDriver = useCallback(
