@@ -6,11 +6,14 @@ import { useLovelyTrackData } from './useLovelyTrackData';
 interface CurrentSectionResult {
   section: LovelyTrackSection | null;
   progress: number; // 0-1 within the current section
+  lapDistPct: number; // normalized [0,1), 0 when telemetry isn't ready
 }
 
 /**
  * Determines the current track section from LapDistPct. Returns the matched
- * section and progress through it.
+ * section, progress through it, and the normalized lap-distance value — the
+ * widget reuses `lapDistPct` from this hook to avoid a second subscription
+ * (per ARCHITECTURE_RULES.md R2.3).
  */
 export const useCurrentSection = (): CurrentSectionResult => {
   const { sections } = useLovelyTrackData();
@@ -19,7 +22,7 @@ export const useCurrentSection = (): CurrentSectionResult => {
 
   return useMemo(() => {
     if (sections.length === 0 || rawLapDistPct == null) {
-      return { section: null, progress: 0 };
+      return { section: null, progress: 0, lapDistPct: 0 };
     }
 
     // Normalize to [0, 1) — rounded telemetry can land exactly on 1.000.
@@ -49,15 +52,16 @@ export const useCurrentSection = (): CurrentSectionResult => {
         return {
           section: wrapping,
           progress: width > 0 ? Math.min(1, Math.max(0, offset / width)) : 0,
+          lapDistPct,
         };
       }
-      return { section: null, progress: 0 };
+      return { section: null, progress: 0, lapDistPct };
     }
 
     const width = current.end_pct - current.start_pct;
     const offset = lapDistPct - current.start_pct;
     const progress = width > 0 ? Math.min(1, Math.max(0, offset / width)) : 0;
 
-    return { section: current, progress };
+    return { section: current, progress, lapDistPct };
   }, [sections, rawLapDistPct]);
 };

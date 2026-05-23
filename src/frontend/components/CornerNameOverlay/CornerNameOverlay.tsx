@@ -1,8 +1,5 @@
 import type { CornerNameOverlayConfig } from '@irdashies/types';
-import {
-  useSessionVisibility,
-  useTelemetryValueRounded,
-} from '@irdashies/context';
+import { useSessionVisibility } from '@irdashies/context';
 import { useCurrentSection } from './hooks/useCurrentSection';
 
 type CornerNameOverlayProps = Partial<CornerNameOverlayConfig>;
@@ -15,8 +12,7 @@ export const CornerNameOverlay = ({
   opacity = 0.9,
   sessionVisibility,
 }: CornerNameOverlayProps) => {
-  const { section, progress } = useCurrentSection();
-  const lapDistPct = useTelemetryValueRounded('LapDistPct', 3) ?? 0;
+  const { section, progress, lapDistPct } = useCurrentSection();
   const isSessionVisible = useSessionVisibility(sessionVisibility);
 
   if (!isSessionVisible) return null;
