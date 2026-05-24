@@ -11,7 +11,7 @@ function isLapClean(trackSurface: number, isOnPitRoad: boolean): boolean {
   return trackSurface === TrackLocation.OnTrack && !isOnPitRoad;
 }
 
-const EMPTY_LAP: ReferenceLap = {
+const EMPTY_LAP: Readonly<ReferenceLap> = {
   startTime: -1,
   finishTime: -1,
   times: new Float32Array().fill(0),
