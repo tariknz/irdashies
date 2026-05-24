@@ -38,7 +38,15 @@ export const setupReferenceLapsBridge = () => {
         );
       }
 
-      return getReferenceLap(seriesId, trackId, classId);
+      const lap = getReferenceLap(seriesId, trackId, classId);
+
+      if (!lap) {
+        logger.info(
+          `[Main] No persisted reference lap for Series: ${seriesId}, Track: ${trackId}, Class: ${classId}`
+        );
+      }
+
+      return lap;
     }
   );
 

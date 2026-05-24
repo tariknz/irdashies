@@ -2,9 +2,9 @@ import { useMemo } from 'react';
 import {
   useSectorTimingStore,
   useSessionStore,
-  useDriverCarIdx,
   useReferenceLapStore,
   useTelemetryValueRounded,
+  useDriverCarIdx,
 } from '@irdashies/context';
 import { calculateReferenceDelta } from '../../Standings/relativeGapHelpers';
 
@@ -15,14 +15,13 @@ import { calculateReferenceDelta } from '../../Standings/relativeGapHelpers';
  * lap's interpolated elapsed time at the same track position. Positive = behind
  * the reference, negative = ahead.
  *
- * When `useGhostFile` is true, compares against the file-loaded ghost lap.
- * Otherwise compares against the player's in-session personal best only —
- * returns null until a personal best lap has been completed.
+ * Automatically selects the best available reference lap: prefers the player's
+ * in-session personal best, falling back to the class-best (ghost) lap.
  *
  * Returns null when no reference data is available or the current sector entry
  * is invalid (reset/teleport).
  */
-export const useLiveSectorDelta = (useGhostFile: boolean): number | null => {
+export const useLiveSectorDelta = (): number | null => {
   // 4dp matches the reference-lap interpolation step (REFERENCE_INTERVAL = 0.0025);
   // 2dp on SessionTime gives 10ms resolution which exceeds the 0.1s display.
   const lapDistPct = useTelemetryValueRounded('LapDistPct', 4) ?? 0;
@@ -32,6 +31,7 @@ export const useLiveSectorDelta = (useGhostFile: boolean): number | null => {
   const sectorEntryValid = useSectorTimingStore((s) => s.sectorEntryValid);
   const currentSectorIdx = useSectorTimingStore((s) => s.currentSectorIdx);
   const sectors = useSectorTimingStore((s) => s.sectors);
+  const getReferenceLap = useReferenceLapStore((s) => s.getReferenceLap);
 
   const playerCarIdx = useDriverCarIdx();
   const playerClassId = useSessionStore((s) => {
@@ -40,21 +40,11 @@ export const useLiveSectorDelta = (useGhostFile: boolean): number | null => {
     return drivers?.find((d) => d.CarIdx === carIdx)?.CarClassID ?? null;
   });
 
-  // Subscribe to these so the memo re-runs when a ghost lap is loaded or the
-  // session resets — the actual lap data is accessed via getState() below.
-  const persistedLapsVersion = useReferenceLapStore(
-    (s) => s.persistedLapsVersion
-  );
-  const seriesId = useReferenceLapStore((s) => s.seriesId);
-
   return useMemo(() => {
     if (!sectorEntryValid) return null;
     if (playerCarIdx == null || playerClassId == null) return null;
 
-    const state = useReferenceLapStore.getState();
-    const refLap = useGhostFile
-      ? state.getReferenceLap(playerCarIdx, playerClassId, true)
-      : state.bestLaps.get(playerCarIdx);
+    const refLap = getReferenceLap(playerCarIdx, playerClassId, false);
 
     if (!refLap || refLap.finishTime < 0) return null;
 
@@ -67,21 +57,15 @@ export const useLiveSectorDelta = (useGhostFile: boolean): number | null => {
     const playerElapsed = sessionTime - sectorEntryTime;
 
     return playerElapsed - ghostElapsed;
-    // persistedLapsVersion and seriesId are intentionally included as deps even
-    // though they're not used directly — they trigger re-computation when ghost
-    // lap data changes or the session resets.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    sectorEntryValid,
+    playerCarIdx,
+    playerClassId,
+    getReferenceLap,
+    sectors,
+    currentSectorIdx,
     lapDistPct,
     sessionTime,
     sectorEntryTime,
-    sectorEntryValid,
-    currentSectorIdx,
-    sectors,
-    playerCarIdx,
-    playerClassId,
-    persistedLapsVersion,
-    seriesId,
-    useGhostFile,
   ]);
 };
