@@ -501,7 +501,10 @@ export const useSectorTimingStore = create<SectorTimingState>((set, get) => ({
     });
   },
 
-  setTrackIncidentSectors: (v: boolean) => set({ trackIncidentSectors: v }),
+  setTrackIncidentSectors: (v: boolean) => {
+    if (get().trackIncidentSectors === v) return;
+    set({ trackIncidentSectors: v });
+  },
 
   reset: () =>
     set((state) => ({

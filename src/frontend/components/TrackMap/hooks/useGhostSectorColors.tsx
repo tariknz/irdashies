@@ -19,7 +19,7 @@ export const useGhostSectorColors = (): SectorColor[] | null => {
     (w) => w.id === 'sectordelta'
   )?.config as SectorDeltaConfig | undefined;
 
-  const { refSectorTimes, hasGhostLap } = useReferenceLapSectorTimes();
+  const { refSectorTimes, hasReferenceLap } = useReferenceLapSectorTimes();
   const sectors = useSectorTimingStore((s) => s.sectors);
   const currentSectorIdx = useSectorTimingStore((s) => s.currentSectorIdx);
   const currentLapSectorTimes = useSectorTimingStore(
@@ -33,7 +33,7 @@ export const useGhostSectorColors = (): SectorColor[] | null => {
     if (
       (sectorDeltaConfig?.ghostComparison ?? 'prefer-ghost') !==
         'prefer-ghost' ||
-      !hasGhostLap
+      !hasReferenceLap
     ) {
       return null;
     }
@@ -51,7 +51,7 @@ export const useGhostSectorColors = (): SectorColor[] | null => {
   }, [
     sectorDeltaConfig?.ghostComparison,
     sectorDeltaConfig?.thresholds,
-    hasGhostLap,
+    hasReferenceLap,
     sectors,
     currentSectorIdx,
     currentLapSectorTimes,
