@@ -7,11 +7,10 @@ import { interpolateAtPoint } from '../../components/Standings/interpolation';
 /**
  * Derives per-sector times from the persisted (ghost) reference lap for the
  * player's car class.  Returns the sector times and a flag indicating whether a
- * ghost file is actually loaded from disk.
+ * valid reference lap is available.
  *
- * hasGhostLap is only true when initialize() found and loaded a saved ghost
- * file for the player's class. In-session laps promoted to persistedLaps are
- * NOT counted — use the ghost icon only for file-backed reference laps.
+ * hasReferenceLap is true when a valid reference lap (either loaded from disk
+ * or created in-session) is available for comparison.
  *
  * Sector times are computed by interpolating the reference lap's
  * timeElapsedSinceStart at each sector-boundary trackPct, then diffing
@@ -19,7 +18,7 @@ import { interpolateAtPoint } from '../../components/Standings/interpolation';
  */
 export const useReferenceLapSectorTimes = (): {
   refSectorTimes: (number | null)[];
-  hasGhostLap: boolean;
+  hasReferenceLap: boolean;
 } => {
   const playerCarIdx = useDriverCarIdx();
 
@@ -32,35 +31,30 @@ export const useReferenceLapSectorTimes = (): {
   const sectors = useSectorTimingStore((s) => s.sectors);
 
   // Subscribe so we recompute once persisted laps finish loading asynchronously.
-  // seriesId is also included to clear the ghost row when a session resets.
-  const seriesId = useReferenceLapStore((s) => s.seriesId);
-  const persistedLapsVersion = useReferenceLapStore(
-    (s) => s.persistedLapsVersion
+  // We use a selector for the lap itself so we re-run when the lap object
+  // reference changes (e.g. after async load or in-session promotion).
+  const refLap = useReferenceLapStore((s) =>
+    playerCarIdx != null && playerClassId != null
+      ? s.getReferenceLap(playerCarIdx, playerClassId, true)
+      : null
   );
 
-  // Only classes that had a ghost file loaded from disk — not in-session laps.
-  const fileLoadedClassIds = useReferenceLapStore((s) => s.fileLoadedClassIds);
-
   return useMemo(() => {
-    if (playerCarIdx == null || playerClassId == null || sectors.length === 0) {
-      return { refSectorTimes: [], hasGhostLap: false };
+    if (
+      playerCarIdx == null ||
+      playerClassId == null ||
+      sectors.length === 0 ||
+      !refLap
+    ) {
+      return { refSectorTimes: [], hasReferenceLap: false };
     }
-
-    // Only show ghost comparison when a file was explicitly loaded from disk.
-    if (!fileLoadedClassIds.has(playerClassId)) {
-      return { refSectorTimes: [], hasGhostLap: false };
-    }
-
-    const refLap = useReferenceLapStore
-      .getState()
-      .getReferenceLap(playerCarIdx, playerClassId, true);
 
     if (refLap.startTime < 0 || refLap.pointsCount === 0) {
-      return { refSectorTimes: [], hasGhostLap: false };
+      return { refSectorTimes: [], hasReferenceLap: false };
     }
 
     const lapTime = refLap.finishTime - refLap.startTime;
-    if (lapTime <= 0) return { refSectorTimes: [], hasGhostLap: false };
+    if (lapTime <= 0) return { refSectorTimes: [], hasReferenceLap: false };
 
     // Time elapsed at each sector's start boundary.
     // Sector 0 always begins at the S/F line (elapsed = 0).
@@ -76,18 +70,7 @@ export const useReferenceLapSectorTimes = (): {
       return end - start;
     });
 
-    return { refSectorTimes, hasGhostLap: true };
-    // seriesId clears the ghost row when the session resets.
-    // persistedLapsVersion increments after the async load in initialize()
-    // completes, ensuring the memo re-runs once laps are actually available.
-    // fileLoadedClassIds changes when initialize() finds a file lap.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    playerCarIdx,
-    playerClassId,
-    sectors,
-    seriesId,
-    persistedLapsVersion,
-    fileLoadedClassIds,
-  ]);
+    return { refSectorTimes, hasReferenceLap: true };
+    // refLap selector triggers re-run if the reference lap object changes.
+  }, [playerCarIdx, playerClassId, sectors, refLap]);
 };

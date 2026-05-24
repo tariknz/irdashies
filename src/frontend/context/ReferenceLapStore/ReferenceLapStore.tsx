@@ -73,20 +73,10 @@ export interface ReferenceRegistryState {
   activeLaps: Map<number, ReferenceLap>;
   bestLaps: Map<number, ReferenceLap>;
   persistedLaps: Map<number, ReferenceLap>;
-  seriesId: number | null;
   trackId: number | null;
   trackLength: number | null;
   interval: number;
   pointsCount: number;
-  /** Incremented each time persisted laps finish loading so subscribers re-run. */
-  persistedLapsVersion: number;
-  /**
-   * Class IDs for which a ghost lap was loaded from disk during initialize().
-   * In-session laps promoted to persistedLaps are NOT included here. Used by
-   * useReferenceLapSectorTimes to show the ghost icon only when a saved file
-   * is present, not for newly-completed in-session laps.
-   */
-  fileLoadedClassIds: Set<number>;
 
   /**
    * Bootstraps the store at the start of a session by loading previously saved
@@ -106,6 +96,7 @@ export interface ReferenceRegistryState {
    */
   collectBulkData: (
     bridge: ReferenceLapBridge,
+    seriesId: number,
     drivers: { CarIdx: number; CarClassID: number }[],
     carIdxLapDistPct: number[],
     carIdxOnPitRoad: boolean[],
@@ -140,20 +131,14 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
     activeLaps: new Map<number, ReferenceLap>(),
     bestLaps: new Map<number, ReferenceLap>(),
     persistedLaps: new Map<number, ReferenceLap>(),
-    seriesId: null,
     trackId: null,
     trackLength: null,
     interval: 0,
     pointsCount: 0,
-    persistedLapsVersion: 0,
-    fileLoadedClassIds: new Set<number>(),
 
     initialize: async (bridge, seriesId, trackId, trackLength, classList) => {
       const pointsCount = Math.ceil(trackLength / TARGET_SPACING_METERS);
       const interval = parseFloat((1 / pointsCount).toFixed(6));
-
-      set({ seriesId, trackId, trackLength, pointsCount, interval });
-      const { persistedLaps } = get();
 
       const results = await Promise.all(
         classList.map(async (classId) => {
@@ -175,25 +160,27 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
         })
       );
 
-      // Mutate persistedLaps in place to avoid triggering Zustand subscriptions
-      // on each lap, then fire a single notification so hooks re-run once all
-      // laps are ready. Build a new Set for fileLoadedClassIds so selectors
-      // that depend on it re-run after initialization completes.
-      const newFileLoadedClassIds = new Set<number>();
+      const newPersistedLaps = new Map<number, ReferenceLap>();
       results.forEach(({ classId, lap }) => {
         if (lap) {
-          persistedLaps.set(classId, lap);
-          newFileLoadedClassIds.add(classId);
+          newPersistedLaps.set(classId, lap);
         }
       });
-      set((s) => ({
-        persistedLapsVersion: s.persistedLapsVersion + 1,
-        fileLoadedClassIds: newFileLoadedClassIds,
-      }));
+
+      set({
+        trackId,
+        trackLength,
+        pointsCount,
+        interval,
+        persistedLaps: newPersistedLaps,
+        activeLaps: new Map<number, ReferenceLap>(),
+        bestLaps: new Map<number, ReferenceLap>(),
+      });
     },
 
     collectBulkData: (
       bridge,
+      seriesId,
       drivers,
       carIdxLapDistPct,
       carIdxOnPitRoad,
@@ -204,7 +191,6 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
         activeLaps,
         bestLaps,
         persistedLaps,
-        seriesId,
         trackId,
         pointsCount,
         interval,
@@ -294,7 +280,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
 
                 persistedLaps.set(classId, refLap);
 
-                if (seriesId !== null && trackId !== null) {
+                if (seriesId !== -1 && trackId !== null) {
                   bridge
                     .saveReferenceLap(seriesId, trackId, classId, refLap)
                     .catch((err: Error) => {
@@ -376,12 +362,10 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
         activeLaps: new Map<number, ReferenceLap>(),
         bestLaps: new Map<number, ReferenceLap>(),
         persistedLaps: new Map<number, ReferenceLap>(),
-        seriesId: null,
         trackId: null,
         trackLength: null,
         interval: 0,
         pointsCount: 0,
-        fileLoadedClassIds: new Set<number>(),
       });
     },
   })

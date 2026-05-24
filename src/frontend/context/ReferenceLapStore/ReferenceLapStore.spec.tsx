@@ -64,7 +64,6 @@ describe('ReferenceLapStore', () => {
         .initialize(mockBridge as ReferenceLapBridge, 100, 200, 1000, [1]);
 
       const state = useReferenceLapStore.getState();
-      expect(state.seriesId).toBe(100);
       expect(state.trackId).toBe(200);
       expect(state.persistedLaps.get(1)).toEqual(mockLap);
     });
@@ -73,6 +72,7 @@ describe('ReferenceLapStore', () => {
   describe('collectBulkData', () => {
     const carIdx = 5;
     const classId = 1;
+    const seriesId = 100;
     const drivers = [{ CarIdx: carIdx, CarClassID: classId }];
 
     beforeEach(() => {
@@ -93,6 +93,7 @@ describe('ReferenceLapStore', () => {
 
       store.collectBulkData(
         mockBridge as ReferenceLapBridge,
+        seriesId,
         drivers,
         dists,
         pits,
@@ -117,6 +118,7 @@ describe('ReferenceLapStore', () => {
       // 1. First call initializes
       store.collectBulkData(
         mockBridge as ReferenceLapBridge,
+        seriesId,
         drivers,
         dists,
         pits,
@@ -126,6 +128,7 @@ describe('ReferenceLapStore', () => {
       // 2. Second call (same bucket) should store if clean
       store.collectBulkData(
         mockBridge as ReferenceLapBridge,
+        seriesId,
         drivers,
         dists,
         pits,
@@ -142,7 +145,7 @@ describe('ReferenceLapStore', () => {
     });
 
     it('should populate pointPos for the initial bucket when a lap is completed and a new one starts', () => {
-      useReferenceLapStore.setState({ seriesId: 1, trackId: 1 });
+      useReferenceLapStore.setState({ trackId: 1 });
       const store = useReferenceLapStore.getState();
 
       const dists1 = [];
@@ -157,6 +160,7 @@ describe('ReferenceLapStore', () => {
       // 1. Start a lap
       store.collectBulkData(
         mockBridge as unknown as ReferenceLapBridge,
+        seriesId,
         drivers,
         dists1,
         pits,
@@ -174,6 +178,7 @@ describe('ReferenceLapStore', () => {
       // 2. Cross the line
       store.collectBulkData(
         mockBridge as unknown as ReferenceLapBridge,
+        seriesId,
         drivers,
         dists2,
         pits,
@@ -181,6 +186,7 @@ describe('ReferenceLapStore', () => {
       );
       store.collectBulkData(
         mockBridge as unknown as ReferenceLapBridge,
+        seriesId,
         drivers,
         dists3,
         pits,
@@ -206,6 +212,7 @@ describe('ReferenceLapStore', () => {
         .getState()
         .collectBulkData(
           mockBridge as ReferenceLapBridge,
+          seriesId,
           drivers,
           dists,
           pits,
@@ -233,6 +240,7 @@ describe('ReferenceLapStore', () => {
       expect(() => {
         store.collectBulkData(
           mockBridge as ReferenceLapBridge,
+          seriesId,
           sparseDrivers as { CarIdx: number; CarClassID: number }[],
           dists,
           pits,
@@ -256,6 +264,7 @@ describe('ReferenceLapStore', () => {
       // 1. Initial point
       store.collectBulkData(
         mockBridge as ReferenceLapBridge,
+        seriesId,
         drivers,
         dists1,
         pits,
@@ -265,6 +274,7 @@ describe('ReferenceLapStore', () => {
       // 2. Point with a gap
       store.collectBulkData(
         mockBridge as ReferenceLapBridge,
+        seriesId,
         drivers,
         dists2,
         pits,
@@ -290,6 +300,7 @@ describe('ReferenceLapStore', () => {
         .getState()
         .collectBulkData(
           mockBridge as ReferenceLapBridge,
+          seriesId,
           drivers,
           dists1,
           pits1,
@@ -301,6 +312,7 @@ describe('ReferenceLapStore', () => {
         .getState()
         .collectBulkData(
           mockBridge as ReferenceLapBridge,
+          seriesId,
           drivers,
           dists2,
           pits2,
@@ -312,7 +324,7 @@ describe('ReferenceLapStore', () => {
     });
 
     it('should complete a lap and save it if it is the new best clean lap', async () => {
-      useReferenceLapStore.setState({ seriesId: 1, trackId: 1 });
+      useReferenceLapStore.setState({ trackId: 1 });
       const store = useReferenceLapStore.getState();
 
       const dists1 = [];
@@ -327,6 +339,7 @@ describe('ReferenceLapStore', () => {
       // 1. Start a lap near the start
       store.collectBulkData(
         mockBridge as ReferenceLapBridge,
+        seriesId,
         drivers,
         dists1,
         pits,
@@ -346,6 +359,7 @@ describe('ReferenceLapStore', () => {
       // 2. Get near the end
       store.collectBulkData(
         mockBridge as ReferenceLapBridge,
+        seriesId,
         drivers,
         dists2,
         pits,
@@ -355,6 +369,7 @@ describe('ReferenceLapStore', () => {
       // 3. Cross the line (0.96 -> 0.01)
       store.collectBulkData(
         mockBridge as ReferenceLapBridge,
+        seriesId,
         drivers,
         dists3,
         pits,
@@ -383,6 +398,7 @@ describe('ReferenceLapStore', () => {
       // Start dirty (far from start line)
       store.collectBulkData(
         mockBridge as ReferenceLapBridge,
+        seriesId,
         drivers,
         dists1,
         pits,
@@ -392,6 +408,7 @@ describe('ReferenceLapStore', () => {
       // Get near the end
       store.collectBulkData(
         mockBridge as ReferenceLapBridge,
+        seriesId,
         drivers,
         dists2,
         pits,
@@ -401,6 +418,7 @@ describe('ReferenceLapStore', () => {
       // Complete lap
       store.collectBulkData(
         mockBridge as ReferenceLapBridge,
+        seriesId,
         drivers,
         dists3,
         pits,
@@ -415,13 +433,13 @@ describe('ReferenceLapStore', () => {
   describe('completeSession', () => {
     it('should reset all maps and IDs', () => {
       useReferenceLapStore.getState().activeLaps.set(1, {} as ReferenceLap);
-      useReferenceLapStore.setState({ seriesId: 50 });
+      useReferenceLapStore.setState({ trackId: 50 });
 
       useReferenceLapStore.getState().completeSession();
 
       const state = useReferenceLapStore.getState();
       expect(state.activeLaps.size).toBe(0);
-      expect(state.seriesId).toBeNull();
+      expect(state.trackId).toBeNull();
       expect(state.bestLaps.size).toBe(0);
     });
   });

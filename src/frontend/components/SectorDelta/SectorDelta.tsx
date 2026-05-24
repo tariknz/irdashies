@@ -90,9 +90,9 @@ export const SectorDelta = ({
     currentSectorIdx,
   } = useSectorDeltas();
   const isOnTrack = useTelemetryValue('IsOnTrack');
-  const { refSectorTimes, hasGhostLap } = useReferenceLapSectorTimes();
+  const { refSectorTimes, hasReferenceLap } = useReferenceLapSectorTimes();
 
-  const useGhost = ghostComparison === 'prefer-ghost' && hasGhostLap;
+  const useGhost = ghostComparison === 'prefer-ghost' && hasReferenceLap;
 
   const currentSectorStart = sectors[currentSectorIdx]?.SectorStartPct ?? 0;
   const currentSectorEnd = sectors[currentSectorIdx + 1]?.SectorStartPct ?? 1;
@@ -190,11 +190,7 @@ export const SectorDelta = ({
           ].join(' ')}
         >
           <span>
-            {isCurrent ? (
-              <LiveDelta useGhost={useGhost} dp={dp} fallback={fallback} />
-            ) : (
-              fallback
-            )}
+            {isCurrent ? <LiveDelta dp={dp} fallback={fallback} /> : fallback}
           </span>
           {isUnclean && (
             <WarningIcon

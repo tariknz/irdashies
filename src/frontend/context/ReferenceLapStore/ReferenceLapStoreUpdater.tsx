@@ -113,7 +113,7 @@ export const useReferenceLapStoreUpdater = (bridge: ReferenceLapBridge) => {
         time > -1 &&
         s.drivers.length > 0
       ) {
-        collectBulkData(bridge, s.drivers, dists, pits, time);
+        collectBulkData(bridge, s.seriesId, s.drivers, dists, pits, time);
       }
     });
 

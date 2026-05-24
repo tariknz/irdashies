@@ -14,13 +14,10 @@ describe('ReferenceLapStore Benchmark', () => {
     // We only need to serialize the metadata keys as completeSession() handles clearing maps.
     const state = useReferenceLapStore.getState();
     initialState = {
-      seriesId: state.seriesId,
       trackId: state.trackId,
       trackLength: state.trackLength,
       pointsCount: state.pointsCount,
       interval: state.interval,
-      persistedLapsVersion: state.persistedLapsVersion,
-      fileLoadedClassIds: new Set(state.fileLoadedClassIds),
     } as ReferenceRegistryState;
   });
 
@@ -45,7 +42,6 @@ describe('ReferenceLapStore Benchmark', () => {
     useReferenceLapStore.setState({
       pointsCount,
       interval,
-      seriesId: 1,
       trackId: 1,
     });
 
@@ -71,6 +67,7 @@ describe('ReferenceLapStore Benchmark', () => {
         .getState()
         .collectBulkData(
           bridge,
+          1,
           drivers,
           carIdxLapDistPct,
           carIdxOnPitRoad,
