@@ -10,6 +10,8 @@ import type { DashboardWidget, WidgetLayout } from '@irdashies/types';
 import { useDragWidget } from './useDragWidget';
 import { useResizeWidget } from './useResizeWidget';
 import { ResizeHandles } from './ResizeHandle';
+import { EdgeDistanceLabels } from './EdgeDistanceLabels';
+import { useEdgeDistances } from './useEdgeDistances';
 import { getWidgetName } from '../../constants/widgetNames';
 import { ResizeIcon, GearIcon, XIcon } from '@phosphor-icons/react';
 import { useContainerOffset } from '@irdashies/context';
@@ -127,6 +129,7 @@ export const WidgetContainer = memo(
 
     // Always use localLayout for display
     const displayedLayout = localLayout;
+    const edgeDistances = useEdgeDistances(displayedLayout);
 
     // Transform widget coordinates from screen space to container space
     // Widget coords assume primary display at (0,0), but container may span multiple displays
@@ -195,6 +198,9 @@ export const WidgetContainer = memo(
 
             {/* Resize handles */}
             <ResizeHandles getResizeHandleProps={getResizeHandleProps} />
+
+            {/* Edge distance indicators */}
+            {edgeDistances && <EdgeDistanceLabels distances={edgeDistances} />}
           </>
         )}
       </div>
