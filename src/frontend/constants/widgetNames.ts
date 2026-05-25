@@ -6,7 +6,7 @@ import type { WidgetId } from '../WidgetIndex';
  */
 export const WIDGET_NAMES: Record<WidgetId, string> = {
   standings: 'Standings',
-  input: 'Input Traces',
+  input: 'Input',
   relative: 'Relative',
   map: 'Track Map',
   flatmap: 'Flat Track Map',
@@ -27,6 +27,7 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   sectordelta: 'Sector Delta',
   wind: 'Wind',
   weatherhorizontal: 'Weather (Horizontal)',
+  inputtrace: 'Input Trace',
 };
 
 /**

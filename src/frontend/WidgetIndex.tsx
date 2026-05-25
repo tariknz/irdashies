@@ -20,6 +20,7 @@ import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
 import { SectorDelta } from './components/SectorDelta/SectorDelta';
 import { Wind } from './components/Wind';
 import { WeatherHorizontal } from './components/WeatherHorizontal';
+import { InputTrace } from './components/InputTrace';
 import type { WidgetConfigMap } from '@irdashies/types';
 
 export {
@@ -45,6 +46,7 @@ export {
   SectorDelta,
   Wind,
   WeatherHorizontal,
+  InputTrace,
 };
 
 // TODO: type this better, right now the config comes from settings
@@ -76,6 +78,7 @@ export const WIDGET_MAP: Record<
   sectordelta: SectorDelta,
   wind: Wind,
   weatherhorizontal: WeatherHorizontal,
+  inputtrace: InputTrace,
 };
 
 export type WidgetId = keyof WidgetConfigMap;

@@ -443,6 +443,22 @@ export interface WeatherHorizontalConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
+export interface InputTraceConfig {
+  useRawValues: boolean;
+  trace: {
+    includeThrottle: boolean;
+    includeBrake: boolean;
+    includeClutch: boolean;
+    includeAbs: boolean;
+    includeSteer?: boolean;
+    strokeWidth?: number;
+    maxSamples?: number;
+  };
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 export interface WindConfig {
   units: 'auto' | 'Metric' | 'Imperial';
   showOnlyWhenOnTrack: boolean;
@@ -609,6 +625,7 @@ export interface WidgetConfigMap {
   sectordelta: SectorDeltaConfig;
   wind: WindConfig;
   weatherhorizontal: WeatherHorizontalConfig;
+  inputtrace: InputTraceConfig;
 }
 
 export type TypedDashboardWidget<
@@ -709,3 +726,4 @@ export type SectorDeltaWidgetSettings = BaseWidgetSettings<SectorDeltaConfig>;
 export type WindWidgetSettings = BaseWidgetSettings<WindConfig>;
 export type WeatherHorizontalWidgetSettings =
   BaseWidgetSettings<WeatherHorizontalConfig>;
+export type InputTraceWidgetSettings = BaseWidgetSettings<InputTraceConfig>;

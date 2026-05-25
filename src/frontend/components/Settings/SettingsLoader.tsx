@@ -28,6 +28,7 @@ import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
 import { SectorDeltaSettings } from './sections/SectorDeltaSettings';
 import { WindSettings } from './sections/WindSettings';
 import { WeatherHorizontalSettings } from './sections/WeatherHorizontalSettings';
+import { InputTraceSettings } from './sections/InputTraceSettings';
 
 interface SettingsLoaderProps {
   previewMode?: boolean;
@@ -94,6 +95,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <WindSettings />;
     case 'weatherhorizontal':
       return <WeatherHorizontalSettings />;
+    case 'inputtrace':
+      return <InputTraceSettings />;
     default:
       return widget ? (
         <div className="text-red-400">No settings available for {type}</div>
