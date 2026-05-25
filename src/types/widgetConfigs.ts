@@ -436,6 +436,19 @@ export interface GarageCoverConfig {
   imageFilename: string;
 }
 
+export interface WeatherHorizontalConfig {
+  background: { opacity: number };
+  units: 'auto' | 'Metric' | 'Imperial';
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export interface WindConfig {
+  units: 'auto' | 'Metric' | 'Imperial';
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 export interface TelemetryInspectorConfig {
   background?: { opacity: number };
   properties?: {
@@ -594,6 +607,8 @@ export interface WidgetConfigMap {
   infobar: InformationBarConfig;
   slowcarahead: SlowCarAheadConfig;
   sectordelta: SectorDeltaConfig;
+  wind: WindConfig;
+  weatherhorizontal: WeatherHorizontalConfig;
 }
 
 export type TypedDashboardWidget<
@@ -691,3 +706,6 @@ export type InformationBarWidgetSettings =
   BaseWidgetSettings<InformationBarConfig>;
 export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;
 export type SectorDeltaWidgetSettings = BaseWidgetSettings<SectorDeltaConfig>;
+export type WindWidgetSettings = BaseWidgetSettings<WindConfig>;
+export type WeatherHorizontalWidgetSettings =
+  BaseWidgetSettings<WeatherHorizontalConfig>;

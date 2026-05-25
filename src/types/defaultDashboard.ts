@@ -49,8 +49,8 @@ export const defaultDashboard: {
         background: {
           opacity: 80,
         },
-        foreground: { 
-          opacity: 70, 
+        foreground: {
+          opacity: 70,
         },
         countryFlags: {
           enabled: true,
@@ -386,8 +386,8 @@ export const defaultDashboard: {
         background: {
           opacity: 80,
         },
-        foreground: { 
-          opacity: 70, 
+        foreground: {
+          opacity: 70,
         },
         position: {
           enabled: true,
@@ -1138,6 +1138,51 @@ export const defaultDashboard: {
           'wind',
           'trackName',
         ],
+      },
+    },
+    {
+      id: 'weatherhorizontal',
+      enabled: false,
+      layout: {
+        x: 1334,
+        y: 271,
+        width: 360,
+        height: 110,
+      },
+      config: {
+        background: {
+          opacity: 80,
+        },
+        units: 'auto',
+        showOnlyWhenOnTrack: false,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
+    },
+    {
+      id: 'wind',
+      enabled: false,
+      layout: {
+        x: 1334,
+        y: 471,
+        width: 174,
+        height: 200,
+      },
+      config: {
+        units: 'auto',
+        showOnlyWhenOnTrack: false,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
       },
     },
     {

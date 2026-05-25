@@ -25,6 +25,8 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   infobar: 'Information Bar',
   slowcarahead: 'Slow Car Ahead',
   sectordelta: 'Sector Delta',
+  wind: 'Wind',
+  weatherhorizontal: 'Weather (Horizontal)',
 };
 
 /**

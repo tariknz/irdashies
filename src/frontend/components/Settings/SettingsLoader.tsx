@@ -26,6 +26,8 @@ import { InformationBarSettings } from './sections/InformationBarSettings';
 import { useDashboard } from '@irdashies/context';
 import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
 import { SectorDeltaSettings } from './sections/SectorDeltaSettings';
+import { WindSettings } from './sections/WindSettings';
+import { WeatherHorizontalSettings } from './sections/WeatherHorizontalSettings';
 
 interface SettingsLoaderProps {
   previewMode?: boolean;
@@ -88,6 +90,10 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <SlowCarAheadSettings />;
     case 'sectordelta':
       return <SectorDeltaSettings />;
+    case 'wind':
+      return <WindSettings />;
+    case 'weatherhorizontal':
+      return <WeatherHorizontalSettings />;
     default:
       return widget ? (
         <div className="text-red-400">No settings available for {type}</div>
