@@ -5,10 +5,12 @@ export interface DriverNameParts {
 }
 
 export const extractDriverName = (
-  fullName = '',
+  fullName: string | number | null | undefined = '',
   removeNumbersFromName = false
 ): DriverNameParts => {
-  const parts = fullName
+  // iRacing session YAML can yield non-string values for UserName (e.g. an
+  // all-digit handle parses as a number), so coerce before string ops.
+  const parts = String(fullName ?? '')
     .trim()
     .split(/\s+/)
     .filter(Boolean)
