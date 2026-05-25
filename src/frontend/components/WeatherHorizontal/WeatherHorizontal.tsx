@@ -38,20 +38,16 @@ export const WeatherHorizontal = () => {
 
   return (
     <div
-      className="@container w-full rounded-sm p-2 bg-slate-800/(--bg-opacity)"
+      className="w-fit rounded-sm p-2 bg-slate-800/(--bg-opacity)"
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
       }}
     >
-      <div className="flex flex-col gap-2">
-        <div className="grid grid-cols-2 gap-2">
-          <WeatherTemp title="Track" value={trackTemp} icon={RoadHorizonIcon} />
-          <WeatherTemp title="Air" value={airTemp} icon={ThermometerIcon} />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <WeatherTrackWetness trackMoisture={weather.trackMoisture} />
-          <WeatherTrackRubbered trackRubbered={trackRubbered} />
-        </div>
+      <div className="grid grid-cols-[auto_auto_auto_auto]">
+        <WeatherTemp value={trackTemp} icon={RoadHorizonIcon} />
+        <WeatherTemp value={airTemp} icon={ThermometerIcon} />
+        <WeatherTrackWetness trackMoisture={weather.trackMoisture} />
+        <WeatherTrackRubbered trackRubbered={trackRubbered} />
       </div>
     </div>
   );
