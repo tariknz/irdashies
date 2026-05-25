@@ -1,22 +1,18 @@
 import { memo } from 'react';
 
 export interface WeatherTempProps {
-  title: string;
   value: string;
   icon: React.ElementType;
 }
 
-export const WeatherTemp = memo(
-  ({ title, value, icon: Icon }: WeatherTempProps) => {
-    return (
-      <div className="bg-slate-800/70 p-2 rounded-sm w-full min-w-0">
-        <div className="flex flex-row gap-x-2 items-center text-sm">
-          <Icon className="flex-none" />
-          <span className="truncate min-w-0 flex-1">{title}</span>
-          <div className="flex-none whitespace-nowrap text-right">{value}</div>
-        </div>
+export const WeatherTemp = memo(({ value, icon: Icon }: WeatherTempProps) => {
+  return (
+    <div className="bg-slate-800/70 px-2 py-1 w-full min-w-0">
+      <div className="flex items-center gap-x-1.5">
+        <Icon size={12} className="flex-none text-white/50" />
+        <div className="text-sm font-medium truncate">{value}</div>
       </div>
-    );
-  }
-);
+    </div>
+  );
+});
 WeatherTemp.displayName = 'WeatherTemp';

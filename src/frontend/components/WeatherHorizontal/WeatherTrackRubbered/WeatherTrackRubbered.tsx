@@ -7,12 +7,11 @@ interface Props {
 
 export const WeatherTrackRubbered = memo(({ trackRubbered }: Props) => {
   return (
-    <div className="bg-slate-800/70 p-2 rounded-sm w-full min-w-0">
-      <div className="flex flex-row gap-x-2 items-center text-sm">
-        <PathIcon className="flex-none" />
-        <span className="truncate min-w-0 flex-1">Rubber</span>
+    <div className="bg-slate-800/70 px-2 py-1 w-full min-w-0">
+      <div className="flex items-center gap-x-1.5">
+        <PathIcon size={12} className="flex-none text-white/50" />
         <div
-          className="flex-none truncate text-right capitalize"
+          className="text-sm font-medium capitalize truncate"
           title={trackRubbered ?? 'N/A'}
         >
           {trackRubbered ?? 'N/A'}
