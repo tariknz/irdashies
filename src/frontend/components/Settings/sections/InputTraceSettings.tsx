@@ -112,6 +112,13 @@ export const InputTraceSettings = () => {
                 handleConfigChange({ background: { opacity: v } })
               }
             />
+            <SettingDivider />
+            <SettingToggleRow
+              title="Use Raw Inputs"
+              description="Disables iRacing's automated input processing, showing direct pedal telemetry without assists like auto-clutch or anti-stall."
+              enabled={settings.config.useRawValues}
+              onToggle={(v) => handleConfigChange({ useRawValues: v })}
+            />
           </SettingsSection>
 
           <SettingsSection title="Visibility">
