@@ -1186,6 +1186,39 @@ export const defaultDashboard: {
       },
     },
     {
+      id: 'inputtrace',
+      enabled: false,
+      layout: {
+        x: 622,
+        y: 810,
+        width: 396,
+        height: 70,
+      },
+      config: {
+        useRawValues: false,
+        trace: {
+          includeThrottle: true,
+          includeBrake: true,
+          includeClutch: false,
+          includeAbs: true,
+          includeSteer: true,
+          strokeWidth: 3,
+          maxSamples: 400,
+        },
+        background: {
+          opacity: 80,
+        },
+        showOnlyWhenOnTrack: true,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
+    },
+    {
       id: 'sectordelta',
       enabled: false,
       layout: {

@@ -97,6 +97,12 @@ const widgetItems: MenuItem[] = [
     widgetType: 'input',
   },
   {
+    to: '/settings/inputtrace',
+    path: '/inputtrace',
+    label: 'Input Trace',
+    widgetType: 'inputtrace',
+  },
+  {
     to: '/settings/laptimelog',
     path: '/laptimelog',
     label: 'Lap Timer',
@@ -192,7 +198,9 @@ const MenuLink = ({
   showIcon?: boolean;
   isEnabled?: boolean;
 }) => {
-  const isActive = pathname.startsWith(`/settings${item.path}`);
+  const isActive =
+    pathname === `/settings${item.path}` ||
+    pathname.startsWith(`/settings${item.path}/`);
   return (
     <li>
       <Link
