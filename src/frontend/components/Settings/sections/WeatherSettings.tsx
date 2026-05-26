@@ -78,6 +78,25 @@ const normalizeEnabledConfig = (
       : fallback.enabled,
 });
 
+const isSortableSettingId = (value: unknown): value is string =>
+  typeof value === 'string' && sortableSettingIds.includes(value);
+
+const normalizeDisplayOrder = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return defaultConfig.displayOrder;
+  }
+
+  const displayOrder: string[] = [];
+
+  value.forEach((id) => {
+    if (isSortableSettingId(id) && !displayOrder.includes(id)) {
+      displayOrder.push(id);
+    }
+  });
+
+  return displayOrder.length > 0 ? displayOrder : defaultConfig.displayOrder;
+};
+
 const normalizeSessionVisibility = (
   value: unknown
 ): WeatherConfig['sessionVisibility'] => {
@@ -105,18 +124,19 @@ const normalizeSessionVisibility = (
 
 const normalizeWeatherConfig = (config: unknown): WeatherConfig => {
   const saved = isObjectRecord(config) ? config : {};
-  const background = isObjectRecord(saved.background) ? saved.background : {};
-  const displayOrder = Array.isArray(saved.displayOrder)
-    ? saved.displayOrder.filter((id): id is string => typeof id === 'string')
-    : defaultConfig.displayOrder;
+  const background = isObjectRecord(saved.background)
+    ? saved.background
+    : undefined;
+  const val = background?.opacity;
+  const opacity = Number.isFinite(val)
+    ? Math.max(0, Math.min(100, Number(val)))
+    : defaultConfig.background.opacity;
+  const displayOrder = normalizeDisplayOrder(saved.displayOrder);
 
   return {
     ...defaultConfig,
     background: {
-      opacity:
-        typeof background.opacity === 'number'
-          ? background.opacity
-          : defaultConfig.background.opacity,
+      opacity,
     },
     layout:
       saved.layout === 'vertical' || saved.layout === 'horizontal'
