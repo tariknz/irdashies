@@ -413,7 +413,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
 
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h4 className="text-md font-medium text-slate-300">
+              <h4
+                id="show-edit-mode-pixel-distances-label"
+                className="text-md font-medium text-slate-300"
+              >
                 Show Pixel Distances
               </h4>
               <p className="text-sm text-slate-500 pr-8">
@@ -428,6 +431,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                 onChange={(e) =>
                   handleShowEditModePixelDistancesChange(e.target.checked)
                 }
+                aria-labelledby="show-edit-mode-pixel-distances-label"
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -436,7 +440,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
 
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h4 className="text-md font-medium text-slate-300">
+              <h4
+                id="snap-edit-mode-widgets-to-grid-label"
+                className="text-md font-medium text-slate-300"
+              >
                 Snap Widgets to Grid
               </h4>
               <p className="text-sm text-slate-500 pr-8">
@@ -452,6 +459,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                 onChange={(e) =>
                   handleSnapEditModeWidgetsToGridChange(e.target.checked)
                 }
+                aria-labelledby="snap-edit-mode-widgets-to-grid-label"
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
