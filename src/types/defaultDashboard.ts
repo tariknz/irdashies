@@ -49,8 +49,8 @@ export const defaultDashboard: {
         background: {
           opacity: 80,
         },
-        foreground: { 
-          opacity: 70, 
+        foreground: {
+          opacity: 70,
         },
         countryFlags: {
           enabled: true,
@@ -386,8 +386,8 @@ export const defaultDashboard: {
         background: {
           opacity: 80,
         },
-        foreground: { 
-          opacity: 70, 
+        foreground: {
+          opacity: 70,
         },
         position: {
           enabled: true,
@@ -1183,6 +1183,8 @@ export const defaultDashboard: {
     compactMode: 'off' as const,
     overlayAlwaysOnTop: true,
     enableNetworkAccess: false,
+    showEditModePixelDistances: true,
+    snapEditModeWidgetsToGrid: true,
   },
 };
 
