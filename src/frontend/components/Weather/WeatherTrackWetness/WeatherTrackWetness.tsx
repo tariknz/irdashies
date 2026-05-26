@@ -5,6 +5,7 @@ import { memo } from 'react';
 const MIN_WETNESS = 1;
 const MAX_WETNESS = 7; // Extremely Wet
 const DEFAULT_WETNESS = 0;
+const FALLBACK_TRACK_STATE = 'N/A';
 const WETNESS_LEVELS: Record<number, string> = {
   0: '',
   1: 'Dry',
@@ -35,6 +36,7 @@ export const WeatherTrackWetness = memo(
       safeTrackMoisture in WETNESS_LEVELS
         ? WETNESS_LEVELS[safeTrackMoisture]
         : 'Unknown';
+    const trackStateLabel = trackState || FALLBACK_TRACK_STATE;
 
     if (variant === 'compact') {
       return (
@@ -42,7 +44,7 @@ export const WeatherTrackWetness = memo(
           <div className="flex items-center gap-x-1.5">
             <WavesIcon size={12} className="flex-none text-white/50" />
             <span className="text-sm font-medium capitalize truncate">
-              {trackState}
+              {trackStateLabel}
             </span>
           </div>
         </div>
@@ -56,7 +58,7 @@ export const WeatherTrackWetness = memo(
             <WavesIcon size={12} className="flex-none text-white/50" />
             <span className="truncate min-w-0 text-white/60">Wetness</span>
             <div className="flex-none whitespace-nowrap text-right font-medium capitalize">
-              {trackState}
+              {trackStateLabel}
             </div>
           </div>
         </div>
@@ -72,7 +74,7 @@ export const WeatherTrackWetness = memo(
             Wetness
           </span>
           <div className="flex-none whitespace-nowrap text-right capitalize">
-            {trackState}
+            {trackStateLabel}
           </div>
         </div>
 

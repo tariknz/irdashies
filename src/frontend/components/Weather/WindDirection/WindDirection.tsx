@@ -85,7 +85,9 @@ export const WindDirection = memo(
               className="flex-none size-5 stroke-current box-border fill-none origin-center transform-gpu transition-transform duration-1000 ease-out"
               strokeWidth="stroke-[5]"
             />
-            <div className="text-sm font-medium truncate">{displaySpeed}</div>
+            <div className="text-sm font-medium truncate tabular-nums text-right min-w-[3ch]">
+              {displaySpeed}
+            </div>
           </div>
         </div>
       );
@@ -103,7 +105,7 @@ export const WindDirection = memo(
               className="flex-none size-5 stroke-current box-border fill-none origin-center transform-gpu transition-transform duration-1000 ease-out"
               strokeWidth="stroke-[5]"
             />
-            <div className="flex-none whitespace-nowrap text-right font-medium">
+            <div className="flex-none whitespace-nowrap text-right font-medium tabular-nums min-w-[3ch]">
               {displaySpeed}
             </div>
           </div>
