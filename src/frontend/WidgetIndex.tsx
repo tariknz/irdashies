@@ -20,6 +20,7 @@ import { InformationBar } from './components/InformationBar/InformationBar';
 import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
 import { SectorDelta } from './components/SectorDelta/SectorDelta';
 import type { WidgetConfigMap } from '@irdashies/types';
+import type { ElementType } from 'react';
 
 export {
   Standings,
@@ -45,13 +46,7 @@ export {
   SectorDelta,
 };
 
-// TODO: type this better, right now the config comes from settings
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export const WIDGET_MAP: Record<
-  keyof WidgetConfigMap,
-  (config?: any) => React.JSX.Element | null
-> = {
-  /* eslint-enable @typescript-eslint/no-explicit-any */
+export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
   standings: Standings,
   input: Input,
   relative: Relative,

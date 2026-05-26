@@ -57,7 +57,7 @@ export const WindDirection = memo(
         className="flex h-full w-full min-h-0 min-w-0 items-center justify-center"
       >
         <div
-          id="wind"
+          data-testid="wind-direction"
           className={`relative flex aspect-square items-center justify-center transition-colors duration-300 ${windIntensityClass}`}
           style={{ width: visualSize, height: visualSize }}
         >

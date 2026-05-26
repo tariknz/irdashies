@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import {
   useDashboard,
   useSessionVisibility,
@@ -8,7 +9,7 @@ import { useWindSettings } from './hooks/useWindSettings';
 import { WindDirection } from './WindDirection/WindDirection';
 import { useWindDemoData } from '../../domain/weather/useWindDemoData';
 
-export const Wind = () => {
+export const Wind = memo(() => {
   const { isDemoMode } = useDashboard();
   const settings = useWindSettings();
   const displayUnits = useTelemetryValue('DisplayUnits');
@@ -59,4 +60,5 @@ export const Wind = () => {
       />
     </div>
   );
-};
+});
+Wind.displayName = 'Wind';
