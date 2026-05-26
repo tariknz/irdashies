@@ -1,10 +1,18 @@
 import { Meta } from '@storybook/react-vite';
 import { EditMode } from './EditMode';
 import { DashboardProvider } from '@irdashies/context';
-import type { DashboardBridge, DashboardLayout } from '@irdashies/types';
+import type {
+  DashboardBridge,
+  DashboardLayout,
+  DashboardWidget,
+  GeneralSettingsType,
+} from '@irdashies/types';
 import { Input } from '../Input';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import { TelemetryDecorator, mockDashboardBridge } from '@irdashies/storybook';
 import { Standings } from '../Standings/Standings';
+import { WidgetContainer } from '../WidgetContainer';
+import { useCallback, useState } from 'react';
+import type { WidgetLayout } from '@irdashies/types';
 
 const meta: Meta<typeof EditMode> = {
   component: EditMode,
@@ -18,86 +26,140 @@ const mockDashboard: DashboardLayout = {
 };
 
 const mockBridge: (editMode: boolean) => DashboardBridge = (editMode) => ({
-  getAnalyticsOptOut: () => Promise.resolve(false),
-  setAnalyticsOptOut: () => Promise.resolve(),
-  saveDashboard: () => {
-    // noop
-  },
+  ...mockDashboardBridge,
   dashboardUpdated: () => {
     return undefined;
-  },
-  reloadDashboard: () => {
-    // noop
   },
   resetDashboard: () => Promise.resolve(mockDashboard),
   onEditModeToggled: (callback) => {
     callback(editMode);
     return undefined;
   },
-  toggleLockOverlays: () => Promise.resolve(true),
-  getAppVersion: () => Promise.resolve('1.0.0'),
-  toggleDemoMode: () => {
-    return;
-  },
-  onDemoModeChanged: (callback) => {
-    callback(false);
-    return () => {
-      return;
-    };
-  },
-  getCurrentDashboard: () => {
-    return null;
-  },
-  stop: () => {
-    return;
-  },
-  saveGarageCoverImage: () => Promise.resolve(''),
-  getGarageCoverImage: () => Promise.resolve(null),
-  getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
-  savePlayerIconImage: () => Promise.resolve(''),
-  getPlayerIconImageAsDataUrl: () => Promise.resolve(null),
-  // Profile management methods
-  listProfiles: () =>
-    Promise.resolve([
-      {
-        id: 'default',
-        name: 'Default',
-        createdAt: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-      },
-    ]),
-  createProfile: (name: string) =>
-    Promise.resolve({
-      id: 'mock-id',
-      name,
-      createdAt: new Date().toISOString(),
-      lastModified: new Date().toISOString(),
-    }),
-  cloneProfile: (profileId: string) =>
-    Promise.resolve({
-      id: 'mock-clone-id',
-      name: `${profileId} - cloned`,
-      createdAt: new Date().toISOString(),
-      lastModified: new Date().toISOString(),
-    }),
-  deleteProfile: () => Promise.resolve(),
-  renameProfile: () => Promise.resolve(),
-  switchProfile: () => Promise.resolve(),
-  getCurrentProfile: () =>
-    Promise.resolve({
-      id: 'default',
-      name: 'Default',
-      createdAt: new Date().toISOString(),
-      lastModified: new Date().toISOString(),
-    }),
-  updateProfileTheme: async () => undefined,
-  getDashboardForProfile: async () => null,
-  exportDashboardToFile: async () => false,
-  importDashboardFromFile: async () => null,
-  setAutoStart: () => Promise.resolve(),
-  openLogFolder: async () => undefined,
-  exportLogFile: async () => false,
 });
+
+const VIEWPORT = { x: 0, y: 0, width: 1200, height: 700 };
+
+const sampleWidgets: DashboardWidget[] = [
+  {
+    id: 'standings',
+    enabled: true,
+    layout: { x: 24, y: 24, width: 280, height: 360 },
+  },
+  {
+    id: 'input',
+    enabled: true,
+    layout: { x: 380, y: 24, width: 340, height: 100 },
+  },
+  {
+    id: 'fuel',
+    enabled: true,
+    layout: { x: 380, y: 180, width: 340, height: 300 },
+  },
+];
+
+const createEditModeBridge = (
+  generalSettings: Partial<GeneralSettingsType>
+): DashboardBridge => {
+  const dashboard: DashboardLayout = {
+    widgets: sampleWidgets,
+    generalSettings: {
+      showEditModePixelDistances: true,
+      snapEditModeWidgetsToGrid: true,
+      ...generalSettings,
+    },
+  };
+  return {
+    ...mockDashboardBridge,
+    dashboardUpdated: (callback) => {
+      callback(dashboard, undefined);
+      return () => undefined;
+    },
+    resetDashboard: async () => dashboard,
+    onEditModeToggled: (callback) => {
+      callback(true);
+      return () => undefined;
+    },
+    onContainerBoundsInfo: (callback) => {
+      callback({
+        expected: VIEWPORT,
+        actual: VIEWPORT,
+        offset: { x: 0, y: 0 },
+        isPrimary: true,
+        displayBounds: VIEWPORT,
+      });
+      return () => undefined;
+    },
+  };
+};
+
+const WidgetPlaceholder = ({
+  label,
+  color,
+}: {
+  label: string;
+  color: string;
+}) => (
+  <div
+    className={`w-full h-full ${color} flex items-center justify-center text-white/80 text-sm`}
+  >
+    {label}
+  </div>
+);
+
+const widgetContent: Record<string, { label: string; color: string }> = {
+  standings: { label: 'Standings', color: 'bg-slate-800/80' },
+  input: { label: 'Input Trace', color: 'bg-slate-700/80' },
+  fuel: { label: 'Fuel Calculator', color: 'bg-slate-800/80' },
+};
+
+const MultiWidgetScene = ({
+  generalSettings,
+}: {
+  generalSettings: Partial<GeneralSettingsType>;
+}) => {
+  const bridge = createEditModeBridge(generalSettings);
+  const [widgets, setWidgets] = useState(sampleWidgets);
+
+  const handleLayoutChange = useCallback(
+    (widgetId: string, layout: WidgetLayout) => {
+      setWidgets((prev) =>
+        prev.map((w) => (w.id === widgetId ? { ...w, layout } : w))
+      );
+    },
+    []
+  );
+
+  return (
+    <DashboardProvider bridge={bridge}>
+      <div
+        className="relative bg-blue-900/20 overflow-hidden"
+        style={{ width: VIEWPORT.width, height: VIEWPORT.height }}
+      >
+        {widgets.map((widget, i) => {
+          const content = widgetContent[widget.id];
+          const siblingLayouts = widgets
+            .filter((w) => w.id !== widget.id)
+            .map((w) => w.layout);
+          return (
+            <WidgetContainer
+              key={widget.id}
+              widget={widget}
+              siblingLayouts={siblingLayouts}
+              editMode={true}
+              zIndex={i + 1}
+              onLayoutChange={handleLayoutChange}
+            >
+              <WidgetPlaceholder
+                label={content?.label ?? widget.id}
+                color={content?.color ?? 'bg-slate-800/80'}
+              />
+            </WidgetContainer>
+          );
+        })}
+      </div>
+    </DashboardProvider>
+  );
+};
 
 export const Primary = {
   render: (args: { editMode: boolean }) => {
@@ -144,4 +206,84 @@ export const WithStandings = {
   args: {
     editMode: true,
   } as { editMode: boolean },
+};
+
+export const DistanceLabelsVisible = {
+  render: () => (
+    <MultiWidgetScene
+      generalSettings={{
+        showEditModePixelDistances: true,
+        snapEditModeWidgetsToGrid: true,
+      }}
+    />
+  ),
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        story:
+          'Three widgets in edit mode with pixel distance labels visible on each edge. Drag widgets to see labels update live.',
+      },
+    },
+  },
+};
+
+export const DistanceLabelsHidden = {
+  render: () => (
+    <MultiWidgetScene
+      generalSettings={{
+        showEditModePixelDistances: false,
+        snapEditModeWidgetsToGrid: true,
+      }}
+    />
+  ),
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        story:
+          'Same layout with pixel distance labels turned off. Widget edit chrome is still visible but without the edge distance readouts.',
+      },
+    },
+  },
+};
+
+export const SnappingEnabled = {
+  render: () => (
+    <MultiWidgetScene
+      generalSettings={{
+        showEditModePixelDistances: true,
+        snapEditModeWidgetsToGrid: true,
+      }}
+    />
+  ),
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        story:
+          'Grid snapping is active. Drag or resize a widget and it will snap to the viewport grid and lock to nearby sibling edges. Hold Shift to bypass snapping temporarily.',
+      },
+    },
+  },
+};
+
+export const SnappingDisabled = {
+  render: () => (
+    <MultiWidgetScene
+      generalSettings={{
+        showEditModePixelDistances: true,
+        snapEditModeWidgetsToGrid: false,
+      }}
+    />
+  ),
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        story:
+          'Grid snapping is turned off. Widgets move and resize freely with pixel-level precision. Distance labels are still visible.',
+      },
+    },
+  },
 };
