@@ -210,6 +210,12 @@ describe('getWidgetDefaultConfig', () => {
     expect(config.humidity.enabled).toBe(true);
   });
 
+  it('returns the wind config', () => {
+    const config = getWidgetDefaultConfig('wind');
+    expect(config.background.opacity).toBe(80);
+    expect(config.units).toBe('auto');
+  });
+
   it('throws for unknown widget id', () => {
     expect(() =>
       getWidgetDefaultConfig('nonexistent' as 'standings')

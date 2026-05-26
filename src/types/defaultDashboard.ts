@@ -734,6 +734,30 @@ export const defaultDashboard: {
       },
     },
     {
+      id: 'wind',
+      enabled: false,
+      layout: {
+        x: 1334,
+        y: 471,
+        width: 174,
+        height: 200,
+      },
+      config: {
+        background: {
+          opacity: 80,
+        },
+        units: 'auto',
+        showOnlyWhenOnTrack: false,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
+    },
+    {
       id: 'fastercarsfrombehind',
       enabled: false,
       layout: {

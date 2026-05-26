@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom';
 import { StandingsSettings } from './sections/StandingsSettings';
 import { RelativeSettings } from './sections/RelativeSettings';
 import { WeatherSettings } from './sections/WeatherSettings';
+import { WindSettings } from './sections/WindSettings';
 import { TrackMapSettings } from './sections/TrackMapSettings';
 import { FlatTrackMapSettings } from './sections/FlatTrackMapSettings';
 import { AdvancedSettings } from './sections/AdvancedSettings';
@@ -56,6 +57,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <RelativeSettings />;
     case 'weather':
       return <WeatherSettings />;
+    case 'wind':
+      return <WindSettings />;
     case 'fuel':
       return <FuelSettings widgetId={widget?.id} />;
     case 'map':

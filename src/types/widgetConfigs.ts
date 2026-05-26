@@ -215,6 +215,13 @@ export interface WeatherConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
+export interface WindConfig {
+  background: { opacity: number };
+  units: 'auto' | 'Metric' | 'Imperial';
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 export interface TrackMapConfig {
   turnLabels: {
     enabled: boolean;
@@ -580,6 +587,7 @@ export interface WidgetConfigMap {
   standings: StandingsConfig;
   relative: RelativeConfig;
   weather: WeatherConfig;
+  wind: WindConfig;
   map: TrackMapConfig;
   flatmap: FlatTrackMapConfig;
   input: InputConfig;
@@ -668,6 +676,7 @@ export interface ShiftPointSettings {
 export type StandingsWidgetSettings = BaseWidgetSettings<StandingsConfig>;
 export type RelativeWidgetSettings = BaseWidgetSettings<RelativeConfig>;
 export type WeatherWidgetSettings = BaseWidgetSettings<WeatherConfig>;
+export type WindWidgetSettings = BaseWidgetSettings<WindConfig>;
 export type TrackMapWidgetSettings = BaseWidgetSettings<TrackMapConfig>;
 export type FlatTrackMapWidgetSettings = BaseWidgetSettings<FlatTrackMapConfig>;
 export type SteerWidgetSettings = BaseWidgetSettings<SteerConfig>;

@@ -4,6 +4,7 @@ import { Relative } from './components/Standings/Relative';
 import { TrackMap } from './components/TrackMap/TrackMap';
 import { FlatTrackMap } from './components/TrackMap/FlatTrackMap';
 import { Weather } from './components/Weather';
+import { Wind } from './components/Wind';
 import { FasterCarsFromBehind } from './components/FasterCarsFromBehind/FasterCarsFromBehind';
 import { FuelCalculator } from './components/FuelCalculator';
 import { BlindSpotMonitor } from './components/BlindSpotMonitor/BlindSpotMonitor';
@@ -27,6 +28,7 @@ export {
   TrackMap,
   FlatTrackMap,
   Weather,
+  Wind,
   FasterCarsFromBehind,
   FuelCalculator,
   BlindSpotMonitor,
@@ -56,6 +58,7 @@ export const WIDGET_MAP: Record<
   map: TrackMap,
   flatmap: FlatTrackMap,
   weather: Weather,
+  wind: Wind,
   fastercarsfrombehind: FasterCarsFromBehind,
   fuel: FuelCalculator,
   blindspotmonitor: BlindSpotMonitor,
