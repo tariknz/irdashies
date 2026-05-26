@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   WeatherWidgetSettings,
@@ -45,6 +45,24 @@ const sortableSettings: SortableSetting[] = [
 ];
 
 const defaultConfig = getWidgetDefaultConfig('weather');
+const sortableSettingIds = sortableSettings.map((setting) => setting.id);
+
+const mergeItemsOrder = (itemsOrder = defaultConfig.displayOrder) => {
+  const mergedOrder = [...itemsOrder];
+
+  sortableSettingIds.forEach((id) => {
+    if (!mergedOrder.includes(id)) {
+      mergedOrder.push(id);
+    }
+  });
+
+  return mergedOrder;
+};
+
+const areStringArraysEqual = (first: string[] | undefined, second: string[]) =>
+  Array.isArray(first) &&
+  first.length === second.length &&
+  first.every((value, index) => value === second[index]);
 
 const DisplaySettingsList = ({
   itemsOrder,
@@ -91,18 +109,22 @@ const DisplaySettingsList = ({
 };
 
 export const WeatherSettings = () => {
-  const { currentDashboard } = useDashboard();
+  const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const onDashboardUpdatedRef = useRef(onDashboardUpdated);
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as WeatherWidgetSettings | undefined;
+  const savedConfig = savedSettings?.config ?? defaultConfig;
+  const mergedSavedConfig = {
+    ...savedConfig,
+    displayOrder: mergeItemsOrder(savedConfig.displayOrder),
+  };
   const [settings, setSettings] = useState<WeatherWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config:
-      (savedSettings?.config as WeatherWidgetSettings['config']) ??
-      defaultConfig,
+    config: mergedSavedConfig,
   });
 
-  const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
+  const [itemsOrder, setItemsOrder] = useState(mergedSavedConfig.displayOrder);
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
@@ -112,6 +134,60 @@ export const WeatherSettings = () => {
   useEffect(() => {
     localStorage.setItem('weatherTab', activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    onDashboardUpdatedRef.current = onDashboardUpdated;
+  }, [onDashboardUpdated]);
+
+  useEffect(() => {
+    if (!currentDashboard) return;
+
+    const savedConfig = savedSettings?.config ?? defaultConfig;
+    const mergedDisplayOrder = mergeItemsOrder(savedConfig.displayOrder);
+    const nextSettings: WeatherWidgetSettings = {
+      enabled: savedSettings?.enabled ?? false,
+      config: {
+        ...savedConfig,
+        displayOrder: mergedDisplayOrder,
+      },
+    };
+
+    let isActive = true;
+
+    queueMicrotask(() => {
+      if (!isActive) return;
+
+      setSettings(nextSettings);
+      setItemsOrder(mergedDisplayOrder);
+    });
+
+    if (
+      savedSettings &&
+      onDashboardUpdatedRef.current &&
+      !areStringArraysEqual(savedConfig.displayOrder, mergedDisplayOrder)
+    ) {
+      const updatedWidgets = currentDashboard.widgets.map((widget) =>
+        widget.id === SETTING_ID
+          ? {
+              ...widget,
+              config: {
+                ...savedConfig,
+                displayOrder: mergedDisplayOrder,
+              },
+            }
+          : widget
+      );
+
+      onDashboardUpdatedRef.current({
+        ...currentDashboard,
+        widgets: updatedWidgets,
+      });
+    }
+
+    return () => {
+      isActive = false;
+    };
+  }, [currentDashboard, savedSettings]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
