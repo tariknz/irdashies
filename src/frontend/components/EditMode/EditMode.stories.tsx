@@ -11,7 +11,7 @@ import { Input } from '../Input';
 import { TelemetryDecorator, mockDashboardBridge } from '@irdashies/storybook';
 import { Standings } from '../Standings/Standings';
 import { WidgetContainer } from '../WidgetContainer';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { WidgetLayout } from '@irdashies/types';
 
 const meta: Meta<typeof EditMode> = {
@@ -92,13 +92,12 @@ const createEditModeBridge = (
   };
 };
 
-const WidgetPlaceholder = ({
-  label,
-  color,
-}: {
+interface WidgetPlaceholderProps {
   label: string;
   color: string;
-}) => (
+}
+
+const WidgetPlaceholder = ({ label, color }: WidgetPlaceholderProps) => (
   <div
     className={`w-full h-full ${color} flex items-center justify-center text-white/80 text-sm`}
   >
@@ -112,12 +111,15 @@ const widgetContent: Record<string, { label: string; color: string }> = {
   fuel: { label: 'Fuel Calculator', color: 'bg-slate-800/80' },
 };
 
-const MultiWidgetScene = ({
-  generalSettings,
-}: {
+interface MultiWidgetSceneProps {
   generalSettings: Partial<GeneralSettingsType>;
-}) => {
-  const bridge = createEditModeBridge(generalSettings);
+}
+
+const MultiWidgetScene = ({ generalSettings }: MultiWidgetSceneProps) => {
+  const bridge = useMemo(
+    () => createEditModeBridge(generalSettings),
+    [generalSettings]
+  );
   const [widgets, setWidgets] = useState(sampleWidgets);
 
   const handleLayoutChange = useCallback(
