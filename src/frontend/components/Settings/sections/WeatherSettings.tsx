@@ -4,6 +4,7 @@ import {
   WeatherWidgetSettings,
   SettingsTabType,
   getWidgetDefaultConfig,
+  type WeatherConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
@@ -64,6 +65,95 @@ const areStringArraysEqual = (first: string[] | undefined, second: string[]) =>
   first.length === second.length &&
   first.every((value, index) => value === second[index]);
 
+const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const normalizeEnabledConfig = (
+  value: unknown,
+  fallback: { enabled: boolean }
+) => ({
+  enabled:
+    isObjectRecord(value) && typeof value.enabled === 'boolean'
+      ? value.enabled
+      : fallback.enabled,
+});
+
+const normalizeSessionVisibility = (
+  value: unknown
+): WeatherConfig['sessionVisibility'] => {
+  const saved = isObjectRecord(value) ? value : {};
+  const fallback = defaultConfig.sessionVisibility;
+
+  return {
+    race: typeof saved.race === 'boolean' ? saved.race : fallback.race,
+    loneQualify:
+      typeof saved.loneQualify === 'boolean'
+        ? saved.loneQualify
+        : fallback.loneQualify,
+    openQualify:
+      typeof saved.openQualify === 'boolean'
+        ? saved.openQualify
+        : fallback.openQualify,
+    practice:
+      typeof saved.practice === 'boolean' ? saved.practice : fallback.practice,
+    offlineTesting:
+      typeof saved.offlineTesting === 'boolean'
+        ? saved.offlineTesting
+        : fallback.offlineTesting,
+  };
+};
+
+const normalizeWeatherConfig = (config: unknown): WeatherConfig => {
+  const saved = isObjectRecord(config) ? config : {};
+  const background = isObjectRecord(saved.background) ? saved.background : {};
+  const displayOrder = Array.isArray(saved.displayOrder)
+    ? saved.displayOrder.filter((id): id is string => typeof id === 'string')
+    : defaultConfig.displayOrder;
+
+  return {
+    ...defaultConfig,
+    background: {
+      opacity:
+        typeof background.opacity === 'number'
+          ? background.opacity
+          : defaultConfig.background.opacity,
+    },
+    layout:
+      saved.layout === 'vertical' || saved.layout === 'horizontal'
+        ? saved.layout
+        : defaultConfig.layout,
+    horizontalMode:
+      saved.horizontalMode === 'compact' || saved.horizontalMode === 'full'
+        ? saved.horizontalMode
+        : defaultConfig.horizontalMode,
+    displayOrder,
+    showOnlyWhenOnTrack:
+      typeof saved.showOnlyWhenOnTrack === 'boolean'
+        ? saved.showOnlyWhenOnTrack
+        : defaultConfig.showOnlyWhenOnTrack,
+    airTemp: normalizeEnabledConfig(saved.airTemp, defaultConfig.airTemp),
+    trackTemp: normalizeEnabledConfig(saved.trackTemp, defaultConfig.trackTemp),
+    humidity: normalizeEnabledConfig(saved.humidity, defaultConfig.humidity),
+    wetness: normalizeEnabledConfig(saved.wetness, defaultConfig.wetness),
+    trackState: normalizeEnabledConfig(
+      saved.trackState,
+      defaultConfig.trackState
+    ),
+    precipitation: normalizeEnabledConfig(
+      saved.precipitation,
+      defaultConfig.precipitation
+    ),
+    wind: normalizeEnabledConfig(saved.wind, defaultConfig.wind),
+    units:
+      saved.units === 'auto' ||
+      saved.units === 'Metric' ||
+      saved.units === 'Imperial'
+        ? saved.units
+        : defaultConfig.units,
+    sessionVisibility: normalizeSessionVisibility(saved.sessionVisibility),
+  };
+};
+
 const DisplaySettingsList = ({
   itemsOrder,
   onReorder,
@@ -114,17 +204,17 @@ export const WeatherSettings = () => {
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as WeatherWidgetSettings | undefined;
-  const savedConfig = savedSettings?.config ?? defaultConfig;
-  const mergedSavedConfig = {
-    ...savedConfig,
-    displayOrder: mergeItemsOrder(savedConfig.displayOrder),
+  const normalizedConfig = normalizeWeatherConfig(savedSettings?.config);
+  const mergedConfig = {
+    ...normalizedConfig,
+    displayOrder: mergeItemsOrder(normalizedConfig.displayOrder),
   };
   const [settings, setSettings] = useState<WeatherWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: mergedSavedConfig,
+    config: mergedConfig,
   });
 
-  const [itemsOrder, setItemsOrder] = useState(mergedSavedConfig.displayOrder);
+  const [itemsOrder, setItemsOrder] = useState(mergedConfig.displayOrder);
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
@@ -142,12 +232,12 @@ export const WeatherSettings = () => {
   useEffect(() => {
     if (!currentDashboard) return;
 
-    const savedConfig = savedSettings?.config ?? defaultConfig;
-    const mergedDisplayOrder = mergeItemsOrder(savedConfig.displayOrder);
+    const normalizedConfig = normalizeWeatherConfig(savedSettings?.config);
+    const mergedDisplayOrder = mergeItemsOrder(normalizedConfig.displayOrder);
     const nextSettings: WeatherWidgetSettings = {
       enabled: savedSettings?.enabled ?? false,
       config: {
-        ...savedConfig,
+        ...normalizedConfig,
         displayOrder: mergedDisplayOrder,
       },
     };
@@ -164,14 +254,14 @@ export const WeatherSettings = () => {
     if (
       savedSettings &&
       onDashboardUpdatedRef.current &&
-      !areStringArraysEqual(savedConfig.displayOrder, mergedDisplayOrder)
+      !areStringArraysEqual(normalizedConfig.displayOrder, mergedDisplayOrder)
     ) {
       const updatedWidgets = currentDashboard.widgets.map((widget) =>
         widget.id === SETTING_ID
           ? {
               ...widget,
               config: {
-                ...savedConfig,
+                ...normalizedConfig,
                 displayOrder: mergedDisplayOrder,
               },
             }
