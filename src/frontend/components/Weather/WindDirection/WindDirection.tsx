@@ -1,5 +1,6 @@
 import { WindIcon } from '@phosphor-icons/react';
 import { memo, useRef, useEffect, useState } from 'react';
+import { getWindIntensityClass } from '../../../domain/weather/wind';
 
 export interface WindDirectionProps {
   speedMs?: number;
@@ -50,6 +51,7 @@ export const WindDirection = memo(
 
     const [normalizedAngle, setNormalizedAngle] = useState<number>(0);
     const prevAngleRef = useRef<number>(0);
+    const windIntensityClass = getWindIntensityClass(speed);
 
     useEffect(() => {
       if (direction === undefined) return;
@@ -74,13 +76,13 @@ export const WindDirection = memo(
     if (variant === 'compact') {
       return (
         <div
-          className="bg-slate-800/70 px-2 py-1 rounded-sm min-w-0"
+          className={`bg-slate-800/70 px-2 py-1 rounded-sm min-w-0 transition-colors duration-300 ${windIntensityClass}`}
           title="Wind"
         >
           <div className="flex items-center gap-x-1.5">
             <WindArrow
               normalizedAngle={normalizedAngle}
-              className="flex-none size-5 stroke-current box-border fill-none origin-center transform-gpu transition-transform duration-1000 ease-out text-white/70"
+              className="flex-none size-5 stroke-current box-border fill-none origin-center transform-gpu transition-transform duration-1000 ease-out"
               strokeWidth="stroke-[5]"
             />
             <div className="text-sm font-medium truncate">{displaySpeed}</div>
@@ -91,14 +93,16 @@ export const WindDirection = memo(
 
     if (variant === 'inline') {
       return (
-        <div className="bg-slate-800/70 px-2 py-1 rounded-sm min-w-0">
+        <div
+          className={`bg-slate-800/70 px-2 py-1 rounded-sm min-w-0 transition-colors duration-300 ${windIntensityClass}`}
+        >
           <div className="flex items-center gap-x-1.5 text-sm">
+            <span className="truncate min-w-0 text-white/60">Wind</span>
             <WindArrow
               normalizedAngle={normalizedAngle}
-              className="flex-none size-5 stroke-current box-border fill-none origin-center transform-gpu transition-transform duration-1000 ease-out text-white/70"
+              className="flex-none size-5 stroke-current box-border fill-none origin-center transform-gpu transition-transform duration-1000 ease-out"
               strokeWidth="stroke-[5]"
             />
-            <span className="truncate min-w-0">Wind</span>
             <div className="flex-none whitespace-nowrap text-right font-medium">
               {displaySpeed}
             </div>
@@ -116,7 +120,10 @@ export const WindDirection = memo(
           </span>
         </div>
         <div className="flex justify-center">
-          <div className="flex aspect-square relative w-full max-w-[120px] mx-auto items-center justify-center">
+          <div
+            id="wind"
+            className={`flex aspect-square relative w-full max-w-[120px] mx-auto items-center justify-center transition-colors duration-300 ${windIntensityClass}`}
+          >
             <WindArrow
               normalizedAngle={normalizedAngle}
               className="absolute stroke-current w-full h-full box-border fill-none origin-center transform-gpu transition-transform duration-1000 ease-out"

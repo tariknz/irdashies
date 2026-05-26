@@ -1,4 +1,5 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { getWindIntensityClass } from '../../../domain/weather/wind';
 
 export interface WindDirectionProps {
   speedMs?: number;
@@ -12,6 +13,9 @@ export const WindDirection = memo(
       speedMs !== undefined ? speedMs * (metric ? 3.6 : 2.23694) : undefined;
     const [normalizedAngle, setNormalizedAngle] = useState(0);
     const prevAngleRef = useRef(0);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const [size, setSize] = useState<number | null>(null);
+    const windIntensityClass = getWindIntensityClass(speed);
 
     useEffect(() => {
       if (direction === undefined) return;
@@ -26,9 +30,37 @@ export const WindDirection = memo(
       prevAngleRef.current = direction;
     }, [direction]);
 
+    useLayoutEffect(() => {
+      const node = containerRef.current;
+      if (!node) return;
+
+      const updateSize = () => {
+        const { clientWidth, clientHeight } = node;
+        if (!clientWidth || !clientHeight) return;
+
+        setSize(Math.round(Math.min(clientWidth, clientHeight)));
+      };
+
+      updateSize();
+      const observer = new ResizeObserver(updateSize);
+      observer.observe(node);
+
+      return () => observer.disconnect();
+    }, []);
+
+    const visualSize = size ? `${size}px` : '100%';
+    const fontSize = size ? Math.max(10, Math.round(size * 0.27)) : 32;
+
     return (
-      <div className="flex justify-center">
-        <div className="flex aspect-square relative w-full max-w-[120px] mx-auto items-center justify-center">
+      <div
+        ref={containerRef}
+        className="flex h-full w-full min-h-0 min-w-0 items-center justify-center"
+      >
+        <div
+          id="wind"
+          className={`relative flex aspect-square items-center justify-center transition-colors duration-300 ${windIntensityClass}`}
+          style={{ width: visualSize, height: visualSize }}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 60 60"
@@ -40,7 +72,10 @@ export const WindDirection = memo(
             <path d="M48 8A28 28 90 0158 30c0 15.464-12.536 28-28 28S2 45.464 2 30A28 28 90 0112 8M22 9 30 1l8 8" />
           </svg>
 
-          <div className="absolute w-full h-full flex justify-center items-center text-[32px]">
+          <div
+            className="absolute flex h-full w-full items-center justify-center leading-none"
+            style={{ fontSize }}
+          >
             {speed !== undefined ? Math.round(speed) : '-'}
           </div>
         </div>

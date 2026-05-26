@@ -1,9 +1,11 @@
 import {
+  useDashboard,
   useTelemetryValue,
   useSessionVisibility,
   useThrottledWeather,
 } from '@irdashies/context';
 import { useTrackTemperature } from './hooks/useTrackTemperature';
+import { useWindDemoData } from '../../domain/weather/useWindDemoData';
 import { WeatherTemp } from './WeatherTemp/WeatherTemp';
 import { WeatherTrackWetness } from './WeatherTrackWetness/WeatherTrackWetness';
 import { WeatherTrackRubbered } from './WeatherTrackRubbered/WeatherTrackRubbered';
@@ -25,6 +27,7 @@ type WeatherColumnId =
   | 'trackState';
 
 export const Weather = () => {
+  const { isDemoMode } = useDashboard();
   const settings = useWeatherSettings();
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
   const isOnTrack = useTelemetryValue('IsOnTrack');
@@ -49,6 +52,9 @@ export const Weather = () => {
   // Derived values
   const relativeWindDirection =
     (weather.windDirection ?? 0) - (weather.windYaw ?? 0);
+  const demoWind = useWindDemoData(isDemoMode, isMetric);
+  const windSpeedMs = demoWind?.speedMs ?? weather.windVelocity;
+  const windDirection = demoWind?.direction ?? relativeWindDirection;
 
   // Column ordering: depends ONLY on settings, NOT on telemetry data.
   // Settings change when the user edits config (very rare during a session).
@@ -131,8 +137,8 @@ export const Weather = () => {
         return (
           <WindDirection
             key={id}
-            speedMs={weather.windVelocity}
-            direction={relativeWindDirection}
+            speedMs={windSpeedMs}
+            direction={windDirection}
             metric={isMetric}
             variant={componentVariant}
           />

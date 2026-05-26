@@ -25,7 +25,7 @@ export const Primary: Story = {
 export const Horizontal: Story = {
   decorators: [
     (Story, context) => (
-      <div style={{ width: '360px' }}>
+      <div style={{ width: '640px' }}>
         {TelemetryDecoratorWithConfig('/test-data/1731637331038', {
           weather: {
             layout: 'horizontal',
@@ -39,7 +39,7 @@ export const Horizontal: Story = {
 export const HorizontalFull: Story = {
   decorators: [
     (Story, context) => (
-      <div style={{ width: '520px' }}>
+      <div style={{ width: '900px' }}>
         {TelemetryDecoratorWithConfig('/test-data/1731637331038', {
           weather: {
             layout: 'horizontal',

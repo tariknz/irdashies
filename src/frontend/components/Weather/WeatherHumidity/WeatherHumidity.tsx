@@ -33,7 +33,7 @@ export const WeatherHumidity = memo(
         <div className="bg-slate-800/70 px-2 py-1 rounded-sm min-w-0">
           <div className="flex items-center gap-x-1.5 text-sm">
             <Icon size={12} className="flex-none text-white/50" />
-            <span className="truncate min-w-0">Humidity</span>
+            <span className="truncate min-w-0 text-white/60">Humidity</span>
             <div className="flex-none whitespace-nowrap text-right font-medium">
               {value}
             </div>
