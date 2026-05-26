@@ -94,12 +94,20 @@ export const OverlayContainer = memo(() => {
         containerBoundsInfo.displayBounds ?? containerBoundsInfo.expected;
       const centerX = widget.layout.x + widget.layout.width / 2;
       const centerY = widget.layout.y + widget.layout.height / 2;
-      const inThisDisplay =
-        centerX >= displayBounds.x &&
-        centerX < displayBounds.x + displayBounds.width &&
-        centerY >= displayBounds.y &&
-        centerY < displayBounds.y + displayBounds.height;
-      return inThisDisplay || (!inThisDisplay && containerBoundsInfo.isPrimary);
+      const inBounds = (b: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+      }) =>
+        centerX >= b.x &&
+        centerX < b.x + b.width &&
+        centerY >= b.y &&
+        centerY < b.y + b.height;
+      const inThisDisplay = inBounds(displayBounds);
+      const inAnyDisplay =
+        containerBoundsInfo.allDisplayBounds?.some(inBounds) ?? inThisDisplay;
+      return inThisDisplay || (containerBoundsInfo.isPrimary && !inAnyDisplay);
     });
   }, [containerBoundsInfo, enabledWidgets]);
 
