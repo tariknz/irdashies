@@ -20,6 +20,7 @@ interface DragState {
   startLayoutY: number;
 }
 
+/** Provides pointer-driven drag behaviour for a widget, with optional viewport grid snapping. */
 export function useDragWidget({
   layout,
   onLayoutChange,

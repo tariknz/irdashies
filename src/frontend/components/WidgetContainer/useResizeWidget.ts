@@ -27,6 +27,7 @@ interface ResizeState {
 const MIN_WIDTH = 100;
 const MIN_HEIGHT = 50;
 
+/** Provides pointer-driven resize behaviour for a widget, with optional viewport grid snapping. */
 export function useResizeWidget({
   layout,
   onLayoutChange,
@@ -146,6 +147,7 @@ export function useResizeWidget({
   };
 }
 
+/** Maps a resize direction to the appropriate CSS cursor string. */
 function getCursor(direction: ResizeDirection): string {
   const cursors: Record<ResizeDirection, string> = {
     n: 'ns-resize',

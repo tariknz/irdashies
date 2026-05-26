@@ -14,6 +14,7 @@ const labelStyle: CSSProperties = {
 const cls =
   'text-xs font-mono bg-slate-900/90 text-sky-400 px-1.5 py-0.5 rounded leading-none';
 
+/** Renders four floating labels showing pixel distances from a widget to each viewport edge. */
 export const EdgeDistanceLabels = ({ distances }: Props) => {
   return (
     <>

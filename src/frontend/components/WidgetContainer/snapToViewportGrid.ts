@@ -36,15 +36,19 @@ const EDGE_ESCAPE_PX = 6;
 const EDGE_LOCK_THRESHOLD_PX = 4;
 const EDGE_RELEASE_FREE_MS = 250;
 
+/** Computes the pixel size of one grid cell for a given viewport dimension. */
 const getGridSize = (length: number) =>
   Math.max(1, Math.round(length / VIEWPORT_GRID_DIVISIONS));
 
+/** Snaps a value to the nearest grid cell relative to an origin. */
 const snapToGrid = (value: number, origin: number, gridSize: number) =>
   origin + Math.round((value - origin) / gridSize) * gridSize;
 
+/** Returns true when value is within threshold pixels of edge. */
 const isNearEdge = (value: number, edge: number, threshold: number) =>
   Math.abs(value - edge) <= threshold;
 
+/** Returns true when two inclusive ranges overlap. */
 const rangesOverlap = (
   firstStart: number,
   firstEnd: number,
@@ -52,6 +56,10 @@ const rangesOverlap = (
   secondEnd: number
 ) => firstStart <= secondEnd && secondStart <= firstEnd;
 
+/**
+ * Returns horizontal snap targets: viewport left/right edges plus the left and right
+ * edges of any sibling widgets whose vertical extent overlaps the current layout.
+ */
 const getHorizontalTargets = (
   bounds: SnapBounds,
   siblingLayouts: WidgetLayout[],
@@ -74,6 +82,10 @@ const getHorizontalTargets = (
     ]),
 ];
 
+/**
+ * Returns vertical snap targets: viewport top/bottom edges plus the top and bottom
+ * edges of any sibling widgets whose horizontal extent overlaps the current layout.
+ */
 const getVerticalTargets = (
   bounds: SnapBounds,
   siblingLayouts: WidgetLayout[],
@@ -96,6 +108,7 @@ const getVerticalTargets = (
     ]),
 ];
 
+/** Returns the closest target within threshold, or undefined if none qualify. */
 const findNearestTarget = (
   value: number,
   targets: number[],
@@ -111,6 +124,10 @@ const findNearestTarget = (
   }, undefined);
 };
 
+/**
+ * Returns true while the lock should hold: the edge hasn't exceeded EDGE_ESCAPE_PX
+ * from the snap target and the lock hasn't expired after EDGE_LOCK_MS.
+ */
 const shouldKeepEdgeLock = (
   edge: SnapEdge,
   layout: WidgetLayout,
@@ -129,6 +146,10 @@ const shouldKeepEdgeLock = (
   return layout.y + layout.height <= target + EDGE_ESCAPE_PX;
 };
 
+/**
+ * Snaps the given edge to target. When preserveOppositeEdge is true (resize mode)
+ * the opposite edge stays fixed and size adjusts accordingly.
+ */
 const applyEdgeLock = (
   layout: WidgetLayout,
   edge: SnapEdge,
@@ -168,6 +189,10 @@ const applyEdgeLock = (
   return { ...layout, y: target - layout.height };
 };
 
+/**
+ * Restores the unsnapped (raw) position for the given edge, used when releasing
+ * a lock so the widget tracks the pointer again instead of staying snapped.
+ */
 const applyRawEdge = (
   layout: WidgetLayout,
   edge: SnapEdge,
@@ -205,6 +230,7 @@ const applyRawEdge = (
   return { ...layout, y: rawLayout.y };
 };
 
+/** Returns a new state object with the given edge entry removed. */
 const omitEdgeState = (
   state: ViewportGridSnapState,
   edge: SnapEdge
@@ -214,6 +240,12 @@ const omitEdgeState = (
   ) as ViewportGridSnapState;
 };
 
+/**
+ * Core snap-lock state machine for a single edge. Acquires a lock when the raw edge
+ * crosses within threshold of a target, holds it for EDGE_LOCK_MS, then releases
+ * into a free period (EDGE_RELEASE_FREE_MS) before allowing re-lock. The suppressed
+ * state prevents immediate re-lock after the user escapes back to the same target.
+ */
 const lockEdgeIfNear = (
   layout: WidgetLayout,
   edge: SnapEdge,
@@ -301,6 +333,11 @@ const lockEdgeIfNear = (
   };
 };
 
+/**
+ * Snaps a dragged widget position to the viewport grid and to sibling/boundary edges.
+ * Pass shift-key state via options.disabled to temporarily bypass snapping.
+ * The returned state must be threaded back in on subsequent calls for lock continuity.
+ */
 export const snapLayoutPositionToViewportGrid = (
   layout: WidgetLayout,
   options: ViewportGridSnapOptions = {},
@@ -361,6 +398,10 @@ export const snapLayoutPositionToViewportGrid = (
   return { layout: result, state: nextState };
 };
 
+/**
+ * Clamps width/height to minimums after snapping, anchoring to the stationary edge
+ * so the fixed side of the widget doesn't shift when the minimum kicks in.
+ */
 const enforceResizeMinimums = (
   layout: WidgetLayout,
   direction: ResizeDirection,
@@ -388,6 +429,11 @@ const enforceResizeMinimums = (
   return nextLayout;
 };
 
+/**
+ * Snaps a resize operation to the viewport grid and to sibling/boundary edges.
+ * Only the edges active in `direction` are snapped; opposite edges are preserved.
+ * Minimum dimensions are enforced after snapping to avoid zero-size widgets.
+ */
 export const snapLayoutResizeToViewportGrid = (
   layout: WidgetLayout,
   direction: ResizeDirection,
