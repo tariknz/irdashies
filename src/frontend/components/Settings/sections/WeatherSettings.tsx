@@ -38,6 +38,7 @@ const sortableSettings: SortableSetting[] = [
   { id: 'trackTemp', label: 'Track Temperature', configKey: 'trackTemp' },
   { id: 'airTemp', label: 'Air Temperature', configKey: 'airTemp' },
   { id: 'wind', label: 'Wind', configKey: 'wind' },
+  { id: 'humidity', label: 'Humidity', configKey: 'humidity' },
   { id: 'precipitation', label: 'Precipitation', configKey: 'precipitation' },
   { id: 'wetness', label: 'Wetness', configKey: 'wetness' },
   { id: 'trackState', label: 'Track State', configKey: 'trackState' },
@@ -64,7 +65,8 @@ const DisplaySettingsList = ({
       onReorder={(newItems) => onReorder(newItems.map((i) => i.id))}
       renderItem={(setting, sortableProps) => {
         const configValue = settings.config[setting.configKey];
-        const isEnabled = (configValue as { enabled: boolean }).enabled;
+        const isEnabled =
+          (configValue as { enabled?: boolean } | undefined)?.enabled ?? true;
 
         return (
           <DraggableSettingItem
@@ -72,10 +74,10 @@ const DisplaySettingsList = ({
             label={setting.label}
             enabled={isEnabled}
             onToggle={(enabled) => {
-              const cv = settings.config[setting.configKey] as {
-                enabled: boolean;
-                [key: string]: unknown;
-              };
+              const cv =
+                (settings.config[setting.configKey] as
+                  | { enabled?: boolean; [key: string]: unknown }
+                  | undefined) ?? {};
               handleConfigChange({
                 [setting.configKey]: { ...cv, enabled },
               });
@@ -194,6 +196,30 @@ export const WeatherSettings = () => {
                       handleConfigChange({ background: { opacity: v } })
                     }
                   />
+
+                  <SettingButtonGroupRow<'vertical' | 'horizontal'>
+                    title="Layout"
+                    value={settings.config.layout ?? 'vertical'}
+                    options={[
+                      { label: 'Vertical', value: 'vertical' },
+                      { label: 'Horizontal', value: 'horizontal' },
+                    ]}
+                    onChange={(v) => handleConfigChange({ layout: v })}
+                  />
+
+                  {settings.config.layout === 'horizontal' && (
+                    <SettingButtonGroupRow<'compact' | 'full'>
+                      title="Horizontal View"
+                      value={settings.config.horizontalMode ?? 'compact'}
+                      options={[
+                        { label: 'Compact', value: 'compact' },
+                        { label: 'Full', value: 'full' },
+                      ]}
+                      onChange={(v) =>
+                        handleConfigChange({ horizontalMode: v })
+                      }
+                    />
+                  )}
 
                   <SettingButtonGroupRow<'auto' | 'Metric' | 'Imperial'>
                     title="Temperature Units"

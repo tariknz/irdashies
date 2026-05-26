@@ -3,7 +3,7 @@ import {
   useSessionVisibility,
   useThrottledWeather,
 } from '@irdashies/context';
-import { useTrackTemperature } from '../Standings/hooks/useTrackTemperature';
+import { useTrackTemperature } from './hooks/useTrackTemperature';
 import { WeatherTemp } from './WeatherTemp/WeatherTemp';
 import { WeatherTrackWetness } from './WeatherTrackWetness/WeatherTrackWetness';
 import { WeatherTrackRubbered } from './WeatherTrackRubbered/WeatherTrackRubbered';
@@ -53,12 +53,21 @@ export const Weather = () => {
   // Column ordering: depends ONLY on settings, NOT on telemetry data.
   // Settings change when the user edits config (very rare during a session).
   const displayOrder = settings?.displayOrder as string[] | undefined;
+  const layout = settings?.layout ?? 'vertical';
+  const horizontalMode = settings?.horizontalMode ?? 'compact';
+  const componentVariant =
+    layout === 'vertical'
+      ? 'default'
+      : horizontalMode === 'compact'
+        ? 'compact'
+        : 'inline';
 
   const visibleColumnIds = useMemo(() => {
     const allColumns: { id: WeatherColumnId; enabled: boolean }[] = [
       { id: 'trackTemp', enabled: settings?.trackTemp?.enabled ?? true },
       { id: 'airTemp', enabled: settings?.airTemp?.enabled ?? true },
       { id: 'wind', enabled: settings?.wind?.enabled ?? true },
+      { id: 'humidity', enabled: settings?.humidity?.enabled ?? true },
       {
         id: 'precipitation',
         enabled: settings?.precipitation?.enabled ?? true,
@@ -86,6 +95,7 @@ export const Weather = () => {
     settings?.trackTemp?.enabled,
     settings?.airTemp?.enabled,
     settings?.wind?.enabled,
+    settings?.humidity?.enabled,
     settings?.precipitation?.enabled,
     settings?.wetness?.enabled,
     settings?.trackState?.enabled,
@@ -104,6 +114,7 @@ export const Weather = () => {
             title="Track"
             value={trackTemp}
             icon={RoadHorizonIcon}
+            variant={componentVariant}
           />
         );
       case 'airTemp':
@@ -113,6 +124,7 @@ export const Weather = () => {
             title="Air"
             value={airTemp}
             icon={ThermometerIcon}
+            variant={componentVariant}
           />
         );
       case 'wind':
@@ -122,23 +134,41 @@ export const Weather = () => {
             speedMs={weather.windVelocity}
             direction={relativeWindDirection}
             metric={isMetric}
+            variant={componentVariant}
           />
         );
       case 'humidity':
-        return <WeatherHumidity key={id} humidity={weather.humidity} />;
+        return (
+          <WeatherHumidity
+            key={id}
+            humidity={weather.humidity}
+            variant={componentVariant}
+          />
+        );
       case 'precipitation':
         return (
           <WeatherPrecipitation
             key={id}
             precipitation={weather.precipitation}
+            variant={componentVariant}
           />
         );
       case 'wetness':
         return (
-          <WeatherTrackWetness key={id} trackMoisture={weather.trackMoisture} />
+          <WeatherTrackWetness
+            key={id}
+            trackMoisture={weather.trackMoisture}
+            variant={componentVariant}
+          />
         );
       case 'trackState':
-        return <WeatherTrackRubbered key={id} trackRubbered={trackRubbered} />;
+        return (
+          <WeatherTrackRubbered
+            key={id}
+            trackRubbered={trackRubbered}
+            variant={componentVariant}
+          />
+        );
     }
   };
 
@@ -156,7 +186,13 @@ export const Weather = () => {
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
       }}
     >
-      <div className="flex flex-col w-full gap-2">
+      <div
+        className={
+          layout === 'horizontal'
+            ? 'flex flex-row flex-wrap w-full gap-1'
+            : 'flex flex-col w-full gap-2'
+        }
+      >
         {visibleColumnIds.map(renderColumn)}
       </div>
     </div>

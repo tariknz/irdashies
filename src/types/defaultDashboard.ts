@@ -49,8 +49,8 @@ export const defaultDashboard: {
         background: {
           opacity: 80,
         },
-        foreground: { 
-          opacity: 70, 
+        foreground: {
+          opacity: 70,
         },
         countryFlags: {
           enabled: true,
@@ -386,8 +386,8 @@ export const defaultDashboard: {
         background: {
           opacity: 80,
         },
-        foreground: { 
-          opacity: 70, 
+        foreground: {
+          opacity: 70,
         },
         position: {
           enabled: true,
@@ -690,6 +690,8 @@ export const defaultDashboard: {
         background: {
           opacity: 25,
         },
+        layout: 'vertical',
+        horizontalMode: 'compact',
         units: 'auto',
         displayOrder: [
           'trackTemp',

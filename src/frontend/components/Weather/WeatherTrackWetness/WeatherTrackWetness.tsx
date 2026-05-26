@@ -18,10 +18,11 @@ const WETNESS_LEVELS: Record<number, string> = {
 
 export interface WeatherTrackWetnessProps {
   trackMoisture?: number;
+  variant?: 'default' | 'compact' | 'inline';
 }
 
 export const WeatherTrackWetness = memo(
-  ({ trackMoisture }: WeatherTrackWetnessProps) => {
+  ({ trackMoisture, variant = 'default' }: WeatherTrackWetnessProps) => {
     // Calculate wetness percentage (0-100%)
     const normalizedMoisture = trackMoisture || MIN_WETNESS;
     const wetnessScale = MAX_WETNESS - MIN_WETNESS;
@@ -34,6 +35,33 @@ export const WeatherTrackWetness = memo(
       safeTrackMoisture in WETNESS_LEVELS
         ? WETNESS_LEVELS[safeTrackMoisture]
         : 'Unknown';
+
+    if (variant === 'compact') {
+      return (
+        <div className="bg-slate-800/70 px-2 py-1 rounded-sm min-w-0">
+          <div className="flex items-center gap-x-1.5">
+            <WavesIcon size={12} className="flex-none text-white/50" />
+            <span className="text-sm font-medium capitalize truncate">
+              {trackState}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    if (variant === 'inline') {
+      return (
+        <div className="bg-slate-800/70 px-2 py-1 rounded-sm min-w-0">
+          <div className="flex items-center gap-x-1.5 text-sm">
+            <WavesIcon size={12} className="flex-none text-white/50" />
+            <span className="truncate min-w-0">Wetness</span>
+            <div className="flex-none whitespace-nowrap text-right font-medium capitalize">
+              {trackState}
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="bg-slate-800/70 p-2 rounded-sm w-full min-w-0">
