@@ -4,18 +4,22 @@ import {
   useRef,
   useState,
   useEffect,
+  useMemo,
   CSSProperties,
 } from 'react';
 import type { DashboardWidget, WidgetLayout } from '@irdashies/types';
 import { useDragWidget } from './useDragWidget';
 import { useResizeWidget } from './useResizeWidget';
 import { ResizeHandles } from './ResizeHandle';
+import { EdgeDistanceLabels } from './EdgeDistanceLabels';
+import { useEdgeDistances } from './useEdgeDistances';
 import { getWidgetName } from '../../constants/widgetNames';
 import { ResizeIcon, GearIcon, XIcon } from '@phosphor-icons/react';
-import { useContainerOffset } from '@irdashies/context';
+import { useContainerOffset, useDashboard } from '@irdashies/context';
 
 export interface WidgetContainerProps {
   widget: DashboardWidget;
+  siblingLayouts?: WidgetLayout[];
   editMode: boolean;
   zIndex: number;
   onLayoutChange: (widgetId: string, layout: WidgetLayout) => void;
@@ -27,6 +31,7 @@ export interface WidgetContainerProps {
 export const WidgetContainer = memo(
   ({
     widget,
+    siblingLayouts = [],
     editMode,
     zIndex,
     onLayoutChange,
@@ -41,6 +46,23 @@ export const WidgetContainer = memo(
     );
     const pendingLayoutRef = useRef<WidgetLayout | null>(null);
     const containerOffset = useContainerOffset();
+    const { containerBoundsInfo, currentDashboard } = useDashboard();
+    const showEditModePixelDistances =
+      currentDashboard?.generalSettings?.showEditModePixelDistances ?? true;
+    const snapEditModeWidgetsToGrid =
+      currentDashboard?.generalSettings?.snapEditModeWidgetsToGrid ?? true;
+    const snapBounds =
+      containerBoundsInfo?.displayBounds ?? containerBoundsInfo?.expected;
+    const gridSnapOptions = useMemo(
+      () =>
+        snapEditModeWidgetsToGrid
+          ? {
+              bounds: snapBounds,
+              siblingLayouts,
+            }
+          : undefined,
+      [snapEditModeWidgetsToGrid, siblingLayouts, snapBounds]
+    );
 
     const handleLayoutChange = useCallback(
       (newLayout: WidgetLayout) => {
@@ -75,12 +97,14 @@ export const WidgetContainer = memo(
       layout: localLayout,
       onLayoutChange: handleLayoutChange,
       enabled: editMode,
+      snapOptions: gridSnapOptions,
     });
 
     const { isResizing, getResizeHandleProps } = useResizeWidget({
       layout: localLayout,
       onLayoutChange: handleLayoutChange,
       enabled: editMode,
+      snapOptions: gridSnapOptions,
     });
 
     // Use local state during interaction, otherwise use prop
@@ -127,6 +151,10 @@ export const WidgetContainer = memo(
 
     // Always use localLayout for display
     const displayedLayout = localLayout;
+    const edgeDistances = useEdgeDistances(
+      displayedLayout,
+      editMode && showEditModePixelDistances
+    );
 
     // Transform widget coordinates from screen space to container space
     // Widget coords assume primary display at (0,0), but container may span multiple displays
@@ -195,6 +223,11 @@ export const WidgetContainer = memo(
 
             {/* Resize handles */}
             <ResizeHandles getResizeHandleProps={getResizeHandleProps} />
+
+            {/* Edge distance indicators */}
+            {showEditModePixelDistances && edgeDistances && (
+              <EdgeDistanceLabels distances={edgeDistances} />
+            )}
           </>
         )}
       </div>

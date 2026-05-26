@@ -1,10 +1,16 @@
 import { useState, useCallback, useRef, useEffect, PointerEvent } from 'react';
 import type { WidgetLayout } from '@irdashies/types';
+import {
+  ViewportGridSnapOptions,
+  ViewportGridSnapState,
+  snapLayoutPositionToViewportGrid,
+} from './snapToViewportGrid';
 
 interface UseDragWidgetOptions {
   layout: WidgetLayout;
   onLayoutChange: (layout: WidgetLayout) => void;
   enabled: boolean;
+  snapOptions?: ViewportGridSnapOptions;
 }
 
 interface DragState {
@@ -18,10 +24,12 @@ export function useDragWidget({
   layout,
   onLayoutChange,
   enabled,
+  snapOptions,
 }: UseDragWidgetOptions) {
   const [isDragging, setIsDragging] = useState(false);
   const dragStateRef = useRef<DragState | null>(null);
   const layoutRef = useRef(layout);
+  const snapStateRef = useRef<ViewportGridSnapState>({});
 
   // Keep layout ref updated
   useEffect(() => {
@@ -41,6 +49,7 @@ export function useDragWidget({
         startLayoutX: layoutRef.current.x,
         startLayoutY: layoutRef.current.y,
       };
+      snapStateRef.current = {};
       setIsDragging(true);
     },
     [enabled]
@@ -56,15 +65,25 @@ export function useDragWidget({
       const deltaX = e.clientX - dragStateRef.current.startX;
       const deltaY = e.clientY - dragStateRef.current.startY;
 
-      onLayoutChange({
+      const nextLayout = {
         ...layoutRef.current,
         x: dragStateRef.current.startLayoutX + deltaX,
         y: dragStateRef.current.startLayoutY + deltaY,
-      });
+      };
+
+      const snapped = snapLayoutPositionToViewportGrid(
+        nextLayout,
+        { ...snapOptions, disabled: e.shiftKey },
+        snapStateRef.current
+      );
+
+      snapStateRef.current = snapped.state;
+      onLayoutChange(snapped.layout);
     };
 
     const handlePointerUp = () => {
       dragStateRef.current = null;
+      snapStateRef.current = {};
       setIsDragging(false);
     };
 
@@ -75,7 +94,7 @@ export function useDragWidget({
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
-  }, [isDragging, onLayoutChange]);
+  }, [isDragging, onLayoutChange, snapOptions]);
 
   return {
     isDragging,

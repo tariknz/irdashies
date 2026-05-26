@@ -1,15 +1,12 @@
 import { useState, useCallback, useRef, useEffect, PointerEvent } from 'react';
 import type { WidgetLayout } from '@irdashies/types';
+import {
+  ViewportGridSnapOptions,
+  ViewportGridSnapState,
+  snapLayoutResizeToViewportGrid,
+} from './snapToViewportGrid';
 
-export type ResizeDirection =
-  | 'n'
-  | 's'
-  | 'e'
-  | 'w'
-  | 'ne'
-  | 'nw'
-  | 'se'
-  | 'sw';
+export type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 
 interface UseResizeWidgetOptions {
   layout: WidgetLayout;
@@ -17,6 +14,7 @@ interface UseResizeWidgetOptions {
   enabled: boolean;
   minWidth?: number;
   minHeight?: number;
+  snapOptions?: ViewportGridSnapOptions;
 }
 
 interface ResizeState {
@@ -35,12 +33,14 @@ export function useResizeWidget({
   enabled,
   minWidth = MIN_WIDTH,
   minHeight = MIN_HEIGHT,
+  snapOptions,
 }: UseResizeWidgetOptions) {
   const [isResizing, setIsResizing] = useState(false);
   const [activeDirection, setActiveDirection] =
     useState<ResizeDirection | null>(null);
   const resizeStateRef = useRef<ResizeState | null>(null);
   const layoutRef = useRef(layout);
+  const snapStateRef = useRef<ViewportGridSnapState>({});
 
   // Keep layout ref updated
   useEffect(() => {
@@ -60,6 +60,7 @@ export function useResizeWidget({
         startY: e.clientY,
         startLayout: { ...layoutRef.current },
       };
+      snapStateRef.current = {};
       setIsResizing(true);
       setActiveDirection(direction);
     },
@@ -101,11 +102,22 @@ export function useResizeWidget({
         newLayout.height = newHeight;
       }
 
-      onLayoutChange(newLayout);
+      const snapped = snapLayoutResizeToViewportGrid(
+        newLayout,
+        direction,
+        { ...snapOptions, disabled: e.shiftKey },
+        minWidth,
+        minHeight,
+        snapStateRef.current
+      );
+
+      snapStateRef.current = snapped.state;
+      onLayoutChange(snapped.layout);
     };
 
     const handlePointerUp = () => {
       resizeStateRef.current = null;
+      snapStateRef.current = {};
       setIsResizing(false);
       setActiveDirection(null);
     };
@@ -117,7 +129,7 @@ export function useResizeWidget({
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
-  }, [isResizing, minWidth, minHeight, onLayoutChange]);
+  }, [isResizing, minWidth, minHeight, onLayoutChange, snapOptions]);
 
   const getResizeHandleProps = useCallback(
     (direction: ResizeDirection) => ({
