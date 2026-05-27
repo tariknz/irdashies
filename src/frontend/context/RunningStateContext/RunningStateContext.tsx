@@ -12,7 +12,7 @@ interface RunningStateContextProps {
 }
 
 interface RunningStateProviderProps {
-  bridge: IrSdkBridge;
+  bridge: IrSdkBridge | Promise<IrSdkBridge>;
   children: ReactNode;
 }
 
@@ -36,8 +36,26 @@ export const RunningStateProvider = ({
   const [running, setRunning] = useState(false);
 
   useEffect(() => {
-    const unsub = bridge.onRunningState((isRunning) => setRunning(isRunning));
+    let cancelled = false;
+    let unsub: (() => void) | undefined;
+    if (bridge instanceof Promise) {
+      bridge.then((resolved) => {
+        if (cancelled) {
+          resolved.stop();
+          return;
+        }
+        unsub = resolved.onRunningState((isRunning) => setRunning(isRunning));
+      });
+      return () => {
+        cancelled = true;
+        if (unsub) unsub();
+        bridge.then((resolved) => resolved.stop());
+      };
+    }
+
+    unsub = bridge.onRunningState((isRunning) => setRunning(isRunning));
     return () => {
+      cancelled = true;
       if (unsub) unsub();
       bridge.stop();
     };
