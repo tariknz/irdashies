@@ -83,7 +83,7 @@ export const useLapTimeLog = () => {
   const setPersonalBest = usePersonalBestStore(
     (state) => state.setPersonalBest
   );
-  const pbMetaData = useRef({ trackId, playerCarName, currentPersonalBest });  
+  const pbMetaData = useRef({ trackId, playerCarName, currentPersonalBest });
   useEffect(() => {
     pbMetaData.current = { trackId, playerCarName, currentPersonalBest };
   }, [trackId, playerCarName, currentPersonalBest]);
@@ -200,7 +200,7 @@ export const useLapTimeLog = () => {
           : 0,
       dirty: isDirty,
     };
-    setHistory((prev) => [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES));    
+    setHistory((prev) => [newEntry, ...prev].slice(0, MAX_HISTORY_ENTRIES));
     // reset for new lap
     lastLoggedLap.current = lapCompleted;
     lastLoggedTime.current = lastLapTime;
@@ -215,26 +215,24 @@ export const useLapTimeLog = () => {
     incidentCount,
     referenceTime,
     history,
-    currentPersonalBest,
-    setPersonalBest,
-    trackId,
-    playerCarName,
   ]);
 
   // 5. check personal best
   useEffect(() => {
     const isValidTime = bestLapTime > 0;
     if (!isValidTime) return;
-    const { 
-      trackId: currentTrackId, 
-      playerCarName: currentCar, 
-      currentPersonalBest: savedPB 
+    const {
+      trackId: currentTrackId,
+      playerCarName: currentCar,
+      currentPersonalBest: savedPB,
     } = pbMetaData.current;
-    const hasPersonalBestKey = Boolean(currentTrackId) && currentCar !== 'unknown';  
-    const isBetter = savedPB === undefined || savedPB === null || bestLapTime < savedPB;
+    const hasPersonalBestKey =
+      Boolean(currentTrackId) && currentCar !== 'unknown';
+    const isBetter =
+      savedPB === undefined || savedPB === null || bestLapTime < savedPB;
     if (hasPersonalBestKey && isBetter) {
       setPersonalBest(currentTrackId, currentCar, bestLapTime);
-    }    
+    }
   }, [bestLapTime, setPersonalBest]);
 
   return {
