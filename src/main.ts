@@ -26,7 +26,7 @@ import { setupKeybindingsBridge } from './app/bridge/keybindingsBridge';
 import { setupLogBridge } from './app/bridge/logBridge';
 import { setupPersonalBestLapTimesBridge } from './app/bridge/personalBestLapTimesBridge';
 import {
-  migrateReferenceLaps,
+  validateReferenceLapFile,
   flushReferenceLapsOnShutdown,
 } from './app/storage/referenceLaps';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
@@ -55,7 +55,7 @@ app.on('ready', async () => {
   await iRacingSDKSetup(overlayManager);
 
   // Perform one-time cleanup of old reference laps
-  migrateReferenceLaps();
+  validateReferenceLapFile();
 
   const dashboard = getOrCreateDefaultDashboard();
   const bridge = getCurrentBridge();

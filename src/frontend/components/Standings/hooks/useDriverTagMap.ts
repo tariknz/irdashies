@@ -136,7 +136,7 @@ export const useDriverTagMap = (
     const tagMap = new Map<number, ResolvedDriverTag>();
     for (const driver of drivers) {
       const userId = driver.UserID != null ? String(driver.UserID) : undefined;
-      const name = (driver.UserName ?? '').trim();
+      const name = String(driver.UserName ?? '').trim();
       const tag = resolveTag(userId, name, tagSettings, lcMapping, groupsById);
       if (tag) tagMap.set(driver.CarIdx, tag);
     }

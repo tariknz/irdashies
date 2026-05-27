@@ -4,20 +4,27 @@ import path from 'node:path';
 import logger from '../logger';
 
 const dataPath = app.getPath('userData');
-const filePath = path.join(dataPath, 'config.json');
+const FILEPATH = path.join(dataPath, 'config.json');
 
-export const writeData = (key: string, value: unknown) => {
-  const contents = parseData();
+export const writeData = (
+  key: string,
+  value: unknown,
+  filePath: string = FILEPATH
+) => {
+  const contents = parseData(filePath);
   contents[key] = value;
   fs.writeFileSync(filePath, JSON.stringify(contents));
 };
 
-export const readData = <T>(key: string): T | undefined => {
-  const contents = parseData();
+export const readData = <T>(
+  key: string,
+  filePath: string = FILEPATH
+): T | undefined => {
+  const contents = parseData(filePath);
   return contents[key] as T;
 };
 
-const parseData = () => {
+const parseData = (filePath: string) => {
   const defaultData = {};
   try {
     const data = fs.readFileSync(filePath, 'utf8');

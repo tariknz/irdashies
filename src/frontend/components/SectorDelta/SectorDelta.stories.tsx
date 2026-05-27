@@ -168,7 +168,6 @@ function GhostLapSeeder() {
     const ghostLap = buildMockGhostLap(GHOST_BOUNDARIES, GHOST_SECTOR_TIMES);
 
     useReferenceLapStore.setState({
-      seriesId: 1,
       trackId: 1,
       pointsCount: ghostLap.pointsCount,
       interval: ghostLap.interval,
