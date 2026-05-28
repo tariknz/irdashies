@@ -21,9 +21,6 @@ export const BROKEN_TRACKS: BrokenTrack[] = [
   { id: 217, name: 'Irwindale Figure 8', issue: 'non-continuous' },
   { id: 388, name: 'Irwindale Figure 8', issue: 'non-continuous' },
 
-  // Nashville Superspeedway - no position
-  { id: 400, name: 'Nashville Superspeedway', issue: 'no position' },
-
   // LA Coliseum - two paths
   { id: 437, name: 'LA Coliseum', issue: 'two paths' },
 
