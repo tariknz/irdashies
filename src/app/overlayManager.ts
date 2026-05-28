@@ -196,6 +196,12 @@ export class OverlayManager {
       }
     );
 
+    // Contain the guest after attachment: no popups, no navigating away.
+    browserWindow.webContents.on('did-attach-webview', (_event, guest) => {
+      guest.setWindowOpenHandler(() => ({ action: 'deny' }));
+      guest.on('will-navigate', (e) => e.preventDefault());
+    });
+
     browserWindow.on('page-title-updated', (evt) => {
       evt.preventDefault();
     });
