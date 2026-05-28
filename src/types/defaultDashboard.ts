@@ -1179,7 +1179,7 @@ export const defaultDashboard: {
       },
       config: {
         deviceId: '',
-        widgetUrl: 'https://app.hyperate.io/animation/93',
+        widgetUrl: '',
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,

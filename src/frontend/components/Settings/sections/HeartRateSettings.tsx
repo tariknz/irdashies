@@ -73,7 +73,7 @@ export const HeartRateSettings = () => {
                 app.hyperate.io/animation/59/YOUR-ID-HERE
               </span>
               . Your Session ID is filled in automatically. Leave blank for the
-              default overlay.
+              default animated heart.
             </p>
           </div>
         </SettingsSection>

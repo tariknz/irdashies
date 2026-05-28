@@ -1,9 +1,15 @@
 const DEFAULT_HOST = 'https://app.hyperate.io';
 const WIDGET_HOST = 'https://hyperate.io';
+/** Animation used when no widget is configured (blank field) or input is invalid. */
+const DEFAULT_ANIMATION = '93';
 
 /** hyperate.io and any subdomain (app., www., …). */
 const isHyperateHost = (hostname: string): boolean =>
   /(^|\.)hyperate\.io$/i.test(hostname);
+
+/** The default embed: HypeRate animation 93 for this session. */
+const defaultEmbed = (id: string): string =>
+  `${DEFAULT_HOST}/animation/${DEFAULT_ANIMATION}/${encodeURIComponent(id)}`;
 
 /**
  * Builds an embeddable HypeRate URL from whatever the user pasted, always
@@ -16,9 +22,11 @@ const isHyperateHost = (hostname: string): boolean =>
  *   - hyperate.io / www -> id is the `id` QUERY param
  *       hyperate.io/Bouncing_Heart_Widget?id=<id>
  *
- * Tolerated inputs: blank (default overlay), bare name ("Bouncing_Heart_Widget"),
- * name+path ("007-Widget/index.html"), "animation/59/<id>", host without scheme,
- * full URLs, and the literal "YOUR-ID-HERE" placeholder.
+ * Tolerated inputs: blank (default animation 93), bare name
+ * ("Bouncing_Heart_Widget"), name+path ("007-Widget/index.html"),
+ * "animation/59/<id>", host without scheme, full URLs, and the literal
+ * "YOUR-ID-HERE" placeholder. Non-HypeRate or unparseable input also falls
+ * back to the default animation.
  */
 export function buildHyperateEmbedUrl(
   deviceId: string,
@@ -28,7 +36,7 @@ export function buildHyperateEmbedUrl(
   const raw = widgetInput?.trim();
 
   if (!raw) {
-    return `${DEFAULT_HOST}/${encodeURIComponent(id)}`;
+    return defaultEmbed(id);
   }
 
   // HypeRate ships their copy-paste URLs with this literal placeholder.
@@ -50,12 +58,12 @@ export function buildHyperateEmbedUrl(
   try {
     url = new URL(str);
   } catch {
-    return `${DEFAULT_HOST}/${encodeURIComponent(id)}`;
+    return defaultEmbed(id);
   }
 
-  // Only ever embed HypeRate; anything else falls back to the default overlay.
+  // Only ever embed HypeRate; anything else falls back to the default animation.
   if (!isHyperateHost(url.hostname)) {
-    return `${DEFAULT_HOST}/${encodeURIComponent(id)}`;
+    return defaultEmbed(id);
   }
 
   if (!id) return url.toString();

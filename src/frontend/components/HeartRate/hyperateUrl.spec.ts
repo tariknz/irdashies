@@ -2,10 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { buildHyperateEmbedUrl } from './hyperateUrl';
 
 describe('buildHyperateEmbedUrl', () => {
-  it('falls back to the default overlay when blank', () => {
-    expect(buildHyperateEmbedUrl('KiY')).toBe('https://app.hyperate.io/KiY');
+  it('defaults to animation 93 when blank', () => {
+    expect(buildHyperateEmbedUrl('KiY')).toBe(
+      'https://app.hyperate.io/animation/93/KiY'
+    );
     expect(buildHyperateEmbedUrl('KiY', '   ')).toBe(
-      'https://app.hyperate.io/KiY'
+      'https://app.hyperate.io/animation/93/KiY'
     );
   });
 
@@ -114,12 +116,12 @@ describe('buildHyperateEmbedUrl', () => {
     ).toBe('https://app.hyperate.io/animation/93/KiY');
   });
 
-  it('falls back to the default overlay for non-HypeRate hosts', () => {
+  it('falls back to the default animation for non-HypeRate hosts', () => {
     expect(buildHyperateEmbedUrl('KiY', 'https://example.com/widget?id=1')).toBe(
-      'https://app.hyperate.io/KiY'
+      'https://app.hyperate.io/animation/93/KiY'
     );
     expect(buildHyperateEmbedUrl('KiY', 'evil.com/Bouncing_Heart_Widget')).toBe(
-      'https://app.hyperate.io/KiY'
+      'https://app.hyperate.io/animation/93/KiY'
     );
   });
 });
