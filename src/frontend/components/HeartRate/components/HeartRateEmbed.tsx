@@ -55,6 +55,13 @@ interface Box {
   h: number;
 }
 
+const isBox = (v: unknown): v is Box =>
+  typeof v === 'object' &&
+  v !== null &&
+  (['x', 'y', 'w', 'h'] as const).every(
+    (k) => typeof (v as Record<string, unknown>)[k] === 'number'
+  );
+
 const isElectron =
   typeof navigator !== 'undefined' && /electron/i.test(navigator.userAgent);
 
@@ -109,11 +116,10 @@ export const HeartRateEmbed = memo(
         webview
           .executeJavaScript(MEASURE_JS)
           .then((res) => {
-            const b = res as Box | null;
-            if (!b || b.w <= 0 || b.h <= 0) return;
+            if (!isBox(res) || res.w <= 0 || res.h <= 0) return;
             // Union successive samples so animated widgets (e.g. a bouncing
             // heart) aren't clipped at their peak.
-            box = measured ? unionBox(box, b) : b;
+            box = measured ? unionBox(box, res) : res;
             measured = true;
             applyFit();
           })

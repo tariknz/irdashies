@@ -1,6 +1,10 @@
 const DEFAULT_HOST = 'https://app.hyperate.io';
 const WIDGET_HOST = 'https://hyperate.io';
 
+/** hyperate.io and any subdomain (app., www., …). */
+const isHyperateHost = (hostname: string): boolean =>
+  /(^|\.)hyperate\.io$/i.test(hostname);
+
 /**
  * Builds an embeddable HypeRate URL from whatever the user pasted, always
  * filling in OUR session id (any id baked into the input is ignored).
@@ -46,6 +50,11 @@ export function buildHyperateEmbedUrl(
   try {
     url = new URL(str);
   } catch {
+    return `${DEFAULT_HOST}/${encodeURIComponent(id)}`;
+  }
+
+  // Only ever embed HypeRate; anything else falls back to the default overlay.
+  if (!isHyperateHost(url.hostname)) {
     return `${DEFAULT_HOST}/${encodeURIComponent(id)}`;
   }
 

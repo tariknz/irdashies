@@ -176,6 +176,26 @@ export class OverlayManager {
 
     browserWindow.setBounds(expectedBounds);
 
+    // Harden the <webview> used by the Heart Rate widget: keep the guest on
+    // secure defaults and only allow HypeRate hosts to attach.
+    browserWindow.webContents.on(
+      'will-attach-webview',
+      (event, webPreferences, params) => {
+        delete webPreferences.preload;
+        webPreferences.nodeIntegration = false;
+        webPreferences.contextIsolation = true;
+        let host = '';
+        try {
+          host = new URL(params.src).hostname;
+        } catch {
+          // invalid/missing src — blocked below
+        }
+        if (!/(^|\.)hyperate\.io$/i.test(host)) {
+          event.preventDefault();
+        }
+      }
+    );
+
     browserWindow.on('page-title-updated', (evt) => {
       evt.preventDefault();
     });

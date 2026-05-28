@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { TelemetryDecorator } from '@irdashies/storybook';
 import { HeartRateEmbed } from './components/HeartRateEmbed';
 
 // The widget embeds HypeRate's overlay. In Storybook (a browser, not Electron)
@@ -8,6 +9,7 @@ const meta: Meta<typeof HeartRateEmbed> = {
   component: HeartRateEmbed,
   title: 'widgets/HeartRate',
   decorators: [
+    TelemetryDecorator(),
     (Story) => (
       <div style={{ width: '240px', height: '160px' }}>
         <Story />

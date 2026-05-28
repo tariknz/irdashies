@@ -1,6 +1,6 @@
 import { useDashboard } from '@irdashies/context';
-import { getWidgetDefaultConfig } from '@irdashies/types';
-import type { HeartRateWidgetSettings } from '@irdashies/types';
+import { getWidgetDefaultConfig, deepMergeConfig } from '@irdashies/types';
+import type { HeartRateConfig, HeartRateWidgetSettings } from '@irdashies/types';
 
 const defaultConfig = getWidgetDefaultConfig('heartrate');
 
@@ -14,7 +14,12 @@ export const useHeartRateSettings = (): HeartRateWidgetSettings => {
   if (saved && typeof saved === 'object') {
     return {
       enabled: saved.enabled ?? false,
-      config: { ...defaultConfig, ...saved.config },
+      // Deep merge so a partial saved config (e.g. nested sessionVisibility)
+      // doesn't drop the other default flags.
+      config: deepMergeConfig(
+        defaultConfig as unknown as Record<string, unknown>,
+        saved.config
+      ) as unknown as HeartRateConfig,
     };
   }
 

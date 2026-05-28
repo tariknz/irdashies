@@ -113,4 +113,13 @@ describe('buildHyperateEmbedUrl', () => {
       buildHyperateEmbedUrl('KiY', 'https://app.hyperate.io/animation/93')
     ).toBe('https://app.hyperate.io/animation/93/KiY');
   });
+
+  it('falls back to the default overlay for non-HypeRate hosts', () => {
+    expect(buildHyperateEmbedUrl('KiY', 'https://example.com/widget?id=1')).toBe(
+      'https://app.hyperate.io/KiY'
+    );
+    expect(buildHyperateEmbedUrl('KiY', 'evil.com/Bouncing_Heart_Widget')).toBe(
+      'https://app.hyperate.io/KiY'
+    );
+  });
 });

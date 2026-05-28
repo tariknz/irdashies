@@ -3,13 +3,15 @@ import { useDashboard } from '@irdashies/context';
 import { useHeartRateSettings } from './hooks/useHeartRateSettings';
 import { HeartRateEmbed } from './components/HeartRateEmbed';
 
+// Registered widget roots are plain function components (see WIDGET_MAP's type
+// and the other widgets); they are not memo-wrapped.
 export const HeartRate = () => {
   const { isDemoMode } = useDashboard();
   const { enabled, config } = useHeartRateSettings();
 
   if (!isDemoMode && !enabled) return null;
 
-  if (!config.deviceId) {
+  if (!config.deviceId.trim()) {
     // Nothing to show on a live overlay until configured; in edit/preview show
     // a hint so the widget isn't invisible.
     if (!isDemoMode) return null;
