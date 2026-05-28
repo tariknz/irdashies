@@ -31,6 +31,12 @@ export const Tachometer = () => {
       carPath={tachometerData.carPath}
       shiftPointSettings={settings?.shiftPointSettings}
       opacity={settings?.background.opacity}
+      showOilTemp={settings?.showOilTemp ?? true}
+      showWaterTemp={settings?.showWaterTemp ?? true}
+      oilTempPosition={settings?.oilTempPosition ?? 'top'}
+      waterTempPosition={settings?.waterTempPosition ?? 'top'}
+      oilTemp={tachometerData.oilTemp}
+      waterTemp={tachometerData.waterTemp}
     />
   );
 };

@@ -28,6 +28,12 @@ export interface TachometerProps {
   shiftPointSettings?: ShiftPointSettings;
   /** Background opacity */
   opacity?: number;
+  oilTemp?: number;
+  waterTemp?: number;
+  showOilTemp?: boolean;
+  showWaterTemp?: boolean;
+  oilTempPosition?: 'top' | 'bottom';
+  waterTempPosition?: 'top' | 'bottom';
 }
 
 export const Tachometer = ({
@@ -45,6 +51,12 @@ export const Tachometer = ({
   carPath = undefined,
   shiftPointSettings = undefined,
   opacity = 100,
+  oilTemp = 0,
+  waterTemp = 0,
+  showOilTemp = true,
+  showWaterTemp = true,
+  oilTempPosition = 'top',
+  waterTempPosition = 'top',
 }: TachometerProps) => {
   const [flash, setFlash] = useState(false);
   const [customShiftFlash, setCustomShiftFlash] = useState(false);
@@ -278,10 +290,49 @@ export const Tachometer = ({
     }
   };
 
+  // Shared style classes matching the RPM box
+  const tempBoxClass =
+    'bg-slate-800/(--bg-opacity) text-base flex min-w-[5em] font-mono font-bold text-white px-3 rounded-lg whitespace-nowrap justify-center items-center gap-1';
+  const tempBoxStyle = {
+    height: '1.5em',
+    ['--bg-opacity' as string]: `${opacity ?? 80}%`,
+  };
+
+  const renderTemp = (label: string, value: number) => (
+    <div className={tempBoxClass} style={tempBoxStyle}>
+      <span className="text-[0.7em] text-gray-400">{label}</span>
+      <span>{Math.round(value)}°C</span>
+    </div>
+  );
+
+  const showTopRow =
+    (showOilTemp && oilTempPosition === 'top') ||
+    (showWaterTemp && waterTempPosition === 'top');
+  const showBottomRow =
+    (showOilTemp && oilTempPosition === 'bottom') ||
+    (showWaterTemp && waterTempPosition === 'bottom');
+
   return (
-    <>
+    <div className="@container-[size] flex flex-col w-full h-full justify-center gap-0">
+      {/* TOP TEMPS ROW */}
+      {showTopRow && (
+        <div className="flex flex-row justify-between items-center px-2">
+          <div>
+            {showOilTemp &&
+              oilTempPosition === 'top' &&
+              renderTemp('OIL', oilTemp)}
+          </div>
+          <div>
+            {showWaterTemp &&
+              waterTempPosition === 'top' &&
+              renderTemp('H₂O', waterTemp)}
+          </div>
+        </div>
+      )}
+
+      {/* CENTER — original tachometer */}
       <div
-        className={`@container-[size] flex ${rpmOrientation === 'horizontal' ? 'flex-row' : rpmOrientation === 'top' ? 'flex-col-reverse' : 'flex-col'} justify-center items-center w-full h-full gap-2`}
+        className={`flex ${rpmOrientation === 'horizontal' ? 'flex-row' : rpmOrientation === 'top' ? 'flex-col-reverse' : 'flex-col'} justify-center items-center flex-1 w-full gap-2`}
       >
         {/* LED lights */}
         <div
@@ -373,7 +424,21 @@ export const Tachometer = ({
         )}
       </div>
 
-      {/* CSS for pulse animation - removed as it's now handled via state */}
-    </>
+      {/* BOTTOM TEMPS ROW */}
+      {showBottomRow && (
+        <div className="flex flex-row justify-between items-center px-2">
+          <div>
+            {showOilTemp &&
+              oilTempPosition === 'bottom' &&
+              renderTemp('OIL', oilTemp)}
+          </div>
+          <div>
+            {showWaterTemp &&
+              waterTempPosition === 'bottom' &&
+              renderTemp('H₂O', waterTemp)}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };

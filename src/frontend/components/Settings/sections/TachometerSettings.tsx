@@ -496,6 +496,55 @@ export const TachometerSettings = () => {
                     />
                   </SettingsSection>
                 )}
+                <SettingDivider />
+
+                <SettingToggleRow
+                  title="Show Oil Temperature"
+                  enabled={config.showOilTemp ?? true}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showOilTemp: newValue })
+                  }
+                />
+
+                {config.showOilTemp && (
+                  <SettingsSection>
+                    <SettingButtonGroupRow<'top' | 'bottom'>
+                      title="Oil Position"
+                      value={config.oilTempPosition ?? 'top'}
+                      options={[
+                        { label: 'Top', value: 'top' },
+                        { label: 'Bottom', value: 'bottom' },
+                      ]}
+                      onChange={(v) =>
+                        handleConfigChange({ oilTempPosition: v })
+                      }
+                    />
+                  </SettingsSection>
+                )}
+
+                <SettingToggleRow
+                  title="Show Water Temperature"
+                  enabled={config.showWaterTemp ?? true}
+                  onToggle={(newValue) =>
+                    handleConfigChange({ showWaterTemp: newValue })
+                  }
+                />
+
+                {config.showWaterTemp && (
+                  <SettingsSection>
+                    <SettingButtonGroupRow<'top' | 'bottom'>
+                      title="Water Position"
+                      value={config.waterTempPosition ?? 'top'}
+                      options={[
+                        { label: 'Top', value: 'top' },
+                        { label: 'Bottom', value: 'bottom' },
+                      ]}
+                      onChange={(v) =>
+                        handleConfigChange({ waterTempPosition: v })
+                      }
+                    />
+                  </SettingsSection>
+                )}
               </SettingsSection>
             )}
 
