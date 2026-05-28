@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { CarData } from '../../../utils/carData';
 import type { ShiftPointSettings } from '@irdashies/types';
+import { EngineWarnings } from '@irdashies/types';
 
 export interface TachometerProps {
   rpm: number;
   maxRpm: number;
+  engineWarnings?: number;
   /** Current gear */
   gear?: number;
   /** RPM when LEDs should turn purple (shift point) */
@@ -40,6 +42,7 @@ export const Tachometer = ({
   rpm,
   maxRpm,
   gear = 0,
+  engineWarnings = 0,
   shiftRpm = 0, // Optional shift RPM (DriverCarSLShiftRPM)
   blinkRpm = 0, // Optional blink RPM (DriverCarSLBlinkRPM)
   numLights = 10,
@@ -292,116 +295,84 @@ export const Tachometer = ({
 
   // Shared style classes matching the RPM box
   const tempBoxClass =
-    'bg-slate-800/(--bg-opacity) text-base flex min-w-[5em] font-mono font-bold text-white px-3 rounded-lg whitespace-nowrap justify-center items-center gap-1';
+    'bg-slate-800/(--bg-opacity) text-2xl flex min-w-[5em] font-mono font-bold px-3 rounded-lg whitespace-nowrap justify-center items-center gap-1';
   const tempBoxStyle = {
     height: '1.5em',
     ['--bg-opacity' as string]: `${opacity ?? 80}%`,
   };
 
-  const renderTemp = (label: string, value: number) => (
-    <div className={tempBoxClass} style={tempBoxStyle}>
+  const oilWarning = !!(engineWarnings & EngineWarnings.OilTempWarning);
+  const waterWarning = !!(engineWarnings & EngineWarnings.WaterTempWarning);
+
+  const renderTemp = (label: string, value: number, warning: boolean) => (
+    <div
+      className={`${tempBoxClass} ${warning ? 'text-red-500' : 'text-white'}`}
+      style={tempBoxStyle}
+    >
       <span className="text-[0.7em] text-gray-400">{label}</span>
       <span>{Math.round(value)}°C</span>
     </div>
   );
-
-  const showTopRow =
-    (showOilTemp && oilTempPosition === 'top') ||
-    (showWaterTemp && waterTempPosition === 'top');
-  const showBottomRow =
-    (showOilTemp && oilTempPosition === 'bottom') ||
-    (showWaterTemp && waterTempPosition === 'bottom');
-
   return (
-    <div className="@container-[size] flex flex-col w-full h-full justify-center gap-0">
-      {/* TOP TEMPS ROW */}
-      {showTopRow && (
-        <div className="flex flex-row justify-between items-center px-2">
-          <div>
-            {showOilTemp &&
-              oilTempPosition === 'top' &&
-              renderTemp('OIL', oilTemp)}
-          </div>
-          <div>
-            {showWaterTemp &&
-              waterTempPosition === 'top' &&
-              renderTemp('H₂O', waterTemp)}
-          </div>
-        </div>
-      )}
-
-      {/* CENTER — original tachometer */}
+    <div
+      className={`@container-[size] flex ${rpmOrientation === 'horizontal' ? 'flex-row' : rpmOrientation === 'top' ? 'flex-col-reverse' : 'flex-col'} justify-center items-center w-full h-full gap-2`}
+    >
+      {/* LED lights */}
       <div
-        className={`flex ${rpmOrientation === 'horizontal' ? 'flex-row' : rpmOrientation === 'top' ? 'flex-col-reverse' : 'flex-col'} justify-center items-center flex-1 w-full gap-2`}
+        id="ledcontainer"
+        className={`bg-slate-800/(--bg-opacity) flex relative items-center justify-center rounded-full`}
+        style={{
+          ['--bg-opacity' as string]: `${opacity ?? 80}%`,
+          padding: `4px min(40cqh, ${(42.5 / effectiveNumLights).toFixed(2)}cqw)`,
+        }}
       >
-        {/* LED lights */}
-        <div
-          id="ledcontainer"
-          className={`bg-slate-800/(--bg-opacity) flex ${rpmOrientation === 'horizontal' ? 'relative' : ''} items-center justify-center rounded-full`}
-          style={{
-            ['--bg-opacity' as string]: `${opacity ?? 80}%`,
-            padding: `4px min(40cqh, ${(42.5 / effectiveNumLights).toFixed(2)}cqw)`,
-          }}
-        >
-          {Array.from({ length: effectiveNumLights }, (_, i) => (
-            <div
-              key={i}
-              className="aspect-square p-0.5"
-              style={{
-                width: `min(80cqh, ${(85 / effectiveNumLights).toFixed(2)}cqw)`,
-              }}
-            >
-              <div
-                className="rounded-full w-full h-full border border-gray-600 transition-all duration-300"
-                style={{
-                  backgroundColor: getLedColor(i),
-                  boxShadow: isLedActive(i)
-                    ? `0 0 4px ${getLedColor(i)}`
-                    : 'none',
-                }}
-                aria-label={`LED ${i + 1}`}
-              />
-            </div>
-          ))}
+        {/* OIL — top-left of the bar */}
+        {showOilTemp && (
+          <div
+            className={`absolute left-[6em] ${oilTempPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'}`}
+          >
+            {renderTemp('OIL', oilTemp, oilWarning)}
+          </div>
+        )}
 
-          {/* RPM display - Horinztonal - shows when showRpmText is true OR when custom shift points exist */}
-          {shouldShowRpmBox && rpmOrientation === 'horizontal' && (
-            <div
-              id="rpm-text"
-              className={`bg-slate-800/(--bg-opacity) text-base absolute right-[-8em] flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
-              style={{
-                ...getRpmBoxStyle(),
-                height: '2em',
-                ['--bg-opacity' as string]: `${opacity ?? 80}%`,
-              }}
-            >
-              {showRpmText && (
-                <>
-                  {shouldShowCustomShift ? (
-                    <span className="font-bold">SHIFT</span>
-                  ) : (
-                    <>
-                      {Math.round(clampedRpm).toLocaleString('en-US')}
-                      <span className="text-[0.6em] ml-2">RPM</span>
-                    </>
-                  )}
-                </>
-              )}
-              {!showRpmText && shouldShowCustomShift && (
-                <span className="font-bold">SHIFT</span>
-              )}
-            </div>
-          )}
-        </div>
+        {/* WATER — top-right of the bar */}
+        {showWaterTemp && (
+          <div
+            className={`absolute right-[6em] ${waterTempPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'}`}
+          >
+            {renderTemp('H₂O', waterTemp, waterWarning)}
+          </div>
+        )}
 
-        {/* RPM display - Vertical - shows when showRpmText is true OR when custom shift points exist */}
-        {shouldShowRpmBox && rpmOrientation !== 'horizontal' && (
+        {Array.from({ length: effectiveNumLights }, (_, i) => (
+          <div
+            key={i}
+            className="aspect-square p-0.5"
+            style={{
+              width: `min(80cqh, ${(85 / effectiveNumLights).toFixed(2)}cqw)`,
+            }}
+          >
+            <div
+              className="rounded-full w-full h-full border border-gray-600 transition-all duration-300"
+              style={{
+                backgroundColor: getLedColor(i),
+                boxShadow: isLedActive(i)
+                  ? `0 0 4px ${getLedColor(i)}`
+                  : 'none',
+              }}
+              aria-label={`LED ${i + 1}`}
+            />
+          </div>
+        ))}
+
+        {/* RPM display - Horinztonal - shows when showRpmText is true OR when custom shift points exist */}
+        {shouldShowRpmBox && rpmOrientation === 'horizontal' && (
           <div
             id="rpm-text"
-            className={`bg-slate-800/(--bg-opacity) text-base flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
+            className={`bg-slate-800/(--bg-opacity) text-2xl absolute right-[-8em] flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
             style={{
               ...getRpmBoxStyle(),
-              height: '1.5em',
+              height: '2em',
               ['--bg-opacity' as string]: `${opacity ?? 80}%`,
             }}
           >
@@ -424,19 +395,32 @@ export const Tachometer = ({
         )}
       </div>
 
-      {/* BOTTOM TEMPS ROW */}
-      {showBottomRow && (
-        <div className="flex flex-row justify-between items-center px-2">
-          <div>
-            {showOilTemp &&
-              oilTempPosition === 'bottom' &&
-              renderTemp('OIL', oilTemp)}
-          </div>
-          <div>
-            {showWaterTemp &&
-              waterTempPosition === 'bottom' &&
-              renderTemp('H₂O', waterTemp)}
-          </div>
+      {/* RPM display - Vertical - shows when showRpmText is true OR when custom shift points exist */}
+      {shouldShowRpmBox && rpmOrientation !== 'horizontal' && (
+        <div
+          id="rpm-text"
+          className={`bg-slate-800/(--bg-opacity) text-2xl flex min-w-[6em] font-mono font-bold text-white px-4 mx-2 rounded-lg transition-colors duration-200 whitespace-nowrap justify-center items-center`}
+          style={{
+            ...getRpmBoxStyle(),
+            height: '1.5em',
+            ['--bg-opacity' as string]: `${opacity ?? 80}%`,
+          }}
+        >
+          {showRpmText && (
+            <>
+              {shouldShowCustomShift ? (
+                <span className="font-bold">SHIFT</span>
+              ) : (
+                <>
+                  {Math.round(clampedRpm).toLocaleString('en-US')}
+                  <span className="text-[0.6em] ml-2">RPM</span>
+                </>
+              )}
+            </>
+          )}
+          {!showRpmText && shouldShowCustomShift && (
+            <span className="font-bold">SHIFT</span>
+          )}
         </div>
       )}
     </div>

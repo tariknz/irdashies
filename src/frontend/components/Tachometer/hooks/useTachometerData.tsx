@@ -12,6 +12,7 @@ export const useTachometerData = () => {
   const shiftGrindRpm = useTelemetryValue('ShiftGrindRPM') ?? 0;
   const oilTemp = useTelemetryValue('OilTemp') ?? 0;
   const waterTemp = useTelemetryValue('WaterTemp') ?? 0;
+  const engineWarnings = useTelemetryValue('EngineWarnings') ?? [];
   const { carData, gearRpmThresholds, hasCarData } = useCarTachometerData();
 
   // Get car-specific redline from session data
@@ -48,6 +49,7 @@ export const useTachometerData = () => {
     blinkRpm,
     oilTemp,
     waterTemp,
+    engineWarnings,
     // Car-specific data
     carData,
     gearRpmThresholds,
