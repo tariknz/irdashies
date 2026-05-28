@@ -12,6 +12,7 @@ import { useLapTimeLogSettings } from './useLapTimeLogSettings';
 
 const TRACK_SURFACE_OFF_TRACK = 4;
 const MAX_HISTORY_ENTRIES = 20;
+const FREEZE_TIME = 5;
 
 export const useLapTimeLog = () => {
   // reset functions
@@ -62,6 +63,7 @@ export const useLapTimeLog = () => {
     useTelemetryValue<number>('PlayerTrackSurface') ?? 0;
   const incidentCount =
     useTelemetryValue<number>('PlayerCarMyIncidentCount') ?? 0;
+  const lapDistPct = useTelemetryValue<number>('LapDistPct') ?? 0;
 
   // Refs
   const lastLoggedLap = useRef<number>(lapCompleted);
@@ -71,8 +73,9 @@ export const useLapTimeLog = () => {
   const referenceAtStartOfLap = useRef<number>(0);
   const incidentsAtLapStart = useRef<number>(incidentCount);
   const lastDeltaUpdate = useRef<number>(0);
-  const lapTransition = useRef<boolean>(false);
-  const displayTimeRef = useRef<number | undefined>(undefined);
+  const prevLapDistPct = useRef<number>(0);
+  const isTransitioning = useRef<boolean>(false);
+  const frozenLapTime = useRef<number>(0);
 
   // Get personal best store and load data
   const currentPersonalBest = usePersonalBestStore((state) =>
@@ -121,30 +124,39 @@ export const useLapTimeLog = () => {
       incidentsAtLapStart.current = incidentCount;
       referenceAtStartOfLap.current = 0;
       lastDeltaUpdate.current = 0;
-      lapTransition.current = false;
+      isTransitioning.current = false;
       resetSessionState();
     }
     prevSessionNum.current = sessionNum;
     prevSessionTime.current = sessionTime;
   }, [sessionNum, sessionTime, lapCompleted, incidentCount, lastLapTime]);
 
-  // 2. check for new lap
+  // 2. check for new lap (use both methods to cater for telemetry hiccups)
   useEffect(() => {
-    lapTransition.current =
-      lapCompleted > 0 && lapCompleted != lastLoggedLap.current;
-    // auto reset to prevent stuck timer
-    const timeout = setTimeout(() => {
-      lapTransition.current = false;
-    }, 5000);
-    // cleanup
-    return () => clearTimeout(timeout);
-  }, [lapCompleted]);
+    const crossedLineDist =
+      prevLapDistPct.current > 0.95 && lapDistPct < 0.05;
+    const crossedLineScoring =
+      lapCompleted > 0 && lapCompleted !== lastLoggedLap.current;
+    // trigger transition
+    if (crossedLineDist || crossedLineScoring) {
+      if (!isTransitioning.current) {
+        isTransitioning.current = true;
+        frozenLapTime.current = currentLapTime;
+        // auto-reset fallback
+        setTimeout(() => {
+          isTransitioning.current = false;
+        }, 5000);          
+      }
+    }
+    prevLapDistPct.current = lapDistPct;
+  }, [lapCompleted, lapDistPct, currentLapTime]);
 
   // 3. live tracking during the lap
   useEffect(() => {
     // 3a. get valid time for current lap
-    const newDisplayTime = lapTransition.current ? undefined : currentLapTime;
-    displayTimeRef.current = newDisplayTime;
+    const newDisplayTime = isTransitioning.current
+      ? frozenLapTime.current
+      : currentLapTime;
     setDisplayTime(newDisplayTime);
     // 3b. prediction Logic (throttle to 100ms)
     const now = Date.now();
@@ -153,9 +165,8 @@ export const useLapTimeLog = () => {
         const currentDelta = liveDelta ?? 0;
         if (
           deltaCheck &&
-          displayTimeRef.current &&
-          currentLapTime > 5 &&
-          !lapTransition.current
+          currentLapTime > FREEZE_TIME &&
+          !isTransitioning.current
         ) {
           lastDeltaUpdate.current = now;
           return currentDelta;
@@ -174,7 +185,6 @@ export const useLapTimeLog = () => {
     });
   }, [
     currentLapTime,
-    lapCompleted,
     liveDelta,
     deltaCheck,
     referenceTime,
@@ -185,9 +195,11 @@ export const useLapTimeLog = () => {
   // 4. log lap history and reset
   useEffect(() => {
     // wait for new last lap time
+    const isNewLapScored =
+      lapCompleted > 0 && lapCompleted !== lastLoggedLap.current;
     const isValidTime =
       lastLapTime > 0 && lastLapTime !== lastLoggedTime.current;
-    if (!lapTransition.current || !isValidTime) return;
+    if (!isNewLapScored || !isValidTime) return;
     // prevent duplicates
     if (history.some((entry) => entry.lap === lapCompleted)) return;
     // add new entry
@@ -206,7 +218,7 @@ export const useLapTimeLog = () => {
     lastLoggedTime.current = lastLapTime;
     referenceAtStartOfLap.current = referenceTime ?? 0;
     incidentsAtLapStart.current = incidentCount;
-    lapTransition.current = false;
+    isTransitioning.current = false;
     resetLapState();
   }, [
     lapCompleted,
