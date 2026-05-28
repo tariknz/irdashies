@@ -166,6 +166,11 @@ export class OverlayManager {
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
         backgroundThrottling: false,
+        // Enables the <webview> used by the Heart Rate widget to embed
+        // HypeRate's overlay and inject transparent-background CSS (the same
+        // technique OBS uses). Guests keep Electron's secure defaults
+        // (no node integration, context isolation on).
+        webviewTag: true,
       },
     });
 

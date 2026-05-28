@@ -85,6 +85,12 @@ const widgetItems: MenuItem[] = [
     widgetType: 'garagecover',
   },
   {
+    to: '/settings/heartrate',
+    path: '/heartrate',
+    label: 'Heart Rate',
+    widgetType: 'heartrate',
+  },
+  {
     to: '/settings/infobar',
     path: '/infobar',
     label: 'Information Bar',

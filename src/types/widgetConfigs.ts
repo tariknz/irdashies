@@ -490,6 +490,19 @@ export interface TwitchChatConfig {
   autoHide: { enabled: boolean; intervalSeconds: number };
 }
 
+export interface HeartRateConfig {
+  /** HypeRate session/device id — the code at the end of your share link (e.g. "KiY"). */
+  deviceId: string;
+  /**
+   * Optional HypeRate widget URL or name (e.g. "Bouncing_Heart_Widget" or
+   * "https://app.hyperate.io/animation/59/YOUR-ID-HERE"). The session id is
+   * substituted in automatically. Blank uses the default overlay.
+   */
+  widgetUrl: string;
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 export interface LapTimeLogConfig {
   showCurrentLap: boolean;
   showPredictedLap: boolean;
@@ -594,6 +607,7 @@ export interface WidgetConfigMap {
   infobar: InformationBarConfig;
   slowcarahead: SlowCarAheadConfig;
   sectordelta: SectorDeltaConfig;
+  heartrate: HeartRateConfig;
 }
 
 export type TypedDashboardWidget<
@@ -691,3 +705,4 @@ export type InformationBarWidgetSettings =
   BaseWidgetSettings<InformationBarConfig>;
 export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;
 export type SectorDeltaWidgetSettings = BaseWidgetSettings<SectorDeltaConfig>;
+export type HeartRateWidgetSettings = BaseWidgetSettings<HeartRateConfig>;
