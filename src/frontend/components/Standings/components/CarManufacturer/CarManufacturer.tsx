@@ -32,7 +32,6 @@ export const CarManufacturer = memo(({ carId }: CarManufacturerProps) => {
         backgroundImage: `url(${carLogoImage})`,
         backgroundSize,
         backgroundPosition,
-        transform: 'translateZ(0)',
       }}
     />
   );
