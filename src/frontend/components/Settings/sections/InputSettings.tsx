@@ -414,7 +414,12 @@ export const InputSettings = () => {
                     {config.steer.enabled && (
                       <SettingsSection>
                         <SettingSelectRow<
-                          'default' | 'formula' | 'lmp' | 'nascar' | 'ushape'
+                          | 'default'
+                          | 'formula'
+                          | 'lmp'
+                          | 'nascar'
+                          | 'ushape'
+                          | 'ring'
                         >
                           title="Wheel Style"
                           value={config.steer.config.style ?? 'default'}
@@ -424,6 +429,7 @@ export const InputSettings = () => {
                             { label: 'LMP', value: 'lmp' },
                             { label: 'NASCAR', value: 'nascar' },
                             { label: 'U-Shape', value: 'ushape' },
+                            { label: 'Ring (gear inside)', value: 'ring' },
                           ]}
                           onChange={(v) =>
                             handleConfigChange({

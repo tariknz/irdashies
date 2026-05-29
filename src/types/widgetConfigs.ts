@@ -265,7 +265,7 @@ export interface FlatTrackMapConfig {
 }
 
 export interface SteerConfig {
-  style: 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default';
+  style: 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default' | 'ring';
   color: 'dark' | 'light';
 }
 
