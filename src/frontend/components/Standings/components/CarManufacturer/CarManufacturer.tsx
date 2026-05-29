@@ -27,11 +27,12 @@ export const CarManufacturer = memo(({ carId }: CarManufacturerProps) => {
 
   return (
     <span
-      className="inline-block w-[1em] h-[1em] bg-no-repeat scale-125"
+      className="inline-block w-[1em] h-[1em] bg-no-repeat"
       style={{
         backgroundImage: `url(${carLogoImage})`,
         backgroundSize,
         backgroundPosition,
+        transform: 'scale(1.25) translateZ(0)',
       }}
     />
   );
