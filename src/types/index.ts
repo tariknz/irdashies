@@ -12,4 +12,5 @@ export * from './widgetConfigs';
 export * from './defaultDashboard';
 export * from './logBridge';
 export * from './keybindings';
+export * from './personalBestLapBridge';
 export * from './chromiumFlags';

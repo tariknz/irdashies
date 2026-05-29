@@ -14,6 +14,7 @@ import type {
   ReferenceLapBridge,
   KeybindingsBridge,
   KeybindingActionId,
+  PersonalBestLapBridge,
   ChromiumFlagsBridge,
   ChromiumFlagsType,
 } from '@irdashies/types';
@@ -256,6 +257,16 @@ export function exposeBridge() {
     startRecording: () => ipcRenderer.invoke('keybindings:startRecording'),
     stopRecording: () => ipcRenderer.invoke('keybindings:stopRecording'),
   } as KeybindingsBridge);
+
+  contextBridge.exposeInMainWorld('personalBestBridge', {
+    getPersonalBest: (trackId: string | number, carName: string) =>
+      ipcRenderer.invoke('personalBest:get', trackId, carName),
+    setPersonalBest: (
+      trackId: string | number,
+      carName: string,
+      time: number
+    ) => ipcRenderer.invoke('personalBest:set', trackId, carName, time),  
+  } as PersonalBestLapBridge);
 
   contextBridge.exposeInMainWorld('chromiumFlagsBridge', {
     getFlags: () => ipcRenderer.invoke('chromiumFlags:get'),

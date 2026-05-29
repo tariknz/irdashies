@@ -24,6 +24,7 @@ import { Analytics } from './app/analytics';
 import { setupReferenceLapsBridge } from './app/bridge/referenceLapsBridge';
 import { setupKeybindingsBridge } from './app/bridge/keybindingsBridge';
 import { setupLogBridge } from './app/bridge/logBridge';
+import { setupPersonalBestLapTimesBridge } from './app/bridge/personalBestLapTimesBridge';
 import {
   validateReferenceLapFile,
   flushReferenceLapsOnShutdown,
@@ -64,6 +65,7 @@ app.on('ready', async () => {
   setupFuelCalculatorBridge();
   setupPitLaneBridge();
   setupReferenceLapsBridge();
+  setupPersonalBestLapTimesBridge();
   setupChromiumFlagsBridge();
 
   // Start component server for browser components

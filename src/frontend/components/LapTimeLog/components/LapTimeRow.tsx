@@ -1,6 +1,7 @@
 import type { LapTimeLogConfig } from '@irdashies/types';
 import { formatTime, formatDelta } from '@irdashies/utils/time';
 import { useGeneralSettings } from '@irdashies/context';
+import { memo } from 'react';
 
 interface LapTimeRowProps {
   label: string;
@@ -9,16 +10,18 @@ interface LapTimeRowProps {
   dirty?: boolean;
   best?: number | undefined;
   overall?: number | undefined;
+  alltime?: number | undefined;
   settings?: LapTimeLogConfig;
 }
 
-export const LapTimeRow = ({
+export const LapTimeRow = memo(({
   label,
   time,
   delta,
   dirty,
   best,
   overall,
+  alltime,
   settings,
 }: LapTimeRowProps) => {
   const generalSettings = useGeneralSettings();
@@ -27,11 +30,15 @@ export const LapTimeRow = ({
     generalSettings?.compactMode === 'ultra';
   const isUltra = generalSettings?.compactMode === 'ultra';
 
-  const isGreen =
-    time !== undefined && best !== undefined && time > 0 && time <= best;
+  const isSameLapTime = (left?: number, right?: number) =>
+    left !== undefined &&
+    right !== undefined &&
+    left > 0 &&
+    Math.abs(left - right) < 0.001;
 
-  const isPurple =
-    time !== undefined && overall !== undefined && time > 0 && time <= overall;
+  const isGreen = isSameLapTime(time, best);
+  const isPurple = isSameLapTime(time, overall);
+  const isYellow = isSameLapTime(time, alltime);
 
   const isDirty = dirty ?? false;
 
@@ -45,6 +52,7 @@ export const LapTimeRow = ({
 
   const getLapColor = () => {
     if (isDirty) return 'text-zinc-400';
+    if (isYellow) return 'text-yellow-400';
     if (isPurple) return 'text-purple-400';
     if (isGreen) return 'text-green-400';
     return 'text-white';
@@ -78,4 +86,6 @@ export const LapTimeRow = ({
       </div>
     </div>
   );
-};
+});
+
+LapTimeRow.displayName = 'LapTimeRow';

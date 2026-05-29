@@ -16,6 +16,7 @@ import { TimerIcon, TargetIcon, XIcon } from '@phosphor-icons/react';
 import { LapTimeRow } from './components/LapTimeRow';
 import type { LapTimeLogConfig } from '@irdashies/types';
 import { formatTime, formatDelta } from '@irdashies/utils/time';
+import { LapTimeCell } from './components/LapTimeCell';
 
 const FREEZE_TIME = 5;
 
@@ -47,6 +48,7 @@ export const LapTimeLog = () => {
         current={demoData.current}
         lastlap={demoData.lastlap}
         bestlap={demoData.bestlap}
+        alltimelap={demoData.alltimelap}
         reference={demoData.reference}
         delta={demoData.delta}
         overall={demoData.overall}
@@ -62,6 +64,7 @@ export const LapTimeLog = () => {
       current={isDriving ? data.current : undefined}
       lastlap={data.lastlap}
       bestlap={data.bestlap}
+      alltimelap={data.alltimelap}
       reference={data.reference}
       delta={data.delta}
       overall={data.overall}
@@ -76,6 +79,7 @@ export const LapTimeLogDisplay = ({
   current,
   lastlap,
   bestlap,
+  alltimelap,
   reference,
   delta,
   overall,
@@ -86,6 +90,7 @@ export const LapTimeLogDisplay = ({
   current?: number;
   lastlap?: number;
   bestlap?: number;
+  alltimelap?: number;
   reference?: number;
   delta?: number;
   overall?: number;
@@ -100,30 +105,38 @@ export const LapTimeLogDisplay = ({
       .slice(0, settings.history.count);
   }, [history, settings.history.count]);
 
+  // predicted lap time
+  const predicted =
+    reference !== undefined && delta !== undefined
+      ? reference + delta
+      : undefined;
+
   // predicted delta
-  const deltaIsGreen =
-    current !== undefined && current > 5 && delta !== undefined && delta < 0;
-  const deltaIsRed =
-    current !== undefined && current > 5 && delta !== undefined && delta > 0;
+  const hasPredictedDelta =
+    current !== undefined &&
+    current > FREEZE_TIME &&
+    predicted !== undefined &&
+    predicted > 0 &&
+    delta !== undefined;
+  const deltaIsGreen = hasPredictedDelta && delta < 0;
+  const deltaIsRed = hasPredictedDelta && delta > 0;
 
   // for the flash
   let bgColor = 'bg-slate-900/[var(--fg-alpha)]';
   if (current !== undefined && current <= FREEZE_TIME) {
-    const isSessionBest =
+    const isMatchingLap = (value?: number) =>
       lastlap !== undefined &&
       lastlap > 0 &&
-      overall !== undefined &&
-      overall > 0 &&
-      Math.abs(lastlap - overall) < 0.001;
-    const isPersonalBest =
-      lastlap !== undefined &&
-      lastlap > 0 &&
-      bestlap !== undefined &&
-      bestlap > 0 &&
-      Math.abs(lastlap - bestlap) < 0.001;
+      value !== undefined &&
+      value > 0 &&
+      Math.abs(lastlap - value) < 0.001;
+    const isSessionBest = isMatchingLap(bestlap);
+    const isOverallBest = isMatchingLap(overall);    
+    const isPersonalBest = isMatchingLap(alltimelap);
     bgColor = 'bg-slate-900';
-    if (isPersonalBest) bgColor = 'bg-green-700';
-    if (isSessionBest) bgColor = 'bg-purple-800';
+    if (isSessionBest) bgColor = 'bg-green-700';
+    if (isOverallBest) bgColor = 'bg-purple-800';
+    if (isPersonalBest) bgColor = 'bg-yellow-600';
   }
 
   const generalSettings = useGeneralSettings();
@@ -199,13 +212,13 @@ export const LapTimeLogDisplay = ({
                   current === undefined
                     ? undefined
                     : current > FREEZE_TIME
-                      ? (reference ?? 0) + (delta ?? 0)
+                      ? predicted
                       : lastlap
                 )}
               </div>
               {settings.delta.enabled && (
                 <div
-                  className={`absolute right-2 text-[0.9em] text-center tabular-nums ${
+                  className={`absolute right-2 text-[0.8em] text-center tabular-nums ${
                     !dirty && delta && deltaIsGreen
                       ? 'text-green-400'
                       : !dirty && delta && deltaIsRed
@@ -214,7 +227,7 @@ export const LapTimeLogDisplay = ({
                   }`}
                 >
                   {formatDelta(
-                    delta && current !== undefined && current > FREEZE_TIME
+                    hasPredictedDelta
                       ? delta
                       : 0
                   )}
@@ -224,34 +237,36 @@ export const LapTimeLogDisplay = ({
           )}
 
           {/* Main Stats */}
-          {settings.showBestLap && (
-            <LapTimeRow
-              label="BEST"
-              time={bestlap}
-              delta={
-                reference !== undefined && reference > 0
-                  ? (bestlap ?? 0) - reference
-                  : 0
-              }
-              best={bestlap}
-              overall={overall}
-              settings={settings}
-            />
-          )}
-          {settings.showLastLap && (
-            <LapTimeRow
-              label="LAST"
-              time={lastlap}
-              delta={
-                reference !== undefined && reference > 0
-                  ? (lastlap ?? 0) - reference
-                  : 0
-              }
-              best={bestlap}
-              overall={overall}
-              settings={settings}
-            />
-          )}
+          <div className="flex w-full gap-1">
+            {settings.showAllTimeLap && (
+              <LapTimeCell
+                label="PERSONAL"
+                time={alltimelap}
+                alltime={alltimelap}
+                settings={settings}
+              />
+            )}
+            {settings.showBestLap && (
+              <LapTimeCell
+                label="SESSION"
+                time={bestlap}
+                best={bestlap}
+                overall={overall}
+                alltime={alltimelap}
+                settings={settings}
+              />
+            )}
+            {settings.showLastLap && (
+              <LapTimeCell
+                label="LAST LAP"
+                time={lastlap}
+                best={bestlap}
+                overall={overall}
+                alltime={alltimelap}
+                settings={settings}
+              />
+            )}
+          </div>
 
           {/* History List */}
           {settings.history.enabled && (
@@ -265,6 +280,7 @@ export const LapTimeLogDisplay = ({
                   dirty={entry.dirty}
                   best={bestlap}
                   overall={overall}
+                  alltime={alltimelap}
                   settings={settings}
                 />
               ))}

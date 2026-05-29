@@ -957,6 +957,7 @@ export const defaultDashboard: {
         showPredictedLap: true,
         showLastLap: true,
         showBestLap: true,
+        showAllTimeLap: false,
         delta: {
           enabled: true,
           method: 'bestlap',

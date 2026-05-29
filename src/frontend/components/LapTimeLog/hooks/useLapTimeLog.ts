@@ -3,12 +3,15 @@ import {
   useTelemetryValue,
   useTelemetryValues,
   useTelemetryValuesRounded,
+  usePersonalBestStore,
+  useSessionStore,
+  useDriverCarIdx,
 } from '@irdashies/context';
 import type { LapEntry } from '../demoData';
 import { useLapTimeLogSettings } from './useLapTimeLogSettings';
 
 const TRACK_SURFACE_OFF_TRACK = 4;
-const MAX_HISTORY_ENTRIES = 10;
+const MAX_HISTORY_ENTRIES = 20;
 
 export const useLapTimeLog = () => {
   // reset functions
@@ -26,6 +29,20 @@ export const useLapTimeLog = () => {
 
   // Get settings
   const settings = useLapTimeLogSettings();
+
+  // Get session data for personal best tracking
+  const session = useSessionStore((state) => state.session);
+  const trackId = session?.WeekendInfo?.TrackID?.toString() ?? 0;
+  const drivers = useMemo(
+    () => session?.DriverInfo?.Drivers ?? [],
+    [session?.DriverInfo?.Drivers]
+  );
+  const playerCarIdx = useDriverCarIdx();
+  const playerCarName = useMemo(() => {
+    if (playerCarIdx === null || playerCarIdx === undefined) return 'unknown';
+    const driver = drivers[playerCarIdx];
+    return driver?.CarPath ?? 'unknown';
+  }, [playerCarIdx, drivers]);
 
   // States
   const [history, setHistory] = useState<LapEntry[]>([]);
@@ -56,6 +73,20 @@ export const useLapTimeLog = () => {
   const lastDeltaUpdate = useRef<number>(0);
   const lapTransition = useRef<boolean>(false);
   const displayTimeRef = useRef<number | undefined>(undefined);
+
+  // Get personal best store and load data
+  const currentPersonalBest = usePersonalBestStore((state) =>
+    !trackId || !playerCarName || playerCarName === 'unknown'
+      ? undefined
+      : state.getPersonalBest(trackId, playerCarName)
+  );
+  const setPersonalBest = usePersonalBestStore(
+    (state) => state.setPersonalBest
+  );
+  const pbMetaData = useRef({ trackId, playerCarName, currentPersonalBest });
+  useEffect(() => {
+    pbMetaData.current = { trackId, playerCarName, currentPersonalBest };
+  }, [trackId, playerCarName, currentPersonalBest]);
 
   // Get overall best
   const sessionBestOverall = useMemo(() => {
@@ -186,10 +217,29 @@ export const useLapTimeLog = () => {
     history,
   ]);
 
+  // 5. check personal best
+  useEffect(() => {
+    const isValidTime = bestLapTime > 0;
+    if (!isValidTime) return;
+    const {
+      trackId: currentTrackId,
+      playerCarName: currentCar,
+      currentPersonalBest: savedPB,
+    } = pbMetaData.current;
+    const hasPersonalBestKey =
+      Boolean(currentTrackId) && currentCar !== 'unknown';
+    const isBetter =
+      savedPB === undefined || savedPB === null || bestLapTime < savedPB;
+    if (hasPersonalBestKey && isBetter) {
+      setPersonalBest(currentTrackId, currentCar, bestLapTime);
+    }
+  }, [bestLapTime, setPersonalBest]);
+
   return {
     current: displayTime,
     lastlap: lastLapTime,
     bestlap: bestLapTime,
+    alltimelap: currentPersonalBest,
     reference: referenceTime,
     delta: savedDelta,
     overall: sessionBestOverall,
