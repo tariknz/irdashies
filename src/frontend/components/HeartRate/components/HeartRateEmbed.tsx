@@ -87,6 +87,9 @@ export const HeartRateEmbed = memo(
       if (!host) return;
 
       const webview = document.createElement('webview') as WebviewElement;
+      // Persistent partition isolates HypeRate's cookies/cache/storage from
+      // the app's own renderer session.
+      webview.setAttribute('partition', 'persist:hyperate');
       webview.setAttribute('src', src);
       Object.assign(webview.style, {
         position: 'absolute',

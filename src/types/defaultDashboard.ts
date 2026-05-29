@@ -1182,7 +1182,14 @@ export const defaultDashboard: {
         deviceId: '',
         widgetUrl: '',
         showOnlyWhenOnTrack: false,
-      }
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
     },
     {
       id: 'cornername',
