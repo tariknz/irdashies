@@ -60,6 +60,12 @@ const widgetItems: MenuItem[] = [
     widgetType: 'blindspotmonitor',
   },
   {
+    to: '/settings/cornername',
+    path: '/cornername',
+    label: 'Corner Names',
+    widgetType: 'cornername',
+  },
+  {
     to: '/settings/fastercarsfrombehind',
     path: '/fastercarsfrombehind',
     label: 'Faster Cars Behind',

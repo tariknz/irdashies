@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { LapTimeLogDisplay } from './LapTimeLog';
 import type { LapTimeLogConfig } from '@irdashies/types';
+import { TelemetryDecorator } from '@irdashies/storybook';
 
 interface LapEntry {
   lap: number;
@@ -14,13 +15,11 @@ const meta: Meta<typeof LapTimeLogDisplay> = {
   parameters: {
     layout: 'centered',
   },
-  decorators: [
-    (Story) => (
-      <div style={{ width: '250px' }}>
-        <Story />
-      </div>
-    ),
-  ],
+  decorators: [TelemetryDecorator(), (Story) => (
+    <div style={{ width: '250px' }}>
+      <Story />
+    </div>
+  )],
 };
 
 export default meta;
@@ -41,6 +40,7 @@ const mockConfig = (
     showPredictedLap: true,
     showLastLap: true,
     showBestLap: true,
+    showAllTimeLap: false,
     delta: {
       enabled: true,
       method: 'bestlap',
@@ -80,6 +80,7 @@ const baseArgs = {
   current: 88.123,
   lastlap: 92.1,
   bestlap: 91.5,
+  alltimelap: 91.3,
   reference: 91.5,
   delta: 0.2,
   overall: 91.0,
@@ -101,9 +102,12 @@ export const NewPersonalBest: Story = {
   args: {
     ...baseArgs,
     current: 4.5, // within 5 seconds
-    lastlap: 91.4, // new best
-    bestlap: 91.4,
-    settings: mockConfig(),
+    lastlap: 91.2, 
+    bestlap: 91.2,
+    alltimelap: 91.2, // new personal best
+    settings: mockConfig({
+      showAllTimeLap: true,     
+    }),
   },
 };
 
@@ -112,8 +116,20 @@ export const NewSessionBest: Story = {
   args: {
     ...baseArgs,
     current: 3.2, // within 5 seconds
+    lastlap: 90.9, 
+    bestlap: 90.9, // new session best
+    overall: 90.2,
+    settings: mockConfig(),
+  },
+};
+
+export const NewOverallBest: Story = {
+  name: 'Flash: New Overall Best',
+  args: {
+    ...baseArgs,
+    current: 3.2, // within 5 seconds
     lastlap: 90.9, // new overall best
-    bestlap: 91.2,
+    bestlap: 90.9,
     overall: 90.9,
     settings: mockConfig(),
   },

@@ -5,6 +5,7 @@ import { useHighlightColor } from './hooks/useHighlightColor';
 import { useGhostSectorColors } from './hooks/useGhostSectorColors';
 import { usePlayerIconImage } from './hooks/usePlayerIconImage';
 import { TrackCanvas } from './TrackCanvas';
+import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
 import {
   useSessionVisibility,
   useTelemetryValue,
@@ -31,6 +32,9 @@ export const TrackMap = () => {
   const playerIconDataUrl = usePlayerIconImage(
     playerIconEnabled ? settings?.playerIcon?.fileName : undefined
   );
+  const driverLivePositions = useDriverLivePositions({
+    enabled: settings?.displayMode === 'livePosition',
+  });
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
@@ -75,6 +79,7 @@ export const TrackMap = () => {
           settings?.sectorColoring?.enabled ? currentSectorIdx : undefined
         }
         playerIconDataUrl={playerIconDataUrl}
+        driverLivePositions={driverLivePositions}
         debug={debug}
       />
     </div>

@@ -19,6 +19,7 @@ import { InformationBar } from './components/InformationBar/InformationBar';
 import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
 import { SectorDelta } from './components/SectorDelta/SectorDelta';
 import { HeartRate } from './components/HeartRate/HeartRate';
+import { CornerNameOverlay } from './components/CornerNameOverlay';
 import type { WidgetConfigMap } from '@irdashies/types';
 
 export {
@@ -43,6 +44,7 @@ export {
   SlowCarAhead,
   SectorDelta,
   HeartRate,
+  CornerNameOverlay,
 };
 
 // TODO: type this better, right now the config comes from settings
@@ -73,6 +75,7 @@ export const WIDGET_MAP: Record<
   slowcarahead: SlowCarAhead,
   sectordelta: SectorDelta,
   heartrate: HeartRate,
+  cornername: CornerNameOverlay,
 };
 
 export type WidgetId = keyof WidgetConfigMap;

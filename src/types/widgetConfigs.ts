@@ -1,4 +1,5 @@
 import type { DashboardWidget } from './dashboardLayout';
+import type { CornerNameOverlayConfig } from './cornerName';
 
 // ===========================
 // Shared primitive types
@@ -508,6 +509,7 @@ export interface LapTimeLogConfig {
   showPredictedLap: boolean;
   showLastLap: boolean;
   showBestLap: boolean;
+  showAllTimeLap: boolean;
   delta: {
     enabled: boolean;
     method: 'lastlap' | 'bestlap';
@@ -608,6 +610,7 @@ export interface WidgetConfigMap {
   slowcarahead: SlowCarAheadConfig;
   sectordelta: SectorDeltaConfig;
   heartrate: HeartRateConfig;
+  cornername: CornerNameOverlayConfig;
 }
 
 export type TypedDashboardWidget<
@@ -706,3 +709,5 @@ export type InformationBarWidgetSettings =
 export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;
 export type SectorDeltaWidgetSettings = BaseWidgetSettings<SectorDeltaConfig>;
 export type HeartRateWidgetSettings = BaseWidgetSettings<HeartRateConfig>;
+export type CornerNameWidgetSettings =
+  BaseWidgetSettings<CornerNameOverlayConfig>;

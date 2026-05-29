@@ -1,7 +1,7 @@
 {
   "name": "irdashies",
   "productName": "irdashies",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "iRacing Dashboards & Overlays",
   "repository": {
     "type": "git",
@@ -22,6 +22,7 @@
     "test": "vitest --coverage",
     "ensure-tracks": "npx tsx ./tools/ensure-tracks.ts",
     "fetch-lovely-data": "npx tsx ./tools/fetch-lovely-data.ts",
+    "fetch-lovely-track-data": "npx tsx ./tools/fetch-lovely-track-data.ts",
     "prepare": "husky"
   },
   "devDependencies": {
