@@ -1,4 +1,4 @@
-export const SPRITE_SIZE = 256;
+export const SPRITE_SIZE = 64;
 export const SPRITES_PER_ROW = 7;
 export const SPRITES_PER_COLUMN = 6;
 
