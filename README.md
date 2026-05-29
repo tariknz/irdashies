@@ -429,6 +429,20 @@ Displays live Twitch chat directly in your overlay, useful for streamers who wan
 - Configurable font size and background opacity
 - Visible even when iRacing is not running
 
+### Heart Rate
+
+Displays your live heart rate from [HypeRate](https://www.hyperate.io/) by embedding its overlay — no API key or account required, just your session id.
+
+**Features:**
+
+- No key/account needed — paste the session id from your HypeRate share link (`app.hyperate.io/`**`KiY`**)
+- Optional widget/theme: paste any HypeRate widget link or name (e.g. `Bouncing_Heart_Widget`, or an `app.hyperate.io/animation/<n>/...` route); your session id is filled in automatically and any baked-in id is ignored
+- Transparent background and no scrollbar (the embedded page is restyled like an OBS browser source)
+- Auto-fits the graphic to the widget and scales it on resize (no truncation)
+- Visible even when iRacing is not running
+
+![Heart Rate](./docs/assets/heartrate.png)
+
 ### Information Bar
 
 A standalone widget that displays session and timing information independently from the Standings and Relative widgets.

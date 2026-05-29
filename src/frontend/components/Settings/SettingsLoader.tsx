@@ -26,6 +26,7 @@ import { InformationBarSettings } from './sections/InformationBarSettings';
 import { useDashboard } from '@irdashies/context';
 import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
 import { SectorDeltaSettings } from './sections/SectorDeltaSettings';
+import { HeartRateSettings } from './sections/HeartRateSettings';
 import { CornerNameSettings } from './sections/CornerNameSettings';
 
 interface SettingsLoaderProps {
@@ -89,6 +90,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <SlowCarAheadSettings />;
     case 'sectordelta':
       return <SectorDeltaSettings />;
+    case 'heartrate':
+      return <HeartRateSettings />;
     case 'cornername':
       return <CornerNameSettings />;
     default:
