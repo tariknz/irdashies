@@ -189,3 +189,10 @@ export const useSetCheckeredLap = () =>
 
 export const useCarSetup = () =>
   useStore(useSessionStore, (state) => state.session?.CarSetup);
+
+export const useDriverTires = () =>
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state) => state.session?.DriverInfo?.DriverTires,
+    arrayShallowCompare
+  );

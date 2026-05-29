@@ -1,14 +1,14 @@
-import { useStore } from 'zustand';
-import { useSessionStore } from '@irdashies/context';
+import { memo } from 'react';
+import { useDriverTires } from '@irdashies/context';
 
 interface CompoundProps {
   tireCompound: number;
   mockTires?: { TireIndex: number; TireCompoundType: string }[];
 }
 
-export const Compound = ({ tireCompound, mockTires }: CompoundProps) => {
-  const session = useStore(useSessionStore, (state) => state.session);
-  const driverTires = mockTires || session?.DriverInfo?.DriverTires;
+export const Compound = memo(({ tireCompound, mockTires }: CompoundProps) => {
+  const sessionDriverTires = useDriverTires();
+  const driverTires = mockTires || sessionDriverTires;
 
   const tireCompoundNameRaw = driverTires?.find(
     (t) => t.TireIndex === tireCompound
@@ -81,4 +81,6 @@ export const Compound = ({ tireCompound, mockTires }: CompoundProps) => {
       <circle cx="50" cy="50" r="2" fill="none" />
     </svg>
   );
-};
+});
+
+Compound.displayName = 'Compound';

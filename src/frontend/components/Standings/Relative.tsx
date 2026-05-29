@@ -11,6 +11,8 @@ import {
   useLapTimeHistory,
   useFocusCarIdx,
   useTelemetryValue,
+  usePitStopDuration,
+  usePitLaneStore,
 } from '@irdashies/context';
 import {
   useRelativeSettings,
@@ -21,7 +23,7 @@ import {
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
-import { calculateLapDeltas } from './hooks/useDriverStandings';
+import { calculateLapDeltas } from './hooks';
 import { FlagContour } from '@irdashies/utils/FlagContour';
 import { getFlag } from '@irdashies/utils/getFlag';
 import { getFlagColor } from '@irdashies/utils/getFlagColor';
@@ -58,6 +60,10 @@ export const Relative = () => {
     () => calculateLapDeltas(lapTimeHistory, focusCarIdx, lapTimeDeltasEnabled),
     [lapTimeHistory, focusCarIdx, lapTimeDeltasEnabled]
   );
+
+  const pitStopDurations = usePitStopDuration();
+  const pitExitPct = usePitLaneStore((s) => s.pitExitPct);
+  const pitExitAfterSF = pitExitPct !== null && pitExitPct > 0.85;
 
   const isSingleMake = useIsSingleMake();
   const hideCarManufacturer = !!(
@@ -125,6 +131,7 @@ export const Relative = () => {
           repair={false}
           penalty={false}
           slowdown={false}
+          pitExitAfterSF={pitExitAfterSF}
           hideCarManufacturer={hideCarManufacturer}
           hasAnyDriverTag={hasAnyTag}
           compactMode={generalSettings?.compactMode}
@@ -180,6 +187,7 @@ export const Relative = () => {
             repair={false}
             penalty={false}
             slowdown={false}
+            pitExitAfterSF={pitExitAfterSF}
             deltaDecimalPlaces={settings?.delta?.precision}
             hideCarManufacturer={hideCarManufacturer}
             hasAnyDriverTag={hasAnyTag}
@@ -254,6 +262,8 @@ export const Relative = () => {
           repair={result.repair}
           penalty={result.penalty}
           slowdown={result.slowdown}
+          pitStopDuration={pitStopDurations[result.carIdx]}
+          pitExitAfterSF={pitExitAfterSF}
           deltaDecimalPlaces={settings?.delta?.precision}
           hideCarManufacturer={hideCarManufacturer}
           compactMode={generalSettings?.compactMode}
@@ -275,6 +285,8 @@ export const Relative = () => {
     lapTimeDeltasEnabled,
     numLapDeltas,
     lapDeltasByCarIdx,
+    pitStopDurations,
+    pitExitAfterSF,
   ]);
 
   if (!isSessionVisible) return <></>;

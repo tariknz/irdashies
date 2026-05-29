@@ -172,7 +172,15 @@ export const findIntersectionPoint = (
 
         const intersection = lineIntersection(point1, point2, point3, point4);
         if (intersection) {
-          return { x: intersection.x, y: intersection.y, length: i };
+          const offset = Math.hypot(
+            intersection.x - point1.x,
+            intersection.y - point1.y
+          );
+          return {
+            x: intersection.x,
+            y: intersection.y,
+            length: i + offset,
+          };
         }
       }
     } else {
@@ -202,7 +210,15 @@ export const findIntersectionPoint = (
         const intersection = lineIntersection(point1, point2, point3, point4);
 
         if (intersection) {
-          return { x: intersection.x, y: intersection.y, length: i };
+          const offset = Math.hypot(
+            intersection.x - point1.x,
+            intersection.y - point1.y
+          );
+          return {
+            x: intersection.x,
+            y: intersection.y,
+            length: i + offset,
+          };
         }
       }
     }
