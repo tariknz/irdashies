@@ -49,8 +49,8 @@ export const defaultDashboard: {
         background: {
           opacity: 80,
         },
-        foreground: { 
-          opacity: 70, 
+        foreground: {
+          opacity: 70,
         },
         countryFlags: {
           enabled: true,
@@ -386,8 +386,8 @@ export const defaultDashboard: {
         background: {
           opacity: 80,
         },
-        foreground: { 
-          opacity: 70, 
+        foreground: {
+          opacity: 70,
         },
         position: {
           enabled: true,
@@ -1159,6 +1159,30 @@ export const defaultDashboard: {
         maxSectorsShown: null,
         thresholds: null,
         showOnlyWhenOnTrack: true,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
+    },
+    {
+      id: 'cornername',
+      enabled: false,
+      layout: {
+        x: 50,
+        y: 50,
+        width: 350,
+        height: 80,
+      },
+      config: {
+        showCornerNumber: true,
+        showProgressBar: true,
+        showTrackPct: true,
+        fontSize: 18,
+        opacity: 0.9,
         sessionVisibility: {
           race: true,
           loneQualify: true,

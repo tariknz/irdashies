@@ -1,4 +1,5 @@
 import type { DashboardWidget } from './dashboardLayout';
+import type { CornerNameOverlayConfig } from './cornerName';
 
 // ===========================
 // Shared primitive types
@@ -595,6 +596,7 @@ export interface WidgetConfigMap {
   infobar: InformationBarConfig;
   slowcarahead: SlowCarAheadConfig;
   sectordelta: SectorDeltaConfig;
+  cornername: CornerNameOverlayConfig;
 }
 
 export type TypedDashboardWidget<
@@ -692,3 +694,5 @@ export type InformationBarWidgetSettings =
   BaseWidgetSettings<InformationBarConfig>;
 export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;
 export type SectorDeltaWidgetSettings = BaseWidgetSettings<SectorDeltaConfig>;
+export type CornerNameWidgetSettings =
+  BaseWidgetSettings<CornerNameOverlayConfig>;

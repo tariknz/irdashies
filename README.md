@@ -444,6 +444,19 @@ A standalone widget that displays session and timing information independently f
 
 A powerful tool for viewing live data coming from iRacing. While mostly used for debugging, it's great for seeing exactly what data the app is receiving in real-time.
 
+### Corner Name Overlay
+
+Displays the current track section (corner or named straight) along with corner number and progress through the section. Track section data is sourced from [lovely-track-data](https://github.com/Lovely-Sim-Racing/lovely-track-data).
+
+**Features:**
+
+- Section name display (e.g. "Eau Rouge", "Kemmel Straight", "La Source")
+- Corner number badge (e.g. T1, T12) when the section is a numbered turn
+- Progress bar showing position within the current section
+- Optional overall lap-distance percentage
+- Configurable font size and background opacity
+- Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
+
 ### Other Features
 
 **Features:**
@@ -603,6 +616,7 @@ As you may know, the iRacing SDK is only available on Windows. To develop on Mac
 This project makes use of data and resources from the following projects:
 
 - **[lovely-car-data](https://github.com/Lovely-Sim-Racing/lovely-car-data)** - Comprehensive car telemetry data including RPM thresholds, LED configurations, and shift point information for various racing games.
+- **[lovely-track-data](https://github.com/Lovely-Sim-Racing/lovely-track-data)** - Per-track corner names, sectors, pit-lane markers, and named straights for various racing games.
 
 ## Contributing
 
