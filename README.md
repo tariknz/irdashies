@@ -112,6 +112,7 @@ Displays standings information for the current session.
 - Title bar with session progress bar
 - Header and footer bars with customizable items and display order:
   - Session name, session time (remaining/elapsed), session clock time, incident count
+  - Enhanced incident display showing your count against the initial and subsequent incident limits (e.g. "3 / 8 / 12 x")
   - Brake bias, local time, track wetness, precipitation, wind speed/direction
   - Air and track temperature (Metric/Imperial units)
   - Track name
@@ -160,6 +161,8 @@ Displays drive relative delta information for the current session.
 - Styling customizations: toggle minimal license badges, minimal status badges, position background color, and car number background/border independently
 - Relative delta timing display with configurable precision
 - Timing information: best lap time, last lap time (multiple time format options: full, mixed, minutes, seconds-full, seconds-mixed, seconds)
+- Lap time delta column (configurable number of laps: 1-5)
+- Optional flag contour: draws a colored border around the widget when a session flag is active, with configurable border width
 - iRating change display (optional)
 - Enhanced gap calculation with advanced options:
   - Interpolation methods (linear, cubic spline)
@@ -199,6 +202,8 @@ Displays a track map with the current position of the cars on track and the trac
 - Configurable track line width (1-100px) and outline width (1-150px)
 - Option to invert track colors (black track with white outline)
 - Option to use highlight color for player circle
+- Custom player car icon: upload an image (PNG, JPG, GIF, WebP, SVG) to replace your player circle
+- Option to use an inverted color for the leader to make them stand out
 - Multi-class support
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
 - Race positions: Driver circles can display their current race position
@@ -367,7 +372,7 @@ Helps you manage your pit stops with clear visual guidance. It assists with spee
 
 **Features:**
 
-- Speed Limit Assistant: Vertical colour-coded indicator (Green/Amber/Red) showing proximity to the pit speed limit, toggleable speed bar with decimal precision.
+- Speed Limit Assistant: Vertical colour-coded indicator (Green/Amber/Red) showing proximity to the pit speed limit, toggleable speed bar with decimal precision and selectable speed unit (Auto/MPH/KM/H).
 - Pitbox Countdown: A distance tracker and progress bar show exactly how far you are from your pit stall.
 - Countdown Bars: Colour-coded progress bars for pit entry, pitbox, and pit exit distances (Green -> Yellow -> Blue).
   - Configurable vertical/horizontal orientation with side-by-side layout option
@@ -387,11 +392,29 @@ Helps you manage your pit stops with clear visual guidance. It assists with spee
 - Current lap: Show current lap time, highlights green for personal best and purple for session best.
 - Predicted lap: Shows an estimate of the lap time based on the current delta.
 - Best and last lap: Display the best and last lap times.
+- Personal best lap: Optionally show the best lap ever recorded by irDashies for the current car and track combo, persisted across sessions.
 - Lap history: Show a history of your most recent lap times along with optional deltas.
 - Fully configurable: Decide which laps your interested in and toggle them on and off individually.
 - Fully customisable: Resize, scale and align to position the widget to your taste.
 
 ![Lap Timer](./docs/assets/laptimer.png)
+
+### Sector Delta
+
+Displays per-sector timing deltas for the current lap, colour-coded by performance against a ghost lap or your session best. Sectors are shown as a strip that can scroll continuously with the current sector pinned to the centre.
+
+**Features:**
+
+- Per-sector deltas coloured green/yellow/red based on performance vs reference
+- Comparison source: ghost lap when available, or session best only
+- Continuous scrolling strip with the current sector position-pinned to the centre
+- Option to limit the number of visible sectors (sliding carousel)
+- Track incident sectors: sectors where you picked up incidents are flagged with a warning icon
+- Configurable colour thresholds (green and yellow limits as a percentage of session best)
+- Time format with configurable decimal precision
+- Adjustable background opacity
+
+![Sector Delta](./docs/assets/sector-delta.png)
 
 ### Flag Widget
 
@@ -403,7 +426,11 @@ Displays racing flags in an LED-matrix style, automatically showing the most rel
 - Automatic flag priority: Shows the most important flag when multiple are active
 - Support for all iRacing racing flags (green, yellow, white, checkered, blue, black, etc.)
 - Option to display two identical flags within a single widget
+- Matrix mode: choose the LED resolution (8x8, 16x16, or uniform 1x1) for a more detailed or compact look
+- Optional flag label and "no flag" state display
+- Optional glow effect and configurable flag animation (toggle plus blink period)
 - Customizable size and positioning
+- Adjustable background opacity
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
 
 ![Flag Widget](./docs/assets/flags.png)
@@ -426,6 +453,8 @@ Displays live Twitch chat directly in your overlay, useful for streamers who wan
 
 - Live chat display with configurable channel name (no OAuth required)
 - Emoji support
+- Colored nicknames using each chatter's Twitch username color
+- Optional auto-disappearing messages with a configurable interval (10-90s)
 - Configurable font size and background opacity
 - Visible even when iRacing is not running
 
@@ -501,6 +530,7 @@ Displays the current track section (corner or named straight) along with corner 
   - System autostart: Optionally have the app start automatically when your computer boots up.
   - Start minimized: Launch the settings window in minimized state for a cleaner desktop
   - Auto port fallback: If port 3000 is in use, the app automatically tries the next available port and updates all URLs in settings.
+  - Configurable Chromium flags: Advanced Settings exposes recommended graphics fixes (disable native window occlusion, ANGLE backend selection, disable Direct Composition) plus custom enable/disable feature lists and freeform switches for troubleshooting rendering issues (e.g. black flickering on some GPUs).
   - Log file access: Open the log folder or export the log file directly from Advanced Settings.
   - Automatic updates: The app keeps itself up to date with the latest features and bug fixes.
 

@@ -1,5 +1,9 @@
 import { type ReactNode, useMemo } from 'react';
-import { SessionProvider, TelemetryProvider } from '@irdashies/context';
+import {
+  SessionProvider,
+  TelemetryProvider,
+  RunningStateProvider,
+} from '@irdashies/context';
 import { DashboardProvider } from '../../../src/frontend/context/DashboardContext/DashboardContext';
 import { generateMockData } from '../../../src/app/bridge/iracingSdk/mock-data/generateMockData';
 import type { DashboardBridge } from '@irdashies/types';
@@ -122,10 +126,12 @@ export function LivePreviewProvider({
   );
 
   return (
-    <>
-      <SessionProvider bridge={bridge} />
-      <TelemetryProvider bridge={bridge} />
-      <DashboardProvider bridge={dashboardBridge}>{children}</DashboardProvider>
-    </>
+    <DashboardProvider bridge={dashboardBridge}>
+      <RunningStateProvider bridge={bridge}>
+        <SessionProvider bridge={bridge} />
+        <TelemetryProvider bridge={bridge} />
+        {children}
+      </RunningStateProvider>
+    </DashboardProvider>
   );
 }

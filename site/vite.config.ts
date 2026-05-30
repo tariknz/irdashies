@@ -6,6 +6,9 @@ import path from 'node:path';
 export default defineConfig({
   plugins: [react()],
   server: {
+    // Use a dedicated port so the site dev server doesn't clash with the
+    // main app's renderer dev server (electron-forge vite plugin on 5173).
+    port: 5174,
     fs: {
       allow: [
         // Allow serving files from the parent project
