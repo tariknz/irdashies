@@ -6,9 +6,9 @@ import { useDashboard } from '@irdashies/context';
 interface BaseSettingsSectionProps<T> {
   title: string;
   description: string;
-  settings: BaseWidgetSettings<T>;
-  onSettingsChange: (settings: BaseWidgetSettings<T>) => void;
-  widgetId: string;
+  settings?: BaseWidgetSettings<T>;
+  onSettingsChange?: (settings: BaseWidgetSettings<T>) => void;
+  widgetId?: string;
   children?:
     | ((handleConfigChange: (config: Partial<T>) => void) => ReactNode)
     | ReactNode;
@@ -27,8 +27,9 @@ export const BaseSettingsSection = <T,>({
   disableInternalScroll = false,
 }: BaseSettingsSectionProps<T>) => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
-  const [localSettings, setLocalSettings] =
-    useState<BaseWidgetSettings<T>>(settings);
+  const [localSettings, setLocalSettings] = useState<BaseWidgetSettings<T>>(
+    settings ?? { enabled: false, config: {} as T }
+  );
 
   // Clean synchronization pattern: track what we last synced to detect external changes
   const updatedWidget = currentDashboard?.widgets.find(
@@ -50,7 +51,7 @@ export const BaseSettingsSection = <T,>({
 
   const handleSettingsChange = (newSettings: BaseWidgetSettings<T>) => {
     setLocalSettings(newSettings);
-    onSettingsChange(newSettings);
+    onSettingsChange?.(newSettings);
     updateDashboard(newSettings);
   };
 
@@ -64,7 +65,7 @@ export const BaseSettingsSection = <T,>({
     };
 
     setLocalSettings(updatedSettings);
-    onSettingsChange(updatedSettings);
+    onSettingsChange?.(updatedSettings);
     updateDashboard(updatedSettings);
     onConfigChange?.(newConfig);
   };
@@ -104,7 +105,7 @@ export const BaseSettingsSection = <T,>({
   };
 
   const updateDashboard = (newSettings: BaseWidgetSettings<T>) => {
-    if (currentDashboard && onDashboardUpdated) {
+    if (currentDashboard && onDashboardUpdated && widgetId) {
       const widgetExists = currentDashboard.widgets.some(
         (w) => w.id === widgetId
       );
@@ -137,6 +138,21 @@ export const BaseSettingsSection = <T,>({
       onDashboardUpdated(updatedDashboard);
     }
   };
+
+  if (!settings || !onSettingsChange || !widgetId) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-medium text-slate-200">{title}</h3>
+          <p className="text-sm text-slate-400">{description}</p>
+        </div>
+        {children &&
+          (typeof children === 'function'
+            ? children(() => undefined)
+            : children)}
+      </div>
+    );
+  }
 
   return (
     <div className={`flex flex-col ${disableInternalScroll ? '' : 'h-full'}`}>
