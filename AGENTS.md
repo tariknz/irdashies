@@ -1,8 +1,8 @@
-# iRDashies - Development Guide
+# irDashies - Development Guide
 
 ## Project Overview
 
-**iRDashies** is an Electron-based iRacing overlay/dashboard app using React, TypeScript, Zustand, and Tailwind CSS.
+**irDashies** is an Electron-based iRacing overlay/dashboard app using React, TypeScript, Zustand, and Tailwind CSS.
 
 - **Repo**: https://github.com/tariknz/irdashies (fork)
 - **Branch**: `main` | **License**: MIT

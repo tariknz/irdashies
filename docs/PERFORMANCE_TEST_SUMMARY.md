@@ -1,4 +1,4 @@
-# iRDashies Performance — Empirical Test Summary
+# irDashies Performance — Empirical Test Summary
 
 > **Date:** May 2026
 > **Author:** Kev (with AI-assisted analysis)
@@ -31,7 +31,7 @@ These findings strongly support architecture review finding **P1** (full telemet
   - **Centre (Primary)** — 4115427433 — driving widgets (relative, blindspot, inputs, etc.)
   - **Left** — 2374779353 — Standings widget (dominant), laptimelog, fuel
   - **Right** — 928586202 — Map, Weather, Battle
-- iRDashies process restarted fresh between each test
+- irDashies process restarted fresh between each test
 - Dashboard configuration held constant across tests 2–5 (`dashboard.json`)
 - PerfMetrics logging captures samples every ~10 seconds
 
@@ -126,7 +126,7 @@ Tick dips were more frequent in Race 2 (8 vs 1 in Race 1). **Partial cause is AI
 - Memory stable from ~minute 5 onward
 - Only **1 tick dip** below 20 Hz
 
-**Significance:** Leak rate falls in the same +13 to +20 MB/min band as AI tests, confirming the leak is not an AI artefact. Real multiplayer has **dramatically better tick stability** than AI multi-class (1 dip vs 8 dips at similar field size) — empirically confirming that Race 2's tick drops were inflated by AI physics environmental contention, not iRDashies cost.
+**Significance:** Leak rate falls in the same +13 to +20 MB/min band as AI tests, confirming the leak is not an AI artefact. Real multiplayer has **dramatically better tick stability** than AI multi-class (1 dip vs 8 dips at similar field size) — empirically confirming that Race 2's tick drops were inflated by AI physics environmental contention, not irDashies cost.
 
 The step-change memory jumps in the first 3 minutes are concentrated in the Left renderer (hosting Standings) and Primary, with Right untouched. At the time of this session the cause was uncertain — driver-join versus session-state hydration could not be discriminated without timestamped join data. **§3.6 (Practice 2) resolves this ambiguity** by capturing a session with a known join burst at a known time; the pattern matches exactly. The Practice 1 step changes are now attributed to drivers joining during the early-session field fill.
 
@@ -198,7 +198,7 @@ Each requires a different fix and they are independent. Item (1) is the primary 
 
 ### 4.4 Renderer-stutter mechanism
 
-The user-perceived stutter is V8 major-GC pause time, not iRDashies blocking work. Mechanism:
+The user-perceived stutter is V8 major-GC pause time, not irDashies blocking work. Mechanism:
 
 1. Linear leak (1) climbs the heap by ~15 MB/min.
 2. With multi-class baseline (2), the heap starts near 3 GB instead of 1.5 GB.
@@ -237,9 +237,9 @@ This is consistent with the user reporting "fine for a few minutes, then choppy.
 
 ### 6.1 Empty-dashboard baseline (HIGH priority)
 
-**Question:** Is there a leak independent of any widgets, in iRDashies' substrate (telemetry bridge, IPC, main process)?
+**Question:** Is there a leak independent of any widgets, in irDashies' substrate (telemetry bridge, IPC, main process)?
 
-**Test:** Run iRDashies with **all widgets disabled**, drive a 15–20 minute solo session, measure app memory slope.
+**Test:** Run irDashies with **all widgets disabled**, drive a 15–20 minute solo session, measure app memory slope.
 
 **Outcome interpretation:**
 
@@ -328,7 +328,7 @@ Driven by A2 (no session lifecycle abstraction), A3 (no reset path), L5/A7 (modu
 
 ### 7.4 Test-suite suggestion
 
-Consider adding a `tools/perfBench/` script that runs a recorded telemetry trace through iRDashies headlessly and asserts on memory slope. This would:
+Consider adding a `tools/perfBench/` script that runs a recorded telemetry trace through irDashies headlessly and asserts on memory slope. This would:
 
 - Catch regressions in the per-tick allocation rate
 - Provide a fast way to A/B test individual fixes (e.g. "did the channel bus PR drop the slope?")

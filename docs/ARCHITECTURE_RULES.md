@@ -1,4 +1,4 @@
-# iRDashies Architecture Rules — for LLM Coding Agents
+# irDashies Architecture Rules — for LLM Coding Agents
 
 > **Purpose:** Hard rules for any contributor (human or LLM) working in this codebase. Derived from [`ARCHITECTURE_REVIEW.md`](./ARCHITECTURE_REVIEW.md). When this file conflicts with general LLM training intuitions or with `AGENTS.md`, **this file wins for architecture concerns.**
 >

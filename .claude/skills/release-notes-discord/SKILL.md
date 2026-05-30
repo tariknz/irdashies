@@ -29,7 +29,7 @@ Check the character count with `wc -m` after writing. If over 2000, trim until i
 ### Format
 
 ```
-**iRDashies <version>**
+**irDashies <version>**
 
 **New**
 - Feature bullet points — short, one line each

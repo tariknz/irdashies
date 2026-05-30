@@ -1,4 +1,4 @@
-# iRDashies Architecture Review
+# irDashies Architecture Review
 
 > **Status:** Proposal (revised after Phase 0 measurement) — May 2026
 > **Audience:** Maintainers and LLM coding agents working on the codebase
@@ -12,13 +12,13 @@
 >
 > **Revision note (2026-05-12):** A follow-up test (Practice 2 in [`PERFORMANCE_TEST_SUMMARY.md`](./PERFORMANCE_TEST_SUMMARY.md) §3.6) captured a real-multiplayer session with a known driver-join burst. Result: **A2/A3/L5/A7 are now empirically CONFIRMED as the primary leak source in busy online sessions**, with quantification at ~5–6 MB of permanent app memory per joining driver, concentrated in renderers hosting driver-list-aware widgets and _not released_ when drivers leave. A new finding **P7 (driver-join leak)** captures the user-facing symptom, and the SessionLifecycle / bridge-callback-cleanup work that addresses it has been pulled forward from Phase 2 into Phase 1.
 
-This document captures findings from a multi-agent audit of the iRDashies codebase, the recommended target architecture, and a phased implementation plan. It exists so that future contributors (human and LLM) share the same understanding of _why_ the architecture is moving in this direction.
+This document captures findings from a multi-agent audit of the irDashies codebase, the recommended target architecture, and a phased implementation plan. It exists so that future contributors (human and LLM) share the same understanding of _why_ the architecture is moving in this direction.
 
 ---
 
 ## 1. Executive Summary
 
-iRDashies has a healthy foundation (Electron 35 secure defaults, contextBridge, native iRacing SDK addon, Zustand with custom equality, version-tagged stores) but is suffering from three compounding problems:
+irDashies has a healthy foundation (Electron 35 secure defaults, contextBridge, native iRacing SDK addon, Zustand with custom equality, version-tagged stores) but is suffering from three compounding problems:
 
 1. **A telemetry hot-path that fans the entire ~340-key telemetry object out to every overlay window 25 Hz** then triggers React render storms because a handful of hooks subscribe to raw, unrounded float arrays. _Phase 0 testing confirmed this is the primary in-race memory-leak source_ (steady +13 to +20 MB/min, driver-count-independent). See [`PERFORMANCE_TEST_SUMMARY.md`](./PERFORMANCE_TEST_SUMMARY.md) §3-4.
 2. **Architectural debt around lifecycle, coupling, and god-files** — `Standings/` has become an unofficial domain library that 6+ other widgets reach into; the disconnect-reset code path is dead; the multi-profile system is bypassed by a hardcoded `'default'` profile; adding a widget edits 5+ god-files.
@@ -321,7 +321,7 @@ After Phase 4, re-measure. Realistic candidates _if needed_:
 
 Phase 0 was measured by hand (run iRacing, capture PerfMetrics CSVs, regress in Excel). That is not sustainable as a per-PR regression gate. Build a headless harness so every PR that touches a hot path produces a number:
 
-- **Trace replay:** record one telemetry stream per scenario (single-driver Test Drive, AI 40-car single-class, AI 40-car multi-class, real-multiplayer-with-join-burst). Feed each through iRDashies headlessly via the existing mock-data infrastructure ([src/app/bridge/iracingSdk/mock-data/mockSdkBridge.ts](../src/app/bridge/iracingSdk/mock-data/mockSdkBridge.ts)).
+- **Trace replay:** record one telemetry stream per scenario (single-driver Test Drive, AI 40-car single-class, AI 40-car multi-class, real-multiplayer-with-join-burst). Feed each through irDashies headlessly via the existing mock-data infrastructure ([src/app/bridge/iracingSdk/mock-data/mockSdkBridge.ts](../src/app/bridge/iracingSdk/mock-data/mockSdkBridge.ts)).
 - **Memory-slope assertion:** linear-regress the renderer heap over a 5-min window and fail the bench if slope exceeds the per-scenario threshold defined in Phase 0's baseline table.
 - **Synthetic driver-join test:** fire N simulated driver-join events into the bridge and assert on the heap delta. This is the regression gate for L5/A7/P7 — anything that re-introduces a per-driver leak shows up here.
 - **PerfMetrics CSVs from Phase 0 are the seed corpus.** They are listed in [`PERFORMANCE_TEST_SUMMARY.md`](./PERFORMANCE_TEST_SUMMARY.md) §8.
