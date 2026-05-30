@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   WeatherWidgetSettings,
   SettingsTabType,
   getWidgetDefaultConfig,
-  type WeatherConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
@@ -48,130 +47,12 @@ const sortableSettings: SortableSetting[] = [
 const defaultConfig = getWidgetDefaultConfig('weather');
 const sortableSettingIds = sortableSettings.map((setting) => setting.id);
 
-const mergeItemsOrder = (itemsOrder = defaultConfig.displayOrder) => {
-  const mergedOrder = [...itemsOrder];
-
-  sortableSettingIds.forEach((id) => {
-    if (!mergedOrder.includes(id)) {
-      mergedOrder.push(id);
-    }
-  });
-
-  return mergedOrder;
-};
-
-const areStringArraysEqual = (first: string[] | undefined, second: string[]) =>
-  Array.isArray(first) &&
-  first.length === second.length &&
-  first.every((value, index) => value === second[index]);
-
-const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const normalizeEnabledConfig = (
-  value: unknown,
-  fallback: { enabled: boolean }
-) => ({
-  enabled:
-    isObjectRecord(value) && typeof value.enabled === 'boolean'
-      ? value.enabled
-      : fallback.enabled,
-});
-
-const isSortableSettingId = (value: unknown): value is string =>
-  typeof value === 'string' && sortableSettingIds.includes(value);
-
-const normalizeDisplayOrder = (value: unknown) => {
-  if (!Array.isArray(value)) {
-    return defaultConfig.displayOrder;
-  }
-
-  const displayOrder: string[] = [];
-
-  value.forEach((id) => {
-    if (isSortableSettingId(id) && !displayOrder.includes(id)) {
-      displayOrder.push(id);
-    }
-  });
-
-  return displayOrder.length > 0 ? displayOrder : defaultConfig.displayOrder;
-};
-
-const normalizeSessionVisibility = (
-  value: unknown
-): WeatherConfig['sessionVisibility'] => {
-  const saved = isObjectRecord(value) ? value : {};
-  const fallback = defaultConfig.sessionVisibility;
-
-  return {
-    race: typeof saved.race === 'boolean' ? saved.race : fallback.race,
-    loneQualify:
-      typeof saved.loneQualify === 'boolean'
-        ? saved.loneQualify
-        : fallback.loneQualify,
-    openQualify:
-      typeof saved.openQualify === 'boolean'
-        ? saved.openQualify
-        : fallback.openQualify,
-    practice:
-      typeof saved.practice === 'boolean' ? saved.practice : fallback.practice,
-    offlineTesting:
-      typeof saved.offlineTesting === 'boolean'
-        ? saved.offlineTesting
-        : fallback.offlineTesting,
-  };
-};
-
-const normalizeWeatherConfig = (config: unknown): WeatherConfig => {
-  const saved = isObjectRecord(config) ? config : {};
-  const background = isObjectRecord(saved.background)
-    ? saved.background
-    : undefined;
-  const val = background?.opacity;
-  const opacity = Number.isFinite(val)
-    ? Math.max(0, Math.min(100, Number(val)))
-    : defaultConfig.background.opacity;
-  const displayOrder = normalizeDisplayOrder(saved.displayOrder);
-
-  return {
-    ...defaultConfig,
-    background: {
-      opacity,
-    },
-    layout:
-      saved.layout === 'vertical' || saved.layout === 'horizontal'
-        ? saved.layout
-        : defaultConfig.layout,
-    horizontalMode:
-      saved.horizontalMode === 'compact' || saved.horizontalMode === 'full'
-        ? saved.horizontalMode
-        : defaultConfig.horizontalMode,
-    displayOrder,
-    showOnlyWhenOnTrack:
-      typeof saved.showOnlyWhenOnTrack === 'boolean'
-        ? saved.showOnlyWhenOnTrack
-        : defaultConfig.showOnlyWhenOnTrack,
-    airTemp: normalizeEnabledConfig(saved.airTemp, defaultConfig.airTemp),
-    trackTemp: normalizeEnabledConfig(saved.trackTemp, defaultConfig.trackTemp),
-    humidity: normalizeEnabledConfig(saved.humidity, defaultConfig.humidity),
-    wetness: normalizeEnabledConfig(saved.wetness, defaultConfig.wetness),
-    trackState: normalizeEnabledConfig(
-      saved.trackState,
-      defaultConfig.trackState
-    ),
-    precipitation: normalizeEnabledConfig(
-      saved.precipitation,
-      defaultConfig.precipitation
-    ),
-    wind: normalizeEnabledConfig(saved.wind, defaultConfig.wind),
-    units:
-      saved.units === 'auto' ||
-      saved.units === 'Metric' ||
-      saved.units === 'Imperial'
-        ? saved.units
-        : defaultConfig.units,
-    sessionVisibility: normalizeSessionVisibility(saved.sessionVisibility),
-  };
+const getItemsOrder = (itemsOrder = defaultConfig.displayOrder) => {
+  const validIds = new Set(sortableSettingIds);
+  const filtered = itemsOrder.filter((id) => validIds.has(id));
+  const present = new Set(filtered);
+  const missing = sortableSettingIds.filter((id) => !present.has(id));
+  return [...filtered, ...missing];
 };
 
 const DisplaySettingsList = ({
@@ -219,22 +100,20 @@ const DisplaySettingsList = ({
 };
 
 export const WeatherSettings = () => {
-  const { currentDashboard, onDashboardUpdated } = useDashboard();
-  const onDashboardUpdatedRef = useRef(onDashboardUpdated);
+  const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as WeatherWidgetSettings | undefined;
-  const normalizedConfig = normalizeWeatherConfig(savedSettings?.config);
-  const mergedConfig = {
-    ...normalizedConfig,
-    displayOrder: mergeItemsOrder(normalizedConfig.displayOrder),
-  };
+  const initialConfig =
+    (savedSettings?.config as WeatherWidgetSettings['config']) ?? defaultConfig;
   const [settings, setSettings] = useState<WeatherWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config: mergedConfig,
+    config: initialConfig,
   });
 
-  const [itemsOrder, setItemsOrder] = useState(mergedConfig.displayOrder);
+  const [itemsOrder, setItemsOrder] = useState(() =>
+    getItemsOrder(initialConfig.displayOrder)
+  );
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
@@ -244,60 +123,6 @@ export const WeatherSettings = () => {
   useEffect(() => {
     localStorage.setItem('weatherTab', activeTab);
   }, [activeTab]);
-
-  useEffect(() => {
-    onDashboardUpdatedRef.current = onDashboardUpdated;
-  }, [onDashboardUpdated]);
-
-  useEffect(() => {
-    if (!currentDashboard) return;
-
-    const normalizedConfig = normalizeWeatherConfig(savedSettings?.config);
-    const mergedDisplayOrder = mergeItemsOrder(normalizedConfig.displayOrder);
-    const nextSettings: WeatherWidgetSettings = {
-      enabled: savedSettings?.enabled ?? false,
-      config: {
-        ...normalizedConfig,
-        displayOrder: mergedDisplayOrder,
-      },
-    };
-
-    let isActive = true;
-
-    queueMicrotask(() => {
-      if (!isActive) return;
-
-      setSettings(nextSettings);
-      setItemsOrder(mergedDisplayOrder);
-    });
-
-    if (
-      savedSettings &&
-      onDashboardUpdatedRef.current &&
-      !areStringArraysEqual(normalizedConfig.displayOrder, mergedDisplayOrder)
-    ) {
-      const updatedWidgets = currentDashboard.widgets.map((widget) =>
-        widget.id === SETTING_ID
-          ? {
-              ...widget,
-              config: {
-                ...normalizedConfig,
-                displayOrder: mergedDisplayOrder,
-              },
-            }
-          : widget
-      );
-
-      onDashboardUpdatedRef.current({
-        ...currentDashboard,
-        widgets: updatedWidgets,
-      });
-    }
-
-    return () => {
-      isActive = false;
-    };
-  }, [currentDashboard, savedSettings]);
 
   if (!currentDashboard) {
     return <>Loading...</>;
