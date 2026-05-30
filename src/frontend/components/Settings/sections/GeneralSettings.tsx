@@ -99,10 +99,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
       currentDashboard?.generalSettings?.overlayAlwaysOnTop ?? true,
     enableNetworkAccess:
       currentDashboard?.generalSettings?.enableNetworkAccess ?? false,
-    showEditModePixelDistances:
-      currentDashboard?.generalSettings?.showEditModePixelDistances ?? true,
-    snapEditModeWidgetsToGrid:
-      currentDashboard?.generalSettings?.snapEditModeWidgetsToGrid ?? true,
+    editMode: {
+      pixelDistances:
+        currentDashboard?.generalSettings?.editMode?.pixelDistances ?? false,
+      snapToGrid:
+        currentDashboard?.generalSettings?.editMode?.snapToGrid ?? false,
+    },
   });
 
   if (!currentDashboard || !onDashboardUpdated) {
@@ -279,13 +281,25 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
   };
 
   const handleShowEditModePixelDistancesChange = (enabled: boolean) => {
-    const newSettings = { ...settings, showEditModePixelDistances: enabled };
+    const newSettings = {
+      ...settings,
+      editMode: {
+        ...settings.editMode,
+        pixelDistances: enabled,
+      },
+    };
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
 
   const handleSnapEditModeWidgetsToGridChange = (enabled: boolean) => {
-    const newSettings = { ...settings, snapEditModeWidgetsToGrid: enabled };
+    const newSettings = {
+      ...settings,
+      editMode: {
+        ...settings.editMode,
+        snapToGrid: enabled,
+      },
+    };
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
@@ -427,7 +441,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={settings.showEditModePixelDistances ?? true}
+                checked={settings.editMode?.pixelDistances ?? false}
                 onChange={(e) =>
                   handleShowEditModePixelDistancesChange(e.target.checked)
                 }
@@ -455,7 +469,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={settings.snapEditModeWidgetsToGrid ?? true}
+                checked={settings.editMode?.snapToGrid ?? false}
                 onChange={(e) =>
                   handleSnapEditModeWidgetsToGridChange(e.target.checked)
                 }

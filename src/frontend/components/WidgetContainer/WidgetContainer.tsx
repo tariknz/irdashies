@@ -47,21 +47,21 @@ export const WidgetContainer = memo(
     const pendingLayoutRef = useRef<WidgetLayout | null>(null);
     const containerOffset = useContainerOffset();
     const { containerBoundsInfo, currentDashboard } = useDashboard();
-    const showEditModePixelDistances =
-      currentDashboard?.generalSettings?.showEditModePixelDistances ?? true;
-    const snapEditModeWidgetsToGrid =
-      currentDashboard?.generalSettings?.snapEditModeWidgetsToGrid ?? true;
+    const pixelDistances =
+      currentDashboard?.generalSettings?.editMode?.pixelDistances ?? false;
+    const snapToGrid =
+      currentDashboard?.generalSettings?.editMode?.snapToGrid ?? false;
     const snapBounds =
       containerBoundsInfo?.displayBounds ?? containerBoundsInfo?.expected;
     const gridSnapOptions = useMemo(
       () =>
-        snapEditModeWidgetsToGrid
+        snapToGrid
           ? {
               bounds: snapBounds,
               siblingLayouts,
             }
           : undefined,
-      [snapEditModeWidgetsToGrid, siblingLayouts, snapBounds]
+      [snapToGrid, siblingLayouts, snapBounds]
     );
 
     const handleLayoutChange = useCallback(
@@ -153,7 +153,7 @@ export const WidgetContainer = memo(
     const displayedLayout = localLayout;
     const edgeDistances = useEdgeDistances(
       displayedLayout,
-      editMode && showEditModePixelDistances
+      editMode && pixelDistances
     );
 
     // Transform widget coordinates from screen space to container space
@@ -225,7 +225,7 @@ export const WidgetContainer = memo(
             <ResizeHandles getResizeHandleProps={getResizeHandleProps} />
 
             {/* Edge distance indicators */}
-            {showEditModePixelDistances && edgeDistances && (
+            {pixelDistances && edgeDistances && (
               <EdgeDistanceLabels distances={edgeDistances} />
             )}
           </>

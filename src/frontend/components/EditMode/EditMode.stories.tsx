@@ -63,9 +63,12 @@ const createEditModeBridge = (
   const dashboard: DashboardLayout = {
     widgets: sampleWidgets,
     generalSettings: {
-      showEditModePixelDistances: true,
-      snapEditModeWidgetsToGrid: true,
       ...generalSettings,
+      editMode: {
+        pixelDistances: true,
+        snapToGrid: true,
+        ...generalSettings.editMode,
+      },
     },
   };
   return {
@@ -214,8 +217,10 @@ export const DistanceLabelsVisible = {
   render: () => (
     <MultiWidgetScene
       generalSettings={{
-        showEditModePixelDistances: true,
-        snapEditModeWidgetsToGrid: true,
+        editMode: {
+          pixelDistances: true,
+          snapToGrid: true,
+        },
       }}
     />
   ),
@@ -234,8 +239,10 @@ export const DistanceLabelsHidden = {
   render: () => (
     <MultiWidgetScene
       generalSettings={{
-        showEditModePixelDistances: false,
-        snapEditModeWidgetsToGrid: true,
+        editMode: {
+          pixelDistances: false,
+          snapToGrid: true,
+        },
       }}
     />
   ),
@@ -254,8 +261,10 @@ export const SnappingEnabled = {
   render: () => (
     <MultiWidgetScene
       generalSettings={{
-        showEditModePixelDistances: true,
-        snapEditModeWidgetsToGrid: true,
+        editMode: {
+          pixelDistances: true,
+          snapToGrid: true,
+        },
       }}
     />
   ),
@@ -274,8 +283,10 @@ export const SnappingDisabled = {
   render: () => (
     <MultiWidgetScene
       generalSettings={{
-        showEditModePixelDistances: true,
-        snapEditModeWidgetsToGrid: false,
+        editMode: {
+          pixelDistances: true,
+          snapToGrid: false,
+        },
       }}
     />
   ),

@@ -1183,8 +1183,10 @@ export const defaultDashboard: {
     compactMode: 'off' as const,
     overlayAlwaysOnTop: true,
     enableNetworkAccess: false,
-    showEditModePixelDistances: true,
-    snapEditModeWidgetsToGrid: true,
+    editMode: {
+      pixelDistances: false,
+      snapToGrid: false,
+    },
   },
 };
 
