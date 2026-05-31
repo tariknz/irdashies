@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { FlagDisplay } from './Flag';
+import {
+  BorderRadiusDecorator,
+  borderRadiusStoryArgTypes,
+  borderRadiusStoryArgs,
+} from '@irdashies/storybook';
 
 const meta: Meta<typeof FlagDisplay> = {
   title: 'widgets/Flag',
   component: FlagDisplay,
+  decorators: [BorderRadiusDecorator],
+  args: borderRadiusStoryArgs,
+  argTypes: borderRadiusStoryArgTypes,
 };
 
 export default meta;

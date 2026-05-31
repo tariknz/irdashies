@@ -131,7 +131,7 @@ export const LapTimeLogDisplay = ({
       value > 0 &&
       Math.abs(lastlap - value) < 0.001;
     const isSessionBest = isMatchingLap(bestlap);
-    const isOverallBest = isMatchingLap(overall);    
+    const isOverallBest = isMatchingLap(overall);
     const isPersonalBest = isMatchingLap(alltimelap);
     bgColor = 'bg-slate-900';
     if (isSessionBest) bgColor = 'bg-green-700';
@@ -152,7 +152,7 @@ export const LapTimeLogDisplay = ({
   return (
     <div className={`h-full flex ${alignment}`}>
       <div
-        className={`w-full text-sm bg-slate-800/[var(--bg-opacity)] rounded-md text-white ${!isCompact ? 'p-2' : 'p-0.5'}`}
+        className={`widget-radius-surface w-full text-sm bg-slate-800/[var(--bg-opacity)] rounded-md text-white ${!isCompact ? 'p-2' : 'p-0.5'}`}
         style={
           {
             '--bg-opacity': `${settings.background.opacity}%`,
@@ -226,11 +226,7 @@ export const LapTimeLogDisplay = ({
                         : 'text-zinc-400'
                   }`}
                 >
-                  {formatDelta(
-                    hasPredictedDelta
-                      ? delta
-                      : 0
-                  )}
+                  {formatDelta(hasPredictedDelta ? delta : 0)}
                 </div>
               )}
             </div>

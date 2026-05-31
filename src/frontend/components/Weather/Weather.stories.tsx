@@ -1,13 +1,26 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Weather } from './Weather';
 import {
+  BorderRadiusDecorator,
   TelemetryDecorator,
   TelemetryDecoratorWithConfig,
+  borderRadiusStoryArgTypes,
+  borderRadiusStoryArgs,
 } from '@irdashies/storybook';
 
 export default {
   component: Weather,
   title: 'widgets/Weather',
+  decorators: [
+    BorderRadiusDecorator,
+    (Story) => (
+      <div style={{ width: '150px' }}>
+        <Story />
+      </div>
+    ),
+  ],
+  args: borderRadiusStoryArgs,
+  argTypes: borderRadiusStoryArgTypes,
 } as Meta;
 
 type Story = StoryObj<typeof Weather>;

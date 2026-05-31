@@ -38,7 +38,12 @@ export const RejoinIndicator = () => {
   // Generate demo data when in demo mode
   if (isDemoMode) {
     const demoData = getDemoRejoinData(settings);
-    return <RejoinIndicatorDisplay gap={demoData.gap} status={demoData.status as 'Clear' | 'Caution' | 'Do Not Rejoin'} />;
+    return (
+      <RejoinIndicatorDisplay
+        gap={demoData.gap}
+        status={demoData.status as 'Clear' | 'Caution' | 'Do Not Rejoin'}
+      />
+    );
   }
 
   // If we don't have dashboard settings or no focused player, hide
@@ -121,15 +126,13 @@ export const RejoinIndicator = () => {
 
   return (
     <div
-      className={`w-full flex justify-between rounded-sm p-2 font-bold text-white ${statusBg}`}
+      className={`widget-radius-surface w-full flex justify-between rounded-sm p-2 font-bold text-white ${statusBg}`}
     >
       <div className="text-lg">{gapLabel}s</div>
       <div className="text-lg">{status.label}</div>
     </div>
   );
 };
-
-
 
 export const RejoinIndicatorDisplay = ({
   gap,
@@ -149,7 +152,7 @@ export const RejoinIndicatorDisplay = ({
 
   return (
     <div
-      className={`w-full flex justify-between rounded-sm p-2 font-bold text-white ${statusBg}`}
+      className={`widget-radius-surface w-full flex justify-between rounded-sm p-2 font-bold text-white ${statusBg}`}
     >
       <div className="text-lg">{gapLabel}</div>
       <div className="text-lg">{status}</div>

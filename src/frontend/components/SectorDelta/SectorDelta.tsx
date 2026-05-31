@@ -213,7 +213,7 @@ export const SectorDelta = ({
 
   return (
     <div
-      className="flex flex-row items-center gap-1 p-1 rounded-sm"
+      className="widget-radius-surface flex flex-row items-center gap-1 p-1 rounded-sm"
       style={{ backgroundColor: `rgba(15, 23, 42, ${opacity})` }}
     >
       {useGhost && (

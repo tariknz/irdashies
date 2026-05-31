@@ -28,7 +28,7 @@ export const Wind = memo(() => {
   const demoWind = useWindDemoData(isDemoMode, isMetric);
 
   const containerClassName =
-    'w-full h-full rounded-sm p-2 bg-slate-800/(--bg-opacity)';
+    'widget-radius-surface w-full h-full rounded-sm p-2 bg-slate-800/(--bg-opacity)';
   const containerStyle = {
     ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
   };

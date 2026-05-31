@@ -1,14 +1,19 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { Input } from './Input';
 import {
+  BorderRadiusDecorator,
   TelemetryDecorator,
   TelemetryDecoratorWithConfig,
+  borderRadiusStoryArgTypes,
+  borderRadiusStoryArgs,
 } from '@irdashies/storybook';
 
 const meta: Meta<typeof Input> = {
   component: Input,
   title: 'widgets/Input',
-  decorators: [TelemetryDecorator()],
+  decorators: [BorderRadiusDecorator, TelemetryDecorator()],
+  args: borderRadiusStoryArgs,
+  argTypes: borderRadiusStoryArgTypes,
 };
 export default meta;
 

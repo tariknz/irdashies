@@ -1,10 +1,13 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { Standings } from './Standings';
 import {
+  BorderRadiusDecorator,
   TelemetryDecorator,
   DynamicTelemetrySelector,
   TelemetryDecoratorWithConfig,
   mockDashboardBridge,
+  borderRadiusStoryArgTypes,
+  borderRadiusStoryArgs,
 } from '@irdashies/storybook';
 import {
   DashboardProvider,
@@ -236,6 +239,9 @@ const StandingsWithoutHeaderFooter = () => {
 export default {
   component: Standings,
   title: 'widgets/Standings',
+  decorators: [BorderRadiusDecorator],
+  args: borderRadiusStoryArgs,
+  argTypes: borderRadiusStoryArgTypes,
 } as Meta;
 
 type Story = StoryObj<typeof Standings>;

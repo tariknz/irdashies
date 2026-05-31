@@ -1,8 +1,11 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { FuelCalculator } from './FuelCalculator';
 import {
+  BorderRadiusDecorator,
   TelemetryDecorator,
   DynamicTelemetrySelector,
+  borderRadiusStoryArgTypes,
+  borderRadiusStoryArgs,
 } from '@irdashies/storybook';
 import { useState, useEffect } from 'react';
 import { useFuelStore } from './FuelStore';
@@ -11,6 +14,9 @@ import type { FuelLapData } from './types';
 export default {
   component: FuelCalculator,
   title: 'widgets/FuelCalculator',
+  decorators: [BorderRadiusDecorator],
+  args: borderRadiusStoryArgs,
+  argTypes: borderRadiusStoryArgTypes,
 } as Meta;
 
 type Story = StoryObj<typeof FuelCalculator>;

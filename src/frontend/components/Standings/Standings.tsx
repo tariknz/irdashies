@@ -83,14 +83,18 @@ export const Standings = () => {
 
   return (
     <div
-      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!isCompact ? 'p-2' : ''} text-white overflow-hidden`}
+      className={`widget-radius-surface w-full bg-slate-800/(--bg-opacity) rounded-sm ${!isCompact ? 'p-2' : ''} text-white overflow-hidden`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {settings?.headerBar && (settings.headerBar.enabled ?? true) && (
-        <SessionBar settings={settings.headerBar} opacity={settings?.foreground?.opacity} position="header" />
+        <SessionBar
+          settings={settings.headerBar}
+          opacity={settings?.foreground?.opacity}
+          position="header"
+        />
       )}
       <table
         className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
@@ -270,7 +274,11 @@ export const Standings = () => {
         </tbody>
       </table>
       {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
-        <SessionBar settings={settings.footerBar} opacity={settings?.foreground?.opacity} position="footer" />
+        <SessionBar
+          settings={settings.footerBar}
+          opacity={settings?.foreground?.opacity}
+          position="footer"
+        />
       )}
     </div>
   );

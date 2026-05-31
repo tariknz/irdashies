@@ -1,7 +1,12 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { ComponentProps } from 'react';
 import { SessionBar } from '../Standings/components/SessionBar/SessionBar';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import {
+  BorderRadiusDecorator,
+  TelemetryDecorator,
+  borderRadiusStoryArgTypes,
+  borderRadiusStoryArgs,
+} from '@irdashies/storybook';
 import { SessionBarConfig } from '@irdashies/types';
 
 /**
@@ -11,7 +16,9 @@ import { SessionBarConfig } from '@irdashies/types';
 const meta: Meta = {
   title: 'widgets/InformationBar',
   component: SessionBar,
-  decorators: [TelemetryDecorator()],
+  decorators: [BorderRadiusDecorator, TelemetryDecorator()],
+  args: borderRadiusStoryArgs,
+  argTypes: borderRadiusStoryArgTypes,
   parameters: {
     layout: 'fullscreen',
   },
@@ -72,7 +79,7 @@ export const Primary: Story = {
     controls: { disable: true },
   },
   render: (args) => (
-    <div className="w-full bg-slate-800/80 p-2">
+    <div className="widget-radius-surface w-full bg-slate-800/80 p-2">
       <SessionBar {...args} />
     </div>
   ),
@@ -173,7 +180,7 @@ export const Playground: StoryObj<PlaygroundArgs> = {
 
     return (
       <div
-        className="w-full bg-slate-800 rounded-sm p-2"
+        className="widget-radius-surface w-full bg-slate-800 rounded-sm p-2"
         style={{ opacity: args.backgroundOpacity / 100 }}
       >
         <SessionBar settings={config} standalone />

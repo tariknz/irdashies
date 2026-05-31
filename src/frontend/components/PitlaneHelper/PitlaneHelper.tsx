@@ -198,13 +198,13 @@ export const PitlaneHelperBody = ({
   traffic,
 }: PitlaneHelperBodyProps) => {
   return (
-    <>
-      <div
-        className="flex h-full flex-col gap-2 p-2 text-white font-medium rounded-t bg-slate-800/(--bg-opacity)"
-        style={{
-          ['--bg-opacity' as string]: `${config.background.opacity ?? 0}%`,
-        }}
-      >
+    <div
+      className="widget-radius-surface flex h-full flex-col bg-slate-800/(--bg-opacity)"
+      style={{
+        ['--bg-opacity' as string]: `${config.background.opacity ?? 0}%`,
+      }}
+    >
+      <div className="flex min-h-0 flex-1 flex-col gap-2 p-2 text-white font-medium">
         {/* Row 1: Speed delta */}
         {config.showSpeedSummary && (
           <div
@@ -398,12 +398,7 @@ export const PitlaneHelperBody = ({
         limiterWarning.showWarning ||
         showEarlyPitboxWarning ||
         (config.showPitlaneTraffic && traffic.totalCars > 0)) && (
-        <div
-          className="flex flex-col gap-2 p-2 rounded-b bg-slate-800/(--bg-opacity)"
-          style={{
-            ['--bg-opacity' as string]: `${config.background?.opacity ?? 0}%`,
-          }}
-        >
+        <div className="flex flex-none flex-col gap-2 p-2">
           {onPitRoad && Math.abs(position.distanceToPit) < 5 && (
             <div className="text-center text-xs font-bold py-1 px-2 bg-green-600 rounded">
               At Pitbox
@@ -442,6 +437,6 @@ export const PitlaneHelperBody = ({
           )}
         </div>
       )}
-    </>
+    </div>
   );
 };

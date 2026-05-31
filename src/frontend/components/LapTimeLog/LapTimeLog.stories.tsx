@@ -1,7 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { LapTimeLogDisplay } from './LapTimeLog';
 import type { LapTimeLogConfig } from '@irdashies/types';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import {
+  BorderRadiusDecorator,
+  TelemetryDecorator,
+  borderRadiusStoryArgTypes,
+  borderRadiusStoryArgs,
+} from '@irdashies/storybook';
 
 interface LapEntry {
   lap: number;
@@ -15,11 +20,17 @@ const meta: Meta<typeof LapTimeLogDisplay> = {
   parameters: {
     layout: 'centered',
   },
-  decorators: [TelemetryDecorator(), (Story) => (
-    <div style={{ width: '250px' }}>
-      <Story />
-    </div>
-  )],
+  decorators: [
+    TelemetryDecorator(),
+    BorderRadiusDecorator,
+    (Story) => (
+      <div style={{ width: '250px' }}>
+        <Story />
+      </div>
+    ),
+  ],
+  args: borderRadiusStoryArgs,
+  argTypes: borderRadiusStoryArgTypes,
 };
 
 export default meta;
@@ -102,11 +113,11 @@ export const NewPersonalBest: Story = {
   args: {
     ...baseArgs,
     current: 4.5, // within 5 seconds
-    lastlap: 91.2, 
+    lastlap: 91.2,
     bestlap: 91.2,
     alltimelap: 91.2, // new personal best
     settings: mockConfig({
-      showAllTimeLap: true,     
+      showAllTimeLap: true,
     }),
   },
 };
@@ -116,7 +127,7 @@ export const NewSessionBest: Story = {
   args: {
     ...baseArgs,
     current: 3.2, // within 5 seconds
-    lastlap: 90.9, 
+    lastlap: 90.9,
     bestlap: 90.9, // new session best
     overall: 90.2,
     settings: mockConfig(),

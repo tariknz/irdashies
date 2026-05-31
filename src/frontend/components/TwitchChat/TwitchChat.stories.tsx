@@ -3,6 +3,11 @@ import { useEffect, useRef, useState } from 'react';
 import type { ChatMessage } from './types';
 import { ChatMessageList } from './TwitchChat';
 import { DEMO_MESSAGES, DEMO_MESSAGE_INTERVAL_MS } from './demoData';
+import {
+  BorderRadiusDecorator,
+  borderRadiusStoryArgTypes,
+  borderRadiusStoryArgs,
+} from '@irdashies/storybook';
 
 const MAX_VISIBLE_MESSAGES = 10;
 
@@ -79,12 +84,15 @@ export default {
   component: ChatMessageList,
   title: 'widgets/TwitchChat',
   decorators: [
+    BorderRadiusDecorator,
     (Story) => (
       <div style={{ width: '350px', height: '400px' }}>
         <Story />
       </div>
     ),
   ],
+  args: borderRadiusStoryArgs,
+  argTypes: borderRadiusStoryArgTypes,
 } as Meta<typeof ChatMessageList>;
 
 type Story = StoryObj<typeof ChatMessageList>;

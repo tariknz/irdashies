@@ -342,7 +342,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
   return (
     <div
-      className={`relative w-full flex flex-col ${borderWidth} box-border transition-colors duration-500 rounded-sm bg-slate-800/(--bg-opacity) overflow-hidden ${paddingClass}`}
+      className={`widget-radius-surface relative w-full flex flex-col ${borderWidth} box-border transition-colors duration-500 rounded-sm bg-slate-800/(--bg-opacity) overflow-hidden ${paddingClass}`}
       style={{
         fontFamily:
           "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",

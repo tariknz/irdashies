@@ -31,12 +31,16 @@ export const InformationBar = () => {
 
   return (
     <div
-      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${!isCompact ? 'p-2' : ''} overflow-hidden pointer-events-none`}
+      className={`widget-radius-surface w-full bg-slate-800/(--bg-opacity) rounded-sm ${!isCompact ? 'p-2' : ''} overflow-hidden pointer-events-none`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 60}%`,
       }}
     >
-      <SessionBar settings={settings} opacity={settings?.foreground?.opacity} standalone />
+      <SessionBar
+        settings={settings}
+        opacity={settings?.foreground?.opacity}
+        standalone
+      />
     </div>
   );
 };

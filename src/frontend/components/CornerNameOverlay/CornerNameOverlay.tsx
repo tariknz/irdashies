@@ -21,7 +21,7 @@ export const CornerNameOverlay = ({
 
   return (
     <div
-      className="w-full rounded-sm p-2 relative overflow-hidden"
+      className="widget-radius-surface w-full rounded-sm p-2 relative overflow-hidden"
       style={{ backgroundColor: `rgba(15, 23, 42, ${opacity})` }}
     >
       {/* Main content */}

@@ -48,7 +48,7 @@ export const GarageCover = () => {
   }
 
   return (
-    <div className="w-full h-full flex items-center justify-center rounded-sm bg-slate-800">
+    <div className="widget-radius-surface w-full h-full flex items-center justify-center rounded-sm bg-slate-800">
       <img
         src={imageUrl || logoSvg}
         alt="Garage Cover"

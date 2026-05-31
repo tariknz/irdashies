@@ -82,37 +82,39 @@ export const ChatMessageList = ({
 
   return (
     <div
-      className="w-full h-full flex flex-col justify-end overflow-hidden bg-slate-800/[var(--bg-opacity)] rounded-sm px-3 py-2 text-white align-bottom border-0 transition-all duration-300"
+      className="widget-radius-surface w-full h-full flex flex-col justify-end overflow-hidden bg-slate-800/[var(--bg-opacity)] rounded-sm px-3 py-2 text-white align-bottom border-0 transition-all duration-300"
       style={
         {
           '--bg-opacity': `${background.opacity}%`,
         } as React.CSSProperties
       }
     >
-      {messages.filter((m) => !removedIds.has(m.id)).map((m) => {
-        const fading = (autoHide?.enabled ?? false) && fadingIds.has(m.id);
-        return (
-          <div
-            key={m.id}
-            style={{
-              marginBottom: 8,
-              fontSize: `${fontSize}px`,
-              opacity: fading ? 0 : 1,
-              transition: fading
-                ? `opacity ${FADE_DURATION_MS}ms linear`
-                : undefined,
-            }}
-          >
-            <strong style={{ color: m.color ?? '#a970ff' }}>{m.user}</strong>:{' '}
-            <MessageWithEmotes
-              text={m.text}
-              emotes={m.emotes}
-              fontSize={fontSize}
-              thirdPartyEmotes={thirdPartyEmotes}
-            />
-          </div>
-        );
-      })}
+      {messages
+        .filter((m) => !removedIds.has(m.id))
+        .map((m) => {
+          const fading = (autoHide?.enabled ?? false) && fadingIds.has(m.id);
+          return (
+            <div
+              key={m.id}
+              style={{
+                marginBottom: 8,
+                fontSize: `${fontSize}px`,
+                opacity: fading ? 0 : 1,
+                transition: fading
+                  ? `opacity ${FADE_DURATION_MS}ms linear`
+                  : undefined,
+              }}
+            >
+              <strong style={{ color: m.color ?? '#a970ff' }}>{m.user}</strong>:{' '}
+              <MessageWithEmotes
+                text={m.text}
+                emotes={m.emotes}
+                fontSize={fontSize}
+                thirdPartyEmotes={thirdPartyEmotes}
+              />
+            </div>
+          );
+        })}
     </div>
   );
 };

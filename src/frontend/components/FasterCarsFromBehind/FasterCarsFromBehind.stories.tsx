@@ -3,7 +3,12 @@ import {
   FasterCarsFromBehind,
   FasterCarsFromBehindDisplay,
 } from './FasterCarsFromBehind';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import {
+  BorderRadiusDecorator,
+  TelemetryDecorator,
+  borderRadiusStoryArgTypes,
+  borderRadiusStoryArgs,
+} from '@irdashies/storybook';
 
 // Mock the settings hook for stories
 const mockSettings = {
@@ -29,7 +34,10 @@ const mockSettings = {
 export default {
   component: FasterCarsFromBehindDisplay,
   title: 'widgets/FasterCarsFromBehind',
+  decorators: [BorderRadiusDecorator],
+  args: borderRadiusStoryArgs,
   argTypes: {
+    ...borderRadiusStoryArgTypes,
     classColor: {
       options: [undefined, 0xffda59, 0x33ceff, 0xff5888, 0xae6bff, 0xffffff],
       control: { type: 'select' },

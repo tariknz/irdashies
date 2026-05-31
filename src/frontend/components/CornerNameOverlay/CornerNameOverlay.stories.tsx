@@ -1,6 +1,11 @@
-import { Meta, StoryObj } from '@storybook/react-vite';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CornerNameOverlay } from './CornerNameOverlay';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import {
+  BorderRadiusDecorator,
+  TelemetryDecorator,
+  borderRadiusStoryArgTypes,
+  borderRadiusStoryArgs,
+} from '@irdashies/storybook';
 
 // Real recorded sessions are used so the bundled-data lookup resolves naturally
 // from WeekendInfo.TrackName — no manual store overrides. As the recording
@@ -10,13 +15,16 @@ export default {
   component: CornerNameOverlay,
   title: 'widgets/CornerNameOverlay',
   args: {
+    ...borderRadiusStoryArgs,
     showCornerNumber: true,
     showProgressBar: true,
     showTrackPct: true,
     fontSize: 18,
     opacity: 0.9,
   },
+  argTypes: borderRadiusStoryArgTypes,
   decorators: [
+    BorderRadiusDecorator,
     (Story) => (
       <div className="w-72">
         <Story />

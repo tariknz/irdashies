@@ -19,7 +19,7 @@ export const FlagContour = ({
 }: FlagContourProps) => {
   const containerClassName = `w-full bg-slate-800/(--bg-opacity) rounded-sm ${
     !compactMode ? 'p-2' : ''
-  } overflow-hidden ${flags.enabled ? 'border-solid' : ''}`;
+  } overflow-hidden widget-radius-surface ${flags.enabled ? 'border-solid' : ''}`;
 
   const containerStyle = {
     ['--bg-opacity' as string]: `${backgroundOpacity}%`,

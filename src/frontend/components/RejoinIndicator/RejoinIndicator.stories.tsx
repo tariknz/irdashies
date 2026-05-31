@@ -1,9 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { RejoinIndicatorDisplay } from './RejoinIndicator';
+import {
+  BorderRadiusDecorator,
+  borderRadiusStoryArgTypes,
+  borderRadiusStoryArgs,
+} from '@irdashies/storybook';
 
 const meta: Meta<typeof RejoinIndicatorDisplay> = {
   title: 'widgets/RejoinIndicator',
   component: RejoinIndicatorDisplay,
+  decorators: [BorderRadiusDecorator],
+  args: borderRadiusStoryArgs,
+  argTypes: borderRadiusStoryArgTypes,
 };
 
 export default meta;

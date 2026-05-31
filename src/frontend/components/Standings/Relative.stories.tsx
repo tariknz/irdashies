@@ -1,9 +1,12 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { Relative } from './Relative';
 import {
+  BorderRadiusDecorator,
   TelemetryDecorator,
   DynamicTelemetrySelector,
   TelemetryDecoratorWithConfig,
+  borderRadiusStoryArgTypes,
+  borderRadiusStoryArgs,
 } from '@irdashies/storybook';
 import {
   DashboardProvider,
@@ -325,6 +328,9 @@ const RelativeWithoutHeaderFooter = () => {
 export default {
   component: Relative,
   title: 'widgets/Relative',
+  decorators: [BorderRadiusDecorator],
+  args: borderRadiusStoryArgs,
+  argTypes: borderRadiusStoryArgTypes,
   parameters: {
     controls: {
       exclude: ['telemetryPath'],

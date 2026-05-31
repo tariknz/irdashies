@@ -6,14 +6,20 @@ import {
   useReferenceLapStore,
   useSessionStore,
 } from '@irdashies/context';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import {
+  BorderRadiusDecorator,
+  TelemetryDecorator,
+  borderRadiusStoryArgTypes,
+  borderRadiusStoryArgs,
+} from '@irdashies/storybook';
 import type { ReferenceLap } from '@irdashies/types';
 
 export default {
   component: SectorDelta,
   title: 'widgets/SectorDelta',
-  decorators: [TelemetryDecorator()],
+  decorators: [BorderRadiusDecorator, TelemetryDecorator()],
   args: {
+    ...borderRadiusStoryArgs,
     background: { opacity: 80 },
     showOnlyWhenOnTrack: false,
     ghostComparison: 'prefer-ghost',
@@ -25,6 +31,7 @@ export default {
       offlineTesting: true,
     },
   },
+  argTypes: borderRadiusStoryArgTypes,
 } as Meta;
 
 type Story = StoryObj<typeof SectorDelta>;
