@@ -119,6 +119,18 @@ const AVAILABLE_WIDGETS: readonly AvailableWidget[] = (
     defaultOn: DEFAULT_ON_WIDGETS.has(id),
   }));
 
+/**
+ * Initial dashboard for the preview: every widget from defaultDashboard, but
+ * with `enabled` reconciled to DEFAULT_ON_WIDGETS. defaultDashboard enables
+ * extras (standings, weather) that the toolbar starts with off; without this
+ * the dashboard context and toolbar disagree, and saving any widget's
+ * settings re-enables those extras via onDashboardSaved.
+ */
+const PREVIEW_WIDGETS = defaultDashboard.widgets.map((w) => ({
+  ...w,
+  enabled: DEFAULT_ON_WIDGETS.has((w.type ?? w.id) as WidgetId),
+}));
+
 // Default-on widgets: relative (top-left), track map (top-right),
 // input (bottom-center). Positions are computed once the canvas is measured.
 
@@ -247,6 +259,7 @@ export function LivePreview() {
       </div>
 
       <LivePreviewProvider
+        widgets={PREVIEW_WIDGETS}
         onDashboardSaved={(dashboard) => {
           setActiveWidgets((prev) => {
             const next = new Set(prev);
