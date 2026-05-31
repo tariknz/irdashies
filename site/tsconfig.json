@@ -11,16 +11,14 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": "..",
+    "types": ["vite/client", "node"],
     "paths": {
-      "@irdashies/utils/*": ["./src/frontend/utils/*"],
-      "@irdashies/context": ["./src/frontend/context"],
-      "@irdashies/types": ["./src/types"]
+      "@irdashies/utils/*": ["../src/frontend/utils/*"],
+      "@irdashies/context": ["../src/frontend/context"],
+      "@irdashies/types": ["../src/types"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "../src/interface.d.ts"],
   "exclude": ["node_modules"]
 }

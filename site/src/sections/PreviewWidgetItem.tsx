@@ -8,10 +8,7 @@ import {
   type CSSProperties,
 } from 'react';
 import { ResizeIcon, GearIcon, XIcon } from '@phosphor-icons/react';
-import {
-  useDashboard,
-  useGeneralSettings,
-} from '../../../src/frontend/context/DashboardContext/DashboardContext';
+import { useDashboard, useGeneralSettings } from '@irdashies/context';
 import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import {
   useDragWidget,

@@ -9,7 +9,7 @@ import {
   getTimeAtPosition,
 } from '../relativeGapHelpers';
 import { ReferenceLap } from '@irdashies/types';
-import { TelemetryVarList } from 'src/app/irsdk/types';
+import { TelemetryVarList } from '../../../../app/irsdk/types';
 
 // Mock the context hooks
 vi.mock('@irdashies/context', async (importOriginal) => {
