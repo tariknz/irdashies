@@ -1231,6 +1231,10 @@ export const defaultDashboard: {
     compactMode: 'off' as const,
     overlayAlwaysOnTop: true,
     enableNetworkAccess: false,
+    editMode: {
+      pixelDistances: false,
+      snapToGrid: false,
+    },
   },
 };
 

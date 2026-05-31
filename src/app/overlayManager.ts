@@ -312,6 +312,10 @@ export class OverlayManager {
         y: actualBounds.y - expectedBounds.y,
       };
 
+      const allDisplayBounds = screen
+        .getAllDisplays()
+        .map((d) => ({ ...d.bounds }));
+
       const boundsInfo: ContainerBoundsInfo = {
         expected: expectedBounds,
         actual: actualBounds,
@@ -319,6 +323,7 @@ export class OverlayManager {
         displayId: display.id,
         isPrimary,
         displayBounds: { ...expectedBounds },
+        allDisplayBounds,
       };
 
       this.displayBoundsInfo.set(display.id, boundsInfo);
