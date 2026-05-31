@@ -1,5 +1,5 @@
 import { generateMockData } from './generateMockData';
-import { OverlayManager } from 'src/app/overlayManager';
+import { OverlayManager } from '../../../overlayManager';
 import { TelemetryPerfMetrics } from '../../../perfMetrics';
 
 export async function publishIRacingSDKEvents(overlayManager: OverlayManager) {

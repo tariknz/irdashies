@@ -11,7 +11,7 @@ import {
 import { WIDGET_MAP, type WidgetId } from '../../../src/frontend/WidgetIndex';
 import { WIDGET_NAMES } from '../../../src/frontend/constants/widgetNames';
 import { SectorTimingUpdater } from '../../../src/frontend/components/OverlayContainer/SectorTimingUpdater';
-import { defaultDashboard } from '../../../src/types/defaultDashboard';
+import { defaultDashboard } from '@irdashies/types';
 
 // Site-local components and utilities
 import { DashboardReady } from '../components/DashboardReady';

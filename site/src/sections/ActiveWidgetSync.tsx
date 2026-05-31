@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useDashboard } from '../../../src/frontend/context/DashboardContext/DashboardContext';
+import { useDashboard } from '@irdashies/context';
 
 /**
  * Syncs the toolbar's activeWidgets set into the dashboard context so the

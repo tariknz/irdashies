@@ -1,4 +1,4 @@
-import { OverlayManager } from 'src/app/overlayManager';
+import { OverlayManager } from '../../overlayManager';
 import { ipcMain } from 'electron';
 import type { IrSdkBridge } from '@irdashies/types';
 import logger from '../../logger';
