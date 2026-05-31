@@ -146,6 +146,7 @@ export const OverlayContainer = memo(() => {
             widget={widget}
             siblingLayouts={siblingLayoutsByWidgetId.get(widget.id)}
             editMode={editMode}
+            generalSettings={currentDashboard.generalSettings}
             zIndex={index + 1}
             onLayoutChange={handleLayoutChange}
             onDisable={handleDisableWidget}

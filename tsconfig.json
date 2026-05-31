@@ -20,5 +20,5 @@
     },
     "types": ["vite/client"]
   },
-  "exclude": ["site"]
+  "exclude": ["site", "storybook-static"]
 }

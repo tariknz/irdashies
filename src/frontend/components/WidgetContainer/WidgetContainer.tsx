@@ -7,7 +7,11 @@ import {
   useMemo,
   CSSProperties,
 } from 'react';
-import type { DashboardWidget, WidgetLayout } from '@irdashies/types';
+import type {
+  DashboardWidget,
+  GeneralSettingsType,
+  WidgetLayout,
+} from '@irdashies/types';
 import { useDragWidget } from './useDragWidget';
 import { useResizeWidget } from './useResizeWidget';
 import { ResizeHandles } from './ResizeHandle';
@@ -16,11 +20,17 @@ import { useEdgeDistances } from './useEdgeDistances';
 import { getWidgetName } from '../../constants/widgetNames';
 import { ResizeIcon, GearIcon, XIcon } from '@phosphor-icons/react';
 import { useContainerOffset, useDashboard } from '@irdashies/context';
+import {
+  WIDGET_BORDER_RADIUS_CLASS,
+  getWidgetBorderRadiusStyle,
+  supportsWidgetBorderRadius,
+} from '@irdashies/utils/borderRadius';
 
 export interface WidgetContainerProps {
   widget: DashboardWidget;
   siblingLayouts?: WidgetLayout[];
   editMode: boolean;
+  generalSettings?: GeneralSettingsType;
   zIndex: number;
   onLayoutChange: (widgetId: string, layout: WidgetLayout) => void;
   onDisable?: (widgetId: string) => void;
@@ -33,6 +43,7 @@ export const WidgetContainer = memo(
     widget,
     siblingLayouts = [],
     editMode,
+    generalSettings,
     zIndex,
     onLayoutChange,
     onDisable,
@@ -175,11 +186,24 @@ export const WidgetContainer = memo(
     };
 
     const widgetName = getWidgetName(id);
+    const widgetType = widget.type || widget.id;
+    const supportsBorderRadius = supportsWidgetBorderRadius(widgetType);
+    const borderRadiusStyle = supportsBorderRadius
+      ? getWidgetBorderRadiusStyle(widget.borderRadius, generalSettings)
+      : undefined;
 
     return (
       <div style={containerStyle} data-widget-id={id}>
         {/* Widget content */}
-        <div className={`w-full h-full pointer-events-none`}>{children}</div>
+        <div
+          className={[
+            'w-full h-full pointer-events-none',
+            supportsBorderRadius ? WIDGET_BORDER_RADIUS_CLASS : '',
+          ].join(' ')}
+          style={borderRadiusStyle}
+        >
+          {children}
+        </div>
 
         {/* Edit mode overlay */}
         {editMode && (

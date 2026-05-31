@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import type { GeneralSettingsType } from '@irdashies/types';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import {
+  DEFAULT_BORDER_RADIUS,
+  MAX_BORDER_RADIUS,
+  clampBorderRadius,
+} from '@irdashies/utils/borderRadius';
 
 const FONT_PRESETS = {
   lato: 'Lato',
@@ -96,6 +101,9 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
     startMinimized: currentDashboard?.generalSettings?.startMinimized ?? false,
     closeToTray: currentDashboard?.generalSettings?.closeToTray ?? true,
     compactMode: currentDashboard?.generalSettings?.compactMode ?? 'off',
+    borderRadius: clampBorderRadius(
+      currentDashboard?.generalSettings?.borderRadius ?? DEFAULT_BORDER_RADIUS
+    ),
     overlayAlwaysOnTop:
       currentDashboard?.generalSettings?.overlayAlwaysOnTop ?? true,
     enableNetworkAccess:
@@ -113,9 +121,13 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
   }
 
   const updateDashboard = (newSettings: GeneralSettingsType) => {
+    const mergedSettings = {
+      ...currentDashboard.generalSettings,
+      ...newSettings,
+    };
     const updatedDashboard = {
       ...currentDashboard,
-      generalSettings: newSettings,
+      generalSettings: mergedSettings,
     };
     onDashboardUpdated(updatedDashboard);
   };
@@ -269,6 +281,15 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
     updateDashboard(newSettings);
   };
 
+  const handleBorderRadiusChange = (borderRadius: number) => {
+    const newSettings = {
+      ...settings,
+      borderRadius: clampBorderRadius(borderRadius),
+    };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
   const handleOverlayAlwaysOnTopChange = (enabled: boolean) => {
     const newSettings = { ...settings, overlayAlwaysOnTop: enabled };
     setSettings(newSettings);
@@ -389,6 +410,37 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
               onChange={handleSliderChange}
               className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider accent-blue-500"
             />
+          </div>
+        </div>
+
+        {/* Border Radius Setting */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-slate-200">
+              Border Radius
+            </h3>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-300">
+                {settings.borderRadius ?? DEFAULT_BORDER_RADIUS}px
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <input
+              type="range"
+              min={0}
+              max={MAX_BORDER_RADIUS}
+              step={1}
+              value={settings.borderRadius ?? DEFAULT_BORDER_RADIUS}
+              onChange={(e) =>
+                handleBorderRadiusChange(parseFloat(e.target.value))
+              }
+              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider accent-blue-500"
+            />
+            <p className="mt-2 text-sm text-slate-500">
+              Default corner radius for widgets that inherit the global setting.
+            </p>
           </div>
         </div>
 

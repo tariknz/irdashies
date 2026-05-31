@@ -118,6 +118,14 @@ html {
   color-scheme: dark;
 }
 
+.widget-radius-clip .widget-radius-surface {
+  border-top-left-radius: var(--widget-border-radius-top-left);
+  border-top-right-radius: var(--widget-border-radius-top-right);
+  border-bottom-right-radius: var(--widget-border-radius-bottom-right);
+  border-bottom-left-radius: var(--widget-border-radius-bottom-left);
+  overflow: hidden;
+}
+
 .overlay-window.overlay-theme-font-face-lato {
   font-family: 'Lato', sans-serif;
 }

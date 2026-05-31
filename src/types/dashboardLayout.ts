@@ -12,6 +12,19 @@ export interface WidgetLayout {
   height: number;
 }
 
+export interface BorderRadiusCorners {
+  topLeft: number;
+  topRight: number;
+  bottomRight: number;
+  bottomLeft: number;
+}
+
+export interface WidgetBorderRadiusSettings {
+  mode: 'inherit' | 'uniform' | 'corners';
+  radius?: number;
+  corners?: Partial<BorderRadiusCorners>;
+}
+
 export interface DashboardWidget {
   /** Unique instance ID of the widget. */
   id: string;
@@ -25,6 +38,8 @@ export interface DashboardWidget {
   layout: WidgetLayout;
   /** Configuration for the widget. */
   config?: Record<string, unknown>;
+  /** Per-widget border radius override. Falls back to generalSettings.borderRadius when absent or set to 'inherit'. */
+  borderRadius?: WidgetBorderRadiusSettings;
 }
 
 export interface TagGroup {
@@ -133,6 +148,7 @@ export interface GeneralSettingsType {
   startMinimized?: boolean;
   closeToTray?: boolean;
   compactMode?: 'off' | 'compact' | 'ultra';
+  borderRadius?: number;
   overlayAlwaysOnTop?: boolean;
   enableNetworkAccess?: boolean;
   editMode?: {
