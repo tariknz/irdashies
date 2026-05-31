@@ -169,6 +169,12 @@ const widgetItems: MenuItem[] = [
     label: 'Weather',
     widgetType: 'weather',
   },
+  {
+    to: '/settings/wind',
+    path: '/wind',
+    label: 'Wind',
+    widgetType: 'wind',
+  },
 ];
 
 const bottomItems: MenuItem[] = [

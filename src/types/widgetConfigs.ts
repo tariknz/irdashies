@@ -201,15 +201,25 @@ export interface RelativeConfig {
 
 export interface WeatherConfig {
   background: { opacity: number };
+  layout?: 'vertical' | 'horizontal';
+  horizontalMode?: 'compact' | 'full';
   displayOrder: string[];
   showOnlyWhenOnTrack?: boolean;
   airTemp: { enabled: boolean };
   trackTemp: { enabled: boolean };
+  humidity: { enabled: boolean };
   wetness: { enabled: boolean };
   trackState: { enabled: boolean };
   precipitation: { enabled: boolean };
   wind: { enabled: boolean };
   units: 'auto' | 'Metric' | 'Imperial';
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export interface WindConfig {
+  background: { opacity: number };
+  units: 'auto' | 'Metric' | 'Imperial';
+  showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }
 
@@ -592,6 +602,7 @@ export interface WidgetConfigMap {
   standings: StandingsConfig;
   relative: RelativeConfig;
   weather: WeatherConfig;
+  wind: WindConfig;
   map: TrackMapConfig;
   flatmap: FlatTrackMapConfig;
   input: InputConfig;
@@ -682,6 +693,7 @@ export interface ShiftPointSettings {
 export type StandingsWidgetSettings = BaseWidgetSettings<StandingsConfig>;
 export type RelativeWidgetSettings = BaseWidgetSettings<RelativeConfig>;
 export type WeatherWidgetSettings = BaseWidgetSettings<WeatherConfig>;
+export type WindWidgetSettings = BaseWidgetSettings<WindConfig>;
 export type TrackMapWidgetSettings = BaseWidgetSettings<TrackMapConfig>;
 export type FlatTrackMapWidgetSettings = BaseWidgetSettings<FlatTrackMapConfig>;
 export type SteerWidgetSettings = BaseWidgetSettings<SteerConfig>;

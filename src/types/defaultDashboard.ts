@@ -690,6 +690,8 @@ export const defaultDashboard: {
         background: {
           opacity: 25,
         },
+        layout: 'vertical',
+        horizontalMode: 'compact',
         units: 'auto',
         displayOrder: [
           'trackTemp',
@@ -721,6 +723,30 @@ export const defaultDashboard: {
         wind: {
           enabled: true,
         },
+        showOnlyWhenOnTrack: false,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
+    },
+    {
+      id: 'wind',
+      enabled: false,
+      layout: {
+        x: 1334,
+        y: 471,
+        width: 174,
+        height: 200,
+      },
+      config: {
+        background: {
+          opacity: 80,
+        },
+        units: 'auto',
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
