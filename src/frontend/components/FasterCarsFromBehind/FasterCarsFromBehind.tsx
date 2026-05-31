@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useSessionVisibility, useDashboard } from '@irdashies/context';
 import { useCarBehind } from './hooks/useCarBehind';
 import { useFasterCarsSettings } from './hooks/useFasterCarsSettings';
@@ -50,78 +51,84 @@ export const FasterCarsFromBehind = () => {
   );
 };
 
-export const FasterCarsFromBehindDisplay = ({
-  name,
-  license,
-  rating,
-  distance,
-  percent,
-  classColor,
-}: FasterCarsFromBehindProps) => {
-  const settings = useFasterCarsSettings();
+export const FasterCarsFromBehindDisplay = memo(
+  function FasterCarsFromBehindDisplay({
+    name,
+    license,
+    rating,
+    distance,
+    percent,
+    classColor,
+  }: FasterCarsFromBehindProps) {
+    const settings = useFasterCarsSettings();
 
-  if (!name) {
-    return null;
-  }
+    if (!name) {
+      return null;
+    }
 
-  const animate = distance && distance > -1.5 ? 'animate-pulse' : '';
-  const red = percent || 0;
-  const green = 100 - (percent || 0);
-  const background = getTailwindStyle(classColor, undefined, true).classHeader;
+    const animate = distance && distance > -1.5 ? 'animate-pulse' : '';
+    const red = percent || 0;
+    const green = 100 - (percent || 0);
+    const background = getTailwindStyle(
+      classColor,
+      undefined,
+      true
+    ).classHeader;
 
-  name = settings?.removeNumbersFromName ? name.replace(/\d/g, '') : name;
+    name = settings?.removeNumbersFromName ? name.replace(/\d/g, '') : name;
 
-  return (
-    <div
-      className={`widget-radius-surface w-full rounded-sm ${background} ${animate}`}
-    >
+    return (
       <div
-        className={`flex p-1 ${(settings?.showName || settings?.showBadge) && settings?.showDistance ? 'justify-between' : settings?.showDistance ? 'justify-end' : 'justify-start'}`}
+        className={`widget-radius-surface w-full rounded-sm ${background} ${animate}`}
       >
-        <div className="flex gap-1">
-          {settings?.showName && (
+        <div
+          className={`flex p-1 ${(settings?.showName || settings?.showBadge) && settings?.showDistance ? 'justify-between' : settings?.showDistance ? 'justify-end' : 'justify-start'}`}
+        >
+          <div className="flex gap-1">
+            {settings?.showName && (
+              <div className="rounded-sm text-lg bg-gray-700 p-1 px-2">
+                {name}
+              </div>
+            )}
+            {settings?.showBadge && (
+              <div className="flex align-center">
+                <DriverRatingBadge
+                  license={license}
+                  rating={rating}
+                  format={
+                    settings.badgeFormat as
+                      | 'license-color-fullrating-combo'
+                      | 'fullrating-color-no-license'
+                      | 'license-color-fullrating-bw'
+                      | 'license-color-rating-bw'
+                      | 'license-color-rating-bw-no-license'
+                      | 'rating-color-no-license'
+                      | 'license-bw-rating-bw'
+                      | 'rating-only-bw-rating-bw'
+                      | 'license-bw-rating-bw-no-license'
+                      | 'rating-bw-no-license'
+                      | 'fullrating-bw-no-license'
+                      | 'rating-only-color-rating-bw'
+                  }
+                />
+              </div>
+            )}
+          </div>
+          {settings?.showDistance && (
             <div className="rounded-sm text-lg bg-gray-700 p-1 px-2">
-              {name}
-            </div>
-          )}
-          {settings?.showBadge && (
-            <div className="flex align-center">
-              <DriverRatingBadge
-                license={license}
-                rating={rating}
-                format={
-                  settings.badgeFormat as
-                    | 'license-color-fullrating-combo'
-                    | 'fullrating-color-no-license'
-                    | 'license-color-fullrating-bw'
-                    | 'license-color-rating-bw'
-                    | 'license-color-rating-bw-no-license'
-                    | 'rating-color-no-license'
-                    | 'license-bw-rating-bw'
-                    | 'rating-only-bw-rating-bw'
-                    | 'license-bw-rating-bw-no-license'
-                    | 'rating-bw-no-license'
-                    | 'fullrating-bw-no-license'
-                    | 'rating-only-color-rating-bw'
-                }
-              />
+              {distance?.toFixed(1)}
             </div>
           )}
         </div>
-        {settings?.showDistance && (
-          <div className="rounded-sm text-lg bg-gray-700 p-1 px-2">
-            {distance?.toFixed(1)}
-          </div>
-        )}
-      </div>
 
-      <div
-        className={`rounded-b-sm bg-white h-2 flex-none`}
-        style={{
-          width: `${percent ?? 0}%`,
-          backgroundColor: `rgb(${red}%, ${green}%, 0%)`,
-        }}
-      ></div>
-    </div>
-  );
-};
+        <div
+          className={`rounded-b-sm bg-white h-2 flex-none`}
+          style={{
+            width: `${percent ?? 0}%`,
+            backgroundColor: `rgb(${red}%, ${green}%, 0%)`,
+          }}
+        ></div>
+      </div>
+    );
+  }
+);

@@ -272,7 +272,7 @@ export const FlagDisplay = ({
       className="w-full h-full flex items-center justify-center"
     >
       <div
-        className="widget-radius-surface flex flex-col items-center gap-[3%] bg-slate-900/(--bg-opacity) rounded-2xl border-4 border-slate-800/(--bg-opacity)"
+        className="widget-radius-surface flex flex-col items-center gap-[3%] bg-slate-900/(--bg-opacity) border-4 border-slate-800/(--bg-opacity)"
         style={{
           ...bgOpacityStyle,
           boxShadow: containerShadow,
