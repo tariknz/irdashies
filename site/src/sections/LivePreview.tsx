@@ -6,26 +6,10 @@ import {
   useSyncExternalStore,
 } from 'react';
 
-// Frontend widget components
-import {
-  BlindSpotMonitor,
-  FasterCarsFromBehind,
-  Flag,
-  FlatTrackMap,
-  FuelCalculator,
-  InformationBar,
-  Input,
-  LapTimeLog,
-  PitlaneHelper,
-  Relative,
-  RejoinIndicator,
-  SectorDelta,
-  SlowCarAhead,
-  Standings,
-  Tachometer,
-  TrackMap,
-  Weather,
-} from '../../../src/frontend/WidgetIndex';
+// Frontend widget registry — the preview list is derived from this so it
+// can't silently drift out of sync when widgets are added to the app.
+import { WIDGET_MAP, type WidgetId } from '../../../src/frontend/WidgetIndex';
+import { WIDGET_NAMES } from '../../../src/frontend/constants/widgetNames';
 import { SectorTimingUpdater } from '../../../src/frontend/components/OverlayContainer/SectorTimingUpdater';
 import { defaultDashboard } from '../../../src/types/defaultDashboard';
 
@@ -108,85 +92,32 @@ interface AvailableWidget {
   defaultOn: boolean;
 }
 
-const AVAILABLE_WIDGETS: readonly AvailableWidget[] = [
-  {
-    id: 'standings',
-    label: 'Standings',
-    component: Standings,
-    defaultOn: false,
-  },
-  { id: 'relative', label: 'Relative', component: Relative, defaultOn: true },
-  { id: 'input', label: 'Input Trace', component: Input, defaultOn: true },
-  {
-    id: 'tachometer',
-    label: 'Tachometer',
-    component: Tachometer,
-    defaultOn: false,
-  },
-  { id: 'weather', label: 'Weather', component: Weather, defaultOn: false },
-  { id: 'flag', label: 'Flag', component: Flag, defaultOn: false },
-  {
-    id: 'infobar',
-    label: 'Info Bar',
-    component: InformationBar,
-    defaultOn: false,
-  },
-  { id: 'map', label: 'Track Map', component: TrackMap, defaultOn: true },
-  {
-    id: 'flatmap',
-    label: 'Flat Track Map',
-    component: FlatTrackMap,
-    defaultOn: false,
-  },
-  {
-    id: 'fastercarsfrombehind',
-    label: 'Faster Cars Behind',
-    component: FasterCarsFromBehind,
-    defaultOn: false,
-  },
-  {
-    id: 'fuel',
-    label: 'Fuel Calculator',
-    component: FuelCalculator as React.ComponentType<unknown>,
-    defaultOn: false,
-  },
-  {
-    id: 'blindspotmonitor',
-    label: 'Blind Spot',
-    component: BlindSpotMonitor,
-    defaultOn: false,
-  },
-  {
-    id: 'rejoin',
-    label: 'Rejoin Indicator',
-    component: RejoinIndicator,
-    defaultOn: false,
-  },
-  {
-    id: 'pitlanehelper',
-    label: 'Pitlane Helper',
-    component: PitlaneHelper,
-    defaultOn: false,
-  },
-  {
-    id: 'laptimelog',
-    label: 'Lap Time Log',
-    component: LapTimeLog,
-    defaultOn: false,
-  },
-  {
-    id: 'slowcarahead',
-    label: 'Slow Car Ahead',
-    component: SlowCarAhead,
-    defaultOn: false,
-  },
-  {
-    id: 'sectordelta',
-    label: 'Sector Delta',
-    component: SectorDelta as React.ComponentType<unknown>,
-    defaultOn: false,
-  },
-];
+/**
+ * Widgets registered in the app but deliberately kept out of the live
+ * preview: they need external input or real-app state that the mock bridge
+ * can't provide, so they'd render empty or broken. Remove an id here to
+ * surface that widget in the preview toolbar.
+ */
+const EXCLUDED_WIDGETS = new Set<WidgetId>([
+  'garagecover', // only renders while in the garage
+  'telemetryinspector', // debug tool, not a showcase overlay
+  'twitchchat', // needs a real Twitch channel to display anything
+  'heartrate', // embeds HypeRate, needs a session id
+]);
+
+/** Widgets enabled by default when the preview first loads. */
+const DEFAULT_ON_WIDGETS = new Set<WidgetId>(['relative', 'input', 'map']);
+
+const AVAILABLE_WIDGETS: readonly AvailableWidget[] = (
+  Object.keys(WIDGET_MAP) as WidgetId[]
+)
+  .filter((id) => !EXCLUDED_WIDGETS.has(id))
+  .map((id) => ({
+    id,
+    label: WIDGET_NAMES[id],
+    component: WIDGET_MAP[id] as React.ComponentType<unknown>,
+    defaultOn: DEFAULT_ON_WIDGETS.has(id),
+  }));
 
 // Default-on widgets: relative (top-left), track map (top-right),
 // input (bottom-center). Positions are computed once the canvas is measured.
@@ -285,11 +216,16 @@ export function LivePreview() {
     setSelectedWidget(widgetId);
   }, []);
 
-  const handleDeselect = useCallback(() => {
-    setSelectedWidget(null);
+  const handleDisable = useCallback((widgetId: string) => {
+    setActiveWidgets((prev) => {
+      const next = new Set(prev);
+      next.delete(widgetId);
+      return next;
+    });
+    setSelectedWidget((prev) => (prev === widgetId ? null : prev));
   }, []);
 
-  const handleDoubleClick = useCallback((widgetId: string) => {
+  const handleOpenSettings = useCallback((widgetId: string) => {
     setSettingsOpenWidget(widgetId);
   }, []);
 
@@ -306,7 +242,7 @@ export function LivePreview() {
         <p className="text-sm text-slate-400 mt-1">
           {isMobile
             ? 'Tap the toolbar to preview different widgets. Try the full interactive experience on desktop.'
-            : 'Toggle widgets in the toolbar to enable them. Click a widget to select it, drag to reposition, resize from edges, or double-click for settings.'}
+            : 'Toggle widgets in the toolbar to enable them. Click a widget to select it, drag to reposition, resize from edges, or use the gear icon for settings.'}
         </p>
       </div>
 
@@ -441,8 +377,8 @@ export function LivePreview() {
                           isSelected={selectedWidget === widget.id}
                           onPositionChange={handlePositionChange}
                           onSelect={handleSelect}
-                          onDeselect={handleDeselect}
-                          onDoubleClick={handleDoubleClick}
+                          onDisable={handleDisable}
+                          onOpenSettings={handleOpenSettings}
                         />
                       );
                     })}

@@ -56,7 +56,7 @@ export function CoachMarks({ onDismiss }: { onDismiss: () => void }) {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 animate-pulse">
         <div className="bg-sky-500 text-white text-sm font-semibold px-4 py-2 rounded-md shadow-lg flex items-center gap-2">
           <ArrowsOutCardinal size={18} />
-          Drag widgets to move, double-click for settings
+          Drag widgets to move, use the gear icon for settings
         </div>
       </div>
 
