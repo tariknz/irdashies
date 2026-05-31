@@ -78,9 +78,7 @@ export const FasterCarsFromBehindDisplay = memo(
     name = settings?.removeNumbersFromName ? name.replace(/\d/g, '') : name;
 
     return (
-      <div
-        className={`widget-radius-surface w-full rounded-sm ${background} ${animate}`}
-      >
+      <div className={`widget-radius-surface w-full ${background} ${animate}`}>
         <div
           className={`flex p-1 ${(settings?.showName || settings?.showBadge) && settings?.showDistance ? 'justify-between' : settings?.showDistance ? 'justify-end' : 'justify-start'}`}
         >
