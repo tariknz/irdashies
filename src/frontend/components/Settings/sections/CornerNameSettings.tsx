@@ -31,10 +31,12 @@ export const CornerNameSettings = () => {
       defaultConfig,
   });
 
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () =>
-      (localStorage.getItem('cornerNameTab') as SettingsTabType) || 'display'
-  );
+  const [activeTab, setActiveTab] = useState<SettingsTabType>(() => {
+    const savedTab = localStorage.getItem(
+      'cornerNameTab'
+    ) as SettingsTabType | null;
+    return savedTab === 'styling' ? 'options' : savedTab || 'display';
+  });
 
   useEffect(() => {
     localStorage.setItem('cornerNameTab', activeTab);
@@ -49,6 +51,7 @@ export const CornerNameSettings = () => {
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
+      activeSettingsTab={activeTab}
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
@@ -61,11 +64,11 @@ export const CornerNameSettings = () => {
               Display
             </TabButton>
             <TabButton
-              id="styling"
+              id="options"
               activeTab={activeTab}
               setActiveTab={setActiveTab}
             >
-              Appearance
+              Options
             </TabButton>
             <TabButton
               id="visibility"
@@ -102,8 +105,8 @@ export const CornerNameSettings = () => {
               </SettingsSection>
             )}
 
-            {activeTab === 'styling' && (
-              <SettingsSection title="Appearance">
+            {activeTab === 'options' && (
+              <SettingsSection title="Options">
                 <SettingNumberRow
                   title="Font Size"
                   description="Base font size for corner names (px)"

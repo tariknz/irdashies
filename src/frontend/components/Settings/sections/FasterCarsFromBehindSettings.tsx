@@ -49,6 +49,7 @@ export const FasterCarsFromBehindSettings = () => {
       settings={settings}
       onSettingsChange={setSettings}
       widgetId="fastercarsfrombehind"
+      activeSettingsTab={activeTab}
     >
       {(handleConfigChange) => (
         <div className="space-y-4">

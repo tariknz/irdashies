@@ -446,6 +446,7 @@ export const RelativeSettings = () => {
       settings={settings}
       onSettingsChange={setSettings}
       widgetId="relative"
+      activeSettingsTab={activeTab}
     >
       {(handleConfigChange) => {
         const handleDisplayOrderChange = (newOrder: string[]) => {

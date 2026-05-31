@@ -51,6 +51,7 @@ export const LapTimeLogSettings = () => {
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
+      activeSettingsTab={activeTab}
     >
       {(handleConfigChange) => (
         <div className="space-y-4">

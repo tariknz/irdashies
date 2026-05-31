@@ -118,6 +118,7 @@ export const InputSettings = () => {
       settings={settings}
       onSettingsChange={setSettings}
       widgetId="input"
+      activeSettingsTab={activeTab}
     >
       {(handleConfigChange) => {
         const handleDisplayOrderChange = (newOrder: string[]) => {

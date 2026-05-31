@@ -47,6 +47,7 @@ export const RejoinIndicatorSettings = () => {
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
+      activeSettingsTab={activeTab}
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
@@ -69,7 +70,7 @@ export const RejoinIndicatorSettings = () => {
           </div>
 
           <div>
-            {/* DISPLAY TAB */}
+            {/* OPTIONS TAB */}
             {activeTab === 'options' && (
               <SettingsSection title="Options">
                 <SettingNumberRow

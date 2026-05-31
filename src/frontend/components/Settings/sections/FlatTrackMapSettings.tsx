@@ -53,6 +53,7 @@ export const FlatTrackMapSettings = () => {
       settings={settings}
       onSettingsChange={setSettings}
       widgetId="flatmap"
+      activeSettingsTab={activeTab}
     >
       {(handleConfigChange) => (
         <div className="space-y-4">

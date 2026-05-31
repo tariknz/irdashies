@@ -54,6 +54,7 @@ export const SectorDeltaSettings = () => {
       settings={settings as SectorDeltaWidgetSettings}
       onSettingsChange={(s) => setSettings(s as SectorDeltaWidgetSettings)}
       widgetId={SETTING_ID}
+      activeSettingsTab={activeTab}
     >
       {(handleConfigChange) => (
         <div className="space-y-4">

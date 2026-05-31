@@ -423,6 +423,7 @@ export const TachometerSettings = () => {
       settings={settings}
       onSettingsChange={setSettings}
       widgetId="tachometer"
+      activeSettingsTab={activeTab}
     >
       {(handleConfigChange) => {
         const config = settings.config;

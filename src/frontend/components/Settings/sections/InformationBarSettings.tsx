@@ -54,6 +54,7 @@ export const InformationBarSettings = () => {
       settings={settings}
       onSettingsChange={setSettings}
       widgetId="infobar"
+      activeSettingsTab={activeTab}
     >
       {(handleConfigChange) => (
         <div className="space-y-4">

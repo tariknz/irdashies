@@ -556,6 +556,7 @@ export const StandingsSettings = () => {
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
+      activeSettingsTab={activeTab}
     >
       {(handleConfigChange) => {
         const handleDisplayOrderChange = (newOrder: string[]) => {

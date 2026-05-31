@@ -315,9 +315,10 @@ npm run storybook  # Port 6006
 3. Add settings to `src/frontend/components/Settings/SettingsLoader.tsx`
 4. Add settings menu item to `src/frontend/components/Settings/SettingsMenu.tsx`
 5. Add type to `src/types/widgetConfigs.ts`
-6. Create `.stories.tsx`
-7. Register in `WidgetIndex.tsx`
-8. Add default config in `src/types/defaultDashboard.ts`
+6. For widgets with a visible rectangular background surface, add the widget type to `WIDGET_BORDER_RADIUS_SUPPORTED_TYPES` in `src/frontend/utils/borderRadius.ts` and apply `widget-radius-surface` to that surface. Leave widgets with no meaningful corners out of the allowlist.
+7. Create `.stories.tsx`
+8. Register in `WidgetIndex.tsx`
+9. Add default config in `src/types/defaultDashboard.ts`
 
 ### Adding a Hook
 

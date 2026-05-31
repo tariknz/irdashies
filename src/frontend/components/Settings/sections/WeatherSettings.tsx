@@ -137,6 +137,7 @@ export const WeatherSettings = () => {
       settings={settings}
       onSettingsChange={(s) => setSettings(s)}
       widgetId={SETTING_ID}
+      activeSettingsTab={activeTab}
     >
       {(handleConfigChange) => {
         const handleDisplayOrderChange = (newOrder: string[]) => {

@@ -170,7 +170,8 @@ Imports flow **downward** in this list. A layer may import from any layer below 
 - **R7.2** Heavy memoised components MUST receive primitive props (string/number/boolean), not freshly-allocated objects. Either flatten props in the parent, or attach a custom `propsAreEqual` to the `memo()` wrapper.
 - **R7.3** UI text is plain strings. **Never use emojis** — use Phosphor icons (`@phosphor-icons/react`).
 - **R7.4** Styling is Tailwind-only. No custom CSS unless theme-level.
-- **R7.5** Every widget has a `.stories.tsx` decorated with `TelemetryDecorator()` (or the channel-snapshot decorators introduced in Phase 3).
+- **R7.5** Widgets with a visible rectangular background surface MUST apply `widget-radius-surface` to that surface so global and per-widget border radius settings work. Radius support is opt-in through `WIDGET_BORDER_RADIUS_SUPPORTED_TYPES`; the settings UI and widget wrapper MUST both use that allowlist. Do not use broad CSS selectors or `!important` overrides to force widget radii. Widgets without a meaningful rectangular surface or corners, and non-user-facing diagnostic overlays such as Telemetry Inspector, MUST stay out of the allowlist.
+- **R7.6** Every widget has a `.stories.tsx` decorated with `TelemetryDecorator()` (or the channel-snapshot decorators introduced in Phase 3).
 
 ---
 

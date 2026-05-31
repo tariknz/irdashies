@@ -136,6 +136,7 @@ export const SingleFuelWidgetSettings = ({
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={widgetId}
+      activeSettingsTab={activeTab}
       disableInternalScroll={true}
     >
       {(handleConfigChange) => {

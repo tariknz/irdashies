@@ -128,6 +128,7 @@ export const TrackMapSettings = () => {
       settings={settings}
       onSettingsChange={setSettings}
       widgetId="map"
+      activeSettingsTab={activeTab}
     >
       {(handleConfigChange) => {
         configChangeHandlerRef.current = handleConfigChange;

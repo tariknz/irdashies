@@ -51,6 +51,7 @@ export const FlagSettings = () => {
       settings={settings as FlagWidgetSettings}
       onSettingsChange={(s) => setSettings(s as FlagWidgetSettings)}
       widgetId={SETTING_ID}
+      activeSettingsTab={activeTab}
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
