@@ -35,10 +35,15 @@ export const InputContainer = ({
 
   // Only recompute section order when settings change (not every telemetry frame)
   const orderedSections = useMemo(() => {
+    // The ring steer style already shows gear + speed in its centre, so hide
+    // the standalone Gear module to avoid a duplicate.
+    const steerIsRing =
+      settings.steer.enabled && settings.steer.config?.style === 'ring';
+
     const allSections: { id: InputSection; enabled: boolean }[] = [
       { id: 'trace', enabled: settings.trace.enabled },
       { id: 'bar', enabled: settings.bar.enabled },
-      { id: 'gear', enabled: settings.gear.enabled },
+      { id: 'gear', enabled: settings.gear.enabled && !steerIsRing },
       { id: 'abs', enabled: settings.abs.enabled },
       { id: 'steer', enabled: settings.steer.enabled },
     ];
@@ -108,11 +113,20 @@ export const InputContainer = ({
           );
         case 'steer':
           return (
-            <div key="steer" className="flex flex-1 min-w-0">
+            <div
+              key="steer"
+              className={`flex min-w-0 ${
+                settings.steer.config?.style === 'ring' ? 'flex-2' : 'flex-1'
+              }`}
+            >
               <InputSteer
                 angleRad={steer}
                 wheelStyle={settings.steer.config?.style}
                 wheelColor={settings.steer.config?.color}
+                gear={gear}
+                speedMs={speed}
+                unit={unit}
+                gearSettings={settings.gear}
               />
             </div>
           );

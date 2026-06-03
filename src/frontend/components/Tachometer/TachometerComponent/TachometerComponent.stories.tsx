@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Tachometer } from './TachometerComponent';
 import { useEffect, useState } from 'react';
 import type { ShiftPointSettings } from '@irdashies/types';
+import { EngineWarnings } from '@irdashies/types';
 
 const meta: Meta<typeof Tachometer> = {
   component: Tachometer,
@@ -142,6 +143,116 @@ const Ferrari296GT3 = () => {
 
 export const Demo: Story = {
   render: () => <RandomRPM />,
+};
+
+// Oil / water temperature display, including the engine overheat warning colour.
+const TemperatureDemo = () => {
+  const [rpm, setRpm] = useState(4250);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRpm((prev) => (prev >= 8500 ? 4250 : prev + 120));
+    }, 50);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="space-y-8 p-4">
+      <div className="space-y-4">
+        <h3 className="text-white text-lg font-semibold">
+          Oil top / Water top
+        </h3>
+        <div className="h-30 w-150">
+          <Tachometer
+            rpm={rpm}
+            maxRpm={8500}
+            showRpmText={true}
+            rpmOrientation="bottom"
+            oilTemp={104}
+            waterTemp={88}
+            showOilTemp={true}
+            showWaterTemp={true}
+            oilTempPosition="top"
+            waterTempPosition="top"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-white text-lg font-semibold">
+          Swapped sides + edge offset (water left, oil right, slid toward
+          centre)
+        </h3>
+        <div className="h-30 w-150">
+          <Tachometer
+            rpm={rpm}
+            maxRpm={8500}
+            showRpmText={true}
+            rpmOrientation="bottom"
+            oilTemp={104}
+            waterTemp={88}
+            showOilTemp={true}
+            showWaterTemp={true}
+            oilTempPosition="top"
+            waterTempPosition="top"
+            swapTempSides={true}
+            oilEdgeOffset={100}
+            waterEdgeOffset={40}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-white text-lg font-semibold">
+          Oil bottom / Water top, with overheat warnings
+        </h3>
+        <p className="text-gray-400 text-sm">
+          EngineWarnings bitfield triggers the red overheat colour.
+        </p>
+        <div className="h-30 w-150">
+          <Tachometer
+            rpm={rpm}
+            maxRpm={8500}
+            showRpmText={true}
+            rpmOrientation="bottom"
+            oilTemp={132}
+            waterTemp={118}
+            showOilTemp={true}
+            showWaterTemp={true}
+            oilTempPosition="bottom"
+            waterTempPosition="top"
+            engineWarnings={
+              EngineWarnings.OilTempWarning | EngineWarnings.WaterTempWarning
+            }
+          />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-white text-lg font-semibold">
+          Small widget — temp boxes match the RPM box size
+        </h3>
+        <div className="h-12 w-72">
+          <Tachometer
+            rpm={rpm}
+            maxRpm={8500}
+            showRpmText={true}
+            rpmOrientation="bottom"
+            oilTemp={104}
+            waterTemp={88}
+            showOilTemp={true}
+            showWaterTemp={true}
+            oilTempPosition="top"
+            waterTempPosition="top"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const Temperatures: Story = {
+  render: () => <TemperatureDemo />,
 };
 
 export const CustomShiftPointDemo: Story = {

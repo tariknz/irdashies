@@ -265,7 +265,7 @@ export interface FlatTrackMapConfig {
 }
 
 export interface SteerConfig {
-  style: 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default';
+  style: 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default' | 'ring';
   color: 'dark' | 'light';
 }
 
@@ -294,6 +294,8 @@ export interface InputConfig {
     unit: 'mph' | 'km/h' | 'auto';
     showspeed: boolean;
     showspeedunit: boolean;
+    /** Swap the speed number and the km/h unit (order + emphasis). Default false. */
+    swapSpeedUnit?: boolean;
   };
   abs: { enabled: boolean };
   steer: {
@@ -326,6 +328,23 @@ export interface TachometerConfig {
       }
     >;
   };
+  oilTemp?: {
+    enabled: boolean;
+    position: 'top' | 'bottom';
+    /** 0-100: slide the oil box from the edge toward the centre. */
+    edgeOffset?: number;
+  };
+  waterTemp?: {
+    enabled: boolean;
+    position: 'top' | 'bottom';
+    /** 0-100: slide the water box from the edge toward the centre. */
+    edgeOffset?: number;
+  };
+  /**
+   * Shared layout for the oil/water temperature boxes.
+   * `swapSides` flips which side each box sits on (default: oil left, water right).
+   */
+  tempLayout?: { swapSides: boolean };
   background: { opacity: number };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;

@@ -426,6 +426,16 @@ export const TachometerSettings = () => {
     >
       {(handleConfigChange) => {
         const config = settings.config;
+        // Defaulted temp display state so the toggle and the position section
+        // stay in sync on existing dashboards where these are still undefined.
+        const oilTempEnabled = config.oilTemp?.enabled ?? true;
+        const oilTempPosition = config.oilTemp?.position ?? 'top';
+        const oilTempEdgeOffset = config.oilTemp?.edgeOffset ?? 0;
+        const waterTempEnabled = config.waterTemp?.enabled ?? true;
+        const waterTempPosition = config.waterTemp?.position ?? 'top';
+        const waterTempEdgeOffset = config.waterTemp?.edgeOffset ?? 0;
+        const tempSwapSides = config.tempLayout?.swapSides ?? false;
+        const anyTempEnabled = oilTempEnabled || waterTempEnabled;
         return (
           <div className="space-y-6">
             {/* Tabs */}
@@ -495,6 +505,125 @@ export const TachometerSettings = () => {
                       }
                     />
                   </SettingsSection>
+                )}
+                <SettingDivider />
+
+                <SettingToggleRow
+                  title="Show Oil Temperature"
+                  enabled={oilTempEnabled}
+                  onToggle={(newValue) =>
+                    handleConfigChange({
+                      oilTemp: {
+                        enabled: newValue,
+                        position: oilTempPosition,
+                        edgeOffset: oilTempEdgeOffset,
+                      },
+                    })
+                  }
+                />
+
+                {oilTempEnabled && (
+                  <SettingsSection>
+                    <SettingButtonGroupRow<'top' | 'bottom'>
+                      title="Oil Position"
+                      value={oilTempPosition}
+                      options={[
+                        { label: 'Top', value: 'top' },
+                        { label: 'Bottom', value: 'bottom' },
+                      ]}
+                      onChange={(v) =>
+                        handleConfigChange({
+                          oilTemp: {
+                            enabled: oilTempEnabled,
+                            position: v,
+                            edgeOffset: oilTempEdgeOffset,
+                          },
+                        })
+                      }
+                    />
+                    <SettingSliderRow
+                      title="Oil Edge Offset"
+                      value={oilTempEdgeOffset}
+                      units="%"
+                      min={0}
+                      max={100}
+                      step={1}
+                      onChange={(v) =>
+                        handleConfigChange({
+                          oilTemp: {
+                            enabled: oilTempEnabled,
+                            position: oilTempPosition,
+                            edgeOffset: v,
+                          },
+                        })
+                      }
+                    />
+                  </SettingsSection>
+                )}
+
+                <SettingToggleRow
+                  title="Show Water Temperature"
+                  enabled={waterTempEnabled}
+                  onToggle={(newValue) =>
+                    handleConfigChange({
+                      waterTemp: {
+                        enabled: newValue,
+                        position: waterTempPosition,
+                        edgeOffset: waterTempEdgeOffset,
+                      },
+                    })
+                  }
+                />
+
+                {waterTempEnabled && (
+                  <SettingsSection>
+                    <SettingButtonGroupRow<'top' | 'bottom'>
+                      title="Water Position"
+                      value={waterTempPosition}
+                      options={[
+                        { label: 'Top', value: 'top' },
+                        { label: 'Bottom', value: 'bottom' },
+                      ]}
+                      onChange={(v) =>
+                        handleConfigChange({
+                          waterTemp: {
+                            enabled: waterTempEnabled,
+                            position: v,
+                            edgeOffset: waterTempEdgeOffset,
+                          },
+                        })
+                      }
+                    />
+                    <SettingSliderRow
+                      title="Water Edge Offset"
+                      value={waterTempEdgeOffset}
+                      units="%"
+                      min={0}
+                      max={100}
+                      step={1}
+                      onChange={(v) =>
+                        handleConfigChange({
+                          waterTemp: {
+                            enabled: waterTempEnabled,
+                            position: waterTempPosition,
+                            edgeOffset: v,
+                          },
+                        })
+                      }
+                    />
+                  </SettingsSection>
+                )}
+
+                {anyTempEnabled && (
+                  <SettingToggleRow
+                    title="Swap Oil/Water Sides"
+                    enabled={tempSwapSides}
+                    onToggle={(newValue) =>
+                      handleConfigChange({
+                        tempLayout: { swapSides: newValue },
+                      })
+                    }
+                  />
                 )}
               </SettingsSection>
             )}
