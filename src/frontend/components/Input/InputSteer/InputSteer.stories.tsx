@@ -56,6 +56,7 @@ export const AllWheels: Story = {
       'lmp',
       'nascar',
       'ushape',
+      'ring',
     ] as const;
     const colors = ['light', 'dark'] as const;
 

@@ -426,6 +426,12 @@ export const TachometerSettings = () => {
     >
       {(handleConfigChange) => {
         const config = settings.config;
+        // Defaulted temp display state so the toggle and the position section
+        // stay in sync on existing dashboards where these are still undefined.
+        const oilTempEnabled = config.oilTemp?.enabled ?? true;
+        const oilTempPosition = config.oilTemp?.position ?? 'top';
+        const waterTempEnabled = config.waterTemp?.enabled ?? true;
+        const waterTempPosition = config.waterTemp?.position ?? 'top';
         return (
           <div className="space-y-6">
             {/* Tabs */}
@@ -500,23 +506,27 @@ export const TachometerSettings = () => {
 
                 <SettingToggleRow
                   title="Show Oil Temperature"
-                  enabled={config.showOilTemp ?? true}
+                  enabled={oilTempEnabled}
                   onToggle={(newValue) =>
-                    handleConfigChange({ showOilTemp: newValue })
+                    handleConfigChange({
+                      oilTemp: { enabled: newValue, position: oilTempPosition },
+                    })
                   }
                 />
 
-                {config.showOilTemp && (
+                {oilTempEnabled && (
                   <SettingsSection>
                     <SettingButtonGroupRow<'top' | 'bottom'>
                       title="Oil Position"
-                      value={config.oilTempPosition ?? 'top'}
+                      value={oilTempPosition}
                       options={[
                         { label: 'Top', value: 'top' },
                         { label: 'Bottom', value: 'bottom' },
                       ]}
                       onChange={(v) =>
-                        handleConfigChange({ oilTempPosition: v })
+                        handleConfigChange({
+                          oilTemp: { enabled: oilTempEnabled, position: v },
+                        })
                       }
                     />
                   </SettingsSection>
@@ -524,23 +534,30 @@ export const TachometerSettings = () => {
 
                 <SettingToggleRow
                   title="Show Water Temperature"
-                  enabled={config.showWaterTemp ?? true}
+                  enabled={waterTempEnabled}
                   onToggle={(newValue) =>
-                    handleConfigChange({ showWaterTemp: newValue })
+                    handleConfigChange({
+                      waterTemp: {
+                        enabled: newValue,
+                        position: waterTempPosition,
+                      },
+                    })
                   }
                 />
 
-                {config.showWaterTemp && (
+                {waterTempEnabled && (
                   <SettingsSection>
                     <SettingButtonGroupRow<'top' | 'bottom'>
                       title="Water Position"
-                      value={config.waterTempPosition ?? 'top'}
+                      value={waterTempPosition}
                       options={[
                         { label: 'Top', value: 'top' },
                         { label: 'Bottom', value: 'bottom' },
                       ]}
                       onChange={(v) =>
-                        handleConfigChange({ waterTempPosition: v })
+                        handleConfigChange({
+                          waterTemp: { enabled: waterTempEnabled, position: v },
+                        })
                       }
                     />
                   </SettingsSection>

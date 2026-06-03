@@ -355,10 +355,8 @@ export const defaultDashboard: {
       config: {
         showRpmText: false,
         rpmOrientation: 'horizontal',
-        showOilTemp: true,
-        showWaterTemp: true,
-        oilTempPosition: 'top',
-        waterTempPosition: 'top',
+        oilTemp: { enabled: true, position: 'top' },
+        waterTemp: { enabled: true, position: 'top' },
         shiftPointSettings: {
           enabled: false,
           indicatorType: 'glow',

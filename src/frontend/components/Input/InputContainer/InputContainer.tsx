@@ -121,7 +121,7 @@ export const InputContainer = ({
                 gear={gear}
                 speedMs={speed}
                 unit={unit}
-                gearSettings={settings.gear}
+                gearSettings={settings.gear.enabled ? settings.gear : undefined}
               />
             </div>
           );

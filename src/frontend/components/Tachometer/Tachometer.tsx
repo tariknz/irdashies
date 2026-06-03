@@ -32,17 +32,13 @@ export const Tachometer = () => {
       carPath={tachometerData.carPath}
       shiftPointSettings={settings?.shiftPointSettings}
       opacity={settings?.background.opacity}
-      showOilTemp={settings?.showOilTemp ?? true}
-      showWaterTemp={settings?.showWaterTemp ?? true}
-      oilTempPosition={settings?.oilTempPosition ?? 'top'}
-      waterTempPosition={settings?.waterTempPosition ?? 'top'}
+      showOilTemp={settings?.oilTemp?.enabled ?? true}
+      showWaterTemp={settings?.waterTemp?.enabled ?? true}
+      oilTempPosition={settings?.oilTemp?.position ?? 'top'}
+      waterTempPosition={settings?.waterTemp?.position ?? 'top'}
       oilTemp={tachometerData.oilTemp}
       waterTemp={tachometerData.waterTemp}
-      engineWarnings={
-        typeof tachometerData.engineWarnings === 'number'
-          ? tachometerData.engineWarnings
-          : undefined
-      }
+      engineWarnings={tachometerData.engineWarnings}
     />
   );
 };

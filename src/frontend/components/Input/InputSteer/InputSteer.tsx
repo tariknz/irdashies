@@ -92,6 +92,7 @@ export function InputSteer({
         gear={gear}
         speedMs={speedMs}
         unit={unit}
+        wheelColor={wheelColor}
         gearSettings={gearSettings}
       />
     );

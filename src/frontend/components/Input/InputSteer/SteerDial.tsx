@@ -8,6 +8,8 @@ export interface SteerDialProps {
   speedMs?: number;
   /** `DisplayUnits` value (0 = imperial, 1 = metric). */
   unit?: number;
+  /** Light/dark colour scheme, matching the icon wheels. */
+  wheelColor?: 'dark' | 'light';
   /** Gear/speed display config, reused from the standalone Gear section. */
   gearSettings?: InputGearProps['settings'];
 }
@@ -37,9 +39,15 @@ export function SteerDial({
   gear,
   speedMs,
   unit,
+  wheelColor = 'light',
   gearSettings,
 }: SteerDialProps) {
   const steerDeg = angleRad * -1 * (180 / Math.PI);
+
+  // Match the icon wheels: 'dark' = black ring with a white marker,
+  // 'light' = white ring with a black marker.
+  const ringClass = wheelColor === 'dark' ? 'stroke-black' : 'stroke-white';
+  const markerClass = wheelColor === 'dark' ? 'stroke-white' : 'stroke-black';
 
   return (
     <div className="w-full h-full flex items-center justify-center">
@@ -52,7 +60,7 @@ export function SteerDial({
             r={RING_RADIUS}
             fill="none"
             strokeWidth={RING_WIDTH}
-            className="stroke-black"
+            className={ringClass}
           />
           {/* white steering marker */}
           <g
@@ -64,7 +72,7 @@ export function SteerDial({
               fill="none"
               strokeWidth={MARKER_WIDTH}
               strokeLinecap="round"
-              className="stroke-white"
+              className={markerClass}
             />
           </g>
         </svg>

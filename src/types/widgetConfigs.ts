@@ -326,10 +326,8 @@ export interface TachometerConfig {
       }
     >;
   };
-  showOilTemp?: boolean;
-  showWaterTemp?: boolean;
-  oilTempPosition?: 'top' | 'bottom';
-  waterTempPosition?: 'top' | 'bottom';
+  oilTemp?: { enabled: boolean; position: 'top' | 'bottom' };
+  waterTemp?: { enabled: boolean; position: 'top' | 'bottom' };
   background: { opacity: number };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
