@@ -530,6 +530,19 @@ export const InputSettings = () => {
                                 })
                               }
                             />
+
+                            <SettingToggleRow
+                              title="Swap Speed & Unit"
+                              enabled={config.gear.swapSpeedUnit ?? false}
+                              onToggle={(newValue) =>
+                                handleConfigChange({
+                                  gear: {
+                                    ...config.gear,
+                                    swapSpeedUnit: newValue,
+                                  },
+                                })
+                              }
+                            />
                           </SettingsSection>
                         )}
                       </SettingsSection>

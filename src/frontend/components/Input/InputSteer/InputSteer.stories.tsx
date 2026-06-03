@@ -45,6 +45,46 @@ export const Ring: Story = {
   ),
 };
 
+// Verifies the dial stays a maximal, centred square (and the speed/gear never
+// overlaps the ring) across very different widget aspect ratios.
+export const RingAspectRatios: Story = {
+  args: {
+    angleRad: 0.6,
+    wheelStyle: 'ring',
+    gear: 6,
+    speedMs: 104, // ~374 km/h, wide 3-digit speed
+    unit: 1,
+    gearSettings: {
+      size: 100,
+      unit: 'auto',
+      showspeed: true,
+      showspeedunit: true,
+    },
+  },
+  render: (args) => (
+    <div className="flex items-start gap-6 p-4">
+      <div className="space-y-2">
+        <div className="text-sm text-white">Square 160x160</div>
+        <div className="w-40 h-40 bg-slate-800 p-2 rounded-md">
+          <InputSteer {...args} />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <div className="text-sm text-white">Tall 80x220</div>
+        <div className="w-20 h-[220px] bg-slate-800 p-2 rounded-md">
+          <InputSteer {...args} />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <div className="text-sm text-white">Wide 280x90</div>
+        <div className="w-[280px] h-[90px] bg-slate-800 p-2 rounded-md">
+          <InputSteer {...args} />
+        </div>
+      </div>
+    </div>
+  ),
+};
+
 export const AllWheels: Story = {
   args: {
     angleRad: 0,

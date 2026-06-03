@@ -294,6 +294,8 @@ export interface InputConfig {
     unit: 'mph' | 'km/h' | 'auto';
     showspeed: boolean;
     showspeedunit: boolean;
+    /** Swap the speed number and the km/h unit (order + emphasis). Default false. */
+    swapSpeedUnit?: boolean;
   };
   abs: { enabled: boolean };
   steer: {

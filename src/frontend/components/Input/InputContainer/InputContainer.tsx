@@ -113,7 +113,12 @@ export const InputContainer = ({
           );
         case 'steer':
           return (
-            <div key="steer" className="flex flex-1 min-w-0">
+            <div
+              key="steer"
+              className={`flex min-w-0 ${
+                settings.steer.config?.style === 'ring' ? 'flex-2' : 'flex-1'
+              }`}
+            >
               <InputSteer
                 angleRad={steer}
                 wheelStyle={settings.steer.config?.style}
@@ -121,7 +126,7 @@ export const InputContainer = ({
                 gear={gear}
                 speedMs={speed}
                 unit={unit}
-                gearSettings={settings.gear.enabled ? settings.gear : undefined}
+                gearSettings={settings.gear}
               />
             </div>
           );
