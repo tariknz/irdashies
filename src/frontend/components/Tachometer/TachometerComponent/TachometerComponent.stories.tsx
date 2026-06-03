@@ -180,6 +180,30 @@ const TemperatureDemo = () => {
 
       <div className="space-y-4">
         <h3 className="text-white text-lg font-semibold">
+          Swapped sides + edge offset (water left, oil right, slid toward
+          centre)
+        </h3>
+        <div className="h-30 w-150">
+          <Tachometer
+            rpm={rpm}
+            maxRpm={8500}
+            showRpmText={true}
+            rpmOrientation="bottom"
+            oilTemp={104}
+            waterTemp={88}
+            showOilTemp={true}
+            showWaterTemp={true}
+            oilTempPosition="top"
+            waterTempPosition="top"
+            swapTempSides={true}
+            oilEdgeOffset={100}
+            waterEdgeOffset={40}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-white text-lg font-semibold">
           Oil bottom / Water top, with overheat warnings
         </h3>
         <p className="text-gray-400 text-sm">
@@ -197,7 +221,29 @@ const TemperatureDemo = () => {
             showWaterTemp={true}
             oilTempPosition="bottom"
             waterTempPosition="top"
-            engineWarnings={EngineWarnings.OilTempWarning | EngineWarnings.WaterTempWarning}
+            engineWarnings={
+              EngineWarnings.OilTempWarning | EngineWarnings.WaterTempWarning
+            }
+          />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-white text-lg font-semibold">
+          Small widget — temp boxes match the RPM box size
+        </h3>
+        <div className="h-12 w-72">
+          <Tachometer
+            rpm={rpm}
+            maxRpm={8500}
+            showRpmText={true}
+            rpmOrientation="bottom"
+            oilTemp={104}
+            waterTemp={88}
+            showOilTemp={true}
+            showWaterTemp={true}
+            oilTempPosition="top"
+            waterTempPosition="top"
           />
         </div>
       </div>

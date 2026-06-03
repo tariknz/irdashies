@@ -36,6 +36,12 @@ export interface TachometerProps {
   showWaterTemp?: boolean;
   oilTempPosition?: 'top' | 'bottom';
   waterTempPosition?: 'top' | 'bottom';
+  /** Swap which side oil/water sit on (default: oil left, water right). */
+  swapTempSides?: boolean;
+  /** 0-100: slide the oil box from the edge toward the centre. */
+  oilEdgeOffset?: number;
+  /** 0-100: slide the water box from the edge toward the centre. */
+  waterEdgeOffset?: number;
 }
 
 export const Tachometer = ({
@@ -60,6 +66,9 @@ export const Tachometer = ({
   showWaterTemp = true,
   oilTempPosition = 'top',
   waterTempPosition = 'top',
+  swapTempSides = false,
+  oilEdgeOffset = 0,
+  waterEdgeOffset = 0,
 }: TachometerProps) => {
   const [flash, setFlash] = useState(false);
   const [customShiftFlash, setCustomShiftFlash] = useState(false);
@@ -293,13 +302,23 @@ export const Tachometer = ({
     }
   };
 
-  // Shared style classes matching the RPM box
+  // Match the RPM readout box exactly (text-2xl / 1.5em tall / px-4) so the
+  // oil & water boxes are the same visual size.
   const tempBoxClass =
-    'bg-slate-800/(--bg-opacity) text-2xl flex min-w-[5em] font-mono font-bold px-3 rounded-lg whitespace-nowrap justify-center items-center gap-1';
+    'bg-slate-800/(--bg-opacity) text-2xl flex min-w-[5em] font-mono font-bold px-4 rounded-lg whitespace-nowrap justify-center items-center gap-1';
   const tempBoxStyle = {
     height: '1.5em',
     ['--bg-opacity' as string]: `${opacity ?? 80}%`,
   };
+
+  // Map a 0-100 edge offset to a horizontal position (% of the LED bar),
+  // capped well short of the centre so a box never covers a centred RPM box.
+  const EDGE_PCT = 6;
+  const CENTER_MAX_PCT = 38;
+  const toOffsetPct = (offset: number) =>
+    EDGE_PCT +
+    (Math.max(0, Math.min(100, offset)) / 100) * (CENTER_MAX_PCT - EDGE_PCT);
+  const oilOnLeft = !swapTempSides;
 
   const oilWarning = !!(engineWarnings & EngineWarnings.OilTempWarning);
   const waterWarning = !!(engineWarnings & EngineWarnings.WaterTempWarning);
@@ -313,6 +332,31 @@ export const Tachometer = ({
       <span>{Math.round(value)}°C</span>
     </div>
   );
+
+  const renderTempBox = (
+    key: string,
+    label: string,
+    value: number,
+    warning: boolean,
+    position: 'top' | 'bottom',
+    onLeft: boolean,
+    offset: number
+  ) => {
+    const offsetPct = toOffsetPct(offset);
+    return (
+      <div
+        key={key}
+        className={`absolute ${position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'}`}
+        style={
+          onLeft
+            ? { left: `${offsetPct}%`, transform: 'translateX(-50%)' }
+            : { right: `${offsetPct}%`, transform: 'translateX(50%)' }
+        }
+      >
+        {renderTemp(label, value, warning)}
+      </div>
+    );
+  };
   return (
     <div
       className={`@container-[size] flex ${rpmOrientation === 'horizontal' ? 'flex-row' : rpmOrientation === 'top' ? 'flex-col-reverse' : 'flex-col'} justify-center items-center w-full h-full gap-2`}
@@ -326,23 +370,29 @@ export const Tachometer = ({
           padding: `4px min(40cqh, ${(42.5 / effectiveNumLights).toFixed(2)}cqw)`,
         }}
       >
-        {/* OIL — top-left of the bar */}
-        {showOilTemp && (
-          <div
-            className={`absolute left-[6em] ${oilTempPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'}`}
-          >
-            {renderTemp('OIL', oilTemp, oilWarning)}
-          </div>
-        )}
+        {/* OIL — defaults to the left of the bar, swappable */}
+        {showOilTemp &&
+          renderTempBox(
+            'oil',
+            'OIL',
+            oilTemp,
+            oilWarning,
+            oilTempPosition,
+            oilOnLeft,
+            oilEdgeOffset
+          )}
 
-        {/* WATER — top-right of the bar */}
-        {showWaterTemp && (
-          <div
-            className={`absolute right-[6em] ${waterTempPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'}`}
-          >
-            {renderTemp('H₂O', waterTemp, waterWarning)}
-          </div>
-        )}
+        {/* WATER — opposite side of oil */}
+        {showWaterTemp &&
+          renderTempBox(
+            'water',
+            'H₂O',
+            waterTemp,
+            waterWarning,
+            waterTempPosition,
+            !oilOnLeft,
+            waterEdgeOffset
+          )}
 
         {Array.from({ length: effectiveNumLights }, (_, i) => (
           <div

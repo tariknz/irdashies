@@ -326,8 +326,23 @@ export interface TachometerConfig {
       }
     >;
   };
-  oilTemp?: { enabled: boolean; position: 'top' | 'bottom' };
-  waterTemp?: { enabled: boolean; position: 'top' | 'bottom' };
+  oilTemp?: {
+    enabled: boolean;
+    position: 'top' | 'bottom';
+    /** 0-100: slide the oil box from the edge toward the centre. */
+    edgeOffset?: number;
+  };
+  waterTemp?: {
+    enabled: boolean;
+    position: 'top' | 'bottom';
+    /** 0-100: slide the water box from the edge toward the centre. */
+    edgeOffset?: number;
+  };
+  /**
+   * Shared layout for the oil/water temperature boxes.
+   * `swapSides` flips which side each box sits on (default: oil left, water right).
+   */
+  tempLayout?: { swapSides: boolean };
   background: { opacity: number };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;

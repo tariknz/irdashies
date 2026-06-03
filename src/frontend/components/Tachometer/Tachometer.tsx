@@ -36,6 +36,9 @@ export const Tachometer = () => {
       showWaterTemp={settings?.waterTemp?.enabled ?? true}
       oilTempPosition={settings?.oilTemp?.position ?? 'top'}
       waterTempPosition={settings?.waterTemp?.position ?? 'top'}
+      swapTempSides={settings?.tempLayout?.swapSides ?? false}
+      oilEdgeOffset={settings?.oilTemp?.edgeOffset ?? 0}
+      waterEdgeOffset={settings?.waterTemp?.edgeOffset ?? 0}
       oilTemp={tachometerData.oilTemp}
       waterTemp={tachometerData.waterTemp}
       engineWarnings={tachometerData.engineWarnings}
