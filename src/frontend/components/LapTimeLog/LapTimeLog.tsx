@@ -131,7 +131,7 @@ export const LapTimeLogDisplay = ({
       value > 0 &&
       Math.abs(lastlap - value) < 0.001;
     const isSessionBest = isMatchingLap(bestlap);
-    const isOverallBest = isMatchingLap(overall);    
+    const isOverallBest = isMatchingLap(overall);
     const isPersonalBest = isMatchingLap(alltimelap);
     bgColor = 'bg-slate-900';
     if (isSessionBest) bgColor = 'bg-green-700';
@@ -167,7 +167,7 @@ export const LapTimeLogDisplay = ({
           {settings.showCurrentLap && (
             <div
               id="current-lap"
-              className={`text-[1.8em] min-h-[2em] w-full p-1 ${bgColor} flex relative items-center justify-center rounded-sm transition-colors duration-500`}
+              className={`text-[1.8em] min-h-[2em] w-full p-1 ${bgColor} flex relative items-center justify-center rounded-sm transition-all duration-500 ease-in-out ${current === undefined ? 'opacity-0' : 'opacity-100'}`}
               style={
                 {
                   '--fg-alpha': `${settings.foreground.opacity}%`,
@@ -226,11 +226,7 @@ export const LapTimeLogDisplay = ({
                         : 'text-zinc-400'
                   }`}
                 >
-                  {formatDelta(
-                    hasPredictedDelta
-                      ? delta
-                      : 0
-                  )}
+                  {formatDelta(hasPredictedDelta ? delta : 0)}
                 </div>
               )}
             </div>

@@ -75,7 +75,6 @@ export const useLapTimeLog = () => {
   const lastDeltaUpdate = useRef<number>(0);
   const prevLapDistPct = useRef<number>(0);
   const isTransitioning = useRef<boolean>(false);
-  const frozenLapTime = useRef<number>(0);
 
   // Get personal best store and load data
   const currentPersonalBest = usePersonalBestStore((state) =>
@@ -134,30 +133,24 @@ export const useLapTimeLog = () => {
   // 2. check for new lap (use both methods to cater for telemetry hiccups)
   useEffect(() => {
     const crossedLineDist = prevLapDistPct.current > 0.95 && lapDistPct < 0.05;
+    const midLineDist = prevLapDistPct.current <= 0.95 && lapDistPct >= 0.05;
     const crossedLineScoring =
       lapCompleted > 0 && lapCompleted !== lastLoggedLap.current;
     // trigger transition
     if (crossedLineDist || crossedLineScoring) {
       if (!isTransitioning.current) {
         isTransitioning.current = true;
-        frozenLapTime.current = currentLapTime;
-        // auto reset to prevent stuck timer
-        const timeout = setTimeout(() => {
-          isTransitioning.current = false;
-        }, 5000);
-        // cleanup
-        return () => clearTimeout(timeout);
       }
+    } else if (midLineDist && isTransitioning.current) {
+      isTransitioning.current = false;
     }
     prevLapDistPct.current = lapDistPct;
-  }, [lapCompleted, lapDistPct, currentLapTime]);
+  }, [lapCompleted, lapDistPct]);
 
   // 3. live tracking during the lap
   useEffect(() => {
     // 3a. get valid time for current lap
-    const newDisplayTime = isTransitioning.current
-      ? frozenLapTime.current
-      : currentLapTime;
+    const newDisplayTime = isTransitioning.current ? undefined : currentLapTime;
     setDisplayTime(newDisplayTime);
     // 3b. prediction Logic (throttle to 100ms)
     const now = Date.now();
