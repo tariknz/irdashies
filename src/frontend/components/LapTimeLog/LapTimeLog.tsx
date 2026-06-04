@@ -167,7 +167,7 @@ export const LapTimeLogDisplay = ({
           {settings.showCurrentLap && (
             <div
               id="current-lap"
-              className={`text-[1.8em] min-h-[2em] w-full p-1 ${bgColor} flex relative items-center justify-center rounded-sm transition-all duration-500 ease-in-out ${current === undefined ? 'opacity-0' : 'opacity-100'}`}
+              className={`text-[1.8em] min-h-[2em] w-full p-1 ${bgColor} flex relative items-center justify-center rounded-sm transition-colors duration-500 ease-in-out`}
               style={
                 {
                   '--fg-alpha': `${settings.foreground.opacity}%`,
