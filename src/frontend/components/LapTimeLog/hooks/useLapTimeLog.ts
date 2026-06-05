@@ -133,7 +133,7 @@ export const useLapTimeLog = () => {
   // 2. check for new lap (use both methods to cater for telemetry hiccups)
   useEffect(() => {
     const crossedLineDist = prevLapDistPct.current > 0.95 && lapDistPct < 0.05;
-    const midLineDist = prevLapDistPct.current <= 0.95 && lapDistPct >= 0.05;
+    const midLapDist = prevLapDistPct.current <= 0.95 && lapDistPct >= 0.05;
     const crossedLineScoring =
       lapCompleted > 0 && lapCompleted !== lastLoggedLap.current;
     // trigger transition
@@ -141,7 +141,7 @@ export const useLapTimeLog = () => {
       if (!isTransitioning.current) {
         isTransitioning.current = true;
       }
-    } else if (midLineDist && isTransitioning.current) {
+    } else if (midLapDist && isTransitioning.current) {
       isTransitioning.current = false;
     }
     prevLapDistPct.current = lapDistPct;
