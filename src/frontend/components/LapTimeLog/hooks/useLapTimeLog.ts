@@ -130,22 +130,19 @@ export const useLapTimeLog = () => {
     prevSessionTime.current = sessionTime;
   }, [sessionNum, sessionTime, lapCompleted, incidentCount, lastLapTime]);
 
-  // 2. check for new lap (use both methods to cater for telemetry hiccups)
+  // 2. check for new lap (use dist method to cater for telemetry hiccups)
   useEffect(() => {
     const crossedLineDist = prevLapDistPct.current > 0.95 && lapDistPct < 0.05;
-    const midLapDist = prevLapDistPct.current <= 0.95 && lapDistPct >= 0.05;
-    const crossedLineScoring =
-      lapCompleted > 0 && lapCompleted !== lastLoggedLap.current;
     // trigger transition
-    if (crossedLineDist || crossedLineScoring) {
+    if (crossedLineDist) {
       if (!isTransitioning.current) {
         isTransitioning.current = true;
       }
-    } else if (midLapDist && isTransitioning.current) {
+    } else if (lapDistPct > 0.05) {
       isTransitioning.current = false;
     }
     prevLapDistPct.current = lapDistPct;
-  }, [lapCompleted, lapDistPct]);
+  }, [lapDistPct]);
 
   // 3. live tracking during the lap
   useEffect(() => {
