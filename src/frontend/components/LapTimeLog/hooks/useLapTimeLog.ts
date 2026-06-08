@@ -130,16 +130,14 @@ export const useLapTimeLog = () => {
     prevSessionTime.current = sessionTime;
   }, [sessionNum, sessionTime, lapCompleted, incidentCount, lastLapTime]);
 
-  // 2. check for new lap (use dist method to cater for telemetry hiccups)
+  // 2. check for new lap (use dist method instead of delayed lapCompleted)
   useEffect(() => {
     const crossedLineDist = prevLapDistPct.current > 0.95 && lapDistPct < 0.05;
     // trigger transition
     if (crossedLineDist) {
-      if (!isTransitioning.current) {
-        isTransitioning.current = true;
-      }
+      isTransitioning.current = true;
     } else if (lapDistPct > 0.05) {
-      isTransitioning.current = false;
+      isTransitioning.current = false; // force reset
     }
     prevLapDistPct.current = lapDistPct;
   }, [lapDistPct]);
