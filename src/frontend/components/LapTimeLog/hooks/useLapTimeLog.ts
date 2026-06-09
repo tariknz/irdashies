@@ -90,20 +90,6 @@ export const useLapTimeLog = () => {
     pbMetaData.current = { trackId, playerCarName, currentPersonalBest };
   }, [trackId, playerCarName, currentPersonalBest]);
 
-  // Get personal best store and load data
-  const currentPersonalBest = usePersonalBestStore((state) =>
-    !trackId || !playerCarName || playerCarName === 'unknown'
-      ? undefined
-      : state.getPersonalBest(trackId, playerCarName)
-  );
-  const setPersonalBest = usePersonalBestStore(
-    (state) => state.setPersonalBest
-  );
-  const pbMetaData = useRef({ trackId, playerCarName, currentPersonalBest });
-  useEffect(() => {
-    pbMetaData.current = { trackId, playerCarName, currentPersonalBest };
-  }, [trackId, playerCarName, currentPersonalBest]);
-
   // Get overall best
   const sessionBestOverall = useMemo(() => {
     if (!carIdxBestLapTime?.length) return undefined;
