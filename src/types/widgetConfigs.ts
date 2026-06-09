@@ -1,4 +1,5 @@
 import type { DashboardWidget } from './dashboardLayout';
+import type { CornerNameOverlayConfig } from './cornerName';
 
 // ===========================
 // Shared primitive types
@@ -150,7 +151,7 @@ export interface StandingsConfig {
   };
   compound: { enabled: boolean };
   carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
-  lapTimeDeltas: { enabled: boolean; numLaps: number };
+  lapTimeDeltas: { enabled: boolean; numLaps: number; decimalPlaces: number };
   avgLapTime: { enabled: boolean; numLaps: number; timeFormat: TimeFormat };
   titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
   headerBar: SessionBarConfig;
@@ -191,7 +192,7 @@ export interface RelativeConfig {
   teamName: { enabled: boolean };
   pitStatus: PitStatusConfig;
   driverTag: { enabled: boolean; widthPx?: number };
-  lapTimeDeltas: { enabled: boolean; numLaps: number };
+  lapTimeDeltas: { enabled: boolean; numLaps: number; decimalPlaces: number };
   displayOrder: string[];
   useLivePosition?: boolean;
   sessionVisibility: SessionVisibilitySettings;
@@ -200,15 +201,25 @@ export interface RelativeConfig {
 
 export interface WeatherConfig {
   background: { opacity: number };
+  layout?: 'vertical' | 'horizontal';
+  horizontalMode?: 'compact' | 'full';
   displayOrder: string[];
   showOnlyWhenOnTrack?: boolean;
   airTemp: { enabled: boolean };
   trackTemp: { enabled: boolean };
+  humidity: { enabled: boolean };
   wetness: { enabled: boolean };
   trackState: { enabled: boolean };
   precipitation: { enabled: boolean };
   wind: { enabled: boolean };
   units: 'auto' | 'Metric' | 'Imperial';
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export interface WindConfig {
+  background: { opacity: number };
+  units: 'auto' | 'Metric' | 'Imperial';
+  showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }
 
@@ -254,7 +265,7 @@ export interface FlatTrackMapConfig {
 }
 
 export interface SteerConfig {
-  style: 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default';
+  style: 'formula' | 'lmp' | 'nascar' | 'ushape' | 'default' | 'ring';
   color: 'dark' | 'light';
 }
 
@@ -283,6 +294,8 @@ export interface InputConfig {
     unit: 'mph' | 'km/h' | 'auto';
     showspeed: boolean;
     showspeedunit: boolean;
+    /** Swap the speed number and the km/h unit (order + emphasis). Default false. */
+    swapSpeedUnit?: boolean;
   };
   abs: { enabled: boolean };
   steer: {
@@ -315,6 +328,23 @@ export interface TachometerConfig {
       }
     >;
   };
+  oilTemp?: {
+    enabled: boolean;
+    position: 'top' | 'bottom';
+    /** 0-100: slide the oil box from the edge toward the centre. */
+    edgeOffset?: number;
+  };
+  waterTemp?: {
+    enabled: boolean;
+    position: 'top' | 'bottom';
+    /** 0-100: slide the water box from the edge toward the centre. */
+    edgeOffset?: number;
+  };
+  /**
+   * Shared layout for the oil/water temperature boxes.
+   * `swapSides` flips which side each box sits on (default: oil left, water right).
+   */
+  tempLayout?: { swapSides: boolean };
   background: { opacity: number };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
@@ -490,6 +520,19 @@ export interface TwitchChatConfig {
   autoHide: { enabled: boolean; intervalSeconds: number };
 }
 
+export interface HeartRateConfig {
+  /** HypeRate session/device id — the code at the end of your share link (e.g. "KiY"). */
+  deviceId: string;
+  /**
+   * Optional HypeRate widget URL or name (e.g. "Bouncing_Heart_Widget" or
+   * "https://app.hyperate.io/animation/59/YOUR-ID-HERE"). The session id is
+   * substituted in automatically. Blank uses the default overlay.
+   */
+  widgetUrl: string;
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 export interface LapTimeLogConfig {
   showCurrentLap: boolean;
   showPredictedLap: boolean;
@@ -578,6 +621,7 @@ export interface WidgetConfigMap {
   standings: StandingsConfig;
   relative: RelativeConfig;
   weather: WeatherConfig;
+  wind: WindConfig;
   map: TrackMapConfig;
   flatmap: FlatTrackMapConfig;
   input: InputConfig;
@@ -595,6 +639,8 @@ export interface WidgetConfigMap {
   infobar: InformationBarConfig;
   slowcarahead: SlowCarAheadConfig;
   sectordelta: SectorDeltaConfig;
+  heartrate: HeartRateConfig;
+  cornername: CornerNameOverlayConfig;
 }
 
 export type TypedDashboardWidget<
@@ -666,6 +712,7 @@ export interface ShiftPointSettings {
 export type StandingsWidgetSettings = BaseWidgetSettings<StandingsConfig>;
 export type RelativeWidgetSettings = BaseWidgetSettings<RelativeConfig>;
 export type WeatherWidgetSettings = BaseWidgetSettings<WeatherConfig>;
+export type WindWidgetSettings = BaseWidgetSettings<WindConfig>;
 export type TrackMapWidgetSettings = BaseWidgetSettings<TrackMapConfig>;
 export type FlatTrackMapWidgetSettings = BaseWidgetSettings<FlatTrackMapConfig>;
 export type SteerWidgetSettings = BaseWidgetSettings<SteerConfig>;
@@ -692,3 +739,6 @@ export type InformationBarWidgetSettings =
   BaseWidgetSettings<InformationBarConfig>;
 export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;
 export type SectorDeltaWidgetSettings = BaseWidgetSettings<SectorDeltaConfig>;
+export type HeartRateWidgetSettings = BaseWidgetSettings<HeartRateConfig>;
+export type CornerNameWidgetSettings =
+  BaseWidgetSettings<CornerNameOverlayConfig>;

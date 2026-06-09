@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   useDashboard,
   useRunningState,
@@ -76,33 +76,55 @@ export const OverlayContainer = memo(() => {
     []
   );
 
-  if (!currentDashboard) {
-    return null;
-  }
-
-  const enabledWidgets = currentDashboard.widgets.filter(
-    (widget) => widget.enabled
+  const enabledWidgets = useMemo(
+    () => currentDashboard?.widgets.filter((widget) => widget.enabled) ?? [],
+    [currentDashboard?.widgets]
   );
 
   // When running per-display windows, each window only renders its own widgets.
   // A widget belongs to a display if its center point falls within that display's bounds.
   // Unmatched widgets (e.g. default positions that fall in no display) render on the primary.
-  const widgetsForThisDisplay = containerBoundsInfo?.displayId
-    ? enabledWidgets.filter((widget) => {
-        const displayBounds =
-          containerBoundsInfo.displayBounds ?? containerBoundsInfo.expected;
-        const centerX = widget.layout.x + widget.layout.width / 2;
-        const centerY = widget.layout.y + widget.layout.height / 2;
-        const inThisDisplay =
-          centerX >= displayBounds.x &&
-          centerX < displayBounds.x + displayBounds.width &&
-          centerY >= displayBounds.y &&
-          centerY < displayBounds.y + displayBounds.height;
-        return (
-          inThisDisplay || (!inThisDisplay && containerBoundsInfo.isPrimary)
-        );
-      })
-    : enabledWidgets;
+  const widgetsForThisDisplay = useMemo(() => {
+    if (!containerBoundsInfo?.displayId) {
+      return enabledWidgets;
+    }
+
+    return enabledWidgets.filter((widget) => {
+      const displayBounds =
+        containerBoundsInfo.displayBounds ?? containerBoundsInfo.expected;
+      const centerX = widget.layout.x + widget.layout.width / 2;
+      const centerY = widget.layout.y + widget.layout.height / 2;
+      const inBounds = (b: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+      }) =>
+        centerX >= b.x &&
+        centerX < b.x + b.width &&
+        centerY >= b.y &&
+        centerY < b.y + b.height;
+      const inThisDisplay = inBounds(displayBounds);
+      const inAnyDisplay =
+        containerBoundsInfo.allDisplayBounds?.some(inBounds) ?? inThisDisplay;
+      return inThisDisplay || (containerBoundsInfo.isPrimary && !inAnyDisplay);
+    });
+  }, [containerBoundsInfo, enabledWidgets]);
+
+  const siblingLayoutsByWidgetId = useMemo(() => {
+    return new Map(
+      widgetsForThisDisplay.map((widget) => [
+        widget.id,
+        widgetsForThisDisplay
+          .filter((otherWidget) => otherWidget.id !== widget.id)
+          .map((otherWidget) => otherWidget.layout),
+      ])
+    );
+  }, [widgetsForThisDisplay]);
+
+  if (!currentDashboard) {
+    return null;
+  }
 
   return (
     <div
@@ -122,6 +144,7 @@ export const OverlayContainer = memo(() => {
           <WidgetContainer
             key={widget.id}
             widget={widget}
+            siblingLayouts={siblingLayoutsByWidgetId.get(widget.id)}
             editMode={editMode}
             zIndex={index + 1}
             onLayoutChange={handleLayoutChange}

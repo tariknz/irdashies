@@ -1,4 +1,4 @@
-# iRDashies Performance — Test Log
+# irDashies Performance — Test Log
 
 > **Purpose:** Running record of empirical performance testing across remediation phases. Updated as new tests are completed.
 > **Companion documents:** [`ARCHITECTURE_REVIEW.md`](./ARCHITECTURE_REVIEW.md), [`PERFORMANCE_TEST_SUMMARY.md`](./PERFORMANCE_TEST_SUMMARY.md)
@@ -8,7 +8,7 @@
 
 ## How to use this document
 
-This document tracks every PerfMetrics-based performance test run against iRDashies, in chronological order. Each entry records what was tested, what the measurements showed, and how the result correlates with architecture review findings.
+This document tracks every PerfMetrics-based performance test run against irDashies, in chronological order. Each entry records what was tested, what the measurements showed, and how the result correlates with architecture review findings.
 
 **For Claude Code instances:**
 
@@ -33,7 +33,7 @@ This document tracks every PerfMetrics-based performance test run against iRDash
   - **Centre (Primary)** — `4115427433` — driving widgets (relative, blindspot, inputs, etc.)
   - **Left** — `2374779353` — Standings widget (dominant), laptimelog, fuel
   - **Right** — `928586202` — Map, Weather, Battle
-- iRDashies process restarted fresh between each test (no carry-over from prior sessions)
+- irDashies process restarted fresh between each test (no carry-over from prior sessions)
 - Standard dashboard configuration held constant across tests unless noted
 
 ### 1.2 Measurement source
@@ -70,7 +70,7 @@ The standard test scenarios. Use these names consistently when adding entries.
 
 When new scenarios are added (e.g. to test specific findings), document them here.
 
-**Important test-conditions variable: iRDashies startup timing relative to iRacing.** Practice 5 surfaced that opening iRDashies _while iRacing is loading into a session_ costs ~+1 GB of baseline memory compared to opening it _after the session is settled_. When recording a test entry, note which condition applies. The "post-load" startup is the cleaner methodology for steady-state slope measurements; the "during session-load" startup is a legitimate user scenario worth measuring separately and currently has its own row in §5.
+**Important test-conditions variable: irDashies startup timing relative to iRacing.** Practice 5 surfaced that opening irDashies _while iRacing is loading into a session_ costs ~+1 GB of baseline memory compared to opening it _after the session is settled_. When recording a test entry, note which condition applies. The "post-load" startup is the cleaner methodology for steady-state slope measurements; the "during session-load" startup is a legitimate user scenario worth measuring separately and currently has its own row in §5.
 
 ---
 
@@ -492,7 +492,7 @@ H1 (`createDriverStandings` rewrite) and P5 (`DriverInfoRow` memo) remain deprio
 
 ### 2026-05-14 · Post-Phase 2a (Tier 1: H3 + H4) · Practice (real, joiners) · IMSA GT3 at Road Atlanta
 
-**Scenario:** Practice (real, joiners) — active driver churn throughout. **Important context:** iRDashies was started while iRacing was loading into the session, capturing the session-load hydration burst.
+**Scenario:** Practice (real, joiners) — active driver churn throughout. **Important context:** irDashies was started while iRacing was loading into the session, capturing the session-load hydration burst.
 **Build:** Post-Phase 2a (H3: no spurious `reset()` at boot; H4: defer cloning in `PitLapStore.updatePitLaps` on uneventful ticks; SessionLifecycle abstraction partly wired up)
 **Source logs:** `OfficialPractice5-IMSA-GT3-RoadAtlanta.txt` (PerfMetrics) + boot log showing renderer/lifecycle events
 **Spreadsheet:** `practice5_perfmetrics_analysis.xlsx`
@@ -520,7 +520,7 @@ H1 (`createDriverStandings` rewrite) and P5 (`DriverInfoRow` memo) remain deprio
 
 **Critical findings from boot log (new):**
 
-The boot log captured between iRDashies start (21:17:14) and the user starting to drive revealed two issues that PerfMetrics alone could not show:
+The boot log captured between irDashies start (21:17:14) and the user starting to drive revealed two issues that PerfMetrics alone could not show:
 
 1. **Reference lap fetch fires 3× per class (once per renderer instead of once per app).** When iRacing connects at 21:18:36, the log shows:
    ```
@@ -533,7 +533,7 @@ The boot log captured between iRDashies start (21:17:14) and the user starting t
 
 This is the A2/A3 finding only partly addressed: Phase 2a wired up join detection but not leave cleanup.
 
-**Reproducible: opening iRDashies during iRacing session-load costs ~+1 GB baseline.**
+**Reproducible: opening irDashies during iRacing session-load costs ~+1 GB baseline.**
 
 App memory at first PerfMetrics sample was 2,417 MB, ~1 GB higher than P2 (1,453), P3 (1,419), and P4 (1,266) — all of which opened with iRacing already in a stable session. The cause is now understood: the rapid SessionInfo churn during session-load fires repeated reference-lap fetches, repeated driver-joined events, and (per the boot log) at least 2 connect/disconnect cycles before the session settles. Each cycle allocates state that the current implementation does not fully release. This is a real user-facing scenario any time someone boots the app after queueing for a session.
 
@@ -1047,7 +1047,7 @@ The Phase 2a remediation effort is now substantially complete. The three remaini
 
 1. **Reference lap fetch dedup.** Each renderer independently fetches reference laps on connect and SessionNum transitions, producing 3× I/O per class per event. The spectated race captured this clearly: 24 fetches in 30 seconds at session-load (4 classes × 3 renderers × 2 transitions) where 4 would suffice. Fix pattern is already established from Tier 2b's save work — move the fetch to a main-process singleton with broadcast to renderers. Estimated effort: small. Estimated impact: meaningful on session-load and SessionNum-transition cost, particularly in multi-class scenarios.
 2. **Tier 2b debounce filesystem verification.** Save log clusters of 3 persist across all five Phase 2a tests. The actual behaviour is unknown — either the debounce works at filesystem level but the log line fires pre-debounce (in which case fix the log), or the debounce doesn't engage (in which case the fix didn't land properly). Either outcome is a one-line resolution once the actual behaviour is known. Approach: add a log line at the post-debounce write point, OR instrument a fast-lap-heavy test with `.json` write-count tracking.
-3. **Empty Dashboard substrate baseline test.** Long-standing test backlog item. Run iRDashies with all widgets disabled for ~20 minutes during a solo practice and measure the slope. Useful baseline for future regression detection. Estimated effort: small (configuration change plus a test run).
+3. **Empty Dashboard substrate baseline test.** Long-standing test backlog item. Run irDashies with all widgets disabled for ~20 minutes during a solo practice and measure the slope. Useful baseline for future regression detection. Estimated effort: small (configuration change plus a test run).
 
 **Items now resolved or deprioritised:**
 

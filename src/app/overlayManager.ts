@@ -18,6 +18,18 @@ declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 declare const APP_GIT_HASH: string;
 
+// Hosts allowed to attach as <webview> guests (Heart Rate widget only).
+// Used by both will-attach-webview and will-redirect so the allowlist
+// can't drift apart.
+const HYPERATE_HOST_RE = /(^|\.)hyperate\.io$/i;
+const isAllowedGuestHost = (urlStr: string): boolean => {
+  try {
+    return HYPERATE_HOST_RE.test(new URL(urlStr).hostname);
+  } catch {
+    return false;
+  }
+};
+
 function getIconPath(): string {
   const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
   const basePath = isDev
@@ -166,10 +178,46 @@ export class OverlayManager {
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
         backgroundThrottling: false,
+        // Enables the <webview> used by the Heart Rate widget to embed
+        // HypeRate's overlay and inject transparent-background CSS (the same
+        // technique OBS uses). Global-by-design: webPreferences are fixed at
+        // window-creation and any widget can land on any display, so this is
+        // set on every overlay window. Attachable guests are constrained to
+        // hyperate.io by the will-attach-webview allowlist below, and guests
+        // run with sandbox + contextIsolation + no node integration + an
+        // isolated session partition (see HeartRateEmbed).
+        webviewTag: true,
       },
     });
 
     browserWindow.setBounds(expectedBounds);
+
+    // Harden the <webview> used by the Heart Rate widget: keep the guest on
+    // secure defaults and only allow HypeRate hosts to attach.
+    browserWindow.webContents.on(
+      'will-attach-webview',
+      (event, webPreferences, params) => {
+        delete webPreferences.preload;
+        webPreferences.nodeIntegration = false;
+        webPreferences.contextIsolation = true;
+        webPreferences.sandbox = true;
+        if (!isAllowedGuestHost(params.src)) {
+          event.preventDefault();
+        }
+      }
+    );
+
+    // Contain the guest after attachment: no popups, no navigating away, and
+    // no cross-origin redirects (3xx fires will-redirect, not will-navigate).
+    browserWindow.webContents.on('did-attach-webview', (_event, guest) => {
+      guest.setWindowOpenHandler(() => ({ action: 'deny' }));
+      guest.on('will-navigate', (e, url) => {
+        if (!isAllowedGuestHost(url)) e.preventDefault();
+      });
+      guest.on('will-redirect', (e, url) => {
+        if (!isAllowedGuestHost(url)) e.preventDefault();
+      });
+    });
 
     browserWindow.on('page-title-updated', (evt) => {
       evt.preventDefault();
@@ -264,6 +312,10 @@ export class OverlayManager {
         y: actualBounds.y - expectedBounds.y,
       };
 
+      const allDisplayBounds = screen
+        .getAllDisplays()
+        .map((d) => ({ ...d.bounds }));
+
       const boundsInfo: ContainerBoundsInfo = {
         expected: expectedBounds,
         actual: actualBounds,
@@ -271,6 +323,7 @@ export class OverlayManager {
         displayId: display.id,
         isPrimary,
         displayBounds: { ...expectedBounds },
+        allDisplayBounds,
       };
 
       this.displayBoundsInfo.set(display.id, boundsInfo);

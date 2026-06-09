@@ -47,6 +47,8 @@ const TELEMETRY_ALLOWLIST = new Set<keyof Telemetry>([
   'LapDistPct',
   'LapLastLapTime',
   'OnPitRoad',
+  'OilTemp',
+  'WaterTemp',
   'PitstopActive',
   'PlayerCarInPitStall',
   'PlayerCarMyIncidentCount',

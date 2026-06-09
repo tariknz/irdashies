@@ -11,6 +11,7 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   map: 'Track Map',
   flatmap: 'Flat Track Map',
   weather: 'Weather',
+  wind: 'Wind',
   fastercarsfrombehind: 'Faster Cars From Behind',
   fuel: 'Fuel Calculator',
   blindspotmonitor: 'Blind Spot Monitor',
@@ -25,6 +26,8 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   infobar: 'Information Bar',
   slowcarahead: 'Slow Car Ahead',
   sectordelta: 'Sector Delta',
+  heartrate: 'Heart Rate',
+  cornername: 'Corner Names',
 };
 
 /**

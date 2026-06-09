@@ -203,6 +203,19 @@ describe('getWidgetDefaultConfig', () => {
     expect(config.enableLogging).toBe(false);
   });
 
+  it('returns the weather config with layout and humidity fields', () => {
+    const config = getWidgetDefaultConfig('weather');
+    expect(config.layout).toBe('vertical');
+    expect(config.horizontalMode).toBe('compact');
+    expect(config.humidity.enabled).toBe(true);
+  });
+
+  it('returns the wind config', () => {
+    const config = getWidgetDefaultConfig('wind');
+    expect(config.background.opacity).toBe(80);
+    expect(config.units).toBe('auto');
+  });
+
   it('throws for unknown widget id', () => {
     expect(() =>
       getWidgetDefaultConfig('nonexistent' as 'standings')

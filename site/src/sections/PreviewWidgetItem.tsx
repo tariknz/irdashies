@@ -7,11 +7,8 @@ import {
   type ReactNode,
   type CSSProperties,
 } from 'react';
-import { ArrowsOutCardinal, X } from '@phosphor-icons/react';
-import {
-  useDashboard,
-  useGeneralSettings,
-} from '../../../src/frontend/context/DashboardContext/DashboardContext';
+import { ResizeIcon, GearIcon, XIcon } from '@phosphor-icons/react';
+import { useDashboard, useGeneralSettings } from '@irdashies/context';
 import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import {
   useDragWidget,
@@ -76,8 +73,8 @@ export const PreviewWidgetItem = memo(function PreviewWidgetItem({
   isSelected,
   onPositionChange,
   onSelect,
-  onDeselect,
-  onDoubleClick,
+  onDisable,
+  onOpenSettings,
 }: {
   widgetId: string;
   label: string;
@@ -86,8 +83,8 @@ export const PreviewWidgetItem = memo(function PreviewWidgetItem({
   isSelected: boolean;
   onPositionChange: (id: string, pos: WidgetPosition) => void;
   onSelect: (id: string) => void;
-  onDeselect: () => void;
-  onDoubleClick: (id: string) => void;
+  onDisable: (id: string) => void;
+  onOpenSettings: (id: string) => void;
 }) {
   const config = useWidgetConfig(widgetId);
   const [localLayout, setLocalLayout] = useState(position);
@@ -160,27 +157,40 @@ export const PreviewWidgetItem = memo(function PreviewWidgetItem({
       <div
         {...dragHandleProps}
         className="w-full h-full overflow-hidden text-white relative"
-        onClick={() => onSelect(widgetId)}
-        onDoubleClick={(e) => {
+        onClick={(e) => {
+          // Stop the click bubbling to the canvas, whose onClick clears the
+          // selection — otherwise selecting a widget instantly deselects it.
           e.stopPropagation();
-          onDoubleClick(widgetId);
+          onSelect(widgetId);
         }}
       >
         {/* Selection border */}
         {isSelected && (
           <div className="absolute inset-0 border-dashed border-2 border-sky-500 pointer-events-none z-20 flex items-start justify-end p-2">
-            <div className="flex items-center gap-2 bg-sky-500 text-white text-sm font-semibold px-2 py-1 rounded pointer-events-auto">
-              <ArrowsOutCardinal size={14} />
+            <div className="flex items-center gap-2 bg-sky-500 text-white text-sm font-semibold px-2 py-1 rounded pointer-events-auto cursor-move">
+              <ResizeIcon size={14} />
               <span>{label}</span>
               <button
+                onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDeselect();
+                  onOpenSettings(widgetId);
                 }}
                 className="ml-1 hover:bg-sky-600 rounded p-0.5 transition-colors"
-                title="Close"
+                title="Widget settings"
               >
-                <X size={14} />
+                <GearIcon size={14} />
+              </button>
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDisable(widgetId);
+                }}
+                className="hover:bg-sky-600 rounded p-0.5 transition-colors"
+                title="Disable widget"
+              >
+                <XIcon size={14} />
               </button>
             </div>
           </div>

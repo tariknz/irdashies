@@ -226,7 +226,11 @@ export const LapTimeLogDisplay = ({
                         : 'text-zinc-400'
                   }`}
                 >
-                  {formatDelta(hasPredictedDelta ? delta : 0)}
+                  {formatDelta(
+                    hasPredictedDelta
+                      ? delta
+                      : 0
+                  )}
                 </div>
               )}
             </div>

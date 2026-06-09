@@ -60,6 +60,12 @@ const widgetItems: MenuItem[] = [
     widgetType: 'blindspotmonitor',
   },
   {
+    to: '/settings/cornername',
+    path: '/cornername',
+    label: 'Corner Names',
+    widgetType: 'cornername',
+  },
+  {
     to: '/settings/fastercarsfrombehind',
     path: '/fastercarsfrombehind',
     label: 'Faster Cars Behind',
@@ -83,6 +89,12 @@ const widgetItems: MenuItem[] = [
     path: '/garagecover',
     label: 'Garage Cover',
     widgetType: 'garagecover',
+  },
+  {
+    to: '/settings/heartrate',
+    path: '/heartrate',
+    label: 'Heart Rate',
+    widgetType: 'heartrate',
   },
   {
     to: '/settings/infobar',
@@ -156,6 +168,12 @@ const widgetItems: MenuItem[] = [
     path: '/weather',
     label: 'Weather',
     widgetType: 'weather',
+  },
+  {
+    to: '/settings/wind',
+    path: '/wind',
+    label: 'Wind',
+    widgetType: 'wind',
   },
 ];
 

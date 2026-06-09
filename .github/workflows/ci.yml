@@ -14,18 +14,18 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 2  # Fetch the last 2 commits to compare changes
 
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
-        node-version: '22'
+        node-version: '24'
         cache: 'npm'
 
     - name: Cache node_modules and native builds
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       id: cache-deps
       with:
         path: |
@@ -50,7 +50,7 @@ jobs:
       run: npm test
 
     - name: Upload coverage report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: coverage-report
         path: coverage 

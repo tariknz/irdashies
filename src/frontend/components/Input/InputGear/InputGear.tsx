@@ -9,6 +9,8 @@ export interface InputGearProps {
     unit: 'mph' | 'km/h' | 'auto' | 'none';
     showspeed: boolean;
     showspeedunit: boolean;
+    /** Swap the speed number and the km/h unit (order + emphasis). */
+    swapSpeedUnit?: boolean;
   };
 }
 
@@ -52,25 +54,54 @@ export const InputGear = memo(
           >
             {gearText}
           </div>
-          {settings.showspeed && (
-            <div
-              className="text-gray-200 leading-none"
-              style={{
-                fontSize: `min(${displaySize * (displayMultiplier / 3)}cqh, ${displaySize * 30}cqw)`,
-              }}
-            >
-              {speed.toFixed(0)}
-            </div>
-          )}
-          {settings.showspeed && settings.showspeedunit && (
-            <div
-              className="text-gray-400 leading-none"
-              style={{
-                fontSize: `min(${displaySize * (displayMultiplier / 5)}cqh, ${displaySize * 20}cqw)`,
-              }}
-            >
-              {displayUnit}
-            </div>
+          {settings.swapSpeedUnit ? (
+            <>
+              {/* Swapped: unit on top, prominent speed below */}
+              {settings.showspeed && settings.showspeedunit && (
+                <div
+                  className="text-gray-400 leading-none"
+                  style={{
+                    fontSize: `min(${displaySize * (displayMultiplier / 4)}cqh, ${displaySize * 25}cqw)`,
+                  }}
+                >
+                  {displayUnit}
+                </div>
+              )}
+              {settings.showspeed && (
+                <div
+                  className="text-gray-200 leading-none"
+                  style={{
+                    fontSize: `min(${displaySize * (displayMultiplier / 2)}cqh, ${displaySize * 45}cqw)`,
+                  }}
+                >
+                  {speed.toFixed(0)}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Default layout: medium speed, small unit below */}
+              {settings.showspeed && (
+                <div
+                  className="text-gray-200 leading-none"
+                  style={{
+                    fontSize: `min(${displaySize * (displayMultiplier / 3)}cqh, ${displaySize * 30}cqw)`,
+                  }}
+                >
+                  {speed.toFixed(0)}
+                </div>
+              )}
+              {settings.showspeed && settings.showspeedunit && (
+                <div
+                  className="text-gray-400 leading-none"
+                  style={{
+                    fontSize: `min(${displaySize * (displayMultiplier / 5)}cqh, ${displaySize * 20}cqw)`,
+                  }}
+                >
+                  {displayUnit}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

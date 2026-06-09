@@ -9,7 +9,8 @@ export const Tachometer = () => {
 
   const { isDriving } = useDrivingState();
 
-  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
+  const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
+  if (!sessionVisible) return <></>;
 
   // Show only when on track setting
   if (settings?.showOnlyWhenOnTrack && !isDriving) {
@@ -31,6 +32,16 @@ export const Tachometer = () => {
       carPath={tachometerData.carPath}
       shiftPointSettings={settings?.shiftPointSettings}
       opacity={settings?.background.opacity}
+      showOilTemp={settings?.oilTemp?.enabled ?? true}
+      showWaterTemp={settings?.waterTemp?.enabled ?? true}
+      oilTempPosition={settings?.oilTemp?.position ?? 'top'}
+      waterTempPosition={settings?.waterTemp?.position ?? 'top'}
+      swapTempSides={settings?.tempLayout?.swapSides ?? false}
+      oilEdgeOffset={settings?.oilTemp?.edgeOffset ?? 0}
+      waterEdgeOffset={settings?.waterTemp?.edgeOffset ?? 0}
+      oilTemp={tachometerData.oilTemp}
+      waterTemp={tachometerData.waterTemp}
+      engineWarnings={tachometerData.engineWarnings}
     />
   );
 };

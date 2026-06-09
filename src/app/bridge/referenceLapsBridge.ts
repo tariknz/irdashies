@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 import { getReferenceLap, saveReferenceLap } from '../storage/referenceLaps';
-import type { ReferenceLap } from 'src/types/referenceLaps';
+import type { ReferenceLap } from '@irdashies/types';
 import logger from '../logger';
 
 const FETCH_DEDUP_TTL_MS = 5000;

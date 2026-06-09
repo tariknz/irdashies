@@ -5,6 +5,7 @@ interface LapTimeDeltasCellProps {
   emptyLapDeltaPlaceholders: number[] | null;
   isPlayer: boolean;
   compactMode?: string;
+  decimalPlaces?: number;
 }
 
 export const LapTimeDeltasCell = memo(
@@ -13,6 +14,7 @@ export const LapTimeDeltasCell = memo(
     emptyLapDeltaPlaceholders,
     isPlayer,
     compactMode,
+    decimalPlaces,
   }: LapTimeDeltasCellProps) => {
     const pxClass = compactMode === 'ultra' ? '' : 'px-1';
 
@@ -31,7 +33,7 @@ export const LapTimeDeltasCell = memo(
                 data-column="lapTimeDelta"
                 className={`w-auto ${pxClass} text-center whitespace-nowrap ${deltaValue > 0 ? 'text-green-400' : 'text-red-400'}`}
               >
-                {Math.abs(deltaValue).toFixed(1)}
+                {Math.abs(deltaValue).toFixed(decimalPlaces)}
               </td>
             );
           } else {

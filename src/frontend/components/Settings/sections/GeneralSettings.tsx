@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useDashboard } from '@irdashies/context';
-import { GeneralSettingsType } from '@irdashies/types';
+import type { GeneralSettingsType } from '@irdashies/types';
+import { BaseSettingsSection } from '../components/BaseSettingsSection';
 
 const FONT_PRESETS = {
   lato: 'Lato',
@@ -99,6 +100,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
       currentDashboard?.generalSettings?.overlayAlwaysOnTop ?? true,
     enableNetworkAccess:
       currentDashboard?.generalSettings?.enableNetworkAccess ?? false,
+    editMode: {
+      pixelDistances:
+        currentDashboard?.generalSettings?.editMode?.pixelDistances ?? false,
+      snapToGrid:
+        currentDashboard?.generalSettings?.editMode?.snapToGrid ?? false,
+    },
   });
 
   if (!currentDashboard || !onDashboardUpdated) {
@@ -274,6 +281,30 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
     updateDashboard(newSettings);
   };
 
+  const handleShowEditModePixelDistancesChange = (enabled: boolean) => {
+    const newSettings = {
+      ...settings,
+      editMode: {
+        ...settings.editMode,
+        pixelDistances: enabled,
+      },
+    };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
+  const handleSnapEditModeWidgetsToGridChange = (enabled: boolean) => {
+    const newSettings = {
+      ...settings,
+      editMode: {
+        ...settings.editMode,
+        snapToGrid: enabled,
+      },
+    };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-none p-4 bg-slate-700 rounded">
@@ -384,6 +415,67 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
             </select>
           </div>
         </div>
+
+        {/* Edit Mode Settings */}
+        <BaseSettingsSection
+          title="Edit Mode"
+          description="Controls for positioning and sizing widgets while editing the overlay layout."
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h4
+                id="show-edit-mode-pixel-distances-label"
+                className="text-md font-medium text-slate-300"
+              >
+                Show Pixel Distances
+              </h4>
+              <p className="text-sm text-slate-500 pr-8">
+                Shows the pixel distance from widgets to each edge of the
+                viewport.
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.editMode?.pixelDistances ?? false}
+                onChange={(e) =>
+                  handleShowEditModePixelDistancesChange(e.target.checked)
+                }
+                aria-labelledby="show-edit-mode-pixel-distances-label"
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h4
+                id="snap-edit-mode-widgets-to-grid-label"
+                className="text-md font-medium text-slate-300"
+              >
+                Snap Widgets to Grid
+              </h4>
+              <p className="text-sm text-slate-500 pr-8">
+                Snaps widget movement and resizing to the pixel grid. Hold
+                &apos;Shift&apos; while dragging or resizing to temporarily
+                disable snapping.
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.editMode?.snapToGrid ?? false}
+                onChange={(e) =>
+                  handleSnapEditModeWidgetsToGridChange(e.target.checked)
+                }
+                aria-labelledby="snap-edit-mode-widgets-to-grid-label"
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </BaseSettingsSection>
 
         {/* Color Theme Settings */}
         <div className="space-y-4">

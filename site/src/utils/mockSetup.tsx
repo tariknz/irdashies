@@ -1,6 +1,10 @@
 import { type ReactNode, useMemo } from 'react';
-import { SessionProvider, TelemetryProvider } from '@irdashies/context';
-import { DashboardProvider } from '../../../src/frontend/context/DashboardContext/DashboardContext';
+import {
+  SessionProvider,
+  TelemetryProvider,
+  RunningStateProvider,
+  DashboardProvider,
+} from '@irdashies/context';
 import { generateMockData } from '../../../src/app/bridge/iracingSdk/mock-data/generateMockData';
 import type { DashboardBridge } from '@irdashies/types';
 import { defaultDashboard } from '@irdashies/types';
@@ -15,7 +19,7 @@ function createMockDashboardBridge(
     : { ...defaultDashboard };
 
   const dashboardCallbacks = new Set<
-    (value: typeof dashboard, err: unknown) => void
+    (value: typeof dashboard, profileId?: string) => void
   >();
 
   return {
@@ -57,6 +61,8 @@ function createMockDashboardBridge(
     getCurrentDashboard: () => null,
     saveGarageCoverImage: () => Promise.resolve(''),
     getGarageCoverImageAsDataUrl: () => Promise.resolve(null),
+    savePlayerIconImage: () => Promise.resolve(''),
+    getPlayerIconImageAsDataUrl: () => Promise.resolve(null),
     getAnalyticsOptOut: () => Promise.resolve(false),
     setAnalyticsOptOut: () => Promise.resolve(),
     listProfiles: () =>
@@ -122,10 +128,12 @@ export function LivePreviewProvider({
   );
 
   return (
-    <>
-      <SessionProvider bridge={bridge} />
-      <TelemetryProvider bridge={bridge} />
-      <DashboardProvider bridge={dashboardBridge}>{children}</DashboardProvider>
-    </>
+    <DashboardProvider bridge={dashboardBridge}>
+      <RunningStateProvider bridge={bridge}>
+        <SessionProvider bridge={bridge} />
+        <TelemetryProvider bridge={bridge} />
+        {children}
+      </RunningStateProvider>
+    </DashboardProvider>
   );
 }

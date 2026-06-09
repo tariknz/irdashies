@@ -135,6 +135,10 @@ export interface GeneralSettingsType {
   compactMode?: 'off' | 'compact' | 'ultra';
   overlayAlwaysOnTop?: boolean;
   enableNetworkAccess?: boolean;
+  editMode?: {
+    pixelDistances?: boolean;
+    snapToGrid?: boolean;
+  };
   /** Driver tag groups and mappings for overlays */
   driverTagSettings?: DriverTagSettings;
 }

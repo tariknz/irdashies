@@ -1,4 +1,4 @@
-# iRDashies Architecture Implementation Plan — Running Log
+# irDashies Architecture Implementation Plan — Running Log
 
 > **Purpose:** Single source of truth for _what has been done_, _what is being done now_, and _what remains_, as we work through the phased plan from [`ARCHITECTURE_REVIEW.md`](./ARCHITECTURE_REVIEW.md) under the rules in [`ARCHITECTURE_RULES.md`](./ARCHITECTURE_RULES.md).
 >
@@ -190,7 +190,7 @@ Implementation: `flushAsync` in [`src/app/storage/referenceLaps.ts`](../src/app/
 
 Long-standing test backlog item (originally Q6, now restated as a concrete deliverable).
 
-- [ ] Configure iRDashies with all widgets disabled
+- [ ] Configure irDashies with all widgets disabled
 - [ ] Run a solo practice for ~20 minutes with PerfMetrics enabled
 - [ ] Record the substrate slope (app-level + per-renderer + per-process)
 - [ ] Add the result to `PERFORMANCE_TEST_LOG.md` and update §5 targets with the substrate baseline
@@ -312,7 +312,7 @@ These block specific phases. They are duplicated from `ARCHITECTURE_REVIEW.md` �
 11. **Sync-I/O tick-dip correlation** _(RESOLVED by Phase 0.5)_ — L1 fix eliminated tick dips; correlation confirmed
 12. ~~Early-session step-change cause~~ — **RESOLVED 2026-05-12 by Practice 2**: driver joins are the cause; produced finding P7
 13. **Cumulative driver-join cost in long sessions** _(RESOLVED)_ — per-joiner cost is bounded by SDK array length (64 slots), confirmed by Practice 5. Disconnect cleanup gap addressed by Phase 2a Tier 2a and validated by GR86 Miami (196 leave events match 196 joins on bridge disconnects).
-14. **Session-load vs post-load startup gap** _(HIGH → SUBSTANTIALLY ADDRESSED, 2026-05-17)_ — opening iRDashies during iRacing session-load originally cost ~+1 GB baseline vs opening post-load. Combined PR test 2026-05-17 shows peak memory −40% vs Tier 1-alone baseline (1,777 MB vs 2,914 MB) and session-load delta −72%. The dominant fix turned out to be Tier 2a's session-boundary cleanup rather than Tier 2b's reference-lap dedup. **Remaining cost** is concentrated in the reference-lap fetch storm at session-load (now scoped as R1); see §2 "Phase 2a remaining items".
+14. **Session-load vs post-load startup gap** _(HIGH → SUBSTANTIALLY ADDRESSED, 2026-05-17)_ — opening irDashies during iRacing session-load originally cost ~+1 GB baseline vs opening post-load. Combined PR test 2026-05-17 shows peak memory −40% vs Tier 1-alone baseline (1,777 MB vs 2,914 MB) and session-load delta −72%. The dominant fix turned out to be Tier 2a's session-boundary cleanup rather than Tier 2b's reference-lap dedup. **Remaining cost** is concentrated in the reference-lap fetch storm at session-load (now scoped as R1); see §2 "Phase 2a remaining items".
 15. **Main process slope** _(MEDIUM → SUBSTANTIALLY ADDRESSED, 2026-05-17)_ — previously +4–6 MB/min, the largest single contributor. Combined PR test 2026-05-17 shows +0.5 MB/min (at target). The Phase 2a session-boundary cleanup picked this up as a side effect. **Watch item**: still elevated in some scenarios (PCC race standalone Tier 1 showed +2.3); needs further investigation if it re-emerges.
 16. **Per-widget rate-throttling mechanism** _(HIGH, new 2026-05-15 — blocks Phase 3 rate-throttling sub-task)_ — Per-widget property (`WidgetDefinition.updateRateHz`), named-group preset (`driverFocused` / `gapTiming` / `informational` / `static`), or both? Plus where the default bucket assignment lives (widget code, dashboard config, or both). User preference (2026-05-15): "I'd like it configurable for developers... through a grouping mechanism or as a property in the configuration of the widget." Leaning toward both — group preset as the default with per-widget override
 17. ~~Mid-session per-driver leave detection~~ — **RESOLVED BY DECLINE 2026-05-18.** Cost/benefit review concluded the architectural completeness isn't worth the implementation risk: the dominant case (ghost slots) is undetectable from SessionInfo alone, the partial fix (slot-reuse detection) carries false-positive risk, and per-driver allocation is already small post-H4. See [`PERFORMANCE_TEST_LOG.md`](./PERFORMANCE_TEST_LOG.md) §4 "Declined for fix" for the full rationale.

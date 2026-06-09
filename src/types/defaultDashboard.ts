@@ -49,8 +49,8 @@ export const defaultDashboard: {
         background: {
           opacity: 80,
         },
-        foreground: { 
-          opacity: 70, 
+        foreground: {
+          opacity: 70,
         },
         countryFlags: {
           enabled: true,
@@ -84,6 +84,7 @@ export const defaultDashboard: {
         lapTimeDeltas: {
           enabled: false,
           numLaps: 3,
+          decimalPlaces: 1,
         },
         avgLapTime: {
           enabled: false,
@@ -354,6 +355,9 @@ export const defaultDashboard: {
       config: {
         showRpmText: false,
         rpmOrientation: 'horizontal',
+        oilTemp: { enabled: true, position: 'top', edgeOffset: 0 },
+        waterTemp: { enabled: true, position: 'top', edgeOffset: 0 },
+        tempLayout: { swapSides: false },
         shiftPointSettings: {
           enabled: false,
           indicatorType: 'glow',
@@ -386,8 +390,8 @@ export const defaultDashboard: {
         background: {
           opacity: 80,
         },
-        foreground: { 
-          opacity: 70, 
+        foreground: {
+          opacity: 70,
         },
         position: {
           enabled: true,
@@ -443,6 +447,7 @@ export const defaultDashboard: {
         lapTimeDeltas: {
           enabled: false,
           numLaps: 3,
+          decimalPlaces: 1,
         },
         displayOrder: [
           'position',
@@ -690,6 +695,8 @@ export const defaultDashboard: {
         background: {
           opacity: 25,
         },
+        layout: 'vertical',
+        horizontalMode: 'compact',
         units: 'auto',
         displayOrder: [
           'trackTemp',
@@ -721,6 +728,30 @@ export const defaultDashboard: {
         wind: {
           enabled: true,
         },
+        showOnlyWhenOnTrack: false,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
+    },
+    {
+      id: 'wind',
+      enabled: false,
+      layout: {
+        x: 1334,
+        y: 471,
+        width: 174,
+        height: 200,
+      },
+      config: {
+        background: {
+          opacity: 80,
+        },
+        units: 'auto',
         showOnlyWhenOnTrack: false,
         sessionVisibility: {
           race: true,
@@ -1168,6 +1199,53 @@ export const defaultDashboard: {
         },
       },
     },
+    {
+      id: 'heartrate',
+      alwaysEnabled: true,
+      enabled: false,
+      layout: {
+        x: 300,
+        y: 100,
+        width: 230,
+        height: 112,
+      },
+      config: {
+        deviceId: '',
+        widgetUrl: '',
+        showOnlyWhenOnTrack: false,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
+    },
+    {
+      id: 'cornername',
+      enabled: false,
+      layout: {
+        x: 50,
+        y: 50,
+        width: 350,
+        height: 80,
+      },
+      config: {
+        showCornerNumber: true,
+        showProgressBar: true,
+        showTrackPct: true,
+        fontSize: 18,
+        opacity: 0.9,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
+    },
   ],
   generalSettings: {
     fontType: 'lato',
@@ -1184,6 +1262,10 @@ export const defaultDashboard: {
     compactMode: 'off' as const,
     overlayAlwaysOnTop: true,
     enableNetworkAccess: false,
+    editMode: {
+      pixelDistances: false,
+      snapToGrid: false,
+    },
   },
 };
 

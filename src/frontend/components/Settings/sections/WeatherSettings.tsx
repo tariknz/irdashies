@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   WeatherWidgetSettings,
@@ -38,12 +38,22 @@ const sortableSettings: SortableSetting[] = [
   { id: 'trackTemp', label: 'Track Temperature', configKey: 'trackTemp' },
   { id: 'airTemp', label: 'Air Temperature', configKey: 'airTemp' },
   { id: 'wind', label: 'Wind', configKey: 'wind' },
+  { id: 'humidity', label: 'Humidity', configKey: 'humidity' },
   { id: 'precipitation', label: 'Precipitation', configKey: 'precipitation' },
   { id: 'wetness', label: 'Wetness', configKey: 'wetness' },
   { id: 'trackState', label: 'Track State', configKey: 'trackState' },
 ];
 
 const defaultConfig = getWidgetDefaultConfig('weather');
+const sortableSettingIds = sortableSettings.map((setting) => setting.id);
+
+const getItemsOrder = (itemsOrder = defaultConfig.displayOrder) => {
+  const validIds = new Set(sortableSettingIds);
+  const filtered = itemsOrder.filter((id) => validIds.has(id));
+  const present = new Set(filtered);
+  const missing = sortableSettingIds.filter((id) => !present.has(id));
+  return [...filtered, ...missing];
+};
 
 const DisplaySettingsList = ({
   itemsOrder,
@@ -64,7 +74,8 @@ const DisplaySettingsList = ({
       onReorder={(newItems) => onReorder(newItems.map((i) => i.id))}
       renderItem={(setting, sortableProps) => {
         const configValue = settings.config[setting.configKey];
-        const isEnabled = (configValue as { enabled: boolean }).enabled;
+        const isEnabled =
+          (configValue as { enabled?: boolean } | undefined)?.enabled ?? true;
 
         return (
           <DraggableSettingItem
@@ -72,10 +83,10 @@ const DisplaySettingsList = ({
             label={setting.label}
             enabled={isEnabled}
             onToggle={(enabled) => {
-              const cv = settings.config[setting.configKey] as {
-                enabled: boolean;
-                [key: string]: unknown;
-              };
+              const cv =
+                (settings.config[setting.configKey] as
+                  | { enabled?: boolean; [key: string]: unknown }
+                  | undefined) ?? {};
               handleConfigChange({
                 [setting.configKey]: { ...cv, enabled },
               });
@@ -93,14 +104,16 @@ export const WeatherSettings = () => {
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as WeatherWidgetSettings | undefined;
+  const initialConfig =
+    (savedSettings?.config as WeatherWidgetSettings['config']) ?? defaultConfig;
   const [settings, setSettings] = useState<WeatherWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
-    config:
-      (savedSettings?.config as WeatherWidgetSettings['config']) ??
-      defaultConfig,
+    config: initialConfig,
   });
 
-  const [itemsOrder, setItemsOrder] = useState(settings.config.displayOrder);
+  const [itemsOrder, setItemsOrder] = useState(() =>
+    getItemsOrder(initialConfig.displayOrder)
+  );
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
@@ -194,6 +207,30 @@ export const WeatherSettings = () => {
                       handleConfigChange({ background: { opacity: v } })
                     }
                   />
+
+                  <SettingButtonGroupRow<'vertical' | 'horizontal'>
+                    title="Layout"
+                    value={settings.config.layout ?? 'vertical'}
+                    options={[
+                      { label: 'Vertical', value: 'vertical' },
+                      { label: 'Horizontal', value: 'horizontal' },
+                    ]}
+                    onChange={(v) => handleConfigChange({ layout: v })}
+                  />
+
+                  {settings.config.layout === 'horizontal' && (
+                    <SettingButtonGroupRow<'compact' | 'full'>
+                      title="Horizontal View"
+                      value={settings.config.horizontalMode ?? 'compact'}
+                      options={[
+                        { label: 'Compact', value: 'compact' },
+                        { label: 'Full', value: 'full' },
+                      ]}
+                      onChange={(v) =>
+                        handleConfigChange({ horizontalMode: v })
+                      }
+                    />
+                  )}
 
                   <SettingButtonGroupRow<'auto' | 'Metric' | 'Imperial'>
                     title="Temperature Units"

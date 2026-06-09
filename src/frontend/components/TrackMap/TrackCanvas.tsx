@@ -16,7 +16,6 @@ import {
 } from './trackDrawingUtils';
 import type { SectorColor } from '@irdashies/context';
 import type { Sector } from '@irdashies/types';
-import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
 import { useTelemetryValues, useCarIdxOffTrack } from '@irdashies/context';
 
 export interface DriverIdentity {
@@ -52,6 +51,7 @@ export interface TrackProps {
   sectorColors?: SectorColor[];
   currentSectorIdx?: number;
   playerIconDataUrl?: string | null;
+  driverLivePositions?: Record<number, number>;
 }
 
 export interface TrackDriver {
@@ -118,6 +118,7 @@ export const TrackCanvas = ({
   sectorColors,
   currentSectorIdx,
   playerIconDataUrl = null,
+  driverLivePositions = {},
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -132,9 +133,6 @@ export const TrackCanvas = ({
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
 
   const driversOffTrack = useCarIdxOffTrack();
-  const driverLivePositions = useDriverLivePositions({
-    enabled: displayMode === 'livePosition',
-  });
   const carIdxIsOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
 
   // Memoize Path2D objects to avoid re-creating them on every render

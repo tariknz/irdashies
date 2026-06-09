@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom';
 import { StandingsSettings } from './sections/StandingsSettings';
 import { RelativeSettings } from './sections/RelativeSettings';
 import { WeatherSettings } from './sections/WeatherSettings';
+import { WindSettings } from './sections/WindSettings';
 import { TrackMapSettings } from './sections/TrackMapSettings';
 import { FlatTrackMapSettings } from './sections/FlatTrackMapSettings';
 import { AdvancedSettings } from './sections/AdvancedSettings';
@@ -26,6 +27,8 @@ import { InformationBarSettings } from './sections/InformationBarSettings';
 import { useDashboard } from '@irdashies/context';
 import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
 import { SectorDeltaSettings } from './sections/SectorDeltaSettings';
+import { HeartRateSettings } from './sections/HeartRateSettings';
+import { CornerNameSettings } from './sections/CornerNameSettings';
 
 interface SettingsLoaderProps {
   previewMode?: boolean;
@@ -56,6 +59,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <RelativeSettings />;
     case 'weather':
       return <WeatherSettings />;
+    case 'wind':
+      return <WindSettings />;
     case 'fuel':
       return <FuelSettings widgetId={widget?.id} />;
     case 'map':
@@ -88,6 +93,10 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <SlowCarAheadSettings />;
     case 'sectordelta':
       return <SectorDeltaSettings />;
+    case 'heartrate':
+      return <HeartRateSettings />;
+    case 'cornername':
+      return <CornerNameSettings />;
     default:
       return widget ? (
         <div className="text-red-400">No settings available for {type}</div>

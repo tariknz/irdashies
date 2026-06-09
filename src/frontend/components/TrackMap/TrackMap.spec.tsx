@@ -9,6 +9,9 @@ vi.mock('./hooks/useHighlightColor');
 vi.mock('./hooks/useGhostSectorColors', () => ({
   useGhostSectorColors: vi.fn(() => null),
 }));
+vi.mock('../Standings/hooks/useDriverLivePositions', () => ({
+  useDriverLivePositions: vi.fn(() => ({})),
+}));
 vi.mock('@irdashies/context', () => ({
   useDashboard: vi.fn(),
   useSessionVisibility: vi.fn(),
