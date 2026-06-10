@@ -2,7 +2,11 @@ import { useBlindSpotMonitor } from './hooks/useBlindSpotMonitor';
 import { useBlindSpotMonitorSettings } from './hooks/useBlindSpotMonitorSettings';
 import { BlindSpotMonitorIndicator } from './components/BlindSpotMonitorIndicator';
 import { BlindSpotMonitorSimpleIndicator } from './components/BlindSpotMonitorSimpleIndicator';
-import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
+import {
+  useDashboard,
+  useSessionVisibility,
+  useTelemetryValue,
+} from '@irdashies/context';
 import { CarLeftRight } from '@irdashies/types';
 
 export interface BlindSpotMonitorDisplayProps {
@@ -119,22 +123,36 @@ export const BlindSpotMonitorDisplay = ({
   );
 };
 
+const DEMO_STATE_SIMPLE = {
+  show: true,
+  leftState: CarLeftRight.CarLeft,
+  rightState: CarLeftRight.Cars2Right,
+  leftPercent: 0,
+  rightPercent: 0,
+  disableTransition: true,
+};
+
 export const BlindSpotMonitor = () => {
   const state = useBlindSpotMonitor();
   const settings = useBlindSpotMonitorSettings();
+  const { isDemoMode } = useDashboard();
   const isOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
 
-  if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
-  if (settings?.showOnlyWhenOnTrack && !isOnTrack) return <></>;
+  const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
+  const isSimple = settings?.displayMode === 'simple';
+  const activeState = isDemoMode && isSimple ? DEMO_STATE_SIMPLE : state;
+
+  if (!isDemoMode && !sessionVisible) return <></>;
+  if (!isDemoMode && settings?.showOnlyWhenOnTrack && !isOnTrack) return <></>;
 
   return (
     <BlindSpotMonitorDisplay
-      show={state.show}
-      leftState={state.leftState}
-      rightState={state.rightState}
-      leftPercent={state.leftPercent}
-      rightPercent={state.rightPercent}
-      disableTransition={state.disableTransition}
+      show={activeState.show}
+      leftState={activeState.leftState}
+      rightState={activeState.rightState}
+      leftPercent={activeState.leftPercent}
+      rightPercent={activeState.rightPercent}
+      disableTransition={activeState.disableTransition}
       bgOpacity={settings?.background?.opacity}
       width={settings?.width}
       borderSize={settings?.borderSize}
