@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 export interface BlindSpotMonitorSimpleIndicatorProps {
   side: 'left' | 'right';
   visible: boolean;
@@ -11,46 +13,50 @@ export interface BlindSpotMonitorSimpleIndicatorProps {
   thresholdColor2: number;
 }
 
-export const BlindSpotMonitorSimpleIndicator = ({
-  side,
-  visible,
-  carCount,
-  size,
-  verticalPosition,
-  showCount,
-  indicatorColor,
-  thresholdColorsEnabled,
-  thresholdColor1,
-  thresholdColor2,
-}: BlindSpotMonitorSimpleIndicatorProps) => {
-  if (!visible) return null;
+export const BlindSpotMonitorSimpleIndicator = memo(
+  ({
+    side,
+    visible,
+    carCount,
+    size,
+    verticalPosition,
+    showCount,
+    indicatorColor,
+    thresholdColorsEnabled,
+    thresholdColor1,
+    thresholdColor2,
+  }: BlindSpotMonitorSimpleIndicatorProps) => {
+    if (!visible) return null;
 
-  let color = indicatorColor;
-  if (thresholdColorsEnabled) {
-    color = carCount >= 2 ? thresholdColor2 : thresholdColor1;
+    let color = indicatorColor;
+    if (thresholdColorsEnabled) {
+      color = carCount >= 2 ? thresholdColor2 : thresholdColor1;
+    }
+    const colorHex = `#${color.toString(16).padStart(6, '0')}`;
+
+    return (
+      <div
+        className={`absolute ${side === 'left' ? 'left-0' : 'right-0'}`}
+        style={{
+          top: `${verticalPosition}%`,
+          transform: 'translateY(-50%)',
+          width: `${size}px`,
+          height: `${size}px`,
+          backgroundColor: colorHex,
+          borderRadius: '6px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: `${Math.round(size * 0.5)}px`,
+          fontWeight: 700,
+          fontFamily: 'inherit',
+          color: '#1e293b',
+        }}
+      >
+        {showCount && carCount}
+      </div>
+    );
   }
-  const colorHex = `#${color.toString(16).padStart(6, '0')}`;
+);
 
-  return (
-    <div
-      className={`absolute ${side === 'left' ? 'left-0' : 'right-0'}`}
-      style={{
-        top: `${verticalPosition}%`,
-        transform: 'translateY(-50%)',
-        width: `${size}px`,
-        height: `${size}px`,
-        backgroundColor: colorHex,
-        borderRadius: '6px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: `${Math.round(size * 0.5)}px`,
-        fontWeight: 700,
-        fontFamily: 'inherit',
-        color: '#1e293b',
-      }}
-    >
-      {showCount && carCount}
-    </div>
-  );
-};
+BlindSpotMonitorSimpleIndicator.displayName = 'BlindSpotMonitorSimpleIndicator';
