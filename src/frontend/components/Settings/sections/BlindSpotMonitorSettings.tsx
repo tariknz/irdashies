@@ -9,6 +9,7 @@ import {
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
 import { SettingSliderRow } from '../components/SettingSliderRow';
+import { SettingSelectRow } from '../components/SettingSelectRow';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingToggleRow } from '../components/SettingToggleRow';
@@ -82,79 +83,198 @@ export const BlindSpotMonitorSettings = () => {
             {/* DISPLAY TAB */}
             {activeTab === 'display' && (
               <SettingsSection title="Display">
-                {/* Background Opacity */}
-                <SettingSliderRow
-                  title="Background Opacity"
-                  value={settings.config.background?.opacity ?? 30}
-                  units="%"
-                  min={0}
-                  max={100}
-                  step={5}
-                  onChange={(v) =>
-                    handleConfigChange({ background: { opacity: v } })
-                  }
+                {/* Display Mode */}
+                <SettingSelectRow
+                  title="Display Mode"
+                  description="Visual style of the blind spot indicator."
+                  value={settings.config.displayMode ?? 'standard'}
+                  options={[
+                    { label: 'Standard', value: 'standard' },
+                    { label: 'Simple', value: 'simple' },
+                  ]}
+                  onChange={(v) => handleConfigChange({ displayMode: v })}
                 />
 
-                {/* Width */}
-                <SettingSliderRow
-                  title="Width"
-                  description="Width of the blind spot indicator in pixels."
-                  value={settings.config.width ?? 20}
-                  units="px"
-                  min={5}
-                  max={100}
-                  step={1}
-                  onChange={(v) => handleConfigChange({ width: v })}
-                />
-
-                {/* Border Size */}
-                <SettingSliderRow
-                  title="Border Size"
-                  description="Border thickness of the blind spot indicator in pixels."
-                  value={settings.config.borderSize ?? 1}
-                  units="px"
-                  min={0}
-                  max={20}
-                  step={1}
-                  onChange={(v) => handleConfigChange({ borderSize: v })}
-                />
-
-                {/* Indicator Color */}
-                <div className="flex items-center justify-between gap-4 py-2">
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">
-                      Indicator Color
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="rounded border-2"
-                      style={{
-                        width: '20px',
-                        height: '20px',
-                        backgroundColor: `#${(settings.config.indicatorColor ?? 16096779).toString(16).padStart(6, '0')}`,
-                        borderColor: `#${(settings.config.indicatorColor ?? 16096779).toString(16).padStart(6, '0')}`,
-                      }}
-                    />
-                    <select
-                      value={settings.config.indicatorColor ?? 16096779}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          indicatorColor: parseInt(e.target.value),
-                        })
+                {/* Standard settings */}
+                {(settings.config.displayMode ?? 'standard') === 'standard' && (
+                  <>
+                    <SettingSliderRow
+                      title="Background Opacity"
+                      value={settings.config.background?.opacity ?? 30}
+                      units="%"
+                      min={0}
+                      max={100}
+                      step={5}
+                      onChange={(v) =>
+                        handleConfigChange({ background: { opacity: v } })
                       }
-                      className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                    >
-                      {Array.from(HIGHLIGHT_COLOR_PRESETS.entries()).map(
-                        ([key, value]) => (
-                          <option key={key} value={key}>
-                            {value}
-                          </option>
-                        )
-                      )}
-                    </select>
-                  </div>
-                </div>
+                    />
+                    <SettingSliderRow
+                      title="Width"
+                      description="Width of the blind spot indicator in pixels."
+                      value={settings.config.width ?? 20}
+                      units="px"
+                      min={5}
+                      max={100}
+                      step={1}
+                      onChange={(v) => handleConfigChange({ width: v })}
+                    />
+                    <SettingSliderRow
+                      title="Border Size"
+                      description="Border thickness of the blind spot indicator in pixels."
+                      value={settings.config.borderSize ?? 1}
+                      units="px"
+                      min={0}
+                      max={20}
+                      step={1}
+                      onChange={(v) => handleConfigChange({ borderSize: v })}
+                    />
+                    <div className="flex items-center justify-between gap-4 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-slate-200">
+                          Indicator Color
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="rounded border-2"
+                          style={{
+                            width: '20px',
+                            height: '20px',
+                            backgroundColor: `#${(settings.config.indicatorColor ?? 16096779).toString(16).padStart(6, '0')}`,
+                            borderColor: `#${(settings.config.indicatorColor ?? 16096779).toString(16).padStart(6, '0')}`,
+                          }}
+                        />
+                        <select
+                          value={settings.config.indicatorColor ?? 16096779}
+                          onChange={(e) =>
+                            handleConfigChange({
+                              indicatorColor: parseInt(e.target.value),
+                            })
+                          }
+                          className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                        >
+                          {Array.from(HIGHLIGHT_COLOR_PRESETS.entries()).map(
+                            ([key, value]) => (
+                              <option key={key} value={key}>
+                                {value}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Simple settings */}
+                {settings.config.displayMode === 'simple' && (
+                  <>
+                    <SettingSliderRow
+                      title="Square Size"
+                      description="Width and height of the indicator square in pixels."
+                      value={settings.config.simpleSize ?? 44}
+                      units="px"
+                      min={20}
+                      max={120}
+                      step={1}
+                      onChange={(v) => handleConfigChange({ simpleSize: v })}
+                    />
+                    <SettingSliderRow
+                      title="Vertical Position"
+                      description="Vertical placement within the widget. 0% = top, 50% = centre, 100% = bottom."
+                      value={settings.config.simpleVerticalPosition ?? 50}
+                      units="%"
+                      min={0}
+                      max={100}
+                      step={1}
+                      onChange={(v) =>
+                        handleConfigChange({ simpleVerticalPosition: v })
+                      }
+                    />
+                    <SettingDivider />
+                    <SettingToggleRow
+                      title="Threshold Colours"
+                      description="Change colour based on the number of cars detected."
+                      enabled={settings.config.thresholdColorsEnabled ?? false}
+                      onToggle={(v) =>
+                        handleConfigChange({ thresholdColorsEnabled: v })
+                      }
+                    />
+                    {settings.config.thresholdColorsEnabled && (
+                      <>
+                        <div className="flex items-center justify-between gap-4 py-2">
+                          <p className="text-sm text-slate-400">1 car colour</p>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="rounded border-2"
+                              style={{
+                                width: '20px',
+                                height: '20px',
+                                backgroundColor: `#${(settings.config.thresholdColor1 ?? 16096779).toString(16).padStart(6, '0')}`,
+                                borderColor: `#${(settings.config.thresholdColor1 ?? 16096779).toString(16).padStart(6, '0')}`,
+                              }}
+                            />
+                            <select
+                              value={
+                                settings.config.thresholdColor1 ?? 16096779
+                              }
+                              onChange={(e) =>
+                                handleConfigChange({
+                                  thresholdColor1: parseInt(e.target.value),
+                                })
+                              }
+                              className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                            >
+                              {Array.from(
+                                HIGHLIGHT_COLOR_PRESETS.entries()
+                              ).map(([key, value]) => (
+                                <option key={key} value={key}>
+                                  {value}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-4 py-2">
+                          <p className="text-sm text-slate-400">
+                            2+ cars colour
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="rounded border-2"
+                              style={{
+                                width: '20px',
+                                height: '20px',
+                                backgroundColor: `#${(settings.config.thresholdColor2 ?? 15680580).toString(16).padStart(6, '0')}`,
+                                borderColor: `#${(settings.config.thresholdColor2 ?? 15680580).toString(16).padStart(6, '0')}`,
+                              }}
+                            />
+                            <select
+                              value={
+                                settings.config.thresholdColor2 ?? 15680580
+                              }
+                              onChange={(e) =>
+                                handleConfigChange({
+                                  thresholdColor2: parseInt(e.target.value),
+                                })
+                              }
+                              className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                            >
+                              {Array.from(
+                                HIGHLIGHT_COLOR_PRESETS.entries()
+                              ).map(([key, value]) => (
+                                <option key={key} value={key}>
+                                  {value}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
               </SettingsSection>
             )}
 

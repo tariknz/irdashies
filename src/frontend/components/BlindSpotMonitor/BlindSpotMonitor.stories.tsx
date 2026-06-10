@@ -8,18 +8,27 @@ import { CarLeftRight } from '@irdashies/types';
 
 type BlindSpotMonitorStoryProps = Omit<
   BlindSpotMonitorDisplayProps,
-  'indicatorColor'
-> & { indicatorColor?: string };
+  'indicatorColor' | 'thresholdColor1' | 'thresholdColor2'
+> & {
+  indicatorColor?: string;
+  thresholdColor1?: string;
+  thresholdColor2?: string;
+};
+
+const parseColor = (c?: string) =>
+  c ? parseInt(c.replace('#', ''), 16) : undefined;
 
 const BlindSpotMonitorDisplayStory = ({
   indicatorColor,
+  thresholdColor1,
+  thresholdColor2,
   ...props
 }: BlindSpotMonitorStoryProps) => (
   <BlindSpotMonitorDisplay
     {...props}
-    indicatorColor={
-      indicatorColor ? parseInt(indicatorColor.replace('#', ''), 16) : undefined
-    }
+    indicatorColor={parseColor(indicatorColor)}
+    thresholdColor1={parseColor(thresholdColor1)}
+    thresholdColor2={parseColor(thresholdColor2)}
   />
 );
 
@@ -75,6 +84,25 @@ export default {
       control: { type: 'range', min: 0, max: 10, step: 1 },
     },
     indicatorColor: {
+      control: { type: 'color' },
+    },
+    displayMode: {
+      control: { type: 'select' },
+      options: ['standard', 'simple'],
+    },
+    simpleSize: {
+      control: { type: 'range', min: 20, max: 120, step: 1 },
+    },
+    simpleVerticalPosition: {
+      control: { type: 'range', min: 0, max: 100, step: 1 },
+    },
+    thresholdColorsEnabled: {
+      control: 'boolean',
+    },
+    thresholdColor1: {
+      control: { type: 'color' },
+    },
+    thresholdColor2: {
       control: { type: 'color' },
     },
   },
@@ -408,4 +436,57 @@ export const CarsPassingBothSides: Story = {
   render: (args) => (
     <CarsPassingBothSidesAnimation {...toAnimationProps(args)} />
   ),
+};
+
+const simpleBase = {
+  show: true,
+  displayMode: 'simple' as const,
+  simpleSize: 44,
+  simpleVerticalPosition: 50,
+  thresholdColorsEnabled: false,
+  leftPercent: 0,
+  rightPercent: 0,
+};
+
+export const SimpleModeCarOnLeft: Story = {
+  args: {
+    ...simpleBase,
+    leftState: CarLeftRight.CarLeft,
+    rightState: CarLeftRight.Off,
+  },
+};
+
+export const SimpleModeCarOnRight: Story = {
+  args: {
+    ...simpleBase,
+    leftState: CarLeftRight.Off,
+    rightState: CarLeftRight.CarRight,
+  },
+};
+
+export const SimpleModeTwoCarsLeft: Story = {
+  args: {
+    ...simpleBase,
+    leftState: CarLeftRight.Cars2Left,
+    rightState: CarLeftRight.Off,
+  },
+};
+
+export const SimpleModeTwoCarsRight: Story = {
+  args: {
+    ...simpleBase,
+    leftState: CarLeftRight.Off,
+    rightState: CarLeftRight.Cars2Right,
+  },
+};
+
+export const SimpleModeThresholdColors: Story = {
+  args: {
+    ...simpleBase,
+    leftState: CarLeftRight.CarLeft,
+    rightState: CarLeftRight.Cars2Right,
+    thresholdColorsEnabled: true,
+    thresholdColor1: '#f5a623',
+    thresholdColor2: '#ef4444',
+  },
 };

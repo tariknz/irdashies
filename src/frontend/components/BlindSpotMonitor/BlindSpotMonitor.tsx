@@ -1,6 +1,7 @@
 import { useBlindSpotMonitor } from './hooks/useBlindSpotMonitor';
 import { useBlindSpotMonitorSettings } from './hooks/useBlindSpotMonitorSettings';
 import { BlindSpotMonitorIndicator } from './components/BlindSpotMonitorIndicator';
+import { BlindSpotMonitorSimpleIndicator } from './components/BlindSpotMonitorSimpleIndicator';
 import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
 import { CarLeftRight } from '@irdashies/types';
 
@@ -15,7 +16,20 @@ export interface BlindSpotMonitorDisplayProps {
   width?: number;
   borderSize?: number;
   indicatorColor?: number;
+  displayMode?: 'standard' | 'simple';
+  simpleSize?: number;
+  simpleVerticalPosition?: number;
+  thresholdColorsEnabled?: boolean;
+  thresholdColor1?: number;
+  thresholdColor2?: number;
 }
+
+const DEFAULT_INDICATOR_COLOR = 16096779;
+const DEFAULT_THRESHOLD_COLOR_1 = 16096779;
+const DEFAULT_THRESHOLD_COLOR_2 = 15680580;
+
+const carCountFromState = (state: CarLeftRight): 1 | 2 =>
+  state === CarLeftRight.Cars2Left || state === CarLeftRight.Cars2Right ? 2 : 1;
 
 export const BlindSpotMonitorDisplay = ({
   show,
@@ -28,6 +42,12 @@ export const BlindSpotMonitorDisplay = ({
   width,
   borderSize,
   indicatorColor,
+  displayMode = 'standard',
+  simpleSize = 44,
+  simpleVerticalPosition = 50,
+  thresholdColorsEnabled = false,
+  thresholdColor1 = DEFAULT_THRESHOLD_COLOR_1,
+  thresholdColor2 = DEFAULT_THRESHOLD_COLOR_2,
 }: BlindSpotMonitorDisplayProps) => {
   const showLeft =
     show &&
@@ -37,6 +57,35 @@ export const BlindSpotMonitorDisplay = ({
     show &&
     (rightState === CarLeftRight.CarRight ||
       rightState === CarLeftRight.Cars2Right);
+
+  if (displayMode === 'simple') {
+    return (
+      <div className="w-full h-full relative">
+        <BlindSpotMonitorSimpleIndicator
+          side="left"
+          visible={showLeft}
+          carCount={carCountFromState(leftState)}
+          size={simpleSize}
+          verticalPosition={simpleVerticalPosition}
+          indicatorColor={indicatorColor ?? DEFAULT_INDICATOR_COLOR}
+          thresholdColorsEnabled={thresholdColorsEnabled}
+          thresholdColor1={thresholdColor1}
+          thresholdColor2={thresholdColor2}
+        />
+        <BlindSpotMonitorSimpleIndicator
+          side="right"
+          visible={showRight}
+          carCount={carCountFromState(rightState)}
+          size={simpleSize}
+          verticalPosition={simpleVerticalPosition}
+          indicatorColor={indicatorColor ?? DEFAULT_INDICATOR_COLOR}
+          thresholdColorsEnabled={thresholdColorsEnabled}
+          thresholdColor1={thresholdColor1}
+          thresholdColor2={thresholdColor2}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full relative">
@@ -86,6 +135,12 @@ export const BlindSpotMonitor = () => {
       width={settings?.width}
       borderSize={settings?.borderSize}
       indicatorColor={settings?.indicatorColor}
+      displayMode={settings?.displayMode}
+      simpleSize={settings?.simpleSize}
+      simpleVerticalPosition={settings?.simpleVerticalPosition}
+      thresholdColorsEnabled={settings?.thresholdColorsEnabled}
+      thresholdColor1={settings?.thresholdColor1}
+      thresholdColor2={settings?.thresholdColor2}
     />
   );
 };

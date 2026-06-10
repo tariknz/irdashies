@@ -437,6 +437,12 @@ export interface BlindSpotMonitorConfig {
   borderSize?: number;
   indicatorColor?: number;
   sessionVisibility: SessionVisibilitySettings;
+  displayMode?: 'standard' | 'simple';
+  simpleSize?: number;
+  simpleVerticalPosition?: number;
+  thresholdColorsEnabled?: boolean;
+  thresholdColor1?: number;
+  thresholdColor2?: number;
 }
 
 export interface RejoinIndicatorConfig {
