@@ -251,6 +251,27 @@ describe('useCarBehind', () => {
       ]);
     });
 
+    it('should treat a positive threshold the same as a negative one', () => {
+      // The settings slider saves a positive magnitude; cars behind have a
+      // negative delta, so the sign must be normalized at usage.
+      const mockDrivers = [
+        createMockDriver(10, -2.0, 42, 'Within'),
+        createMockDriver(20, -3.5, 42, 'Too Far'),
+        createMockDriver(30, 0, 37, 'Player'),
+      ];
+
+      vi.mocked(driverRelativesModule.useDriverRelatives).mockReturnValue(
+        mockDrivers
+      );
+
+      const { result } = renderHook(() =>
+        useCarBehind({ distanceThreshold: 3.0 })
+      );
+
+      expect(result.current).toHaveLength(1);
+      expect(result.current[0].name).toBe('Within');
+    });
+
     it('should use default threshold when not provided', () => {
       const mockDrivers = [
         createMockDriver(10, -2.0, 42, 'Within Default'),

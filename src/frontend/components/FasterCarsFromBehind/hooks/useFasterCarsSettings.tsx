@@ -33,13 +33,8 @@ export const useFasterCarsSettings = () => {
     showOnlyWhenOnTrack:
       (settings?.showOnlyWhenOnTrack as boolean) ??
       DEFAULT_CONFIG.showOnlyWhenOnTrack,
-    // Stored as a negative value (cars behind have a negative delta). Coerce to
-    // negative so configs that saved a positive threshold self-heal instead of
-    // filtering out every car.
-    distanceThreshold: -Math.abs(
-      (settings?.distanceThreshold as number) ??
-        DEFAULT_CONFIG.distanceThreshold
-    ),
+    distanceThreshold:
+      settings?.distanceThreshold ?? DEFAULT_CONFIG.distanceThreshold,
     numberDriversBehind:
       settings?.numberDriversBehind ?? DEFAULT_CONFIG.numberDriversBehind,
     alignDriverBoxes:

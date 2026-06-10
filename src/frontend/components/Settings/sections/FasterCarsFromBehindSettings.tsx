@@ -84,9 +84,7 @@ export const FasterCarsFromBehindSettings = () => {
                   min={0.3}
                   max={20}
                   step={0.1}
-                  onChange={(v) =>
-                    handleConfigChange({ distanceThreshold: -v })
-                  }
+                  onChange={(v) => handleConfigChange({ distanceThreshold: v })}
                 />
 
                 {/* Show Distance Section */}
