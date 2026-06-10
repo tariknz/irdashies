@@ -19,6 +19,7 @@ export interface BlindSpotMonitorDisplayProps {
   displayMode?: 'standard' | 'simple';
   simpleSize?: number;
   simpleVerticalPosition?: number;
+  simpleShowCount?: boolean;
   thresholdColorsEnabled?: boolean;
   thresholdColor1?: number;
   thresholdColor2?: number;
@@ -45,6 +46,7 @@ export const BlindSpotMonitorDisplay = ({
   displayMode = 'standard',
   simpleSize = 44,
   simpleVerticalPosition = 50,
+  simpleShowCount = true,
   thresholdColorsEnabled = false,
   thresholdColor1 = DEFAULT_THRESHOLD_COLOR_1,
   thresholdColor2 = DEFAULT_THRESHOLD_COLOR_2,
@@ -67,6 +69,7 @@ export const BlindSpotMonitorDisplay = ({
           carCount={carCountFromState(leftState)}
           size={simpleSize}
           verticalPosition={simpleVerticalPosition}
+          showCount={simpleShowCount}
           indicatorColor={indicatorColor ?? DEFAULT_INDICATOR_COLOR}
           thresholdColorsEnabled={thresholdColorsEnabled}
           thresholdColor1={thresholdColor1}
@@ -78,6 +81,7 @@ export const BlindSpotMonitorDisplay = ({
           carCount={carCountFromState(rightState)}
           size={simpleSize}
           verticalPosition={simpleVerticalPosition}
+          showCount={simpleShowCount}
           indicatorColor={indicatorColor ?? DEFAULT_INDICATOR_COLOR}
           thresholdColorsEnabled={thresholdColorsEnabled}
           thresholdColor1={thresholdColor1}
@@ -138,6 +142,7 @@ export const BlindSpotMonitor = () => {
       displayMode={settings?.displayMode}
       simpleSize={settings?.simpleSize}
       simpleVerticalPosition={settings?.simpleVerticalPosition}
+      simpleShowCount={settings?.simpleShowCount}
       thresholdColorsEnabled={settings?.thresholdColorsEnabled}
       thresholdColor1={settings?.thresholdColor1}
       thresholdColor2={settings?.thresholdColor2}

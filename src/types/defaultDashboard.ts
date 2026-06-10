@@ -928,6 +928,7 @@ export const defaultDashboard: {
         displayMode: 'standard',
         simpleSize: 44,
         simpleVerticalPosition: 50,
+        simpleShowCount: true,
         thresholdColorsEnabled: false,
         thresholdColor1: 16096779,
         thresholdColor2: 15680580,

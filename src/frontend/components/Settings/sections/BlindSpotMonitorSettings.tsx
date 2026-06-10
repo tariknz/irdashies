@@ -192,6 +192,14 @@ export const BlindSpotMonitorSettings = () => {
                         handleConfigChange({ simpleVerticalPosition: v })
                       }
                     />
+                    <SettingToggleRow
+                      title="Show Count"
+                      description="Display the number of cars inside the indicator square."
+                      enabled={settings.config.simpleShowCount ?? true}
+                      onToggle={(v) =>
+                        handleConfigChange({ simpleShowCount: v })
+                      }
+                    />
                     <SettingDivider />
                     <SettingToggleRow
                       title="Threshold Colours"

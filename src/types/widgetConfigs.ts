@@ -440,6 +440,7 @@ export interface BlindSpotMonitorConfig {
   displayMode?: 'standard' | 'simple';
   simpleSize?: number;
   simpleVerticalPosition?: number;
+  simpleShowCount?: boolean;
   thresholdColorsEnabled?: boolean;
   thresholdColor1?: number;
   thresholdColor2?: number;

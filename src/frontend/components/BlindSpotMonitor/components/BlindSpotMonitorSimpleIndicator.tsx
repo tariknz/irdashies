@@ -4,6 +4,7 @@ export interface BlindSpotMonitorSimpleIndicatorProps {
   carCount: 1 | 2;
   size: number;
   verticalPosition: number;
+  showCount: boolean;
   indicatorColor: number;
   thresholdColorsEnabled: boolean;
   thresholdColor1: number;
@@ -16,6 +17,7 @@ export const BlindSpotMonitorSimpleIndicator = ({
   carCount,
   size,
   verticalPosition,
+  showCount,
   indicatorColor,
   thresholdColorsEnabled,
   thresholdColor1,
@@ -44,10 +46,11 @@ export const BlindSpotMonitorSimpleIndicator = ({
         justifyContent: 'center',
         fontSize: `${Math.round(size * 0.5)}px`,
         fontWeight: 700,
+        fontFamily: 'inherit',
         color: '#1e293b',
       }}
     >
-      {carCount}
+      {showCount && carCount}
     </div>
   );
 };
