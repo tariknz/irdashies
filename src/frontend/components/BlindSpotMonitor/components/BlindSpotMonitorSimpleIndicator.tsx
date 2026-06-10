@@ -33,7 +33,7 @@ export const BlindSpotMonitorSimpleIndicator = ({
 
   return (
     <div
-      className={`absolute ${side === 'left' ? 'left-0' : 'right-0'}`}
+      className={`absolute flex items-center justify-center ${side === 'left' ? 'left-0' : 'right-0'}`}
       style={{
         top: `${verticalPosition}%`,
         transform: 'translateY(-50%)',
@@ -41,16 +41,20 @@ export const BlindSpotMonitorSimpleIndicator = ({
         height: `${size}px`,
         backgroundColor: colorHex,
         borderRadius: '6px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: `${Math.round(size * 0.5)}px`,
-        fontWeight: 700,
-        fontFamily: 'inherit',
-        color: '#1e293b',
       }}
     >
-      {showCount && carCount}
+      {showCount && (
+        <span
+          className={`bg-black/70 rounded-full text-amber-500 font-semibold text-shadow-md${carCount === 2 ? ' animate-blink' : ''}`}
+          style={{
+            fontFamily: 'inherit',
+            fontSize: `${Math.round(size * 0.42)}px`,
+            padding: `${Math.round(size * 0.05)}px ${Math.round(size * 0.1)}px`,
+          }}
+        >
+          {carCount}
+        </span>
+      )}
     </div>
   );
 };
