@@ -182,9 +182,10 @@ export const generateTrackJson = () => {
   );
 };
 
+const sharedWindow = new JSDOM('').window;
+const sharedParser = new sharedWindow.DOMParser();
+
 const getSvgDom = (svgContent: string) => {
-  const dom = new JSDOM(svgContent);
-  const root = dom.window.document.documentElement;
-  const svg = root.querySelector('svg') as SVGSVGElement;
-  return svg;
+  const doc = sharedParser.parseFromString(svgContent, 'image/svg+xml');
+  return doc.querySelector('svg') as SVGSVGElement;
 };
