@@ -140,7 +140,9 @@ export const BlindSpotMonitor = () => {
 
   const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
   const isSimple = settings?.displayMode === 'simple';
-  const activeState = isDemoMode && isSimple ? DEMO_STATE_SIMPLE : state;
+  const forcePreview =
+    isDemoMode || (isSimple && (settings?.thresholdColorsEnabled ?? false));
+  const activeState = forcePreview ? DEMO_STATE_SIMPLE : state;
 
   if (!isDemoMode && !sessionVisible) return <></>;
   if (!isDemoMode && settings?.showOnlyWhenOnTrack && !isOnTrack) return <></>;

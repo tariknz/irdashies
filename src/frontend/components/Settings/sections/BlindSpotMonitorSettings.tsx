@@ -202,14 +202,51 @@ export const BlindSpotMonitorSettings = () => {
                     />
                     <SettingDivider />
                     <SettingToggleRow
-                      title="Threshold Colours"
-                      description="Change colour based on the number of cars detected."
+                      title="Colour by Car Count"
+                      description="Use different colours based on how many cars are in your blind spot."
                       enabled={settings.config.thresholdColorsEnabled ?? false}
                       onToggle={(v) =>
                         handleConfigChange({ thresholdColorsEnabled: v })
                       }
                     />
-                    {settings.config.thresholdColorsEnabled && (
+                    {!(settings.config.thresholdColorsEnabled ?? false) && (
+                      <div className="flex items-center justify-between gap-4 py-2">
+                        <div>
+                          <p className="text-sm font-medium text-slate-200">
+                            Square Colour
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="rounded border-2"
+                            style={{
+                              width: '20px',
+                              height: '20px',
+                              backgroundColor: `#${(settings.config.indicatorColor ?? 16096779).toString(16).padStart(6, '0')}`,
+                              borderColor: `#${(settings.config.indicatorColor ?? 16096779).toString(16).padStart(6, '0')}`,
+                            }}
+                          />
+                          <select
+                            value={settings.config.indicatorColor ?? 16096779}
+                            onChange={(e) =>
+                              handleConfigChange({
+                                indicatorColor: parseInt(e.target.value),
+                              })
+                            }
+                            className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                          >
+                            {Array.from(HIGHLIGHT_COLOR_PRESETS.entries()).map(
+                              ([key, value]) => (
+                                <option key={key} value={key}>
+                                  {value}
+                                </option>
+                              )
+                            )}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                    {(settings.config.thresholdColorsEnabled ?? false) && (
                       <>
                         <div className="flex items-center justify-between gap-4 py-2">
                           <p className="text-sm text-slate-400">1 car colour</p>
