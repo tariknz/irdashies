@@ -139,10 +139,7 @@ export const BlindSpotMonitor = () => {
   const isOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
 
   const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
-  const isSimple = settings?.displayMode === 'simple';
-  const forcePreview =
-    isDemoMode || (isSimple && (settings?.thresholdColorsEnabled ?? false));
-  const activeState = forcePreview ? DEMO_STATE_SIMPLE : state;
+  const activeState = isDemoMode ? DEMO_STATE_SIMPLE : state;
 
   if (!isDemoMode && !sessionVisible) return <></>;
   if (!isDemoMode && settings?.showOnlyWhenOnTrack && !isOnTrack) return <></>;
