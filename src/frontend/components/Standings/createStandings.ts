@@ -446,7 +446,57 @@ export const groupStandingsByClass = (
     sorted.push([String(classId), drivers]);
   }
   sorted.sort(
-    ([, a], [, b]) => b[0].carClass.relativeSpeed - a[0].carClass.relativeSpeed
+      ([, classA], [, classB]) => {
+          const getTop2Stats = (drivers: Standings[]) => {
+              const validDrivers = drivers
+                  .filter(
+                      (d) =>
+                          d.position !== undefined &&
+                          d.fastestTime !== undefined &&
+                          d.fastestTime > 0
+                  )
+                  .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
+                  .slice(0, 2);
+
+              if (validDrivers.length === 0) {
+                  return undefined;
+              }
+
+              const positions = validDrivers.map((d) => d.position ?? 999);
+
+              return {
+                  average:
+                      positions.reduce((sum, pos) => sum + pos, 0) /
+                      positions.length,
+                  bestPosition: positions[0], // lower is better
+              };
+          };
+
+          const statsA = getTop2Stats(classA);
+          const statsB = getTop2Stats(classB);
+
+          // Primary sort: average top-2 position
+          if (statsA && statsB) {
+              if (statsA.average !== statsB.average) {
+                  return statsA.average - statsB.average;
+              }
+
+              // Tie-breaker: better leading position wins
+              if (statsA.bestPosition !== statsB.bestPosition) {
+                  return statsA.bestPosition - statsB.bestPosition;
+              }
+          }
+
+          // Prefer classes with valid timing data
+          if (statsA) return -1;
+          if (statsB) return 1;
+
+          // Final fallback: relative speed
+          return (
+              classB[0].carClass.relativeSpeed -
+              classA[0].carClass.relativeSpeed
+          );
+      }
   );
   return sorted;
 };
