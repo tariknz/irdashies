@@ -19,7 +19,10 @@ export const useCarBehind = ({
 
   // Filter out drivers who are in the pits
   const drivers = allDrivers.filter((driver) => !driver.onPitRoad);
-  const threshold = distanceThreshold ?? -3;
+  // Cars behind have a negative delta, so the threshold must be negative.
+  // Normalize here so the stored value's sign doesn't matter — the settings
+  // slider saves a positive magnitude, while the default is negative.
+  const threshold = -Math.abs(distanceThreshold ?? -3);
 
   const fasterCarsFromBehind = useMemo(() => {
     if (!myCar || myCar.onPitRoad) {
