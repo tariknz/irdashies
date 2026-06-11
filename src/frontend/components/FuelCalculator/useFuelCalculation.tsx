@@ -9,7 +9,7 @@ import {
   useSessionLaps,
   useSessionStore,
   useTelemetryValue,
-  useTotalRaceLaps,
+  useTotalRaceValue,
 } from '@irdashies/context';
 import { useStore } from 'zustand';
 import {
@@ -81,7 +81,7 @@ export function useFuelCalculation(
 
   // Use centralized total race laps calculation
   const { isFixedLapRace, totalRaceLaps: calculatedTotalRaceLaps } =
-    useTotalRaceLaps();
+    useTotalRaceValue();
 
   // Check if current session is a Race
   const sessions = useStore(
