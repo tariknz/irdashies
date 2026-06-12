@@ -1019,6 +1019,13 @@ export const defaultDashboard: {
         width: 20,
         borderSize: 1,
         indicatorColor: 16096779,
+        displayMode: 'standard',
+        simpleSize: 44,
+        simpleVerticalPosition: 50,
+        simpleShowCount: true,
+        thresholdColorsEnabled: false,
+        thresholdColor1: 16096779,
+        thresholdColor2: 15680580,
         sessionVisibility: {
           race: true,
           loneQualify: true,
