@@ -17,3 +17,7 @@ export * from './LapTimesStore/LapTimesStoreUpdater';
 export * from './SectorTimingStore/SectorTimingStore';
 export * from './shared';
 export * from './PersonalBestStore/PersonalBestStore';
+export * from './CarSpeedStore/TopSpeedStore';
+export * from './CarSpeedStore/TopSpeedStoreUpdater';
+export * from './RivalSectorStore/RivalSectorStore';
+export * from './RivalSectorStore/RivalSectorStoreUpdater';

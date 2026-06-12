@@ -21,6 +21,7 @@ import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
 import { SectorDelta } from './components/SectorDelta/SectorDelta';
 import { HeartRate } from './components/HeartRate/HeartRate';
 import { CornerNameOverlay } from './components/CornerNameOverlay';
+import { Rivals } from './components/Rivals/Rivals';
 import type { WidgetConfigMap } from '@irdashies/types';
 import type { ElementType } from 'react';
 
@@ -54,6 +55,7 @@ export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
   standings: Standings,
   input: Input,
   relative: Relative,
+  rivals: Rivals,
   map: TrackMap,
   flatmap: FlatTrackMap,
   weather: Weather,

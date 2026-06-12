@@ -67,7 +67,12 @@ export const DriverClassHeader = ({
           >
             {sof ? (
               <>
-                <BarbellIcon /> <span>{sof?.toFixed(0)}</span>
+                <BarbellIcon />{' '}
+                <span>
+                  {classHeaderStyle?.compactSof && sof >= 1000
+                    ? `${(sof / 1000).toFixed(1)}k`
+                    : sof.toFixed(0)}
+                </span>
               </>
             ) : (
               ''

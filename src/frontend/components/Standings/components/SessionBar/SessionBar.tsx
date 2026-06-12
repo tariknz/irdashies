@@ -1,12 +1,18 @@
 import {
   useGeneralSettings,
   useTelemetryValue,
+  useTelemetryValues,
   useCurrentSessionType,
   useThrottledWeather,
   useTotalRaceLaps,
   useTotalRaceTime,
   useTrackDisplayName,
+  useTopSpeedStoreUpdater,
+  useLastLapTopSpeed,
+  useSessionBestTopSpeed,
 } from '@irdashies/context';
+import { formatFuel } from '../../../FuelCalculator/fuelCalculations';
+import { formatTime } from '@irdashies/utils/time';
 import {
   useDriverIncidents,
   useSessionLapCount,
@@ -19,8 +25,12 @@ import {
   ClockIcon,
   ClockUserIcon,
   CloudRainIcon,
+  FlagIcon,
+  GasPumpIcon,
+  GaugeIcon,
   RoadHorizonIcon,
   ThermometerIcon,
+  TimerIcon,
   TireIcon,
   WavesIcon,
 } from '@phosphor-icons/react';
@@ -122,6 +132,7 @@ export const SessionBar = ({
 
   const session = useCurrentSessionType();
   const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
+  const fuelLevelLiters = useTelemetryValue('FuelLevel');
   const {
     incidentLimit,
     incidents,
@@ -151,6 +162,16 @@ export const SessionBar = ({
   const { totalRaceLaps, isFixedLapRace } = useTotalRaceLaps();
   const { totalRaceTime, adjustedRaceTime } = useTotalRaceTime();
   const trackDisplayName = useTrackDisplayName();
+  const lastLapTime = useTelemetryValue('LapLastLapTime');
+  const bestLapTime = useTelemetryValue('LapBestLapTime');
+  const allBestLapTimes = useTelemetryValues('CarIdxBestLapTime');
+  const lastLapTopSpeedMs = useLastLapTopSpeed();
+  const sessionBestTopSpeedMs = useSessionBestTopSpeed();
+  useTopSpeedStoreUpdater(effectiveBarSettings?.topSpeed?.enabled ?? false);
+  const sessionBestLap =
+    allBestLapTimes && allBestLapTimes.some((t) => t > 0)
+      ? Math.min(...allBestLapTimes.filter((t) => t > 0))
+      : undefined;
 
   // Define all possible items with their render functions
   const itemDefinitions = {
@@ -400,6 +421,81 @@ export const SessionBar = ({
     trackName: {
       enabled: effectiveBarSettings?.trackName?.enabled ?? false,
       render: () => <div className="flex">{trackDisplayName}</div>,
+    },
+    fuelLevel: {
+      enabled: effectiveBarSettings?.fuelLevel?.enabled ?? false,
+      render: () => {
+        if (fuelLevelLiters === undefined) return null;
+        const units = displayUnits === 0 ? 'gal' : 'L';
+        return (
+          <div className="flex justify-center gap-1 items-center tabular-nums">
+            <GasPumpIcon />
+            <span>{formatFuel(fuelLevelLiters, units, 1)}</span>
+          </div>
+        );
+      },
+    },
+    lastLap: {
+      enabled: effectiveBarSettings?.lastLap?.enabled ?? false,
+      render: () => {
+        const t = lastLapTime ?? 0;
+        const pb = bestLapTime ?? 0;
+        const color =
+          t > 0 && sessionBestLap !== undefined && t <= sessionBestLap
+            ? 'text-purple-400'
+            : t > 0 && pb > 0 && t <= pb
+              ? 'text-green-400'
+              : '';
+        return (
+          <div className="flex justify-center gap-1 items-center tabular-nums">
+            <TimerIcon />
+            <span className={color}>
+              {t > 0 ? formatTime(t, 'mixed') : '—'}
+            </span>
+          </div>
+        );
+      },
+    },
+    bestLap: {
+      enabled: effectiveBarSettings?.bestLap?.enabled ?? false,
+      render: () => {
+        const pb = bestLapTime ?? 0;
+        const color =
+          pb > 0 && sessionBestLap !== undefined && pb <= sessionBestLap
+            ? 'text-purple-400'
+            : '';
+        return (
+          <div className="flex justify-center gap-1 items-center tabular-nums">
+            <FlagIcon />
+            <span className={color}>
+              {pb > 0 ? formatTime(pb, 'mixed') : '—'}
+            </span>
+          </div>
+        );
+      },
+    },
+    topSpeed: {
+      enabled: effectiveBarSettings?.topSpeed?.enabled ?? false,
+      render: () => {
+        if (lastLapTopSpeedMs === null) return null;
+        const isMetric = displayUnits === 1;
+        const factor = isMetric ? 3.6 : 2.23694;
+        const unit = isMetric ? 'km/h' : 'mph';
+        const last = (lastLapTopSpeedMs * factor).toFixed(0);
+        const best =
+          sessionBestTopSpeedMs !== null
+            ? (sessionBestTopSpeedMs * factor).toFixed(0)
+            : null;
+        return (
+          <div className="flex justify-center gap-1 items-center tabular-nums">
+            <GaugeIcon />
+            <span>
+              {last} {unit}
+            </span>
+            {best && <span className="text-green-400">({best})</span>}
+          </div>
+        );
+      },
     },
     wind: {
       enabled: effectiveBarSettings?.wind?.enabled ?? false,
