@@ -23,3 +23,16 @@ export const Primary: Story = {
     trackMoisture: 5,
   },
 };
+
+export const Narrow150px: Story = {
+  args: {
+    trackMoisture: 5,
+  },
+  decorators: [
+    (Story) => (
+      <div className="w-25">
+        <Story />
+      </div>
+    ),
+  ],
+};
