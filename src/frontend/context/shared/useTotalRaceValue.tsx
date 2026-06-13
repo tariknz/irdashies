@@ -95,22 +95,14 @@ export const useTotalRaceValue = () => {
         // the estimation in this case
         result.totalRaceTime = timeTotal;
 
-        const classEstLapTime = classEstLapTimes?.[carIdx];
-        const effectiveLapTime =
-            avgLapTime !== undefined && avgLapTime > 1
-                ? avgLapTime
-                : classEstLapTime !== undefined && classEstLapTime > 1
-                    ? classEstLapTime
-                    : undefined;
-
-        if (effectiveLapTime !== undefined) {
+        if (avgLapTime !== undefined) {
             if (lap === 0) {
                 // Race has not yet started
-                result.totalRaceLaps = timeTotal / effectiveLapTime;
+                result.totalRaceLaps = timeTotal / avgLapTime;
             } else {
                 // Race has started, so we have to add the number of completed laps and the percentage of the current lap
                 result.totalRaceLaps =
-                    timeRemaining / effectiveLapTime +
+                    timeRemaining / avgLapTime +
                     (leaderLap - 1) +
                     (leaderLapDistPct ?? 0);
 
