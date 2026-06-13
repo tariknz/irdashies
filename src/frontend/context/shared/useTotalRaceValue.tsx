@@ -32,7 +32,7 @@ export const useTotalRaceValue = () => {
     };
 
     // No race, no business
-    if (sessionType != 'Race') return result;
+    if (sessionType !== 'Race') return result;
 
     let leaderCarIdx = -1;
     let leaderLap = 0;
