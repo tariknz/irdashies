@@ -70,10 +70,7 @@ export const WeatherTrackWetness = memo(
         {/* Header row with consistency label styling */}
         <div className="flex flex-row gap-x-2 items-center text-sm mb-2">
           <WavesIcon className="flex-none" />
-          <span className="truncate min-w-0 flex-1 @max-[120px]:hidden">
-            Wetness
-          </span>
-          <div className="flex-none whitespace-nowrap text-right capitalize">
+          <div className="flex-1 min-w-0 truncate capitalize">
             {trackStateLabel}
           </div>
         </div>
