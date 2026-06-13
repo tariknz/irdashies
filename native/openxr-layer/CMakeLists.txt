@@ -23,7 +23,13 @@ FetchContent_MakeAvailable(OpenXR)
 
 add_library(irDashiesOpenXRLayer SHARED src/layer.cpp)
 
-target_link_libraries(irDashiesOpenXRLayer PRIVATE OpenXR::headers d3d11)
+target_include_directories(irDashiesOpenXRLayer PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/../shared
+)
+
+target_link_libraries(irDashiesOpenXRLayer PRIVATE
+  OpenXR::headers d3d11 d3dcompiler
+)
 
 # Note: XR_USE_GRAPHICS_API_D3D11 / WIN32_LEAN_AND_MEAN / NOMINMAX are defined
 # at the top of layer.cpp (must precede the openxr_platform.h include).
