@@ -38,10 +38,10 @@ export const useTotalRaceValue = () => {
     let leaderLap = 0;
     let leaderLapDistPct = 0;
     for (let i = 0; i < carIdxPosition.length; i++) {
-        if (carIdxPosition[i] === 1) {
+        if (carIdxPosition[i] === 1 && carIdxLap[i] !== undefined && carIdxLapDistPct[i] !== undefined) {
             leaderCarIdx = i;
-            leaderLap = carIdxLap[i];
-            leaderLapDistPct = carIdxLapDistPct[i];
+            leaderLap = carIdxLap[i] ?? 0;
+            leaderLapDistPct = carIdxLapDistPct[i] ?? 0;
             break;
         }
     }
@@ -66,8 +66,7 @@ export const useTotalRaceValue = () => {
             lapDistPct !== undefined &&
             leaderLapDistPct !== undefined &&
             lap > 0 &&
-            leaderLap > 0
-
+            leaderLap > 0;
         if (lapsValid) {
             const totalDist = lap + lapDistPct;
             const totalLeaderDist = leaderLap + leaderLapDistPct;
