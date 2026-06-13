@@ -1,0 +1,14 @@
+{
+  "file_format_version": "1.0.0",
+  "api_layer": {
+    "name": "XR_APILAYER_IRDASHIES_overlay",
+    "library_path": "$<TARGET_FILE:irDashiesOpenXRLayer>",
+    "api_version": "1.0",
+    "implementation_version": "1",
+    "description": "irDashies VR overlay (PoC)",
+    "functions": {
+      "xrNegotiateLoaderApiLayerInterface": "irDashies_xrNegotiateLoaderApiLayerInterface"
+    },
+    "disable_environment": "DISABLE_IRDASHIES_OPENXR"
+  }
+}
