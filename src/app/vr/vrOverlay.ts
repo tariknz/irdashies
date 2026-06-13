@@ -14,6 +14,12 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 const QUAD_DISTANCE_METERS = 1.4; // distance in front of the user
 const QUAD_WIDTH_METERS = 1.8; // physical width; height follows display aspect
 
+// Supersampling: render the overlay at N x the display's pixel dimensions so the
+// quad has more texels and aliases less in the headset. The page still lays out
+// as if at the display size (via zoom factor); only the backing texture grows.
+const VR_SUPERSAMPLE = 2;
+const VR_MAX_TEXTURE_DIM = 4096; // clamp longest side on high-res displays
+
 let osrWindow: BrowserWindow | null = null;
 
 /**
@@ -31,12 +37,22 @@ export function isVrOverlayEnabled(): boolean {
 export function startVrOverlay(overlayManager: OverlayManager): void {
   if (osrWindow) return;
 
-  // Match the primary display so widget pixel coordinates render where intended.
-  const { width, height } = screen.getPrimaryDisplay().size;
+  // Lay out at the primary display size (so widget pixel coordinates land where
+  // intended) but render into a larger backing texture for supersampling.
+  const { width: displayW, height: displayH } = screen.getPrimaryDisplay().size;
+  let scale = Math.min(
+    VR_SUPERSAMPLE,
+    VR_MAX_TEXTURE_DIM / Math.max(displayW, displayH)
+  );
+  scale = Math.max(1, scale);
+  const texW = Math.round(displayW * scale);
+  const texH = Math.round(displayH * scale);
+  const zoomFactor = texW / displayW;
+
   const pose: VrPose = {
     position: [0, 0, -QUAD_DISTANCE_METERS],
     orientation: [0, 0, 0, 1],
-    size: [QUAD_WIDTH_METERS, QUAD_WIDTH_METERS * (height / width)],
+    size: [QUAD_WIDTH_METERS, QUAD_WIDTH_METERS * (displayH / displayW)],
   };
 
   try {
@@ -56,8 +72,8 @@ export function startVrOverlay(overlayManager: OverlayManager): void {
   } as unknown as Electron.WebPreferences;
 
   osrWindow = new BrowserWindow({
-    width,
-    height,
+    width: texW,
+    height: texH,
     show: false,
     frame: false,
     transparent: true,
@@ -70,6 +86,11 @@ export function startVrOverlay(overlayManager: OverlayManager): void {
   overlayManager.addExternalWindow(osrWindow);
 
   const wc = osrWindow.webContents;
+  // Apply the supersample zoom on load: zoom shrinks the CSS viewport back to
+  // the display size while the backing texture stays at texW x texH.
+  wc.on('did-finish-load', () => {
+    if (osrWindow && !osrWindow.isDestroyed()) wc.setZoomFactor(zoomFactor);
+  });
   let paintCount = 0;
   let submitOk = 0;
   let loggedFirstPaint = false;
