@@ -90,7 +90,11 @@ export const Standings = () => {
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {settings?.headerBar && (settings.headerBar.enabled ?? true) && (
-        <SessionBar settings={settings.headerBar} opacity={settings?.foreground?.opacity} position="header" />
+        <SessionBar
+          settings={settings.headerBar}
+          opacity={settings?.foreground?.opacity}
+          position="header"
+        />
       )}
       <table
         className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
@@ -207,6 +211,7 @@ export const Standings = () => {
                         onPitRoad={result.onPitRoad}
                         onTrack={result.onTrack}
                         radioActive={result.radioActive}
+                        radioTransmitting={result.radioTransmitting}
                         isMultiClass={isMultiClass}
                         flairId={
                           (settings?.countryFlags?.enabled ?? true)
@@ -270,7 +275,11 @@ export const Standings = () => {
         </tbody>
       </table>
       {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
-        <SessionBar settings={settings.footerBar} opacity={settings?.foreground?.opacity} position="footer" />
+        <SessionBar
+          settings={settings.footerBar}
+          opacity={settings?.foreground?.opacity}
+          position="footer"
+        />
       )}
     </div>
   );

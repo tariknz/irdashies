@@ -49,6 +49,7 @@ interface DriverRowInfoProps {
   onPitRoad?: boolean;
   onTrack?: boolean;
   radioActive?: boolean;
+  radioTransmitting?: boolean;
   isLapped?: boolean;
   isLappingAhead?: boolean;
   hidden?: boolean;
@@ -198,6 +199,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     onPitRoad,
     onTrack,
     radioActive,
+    radioTransmitting,
     isLapped,
     isLappingAhead,
     hidden,
@@ -352,6 +354,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <DriverNameCell
             key="driverName"
             radioActive={radioActive}
+            radioTransmitting={radioTransmitting}
             repair={repair}
             penalty={penalty}
             slowdown={slowdown}
@@ -633,6 +636,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     name,
     teamName,
     radioActive,
+    radioTransmitting,
     onPitRoad,
     carTrackSurface,
     prevCarTrackSurface,

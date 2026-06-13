@@ -52,6 +52,7 @@ export interface Standings {
     estLapTime: number;
   };
   radioActive?: boolean;
+  radioTransmitting?: boolean;
   iratingChange?: number;
   carId?: number;
   lapTimeDeltas?: number[]; // Array of deltas vs player's recent laps, most recent last
@@ -122,6 +123,7 @@ export const createDriverStandings = (
     carIdxOnPitRoadValue?: boolean[];
     carIdxTrackSurfaceValue?: TrackLocation[];
     radioTransmitCarIdx?: number[];
+    radioTransmittingCarIdx?: number[];
     carIdxTireCompoundValue?: number[];
     isOnTrack?: boolean;
     carIdxSessionFlags?: number[];
@@ -193,6 +195,9 @@ export const createDriverStandings = (
           estLapTime: driver.CarClassEstLapTime,
         },
         radioActive: telemetry.radioTransmitCarIdx?.includes(driver.CarIdx),
+        radioTransmitting: telemetry.radioTransmittingCarIdx?.includes(
+          driver.CarIdx
+        ),
         carId: driver.CarID,
         lapTimeDeltas: undefined,
         lastPitLap: lastPitLap[driver.CarIdx] ?? undefined,
@@ -303,6 +308,9 @@ export const createDriverStandings = (
           estLapTime: driver.CarClassEstLapTime,
         },
         radioActive: telemetry.radioTransmitCarIdx?.includes(result.CarIdx),
+        radioTransmitting: telemetry.radioTransmittingCarIdx?.includes(
+          result.CarIdx
+        ),
         carId: driver.CarID,
         lapTimeDeltas:
           result.CarIdx === session.playerIdx
@@ -400,6 +408,9 @@ export const createDriverStandings = (
           estLapTime: driver.CarClassEstLapTime,
         },
         radioActive: telemetry.radioTransmitCarIdx?.includes(driver.CarIdx),
+        radioTransmitting: telemetry.radioTransmittingCarIdx?.includes(
+          driver.CarIdx
+        ),
         carId: driver.CarID,
         lapTimeDeltas: undefined,
         lastPitLap: lastPitLap[driver.CarIdx] ?? undefined,

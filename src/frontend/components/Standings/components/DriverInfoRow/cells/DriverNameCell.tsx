@@ -79,6 +79,7 @@ interface DriverNameCellProps {
   fullName?: string;
   nameFormat?: DriverNameFormat;
   radioActive?: boolean;
+  radioTransmitting?: boolean;
   repair?: boolean;
   penalty?: boolean;
   slowdown?: boolean;
@@ -97,6 +98,7 @@ export const DriverNameCell = memo(
     fullName,
     nameFormat,
     radioActive,
+    radioTransmitting,
     repair,
     penalty,
     slowdown,
@@ -114,6 +116,10 @@ export const DriverNameCell = memo(
           nameFormat ?? 'name-middlename-surname'
         )
       : (name ?? '');
+
+    // Fall back to radioActive when transmitting state isn't supplied, so
+    // callers that only know "icon on/off" keep the original pulsing icon.
+    const isRadioTransmitting = radioTransmitting ?? radioActive;
 
     const shouldAnimate = !!label && (!nameDisplay || nameDisplay === 'both');
     const staticText = nameDisplay === 'label' && label ? label : displayName;
@@ -158,9 +164,15 @@ export const DriverNameCell = memo(
       >
         <div className="flex items-center overflow-hidden">
           <span
-            className={`animate-pulse transition-[width] duration-300 ${
-              radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden'
-            }`}
+            className={[
+              'transition-[width,opacity] duration-300',
+              radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden',
+              // While actively transmitting the icon pulses at full strength.
+              // Once they stop (but the icon lingers) it goes static and dims,
+              // so a recent transmission reads differently from a live one.
+              isRadioTransmitting ? 'animate-pulse' : '',
+              radioActive && !isRadioTransmitting ? 'opacity-60' : '',
+            ].join(' ')}
           >
             <SpeakerHighIcon className="mt-px" size={16} />
           </span>
