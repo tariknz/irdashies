@@ -26,11 +26,33 @@
 
 #include <napi.h>
 
+#include <cstdarg>
 #include <cstdint>
+#include <cstdio>
 
 #include "irdashies_shm.h"
 
 namespace {
+
+void producerLog(const char* fmt, ...) {
+  char buf[512];
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+  OutputDebugStringA("[irDashies-VR-producer] ");
+  OutputDebugStringA(buf);
+  OutputDebugStringA("\n");
+  char path[MAX_PATH];
+  if (GetTempPathA(MAX_PATH, path)) {
+    strncat_s(path, MAX_PATH, "irdashies-vr-producer.log", _TRUNCATE);
+    FILE* f = nullptr;
+    if (fopen_s(&f, path, "a") == 0 && f) {
+      fprintf(f, "%s\n", buf);
+      fclose(f);
+    }
+  }
+}
 
 template <typename T>
 void release(T*& p) {
@@ -214,17 +236,45 @@ Napi::Value SubmitFrame(const Napi::CallbackInfo& info) {
   }
   Napi::Object textureInfo = info[0].As<Napi::Object>();
 
-  Napi::Value handleVal = textureInfo.Get("sharedTextureHandle");
-  if (!handleVal.IsBuffer()) return Napi::Boolean::New(env, false);
-  Napi::Buffer<uint8_t> handleBuf = handleVal.As<Napi::Buffer<uint8_t>>();
-  if (handleBuf.Length() < sizeof(HANDLE)) {
+  // The NT handle location moved across Electron versions: current (>=~33)
+  // nests it at textureInfo.handle.ntHandle; older builds exposed
+  // textureInfo.sharedTextureHandle directly. Support both.
+  HANDLE srcHandle = nullptr;
+  bool gotHandle = false;
+  auto tryBuffer = [&](Napi::Value v) {
+    if (gotHandle || !v.IsBuffer()) return;
+    Napi::Buffer<uint8_t> b = v.As<Napi::Buffer<uint8_t>>();
+    if (b.Length() >= sizeof(HANDLE)) {
+      srcHandle = *reinterpret_cast<HANDLE*>(b.Data());
+      gotHandle = true;
+    }
+  };
+  Napi::Value handle = textureInfo.Get("handle");
+  if (handle.IsObject()) {
+    tryBuffer(handle.As<Napi::Object>().Get("ntHandle"));
+  }
+  tryBuffer(textureInfo.Get("sharedTextureHandle"));
+  if (!gotHandle) {
+    static bool logged = false;
+    if (!logged) {
+      logged = true;
+      producerLog(
+          "no NT handle in textureInfo (checked handle.ntHandle and "
+          "sharedTextureHandle)");
+    }
     return Napi::Boolean::New(env, false);
   }
-  HANDLE srcHandle = *reinterpret_cast<HANDLE*>(handleBuf.Data());
 
   ID3D11Texture2D* srcTex = nullptr;
   if (FAILED(g.device1->OpenSharedResource1(srcHandle,
                                             IID_PPV_ARGS(&srcTex)))) {
+    static bool logged = false;
+    if (!logged) {
+      logged = true;
+      producerLog(
+          "OpenSharedResource1 failed - Chromium GPU adapter likely differs "
+          "from the producer device adapter");
+    }
     return Napi::Boolean::New(env, false);
   }
   D3D11_TEXTURE2D_DESC sd{};
@@ -282,6 +332,8 @@ Napi::Value SubmitFrame(const Napi::CallbackInfo& info) {
     g.width = vw;
     g.height = vh;
     g.format = sd.Format;
+    producerLog("created shared texture %ux%u format=%u", vw, vh,
+                (unsigned)sd.Format);
 
     if (g.mutex) WaitForSingleObject(g.mutex, INFINITE);
     g.shm->textureHandle = (uint64_t)(uintptr_t)g.textureHandle;
@@ -311,6 +363,11 @@ Napi::Value SubmitFrame(const Napi::CallbackInfo& info) {
   g.shm->flags |= IRDASHIES_SHM_FLAG_FEEDER_ATTACHED;
   if (g.mutex) ReleaseMutex(g.mutex);
 
+  static bool firstOk = false;
+  if (!firstOk) {
+    firstOk = true;
+    producerLog("first frame published %ux%u", g.width, g.height);
+  }
   return Napi::Boolean::New(env, true);
 }
 

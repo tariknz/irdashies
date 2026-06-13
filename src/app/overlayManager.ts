@@ -534,6 +534,10 @@ export class OverlayManager {
     'runningState',
   ]);
 
+  // Windows that receive all overlay broadcasts but are not display/bounds
+  // managed (e.g. the offscreen VR overlay window).
+  private externalWindows = new Set<BrowserWindow>();
+
   public publishMessage(key: string, value: unknown): void {
     // Send to all display overlay windows
     for (const win of this.displayWindows.values()) {
@@ -542,6 +546,16 @@ export class OverlayManager {
         win.webContents.send(key, value);
       } catch (e) {
         logger.error(`Failed to send message ${key} to overlay window`, e);
+      }
+    }
+
+    // Send to external (non-bounds-managed) windows, e.g. the VR overlay.
+    for (const win of this.externalWindows) {
+      if (win.isDestroyed()) continue;
+      try {
+        win.webContents.send(key, value);
+      } catch (e) {
+        logger.error(`Failed to send message ${key} to external window`, e);
       }
     }
 
@@ -578,6 +592,25 @@ export class OverlayManager {
   public onOverlayReady(callback: (id: string) => void) {
     this.onWindowReadyCallbacks.add(callback);
     return () => this.onWindowReadyCallbacks.delete(callback);
+  }
+
+  /**
+   * Register a window that should receive all overlay broadcasts (dashboard,
+   * telemetry, running state) without being display/bounds managed. Used by the
+   * offscreen VR overlay window. Firing the ready callbacks on load makes the
+   * SDK bridge send the latest running state / telemetry / session.
+   */
+  public addExternalWindow(win: BrowserWindow): void {
+    this.externalWindows.add(win);
+    win.on('closed', () => this.externalWindows.delete(win));
+    win.webContents.on('did-finish-load', () => {
+      if (win.isDestroyed()) return;
+      this.onWindowReadyCallbacks.forEach((cb) => cb('external'));
+    });
+  }
+
+  public removeExternalWindow(win: BrowserWindow): void {
+    this.externalWindows.delete(win);
   }
 
   /**

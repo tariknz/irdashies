@@ -406,7 +406,10 @@ static XrResult XRAPI_CALL my_xrEndFrame(XrSession session,
   g_next_xrReleaseSwapchainImage(g.swapchain, &rel);
 
   XrCompositionLayerQuad quad{XR_TYPE_COMPOSITION_LAYER_QUAD};
-  quad.layerFlags = 0;
+  // Real producer frames are premultiplied-alpha (Chromium OSR) - blend so
+  // transparent page areas are see-through. The fallback pulse is opaque.
+  quad.layerFlags =
+      haveFrame ? XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT : 0;
   quad.space = g.localSpace;
   quad.eyeVisibility = XR_EYE_VISIBILITY_BOTH;
   quad.subImage.swapchain = g.swapchain;

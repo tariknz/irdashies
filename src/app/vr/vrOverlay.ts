@@ -1,21 +1,18 @@
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, screen } from 'electron';
 import path from 'path';
 import logger from '../logger';
+import type { OverlayManager } from '../overlayManager';
 import { VrOverlayNative, type VrPose } from './native';
 
 // Injected by the forge vite plugin (same globals overlayManager uses).
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-// Offscreen render size. Fixed for the MVP; the quad aspect is set by `size`.
-const OSR_WIDTH = 2048;
-const OSR_HEIGHT = 2048;
-
-const DEFAULT_POSE: VrPose = {
-  position: [0, 0, -1.5],
-  orientation: [0, 0, 0, 1],
-  size: [0.6, 0.6],
-};
+// Quad placement. The offscreen surface matches the primary display so widget
+// pixel layouts land 1:1; the quad's physical height is derived from that
+// aspect so the texture is not stretched.
+const QUAD_DISTANCE_METERS = 1.5; // distance in front of the user
+const QUAD_WIDTH_METERS = 1.0; // physical width; height follows display aspect
 
 let osrWindow: BrowserWindow | null = null;
 
@@ -31,11 +28,19 @@ export function isVrOverlayEnabled(): boolean {
  * Render the overlay offscreen and feed each GPU frame to the native producer,
  * which publishes it over shared memory to the OpenXR layer.
  */
-export function startVrOverlay(): void {
+export function startVrOverlay(overlayManager: OverlayManager): void {
   if (osrWindow) return;
 
+  // Match the primary display so widget pixel coordinates render where intended.
+  const { width, height } = screen.getPrimaryDisplay().size;
+  const pose: VrPose = {
+    position: [0, 0, -QUAD_DISTANCE_METERS],
+    orientation: [0, 0, 0, 1],
+    size: [QUAD_WIDTH_METERS, QUAD_WIDTH_METERS * (height / width)],
+  };
+
   try {
-    if (!VrOverlayNative.start(DEFAULT_POSE)) {
+    if (!VrOverlayNative.start(pose)) {
       logger.error('[VR] native overlay start returned false');
       return;
     }
@@ -51,22 +56,67 @@ export function startVrOverlay(): void {
   } as unknown as Electron.WebPreferences;
 
   osrWindow = new BrowserWindow({
-    width: OSR_WIDTH,
-    height: OSR_HEIGHT,
+    width,
+    height,
     show: false,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
     webPreferences,
   });
 
+  // Receive dashboard/telemetry/running broadcasts like a real overlay window
+  // (it is not display/bounds managed, so it renders all enabled widgets).
+  overlayManager.addExternalWindow(osrWindow);
+
   const wc = osrWindow.webContents;
+  let paintCount = 0;
+  let submitOk = 0;
+  let loggedFirstPaint = false;
+  let loggedNoTexture = false;
   wc.on('paint', (event) => {
+    paintCount++;
     const texture = (
       event as unknown as {
         texture?: { textureInfo: unknown; release: () => void };
       }
     ).texture;
-    if (!texture) return;
+
+    if (!texture) {
+      if (!loggedNoTexture) {
+        loggedNoTexture = true;
+        logger.warn(
+          '[VR] paint has no GPU texture (useSharedTexture inactive - ' +
+            'hardware acceleration off or GPU compositing disabled). ' +
+            'CPU-only offscreen frames are not supported.'
+        );
+      }
+      return;
+    }
+
+    if (!loggedFirstPaint) {
+      loggedFirstPaint = true;
+      const info = texture.textureInfo as {
+        pixelFormat?: string;
+        codedSize?: { width: number; height: number };
+        visibleRect?: { width: number; height: number };
+      };
+      logger.info(
+        `[VR] first GPU frame: format=${info.pixelFormat} ` +
+          `coded=${info.codedSize?.width}x${info.codedSize?.height} ` +
+          `visible=${info.visibleRect?.width}x${info.visibleRect?.height}`
+      );
+    }
+
     try {
-      VrOverlayNative.submitFrame(texture.textureInfo);
+      const ok = VrOverlayNative.submitFrame(texture.textureInfo);
+      if (ok) submitOk++;
+      if (paintCount % 120 === 0) {
+        logger.info(
+          `[VR] frames: paint=${paintCount} submitOk=${submitOk}` +
+            (submitOk === 0 ? ' (producer not publishing - check adapter)' : '')
+        );
+      }
     } catch (err) {
       logger.error('[VR] submitFrame failed', err);
     } finally {
