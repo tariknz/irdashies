@@ -81,6 +81,9 @@ export const defaultDashboard: {
           enabled: true,
           hideIfSingleMake: false,
         },
+        radio: {
+          persistenceSeconds: 3,
+        },
         lapTimeDeltas: {
           enabled: false,
           numLaps: 3,
@@ -418,6 +421,9 @@ export const defaultDashboard: {
         carManufacturer: {
           enabled: true,
           hideIfSingleMake: false,
+        },
+        radio: {
+          persistenceSeconds: 3,
         },
         badge: {
           enabled: true,
