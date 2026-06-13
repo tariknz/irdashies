@@ -214,6 +214,7 @@ export const Standings = () => {
                         onPitRoad={result.onPitRoad}
                         onTrack={result.onTrack}
                         radioActive={result.radioActive}
+                        radioTransmitting={result.radioTransmitting}
                         isMultiClass={isMultiClass}
                         flairId={
                           (settings?.countryFlags?.enabled ?? true)

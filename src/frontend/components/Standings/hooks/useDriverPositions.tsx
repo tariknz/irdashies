@@ -24,6 +24,7 @@ import {
 import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useRelativeSettings } from './useRelativeSettings';
+import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
 
 const getLastTimeState = (
   lastTime: number | undefined,
@@ -156,7 +157,10 @@ export const useDriverStandings = () => {
     enabled: useLivePositionStandings,
   });
   const drivers = useDrivers();
-  const radioTransmitCarIdx = useTelemetryValue('RadioTransmitCarIdx');
+  const { active: radioActiveCarIdxs, transmitting: radioTransmittingCarIdxs } =
+    useRadioActiveCarIdxs(
+      (relativeSettings?.radio?.persistenceSeconds ?? 3) * 1000
+    );
   const carStates = useCarState();
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
   const playerCarIdx = useFocusCarIdx();
@@ -273,7 +277,8 @@ export const useDriverStandings = () => {
         onTrack: carState?.onTrack ?? false,
         tireCompound: carState?.tireCompound ?? 0,
         carClass: driver.carClass,
-        radioActive: driverPos.carIdx === radioTransmitCarIdx,
+        radioActive: radioActiveCarIdxs.includes(driverPos.carIdx),
+        radioTransmitting: radioTransmittingCarIdxs.includes(driverPos.carIdx),
         carId: driver.carId,
         lastPitLap: driverPos.lastPitLap,
         lastLap: driverPos.lastLap,
@@ -309,7 +314,8 @@ export const useDriverStandings = () => {
     drivers,
     sessionType,
     useLivePositionStandings,
-    radioTransmitCarIdx,
+    radioActiveCarIdxs,
+    radioTransmittingCarIdxs,
     driverLivePositions,
     fastestLapCarIdx,
     isOfficial,

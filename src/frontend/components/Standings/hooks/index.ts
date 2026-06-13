@@ -10,3 +10,4 @@ export * from './useHighlightColor';
 export * from './useTrackMapSettings';
 export * from './useDriverTagMap';
 export * from './useInformationBarSettings';
+export * from './useRadioActiveCarIdxs';

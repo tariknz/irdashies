@@ -760,6 +760,19 @@ export const StandingsSettings = () => {
                         handleConfigChange({ useLivePosition: newValue })
                       }
                     />
+
+                    <SettingSliderRow
+                      title="Radio Icon Duration"
+                      description="How long the speaker icon keeps showing after a driver stops talking. Set to 0 to only show it while they are actively transmitting."
+                      value={settings.config.radio?.persistenceSeconds ?? 3}
+                      units="s"
+                      min={0}
+                      max={10}
+                      step={0.5}
+                      onChange={(v) =>
+                        handleConfigChange({ radio: { persistenceSeconds: v } })
+                      }
+                    />
                   </SettingsSection>
 
                   <SettingDivider />
