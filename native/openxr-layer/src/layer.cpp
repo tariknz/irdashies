@@ -81,6 +81,7 @@ static PFN_xrWaitSwapchainImage g_next_xrWaitSwapchainImage = nullptr;
 static PFN_xrReleaseSwapchainImage g_next_xrReleaseSwapchainImage = nullptr;
 static PFN_xrCreateReferenceSpace g_next_xrCreateReferenceSpace = nullptr;
 static PFN_xrDestroySpace g_next_xrDestroySpace = nullptr;
+static PFN_xrLocateSpace g_next_xrLocateSpace = nullptr;
 
 // ---------------------------------------------------------------------------
 // Shared-memory reader (producer -> consumer transport)
@@ -135,6 +136,13 @@ struct SessionState {
   ID3D11DeviceContext* context = nullptr;
   ID3D11DeviceContext4* context4 = nullptr;
   XrSpace localSpace = XR_NULL_HANDLE;
+  XrSpace viewSpace = XR_NULL_HANDLE;
+
+  // Recenter: when the producer's recenterCounter changes, capture the head
+  // pose and pin the quad in front of it until the next recenter.
+  uint32_t lastRecenterCounter = 0;
+  bool hasRecenterPose = false;
+  XrPosef recenterPose{};
 
   // Quad swapchain (sized to the shared texture, or kFallbackSize).
   XrSwapchain swapchain = XR_NULL_HANDLE;
@@ -158,6 +166,16 @@ struct SessionState {
   ID3D11Fence* fence = nullptr;
 };
 static SessionState g;
+
+// Rotate vector v by quaternion q (v' = q * v * q^-1, expanded).
+static XrVector3f rotateVec(const XrQuaternionf& q, const XrVector3f& v) {
+  const XrVector3f t{2.0f * (q.y * v.z - q.z * v.y),
+                     2.0f * (q.z * v.x - q.x * v.z),
+                     2.0f * (q.x * v.y - q.y * v.x)};
+  const XrVector3f c{q.y * t.z - q.z * t.y, q.z * t.x - q.x * t.z,
+                     q.x * t.y - q.y * t.x};
+  return {v.x + q.w * t.x + c.x, v.y + q.w * t.y + c.y, v.z + q.w * t.z + c.z};
+}
 
 // ---------------------------------------------------------------------------
 // Blit shaders
@@ -359,6 +377,30 @@ static XrResult XRAPI_CALL my_xrEndFrame(XrSession session,
   IrdashiesShmHeader frame{};
   const bool haveFrame = readShmFrame(frame) && ensureSharedResources(frame);
 
+  // Recenter request: pin the quad in front of the current head pose.
+  if (haveFrame && frame.recenterCounter != g.lastRecenterCounter) {
+    g.lastRecenterCounter = frame.recenterCounter;
+    XrSpaceLocation loc{XR_TYPE_SPACE_LOCATION};
+    if (g.viewSpace && g.localSpace &&
+        XR_SUCCEEDED(g_next_xrLocateSpace(g.viewSpace, g.localSpace,
+                                          frameEndInfo->displayTime, &loc)) &&
+        (loc.locationFlags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT) &&
+        (loc.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT)) {
+      float distance =
+          std::sqrt(frame.posePosition[0] * frame.posePosition[0] +
+                    frame.posePosition[1] * frame.posePosition[1] +
+                    frame.posePosition[2] * frame.posePosition[2]);
+      if (distance < 0.01f) distance = 1.5f;
+      const XrVector3f fwd = rotateVec(loc.pose.orientation, {0, 0, -distance});
+      g.recenterPose.orientation = loc.pose.orientation;
+      g.recenterPose.position = {loc.pose.position.x + fwd.x,
+                                 loc.pose.position.y + fwd.y,
+                                 loc.pose.position.z + fwd.z};
+      g.hasRecenterPose = true;
+      layerLog("Recentered quad to current head pose.");
+    }
+  }
+
   const uint32_t w = haveFrame ? frame.width : kFallbackSize;
   const uint32_t h = haveFrame ? frame.height : kFallbackSize;
   if (!ensureSwapchain(w, h)) {
@@ -416,10 +458,15 @@ static XrResult XRAPI_CALL my_xrEndFrame(XrSession session,
   quad.subImage.imageRect = {{0, 0}, {(int32_t)w, (int32_t)h}};
   quad.subImage.imageArrayIndex = 0;
   if (haveFrame) {
-    quad.pose.orientation = {frame.poseOrientation[0], frame.poseOrientation[1],
-                             frame.poseOrientation[2], frame.poseOrientation[3]};
-    quad.pose.position = {frame.posePosition[0], frame.posePosition[1],
-                          frame.posePosition[2]};
+    if (g.hasRecenterPose) {
+      quad.pose = g.recenterPose;
+    } else {
+      quad.pose.orientation = {
+          frame.poseOrientation[0], frame.poseOrientation[1],
+          frame.poseOrientation[2], frame.poseOrientation[3]};
+      quad.pose.position = {frame.posePosition[0], frame.posePosition[1],
+                            frame.posePosition[2]};
+    }
     quad.size = {frame.quadSizeMeters[0], frame.quadSizeMeters[1]};
   } else {
     quad.pose.orientation = {0, 0, 0, 1};
@@ -484,6 +531,16 @@ static XrResult XRAPI_CALL my_xrCreateSession(
     return res;
   }
 
+  // VIEW space - used to read the head pose for recentering.
+  XrReferenceSpaceCreateInfo viewSpaceInfo{XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
+  viewSpaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_VIEW;
+  viewSpaceInfo.poseInReferenceSpace.orientation = {0, 0, 0, 1};
+  if (XR_FAILED(g_next_xrCreateReferenceSpace(*session, &viewSpaceInfo,
+                                              &g.viewSpace))) {
+    layerLog("Failed to create VIEW reference space (recenter disabled).");
+    g.viewSpace = XR_NULL_HANDLE;
+  }
+
   if (!createBlitPipeline()) {
     layerLog("Failed to create blit pipeline - overlay disabled.");
     return res;
@@ -501,6 +558,7 @@ static XrResult XRAPI_CALL my_xrDestroySession(XrSession session) {
     release(g.vs);
     release(g.ps);
     if (g.localSpace) g_next_xrDestroySpace(g.localSpace);
+    if (g.viewSpace) g_next_xrDestroySpace(g.viewSpace);
     release(g.context4);
     release(g.context);
     release(g.device5);
@@ -564,6 +622,7 @@ static XrResult XRAPI_CALL my_xrCreateApiLayerInstance(
   LOAD(xrReleaseSwapchainImage);
   LOAD(xrCreateReferenceSpace);
   LOAD(xrDestroySpace);
+  LOAD(xrLocateSpace);
 #undef LOAD
 
   layerLog("API layer instance created.");

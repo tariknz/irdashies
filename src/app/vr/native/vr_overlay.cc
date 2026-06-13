@@ -382,6 +382,19 @@ Napi::Value SetPose(const Napi::CallbackInfo& info) {
   return env.Undefined();
 }
 
+// recenter() -> void
+// Signal the consumer (OpenXR layer) to reposition the quad to the current
+// head pose. The consumer recenters when the counter changes.
+Napi::Value Recenter(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  if (g.shm) {
+    if (g.mutex) WaitForSingleObject(g.mutex, INFINITE);
+    g.shm->recenterCounter++;
+    if (g.mutex) ReleaseMutex(g.mutex);
+  }
+  return env.Undefined();
+}
+
 // stop() -> void
 Napi::Value Stop(const Napi::CallbackInfo& info) {
   teardown();
@@ -392,6 +405,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set("start", Napi::Function::New(env, Start));
   exports.Set("submitFrame", Napi::Function::New(env, SubmitFrame));
   exports.Set("setPose", Napi::Function::New(env, SetPose));
+  exports.Set("recenter", Napi::Function::New(env, Recenter));
   exports.Set("stop", Napi::Function::New(env, Stop));
   return exports;
 }

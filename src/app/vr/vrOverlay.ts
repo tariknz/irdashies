@@ -11,8 +11,8 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 // Quad placement. The offscreen surface matches the primary display so widget
 // pixel layouts land 1:1; the quad's physical height is derived from that
 // aspect so the texture is not stretched.
-const QUAD_DISTANCE_METERS = 1.5; // distance in front of the user
-const QUAD_WIDTH_METERS = 1.0; // physical width; height follows display aspect
+const QUAD_DISTANCE_METERS = 1.4; // distance in front of the user
+const QUAD_WIDTH_METERS = 1.8; // physical width; height follows display aspect
 
 let osrWindow: BrowserWindow | null = null;
 
@@ -135,6 +135,19 @@ export function startVrOverlay(overlayManager: OverlayManager): void {
   }
 
   logger.info('[VR] overlay started (OSR -> shared memory -> OpenXR layer)');
+}
+
+/**
+ * Recenter the VR overlay quad to the user's current head pose. No-op if VR is
+ * not running.
+ */
+export function recenterVrOverlay(): void {
+  if (!osrWindow) return;
+  try {
+    VrOverlayNative.recenter();
+  } catch (err) {
+    logger.error('[VR] recenter failed', err);
+  }
 }
 
 export function stopVrOverlay(): void {

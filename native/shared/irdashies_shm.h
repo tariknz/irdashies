@@ -44,7 +44,9 @@ struct IrdashiesShmHeader {
   uint32_t width;
   uint32_t height;
   uint32_t format;  // DXGI_FORMAT of the shared texture
-  uint32_t _pad0;
+  // Bumped by the producer to request the consumer recenter the quad to the
+  // current head pose. The consumer recenters when this value changes.
+  uint32_t recenterCounter;
 
   // Quad placement in the LOCAL reference space (app controls it).
   float posePosition[3];     // metres

@@ -75,6 +75,12 @@ const sampleBindings = (): KeybindingsMap => ({
     description: '',
     isDefault: true,
   },
+  'recenter-vr': {
+    accelerator: 'F8',
+    label: '',
+    description: '',
+    isDefault: true,
+  },
 });
 
 const invokeUpdate = (actionId: KeybindingActionId, accelerator: string) => {

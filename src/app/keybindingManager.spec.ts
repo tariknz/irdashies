@@ -61,6 +61,12 @@ const bindingsWithBadAccelerator = (): KeybindingsMap => ({
     description: '',
     isDefault: true,
   },
+  'recenter-vr': {
+    accelerator: 'F8',
+    label: 'Recenter VR Overlay',
+    description: '',
+    isDefault: true,
+  },
 });
 
 describe('KeybindingManager', () => {

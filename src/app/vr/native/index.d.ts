@@ -17,6 +17,8 @@ export interface IVrOverlayNative {
   submitFrame(textureInfo: unknown): boolean;
   /** Update the quad pose without restarting. */
   setPose(pose: VrPose): void;
+  /** Request the OpenXR layer to recenter the quad to the current head pose. */
+  recenter(): void;
   /** Release all resources and detach the feeder. */
   stop(): void;
 }

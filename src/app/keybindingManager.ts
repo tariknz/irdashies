@@ -32,6 +32,14 @@ export class KeybindingManager {
     this.actionHandlers.set('save-telemetry', () => {
       this.saveTelemetry();
     });
+
+    this.actionHandlers.set('recenter-vr', () => {
+      // Lazy import so the native VR addon is only loaded when actually used
+      // (keeps it out of the module graph for tests and non-VR sessions).
+      import('./vr/vrOverlay')
+        .then((m) => m.recenterVrOverlay())
+        .catch((err) => logger.error('[VR] recenter failed', err));
+    });
   }
 
   private async saveTelemetry(): Promise<void> {
