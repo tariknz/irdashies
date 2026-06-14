@@ -9,7 +9,8 @@
   },
   "main": ".vite/build/main.js",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.12.0",
+    "npm": ">=11.10.0"
   },
   "scripts": {
     "start": "electron-forge start --enable-logging",
