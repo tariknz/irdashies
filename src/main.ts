@@ -34,7 +34,9 @@ import {
   isVrOverlayEnabled,
   startVrOverlay,
   stopVrOverlay,
+  applyVrOverlaySettings,
 } from './app/vr/vrOverlay';
+import { onDashboardUpdated } from './app/storage/dashboardEvents';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -82,7 +84,12 @@ app.on('ready', async () => {
 
   // Experimental native VR overlay (opt-in via IRDASHIES_VR=1).
   if (isVrOverlayEnabled()) {
-    startVrOverlay(overlayManager);
+    startVrOverlay(overlayManager, dashboard?.generalSettings?.vr);
+    // Push placement changes to the native layer in real time as the user
+    // edits the VR settings section.
+    onDashboardUpdated((updated) => {
+      applyVrOverlaySettings(updated.generalSettings?.vr);
+    });
   }
 
   const keybindingManager = new KeybindingManager(overlayManager);

@@ -5,6 +5,7 @@ import {
   TagIcon,
   ScalesIcon,
   KeyboardIcon,
+  GogglesIcon,
   WrenchIcon,
   InfoIcon,
 } from '@phosphor-icons/react';
@@ -25,6 +26,12 @@ const generalItems: MenuItem[] = [
     path: '/general',
     label: 'General',
     icon: SlidersHorizontalIcon,
+  },
+  {
+    to: '/settings/vr',
+    path: '/vr',
+    label: 'VR',
+    icon: GogglesIcon,
   },
   {
     to: '/settings/profiles',

@@ -2,25 +2,46 @@ import { BrowserWindow, screen } from 'electron';
 import path from 'path';
 import logger from '../logger';
 import type { OverlayManager } from '../overlayManager';
+import {
+  DEFAULT_VR_OVERLAY_SETTINGS,
+  type VrOverlaySettings,
+} from '@irdashies/types';
 import { VrOverlayNative, type VrPose } from './native';
 
 // Injected by the forge vite plugin (same globals overlayManager uses).
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-// Quad placement. The offscreen surface matches the primary display so widget
-// pixel layouts land 1:1; the quad's physical height is derived from that
-// aspect so the texture is not stretched.
-const QUAD_DISTANCE_METERS = 1.4; // distance in front of the user
-const QUAD_WIDTH_METERS = 1.8; // physical width; height follows display aspect
-
 // Supersampling: render the overlay at N x the display's pixel dimensions so the
 // quad has more texels and aliases less in the headset. The page still lays out
 // as if at the display size (via zoom factor); only the backing texture grows.
-const VR_SUPERSAMPLE = 2;
-const VR_MAX_TEXTURE_DIM = 4096; // clamp longest side on high-res displays
+const VR_SUPERSAMPLE = 8;
+const VR_MAX_TEXTURE_DIM = 8192; // clamp longest side on high-res displays
 
 let osrWindow: BrowserWindow | null = null;
+
+// Quad height follows the primary display aspect (height / width) so the texture
+// is never stretched. Captured at start; needed to recompute size on the fly.
+let quadAspect = 9 / 16;
+
+/**
+ * Build a native pose from user settings. The offscreen surface matches the
+ * primary display so widget pixel layouts land 1:1; the quad's physical height
+ * is derived from that aspect. Position is in metres, LOCAL space (z negative is
+ * in front of the user); horizontal is +right, vertical is +up.
+ */
+function poseFromSettings(settings?: VrOverlaySettings): VrPose {
+  const width = settings?.width ?? DEFAULT_VR_OVERLAY_SETTINGS.width;
+  const distance = settings?.distance ?? DEFAULT_VR_OVERLAY_SETTINGS.distance;
+  const horizontal =
+    settings?.horizontal ?? DEFAULT_VR_OVERLAY_SETTINGS.horizontal;
+  const vertical = settings?.vertical ?? DEFAULT_VR_OVERLAY_SETTINGS.vertical;
+  return {
+    position: [horizontal, vertical, -distance],
+    orientation: [0, 0, 0, 1],
+    size: [width, width * quadAspect],
+  };
+}
 
 /**
  * MVP gate: VR overlay is opt-in via env var while it is experimental and not
@@ -34,7 +55,10 @@ export function isVrOverlayEnabled(): boolean {
  * Render the overlay offscreen and feed each GPU frame to the native producer,
  * which publishes it over shared memory to the OpenXR layer.
  */
-export function startVrOverlay(overlayManager: OverlayManager): void {
+export function startVrOverlay(
+  overlayManager: OverlayManager,
+  settings?: VrOverlaySettings
+): void {
   if (osrWindow) return;
 
   // Lay out at the primary display size (so widget pixel coordinates land where
@@ -49,11 +73,8 @@ export function startVrOverlay(overlayManager: OverlayManager): void {
   const texH = Math.round(displayH * scale);
   const zoomFactor = texW / displayW;
 
-  const pose: VrPose = {
-    position: [0, 0, -QUAD_DISTANCE_METERS],
-    orientation: [0, 0, 0, 1],
-    size: [QUAD_WIDTH_METERS, QUAD_WIDTH_METERS * (displayH / displayW)],
-  };
+  quadAspect = displayH / displayW;
+  const pose = poseFromSettings(settings);
 
   try {
     if (!VrOverlayNative.start(pose)) {
@@ -91,12 +112,9 @@ export function startVrOverlay(overlayManager: OverlayManager): void {
   wc.on('did-finish-load', () => {
     if (osrWindow && !osrWindow.isDestroyed()) wc.setZoomFactor(zoomFactor);
   });
-  let paintCount = 0;
-  let submitOk = 0;
   let loggedFirstPaint = false;
   let loggedNoTexture = false;
   wc.on('paint', (event) => {
-    paintCount++;
     const texture = (
       event as unknown as {
         texture?: { textureInfo: unknown; release: () => void };
@@ -130,14 +148,7 @@ export function startVrOverlay(overlayManager: OverlayManager): void {
     }
 
     try {
-      const ok = VrOverlayNative.submitFrame(texture.textureInfo);
-      if (ok) submitOk++;
-      if (paintCount % 120 === 0) {
-        logger.info(
-          `[VR] frames: paint=${paintCount} submitOk=${submitOk}` +
-            (submitOk === 0 ? ' (producer not publishing - check adapter)' : '')
-        );
-      }
+      VrOverlayNative.submitFrame(texture.textureInfo);
     } catch (err) {
       logger.error('[VR] submitFrame failed', err);
     } finally {
@@ -156,6 +167,19 @@ export function startVrOverlay(overlayManager: OverlayManager): void {
   }
 
   logger.info('[VR] overlay started (OSR -> shared memory -> OpenXR layer)');
+}
+
+/**
+ * Push updated quad placement to the native layer without restarting. No-op if
+ * VR is not running. Called whenever the dashboard's VR settings change.
+ */
+export function applyVrOverlaySettings(settings?: VrOverlaySettings): void {
+  if (!osrWindow) return;
+  try {
+    VrOverlayNative.setPose(poseFromSettings(settings));
+  } catch (err) {
+    logger.error('[VR] setPose failed', err);
+  }
 }
 
 /**

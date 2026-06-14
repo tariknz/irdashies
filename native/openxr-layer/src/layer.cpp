@@ -135,6 +135,10 @@ struct SessionState {
   ID3D11Device5* device5 = nullptr;
   ID3D11DeviceContext* context = nullptr;
   ID3D11DeviceContext4* context4 = nullptr;
+  // Deferred context for our blit so we never mutate the game's immediate
+  // context pipeline state (which would corrupt the game's own rendering).
+  ID3D11DeviceContext* deferred = nullptr;
+  int64_t adapterLuid = 0;  // game GPU; must match the producer's
   XrSpace localSpace = XR_NULL_HANDLE;
   XrSpace viewSpace = XR_NULL_HANDLE;
 
@@ -156,6 +160,7 @@ struct SessionState {
   ID3D11VertexShader* vs = nullptr;
   ID3D11PixelShader* ps = nullptr;
   ID3D11SamplerState* sampler = nullptr;
+  ID3D11RasterizerState* rasterState = nullptr;  // CULL_NONE (winding-agnostic)
 
   // Shared producer resources (cached; reopened when producer identity changes).
   uint32_t feederPid = 0;
@@ -175,6 +180,64 @@ static XrVector3f rotateVec(const XrQuaternionf& q, const XrVector3f& v) {
   const XrVector3f c{q.y * t.z - q.z * t.y, q.z * t.x - q.x * t.z,
                      q.x * t.y - q.y * t.x};
   return {v.x + q.w * t.x + c.x, v.y + q.w * t.y + c.y, v.z + q.w * t.z + c.z};
+}
+
+static XrVector3f cross3(const XrVector3f& a, const XrVector3f& b) {
+  return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
+}
+
+static float len3(const XrVector3f& v) {
+  return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+}
+
+static XrVector3f norm3(const XrVector3f& v) {
+  const float l = len3(v);
+  return l > 1e-6f ? XrVector3f{v.x / l, v.y / l, v.z / l} : v;
+}
+
+// Build a quaternion from an orthonormal basis (columns map local X,Y,Z).
+static XrQuaternionf quatFromBasis(const XrVector3f& r, const XrVector3f& u,
+                                   const XrVector3f& n) {
+  const float m00 = r.x, m01 = u.x, m02 = n.x;
+  const float m10 = r.y, m11 = u.y, m12 = n.y;
+  const float m20 = r.z, m21 = u.z, m22 = n.z;
+  const float tr = m00 + m11 + m22;
+  XrQuaternionf q;
+  if (tr > 0.0f) {
+    const float s = std::sqrt(tr + 1.0f) * 2.0f;
+    q.w = 0.25f * s;
+    q.x = (m21 - m12) / s;
+    q.y = (m02 - m20) / s;
+    q.z = (m10 - m01) / s;
+  } else if (m00 > m11 && m00 > m22) {
+    const float s = std::sqrt(1.0f + m00 - m11 - m22) * 2.0f;
+    q.w = (m21 - m12) / s;
+    q.x = 0.25f * s;
+    q.y = (m01 + m10) / s;
+    q.z = (m02 + m20) / s;
+  } else if (m11 > m22) {
+    const float s = std::sqrt(1.0f + m11 - m00 - m22) * 2.0f;
+    q.w = (m02 - m20) / s;
+    q.x = (m01 + m10) / s;
+    q.y = 0.25f * s;
+    q.z = (m12 + m21) / s;
+  } else {
+    const float s = std::sqrt(1.0f + m22 - m00 - m11) * 2.0f;
+    q.w = (m10 - m01) / s;
+    q.x = (m02 + m20) / s;
+    q.y = (m12 + m21) / s;
+    q.z = 0.25f * s;
+  }
+  return q;
+}
+
+// Hamilton product a*b. rotateVec(a*b, v) == rotateVec(a, rotateVec(b, v)), so
+// this composes b (local) inside a (parent): world = parent * local.
+static XrQuaternionf quatMul(const XrQuaternionf& a, const XrQuaternionf& b) {
+  return {a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+          a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+          a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+          a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z};
 }
 
 // ---------------------------------------------------------------------------
@@ -229,7 +292,16 @@ static bool createBlitPipeline() {
   sd.AddressU = sd.AddressV = sd.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
   sd.ComparisonFunc = D3D11_COMPARISON_NEVER;
   sd.MaxLOD = D3D11_FLOAT32_MAX;
-  return SUCCEEDED(g.device->CreateSamplerState(&sd, &g.sampler));
+  if (FAILED(g.device->CreateSamplerState(&sd, &g.sampler))) return false;
+
+  // CULL_NONE so the fullscreen triangle is drawn regardless of winding/front
+  // face. Our shader flips Y for correct texture orientation, which would make
+  // the triangle back-facing under the default rasterizer state.
+  D3D11_RASTERIZER_DESC rd{};
+  rd.FillMode = D3D11_FILL_SOLID;
+  rd.CullMode = D3D11_CULL_NONE;
+  rd.DepthClipEnable = TRUE;
+  return SUCCEEDED(g.device->CreateRasterizerState(&rd, &g.rasterState));
 }
 
 // ---------------------------------------------------------------------------
@@ -255,10 +327,28 @@ static bool ensureSharedResources(const IrdashiesShmHeader& f) {
 
   closeSharedResources();
 
+  // Cross-adapter sharing is not possible. If the producer rendered on a
+  // different GPU than the game (multi-GPU laptop / GPU selection), bail with a
+  // clear message instead of failing obscurely in OpenSharedResource1.
+  if (g.adapterLuid != 0 && f.adapterLuid != g.adapterLuid) {
+    static bool logged = false;
+    if (!logged) {
+      logged = true;
+      layerLog(
+          "GPU mismatch: producer LUID 0x%llx != game LUID 0x%llx. The "
+          "producer must render on the same adapter as the game.",
+          (unsigned long long)f.adapterLuid,
+          (unsigned long long)g.adapterLuid);
+    }
+    return false;
+  }
+
   HANDLE feeder = OpenProcess(PROCESS_DUP_HANDLE, FALSE, f.feederProcessId);
   if (!feeder) {
-    layerLog("OpenProcess(feeder %u) failed: %lu", f.feederProcessId,
-             GetLastError());
+    layerLog(
+        "OpenProcess(feeder %u) failed: %lu (elevation mismatch? run irdashies "
+        "and the game at the same privilege level)",
+        f.feederProcessId, GetLastError());
     return false;
   }
 
@@ -289,7 +379,16 @@ static bool ensureSharedResources(const IrdashiesShmHeader& f) {
   // Once OpenShared* succeeds, D3D holds its own reference; close our dups.
   if (dupTex) CloseHandle(dupTex);
   if (dupFence) CloseHandle(dupFence);
-  if (!ok) closeSharedResources();
+  if (!ok) {
+    static bool logged = false;
+    if (!logged) {
+      logged = true;
+      layerLog(
+          "Failed to open shared texture/fence (dupTex=%d dupFence=%d).",
+          dupTex != nullptr, dupFence != nullptr);
+    }
+    closeSharedResources();
+  }
   return ok;
 }
 
@@ -386,18 +485,27 @@ static XrResult XRAPI_CALL my_xrEndFrame(XrSession session,
                                           frameEndInfo->displayTime, &loc)) &&
         (loc.locationFlags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT) &&
         (loc.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT)) {
-      float distance =
-          std::sqrt(frame.posePosition[0] * frame.posePosition[0] +
-                    frame.posePosition[1] * frame.posePosition[1] +
-                    frame.posePosition[2] * frame.posePosition[2]);
-      if (distance < 0.01f) distance = 1.5f;
-      const XrVector3f fwd = rotateVec(loc.pose.orientation, {0, 0, -distance});
-      g.recenterPose.orientation = loc.pose.orientation;
-      g.recenterPose.position = {loc.pose.position.x + fwd.x,
-                                 loc.pose.position.y + fwd.y,
-                                 loc.pose.position.z + fwd.z};
+      // Anchor the quad's reference frame to the head pose WITHOUT baking in the
+      // current distance/offset. The live SHM pose is applied relative to this
+      // anchor every frame (see my_xrEndFrame below), so distance and
+      // lateral/vertical edits keep propagating in real time after a recenter.
+      const XrVector3f facing = rotateVec(loc.pose.orientation, {0, 0, -1});
+      // Roll-free orientation: keep yaw + pitch but drop head roll so the quad
+      // stays level. Local +Z (normal) faces back at the user; local +X (right)
+      // is forced horizontal via world up; local +Y is up.
+      const XrVector3f normal = norm3({-facing.x, -facing.y, -facing.z});
+      XrVector3f right = cross3({0.0f, 1.0f, 0.0f}, normal);
+      if (len3(right) < 1e-3f) {
+        // Looking near-vertical: world up is ambiguous, keep full orientation.
+        g.recenterPose.orientation = loc.pose.orientation;
+      } else {
+        right = norm3(right);
+        const XrVector3f up = cross3(normal, right);
+        g.recenterPose.orientation = quatFromBasis(right, up, normal);
+      }
+      g.recenterPose.position = loc.pose.position;
       g.hasRecenterPose = true;
-      layerLog("Recentered quad to current head pose.");
+      layerLog("Recentered quad anchor to current head pose (roll ignored).");
     }
   }
 
@@ -417,23 +525,36 @@ static XrResult XRAPI_CALL my_xrEndFrame(XrSession session,
   g_next_xrWaitSwapchainImage(g.swapchain, &wait);
 
   if (haveFrame) {
-    // Wait on the GPU until the producer signalled this frame is ready, then
-    // blit the shared texture into the swapchain image.
+    // Wait on the GPU until the producer signalled this frame is ready.
     g.context4->Wait(g.fence, frame.fenceValue);
 
-    g.context->OMSetRenderTargets(1, &g.rtvs[idx], nullptr);
+    // Record the blit on the deferred context (default pipeline state) and
+    // execute with RestoreContextState=TRUE so the game's immediate context
+    // state is preserved. Falling back to the immediate context only if no
+    // deferred context is available.
+    ID3D11DeviceContext* dc = g.deferred ? g.deferred : g.context;
+    dc->OMSetRenderTargets(1, &g.rtvs[idx], nullptr);
     D3D11_VIEWPORT vp{0, 0, (float)w, (float)h, 0, 1};
-    g.context->RSSetViewports(1, &vp);
-    g.context->IASetInputLayout(nullptr);
-    g.context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    g.context->VSSetShader(g.vs, nullptr, 0);
-    g.context->PSSetShader(g.ps, nullptr, 0);
-    g.context->PSSetShaderResources(0, 1, &g.sharedSrv);
-    g.context->PSSetSamplers(0, 1, &g.sampler);
-    g.context->Draw(3, 0);
+    dc->RSSetViewports(1, &vp);
+    dc->RSSetState(g.rasterState);
+    dc->IASetInputLayout(nullptr);
+    dc->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    dc->VSSetShader(g.vs, nullptr, 0);
+    dc->PSSetShader(g.ps, nullptr, 0);
+    dc->PSSetShaderResources(0, 1, &g.sharedSrv);
+    dc->PSSetSamplers(0, 1, &g.sampler);
+    dc->Draw(3, 0);
 
     ID3D11ShaderResourceView* nullSrv = nullptr;
-    g.context->PSSetShaderResources(0, 1, &nullSrv);  // clear hazard
+    dc->PSSetShaderResources(0, 1, &nullSrv);  // clear hazard
+
+    if (g.deferred) {
+      ID3D11CommandList* cmd = nullptr;
+      if (SUCCEEDED(g.deferred->FinishCommandList(FALSE, &cmd)) && cmd) {
+        g.context->ExecuteCommandList(cmd, TRUE);
+        cmd->Release();
+      }
+    }
   } else {
     // No producer: animated solid color so something is always visible.
     double seconds = (double)frameEndInfo->displayTime / 1e9;
@@ -458,14 +579,25 @@ static XrResult XRAPI_CALL my_xrEndFrame(XrSession session,
   quad.subImage.imageRect = {{0, 0}, {(int32_t)w, (int32_t)h}};
   quad.subImage.imageArrayIndex = 0;
   if (haveFrame) {
+    const XrQuaternionf offsetOrient{
+        frame.poseOrientation[0], frame.poseOrientation[1],
+        frame.poseOrientation[2], frame.poseOrientation[3]};
+    const XrVector3f offsetPos{frame.posePosition[0], frame.posePosition[1],
+                               frame.posePosition[2]};
     if (g.hasRecenterPose) {
-      quad.pose = g.recenterPose;
+      // Apply the live SHM pose as an offset inside the recentered anchor frame
+      // so distance (local -Z), lateral (local X) and vertical (local Y) edits
+      // propagate in real time. Producer orientation is identity in practice,
+      // but compose it for correctness.
+      const XrVector3f worldOffset =
+          rotateVec(g.recenterPose.orientation, offsetPos);
+      quad.pose.position = {g.recenterPose.position.x + worldOffset.x,
+                            g.recenterPose.position.y + worldOffset.y,
+                            g.recenterPose.position.z + worldOffset.z};
+      quad.pose.orientation = quatMul(g.recenterPose.orientation, offsetOrient);
     } else {
-      quad.pose.orientation = {
-          frame.poseOrientation[0], frame.poseOrientation[1],
-          frame.poseOrientation[2], frame.poseOrientation[3]};
-      quad.pose.position = {frame.posePosition[0], frame.posePosition[1],
-                            frame.posePosition[2]};
+      quad.pose.orientation = offsetOrient;
+      quad.pose.position = offsetPos;
     }
     quad.size = {frame.quadSizeMeters[0], frame.quadSizeMeters[1]};
   } else {
@@ -521,6 +653,29 @@ static XrResult XRAPI_CALL my_xrCreateSession(
     return res;
   }
 
+  // Deferred context so our blit never disturbs the game's immediate context.
+  g.device->CreateDeferredContext(0, &g.deferred);
+  if (!g.deferred) {
+    layerLog(
+        "CreateDeferredContext failed - using immediate context (may disturb "
+        "game render state).");
+  }
+
+  // Record the game's GPU LUID so we can detect a producer/game GPU mismatch.
+  {
+    IDXGIDevice* dxgiDevice = nullptr;
+    IDXGIAdapter* adapter = nullptr;
+    if (SUCCEEDED(g.device->QueryInterface(IID_PPV_ARGS(&dxgiDevice))) &&
+        SUCCEEDED(dxgiDevice->GetAdapter(&adapter))) {
+      DXGI_ADAPTER_DESC desc{};
+      adapter->GetDesc(&desc);
+      g.adapterLuid = (int64_t)((uint64_t)desc.AdapterLuid.HighPart << 32 |
+                                (uint32_t)desc.AdapterLuid.LowPart);
+    }
+    release(adapter);
+    release(dxgiDevice);
+  }
+
   XrReferenceSpaceCreateInfo spaceInfo{XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
   spaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
   spaceInfo.poseInReferenceSpace.orientation = {0, 0, 0, 1};
@@ -554,11 +709,13 @@ static XrResult XRAPI_CALL my_xrDestroySession(XrSession session) {
   if (session == g.session) {
     closeSharedResources();
     destroySwapchain();
+    release(g.rasterState);
     release(g.sampler);
     release(g.vs);
     release(g.ps);
     if (g.localSpace) g_next_xrDestroySpace(g.localSpace);
     if (g.viewSpace) g_next_xrDestroySpace(g.viewSpace);
+    release(g.deferred);
     release(g.context4);
     release(g.context);
     release(g.device5);

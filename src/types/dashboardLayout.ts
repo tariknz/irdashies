@@ -93,6 +93,29 @@ export type FontSize =
   | '8xl'
   | '9xl';
 
+/**
+ * Placement of the experimental VR overlay quad, in metres. All values
+ * propagate to the native OpenXR layer in real time via `setPose`.
+ */
+export interface VrOverlaySettings {
+  /** Physical width of the overlay quad. Height follows the display aspect. */
+  width?: number;
+  /** Distance of the quad in front of the user (along the view direction). */
+  distance?: number;
+  /** Horizontal offset; positive moves the quad to the right. */
+  horizontal?: number;
+  /** Vertical offset; positive moves the quad up. */
+  vertical?: number;
+}
+
+/** Defaults matching the original hard-coded quad placement. */
+export const DEFAULT_VR_OVERLAY_SETTINGS: Required<VrOverlaySettings> = {
+  width: 1.8,
+  distance: 1.4,
+  horizontal: 0,
+  vertical: 0,
+};
+
 export interface GeneralSettingsType {
   fontType?: FontType;
   fontSize?: FontSize;
@@ -141,6 +164,8 @@ export interface GeneralSettingsType {
   };
   /** Driver tag groups and mappings for overlays */
   driverTagSettings?: DriverTagSettings;
+  /** Placement of the experimental VR overlay quad. */
+  vr?: VrOverlaySettings;
 }
 
 /**
