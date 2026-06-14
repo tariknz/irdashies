@@ -1,20 +1,21 @@
 import { DropIcon, SunIcon, WavesIcon } from '@phosphor-icons/react';
 import { memo } from 'react';
+import { TrackWetness } from '@irdashies/types';
 
 // Track wetness constants
-const MIN_WETNESS = 1;
-const MAX_WETNESS = 7; // Extremely Wet
-const DEFAULT_WETNESS = 0;
+const MIN_WETNESS = TrackWetness.Dry;
+const MAX_WETNESS = TrackWetness.ExtremelyWet;
+const DEFAULT_WETNESS = TrackWetness.Unknown;
 const FALLBACK_TRACK_STATE = 'N/A';
 const WETNESS_LEVELS: Record<number, string> = {
-  0: '',
-  1: 'Dry',
-  2: 'Mostly Dry',
-  3: 'Very Lightly Wet',
-  4: 'Lightly Wet',
-  5: 'Moderately Wet',
-  6: 'Very Wet',
-  7: 'Extremely Wet',
+  [TrackWetness.Unknown]: '',
+  [TrackWetness.Dry]: 'Dry',
+  [TrackWetness.MostlyDry]: 'Mostly Dry',
+  [TrackWetness.VeryLightlyWet]: 'Very Lightly Wet',
+  [TrackWetness.LightlyWet]: 'Lightly Wet',
+  [TrackWetness.ModeratelyWet]: 'Moderately Wet',
+  [TrackWetness.VeryWet]: 'Very Wet',
+  [TrackWetness.ExtremelyWet]: 'Extremely Wet',
 };
 
 export interface WeatherTrackWetnessProps {
