@@ -52,7 +52,6 @@ export interface Standings {
     estLapTime: number;
   };
   radioActive?: boolean;
-  radioTransmitting?: boolean;
   iratingChange?: number;
   carId?: number;
   lapTimeDeltas?: number[]; // Array of deltas vs player's recent laps, most recent last
@@ -123,7 +122,6 @@ export const createDriverStandings = (
     carIdxOnPitRoadValue?: boolean[];
     carIdxTrackSurfaceValue?: TrackLocation[];
     radioTransmitCarIdx?: number[];
-    radioTransmittingCarIdx?: number[];
     carIdxTireCompoundValue?: number[];
     isOnTrack?: boolean;
     carIdxSessionFlags?: number[];
@@ -195,9 +193,6 @@ export const createDriverStandings = (
           estLapTime: driver.CarClassEstLapTime,
         },
         radioActive: telemetry.radioTransmitCarIdx?.includes(driver.CarIdx),
-        radioTransmitting: telemetry.radioTransmittingCarIdx?.includes(
-          driver.CarIdx
-        ),
         carId: driver.CarID,
         lapTimeDeltas: undefined,
         lastPitLap: lastPitLap[driver.CarIdx] ?? undefined,
@@ -308,9 +303,6 @@ export const createDriverStandings = (
           estLapTime: driver.CarClassEstLapTime,
         },
         radioActive: telemetry.radioTransmitCarIdx?.includes(result.CarIdx),
-        radioTransmitting: telemetry.radioTransmittingCarIdx?.includes(
-          result.CarIdx
-        ),
         carId: driver.CarID,
         lapTimeDeltas:
           result.CarIdx === session.playerIdx
@@ -408,9 +400,6 @@ export const createDriverStandings = (
           estLapTime: driver.CarClassEstLapTime,
         },
         radioActive: telemetry.radioTransmitCarIdx?.includes(driver.CarIdx),
-        radioTransmitting: telemetry.radioTransmittingCarIdx?.includes(
-          driver.CarIdx
-        ),
         carId: driver.CarID,
         lapTimeDeltas: undefined,
         lastPitLap: lastPitLap[driver.CarIdx] ?? undefined,
@@ -454,29 +443,27 @@ export const groupStandingsByClass = (
 
   const getTop2Stats = (drivers: Standings[]) => {
     const validDrivers = drivers
-        .filter(
-            (d) =>
-                d.position !== undefined &&
-                d.fastestTime !== undefined &&
-                d.fastestTime > 0
-        )
-        .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
-        .slice(0, 2);
+      .filter(
+        (d) =>
+          d.position !== undefined &&
+          d.fastestTime !== undefined &&
+          d.fastestTime > 0
+      )
+      .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
+      .slice(0, 2);
 
     if (validDrivers.length === 0) {
-        return undefined;
+      return undefined;
     }
 
     const positions = validDrivers.map((d) => d.position ?? 999);
 
     return {
-        average:
-            positions.reduce((sum, pos) => sum + pos, 0) /
-            positions.length,
-        bestPosition: positions[0], // lower is better
+      average: positions.reduce((sum, pos) => sum + pos, 0) / positions.length,
+      bestPosition: positions[0], // lower is better
     };
   };
-  
+
   const sorted: [string, Standings[]][] = [];
   for (const [classId, drivers] of groupedByClassId) {
     sorted.push([String(classId), drivers]);
@@ -485,43 +472,39 @@ export const groupStandingsByClass = (
   const statsByClass = new Map(
     sorted.map(([id, drivers]) => [id, getTop2Stats(drivers)])
   );
-  
+
   sorted.sort(([idA, classA], [idB, classB]) => {
     const statsA = statsByClass.get(idA);
     const statsB = statsByClass.get(idB);
 
-          // Primary sort: average top-2 position
-          if (statsA && statsB) {
-              // Prioritize the overall leader
-              if (statsA.bestPosition === 1 && statsB.bestPosition !== 1) {
-                  return -1;
-              }
-              if (statsB.bestPosition === 1 && statsA.bestPosition !== 1) {
-                  return 1;
-              }
-
-              // Better Class Average Position Overall
-              if (statsA.average !== statsB.average) {
-                  return statsA.average - statsB.average;
-              }
-
-              // Tie-breaker: better leading position wins
-              if (statsA.bestPosition !== statsB.bestPosition) {
-                  return statsA.bestPosition - statsB.bestPosition;
-              }
-          }
-
-          // Prefer classes with valid timing data
-          if (statsA) return -1;
-          if (statsB) return 1;
-
-          // Final fallback: relative speed
-          return (
-              classB[0].carClass.relativeSpeed -
-              classA[0].carClass.relativeSpeed
-          );
+    // Primary sort: average top-2 position
+    if (statsA && statsB) {
+      // Prioritize the overall leader
+      if (statsA.bestPosition === 1 && statsB.bestPosition !== 1) {
+        return -1;
       }
-  );
+      if (statsB.bestPosition === 1 && statsA.bestPosition !== 1) {
+        return 1;
+      }
+
+      // Better Class Average Position Overall
+      if (statsA.average !== statsB.average) {
+        return statsA.average - statsB.average;
+      }
+
+      // Tie-breaker: better leading position wins
+      if (statsA.bestPosition !== statsB.bestPosition) {
+        return statsA.bestPosition - statsB.bestPosition;
+      }
+    }
+
+    // Prefer classes with valid timing data
+    if (statsA) return -1;
+    if (statsB) return 1;
+
+    // Final fallback: relative speed
+    return classB[0].carClass.relativeSpeed - classA[0].carClass.relativeSpeed;
+  });
   return sorted;
 };
 
