@@ -176,6 +176,87 @@ describe('KeybindingManager', () => {
     });
   });
 
+  describe('gamepad bindings', () => {
+    const overlayWith = (toggleLockOverlays: () => void) =>
+      ({
+        getOverlays: () => [],
+        toggleLockOverlays,
+      }) as unknown as OverlayManager;
+
+    const gamepadBinding = (): KeybindingsMap =>
+      ({
+        'toggle-edit-mode': {
+          accelerator: 'gamepad:a',
+          label: 'Edit Layout',
+          description: '',
+          isDefault: false,
+        },
+      }) as unknown as KeybindingsMap;
+
+    // handleGamepadButton is private; the native callback is its only caller.
+    const fireButton = (manager: KeybindingManager, button: string) =>
+      (
+        manager as unknown as {
+          handleGamepadButton: (e: { button: string }) => void;
+        }
+      ).handleGamepadButton({ button });
+
+    it('does not register gamepad bindings as global keyboard shortcuts', () => {
+      mockGetKeybindings.mockReturnValue(gamepadBinding());
+      mockIsRegistered.mockReturnValue(false);
+      mockRegister.mockReturnValue(true);
+
+      const manager = new KeybindingManager(fakeOverlayManager);
+      manager.registerAll();
+
+      expect(mockRegister).not.toHaveBeenCalled();
+    });
+
+    it('triggers the mapped action when its bound pad button is pressed', () => {
+      const toggleLock = vi.fn();
+      mockGetKeybindings.mockReturnValue(gamepadBinding());
+      mockIsRegistered.mockReturnValue(false);
+
+      const manager = new KeybindingManager(overlayWith(toggleLock));
+      manager.registerAll(); // builds the gamepad token -> action map
+
+      fireButton(manager, 'a');
+      expect(toggleLock).toHaveBeenCalledOnce();
+    });
+
+    it('does not trigger an action for an unbound pad button', () => {
+      const toggleLock = vi.fn();
+      mockGetKeybindings.mockReturnValue(gamepadBinding());
+      mockIsRegistered.mockReturnValue(false);
+
+      const manager = new KeybindingManager(overlayWith(toggleLock));
+      manager.registerAll();
+
+      fireButton(manager, 'b');
+      expect(toggleLock).not.toHaveBeenCalled();
+    });
+
+    it('forwards to the capture callback instead of triggering while recording', () => {
+      const toggleLock = vi.fn();
+      mockGetKeybindings.mockReturnValue(gamepadBinding());
+      mockIsRegistered.mockReturnValue(false);
+
+      const manager = new KeybindingManager(overlayWith(toggleLock));
+      manager.registerAll();
+
+      const captured: string[] = [];
+      manager.startGamepadCapture((token) => captured.push(token));
+      fireButton(manager, 'a');
+
+      expect(captured).toEqual(['gamepad:a']);
+      expect(toggleLock).not.toHaveBeenCalled();
+
+      manager.stopGamepadCapture();
+      fireButton(manager, 'a');
+      expect(toggleLock).toHaveBeenCalledOnce();
+    });
+  });
+
   describe('isValidAccelerator', () => {
     it('returns true when registration succeeds and unregisters the trial', () => {
       mockRegister.mockReturnValue(true);

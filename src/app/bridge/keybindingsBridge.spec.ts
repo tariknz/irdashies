@@ -131,6 +131,30 @@ describe('keybindingsBridge keybindings:update', () => {
     expect(mockReloadBindings).toHaveBeenCalledOnce();
   });
 
+  it('accepts a valid gamepad token without keyboard validation', () => {
+    const next = sampleBindings();
+    mockUpdateKeybinding.mockReturnValue(next);
+
+    const result = invokeUpdate('toggle-edit-mode', 'gamepad:a');
+
+    expect(result).toBe(next);
+    // Gamepad tokens skip the Electron accelerator check entirely.
+    expect(mockIsValidAccelerator).not.toHaveBeenCalled();
+    expect(mockUpdateKeybinding).toHaveBeenCalledWith(
+      'toggle-edit-mode',
+      'gamepad:a'
+    );
+    expect(mockReloadBindings).toHaveBeenCalledOnce();
+  });
+
+  it('rejects an unknown gamepad token without persisting', () => {
+    expect(() => invokeUpdate('toggle-edit-mode', 'gamepad:nope')).toThrow(
+      'not a valid controller button'
+    );
+    expect(mockUpdateKeybinding).not.toHaveBeenCalled();
+    expect(mockReloadBindings).not.toHaveBeenCalled();
+  });
+
   it('surfaces storage conflict errors to the caller', () => {
     mockIsValidAccelerator.mockReturnValue(true);
     mockUpdateKeybinding.mockImplementation(() => {

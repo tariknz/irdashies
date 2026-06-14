@@ -256,6 +256,13 @@ export function exposeBridge() {
     resetAllKeybindings: () => ipcRenderer.invoke('keybindings:resetAll'),
     startRecording: () => ipcRenderer.invoke('keybindings:startRecording'),
     stopRecording: () => ipcRenderer.invoke('keybindings:stopRecording'),
+    onGamepadCaptured: (callback: (token: string) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, token: string) =>
+        callback(token);
+      ipcRenderer.on('keybindings:gamepadCaptured', handler);
+      return () =>
+        ipcRenderer.removeListener('keybindings:gamepadCaptured', handler);
+    },
   } as KeybindingsBridge);
 
   contextBridge.exposeInMainWorld('personalBestBridge', {
@@ -265,7 +272,7 @@ export function exposeBridge() {
       trackId: string | number,
       carName: string,
       time: number
-    ) => ipcRenderer.invoke('personalBest:set', trackId, carName, time),  
+    ) => ipcRenderer.invoke('personalBest:set', trackId, carName, time),
   } as PersonalBestLapBridge);
 
   contextBridge.exposeInMainWorld('chromiumFlagsBridge', {

@@ -2,14 +2,26 @@ import { globalShortcut, desktopCapturer } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { KeybindingActionId, KeybindingsMap } from '@irdashies/types';
+import { gamepadToken, isGamepadBinding } from '@irdashies/types';
 import { getKeybindings } from './storage/keybindings';
 import { OverlayManager } from './overlayManager';
 import logger from './logger';
+import type {
+  GamepadManager,
+  GamepadButtonEvent,
+} from './gamepad/gamepadManager';
 
 export class KeybindingManager {
   private bindings: KeybindingsMap;
   private actionHandlers: Map<KeybindingActionId, () => void>;
   private hideState = false;
+
+  /** Lazily-created SDL gamepad poller (see startGamepad). */
+  private gamepad?: GamepadManager;
+  /** Gamepad token (e.g. "gamepad:a") -> action it triggers. */
+  private gamepadMap = new Map<string, KeybindingActionId>();
+  /** When set, captured gamepad presses are reported here instead of triggering actions (rebinding). */
+  private captureCb?: (token: string) => void;
 
   constructor(private overlayManager: OverlayManager) {
     this.bindings = getKeybindings();
@@ -84,9 +96,14 @@ export class KeybindingManager {
   }
 
   public registerAll(): void {
+    this.buildGamepadMap();
     for (const [actionId, entry] of Object.entries(this.bindings)) {
       const handler = this.actionHandlers.get(actionId as KeybindingActionId);
       if (!handler) continue;
+
+      // Gamepad bindings aren't global keyboard shortcuts; the GamepadManager
+      // routes them via buildGamepadMap() above.
+      if (isGamepadBinding(entry.accelerator)) continue;
 
       try {
         // Skip if already registered (idempotent — safe to call after reloadBindings)
@@ -111,6 +128,7 @@ export class KeybindingManager {
 
   public unregisterAll(): void {
     for (const entry of Object.values(this.bindings)) {
+      if (isGamepadBinding(entry.accelerator)) continue;
       try {
         if (globalShortcut.isRegistered(entry.accelerator)) {
           globalShortcut.unregister(entry.accelerator);
@@ -122,6 +140,65 @@ export class KeybindingManager {
         );
       }
     }
+  }
+
+  /** Rebuild the gamepad token -> action lookup from the current bindings. */
+  private buildGamepadMap(): void {
+    this.gamepadMap.clear();
+    for (const [actionId, entry] of Object.entries(this.bindings)) {
+      if (isGamepadBinding(entry.accelerator)) {
+        this.gamepadMap.set(entry.accelerator, actionId as KeybindingActionId);
+      }
+    }
+  }
+
+  /** Route a native gamepad button-down to capture (rebinding) or its action. */
+  private handleGamepadButton(event: GamepadButtonEvent): void {
+    const token = gamepadToken(event.button);
+    if (this.captureCb) {
+      this.captureCb(token);
+      return;
+    }
+    const actionId = this.gamepadMap.get(token);
+    if (actionId) this.triggerAction(actionId);
+  }
+
+  /**
+   * Start polling game controllers. Lazily loads the native SDL addon so it
+   * stays out of the module graph for tests and non-Windows builds; failures
+   * are logged and leave keyboard bindings working.
+   */
+  public startGamepad(): void {
+    if (this.gamepad) {
+      this.gamepad.start((e) => this.handleGamepadButton(e));
+      return;
+    }
+    import('./gamepad/gamepadManager')
+      .then(({ GamepadManager }) => {
+        this.gamepad = new GamepadManager();
+        this.gamepad.start((e) => this.handleGamepadButton(e));
+      })
+      .catch((err) =>
+        logger.error(
+          '[Gamepad] manager unavailable, controller bindings disabled',
+          err
+        )
+      );
+  }
+
+  /** Stop the gamepad poll thread (call on shutdown). */
+  public stopGamepad(): void {
+    this.gamepad?.stop();
+  }
+
+  /** Enter capture mode: the next pad presses are reported to `cb` for rebinding. */
+  public startGamepadCapture(cb: (token: string) => void): void {
+    this.captureCb = cb;
+  }
+
+  /** Leave capture mode; pad presses resume triggering actions. */
+  public stopGamepadCapture(): void {
+    this.captureCb = undefined;
   }
 
   /**

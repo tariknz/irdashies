@@ -47,6 +47,9 @@ const overlayManager = new OverlayManager();
 const analytics = new Analytics();
 analytics.setupLogTransport();
 
+// Hoisted so the quit handler can stop the gamepad poll thread cleanly.
+let keybindingManager: KeybindingManager | undefined;
+
 overlayManager.setupChromiumFlags();
 overlayManager.setupHardwareAcceleration();
 overlayManager.setupSingleInstanceLock();
@@ -92,8 +95,10 @@ app.on('ready', async () => {
     });
   }
 
-  const keybindingManager = new KeybindingManager(overlayManager);
+  keybindingManager = new KeybindingManager(overlayManager);
   keybindingManager.registerAll();
+  // Begin polling game controllers for any gamepad bindings (lazy-loads SDL).
+  keybindingManager.startGamepad();
 
   setupTaskbar(overlayManager, keybindingManager);
   publishDashboardUpdates(overlayManager, analytics);
@@ -124,6 +129,7 @@ app.on('quit', () => {
 
 app.on('before-quit', () => {
   overlayManager.markQuitting();
+  keybindingManager?.stopGamepad();
   stopVrOverlay();
   // Synchronous flush so any pending debounced reference-lap write completes
   // before the process exits.

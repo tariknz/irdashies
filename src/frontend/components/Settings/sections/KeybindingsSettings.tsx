@@ -5,7 +5,58 @@ import type {
   KeybindingEntry,
   KeybindingsMap,
 } from '@irdashies/types';
+import { isGamepadBinding, gamepadButtonFromToken } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
+
+/** Friendly labels for gamepad buttons, e.g. "gamepad:leftShoulder" -> "Pad: LB". */
+const GAMEPAD_LABELS: Record<string, string> = {
+  a: 'A',
+  b: 'B',
+  x: 'X',
+  y: 'Y',
+  back: 'Back',
+  guide: 'Guide',
+  start: 'Start',
+  leftStick: 'L3',
+  rightStick: 'R3',
+  leftShoulder: 'LB',
+  rightShoulder: 'RB',
+  leftTrigger: 'LT',
+  rightTrigger: 'RT',
+  dpadUp: 'D-Pad Up',
+  dpadDown: 'D-Pad Down',
+  dpadLeft: 'D-Pad Left',
+  dpadRight: 'D-Pad Right',
+  paddle1: 'P1',
+  paddle2: 'P2',
+  paddle3: 'P3',
+  paddle4: 'P4',
+};
+
+const HAT_LABELS: Record<string, string> = {
+  up: 'Up',
+  down: 'Down',
+  left: 'Left',
+  right: 'Right',
+  leftup: 'Up-Left',
+  rightup: 'Up-Right',
+  leftdown: 'Down-Left',
+  rightdown: 'Down-Right',
+};
+
+function formatGamepadToken(token: string): string {
+  const button = gamepadButtonFromToken(token);
+
+  if (GAMEPAD_LABELS[button]) return `Pad: ${GAMEPAD_LABELS[button]}`;
+
+  const buttonMatch = /^button(\d+)$/.exec(button);
+  if (buttonMatch) return `Pad: Btn ${buttonMatch[1]}`;
+
+  const hatMatch = /^hat\d+_(\w+)$/.exec(button);
+  if (hatMatch) return `Pad: POV ${HAT_LABELS[hatMatch[1]] ?? hatMatch[1]}`;
+
+  return `Pad: ${button.toUpperCase()}`;
+}
 
 /**
  * Maps a browser KeyboardEvent into an Electron accelerator string.
@@ -60,6 +111,10 @@ function keyEventToAccelerator(e: KeyboardEvent): string | null {
  * Formats an accelerator string for display, e.g. "CommandOrControl" -> "Ctrl".
  */
 function formatAccelerator(accelerator: string): string {
+  if (isGamepadBinding(accelerator)) {
+    return formatGamepadToken(accelerator);
+  }
+
   const isMac =
     typeof navigator !== 'undefined' &&
     navigator.platform.toUpperCase().includes('MAC');
@@ -100,19 +155,8 @@ const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
   useEffect(() => {
     if (!recording) return;
 
-    const handleKeyDown = async (e: KeyboardEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Escape cancels recording
-      if (e.key === 'Escape') {
-        await stopRecording();
-        return;
-      }
-
-      const accelerator = keyEventToAccelerator(e);
-      if (!accelerator) return; // Only modifiers pressed, keep waiting
-
+    // Persist whichever input arrives first — a key combo or a controller button.
+    const applyBinding = async (accelerator: string) => {
       try {
         const result = await window.keybindingsBridge.updateKeybinding(
           actionId,
@@ -128,9 +172,34 @@ const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
       await stopRecording();
     };
 
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Escape cancels recording
+      if (e.key === 'Escape') {
+        await stopRecording();
+        return;
+      }
+
+      const accelerator = keyEventToAccelerator(e);
+      if (!accelerator) return; // Only modifiers pressed, keep waiting
+
+      await applyBinding(accelerator);
+    };
+
     window.addEventListener('keydown', handleKeyDown, true);
+    // Controllers have no focus/DOM events; the main process captures pad
+    // presses via SDL and forwards the token here while recording.
+    const unsubscribeGamepad = window.keybindingsBridge?.onGamepadCaptured(
+      (token) => {
+        void applyBinding(token);
+      }
+    );
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
+      unsubscribeGamepad?.();
     };
   }, [recording, actionId, onUpdated, stopRecording]);
 

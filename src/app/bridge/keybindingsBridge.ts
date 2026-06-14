@@ -1,5 +1,6 @@
-import { ipcMain } from 'electron';
+import { ipcMain, webContents } from 'electron';
 import type { KeybindingActionId } from '@irdashies/types';
+import { isGamepadBinding, isValidGamepadToken } from '@irdashies/types';
 import {
   getKeybindings,
   updateKeybinding,
@@ -21,7 +22,13 @@ export function setupKeybindingsBridge(
     'keybindings:update',
     (_, actionId: KeybindingActionId, accelerator: string) => {
       try {
-        if (!KeybindingManager.isValidAccelerator(accelerator)) {
+        if (isGamepadBinding(accelerator)) {
+          if (!isValidGamepadToken(accelerator)) {
+            throw new Error(
+              `"${accelerator}" is not a valid controller button`
+            );
+          }
+        } else if (!KeybindingManager.isValidAccelerator(accelerator)) {
           throw new Error(`"${accelerator}" is not a valid keyboard shortcut`);
         }
         const result = updateKeybinding(actionId, accelerator);
@@ -50,10 +57,18 @@ export function setupKeybindingsBridge(
   });
 
   ipcMain.handle('keybindings:startRecording', () => {
+    // Free keyboard shortcuts so presses reach the settings window, and route
+    // captured pad presses to the renderer instead of triggering actions.
     keybindingManager.unregisterAll();
+    keybindingManager.startGamepadCapture((token) => {
+      for (const wc of webContents.getAllWebContents()) {
+        wc.send('keybindings:gamepadCaptured', token);
+      }
+    });
   });
 
   ipcMain.handle('keybindings:stopRecording', () => {
+    keybindingManager.stopGamepadCapture();
     keybindingManager.registerAll();
   });
 }
