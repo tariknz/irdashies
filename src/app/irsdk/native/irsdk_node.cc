@@ -421,7 +421,13 @@ static bool SessionIsUTF8(const char *session) {
   if (!key) return false;
   const char *p = key + strlen("Encoding:");
   while (*p == ' ' || *p == '\t') ++p;
-  return _strnicmp(p, "UTF8", 4) == 0 || _strnicmp(p, "UTF-8", 5) == 0;
+  // Require the value token to end at a delimiter so we don't match a prefix
+  // like "UTF8X" and wrongly skip the Windows-1252 conversion.
+  auto isDelim = [](char ch) {
+    return ch == '\0' || ch == '\r' || ch == '\n' || ch == ' ' || ch == '\t';
+  };
+  return (_strnicmp(p, "UTF8", 4) == 0 && isDelim(p[4])) ||
+         (_strnicmp(p, "UTF-8", 5) == 0 && isDelim(p[5]));
 }
 
 Napi::Value iRacingSdkNode::GetSessionData(const Napi::CallbackInfo &info)
