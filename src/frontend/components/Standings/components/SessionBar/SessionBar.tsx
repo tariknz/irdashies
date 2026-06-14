@@ -3,8 +3,7 @@ import {
   useTelemetryValue,
   useCurrentSessionType,
   useThrottledWeather,
-  useTotalRaceLaps,
-  useTotalRaceTime,
+  useTotalRaceValue,
   useTrackDisplayName,
 } from '@irdashies/context';
 import {
@@ -148,8 +147,7 @@ export const SessionBar = ({
   });
   const localTime = useCurrentTime();
   const sessionClockTime = useSessionCurrentTime();
-  const { totalRaceLaps, isFixedLapRace } = useTotalRaceLaps();
-  const { totalRaceTime, adjustedRaceTime } = useTotalRaceTime();
+  const { totalRaceLaps, isFixedLapRace, totalRaceTime, adjustedRaceTime } = useTotalRaceValue();
   const trackDisplayName = useTrackDisplayName();
 
   // Define all possible items with their render functions
@@ -258,7 +256,7 @@ export const SessionBar = ({
         const lapsTotal = session === 'Race' ? totalRaceLaps : totalLaps;
         const lapsMode = effectiveBarSettings?.sessionLaps?.mode ?? 'Elapsed';
         // Round up the total if the current lap has exceeded it
-        const overrun = lapDisplay > lapsTotal;
+        const overrun = lapDisplay > lapsTotal && session === 'Race';
         const effectiveTotal = overrun ? lapDisplay : lapsTotal;
         const lapValue =
           lapsMode === 'Remaining'
