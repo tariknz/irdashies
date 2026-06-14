@@ -25,8 +25,12 @@ export interface WeatherTrackWetnessProps {
 
 export const WeatherTrackWetness = memo(
   ({ trackMoisture, variant = 'default' }: WeatherTrackWetnessProps) => {
-    // Calculate wetness percentage (0-100%)
-    const normalizedMoisture = trackMoisture || MIN_WETNESS;
+    // Calculate wetness percentage (0-100%), clamped so out-of-range
+    // moisture values can't produce negative or >100% widths.
+    const normalizedMoisture = Math.min(
+      MAX_WETNESS,
+      Math.max(MIN_WETNESS, trackMoisture ?? MIN_WETNESS)
+    );
     const wetnessScale = MAX_WETNESS - MIN_WETNESS;
     const trackWetnessPct =
       ((normalizedMoisture - MIN_WETNESS) / wetnessScale) * 100;
