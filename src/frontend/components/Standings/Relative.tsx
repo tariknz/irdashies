@@ -221,7 +221,6 @@ export const Relative = () => {
           onPitRoad={result.onPitRoad}
           onTrack={result.onTrack}
           radioActive={result.radioActive}
-          radioTransmitting={result.radioTransmitting}
           isLapped={result.lappedState === 'behind'}
           isLappingAhead={result.lappedState === 'ahead'}
           flairId={
