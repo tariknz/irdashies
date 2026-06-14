@@ -239,7 +239,7 @@ Napi::Value iRacingSdkNode::BroadcastMessage(const Napi::CallbackInfo &info)
   case irsdk_BroadcastPitCommand: // arg1 == irsdk_PitCommandMode
   case irsdk_BroadcastFFBCommand: // arg1 == irsdk_FFBCommandMode
   case irsdk_BroadcastReplaySearchSessionTime:
-  case irskd_BroadcastReplaySetPlayPosition:
+  case irsdk_BroadcastReplaySetPlayPosition:
     printf("BroadcastMessage(msgType: %d, arg1: %d, arg2: %f)\n", msgType, arg1, (float)arg2.FloatValue());
     irsdk_broadcastMsg(msgType, arg1, (float)arg2.FloatValue());
     break;
@@ -410,6 +410,26 @@ std::string ConvertToUTF8(const char* input) {
     return result;
 }
 
+// Detect whether the iRacing session string is already UTF-8 encoded.
+// Newer sim builds emit "Encoding: UTF8" under WeekendInfo and send the
+// session YAML as UTF-8; older builds send Windows-1252 (iso-8859-1).
+// Mirrors irsdkClient::isSessionStrUTF8() from SDK 1.20 without pulling in
+// the (uncompiled) irsdk_client wrapper.
+static bool SessionIsUTF8(const char *session) {
+  if (!session) return false;
+  const char *key = strstr(session, "Encoding:");
+  if (!key) return false;
+  const char *p = key + strlen("Encoding:");
+  while (*p == ' ' || *p == '\t') ++p;
+  // Require the value token to end at a delimiter so we don't match a prefix
+  // like "UTF8X" and wrongly skip the Windows-1252 conversion.
+  auto isDelim = [](char ch) {
+    return ch == '\0' || ch == '\r' || ch == '\n' || ch == ' ' || ch == '\t';
+  };
+  return (_strnicmp(p, "UTF8", 4) == 0 && isDelim(p[4])) ||
+         (_strnicmp(p, "UTF-8", 5) == 0 && isDelim(p[5]));
+}
+
 Napi::Value iRacingSdkNode::GetSessionData(const Napi::CallbackInfo &info)
 {
   int latestUpdate = irsdk_getSessionInfoStrUpdate();
@@ -422,8 +442,15 @@ Napi::Value iRacingSdkNode::GetSessionData(const Napi::CallbackInfo &info)
   if (session == NULL) {
     return Napi::String::New(info.Env(), "");
   }
-  
-  // Convert Windows-1252 to UTF-8
+
+  // If the sim already gave us UTF-8, pass it through untouched. Running the
+  // Windows-1252 converter over real UTF-8 would double-encode multi-byte
+  // sequences (e.g. "ü" -> "Ã¼").
+  if (SessionIsUTF8(session)) {
+    return Napi::String::New(info.Env(), session);
+  }
+
+  // Legacy path: convert Windows-1252 to UTF-8
   std::string utf8Session = ConvertToUTF8(session);
   return Napi::String::New(info.Env(), utf8Session.c_str());
 }
