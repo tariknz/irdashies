@@ -95,8 +95,9 @@ export const useDriverStandings = (
   const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
   const carIdxTrackSurface =
     useTelemetryValues<TrackLocation[]>('CarIdxTrackSurface');
-  const { active: radioTransmitCarIdx, transmitting: radioTransmittingCarIdx } =
-    useRadioActiveCarIdxs((settings?.radio?.persistenceSeconds ?? 3) * 1000);
+  const radioTransmitCarIdx = useRadioActiveCarIdxs(
+    (settings?.radio?.persistenceSeconds ?? 3) * 1000
+  );
   const carIdxTireCompound = useTelemetryValues<number[]>('CarIdxTireCompound');
   const carIdxSessionFlags = useTelemetryValues<number[]>('CarIdxSessionFlags');
   const isOfficial = useSessionIsOfficial();
@@ -128,7 +129,6 @@ export const useDriverStandings = (
         carIdxOnPitRoadValue: carIdxOnPitRoad,
         carIdxTrackSurfaceValue: carIdxTrackSurface,
         radioTransmitCarIdx: radioTransmitCarIdx,
-        radioTransmittingCarIdx: radioTransmittingCarIdx,
         carIdxTireCompoundValue: carIdxTireCompound,
         carIdxSessionFlags: carIdxSessionFlags,
       },
@@ -208,7 +208,6 @@ export const useDriverStandings = (
     carIdxOnPitRoad,
     carIdxTrackSurface,
     radioTransmitCarIdx,
-    radioTransmittingCarIdx,
     carIdxTireCompound,
     carIdxSessionFlags,
     positions,

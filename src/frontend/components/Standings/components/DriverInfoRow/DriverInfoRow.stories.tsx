@@ -1,4 +1,3 @@
-import { useEffect, useState, type ComponentProps } from 'react';
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { DriverInfoRow } from './DriverInfoRow';
 import { useCurrentSessionType } from '@irdashies/context';
@@ -116,78 +115,10 @@ export const RadioActiveWithStatus: Story = {
   },
 };
 
-// Live transmission: the icon pulses at full strength.
-export const RadioTransmitting: Story = {
-  name: 'Radio - Transmitting (live)',
-  args: {
-    ...Primary.args,
-    radioActive: true,
-    radioTransmitting: true,
-  },
-};
-
-// Lingering state: the driver has stopped talking but the icon is held visible
-// by the persistence window — static and dimmed to distinguish it from live.
-export const RadioLingering: Story = {
-  name: 'Radio - Lingering (recently spoke)',
-  args: {
-    ...Primary.args,
-    radioActive: true,
-    radioTransmitting: false,
-  },
-};
-
-// Interactive demo of the full lifecycle the radio persistence produces:
-// idle -> transmitting (pulsing) -> lingering (static + dimmed) -> idle.
-const radioLifecyclePhases = [
-  { label: 'Idle', radioActive: false, radioTransmitting: false, ms: 1500 },
-  {
-    label: 'Transmitting (pulsing)',
-    radioActive: true,
-    radioTransmitting: true,
-    ms: 2500,
-  },
-  {
-    label: 'Lingering (static + dimmed)',
-    radioActive: true,
-    radioTransmitting: false,
-    ms: 3000,
-  },
-];
-
-const RadioPersistenceDemoComponent = () => {
-  const [phase, setPhase] = useState(0);
-
-  useEffect(() => {
-    const timer = setTimeout(
-      () => setPhase((p) => (p + 1) % radioLifecyclePhases.length),
-      radioLifecyclePhases[phase].ms
-    );
-    return () => clearTimeout(timer);
-  }, [phase]);
-
-  const current = radioLifecyclePhases[phase];
-
-  return (
-    <>
-      <DriverInfoRow
-        {...(Primary.args as ComponentProps<typeof DriverInfoRow>)}
-        radioActive={current.radioActive}
-        radioTransmitting={current.radioTransmitting}
-      />
-      <tr>
-        <td className="pt-3 text-xs text-slate-300" colSpan={99}>
-          State: <span className="text-amber-300">{current.label}</span>
-        </td>
-      </tr>
-    </>
-  );
-};
-
-export const RadioPersistenceLifecycle: Story = {
-  name: 'Radio - Persistence lifecycle',
-  render: () => <RadioPersistenceDemoComponent />,
-};
+// NOTE: DriverInfoRow only renders a single on/off icon. The debounce that
+// decides *when* radioActive flips off lives in useRadioActiveCarIdxs and is
+// demonstrated against the real telemetry store in its own stories file
+// (useRadioActiveCarIdxs.stories.tsx).
 
 export const IsPlayer: Story = {
   args: {
