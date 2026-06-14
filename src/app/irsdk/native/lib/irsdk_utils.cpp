@@ -44,6 +44,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <crtdbg.h>
 #endif
 
+// memory read barrier, keeps compiler from reordering our memory reads
+#include <intrin.h>
+#pragma intrinsic(_ReadBarrier)
+
 #include "irsdk_defines.h"
 
 // for timeBeginPeriod()
@@ -142,10 +146,10 @@ bool irsdk_getNewData(char *data)
 			return false;
 		}
 
-		int latest = 0;
-		for(int i=1; i<pHeader->numBuf; i++)
-			if(pHeader->varBuf[latest].tickCount < pHeader->varBuf[i].tickCount)
-			   latest = i;	
+		// use curBuf to find the most recently written buffer
+		int latest = pHeader->curBuf;
+		if(latest < 0 || latest >= pHeader->numBuf)
+			latest = 0;
 
 		// if newer than last recieved, than report new data
 		if(lastTickCount < pHeader->varBuf[latest].tickCount)
@@ -156,9 +160,18 @@ bool irsdk_getNewData(char *data)
 				// try twice to get the data out
 				for(int count = 0; count < 2; count++)
 				{
-					int curTickCount =  pHeader->varBuf[latest].tickCount;
+					// Read tickCount (updated AFTER write completes)
+					int curTickCount = pHeader->varBuf[latest].tickCount;
+
+					_ReadBarrier();
+
 					memcpy(data, pSharedMem + pHeader->varBuf[latest].bufOffset, pHeader->bufLen);
-					if(curTickCount ==  pHeader->varBuf[latest].tickCount)
+
+					_ReadBarrier();
+
+					// Read tickCountBegin (updated BEFORE write starts)
+					// If they match, no write was in progress during our read
+					if(curTickCount == pHeader->varBuf[latest].tickCountBegin)
 					{
 						lastTickCount = curTickCount;
 						lastValidTime = time(NULL);
@@ -338,7 +351,7 @@ unsigned int irsdk_getBroadcastMsgID()
 
 void irsdk_broadcastMsg(irsdk_BroadcastMsg msg, int var1, int var2, int var3)
 {
-	irsdk_broadcastMsg(msg, var1, static_cast<int>MAKELONG(var2, var3));
+	irsdk_broadcastMsg(msg, var1, (int)MAKELONG(var2, var3));
 }
 
 void irsdk_broadcastMsg(irsdk_BroadcastMsg msg, int var1, float var2)

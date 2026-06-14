@@ -33,6 +33,8 @@ export enum GlobalFlags {
   Servicible = 0x00040000,
   Furled = 0x00080000,
   Repair = 0x00100000,
+  /** Car is disqualified and scoring is disabled */
+  DqScoringInvalid = 0x00200000,
 
   // Start lights
   StartHidden = 0x10000000,
@@ -42,13 +44,32 @@ export enum GlobalFlags {
 }
 
 export enum EngineWarnings {
-  WaterTempWarning = 0x01,
-  FuelPressureWarning = 0x02,
-  OilPressureWarning = 0x04,
-  EngineStalled = 0x08,
-  PitSpeedLimiter = 0x10,
-  RevLimiterActive = 0x20,
-  OilTempWarning = 0x40,
+  WaterTempWarning = 0x0001,
+  FuelPressureWarning = 0x0002,
+  OilPressureWarning = 0x0004,
+  EngineStalled = 0x0008,
+  PitSpeedLimiter = 0x0010,
+  RevLimiterActive = 0x0020,
+  OilTempWarning = 0x0040,
+  /** Car needs mandatory repairs */
+  MandRepNeeded = 0x0080,
+  /** Car needs optional repairs */
+  OptRepNeeded = 0x0100,
+}
+
+/**
+ * Track wetness / rain state.
+ * Reported by the `TrackWetness` telemetry variable.
+ */
+export enum TrackWetness {
+  Unknown = 0,
+  Dry,
+  MostlyDry,
+  VeryLightlyWet,
+  LightlyWet,
+  ModeratelyWet,
+  VeryWet,
+  ExtremelyWet,
 }
 
 export enum PitSvFlags {
@@ -86,9 +107,48 @@ export enum PaceMode {
 }
 
 export enum PaceFlags {
-  EndOfLine = 0x01,
-  FreePass = 0x02,
-  WavedAround = 0x04,
+  EndOfLine = 0x0001,
+  FreePass = 0x0002,
+  WavedAround = 0x0004,
+}
+
+/**
+ * Incident report/penalty bitfield.
+ * The low byte is the incident report; the high byte is the penalty.
+ * Mask with `IncidentReportMask` / `IncidentPenaltyMask` to separate them.
+ */
+export enum IncidentFlags {
+  // Incident report (low byte) — only one will be set
+  /** No penalty */
+  RepNoReport = 0x0000,
+  /** "Loss of Control (2x)" */
+  RepOutOfControl = 0x0001,
+  /** "Off Track (1x)" */
+  RepOffTrack = 0x0002,
+  /** Not currently sent */
+  RepOffTrackOngoing = 0x0003,
+  /** "Contact (0x)" */
+  RepContactWithWorld = 0x0004,
+  /** "Contact (2x)" */
+  RepCollisionWithWorld = 0x0005,
+  /** Not currently sent */
+  RepCollisionWithWorldOngoing = 0x0006,
+  /** "Car Contact (0x)" */
+  RepContactWithCar = 0x0007,
+  /** "Car Contact (4x)" */
+  RepCollisionWithCar = 0x0008,
+
+  // Incident penalty (high byte) — only one will be set
+  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values -- distinct penalty-byte value that coincides with RepNoReport
+  PenNoReport = 0x0000,
+  PenZeroX = 0x0100,
+  PenOneX = 0x0200,
+  PenTwoX = 0x0300,
+  PenFourX = 0x0400,
+
+  // Masks to separate the report field from the penalty field
+  IncidentReportMask = 0x000000ff,
+  IncidentPenaltyMask = 0x0000ff00,
 }
 
 export enum CarLeftRight {
@@ -155,7 +215,7 @@ export enum BroadcastMessages {
   /** Trigger video capture. */
   VideoCapture,
   /** Unused. */
-  Last
+  Last,
 }
 
 export enum CameraState {
@@ -216,6 +276,8 @@ export enum PitCommand {
   ClearFR,
   /** Uncheck add fuel */
   ClearFuel,
+  /** Change tire compound */
+  TC,
 }
 
 export enum TelemetryCommand {
