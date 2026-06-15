@@ -5,20 +5,24 @@ import type {
   KeybindingEntry,
   KeybindingsMap,
 } from '@irdashies/types';
-import { isGamepadBinding, gamepadButtonFromToken } from '@irdashies/types';
+import { isGamepadBinding, parseGamepadToken } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
 
 /**
- * Formats a gamepad token for display, e.g. "gamepad:btn5" -> "Pad: Button 5".
- * WebHID exposes controller buttons by index, so labels are numeric.
+ * Formats a gamepad token for display, prefixed with the device name when known
+ * and falling back to "Pad" otherwise, e.g.
+ *   "gamepad:Logitech%20G29:btn5" -> "Logitech G29: Button 5"
+ *   "gamepad:btn5"                -> "Pad: Button 5"
  */
 function formatGamepadToken(token: string): string {
-  const button = gamepadButtonFromToken(token);
+  const parsed = parseGamepadToken(token);
+  if (!parsed) return 'Pad: ?';
 
-  const buttonMatch = /^btn(\d+)$/.exec(button);
-  if (buttonMatch) return `Pad: Button ${buttonMatch[1]}`;
+  const prefix = parsed.device || 'Pad';
+  const buttonMatch = /^btn(\d+)$/.exec(parsed.button);
+  const button = buttonMatch ? `Button ${buttonMatch[1]}` : parsed.button;
 
-  return `Pad: ${button.toUpperCase()}`;
+  return `${prefix}: ${button}`;
 }
 
 /**

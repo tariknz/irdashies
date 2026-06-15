@@ -53,12 +53,14 @@ window can read input immediately.
 ## Tokens
 
 Every binding's stored value is either a keyboard accelerator (`"Alt+H"`) or a
-gamepad token. WebHID exposes controller buttons **by index**, not by name, so
-all gamepad tokens are indexed:
+gamepad token. WebHID exposes controller buttons **by index**, not by name. The
+token also carries the device's (URL-encoded) product name when known, so the
+settings UI can label the binding with the device it came from:
 
-| Token            | Example        | Display         |
-| ---------------- | -------------- | --------------- |
-| `gamepad:btn<N>` | `gamepad:btn5` | `Pad: Button 5` |
+| Token                     | Example                       | Display                  |
+| ------------------------- | ----------------------------- | ------------------------ |
+| `gamepad:<device>:btn<N>` | `gamepad:Logitech%20G29:btn5` | `Logitech G29: Button 5` |
+| `gamepad:btn<N>`          | `gamepad:btn5`                | `Pad: Button 5`          |
 
 Token helpers and validation live in `src/types/keybindings.ts`.
 
