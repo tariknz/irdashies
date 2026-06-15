@@ -8,52 +8,15 @@ import type {
 import { isGamepadBinding, gamepadButtonFromToken } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
 
-/** Friendly labels for gamepad buttons, e.g. "gamepad:leftShoulder" -> "Pad: LB". */
-const GAMEPAD_LABELS: Record<string, string> = {
-  a: 'A',
-  b: 'B',
-  x: 'X',
-  y: 'Y',
-  back: 'Back',
-  guide: 'Guide',
-  start: 'Start',
-  leftStick: 'L3',
-  rightStick: 'R3',
-  leftShoulder: 'LB',
-  rightShoulder: 'RB',
-  leftTrigger: 'LT',
-  rightTrigger: 'RT',
-  dpadUp: 'D-Pad Up',
-  dpadDown: 'D-Pad Down',
-  dpadLeft: 'D-Pad Left',
-  dpadRight: 'D-Pad Right',
-  paddle1: 'P1',
-  paddle2: 'P2',
-  paddle3: 'P3',
-  paddle4: 'P4',
-};
-
-const HAT_LABELS: Record<string, string> = {
-  up: 'Up',
-  down: 'Down',
-  left: 'Left',
-  right: 'Right',
-  leftup: 'Up-Left',
-  rightup: 'Up-Right',
-  leftdown: 'Down-Left',
-  rightdown: 'Down-Right',
-};
-
+/**
+ * Formats a gamepad token for display, e.g. "gamepad:btn5" -> "Pad: Button 5".
+ * WebHID exposes controller buttons by index, so labels are numeric.
+ */
 function formatGamepadToken(token: string): string {
   const button = gamepadButtonFromToken(token);
 
-  if (GAMEPAD_LABELS[button]) return `Pad: ${GAMEPAD_LABELS[button]}`;
-
-  const buttonMatch = /^button(\d+)$/.exec(button);
-  if (buttonMatch) return `Pad: Btn ${buttonMatch[1]}`;
-
-  const hatMatch = /^hat\d+_(\w+)$/.exec(button);
-  if (hatMatch) return `Pad: POV ${HAT_LABELS[hatMatch[1]] ?? hatMatch[1]}`;
+  const buttonMatch = /^btn(\d+)$/.exec(button);
+  if (buttonMatch) return `Pad: Button ${buttonMatch[1]}`;
 
   return `Pad: ${button.toUpperCase()}`;
 }

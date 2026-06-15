@@ -2,23 +2,20 @@ import { globalShortcut, desktopCapturer } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { KeybindingActionId, KeybindingsMap } from '@irdashies/types';
-import { gamepadToken, isGamepadBinding } from '@irdashies/types';
+import { isGamepadBinding } from '@irdashies/types';
 import { getKeybindings } from './storage/keybindings';
 import { OverlayManager } from './overlayManager';
 import logger from './logger';
-import type {
-  GamepadManager,
-  GamepadButtonEvent,
-} from './gamepad/gamepadManager';
+import type { GamepadHost } from './gamepad/gamepadHost';
 
 export class KeybindingManager {
   private bindings: KeybindingsMap;
   private actionHandlers: Map<KeybindingActionId, () => void>;
   private hideState = false;
 
-  /** Lazily-created SDL gamepad poller (see startGamepad). */
-  private gamepad?: GamepadManager;
-  /** Gamepad token (e.g. "gamepad:a") -> action it triggers. */
+  /** Lazily-created WebHID host window manager (see startGamepad). */
+  private gamepad?: GamepadHost;
+  /** Gamepad token (e.g. "gamepad:btn0") -> action it triggers. */
   private gamepadMap = new Map<string, KeybindingActionId>();
   /** When set, captured gamepad presses are reported here instead of triggering actions (rebinding). */
   private captureCb?: (token: string) => void;
@@ -101,7 +98,7 @@ export class KeybindingManager {
       const handler = this.actionHandlers.get(actionId as KeybindingActionId);
       if (!handler) continue;
 
-      // Gamepad bindings aren't global keyboard shortcuts; the GamepadManager
+      // Gamepad bindings aren't global keyboard shortcuts; the GamepadHost
       // routes them via buildGamepadMap() above.
       if (isGamepadBinding(entry.accelerator)) continue;
 
@@ -152,9 +149,11 @@ export class KeybindingManager {
     }
   }
 
-  /** Route a native gamepad button-down to capture (rebinding) or its action. */
-  private handleGamepadButton(event: GamepadButtonEvent): void {
-    const token = gamepadToken(event.button);
+  /**
+   * Route a gamepad button-down (a `gamepad:btn<N>` token from the WebHID host)
+   * to capture (rebinding) or to its bound action.
+   */
+  private handleGamepadButton(token: string): void {
     if (this.captureCb) {
       this.captureCb(token);
       return;
@@ -164,29 +163,29 @@ export class KeybindingManager {
   }
 
   /**
-   * Start polling game controllers. Lazily loads the native SDL addon so it
-   * stays out of the module graph for tests and non-Windows builds; failures
-   * are logged and leave keyboard bindings working.
+   * Start reading game controllers. Lazily creates the hidden WebHID host
+   * window so its module stays out of the graph for tests; failures are logged
+   * and leave keyboard bindings working.
    */
   public startGamepad(): void {
     if (this.gamepad) {
-      this.gamepad.start((e) => this.handleGamepadButton(e));
+      this.gamepad.start((token) => this.handleGamepadButton(token));
       return;
     }
-    import('./gamepad/gamepadManager')
-      .then(({ GamepadManager }) => {
-        this.gamepad = new GamepadManager();
-        this.gamepad.start((e) => this.handleGamepadButton(e));
+    import('./gamepad/gamepadHost')
+      .then(({ GamepadHost }) => {
+        this.gamepad = new GamepadHost();
+        this.gamepad.start((token) => this.handleGamepadButton(token));
       })
       .catch((err) =>
         logger.error(
-          '[Gamepad] manager unavailable, controller bindings disabled',
+          '[Gamepad] host unavailable, controller bindings disabled',
           err
         )
       );
   }
 
-  /** Stop the gamepad poll thread (call on shutdown). */
+  /** Tear down the WebHID host window (call on shutdown). */
   public stopGamepad(): void {
     this.gamepad?.stop();
   }

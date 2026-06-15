@@ -87,7 +87,6 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@kmamal/sdl": "^0.11.13",
     "@phosphor-icons/core": "^2.1.1",
     "@phosphor-icons/react": "^2.1.10",
     "@tmi.js/chat": "^0.8.0",

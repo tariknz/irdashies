@@ -1,62 +1,73 @@
-# Gamepad input (@kmamal/sdl)
+# Gamepad input (WebHID)
 
-Lets any keybinding be triggered by a game controller button instead of (or as
-well as) a keyboard shortcut. Bindings live in the existing **Settings → Key
-Bindings** list — click a binding to record, then press a key _or_ a controller
-button.
+Lets any keybinding be triggered by a game controller button as well as a
+keyboard shortcut. Bindings live in the existing **Settings → Key Bindings**
+list — click a binding to record, then press a key _or_ a controller button.
 
-## Why SDL and not Electron
+## Why WebHID (and not Electron's other options)
 
-Electron has no way to read a controller for an overlay:
+An iRacing overlay never holds focus — the sim does — so the input source has to
+deliver presses while the app is unfocused:
 
-- The **main process** only exposes `globalShortcut` (keyboard accelerators).
-- The **renderer**'s W3C Gamepad API (`navigator.getGamepads()`) only delivers
-  input while the window is focused. An iRacing overlay never holds focus — the
-  sim does — so it receives nothing.
+- The **main process** `globalShortcut` is keyboard-only.
+- The renderer's **W3C Gamepad API** (`navigator.getGamepads()`) only delivers
+  input while the window is focused → useless for an overlay.
+- **WebHID** (`navigator.hid`) keeps delivering input reports while unfocused,
+  is built into Chromium (no extra dependency / native build), and supports
+  hotplug via `connect` / `disconnect` events.
 
-[`@kmamal/sdl`](https://github.com/kmamal/node-sdl) wraps SDL and reads
-controller input even while the app is unfocused, with hotplug, no window
-required. It ships prebuilt N-API binaries (ABI-stable across Node and Electron,
-so no native rebuild) — no SDL toolchain or vendoring needed.
+## How it works
 
-## Pieces
+WebHID runs in a renderer, but keybinding actions must fire even when no window
+is focused or open. So a dedicated, hidden, always-alive window hosts the HID
+reader and forwards presses to the main process, which triggers the bound
+action (reusing the same code path as keyboard shortcuts).
 
-| File                      | Role                                                                                   |
-| ------------------------- | -------------------------------------------------------------------------------------- |
-| `gamepadManager.ts`       | Opens devices via `@kmamal/sdl` and forwards button presses.                           |
-| `../keybindingManager.ts` | Maps gamepad tokens (`gamepad:<button>`) to actions; handles capture during rebinding. |
+```
+hidden HID-host window (WebHID)         main process
+  src/hidHost.ts                          gamepadHost.ts ── KeybindingManager
+  getDevices() → open → inputreport   →   ipc 'gamepad:button'  → triggerAction
+        │  parse button bits (hidReport.ts)        (or → capture during rebinding)
+        └─ window.gamepadHost.sendButton('gamepad:btn5')
+```
 
-## Devices: controllers vs. raw joysticks
+| File                      | Role                                                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `gamepadHost.ts`          | Main process. Creates the hidden window, auto-grants HID permission for its session, relays button tokens to KeybindingManager. |
+| `hidReport.ts`            | Pure helpers: locate button bits in a device's HID input reports and detect press edges. Unit tested.                           |
+| `../../hidHost.ts`        | The hidden renderer. Opens every HID device and emits `gamepad:btn<N>` tokens.                                                  |
+| `../keybindingManager.ts` | Maps gamepad tokens to actions; handles capture during rebinding.                                                               |
 
-Every SDL device is a joystick; some are additionally recognized as **game
-controllers** with a named-button mapping. GamepadManager prefers the controller
-API for readable names and falls back to the raw joystick API otherwise — for
-wheel bases, pedals, unrecognized pads, and recognized pads whose controller
-mapping fails to open (e.g. a Logitech F710 in DirectInput mode throwing
-`0 hats`).
+## Permissions (no chooser, no user gesture)
 
-Token shapes (stored as `gamepad:<button>`):
+The main process scopes two handlers to the host window's own session partition
+(`hid-host`) so the default session every other window shares is untouched:
 
-| Source                                      | Token          | Example                       | Display       |
-| ------------------------------------------- | -------------- | ----------------------------- | ------------- |
-| Game controller button                      | named          | `gamepad:a`, `gamepad:dpadUp` | `Pad: A`      |
-| Controller trigger (analog, edge-triggered) | named          | `gamepad:leftTrigger`         | `Pad: LT`     |
-| Raw joystick button                         | `button<N>`    | `gamepad:button5`             | `Pad: Btn 5`  |
-| Raw joystick POV hat                        | `hat<N>_<dir>` | `gamepad:hat0_up`             | `Pad: POV Up` |
+- `setPermissionCheckHandler` → allow `hid`
+- `setDevicePermissionHandler` → allow `hid`
 
-A binding's stored value is either a keyboard accelerator (`"Alt+H"`) or one of
-the gamepad tokens above. Helpers and validation live in
-`src/types/keybindings.ts` (named buttons match @kmamal/sdl's `Controller.Button`).
+With these, `navigator.hid.getDevices()` returns the connected controllers at
+startup without showing a device picker or requiring a click — so the hidden
+window can read input immediately.
 
-> Raw joystick buttons are indexed per device; with multiple raw joysticks the
-> indices share one namespace (device A's `button0` == device B's `button0`).
-> Fine for a single wheel; a known limitation otherwise.
+## Tokens
 
-## Build / packaging notes
+Every binding's stored value is either a keyboard accelerator (`"Alt+H"`) or a
+gamepad token. WebHID exposes controller buttons **by index**, not by name, so
+all gamepad tokens are indexed:
 
-- `@kmamal/sdl` is a runtime dependency; it is marked `external` in
-  `vite.main.config.ts` so it loads from `node_modules` instead of being bundled.
-- `AutoUnpackNativesPlugin` (in `forge.config.ts`) unpacks its `.node` binary
-  from the asar in packaged builds.
-- The native addon is loaded lazily (see `KeybindingManager.startGamepad`) so SDL
-  stays out of the module graph for tests and unused sessions.
+| Token            | Example        | Display         |
+| ---------------- | -------------- | --------------- |
+| `gamepad:btn<N>` | `gamepad:btn5` | `Pad: Button 5` |
+
+Token helpers and validation live in `src/types/keybindings.ts`.
+
+> Button indices are per device, in HID-report declaration order. A controller's
+> face button "A" and a wheel base's first button can both be `btn0`. With a
+> single controller this is unambiguous; with multiple HID devices their indices
+> share one namespace — a known limitation. (Re-record the binding by pressing
+> the actual button you want.)
+>
+> Only digital buttons (HID Button usage page) are bound. Analog axes (steering,
+> pedals, triggers) and POV hats are intentionally ignored so axis movement
+> can't masquerade as a button press.

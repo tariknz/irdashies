@@ -29,9 +29,7 @@ export default defineConfig({
   ],
   build: {
     rollupOptions: {
-      // @kmamal/sdl is a prebuilt native module; load it from node_modules at
-      // runtime instead of bundling it.
-      external: ['bufferutil', 'utf-8-validate', '@kmamal/sdl'],
+      external: ['bufferutil', 'utf-8-validate'],
     },
   },
   resolve: {

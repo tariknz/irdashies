@@ -9,8 +9,7 @@ export interface KeybindingEntry {
   /**
    * The bound input. Either an Electron keyboard accelerator
    * (e.g. "Alt+H", "CommandOrControl+Shift+F6") or a gamepad token
-   * (e.g. "gamepad:a", "gamepad:lefttrigger"). Use {@link isGamepadBinding}
-   * to tell them apart.
+   * (e.g. "gamepad:btn0"). Use {@link isGamepadBinding} to tell them apart.
    */
   accelerator: string;
   /** Human-readable label for the settings UI */
@@ -27,69 +26,37 @@ export type KeybindingsMap = Record<KeybindingActionId, KeybindingEntry>;
 export const GAMEPAD_TOKEN_PREFIX = 'gamepad:';
 
 /**
- * Controller button names accepted as bindings. These match @kmamal/sdl's
- * `Controller.Button` names, plus the two analog triggers which GamepadManager
- * reports as edge-triggered pseudo-buttons.
+ * Gamepad button token grammar: `gamepad:btn<N>` where N is the button's
+ * zero-based index within the device's HID input report. WebHID exposes buttons
+ * by index, not by name, so a controller's face button "A" and a wheel base's
+ * physical button are both just indexed buttons.
  */
-export const GAMEPAD_BUTTONS = [
-  'a',
-  'b',
-  'x',
-  'y',
-  'back',
-  'guide',
-  'start',
-  'leftStick',
-  'rightStick',
-  'leftShoulder',
-  'rightShoulder',
-  'dpadUp',
-  'dpadDown',
-  'dpadLeft',
-  'dpadRight',
-  'paddle1',
-  'paddle2',
-  'paddle3',
-  'paddle4',
-  'leftTrigger',
-  'rightTrigger',
-] as const;
-
-export type GamepadButton = (typeof GAMEPAD_BUTTONS)[number];
+const GAMEPAD_BUTTON_RE = /^btn\d+$/;
 
 /** True when a binding value refers to a gamepad button. */
 export function isGamepadBinding(accelerator: string): boolean {
   return accelerator.startsWith(GAMEPAD_TOKEN_PREFIX);
 }
 
-/** Build a gamepad binding token from an SDL button name, e.g. "a" -> "gamepad:a". */
+/** Build a gamepad binding token from a button id, e.g. "btn0" -> "gamepad:btn0". */
 export function gamepadToken(button: string): string {
   return `${GAMEPAD_TOKEN_PREFIX}${button}`;
 }
 
-/** Extract the SDL button name from a gamepad token, e.g. "gamepad:a" -> "a". */
+/** Build a gamepad token from a button index, e.g. 5 -> "gamepad:btn5". */
+export function gamepadTokenFromIndex(index: number): string {
+  return `${GAMEPAD_TOKEN_PREFIX}btn${index}`;
+}
+
+/** Extract the button id from a gamepad token, e.g. "gamepad:btn0" -> "btn0". */
 export function gamepadButtonFromToken(token: string): string {
   return token.slice(GAMEPAD_TOKEN_PREFIX.length);
 }
 
-/** Raw joystick button token, e.g. "button5" (wheel bases, unmapped pads). */
-const JOYSTICK_BUTTON_RE = /^button\d+$/;
-/** Raw joystick POV-hat token, e.g. "hat0_up". */
-const JOYSTICK_HAT_RE =
-  /^hat\d+_(up|down|left|right|leftup|leftdown|rightup|rightdown)$/;
-
-/**
- * True when a string is a gamepad token referencing either a named controller
- * button or a raw joystick button/hat.
- */
+/** True when a string is a valid gamepad button token (`gamepad:btn<N>`). */
 export function isValidGamepadToken(token: string): boolean {
   if (!isGamepadBinding(token)) return false;
-  const button = gamepadButtonFromToken(token);
-  return (
-    (GAMEPAD_BUTTONS as readonly string[]).includes(button) ||
-    JOYSTICK_BUTTON_RE.test(button) ||
-    JOYSTICK_HAT_RE.test(button)
-  );
+  return GAMEPAD_BUTTON_RE.test(gamepadButtonFromToken(token));
 }
 
 /** Bridge methods exposed to the renderer for keybinding management */
@@ -110,9 +77,17 @@ export interface KeybindingsBridge {
   stopRecording: () => Promise<void>;
   /**
    * Subscribe to gamepad button presses captured while recording. The callback
-   * receives a gamepad token (e.g. "gamepad:a"). Returns an unsubscribe fn.
+   * receives a gamepad token (e.g. "gamepad:btn0"). Returns an unsubscribe fn.
    */
   onGamepadCaptured: (callback: (token: string) => void) => () => void;
+}
+
+/**
+ * Bridge exposed only to the hidden WebHID host window. Forwards a controller
+ * button press (already encoded as a `gamepad:btn<N>` token) to the main process.
+ */
+export interface GamepadHostBridge {
+  sendButton: (token: string) => void;
 }
 
 export const DEFAULT_KEYBINDINGS: KeybindingsMap = {

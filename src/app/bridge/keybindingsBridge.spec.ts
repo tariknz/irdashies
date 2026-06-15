@@ -135,14 +135,14 @@ describe('keybindingsBridge keybindings:update', () => {
     const next = sampleBindings();
     mockUpdateKeybinding.mockReturnValue(next);
 
-    const result = invokeUpdate('toggle-edit-mode', 'gamepad:a');
+    const result = invokeUpdate('toggle-edit-mode', 'gamepad:btn0');
 
     expect(result).toBe(next);
     // Gamepad tokens skip the Electron accelerator check entirely.
     expect(mockIsValidAccelerator).not.toHaveBeenCalled();
     expect(mockUpdateKeybinding).toHaveBeenCalledWith(
       'toggle-edit-mode',
-      'gamepad:a'
+      'gamepad:btn0'
     );
     expect(mockReloadBindings).toHaveBeenCalledOnce();
   });

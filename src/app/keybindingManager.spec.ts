@@ -186,20 +186,21 @@ describe('KeybindingManager', () => {
     const gamepadBinding = (): KeybindingsMap =>
       ({
         'toggle-edit-mode': {
-          accelerator: 'gamepad:a',
+          accelerator: 'gamepad:btn0',
           label: 'Edit Layout',
           description: '',
           isDefault: false,
         },
       }) as unknown as KeybindingsMap;
 
-    // handleGamepadButton is private; the native callback is its only caller.
-    const fireButton = (manager: KeybindingManager, button: string) =>
+    // handleGamepadButton is private; the WebHID host callback is its only
+    // caller, passing a ready-made gamepad token.
+    const fireButton = (manager: KeybindingManager, token: string) =>
       (
         manager as unknown as {
-          handleGamepadButton: (e: { button: string }) => void;
+          handleGamepadButton: (token: string) => void;
         }
-      ).handleGamepadButton({ button });
+      ).handleGamepadButton(token);
 
     it('does not register gamepad bindings as global keyboard shortcuts', () => {
       mockGetKeybindings.mockReturnValue(gamepadBinding());
@@ -220,7 +221,7 @@ describe('KeybindingManager', () => {
       const manager = new KeybindingManager(overlayWith(toggleLock));
       manager.registerAll(); // builds the gamepad token -> action map
 
-      fireButton(manager, 'a');
+      fireButton(manager, 'gamepad:btn0');
       expect(toggleLock).toHaveBeenCalledOnce();
     });
 
@@ -232,7 +233,7 @@ describe('KeybindingManager', () => {
       const manager = new KeybindingManager(overlayWith(toggleLock));
       manager.registerAll();
 
-      fireButton(manager, 'b');
+      fireButton(manager, 'gamepad:btn1');
       expect(toggleLock).not.toHaveBeenCalled();
     });
 
@@ -246,13 +247,13 @@ describe('KeybindingManager', () => {
 
       const captured: string[] = [];
       manager.startGamepadCapture((token) => captured.push(token));
-      fireButton(manager, 'a');
+      fireButton(manager, 'gamepad:btn0');
 
-      expect(captured).toEqual(['gamepad:a']);
+      expect(captured).toEqual(['gamepad:btn0']);
       expect(toggleLock).not.toHaveBeenCalled();
 
       manager.stopGamepadCapture();
-      fireButton(manager, 'a');
+      fireButton(manager, 'gamepad:btn0');
       expect(toggleLock).toHaveBeenCalledOnce();
     });
   });

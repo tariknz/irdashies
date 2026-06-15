@@ -14,6 +14,7 @@ import type {
   ReferenceLapBridge,
   KeybindingsBridge,
   KeybindingActionId,
+  GamepadHostBridge,
   PersonalBestLapBridge,
   ChromiumFlagsBridge,
   ChromiumFlagsType,
@@ -264,6 +265,12 @@ export function exposeBridge() {
         ipcRenderer.removeListener('keybindings:gamepadCaptured', handler);
     },
   } as KeybindingsBridge);
+
+  // Used only by the hidden WebHID host renderer (src/hidHost.ts) to forward
+  // controller button presses to the main process.
+  contextBridge.exposeInMainWorld('gamepadHost', {
+    sendButton: (token: string) => ipcRenderer.send('gamepad:button', token),
+  } as GamepadHostBridge);
 
   contextBridge.exposeInMainWorld('personalBestBridge', {
     getPersonalBest: (trackId: string | number, carName: string) =>

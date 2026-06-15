@@ -2,7 +2,6 @@ import type { ForgeConfig } from '@electron-forge/shared-types';
 import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import { MakerDMG } from '@electron-forge/maker-dmg';
 import { VitePlugin } from '@electron-forge/plugin-vite';
-import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import path from 'node:path';
@@ -15,10 +14,6 @@ const config: ForgeConfig = {
   },
   rebuildConfig: {
     force: true,
-    // @kmamal/sdl ships a prebuilt N-API binary (ABI-stable across Node and
-    // Electron). Forcing a source rebuild fails because SDL itself isn't present
-    // to compile against, so skip it and use the shipped dist/sdl.node.
-    ignoreModules: ['@kmamal/sdl'],
   },
   makers: [
     new MakerSquirrel({
@@ -42,9 +37,6 @@ const config: ForgeConfig = {
     },
   ],
   plugins: [
-    // Unpack native modules (e.g. @kmamal/sdl) from the asar so their .node
-    // binaries can be loaded at runtime.
-    new AutoUnpackNativesPlugin({}),
     new VitePlugin({
       // `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.
       // If you are familiar with Vite configuration, it will look really familiar.
