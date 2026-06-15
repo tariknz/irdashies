@@ -57,6 +57,9 @@ export class GamepadHost {
     );
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+      // Temporary: surface the hidden renderer's console while diagnosing
+      // controller input. Remove once gamepad bindings are confirmed working.
+      wc.openDevTools({ mode: 'detach' });
       const base = MAIN_WINDOW_VITE_DEV_SERVER_URL.replace(/\/$/, '');
       this.window.loadURL(`${base}/index-hid-host.html`);
     } else {
