@@ -16,9 +16,10 @@
       "@irdashies/storybook": ["./.storybook"],
       "@irdashies/utils/*": ["./src/frontend/utils/*"],
       "@irdashies/context": ["./src/frontend/context"],
-      "@irdashies/types": ["./src/types"]
+      "@irdashies/types": ["./src/types"],
+      "@irdashies/shared": ["./src/shared"]
     },
-    "types": ["vite/client"]
+    "types": ["vite/client", "w3c-web-hid"]
   },
   "exclude": ["site"]
 }

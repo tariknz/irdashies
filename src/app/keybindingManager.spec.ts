@@ -170,6 +170,32 @@ describe('KeybindingManager', () => {
     });
   });
 
+  describe('gamepad bindings', () => {
+    const gamepadBinding = (): KeybindingsMap =>
+      ({
+        'toggle-edit-mode': {
+          accelerator: 'gamepad:btn0',
+          label: 'Edit Layout',
+          description: '',
+          isDefault: false,
+        },
+      }) as unknown as KeybindingsMap;
+
+    // The token -> action routing, capture mode, and host lifecycle now live in
+    // GamepadManager (see gamepadManager.spec.ts). KeybindingManager only has to
+    // keep gamepad bindings out of the global keyboard-shortcut registry.
+    it('does not register gamepad bindings as global keyboard shortcuts', () => {
+      mockGetKeybindings.mockReturnValue(gamepadBinding());
+      mockIsRegistered.mockReturnValue(false);
+      mockRegister.mockReturnValue(true);
+
+      const manager = new KeybindingManager(fakeOverlayManager);
+      manager.registerAll();
+
+      expect(mockRegister).not.toHaveBeenCalled();
+    });
+  });
+
   describe('isValidAccelerator', () => {
     it('returns true when registration succeeds and unregisters the trial', () => {
       mockRegister.mockReturnValue(true);

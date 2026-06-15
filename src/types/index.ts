@@ -15,3 +15,4 @@ export * from './logBridge';
 export * from './keybindings';
 export * from './personalBestLapBridge';
 export * from './chromiumFlags';
+export * from './gamepadToken';

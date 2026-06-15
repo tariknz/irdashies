@@ -45,6 +45,9 @@ overlayManager.setupHardwareAcceleration();
 overlayManager.setupSingleInstanceLock();
 overlayManager.setupAutoStart();
 
+// Hoisted so the quit handler can tear down the WebHID host window cleanly.
+let keybindingManager: KeybindingManager | undefined;
+
 app.on('ready', async () => {
   // Don't start services if we don't have the single instance lock
   // (this instance should be quitting)
@@ -75,8 +78,10 @@ app.on('ready', async () => {
 
   overlayManager.createOverlays(dashboard);
 
-  const keybindingManager = new KeybindingManager(overlayManager);
+  keybindingManager = new KeybindingManager(overlayManager);
   keybindingManager.registerAll();
+  // Start the WebHID host window that reads game controllers for gamepad bindings.
+  keybindingManager.startGamepad();
 
   setupTaskbar(overlayManager, keybindingManager);
   publishDashboardUpdates(overlayManager, analytics);
@@ -107,6 +112,7 @@ app.on('quit', () => {
 
 app.on('before-quit', () => {
   overlayManager.markQuitting();
+  keybindingManager?.stopGamepad();
   // Synchronous flush so any pending debounced reference-lap write completes
   // before the process exits.
   flushReferenceLapsOnShutdown();

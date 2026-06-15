@@ -2,19 +2,27 @@ import { globalShortcut, desktopCapturer } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { KeybindingActionId, KeybindingsMap } from '@irdashies/types';
+import { isGamepadBinding } from '@irdashies/shared';
 import { getKeybindings } from './storage/keybindings';
 import { OverlayManager } from './overlayManager';
 import logger from './logger';
+import { GamepadManager } from './gamepad/gamepadManager';
 
 export class KeybindingManager {
   private bindings: KeybindingsMap;
   private actionHandlers: Map<KeybindingActionId, () => void>;
   private hideState = false;
 
+  /** Owns the gamepad token -> action map, capture mode, and WebHID host. */
+  private gamepad: GamepadManager;
+
   constructor(private overlayManager: OverlayManager) {
     this.bindings = getKeybindings();
     this.actionHandlers = new Map();
     this.setupActionHandlers();
+    this.gamepad = new GamepadManager((actionId) =>
+      this.triggerAction(actionId)
+    );
   }
 
   private setupActionHandlers(): void {
@@ -76,9 +84,14 @@ export class KeybindingManager {
   }
 
   public registerAll(): void {
+    this.gamepad.syncBindings(this.bindings);
     for (const [actionId, entry] of Object.entries(this.bindings)) {
       const handler = this.actionHandlers.get(actionId as KeybindingActionId);
       if (!handler) continue;
+
+      // Gamepad bindings aren't global keyboard shortcuts; the GamepadManager
+      // routes them via syncBindings() above.
+      if (isGamepadBinding(entry.accelerator)) continue;
 
       try {
         // Skip if already registered (idempotent — safe to call after reloadBindings)
@@ -103,6 +116,7 @@ export class KeybindingManager {
 
   public unregisterAll(): void {
     for (const entry of Object.values(this.bindings)) {
+      if (isGamepadBinding(entry.accelerator)) continue;
       try {
         if (globalShortcut.isRegistered(entry.accelerator)) {
           globalShortcut.unregister(entry.accelerator);
@@ -114,6 +128,26 @@ export class KeybindingManager {
         );
       }
     }
+  }
+
+  /** Start reading game controllers (see {@link GamepadManager.start}). */
+  public startGamepad(): void {
+    this.gamepad.start();
+  }
+
+  /** Tear down the WebHID host window (call on shutdown). */
+  public stopGamepad(): void {
+    this.gamepad.stop();
+  }
+
+  /** Enter capture mode: the next pad presses are reported to `onCapture` for rebinding. */
+  public startGamepadCapture(onCapture: (token: string) => void): void {
+    this.gamepad.startCapture(onCapture);
+  }
+
+  /** Leave capture mode; pad presses resume triggering actions. */
+  public stopGamepadCapture(): void {
+    this.gamepad.stopCapture();
   }
 
   /**

@@ -50,6 +50,7 @@
     "@types/jsdom": "^28.0.3",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
+    "@types/w3c-web-hid": "^1.0.7",
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.7",
