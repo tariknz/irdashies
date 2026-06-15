@@ -66,6 +66,43 @@ describe('parseButtons', () => {
     expect(buttons).toHaveLength(0);
   });
 
+  it('falls back to non-constant 1-bit fields when no 0x09 buttons exist', () => {
+    // Wheel bases often declare buttons on a vendor-defined usage page.
+    const buttons = parseButtons(
+      collections({
+        items: [
+          {
+            usagePage: 0xff00,
+            reportSize: 1,
+            reportCount: 6,
+            isConstant: false,
+          },
+          { usagePage: 0x01, reportSize: 8, reportCount: 2 }, // axes
+        ],
+      })
+    );
+
+    expect(buttons).toHaveLength(6);
+    expect(buttons[0]).toMatchObject({ byteOffset: 0, bitMask: 0b1, index: 0 });
+  });
+
+  it('excludes constant padding from the fallback', () => {
+    const buttons = parseButtons(
+      collections({
+        items: [
+          {
+            usagePage: 0xff00,
+            reportSize: 1,
+            reportCount: 4,
+            isConstant: false,
+          },
+          { usagePage: 0x00, reportSize: 1, reportCount: 4, isConstant: true }, // padding
+        ],
+      })
+    );
+    expect(buttons).toHaveLength(4);
+  });
+
   it('indexes buttons continuously across multiple reports', () => {
     const buttons = parseButtons(
       collections(

@@ -6,10 +6,10 @@
  *
  * HID input reports are bit-packed: each report item occupies
  * `reportSize * reportCount` bits, laid out sequentially (LSB-first within each
- * byte). Buttons live on the Button usage page (0x09) as 1-bit fields; axes,
- * hats and padding live on other pages / wider fields. By walking every item and
- * advancing a bit cursor we can pick out just the button bits and ignore the
- * rest — so a wheel base's many analog axes never masquerade as button presses.
+ * byte). Buttons are 1-bit fields; axes, hats and padding are wider or constant.
+ * By walking every item and advancing a bit cursor we can pick out just the
+ * button bits and ignore the rest — so a wheel base's analog axes never
+ * masquerade as button presses.
  */
 
 /** Usage page for buttons in the HID spec. */
@@ -27,6 +27,15 @@ export interface ButtonBit {
   index: number;
 }
 
+/** A single 1-bit field located in a report, with the metadata used to pick buttons. */
+interface BitField {
+  reportId: number;
+  byteOffset: number;
+  bitMask: number;
+  usagePage: number;
+  isConstant: boolean;
+}
+
 /** Flatten a collection tree into its input reports (reports can nest in children). */
 function collectInputReports(
   collections: readonly HIDCollectionInfo[]
@@ -41,15 +50,11 @@ function collectInputReports(
   return reports;
 }
 
-/**
- * Walk a device's input reports and return the bit location of every button,
- * indexed in declaration order.
- */
-export function parseButtons(
+/** Walk every input-report item and record the bit location of each 1-bit field. */
+function collectBitFields(
   collections: readonly HIDCollectionInfo[]
-): ButtonBit[] {
-  const buttons: ButtonBit[] = [];
-  let index = 0;
+): BitField[] {
+  const fields: BitField[] = [];
 
   for (const report of collectInputReports(collections)) {
     const reportId = report.reportId ?? 0;
@@ -59,14 +64,15 @@ export function parseButtons(
       const size = item.reportSize ?? 0;
       const count = item.reportCount ?? 0;
 
-      if (item.usagePage === BUTTON_USAGE_PAGE && size === 1) {
+      if (size === 1) {
         for (let k = 0; k < count; k++) {
           const position = bit + k;
-          buttons.push({
+          fields.push({
             reportId,
             byteOffset: position >> 3,
             bitMask: 1 << (position & 7),
-            index: index++,
+            usagePage: item.usagePage ?? 0,
+            isConstant: item.isConstant ?? false,
           });
         }
       }
@@ -76,7 +82,34 @@ export function parseButtons(
     }
   }
 
-  return buttons;
+  return fields;
+}
+
+/**
+ * Locate every button in a device's input reports, indexed in declaration order.
+ *
+ * Buttons on the HID Button usage page (0x09) are preferred. Some controllers
+ * and most sim wheel bases declare their buttons on a vendor-defined usage page
+ * instead; when no 0x09 buttons exist we fall back to every non-constant 1-bit
+ * field (axes are multi-bit, padding is constant, so neither is mistaken for a
+ * button).
+ */
+export function parseButtons(
+  collections: readonly HIDCollectionInfo[]
+): ButtonBit[] {
+  const fields = collectBitFields(collections);
+
+  let chosen = fields.filter((f) => f.usagePage === BUTTON_USAGE_PAGE);
+  if (chosen.length === 0) {
+    chosen = fields.filter((f) => !f.isConstant);
+  }
+
+  return chosen.map((field, index) => ({
+    reportId: field.reportId,
+    byteOffset: field.byteOffset,
+    bitMask: field.bitMask,
+    index,
+  }));
 }
 
 /**
@@ -104,4 +137,26 @@ export function buttonEdges(
   }
 
   return pressed;
+}
+
+/** Human-readable dump of a device's input-report layout, for diagnostics. */
+export function describeCollections(
+  collections: readonly HIDCollectionInfo[]
+): string {
+  const hex = (n: number) => `0x${n.toString(16).padStart(2, '0')}`;
+  const lines: string[] = [];
+
+  for (const report of collectInputReports(collections)) {
+    lines.push(`  report id=${report.reportId ?? 0}`);
+    for (const item of report.items ?? []) {
+      lines.push(
+        `    usagePage=${hex(item.usagePage ?? 0)} ` +
+          `usages=${item.usageMinimum ?? '?'}..${item.usageMaximum ?? '?'} ` +
+          `size=${item.reportSize ?? 0}x${item.reportCount ?? 0} ` +
+          `const=${item.isConstant ?? false}`
+      );
+    }
+  }
+
+  return lines.join('\n') || '  (no input reports)';
 }

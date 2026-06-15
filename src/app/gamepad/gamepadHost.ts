@@ -48,10 +48,17 @@ export class GamepadHost {
       },
     });
 
+    const wc = this.window.webContents;
+    wc.on('did-finish-load', () =>
+      logger.info('[Gamepad] HID host page loaded')
+    );
+    wc.on('did-fail-load', (_e, code, desc, url) =>
+      logger.error(`[Gamepad] HID host failed to load ${url}: ${code} ${desc}`)
+    );
+
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-      this.window.loadURL(
-        `${MAIN_WINDOW_VITE_DEV_SERVER_URL}/index-hid-host.html`
-      );
+      const base = MAIN_WINDOW_VITE_DEV_SERVER_URL.replace(/\/$/, '');
+      this.window.loadURL(`${base}/index-hid-host.html`);
     } else {
       this.window.loadFile(
         path.join(
@@ -79,16 +86,21 @@ export class GamepadHost {
   /**
    * Auto-grant HID access for the host window's session so the renderer can
    * enumerate controllers via `navigator.hid.getDevices()` without a chooser or
-   * a user gesture. Scoped to the dedicated partition; only this app's own
-   * renderer loads there.
+   * a user gesture.
+   *
+   * The handlers grant unconditionally: this is a dedicated in-memory partition
+   * that only this app's own hidden HID-host renderer ever loads, so there is no
+   * untrusted origin to guard against. (Filtering on `permission === 'hid'` or
+   * `details.deviceType === 'hid'` risks silently denying enumeration if those
+   * fields differ across call contexts — which would leave getDevices() empty.)
    */
   private grantHidPermissions(): void {
     if (this.permissionsGranted) return;
     this.permissionsGranted = true;
 
     const ses = session.fromPartition(HID_PARTITION);
-    ses.setPermissionCheckHandler((_wc, permission) => permission === 'hid');
-    ses.setDevicePermissionHandler((details) => details.deviceType === 'hid');
+    ses.setPermissionCheckHandler(() => true);
+    ses.setDevicePermissionHandler(() => true);
     ses.on('select-hid-device', (event, details, callback) => {
       // Only fires if the renderer ever calls requestDevice(); auto-pick the
       // first match so no picker UI is shown.
