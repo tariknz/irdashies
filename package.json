@@ -8,9 +8,6 @@
     "url": "https://github.com/tariknz/irdashies"
   },
   "main": ".vite/build/main.js",
-  "engines": {
-    "node": ">=22.12.0"
-  },
   "scripts": {
     "start": "electron-forge start --enable-logging",
     "generate-assets": "npx tsx ./tools/index.ts",
@@ -102,7 +99,6 @@
     "zustand": "^5.0.14"
   },
   "overrides": {
-    "yauzl": "^3.3.1",
-    "@electron/rebuild": "^4.0.4"
+    "yauzl": "^3.3.1"
   }
 }
