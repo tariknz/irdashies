@@ -89,7 +89,7 @@
     "electron-log": "^5.4.4",
     "electron-squirrel-startup": "^1.0.1",
     "flag-icons": "^7.5.0",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "^4.2.0",
     "posthog-node": "^5.35.6",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
