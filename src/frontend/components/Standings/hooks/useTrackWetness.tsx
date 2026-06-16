@@ -1,16 +1,15 @@
 import { useMemo } from 'react';
 import { useTelemetry } from '@irdashies/context';
-import { TrackWetness } from '@irdashies/types';
 
 const wetnessLevels: Record<number, string> = {
-  [TrackWetness.Unknown]: '',
-  [TrackWetness.Dry]: 'Dry',
-  [TrackWetness.MostlyDry]: 'Mostly Dry',
-  [TrackWetness.VeryLightlyWet]: 'Very Lightly Wet',
-  [TrackWetness.LightlyWet]: 'Lightly Wet',
-  [TrackWetness.ModeratelyWet]: 'Moderately Wet',
-  [TrackWetness.VeryWet]: 'Very Wet',
-  [TrackWetness.ExtremelyWet]: 'Extremely Wet',
+  0: '',
+  1: 'Dry',
+  2: 'Mostly Dry',
+  3: 'Very Lightly Wet',
+  4: 'Lightly Wet',
+  5: 'Moderately Wet',
+  6: 'Very Wet',
+  7: 'Extremely Wet',
 };
 
 export const useTrackWetness = () => {
