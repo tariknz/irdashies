@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { RivalsRow, getCompactSizes } from './RivalsRow';
-import { TelemetryDecorator } from '../../../../.storybook/telemetryDecorator';
+import { TelemetryDecorator } from '@irdashies/storybook';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { RivalEntry } from './hooks/useRivalsData';
 import { RIVAL_COLUMN_IDS, RIVAL_COLUMN_META, RivalColumnId } from './RivalsRow';
@@ -282,6 +282,11 @@ const SectorDataDecorator = (Story: React.ComponentType) => {
         },
       },
     });
+
+    return () => {
+      useSectorTimingStore.getState().reset();
+      useRivalSectorStore.getState().reset();
+    };
   }, []);
 
   return <Story />;

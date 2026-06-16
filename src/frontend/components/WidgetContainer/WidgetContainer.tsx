@@ -196,16 +196,16 @@ export const WidgetContainer = memo(
               ].join(' ')}
             >
               {/* Center-of-edge outward indicators */}
-              <svg className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none" width="10" height="6" viewBox="0 0 10 6">
+              <svg aria-hidden="true" className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none" width="10" height="6" viewBox="0 0 10 6">
                 <polygon points="5,0 0,6 10,6" fill={edgeIndicatorFill} />
               </svg>
-              <svg className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full pointer-events-none" width="10" height="6" viewBox="0 0 10 6">
+              <svg aria-hidden="true" className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full pointer-events-none" width="10" height="6" viewBox="0 0 10 6">
                 <polygon points="5,6 0,0 10,0" fill={edgeIndicatorFill} />
               </svg>
-              <svg className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full pointer-events-none" width="6" height="10" viewBox="0 0 6 10">
+              <svg aria-hidden="true" className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full pointer-events-none" width="6" height="10" viewBox="0 0 6 10">
                 <polygon points="6,5 0,0 0,10" fill={edgeIndicatorFill} />
               </svg>
-              <svg className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full pointer-events-none" width="6" height="10" viewBox="0 0 6 10">
+              <svg aria-hidden="true" className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full pointer-events-none" width="6" height="10" viewBox="0 0 6 10">
                 <polygon points="0,5 6,0 6,10" fill={edgeIndicatorFill} />
               </svg>
 
@@ -219,6 +219,7 @@ export const WidgetContainer = memo(
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => onOpenSettings(id)}
                     title="Widget settings"
+                    aria-label="Widget settings"
                   >
                     <GearIcon size={14} />
                   </button>
@@ -229,6 +230,7 @@ export const WidgetContainer = memo(
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => onDisable(id)}
                     title="Disable widget"
+                    aria-label="Disable widget"
                   >
                     <XIcon size={14} />
                   </button>
