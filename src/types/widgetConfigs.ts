@@ -156,6 +156,7 @@ export interface StandingsConfig {
   };
   compound: { enabled: boolean };
   carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
+  radio?: { persistenceSeconds: number };
   lapTimeDeltas: { enabled: boolean; numLaps: number; decimalPlaces: number };
   avgLapTime: { enabled: boolean; numLaps: number; timeFormat: TimeFormat };
   titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
@@ -184,6 +185,7 @@ export interface RelativeConfig {
   fastestTime: { enabled: boolean; timeFormat: TimeFormat };
   compound: { enabled: boolean };
   carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
+  radio?: { persistenceSeconds: number };
   titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
   headerBar: SessionBarConfig;
   footerBar: SessionBarConfig;

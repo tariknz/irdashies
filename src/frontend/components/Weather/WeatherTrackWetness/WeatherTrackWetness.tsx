@@ -1,20 +1,21 @@
 import { DropIcon, SunIcon, WavesIcon } from '@phosphor-icons/react';
 import { memo } from 'react';
+import { TrackWetness } from '@irdashies/types';
 
 // Track wetness constants
-const MIN_WETNESS = 1;
-const MAX_WETNESS = 7; // Extremely Wet
-const DEFAULT_WETNESS = 0;
+const MIN_WETNESS = TrackWetness.Dry;
+const MAX_WETNESS = TrackWetness.ExtremelyWet;
+const DEFAULT_WETNESS = TrackWetness.Unknown;
 const FALLBACK_TRACK_STATE = 'N/A';
 const WETNESS_LEVELS: Record<number, string> = {
-  0: '',
-  1: 'Dry',
-  2: 'Mostly Dry',
-  3: 'Very Lightly Wet',
-  4: 'Lightly Wet',
-  5: 'Moderately Wet',
-  6: 'Very Wet',
-  7: 'Extremely Wet',
+  [TrackWetness.Unknown]: '',
+  [TrackWetness.Dry]: 'Dry',
+  [TrackWetness.MostlyDry]: 'Mostly Dry',
+  [TrackWetness.VeryLightlyWet]: 'Very Lightly Wet',
+  [TrackWetness.LightlyWet]: 'Lightly Wet',
+  [TrackWetness.ModeratelyWet]: 'Moderately Wet',
+  [TrackWetness.VeryWet]: 'Very Wet',
+  [TrackWetness.ExtremelyWet]: 'Extremely Wet',
 };
 
 export interface WeatherTrackWetnessProps {
@@ -24,8 +25,12 @@ export interface WeatherTrackWetnessProps {
 
 export const WeatherTrackWetness = memo(
   ({ trackMoisture, variant = 'default' }: WeatherTrackWetnessProps) => {
-    // Calculate wetness percentage (0-100%)
-    const normalizedMoisture = trackMoisture || MIN_WETNESS;
+    // Calculate wetness percentage (0-100%), clamped so out-of-range
+    // moisture values can't produce negative or >100% widths.
+    const normalizedMoisture = Math.min(
+      MAX_WETNESS,
+      Math.max(MIN_WETNESS, trackMoisture ?? MIN_WETNESS)
+    );
     const wetnessScale = MAX_WETNESS - MIN_WETNESS;
     const trackWetnessPct =
       ((normalizedMoisture - MIN_WETNESS) / wetnessScale) * 100;
@@ -70,10 +75,7 @@ export const WeatherTrackWetness = memo(
         {/* Header row with consistency label styling */}
         <div className="flex flex-row gap-x-2 items-center text-sm mb-2">
           <WavesIcon className="flex-none" />
-          <span className="truncate min-w-0 flex-1 @max-[120px]:hidden">
-            Wetness
-          </span>
-          <div className="flex-none whitespace-nowrap text-right capitalize">
+          <div className="flex-1 min-w-0 truncate capitalize">
             {trackStateLabel}
           </div>
         </div>

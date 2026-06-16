@@ -115,6 +115,11 @@ export const RadioActiveWithStatus: Story = {
   },
 };
 
+// NOTE: DriverInfoRow only renders a single on/off icon. The debounce that
+// decides *when* radioActive flips off lives in useRadioActiveCarIdxs and is
+// demonstrated against the real telemetry store in its own stories file
+// (useRadioActiveCarIdxs.stories.tsx).
+
 export const IsPlayer: Story = {
   args: {
     ...Primary.args,

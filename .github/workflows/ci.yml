@@ -11,7 +11,10 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
+    # Pinned to windows-2022 (VS 2022 / v143 toolset). windows-latest moved to
+    # Windows Server 2025 + Visual Studio 2026, whose compiler hits an internal
+    # compiler error (C1001) building node-addon-api's napi-inl.h.
+    runs-on: windows-2022
 
     steps:
     - uses: actions/checkout@v6

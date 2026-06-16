@@ -441,13 +441,70 @@ export const groupStandingsByClass = (
     bucket.push(result);
   }
 
+  const getTop2Stats = (drivers: Standings[]) => {
+    const validDrivers = drivers
+      .filter(
+        (d) =>
+          d.position !== undefined &&
+          d.fastestTime !== undefined &&
+          d.fastestTime > 0
+      )
+      .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
+      .slice(0, 2);
+
+    if (validDrivers.length === 0) {
+      return undefined;
+    }
+
+    const positions = validDrivers.map((d) => d.position ?? 999);
+
+    return {
+      average: positions.reduce((sum, pos) => sum + pos, 0) / positions.length,
+      bestPosition: positions[0], // lower is better
+    };
+  };
+
   const sorted: [string, Standings[]][] = [];
   for (const [classId, drivers] of groupedByClassId) {
     sorted.push([String(classId), drivers]);
   }
-  sorted.sort(
-    ([, a], [, b]) => b[0].carClass.relativeSpeed - a[0].carClass.relativeSpeed
+
+  const statsByClass = new Map(
+    sorted.map(([id, drivers]) => [id, getTop2Stats(drivers)])
   );
+
+  sorted.sort(([idA, classA], [idB, classB]) => {
+    const statsA = statsByClass.get(idA);
+    const statsB = statsByClass.get(idB);
+
+    // Primary sort: average top-2 position
+    if (statsA && statsB) {
+      // Prioritize the overall leader
+      if (statsA.bestPosition === 1 && statsB.bestPosition !== 1) {
+        return -1;
+      }
+      if (statsB.bestPosition === 1 && statsA.bestPosition !== 1) {
+        return 1;
+      }
+
+      // Better Class Average Position Overall
+      if (statsA.average !== statsB.average) {
+        return statsA.average - statsB.average;
+      }
+
+      // Tie-breaker: better leading position wins
+      if (statsA.bestPosition !== statsB.bestPosition) {
+        return statsA.bestPosition - statsB.bestPosition;
+      }
+    }
+
+    // Prefer classes with valid timing data
+    if (statsA) return -1;
+    if (statsB) return 1;
+
+    // Final fallback: relative speed
+    return classB[0].carClass.relativeSpeed - classA[0].carClass.relativeSpeed;
+  });
   return sorted;
 };
 

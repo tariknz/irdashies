@@ -29,6 +29,7 @@ import {
 import type { StandingsWidgetSettings } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useStandingsSettings } from './useStandingsSettings';
+import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
 import { TrackLocation } from '@irdashies/types';
 import type { SessionResults } from '@irdashies/types';
 
@@ -94,8 +95,8 @@ export const useDriverStandings = (
   const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
   const carIdxTrackSurface =
     useTelemetryValues<TrackLocation[]>('CarIdxTrackSurface');
-  const radioTransmitCarIdx = useTelemetryValues<number[]>(
-    'RadioTransmitCarIdx'
+  const radioTransmitCarIdx = useRadioActiveCarIdxs(
+    (settings?.radio?.persistenceSeconds ?? 3) * 1000
   );
   const carIdxTireCompound = useTelemetryValues<number[]>('CarIdxTireCompound');
   const carIdxSessionFlags = useTelemetryValues<number[]>('CarIdxSessionFlags');

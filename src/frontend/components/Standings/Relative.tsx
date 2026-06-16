@@ -308,7 +308,11 @@ export const Relative = () => {
       >
         <TitleBar titleBarSettings={settings?.titleBar} />
         {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
-          <SessionBar settings={settings.headerBar} opacity={settings?.foreground?.opacity} position="header" />
+          <SessionBar
+            settings={settings.headerBar}
+            opacity={settings?.foreground?.opacity}
+            position="header"
+          />
         )}
         <table
           className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
@@ -316,7 +320,11 @@ export const Relative = () => {
           <tbody>{rows}</tbody>
         </table>
         {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
-          <SessionBar settings={settings.footerBar} opacity={settings?.foreground?.opacity} position="footer" />
+          <SessionBar
+            settings={settings.footerBar}
+            opacity={settings?.foreground?.opacity}
+            position="footer"
+          />
         )}
       </FlagContour>
     );
@@ -332,7 +340,11 @@ export const Relative = () => {
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
-        <SessionBar settings={settings.headerBar} opacity={settings?.foreground?.opacity} position="header" />
+        <SessionBar
+          settings={settings.headerBar}
+          opacity={settings?.foreground?.opacity}
+          position="header"
+        />
       )}
       <table
         className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
@@ -340,7 +352,11 @@ export const Relative = () => {
         <tbody>{rows}</tbody>
       </table>
       {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
-        <SessionBar settings={settings.footerBar} opacity={settings?.foreground?.opacity} position="footer" />
+        <SessionBar
+          settings={settings.footerBar}
+          opacity={settings?.foreground?.opacity}
+          position="footer"
+        />
       )}
     </FlagContour>
   );

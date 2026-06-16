@@ -158,9 +158,10 @@ export const DriverNameCell = memo(
       >
         <div className="flex items-center overflow-hidden">
           <span
-            className={`animate-pulse transition-[width] duration-300 ${
-              radioActive ? 'w-4 mr-1' : 'w-0 overflow-hidden'
-            }`}
+            className={[
+              'transition-[width,opacity] duration-300',
+              radioActive ? 'w-4 mr-1 animate-pulse' : 'w-0 overflow-hidden',
+            ].join(' ')}
           >
             <SpeakerHighIcon className="mt-px" size={16} />
           </span>
