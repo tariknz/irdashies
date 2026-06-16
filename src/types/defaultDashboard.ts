@@ -690,6 +690,7 @@ export const defaultDashboard: {
       },
       config: {
         background: { opacity: 80 },
+        timeFormat: 'seconds-full',
         gap: { enabled: true },
         lastTime: { enabled: true },
         lastTimeDiff: { enabled: true },

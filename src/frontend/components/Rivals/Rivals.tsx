@@ -3,6 +3,7 @@ import {
   useSessionVisibility,
   useFocusCarIdx,
   useRivalSectorStoreUpdater,
+  useGeneralSettings,
 } from '@irdashies/context';
 import { useRivalsData } from './hooks/useRivalsData';
 import { useRivalsSettings } from './hooks/useRivalsSettings';
@@ -11,6 +12,7 @@ import {
   RIVAL_COLUMN_IDS,
   RIVAL_COLUMN_META,
   RivalColumnId,
+  getCompactSizes,
 } from './RivalsRow';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 
@@ -23,6 +25,8 @@ export const Rivals = () => {
   const isSessionVisible = useSessionVisibility(config.sessionVisibility);
   const { ahead, behind } = useRivalsData();
   const playerCarIdx = useFocusCarIdx();
+  const compactMode = useGeneralSettings()?.compactMode;
+  const { rowGap, rowPx, cellW, posW, headerFontSize } = getCompactSizes(compactMode);
   useRivalSectorStoreUpdater(config.sectors?.enabled ?? false);
 
   if (!isSessionVisible) return null;
@@ -41,16 +45,16 @@ export const Rivals = () => {
       }}
     >
       {config.showHeader?.enabled && (
-        <div className="flex items-center gap-3 px-2 py-0.5 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-600/50">
-          <span className="w-8 shrink-0 text-center">Pos</span>
-          <span className="flex-1 min-w-[20ch]">Driver</span>
+        <div className={`flex items-center ${rowGap} ${rowPx} py-0.5 ${headerFontSize} text-slate-400 tracking-wider border-b border-slate-600/50`}>
+          <span className={`${posW} shrink-0 text-center`}>Pos</span>
+          <span className="flex-1 min-w-0">Driver</span>
           {displayOrder.map((colId) => {
             const col = config[colId as keyof typeof config] as
               | { enabled: boolean }
               | undefined;
             if (!col?.enabled) return null;
             return (
-              <span key={colId} className="w-16 text-right shrink-0">
+              <span key={colId} className={`${cellW} text-right shrink-0`}>
                 {RIVAL_COLUMN_META[colId].header}
               </span>
             );

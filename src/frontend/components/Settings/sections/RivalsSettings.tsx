@@ -11,6 +11,7 @@ import { TabButton } from '../components/TabButton';
 import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { SettingActionButton } from '../components/SettingActionButton';
+import { SettingSelectRow } from '../components/SettingSelectRow';
 import { RIVAL_COLUMN_IDS, RIVAL_COLUMN_META, RivalColumnId } from '../../Rivals/RivalsRow';
 
 const SETTING_ID = 'rivals';
@@ -186,6 +187,17 @@ export const RivalsSettings = () => {
                       onChange={(v) =>
                         handleConfigChange({ background: { opacity: v } })
                       }
+                    />
+                    <SettingSelectRow
+                      title="Time Format"
+                      description="Decimal precision for delta and sector delta values."
+                      value={config.timeFormat ?? 'seconds-full'}
+                      options={[
+                        { label: '42.123', value: 'seconds-full' },
+                        { label: '42.12', value: 'seconds-2' },
+                        { label: '42.1', value: 'seconds-mixed' },
+                      ]}
+                      onChange={(v) => handleConfigChange({ timeFormat: v })}
                     />
                   </SettingsSection>
 

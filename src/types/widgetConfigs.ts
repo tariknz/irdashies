@@ -633,6 +633,7 @@ export interface InformationBarConfig extends SessionBarConfig {
 
 export interface RivalsConfig {
   background: { opacity: number };
+  timeFormat?: TimeFormat;
   gap: { enabled: boolean };
   lastTime: { enabled: boolean };
   lastTimeDiff: { enabled: boolean };

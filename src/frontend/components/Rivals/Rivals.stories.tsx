@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { Meta, StoryObj } from '@storybook/react-vite';
-import { RivalsRow } from './RivalsRow';
+import { RivalsRow, getCompactSizes } from './RivalsRow';
 import { TelemetryDecorator } from '../../../../.storybook/telemetryDecorator';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { RivalEntry } from './hooks/useRivalsData';
 import { RIVAL_COLUMN_IDS, RIVAL_COLUMN_META, RivalColumnId } from './RivalsRow';
+import { useGeneralSettings, useRivalSectorStore, useSectorTimingStore } from '@irdashies/context';
 
 export default {
   title: 'widgets/Rivals',
@@ -177,16 +179,17 @@ const headerConfig = {
 export const WithHeader: Story = {
   render: () => {
     const displayOrder = RIVAL_COLUMN_IDS;
+    const { rowGap, rowPx, cellW, posW, headerFontSize } = getCompactSizes(useGeneralSettings()?.compactMode);
     return (
       <div className="bg-slate-800/80 rounded-md overflow-hidden flex flex-col justify-center w-[480px]">
-        <div className="flex items-center gap-3 px-2 py-0.5 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-600/50">
-          <span className="w-8 shrink-0 text-center">Pos</span>
+        <div className={`flex items-center ${rowGap} ${rowPx} py-0.5 ${headerFontSize} text-slate-400 tracking-wider border-b border-slate-600/50`}>
+          <span className={`${posW} shrink-0 text-center`}>Pos</span>
           <span className="flex-1 min-w-0">Driver</span>
           {displayOrder.map((colId: RivalColumnId) => {
             const col = headerConfig[colId] as { enabled: boolean };
             if (!col.enabled) return null;
             return (
-              <span key={colId} className="w-16 text-right shrink-0">
+              <span key={colId} className={`${cellW} text-right shrink-0`}>
                 {RIVAL_COLUMN_META[colId].header}
               </span>
             );
@@ -204,6 +207,189 @@ export const WithHeader: Story = {
           config={headerConfig}
           displayOrder={displayOrder}
           playerCarIdx={undefined}
+        />
+      </div>
+    );
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Sector deltas story
+// ---------------------------------------------------------------------------
+
+const PLAYER_CAR_IDX = 0;
+const AHEAD_CAR_IDX = 5;
+const BEHIND_CAR_IDX = 7;
+
+const sectorConfig = {
+  ...defaultConfig,
+  bestTimeDiff: { enabled: true },
+  showHeader: { enabled: true },
+  sectors: { enabled: true },
+};
+
+const SectorDataDecorator = (Story: React.ComponentType) => {
+  useEffect(() => {
+    useSectorTimingStore.setState({
+      sectors: [
+        { SectorNum: 0, SectorStartPct: 0 },
+        { SectorNum: 1, SectorStartPct: 0.33 },
+        { SectorNum: 2, SectorStartPct: 0.66 },
+      ],
+    });
+
+    // Player: completed all 3 sectors on lap 5; lap 4 reference data for stale display
+    const playerMap = new Map([
+      [4, [29.501, 31.388, 29.012]],
+      [5, [29.412, 31.204, 28.867]],
+    ]);
+    // Rival ahead: S1 faster, S2 slower — S3 still pending, stale italic from lap 4
+    const aheadMap = new Map([
+      [4, [29.198, 31.720, 28.544]],
+      [5, [29.121, 31.643, null]],
+    ]);
+    // Rival behind: completed S1 — S2 & S3 pending, stale italic from lap 4
+    const behindMap = new Map([
+      [4, [29.655, 31.102, 29.334]],
+      [5, [29.782, null, null]],
+    ]);
+
+    useRivalSectorStore.setState({
+      cars: {
+        [PLAYER_CAR_IDX]: {
+          currentLap: 5,
+          currentSectorIdx: 2,
+          sectorEntryTime: 0,
+          lastLapDistPct: 0.82,
+          lastSessionTime: 0,
+          sectorTimesByLap: playerMap,
+        },
+        [AHEAD_CAR_IDX]: {
+          currentLap: 5,
+          currentSectorIdx: 1,
+          sectorEntryTime: 0,
+          lastLapDistPct: 0.91,
+          lastSessionTime: 0,
+          sectorTimesByLap: aheadMap,
+        },
+        [BEHIND_CAR_IDX]: {
+          currentLap: 5,
+          currentSectorIdx: 0,
+          sectorEntryTime: 0,
+          lastLapDistPct: 0.22,
+          lastSessionTime: 0,
+          sectorTimesByLap: behindMap,
+        },
+      },
+    });
+  }, []);
+
+  return <Story />;
+};
+
+const sectorDeltaOnlyConfig = {
+  ...defaultConfig,
+  gap: { enabled: false },
+  lastTime: { enabled: false },
+  lastTimeDiff: { enabled: true },
+  bestTime: { enabled: false },
+  bestTimeDiff: { enabled: false },
+  showHeader: { enabled: true },
+  sectors: { enabled: true },
+};
+
+const deltaOnlyDisplayOrder: RivalColumnId[] = ['lastTimeDiff'];
+
+export const WithSectorsDeltaOnly: Story = {
+  decorators: [SectorDataDecorator],
+  render: () => {
+    const { rowGap, rowPx, cellW, posW, headerFontSize } = getCompactSizes(useGeneralSettings()?.compactMode);
+    return (
+      <div className="bg-slate-800/80 rounded-md overflow-hidden flex flex-col justify-center w-[300px]">
+        <div className={`flex items-center ${rowGap} ${rowPx} py-0.5 ${headerFontSize} text-slate-400 tracking-wider border-b border-slate-600/50`}>
+          <span className={`${posW} shrink-0 text-center`}>Pos</span>
+          <span className="flex-1 min-w-0">Driver</span>
+          <span className={`${cellW} text-right shrink-0`}>Delta</span>
+        </div>
+        <RivalsRow
+          rival={{ ...mockAhead, carIdx: AHEAD_CAR_IDX }}
+          config={sectorDeltaOnlyConfig}
+          displayOrder={deltaOnlyDisplayOrder}
+          playerCarIdx={PLAYER_CAR_IDX}
+        />
+        <div className="mx-2 border-t border-slate-600/50" />
+        <RivalsRow
+          rival={{ ...mockBehind, carIdx: BEHIND_CAR_IDX }}
+          config={sectorDeltaOnlyConfig}
+          displayOrder={deltaOnlyDisplayOrder}
+          playerCarIdx={PLAYER_CAR_IDX}
+        />
+      </div>
+    );
+  },
+};
+
+const sectorNoHeaderConfig = {
+  ...sectorConfig,
+  showHeader: { enabled: false },
+};
+
+export const WithSectorsNoHeader: Story = {
+  decorators: [SectorDataDecorator],
+  render: () => {
+    const displayOrder = RIVAL_COLUMN_IDS;
+    return (
+      <div className="bg-slate-800/80 rounded-md overflow-hidden flex flex-col justify-center w-[480px]">
+        <RivalsRow
+          rival={{ ...mockAhead, carIdx: AHEAD_CAR_IDX }}
+          config={sectorNoHeaderConfig}
+          displayOrder={displayOrder}
+          playerCarIdx={PLAYER_CAR_IDX}
+        />
+        <div className="mx-2 border-t border-slate-600/50" />
+        <RivalsRow
+          rival={{ ...mockBehind, carIdx: BEHIND_CAR_IDX }}
+          config={sectorNoHeaderConfig}
+          displayOrder={displayOrder}
+          playerCarIdx={PLAYER_CAR_IDX}
+        />
+      </div>
+    );
+  },
+};
+
+export const WithSectors: Story = {
+  decorators: [SectorDataDecorator],
+  render: () => {
+    const displayOrder = RIVAL_COLUMN_IDS;
+    const { rowGap, rowPx, cellW, posW, headerFontSize } = getCompactSizes(useGeneralSettings()?.compactMode);
+    return (
+      <div className="bg-slate-800/80 rounded-md overflow-hidden flex flex-col justify-center w-[480px]">
+        <div className={`flex items-center ${rowGap} ${rowPx} py-0.5 ${headerFontSize} text-slate-400 tracking-wider border-b border-slate-600/50`}>
+          <span className={`${posW} shrink-0 text-center`}>Pos</span>
+          <span className="flex-1 min-w-0">Driver</span>
+          {displayOrder.map((colId: RivalColumnId) => {
+            const col = sectorConfig[colId] as { enabled: boolean };
+            if (!col.enabled) return null;
+            return (
+              <span key={colId} className={`${cellW} text-right shrink-0`}>
+                {RIVAL_COLUMN_META[colId].header}
+              </span>
+            );
+          })}
+        </div>
+        <RivalsRow
+          rival={{ ...mockAhead, carIdx: AHEAD_CAR_IDX }}
+          config={sectorConfig}
+          displayOrder={displayOrder}
+          playerCarIdx={PLAYER_CAR_IDX}
+        />
+        <div className="mx-2 border-t border-slate-600/50" />
+        <RivalsRow
+          rival={{ ...mockBehind, carIdx: BEHIND_CAR_IDX }}
+          config={sectorConfig}
+          displayOrder={displayOrder}
+          playerCarIdx={PLAYER_CAR_IDX}
         />
       </div>
     );

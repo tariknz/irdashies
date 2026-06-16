@@ -37,7 +37,8 @@ interface RivalSectorStoreState {
   reset: () => void;
 }
 
-export type SectorDelta = number | '...' | null;
+/** Fresh numeric delta, pending (animation), stale (previous lap, italic), or no data yet. */
+export type SectorDelta = number | { value: number; stale: true } | '...' | null;
 
 // ---------------------------------------------------------------------------
 // Constants (mirrors SectorTimingStore)
@@ -257,22 +258,35 @@ export const useRivalSectorDeltas = (
       let anyPending = false;
       let allNull = true;
 
+      const prevLap = compareLap - 1;
+      const prevPlayerTimes = player.sectorTimesByLap.get(prevLap);
+      const prevRivalTimes = rival.sectorTimesByLap.get(prevLap);
+
       for (let n = 0; n < numSectors; n++) {
         const pt = playerTimes?.[n] ?? null;
         const rt = rivalTimes?.[n] ?? null;
 
         if (pt !== null && rt !== null) {
-          const d = rt - pt;
+          // Both completed this sector — fresh delta (positive = rival faster = red)
+          const d = pt - rt;
           sectorDeltas.push(d);
           lapDeltaSum += d;
           allNull = false;
-        } else if (pt !== null || rt !== null) {
-          // One is null — someone hasn't completed this sector yet
-          sectorDeltas.push('...');
-          anyPending = true;
-          allNull = false;
         } else {
-          sectorDeltas.push(null);
+          // At least one car hasn't finished this sector yet — try previous lap as stale fallback
+          const prevPt = prevPlayerTimes?.[n] ?? null;
+          const prevRt = prevRivalTimes?.[n] ?? null;
+          if (prevPt !== null && prevRt !== null) {
+            sectorDeltas.push({ value: prevPt - prevRt, stale: true });
+            anyPending = true;
+            allNull = false;
+          } else if (pt !== null || rt !== null) {
+            sectorDeltas.push('...');
+            anyPending = true;
+            allNull = false;
+          } else {
+            sectorDeltas.push(null);
+          }
         }
       }
 
