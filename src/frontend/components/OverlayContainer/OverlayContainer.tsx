@@ -11,6 +11,7 @@ import { XIcon } from '@phosphor-icons/react';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { SectorTimingUpdater } from './SectorTimingUpdater';
 import { PushToPassUpdater } from './PushToPassUpdater';
+import { PitLapUpdater } from './PitLapUpdater';
 
 export const OverlayContainer = memo(() => {
   const {
@@ -136,6 +137,7 @@ export const OverlayContainer = memo(() => {
     >
       <SectorTimingUpdater />
       <PushToPassUpdater />
+      <PitLapUpdater />
       {widgetsForThisDisplay.map((widget, index) => {
         const WidgetComponent = getWidget(widget.type || widget.id);
         if (!WidgetComponent) {

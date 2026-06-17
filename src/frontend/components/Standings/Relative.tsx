@@ -6,7 +6,6 @@ import {
   useWeekendInfoTeamRacing,
   useSessionVisibility,
   useGeneralSettings,
-  usePitLapStoreUpdater,
   useLapTimesStoreUpdater,
   useLapTimeHistory,
   useFocusCarIdx,
@@ -50,8 +49,8 @@ export const Relative = () => {
 
   const flagColor = getFlagColor(getFlag(sessionFlags).label);
 
-  usePitLapStoreUpdater();
   const p2pDisplayStates = useP2PDisplayStates();
+
 
   const lapTimeDeltasEnabled = settings?.lapTimeDeltas?.enabled ?? false;
   useLapTimesStoreUpdater(lapTimeDeltasEnabled);
