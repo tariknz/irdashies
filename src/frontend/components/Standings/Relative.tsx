@@ -11,10 +11,9 @@ import {
   useLapTimeHistory,
   useFocusCarIdx,
   useTelemetryValue,
+  useP2PDisplayStates,
   usePitStopDuration,
   usePitLaneStore,
-  usePushToPassStoreUpdater,
-  useP2PDisplayStates,
 } from '@irdashies/context';
 import {
   useRelativeSettings,
@@ -52,7 +51,6 @@ export const Relative = () => {
   const flagColor = getFlagColor(getFlag(sessionFlags).label);
 
   usePitLapStoreUpdater();
-  usePushToPassStoreUpdater();
   const p2pDisplayStates = useP2PDisplayStates();
 
   const lapTimeDeltasEnabled = settings?.lapTimeDeltas?.enabled ?? false;
@@ -314,7 +312,11 @@ export const Relative = () => {
       >
         <TitleBar titleBarSettings={settings?.titleBar} />
         {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
-          <SessionBar settings={settings.headerBar} opacity={settings?.foreground?.opacity} position="header" />
+          <SessionBar
+            settings={settings.headerBar}
+            opacity={settings?.foreground?.opacity}
+            position="header"
+          />
         )}
         <table
           className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
@@ -322,7 +324,11 @@ export const Relative = () => {
           <tbody>{rows}</tbody>
         </table>
         {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
-          <SessionBar settings={settings.footerBar} opacity={settings?.foreground?.opacity} position="footer" />
+          <SessionBar
+            settings={settings.footerBar}
+            opacity={settings?.foreground?.opacity}
+            position="footer"
+          />
         )}
       </FlagContour>
     );
@@ -338,7 +344,11 @@ export const Relative = () => {
     >
       <TitleBar titleBarSettings={settings?.titleBar} />
       {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
-        <SessionBar settings={settings.headerBar} opacity={settings?.foreground?.opacity} position="header" />
+        <SessionBar
+          settings={settings.headerBar}
+          opacity={settings?.foreground?.opacity}
+          position="header"
+        />
       )}
       <table
         className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
@@ -346,7 +356,11 @@ export const Relative = () => {
         <tbody>{rows}</tbody>
       </table>
       {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
-        <SessionBar settings={settings.footerBar} opacity={settings?.foreground?.opacity} position="footer" />
+        <SessionBar
+          settings={settings.footerBar}
+          opacity={settings?.foreground?.opacity}
+          position="footer"
+        />
       )}
     </FlagContour>
   );

@@ -18,6 +18,8 @@ export const CAR_P2P_CONFIGS: CarP2PConfig[] = [
   { carId: 171, cooldownInterval: 100 },
   // Super Formula - Honda
   { carId: 172, cooldownInterval: 100 },
+  // IL-15
+  { carId: 205, cooldownInterval: 0 },
 ];
 
 export const getCarP2PConfig = (carId: number): CarP2PConfig | undefined =>

@@ -23,17 +23,16 @@ export const PushToPassCell = memo(({ state }: PushToPassCellProps) => {
   const isCooldown = status === 'cooldown';
   const isActiveHighCount = isActive && count <= 20;
 
-  const bgClass = isExhausted
-    ? 'bg-red-500/80 text-white'
-    : isCooldown
-      ? 'bg-sky-500 text-slate-800'
-      : isActiveHighCount
-        ? 'bg-red-500 text-white'
-        : isActive
-          ? 'bg-lime-500 text-slate-800'
-          : count <= 20
-            ? 'bg-red-200 text-slate-800'
-            : 'bg-lime-200 text-slate-800';
+  const getBgClass = () => {
+    if (isExhausted) return 'bg-red-500/80 text-white';
+    if (isCooldown) return 'bg-sky-500 text-slate-800';
+    if (isActiveHighCount) return 'bg-red-500 text-white';
+    if (isActive) return 'bg-lime-500 text-slate-800';
+    if (count <= 20) return 'bg-red-200 text-slate-800';
+    return 'bg-lime-200 text-slate-800';
+  };
+
+  const bgClass = getBgClass();
 
   const pulseClass = isActive || isCooldown ? 'animate-pulse' : '';
 

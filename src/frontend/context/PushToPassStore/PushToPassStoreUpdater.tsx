@@ -1,20 +1,18 @@
 import { useEffect, useMemo } from 'react';
 import { useStore } from 'zustand';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
 import {
   useTelemetryValues,
   useTelemetryValue,
   useTelemetryStore,
 } from '../TelemetryStore/TelemetryStore';
 import { useDriverCarIdx, useSessionStore } from '../SessionStore/SessionStore';
-import { arrayShallowCompare } from '../SessionStore/arrayShallowCompare';
-import { usePushToPassStore, type P2PDisplayState } from './PushToPassStore';
+import { usePushToPassStore } from './PushToPassStore';
 
 /**
  * Hook that drives the PushToPassStore from telemetry each frame.
  * Call this once in Standings and Relative components.
  */
-export const usePushToPassStoreUpdater = () => {
+export const usePushToPassStoreUpdater = (enabled: boolean) => {
   const p2pStatus = useTelemetryValues<boolean[]>('CarIdxP2P_Status');
   const p2pCount = useTelemetryValues<number[]>('CarIdxP2P_Count');
   const sessionUniqId = useTelemetryValue('SessionUniqueID');
@@ -37,6 +35,7 @@ export const usePushToPassStoreUpdater = () => {
   }, [sessionDrivers]);
 
   useEffect(() => {
+    if (!enabled) return;
     update(
       p2pStatus ?? [],
       p2pCount ?? [],
@@ -46,6 +45,7 @@ export const usePushToPassStoreUpdater = () => {
       playerCarIdx
     );
   }, [
+    enabled,
     p2pStatus,
     p2pCount,
     carIdxToCarId,
@@ -54,16 +54,4 @@ export const usePushToPassStoreUpdater = () => {
     playerCarIdx,
     update,
   ]);
-};
-
-/**
- * Returns computed P2P display state for every car index.
- * Returns undefined for cars that do not support P2P.
- */
-export const useP2PDisplayStates = (): (P2PDisplayState | undefined)[] => {
-  return useStoreWithEqualityFn(
-    usePushToPassStore,
-    (s) => s.displayStates,
-    arrayShallowCompare
-  );
 };

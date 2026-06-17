@@ -1,5 +1,7 @@
 import { create } from 'zustand';
+import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { getCarP2PConfig } from './carP2PConfigs';
+import { arrayShallowCompare } from '../SessionStore/arrayShallowCompare';
 
 // Other cars report CarIdxP2P_Count as IEEE-754 float32 bits despite varType=2 (int).
 // The decoded float is in 0.1s units, so multiply by 10 to get seconds.
@@ -160,3 +162,10 @@ export const usePushToPassStore = create<PushToPassState>((set, get) => ({
     });
   },
 }));
+
+export const useP2PDisplayStates = (): (P2PDisplayState | undefined)[] =>
+  useStoreWithEqualityFn(
+    usePushToPassStore,
+    (s) => s.displayStates,
+    arrayShallowCompare
+  );
