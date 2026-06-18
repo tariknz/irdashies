@@ -83,6 +83,19 @@ export function generateMockData(sessionData?: {
   let playerSectorMultipliers = newSectorMultipliers();
   let playerCurrentSectorIdx = getPlayerSectorIdx(mockState.lapDistPct);
 
+  // P2P demo: carIdx 1-4 are overridden to Dallara IR18 (CarID 97) in demo session
+  const P2P_DEMO_CAR_IDXS = [1, 2, 3, 4];
+  const P2P_IR18_CAR_ID = 97;
+
+  // P2P demo telemetry state
+  const p2pDemo = {
+    frame: 0,
+    activeCount: 100, // carIdx 2: slowly decreasing while active
+  };
+  // Cycle lengths for carIdx 4 (cooldown demo car): 5s active → transition → 5s inactive → repeat
+  const P2P_CYCLE_FRAMES = 60 * 20; // 20s full cycle
+  const P2P_ACTIVE_FRAMES = 60 * 5; // 5s active phase
+
   // Demo mode: Simulate RPM and gear changes for Mazda MX-5
   let demoRpm = 2000;
   let demoGear = 1;
@@ -198,6 +211,32 @@ export function generateMockData(sessionData?: {
             const prevAbs =
               prevTelemetry.BrakeABSactive ?? ({ value: [false] } as const);
 
+            // P2P demo: advance frame counter and update state
+            p2pDemo.frame++;
+            // carIdx 2 (active): count decreases 1/s, resets to 100 when exhausted
+            if (p2pDemo.frame % 60 === 0) {
+              p2pDemo.activeCount =
+                p2pDemo.activeCount > 0 ? p2pDemo.activeCount - 1 : 100;
+            }
+            // carIdx 4 (cooldown cycle): active for 5s, then transitions to inactive
+            const cycleFrame = p2pDemo.frame % P2P_CYCLE_FRAMES;
+            const cooldownCarActive = cycleFrame < P2P_ACTIVE_FRAMES;
+
+            const demoP2PStatus = [
+              ...prevTelemetry.CarIdxP2P_Status.value,
+            ] as boolean[];
+            const demoP2PCount = [
+              ...prevTelemetry.CarIdxP2P_Count.value,
+            ] as number[];
+            demoP2PStatus[1] = false; // inactive
+            demoP2PCount[1] = 150;
+            demoP2PStatus[2] = true; // active
+            demoP2PCount[2] = p2pDemo.activeCount;
+            demoP2PStatus[3] = false; // exhausted
+            demoP2PCount[3] = 0;
+            demoP2PStatus[4] = cooldownCarActive; // cycling for cooldown demo
+            demoP2PCount[4] = 80;
+
             t = {
               ...prevTelemetry,
               Brake: {
@@ -265,6 +304,14 @@ export function generateMockData(sessionData?: {
                 ...prevAbs,
                 value: [absActive],
               },
+              CarIdxP2P_Status: {
+                ...prevTelemetry.CarIdxP2P_Status,
+                value: demoP2PStatus,
+              },
+              CarIdxP2P_Count: {
+                ...prevTelemetry.CarIdxP2P_Count,
+                value: demoP2PCount,
+              },
             } as unknown as Telemetry;
             prevTelemetry = t;
           }
@@ -295,11 +342,25 @@ export function generateMockData(sessionData?: {
           ? sessionInfo[sessionIdx % sessionInfo.length]
           : sessionInfo;
 
-        if (!s) s = mockSessionInfo as unknown as Session;
+        if (!s) {
+          const base = mockSessionInfo as unknown as Session;
+          // Demo mode: override CarID for P2P demo drivers
+          s = {
+            ...base,
+            DriverInfo: {
+              ...base.DriverInfo,
+              Drivers: base.DriverInfo.Drivers.map((driver) =>
+                P2P_DEMO_CAR_IDXS.includes(driver.CarIdx)
+                  ? { ...driver, CarID: P2P_IR18_CAR_ID }
+                  : driver
+              ),
+            },
+          };
+        }
         sessionIdx = sessionIdx + 1;
 
         // Call all registered callbacks
-        sessionCallbacks.forEach((cb) => cb(s));
+        if (s) sessionCallbacks.forEach((cb) => cb(s));
       };
 
       // Send initial data immediately

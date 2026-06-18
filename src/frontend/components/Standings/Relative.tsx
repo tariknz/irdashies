@@ -11,6 +11,7 @@ import {
   useLapTimeHistory,
   useFocusCarIdx,
   useTelemetryValue,
+  useP2PDisplayStates,
   usePitStopDuration,
   usePitLaneStore,
 } from '@irdashies/context';
@@ -50,6 +51,7 @@ export const Relative = () => {
   const flagColor = getFlagColor(getFlag(sessionFlags).label);
 
   usePitLapStoreUpdater();
+  const p2pDisplayStates = useP2PDisplayStates();
 
   const lapTimeDeltasEnabled = settings?.lapTimeDeltas?.enabled ?? false;
   useLapTimesStoreUpdater(lapTimeDeltasEnabled);
@@ -267,6 +269,7 @@ export const Relative = () => {
           deltaDecimalPlaces={settings?.delta?.precision}
           hideCarManufacturer={hideCarManufacturer}
           compactMode={generalSettings?.compactMode}
+          p2pDisplayState={p2pDisplayStates[result.carIdx]}
         />
       );
     });
@@ -278,6 +281,7 @@ export const Relative = () => {
     isMultiClass,
     highlightColor,
     hideCarManufacturer,
+    p2pDisplayStates,
     isTeamRacing,
     tagMap,
     hasAnyTag,
