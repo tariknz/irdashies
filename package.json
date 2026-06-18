@@ -100,6 +100,7 @@
     "zustand": "^5.0.14"
   },
   "overrides": {
-    "yauzl": "^3.3.1"
+    "yauzl": "^3.3.1",
+    "@electron/rebuild": "^4"
   }
 }
