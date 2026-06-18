@@ -5,7 +5,49 @@ import type {
   KeybindingEntry,
   KeybindingsMap,
 } from '@irdashies/types';
+import { isGamepadBinding, parseGamepadToken } from '@irdashies/shared';
 import logger from '@irdashies/utils/logger';
+
+const HAT_DIRECTION_LABELS: Record<string, string> = {
+  up: 'Up',
+  upright: 'Up Right',
+  right: 'Right',
+  downright: 'Down Right',
+  down: 'Down',
+  downleft: 'Down Left',
+  left: 'Left',
+  upleft: 'Up Left',
+};
+
+/** Format a gamepad control id ("btn5", "hat0_up") into a human label. */
+function formatGamepadControl(control: string): string {
+  const button = /^btn(\d+)$/.exec(control);
+  if (button) return `Button ${button[1]}`;
+
+  const hat = /^hat(\d+)_([a-z]+)$/.exec(control);
+  if (hat) {
+    const label = HAT_DIRECTION_LABELS[hat[2]] ?? hat[2];
+    // Hat 0 is the d-pad on every controller seen so far; name it as such.
+    return hat[1] === '0' ? `D-pad ${label}` : `Hat ${hat[1]} ${label}`;
+  }
+
+  return control;
+}
+
+/**
+ * Formats a gamepad token for display, prefixed with the device name when known
+ * and falling back to "Pad" otherwise, e.g.
+ *   "gamepad:Logitech%20G29:btn5" -> "Logitech G29: Button 5"
+ *   "gamepad:btn5"                -> "Pad: Button 5"
+ *   "gamepad:hat0_up"             -> "Pad: D-pad Up"
+ */
+function formatGamepadToken(token: string): string {
+  const parsed = parseGamepadToken(token);
+  if (!parsed) return 'Pad: ?';
+
+  const prefix = parsed.device || 'Pad';
+  return `${prefix}: ${formatGamepadControl(parsed.button)}`;
+}
 
 /**
  * Maps a browser KeyboardEvent into an Electron accelerator string.
@@ -60,6 +102,10 @@ function keyEventToAccelerator(e: KeyboardEvent): string | null {
  * Formats an accelerator string for display, e.g. "CommandOrControl" -> "Ctrl".
  */
 function formatAccelerator(accelerator: string): string {
+  if (isGamepadBinding(accelerator)) {
+    return formatGamepadToken(accelerator);
+  }
+
   const isMac =
     typeof navigator !== 'undefined' &&
     navigator.platform.toUpperCase().includes('MAC');
@@ -91,28 +137,24 @@ const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
   const [recording, setRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const recorderRef = useRef<HTMLButtonElement>(null);
+  // First input (key or pad) during recording wins; later ones are ignored until
+  // recording restarts. Guards the async gap before listeners are torn down.
+  const bindingInProgressRef = useRef(false);
 
   const stopRecording = useCallback(async () => {
     setRecording(false);
+    bindingInProgressRef.current = false;
     await window.keybindingsBridge?.stopRecording();
   }, []);
 
   useEffect(() => {
     if (!recording) return;
 
-    const handleKeyDown = async (e: KeyboardEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Escape cancels recording
-      if (e.key === 'Escape') {
-        await stopRecording();
-        return;
-      }
-
-      const accelerator = keyEventToAccelerator(e);
-      if (!accelerator) return; // Only modifiers pressed, keep waiting
-
+    // Persist whichever input arrives first — a key combo or a controller button.
+    const applyBinding = async (accelerator: string) => {
+      // check-then-set is atomic (no await between); blocks a second concurrent input.
+      if (bindingInProgressRef.current) return;
+      bindingInProgressRef.current = true;
       try {
         const result = await window.keybindingsBridge.updateKeybinding(
           actionId,
@@ -128,9 +170,34 @@ const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
       await stopRecording();
     };
 
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Escape cancels recording
+      if (e.key === 'Escape') {
+        await stopRecording();
+        return;
+      }
+
+      const accelerator = keyEventToAccelerator(e);
+      if (!accelerator) return; // Only modifiers pressed, keep waiting
+
+      await applyBinding(accelerator);
+    };
+
     window.addEventListener('keydown', handleKeyDown, true);
+    // Controllers have no focus/DOM events; the main process captures pad
+    // presses via the WebHID host and forwards the token here while recording.
+    const unsubscribeGamepad = window.keybindingsBridge?.onGamepadCaptured(
+      (token) => {
+        void applyBinding(token);
+      }
+    );
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
+      unsubscribeGamepad?.();
     };
   }, [recording, actionId, onUpdated, stopRecording]);
 

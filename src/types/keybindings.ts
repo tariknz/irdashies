@@ -5,7 +5,11 @@ export type KeybindingActionId =
   | 'save-telemetry';
 
 export interface KeybindingEntry {
-  /** Electron accelerator string, e.g. "Alt+H", "CommandOrControl+Shift+F6" */
+  /**
+   * The bound input. Either an Electron keyboard accelerator
+   * (e.g. "Alt+H", "CommandOrControl+Shift+F6") or a gamepad token
+   * (e.g. "gamepad:btn0"). Use `isGamepadBinding` to tell them apart.
+   */
   accelerator: string;
   /** Human-readable label for the settings UI */
   label: string;
@@ -26,10 +30,26 @@ export interface KeybindingsBridge {
   ) => Promise<KeybindingsMap>;
   resetKeybinding: (actionId: KeybindingActionId) => Promise<KeybindingsMap>;
   resetAllKeybindings: () => Promise<KeybindingsMap>;
-  /** Temporarily unregister all global shortcuts so key presses reach the settings window */
+  /**
+   * Temporarily unregister keyboard shortcuts (so key presses reach the
+   * settings window) and put the gamepad into capture mode.
+   */
   startRecording: () => Promise<void>;
-  /** Re-register all global shortcuts after recording completes */
+  /** Re-register keyboard shortcuts and leave gamepad capture mode. */
   stopRecording: () => Promise<void>;
+  /**
+   * Subscribe to gamepad button presses captured while recording. The callback
+   * receives a gamepad token (e.g. "gamepad:btn0"). Returns an unsubscribe fn.
+   */
+  onGamepadCaptured: (callback: (token: string) => void) => () => void;
+}
+
+/**
+ * Bridge exposed only to the hidden WebHID host window. Forwards a controller
+ * button press (already encoded as a `gamepad:btn<N>` token) to the main process.
+ */
+export interface GamepadHostBridge {
+  sendButton: (token: string) => void;
 }
 
 export const DEFAULT_KEYBINDINGS: KeybindingsMap = {
