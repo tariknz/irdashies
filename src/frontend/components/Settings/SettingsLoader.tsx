@@ -29,6 +29,7 @@ import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
 import { SectorDeltaSettings } from './sections/SectorDeltaSettings';
 import { HeartRateSettings } from './sections/HeartRateSettings';
 import { CornerNameSettings } from './sections/CornerNameSettings';
+import { VrSettings } from './sections/VrSettings';
 
 interface SettingsLoaderProps {
   previewMode?: boolean;
@@ -47,6 +48,7 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
   if (widgetId === 'about') return <AboutSettings />;
   if (widgetId === 'driver-tags') return <DriverTagsSettings />;
   if (widgetId === 'keybindings') return <KeybindingsSettings />;
+  if (widgetId === 'vr') return <VrSettings />;
 
   // 2. Find specific widget instance (may be undefined if widgetId is a type name)
   const widget = currentDashboard?.widgets.find((w) => w.id === widgetId);

@@ -14,6 +14,7 @@ import type {
   ReferenceLapBridge,
   KeybindingsBridge,
   KeybindingActionId,
+  GamepadHostBridge,
   PersonalBestLapBridge,
   ChromiumFlagsBridge,
   ChromiumFlagsType,
@@ -256,7 +257,20 @@ export function exposeBridge() {
     resetAllKeybindings: () => ipcRenderer.invoke('keybindings:resetAll'),
     startRecording: () => ipcRenderer.invoke('keybindings:startRecording'),
     stopRecording: () => ipcRenderer.invoke('keybindings:stopRecording'),
+    onGamepadCaptured: (callback: (token: string) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, token: string) =>
+        callback(token);
+      ipcRenderer.on('keybindings:gamepadCaptured', handler);
+      return () =>
+        ipcRenderer.removeListener('keybindings:gamepadCaptured', handler);
+    },
   } as KeybindingsBridge);
+
+  // Used only by the hidden WebHID host renderer (src/hidHost.ts) to forward
+  // controller button presses to the main process.
+  contextBridge.exposeInMainWorld('gamepadHost', {
+    sendButton: (token: string) => ipcRenderer.send('gamepad:button', token),
+  } as GamepadHostBridge);
 
   contextBridge.exposeInMainWorld('personalBestBridge', {
     getPersonalBest: (trackId: string | number, carName: string) =>
@@ -265,7 +279,7 @@ export function exposeBridge() {
       trackId: string | number,
       carName: string,
       time: number
-    ) => ipcRenderer.invoke('personalBest:set', trackId, carName, time),  
+    ) => ipcRenderer.invoke('personalBest:set', trackId, carName, time),
   } as PersonalBestLapBridge);
 
   contextBridge.exposeInMainWorld('chromiumFlagsBridge', {

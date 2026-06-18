@@ -75,6 +75,12 @@ const sampleBindings = (): KeybindingsMap => ({
     description: '',
     isDefault: true,
   },
+  'recenter-vr': {
+    accelerator: 'F8',
+    label: '',
+    description: '',
+    isDefault: true,
+  },
 });
 
 const invokeUpdate = (actionId: KeybindingActionId, accelerator: string) => {
@@ -123,6 +129,30 @@ describe('keybindingsBridge keybindings:update', () => {
       'Alt+J'
     );
     expect(mockReloadBindings).toHaveBeenCalledOnce();
+  });
+
+  it('accepts a valid gamepad token without keyboard validation', () => {
+    const next = sampleBindings();
+    mockUpdateKeybinding.mockReturnValue(next);
+
+    const result = invokeUpdate('toggle-edit-mode', 'gamepad:btn0');
+
+    expect(result).toBe(next);
+    // Gamepad tokens skip the Electron accelerator check entirely.
+    expect(mockIsValidAccelerator).not.toHaveBeenCalled();
+    expect(mockUpdateKeybinding).toHaveBeenCalledWith(
+      'toggle-edit-mode',
+      'gamepad:btn0'
+    );
+    expect(mockReloadBindings).toHaveBeenCalledOnce();
+  });
+
+  it('rejects an unknown gamepad token without persisting', () => {
+    expect(() => invokeUpdate('toggle-edit-mode', 'gamepad:nope')).toThrow(
+      'not a valid controller button'
+    );
+    expect(mockUpdateKeybinding).not.toHaveBeenCalled();
+    expect(mockReloadBindings).not.toHaveBeenCalled();
   });
 
   it('surfaces storage conflict errors to the caller', () => {

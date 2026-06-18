@@ -5,7 +5,25 @@ import type {
   KeybindingEntry,
   KeybindingsMap,
 } from '@irdashies/types';
+import { isGamepadBinding, parseGamepadToken } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
+
+/**
+ * Formats a gamepad token for display, prefixed with the device name when known
+ * and falling back to "Pad" otherwise, e.g.
+ *   "gamepad:Logitech%20G29:btn5" -> "Logitech G29: Button 5"
+ *   "gamepad:btn5"                -> "Pad: Button 5"
+ */
+function formatGamepadToken(token: string): string {
+  const parsed = parseGamepadToken(token);
+  if (!parsed) return 'Pad: ?';
+
+  const prefix = parsed.device || 'Pad';
+  const buttonMatch = /^btn(\d+)$/.exec(parsed.button);
+  const button = buttonMatch ? `Button ${buttonMatch[1]}` : parsed.button;
+
+  return `${prefix}: ${button}`;
+}
 
 /**
  * Maps a browser KeyboardEvent into an Electron accelerator string.
@@ -60,6 +78,10 @@ function keyEventToAccelerator(e: KeyboardEvent): string | null {
  * Formats an accelerator string for display, e.g. "CommandOrControl" -> "Ctrl".
  */
 function formatAccelerator(accelerator: string): string {
+  if (isGamepadBinding(accelerator)) {
+    return formatGamepadToken(accelerator);
+  }
+
   const isMac =
     typeof navigator !== 'undefined' &&
     navigator.platform.toUpperCase().includes('MAC');
@@ -100,19 +122,8 @@ const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
   useEffect(() => {
     if (!recording) return;
 
-    const handleKeyDown = async (e: KeyboardEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Escape cancels recording
-      if (e.key === 'Escape') {
-        await stopRecording();
-        return;
-      }
-
-      const accelerator = keyEventToAccelerator(e);
-      if (!accelerator) return; // Only modifiers pressed, keep waiting
-
+    // Persist whichever input arrives first — a key combo or a controller button.
+    const applyBinding = async (accelerator: string) => {
       try {
         const result = await window.keybindingsBridge.updateKeybinding(
           actionId,
@@ -128,9 +139,34 @@ const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
       await stopRecording();
     };
 
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Escape cancels recording
+      if (e.key === 'Escape') {
+        await stopRecording();
+        return;
+      }
+
+      const accelerator = keyEventToAccelerator(e);
+      if (!accelerator) return; // Only modifiers pressed, keep waiting
+
+      await applyBinding(accelerator);
+    };
+
     window.addEventListener('keydown', handleKeyDown, true);
+    // Controllers have no focus/DOM events; the main process captures pad
+    // presses via SDL and forwards the token here while recording.
+    const unsubscribeGamepad = window.keybindingsBridge?.onGamepadCaptured(
+      (token) => {
+        void applyBinding(token);
+      }
+    );
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
+      unsubscribeGamepad?.();
     };
   }, [recording, actionId, onUpdated, stopRecording]);
 

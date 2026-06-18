@@ -10,9 +10,7 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     icon: path.resolve(__dirname, 'docs/assets/icons/logo'),
-    extraResource: [
-      path.resolve(__dirname, 'docs/assets/icons'),
-    ],
+    extraResource: [path.resolve(__dirname, 'docs/assets/icons')],
   },
   rebuildConfig: {
     force: true,

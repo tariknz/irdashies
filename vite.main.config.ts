@@ -15,8 +15,15 @@ const getGitHash = () => {
 
 export default defineConfig({
   plugins: [
-    irsdkNativeModule(
-      ['build/Release/irsdk_node.node'],
+    nativeModules(
+      [
+        {
+          file: 'build/Release/irsdk_node.node',
+          exportName: 'iRacingSdkNode',
+          accessor: 'iRacingSdkNode',
+        },
+        { file: 'build/Release/vr_overlay.node', exportName: 'vrOverlay' },
+      ],
       '.vite/build/Release/'
     ),
   ],
@@ -37,30 +44,39 @@ export default defineConfig({
   },
 });
 
-// this handles the native module for irsdk-node so vite can bundle it as its currently cjs only
-// this plugin will import it using createRequire and copy the native module to the vite build directory
-function irsdkNativeModule(nodeFiles: string[], outDir: string) {
-  const nodeFileMap = new Map(
-    nodeFiles.map((file) => [path.basename(file), file])
+// Handles native .node modules so vite can bundle them (they are cjs only).
+// For each entry the plugin rewrites the import using createRequire and copies
+// the .node into the vite build directory. `accessor` picks a property off the
+// required module (e.g. a class export); omit it to re-export the whole module.
+interface NativeModuleEntry {
+  file: string;
+  exportName: string;
+  accessor?: string;
+}
+
+function nativeModules(entries: NativeModuleEntry[], outDir: string) {
+  const entryMap = new Map(
+    entries.map((entry) => [path.basename(entry.file), entry])
   );
 
   return {
-    name: 'irsdk-native-module-plugin',
+    name: 'native-module-plugin',
     resolveId(source: string) {
-      return nodeFileMap.has(path.basename(source)) ? source : null;
+      return entryMap.has(path.basename(source)) ? source : null;
     },
     transform(code: string, id: string) {
       // check platform
       if (process.platform !== 'win32') {
         return code;
       }
-      const file = nodeFileMap.get(path.basename(id));
-      if (file) {
+      const entry = entryMap.get(path.basename(id));
+      if (entry) {
+        const access = entry.accessor ? `.${entry.accessor}` : '';
         return {
           code: `
             import { createRequire } from 'module';
             const customRequire = createRequire(__filename);
-            export const iRacingSdkNode = customRequire('./Release/${path.basename(file)}').iRacingSdkNode;
+            export const ${entry.exportName} = customRequire('./Release/${path.basename(entry.file)}')${access};
           `,
           moduleType: 'js',
         };
@@ -68,22 +84,22 @@ function irsdkNativeModule(nodeFiles: string[], outDir: string) {
       return code;
     },
     load(id: string) {
-      return nodeFileMap.has(path.basename(id)) ? '' : null;
+      return entryMap.has(path.basename(id)) ? '' : null;
     },
     generateBundle() {
       // check platform
       if (process.platform !== 'win32') {
         return;
       }
-      nodeFileMap.forEach((fileAbs, file) => {
+      entryMap.forEach((entry, file) => {
         const out = `${outDir}/${file}`;
-        if (!fs.existsSync(fileAbs)) {
+        if (!fs.existsSync(entry.file)) {
           console.warn(
-            `[irsdkNativeModule] Native module not found at: ${fileAbs}`
+            `[nativeModules] Native module not found at: ${entry.file}`
           );
           return;
         }
-        const nodeFile = fs.readFileSync(fileAbs);
+        const nodeFile = fs.readFileSync(entry.file);
         fs.mkdirSync(path.dirname(out), { recursive: true });
         fs.writeFileSync(out, nodeFile);
       });

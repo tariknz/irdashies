@@ -30,6 +30,13 @@ import {
   flushReferenceLapsOnShutdown,
 } from './app/storage/referenceLaps';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
+import {
+  isVrOverlayEnabled,
+  startVrOverlay,
+  stopVrOverlay,
+  applyVrOverlaySettings,
+} from './app/vr/vrOverlay';
+import { onDashboardUpdated } from './app/storage/dashboardEvents';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -39,6 +46,9 @@ updateElectronApp();
 const overlayManager = new OverlayManager();
 const analytics = new Analytics();
 analytics.setupLogTransport();
+
+// Hoisted so the quit handler can stop the gamepad poll thread cleanly.
+let keybindingManager: KeybindingManager | undefined;
 
 overlayManager.setupChromiumFlags();
 overlayManager.setupHardwareAcceleration();
@@ -75,8 +85,20 @@ app.on('ready', async () => {
 
   overlayManager.createOverlays(dashboard);
 
-  const keybindingManager = new KeybindingManager(overlayManager);
+  // Experimental native VR overlay (opt-in via IRDASHIES_VR=1).
+  if (isVrOverlayEnabled()) {
+    startVrOverlay(overlayManager, dashboard?.generalSettings?.vr);
+    // Push placement changes to the native layer in real time as the user
+    // edits the VR settings section.
+    onDashboardUpdated((updated) => {
+      applyVrOverlaySettings(updated.generalSettings?.vr);
+    });
+  }
+
+  keybindingManager = new KeybindingManager(overlayManager);
   keybindingManager.registerAll();
+  // Begin polling game controllers for any gamepad bindings (lazy-loads SDL).
+  keybindingManager.startGamepad();
 
   setupTaskbar(overlayManager, keybindingManager);
   publishDashboardUpdates(overlayManager, analytics);
@@ -107,6 +129,8 @@ app.on('quit', () => {
 
 app.on('before-quit', () => {
   overlayManager.markQuitting();
+  keybindingManager?.stopGamepad();
+  stopVrOverlay();
   // Synchronous flush so any pending debounced reference-lap write completes
   // before the process exits.
   flushReferenceLapsOnShutdown();
