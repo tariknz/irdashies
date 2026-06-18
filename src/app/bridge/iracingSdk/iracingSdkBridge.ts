@@ -24,6 +24,8 @@ const TELEMETRY_ALLOWLIST = new Set<keyof Telemetry>([
   'CarIdxLapDistPct',
   'CarIdxLastLapTime',
   'CarIdxOnPitRoad',
+  'CarIdxP2P_Count',
+  'CarIdxP2P_Status',
   'CarIdxPosition',
   'CarIdxSessionFlags',
   'CarIdxTireCompound',

@@ -163,6 +163,7 @@ export interface StandingsConfig {
   driverName: DriverNameConfig;
   teamName: { enabled: boolean };
   pitStatus: PitStatusConfig;
+  pushToPass: { enabled: boolean };
   driverTag: { enabled: boolean; widthPx?: number };
   displayOrder: string[];
   sessionVisibility: SessionVisibilitySettings;
@@ -193,6 +194,7 @@ export interface RelativeConfig {
   driverName: DriverNameConfig;
   teamName: { enabled: boolean };
   pitStatus: PitStatusConfig;
+  pushToPass: { enabled: boolean };
   driverTag: { enabled: boolean; widthPx?: number };
   lapTimeDeltas: { enabled: boolean; numLaps: number; decimalPlaces: number };
   displayOrder: string[];

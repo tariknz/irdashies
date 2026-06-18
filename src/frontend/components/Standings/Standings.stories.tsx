@@ -18,10 +18,11 @@ import {
   useTelemetryValue,
   useSessionName,
   useSessionLaps,
+  type P2PDisplayState,
 } from '@irdashies/context';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
-import type { DashboardBridge, StandingsConfig } from '@irdashies/types';
-import { defaultDashboard } from '@irdashies/types';
+import type { DashboardBridge, StandingsConfig, StandingsWidgetSettings } from '@irdashies/types';
+import { defaultDashboard, getWidgetDefaultConfig } from '@irdashies/types';
 import {
   calculateIRatingGain,
   type CalculationResult,
@@ -1481,4 +1482,118 @@ export const AvgLapTime: Story = {
       },
     }),
   ],
+};
+
+// ─── Push to Pass story ───────────────────────────────────────────────────────
+
+const P2P_STANDINGS_DISPLAY_ORDER = [
+  'position',
+  'carNumber',
+  'driverName',
+  'pushToPass',
+];
+
+const p2pStandingsConfig: StandingsWidgetSettings['config'] = {
+  ...getWidgetDefaultConfig('standings'),
+  pushToPass: { enabled: true },
+  displayOrder: P2P_STANDINGS_DISPLAY_ORDER,
+};
+
+interface P2PDriver {
+  carNum: string;
+  name: string;
+  position: number;
+  isPlayer: boolean;
+  state: P2PDisplayState | undefined;
+}
+
+const p2pStandingsDrivers: P2PDriver[] = [
+  {
+    carNum: '9',
+    name: 'Scott Dixon',
+    position: 1,
+    isPlayer: true,
+    state: { status: 'inactive', count: 200 },
+  },
+  {
+    carNum: '2',
+    name: 'Josef Newgarden',
+    position: 2,
+    isPlayer: false,
+    state: { status: 'active', count: 150 },
+  },
+  {
+    carNum: '5',
+    name: "Pato O'Ward",
+    position: 3,
+    isPlayer: false,
+    state: { status: 'cooldown', count: 100 },
+  },
+  {
+    carNum: '10',
+    name: 'Alex Palou',
+    position: 4,
+    isPlayer: false,
+    state: { status: 'inactive', count: 50 },
+  },
+  {
+    carNum: '8',
+    name: 'Marcus Ericsson',
+    position: 5,
+    isPlayer: false,
+    state: { status: 'inactive', count: 20 },
+  },
+  {
+    carNum: '22',
+    name: 'Simon Pagenaud',
+    position: 6,
+    isPlayer: false,
+    state: { status: 'exhausted', count: 0 },
+  },
+  {
+    carNum: '77',
+    name: 'Callum Ilott',
+    position: 7,
+    isPlayer: false,
+    // undefined = car does not support Push to Pass
+    state: undefined,
+  },
+];
+
+const StandingsPushToPassComponent = () => (
+  <div className="w-full bg-slate-800/80 rounded-sm p-2 text-white">
+    <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
+      <tbody>
+        {p2pStandingsDrivers.map((driver, i) => (
+          <DriverInfoRow
+            key={i}
+            carIdx={i}
+            classColor={0xffc906}
+            carNumber={driver.carNum}
+            name={driver.name}
+            position={driver.position}
+            isPlayer={driver.isPlayer}
+            hasFastestTime={false}
+            isMultiClass={false}
+            displayOrder={P2P_STANDINGS_DISPLAY_ORDER}
+            config={p2pStandingsConfig}
+            p2pDisplayState={driver.state}
+            onTrack={true}
+            dnf={false}
+            repair={false}
+            penalty={false}
+            slowdown={false}
+          />
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+export const PushToPass: Story = {
+  decorators: [TelemetryDecorator()],
+  render: () => <StandingsPushToPassComponent />,
+  parameters: {
+    layout: 'padded',
+  },
 };
