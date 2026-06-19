@@ -19,3 +19,7 @@ export * from './PushToPassStore/PushToPassStore';
 export * from './PushToPassStore/PushToPassStoreUpdater';
 export * from './shared';
 export * from './PersonalBestStore/PersonalBestStore';
+export * from './CarSpeedStore/TopSpeedStore';
+export * from './CarSpeedStore/TopSpeedStoreUpdater';
+export * from './RivalSectorStore/RivalSectorStore';
+export * from './RivalSectorStore/RivalSectorStoreUpdater';

@@ -1057,6 +1057,21 @@ export const StandingsSettings = () => {
                         })
                       }
                     />
+                    <SettingToggleRow
+                      title="Compact SoF Formatting"
+                      description='Display SoF as a compact value (e.g. "2.4k" instead of "2432")'
+                      enabled={
+                        settings.config.classHeaderStyle?.compactSof ?? false
+                      }
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          classHeaderStyle: {
+                            ...settings.config.classHeaderStyle,
+                            compactSof: newValue,
+                          },
+                        })
+                      }
+                    />
                   </SettingsSection>
 
                   <SettingDivider />

@@ -8,6 +8,7 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   standings: 'Standings',
   input: 'Input Traces',
   relative: 'Relative',
+  rivals: 'Rivals',
   map: 'Track Map',
   flatmap: 'Flat Track Map',
   weather: 'Weather',

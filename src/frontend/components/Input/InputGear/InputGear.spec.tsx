@@ -29,6 +29,7 @@ describe('InputGear', () => {
           unit: 'auto',
           showspeed: true,
           showspeedunit: true,
+          swapSpeedUnit: false,
         }}
       />
     );

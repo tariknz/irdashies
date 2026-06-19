@@ -1,9 +1,17 @@
+import React from 'react';
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { InputGear } from './InputGear';
+
+const withContainer = (Story: React.ComponentType) => (
+  <div className="w-32 h-32 bg-slate-800 rounded-md p-2">
+    <Story />
+  </div>
+);
 
 export default {
   component: InputGear,
   title: 'widgets/Input/components/InputGear',
+  decorators: [withContainer],
   argTypes: {
     gear: {
       control: {
@@ -64,6 +72,20 @@ export const ForceImperial: Story = {
       unit: 'mph',
       showspeed: true,
       showspeedunit: true,
+    },
+  },
+};
+export const SwappedSpeedUnit: Story = {
+  args: {
+    gear: 3,
+    speedMs: 35,
+    unit: 1,
+    settings: {
+      size: 100,
+      unit: 'auto',
+      showspeed: true,
+      showspeedunit: true,
+      swapSpeedUnit: true,
     },
   },
 };

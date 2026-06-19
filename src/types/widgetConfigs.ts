@@ -69,6 +69,10 @@ export interface SessionBarConfig {
   trackTemperature: { enabled: boolean; unit: TemperatureUnit };
   wind?: { enabled: boolean; speedPosition?: 'left' | 'right' };
   trackName: { enabled: boolean };
+  fuelLevel?: { enabled: boolean };
+  lastLap?: { enabled: boolean };
+  bestLap?: { enabled: boolean };
+  topSpeed?: { enabled: boolean };
   displayOrder: string[];
   foreground?: { opacity: number };
 }
@@ -92,6 +96,7 @@ export interface ClassHeaderStyle {
   className?: { colorBackground?: boolean };
   classInfo?: { colorBackground?: boolean };
   classDivider?: { bottomBorder?: boolean };
+  compactSof?: boolean;
 }
 
 // ===========================
@@ -281,6 +286,8 @@ export interface InputConfig {
     includeBrake: boolean;
     includeClutch: boolean;
     includeAbs: boolean;
+    /** 'overlay' draws a wider stroke on top of the brake curve; 'bar' fills the area under the curve to y=0 */
+    absStyle?: 'overlay' | 'bar';
     includeSteer?: boolean;
     strokeWidth?: number;
     maxSamples?: number;
@@ -628,9 +635,27 @@ export interface InformationBarConfig extends SessionBarConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
+export interface RivalsConfig {
+  background: { opacity: number };
+  timeFormat?: TimeFormat;
+  gap: { enabled: boolean };
+  lastTime: { enabled: boolean };
+  lastTimeDiff: { enabled: boolean };
+  bestTime: { enabled: boolean };
+  bestTimeDiff: { enabled: boolean };
+  showHeader: { enabled: boolean };
+  sectors?: { enabled: boolean };
+  displayOrder: string[];
+  sessionVisibility: SessionVisibilitySettings;
+  showOnlyWhenOnTrack?: boolean;
+}
+
+export type RivalsWidgetSettings = BaseWidgetSettings<RivalsConfig>;
+
 export interface WidgetConfigMap {
   standings: StandingsConfig;
   relative: RelativeConfig;
+  rivals: RivalsConfig;
   weather: WeatherConfig;
   wind: WindConfig;
   map: TrackMapConfig;

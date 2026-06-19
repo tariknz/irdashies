@@ -51,6 +51,11 @@ export const formatTime = (
     case 'seconds-full':
       formattedTime = `${totalSeconds % 60}.${String(ms).padStart(3, '0')}`;
       break;
+    case 'seconds-2': {
+      const ms2 = Math.floor(ms / 10);
+      formattedTime = `${totalSeconds % 60}.${String(ms2).padStart(2, '0')}`;
+      break;
+    }
     case 'seconds-mixed': {
       const ms1Seconds = Math.floor(ms / 100); // Get first decimal
       formattedTime = `${totalSeconds % 60}.${ms1Seconds}`;

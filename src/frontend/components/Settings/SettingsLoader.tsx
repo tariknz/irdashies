@@ -29,6 +29,7 @@ import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
 import { SectorDeltaSettings } from './sections/SectorDeltaSettings';
 import { HeartRateSettings } from './sections/HeartRateSettings';
 import { CornerNameSettings } from './sections/CornerNameSettings';
+import { RivalsSettings } from './sections/RivalsSettings';
 
 interface SettingsLoaderProps {
   previewMode?: boolean;
@@ -57,6 +58,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <StandingsSettings />;
     case 'relative':
       return <RelativeSettings />;
+    case 'rivals':
+      return <RivalsSettings />;
     case 'weather':
       return <WeatherSettings />;
     case 'wind':

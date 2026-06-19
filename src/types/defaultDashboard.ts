@@ -151,6 +151,18 @@ export const defaultDashboard: {
           trackName: {
             enabled: false,
           },
+          fuelLevel: {
+            enabled: false,
+          },
+          lastLap: {
+            enabled: false,
+          },
+          bestLap: {
+            enabled: false,
+          },
+          topSpeed: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -165,6 +177,10 @@ export const defaultDashboard: {
             'trackTemperature',
             'wind',
             'trackName',
+            'fuelLevel',
+            'lastLap',
+            'bestLap',
+            'topSpeed',
           ],
         },
         footerBar: {
@@ -211,6 +227,18 @@ export const defaultDashboard: {
           trackName: {
             enabled: false,
           },
+          fuelLevel: {
+            enabled: false,
+          },
+          lastLap: {
+            enabled: false,
+          },
+          bestLap: {
+            enabled: false,
+          },
+          topSpeed: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -225,6 +253,10 @@ export const defaultDashboard: {
             'trackTemperature',
             'wind',
             'trackName',
+            'fuelLevel',
+            'lastLap',
+            'bestLap',
+            'topSpeed',
           ],
         },
         showOnlyWhenOnTrack: false,
@@ -322,6 +354,7 @@ export const defaultDashboard: {
           size: 100,
           showspeed: true,
           showspeedunit: true,
+          swapSpeedUnit: true,
           unit: 'auto',
         },
         abs: {
@@ -528,6 +561,18 @@ export const defaultDashboard: {
           trackName: {
             enabled: false,
           },
+          fuelLevel: {
+            enabled: false,
+          },
+          lastLap: {
+            enabled: false,
+          },
+          bestLap: {
+            enabled: false,
+          },
+          topSpeed: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -542,6 +587,10 @@ export const defaultDashboard: {
             'trackTemperature',
             'wind',
             'trackName',
+            'fuelLevel',
+            'lastLap',
+            'bestLap',
+            'topSpeed',
           ],
         },
         footerBar: {
@@ -588,6 +637,18 @@ export const defaultDashboard: {
           trackName: {
             enabled: false,
           },
+          fuelLevel: {
+            enabled: false,
+          },
+          lastLap: {
+            enabled: false,
+          },
+          bestLap: {
+            enabled: false,
+          },
+          topSpeed: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -602,6 +663,10 @@ export const defaultDashboard: {
             'trackTemperature',
             'wind',
             'trackName',
+            'fuelLevel',
+            'lastLap',
+            'bestLap',
+            'topSpeed',
           ],
         },
         showOnlyWhenOnTrack: false,
@@ -622,6 +687,36 @@ export const defaultDashboard: {
             borderWidth: 5,
           },
         },
+      },
+    },
+    {
+      id: 'rivals',
+      enabled: false,
+      layout: {
+        x: 700,
+        y: 300,
+        width: 460,
+        height: 90,
+      },
+      config: {
+        background: { opacity: 80 },
+        timeFormat: 'seconds-full',
+        gap: { enabled: true },
+        lastTime: { enabled: true },
+        lastTimeDiff: { enabled: true },
+        bestTime: { enabled: true },
+        bestTimeDiff: { enabled: false },
+        showHeader: { enabled: false },
+        sectors: { enabled: false },
+        displayOrder: ['gap', 'lastTime', 'lastTimeDiff', 'bestTime', 'bestTimeDiff'],
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+        showOnlyWhenOnTrack: false,
       },
     },
     {

@@ -133,6 +133,12 @@ const widgetItems: MenuItem[] = [
     widgetType: 'relative',
   },
   {
+    to: '/settings/rivals',
+    path: '/rivals',
+    label: 'Rivals',
+    widgetType: 'rivals',
+  },
+  {
     to: '/settings/sectordelta',
     path: '/sectordelta',
     label: 'Sector Delta',
