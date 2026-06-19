@@ -16,11 +16,7 @@ Napi::Object iRacingSdkNode::Init(Napi::Env env, Napi::Object exports)
 {
   Napi::Function func = DefineClass(env, "iRacingSdkNode", {
     // Properties
-    // NOTE: use the runtime-pointer overloads (not the templated
-    // InstanceAccessor<&fn>/InstanceMethod<&fn> forms). The templated forms
-    // trigger an MSVC internal compiler error (C1001) under VS 2026 in
-    // node-addon-api's constexpr machinery (napi-inl.h). The runtime overloads
-    // are functionally equivalent and compile cleanly.
+    // Runtime-pointer overloads, not the templated forms which ICE on MSVC/VS 2026.
     InstanceAccessor("currDataVersion", &iRacingSdkNode::GetCurrSessionDataVersion, nullptr),
     InstanceAccessor("enableLogging", &iRacingSdkNode::GetEnableLogging, &iRacingSdkNode::SetEnableLogging),
     // Methods

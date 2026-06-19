@@ -11,10 +11,7 @@ permissions:
 
 jobs:
   build:
-    # Pinned to windows-2022 (VS 2022). windows-latest now maps to the VS 2026
-    # image, whose Visual Studio "v18" the bundled @electron/node-gyp can't
-    # detect, breaking node-gyp rebuild of the native iRacing SDK addon.
-    runs-on: windows-2022
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v6
