@@ -164,6 +164,49 @@ describe('DashboardContext', () => {
     });
   });
 
+  it('loads the dashboard directly when no dashboardUpdated broadcast arrives', async () => {
+    // Regression: the settings/overlay windows (no profileId) must not depend
+    // solely on the unbuffered dashboardUpdated broadcast, which can be missed
+    // if it is published before the renderer registers its listener — leaving
+    // the window stuck on "Loading...". Here dashboardUpdated never fires.
+    const mockDashboard: DashboardLayout = {
+      widgets: [
+        {
+          id: 'test',
+          enabled: true,
+          layout: { x: 0, y: 0, width: 1, height: 1 },
+        },
+      ],
+    };
+    mockBridge.dashboardUpdated = vi.fn(); // never invokes the callback
+    mockBridge.getCurrentProfile = vi.fn().mockResolvedValue({
+      id: 'active-profile',
+      name: 'Active',
+      createdAt: '',
+      lastModified: '',
+    });
+    mockBridge.getDashboardForProfile = vi
+      .fn()
+      .mockResolvedValue(mockDashboard);
+
+    act(() => {
+      render(
+        <DashboardProvider bridge={mockBridge}>
+          <TestComponent />
+        </DashboardProvider>
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('current-dashboard').textContent).toBe(
+        JSON.stringify(mockDashboard)
+      );
+    });
+    expect(mockBridge.getDashboardForProfile).toHaveBeenCalledWith(
+      'active-profile'
+    );
+  });
+
   it('stops the bridge on unmount', () => {
     const { unmount } = render(
       <DashboardProvider bridge={mockBridge}>

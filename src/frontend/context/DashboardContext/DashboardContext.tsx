@@ -145,8 +145,28 @@ export const DashboardProvider: React.FC<{
           bridge.reloadDashboard();
         });
     } else {
-      // This is the path for the main Electron app, which doesn't have a profileId prop
-      bridge.reloadDashboard();
+      // Main Electron app windows (overlay + settings) have no profileId prop.
+      // Fetch the dashboard directly rather than relying solely on the
+      // reloadDashboard broadcast: 'dashboardUpdated' is delivered via an
+      // unbuffered ipcRenderer.on, so a broadcast published before this
+      // renderer has registered its listener is silently dropped — leaving the
+      // window stuck on "Loading...". The direct fetch is race-free (it mirrors
+      // the profileId path above). reloadDashboard is still sent for its
+      // main-side side effect of creating/refreshing the overlay windows.
+      bridge
+        .getCurrentProfile()
+        .then((profile) =>
+          profile?.id && bridge.getDashboardForProfile
+            ? bridge.getDashboardForProfile(profile.id)
+            : null
+        )
+        .then((dashboard) => {
+          if (dashboard) setDashboard(dashboard);
+        })
+        .catch((error) =>
+          logger.error('Error loading current dashboard:', error)
+        )
+        .finally(() => bridge.reloadDashboard());
     }
 
     const unsubEditMode = bridge.onEditModeToggled((editMode) =>
