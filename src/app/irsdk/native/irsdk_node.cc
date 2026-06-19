@@ -16,11 +16,12 @@ Napi::Object iRacingSdkNode::Init(Napi::Env env, Napi::Object exports)
 {
   Napi::Function func = DefineClass(env, "iRacingSdkNode", {
     // Properties
-    InstanceAccessor<&iRacingSdkNode::GetCurrSessionDataVersion>("currDataVersion"),
-    InstanceAccessor<&iRacingSdkNode::GetEnableLogging, &iRacingSdkNode::SetEnableLogging>("enableLogging"),
+    // Runtime-pointer overloads, not the templated forms which ICE on MSVC/VS 2026.
+    InstanceAccessor("currDataVersion", &iRacingSdkNode::GetCurrSessionDataVersion, nullptr),
+    InstanceAccessor("enableLogging", &iRacingSdkNode::GetEnableLogging, &iRacingSdkNode::SetEnableLogging),
     // Methods
     //Control
-    InstanceMethod<&iRacingSdkNode::StartSdk>("startSDK"),
+    InstanceMethod("startSDK", &iRacingSdkNode::StartSdk),
     InstanceMethod("stopSDK", &iRacingSdkNode::StopSdk),
     InstanceMethod("waitForData", &iRacingSdkNode::WaitForData),
     InstanceMethod("broadcast", &iRacingSdkNode::BroadcastMessage),
@@ -77,7 +78,7 @@ void iRacingSdkNode::SetEnableLogging(const Napi::CallbackInfo &info, const Napi
   } else {
     enable = info[0].As<Napi::Boolean>();
   }
-  printf("Setting logging enabled: %i\n", info[0]);
+  printf("Setting logging enabled: %i\n", enable.Value());
   this->_loggingEnabled = enable;
 }
 
