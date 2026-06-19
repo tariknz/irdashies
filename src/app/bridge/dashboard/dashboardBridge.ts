@@ -249,8 +249,12 @@ export async function publishDashboardUpdates(
   });
   ipcMain.on('reloadDashboard', () => {
     const currentProfileId = getCurrentProfileId();
-    const dashboard = getDashboard(currentProfileId);
-    if (!dashboard) return;
+    // Self-heal: if no dashboard is stored for the current profile, seed a
+    // default one instead of silently returning. A missing dashboard here
+    // means renderers never receive 'dashboardUpdated' and hang on "Loading...".
+    const dashboard =
+      getDashboard(currentProfileId) ??
+      getOrCreateDefaultDashboardForProfile(currentProfileId);
     const merged = mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
     overlayManager.closeOrCreateWindows(merged);
     overlayManager.publishMessage('dashboardUpdated', merged);
