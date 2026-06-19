@@ -16,11 +16,16 @@ Napi::Object iRacingSdkNode::Init(Napi::Env env, Napi::Object exports)
 {
   Napi::Function func = DefineClass(env, "iRacingSdkNode", {
     // Properties
-    InstanceAccessor<&iRacingSdkNode::GetCurrSessionDataVersion>("currDataVersion"),
-    InstanceAccessor<&iRacingSdkNode::GetEnableLogging, &iRacingSdkNode::SetEnableLogging>("enableLogging"),
+    // NOTE: use the runtime-pointer overloads (not the templated
+    // InstanceAccessor<&fn>/InstanceMethod<&fn> forms). The templated forms
+    // trigger an MSVC internal compiler error (C1001) under VS 2026 in
+    // node-addon-api's constexpr machinery (napi-inl.h). The runtime overloads
+    // are functionally equivalent and compile cleanly.
+    InstanceAccessor("currDataVersion", &iRacingSdkNode::GetCurrSessionDataVersion, nullptr),
+    InstanceAccessor("enableLogging", &iRacingSdkNode::GetEnableLogging, &iRacingSdkNode::SetEnableLogging),
     // Methods
     //Control
-    InstanceMethod<&iRacingSdkNode::StartSdk>("startSDK"),
+    InstanceMethod("startSDK", &iRacingSdkNode::StartSdk),
     InstanceMethod("stopSDK", &iRacingSdkNode::StopSdk),
     InstanceMethod("waitForData", &iRacingSdkNode::WaitForData),
     InstanceMethod("broadcast", &iRacingSdkNode::BroadcastMessage),
@@ -77,7 +82,7 @@ void iRacingSdkNode::SetEnableLogging(const Napi::CallbackInfo &info, const Napi
   } else {
     enable = info[0].As<Napi::Boolean>();
   }
-  printf("Setting logging enabled: %i\n", info[0]);
+  printf("Setting logging enabled: %i\n", enable.Value());
   this->_loggingEnabled = enable;
 }
 
