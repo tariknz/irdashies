@@ -128,7 +128,8 @@ export class OverlayManager {
       this.createWindowForDisplay(display, isPrimary);
     }
 
-    this.createSettingsWindow();
+    const startMinimized = generalSettings?.startMinimized ?? false;
+    this.createSettingsWindow(undefined, { startHidden: startMinimized });
   }
 
   /**
@@ -835,7 +836,10 @@ export class OverlayManager {
     return this.hasSingleInstanceLock;
   }
 
-  public createSettingsWindow(widgetType?: string): BrowserWindow {
+  public createSettingsWindow(
+    widgetType?: string,
+    options?: { startHidden?: boolean }
+  ): BrowserWindow {
     if (this.currentSettingsWindow) {
       if (this.currentSettingsWindow.isMinimized()) {
         this.currentSettingsWindow.restore();
@@ -844,6 +848,8 @@ export class OverlayManager {
       this.currentSettingsWindow.focus();
       return this.currentSettingsWindow;
     }
+
+    const startHidden = options?.startHidden ?? false;
 
     // Load saved window bounds
     const savedBounds = loadWindowBounds();
@@ -855,6 +861,11 @@ export class OverlayManager {
       autoHideMenuBar: true,
       acceptFirstMouse: true,
       icon: getIconPath(),
+      // Start hidden and reveal on ready-to-show (same pattern as overlay
+      // windows). This avoids a race where a window created with the default
+      // show:true is auto-shown by Electron on first paint even after an early
+      // hide() call — which is what broke the "Start minimized" setting.
+      show: false,
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
         backgroundThrottling: false,
@@ -867,6 +878,14 @@ export class OverlayManager {
     );
 
     this.currentSettingsWindow = browserWindow;
+
+    // Reveal the window once its content is ready, unless it should start
+    // minimized to the system tray (the "Start minimized" general setting).
+    browserWindow.once('ready-to-show', () => {
+      if (browserWindow.isDestroyed() || startHidden) return;
+      browserWindow.show();
+      browserWindow.focus();
+    });
 
     // During edit mode, raise settings window above overlay windows (layer 1).
     // Outside edit mode, use normal window layering.
