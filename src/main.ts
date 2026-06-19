@@ -88,16 +88,6 @@ app.on('ready', async () => {
   setupKeybindingsBridge(keybindingManager);
 
   await analytics.init(overlayManager.getVersion(), dashboard);
-
-  // Check if settings window should start minimized
-  const shouldStartMinimized =
-    dashboard?.generalSettings?.startMinimized ?? false;
-  if (shouldStartMinimized) {
-    // Create the settings window but don't show it immediately
-    const settingsWindow = overlayManager.createSettingsWindow();
-    // Minimize it to system tray
-    settingsWindow.hide();
-  }
 });
 
 app.on('window-all-closed', () => {
