@@ -13,7 +13,7 @@ import {
 } from '@irdashies/shared';
 import { useDashboard } from '@irdashies/context';
 import logger from '@irdashies/utils/logger';
-import { widgetLabel } from '../menuItems';
+import { widgetItems, widgetLabel } from '../menuItems';
 
 const HAT_DIRECTION_LABELS: Record<string, string> = {
   up: 'Up',
@@ -337,7 +337,16 @@ export const KeybindingsSettings = () => {
 
   // One bindable show/hide toggle per widget instance in the current dashboard.
   // Derived live, so newly-added widgets automatically appear with no defaults.
-  const widgets = currentDashboard?.widgets ?? [];
+  // Ordered to match the settings menu (widgetItems); unknown types sort last.
+  const menuOrder = (widget: { type?: string; id: string }) => {
+    const index = widgetItems.findIndex(
+      (item) => item.widgetType === (widget.type ?? widget.id)
+    );
+    return index === -1 ? widgetItems.length : index;
+  };
+  const widgets = [...(currentDashboard?.widgets ?? [])].sort(
+    (a, b) => menuOrder(a) - menuOrder(b)
+  );
 
   return (
     <div className="flex flex-col h-full">
