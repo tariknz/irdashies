@@ -61,12 +61,8 @@ export class KeybindingManager {
   // module graph (electron isn't fully mocked in keybinding unit tests).
   private async cycleProfile(direction: 1 | -1): Promise<void> {
     try {
-      const {
-        listProfiles,
-        getCurrentProfileId,
-        setCurrentProfile,
-        getDashboard,
-      } = await import('./storage/dashboards');
+      const { listProfiles, getCurrentProfileId, setCurrentProfile } =
+        await import('./storage/dashboards');
       const { getCycleProfiles } = await import('./storage/appSettings');
 
       const profiles = listProfiles();
@@ -87,11 +83,10 @@ export class KeybindingManager {
       const target = profiles[targetIndex];
       if (!target || target.id === currentId) return;
 
+      // setCurrentProfile emits dashboardUpdated, which live-updates the
+      // existing overlay windows (closeOrCreateWindows + publishMessage). No
+      // destroy/recreate — see publishDashboardUpdates in dashboardBridge.
       setCurrentProfile(target.id);
-      const dashboard = getDashboard(target.id);
-      if (dashboard) {
-        this.overlayManager.forceRefreshOverlays(dashboard);
-      }
     } catch (error) {
       logger.error('Error switching profile via keybind:', error);
     }

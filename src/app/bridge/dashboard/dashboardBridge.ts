@@ -408,12 +408,10 @@ export async function publishDashboardUpdates(
   });
 
   ipcMain.handle('switchProfile', (_, profileId: string) => {
+    // setCurrentProfile emits dashboardUpdated → publishDashboardUpdates
+    // live-updates overlays (closeOrCreateWindows + publishMessage). No
+    // destroy/recreate, so the switch is near-instant.
     setCurrentProfile(profileId);
-    // Force refresh overlays with the new profile's dashboard
-    const dashboard = getDashboard(profileId);
-    if (dashboard) {
-      overlayManager.forceRefreshOverlays(dashboard);
-    }
   });
 
   ipcMain.handle('getCurrentProfile', () => {
