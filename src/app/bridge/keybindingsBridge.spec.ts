@@ -77,10 +77,14 @@ const sampleBindings = (): KeybindingsMap => ({
   },
 });
 
-const invokeUpdate = (actionId: KeybindingActionId, accelerator: string) => {
+const invokeUpdate = (
+  actionId: KeybindingActionId,
+  accelerator: string,
+  meta?: { label: string; description: string }
+) => {
   const handler = handlers.get('keybindings:update');
   if (!handler) throw new Error('keybindings:update handler not registered');
-  return handler({}, actionId, accelerator);
+  return handler({}, actionId, accelerator, meta);
 };
 
 describe('keybindingsBridge keybindings:update', () => {
@@ -124,6 +128,36 @@ describe('keybindingsBridge keybindings:update', () => {
       undefined
     );
     expect(mockReloadBindings).toHaveBeenCalledOnce();
+  });
+
+  it('forwards the meta (label/description) for a dynamic widget binding', () => {
+    mockIsValidAccelerator.mockReturnValue(true);
+    const next = sampleBindings();
+    mockUpdateKeybinding.mockReturnValue(next);
+    const meta = { label: 'Standings', description: 'Show / hide Standings' };
+
+    invokeUpdate('toggle-widget:standings', 'Alt+1', meta);
+
+    expect(mockUpdateKeybinding).toHaveBeenCalledWith(
+      'toggle-widget:standings',
+      'Alt+1',
+      meta
+    );
+    expect(mockReloadBindings).toHaveBeenCalledOnce();
+  });
+
+  it('rejects an unsupported action id without persisting', () => {
+    mockIsValidAccelerator.mockReturnValue(true);
+
+    expect(() =>
+      invokeUpdate('bogus-action' as KeybindingActionId, 'Alt+J')
+    ).toThrow('is not a supported keybinding action');
+    expect(() =>
+      invokeUpdate('toggle-widget:' as KeybindingActionId, 'Alt+J')
+    ).toThrow('is not a supported keybinding action');
+
+    expect(mockUpdateKeybinding).not.toHaveBeenCalled();
+    expect(mockReloadBindings).not.toHaveBeenCalled();
   });
 
   it('accepts a valid gamepad token without keyboard validation', () => {

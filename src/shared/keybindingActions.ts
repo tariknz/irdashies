@@ -24,3 +24,14 @@ export function widgetIdFromToggleActionId(
 ): string {
   return actionId.slice(WIDGET_TOGGLE_PREFIX.length);
 }
+
+/**
+ * True when an action id is a widget toggle with a non-empty widget id. Use at
+ * boundaries (storage merge, IPC) to reject malformed `toggle-widget:` keys.
+ */
+export function isValidWidgetToggleActionId(actionId: string): boolean {
+  return (
+    isWidgetToggleActionId(actionId) &&
+    widgetIdFromToggleActionId(actionId).length > 0
+  );
+}

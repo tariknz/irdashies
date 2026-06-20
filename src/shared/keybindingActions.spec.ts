@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   WIDGET_TOGGLE_PREFIX,
   isWidgetToggleActionId,
+  isValidWidgetToggleActionId,
   widgetToggleActionId,
   widgetIdFromToggleActionId,
 } from './keybindingActions';
@@ -29,5 +30,11 @@ describe('widget toggle action id helpers', () => {
     expect(widgetIdFromToggleActionId('toggle-widget:my:weird:id')).toBe(
       'my:weird:id'
     );
+  });
+
+  it('treats a prefix with an empty widget id as invalid', () => {
+    expect(isValidWidgetToggleActionId('toggle-widget:fuel')).toBe(true);
+    expect(isValidWidgetToggleActionId('toggle-widget:')).toBe(false);
+    expect(isValidWidgetToggleActionId('toggle-hide-ui')).toBe(false);
   });
 });

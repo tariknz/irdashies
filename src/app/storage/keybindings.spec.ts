@@ -53,6 +53,19 @@ describe('keybindings storage', () => {
       );
     });
 
+    it('drops malformed widget-toggle keys with an empty widget id', () => {
+      mockReadData.mockReturnValue({
+        'toggle-widget:': {
+          accelerator: 'Alt+0',
+          label: '',
+          description: '',
+          isDefault: false,
+        },
+      });
+      const result = getKeybindings();
+      expect('toggle-widget:' in result).toBe(false);
+    });
+
     it('keeps stored overrides of static actions', () => {
       mockReadData.mockReturnValue({
         'toggle-hide-ui': {

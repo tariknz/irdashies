@@ -1,6 +1,6 @@
 import type { KeybindingActionId, KeybindingsMap } from '@irdashies/types';
 import { DEFAULT_KEYBINDINGS } from '@irdashies/types';
-import { isWidgetToggleActionId } from '@irdashies/shared';
+import { isValidWidgetToggleActionId } from '@irdashies/shared';
 import { readData, writeData } from './storage';
 
 const STORAGE_KEY = 'keybindings';
@@ -17,9 +17,10 @@ export function getKeybindings(): KeybindingsMap {
   for (const key of Object.keys(stored) as KeybindingActionId[]) {
     const entry = stored[key];
     if (!entry) continue;
-    // Keep stored overrides of known static actions, plus any dynamic
-    // per-widget toggles (which have no factory default to merge against).
-    if (key in merged || isWidgetToggleActionId(key)) {
+    // Keep stored overrides of known static actions, plus any well-formed
+    // dynamic per-widget toggles (which have no factory default to merge
+    // against). Malformed `toggle-widget:` keys (empty id) are dropped.
+    if (key in merged || isValidWidgetToggleActionId(key)) {
       merged[key] = entry;
     }
   }
