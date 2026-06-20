@@ -2,7 +2,11 @@ import { globalShortcut, desktopCapturer } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { KeybindingActionId, KeybindingsMap } from '@irdashies/types';
-import { isGamepadBinding } from '@irdashies/shared';
+import {
+  isGamepadBinding,
+  isWidgetToggleActionId,
+  widgetIdFromToggleActionId,
+} from '@irdashies/shared';
 import { getKeybindings } from './storage/keybindings';
 import { OverlayManager } from './overlayManager';
 import logger from './logger';
@@ -12,6 +16,8 @@ export class KeybindingManager {
   private bindings: KeybindingsMap;
   private actionHandlers: Map<KeybindingActionId, () => void>;
   private hideState = false;
+  /** Widget instance ids currently hidden via a per-widget toggle (session only). */
+  private hiddenWidgets = new Set<string>();
 
   /** Owns the gamepad token -> action map, capture mode, and WebHID host. */
   private gamepad: GamepadManager;
@@ -79,6 +85,33 @@ export class KeybindingManager {
     }
   }
 
+  /**
+   * Resolve the handler for an action id. Static actions come from the handler
+   * map; dynamic `toggle-widget:<id>` actions hide/show that widget instance.
+   */
+  private resolveHandler(
+    actionId: KeybindingActionId
+  ): (() => void) | undefined {
+    if (isWidgetToggleActionId(actionId)) {
+      const widgetId = widgetIdFromToggleActionId(actionId);
+      return () => this.toggleWidgetHide(widgetId);
+    }
+    return this.actionHandlers.get(actionId);
+  }
+
+  /** Toggle the session-only hidden state of a single widget and broadcast it. */
+  private toggleWidgetHide(widgetId: string): void {
+    const hide = !this.hiddenWidgets.has(widgetId);
+    if (hide) {
+      this.hiddenWidgets.add(widgetId);
+    } else {
+      this.hiddenWidgets.delete(widgetId);
+    }
+    this.overlayManager.getOverlays().forEach(({ window }) => {
+      window.webContents.send('widget-toggle-hide', widgetId, hide);
+    });
+  }
+
   public getBindings(): KeybindingsMap {
     return this.bindings;
   }
@@ -86,7 +119,10 @@ export class KeybindingManager {
   public registerAll(): void {
     this.gamepad.syncBindings(this.bindings);
     for (const [actionId, entry] of Object.entries(this.bindings)) {
-      const handler = this.actionHandlers.get(actionId as KeybindingActionId);
+      // Unbound entries (empty accelerator) have nothing to register.
+      if (!entry.accelerator) continue;
+
+      const handler = this.resolveHandler(actionId as KeybindingActionId);
       if (!handler) continue;
 
       // Gamepad bindings aren't global keyboard shortcuts; the GamepadManager
@@ -168,7 +204,7 @@ export class KeybindingManager {
   }
 
   public triggerAction(actionId: KeybindingActionId): void {
-    const handler = this.actionHandlers.get(actionId);
+    const handler = this.resolveHandler(actionId);
     if (handler) handler();
   }
 

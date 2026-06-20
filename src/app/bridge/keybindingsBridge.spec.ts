@@ -120,7 +120,8 @@ describe('keybindingsBridge keybindings:update', () => {
     expect(result).toBe(next);
     expect(mockUpdateKeybinding).toHaveBeenCalledWith(
       'toggle-hide-ui',
-      'Alt+J'
+      'Alt+J',
+      undefined
     );
     expect(mockReloadBindings).toHaveBeenCalledOnce();
   });
@@ -136,7 +137,8 @@ describe('keybindingsBridge keybindings:update', () => {
     expect(mockIsValidAccelerator).not.toHaveBeenCalled();
     expect(mockUpdateKeybinding).toHaveBeenCalledWith(
       'toggle-edit-mode',
-      'gamepad:btn0'
+      'gamepad:btn0',
+      undefined
     );
     expect(mockReloadBindings).toHaveBeenCalledOnce();
   });

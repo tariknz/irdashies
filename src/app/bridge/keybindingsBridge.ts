@@ -36,11 +36,17 @@ export function setupKeybindingsBridge(
 
   ipcMain.handle(
     'keybindings:update',
-    (_, actionId: KeybindingActionId, accelerator: string) => {
+    (
+      _,
+      actionId: KeybindingActionId,
+      accelerator: string,
+      meta?: { label: string; description: string }
+    ) => {
       try {
-        assertValidAccelerator(accelerator);
+        // An empty accelerator means "unbind" — nothing to validate.
+        if (accelerator) assertValidAccelerator(accelerator);
 
-        const result = updateKeybinding(actionId, accelerator);
+        const result = updateKeybinding(actionId, accelerator, meta);
         keybindingManager.reloadBindings();
         rebuildTaskbarMenu();
 

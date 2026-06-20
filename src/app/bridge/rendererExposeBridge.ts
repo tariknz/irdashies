@@ -250,8 +250,11 @@ export function exposeBridge() {
 
   contextBridge.exposeInMainWorld('keybindingsBridge', {
     getKeybindings: () => ipcRenderer.invoke('keybindings:get'),
-    updateKeybinding: (actionId: KeybindingActionId, accelerator: string) =>
-      ipcRenderer.invoke('keybindings:update', actionId, accelerator),
+    updateKeybinding: (
+      actionId: KeybindingActionId,
+      accelerator: string,
+      meta?: { label: string; description: string }
+    ) => ipcRenderer.invoke('keybindings:update', actionId, accelerator, meta),
     resetKeybinding: (actionId: KeybindingActionId) =>
       ipcRenderer.invoke('keybindings:reset', actionId),
     resetAllKeybindings: () => ipcRenderer.invoke('keybindings:resetAll'),

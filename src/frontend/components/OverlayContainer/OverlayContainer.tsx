@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   useDashboard,
   useRunningState,
@@ -22,6 +22,27 @@ export const OverlayContainer = memo(() => {
   } = useDashboard();
   const { running } = useRunningState();
   useResetOnDisconnect(running);
+
+  // Session-only per-widget visibility, toggled via a hotkey in the main
+  // process (see KeybindingManager.toggleWidgetHide). Does not touch the saved
+  // dashboard — purely transient, mirroring the global Alt+H hide.
+  const [hiddenWidgetIds, setHiddenWidgetIds] = useState<Set<string>>(
+    () => new Set()
+  );
+  useEffect(() => {
+    if (!window.globalKey?.onWidgetToggle) return;
+    return window.globalKey.onWidgetToggle((widgetId, hide) => {
+      setHiddenWidgetIds((prev) => {
+        const next = new Set(prev);
+        if (hide) {
+          next.add(widgetId);
+        } else {
+          next.delete(widgetId);
+        }
+        return next;
+      });
+    });
+  }, []);
 
   const handleExitEditMode = useCallback(() => {
     bridge.toggleLockOverlays();
@@ -137,6 +158,11 @@ export const OverlayContainer = memo(() => {
       <SectorTimingUpdater />
       <PushToPassUpdater />
       {widgetsForThisDisplay.map((widget, index) => {
+        // Transiently hidden via a per-widget hotkey — skip rendering.
+        if (hiddenWidgetIds.has(widget.id)) {
+          return null;
+        }
+
         const WidgetComponent = getWidget(widget.type || widget.id);
         if (!WidgetComponent) {
           return null;
