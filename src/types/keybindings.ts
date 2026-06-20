@@ -1,8 +1,20 @@
-/** Identifiers for every bindable action in the app */
-export type KeybindingActionId =
+/** Fixed, app-level actions with a factory default binding. */
+export type StaticKeybindingActionId =
   | 'toggle-hide-ui'
   | 'toggle-edit-mode'
   | 'save-telemetry';
+
+/**
+ * Dynamic per-widget show/hide action, keyed by the widget instance id, e.g.
+ * `toggle-widget:standings`. These have no factory default — they are bound by
+ * the user and derived from the current dashboard's widget list.
+ */
+export type WidgetToggleActionId = `toggle-widget:${string}`;
+
+/** Identifiers for every bindable action in the app */
+export type KeybindingActionId =
+  | StaticKeybindingActionId
+  | WidgetToggleActionId;
 
 export interface KeybindingEntry {
   /**
@@ -26,7 +38,12 @@ export interface KeybindingsBridge {
   getKeybindings: () => Promise<KeybindingsMap>;
   updateKeybinding: (
     actionId: KeybindingActionId,
-    accelerator: string
+    accelerator: string,
+    /**
+     * Friendly name + description, used when creating a binding for a dynamic
+     * action (e.g. a widget toggle) that has no factory default entry.
+     */
+    meta?: { label: string; description: string }
   ) => Promise<KeybindingsMap>;
   resetKeybinding: (actionId: KeybindingActionId) => Promise<KeybindingsMap>;
   resetAllKeybindings: () => Promise<KeybindingsMap>;

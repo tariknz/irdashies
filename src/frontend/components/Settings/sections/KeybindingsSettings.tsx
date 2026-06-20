@@ -5,8 +5,15 @@ import type {
   KeybindingEntry,
   KeybindingsMap,
 } from '@irdashies/types';
-import { isGamepadBinding, parseGamepadToken } from '@irdashies/shared';
+import {
+  isGamepadBinding,
+  isWidgetToggleActionId,
+  parseGamepadToken,
+  widgetToggleActionId,
+} from '@irdashies/shared';
+import { useDashboard } from '@irdashies/context';
 import logger from '@irdashies/utils/logger';
+import { widgetItems, widgetLabel } from '../menuItems';
 
 const HAT_DIRECTION_LABELS: Record<string, string> = {
   up: 'Up',
@@ -140,6 +147,12 @@ const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
   // First input (key or pad) during recording wins; later ones are ignored until
   // recording restarts. Guards the async gap before listeners are torn down.
   const bindingInProgressRef = useRef(false);
+  // Read the latest label/description at bind time without re-running the
+  // recording effect when the (possibly freshly-synthesized) entry changes.
+  const entryRef = useRef(entry);
+  useEffect(() => {
+    entryRef.current = entry;
+  }, [entry]);
 
   const stopRecording = useCallback(async () => {
     setRecording(false);
@@ -158,7 +171,11 @@ const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
       try {
         const result = await window.keybindingsBridge.updateKeybinding(
           actionId,
-          accelerator
+          accelerator,
+          {
+            label: entryRef.current.label,
+            description: entryRef.current.description,
+          }
         );
         setError(null);
         onUpdated(result);
@@ -254,7 +271,11 @@ const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
             : 'bg-slate-700 border border-slate-600 text-white hover:bg-slate-600',
         ].join(' ')}
       >
-        {recording ? 'Press keys...' : formatAccelerator(entry.accelerator)}
+        {recording
+          ? 'Press keys...'
+          : entry.accelerator
+            ? formatAccelerator(entry.accelerator)
+            : 'Not set'}
       </button>
       {!entry.isDefault && (
         <button
@@ -271,8 +292,25 @@ const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
   );
 };
 
+interface BindingRowProps {
+  actionId: KeybindingActionId;
+  entry: KeybindingEntry;
+  onUpdated: (bindings: KeybindingsMap) => void;
+}
+
+const BindingRow = ({ actionId, entry, onUpdated }: BindingRowProps) => (
+  <div className="flex items-center justify-between px-4 py-3 rounded bg-slate-700/50 hover:bg-slate-700/70 transition-colors">
+    <div className="flex flex-col gap-0.5">
+      <span className="text-sm font-medium text-white">{entry.label}</span>
+      <span className="text-xs text-slate-400">{entry.description}</span>
+    </div>
+    <KeyRecorder actionId={actionId} entry={entry} onUpdated={onUpdated} />
+  </div>
+);
+
 export const KeybindingsSettings = () => {
   const [bindings, setBindings] = useState<KeybindingsMap | null>(null);
+  const { currentDashboard } = useDashboard();
 
   useEffect(() => {
     window.keybindingsBridge?.getKeybindings().then(setBindings);
@@ -291,7 +329,24 @@ export const KeybindingsSettings = () => {
     return <>Loading...</>;
   }
 
-  const actionIds = Object.keys(bindings) as KeybindingActionId[];
+  // The stored map may also contain dynamic widget toggles; the static section
+  // only shows the fixed app-level actions.
+  const staticActionIds = (
+    Object.keys(bindings) as KeybindingActionId[]
+  ).filter((id) => !isWidgetToggleActionId(id));
+
+  // One bindable show/hide toggle per widget instance in the current dashboard.
+  // Derived live, so newly-added widgets automatically appear with no defaults.
+  // Ordered to match the settings menu (widgetItems); unknown types sort last.
+  const menuOrder = (widget: { type?: string; id: string }) => {
+    const index = widgetItems.findIndex(
+      (item) => item.widgetType === (widget.type ?? widget.id)
+    );
+    return index === -1 ? widgetItems.length : index;
+  };
+  const widgets = [...(currentDashboard?.widgets ?? [])].sort(
+    (a, b) => menuOrder(a) - menuOrder(b)
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -316,30 +371,47 @@ export const KeybindingsSettings = () => {
 
       <div className="flex-1 overflow-y-auto min-h-0 mt-4">
         <div className="flex flex-col gap-1">
-          {actionIds.map((actionId) => {
-            const entry = bindings[actionId];
-            return (
-              <div
-                key={actionId}
-                className="flex items-center justify-between px-4 py-3 rounded bg-slate-700/50 hover:bg-slate-700/70 transition-colors"
-              >
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium text-white">
-                    {entry.label}
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    {entry.description}
-                  </span>
-                </div>
-                <KeyRecorder
-                  actionId={actionId}
-                  entry={entry}
-                  onUpdated={setBindings}
-                />
-              </div>
-            );
-          })}
+          {staticActionIds.map((actionId) => (
+            <BindingRow
+              key={actionId}
+              actionId={actionId}
+              entry={bindings[actionId]}
+              onUpdated={setBindings}
+            />
+          ))}
         </div>
+
+        {widgets.length > 0 && (
+          <>
+            <h3 className="text-sm font-semibold text-slate-300 mt-6 mb-2 px-1">
+              Widget Visibility
+            </h3>
+            <p className="text-xs text-slate-400 mb-2 px-1">
+              Assign a key or controller button to show / hide an individual
+              widget. Unbound by default.
+            </p>
+            <div className="flex flex-col gap-1">
+              {widgets.map((widget) => {
+                const actionId = widgetToggleActionId(widget.id);
+                const label = widgetLabel(widget.type ?? widget.id);
+                const entry: KeybindingEntry = bindings[actionId] ?? {
+                  accelerator: '',
+                  label,
+                  description: `Show / hide the ${label} widget`,
+                  isDefault: true,
+                };
+                return (
+                  <BindingRow
+                    key={actionId}
+                    actionId={actionId}
+                    entry={entry}
+                    onUpdated={setBindings}
+                  />
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

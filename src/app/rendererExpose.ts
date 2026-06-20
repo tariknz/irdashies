@@ -21,6 +21,15 @@ export function exposeInMainWorld() {
       ipcRenderer.on('global-toggle-hide', listener);
       return () => ipcRenderer.removeListener('global-toggle-hide', listener);
     },
+    onWidgetToggle: (cb: (widgetId: string, hide: boolean) => void) => {
+      const listener = (
+        _: Electron.IpcRendererEvent,
+        widgetId: string,
+        hide: boolean
+      ) => cb(widgetId, hide);
+      ipcRenderer.on('widget-toggle-hide', listener);
+      return () => ipcRenderer.removeListener('widget-toggle-hide', listener);
+    },
   });
 
   const pitLaneBridge: PitLaneBridge = {

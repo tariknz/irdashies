@@ -1,6 +1,11 @@
 import { ipcMain, webContents } from 'electron';
 import type { KeybindingActionId } from '@irdashies/types';
-import { isGamepadBinding, parseGamepadToken } from '@irdashies/shared';
+import { DEFAULT_KEYBINDINGS } from '@irdashies/types';
+import {
+  isGamepadBinding,
+  isValidWidgetToggleActionId,
+  parseGamepadToken,
+} from '@irdashies/shared';
 import {
   getKeybindings,
   updateKeybinding,
@@ -10,6 +15,14 @@ import {
 import { KeybindingManager } from '../keybindingManager';
 import { rebuildTaskbarMenu } from '../setupTaskbar';
 import logger from '../logger';
+
+/** Throw if `actionId` is not a known static action or a valid widget toggle. */
+function assertSupportedAction(actionId: KeybindingActionId): void {
+  const isStatic = Object.hasOwn(DEFAULT_KEYBINDINGS, actionId);
+  if (!isStatic && !isValidWidgetToggleActionId(actionId)) {
+    throw new Error(`"${actionId}" is not a supported keybinding action`);
+  }
+}
 
 /** Throw if `accelerator` is not a valid binding of its kind. */
 function assertValidAccelerator(accelerator: string): void {
@@ -36,11 +49,18 @@ export function setupKeybindingsBridge(
 
   ipcMain.handle(
     'keybindings:update',
-    (_, actionId: KeybindingActionId, accelerator: string) => {
+    (
+      _,
+      actionId: KeybindingActionId,
+      accelerator: string,
+      meta?: { label: string; description: string }
+    ) => {
       try {
-        assertValidAccelerator(accelerator);
+        assertSupportedAction(actionId);
+        // An empty accelerator means "unbind" — nothing to validate.
+        if (accelerator) assertValidAccelerator(accelerator);
 
-        const result = updateKeybinding(actionId, accelerator);
+        const result = updateKeybinding(actionId, accelerator, meta);
         keybindingManager.reloadBindings();
         rebuildTaskbarMenu();
 

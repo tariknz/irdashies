@@ -4,6 +4,9 @@ declare global {
   interface Window {
     globalKey?: {
       onToggle: (cb: (hide: boolean) => void) => () => void;
+      onWidgetToggle: (
+        cb: (widgetId: string, hide: boolean) => void
+      ) => () => void;
     };
   }
 }
