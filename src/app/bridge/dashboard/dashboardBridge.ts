@@ -37,6 +37,12 @@ import {
   getAnalyticsOptOut as getAnalyticsOptOutStorage,
   setAnalyticsOptOut as setAnalyticsOptOutStorage,
 } from '../../storage/analytics';
+import {
+  getCycleProfiles as getCycleProfilesStorage,
+  setCycleProfiles as setCycleProfilesStorage,
+  getShowProfileBanner as getShowProfileBannerStorage,
+  setShowProfileBanner as setShowProfileBannerStorage,
+} from '../../storage/appSettings';
 import { Analytics } from '../../analytics';
 import logger from '../../logger';
 
@@ -212,9 +218,11 @@ export async function publishDashboardUpdates(
   overlayManager: OverlayManager,
   analytics: Analytics
 ) {
-  onDashboardUpdated((dashboard) => {
-    const merged = mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
-    const profileId = getCurrentProfileId();
+  let lastProfileId = getCurrentProfileId();
+  let hideTimer: ReturnType<typeof setTimeout> | undefined;
+  let settleTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const applyDashboard = (merged: DashboardLayout, profileId: string) => {
     overlayManager.closeOrCreateWindows(merged);
     overlayManager.publishMessage('dashboardUpdated', merged);
     // Notify component server bridge subscribers
@@ -225,6 +233,40 @@ export async function publishDashboardUpdates(
         logger.error('Error in dashboard update callback:', err);
       }
     });
+  };
+
+  onDashboardUpdated((dashboard) => {
+    const merged = mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
+    const profileId = getCurrentProfileId();
+
+    if (profileId === lastProfileId) {
+      applyDashboard(merged, profileId);
+      return;
+    }
+
+    // Profile switch: the overlay windows resize to the new layout, which is
+    // visible if it happens on screen. So hide the widgets, resize while
+    // hidden, then reveal and show the name. The renderer just toggles
+    // visibility on command; main sequences the timing.
+    clearTimeout(hideTimer);
+    clearTimeout(settleTimer);
+    lastProfileId = profileId;
+    const name = getProfile(profileId)?.name ?? '';
+    // Banner is cosmetic; the hide/reveal still runs to mask the resize.
+    const showBanner = getShowProfileBannerStorage();
+    const HIDE_MS = 120; // let the renderer hide before we resize
+    const SETTLE_MS = 80; // let the new layout settle before revealing
+    overlayManager.publishMessage('profileTransition', { hidden: true, name });
+    hideTimer = setTimeout(() => {
+      applyDashboard(merged, profileId);
+      settleTimer = setTimeout(() => {
+        overlayManager.publishMessage('profileTransition', {
+          hidden: false,
+          name,
+          showBanner,
+        });
+      }, SETTLE_MS);
+    }, HIDE_MS);
   });
   ipcMain.on('saveDashboard', (_, dashboard, options) => {
     // For layout-only changes (drag/resize), skip the window refresh
@@ -331,6 +373,18 @@ export async function publishDashboardUpdates(
       },
     });
   });
+
+  ipcMain.handle('getCycleProfiles', () => getCycleProfilesStorage());
+
+  ipcMain.handle('setCycleProfiles', (_, enabled: boolean) =>
+    setCycleProfilesStorage(enabled)
+  );
+
+  ipcMain.handle('getShowProfileBanner', () => getShowProfileBannerStorage());
+
+  ipcMain.handle('setShowProfileBanner', (_, enabled: boolean) =>
+    setShowProfileBannerStorage(enabled)
+  );
 
   // Profile management IPC handlers
   ipcMain.handle('listProfiles', () => {

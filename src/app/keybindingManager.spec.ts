@@ -61,6 +61,18 @@ const bindingsWithBadAccelerator = (): KeybindingsMap => ({
     description: '',
     isDefault: true,
   },
+  'prev-profile': {
+    accelerator: 'Alt+PageUp',
+    label: 'Previous Profile',
+    description: '',
+    isDefault: true,
+  },
+  'next-profile': {
+    accelerator: 'Alt+PageDown',
+    label: 'Next Profile',
+    description: '',
+    isDefault: true,
+  },
 });
 
 describe('KeybindingManager', () => {

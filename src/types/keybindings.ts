@@ -2,7 +2,9 @@
 export type StaticKeybindingActionId =
   | 'toggle-hide-ui'
   | 'toggle-edit-mode'
-  | 'save-telemetry';
+  | 'save-telemetry'
+  | 'prev-profile'
+  | 'next-profile';
 
 /**
  * Dynamic per-widget show/hide action, keyed by the widget instance id, e.g.
@@ -86,6 +88,18 @@ export const DEFAULT_KEYBINDINGS: KeybindingsMap = {
     accelerator: 'F7',
     label: 'Save Telemetry',
     description: 'Capture current telemetry data and screenshots',
+    isDefault: true,
+  },
+  'prev-profile': {
+    accelerator: 'Alt+PageUp',
+    label: 'Previous Profile',
+    description: 'Switch to the previous configuration profile',
+    isDefault: true,
+  },
+  'next-profile': {
+    accelerator: 'Alt+PageDown',
+    label: 'Next Profile',
+    description: 'Switch to the next configuration profile',
     isDefault: true,
   },
 };

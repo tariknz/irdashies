@@ -35,3 +35,21 @@ export function isValidWidgetToggleActionId(actionId: string): boolean {
     widgetIdFromToggleActionId(actionId).length > 0
   );
 }
+
+/**
+ * Target index when cycling profiles. Returns -1 when at an edge and cycle is
+ * off (i.e. no switch should happen).
+ */
+export const nextProfileIndex = (
+  currentIndex: number,
+  length: number,
+  direction: 1 | -1,
+  cycle: boolean
+): number => {
+  if (length === 0) return -1;
+  const start = currentIndex === -1 ? 0 : currentIndex;
+  const next = start + direction;
+  if (cycle) return (next + length) % length;
+  if (next < 0 || next >= length) return -1;
+  return next;
+};

@@ -58,6 +58,10 @@ export interface DashboardBridge {
   getPlayerIconImageAsDataUrl: (imagePath: string) => Promise<string | null>;
   getAnalyticsOptOut: () => Promise<boolean>;
   setAnalyticsOptOut: (optOut: boolean) => Promise<void>;
+  getCycleProfiles?: () => Promise<boolean>;
+  setCycleProfiles?: (enabled: boolean) => Promise<void>;
+  getShowProfileBanner?: () => Promise<boolean>;
+  setShowProfileBanner?: (enabled: boolean) => Promise<void>;
   listProfiles: () => Promise<DashboardProfile[]>;
   createProfile: (name: string) => Promise<DashboardProfile>;
   cloneProfile: (profileId: string) => Promise<DashboardProfile>;

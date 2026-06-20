@@ -14,6 +14,7 @@ export const ProfileSettings = () => {
   const {
     currentProfile,
     profiles,
+    bridge,
     createProfile,
     cloneProfile,
     deleteProfile,
@@ -21,6 +22,26 @@ export const ProfileSettings = () => {
     switchProfile,
     refreshProfiles,
   } = useDashboard();
+
+  const [cycleProfiles, setCycleProfiles] = useState(false);
+  const [showProfileBanner, setShowProfileBanner] = useState(true);
+
+  useEffect(() => {
+    bridge.getCycleProfiles?.().then((v) => setCycleProfiles(v ?? false));
+    bridge
+      .getShowProfileBanner?.()
+      .then((v) => setShowProfileBanner(v ?? true));
+  }, [bridge]);
+
+  const handleToggleCycleProfiles = async (checked: boolean) => {
+    await bridge.setCycleProfiles?.(checked);
+    setCycleProfiles(checked);
+  };
+
+  const handleToggleShowProfileBanner = async (checked: boolean) => {
+    await bridge.setShowProfileBanner?.(checked);
+    setShowProfileBanner(checked);
+  };
 
   const [newProfileName, setNewProfileName] = useState('');
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
@@ -396,6 +417,61 @@ export const ProfileSettings = () => {
                 );
               })
             )}
+          </div>
+        </div>
+
+        {/* Profile Switching Options */}
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h4
+                id="cycle-profiles-label"
+                className="text-md font-medium text-slate-300"
+              >
+                Cycle Profiles
+              </h4>
+              <p className="text-sm text-slate-400">
+                When switching profiles with the keyboard shortcut, wrap around
+                from the last profile back to the first (and vice versa).
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={cycleProfiles}
+                onChange={(e) => handleToggleCycleProfiles(e.target.checked)}
+                aria-labelledby="cycle-profiles-label"
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h4
+                id="show-profile-banner-label"
+                className="text-md font-medium text-slate-300"
+              >
+                Show Profile Name Banner
+              </h4>
+              <p className="text-sm text-slate-400">
+                Briefly display the profile name on the overlay when switching
+                profiles.
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showProfileBanner}
+                onChange={(e) =>
+                  handleToggleShowProfileBanner(e.target.checked)
+                }
+                aria-labelledby="show-profile-banner-label"
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
           </div>
         </div>
 

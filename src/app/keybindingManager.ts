@@ -5,6 +5,7 @@ import type { KeybindingActionId, KeybindingsMap } from '@irdashies/types';
 import {
   isGamepadBinding,
   isWidgetToggleActionId,
+  nextProfileIndex,
   widgetIdFromToggleActionId,
 } from '@irdashies/shared';
 import { getKeybindings } from './storage/keybindings';
@@ -46,6 +47,54 @@ export class KeybindingManager {
     this.actionHandlers.set('save-telemetry', () => {
       this.saveTelemetry();
     });
+
+    this.actionHandlers.set('prev-profile', () => {
+      this.cycleProfile(-1);
+    });
+
+    this.actionHandlers.set('next-profile', () => {
+      this.cycleProfile(1);
+    });
+  }
+
+  // ponytail: dynamic import keeps storage/dashboards out of the constructor's
+  // module graph (electron isn't fully mocked in keybinding unit tests).
+  private async cycleProfile(direction: 1 | -1): Promise<void> {
+    try {
+      const {
+        listProfiles,
+        getCurrentProfileId,
+        setCurrentProfile,
+        getDashboard,
+      } = await import('./storage/dashboards');
+      const { getCycleProfiles } = await import('./storage/appSettings');
+
+      const profiles = listProfiles();
+      if (profiles.length < 2) return;
+
+      const currentId = getCurrentProfileId();
+      const currentIndex = profiles.findIndex((p) => p.id === currentId);
+      const cycle = getCycleProfiles();
+
+      const targetIndex = nextProfileIndex(
+        currentIndex,
+        profiles.length,
+        direction,
+        cycle
+      );
+      if (targetIndex === -1) return;
+
+      const target = profiles[targetIndex];
+      if (!target || target.id === currentId) return;
+
+      setCurrentProfile(target.id);
+      const dashboard = getDashboard(target.id);
+      if (dashboard) {
+        this.overlayManager.forceRefreshOverlays(dashboard);
+      }
+    } catch (error) {
+      logger.error('Error switching profile via keybind:', error);
+    }
   }
 
   private async saveTelemetry(): Promise<void> {

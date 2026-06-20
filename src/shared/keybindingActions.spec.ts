@@ -5,6 +5,7 @@ import {
   isValidWidgetToggleActionId,
   widgetToggleActionId,
   widgetIdFromToggleActionId,
+  nextProfileIndex,
 } from './keybindingActions';
 
 describe('widget toggle action id helpers', () => {
@@ -36,5 +37,26 @@ describe('widget toggle action id helpers', () => {
     expect(isValidWidgetToggleActionId('toggle-widget:fuel')).toBe(true);
     expect(isValidWidgetToggleActionId('toggle-widget:')).toBe(false);
     expect(isValidWidgetToggleActionId('toggle-hide-ui')).toBe(false);
+  });
+});
+
+describe('nextProfileIndex', () => {
+  it('advances and goes back without wrapping when loop is off', () => {
+    expect(nextProfileIndex(0, 3, 1, false)).toBe(1);
+    expect(nextProfileIndex(1, 3, -1, false)).toBe(0);
+  });
+
+  it('returns -1 at the edges when loop is off', () => {
+    expect(nextProfileIndex(2, 3, 1, false)).toBe(-1); // last -> next
+    expect(nextProfileIndex(0, 3, -1, false)).toBe(-1); // first -> prev
+  });
+
+  it('wraps around at the edges when loop is on', () => {
+    expect(nextProfileIndex(2, 3, 1, true)).toBe(0); // last -> first
+    expect(nextProfileIndex(0, 3, -1, true)).toBe(2); // first -> last
+  });
+
+  it('treats an unknown current index as the start', () => {
+    expect(nextProfileIndex(-1, 3, 1, false)).toBe(1);
   });
 });

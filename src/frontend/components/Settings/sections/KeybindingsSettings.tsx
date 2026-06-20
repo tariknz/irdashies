@@ -56,6 +56,25 @@ function formatGamepadToken(token: string): string {
   return `${prefix}: ${formatGamepadControl(parsed.button)}`;
 }
 
+// Every modifier KeyboardEvent.key value (W3C UI Events). A bare modifier press
+// can't be a main key, and none are valid standalone Electron accelerators.
+const MODIFIER_KEYS = new Set([
+  'Alt',
+  'AltGraph',
+  'CapsLock',
+  'Control',
+  'Fn',
+  'FnLock',
+  'Hyper',
+  'Meta',
+  'NumLock',
+  'ScrollLock',
+  'Shift',
+  'Super',
+  'Symbol',
+  'SymbolLock',
+]);
+
 /**
  * Maps a browser KeyboardEvent into an Electron accelerator string.
  * Returns null if only modifier keys are pressed (waiting for a main key).
@@ -68,7 +87,7 @@ function keyEventToAccelerator(e: KeyboardEvent): string | null {
   if (e.shiftKey) parts.push('Shift');
 
   // Ignore standalone modifier presses
-  if (['Control', 'Meta', 'Alt', 'Shift'].includes(e.key)) {
+  if (MODIFIER_KEYS.has(e.key)) {
     return null;
   }
 
