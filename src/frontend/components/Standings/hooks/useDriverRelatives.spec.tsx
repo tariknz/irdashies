@@ -19,6 +19,7 @@ vi.mock('@irdashies/context', async (importOriginal) => {
     useFocusCarIdx: vi.fn(),
     useTelemetryValues: vi.fn(),
     useTelemetryValuesRounded: vi.fn(),
+    useTelemetryValuesThrottled: vi.fn(),
     useSessionStore: vi.fn(),
     REFERENCE_INTERVAL: 0.0025,
   };
@@ -69,6 +70,7 @@ const {
   useFocusCarIdx,
   useTelemetryValues,
   useTelemetryValuesRounded,
+  useTelemetryValuesThrottled,
   useSessionStore,
 } = await import('@irdashies/context');
 const { useDriverStandings } = await import('./useDriverPositions');
@@ -175,8 +177,12 @@ describe('useDriverRelatives', () => {
     vi.clearAllMocks();
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
-    // Delegate rounded calls to the same mock — precision is irrelevant for static test data
+    // Delegate rounded/throttled calls to the same mock — precision/cadence is irrelevant for static test data
     vi.mocked(useTelemetryValuesRounded).mockImplementation(
+      (key: keyof TelemetryVarList) =>
+        vi.mocked(useTelemetryValues)(key) as number[]
+    );
+    vi.mocked(useTelemetryValuesThrottled).mockImplementation(
       (key: keyof TelemetryVarList) =>
         vi.mocked(useTelemetryValues)(key) as number[]
     );

@@ -13,6 +13,7 @@ import {
   useSessionPositions,
   useSessionFastestLaps,
   useTelemetryValuesRounded,
+  useTelemetryValuesThrottled,
 } from '@irdashies/context';
 
 import {
@@ -41,7 +42,11 @@ const getLastTimeState = (
   return undefined;
 };
 
-export const useDriverPositions = () => {
+export const useDriverPositions = (overrides?: {
+  /** Pass an already-subscribed array to avoid a duplicate store subscription
+   * when the caller already holds this telemetry key. */
+  carIdxLapDstPct?: number[];
+}) => {
   const carIdxPosition = useTelemetry('CarIdxPosition');
   const carIdxClassPosition = useTelemetry('CarIdxClassPosition');
   const carIdxBestLap = useTelemetry('CarIdxBestLapTime');
@@ -52,7 +57,11 @@ export const useDriverPositions = () => {
   const prevCarTrackSurface = usePrevCarTrackSurface();
   const lastPitLap = usePitLap();
   const lastLap = useCarLap();
-  const carIdxLapDstPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
+  // Sampled by time, not value delta: with a full grid, some car's lap
+  // distance crosses any rounding threshold almost every tick, so value
+  // rounding alone doesn't throttle the recompute below.
+  const ownCarIdxLapDstPct = useTelemetryValuesThrottled('CarIdxLapDistPct', 66);
+  const carIdxLapDstPct = overrides?.carIdxLapDstPct ?? ownCarIdxLapDstPct;
 
   const positions = useMemo(() => {
     return (
@@ -112,8 +121,14 @@ export const useDrivers = () => {
   return drivers;
 };
 
-export const useCarState = () => {
-  const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
+export const useCarState = (overrides?: {
+  /** Pass an already-subscribed value to avoid a duplicate store subscription
+   * when the caller already holds this telemetry key. */
+  carIdxTrackSurface?: ReturnType<typeof useTelemetry<number[]>>;
+}) => {
+  const ownCarIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
+  const carIdxTrackSurface =
+    overrides?.carIdxTrackSurface ?? ownCarIdxTrackSurface;
   const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
   const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
   const carIdxSessionFlags = useTelemetry<number[]>('CarIdxSessionFlags');
@@ -150,17 +165,25 @@ export const useCarState = () => {
 // TODO: this should eventually replace the useDriverStandings hook
 // currently there's still a few bugs to handle but is only used in relative right now
 export const useDriverStandings = () => {
-  const driverPositions = useDriverPositions();
+  // Shared once here and passed down so useDriverPositions, useCarState and
+  // useDriverLivePositions don't each open their own subscription to the
+  // same telemetry key.
+  const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
+  const carIdxLapDstPct = useTelemetryValuesThrottled('CarIdxLapDistPct', 66);
+
+  const driverPositions = useDriverPositions({ carIdxLapDstPct });
   const relativeSettings = useRelativeSettings();
   const useLivePositionStandings = relativeSettings?.useLivePosition ?? false;
   const driverLivePositions = useDriverLivePositions({
     enabled: useLivePositionStandings,
+    carIdxLapDistPct: carIdxLapDstPct,
+    carIdxTrackSurface: carIdxTrackSurface?.value,
   });
   const drivers = useDrivers();
   const radioActiveCarIdxs = useRadioActiveCarIdxs(
     (relativeSettings?.radio?.persistenceSeconds ?? 3) * 1000
   );
-  const carStates = useCarState();
+  const carStates = useCarState({ carIdxTrackSurface });
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
   const playerCarIdx = useFocusCarIdx();
   const sessionType = useCurrentSessionType();

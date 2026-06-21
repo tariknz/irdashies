@@ -3,6 +3,7 @@ import {
   useSessionStore,
   useTelemetryValues,
   useTelemetryValuesRounded,
+  useTelemetryValuesThrottled,
   useFocusCarIdx,
   useReferenceLapStore,
 } from '@irdashies/context';
@@ -16,7 +17,8 @@ import { Standings } from '../createStandings';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();
-  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 4);
+  // Sampled by time, not value delta - see useDriverPositions.tsx for why.
+  const carIdxLapDistPct = useTelemetryValuesThrottled('CarIdxLapDistPct', 66);
   const carIdxIsOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
   const carIdxEstTime = useTelemetryValuesRounded('CarIdxEstTime', 2);
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
