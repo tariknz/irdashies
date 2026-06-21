@@ -98,7 +98,7 @@ const StandingsWithoutHeaderFooter = () => {
   useLapTimesStoreUpdater(true);
 
   // Update pit laps
-  usePitLapStoreUpdater();
+  usePitLapStoreUpdater(true);
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
@@ -284,7 +284,7 @@ const StandingsWithIRatingCalculation = () => {
   const highlightColor = useHighlightColor();
 
   useLapTimesStoreUpdater(true);
-  usePitLapStoreUpdater();
+  usePitLapStoreUpdater(true);
 
   // Manually apply irating calculation for demo purposes
   const standingsWithIRating = useMemo(() => {
@@ -563,7 +563,7 @@ const StandingsWithoutHeader = () => {
   useLapTimesStoreUpdater(true);
 
   // Update pit laps
-  usePitLapStoreUpdater();
+  usePitLapStoreUpdater(true);
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
@@ -721,7 +721,7 @@ const StandingsWithoutFooter = () => {
   useLapTimesStoreUpdater(true);
 
   // Update pit laps
-  usePitLapStoreUpdater();
+  usePitLapStoreUpdater(true);
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
@@ -978,7 +978,7 @@ const StandingsWithFullHeader = () => {
   useLapTimesStoreUpdater(true);
 
   // Update pit laps
-  usePitLapStoreUpdater();
+  usePitLapStoreUpdater(true);
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();

@@ -14,7 +14,6 @@ import {
 import {
   useGeneralSettings,
   useLapTimesStoreUpdater,
-  usePitLapStoreUpdater,
   useP2PDisplayStates,
   useDrivingState,
   useWeekendInfoNumCarClasses,
@@ -36,10 +35,8 @@ export const Standings = () => {
     !!(settings?.lapTimeDeltas?.enabled || settings?.avgLapTime?.enabled)
   );
 
-  // Update pit laps
-  usePitLapStoreUpdater();
-
   const p2pDisplayStates = useP2PDisplayStates();
+
 
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();

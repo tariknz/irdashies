@@ -10,6 +10,7 @@ vi.mock('@irdashies/context', () => ({
   useRunningState: vi.fn(),
   usePushToPassStoreUpdater: vi.fn(),
   useResetOnDisconnect: vi.fn(),
+  usePitLapStoreUpdater: vi.fn(),
 }));
 vi.mock('../TrackMap/hooks/useSectorTiming', () => ({
   useSectorTiming: vi.fn(),

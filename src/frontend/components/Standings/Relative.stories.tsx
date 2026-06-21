@@ -107,7 +107,7 @@ const RelativeWithoutHeaderFooter = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
 
-  usePitLapStoreUpdater();
+  usePitLapStoreUpdater(true);
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -554,7 +554,7 @@ const RelativeWithoutHeader = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
 
-  usePitLapStoreUpdater();
+  usePitLapStoreUpdater(true);
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;
@@ -797,7 +797,7 @@ const RelativeWithoutFooter = () => {
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
 
-  usePitLapStoreUpdater();
+  usePitLapStoreUpdater(true);
 
   // Always render 2 * buffer + 1 rows (buffer above + player + buffer below)
   const totalRows = 2 * buffer + 1;

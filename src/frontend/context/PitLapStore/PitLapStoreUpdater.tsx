@@ -9,7 +9,7 @@ import { useStore } from 'zustand';
  *
  * Use this hook in components that need pit lap tracking (e.g., Standings overlay).
  */
-export const usePitLapStoreUpdater = () => {
+export const usePitLapStoreUpdater = (enabled: boolean) => {
   const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
   const carIdxLap = useTelemetryValues<number[]>('CarIdxLap');
   const sessionUniqueID = useTelemetryValue('SessionUniqueID');
@@ -24,6 +24,7 @@ export const usePitLapStoreUpdater = () => {
   });
 
   useEffect(() => {
+    if (!enabled) return;
     updatePitLapTimes(
       carIdxOnPitRoad ?? [],
       carIdxLap ?? [],
@@ -32,5 +33,5 @@ export const usePitLapStoreUpdater = () => {
       carIdxTrackSurface ?? [],
       sessionState ?? 0
     );
-  }, [carIdxOnPitRoad, carIdxLap, sessionUniqueID, throttledSessionTime, carIdxTrackSurface, sessionState, updatePitLapTimes]);
+  }, [enabled, carIdxOnPitRoad, carIdxLap, sessionUniqueID, throttledSessionTime, carIdxTrackSurface, sessionState, updatePitLapTimes]);
 };
