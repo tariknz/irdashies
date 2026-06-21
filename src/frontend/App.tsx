@@ -12,6 +12,7 @@ import {
 import { Settings } from './components/Settings/Settings';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
 import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
+import { ProfileSwitchOverlay } from './components/ProfileSwitchOverlay/ProfileSwitchOverlay';
 import { OverlayContainer } from './components/OverlayContainer';
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 
@@ -44,9 +45,11 @@ const SettingsApp = () => {
 const OverlayApp = () => {
   return (
     <HideUIWrapper>
-      <ThemeManager>
-        <OverlayContainer />
-      </ThemeManager>
+      <ProfileSwitchOverlay>
+        <ThemeManager>
+          <OverlayContainer />
+        </ThemeManager>
+      </ProfileSwitchOverlay>
     </HideUIWrapper>
   );
 };

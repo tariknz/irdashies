@@ -152,6 +152,14 @@ export async function publishIRacingSDKEvents(
   sdk.autoEnableTelemetry = true;
   await sdk.ready();
 
+  // Seed the running state immediately so the renderer doesn't sit on the
+  // previous bridge's last value (e.g. a stale demo frame) until the first
+  // interval tick 5s later — this is what made exiting demo mode feel slow.
+  const initialRunningState = sdk.sessionStatusOK;
+  lastRunningState = initialRunningState;
+  overlayManager.publishMessage('runningState', initialRunningState);
+  runningStateCallbacks.forEach((callback) => callback(initialRunningState));
+
   const runningStateInterval = setInterval(() => {
     const isSimRunning = sdk.sessionStatusOK;
     if (isSimRunning === lastRunningState) {

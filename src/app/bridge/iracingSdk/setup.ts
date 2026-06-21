@@ -42,13 +42,16 @@ export async function iRacingSDKSetup(overlayManager: OverlayManager) {
       currentBridge.stop();
       currentBridge = undefined;
     }
-    await setupBridge(overlayManager);
 
+    // Flip the UI immediately; the data source swaps underneath. Otherwise the
+    // mode change is gated behind the full bridge teardown/rebuild below
+    // (dynamic import, native SDK load, sdk.ready()).
     overlayManager.publishMessage('demoModeChanged', value);
-
     const { notifyDemoModeChanged } =
       await import('../dashboard/dashboardBridge');
     notifyDemoModeChanged(value);
+
+    await setupBridge(overlayManager);
   });
 
   await setupBridge(overlayManager);

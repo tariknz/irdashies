@@ -32,6 +32,23 @@ export function exposeInMainWorld() {
     },
   });
 
+  contextBridge.exposeInMainWorld('profileSwitch', {
+    onTransition: (
+      cb: (data: {
+        hidden: boolean;
+        name: string;
+        showBanner?: boolean;
+      }) => void
+    ) => {
+      const listener = (
+        _: Electron.IpcRendererEvent,
+        data: { hidden: boolean; name: string; showBanner?: boolean }
+      ) => cb(data);
+      ipcRenderer.on('profileTransition', listener);
+      return () => ipcRenderer.removeListener('profileTransition', listener);
+    },
+  });
+
   const pitLaneBridge: PitLaneBridge = {
     getPitLaneData: (trackId: string) =>
       ipcRenderer.invoke('pitLane:getData', trackId),

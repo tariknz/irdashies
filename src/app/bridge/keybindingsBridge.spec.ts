@@ -75,6 +75,18 @@ const sampleBindings = (): KeybindingsMap => ({
     description: '',
     isDefault: true,
   },
+  'prev-profile': {
+    accelerator: 'Alt+PageUp',
+    label: '',
+    description: '',
+    isDefault: true,
+  },
+  'next-profile': {
+    accelerator: 'Alt+PageDown',
+    label: '',
+    description: '',
+    isDefault: true,
+  },
 });
 
 const invokeUpdate = (

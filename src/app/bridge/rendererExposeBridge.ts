@@ -114,6 +114,18 @@ export function exposeBridge() {
     setAnalyticsOptOut: (optOut: boolean) => {
       return ipcRenderer.invoke('setAnalyticsOptOut', optOut);
     },
+    getCycleProfiles: () => {
+      return ipcRenderer.invoke('getCycleProfiles');
+    },
+    setCycleProfiles: (enabled: boolean) => {
+      return ipcRenderer.invoke('setCycleProfiles', enabled);
+    },
+    getShowProfileBanner: () => {
+      return ipcRenderer.invoke('getShowProfileBanner');
+    },
+    setShowProfileBanner: (enabled: boolean) => {
+      return ipcRenderer.invoke('setShowProfileBanner', enabled);
+    },
     // Profile management
     listProfiles: () => {
       return ipcRenderer.invoke('listProfiles');
