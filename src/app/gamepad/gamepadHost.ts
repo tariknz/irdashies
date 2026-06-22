@@ -23,18 +23,19 @@ const HID_PARTITION = 'hid-host';
  */
 export class GamepadHost {
   private window?: BrowserWindow;
-  private onButton?: (token: string) => void;
+  private onButton?: (token: string, down: boolean) => void;
   private permissionsGranted = false;
   private readonly handleButton = (
     event: Electron.IpcMainEvent,
-    token: string
+    token: string,
+    down: boolean
   ): void => {
     // Only the HID-host window may emit; reject any other renderer spoofing tokens.
     if (event.sender.id !== this.window?.webContents.id) return;
-    this.onButton?.(token);
+    this.onButton?.(token, down);
   };
 
-  start(onButton: (token: string) => void): void {
+  start(onButton: (token: string, down: boolean) => void): void {
     this.onButton = onButton;
     if (this.window && !this.window.isDestroyed()) return;
 
