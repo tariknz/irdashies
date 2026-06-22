@@ -2,7 +2,6 @@ import { memo, useMemo } from 'react';
 import {
   useDrivingState,
   useSessionVisibility,
-  usePitLapStoreUpdater,
   usePitLap,
   useCarLap,
   useFocusCarIdx,
@@ -288,8 +287,6 @@ export const Battle = () => {
   const highlightColor = useHighlightColor();
   const numCarClasses = useWeekendInfoNumCarClasses();
   const isMultiClass = (numCarClasses ?? 0) > 1;
-
-  usePitLapStoreUpdater();
 
   // Full driver list with metadata (name, car class, etc.). NOTE: this list's
   // ordering is by SDK CarIdxPosition which only updates at the start/finish line,
