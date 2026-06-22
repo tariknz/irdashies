@@ -34,7 +34,7 @@ const buildTelemetry = (lapDistPct: number[]): Telemetry =>
  * race-speed cars (200kph on a 5km track ≈ 0.011/tick). */
 const tickDeltas = Array.from(
   { length: CAR_COUNT },
-  (_, carIdx) => 0.005 + ((carIdx % 5) * 0.003) // varied speeds, all comfortably > 0.001
+  (_, carIdx) => 0.005 + (carIdx % 5) * 0.003 // varied speeds, all comfortably > 0.001
 );
 
 const driveSimulatedRace = (onTick: (lapDistPct: number[]) => void) => {
@@ -55,7 +55,9 @@ const driveSimulatedRace = (onTick: (lapDistPct: number[]) => void) => {
 describe('Standings telemetry subscription: rounding vs throttling under realistic load', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    useTelemetryStore.getState().setTelemetry(buildTelemetry(new Array(CAR_COUNT).fill(0)));
+    useTelemetryStore
+      .getState()
+      .setTelemetry(buildTelemetry(new Array(CAR_COUNT).fill(0)));
   });
 
   afterEach(() => {
@@ -72,7 +74,7 @@ describe('Standings telemetry subscription: rounding vs throttling under realist
     let throttledRenders = 0;
     renderHook(() => {
       throttledRenders++;
-      return useTelemetryValuesThrottled('CarIdxLapDistPct', 66);
+      return useTelemetryValuesThrottled('CarIdxLapDistPct');
     });
 
     // Both hooks render once on mount before any ticks are driven.

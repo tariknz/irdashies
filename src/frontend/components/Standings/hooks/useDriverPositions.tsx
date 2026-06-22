@@ -60,7 +60,7 @@ export const useDriverPositions = (overrides?: {
   // Sampled by time, not value delta: with a full grid, some car's lap
   // distance crosses any rounding threshold almost every tick, so value
   // rounding alone doesn't throttle the recompute below.
-  const ownCarIdxLapDstPct = useTelemetryValuesThrottled('CarIdxLapDistPct', 66);
+  const ownCarIdxLapDstPct = useTelemetryValuesThrottled('CarIdxLapDistPct');
   const carIdxLapDstPct = overrides?.carIdxLapDstPct ?? ownCarIdxLapDstPct;
 
   const positions = useMemo(() => {
@@ -169,7 +169,7 @@ export const useDriverStandings = () => {
   // useDriverLivePositions don't each open their own subscription to the
   // same telemetry key.
   const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
-  const carIdxLapDstPct = useTelemetryValuesThrottled('CarIdxLapDistPct', 66);
+  const carIdxLapDstPct = useTelemetryValuesThrottled('CarIdxLapDistPct');
 
   const driverPositions = useDriverPositions({ carIdxLapDstPct });
   const relativeSettings = useRelativeSettings();

@@ -81,12 +81,13 @@ export const useDriverLivePositions = ({
   const sessionPositions = useSessionPositions(sessionNum);
   const sessionState = useTelemetryValue('SessionState') ?? 0;
   const carIdxLapCompleted = useTelemetryValues<number[]>('CarIdxLapCompleted');
-  const ownCarIdxLapDistPct = useTelemetryValuesThrottled('CarIdxLapDistPct', 66);
+  const ownCarIdxLapDistPct = useTelemetryValuesThrottled('CarIdxLapDistPct');
   const carIdxLapDistPct = carIdxLapDistPctOverride ?? ownCarIdxLapDistPct;
   const carIdxClass = useTelemetryValues<number[]>('CarIdxClass');
   const ownCarIdxTrackSurface =
     useTelemetryValues<number[]>('CarIdxTrackSurface');
-  const carIdxTrackSurface = carIdxTrackSurfaceOverride ?? ownCarIdxTrackSurface;
+  const carIdxTrackSurface =
+    carIdxTrackSurfaceOverride ?? ownCarIdxTrackSurface;
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
   const p1Car = sessionPositions?.find((pos) => pos.Position === 1); // Position is 1-based

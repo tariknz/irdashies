@@ -67,22 +67,22 @@ export const useDriverStandings = (
     qualifyingResultsRaw?.length
       ? qualifyingResultsRaw
       : sessionQualifyPositions?.map((q) => ({
-        Position: q.Position + 1,
-        ClassPosition: q.ClassPosition,
-        CarIdx: q.CarIdx,
-        Lap: q.FastestLap,
-        Time: q.FastestTime,
-        FastestLap: q.FastestLap,
-        FastestTime: q.FastestTime,
-        LastTime: -1,
-        LapsLed: 0,
-        LapsComplete: 0,
-        JokerLapsComplete: 0,
-        LapsDriven: 0,
-        Incidents: 0,
-        ReasonOutId: 0,
-        ReasonOutStr: 'Running',
-      }));
+          Position: q.Position + 1,
+          ClassPosition: q.ClassPosition,
+          CarIdx: q.CarIdx,
+          Lap: q.FastestLap,
+          Time: q.FastestTime,
+          FastestLap: q.FastestLap,
+          FastestTime: q.FastestTime,
+          LastTime: -1,
+          LapsLed: 0,
+          LapsComplete: 0,
+          JokerLapsComplete: 0,
+          LapsDriven: 0,
+          Incidents: 0,
+          ReasonOutId: 0,
+          ReasonOutStr: 'Running',
+        }));
   const standingsSettings = useStandingsSettings();
   const useLivePositionStandings = standingsSettings?.useLivePosition ?? false;
   const fastestLaps = useSessionFastestLaps(sessionNum);
@@ -93,7 +93,7 @@ export const useDriverStandings = (
   // Sampled by time, not value delta: with a full grid, some car's lap
   // distance crosses any rounding threshold almost every tick, so value
   // rounding alone doesn't throttle the recompute below.
-  const carIdxLapDistPct = useTelemetryValuesThrottled('CarIdxLapDistPct', 66);
+  const carIdxLapDistPct = useTelemetryValuesThrottled('CarIdxLapDistPct');
   const carIdxTrackSurface =
     useTelemetryValues<TrackLocation[]>('CarIdxTrackSurface');
   // Pass already-subscribed arrays down so this doesn't also re-subscribe
@@ -187,14 +187,14 @@ export const useDriverStandings = (
     const gapAugmentedGroupedByClass =
       gapEnabled || intervalEnabled
         ? augmentStandingsWithGap(
-          iratingAugmentedGroupedByClass,
-          carIdxLap,
-          carIdxLapDistPct,
-          carIdxOnPitRoad,
-          carIdxEstTime,
-          useLivePositionStandings,
-          sessionType
-        )
+            iratingAugmentedGroupedByClass,
+            carIdxLap,
+            carIdxLapDistPct,
+            carIdxOnPitRoad,
+            carIdxEstTime,
+            useLivePositionStandings,
+            sessionType
+          )
         : iratingAugmentedGroupedByClass;
 
     // Calculate interval to player when enabled

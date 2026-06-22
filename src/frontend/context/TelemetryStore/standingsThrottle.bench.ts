@@ -72,7 +72,7 @@ describe('Standings telemetry subscription cost: rounding vs throttling', () => 
     const lapDistPct = new Array(CAR_COUNT).fill(0);
 
     renderHook(() => {
-      const values = useTelemetryValuesThrottled('CarIdxLapDistPct', 66);
+      const values = useTelemetryValuesThrottled('CarIdxLapDistPct');
       simulateStandingsRecompute(values);
       return values;
     });

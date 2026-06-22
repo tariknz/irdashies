@@ -107,10 +107,11 @@ export const useTelemetryValueRounded = (
  */
 export const useTelemetryValuesThrottled = (
   key: keyof Telemetry,
-  intervalMs: number
+  intervalMs = 66
 ): number[] => {
   const [sampled, setSampled] = useState<number[]>(
-    () => (useTelemetryStore.getState().telemetry?.[key]?.value ?? []) as number[]
+    () =>
+      (useTelemetryStore.getState().telemetry?.[key]?.value ?? []) as number[]
   );
 
   useEffect(() => {
