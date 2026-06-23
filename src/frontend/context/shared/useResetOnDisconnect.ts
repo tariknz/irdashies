@@ -4,6 +4,7 @@ import { useTelemetryStore } from '../TelemetryStore/TelemetryStore';
 import { useCarSpeedsStore } from '../CarSpeedStore/CarSpeedsStore';
 import { useLapTimesStore } from '../LapTimesStore/LapTimesStore';
 import { usePitLapStore } from '../PitLapStore/PitLapStore';
+import { useBattleGapStore } from '../BattleGapStore/BattleGapStore';
 import { useFuelStore } from '../../components/FuelCalculator/FuelStore';
 import logger from '@irdashies/utils/logger';
 
@@ -25,6 +26,7 @@ export const useResetOnDisconnect = (running: boolean) => {
       useCarSpeedsStore.getState().resetCarSpeeds();
       useLapTimesStore.getState().reset();
       usePitLapStore.getState().reset();
+      useBattleGapStore.getState().reset();
       useFuelStore.getState().clearAllData();
     }
     prevRunning.current = running;
