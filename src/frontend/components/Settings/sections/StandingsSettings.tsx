@@ -125,7 +125,8 @@ const DisplaySettingsList = ({
       onReorder={(newItems) => onReorder(newItems.map((i) => i.id))}
       renderItem={(setting, sortableProps) => {
         const configValue = settings.config[setting.configKey];
-        const isEnabled = (configValue as { enabled: boolean }).enabled;
+        const isEnabled =
+          (configValue as { enabled: boolean } | undefined)?.enabled ?? false;
 
         return (
           <DraggableSettingItem
