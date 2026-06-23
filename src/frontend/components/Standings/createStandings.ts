@@ -450,7 +450,7 @@ export const groupStandingsByClass = (
           d.fastestTime > 0
       )
       .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
-      .slice(0, 2);
+      .slice(0, 1); // Changed .slice(0,2) to .slice(0,1) to only compare leader of each class
 
     if (validDrivers.length === 0) {
       return undefined;
