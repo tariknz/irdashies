@@ -447,7 +447,7 @@ export const groupStandingsByClass = (
         (d) =>
           d.position !== undefined &&
           d.fastestTime !== undefined &&
-          d.fastestTime > 0
+          d.fastestTime > 0 
       )
       .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
       .slice(0, 1); // Changed .slice(0,2) to .slice(0,1) to only compare leader of each class
@@ -459,7 +459,7 @@ export const groupStandingsByClass = (
     const positions = validDrivers.map((d) => d.position ?? 999);
 
     return {
-      average: positions.reduce((sum, pos) => sum + pos, 0) / positions.length,
+      //average: positions.reduce((sum, pos) => sum + pos, 0) / positions.length,
       bestPosition: positions[0], // lower is better
     };
   };
@@ -477,22 +477,9 @@ export const groupStandingsByClass = (
     const statsA = statsByClass.get(idA);
     const statsB = statsByClass.get(idB);
 
-    // Primary sort: average top-2 position
+    // Primary sort: average top-1 position
     if (statsA && statsB) {
-      // Prioritize the overall leader
-      if (statsA.bestPosition === 1 && statsB.bestPosition !== 1) {
-        return -1;
-      }
-      if (statsB.bestPosition === 1 && statsA.bestPosition !== 1) {
-        return 1;
-      }
-
-      // Better Class Average Position Overall
-      if (statsA.average !== statsB.average) {
-        return statsA.average - statsB.average;
-      }
-
-      // Tie-breaker: better leading position wins
+      // Better Class Leader Position Overall
       if (statsA.bestPosition !== statsB.bestPosition) {
         return statsA.bestPosition - statsB.bestPosition;
       }
