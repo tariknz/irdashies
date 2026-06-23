@@ -94,6 +94,9 @@ export const defaultDashboard: {
           numLaps: 5,
           timeFormat: 'mixed',
         },
+        lapCount: {
+          enabled: false,
+        },
         driverStandings: {
           buffer: 3,
           numNonClassDrivers: 3,
@@ -248,6 +251,7 @@ export const defaultDashboard: {
           'compound',
           'lapTimeDeltas',
           'avgLapTime',
+          'lapCount',
           'pushToPass',
         ],
         driverTag: { enabled: false },

@@ -22,6 +22,7 @@ import {
   useCarIdxRollingAvgLapTime,
   usePitStopDuration,
   usePitLaneStore,
+  useTelemetryValues,
 } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 
@@ -37,7 +38,6 @@ export const Standings = () => {
 
   const p2pDisplayStates = useP2PDisplayStates();
 
-
   const standings = useDriverStandings(settings);
   const classStats = useCarClassStats();
   const { tagMap, hasAnyTag } = useDriverTagMap(settings?.driverTag?.enabled);
@@ -50,6 +50,7 @@ export const Standings = () => {
   );
 
   const pitStopDurations = usePitStopDuration();
+  const carIdxLap = useTelemetryValues<number[]>('CarIdxLap');
   const pitExitPct = usePitLaneStore((s) => s.pitExitPct);
   const pitExitAfterSF = pitExitPct !== null && pitExitPct > 0.85;
 
@@ -253,6 +254,7 @@ export const Standings = () => {
                         penalty={result.penalty}
                         slowdown={result.slowdown}
                         pitStopDuration={pitStopDurations[result.carIdx]}
+                        currentLap={carIdxLap?.[result.carIdx]}
                         pitExitAfterSF={pitExitAfterSF}
                         hideCarManufacturer={hideCarManufacturer}
                         compactMode={generalSettings?.compactMode}

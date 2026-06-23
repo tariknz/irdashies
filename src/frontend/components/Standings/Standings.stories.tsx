@@ -21,7 +21,11 @@ import {
   type P2PDisplayState,
 } from '@irdashies/context';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
-import type { DashboardBridge, StandingsConfig, StandingsWidgetSettings } from '@irdashies/types';
+import type {
+  DashboardBridge,
+  StandingsConfig,
+  StandingsWidgetSettings,
+} from '@irdashies/types';
 import { defaultDashboard, getWidgetDefaultConfig } from '@irdashies/types';
 import {
   calculateIRatingGain,
@@ -1478,6 +1482,26 @@ export const AvgLapTime: Story = {
           'interval',
           'lastTime',
           'avgLapTime',
+        ],
+      },
+    }),
+  ],
+};
+
+export const LapCount: Story = {
+  name: 'Lap Count Column',
+  render: () => <Standings />,
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      standings: {
+        lapCount: { enabled: true },
+        displayOrder: [
+          'position',
+          'carNumber',
+          'driverName',
+          'pitStatus',
+          'lastTime',
+          'lapCount',
         ],
       },
     }),
