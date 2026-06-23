@@ -198,9 +198,9 @@ export const PitlaneHelperBody = ({
   traffic,
 }: PitlaneHelperBodyProps) => {
   return (
-    <>
+    <div className="flex flex-col h-full">
       <div
-        className="flex h-full flex-col gap-2 p-2 text-white font-medium rounded-t bg-slate-800/(--bg-opacity)"
+        className="flex flex-1 min-h-0 flex-col gap-2 p-2 text-white font-medium rounded-t bg-slate-800/(--bg-opacity)"
         style={{
           ['--bg-opacity' as string]: `${config.background.opacity ?? 0}%`,
         }}
@@ -442,6 +442,6 @@ export const PitlaneHelperBody = ({
           )}
         </div>
       )}
-    </>
+    </div>
   );
 };
