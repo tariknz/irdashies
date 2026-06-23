@@ -445,9 +445,9 @@ export const groupStandingsByClass = (
     const validDrivers = drivers
       .filter(
         (d) =>
-          d.position !== undefined &&
-          d.fastestTime !== undefined &&
-          d.fastestTime > 0 
+          d.position !== undefined &&  //Check for valid position
+          d.fastestTime !== undefined &&   //Check for valid time to filter qualifying positions with no set time
+          d.fastestTime > 0
       )
       .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
       .slice(0, 1); // Changed .slice(0,2) to .slice(0,1) to only compare leader of each class
@@ -459,7 +459,6 @@ export const groupStandingsByClass = (
     const positions = validDrivers.map((d) => d.position ?? 999);
 
     return {
-      //average: positions.reduce((sum, pos) => sum + pos, 0) / positions.length,
       bestPosition: positions[0], // lower is better
     };
   };
