@@ -49,4 +49,15 @@ describe('LapCountCell', () => {
       'border-2'
     );
   });
+
+  it('renders L- placeholder when unknown', () => {
+    const { container } = renderInTable(<LapCountCell unknown />);
+    expect(container.textContent).toContain('L-');
+  });
+
+  it('renders L- even when a lap value is also passed', () => {
+    const { container } = renderInTable(<LapCountCell lap={22} unknown />);
+    expect(container.textContent).toContain('L-');
+    expect(container.textContent).not.toContain('L22');
+  });
 });

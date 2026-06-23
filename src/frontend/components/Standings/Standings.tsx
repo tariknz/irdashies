@@ -22,9 +22,10 @@ import {
   useCarIdxRollingAvgLapTime,
   usePitStopDuration,
   usePitLaneStore,
-  useTelemetryValues,
+  useFirstObservedLap,
 } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
+import { computeStintLap } from './components/DriverInfoRow/cells/lapCountUtils';
 
 export const Standings = () => {
   const settings = useStandingsSettings();
@@ -50,7 +51,7 @@ export const Standings = () => {
   );
 
   const pitStopDurations = usePitStopDuration();
-  const carIdxLap = useTelemetryValues<number[]>('CarIdxLap');
+  const firstObservedLaps = useFirstObservedLap();
   const pitExitPct = usePitLaneStore((s) => s.pitExitPct);
   const pitExitAfterSF = pitExitPct !== null && pitExitPct > 0.85;
 
@@ -146,6 +147,17 @@ export const Standings = () => {
                     prev.classPosition <= numTopDrivers &&
                     result.classPosition > numTopDrivers &&
                     result.classPosition > prev.classPosition + 1;
+
+                  // Stint lap = laps since last observed pit. Blank/unknown when
+                  // we lack the data to compute it reliably, and hidden entirely
+                  // for cars not out on track (see computeStintLap).
+                  const stintLap = computeStintLap({
+                    lastLap: result.lastLap,
+                    lastPitLap: result.lastPitLap,
+                    firstObservedLap: firstObservedLaps[result.carIdx],
+                    pitExitAfterSF,
+                    onTrack: result.onTrack,
+                  });
 
                   return (
                     <Fragment key={result.carIdx}>
@@ -254,12 +266,8 @@ export const Standings = () => {
                         penalty={result.penalty}
                         slowdown={result.slowdown}
                         pitStopDuration={pitStopDurations[result.carIdx]}
-                        currentLap={
-                          carIdxLap?.[result.carIdx] !== undefined
-                            ? carIdxLap[result.carIdx] -
-                              (result.lastPitLap ?? 0)
-                            : undefined
-                        }
+                        currentLap={stintLap.lap}
+                        lapCountUnknown={stintLap.unknown}
                         pitExitAfterSF={pitExitAfterSF}
                         hideCarManufacturer={hideCarManufacturer}
                         compactMode={generalSettings?.compactMode}

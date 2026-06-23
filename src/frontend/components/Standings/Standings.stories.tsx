@@ -1488,26 +1488,6 @@ export const AvgLapTime: Story = {
   ],
 };
 
-export const LapCount: Story = {
-  name: 'Lap Count Column',
-  render: () => <Standings />,
-  decorators: [
-    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
-      standings: {
-        lapCount: { enabled: true },
-        displayOrder: [
-          'position',
-          'carNumber',
-          'driverName',
-          'pitStatus',
-          'lastTime',
-          'lapCount',
-        ],
-      },
-    }),
-  ],
-};
-
 // ─── Push to Pass story ───────────────────────────────────────────────────────
 
 const P2P_STANDINGS_DISPLAY_ORDER = [

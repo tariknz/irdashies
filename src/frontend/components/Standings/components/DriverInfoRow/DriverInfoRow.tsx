@@ -82,6 +82,7 @@ interface DriverRowInfoProps {
   compactMode?: string;
   p2pDisplayState?: P2PDisplayState;
   currentLap?: number;
+  lapCountUnknown?: boolean;
 }
 
 // Helper function to provide dummy data for hidden rows
@@ -233,6 +234,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     compactMode,
     p2pDisplayState,
     currentLap,
+    lapCountUnknown,
   } = displayProps;
 
   const { currentDashboard } = useDashboard();
@@ -617,6 +619,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <LapCountCell
             key="lapCount"
             lap={currentLap}
+            unknown={lapCountUnknown}
             showBorder={!(config?.stylingOptions?.lapCount?.minimal ?? false)}
             compactMode={compactMode}
           />
@@ -702,6 +705,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     compactMode,
     p2pDisplayState,
     currentLap,
+    lapCountUnknown,
   ]);
 
   return (

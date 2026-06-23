@@ -1623,3 +1623,19 @@ export const WithLapCountMinimal: Story = {
     } as StandingsWidgetSettings['config'],
   },
 };
+
+export const WithLapCountUnknown: Story = {
+  name: 'Lap Count Badge Unknown (L-)',
+  args: {
+    ...Primary.args,
+    // Overlay joined mid-session and this car has not pitted since, so its
+    // stint lap is unknown — the badge shows the L-- placeholder.
+    currentLap: undefined,
+    lapCountUnknown: true,
+    displayOrder: ['position', 'carNumber', 'driverName', 'lapCount'],
+    config: {
+      ...Primary.args?.config,
+      lapCount: { enabled: true },
+    } as StandingsWidgetSettings['config'],
+  },
+};
