@@ -254,7 +254,12 @@ export const Standings = () => {
                         penalty={result.penalty}
                         slowdown={result.slowdown}
                         pitStopDuration={pitStopDurations[result.carIdx]}
-                        currentLap={carIdxLap?.[result.carIdx]}
+                        currentLap={
+                          carIdxLap?.[result.carIdx] !== undefined
+                            ? carIdxLap[result.carIdx] -
+                              (result.lastPitLap ?? 0)
+                            : undefined
+                        }
                         pitExitAfterSF={pitExitAfterSF}
                         hideCarManufacturer={hideCarManufacturer}
                         compactMode={generalSettings?.compactMode}
