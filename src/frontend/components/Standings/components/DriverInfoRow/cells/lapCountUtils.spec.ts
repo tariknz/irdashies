@@ -32,17 +32,25 @@ describe('computeStintLap', () => {
   });
 
   describe('without an observed pit stop', () => {
-    it('shows the total session lap when watched from the start', () => {
-      // First seen at lap 0, never pitted → first stint, L20
+    it('counts the out-lap as L1 when watched from the start', () => {
+      // First seen at lap 0, on the grid/out-lap before the first S/F crossing → L1
+      expect(computeStintLap({ lastLap: 0, firstObservedLap: 0 })).toEqual({
+        lap: 1,
+        unknown: false,
+      });
+    });
+
+    it('counts the session lap plus the out-lap offset', () => {
+      // First seen at lap 0, never pitted, crossed S/F 20 times → L21
       expect(computeStintLap({ lastLap: 20, firstObservedLap: 0 })).toEqual({
-        lap: 20,
+        lap: 21,
         unknown: false,
       });
     });
 
     it('treats first-seen lap 1 as watched from the start', () => {
       expect(computeStintLap({ lastLap: 12, firstObservedLap: 1 })).toEqual({
-        lap: 12,
+        lap: 13,
         unknown: false,
       });
     });

@@ -60,10 +60,12 @@ export function computeStintLap({
     return { lap: stint, unknown: false };
   }
 
-  // No pit observed, but we watched the car from its session start (lap 0/1),
-  // so the first-stint lap equals the total session lap.
+  // No pit observed, but we watched the car from its session start (lap 0/1).
+  // Count the out-lap as L1: before the first S/F crossing CarIdxLap is 0 → L1,
+  // after the first crossing CarIdxLap is 1 → L2. This mirrors the observed-pit
+  // formula above, where the out-lap before the first crossing is also L1.
   if (firstObservedLap !== undefined && firstObservedLap <= 1) {
-    return { lap: lastLap, unknown: false };
+    return { lap: lastLap + 1, unknown: false };
   }
 
   // We joined mid-session and the car hasn't pitted since — stint lap unknown.
