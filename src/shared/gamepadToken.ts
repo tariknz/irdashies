@@ -91,12 +91,17 @@ const COMBO_SEPARATOR = '+';
 /**
  * Split a gamepad accelerator (single token or combo) into its individual
  * tokens, validating each one. Returns null if `accelerator` isn't a gamepad
- * binding, or if any part fails to parse as a gamepad token.
+ * binding, any part fails to parse, or the combo isn't in canonical form.
+ *
+ * The runtime lookup keys actions by `gamepadComboToken` (sorted + deduped),
+ * so a non-canonical combo like "gamepad:btn5+gamepad:btn0" or a duplicate
+ * "gamepad:btn0+gamepad:btn0" would validate here yet never fire — reject it.
  */
 export function parseGamepadTokens(accelerator: string): string[] | null {
   if (!isGamepadBinding(accelerator)) return null;
   const parts = accelerator.split(COMBO_SEPARATOR);
-  return parts.every((part) => parseGamepadToken(part)) ? parts : null;
+  if (!parts.every((part) => parseGamepadToken(part))) return null;
+  return gamepadComboToken(parts) === accelerator ? parts : null;
 }
 
 /**

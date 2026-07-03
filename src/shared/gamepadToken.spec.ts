@@ -93,4 +93,11 @@ describe('gamepad combo (chord) helpers', () => {
     expect(parseGamepadTokens('gamepad:btn0+Alt')).toBeNull();
     expect(parseGamepadTokens('Alt+H')).toBeNull();
   });
+
+  it('rejects a non-canonical combo that could never fire at runtime', () => {
+    // Unsorted and duplicate combos validate part-by-part but the runtime
+    // lookup keys on gamepadComboToken form, so they would never match.
+    expect(parseGamepadTokens('gamepad:btn5+gamepad:btn0')).toBeNull();
+    expect(parseGamepadTokens('gamepad:btn0+gamepad:btn0')).toBeNull();
+  });
 });
