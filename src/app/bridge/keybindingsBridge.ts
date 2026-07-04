@@ -4,7 +4,7 @@ import { DEFAULT_KEYBINDINGS } from '@irdashies/types';
 import {
   isGamepadBinding,
   isValidWidgetToggleActionId,
-  parseGamepadToken,
+  parseGamepadTokens,
 } from '@irdashies/shared';
 import {
   getKeybindings,
@@ -24,10 +24,10 @@ function assertSupportedAction(actionId: KeybindingActionId): void {
   }
 }
 
-/** Throw if `accelerator` is not a valid binding of its kind. */
+/** Throw if `accelerator` is not a valid binding of its kind (single token or combo). */
 function assertValidAccelerator(accelerator: string): void {
   if (isGamepadBinding(accelerator)) {
-    if (!parseGamepadToken(accelerator)) {
+    if (!parseGamepadTokens(accelerator)) {
       throw new Error(`"${accelerator}" is not a valid controller button`);
     }
   } else if (!KeybindingManager.isValidAccelerator(accelerator)) {

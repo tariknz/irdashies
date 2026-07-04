@@ -79,3 +79,37 @@ export function parseGamepadToken(token: string): ParsedGamepadToken | null {
   }
   return { device, button };
 }
+
+/**
+ * Separator joining individual gamepad tokens into a combo (chord) accelerator,
+ * e.g. "gamepad:btn0+gamepad:btn5". Safe to split on: every token's encoded
+ * device segment runs through `encodeURIComponent`, which escapes '+' (it is
+ * not in the unreserved set), so a literal '+' never appears inside a token.
+ */
+const COMBO_SEPARATOR = '+';
+
+/**
+ * Split a gamepad accelerator (single token or combo) into its individual
+ * tokens, validating each one. Returns null if `accelerator` isn't a gamepad
+ * binding, any part fails to parse, or the combo isn't in canonical form.
+ *
+ * The runtime lookup keys actions by `gamepadComboToken` (sorted + deduped),
+ * so a non-canonical combo like "gamepad:btn5+gamepad:btn0" or a duplicate
+ * "gamepad:btn0+gamepad:btn0" would validate here yet never fire — reject it.
+ */
+export function parseGamepadTokens(accelerator: string): string[] | null {
+  if (!isGamepadBinding(accelerator)) return null;
+  const parts = accelerator.split(COMBO_SEPARATOR);
+  if (!parts.every((part) => parseGamepadToken(part))) return null;
+  return gamepadComboToken(parts) === accelerator ? parts : null;
+}
+
+/**
+ * Build a canonical combo accelerator from a set of gamepad tokens, sorted so
+ * the binding is independent of press order (the same chord always produces
+ * the same string, however its buttons were pressed). A single token round
+ * -trips unchanged, so this also covers plain (non-combo) bindings.
+ */
+export function gamepadComboToken(tokens: Iterable<string>): string {
+  return [...new Set(tokens)].sort().join(COMBO_SEPARATOR);
+}

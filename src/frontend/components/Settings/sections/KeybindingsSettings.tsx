@@ -9,6 +9,7 @@ import {
   isGamepadBinding,
   isWidgetToggleActionId,
   parseGamepadToken,
+  parseGamepadTokens,
   widgetToggleActionId,
 } from '@irdashies/shared';
 import { useDashboard } from '@irdashies/context';
@@ -126,9 +127,13 @@ function keyEventToAccelerator(e: KeyboardEvent): string | null {
 
 /**
  * Formats an accelerator string for display, e.g. "CommandOrControl" -> "Ctrl".
+ * A gamepad combo (chord) renders each button joined by " + ", e.g.
+ * "Pad: Button 0 + Pad: Button 5".
  */
 function formatAccelerator(accelerator: string): string {
   if (isGamepadBinding(accelerator)) {
+    const tokens = parseGamepadTokens(accelerator);
+    if (tokens) return tokens.map(formatGamepadToken).join(' + ');
     return formatGamepadToken(accelerator);
   }
 
@@ -375,7 +380,8 @@ export const KeybindingsSettings = () => {
             <h2 className="text-xl mb-1">Key Bindings</h2>
             <p className="text-slate-400 text-sm">
               Customize keyboard shortcuts. Click a binding then press a new key
-              combination.
+              combination, or hold two or more controller buttons together for a
+              combo.
             </p>
           </div>
           <button

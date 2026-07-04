@@ -21,9 +21,19 @@ So one hidden, always-alive window host the HID reader and forward presses to th
 - Many controllers and sim wheel bases (Thrustmaster, Fanatec, Simucube) declare buttons on a **vendor-defined** page (`0xFF00`+), not the standard Button page (`0x09`). Filtering by page drop those — exactly what broke a real Thrustmaster wheel. An unbound bit fire nothing (`GamepadManager` only trigger mapped tokens), so no need to guess which bits are "real" buttons.
 - Single-bit is the safety line. Analog axes are multi-bit (`reportSize > 1`), so a turned wheel or pressed pedal can't reach the binding map. The overlay run during a race — firing an action by accident (analog drift, a status flag toggling mid-corner) is worse than a missing feature.
 
+## Button & d-pad combos (chords)
+
+A binding can be two or more controls held together — buttons, d-pad directions, or a mix, e.g. `gamepad:btn0+gamepad:hat0_up`. `GamepadManager` tracks every currently-held control token in a `Set`; on each press it canonicalizes the held set (sorted, joined by `+` — see `gamepadComboToken` in `gamepadToken.ts`) and looks that up directly. So a combo fires the instant its exact set of controls is held, and pressing one more unrelated control breaks the match — it is not "any superset", deliberately, to avoid one combo accidentally swallowing another that shares controls.
+
+To record one: hold the controls together, then release any one of them — that release commits whatever was held as the new binding. A single press+release still binds a plain single-control accelerator (the one-control case of the same canonical-join logic), so existing single bindings are unaffected.
+
+This needs a release edge per control to know what's still held: `buttonChanges` in `hidReport.ts` reports both press and release for buttons; `hatChanges` does the same for hat directions — rolling from one direction straight to another emits a release of the old direction and a press of the new one in the same report, and centering emits a release with no matching press.
+
+One consequence worth knowing: **no subset firing.** Holding A+B+C when only A+B is bound does not fire A+B. This keeps a 2-control and a 3-control combo that share controls unambiguous, at the cost of needing an exact match.
+
 ## Hat switch (d-pad)
 
-Pads report the d-pad as one multi-bit **hat switch** (Generic Desktop usage `0x39`), not four bits, so `parseButtons` never see it. `parseHats` find it; `hatEdges` decode directions clockwise from the descriptor's logical minimum (= up), which handles both `0-7` and `1-8` pads.
+Pads report the d-pad as one multi-bit **hat switch** (Generic Desktop usage `0x39`), not four bits, so `parseButtons` never see it. `parseHats` find it; `hatChanges` decode directions clockwise from the descriptor's logical minimum (= up), which handles both `0-7` and `1-8` pads.
 
 > **Assumption left:** directions read clockwise from `logicalMin`. Matches every pad seen. A device ordering its hat differently would map wrong — fix point is the `HAT_DIRECTIONS` order in `hidReport.ts`.
 

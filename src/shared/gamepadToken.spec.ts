@@ -3,7 +3,9 @@ import {
   isGamepadBinding,
   gamepadTokenFromIndex,
   gamepadTokenFromHat,
+  gamepadComboToken,
   parseGamepadToken,
+  parseGamepadTokens,
 } from './gamepadToken';
 
 describe('gamepad binding token helpers', () => {
@@ -55,5 +57,47 @@ describe('gamepad binding token helpers', () => {
     expect(parseGamepadToken('gamepad:hat_up')).toBeNull();
     expect(parseGamepadToken('gamepad:hat0_unknown')).toBeNull();
     expect(parseGamepadToken('Alt+H')).toBeNull();
+  });
+});
+
+describe('gamepad combo (chord) helpers', () => {
+  it('builds a canonical, sorted combo regardless of input order', () => {
+    expect(gamepadComboToken(['gamepad:btn5', 'gamepad:btn0'])).toBe(
+      'gamepad:btn0+gamepad:btn5'
+    );
+    expect(gamepadComboToken(['gamepad:btn0', 'gamepad:btn5'])).toBe(
+      'gamepad:btn0+gamepad:btn5'
+    );
+  });
+
+  it('de-duplicates tokens when building a combo', () => {
+    expect(gamepadComboToken(['gamepad:btn0', 'gamepad:btn0'])).toBe(
+      'gamepad:btn0'
+    );
+  });
+
+  it('round-trips a single token unchanged', () => {
+    expect(gamepadComboToken(['gamepad:btn0'])).toBe('gamepad:btn0');
+  });
+
+  it('parses a combo into its individual valid tokens', () => {
+    expect(parseGamepadTokens('gamepad:btn0+gamepad:btn1')).toEqual([
+      'gamepad:btn0',
+      'gamepad:btn1',
+    ]);
+    expect(parseGamepadTokens('gamepad:btn0')).toEqual(['gamepad:btn0']);
+  });
+
+  it('rejects a combo containing an invalid or non-gamepad part', () => {
+    expect(parseGamepadTokens('gamepad:btn0+gamepad:nope')).toBeNull();
+    expect(parseGamepadTokens('gamepad:btn0+Alt')).toBeNull();
+    expect(parseGamepadTokens('Alt+H')).toBeNull();
+  });
+
+  it('rejects a non-canonical combo that could never fire at runtime', () => {
+    // Unsorted and duplicate combos validate part-by-part but the runtime
+    // lookup keys on gamepadComboToken form, so they would never match.
+    expect(parseGamepadTokens('gamepad:btn5+gamepad:btn0')).toBeNull();
+    expect(parseGamepadTokens('gamepad:btn0+gamepad:btn0')).toBeNull();
   });
 });

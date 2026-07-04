@@ -21,8 +21,11 @@ export type KeybindingActionId =
 export interface KeybindingEntry {
   /**
    * The bound input. Either an Electron keyboard accelerator
-   * (e.g. "Alt+H", "CommandOrControl+Shift+F6") or a gamepad token
-   * (e.g. "gamepad:btn0"). Use `isGamepadBinding` to tell them apart.
+   * (e.g. "Alt+H", "CommandOrControl+Shift+F6"), a single gamepad token
+   * (e.g. "gamepad:btn0"), or a multi-button gamepad combo/chord — gamepad
+   * tokens joined by '+' in sorted order (e.g. "gamepad:btn0+gamepad:btn5").
+   * Use `isGamepadBinding` to tell them apart, `parseGamepadTokens` to split
+   * a combo into its individual tokens.
    */
   accelerator: string;
   /** Human-readable label for the settings UI */
@@ -65,10 +68,13 @@ export interface KeybindingsBridge {
 
 /**
  * Bridge exposed only to the hidden WebHID host window. Forwards a controller
- * button press (already encoded as a `gamepad:btn<N>` token) to the main process.
+ * button transition (already encoded as a `gamepad:btn<N>` token) to the main
+ * process: `down: true` on press, `false` on release. Releases let the main
+ * process track which buttons and hat directions are held together for
+ * combo (chord) bindings.
  */
 export interface GamepadHostBridge {
-  sendButton: (token: string) => void;
+  sendButton: (token: string, down: boolean) => void;
 }
 
 export const DEFAULT_KEYBINDINGS: KeybindingsMap = {
