@@ -43,6 +43,8 @@ Check the character count with `wc -m` after writing. If over 2000, trim until i
 **Tracks:** list
 **Logos:** list
 
+A big welcome to our first-time contributors <first-timers> — thanks for jumping in! 🎉
+
 Thanks to <contributors ordered by most PRs> for their contributions!
 
 View the full release notes here:
@@ -54,6 +56,7 @@ https://github.com/tariknz/irdashies/releases/tag/<version>
 - **User-facing language** — no code, no function names, no technical jargon
 - **Condense aggressively** — combine related items, use short phrases with em-dashes
 - **Order contributors by number of PRs** in the release, most first. Use Discord display names, not GitHub handles. Don't include yourself (tarik) in the thanks
+- **Always welcome first-time contributors** — pull the "New Contributors" list from the full release notes and call them out by Discord display name in a dedicated welcome line above the general thanks. Keep it warm and brief (one line). Don't repeat names: first-timers go in the welcome line only, and returning contributors go in the general thanks line only. If there are no first-timers, omit the welcome line and thank everyone in the general line. If everyone is a first-timer, the welcome line covers them and you can drop the general thanks line
 - **Start with the most impactful features** — new widgets and major overhauls first, smaller enhancements after
 - **Use all available space** — if you're well under 2000 characters, add back detail that was cut. Don't leave room on the table unnecessarily
 - **Tracks and logos** get their own one-liner sections at the bottom

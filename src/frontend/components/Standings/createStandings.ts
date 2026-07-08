@@ -265,7 +265,9 @@ export const createDriverStandings = (
       return {
         carIdx: result.CarIdx,
         position: result.Position,
-        classPosition: result.ClassPosition + 1,
+        classPosition: isFinite(result.ClassPosition)
+          ? result.ClassPosition + 1
+          : undefined,
         delta: calculateDelta(
           result.CarIdx,
           result.FastestTime,
@@ -445,12 +447,12 @@ export const groupStandingsByClass = (
     const validDrivers = drivers
       .filter(
         (d) =>
-          d.position !== undefined &&
-          d.fastestTime !== undefined &&
+          d.position !== undefined &&  //Check for valid position
+          d.fastestTime !== undefined &&   //Check for valid time to filter qualifying positions with no set time
           d.fastestTime > 0
       )
       .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
-      .slice(0, 2);
+      .slice(0, 1); // Changed .slice(0,2) to .slice(0,1) to only compare leader of each class
 
     if (validDrivers.length === 0) {
       return undefined;
@@ -459,7 +461,6 @@ export const groupStandingsByClass = (
     const positions = validDrivers.map((d) => d.position ?? 999);
 
     return {
-      average: positions.reduce((sum, pos) => sum + pos, 0) / positions.length,
       bestPosition: positions[0], // lower is better
     };
   };
@@ -477,22 +478,9 @@ export const groupStandingsByClass = (
     const statsA = statsByClass.get(idA);
     const statsB = statsByClass.get(idB);
 
-    // Primary sort: average top-2 position
+    // Primary sort: average top-1 position
     if (statsA && statsB) {
-      // Prioritize the overall leader
-      if (statsA.bestPosition === 1 && statsB.bestPosition !== 1) {
-        return -1;
-      }
-      if (statsB.bestPosition === 1 && statsA.bestPosition !== 1) {
-        return 1;
-      }
-
-      // Better Class Average Position Overall
-      if (statsA.average !== statsB.average) {
-        return statsA.average - statsB.average;
-      }
-
-      // Tie-breaker: better leading position wins
+      // Better Class Leader Position Overall
       if (statsA.bestPosition !== statsB.bestPosition) {
         return statsA.bestPosition - statsB.bestPosition;
       }

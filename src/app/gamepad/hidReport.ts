@@ -188,31 +188,40 @@ export function parseHats(
   return hats;
 }
 
+/** A button that transitioned this report: `down: true` on press, `false` on release. */
+export interface ButtonChange {
+  index: number;
+  down: boolean;
+}
+
 /**
- * Read button states from an input report and return the indices that
- * transitioned from up to down (rising edge). `state` is mutated in place to
- * hold the latest pressed/released value for each button index.
+ * Read button states from an input report and return every button that
+ * transitioned (pressed or released) this report. Combo (chord) bindings need
+ * both edges to know which buttons are still held alongside a newly-pressed
+ * one. `state` is mutated in place to hold the latest pressed/released value
+ * for each button index.
  */
-export function buttonEdges(
+export function buttonChanges(
   data: DataView,
   buttons: readonly ButtonBit[],
   reportId: number,
   state: Map<number, boolean>
-): number[] {
-  const pressed: number[] = [];
+): ButtonChange[] {
+  const changes: ButtonChange[] = [];
 
   for (const button of buttons) {
     if (button.reportId !== reportId) continue;
     if (button.byteOffset >= data.byteLength) continue;
 
     const isDown = (data.getUint8(button.byteOffset) & button.bitMask) !== 0;
-    if (isDown && !(state.get(button.index) ?? false)) {
-      pressed.push(button.index);
+    const wasDown = state.get(button.index) ?? false;
+    if (isDown !== wasDown) {
+      changes.push({ index: button.index, down: isDown });
     }
     state.set(button.index, isDown);
   }
 
-  return pressed;
+  return changes;
 }
 
 /** Read `bitWidth` bits starting at `bitOffset` (LSB-first), or null if out of range. */
@@ -231,19 +240,27 @@ function readBits(
   return value;
 }
 
+/** A hat direction that transitioned this report: released, pressed, or both (rolling to a new direction). */
+export interface HatChange extends HatPress {
+  down: boolean;
+}
+
 /**
- * Read hat values from an input report and return the hats that just entered a
- * new direction (the d-pad equivalent of a rising edge). Holding a direction
- * fires once; rolling straight from one direction to another fires the new one;
- * centering (value outside 0-7) fires nothing. `state` is mutated in place.
+ * Read hat values from an input report and return every direction transition
+ * this report: holding fires nothing further, rolling straight from one
+ * direction to another fires a release of the old one followed by a press of
+ * the new one (same report, two entries), and centering (value outside the
+ * logical range) fires a release with no matching press. `state` is mutated
+ * in place. Releases let a d-pad direction be tracked as held, same as a
+ * button, so it can be a combo (chord) member.
  */
-export function hatEdges(
+export function hatChanges(
   data: DataView,
   hats: readonly HatField[],
   reportId: number,
   state: Map<number, HatDirection | null>
-): HatPress[] {
-  const pressed: HatPress[] = [];
+): HatChange[] {
+  const changes: HatChange[] = [];
 
   for (const hat of hats) {
     if (hat.reportId !== reportId) continue;
@@ -261,13 +278,15 @@ export function hatEdges(
         : null;
     const previous = state.get(hat.index) ?? null;
 
-    if (direction && direction !== previous) {
-      pressed.push({ index: hat.index, direction });
+    if (direction !== previous) {
+      if (previous)
+        changes.push({ index: hat.index, direction: previous, down: false });
+      if (direction) changes.push({ index: hat.index, direction, down: true });
     }
     state.set(hat.index, direction);
   }
 
-  return pressed;
+  return changes;
 }
 
 /** Human-readable dump of a device's input-report layout, for diagnostics. */

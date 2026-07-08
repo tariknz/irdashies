@@ -1,5 +1,5 @@
 import type { KeybindingActionId, KeybindingsMap } from '@irdashies/types';
-import { isGamepadBinding } from '@irdashies/shared';
+import { gamepadComboToken, isGamepadBinding } from '@irdashies/shared';
 import logger from '../logger';
 import { GamepadHost } from './gamepadHost';
 
@@ -11,14 +11,24 @@ import { GamepadHost } from './gamepadHost';
  * the current map in via {@link GamepadManager.syncBindings} — and it triggers
  * actions through the `triggerAction` callback supplied at construction, so it
  * stays decoupled from how those actions are implemented.
+ *
+ * Buttons and d-pad directions both support combos (chords): a binding can be
+ * a single token ("gamepad:btn0", "gamepad:hat0_up") or several joined with
+ * '+' in canonical (sorted) order ("gamepad:btn0+gamepad:hat0_up"). A combo
+ * fires the moment its exact set of controls is held — pressing an extra,
+ * unrelated control breaks the match, it does not fire a 2-of-3 subset.
  */
 export class GamepadManager {
-  /** Gamepad token (e.g. "gamepad:btn0") -> action it triggers. */
+  /** Canonical accelerator (single token or sorted combo) -> action it triggers. */
   private map = new Map<string, KeybindingActionId>();
+  /** Controls (buttons and hat directions) currently held down. */
+  private held = new Set<string>();
   /** Lazily-created WebHID host window manager (see start). */
   private host?: GamepadHost;
   /** When set, captured pad presses are reported here instead of triggering actions (rebinding). */
   private onCapture?: (token: string) => void;
+  /** Tokens pressed since capture started, committed as a combo on first release. */
+  private captureHeld = new Set<string>();
 
   constructor(private triggerAction: (actionId: KeybindingActionId) => void) {}
 
@@ -30,18 +40,34 @@ export class GamepadManager {
         this.map.set(entry.accelerator, actionId as KeybindingActionId);
       }
     }
+    // Rebinding invalidates whatever was held under the old map — start the
+    // new map's held-set tracking from a clean slate.
+    this.held.clear();
   }
 
   /**
-   * Route a gamepad button-down (a `gamepad:btn<N>` token from the WebHID host)
-   * to capture (rebinding) or to its bound action.
+   * Route a gamepad control transition (a token from the WebHID host, `down`
+   * true on press / false on release) to capture (rebinding) or to its bound
+   * action.
    */
-  private handleButton(token: string): void {
+  private handleButton(token: string, down: boolean): void {
     if (this.onCapture) {
-      this.onCapture(token);
+      if (down) {
+        this.captureHeld.add(token);
+      } else if (this.captureHeld.size > 0) {
+        const combo = gamepadComboToken(this.captureHeld);
+        this.captureHeld.clear();
+        this.onCapture(combo);
+      }
       return;
     }
-    const actionId = this.map.get(token);
+
+    if (!down) {
+      this.held.delete(token);
+      return;
+    }
+    this.held.add(token);
+    const actionId = this.map.get(gamepadComboToken(this.held));
     if (actionId) this.triggerAction(actionId);
   }
 
@@ -52,7 +78,7 @@ export class GamepadManager {
   public start(): void {
     try {
       if (!this.host) this.host = new GamepadHost();
-      this.host.start((token) => this.handleButton(token));
+      this.host.start((token, down) => this.handleButton(token, down));
     } catch (err) {
       logger.error(
         '[Gamepad] host unavailable, controller bindings disabled',
@@ -68,11 +94,16 @@ export class GamepadManager {
 
   /** Enter capture mode: the next pad presses are reported to `onCapture` for rebinding. */
   public startCapture(onCapture: (token: string) => void): void {
+    this.captureHeld.clear();
     this.onCapture = onCapture;
   }
 
   /** Leave capture mode; pad presses resume triggering actions. */
   public stopCapture(): void {
     this.onCapture = undefined;
+    this.captureHeld.clear();
+    // Buttons held while recording may never have reached a release edge
+    // here (focus, timing) — start the next non-capture run from a clean slate.
+    this.held.clear();
   }
 }

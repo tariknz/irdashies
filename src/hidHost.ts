@@ -15,8 +15,8 @@ import type { ButtonBit, HatField, HatDirection } from '@irdashies/types';
 import {
   parseButtons,
   parseHats,
-  buttonEdges,
-  hatEdges,
+  buttonChanges,
+  hatChanges,
   describeCollections,
 } from './app/gamepad/hidReport';
 
@@ -58,25 +58,27 @@ async function openDevice(device: HIDDevice): Promise<void> {
   }
 
   device.addEventListener('inputreport', (event) => {
-    for (const index of buttonEdges(
+    for (const change of buttonChanges(
       event.data,
       state.buttons,
       event.reportId,
       state.pressed
     )) {
       window.gamepadHost?.sendButton(
-        gamepadTokenFromIndex(index, device.productName)
+        gamepadTokenFromIndex(change.index, device.productName),
+        change.down
       );
     }
 
-    for (const { index, direction } of hatEdges(
+    for (const change of hatChanges(
       event.data,
       state.hats,
       event.reportId,
       state.hatState
     )) {
       window.gamepadHost?.sendButton(
-        gamepadTokenFromHat(index, direction, device.productName)
+        gamepadTokenFromHat(change.index, change.direction, device.productName),
+        change.down
       );
     }
   });
