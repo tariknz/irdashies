@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch: # Manually run the signed-release flow from any branch (creates a draft release)
 
 permissions:
   contents: write
@@ -66,9 +67,48 @@ jobs:
           echo "Version changed from $previousVersion to $currentVersion"
         }
 
-    - name: Make & Publish
-      if: steps.check_version.outputs.version_changed == 'true'
-      run: npm run publish:ci
+    # --- Signed release (only when the version bumps) ---------------------
+    # Flow: build unsigned (dry-run) -> sign Setup.exe via SignPath -> swap the
+    # signed installer back in place -> publish from the saved dry-run.
+    # The dry-run manifest stores paths to out/make/... (no content hashing), so
+    # replacing the Setup.exe file is picked up by --from-dry-run. RELEASES and
+    # the .nupkg are never touched, keeping auto-updates valid.
+
+    - name: Build unsigned artifacts (publish dry-run)
+      if: steps.check_version.outputs.version_changed == 'true' || github.event_name == 'workflow_dispatch'
+      run: npx electron-forge publish --dry-run
       env:
         POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
+
+    - name: Upload unsigned installer for signing
+      id: upload-unsigned
+      if: steps.check_version.outputs.version_changed == 'true' || github.event_name == 'workflow_dispatch'
+      uses: actions/upload-artifact@v7
+      with:
+        name: unsigned-installer
+        if-no-files-found: error
+        path: out/make/squirrel.windows/x64/*Setup.exe
+
+    - name: Sign installer with SignPath
+      if: steps.check_version.outputs.version_changed == 'true' || github.event_name == 'workflow_dispatch'
+      uses: signpath/github-action-submit-signing-request@v2
+      with:
+        api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+        organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+        project-slug: irdashies
+        signing-policy-slug: release-signing
+        artifact-configuration-slug: initial
+        github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+        wait-for-completion: true
+        output-artifact-directory: signed-installer
+
+    - name: Swap in the signed installer
+      if: steps.check_version.outputs.version_changed == 'true' || github.event_name == 'workflow_dispatch'
+      shell: pwsh
+      run: Copy-Item signed-installer/*Setup.exe out/make/squirrel.windows/x64/ -Force
+
+    - name: Publish signed release
+      if: steps.check_version.outputs.version_changed == 'true' || github.event_name == 'workflow_dispatch'
+      run: npx electron-forge publish --from-dry-run
+      env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration for irdashies.
+
+  We build with electron-forge's Squirrel.Windows maker, which produces:
+    - irdashies-<version> Setup.exe   (the installer users download)
+    - irdashies-<version>-full.nupkg  (auto-update payload)
+    - RELEASES                        (manifest holding the SHA1 of the .nupkg)
+
+  We only sign the Setup.exe. Authenticode on the Setup.exe wraps the entire
+  installer (including its embedded .nupkg payload), which is what SmartScreen
+  checks on download/install.
+
+  We deliberately do NOT sign inside the .nupkg: re-signing its contents would
+  change the nupkg bytes and invalidate the SHA1 recorded in RELEASES, breaking
+  update-electron-app / Squirrel auto-updates.
+
+  The CI workflow uploads ONLY the Setup.exe as the GitHub artifact. GitHub
+  always wraps uploaded artifacts in a zip, hence the <zip-file> root.
+
+  This file is the repo copy for review/versioning. The authoritative copy must
+  also be uploaded in the SignPath portal under Artifact Configurations. Keep
+  them in sync. Schema: https://docs.signpath.io/artifact-configuration/
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file path="*Setup.exe" min-matches="1" max-matches="1">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>
