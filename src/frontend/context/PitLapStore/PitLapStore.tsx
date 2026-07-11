@@ -15,6 +15,7 @@ interface PitLapState {
   pitExitTime: (number | null)[]; // [carIdx]
   prevOnPitRoad: boolean[]; // [carIdx]
   entryLap: number[]; // [carIdx]
+  firstObservedLap: number[]; // [carIdx] — CarIdxLap when this car was first seen
   updatePitLaps: (
     carIdxOnPitRoad: boolean[],
     carIdxLap: number[],
@@ -38,6 +39,7 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
   pitExitTime: [],
   prevOnPitRoad: [],
   entryLap: [],
+  firstObservedLap: [],
   updatePitLaps: (
     carIdxOnPitRoad,
     carIdxLap,
@@ -56,6 +58,7 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
       pitExitTime,
       prevOnPitRoad,
       entryLap,
+      firstObservedLap,
     } = get();
 
     // reset store when session was changed
@@ -73,6 +76,7 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
         pitExitTime: [],
         prevOnPitRoad: [],
         entryLap: [],
+        firstObservedLap: [],
         sessionTime: currentSessionTime,
         sessionState: sessionState,
       });
@@ -85,6 +89,7 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
     let updatedPitExitTime: (number | null)[] | null = null;
     let updatedPrevOnPitRoad: boolean[] | null = null;
     let updatedEntryLap: number[] | null = null;
+    let updatedFirstObservedLap: number[] | null = null;
     let pitLapsChanged = false;
 
     carIdxOnPitRoad.forEach((onPitRoad, idx) => {
@@ -92,6 +97,15 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
       const trackSurface = carIdxTrackSurface[idx] ?? -1;
       const currentLap = carIdxLap[idx] ?? -1;
       const lastEntryLap = entryLap[idx] ?? -1;
+
+      // Record the lap on which we first observed each car. Used to tell whether
+      // we've watched a car since its session start — if so, its first-stint lap
+      // equals the total session lap even without an observed pit stop.
+      if (firstObservedLap[idx] === undefined && currentLap >= 0) {
+        if (!updatedFirstObservedLap)
+          updatedFirstObservedLap = [...firstObservedLap];
+        updatedFirstObservedLap[idx] = currentLap;
+      }
 
       if (onPitRoad && pitLaps[idx] !== currentLap) {
         pitLaps[idx] = currentLap;
@@ -172,6 +186,7 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
       updatedPitExitTime !== null ||
       updatedPrevOnPitRoad !== null ||
       updatedEntryLap !== null ||
+      updatedFirstObservedLap !== null ||
       updatedPrevCarTrackSurface !== null ||
       updatedActualCarTrackSurface !== null ||
       carLapsChanged ||
@@ -193,6 +208,7 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
       pitExitTime: updatedPitExitTime ?? pitExitTime,
       prevOnPitRoad: updatedPrevOnPitRoad ?? prevOnPitRoad,
       entryLap: updatedEntryLap ?? entryLap,
+      firstObservedLap: updatedFirstObservedLap ?? firstObservedLap,
       sessionTime: currentSessionTime,
       sessionState: sessionState,
       sessionUniqId: currentSessionUniqId,
@@ -211,6 +227,7 @@ export const usePitLapStore = create<PitLapState>((set, get) => ({
       pitExitTime: [],
       prevOnPitRoad: [],
       entryLap: [],
+      firstObservedLap: [],
     });
   },
 }));
@@ -260,6 +277,18 @@ export const usePrevCarTrackSurface = (): number[] =>
   useStoreWithEqualityFn(
     usePitLapStore,
     (state) => state.prevCarTrackSurface,
+    arrayCompare
+  );
+
+/**
+ * @returns An array of the CarIdxLap value at which each car was first observed
+ * by the overlay, indexed by carIdx. Used to determine whether the overlay has
+ * watched a car since its session start (and therefore knows its true stint lap).
+ */
+export const useFirstObservedLap = (): number[] =>
+  useStoreWithEqualityFn(
+    usePitLapStore,
+    (state) => state.firstObservedLap,
     arrayCompare
   );
 

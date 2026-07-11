@@ -21,7 +21,11 @@ import {
   type P2PDisplayState,
 } from '@irdashies/context';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
-import type { DashboardBridge, StandingsConfig, StandingsWidgetSettings } from '@irdashies/types';
+import type {
+  DashboardBridge,
+  StandingsConfig,
+  StandingsWidgetSettings,
+} from '@irdashies/types';
 import { defaultDashboard, getWidgetDefaultConfig } from '@irdashies/types';
 import {
   calculateIRatingGain,

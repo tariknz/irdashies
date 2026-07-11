@@ -82,6 +82,7 @@ export interface StylingOptions {
   statusBadges?: boolean;
   driverPosition?: { background?: boolean };
   driverNumber?: { background?: boolean; border?: boolean };
+  lapCount?: { minimal?: boolean };
   flagContour?: {
     enabled?: boolean;
     borderWidth?: number;
@@ -154,6 +155,7 @@ export interface StandingsConfig {
   radio?: { persistenceSeconds: number };
   lapTimeDeltas: { enabled: boolean; numLaps: number; decimalPlaces: number };
   avgLapTime: { enabled: boolean; numLaps: number; timeFormat: TimeFormat };
+  lapCount: { enabled: boolean };
   titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
   headerBar: SessionBarConfig;
   footerBar: SessionBarConfig;
