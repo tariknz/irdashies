@@ -47,7 +47,7 @@ export const LapHistoryChart = memo(
       const yScale = d3
         .scaleLinear()
         .domain([min - domainPad, max + domainPad])
-        .range([PADDING_Y, HEIGHT - PADDING_Y]);
+        .range([HEIGHT - PADDING_Y, PADDING_Y]);
 
       const line = d3
         .line<LapEntry>()
