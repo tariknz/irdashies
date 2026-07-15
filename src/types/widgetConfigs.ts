@@ -559,6 +559,7 @@ export interface LapTimeLogConfig {
   history: {
     enabled: boolean;
     count: number;
+    style?: 'list' | 'chart';
   };
   scale: number;
   alignment: 'top' | 'bottom';
