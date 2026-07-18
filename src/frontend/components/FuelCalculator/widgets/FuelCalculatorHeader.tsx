@@ -1,5 +1,4 @@
 import React from 'react';
-import { GasPumpIcon } from '@phosphor-icons/react';
 import type { FuelCalculatorSettings, FuelCalculation } from '../types';
 
 interface FuelCalculatorWidgetProps {
@@ -16,38 +15,6 @@ interface FuelCalculatorWidgetProps {
   };
   compactMode?: 'off' | 'compact' | 'ultra';
 }
-
-// Map confidence to colors and text
-const getConfidenceConfig = (confidence: string) => {
-  switch (confidence) {
-    case 'high':
-      return {
-        color: 'text-green-400',
-        bg: 'bg-green-500',
-        border: 'border-green-500',
-        shadow: 'shadow-[0_0_15px_rgba(34,197,94,0.3)]',
-        pulse: '',
-      };
-    case 'medium':
-      return {
-        color: 'text-amber-400',
-        bg: 'bg-amber-500',
-        border: 'border-orange-500',
-        shadow: 'shadow-[0_0_15px_rgba(249,115,22,0.3)]',
-        pulse: 'animate-pulse',
-      };
-    case 'very-low':
-    case 'low':
-    default:
-      return {
-        color: 'text-red-400',
-        bg: 'bg-red-500',
-        border: 'border-red-500',
-        shadow: 'shadow-[0_0_15px_rgba(239,68,68,0.3)]',
-        pulse: 'animate-pulse',
-      };
-  }
-};
 
 export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
   fuelData,
@@ -77,14 +44,11 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
 
   // Confidence logic (mapping from existing data)
   const confidence = fuelData.confidence || 'low';
-  const confConfig = getConfidenceConfig(confidence);
-
-  // Format laps remaining for confidence pill
-  let lapsText = `${Math.ceil(fuelData.lapsRemaining)} LAPS`;
+  let lapsText = `${Math.ceil(fuelData.lapsRemaining)}`;
   if (confidence === 'medium')
-    lapsText = `~${Math.ceil(fuelData.lapsRemaining)} LAPS`;
+    lapsText = `~${Math.ceil(fuelData.lapsRemaining)}`;
   if (confidence === 'low' || confidence === 'very-low')
-    lapsText = `${Math.floor(fuelData.lapsRemaining)}-${Math.ceil(fuelData.lapsRemaining + 2)} LAPS`;
+    lapsText = `${Math.floor(fuelData.lapsRemaining)}–${Math.ceil(fuelData.lapsRemaining + 2)}`;
 
   // If no data (avgLaps is 0), show --
   if ((fuelData.avgLaps || 0) <= 0) {
@@ -101,20 +65,16 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
       <div className="grid grid-cols-3">
         <div>
           <div
-            className="flex items-center gap-1 text-slate-500 font-semibold tracking-wide uppercase"
+            className="font-semibold tracking-wide text-slate-500 uppercase"
             style={{ fontSize: labelFontSize }}
           >
-            <GasPumpIcon size={12} weight="fill" />
-            <span>To go</span>
+            To go
           </div>
           <div
-            className={`flex items-center gap-1 ${confConfig.color} font-bold tabular-nums`}
+            className="font-bold text-white tabular-nums"
             style={{ fontSize: valueFontSize }}
             title={`${confidence} confidence`}
           >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${confConfig.bg} ${confConfig.pulse}`}
-            />
             {lapsText}
           </div>
         </div>
