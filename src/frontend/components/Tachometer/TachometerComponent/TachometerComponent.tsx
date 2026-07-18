@@ -83,6 +83,7 @@ export const Tachometer = ({
   const effectiveBlinkRpm = gearRpmThresholds
     ? gearRpmThresholds[0]
     : blinkRpm || maxRpm * 0.97; // Use redline from car data
+  const shouldBlink = clampedRpm >= effectiveBlinkRpm;
 
   // Use car-specific LED count if available
   const effectiveNumLights =
@@ -231,9 +232,6 @@ export const Tachometer = ({
 
   // Flash effect when RPM exceeds blink threshold
   useEffect(() => {
-    // Ensure we have a valid blinkRpm
-    const shouldBlink = clampedRpm >= effectiveBlinkRpm;
-
     if (shouldBlink) {
       // Set up flashing with a shorter interval for better visibility
       const interval = setInterval(() => {
@@ -242,9 +240,10 @@ export const Tachometer = ({
 
       return () => {
         clearInterval(interval);
+        setFlash(false);
       };
     }
-  }, [clampedRpm, effectiveBlinkRpm]);
+  }, [shouldBlink]);
 
   // Custom shift point flash effect
   useEffect(() => {
@@ -267,7 +266,7 @@ export const Tachometer = ({
     }
 
     // Phase 1: At or above blinkRpm - flash purple/white with stronger colors
-    if (clampedRpm >= effectiveBlinkRpm) {
+    if (shouldBlink) {
       return flash
         ? '#ffffff' /* Brighter white */
         : '#9333ea' /* More vivid purple */;
