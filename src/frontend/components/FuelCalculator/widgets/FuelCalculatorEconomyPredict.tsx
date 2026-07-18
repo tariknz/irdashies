@@ -59,26 +59,28 @@ export const FuelCalculatorEconomyPredict: React.FC<
   }
 
   return (
-    <div
-      className={`flex flex-row items-center justify-around w-full ${compactMode === 'ultra' ? 'gap-0' : compactMode === 'compact' ? 'gap-0.5' : 'gap-2'}`}
-    >
+    <div className="grid w-full grid-cols-3 border-y border-slate-600/40">
       {scenariosToShow.map((scenario) => {
         const isCurrent = scenario.isCurrentTarget;
         const lapsRemaining = scenario.laps;
         const absoluteTargetLap = displayData.currentLap + lapsRemaining;
         const fuelPerLap = scenario.fuelPerLap.toFixed(2);
 
-        // Highlight current target
-        const textColor = isCurrent ? 'text-green-400' : 'text-slate-300';
+        const textColor = isCurrent ? 'text-slate-100' : 'text-slate-400';
         const valueColor = isCurrent
           ? 'text-green-400 font-bold'
-          : 'text-slate-200';
-        const bgColor = isCurrent ? 'bg-green-500/10' : 'bg-transparent';
+          : 'text-slate-200 font-medium';
+        const padding =
+          compactMode === 'ultra'
+            ? 'py-0.5'
+            : compactMode === 'compact'
+              ? 'py-1'
+              : 'py-1.5';
 
         return (
           <div
             key={lapsRemaining}
-            className={`flex flex-col items-center justify-center rounded ${bgColor} ${compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2'}`}
+            className={`flex min-w-0 flex-col items-center justify-center px-1 ${padding} ${isCurrent ? 'bg-slate-700/60' : ''} ${lapsRemaining !== scenariosToShow[0]?.laps ? 'border-l border-slate-600/40' : ''}`}
           >
             <span
               className={`${textColor} uppercase leading-none`}
@@ -87,11 +89,11 @@ export const FuelCalculatorEconomyPredict: React.FC<
               L{absoluteTargetLap}
             </span>
             <span
-              className={`${valueColor} leading-none mt-0.5`}
+              className={`${valueColor} mt-0.5 whitespace-nowrap leading-none tabular-nums`}
               style={{ fontSize: valueFontSize }}
             >
-              {fuelPerLap}{' '}
-              <span className="text-[0.7em] text-slate-500">
+              {fuelPerLap}
+              <span className="ml-0.5 text-[0.7em] text-slate-500">
                 {settings?.fuelUnits || 'L'}/lap
               </span>
             </span>

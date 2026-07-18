@@ -354,7 +354,7 @@ export const SingleFuelWidgetSettings = ({
 
               {/* OPTIONS TAB */}
               {activeTab === 'options' && (
-                <>
+                <div className="space-y-8">
                   <SettingsSection title="Options">
                     {/* Fuel Units */}
                     <SettingSelectRow<'L' | 'gal'>
@@ -414,7 +414,7 @@ export const SingleFuelWidgetSettings = ({
                     settings={settings}
                     onChange={handleConfigChange}
                   />
-                </>
+                </div>
               )}
 
               {/* HISTORY TAB */}

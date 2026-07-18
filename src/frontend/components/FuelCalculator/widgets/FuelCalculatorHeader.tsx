@@ -1,4 +1,5 @@
 import React from 'react';
+import { GasPumpIcon } from '@phosphor-icons/react';
 import type { FuelCalculatorSettings, FuelCalculation } from '../types';
 
 interface FuelCalculatorWidgetProps {
@@ -95,54 +96,55 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
 
   return (
     <div
-      className={`flex items-center justify-between ${paddingClass} ${compactMode !== 'off' ? 'mb-0' : 'mb-1 border-b border-slate-600/50'}`}
+      className={`border-b border-slate-600/50 ${paddingClass} ${compactMode !== 'off' ? 'mb-0' : 'mb-1'}`}
     >
-      <div
-        className={`flex items-center ${compactMode !== 'off' ? 'gap-3' : 'gap-6'}`}
-      >
-        <div className="flex items-center gap-2">
-          <span
-            className="text-slate-500 font-semibold tracking-wider"
+      <div className="grid grid-cols-3">
+        <div>
+          <div
+            className="flex items-center gap-1 text-slate-500 font-semibold tracking-wide uppercase"
             style={{ fontSize: labelFontSize }}
           >
-            STOPS
-          </span>
-          <span
-            className="text-white font-bold"
+            <GasPumpIcon size={12} weight="fill" />
+            <span>To go</span>
+          </div>
+          <div
+            className={`flex items-center gap-1 ${confConfig.color} font-bold tabular-nums`}
             style={{ fontSize: valueFontSize }}
+            title={`${confidence} confidence`}
           >
-            {stopsRemaining}
-          </span>
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${confConfig.bg} ${confConfig.pulse}`}
+            />
+            {lapsText}
+          </div>
         </div>
-        <div className={`flex items-center gap-2 `}>
-          <span
-            className="text-slate-500 font-semibold tracking-wider"
+        <div>
+          <div
+            className="text-slate-500 font-semibold tracking-wide uppercase"
             style={{ fontSize: labelFontSize }}
           >
-            EARLIEST
-          </span>
-          <span
-            className="text-green-400 font-bold"
+            Next pit
+          </div>
+          <div
+            className="text-white font-bold tabular-nums"
             style={{ fontSize: valueFontSize }}
           >
             L{pitWindowOpen}
-          </span>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center">
-        <div
-          className="flex items-center gap-2"
-          title={`${confidence} confidence`}
-        >
+        <div>
           <div
-            className={`w-2 h-2 rounded-full ${confConfig.bg} ${confConfig.pulse}`}
-          ></div>
-          <span
-            className={`${confConfig.color} font-bold`}
+            className="text-slate-500 font-semibold tracking-wide uppercase"
+            style={{ fontSize: labelFontSize }}
+          >
+            Stops
+          </div>
+          <div
+            className="text-white font-bold tabular-nums"
             style={{ fontSize: valueFontSize }}
           >
-            {lapsText}
-          </span>
+            {stopsRemaining}
+          </div>
         </div>
       </div>
     </div>

@@ -263,60 +263,73 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   const fmt = (num: number, isValid: boolean) =>
     isValid ? num.toFixed(2) : '--';
 
+  const formatBalance = (data: {
+    isDeficit: boolean;
+    refuel: number;
+    isValid: boolean;
+  }) => {
+    if (!data.isValid) return '--';
+    const value = fmt(data.refuel, true);
+    return data.isDeficit ? `SHORT ${value}` : `+${value}`;
+  };
+
+  const getBalanceClass = (
+    data: { isDeficit: boolean },
+    isRecommended = false
+  ) => {
+    if (!isRecommended) return 'text-slate-300';
+    return data.isDeficit ? 'text-red-400' : 'text-emerald-400';
+  };
+
   // Helper for Refuel color
 
   const rowPadding = compactMode === 'ultra' ? '' : 'px-1 py-0.5';
-  const rowGap = compactMode !== 'off' ? '' : 'gap-y-0.5';
-  const divideCls =
-    compactMode !== 'off'
-      ? 'divide-x divide-slate-500/40'
-      : 'divide-x-2 divide-slate-500/40';
-  const rowCls = `col-span-5 grid grid-cols-subgrid ${divideCls} odd:bg-slate-800/70 even:bg-slate-900/70`;
+  const gridPadding =
+    compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'px-1' : 'px-2';
+  const rowGap = '';
+  const rowCls = 'col-span-4 grid grid-cols-subgrid';
+  const recommendedRowCls = `${rowCls} bg-slate-700/50`;
+  const finishCellCls = `border-l border-slate-600/40 ${rowPadding}`;
 
   return (
     <div
       style={containerStyle}
-      className={`grid grid-cols-[auto_auto_auto_auto_auto] select-none overflow-hidden w-full ${rowGap}`}
+      className={`grid w-full grid-cols-[1.15fr_0.9fr_1.05fr_1.35fr] select-none overflow-hidden ${gridPadding} ${rowGap}`}
     >
-      {/* Grid Header */}
       <div
-        className={`col-span-5 grid grid-cols-subgrid ${divideCls} bg-slate-900 border-b border-slate-500/40`}
+        className="col-span-4 flex justify-end pb-1 text-slate-500 font-semibold tracking-wide uppercase"
+        style={{ fontSize: labelFontSize }}
       >
+        Race lap {currentLap}
+        {(displayData?.totalLaps ?? 0) > 0
+          ? ` / ${displayData?.totalLaps.toFixed(0)}`
+          : ''}
+      </div>
+      {/* Grid Header */}
+      <div className="col-span-4 grid grid-cols-subgrid bg-slate-900 border-b border-slate-500/40">
         <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
+          className={`font-bold text-slate-400 flex justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
           style={{ fontSize: labelFontSize }}
         >
-          <div style={{ fontSize: '0.8em', opacity: 0.7 }}>IN RACE</div>
-          <div style={{ color: '#fff' }}>
-            {currentLap}
-            {isRace && effectiveTotalLaps > 0
-              ? ` / ${effectiveTotalLaps.toFixed(2)}`
-              : ''}
-          </div>
+          BASIS
         </div>
         <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
+          className={`font-bold text-slate-400 flex justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
           style={{ fontSize: labelFontSize }}
         >
-          USE
+          USE/LAP
         </div>
         <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
+          className={`font-bold text-slate-400 flex justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
           style={{ fontSize: labelFontSize }}
         >
-          LAPS
+          IN TANK
         </div>
         <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
+          className={`font-bold text-slate-400 flex justify-center items-center leading-none border-l border-slate-600/40 ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
           style={{ fontSize: labelFontSize }}
         >
-          REFUEL
-        </div>
-        <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
-          style={{ fontSize: labelFontSize }}
-        >
-          TOTAL
+          AT FINISH
         </div>
       </div>
 
@@ -324,10 +337,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
       {(() => {
         const defaultOrder = ['curr', 'avg', 'max', 'last', 'min', 'qual'];
         const savedOrder = settings?.consumptionGridOrder || defaultOrder;
-        const order = [...savedOrder];
-        defaultOrder.forEach((key) => {
-          if (!order.includes(key)) order.push(key);
-        });
+        const order = savedOrder;
 
         const renderRow = (type: string) => {
           switch (type) {
@@ -339,32 +349,25 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-slate-400 ${rowPadding}`}
                     style={{ fontSize: labelFontSize }}
                   >
-                    CURR
+                    EST.
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding} font-bold`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {currentUsage > 0 ? currentUsage.toFixed(2) : '--'}
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding} opacity-90`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {fmt(currentData.laps, isFinite(currentData.laps))}
                   </div>
                   <div
-                    className={`${currentData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded`}
+                    className={`${getBalanceClass(currentData)} text-center ${finishCellCls}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {!currentData.isDeficit ? '+' : ''}
-                    {fmt(currentData.refuel, true)}
-                  </div>
-                  <div
-                    className={`text-white text-center ${rowPadding} opacity-90`}
-                    style={{ fontSize: valueFontSize }}
-                  >
-                    {fmt(currentData.totalReq, true)}
+                    {formatBalance(currentData)}
                   </div>
                 </div>
               );
@@ -372,37 +375,30 @@ export const FuelCalculatorConsumptionGrid: React.FC<
               if (!showAvg) return null;
               const avgLabel = `AVG ${settings?.avgLapsCount || 3}`;
               return (
-                <div key="avg" className={rowCls}>
+                <div key="avg" className={recommendedRowCls}>
                   <div
-                    className={`text-slate-400 ${rowPadding}`}
+                    className={`text-white font-semibold ${rowPadding}`}
                     style={{ fontSize: labelFontSize }}
                   >
                     {avgLabel}
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding}`}
+                    className={`text-white text-center ${rowPadding} font-bold`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {avg.toFixed(2)}
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding}`}
+                    className={`text-white text-center ${rowPadding} font-bold`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {fmt(avgData.laps, isFinite(avgData.laps))}
                   </div>
                   <div
-                    className={`${avgData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded`}
+                    className={`${getBalanceClass(avgData, true)} text-center ${finishCellCls} font-bold`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {!avgData.isDeficit ? '+' : ''}
-                    {fmt(avgData.refuel, true)}
-                  </div>
-                  <div
-                    className={`text-white text-center ${rowPadding}`}
-                    style={{ fontSize: valueFontSize }}
-                  >
-                    {fmt(avgData.totalReq, true)}
+                    {formatBalance(avgData)}
                   </div>
                 </div>
               );
@@ -418,29 +414,22 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     MAX
                   </div>
                   <div
-                    className={`text-orange-400 text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {max.toFixed(2)}
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {fmt(maxData.laps, isFinite(maxData.laps))}
                   </div>
                   <div
-                    className={`${maxData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded`}
+                    className={`${getBalanceClass(maxData)} text-center ${finishCellCls}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {!maxData.isDeficit ? '+' : ''}
-                    {fmt(maxData.refuel, true)}
-                  </div>
-                  <div
-                    className={`text-white text-center ${rowPadding}`}
-                    style={{ fontSize: valueFontSize }}
-                  >
-                    {fmt(maxData.totalReq, true)}
+                    {formatBalance(maxData)}
                   </div>
                 </div>
               );
@@ -455,29 +444,22 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     LAST
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {last.toFixed(2)}
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {fmt(lastData.laps, isFinite(lastData.laps))}
                   </div>
                   <div
-                    className={`${lastData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded`}
+                    className={`${getBalanceClass(lastData)} text-center ${finishCellCls}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {!lastData.isDeficit ? '+' : ''}
-                    {fmt(lastData.refuel, true)}
-                  </div>
-                  <div
-                    className={`text-white text-center ${rowPadding}`}
-                    style={{ fontSize: valueFontSize }}
-                  >
-                    {fmt(lastData.totalReq, true)}
+                    {formatBalance(lastData)}
                   </div>
                 </div>
               );
@@ -492,34 +474,28 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     MIN
                   </div>
                   <div
-                    className={`text-green-400 text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {min.toFixed(2)}
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {fmt(minData.laps, isFinite(minData.laps))}
                   </div>
                   <div
-                    className={`${minData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded`}
+                    className={`${getBalanceClass(minData)} text-center ${finishCellCls}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {!minData.isDeficit ? '+' : ''}
-                    {fmt(minData.refuel, true)}
-                  </div>
-                  <div
-                    className={`text-white text-center ${rowPadding}`}
-                    style={{ fontSize: valueFontSize }}
-                  >
-                    {fmt(minData.totalReq, true)}
+                    {formatBalance(minData)}
                   </div>
                 </div>
               );
             case 'qual':
-              if (settings?.showQualifyConsumption === false) return null;
+              if (settings?.showQualifyConsumption === false || qual <= 0)
+                return null;
               return (
                 <div key="qual" className={rowCls}>
                   <div
@@ -529,35 +505,29 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     QUAL MAX
                   </div>
                   <div
-                    className={`text-orange-400 text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {qual > 0 ? qual.toFixed(2) : '--'}
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {fmt(qualData.laps, isFinite(qualData.laps))}
                   </div>
                   <div
-                    className={`${qualData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded`}
+                    className={`${getBalanceClass(qualData)} text-center ${finishCellCls}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {isRace && qual > 0 ? (
                       <>
-                        {!qualData.isDeficit ? '+' : ''}
+                        {qualData.isDeficit ? '-' : '+'}
                         {fmt(qualData.refuel, true)}
                       </>
                     ) : (
                       '--'
                     )}
-                  </div>
-                  <div
-                    className={`text-white text-center ${rowPadding}`}
-                    style={{ fontSize: valueFontSize }}
-                  >
-                    {isRace && qual > 0 ? fmt(qualData.totalReq, true) : '--'}
                   </div>
                 </div>
               );
