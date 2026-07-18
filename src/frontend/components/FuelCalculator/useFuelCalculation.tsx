@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-useless-assignment */
 /**
  * Hook for calculating fuel metrics from telemetry data
  * Follows irdashies pattern using useTelemetryValues and Zustand store
