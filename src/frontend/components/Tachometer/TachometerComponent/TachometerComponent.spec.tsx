@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { Tachometer } from '../TachometerComponent/TachometerComponent';
 import type { ShiftPointSettings } from '@irdashies/types';
 
@@ -9,6 +9,10 @@ vi.mock('../../../context/TelemetryStore/TelemetryStore', () => ({
 }));
 
 describe('Tachometer', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   const mockCarData = {
     carName: 'Ferrari 296 GT3',
     carId: 'ferrari296gt3',
@@ -144,6 +148,44 @@ describe('Tachometer', () => {
     expect(ledElements.length).toBe(10);
     const firstLedColor = (ledElements[0] as HTMLElement).style.backgroundColor;
     expect(firstLedColor).toBeTruthy();
+  });
+
+  it('keeps the blink interval running while RPM changes above the threshold', () => {
+    vi.useFakeTimers();
+    const { container, rerender } = render(
+      <Tachometer rpm={8300} maxRpm={8500} blinkRpm={8200} />
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
+    rerender(<Tachometer rpm={8400} maxRpm={8500} blinkRpm={8200} />);
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
+
+    const firstLed = container.querySelectorAll('.rounded-full.border')[0];
+    expect((firstLed as HTMLElement).style.backgroundColor).toBe(
+      'rgb(255, 255, 255)'
+    );
+  });
+
+  it('starts a new blink cycle on purple after RPM drops below the threshold', () => {
+    vi.useFakeTimers();
+    const { container, rerender } = render(
+      <Tachometer rpm={8300} maxRpm={8500} blinkRpm={8200} />
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    rerender(<Tachometer rpm={8000} maxRpm={8500} blinkRpm={8200} />);
+    rerender(<Tachometer rpm={8300} maxRpm={8500} blinkRpm={8200} />);
+
+    const firstLed = container.querySelectorAll('.rounded-full.border')[0];
+    expect((firstLed as HTMLElement).style.backgroundColor).toBe(
+      'rgb(147, 51, 234)'
+    );
   });
 
   it('uses car-specific RPM thresholds when available', () => {
