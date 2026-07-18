@@ -52,7 +52,8 @@ Displays the throttle, clutch, and brake input traces, as well as the current ge
   - Toggle individual inputs (clutch, brake, throttle, ABS)
   - Optional raw input values showing actual pedal/wheel inputs without sim processing (e.g. ABS, traction control)
 - Current gear display with speed (auto/mph/km/h units) and dynamic sizing to fit container
-- Steering wheel visualization with multiple styles (default, formula, LMP, NASCAR, U-shape) and color themes (light/dark)
+- Optional speed-first gear layout
+- Steering wheel visualization with multiple styles (default, formula, LMP, NASCAR, U-shape, ring) and color themes (light/dark)
 - Customizable display order for all components
 - Adjustable background opacity
 - Option to show only when on track
@@ -73,6 +74,7 @@ Displays a real-time tachometer with optional RPM text display.
   - Horizontal or vertical orientation
   - Consistent sizing across different cars
   - Option to show RPM text above the tachometer
+  - Optional oil and water temperature displays, with configurable placement and overheat warnings
 - Resizable and adjustable background opacity
 - Option to show only when on track
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
@@ -107,6 +109,8 @@ Displays standings information for the current session.
 - Timing information: gap, interval, best lap time, last lap time (multiple time format options)
   - Configurable decimal precision (1, 2, or 3) for gap and interval
   - Gap and interval display in practice and qualifying sessions
+- Optional Push-to-Pass column, showing a driver's active state and remaining time in supported series
+- Configurable radio icon duration, so recent transmissions remain visible without flickering
 - iRating change display
 - Lap time deltas (configurable number of laps: 1-5)
 - Title bar with session progress bar
@@ -161,6 +165,8 @@ Displays drive relative delta information for the current session.
 - Styling customizations: toggle minimal license badges, minimal status badges, position background color, and car number background/border independently
 - Relative delta timing display with configurable precision
 - Timing information: best lap time, last lap time (multiple time format options: full, mixed, minutes, seconds-full, seconds-mixed, seconds)
+- Optional Push-to-Pass column, showing a driver's active state and remaining time in supported series
+- Configurable radio icon duration, so recent transmissions remain visible without flickering
 - Lap time delta column (configurable number of laps: 1-5)
 - Optional flag contour: draws a colored border around the widget when a session flag is active, with configurable border width
 - iRating change display (optional)
@@ -237,6 +243,8 @@ Displays the weather information for the current session.
 **Features:**
 
 - Current weather conditions: track state, track and air temperature, wind speed and direction, humidity, precipitation, track wetness
+- Vertical, horizontal compact, and horizontal full layouts
+- Optional humidity display
 - Customizable display order for all weather elements
 - Temperature units: Auto (based on iRacing settings), Metric (°C), or Imperial (°F)
 - Adjustable background opacity
@@ -244,6 +252,16 @@ Displays the weather information for the current session.
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
 
 ![Weather](./docs/assets/weather.png)
+
+### Wind
+
+Displays wind direction and speed as a standalone overlay.
+
+**Features:**
+
+- Wind compass with live direction and intensity
+- Speed units: Auto, km/h, or mph
+- Adjustable background opacity and on-track/session visibility controls
 
 ### Faster Cars From Behind
 
@@ -310,8 +328,21 @@ Displays visual indicators on the left and right sides of the screen when cars a
 - Adjustable background opacity
 - Only displays when on track
 - Real-time position tracking based on lap distance
+- Standard bar or compact Simple mode, with configurable indicator size, position, car count, and colours
 
 ![Blind Spot Monitor](./docs/assets/blindspot-monitor.png)
+
+### Battle
+
+Displays a compact three-row view of the cars immediately ahead of and behind you in class position, alongside your own row.
+
+**Features:**
+
+- Live gap, previous-lap gap, and gap-change display
+- Optional position, car number, driver name, stint length, last lap time, and speed columns
+- Reorderable columns and configurable gap precision, lap-time format, and speed units
+- Last-lap highlights for personal-best and session-fastest laps
+- Adjustable background opacity and on-track/session visibility controls
 
 ### Slow Car Ahead Warning
 
@@ -508,6 +539,7 @@ Displays the current track section (corner or named straight) along with corner 
   - Save and switch between different dashboard configurations
   - Multiple profiles for different racing scenarios or streaming setups
   - Clone existing profiles with one click to create variations without starting from scratch
+  - Bind shortcuts to cycle to the previous or next profile, with an on-screen profile-name banner
   - Each profile can be accessed as its own browser source URL for OBS streaming
   - Dashboard import/export to share layouts between users or back up your setup
 - Streamer & OBS Ready
@@ -522,7 +554,8 @@ Displays the current track section (corner or named straight) along with corner 
   - Font sizes: Multiple font size options (including 2x Small, 3x Small, and Tiny for large or ultra-wide monitors) to ensure readability on any screen.
   - Font weight: Choose between Normal, Bold, or Extra Bold text for improved readability.
 - Ease of Use
-  - Configurable key bindings: Rebind all keyboard shortcuts (hide/show UI, edit layout, save telemetry) from the Key Bindings settings page. Supports any keyboard chord combination.
+  - Configurable key bindings: Rebind shortcuts for global overlay visibility, edit layout, telemetry, layout-profile cycling, and individual widget visibility. Supports keyboard chords, controller buttons, and controller-button combos.
+  - Per-widget visibility shortcuts: Show or hide individual widgets without affecting the rest of the dashboard.
   - Global toggle (Alt+H by default): Quickly hide or show all your overlays with a single keyboard shortcut.
   - Reset widget position: Reset any widget's position to the top-left corner if it gets lost off-screen.
   - Close to tray: Closing the window minimizes to the system tray instead of quitting (configurable).
