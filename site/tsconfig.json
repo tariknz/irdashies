@@ -16,7 +16,8 @@
     "paths": {
       "@irdashies/utils/*": ["../src/frontend/utils/*"],
       "@irdashies/context": ["../src/frontend/context"],
-      "@irdashies/types": ["../src/types"]
+      "@irdashies/types": ["../src/types"],
+      "@irdashies/shared": ["../src/shared"]
     }
   },
   "include": ["src", "../src/interface.d.ts"],
