@@ -131,11 +131,6 @@ const BattleRow = memo(
       .filter(Boolean)
       .join(' ');
     const mutedColor = 'text-white/55';
-    const highlightStyle =
-      isPlayer && highlightColor
-        ? { color: `#${highlightColor.toString(16).padStart(6, '0')}` }
-        : {};
-
     const tailwindStyles = useMemo(
       () =>
         getTailwindStyle(entry?.carClass?.color, highlightColor, isMultiClass),
@@ -164,12 +159,11 @@ const BattleRow = memo(
           : isPlayer
             ? tailwindStyles.classHeader
             : '';
-        const positionText = offTrack ? 'text-yellow-900' : '';
+        const positionText = offTrack ? 'text-yellow-900' : 'text-white';
         cols.push(
           <td
             key="pos"
             className={`w-auto text-center px-2 whitespace-nowrap ${positionBg} ${positionText}`}
-            style={highlightStyle}
           >
             {(() => {
               const p = liveClassPosition ?? entry?.classPosition;
@@ -188,11 +182,7 @@ const BattleRow = memo(
         );
       } else if (key === 'driverName' && settings?.driverName?.enabled) {
         cols.push(
-          <td
-            key="name"
-            className="px-1 py-0.5 w-full truncate max-w-0"
-            style={highlightStyle}
-          >
+          <td key="name" className="px-1 py-0.5 w-full truncate max-w-0">
             {entry?.driver?.name || '—'}
           </td>
         );
