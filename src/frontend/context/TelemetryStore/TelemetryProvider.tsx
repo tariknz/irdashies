@@ -39,7 +39,7 @@ export const TelemetryProvider = ({ bridge }: TelemetryProviderProps) => {
       if (unsub) unsub();
       bridge.stop();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, [bridge]);
 
   return <></>;

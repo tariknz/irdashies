@@ -1522,7 +1522,7 @@ export function useFuelCalculation(
     // lapHistorySize is an intentional cache-invalidation dep: lapHistory is read via
     // getState() for performance, and lapHistorySize is the reactive signal that
     // invalidates this memo whenever laps are added or removed from the store.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, [
     sessionNum,
     fuelLevel,

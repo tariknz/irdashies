@@ -123,7 +123,7 @@ export function LivePreviewProvider({
   const bridge = useMemo(() => generateMockData(), []);
   const dashboardBridge = useMemo(
     () => createMockDashboardBridge(widgets, onDashboardSaved),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
     [widgets]
   );
 

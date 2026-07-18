@@ -86,7 +86,7 @@ export const ProfileSettings = () => {
           });
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, []);
 
   const handleCreateProfile = async () => {

@@ -145,7 +145,6 @@ export const WidgetContainer = memo(
       }
 
       // Prop changed externally - sync to it
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalLayout(layout);
     }, [layout, localLayout, isInteracting]);
 
