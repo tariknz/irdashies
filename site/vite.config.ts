@@ -21,6 +21,7 @@ export default defineConfig({
       '@irdashies/utils': path.resolve(__dirname, '../src/frontend/utils'),
       '@irdashies/context': path.resolve(__dirname, '../src/frontend/context'),
       '@irdashies/types': path.resolve(__dirname, '../src/types'),
+      '@irdashies/shared': path.resolve(__dirname, '../src/shared'),
     },
   },
   css: {
