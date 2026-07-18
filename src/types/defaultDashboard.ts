@@ -1017,6 +1017,7 @@ export const defaultDashboard: {
         history: {
           enabled: true,
           count: 10,
+          style: 'list',
         },
         background: {
           opacity: 80,
