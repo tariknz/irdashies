@@ -27,6 +27,7 @@ import { SessionBarConfig } from '@irdashies/types';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 import { SessionState } from '@irdashies/types';
 import { WindArrow } from '../../../shared/WindArrow';
+import { formatLapTotal } from './formatLapTotal';
 import { getIncidentDisplay } from './getIncidentDisplay';
 
 // compact=true (total time): trims trailing zero components, never shows seconds
@@ -282,7 +283,7 @@ export const SessionBar = ({
             return (
               <div className="flex justify-center">
                 L{lapValue} /{' '}
-                {overrun ? effectiveTotal.toFixed(0) : lapsTotal.toFixed(1)}
+                {overrun ? effectiveTotal.toFixed(0) : formatLapTotal(lapsTotal)}
               </div>
             );
         else return <div className="flex justify-center">L{lapDisplay}</div>;
