@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.join(path.dirname(__filename));
 
 export const tsconfigPathAliases = Object.fromEntries(
-  Object.entries(tsconfig.compilerOptions.paths).map(([key, values]) => {
+  Object.entries(tsconfig.compilerOptions?.paths || {}).map(([key, values]) => {
     let value = values[0];
 
     if (key.endsWith('/*')) {

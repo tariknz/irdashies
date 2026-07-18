@@ -16,7 +16,9 @@ const OverlayFrame = ({
   children: ReactNode;
   height: 260 | 520;
 }) => (
-  <div className="w-[300px] [&>div]:h-full" style={{ height }}>
+  <div
+    className={`w-[300px] [&>div]:h-full ${height === 520 ? 'h-[520px]' : 'h-[260px]'}`}
+  >
     {children}
   </div>
 );
@@ -350,6 +352,8 @@ const MockFuelDataProvider = ({
 
     mockLaps.forEach((lap) => addLapData(lap));
     updateLapCrossing(0.1, 35.5, 2700, 31, false);
+
+    return () => clearAllData();
   }, [addLapData, clearAllData, lapCount, updateLapCrossing]);
 
   return <>{children}</>;

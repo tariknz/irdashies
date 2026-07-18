@@ -119,7 +119,7 @@ export const FuelCalculatorGauge: React.FC<FuelCalculatorWidgetProps> = ({
           style={{ fontSize: valueFontSize }}
         >
           {fuelString} <span className="text-slate-500 font-medium">·</span>{' '}
-          {lapsString} in tank
+          {lapsString} laps in tank
         </span>
         <span
           className="uppercase tracking-wide"

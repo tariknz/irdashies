@@ -246,7 +246,7 @@ export const FuelCalculatorPitScenarios: React.FC<
           const windowDisplay = isTesting ? '--' : windowStatus;
 
           const rowColor = scenario.isCurrentTarget
-            ? 'text-white font-bold bg-slate-700/50'
+            ? 'text-white font-bold'
             : 'text-slate-300';
 
           const cellPadding =

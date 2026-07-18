@@ -271,8 +271,9 @@ export const FuelCalculatorConsumptionGrid: React.FC<
     isDeficit: boolean;
     refuel: number;
     isValid: boolean;
+    hideRefuel?: boolean;
   }) => {
-    if (!data.isValid) return '--';
+    if (!data.isValid || data.hideRefuel) return '--';
     const value = fmtFuel(data.refuel);
     return data.isDeficit ? `-${value}` : `+${value}`;
   };
@@ -524,14 +525,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`${getBalanceClass(qualData)} text-center ${finishCellCls}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {isRace && qual > 0 ? (
-                      <>
-                        {qualData.isDeficit ? '-' : '+'}
-                        {fmtFuel(qualData.refuel)}
-                      </>
-                    ) : (
-                      '--'
-                    )}
+                    {isRace && qual > 0 ? formatBalance(qualData) : '--'}
                   </div>
                 </div>
               );

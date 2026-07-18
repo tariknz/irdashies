@@ -23,6 +23,7 @@ export const FuelCalculatorTargetMessage: React.FC<
 > = ({
   fuelData,
   displayData,
+  fuelUnits = 'L',
   settings,
   widgetId,
   customStyles,
@@ -69,7 +70,7 @@ export const FuelCalculatorTargetMessage: React.FC<
     consumption || displayData.avgLaps || displayData.avg10Laps || 0;
   // Additive Safety Margin logic
   const marginAmount =
-    settings?.fuelUnits === 'gal' ? safetyMargin * 3.78541 : safetyMargin;
+    fuelUnits === 'gal' ? safetyMargin * 3.78541 : safetyMargin;
   const fuelNeeded = lapsLeftAfterPit * consumption + marginAmount;
   const fuelToAddHypothetical = Math.max(0, fuelNeeded);
 
@@ -89,7 +90,7 @@ export const FuelCalculatorTargetMessage: React.FC<
   const needDisplay =
     isTesting || consumption === 0
       ? '--'
-      : `+${formatFuel(fuelToAddHypothetical, settings.fuelUnits, 1)}`;
+      : `+${formatFuel(fuelToAddHypothetical, fuelUnits, 1)}`;
 
   return (
     <div
