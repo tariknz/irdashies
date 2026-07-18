@@ -1,3 +1,4 @@
+/* eslint-disable @eslint-react/no-array-index-key -- Placeholder positions correspond to fixed lap columns. */
 import { memo, Fragment } from 'react';
 
 interface LapTimeDeltasCellProps {
@@ -29,7 +30,7 @@ export const LapTimeDeltasCell = memo(
           if (deltaValue !== undefined) {
             return (
               <td
-                key={`lapTimeDelta-${index}`}
+                key={index}
                 data-column="lapTimeDelta"
                 className={`w-auto ${pxClass} text-center whitespace-nowrap ${deltaValue > 0 ? 'text-green-400' : 'text-red-400'}`}
               >
@@ -39,7 +40,7 @@ export const LapTimeDeltasCell = memo(
           } else {
             return (
               <td
-                key={`empty-lapTimeDelta-${index}`}
+                key={index}
                 data-column="lapTimeDelta"
                 className={`w-auto ${pxClass} text-center whitespace-nowrap`}
               >

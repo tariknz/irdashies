@@ -1,3 +1,4 @@
+/* eslint-disable @eslint-react/no-array-index-key -- Setup values represent fixed positional columns. */
 import { useCarSetup } from '@irdashies/context';
 import type { CarSetupInfo } from '@irdashies/types';
 import { memo, type ReactNode, useState } from 'react';

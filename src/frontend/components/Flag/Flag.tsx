@@ -195,7 +195,7 @@ export const FlagDisplay = ({
 
     return (
       <div
-        key={i}
+        key={`${row}-${col}`}
         className="w-full h-full box-border"
         style={{ borderRadius: cellRadius, background: bg, boxShadow }}
       />

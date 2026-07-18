@@ -197,7 +197,7 @@ const RecursiveRenderer = ({
 
             return (
               <div
-                key={`${node.id}-${idx}`}
+                key={`${node.id}-${wId}`}
                 className="relative flex items-center group/widget-container"
               >
                 {/* Insertion Ghost Indicator */}

@@ -1,3 +1,4 @@
+/* eslint-disable @eslint-react/no-array-index-key -- Ordered lap-history samples have no domain ID; their position is their stable identity. */
 import { formatFuel } from '../fuelCalculations';
 import { FuelLapData } from '../types';
 
@@ -44,13 +45,13 @@ export const ConsumptionGraphWidget = ({
     !isDummy && graphData
       ? graphData
       : {
-        maxFuel: 3.5,
-        avgFuel: 2.8,
-        fuelValues: [
-          2.5, 3.1, 2.7, 3.4, 2.9, 3.0, 2.6, 3.2, 2.8, 3.0, 2.5, 3.1, 2.7, 3.4,
-          2.9,
-        ],
-      };
+          maxFuel: 3.5,
+          avgFuel: 2.8,
+          fuelValues: [
+            2.5, 3.1, 2.7, 3.4, 2.9, 3.0, 2.6, 3.2, 2.8, 3.0, 2.5, 3.1, 2.7,
+            3.4, 2.9,
+          ],
+        };
 
   const { maxFuel, avgFuel, fuelValues } = effectiveGraphData;
 
@@ -142,7 +143,7 @@ export const ConsumptionGraphWidget = ({
 
                     return (
                       <div
-                        key={`${i}-${fuel}-${heightPct}`}
+                        key={i}
                         className={`flex-1 min-w-[3px] max-w-[12px] rounded-t-[1px] transition-all duration-300 relative group ${
                           isHigh
                             ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]'

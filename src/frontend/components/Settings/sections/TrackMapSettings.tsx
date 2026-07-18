@@ -39,8 +39,7 @@ export const TrackMapSettings = () => {
 
   const sectorDeltaThresholds = (
     currentDashboard?.widgets.find((w) => w.id === 'sectordelta')?.config as
-      | SectorDeltaConfig
-      | undefined
+      SectorDeltaConfig | undefined
   )?.thresholds;
   const { green: greenPct, yellow: yellowPct } =
     getSectorDeltaThresholdPercentages(sectorDeltaThresholds);
@@ -59,6 +58,9 @@ export const TrackMapSettings = () => {
 
   const [imageError, setImageError] = useState<string | null>(null);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [browserPreviewUrl, setBrowserPreviewUrl] = useState<string | null>(
+    () => localStorage.getItem(LOCALSTORAGE_KEY)
+  );
   const configChangeHandlerRef = useRef<
     ((newConfig: Partial<TrackMapWidgetSettings['config']>) => void) | null
   >(null);
@@ -91,7 +93,7 @@ export const TrackMapSettings = () => {
   const previewUrl = !imageFilename
     ? null
     : useBrowserMode
-      ? localStorage.getItem(LOCALSTORAGE_KEY)
+      ? browserPreviewUrl
       : bridgePreview?.filename === imageFilename
         ? bridgePreview.url
         : null;
@@ -159,6 +161,7 @@ export const TrackMapSettings = () => {
 
             const fallbackToLocalStorage = () => {
               localStorage.setItem(LOCALSTORAGE_KEY, storedDataUrl);
+              setBrowserPreviewUrl(storedDataUrl);
               configChangeHandlerRef.current?.({
                 playerIcon: {
                   enabled: settings.config.playerIcon?.enabled ?? false,
@@ -443,6 +446,7 @@ export const TrackMapSettings = () => {
                             <button
                               onClick={() => {
                                 localStorage.removeItem(LOCALSTORAGE_KEY);
+                                setBrowserPreviewUrl(null);
                                 handleConfigChange({
                                   playerIcon: {
                                     enabled:

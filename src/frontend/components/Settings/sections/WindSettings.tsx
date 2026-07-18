@@ -57,14 +57,14 @@ export const WindSettings = () => {
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   );
-  const [settings, setSettings] = useState<WindWidgetSettings>({
+  const [settings, setSettings] = useState<WindWidgetSettings>(() => ({
     enabled: isWindWidgetSettings(savedSettings)
       ? savedSettings.enabled
       : false,
     config: isWindWidgetSettings(savedSettings)
       ? savedSettings.config
       : defaultConfig,
-  });
+  }));
 
   useEffect(() => {
     if (!currentDashboard) return;

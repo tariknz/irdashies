@@ -136,7 +136,12 @@ export const HeartRateEmbed = memo(
         webview.insertCSS(TRANSPARENT_CSS).catch(() => {
           // guest navigated away before CSS applied — ignore
         });
-        [50, 300, 700, 1300].forEach((d) => timers.push(setTimeout(sample, d)));
+        [50, 300, 700, 1300].forEach((delay) => {
+          // All collected timers are cleared by this effect's cleanup below.
+          // eslint-disable-next-line @eslint-react/web-api-no-leaked-timeout
+          const timer = setTimeout(sample, delay);
+          timers.push(timer);
+        });
       };
 
       webview.addEventListener('dom-ready', onReady);
