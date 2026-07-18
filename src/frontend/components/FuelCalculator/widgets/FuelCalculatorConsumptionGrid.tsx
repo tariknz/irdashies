@@ -274,7 +274,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   }) => {
     if (!data.isValid) return '--';
     const value = fmtFuel(data.refuel);
-    return data.isDeficit ? `SHORT ${value}` : `+${value}`;
+    return data.isDeficit ? `-${value}` : `+${value}`;
   };
 
   const getBalanceClass = (
