@@ -8,7 +8,7 @@ export const useCurrentTime = () => {
     }),
     []
   );
-  const [time, setTime] = useState<string>(
+  const [time, setTime] = useState<string>(() =>
     new Date().toLocaleTimeString([], options)
   );
 

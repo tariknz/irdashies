@@ -42,6 +42,8 @@ export default defineConfig([
       // and require application refactors outside this dependency migration.
       '@eslint-react/no-nested-component-definitions': 'off',
       '@eslint-react/set-state-in-effect': 'off',
+      // Registry-selected components have stable identities, but this rule
+      // reports them as components created during render.
       '@eslint-react/static-components': 'off',
     },
   },

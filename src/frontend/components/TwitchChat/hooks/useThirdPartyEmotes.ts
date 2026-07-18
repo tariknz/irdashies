@@ -78,10 +78,10 @@ export function useThirdPartyEmotes(
   roomId: string | undefined
 ): ThirdPartyEmoteMap {
   const [globalEmotes, setGlobalEmotes] = useState<ThirdPartyEmoteMap>(
-    new Map()
+    () => new Map()
   );
   const [channelEmotes, setChannelEmotes] = useState<ThirdPartyEmoteMap>(
-    new Map()
+    () => new Map()
   );
 
   useEffect(() => {

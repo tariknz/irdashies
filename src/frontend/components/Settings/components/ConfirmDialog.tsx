@@ -25,16 +25,18 @@ export const ConfirmDialog = ({
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      // Focus the cancel button by default for destructive actions
-      setTimeout(() => {
-        if (variant === 'danger') {
-          cancelButtonRef.current?.focus();
-        } else {
-          confirmButtonRef.current?.focus();
-        }
-      }, 100);
-    }
+    if (!isOpen) return;
+
+    // Focus the cancel button by default for destructive actions.
+    const focusTimeout = setTimeout(() => {
+      if (variant === 'danger') {
+        cancelButtonRef.current?.focus();
+      } else {
+        confirmButtonRef.current?.focus();
+      }
+    }, 100);
+
+    return () => clearTimeout(focusTimeout);
   }, [isOpen, variant]);
 
   useEffect(() => {

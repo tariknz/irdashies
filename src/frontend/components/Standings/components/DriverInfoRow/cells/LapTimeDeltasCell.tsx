@@ -29,7 +29,7 @@ export const LapTimeDeltasCell = memo(
           if (deltaValue !== undefined) {
             return (
               <td
-                key={`lapTimeDelta-${index}`}
+                key={index}
                 data-column="lapTimeDelta"
                 className={`w-auto ${pxClass} text-center whitespace-nowrap ${deltaValue > 0 ? 'text-green-400' : 'text-red-400'}`}
               >
@@ -39,7 +39,7 @@ export const LapTimeDeltasCell = memo(
           } else {
             return (
               <td
-                key={`empty-lapTimeDelta-${index}`}
+                key={index}
                 data-column="lapTimeDelta"
                 className={`w-auto ${pxClass} text-center whitespace-nowrap`}
               >

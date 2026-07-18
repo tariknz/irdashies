@@ -31,8 +31,8 @@ export const ChatMessageList = ({
   autoHide,
   thirdPartyEmotes,
 }: ChatMessageListProps) => {
-  const [fadingIds, setFadingIds] = useState<Set<string>>(new Set());
-  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
+  const [fadingIds, setFadingIds] = useState<Set<string>>(() => new Set());
+  const [removedIds, setRemovedIds] = useState<Set<string>>(() => new Set());
   const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map()
   );
@@ -53,6 +53,8 @@ export const ChatMessageList = ({
       if (!timeoutsRef.current.has(m.id)) {
         const t = setTimeout(() => {
           setFadingIds((prev) => new Set([...prev, m.id]));
+          // Both timeout maps are cleared by the unmount effect below; this
+          // rule only recognizes cleanup in the effect that creates the timer.
           const rt = setTimeout(() => {
             setRemovedIds((prev) => new Set([...prev, m.id]));
           }, FADE_DURATION_MS);
@@ -89,30 +91,32 @@ export const ChatMessageList = ({
         } as React.CSSProperties
       }
     >
-      {messages.filter((m) => !removedIds.has(m.id)).map((m) => {
-        const fading = (autoHide?.enabled ?? false) && fadingIds.has(m.id);
-        return (
-          <div
-            key={m.id}
-            style={{
-              marginBottom: 8,
-              fontSize: `${fontSize}px`,
-              opacity: fading ? 0 : 1,
-              transition: fading
-                ? `opacity ${FADE_DURATION_MS}ms linear`
-                : undefined,
-            }}
-          >
-            <strong style={{ color: m.color ?? '#a970ff' }}>{m.user}</strong>:{' '}
-            <MessageWithEmotes
-              text={m.text}
-              emotes={m.emotes}
-              fontSize={fontSize}
-              thirdPartyEmotes={thirdPartyEmotes}
-            />
-          </div>
-        );
-      })}
+      {messages
+        .filter((m) => !removedIds.has(m.id))
+        .map((m) => {
+          const fading = (autoHide?.enabled ?? false) && fadingIds.has(m.id);
+          return (
+            <div
+              key={m.id}
+              style={{
+                marginBottom: 8,
+                fontSize: `${fontSize}px`,
+                opacity: fading ? 0 : 1,
+                transition: fading
+                  ? `opacity ${FADE_DURATION_MS}ms linear`
+                  : undefined,
+              }}
+            >
+              <strong style={{ color: m.color ?? '#a970ff' }}>{m.user}</strong>:{' '}
+              <MessageWithEmotes
+                text={m.text}
+                emotes={m.emotes}
+                fontSize={fontSize}
+                thirdPartyEmotes={thirdPartyEmotes}
+              />
+            </div>
+          );
+        })}
     </div>
   );
 };
