@@ -97,38 +97,42 @@ export const FuelCalculatorGauge: React.FC<FuelCalculatorWidgetProps> = ({
   const tankString = formatFuel(tankCapacity, fuelUnits, 0);
 
   const paddingClass =
-    compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2';
+    compactMode === 'ultra'
+      ? ''
+      : compactMode === 'compact'
+        ? 'px-1 pt-1 pb-0'
+        : 'px-2 pt-2 pb-0';
 
   return (
-    <div
-      className={`${paddingClass} ${compactMode !== 'off' ? 'mb-1' : 'mb-4'}`}
-    >
+    <div className={`${paddingClass} mb-1`}>
       <div
-        className={`flex justify-between text-[0.75em] text-slate-400 font-medium items-end ${compactMode !== 'off' ? 'mb-0.5' : 'mb-2'}`}
+        className={`flex justify-between text-[0.75em] text-slate-400 font-medium items-end ${compactMode !== 'off' ? 'mb-0.5' : 'mb-1'}`}
       >
-        <span className="mb-0.5" style={{ fontSize: labelFontSize }}>
-          E
+        <span
+          className="uppercase tracking-wide"
+          style={{ fontSize: labelFontSize }}
+        >
+          Tank
         </span>
         <span
           className="text-white font-bold tracking-wide"
           style={{ fontSize: valueFontSize }}
         >
-          {fuelString} / {lapsString} laps
+          {fuelString} <span className="text-slate-500 font-medium">·</span>{' '}
+          {lapsString} laps in tank
         </span>
-        <span className="mb-0.5" style={{ fontSize: labelFontSize }}>
-          {tankString}
+        <span
+          className="uppercase tracking-wide"
+          style={{ fontSize: labelFontSize }}
+        >
+          {tankString} cap
         </span>
       </div>
-      <div
-        className={`h-2 bg-slate-700 rounded-full overflow-hidden shadow-inner`}
-      >
+      <div className="h-1.5 bg-slate-700/80 rounded-sm overflow-hidden">
         <div
-          className={`h-full bg-gradient-to-r ${gradient} rounded-full transition-all duration-500 relative`}
+          className={`h-full bg-gradient-to-r ${gradient} transition-all duration-300`}
           style={{ width: `${fuelPct}%` }}
-        >
-          <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-white/20 shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>
-          <div className="absolute top-0 bottom-0 right-0 left-0 bg-gradient-to-b from-white/10 to-transparent"></div>
-        </div>
+        />
       </div>
     </div>
   );

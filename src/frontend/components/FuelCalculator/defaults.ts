@@ -73,6 +73,7 @@ export const defaultFuelCalculatorSettings: FuelCalculatorSettings = {
     fuelScenarios: { labelFontSize: 10, valueFontSize: 12 },
     fuelTargetMessage: { labelFontSize: 10, valueFontSize: 12 },
     fuelEconomyPredict: { labelFontSize: 12, valueFontSize: 14 },
+    fuelAtFinish: { labelFontSize: 10, valueFontSize: 14 },
   },
   enableStorage: true,
   enableLogging: false,

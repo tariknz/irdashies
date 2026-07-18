@@ -79,12 +79,12 @@ const TargetScenarioRow: React.FC<{
       : `+${fuelToAddHypothetical.toFixed(1)}`;
   const finishDisplay =
     isTesting || consumption === 0 ? '--' : estimatedFinishFuel.toFixed(1);
-  const rowColor = 'text-purple-400 font-bold bg-purple-500/20 rounded';
+  const rowColor = 'text-white font-bold';
   const cellPadding =
     compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2';
 
   return (
-    <React.Fragment>
+    <div className="col-span-4 grid grid-cols-subgrid bg-slate-700/50">
       <div
         className={`${rowColor} text-center ${cellPadding}`}
         style={{ fontSize: valueFontSize }}
@@ -109,7 +109,7 @@ const TargetScenarioRow: React.FC<{
       >
         TARGET
       </div>
-    </React.Fragment>
+    </div>
   );
 };
 
@@ -169,9 +169,7 @@ export const FuelCalculatorPitScenarios: React.FC<
         className={`border-t border-slate-600/30 ${compactMode !== 'off' ? 'mb-0.5' : 'mb-2'}`}
       ></div>
 
-      <div
-        className={`grid grid-cols-4 ${compactMode !== 'off' ? 'gap-0 md:gap-x-1 mb-0.5' : 'gap-1 mb-3'}`}
-      >
+      <div className="grid grid-cols-4 mb-3">
         <div
           className="text-slate-500 text-center"
           style={{ fontSize: labelFontSize }}
@@ -247,12 +245,9 @@ export const FuelCalculatorPitScenarios: React.FC<
             : estimatedFinishFuel.toFixed(1);
           const windowDisplay = isTesting ? '--' : windowStatus;
 
-          // Row Color Logic determines the color for ALL text in the row
-          let rowColor = 'text-cyan-400'; // Default
-          if (windowStatus === 'Ideal') rowColor = 'text-green-400 font-bold';
-          else if (windowStatus === '+1 Lap')
-            rowColor = 'text-cyan-400 font-bold';
-          else rowColor = 'text-yellow-400';
+          const rowColor = scenario.isCurrentTarget
+            ? 'text-white font-bold'
+            : 'text-slate-300';
 
           const cellPadding =
             compactMode === 'ultra'
@@ -262,7 +257,10 @@ export const FuelCalculatorPitScenarios: React.FC<
                 : 'p-2';
 
           return (
-            <React.Fragment key={scenario.laps}>
+            <div
+              key={scenario.laps}
+              className={`col-span-4 grid grid-cols-subgrid ${scenario.isCurrentTarget ? 'bg-slate-700/50' : ''}`}
+            >
               <div
                 className={`${rowColor} text-center ${cellPadding}`}
                 style={{ fontSize: valueFontSize }}
@@ -287,7 +285,7 @@ export const FuelCalculatorPitScenarios: React.FC<
               >
                 {windowDisplay}
               </div>
-            </React.Fragment>
+            </div>
           );
         })}
 
