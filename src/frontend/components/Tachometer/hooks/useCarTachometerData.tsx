@@ -34,7 +34,6 @@ export const useCarTachometerData = () => {
   // Load car data when car path changes
   useEffect(() => {
     if (!carPath) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCarData(null);
       return;
     }

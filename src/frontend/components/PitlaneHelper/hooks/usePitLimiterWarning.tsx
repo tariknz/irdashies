@@ -8,7 +8,9 @@ export interface PitLimiterWarningResult {
   warningText: string;
 }
 
-export const usePitLimiterWarning = (enabled: boolean): PitLimiterWarningResult => {
+export const usePitLimiterWarning = (
+  enabled: boolean
+): PitLimiterWarningResult => {
   const session = useSessionStore((state) => state.session);
   const onPitRoad = useTelemetryValue('OnPitRoad') ?? false;
   const limiterActive = useTelemetryValue('dcPitSpeedLimiterToggle') ?? false;
@@ -17,7 +19,8 @@ export const usePitLimiterWarning = (enabled: boolean): PitLimiterWarningResult 
   const isTeamRacing = (session?.WeekendInfo?.TeamRacing ?? 0) === 1;
 
   // Check if pit speed limiter is actively engaged (manual OR auto)
-  const limiterEngaged = (engineWarnings & EngineWarnings.PitSpeedLimiter) !== 0;
+  const limiterEngaged =
+    (engineWarnings & EngineWarnings.PitSpeedLimiter) !== 0;
 
   // Track if we detected auto-limiter on entry to pit road
   const [autoLimiterDetected, setAutoLimiterDetected] = useState(false);
@@ -81,7 +84,7 @@ export const usePitLimiterWarning = (enabled: boolean): PitLimiterWarningResult 
       }
     };
     // Intentionally excluding teamRaceWarningActive from deps to avoid unnecessary re-runs
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, [pitstopActive, limiterActive, enabled, isTeamRacing]);
 
   // Separate effect to dismiss warning when limiter is activated
@@ -137,5 +140,12 @@ export const usePitLimiterWarning = (enabled: boolean): PitLimiterWarningResult 
       isTeamRaceWarning: false,
       warningText: '',
     };
-  }, [enabled, teamRaceWarningActive, onPitRoad, limiterActive, limiterEngaged, autoLimiterDetected]);
+  }, [
+    enabled,
+    teamRaceWarningActive,
+    onPitRoad,
+    limiterActive,
+    limiterEngaged,
+    autoLimiterDetected,
+  ]);
 };

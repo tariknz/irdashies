@@ -152,7 +152,6 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
 
   useEffect(() => {
     if (carLeftRight <= CarLeftRight.Clear) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLeftCarIdx(null);
       setRightCarIdx(null);
       setPrevPercents({ left: null, right: null });
