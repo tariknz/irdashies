@@ -1,4 +1,3 @@
-/* eslint-disable @eslint-react/no-array-index-key -- Ordered lap-history samples have no domain ID; their position is their stable identity. */
 import { formatFuel } from '../fuelCalculations';
 import { FuelLapData } from '../types';
 

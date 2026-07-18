@@ -96,6 +96,12 @@ export const TelemetryInspectorSettings = () => {
         const properties = settings.config.properties ?? [];
 
         const addProperty = (prop: PropertyConfig) => {
+          const alreadyExists = properties.some(
+            (existing) =>
+              existing.source === prop.source && existing.path === prop.path
+          );
+          if (alreadyExists) return;
+
           const newProperties = [...properties, prop];
           handleConfigChange({ properties: newProperties });
           setNewProperty({ source: 'telemetry', path: '', label: '' });
@@ -121,7 +127,7 @@ export const TelemetryInspectorSettings = () => {
                 <div className="space-y-1 max-h-48 overflow-y-auto">
                   {properties.map((prop, index) => (
                     <div
-                      key={`${prop.source}-${prop.path}`}
+                      key={`${prop.source}-${prop.path}-${index}`}
                       className="flex items-center justify-between bg-slate-700 rounded px-3 py-1.5"
                     >
                       <div className="flex items-center gap-2">

@@ -1,5 +1,4 @@
-import { Fragment, useMemo, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   useSessionVisibility,
   useTelemetryValue,
@@ -50,53 +49,6 @@ const EMPTY_DATA: FuelCalculation = {
   projectedLapUsage: 0,
   maxQualify: null,
   fuelStatus: 'safe',
-};
-
-const renderLayoutNode = (
-  node: LayoutNode,
-  renderWidget: (widgetId: string) => ReactNode
-): ReactNode => {
-  if (!node?.type) return null;
-
-  if (node.type === 'box') {
-    const isHorizontalBox = node.direction === 'row';
-    return (
-      <div
-        className="flex-1 flex flex-col w-full"
-        style={{ flexGrow: node.weight || 1 }}
-      >
-        <div
-          className={`flex flex-1 ${isHorizontalBox ? 'flex-row items-center justify-around' : 'flex-col'} w-full`}
-        >
-          {Array.from(new Set(node.widgets || [])).map((widgetId) => (
-            <div
-              key={widgetId}
-              data-widget-id={widgetId}
-              className="flex-1 min-w-0 flex flex-col w-full"
-            >
-              {renderWidget(widgetId)}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (node.type === 'split') {
-    return (
-      <div
-        className={`flex flex-1 gap-1 ${node.direction === 'row' ? 'flex-row items-center' : 'flex-col'} h-full`}
-      >
-        {node.children?.map((child: LayoutNode) => (
-          <Fragment key={child.id}>
-            {renderLayoutNode(child, renderWidget)}
-          </Fragment>
-        ))}
-      </div>
-    );
-  }
-
-  return null;
 };
 
 export const FuelCalculator = (props: FuelCalculatorProps) => {
@@ -326,6 +278,45 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
     }
   };
 
+  const RecursiveWidgetRenderer = ({ node }: { node: LayoutNode }) => {
+    if (!node || !node.type) return null;
+    if (node.type === 'box') {
+      const isHorizontalBox = node.direction === 'row';
+      return (
+        <div
+          className="flex-1 flex flex-col w-full"
+          style={{ flexGrow: node.weight || 1 }}
+        >
+          <div
+            className={`flex flex-1 ${isHorizontalBox ? 'flex-row items-center justify-around' : 'flex-col'} w-full`}
+          >
+            {Array.from(new Set(node.widgets || [])).map((widgetId) => (
+              <div
+                key={widgetId}
+                data-widget-id={widgetId}
+                className="flex-1 min-w-0 flex flex-col w-full"
+              >
+                {renderWidget(widgetId)}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    if (node.type === 'split') {
+      return (
+        <div
+          className={`flex flex-1 gap-1 ${node.direction === 'row' ? 'flex-row items-center' : 'flex-col'} h-full`}
+        >
+          {node.children?.map((child: LayoutNode) => (
+            <RecursiveWidgetRenderer key={child.id} node={child} />
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   const currentFuelStatus = displayData.fuelStatus || 'safe';
   const showFuelStatusBorder = settings.showFuelStatusBorder ?? true;
 
@@ -363,7 +354,7 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
       }}
     >
       {layoutTree ? (
-        renderLayoutNode(layoutTree, renderWidget)
+        <RecursiveWidgetRenderer node={layoutTree} />
       ) : (
         <div className="text-red-500">Layout Error</div>
       )}

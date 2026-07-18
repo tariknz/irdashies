@@ -1,4 +1,3 @@
-/* eslint-disable @eslint-react/no-array-index-key -- Placeholder positions correspond to fixed lap columns. */
 import { memo, Fragment } from 'react';
 
 interface LapTimeDeltasCellProps {

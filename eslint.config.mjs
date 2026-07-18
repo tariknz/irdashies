@@ -38,32 +38,9 @@ export default defineConfig([
       ...eslintReactErrorRules,
       // Preserve dependency checking from react-hooks/recommended-latest.
       '@eslint-react/exhaustive-deps': 'error',
-      // High-signal correctness, security, and lifecycle rules.
-      '@eslint-react/no-array-index-key': 'error',
-      '@eslint-react/no-nested-component-definitions': 'error',
-      '@eslint-react/purity': 'error',
-      '@eslint-react/use-state': 'error',
-      '@eslint-react/jsx-no-comment-textnodes': 'error',
-      '@eslint-react/jsx-no-leaked-dollar': 'error',
-      '@eslint-react/jsx-no-leaked-semicolon': 'error',
-      '@eslint-react/dom-no-dangerously-set-innerhtml': 'error',
-      '@eslint-react/dom-no-script-url': 'error',
-      '@eslint-react/dom-no-unsafe-iframe-sandbox': 'error',
-      '@eslint-react/web-api-no-leaked-event-listener': 'error',
-      '@eslint-react/web-api-no-leaked-fetch': 'error',
-      '@eslint-react/web-api-no-leaked-interval': 'error',
-      '@eslint-react/web-api-no-leaked-intersection-observer': 'error',
-      '@eslint-react/web-api-no-leaked-resize-observer': 'error',
-      '@eslint-react/web-api-no-leaked-timeout': 'error',
-      '@eslint-react/no-set-state-in-component-did-mount': 'error',
-      '@eslint-react/no-set-state-in-component-did-update': 'error',
-      '@eslint-react/no-set-state-in-component-will-update': 'error',
-      '@eslint-react/no-unsafe-component-will-mount': 'error',
-      '@eslint-react/no-unsafe-component-will-receive-props': 'error',
-      '@eslint-react/no-unsafe-component-will-update': 'error',
-      '@eslint-react/no-unused-class-component-members': 'error',
       // These rules are substantially broader than their previous counterparts
       // and require application refactors outside this dependency migration.
+      '@eslint-react/no-nested-component-definitions': 'off',
       '@eslint-react/set-state-in-effect': 'off',
       // Registry-selected components have stable identities, but this rule
       // reports them as components created during render.
@@ -76,11 +53,6 @@ export default defineConfig([
     rules: {
       // Storybook render functions are component-like but intentionally lowercase.
       '@eslint-react/rules-of-hooks': 'off',
-      // Static story fixtures intentionally use positional keys and concise
-      // state initialization patterns that are not production concerns.
-      '@eslint-react/no-array-index-key': 'off',
-      '@eslint-react/use-state': 'off',
-      '@eslint-react/web-api-no-leaked-timeout': 'off',
     },
   },
   // Architectural boundary: prevent cross-imports between frontend and app

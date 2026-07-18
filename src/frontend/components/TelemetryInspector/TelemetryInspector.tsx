@@ -125,9 +125,9 @@ export const TelemetryInspector = (config?: TelemetryInspectorConfig) => {
         Telemetry Inspector
       </div>
       <div className="flex flex-col">
-        {properties.map((prop) => (
+        {properties.map((prop, index) => (
           <PropertyRow
-            key={`${prop.source}-${prop.path}`}
+            key={`${prop.source}-${prop.path}-${index}`}
             label={prop.label ?? prop.path}
             path={prop.path}
             source={prop.source}

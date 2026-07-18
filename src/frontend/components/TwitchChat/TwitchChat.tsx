@@ -55,7 +55,6 @@ export const ChatMessageList = ({
           setFadingIds((prev) => new Set([...prev, m.id]));
           // Both timeout maps are cleared by the unmount effect below; this
           // rule only recognizes cleanup in the effect that creates the timer.
-          // eslint-disable-next-line @eslint-react/web-api-no-leaked-timeout
           const rt = setTimeout(() => {
             setRemovedIds((prev) => new Set([...prev, m.id]));
           }, FADE_DURATION_MS);

@@ -138,7 +138,6 @@ export const HeartRateEmbed = memo(
         });
         [50, 300, 700, 1300].forEach((delay) => {
           // All collected timers are cleared by this effect's cleanup below.
-          // eslint-disable-next-line @eslint-react/web-api-no-leaked-timeout
           const timer = setTimeout(sample, delay);
           timers.push(timer);
         });
