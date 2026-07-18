@@ -97,7 +97,7 @@ interface SessionBarProps {
 
 export const SessionBar = ({
   settings: effectiveBarSettings,
-  position = 'header',  
+  position = 'header',
   opacity = 70,
   standalone = false,
 }: SessionBarProps) => {
@@ -148,7 +148,8 @@ export const SessionBar = ({
   });
   const localTime = useCurrentTime();
   const sessionClockTime = useSessionCurrentTime();
-  const { totalRaceLaps, isFixedLapRace, totalRaceTime, adjustedRaceTime } = useTotalRaceValue();
+  const { totalRaceLaps, isFixedLapRace, totalRaceTime, adjustedRaceTime } =
+    useTotalRaceValue();
   const trackDisplayName = useTrackDisplayName();
 
   // Define all possible items with their render functions
@@ -164,9 +165,9 @@ export const SessionBar = ({
         effectiveBarSettings?.sessionTime?.enabled ??
         (position === 'header' ? true : false),
       render: () => {
-        let elapsedTime = -1;
-        let remainingTime = -1;
-        let totalTime = -1;
+        let elapsedTime: number;
+        let remainingTime: number;
+        let totalTime: number;
         if (session === 'Race') {
           switch (state) {
             case SessionState.GetInCar:
@@ -283,7 +284,9 @@ export const SessionBar = ({
             return (
               <div className="flex justify-center">
                 L{lapValue} /{' '}
-                {overrun ? effectiveTotal.toFixed(0) : formatLapTotal(lapsTotal)}
+                {overrun
+                  ? effectiveTotal.toFixed(0)
+                  : formatLapTotal(lapsTotal)}
               </div>
             );
         else return <div className="flex justify-center">L{lapDisplay}</div>;
@@ -498,9 +501,9 @@ export const SessionBar = ({
     <div
       className={`${pxClass} ${pyClass} bg-slate-900/(--fg-opacity) flex items-center text-sm ${standalone ? `w-full justify-between ${gapClass}` : 'justify-between'} ${!isCompact && !isUltra && !standalone ? (position === 'header' ? 'mb-3' : 'mt-3') : ''}`}
       style={{
-          ['--fg-opacity' as string]: `${opacity}%`,
-        }}
-      >
+        ['--fg-opacity' as string]: `${opacity}%`,
+      }}
+    >
       {itemsToRender}
     </div>
   );

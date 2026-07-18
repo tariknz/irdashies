@@ -228,7 +228,7 @@ export const FuelCalculatorPitScenarios: React.FC<
             fuelToAddHypothetical - fuelBurnedToFinish
           );
 
-          let windowStatus = '';
+          let windowStatus;
           if (scenario.isCurrentTarget) {
             windowStatus = 'Ideal';
           } else if (scenario.laps < (displayData.lapsWithFuel || 0)) {

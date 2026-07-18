@@ -38,7 +38,12 @@ export const RejoinIndicator = () => {
   // Generate demo data when in demo mode
   if (isDemoMode) {
     const demoData = getDemoRejoinData(settings);
-    return <RejoinIndicatorDisplay gap={demoData.gap} status={demoData.status as 'Clear' | 'Caution' | 'Do Not Rejoin'} />;
+    return (
+      <RejoinIndicatorDisplay
+        gap={demoData.gap}
+        status={demoData.status as 'Clear' | 'Caution' | 'Do Not Rejoin'}
+      />
+    );
   }
 
   // If we don't have dashboard settings or no focused player, hide
@@ -51,7 +56,7 @@ export const RejoinIndicator = () => {
   if (!isDriving) return null;
   // Choose the first car behind the player that is not in the pit lane or off-track
   let carBehind: Standings | undefined = undefined;
-  let behindList: Standings[] = [];
+  let behindList: Standings[];
   if (drivers && drivers.length) {
     const playerArrIndex = drivers.findIndex((d) => d.carIdx === playerIndex);
     if (playerArrIndex >= 0) {
@@ -128,8 +133,6 @@ export const RejoinIndicator = () => {
     </div>
   );
 };
-
-
 
 export const RejoinIndicatorDisplay = ({
   gap,

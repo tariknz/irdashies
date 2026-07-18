@@ -38,7 +38,7 @@ export function calculateClassEstimatedDelta(
   const aheadTimeScaled = carAhead.estTime * scalingRatio;
 
   const referenceLapTime = carBehind.classEstTime;
-  let delta = 0;
+  let delta: number;
 
   if (isTargetAhead) {
     // Scenario: We want the gap TO the car Ahead (Expected: Positive)

@@ -20,7 +20,7 @@ export const InputGear = memo(
       (unit === 1 && settings.unit === 'auto') || settings.unit === 'km/h';
     const speed = (speedMs ?? 0) * (isMetric ? 3.6 : 2.23694);
     const displayUnit = isMetric ? 'km/h' : 'mph';
-    let gearText = '';
+    let gearText;
     switch (gear) {
       case -1:
         gearText = 'R';
@@ -44,7 +44,7 @@ export const InputGear = memo(
           : 90;
 
     return (
-      <div className="@container-[size] flex items-center justify-center p-1 font-mono w-full h-full">
+      <div className="@container-size flex items-center justify-center p-1 font-mono w-full h-full">
         <div className="flex flex-col items-center">
           <div
             className="font-bold leading-none"
