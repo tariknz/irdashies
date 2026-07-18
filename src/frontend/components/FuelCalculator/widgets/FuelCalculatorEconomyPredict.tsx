@@ -1,4 +1,5 @@
 import React from 'react';
+import { fuelDisplayValue } from '../fuelCalculations';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 
 interface FuelCalculatorWidgetProps {
@@ -64,7 +65,10 @@ export const FuelCalculatorEconomyPredict: React.FC<
         const isCurrent = scenario.isCurrentTarget;
         const lapsRemaining = scenario.laps;
         const absoluteTargetLap = displayData.currentLap + lapsRemaining;
-        const fuelPerLap = scenario.fuelPerLap.toFixed(2);
+        const fuelPerLap = fuelDisplayValue(
+          scenario.fuelPerLap,
+          settings?.fuelUnits || 'L'
+        ).toFixed(2);
 
         const textColor = isCurrent ? 'text-slate-100' : 'text-slate-400';
         const valueColor = isCurrent

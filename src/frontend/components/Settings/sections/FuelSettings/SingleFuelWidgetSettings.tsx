@@ -346,6 +346,14 @@ export const SingleFuelWidgetSettings = ({
                           settings={settings}
                           onChange={handleConfigChange}
                         />
+
+                        <DualFontSizeInput
+                          widgetId="fuelAtFinish"
+                          title="Fuel at End"
+                          description="Shows the estimated fuel balance at race finish."
+                          settings={settings}
+                          onChange={handleConfigChange}
+                        />
                       </>
                     )}
                   </SettingsSection>

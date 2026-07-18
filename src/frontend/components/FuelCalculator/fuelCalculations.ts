@@ -179,6 +179,11 @@ export function gallonsToLiters(gallons: number): number {
   return gallons / LITERS_TO_GALLONS;
 }
 
+/** Convert an internal litre value to the selected display unit. */
+export function fuelDisplayValue(liters: number, units: 'L' | 'gal'): number {
+  return units === 'gal' ? litersToGallons(liters) : liters;
+}
+
 /**
  * Format fuel amount for display
  */
@@ -187,7 +192,7 @@ export function formatFuel(
   units: 'L' | 'gal',
   decimals = 2
 ): string {
-  const value = units === 'gal' ? litersToGallons(liters) : liters;
+  const value = fuelDisplayValue(liters, units);
   return `${value.toFixed(decimals)} ${units}`;
 }
 

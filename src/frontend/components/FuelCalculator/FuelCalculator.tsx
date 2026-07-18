@@ -15,6 +15,7 @@ import {
   FuelCalculatorTargetMessage,
   FuelCalculatorConfidence,
   FuelCalculatorEconomyPredict,
+  FuelCalculatorFinishFuel,
 } from './widgets/FuelCalculatorWidgets';
 import type { FuelCalculatorSettings, FuelCalculation } from './types';
 import type { LayoutNode } from '@irdashies/types';
@@ -275,6 +276,14 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
             {...widgetProps}
             fuelData={frozenFuelData}
             displayData={displayData}
+          />
+        );
+      case 'fuelAtFinish':
+        return (
+          <FuelCalculatorFinishFuel
+            {...widgetProps}
+            fuelData={frozenFuelData}
+            displayData={frozenDisplayData}
           />
         );
       default:

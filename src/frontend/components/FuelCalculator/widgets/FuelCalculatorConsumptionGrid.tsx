@@ -5,6 +5,7 @@ import {
   useTotalRaceLaps,
 } from '@irdashies/context';
 import { useStore } from 'zustand';
+import { fuelDisplayValue } from '../fuelCalculations';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 
 interface FuelCalculatorWidgetProps {
@@ -31,6 +32,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
 > = ({
   fuelData,
   displayData,
+  fuelUnits = 'L',
   settings,
   widgetId,
   customStyles,
@@ -262,6 +264,8 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   // Helper for formatting
   const fmt = (num: number, isValid: boolean) =>
     isValid ? num.toFixed(2) : '--';
+  const fmtFuel = (liters: number, isValid = true) =>
+    isValid ? fuelDisplayValue(liters, fuelUnits).toFixed(2) : '--';
 
   const formatBalance = (data: {
     isDeficit: boolean;
@@ -269,7 +273,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
     isValid: boolean;
   }) => {
     if (!data.isValid) return '--';
-    const value = fmt(data.refuel, true);
+    const value = fmtFuel(data.refuel);
     return data.isDeficit ? `SHORT ${value}` : `+${value}`;
   };
 
@@ -355,7 +359,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {currentUsage > 0 ? currentUsage.toFixed(2) : '--'}
+                    {currentUsage > 0 ? fmtFuel(currentUsage) : '--'}
                   </div>
                   <div
                     className={`text-slate-300 text-center ${rowPadding}`}
@@ -386,7 +390,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-white text-center ${rowPadding} font-bold`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {avg.toFixed(2)}
+                    {fmtFuel(avg)}
                   </div>
                   <div
                     className={`text-white text-center ${rowPadding} font-bold`}
@@ -417,7 +421,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {max.toFixed(2)}
+                    {fmtFuel(max)}
                   </div>
                   <div
                     className={`text-slate-300 text-center ${rowPadding}`}
@@ -447,7 +451,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {last.toFixed(2)}
+                    {fmtFuel(last)}
                   </div>
                   <div
                     className={`text-slate-300 text-center ${rowPadding}`}
@@ -477,7 +481,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {min.toFixed(2)}
+                    {fmtFuel(min)}
                   </div>
                   <div
                     className={`text-slate-300 text-center ${rowPadding}`}
@@ -508,7 +512,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {qual > 0 ? qual.toFixed(2) : '--'}
+                    {qual > 0 ? fmtFuel(qual) : '--'}
                   </div>
                   <div
                     className={`text-slate-300 text-center ${rowPadding}`}
@@ -523,7 +527,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     {isRace && qual > 0 ? (
                       <>
                         {qualData.isDeficit ? '-' : '+'}
-                        {fmt(qualData.refuel, true)}
+                        {fmtFuel(qualData.refuel)}
                       </>
                     ) : (
                       '--'

@@ -62,6 +62,13 @@ const fuelSaveTargetsLayout: LayoutNode = {
   widgets: ['fuelHeader', 'fuelGauge', 'fuelEconomyPredict'],
 };
 
+const fuelAtFinishLayout: LayoutNode = {
+  id: 'fuel-at-finish',
+  type: 'box',
+  direction: 'col',
+  widgets: ['fuelHeader', 'fuelGauge', 'fuelAtFinish'],
+};
+
 const baselineArgs = {
   showOnlyWhenOnTrack: false,
   layoutTree: strategyLayout,
@@ -214,6 +221,23 @@ export const FuelSaveTargets: Story = {
   args: {
     ...baselineArgs,
     layoutTree: fuelSaveTargetsLayout,
+    previewData: previewFuelData,
+  },
+};
+
+/** Shows the optional, explicit fuel balance expected at the chequered flag. */
+export const FuelAtFinish: Story = {
+  decorators: [
+    (Story) => (
+      <MockFuelDataProvider>
+        <Story />
+      </MockFuelDataProvider>
+    ),
+    TelemetryDecorator(),
+  ],
+  args: {
+    ...baselineArgs,
+    layoutTree: fuelAtFinishLayout,
     previewData: previewFuelData,
   },
 };

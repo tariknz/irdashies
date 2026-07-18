@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatFuel } from '../fuelCalculations';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 import { useTelemetryValue, useSessionType } from '@irdashies/context';
 
@@ -88,7 +89,7 @@ export const FuelCalculatorTargetMessage: React.FC<
   const needDisplay =
     isTesting || consumption === 0
       ? '--'
-      : `+${fuelToAddHypothetical.toFixed(1)}L`;
+      : `+${formatFuel(fuelToAddHypothetical, settings.fuelUnits, 1)}`;
 
   return (
     <div
