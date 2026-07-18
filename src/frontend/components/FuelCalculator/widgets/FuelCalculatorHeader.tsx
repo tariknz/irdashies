@@ -1,4 +1,5 @@
 import React from 'react';
+import { GasPumpIcon } from '@phosphor-icons/react';
 import type { FuelCalculatorSettings, FuelCalculation } from '../types';
 
 interface FuelCalculatorWidgetProps {
@@ -15,6 +16,27 @@ interface FuelCalculatorWidgetProps {
   };
   compactMode?: 'off' | 'compact' | 'ultra';
 }
+
+const getConfidenceConfig = (confidence: string) => {
+  switch (confidence) {
+    case 'high':
+      return { color: 'text-green-400', bg: 'bg-green-500', pulse: '' };
+    case 'medium':
+      return {
+        color: 'text-amber-400',
+        bg: 'bg-amber-500',
+        pulse: 'animate-pulse',
+      };
+    case 'very-low':
+    case 'low':
+    default:
+      return {
+        color: 'text-red-400',
+        bg: 'bg-red-500',
+        pulse: 'animate-pulse',
+      };
+  }
+};
 
 export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
   fuelData,
@@ -44,11 +66,12 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
 
   // Confidence logic (mapping from existing data)
   const confidence = fuelData.confidence || 'low';
-  let lapsText = `${Math.ceil(fuelData.lapsRemaining)}`;
+  const confConfig = getConfidenceConfig(confidence);
+  let lapsText = `${Math.ceil(fuelData.lapsRemaining)} LAPS`;
   if (confidence === 'medium')
-    lapsText = `~${Math.ceil(fuelData.lapsRemaining)}`;
+    lapsText = `~${Math.ceil(fuelData.lapsRemaining)} LAPS`;
   if (confidence === 'low' || confidence === 'very-low')
-    lapsText = `${Math.floor(fuelData.lapsRemaining)}–${Math.ceil(fuelData.lapsRemaining + 2)}`;
+    lapsText = `${Math.floor(fuelData.lapsRemaining)}-${Math.ceil(fuelData.lapsRemaining + 2)} LAPS`;
 
   // If no data (avgLaps is 0), show --
   if ((fuelData.avgLaps || 0) <= 0) {
@@ -62,49 +85,53 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
     <div
       className={`border-b border-slate-600/50 ${paddingClass} ${compactMode !== 'off' ? 'mb-0' : 'mb-1'}`}
     >
-      <div className="grid grid-cols-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-end gap-x-3">
         <div>
           <div
-            className="font-semibold tracking-wide text-slate-500 uppercase"
+            className="flex items-center gap-1 text-slate-500 font-semibold tracking-wide uppercase"
             style={{ fontSize: labelFontSize }}
           >
-            To go
+            <GasPumpIcon size={12} weight="fill" />
+            <span>To go</span>
           </div>
           <div
-            className="font-bold text-white tabular-nums"
+            className={`flex items-center gap-1 ${confConfig.color} font-bold tabular-nums`}
             style={{ fontSize: valueFontSize }}
             title={`${confidence} confidence`}
           >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${confConfig.bg} ${confConfig.pulse}`}
+            />
             {lapsText}
           </div>
         </div>
-        <div>
-          <div
+        <div className="flex items-baseline gap-1 whitespace-nowrap pb-px">
+          <span
             className="text-slate-500 font-semibold tracking-wide uppercase"
             style={{ fontSize: labelFontSize }}
           >
             Next pit
-          </div>
-          <div
+          </span>
+          <span
             className="text-white font-bold tabular-nums"
             style={{ fontSize: valueFontSize }}
           >
             L{pitWindowOpen}
-          </div>
+          </span>
         </div>
-        <div>
-          <div
+        <div className="flex items-baseline gap-1 whitespace-nowrap pb-px">
+          <span
             className="text-slate-500 font-semibold tracking-wide uppercase"
             style={{ fontSize: labelFontSize }}
           >
             Stops
-          </div>
-          <div
+          </span>
+          <span
             className="text-white font-bold tabular-nums"
             style={{ fontSize: valueFontSize }}
           >
             {stopsRemaining}
-          </div>
+          </span>
         </div>
       </div>
     </div>
