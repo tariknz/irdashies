@@ -18,12 +18,15 @@ function expandTextWithThirdParty(
   emoteMap: ThirdPartyEmoteMap
 ): MessagePart[] {
   if (!emoteMap.size) return [{ type: 'text', content: text }];
-  return text.split(/(\s+)/).map((token) => {
-    const url = emoteMap.get(token);
-    if (url)
-      return { type: 'third-party-emote', content: token, emoteUrl: url };
-    return { type: 'text', content: token };
-  });
+  return text
+    .split(/(\s+)/)
+    .filter((token) => token.length > 0)
+    .map((token) => {
+      const url = emoteMap.get(token);
+      if (url)
+        return { type: 'third-party-emote', content: token, emoteUrl: url };
+      return { type: 'text', content: token };
+    });
 }
 
 function parseMessageParts(
