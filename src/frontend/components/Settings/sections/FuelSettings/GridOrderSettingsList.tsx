@@ -16,6 +16,7 @@ export const getSortableRows = (avgLapsCount: number): SortableRow[] => [
     label: `Average (${avgLapsCount} Lap)`,
     configKey: 'show3LapAvg',
   },
+  { id: 'avg10', label: 'Average (10 Lap)', configKey: 'show10LapAvg' },
   { id: 'max', label: 'Max Consumption', configKey: 'showMax' },
   { id: 'last', label: 'Last Lap', configKey: 'showLastLap' },
   { id: 'min', label: 'Min Consumption', configKey: 'showMin' },
@@ -60,6 +61,9 @@ export const GridOrderSettingsList = ({
             label={row.label}
             enabled={isEnabled}
             onToggle={(val) => {
+              if (val && !itemsOrder.includes(row.id)) {
+                onReorder([...itemsOrder, row.id]);
+              }
               handleConfigChange({ [row.configKey]: val });
             }}
             sortableProps={sortableProps}

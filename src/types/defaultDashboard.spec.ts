@@ -189,6 +189,16 @@ describe('getWidgetDefaultConfig', () => {
     expect(config).toBeDefined();
     expect(config.fuelUnits).toBeDefined();
     expect(config.safetyMargin).toBeDefined();
+    expect(config.showCurrentLap).toBe(true);
+    expect(config.consumptionGridOrder).toEqual([
+      'curr',
+      'avg',
+      'max',
+      'min',
+      'last',
+      'avg10',
+      'qual',
+    ]);
   });
 
   it('returns the flag config with doubleFlag field', () => {

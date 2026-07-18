@@ -101,7 +101,7 @@ export const FuelCalculatorGauge: React.FC<FuelCalculatorWidgetProps> = ({
       ? ''
       : compactMode === 'compact'
         ? 'px-1 pt-1 pb-0'
-        : 'px-2 pt-2 pb-0';
+        : 'px-2 pt-1 pb-0';
 
   return (
     <div className={`${paddingClass} mb-1`}>
@@ -119,7 +119,7 @@ export const FuelCalculatorGauge: React.FC<FuelCalculatorWidgetProps> = ({
           style={{ fontSize: valueFontSize }}
         >
           {fuelString} <span className="text-slate-500 font-medium">·</span>{' '}
-          {lapsString} laps in tank
+          {lapsString} laps
         </span>
         <span
           className="uppercase tracking-wide"
