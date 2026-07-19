@@ -35,4 +35,25 @@ describe('PushToPassStore', () => {
       { status: 'inactive', count: 65 },
     ]);
   });
+
+  it('decodes Super Formula opponent counts from float32 tenths', () => {
+    const encodedCount = new DataView(new ArrayBuffer(4));
+    encodedCount.setFloat32(0, 12.5);
+
+    usePushToPassStore
+      .getState()
+      .update(
+        [false, false],
+        [encodedCount.getInt32(0), 65],
+        { 0: 171, 1: 171 },
+        100,
+        1,
+        1
+      );
+
+    expect(usePushToPassStore.getState().displayStates).toEqual([
+      { status: 'inactive', count: 125 },
+      { status: 'inactive', count: 65 },
+    ]);
+  });
 });
