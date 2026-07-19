@@ -169,4 +169,24 @@ DriverInfo:
     expect(result?.DriverInfo?.Drivers[0]?.UserName).toBe('? ?');
     expect(result?.DriverInfo?.Drivers[0]?.AbbrevName).toBe(null);
   });
+
+  it('should not consume the next key after a bare mapping indicator', () => {
+    const malformedYaml = `
+DriverInfo:
+  Drivers:
+    - CarIdx: 13
+      UserName: ?
+      AbbrevName: Anonymous
+      Initials: A
+`;
+
+    vi.mocked(mockSdk.getSessionData).mockReturnValue(malformedYaml);
+
+    const result = sdk.getSessionData();
+
+    expect(result).toBeDefined();
+    expect(result?.DriverInfo?.Drivers[0]?.UserName).toBe('?');
+    expect(result?.DriverInfo?.Drivers[0]?.AbbrevName).toBe('Anonymous');
+    expect(result?.DriverInfo?.Drivers[0]?.Initials).toBe('A');
+  });
 });

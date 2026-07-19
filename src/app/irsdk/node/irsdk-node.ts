@@ -221,7 +221,7 @@ export class IRacingSDK {
    */
   private static fixMappingIndicatorValues(yamlText: string): string {
     return yamlText.replace(
-      /^(\s*(?:-\s+)?\w+:\s*)(\?(?:\s.*)?)$/gm,
+      /^(\s*(?:-\s+)?\w+:\s*)(\?(?:[^\S\r\n]+[^\r\n]*)?)\r?$/gm,
       (_line, keyPart: string, value: string) =>
         `${keyPart}'${value.replace(/'/g, "''")}'`
     );
