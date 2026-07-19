@@ -36,6 +36,17 @@ describe('PushToPassStore', () => {
     ]);
   });
 
+  it('does not add a cooldown after IR18 P2P deactivates', () => {
+    const store = usePushToPassStore.getState();
+
+    store.update([true], [65], { 0: 99 }, 100, 1, 0);
+    store.update([false], [65], { 0: 99 }, 101, 1, 0);
+
+    expect(usePushToPassStore.getState().displayStates).toEqual([
+      { status: 'inactive', count: 65 },
+    ]);
+  });
+
   it('decodes Super Formula opponent counts from float32 tenths', () => {
     const encodedCount = new DataView(new ArrayBuffer(4));
     encodedCount.setFloat32(0, 12.5);

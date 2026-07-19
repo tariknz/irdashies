@@ -13,7 +13,7 @@ export interface CarP2PConfig {
  */
 export const CAR_P2P_CONFIGS: CarP2PConfig[] = [
   // Dallara IR18 (IndyCar)
-  { carId: 99, countEncoding: 'integer', cooldownInterval: 10 },
+  { carId: 99, countEncoding: 'integer', cooldownInterval: 0 },
   // Super Formula - Toyota
   { carId: 171, countEncoding: 'float32-tenths', cooldownInterval: 100 },
   // Super Formula - Honda
