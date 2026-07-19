@@ -128,13 +128,16 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   // BUT use predictiveUsage (passed from parent's throttled trigger) for the CURR column
   const currentUsage = predictiveUsage ?? displayData?.projectedLapUsage ?? 0;
   const tankCapacity = fuelData?.fuelTankCapacity ?? 0;
+  const frozenPitWindowOpen = displayData?.pitWindowOpen ?? currentLap;
 
   // Calculate derivates (Laps, Refuel, Finish)
   const calcCol = (
     usage: number,
     contextTotalLaps: number,
     contextLapsRemaining: number,
-    contextFuelLevel: number
+    contextFuelLevel: number,
+    contextCurrentLap: number,
+    contextPitWindowOpen: number
   ) => {
     if (usage <= 0)
       return {
@@ -164,7 +167,10 @@ export const FuelCalculatorConsumptionGrid: React.FC<
     // balance means no refuel is required; a deficit becomes a positive add.
     const refuelValue = Math.max(0, -balance);
     const isDeficit = balance < 0;
-    const fitsInTank = tankCapacity <= 0 || refuelValue <= tankCapacity;
+    const lapsUntilPit = Math.max(0, contextPitWindowOpen - contextCurrentLap);
+    const fuelAtPit = Math.max(0, contextFuelLevel - lapsUntilPit * usage);
+    const fitsInTank =
+      tankCapacity <= 0 || fuelAtPit + refuelValue <= tankCapacity;
 
     // If testing, hide Refuel and Finish (return 0/invalid)
     if (isTesting) {
@@ -214,37 +220,49 @@ export const FuelCalculatorConsumptionGrid: React.FC<
     avg,
     frozenTotalLaps,
     frozenLapsRemaining,
-    frozenFuelLevel
+    frozenFuelLevel,
+    currentLap,
+    frozenPitWindowOpen
   );
   const maxData = calcCol(
     max,
     frozenTotalLaps,
     frozenLapsRemaining,
-    frozenFuelLevel
+    frozenFuelLevel,
+    currentLap,
+    frozenPitWindowOpen
   );
   const avg10Data = calcCol(
     displayData?.avg10Laps || 0,
     frozenTotalLaps,
     frozenLapsRemaining,
-    frozenFuelLevel
+    frozenFuelLevel,
+    currentLap,
+    frozenPitWindowOpen
   );
   const lastData = calcCol(
     last,
     frozenTotalLaps,
     frozenLapsRemaining,
-    frozenFuelLevel
+    frozenFuelLevel,
+    currentLap,
+    frozenPitWindowOpen
   );
   const minData = calcCol(
     min,
     frozenTotalLaps,
     frozenLapsRemaining,
-    frozenFuelLevel
+    frozenFuelLevel,
+    currentLap,
+    frozenPitWindowOpen
   );
   const qualData = calcCol(
     qual,
     frozenTotalLaps,
     frozenLapsRemaining,
-    frozenFuelLevel
+    frozenFuelLevel,
+    currentLap,
+    frozenPitWindowOpen
   );
 
   // CURR uses LIVE context
@@ -252,7 +270,9 @@ export const FuelCalculatorConsumptionGrid: React.FC<
     currentUsage,
     liveTotalLaps,
     liveLapsRemaining,
-    dataLiveFuelLevel
+    dataLiveFuelLevel,
+    liveFuelData?.currentLap ?? currentLap,
+    liveFuelData?.pitWindowOpen ?? frozenPitWindowOpen
   );
   if (!fuelData) return null;
 
@@ -310,7 +330,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   const recommendedRowCls = `${rowCls} bg-slate-700/50`;
   const actionCellCls = rowPadding;
   const avg10 = displayData?.avg10Laps || 0;
-  const pitWindowOpen = displayData?.pitWindowOpen ?? 0;
+  const pitWindowOpen = frozenPitWindowOpen;
   const pitWindowClose = displayData?.pitWindowClose ?? 0;
   const hasStrategy = isRace && avg > 0;
   const pitWindowStart = Math.ceil(pitWindowOpen);
