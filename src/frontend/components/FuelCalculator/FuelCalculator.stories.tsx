@@ -6,6 +6,7 @@ import {
   TelemetryDecorator,
 } from '@irdashies/storybook';
 import { useFuelStore } from './FuelStore';
+import { defaultFuelCalculatorSettings } from './defaults';
 import type { FuelCalculation, FuelLapData } from './types';
 import type { LayoutNode } from '@irdashies/types';
 
@@ -17,7 +18,7 @@ const OverlayFrame = ({
   height: 260 | 520;
 }) => (
   <div
-    className={`w-[300px] [&>div]:h-full ${height === 520 ? 'h-[520px]' : 'h-[260px]'}`}
+    className={`w-[300px] [&>div]:min-h-full ${height === 520 ? 'min-h-[520px]' : 'min-h-[260px]'}`}
   >
     {children}
   </div>
@@ -72,12 +73,10 @@ const fuelAtFinishLayout: LayoutNode = {
 };
 
 const baselineArgs = {
+  ...defaultFuelCalculatorSettings,
   showOnlyWhenOnTrack: false,
   layoutTree: strategyLayout,
   showFuelStatusBorder: false,
-  showMin: false,
-  showQualifyConsumption: false,
-  consumptionGridOrder: ['avg', 'last', 'max'],
 };
 
 const previewFuelData: FuelCalculation = {
@@ -153,6 +152,46 @@ export const Primary: Story = {
   args: { ...baselineArgs, previewData: previewFuelData },
 };
 
+/** Fuel required at the next stop fits within the car's usable tank capacity. */
+export const RefuelFitsTank: Story = {
+  decorators: [
+    (Story) => (
+      <MockFuelDataProvider>
+        <Story />
+      </MockFuelDataProvider>
+    ),
+    TelemetryDecorator(),
+  ],
+  args: { ...baselineArgs, previewData: previewFuelData },
+};
+
+/** Fuel required exceeds one tank, signalling that another stop is necessary. */
+export const RefuelExceedsTank: Story = {
+  decorators: [
+    (Story) => (
+      <MockFuelDataProvider>
+        <Story />
+      </MockFuelDataProvider>
+    ),
+    TelemetryDecorator(),
+  ],
+  args: {
+    ...baselineArgs,
+    previewData: {
+      ...previewFuelData,
+      fuelLevel: 8,
+      lapsWithFuel: 3.4,
+      fuelToAdd: 66.9,
+      pitWindowOpen: 4,
+      pitWindowClose: 5.4,
+      fuelAtFinish: -66.9,
+      stopsRemaining: 2,
+      earliestPitLap: 4,
+      fuelStatus: 'danger',
+    },
+  },
+};
+
 /** Verifies that the layout tree, grid order, and visibility settings are applied. */
 export const StrategyWithHistory: Story = {
   decorators: [
@@ -167,6 +206,16 @@ export const StrategyWithHistory: Story = {
     ...baselineArgs,
     layoutTree: strategyWithHistoryLayout,
     fuelHistoryType: 'histogram',
+    showLastLap: true,
+    consumptionGridOrder: [
+      'last',
+      'avg',
+      'max',
+      'min',
+      'avg10',
+      'curr',
+      'qual',
+    ],
     previewData: previewFuelData,
   },
 };

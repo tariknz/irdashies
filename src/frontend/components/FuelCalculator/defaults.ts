@@ -24,11 +24,11 @@ export const defaultFuelCalculatorSettings: FuelCalculatorSettings = {
   showConsumption: true,
   showFuelLevel: true,
   showLapsRemaining: true,
-  showMin: false,
+  showMin: true,
   showCurrentLap: true,
-  showLastLap: true,
+  showLastLap: false,
   show3LapAvg: true,
-  show10LapAvg: true,
+  show10LapAvg: false,
   showMax: true,
   showPitWindow: true,
   showEnduranceStrategy: true,
@@ -53,7 +53,7 @@ export const defaultFuelCalculatorSettings: FuelCalculatorSettings = {
   },
   layoutConfig: [], // Default empty
   layoutTree: undefined, // Will be migrated on load
-  consumptionGridOrder: ['curr', 'avg', 'max', 'last', 'min', 'qual'],
+  consumptionGridOrder: ['curr', 'avg', 'max', 'min', 'last', 'avg10', 'qual'],
   avgLapsCount: 5,
   fuelStatusThresholds: { green: 35, amber: 15, red: 10 },
   fuelStatusBasis: 'avg',

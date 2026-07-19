@@ -823,15 +823,15 @@ export const defaultDashboard: {
         showLapsRemaining: true,
         showMin: true,
         showCurrentLap: true,
-        showLastLap: true,
+        showLastLap: false,
         show3LapAvg: true,
-        show10LapAvg: true,
+        show10LapAvg: false,
         showMax: true,
         showPitWindow: true,
         showEnduranceStrategy: true,
         showFuelScenarios: true,
         showFuelRequired: true,
-        showQualifyConsumption: true,
+        showQualifyConsumption: false,
         showFuelHistory: true,
         fuelHistoryType: 'histogram',
         safetyMargin: 0,
@@ -869,7 +869,15 @@ export const defaultDashboard: {
             },
           ],
         },
-        consumptionGridOrder: ['curr', 'avg', 'max', 'last', 'min', 'qual'],
+        consumptionGridOrder: [
+          'curr',
+          'avg',
+          'max',
+          'min',
+          'last',
+          'avg10',
+          'qual',
+        ],
         avgLapsCount: 5,
         fuelStatusThresholds: {
           green: 60,
@@ -1332,8 +1340,7 @@ export function getWidgetDefaultConfig<K extends keyof WidgetConfigMap>(
   id: K
 ): WidgetConfigMap[K] {
   const widget = defaultDashboard.widgets.find((w) => w.id === id) as
-    | TypedDashboardWidget<K>
-    | undefined;
+    TypedDashboardWidget<K> | undefined;
   if (!widget) throw new Error(`No default config found for widget: ${id}`);
   return widget.config;
 }

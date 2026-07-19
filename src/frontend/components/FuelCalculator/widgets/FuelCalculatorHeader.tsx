@@ -79,12 +79,14 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
   }
 
   const paddingClass =
-    compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2';
+    compactMode === 'ultra'
+      ? ''
+      : compactMode === 'compact'
+        ? 'p-1'
+        : 'px-2 py-1';
 
   return (
-    <div
-      className={`border-b border-slate-600/50 ${paddingClass} ${compactMode !== 'off' ? 'mb-0' : 'mb-1'}`}
-    >
+    <div className={paddingClass}>
       <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-end gap-x-3">
         <div>
           <div
