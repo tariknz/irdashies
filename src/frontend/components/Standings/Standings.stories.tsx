@@ -18,6 +18,8 @@ import {
   useTelemetryValue,
   useSessionName,
   useSessionLaps,
+  usePushToPassStoreUpdater,
+  useSessionDrivers,
   type P2PDisplayState,
 } from '@irdashies/context';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
@@ -1597,6 +1599,36 @@ const StandingsPushToPassComponent = () => (
 export const PushToPass: Story = {
   decorators: [TelemetryDecorator()],
   render: () => <StandingsPushToPassComponent />,
+  parameters: {
+    layout: 'padded',
+  },
+};
+
+const RecordedIL15P2PStandings = () => {
+  usePushToPassStoreUpdater(true);
+
+  const sessionDrivers = useSessionDrivers();
+
+  if (!sessionDrivers?.length) {
+    return (
+      <div className="p-4 text-sm text-white">Loading recorded telemetry…</div>
+    );
+  }
+
+  return <Standings />;
+};
+
+export const RecordedIL15P2P: Story = {
+  name: 'Recorded IL-15 P2P telemetry',
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1783998516193', {
+      standings: {
+        pushToPass: { enabled: true },
+        displayOrder: P2P_STANDINGS_DISPLAY_ORDER,
+      },
+    }),
+  ],
+  render: () => <RecordedIL15P2PStandings />,
   parameters: {
     layout: 'padded',
   },
