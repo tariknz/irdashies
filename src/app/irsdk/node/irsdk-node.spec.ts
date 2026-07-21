@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import * as yaml from 'js-yaml';
 import { IRacingSDK } from './irsdk-node';
 import { getSdkOrMock } from './get-sdk';
 import type { INativeSDK } from '../native';
@@ -19,6 +22,51 @@ vi.mock('./get-sdk', () => ({
   } as INativeSDK),
 }));
 
+const sessionFixtureDirectories = [
+  '1731390354633',
+  '1731390745335',
+  '1731391056221',
+  '1731392546947',
+  '1731637331038',
+  '1731639076383',
+  '1731639563794',
+  '1731641231325',
+  '1731649593423',
+  '1731663455602',
+  '1731663749009',
+  '1731667156475',
+  '1731732047131',
+  '1731750041464',
+  '1732260478001',
+  '1732274253573',
+  '1732355190142',
+  '1732359661942',
+  '1733030013074',
+  '1735296198162',
+  '1747384033336',
+  '1752616787255',
+  '1752616787256',
+  '1762367281467',
+  '1762563786057',
+  '1762565848348',
+  '1762847139582',
+  '1763227688917',
+  '1763228431951',
+  '1763241199586',
+  '1763752236492',
+  '1767346240219',
+  '1769296540072',
+  '1769296545517',
+  '1770713899767',
+  '1770713906135',
+  '1770713920383',
+  '1772216560572',
+  '1772788167371',
+  '1781323503005',
+  '1783998516193',
+  'GT3 Sprint Arrays',
+] as const;
+
 describe('irsdk-node', () => {
   let sdk: IRacingSDK;
   let mockSdk: INativeSDK;
@@ -29,6 +77,25 @@ describe('irsdk-node', () => {
     await sdk.ready();
     // Get the mock SDK instance
     mockSdk = await getSdkOrMock();
+  });
+
+  it('should round-trip all tracked session data fixtures', async () => {
+    for (const [index, directory] of sessionFixtureDirectories.entries()) {
+      const fixturePath = resolve('test-data', directory, 'session.json');
+      const fixture = JSON.parse(
+        await readFile(fixturePath, 'utf8')
+      ) as unknown;
+
+      vi.mocked(mockSdk.getSessionData).mockReturnValue(
+        yaml.dump(fixture, { lineWidth: -1 })
+      );
+      Object.defineProperty(mockSdk, 'currDataVersion', {
+        configurable: true,
+        value: index + 1,
+      });
+
+      expect(sdk.getSessionData(), directory).toEqual(fixture);
+    }
   });
 
   it('should handle malformed YAML with trailing commas', () => {
