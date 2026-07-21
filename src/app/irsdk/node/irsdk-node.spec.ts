@@ -170,6 +170,48 @@ DriverInfo:
     expect(result?.DriverInfo?.Drivers[0]?.AbbrevName).toBe(null);
   });
 
+  it('should handle the anonymous driver name from irdashies.log', () => {
+    const malformedYaml = `
+DriverInfo:
+  Drivers:
+    - CarIdx: 18
+      UserName: ? ?
+      AbbrevName: ?? ?
+      Initials: ?
+`;
+
+    vi.mocked(mockSdk.getSessionData).mockReturnValue(malformedYaml);
+
+    const result = sdk.getSessionData();
+
+    expect(result).toBeDefined();
+    expect(result?.DriverInfo?.Drivers[0]?.UserName).toBe('? ?');
+    expect(result?.DriverInfo?.Drivers[0]?.AbbrevName).toBe('?? ?');
+    expect(result?.DriverInfo?.Drivers[0]?.Initials).toBe('?');
+  });
+
+  it('should handle a team name beginning with a YAML sequence indicator', () => {
+    const malformedYaml = `
+DriverInfo:
+  Drivers:
+    - CarIdx: 1
+      UserName: L M
+      TeamID: 469539
+      TeamName: - BLACKSUIT - Catteam Agency
+      CarNumber: "1"
+`;
+
+    vi.mocked(mockSdk.getSessionData).mockReturnValue(malformedYaml);
+
+    const result = sdk.getSessionData();
+
+    expect(result).toBeDefined();
+    expect(result?.DriverInfo?.Drivers[0]?.TeamName).toBe(
+      '- BLACKSUIT - Catteam Agency'
+    );
+    expect(result?.DriverInfo?.Drivers[0]?.CarNumber).toBe('1');
+  });
+
   it('should not consume the next key after a bare mapping indicator', () => {
     const malformedYaml = `
 DriverInfo:

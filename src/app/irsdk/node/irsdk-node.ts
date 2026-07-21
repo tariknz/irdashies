@@ -215,13 +215,13 @@ export class IRacingSDK {
   }
 
   /**
-   * Quotes scalar values that iRacing emits with a leading YAML mapping
-   * indicator. For example, an anonymous driver's `UserName: ? ?` is not
-   * valid as an unquoted scalar because `? ` starts an explicit mapping key.
+   * Quotes scalar values that iRacing emits with a leading YAML mapping or
+   * sequence indicator. For example, `UserName: ? ?` and
+   * `TeamName: - BLACKSUIT` are not valid as unquoted scalars.
    */
-  private static fixMappingIndicatorValues(yamlText: string): string {
+  private static fixIndicatorValues(yamlText: string): string {
     return yamlText.replace(
-      /^(\s*(?:-\s+)?\w+:\s*)(\?(?:[^\S\r\n]+[^\r\n]*)?)\r?$/gm,
+      /^([^\S\r\n]*(?:-[^\S\r\n]+)?\w+:[^\S\r\n]*)([?-](?:[^\S\r\n]+[^\r\n]*)?)\r?$/gm,
       (_line, keyPart: string, value: string) =>
         `${keyPart}'${value.replace(/'/g, "''")}'`
     );
@@ -282,7 +282,7 @@ export class IRacingSDK {
       // The multiline-value pass handles iRacing setup names that contain a literal
       // newline (e.g. corrupted DriverSetupName paths), which YAML would otherwise reject.
       const fixedYaml = seshString
-        ? IRacingSDK.fixMappingIndicatorValues(
+        ? IRacingSDK.fixIndicatorValues(
             IRacingSDK.fixMultilineValues(seshString)
           )
             .replace(/(\w+: ) *, *\n/g, '$1 \n')
