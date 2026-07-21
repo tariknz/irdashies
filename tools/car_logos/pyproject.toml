@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Car logos sprite sheet generator"
 requires-python = ">=3.12"
 dependencies = [
-    "pillow>=12.2.0",
+    "pillow>=12.3.0",
 ]
 
 [project.scripts]
