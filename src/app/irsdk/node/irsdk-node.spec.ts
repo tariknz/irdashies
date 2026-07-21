@@ -79,8 +79,9 @@ describe('irsdk-node', () => {
     mockSdk = await getSdkOrMock();
   });
 
-  it('should round-trip all tracked session data fixtures', async () => {
-    for (const [index, directory] of sessionFixtureDirectories.entries()) {
+  it.each(sessionFixtureDirectories)(
+    'should round-trip tracked session data fixture %s',
+    async (directory) => {
       const fixturePath = resolve('test-data', directory, 'session.json');
       const fixture = JSON.parse(
         await readFile(fixturePath, 'utf8')
@@ -89,14 +90,10 @@ describe('irsdk-node', () => {
       vi.mocked(mockSdk.getSessionData).mockReturnValue(
         yaml.dump(fixture, { lineWidth: -1 })
       );
-      Object.defineProperty(mockSdk, 'currDataVersion', {
-        configurable: true,
-        value: index + 1,
-      });
 
-      expect(sdk.getSessionData(), directory).toEqual(fixture);
+      expect(sdk.getSessionData()).toEqual(fixture);
     }
-  });
+  );
 
   it('should handle malformed YAML with trailing commas', () => {
     const malformedYaml = `
