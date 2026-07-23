@@ -11,7 +11,7 @@ export const PushToPassCell = memo(({ state }: PushToPassCellProps) => {
     return (
       <td
         data-column="pushToPass"
-        className="w-[4.5rem] px-1 text-center align-middle"
+        className="w-16 px-1 text-center align-middle"
       />
     );
   }
@@ -51,15 +51,14 @@ export const PushToPassCell = memo(({ state }: PushToPassCellProps) => {
   );
 
   return (
-    <td
-      data-column="pushToPass"
-      className="w-[4.5rem] px-1 text-center align-middle"
-    >
+    <td data-column="pushToPass" className="w-16 px-1 text-center align-middle">
       <span
-        className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs w-[4rem] ${bgClass} ${pulseClass}`}
+        className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs w-14 ${bgClass} ${pulseClass}`}
       >
         <span className={iconClass}>{icon}</span>
-        <span className="flex-1 text-right">{isExhausted ? 0 : count} s</span>
+        <span className="flex-1 text-right text-nowrap">
+          {isExhausted ? 0 : count} s
+        </span>
       </span>
     </td>
   );

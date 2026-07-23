@@ -315,25 +315,9 @@ export interface InputConfig {
 }
 
 export interface TachometerConfig {
+  version: 2;
   showRpmText: boolean;
   rpmOrientation?: 'horizontal' | 'bottom' | 'top';
-  shiftPointStyle?: 'glow' | 'pulse' | 'border';
-  shiftPointSettings: {
-    enabled: boolean;
-    indicatorType: 'glow' | 'pulse' | 'border';
-    indicatorColor: string;
-    carConfigs: Record<
-      string,
-      {
-        enabled: boolean;
-        carId: string;
-        carName: string;
-        gearCount: number;
-        redlineRpm: number;
-        gearShiftPoints: Record<string, { shiftRpm: number }>;
-      }
-    >;
-  };
   oilTemp?: {
     enabled: boolean;
     position: 'top' | 'bottom';
@@ -351,6 +335,14 @@ export interface TachometerConfig {
    * `swapSides` flips which side each box sits on (default: oil left, water right).
    */
   tempLayout?: { swapSides: boolean };
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export interface ShiftLightsConfig {
+  version: 1;
+  shiftPointSettings: ShiftPointSettings;
   background: { opacity: number };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
@@ -654,6 +646,7 @@ export interface WidgetConfigMap {
   flatmap: FlatTrackMapConfig;
   input: InputConfig;
   tachometer: TachometerConfig;
+  shiftlights: ShiftLightsConfig;
   fuel: FuelConfig;
   blindspotmonitor: BlindSpotMonitorConfig;
   garagecover: GarageCoverConfig;
@@ -747,6 +740,7 @@ export type FlatTrackMapWidgetSettings = BaseWidgetSettings<FlatTrackMapConfig>;
 export type SteerWidgetSettings = BaseWidgetSettings<SteerConfig>;
 export type InputWidgetSettings = BaseWidgetSettings<InputConfig>;
 export type TachometerWidgetSettings = BaseWidgetSettings<TachometerConfig>;
+export type ShiftLightsWidgetSettings = BaseWidgetSettings<ShiftLightsConfig>;
 export type FuelWidgetSettings = BaseWidgetSettings<FuelConfig>;
 export type BlindSpotMonitorWidgetSettings =
   BaseWidgetSettings<BlindSpotMonitorConfig>;

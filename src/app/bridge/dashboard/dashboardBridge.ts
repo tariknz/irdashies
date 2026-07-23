@@ -1,9 +1,10 @@
-import type {
-  DashboardBridge,
-  DashboardLayout,
-  DashboardProfile,
-  DriverTagSettings,
-  SaveDashboardOptions,
+import {
+  migrateSplitTachometerShiftLights,
+  type DashboardBridge,
+  type DashboardLayout,
+  type DashboardProfile,
+  type DriverTagSettings,
+  type SaveDashboardOptions,
 } from '@irdashies/types';
 import { app, ipcMain } from 'electron';
 import { onDashboardUpdated } from '../../storage/dashboardEvents';
@@ -502,7 +503,8 @@ export async function publishDashboardUpdates(
     if (canceled || !filePaths[0]) return null;
     const { readFile } = await import('node:fs/promises');
     const content = await readFile(filePaths[0], 'utf-8');
-    return JSON.parse(content) as DashboardLayout;
+    const imported = JSON.parse(content) as unknown;
+    return migrateSplitTachometerShiftLights(imported).dashboard;
   });
 
   ipcMain.handle('autostart:set', (_event, enabled: boolean) => {

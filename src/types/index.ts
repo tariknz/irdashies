@@ -16,3 +16,4 @@ export * from './keybindings';
 export * from './personalBestLapBridge';
 export * from './chromiumFlags';
 export * from './gamepadToken';
+export * from './migrators/splitTachometerShiftLights';

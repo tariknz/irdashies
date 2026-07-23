@@ -20,7 +20,6 @@ export const Tachometer = () => {
   return (
     <TachometerComponent
       rpm={tachometerData.rpm}
-      gear={tachometerData.gear}
       maxRpm={tachometerData.maxRpm}
       shiftRpm={tachometerData.shiftRpm}
       blinkRpm={tachometerData.blinkRpm}
@@ -29,8 +28,6 @@ export const Tachometer = () => {
       gearRpmThresholds={tachometerData.gearRpmThresholds}
       ledColors={tachometerData.carData?.ledColor}
       carData={tachometerData.carData}
-      carPath={tachometerData.carPath}
-      shiftPointSettings={settings?.shiftPointSettings}
       opacity={settings?.background.opacity}
       showOilTemp={settings?.oilTemp?.enabled ?? true}
       showWaterTemp={settings?.waterTemp?.enabled ?? true}

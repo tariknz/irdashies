@@ -4,7 +4,11 @@ import type {
   DashboardProfile,
 } from '@irdashies/types';
 import { emitDashboardUpdated } from './dashboardEvents';
-import { defaultDashboard, deepMergeConfig } from '@irdashies/types';
+import {
+  defaultDashboard,
+  deepMergeConfig,
+  migrateSplitTachometerShiftLights,
+} from '@irdashies/types';
 import { readData, writeData } from './storage';
 import { writeFile, mkdir, readFile, readdir, unlink } from 'node:fs/promises';
 import { resolve, basename, sep } from 'node:path';
@@ -41,6 +45,7 @@ const isDashboardChanged = (
 };
 
 export const getOrCreateDefaultDashboard = () => {
+  migrateStoredDashboards();
   const currentProfileId = getCurrentProfileId();
   return getOrCreateDefaultDashboardForProfile(currentProfileId);
 };
@@ -93,6 +98,32 @@ export const listDashboards = () => {
   return dashboards;
 };
 
+/** Runs structural widget migrations over every saved profile in one write. */
+export const migrateStoredDashboards = (): boolean => {
+  const dashboards = listDashboards();
+  let changed = false;
+
+  for (const [profileId, dashboard] of Object.entries(dashboards)) {
+    const result = migrateSplitTachometerShiftLights(dashboard);
+    if (result.invalidShiftPointSettings) {
+      logger.warn(
+        '[dashboard migration] Invalid legacy tachometer shift settings for profile:',
+        profileId
+      );
+    }
+    if (result.changed) {
+      dashboards[profileId] = result.dashboard;
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    writeData(DASHBOARDS_KEY, dashboards);
+  }
+
+  return changed;
+};
+
 export const getDashboard = (id: string) => {
   const dashboards = readData<Record<string, DashboardLayout>>(DASHBOARDS_KEY);
   if (!dashboards) return null;
@@ -125,15 +156,23 @@ export const saveDashboard = (
 ) => {
   const dashboards = listDashboards();
   const existingDashboard = dashboards[id];
+  const migration = migrateSplitTachometerShiftLights(value);
+  if (migration.invalidShiftPointSettings) {
+    logger.warn(
+      '[dashboard migration] Invalid imported tachometer shift settings for profile:',
+      id
+    );
+  }
+  const migratedValue = migration.dashboard;
 
   // Merge the existing dashboard with the new value to preserve structure
   const mergedDashboard: DashboardLayout = {
     ...existingDashboard,
-    ...value,
-    widgets: value.widgets || existingDashboard?.widgets || [],
+    ...migratedValue,
+    widgets: migratedValue.widgets || existingDashboard?.widgets || [],
     generalSettings: {
       ...existingDashboard?.generalSettings,
-      ...value.generalSettings,
+      ...migratedValue.generalSettings,
     },
   };
   // Only save and emit if there are actual changes

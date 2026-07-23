@@ -5,6 +5,7 @@ import {
   getDashboard,
   saveDashboard,
   updateDashboardWidget,
+  migrateStoredDashboards,
 } from './dashboards';
 import { defaultDashboard } from '@irdashies/types';
 import { DashboardLayout } from '@irdashies/types';
@@ -89,6 +90,43 @@ describe('dashboards', () => {
       const dashboards = listDashboards();
 
       expect(dashboards).toEqual(dashboardsData);
+    });
+  });
+
+  describe('dashboard migrations', () => {
+    it('migrates every stored profile in a single write', () => {
+      const legacyWidget = {
+        id: 'tachometer',
+        enabled: true,
+        layout: { x: 10, y: 20, width: 496, height: 50 },
+        config: {
+          showRpmText: false,
+          rpmOrientation: 'horizontal',
+          shiftPointSettings: {
+            enabled: false,
+            indicatorType: 'glow',
+            indicatorColor: '#00ff00',
+            carConfigs: {},
+          },
+        },
+      };
+      mockReadData.mockImplementation((key: string) =>
+        key === 'dashboards'
+          ? {
+              default: { widgets: [structuredClone(legacyWidget)] },
+              endurance: { widgets: [structuredClone(legacyWidget)] },
+            }
+          : null
+      );
+
+      expect(migrateStoredDashboards()).toBe(true);
+      expect(mockWriteData).toHaveBeenCalledTimes(1);
+      const written = mockWriteData.mock.calls[0][1] as Record<
+        string,
+        DashboardLayout
+      >;
+      expect(written.default.widgets[1].id).toBe('shiftlights');
+      expect(written.endurance.widgets[1].id).toBe('shiftlights');
     });
   });
 

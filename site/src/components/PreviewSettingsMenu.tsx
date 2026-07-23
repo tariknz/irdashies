@@ -31,6 +31,7 @@ const widgetItems: MenuItem[] = [
   },
   { to: '/settings/rejoin', id: 'rejoin', label: 'Rejoin Indicator' },
   { to: '/settings/relative', id: 'relative', label: 'Relative' },
+  { to: '/settings/shiftlights', id: 'shiftlights', label: 'Shift Lights' },
   { to: '/settings/slowcarahead', id: 'slowcarahead', label: 'Slow Car Ahead' },
   { to: '/settings/standings', id: 'standings', label: 'Standings' },
   { to: '/settings/tachometer', id: 'tachometer', label: 'Tachometer' },

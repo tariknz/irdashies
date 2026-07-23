@@ -385,6 +385,7 @@ export async function startComponentServer(
         'standings',
         'input',
         'tachometer',
+        'shiftlights',
         'relative',
         'map',
         'weather',

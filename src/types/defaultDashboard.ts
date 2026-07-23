@@ -362,11 +362,34 @@ export const defaultDashboard: {
         height: 50,
       },
       config: {
-        showRpmText: false,
+        version: 2,
+        showRpmText: true,
         rpmOrientation: 'horizontal',
         oilTemp: { enabled: true, position: 'top', edgeOffset: 0 },
         waterTemp: { enabled: true, position: 'top', edgeOffset: 0 },
         tempLayout: { swapSides: false },
+        background: { opacity: 80 },
+        showOnlyWhenOnTrack: true,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
+    },
+    {
+      id: 'shiftlights',
+      enabled: false,
+      layout: {
+        x: 622,
+        y: 864,
+        width: 496,
+        height: 50,
+      },
+      config: {
+        version: 1,
         shiftPointSettings: {
           enabled: false,
           indicatorType: 'glow',
