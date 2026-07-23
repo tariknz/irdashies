@@ -1,11 +1,7 @@
 import React from 'react';
-import {
-  useTelemetryValue,
-  useSessionStore,
-  useTotalRaceLaps,
-} from '@irdashies/context';
+import { useTelemetryValue, useSessionStore } from '@irdashies/context';
 import { useStore } from 'zustand';
-import { fuelDisplayValue } from '../fuelCalculations';
+import { fuelDisplayValue, isFinalLap } from '../fuelCalculations';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 
 interface FuelCalculatorWidgetProps {
@@ -54,9 +50,6 @@ export const FuelCalculatorConsumptionGrid: React.FC<
       )?.SessionType
   );
 
-  // Use shared hook for total race laps (handles timed races and leader lapping)
-  const { totalRaceLaps } = useTotalRaceLaps();
-
   // Custom style handling for separate label/value sizes
   const widgetStyle =
     customStyles || (widgetId && settings?.widgetStyles?.[widgetId]) || {};
@@ -90,12 +83,11 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   const lapsRemainingToUse = displayData?.lapsRemaining || 0;
   const currentLap = displayData?.currentLap || 0;
   const fuelLevelToUse = displayData?.fuelLevel ?? 0;
-  // Check for White (0x0002) or Checkered (0x0004) flag
   const isFinalLapOrFinished =
-    sessionFlags && (sessionFlags & 0x0002 || sessionFlags & 0x0004);
+    sessionFlags !== undefined && isFinalLap(sessionFlags);
 
   // If final lap/finished, we clamp the total race laps to the current lap (so it shows X / X)
-  let effectiveTotalLaps = Math.max(totalRaceLaps, currentLap);
+  let effectiveTotalLaps = Math.max(displayData?.totalLaps ?? 0, currentLap);
   if (isFinalLapOrFinished) {
     effectiveTotalLaps = currentLap;
   }
