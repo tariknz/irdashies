@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 import {
   BroadcastMessages,
   CameraState,
@@ -215,6 +215,19 @@ export class IRacingSDK {
   }
 
   /**
+   * Quotes scalar values that iRacing emits with a leading YAML mapping or
+   * sequence indicator. For example, `UserName: ? ?` and
+   * `TeamName: - BLACKSUIT` are not valid as unquoted scalars.
+   */
+  private static fixIndicatorValues(yamlText: string): string {
+    return yamlText.replace(
+      /^([^\S\r\n]*(?:-[^\S\r\n]+)?\w+:[^\S\r\n]*)([?-](?:[^\S\r\n]+[^\r\n]*)?)\r?$/gm,
+      (_line, keyPart: string, value: string) =>
+        `${keyPart}'${value.replace(/'/g, "''")}'`
+    );
+  }
+
+  /**
    * Starts the native iRacing SDK and begins subscribing for data.
    * @returns {boolean} If the SDK started successfully.
    */
@@ -269,7 +282,9 @@ export class IRacingSDK {
       // The multiline-value pass handles iRacing setup names that contain a literal
       // newline (e.g. corrupted DriverSetupName paths), which YAML would otherwise reject.
       const fixedYaml = seshString
-        ? IRacingSDK.fixMultilineValues(seshString)
+        ? IRacingSDK.fixIndicatorValues(
+            IRacingSDK.fixMultilineValues(seshString)
+          )
             .replace(/(\w+: ) *, *\n/g, '$1 \n')
             .replace(/(\w+: )(,.*)/g, '$1"$2" \n')
         : seshString;

@@ -135,7 +135,7 @@ export const useDriverLivePositions = ({
 
     // console.log('lastLapSnapshot:', lastLapSnapshotRef.current ? JSON.stringify(Object.fromEntries(lastLapSnapshotRef.current), ) : undefined, lastLapSnapshotRef.current, p1CarRef.current, p1Car?.CarIdx);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, [sessionState, p1LapCompleted, p1Car]);
 
   return useMemo(() => {

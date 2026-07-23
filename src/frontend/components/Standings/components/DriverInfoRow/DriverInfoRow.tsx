@@ -9,6 +9,7 @@ import type {
   StandingsWidgetSettings,
 } from '@irdashies/types';
 import { AvgLapTimeCell } from './cells/AvgLapTimeCell';
+import { LapCountCell } from './cells/LapCountCell';
 import { BadgeCell } from './cells/BadgeCell';
 import { CarManufacturerCell } from './cells/CarManufacturerCell';
 import { CarNumberCell } from './cells/CarNumberCell';
@@ -80,6 +81,8 @@ interface DriverRowInfoProps {
   hasAnyDriverTag?: boolean;
   compactMode?: string;
   p2pDisplayState?: P2PDisplayState;
+  currentLap?: number;
+  lapCountUnknown?: boolean;
 }
 
 // Helper function to provide dummy data for hidden rows
@@ -230,6 +233,8 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     hasAnyDriverTag,
     compactMode,
     p2pDisplayState,
+    currentLap,
+    lapCountUnknown,
   } = displayProps;
 
   const { currentDashboard } = useDashboard();
@@ -606,6 +611,21 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         ),
       },
       {
+        id: 'lapCount',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('lapCount') : false) &&
+          (config && 'lapCount' in config ? config.lapCount.enabled : false),
+        component: (
+          <LapCountCell
+            key="lapCount"
+            lap={currentLap}
+            unknown={lapCountUnknown}
+            showBorder={!(config?.stylingOptions?.lapCount?.minimal ?? false)}
+            compactMode={compactMode}
+          />
+        ),
+      },
+      {
         id: 'pushToPass',
         shouldRender:
           (displayOrder ? displayOrder.includes('pushToPass') : false) &&
@@ -684,6 +704,8 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     numberBorder,
     compactMode,
     p2pDisplayState,
+    currentLap,
+    lapCountUnknown,
   ]);
 
   return (

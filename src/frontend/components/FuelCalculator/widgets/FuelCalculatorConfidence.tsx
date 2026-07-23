@@ -1,4 +1,5 @@
 import React from 'react';
+import { WarningCircleIcon } from '@phosphor-icons/react';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 
 export type ConfidenceLevel = 'high' | 'medium' | 'low' | 'very-low';
@@ -58,10 +59,9 @@ export const FuelCalculatorConfidence: React.FC<FuelCalculatorWidgetProps> = ({
           className={`text-center ${paddingPart}`}
           style={{ fontSize: labelFontSize }}
         >
-          <span className="text-red-400">
-            {confidence === 'very-low'
-              ? '⚠ Not enough data'
-              : '⚠ Low confidence'}
+          <span className="text-red-400 inline-flex items-center gap-1">
+            <WarningCircleIcon size={14} weight="fill" />
+            {confidence === 'very-low' ? 'Not enough data' : 'Low confidence'}
           </span>
         </div>
         <div
@@ -88,7 +88,10 @@ export const FuelCalculatorConfidence: React.FC<FuelCalculatorWidgetProps> = ({
             Fuelling for{' '}
             <span className="text-white font-medium">{fuelForLaps}</span> laps
             (worst case){' '}
-            <span className="text-amber-400">⚠ Lap count uncertain</span>
+            <span className="text-amber-400 inline-flex items-center gap-1">
+              <WarningCircleIcon size={14} weight="fill" />
+              Lap count uncertain
+            </span>
           </span>
         </div>
       </div>

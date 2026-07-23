@@ -47,6 +47,9 @@ jobs:
     - name: Run linting
       run: npm run lint
 
+    - name: Build Storybook
+      run: npm run build-storybook
+
     - name: Run tests with coverage
       run: npm test
 

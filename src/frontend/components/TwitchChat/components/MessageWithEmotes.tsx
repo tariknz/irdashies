@@ -18,11 +18,15 @@ function expandTextWithThirdParty(
   emoteMap: ThirdPartyEmoteMap
 ): MessagePart[] {
   if (!emoteMap.size) return [{ type: 'text', content: text }];
-  return text.split(/(\s+)/).map((token) => {
-    const url = emoteMap.get(token);
-    if (url) return { type: 'third-party-emote', content: token, emoteUrl: url };
-    return { type: 'text', content: token };
-  });
+  return text
+    .split(/(\s+)/)
+    .filter((token) => token.length > 0)
+    .map((token) => {
+      const url = emoteMap.get(token);
+      if (url)
+        return { type: 'third-party-emote', content: token, emoteUrl: url };
+      return { type: 'text', content: token };
+    });
 }
 
 function parseMessageParts(
@@ -48,7 +52,10 @@ function parseMessageParts(
     let cursor = 0;
     for (const pos of positions) {
       if (cursor < pos.start) {
-        nativeParts.push({ type: 'text', content: text.slice(cursor, pos.start) });
+        nativeParts.push({
+          type: 'text',
+          content: text.slice(cursor, pos.start),
+        });
       }
       nativeParts.push({
         type: 'emote',
@@ -110,14 +117,17 @@ export const MessageWithEmotes = ({
   thirdPartyEmotes = new Map(),
 }: MessageWithEmotesProps) => {
   const parts = parseMessageParts(text, emotes, thirdPartyEmotes);
+  let textOffset = 0;
 
   return (
     <>
-      {parts.map((part, i) => {
+      {parts.map((part) => {
+        const partKey = `${part.type}-${textOffset}`;
+        textOffset += part.content.length;
         if (part.type === 'emote' && part.emoteId) {
           return (
             <EmoteImage
-              key={i}
+              key={partKey}
               src={getTwitchEmoteUrl(part.emoteId)}
               name={part.content}
               fontSize={fontSize}
@@ -127,14 +137,14 @@ export const MessageWithEmotes = ({
         if (part.type === 'third-party-emote' && part.emoteUrl) {
           return (
             <EmoteImage
-              key={i}
+              key={partKey}
               src={part.emoteUrl}
               name={part.content}
               fontSize={fontSize}
             />
           );
         }
-        return <span key={i}>{part.content}</span>;
+        return <span key={partKey}>{part.content}</span>;
       })}
     </>
   );

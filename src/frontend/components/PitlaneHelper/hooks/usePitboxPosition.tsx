@@ -78,7 +78,7 @@ export const usePitboxPosition = (
     //
     // If we have accurate pit entry data from detection, calculate distance from pit entry to pitbox.
     // Otherwise, fall back to heuristic (pitbox in last 10% of track).
-    let isEarlyPitbox = false;
+    let isEarlyPitbox: boolean;
 
     if (pitEntryPct !== null) {
       // Calculate distance from pit entry to pitbox along pit lane direction

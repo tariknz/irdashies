@@ -77,7 +77,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
       const isInPitOrHasNoData = isAnyoneOnPitRoad || refLap.finishTime < 0;
 
-      let calculatedDelta = 0;
+      let calculatedDelta: number;
 
       if (isInPitOrHasNoData) {
         const aheadEstTime = carIdxEstTime[aheadIdx];

@@ -5,6 +5,7 @@ import {
   useTotalRaceLaps,
 } from '@irdashies/context';
 import { useStore } from 'zustand';
+import { fuelDisplayValue } from '../fuelCalculations';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 
 interface FuelCalculatorWidgetProps {
@@ -31,6 +32,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
 > = ({
   fuelData,
   displayData,
+  fuelUnits = 'L',
   settings,
   widgetId,
   customStyles,
@@ -125,13 +127,17 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   // Use frozen displayData for stable columns
   // BUT use predictiveUsage (passed from parent's throttled trigger) for the CURR column
   const currentUsage = predictiveUsage ?? displayData?.projectedLapUsage ?? 0;
+  const tankCapacity = fuelData?.fuelTankCapacity ?? 0;
+  const frozenPitWindowOpen = displayData?.pitWindowOpen ?? currentLap;
 
   // Calculate derivates (Laps, Refuel, Finish)
   const calcCol = (
     usage: number,
     contextTotalLaps: number,
     contextLapsRemaining: number,
-    contextFuelLevel: number
+    contextFuelLevel: number,
+    contextCurrentLap: number,
+    contextPitWindowOpen: number
   ) => {
     if (usage <= 0)
       return {
@@ -139,6 +145,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
         refuel: 0,
         totalReq: 0,
         isDeficit: false,
+        fitsInTank: true,
         isValid: false,
         hideRefuel: true,
       };
@@ -156,11 +163,14 @@ export const FuelCalculatorConsumptionGrid: React.FC<
     const fuelNeeded = contextLapsRemaining * usage;
     const balance = contextFuelLevel - fuelNeeded;
 
-    // Logic for Refuel Column:
-    // If Balance < 0 (Deficit): Show POSITIVE amount to ADD.
-    // If Balance >= 0 (Surplus): Show POSITIVE amount EXTRA.
-    const refuelValue = balance < 0 ? Math.abs(balance) : balance;
+    // Fuel to add is the actionable pit-stop amount. A positive finish
+    // balance means no refuel is required; a deficit becomes a positive add.
+    const refuelValue = Math.max(0, -balance);
     const isDeficit = balance < 0;
+    const lapsUntilPit = Math.max(0, contextPitWindowOpen - contextCurrentLap);
+    const fuelAtPit = Math.max(0, contextFuelLevel - lapsUntilPit * usage);
+    const fitsInTank =
+      tankCapacity <= 0 || fuelAtPit + refuelValue <= tankCapacity;
 
     // If testing, hide Refuel and Finish (return 0/invalid)
     if (isTesting) {
@@ -169,6 +179,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
         refuel: 0,
         totalReq: 0,
         isDeficit: false,
+        fitsInTank: true,
         isValid: true,
         hideRefuel: true,
       };
@@ -179,6 +190,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
       refuel: refuelValue, // number (absolute value to show)
       totalReq: totalReq, // number
       isDeficit: isDeficit, // boolean
+      fitsInTank,
       isValid: true,
       hideRefuel: false,
     };
@@ -208,31 +220,49 @@ export const FuelCalculatorConsumptionGrid: React.FC<
     avg,
     frozenTotalLaps,
     frozenLapsRemaining,
-    frozenFuelLevel
+    frozenFuelLevel,
+    currentLap,
+    frozenPitWindowOpen
   );
   const maxData = calcCol(
     max,
     frozenTotalLaps,
     frozenLapsRemaining,
-    frozenFuelLevel
+    frozenFuelLevel,
+    currentLap,
+    frozenPitWindowOpen
+  );
+  const avg10Data = calcCol(
+    displayData?.avg10Laps || 0,
+    frozenTotalLaps,
+    frozenLapsRemaining,
+    frozenFuelLevel,
+    currentLap,
+    frozenPitWindowOpen
   );
   const lastData = calcCol(
     last,
     frozenTotalLaps,
     frozenLapsRemaining,
-    frozenFuelLevel
+    frozenFuelLevel,
+    currentLap,
+    frozenPitWindowOpen
   );
   const minData = calcCol(
     min,
     frozenTotalLaps,
     frozenLapsRemaining,
-    frozenFuelLevel
+    frozenFuelLevel,
+    currentLap,
+    frozenPitWindowOpen
   );
   const qualData = calcCol(
     qual,
     frozenTotalLaps,
     frozenLapsRemaining,
-    frozenFuelLevel
+    frozenFuelLevel,
+    currentLap,
+    frozenPitWindowOpen
   );
 
   // CURR uses LIVE context
@@ -240,7 +270,9 @@ export const FuelCalculatorConsumptionGrid: React.FC<
     currentUsage,
     liveTotalLaps,
     liveLapsRemaining,
-    dataLiveFuelLevel
+    dataLiveFuelLevel,
+    liveFuelData?.currentLap ?? currentLap,
+    liveFuelData?.pitWindowOpen ?? frozenPitWindowOpen
   );
   if (!fuelData) return null;
 
@@ -249,6 +281,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
 
   // Visibility Settings (Default to true if no settings provided, except Min which is optional in modern default layout)
   const showAvg = settings ? settings.show3LapAvg : true;
+  const showAvg10 = settings ? settings.show10LapAvg : true;
   const showMax = settings ? settings.showMax : true;
   const showLast = settings ? settings.showLastLap : true;
   const showCurrent = settings ? settings.showCurrentLap : true;
@@ -262,72 +295,120 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   // Helper for formatting
   const fmt = (num: number, isValid: boolean) =>
     isValid ? num.toFixed(2) : '--';
+  const fmtFuel = (liters: number, isValid = true) =>
+    isValid ? fuelDisplayValue(liters, fuelUnits).toFixed(2) : '--';
+  const formatFuelToAdd = (data: {
+    refuel: number;
+    isValid: boolean;
+    hideRefuel?: boolean;
+  }) => {
+    if (!data.isValid || data.hideRefuel) return '--';
+    return `+${fmtFuel(data.refuel)}`;
+  };
+
+  const getFuelToAddClass = (data: {
+    fitsInTank: boolean;
+    isValid: boolean;
+  }) => {
+    if (!data.isValid) return 'text-slate-300';
+    return data.fitsInTank ? 'text-emerald-400' : 'text-red-400';
+  };
 
   // Helper for Refuel color
 
-  const rowPadding = compactMode === 'ultra' ? '' : 'px-1 py-0.5';
-  const rowGap = compactMode !== 'off' ? '' : 'gap-y-0.5';
-  const divideCls =
-    compactMode !== 'off'
-      ? 'divide-x divide-slate-500/40'
-      : 'divide-x-2 divide-slate-500/40';
-  const rowCls = `col-span-5 grid grid-cols-subgrid ${divideCls} odd:bg-slate-800/70 even:bg-slate-900/70`;
+  const rowPadding = compactMode === 'ultra' ? '' : 'px-1 py-px';
+  const headerPadding =
+    compactMode === 'ultra'
+      ? 'px-1'
+      : compactMode === 'compact'
+        ? 'px-1 py-0.5'
+        : 'px-1 py-1';
+  const gridPadding =
+    compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'px-1' : 'px-2';
+  const rowGap = '';
+  const rowCls = 'col-span-4 grid grid-cols-subgrid';
+  const recommendedRowCls = `${rowCls} bg-slate-700/50`;
+  const actionCellCls = rowPadding;
+  const avg10 = displayData?.avg10Laps || 0;
+  const pitWindowOpen = frozenPitWindowOpen;
+  const pitWindowClose = displayData?.pitWindowClose ?? 0;
+  const hasStrategy = isRace && avg > 0;
+  const pitWindowStart = Math.ceil(pitWindowOpen);
+  const pitWindowEnd = Math.floor(pitWindowClose);
+  const pitWindowLabel = !hasStrategy
+    ? '--'
+    : pitWindowStart === pitWindowEnd
+      ? `L${pitWindowStart}`
+      : `L${pitWindowStart}–${pitWindowEnd}`;
+  const isPitWindowOpen =
+    hasStrategy && currentLap >= pitWindowStart && currentLap <= pitWindowEnd;
+  const isPastPitWindow = hasStrategy && currentLap > pitWindowEnd;
+  const pitWindowStatus = !hasStrategy
+    ? 'PIT WINDOW'
+    : isPastPitWindow
+      ? 'PIT NOW'
+      : isPitWindowOpen
+        ? 'OPEN'
+        : 'OPENS';
+  const pitWindowStatusClass = isPastPitWindow
+    ? 'text-red-400'
+    : isPitWindowOpen
+      ? 'text-emerald-400'
+      : 'text-amber-300';
 
   return (
     <div
       style={containerStyle}
-      className={`grid grid-cols-[auto_auto_auto_auto_auto] select-none overflow-hidden w-full ${rowGap}`}
+      className={`grid w-full grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)] select-none overflow-hidden ${gridPadding} ${rowGap}`}
     >
-      {/* Grid Header */}
       <div
-        className={`col-span-5 grid grid-cols-subgrid ${divideCls} bg-slate-900 border-b border-slate-500/40`}
+        className="col-span-4 flex items-center justify-between pb-1 text-slate-500 font-semibold tracking-wide uppercase"
+        style={{ fontSize: labelFontSize }}
       >
+        <span>
+          Race L{currentLap}
+          {(displayData?.totalLaps ?? 0) > 0
+            ? ` / ${displayData?.totalLaps.toFixed(0)}`
+            : ''}
+        </span>
+        <span>Fuel {fmtFuel(frozenFuelLevel)}</span>
+      </div>
+      {/* Grid Header */}
+      <div className="col-span-4 mt-0.5 grid grid-cols-subgrid bg-slate-900/30">
+        <div aria-hidden="true" />
         <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
+          className={`font-bold text-slate-400 flex justify-center items-center leading-none ${headerPadding}`}
           style={{ fontSize: labelFontSize }}
         >
-          <div style={{ fontSize: '0.8em', opacity: 0.7 }}>IN RACE</div>
-          <div style={{ color: '#fff' }}>
-            {currentLap}
-            {isRace && effectiveTotalLaps > 0
-              ? ` / ${effectiveTotalLaps.toFixed(2)}`
-              : ''}
-          </div>
+          USE/LAP
         </div>
         <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
-          style={{ fontSize: labelFontSize }}
-        >
-          USE
-        </div>
-        <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
+          className={`font-bold text-slate-400 flex justify-center items-center leading-none ${headerPadding}`}
           style={{ fontSize: labelFontSize }}
         >
           LAPS
         </div>
         <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
+          className={`font-bold text-slate-400 flex justify-center items-center leading-none ${headerPadding}`}
           style={{ fontSize: labelFontSize }}
         >
-          REFUEL
-        </div>
-        <div
-          className={`font-bold text-slate-400 flex flex-col justify-center items-center leading-none ${compactMode === 'ultra' ? 'px-1 py-0' : compactMode === 'compact' ? 'px-1 py-1' : 'px-1 py-2'}`}
-          style={{ fontSize: labelFontSize }}
-        >
-          TOTAL
+          TO ADD
         </div>
       </div>
 
       {/* Dynamic Rows based on Order */}
       {(() => {
-        const defaultOrder = ['curr', 'avg', 'max', 'last', 'min', 'qual'];
+        const defaultOrder = [
+          'curr',
+          'avg',
+          'max',
+          'min',
+          'last',
+          'avg10',
+          'qual',
+        ];
         const savedOrder = settings?.consumptionGridOrder || defaultOrder;
         const order = [...savedOrder];
-        defaultOrder.forEach((key) => {
-          if (!order.includes(key)) order.push(key);
-        });
 
         const renderRow = (type: string) => {
           switch (type) {
@@ -339,32 +420,25 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     className={`text-slate-400 ${rowPadding}`}
                     style={{ fontSize: labelFontSize }}
                   >
-                    CURR
+                    EST.
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding} font-bold`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {currentUsage > 0 ? currentUsage.toFixed(2) : '--'}
+                    {currentUsage > 0 ? fmtFuel(currentUsage) : '--'}
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding} opacity-90`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {fmt(currentData.laps, isFinite(currentData.laps))}
                   </div>
                   <div
-                    className={`${currentData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded`}
+                    className={`${getFuelToAddClass(currentData)} text-center ${actionCellCls}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {!currentData.isDeficit ? '+' : ''}
-                    {fmt(currentData.refuel, true)}
-                  </div>
-                  <div
-                    className={`text-white text-center ${rowPadding} opacity-90`}
-                    style={{ fontSize: valueFontSize }}
-                  >
-                    {fmt(currentData.totalReq, true)}
+                    {formatFuelToAdd(currentData)}
                   </div>
                 </div>
               );
@@ -372,41 +446,64 @@ export const FuelCalculatorConsumptionGrid: React.FC<
               if (!showAvg) return null;
               const avgLabel = `AVG ${settings?.avgLapsCount || 3}`;
               return (
-                <div key="avg" className={rowCls}>
+                <div key="avg" className={recommendedRowCls}>
                   <div
-                    className={`text-slate-400 ${rowPadding}`}
+                    className={`text-white font-semibold ${rowPadding}`}
                     style={{ fontSize: labelFontSize }}
                   >
                     {avgLabel}
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding}`}
+                    className={`text-white text-center ${rowPadding} font-bold`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {avg.toFixed(2)}
+                    {fmtFuel(avg)}
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding}`}
+                    className={`text-white text-center ${rowPadding} font-bold`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {fmt(avgData.laps, isFinite(avgData.laps))}
                   </div>
                   <div
-                    className={`${avgData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded`}
+                    className={`${getFuelToAddClass(avgData)} text-center ${actionCellCls} font-bold`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {!avgData.isDeficit ? '+' : ''}
-                    {fmt(avgData.refuel, true)}
-                  </div>
-                  <div
-                    className={`text-white text-center ${rowPadding}`}
-                    style={{ fontSize: valueFontSize }}
-                  >
-                    {fmt(avgData.totalReq, true)}
+                    {formatFuelToAdd(avgData)}
                   </div>
                 </div>
               );
             }
+            case 'avg10':
+              if (!showAvg10 || avg10 <= 0) return null;
+              return (
+                <div key="avg10" className={rowCls}>
+                  <div
+                    className={`text-slate-400 ${rowPadding}`}
+                    style={{ fontSize: labelFontSize }}
+                  >
+                    AVG 10
+                  </div>
+                  <div
+                    className={`text-slate-300 text-center ${rowPadding}`}
+                    style={{ fontSize: valueFontSize }}
+                  >
+                    {fmtFuel(avg10)}
+                  </div>
+                  <div
+                    className={`text-slate-300 text-center ${rowPadding}`}
+                    style={{ fontSize: valueFontSize }}
+                  >
+                    {fmt(avg10Data.laps, isFinite(avg10Data.laps))}
+                  </div>
+                  <div
+                    className={`${getFuelToAddClass(avg10Data)} text-center ${actionCellCls}`}
+                    style={{ fontSize: valueFontSize }}
+                  >
+                    {formatFuelToAdd(avg10Data)}
+                  </div>
+                </div>
+              );
             case 'max':
               if (!showMax) return null;
               return (
@@ -418,29 +515,22 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     MAX
                   </div>
                   <div
-                    className={`text-orange-400 text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {max.toFixed(2)}
+                    {fmtFuel(max)}
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {fmt(maxData.laps, isFinite(maxData.laps))}
                   </div>
                   <div
-                    className={`${maxData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded`}
+                    className={`${getFuelToAddClass(maxData)} text-center ${actionCellCls}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {!maxData.isDeficit ? '+' : ''}
-                    {fmt(maxData.refuel, true)}
-                  </div>
-                  <div
-                    className={`text-white text-center ${rowPadding}`}
-                    style={{ fontSize: valueFontSize }}
-                  >
-                    {fmt(maxData.totalReq, true)}
+                    {formatFuelToAdd(maxData)}
                   </div>
                 </div>
               );
@@ -455,29 +545,22 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     LAST
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {last.toFixed(2)}
+                    {fmtFuel(last)}
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {fmt(lastData.laps, isFinite(lastData.laps))}
                   </div>
                   <div
-                    className={`${lastData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded`}
+                    className={`${getFuelToAddClass(lastData)} text-center ${actionCellCls}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {!lastData.isDeficit ? '+' : ''}
-                    {fmt(lastData.refuel, true)}
-                  </div>
-                  <div
-                    className={`text-white text-center ${rowPadding}`}
-                    style={{ fontSize: valueFontSize }}
-                  >
-                    {fmt(lastData.totalReq, true)}
+                    {formatFuelToAdd(lastData)}
                   </div>
                 </div>
               );
@@ -492,72 +575,53 @@ export const FuelCalculatorConsumptionGrid: React.FC<
                     MIN
                   </div>
                   <div
-                    className={`text-green-400 text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {min.toFixed(2)}
+                    {fmtFuel(min)}
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {fmt(minData.laps, isFinite(minData.laps))}
                   </div>
                   <div
-                    className={`${minData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded`}
+                    className={`${getFuelToAddClass(minData)} text-center ${actionCellCls}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {!minData.isDeficit ? '+' : ''}
-                    {fmt(minData.refuel, true)}
-                  </div>
-                  <div
-                    className={`text-white text-center ${rowPadding}`}
-                    style={{ fontSize: valueFontSize }}
-                  >
-                    {fmt(minData.totalReq, true)}
+                    {formatFuelToAdd(minData)}
                   </div>
                 </div>
               );
             case 'qual':
-              if (settings?.showQualifyConsumption === false) return null;
+              if (settings?.showQualifyConsumption === false || qual <= 0)
+                return null;
               return (
                 <div key="qual" className={rowCls}>
                   <div
                     className={`text-slate-400 ${rowPadding}`}
                     style={{ fontSize: labelFontSize }}
                   >
-                    QUAL MAX
+                    QUAL
                   </div>
                   <div
-                    className={`text-orange-400 text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {qual > 0 ? qual.toFixed(2) : '--'}
+                    {qual > 0 ? fmtFuel(qual) : '--'}
                   </div>
                   <div
-                    className={`text-white text-center ${rowPadding}`}
+                    className={`text-slate-300 text-center ${rowPadding}`}
                     style={{ fontSize: valueFontSize }}
                   >
                     {fmt(qualData.laps, isFinite(qualData.laps))}
                   </div>
                   <div
-                    className={`${qualData.isDeficit ? 'text-red-500 bg-red-500/10' : 'text-green-400 bg-green-500/10'} text-center ${rowPadding} font-bold rounded`}
+                    className={`${getFuelToAddClass(qualData)} text-center ${actionCellCls}`}
                     style={{ fontSize: valueFontSize }}
                   >
-                    {isRace && qual > 0 ? (
-                      <>
-                        {!qualData.isDeficit ? '+' : ''}
-                        {fmt(qualData.refuel, true)}
-                      </>
-                    ) : (
-                      '--'
-                    )}
-                  </div>
-                  <div
-                    className={`text-white text-center ${rowPadding}`}
-                    style={{ fontSize: valueFontSize }}
-                  >
-                    {isRace && qual > 0 ? fmt(qualData.totalReq, true) : '--'}
+                    {isRace && qual > 0 ? formatFuelToAdd(qualData) : '--'}
                   </div>
                 </div>
               );
@@ -569,6 +633,36 @@ export const FuelCalculatorConsumptionGrid: React.FC<
         const uniqueOrder = Array.from(new Set(order));
         return uniqueOrder.map((id) => renderRow(id));
       })()}
+      <div className="col-span-4 mt-1 grid grid-cols-[1fr_auto] items-center bg-slate-900/30 px-1 py-1 tabular-nums">
+        <div className="flex items-baseline gap-1">
+          <span
+            className={`font-bold tracking-wide ${pitWindowStatusClass}`}
+            style={{ fontSize: valueFontSize }}
+          >
+            {pitWindowStatus}
+          </span>
+          <span
+            className="font-bold text-white"
+            style={{ fontSize: valueFontSize }}
+          >
+            {pitWindowLabel}
+          </span>
+        </div>
+        <div className="flex items-baseline gap-1">
+          <span
+            className="font-semibold tracking-wide text-slate-500"
+            style={{ fontSize: labelFontSize }}
+          >
+            ADD
+          </span>
+          <strong
+            className={getFuelToAddClass(avgData)}
+            style={{ fontSize: valueFontSize }}
+          >
+            {hasStrategy ? `+${fmtFuel(avgData.refuel)} ${fuelUnits}` : '--'}
+          </strong>
+        </div>
+      </div>
     </div>
   );
 };

@@ -7,3 +7,4 @@ export * from './FuelCalculatorTimeEmpty';
 export * from './FuelHistory';
 export * from './FuelCalculatorConfidence';
 export * from './FuelCalculatorEconomyPredict';
+export * from './FuelCalculatorFinishFuel';

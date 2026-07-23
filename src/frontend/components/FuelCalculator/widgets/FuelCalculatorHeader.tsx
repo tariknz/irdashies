@@ -1,4 +1,5 @@
 import React from 'react';
+import { GasPumpIcon } from '@phosphor-icons/react';
 import type { FuelCalculatorSettings, FuelCalculation } from '../types';
 
 interface FuelCalculatorWidgetProps {
@@ -16,23 +17,14 @@ interface FuelCalculatorWidgetProps {
   compactMode?: 'off' | 'compact' | 'ultra';
 }
 
-// Map confidence to colors and text
 const getConfidenceConfig = (confidence: string) => {
   switch (confidence) {
     case 'high':
-      return {
-        color: 'text-green-400',
-        bg: 'bg-green-500',
-        border: 'border-green-500',
-        shadow: 'shadow-[0_0_15px_rgba(34,197,94,0.3)]',
-        pulse: '',
-      };
+      return { color: 'text-green-400', bg: 'bg-green-500', pulse: '' };
     case 'medium':
       return {
         color: 'text-amber-400',
         bg: 'bg-amber-500',
-        border: 'border-orange-500',
-        shadow: 'shadow-[0_0_15px_rgba(249,115,22,0.3)]',
         pulse: 'animate-pulse',
       };
     case 'very-low':
@@ -41,8 +33,6 @@ const getConfidenceConfig = (confidence: string) => {
       return {
         color: 'text-red-400',
         bg: 'bg-red-500',
-        border: 'border-red-500',
-        shadow: 'shadow-[0_0_15px_rgba(239,68,68,0.3)]',
         pulse: 'animate-pulse',
       };
   }
@@ -77,8 +67,6 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
   // Confidence logic (mapping from existing data)
   const confidence = fuelData.confidence || 'low';
   const confConfig = getConfidenceConfig(confidence);
-
-  // Format laps remaining for confidence pill
   let lapsText = `${Math.ceil(fuelData.lapsRemaining)} LAPS`;
   if (confidence === 'medium')
     lapsText = `~${Math.ceil(fuelData.lapsRemaining)} LAPS`;
@@ -91,57 +79,60 @@ export const FuelCalculatorHeader: React.FC<FuelCalculatorWidgetProps> = ({
   }
 
   const paddingClass =
-    compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2';
+    compactMode === 'ultra'
+      ? ''
+      : compactMode === 'compact'
+        ? 'p-1'
+        : 'px-2 py-1';
 
   return (
-    <div
-      className={`flex items-center justify-between ${paddingClass} ${compactMode !== 'off' ? 'mb-0' : 'mb-1 border-b border-slate-600/50'}`}
-    >
-      <div
-        className={`flex items-center ${compactMode !== 'off' ? 'gap-3' : 'gap-6'}`}
-      >
-        <div className="flex items-center gap-2">
-          <span
-            className="text-slate-500 font-semibold tracking-wider"
+    <div className={paddingClass}>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-end gap-x-3">
+        <div>
+          <div
+            className="flex items-center gap-1 text-slate-500 font-semibold tracking-wide uppercase"
             style={{ fontSize: labelFontSize }}
           >
-            STOPS
-          </span>
-          <span
-            className="text-white font-bold"
+            <GasPumpIcon size={12} weight="fill" />
+            <span>To go</span>
+          </div>
+          <div
+            className={`flex items-center gap-1 ${confConfig.color} font-bold tabular-nums`}
             style={{ fontSize: valueFontSize }}
+            title={`${confidence} confidence`}
           >
-            {stopsRemaining}
-          </span>
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${confConfig.bg} ${confConfig.pulse}`}
+            />
+            {lapsText}
+          </div>
         </div>
-        <div className={`flex items-center gap-2 `}>
+        <div className="flex items-baseline gap-1 whitespace-nowrap pb-px">
           <span
-            className="text-slate-500 font-semibold tracking-wider"
+            className="text-slate-500 font-semibold tracking-wide uppercase"
             style={{ fontSize: labelFontSize }}
           >
-            EARLIEST
+            Next pit
           </span>
           <span
-            className="text-green-400 font-bold"
+            className="text-white font-bold tabular-nums"
             style={{ fontSize: valueFontSize }}
           >
             L{pitWindowOpen}
           </span>
         </div>
-      </div>
-      <div className="flex items-center">
-        <div
-          className="flex items-center gap-2"
-          title={`${confidence} confidence`}
-        >
-          <div
-            className={`w-2 h-2 rounded-full ${confConfig.bg} ${confConfig.pulse}`}
-          ></div>
+        <div className="flex items-baseline gap-1 whitespace-nowrap pb-px">
           <span
-            className={`${confConfig.color} font-bold`}
+            className="text-slate-500 font-semibold tracking-wide uppercase"
+            style={{ fontSize: labelFontSize }}
+          >
+            Stops
+          </span>
+          <span
+            className="text-white font-bold tabular-nums"
             style={{ fontSize: valueFontSize }}
           >
-            {lapsText}
+            {stopsRemaining}
           </span>
         </div>
       </div>

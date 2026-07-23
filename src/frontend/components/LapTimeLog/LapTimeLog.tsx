@@ -14,6 +14,7 @@ import { useLapTimeLog } from './hooks/useLapTimeLog';
 import { getDemoLapTimeLogData, LapEntry } from './demoData';
 import { TimerIcon, TargetIcon, XIcon } from '@phosphor-icons/react';
 import { LapTimeRow } from './components/LapTimeRow';
+import { LapHistoryChart } from './components/LapHistoryChart';
 import type { LapTimeLogConfig } from '@irdashies/types';
 import { formatTime, formatDelta } from '@irdashies/utils/time';
 import { LapTimeCell } from './components/LapTimeCell';
@@ -268,24 +269,33 @@ export const LapTimeLogDisplay = ({
             )}
           </div>
 
-          {/* History List */}
-          {settings.history.enabled && (
-            <>
-              {sortedHistory.map((entry) => (
-                <LapTimeRow
-                  key={entry.lap} // Critical for React performance
-                  label={`LAP ${entry.lap}`}
-                  time={entry.time}
-                  delta={entry.delta}
-                  dirty={entry.dirty}
-                  best={bestlap}
-                  overall={overall}
-                  alltime={alltimelap}
-                  settings={settings}
-                />
-              ))}
-            </>
-          )}
+          {/* History List / Chart */}
+          {settings.history.enabled &&
+            (settings.history.style === 'chart' ? (
+              <LapHistoryChart
+                history={sortedHistory}
+                best={bestlap}
+                overall={overall}
+                alltime={alltimelap}
+                foregroundOpacity={settings.foreground.opacity}
+              />
+            ) : (
+              <>
+                {sortedHistory.map((entry) => (
+                  <LapTimeRow
+                    key={entry.lap} // Critical for React performance
+                    label={`LAP ${entry.lap}`}
+                    time={entry.time}
+                    delta={entry.delta}
+                    dirty={entry.dirty}
+                    best={bestlap}
+                    overall={overall}
+                    alltime={alltimelap}
+                    settings={settings}
+                  />
+                ))}
+              </>
+            ))}
         </div>
       </div>
     </div>

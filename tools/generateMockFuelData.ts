@@ -74,18 +74,28 @@ function generateNormalRace(): TelemetrySnapshot[] {
       snapshots.push({
         SessionTime: sessionTime + lapProgress * lapTime,
         SessionNum: 0,
-        SessionFlags: lap === TOTAL_RACE_LAPS && i === snapshotsPerLap - 1 ? CHECKERED_FLAG : GREEN_FLAG,
-        SessionTimeRemain: RACE_DURATION - (sessionTime + lapProgress * lapTime),
+        SessionFlags:
+          lap === TOTAL_RACE_LAPS && i === snapshotsPerLap - 1
+            ? CHECKERED_FLAG
+            : GREEN_FLAG,
+        SessionTimeRemain:
+          RACE_DURATION - (sessionTime + lapProgress * lapTime),
         SessionLapsRemain: TOTAL_RACE_LAPS - lap + 1,
         SessionLapsTotal: TOTAL_RACE_LAPS,
         Lap: currentLap,
         LapDistPct: lapDistPct,
-        FuelLevel: fuelLevel - (fuelUsed * lapProgress),
-        FuelLevelPct: (fuelLevel - (fuelUsed * lapProgress)) / FUEL_TANK_CAPACITY,
+        FuelLevel: fuelLevel - fuelUsed * lapProgress,
+        FuelLevelPct: (fuelLevel - fuelUsed * lapProgress) / FUEL_TANK_CAPACITY,
         OnPitRoad: 0,
-        CarIdxLap: Array(64).fill(-1).map((_, idx) => idx === 19 ? currentLap : -1),
-        CarIdxPosition: Array(64).fill(0).map((_, idx) => idx === 19 ? 1 : 0),
-        CarIdxLastLapTime: Array(64).fill(-1).map((_, idx) => idx === 19 ? lapTime : -1),
+        CarIdxLap: Array(64)
+          .fill(-1)
+          .map((_, idx) => (idx === 19 ? currentLap : -1)),
+        CarIdxPosition: Array(64)
+          .fill(0)
+          .map((_, idx) => (idx === 19 ? 1 : 0)),
+        CarIdxLastLapTime: Array(64)
+          .fill(-1)
+          .map((_, idx) => (idx === 19 ? lapTime : -1)),
       });
     }
 
@@ -94,7 +104,9 @@ function generateNormalRace(): TelemetrySnapshot[] {
     currentLap++;
   }
 
-  console.log(`Generated ${snapshots.length} snapshots for ${TOTAL_RACE_LAPS} laps`);
+  console.log(
+    `Generated ${snapshots.length} snapshots for ${TOTAL_RACE_LAPS} laps`
+  );
   return snapshots;
 }
 
@@ -125,16 +137,22 @@ function generatePitStopRace(): TelemetrySnapshot[] {
           SessionTime: sessionTime + lapProgress * lapTime,
           SessionNum: 0,
           SessionFlags: GREEN_FLAG,
-          SessionTimeRemain: RACE_DURATION - (sessionTime + lapProgress * lapTime),
+          SessionTimeRemain:
+            RACE_DURATION - (sessionTime + lapProgress * lapTime),
           SessionLapsRemain: TOTAL_RACE_LAPS - lap + 1,
           SessionLapsTotal: TOTAL_RACE_LAPS,
           Lap: currentLap,
           LapDistPct: lapDistPct,
-          FuelLevel: fuelLevel - (fuelUsed * lapProgress),
-          FuelLevelPct: (fuelLevel - (fuelUsed * lapProgress)) / FUEL_TANK_CAPACITY,
+          FuelLevel: fuelLevel - fuelUsed * lapProgress,
+          FuelLevelPct:
+            (fuelLevel - fuelUsed * lapProgress) / FUEL_TANK_CAPACITY,
           OnPitRoad: isOnPitRoad,
-          CarIdxLap: Array(64).fill(-1).map((_, idx) => idx === 19 ? currentLap : -1),
-          CarIdxPosition: Array(64).fill(0).map((_, idx) => idx === 19 ? 1 : 0),
+          CarIdxLap: Array(64)
+            .fill(-1)
+            .map((_, idx) => (idx === 19 ? currentLap : -1)),
+          CarIdxPosition: Array(64)
+            .fill(0)
+            .map((_, idx) => (idx === 19 ? 1 : 0)),
           CarIdxLastLapTime: Array(64).fill(-1),
         });
       }
@@ -143,7 +161,6 @@ function generatePitStopRace(): TelemetrySnapshot[] {
       fuelLevel -= fuelUsed;
 
       // Pit stop - refuel to full tank
-      fuelLevel = FUEL_TANK_CAPACITY;
       sessionTime += pitDuration;
 
       // Out-lap (exiting pits)
@@ -159,17 +176,25 @@ function generatePitStopRace(): TelemetrySnapshot[] {
           SessionTime: sessionTime + lapProgress * outLapTime,
           SessionNum: 0,
           SessionFlags: GREEN_FLAG,
-          SessionTimeRemain: RACE_DURATION - (sessionTime + lapProgress * outLapTime),
+          SessionTimeRemain:
+            RACE_DURATION - (sessionTime + lapProgress * outLapTime),
           SessionLapsRemain: TOTAL_RACE_LAPS - lap,
           SessionLapsTotal: TOTAL_RACE_LAPS,
           Lap: currentLap,
           LapDistPct: lapDistPct,
-          FuelLevel: fuelLevel - (outLapFuel * lapProgress),
-          FuelLevelPct: (fuelLevel - (outLapFuel * lapProgress)) / FUEL_TANK_CAPACITY,
+          FuelLevel: fuelLevel - outLapFuel * lapProgress,
+          FuelLevelPct:
+            (fuelLevel - outLapFuel * lapProgress) / FUEL_TANK_CAPACITY,
           OnPitRoad: isOnPitRoad,
-          CarIdxLap: Array(64).fill(-1).map((_, idx) => idx === 19 ? currentLap : -1),
-          CarIdxPosition: Array(64).fill(0).map((_, idx) => idx === 19 ? 1 : 0),
-          CarIdxLastLapTime: Array(64).fill(-1).map((_, idx) => idx === 19 ? outLapTime : -1),
+          CarIdxLap: Array(64)
+            .fill(-1)
+            .map((_, idx) => (idx === 19 ? currentLap : -1)),
+          CarIdxPosition: Array(64)
+            .fill(0)
+            .map((_, idx) => (idx === 19 ? 1 : 0)),
+          CarIdxLastLapTime: Array(64)
+            .fill(-1)
+            .map((_, idx) => (idx === 19 ? outLapTime : -1)),
         });
       }
 
@@ -187,17 +212,25 @@ function generatePitStopRace(): TelemetrySnapshot[] {
           SessionTime: sessionTime + lapProgress * lapTime,
           SessionNum: 0,
           SessionFlags: GREEN_FLAG,
-          SessionTimeRemain: RACE_DURATION - (sessionTime + lapProgress * lapTime),
+          SessionTimeRemain:
+            RACE_DURATION - (sessionTime + lapProgress * lapTime),
           SessionLapsRemain: TOTAL_RACE_LAPS - lap + 1,
           SessionLapsTotal: TOTAL_RACE_LAPS,
           Lap: currentLap,
           LapDistPct: lapDistPct,
-          FuelLevel: fuelLevel - (fuelUsed * lapProgress),
-          FuelLevelPct: (fuelLevel - (fuelUsed * lapProgress)) / FUEL_TANK_CAPACITY,
+          FuelLevel: fuelLevel - fuelUsed * lapProgress,
+          FuelLevelPct:
+            (fuelLevel - fuelUsed * lapProgress) / FUEL_TANK_CAPACITY,
           OnPitRoad: 0,
-          CarIdxLap: Array(64).fill(-1).map((_, idx) => idx === 19 ? currentLap : -1),
-          CarIdxPosition: Array(64).fill(0).map((_, idx) => idx === 19 ? 1 : 0),
-          CarIdxLastLapTime: Array(64).fill(-1).map((_, idx) => idx === 19 ? lapTime : -1),
+          CarIdxLap: Array(64)
+            .fill(-1)
+            .map((_, idx) => (idx === 19 ? currentLap : -1)),
+          CarIdxPosition: Array(64)
+            .fill(0)
+            .map((_, idx) => (idx === 19 ? 1 : 0)),
+          CarIdxLastLapTime: Array(64)
+            .fill(-1)
+            .map((_, idx) => (idx === 19 ? lapTime : -1)),
         });
       }
 
@@ -207,7 +240,9 @@ function generatePitStopRace(): TelemetrySnapshot[] {
     }
   }
 
-  console.log(`Generated ${snapshots.length} snapshots with pit stop at lap ${pitLap}`);
+  console.log(
+    `Generated ${snapshots.length} snapshots with pit stop at lap ${pitLap}`
+  );
   return snapshots;
 }
 
@@ -222,8 +257,12 @@ function generateYellowFlagRace(): TelemetrySnapshot[] {
 
   for (let lap = 1; lap <= TOTAL_RACE_LAPS; lap++) {
     const isYellow = yellowLaps.includes(lap);
-    const lapTime = isYellow ? LAP_TIME_BASE + 20 : LAP_TIME_BASE + (Math.random() - 0.5) * 2;
-    const fuelUsed = isYellow ? FUEL_PER_LAP_BASE * 0.4 : FUEL_PER_LAP_BASE + (Math.random() - 0.5) * 0.2;
+    const lapTime = isYellow
+      ? LAP_TIME_BASE + 20
+      : LAP_TIME_BASE + (Math.random() - 0.5) * 2;
+    const fuelUsed = isYellow
+      ? FUEL_PER_LAP_BASE * 0.4
+      : FUEL_PER_LAP_BASE + (Math.random() - 0.5) * 0.2;
 
     const snapshotsPerLap = 20;
     for (let i = 0; i < snapshotsPerLap; i++) {
@@ -234,17 +273,24 @@ function generateYellowFlagRace(): TelemetrySnapshot[] {
         SessionTime: sessionTime + lapProgress * lapTime,
         SessionNum: 0,
         SessionFlags: isYellow ? YELLOW_FLAG : GREEN_FLAG,
-        SessionTimeRemain: RACE_DURATION - (sessionTime + lapProgress * lapTime),
+        SessionTimeRemain:
+          RACE_DURATION - (sessionTime + lapProgress * lapTime),
         SessionLapsRemain: TOTAL_RACE_LAPS - lap + 1,
         SessionLapsTotal: TOTAL_RACE_LAPS,
         Lap: currentLap,
         LapDistPct: lapDistPct,
-        FuelLevel: fuelLevel - (fuelUsed * lapProgress),
-        FuelLevelPct: (fuelLevel - (fuelUsed * lapProgress)) / FUEL_TANK_CAPACITY,
+        FuelLevel: fuelLevel - fuelUsed * lapProgress,
+        FuelLevelPct: (fuelLevel - fuelUsed * lapProgress) / FUEL_TANK_CAPACITY,
         OnPitRoad: 0,
-        CarIdxLap: Array(64).fill(-1).map((_, idx) => idx === 19 ? currentLap : -1),
-        CarIdxPosition: Array(64).fill(0).map((_, idx) => idx === 19 ? 1 : 0),
-        CarIdxLastLapTime: Array(64).fill(-1).map((_, idx) => idx === 19 ? lapTime : -1),
+        CarIdxLap: Array(64)
+          .fill(-1)
+          .map((_, idx) => (idx === 19 ? currentLap : -1)),
+        CarIdxPosition: Array(64)
+          .fill(0)
+          .map((_, idx) => (idx === 19 ? 1 : 0)),
+        CarIdxLastLapTime: Array(64)
+          .fill(-1)
+          .map((_, idx) => (idx === 19 ? lapTime : -1)),
       });
     }
 
@@ -253,7 +299,9 @@ function generateYellowFlagRace(): TelemetrySnapshot[] {
     currentLap++;
   }
 
-  console.log(`Generated ${snapshots.length} snapshots with yellow flags on laps ${yellowLaps.join(', ')}`);
+  console.log(
+    `Generated ${snapshots.length} snapshots with yellow flags on laps ${yellowLaps.join(', ')}`
+  );
   return snapshots;
 }
 
@@ -268,7 +316,9 @@ function generateFuelSavingRace(): TelemetrySnapshot[] {
 
   for (let lap = 1; lap <= TOTAL_RACE_LAPS; lap++) {
     const isSaving = lap >= savingStartLap;
-    const lapTime = isSaving ? LAP_TIME_BASE + 3 : LAP_TIME_BASE + (Math.random() - 0.5) * 2;
+    const lapTime = isSaving
+      ? LAP_TIME_BASE + 3
+      : LAP_TIME_BASE + (Math.random() - 0.5) * 2;
     const fuelUsed = isSaving
       ? FUEL_PER_LAP_BASE * 0.85 // 15% reduction when saving
       : FUEL_PER_LAP_BASE + (Math.random() - 0.5) * 0.2;
@@ -282,17 +332,24 @@ function generateFuelSavingRace(): TelemetrySnapshot[] {
         SessionTime: sessionTime + lapProgress * lapTime,
         SessionNum: 0,
         SessionFlags: GREEN_FLAG,
-        SessionTimeRemain: RACE_DURATION - (sessionTime + lapProgress * lapTime),
+        SessionTimeRemain:
+          RACE_DURATION - (sessionTime + lapProgress * lapTime),
         SessionLapsRemain: TOTAL_RACE_LAPS - lap + 1,
         SessionLapsTotal: TOTAL_RACE_LAPS,
         Lap: currentLap,
         LapDistPct: lapDistPct,
-        FuelLevel: fuelLevel - (fuelUsed * lapProgress),
-        FuelLevelPct: (fuelLevel - (fuelUsed * lapProgress)) / FUEL_TANK_CAPACITY,
+        FuelLevel: fuelLevel - fuelUsed * lapProgress,
+        FuelLevelPct: (fuelLevel - fuelUsed * lapProgress) / FUEL_TANK_CAPACITY,
         OnPitRoad: 0,
-        CarIdxLap: Array(64).fill(-1).map((_, idx) => idx === 19 ? currentLap : -1),
-        CarIdxPosition: Array(64).fill(0).map((_, idx) => idx === 19 ? 1 : 0),
-        CarIdxLastLapTime: Array(64).fill(-1).map((_, idx) => idx === 19 ? lapTime : -1),
+        CarIdxLap: Array(64)
+          .fill(-1)
+          .map((_, idx) => (idx === 19 ? currentLap : -1)),
+        CarIdxPosition: Array(64)
+          .fill(0)
+          .map((_, idx) => (idx === 19 ? 1 : 0)),
+        CarIdxLastLapTime: Array(64)
+          .fill(-1)
+          .map((_, idx) => (idx === 19 ? lapTime : -1)),
       });
     }
 
@@ -301,13 +358,15 @@ function generateFuelSavingRace(): TelemetrySnapshot[] {
     currentLap++;
   }
 
-  console.log(`Generated ${snapshots.length} snapshots with fuel saving from lap ${savingStartLap}`);
+  console.log(
+    `Generated ${snapshots.length} snapshots with fuel saving from lap ${savingStartLap}`
+  );
   return snapshots;
 }
 
 // Convert snapshots to full telemetry format
 function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
-  return snapshots.map(snapshot => ({
+  return snapshots.map((snapshot) => ({
     SessionTime: {
       countAsTime: false,
       length: 1,
@@ -315,7 +374,7 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'Seconds since session start',
       unit: 's',
       varType: 5,
-      value: [snapshot.SessionTime]
+      value: [snapshot.SessionTime],
     },
     SessionNum: {
       countAsTime: false,
@@ -324,7 +383,7 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'Session number',
       unit: '',
       varType: 2,
-      value: [snapshot.SessionNum]
+      value: [snapshot.SessionNum],
     },
     SessionFlags: {
       countAsTime: false,
@@ -333,7 +392,7 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'Session flags',
       unit: 'irsdk_Flags',
       varType: 3,
-      value: [snapshot.SessionFlags]
+      value: [snapshot.SessionFlags],
     },
     SessionTimeRemain: {
       countAsTime: false,
@@ -342,7 +401,7 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'Seconds left till session ends',
       unit: 's',
       varType: 5,
-      value: [snapshot.SessionTimeRemain]
+      value: [snapshot.SessionTimeRemain],
     },
     SessionLapsRemain: {
       countAsTime: false,
@@ -351,7 +410,7 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'Laps left till session ends',
       unit: '',
       varType: 2,
-      value: [snapshot.SessionLapsRemain]
+      value: [snapshot.SessionLapsRemain],
     },
     SessionLapsTotal: {
       countAsTime: false,
@@ -360,7 +419,7 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'Total number of laps in session',
       unit: '',
       varType: 2,
-      value: [snapshot.SessionLapsTotal]
+      value: [snapshot.SessionLapsTotal],
     },
     Lap: {
       countAsTime: false,
@@ -369,7 +428,7 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'Current lap number',
       unit: '',
       varType: 2,
-      value: [snapshot.Lap]
+      value: [snapshot.Lap],
     },
     LapDistPct: {
       countAsTime: false,
@@ -378,7 +437,7 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'Percentage distance around lap',
       unit: '%',
       varType: 4,
-      value: [snapshot.LapDistPct]
+      value: [snapshot.LapDistPct],
     },
     FuelLevel: {
       countAsTime: false,
@@ -387,7 +446,7 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'Fuel level in tank',
       unit: 'l',
       varType: 4,
-      value: [snapshot.FuelLevel]
+      value: [snapshot.FuelLevel],
     },
     FuelLevelPct: {
       countAsTime: false,
@@ -396,7 +455,7 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'Fuel level as percentage of tank capacity',
       unit: '%',
       varType: 4,
-      value: [snapshot.FuelLevelPct]
+      value: [snapshot.FuelLevelPct],
     },
     OnPitRoad: {
       countAsTime: false,
@@ -405,7 +464,7 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'On pit road between the cones',
       unit: '',
       varType: 2,
-      value: [snapshot.OnPitRoad]
+      value: [snapshot.OnPitRoad],
     },
     CarIdxLap: {
       countAsTime: false,
@@ -414,7 +473,7 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'Laps started by car index',
       unit: '',
       varType: 2,
-      value: snapshot.CarIdxLap
+      value: snapshot.CarIdxLap,
     },
     CarIdxPosition: {
       countAsTime: false,
@@ -423,7 +482,7 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'Cars position in race by car index',
       unit: '',
       varType: 2,
-      value: snapshot.CarIdxPosition
+      value: snapshot.CarIdxPosition,
     },
     CarIdxLastLapTime: {
       countAsTime: false,
@@ -432,7 +491,7 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'Cars last lap time',
       unit: 's',
       varType: 4,
-      value: snapshot.CarIdxLastLapTime
+      value: snapshot.CarIdxLastLapTime,
     },
     PlayerCarIdx: {
       countAsTime: false,
@@ -441,8 +500,8 @@ function snapshotsToTelemetry(snapshots: TelemetrySnapshot[]) {
       description: 'Players carIdx',
       unit: '',
       varType: 2,
-      value: [19]
-    }
+      value: [19],
+    },
   }));
 }
 
@@ -475,7 +534,12 @@ async function main() {
   const telemetry = snapshotsToTelemetry(snapshots);
 
   // Create output directory
-  const outputDir = path.join(process.cwd(), 'test-data', 'mock-fuel', scenarioName);
+  const outputDir = path.join(
+    process.cwd(),
+    'test-data',
+    'mock-fuel',
+    scenarioName
+  );
   await mkdir(outputDir, { recursive: true });
 
   // Write telemetry file
@@ -491,7 +555,7 @@ async function main() {
     fuelTankCapacity: FUEL_TANK_CAPACITY,
     avgFuelPerLap: FUEL_PER_LAP_BASE,
     avgLapTime: LAP_TIME_BASE,
-    generated: new Date().toISOString()
+    generated: new Date().toISOString(),
   };
   const metadataPath = path.join(outputDir, 'metadata.json');
   await writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');

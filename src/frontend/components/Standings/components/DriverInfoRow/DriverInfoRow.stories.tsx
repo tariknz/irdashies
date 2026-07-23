@@ -1583,3 +1583,59 @@ export const IMSACars: Story = {
     layout: 'padded',
   },
 };
+
+export const WithLapCount: Story = {
+  name: 'Lap Count Badge (L6)',
+  args: {
+    ...Primary.args,
+    currentLap: 6,
+    displayOrder: ['position', 'carNumber', 'driverName', 'lapCount'],
+    config: {
+      ...Primary.args?.config,
+      lapCount: { enabled: true },
+    } as StandingsWidgetSettings['config'],
+  },
+};
+
+export const WithLapCountHigh: Story = {
+  name: 'Lap Count Badge (L100)',
+  args: {
+    ...Primary.args,
+    currentLap: 100,
+    displayOrder: ['position', 'carNumber', 'driverName', 'lapCount'],
+    config: {
+      ...Primary.args?.config,
+      lapCount: { enabled: true },
+    } as StandingsWidgetSettings['config'],
+  },
+};
+
+export const WithLapCountMinimal: Story = {
+  name: 'Lap Count Badge Minimal (no border)',
+  args: {
+    ...Primary.args,
+    currentLap: 100,
+    displayOrder: ['position', 'carNumber', 'driverName', 'lapCount'],
+    config: {
+      ...Primary.args?.config,
+      lapCount: { enabled: true },
+      stylingOptions: { lapCount: { minimal: true } },
+    } as StandingsWidgetSettings['config'],
+  },
+};
+
+export const WithLapCountUnknown: Story = {
+  name: 'Lap Count Badge Unknown (L-)',
+  args: {
+    ...Primary.args,
+    // Overlay joined mid-session and this car has not pitted since, so its
+    // stint lap is unknown — the badge shows the L-- placeholder.
+    currentLap: undefined,
+    lapCountUnknown: true,
+    displayOrder: ['position', 'carNumber', 'driverName', 'lapCount'],
+    config: {
+      ...Primary.args?.config,
+      lapCount: { enabled: true },
+    } as StandingsWidgetSettings['config'],
+  },
+};

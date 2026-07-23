@@ -182,6 +182,24 @@ export const LapTimeLogSettings = () => {
 
                   {settings.config.history?.enabled && (
                     <SettingsSection>
+                      <SettingButtonGroupRow<'list' | 'chart'>
+                        title="History Style"
+                        value={settings.config.history?.style ?? 'list'}
+                        options={[
+                          { label: 'List', value: 'list' },
+                          { label: 'Graph', value: 'chart' },
+                        ]}
+                        onChange={(v) =>
+                          handleConfigChange({
+                            ...settings.config,
+                            history: {
+                              ...settings.config.history,
+                              style: v,
+                            },
+                          })
+                        }
+                      />
+
                       <SettingSelectRow
                         title="Number Of Laps To Show"
                         value={(

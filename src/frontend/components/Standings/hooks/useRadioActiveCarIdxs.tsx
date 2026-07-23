@@ -93,6 +93,6 @@ export const useRadioActiveCarIdxs = (persistenceMs: number): number[] => {
     }
     return [...active].sort((a, b) => a - b);
     // renderTick forces recompute when a window expires with no telemetry change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, [persistenceMs, transmitting, renderTick]);
 };

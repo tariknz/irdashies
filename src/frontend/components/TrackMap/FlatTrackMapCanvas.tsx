@@ -239,7 +239,7 @@ export const FlatTrackMapCanvas = ({
           ctx.font = `${fontSize}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          let displayText = '';
+          let displayText;
           if (onPitRoad) {
             displayText = 'P';
           } else if (displayMode === 'livePosition') {

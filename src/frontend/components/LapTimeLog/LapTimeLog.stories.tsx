@@ -197,6 +197,24 @@ export const HistoryView: Story = {
   },
 };
 
+export const HistoryChart: Story = {
+  name: 'History As Graph',
+  args: {
+    ...baseArgs,
+    history: [
+      ...baseHistory,
+      { lap: 5, time: 92.2, delta: 0.7 },
+      { lap: 4, time: 91.6, delta: 0.1 },
+      { lap: 3, time: 93.1, delta: 1.6 },
+      { lap: 2, time: 92.0, delta: 0.5 },
+      { lap: 1, time: 91.7, delta: 0.2 },
+    ],
+    settings: mockConfig({
+      history: { enabled: true, count: 10, style: 'chart' },
+    }),
+  },
+};
+
 export const NoDelta: Story = {
   name: 'Delta Disabled',
   args: {

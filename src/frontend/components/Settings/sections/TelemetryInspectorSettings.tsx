@@ -96,6 +96,12 @@ export const TelemetryInspectorSettings = () => {
         const properties = settings.config.properties ?? [];
 
         const addProperty = (prop: PropertyConfig) => {
+          const alreadyExists = properties.some(
+            (existing) =>
+              existing.source === prop.source && existing.path === prop.path
+          );
+          if (alreadyExists) return;
+
           const newProperties = [...properties, prop];
           handleConfigChange({ properties: newProperties });
           setNewProperty({ source: 'telemetry', path: '', label: '' });

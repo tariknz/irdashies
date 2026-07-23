@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatFuel } from '../fuelCalculations';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
 import { useTelemetryValue, useSessionType } from '@irdashies/context';
 
@@ -22,6 +23,7 @@ export const FuelCalculatorTargetMessage: React.FC<
 > = ({
   fuelData,
   displayData,
+  fuelUnits = 'L',
   settings,
   widgetId,
   customStyles,
@@ -68,7 +70,7 @@ export const FuelCalculatorTargetMessage: React.FC<
     consumption || displayData.avgLaps || displayData.avg10Laps || 0;
   // Additive Safety Margin logic
   const marginAmount =
-    settings?.fuelUnits === 'gal' ? safetyMargin * 3.78541 : safetyMargin;
+    fuelUnits === 'gal' ? safetyMargin * 3.78541 : safetyMargin;
   const fuelNeeded = lapsLeftAfterPit * consumption + marginAmount;
   const fuelToAddHypothetical = Math.max(0, fuelNeeded);
 
@@ -88,17 +90,17 @@ export const FuelCalculatorTargetMessage: React.FC<
   const needDisplay =
     isTesting || consumption === 0
       ? '--'
-      : `+${fuelToAddHypothetical.toFixed(1)}L`;
+      : `+${formatFuel(fuelToAddHypothetical, fuelUnits, 1)}`;
 
   return (
     <div
-      className={`${compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2'} bg-purple-500/20 border border-purple-500/50 rounded flex items-center justify-between ${compactMode !== 'off' ? 'mb-0.5' : 'mb-2'}`}
+      className={`${compactMode === 'ultra' ? '' : compactMode === 'compact' ? 'p-1' : 'p-2'} border-t border-slate-600/30 flex items-center justify-between ${compactMode !== 'off' ? 'mb-0.5' : 'mb-2'}`}
     >
       <div
         className={`flex items-center ${compactMode !== 'off' ? 'gap-1' : 'gap-2'}`}
       >
         <span
-          className="text-purple-400 font-medium"
+          className="text-slate-400 font-medium"
           style={{ fontSize: labelFontSize }}
         >
           TARGET
@@ -115,7 +117,7 @@ export const FuelCalculatorTargetMessage: React.FC<
           Need:
         </span>
         <span
-          className="text-purple-300 font-medium ml-1"
+          className="text-white font-medium ml-1"
           style={{ fontSize: valueFontSize }}
         >
           {needDisplay}

@@ -14,6 +14,7 @@ import {
   getGreenFlagLaps,
   litersToGallons,
   gallonsToLiters,
+  fuelDisplayValue,
   formatFuel,
   detectLapCrossing,
   isGreenFlag,
@@ -216,6 +217,13 @@ describe('fuelCalculations', () => {
     it('should respect custom decimal places', () => {
       expect(formatFuel(10.5, 'L', 1)).toBe('10.5 L');
       expect(formatFuel(10.5, 'L', 3)).toBe('10.500 L');
+    });
+  });
+
+  describe('fuelDisplayValue', () => {
+    it('converts litre values for a gallon display without changing litre output', () => {
+      expect(fuelDisplayValue(0.8, 'gal')).toBeCloseTo(0.2113, 4);
+      expect(fuelDisplayValue(0.8, 'L')).toBe(0.8);
     });
   });
 

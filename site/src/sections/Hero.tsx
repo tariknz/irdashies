@@ -65,7 +65,7 @@ export function Hero() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {speedLineWidths.map((width, i) => (
           <div
-            key={i}
+            key={width}
             className="absolute h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
             style={{
               top: `${15 + i * 14}%`,

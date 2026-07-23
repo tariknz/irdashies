@@ -7,6 +7,7 @@ export const AVAILABLE_WIDGETS_FUEL: { id: string; label: string }[] = [
   { id: 'fuelGrid', label: 'Consumption Grid' },
   { id: 'fuelScenarios', label: 'Pit Scenarios' },
   { id: 'fuelTargetMessage', label: 'Target Pit Message' },
+  { id: 'fuelAtFinish', label: 'Fuel at End' },
   { id: 'fuelGraph', label: 'Fuel History' },
   { id: 'fuelTimeEmpty', label: 'Time Until Empty' },
   { id: 'fuelEconomyPredict', label: 'Economy Predict (Laps vs Target)' },

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-useless-assignment */
 /**
  * Hook for calculating fuel metrics from telemetry data
  * Follows irdashies pattern using useTelemetryValues and Zustand store
@@ -1522,7 +1523,7 @@ export function useFuelCalculation(
     // lapHistorySize is an intentional cache-invalidation dep: lapHistory is read via
     // getState() for performance, and lapHistorySize is the reactive signal that
     // invalidates this memo whenever laps are added or removed from the store.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, [
     sessionNum,
     fuelLevel,

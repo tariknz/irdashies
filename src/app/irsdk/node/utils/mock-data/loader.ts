@@ -1,5 +1,5 @@
 import { TelemetryVarList } from '../../../types';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 
 export const loadMockSessionData = async (): Promise<string> => {
   const json = await import('./session.json');

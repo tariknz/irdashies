@@ -40,7 +40,6 @@ export const BlindSpotMonitorIndicator = ({
     }
 
     if (visible && !disableTransition && !enableTransition) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEnableTransition(false);
       transitionTimeoutRef.current = window.setTimeout(() => {
         setEnableTransition(true);

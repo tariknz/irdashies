@@ -20,8 +20,7 @@ export const GarageCoverSettings = () => {
       false,
     config:
       (currentDashboard?.widgets.find((w) => w.id === SETTING_ID)?.config as
-        | GarageCoverWidgetSettings['config']
-        | undefined) ?? defaultConfig,
+        GarageCoverWidgetSettings['config'] | undefined) ?? defaultConfig,
   });
   const [serverPort, setServerPort] = useState<number>(3000);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -38,7 +37,7 @@ export const GarageCoverSettings = () => {
 
   const loadPreview = (imageFilename: string) => {
     if (!imageFilename) {
-      setTimeout(() => setPreviewUrl(null), 0);
+      setPreviewUrl(null);
       return;
     }
 
@@ -55,12 +54,12 @@ export const GarageCoverSettings = () => {
         .catch(() => {
           // Fallback to localStorage
           const dataUrl = localStorage.getItem(LOCALSTORAGE_KEY);
-          setTimeout(() => setPreviewUrl(dataUrl), 0);
+          setPreviewUrl(dataUrl);
         });
     } else {
       // Browser mode - use localStorage
       const dataUrl = localStorage.getItem(LOCALSTORAGE_KEY);
-      setTimeout(() => setPreviewUrl(dataUrl), 0);
+      setPreviewUrl(dataUrl);
     }
   };
 
@@ -79,7 +78,7 @@ export const GarageCoverSettings = () => {
         (widget.config as unknown as GarageCoverWidgetSettings['config']) ||
         defaultConfig,
     };
-    setTimeout(() => setSettings(newSettings), 0);
+    setSettings(newSettings);
     // Preview will be loaded by the next effect when settings change
   }, [currentDashboard]);
 

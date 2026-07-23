@@ -1,13 +1,18 @@
 import { create } from 'zustand';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { getCarP2PConfig } from './carP2PConfigs';
+import { getCarP2PConfig, type CarP2PConfig } from './carP2PConfigs';
 import { arrayShallowCompare } from '../SessionStore/arrayShallowCompare';
 
 // Other cars report CarIdxP2P_Count as IEEE-754 float32 bits despite varType=2 (int).
 // The decoded float is in 0.1s units, so multiply by 10 to get seconds.
 // The player's own car reports it as a plain integer (already in seconds) — no conversion needed.
-const parseP2PCount = (bits: number, isPlayer: boolean): number => {
+const parseP2PCount = (
+  bits: number,
+  isPlayer: boolean,
+  config: CarP2PConfig
+): number => {
   if (isPlayer) return bits;
+  if (config.countEncoding === 'integer') return bits;
   const view = new DataView(new ArrayBuffer(4));
   view.setInt32(0, bits, true);
   return Math.round(view.getFloat32(0, true) * 10);
@@ -77,10 +82,6 @@ export const usePushToPassStore = create<PushToPassState>((set, get) => ({
 
     p2pStatus.forEach((isActive, carIdx) => {
       const wasActive = prevP2PStatus[carIdx] ?? false;
-      const count = parseP2PCount(
-        p2pCount[carIdx] ?? 0,
-        carIdx === playerCarIdx
-      );
       const carId = carIdxToCarId[carIdx];
       const config = carId !== undefined ? getCarP2PConfig(carId) : undefined;
 
@@ -88,6 +89,12 @@ export const usePushToPassStore = create<PushToPassState>((set, get) => ({
         newPrevP2PStatus[carIdx] = isActive;
         return;
       }
+
+      const count = parseP2PCount(
+        p2pCount[carIdx] ?? 0,
+        carIdx === playerCarIdx,
+        config
+      );
 
       // Transition active → inactive: start cooldown (only if P2P not exhausted)
       if (wasActive && !isActive && count > 0) {
@@ -125,7 +132,7 @@ export const usePushToPassStore = create<PushToPassState>((set, get) => ({
         continue;
       }
 
-      const count = parseP2PCount(rawCount, carIdx === playerCarIdx);
+      const count = parseP2PCount(rawCount, carIdx === playerCarIdx, config);
       const isActive = p2pStatus[carIdx] ?? false;
       const cooldownEnd = newCooldownEndTimes[carIdx] ?? null;
 
