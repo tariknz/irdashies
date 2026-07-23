@@ -1,10 +1,11 @@
-import { renderHook } from '@testing-library/react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { act, renderHook } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   useTelemetryStore,
   useTelemetry,
   useTelemetryValue,
   useTelemetryValues,
+  useTelemetryValuesThrottled,
 } from './TelemetryStore';
 import type { Telemetry } from '@irdashies/types';
 
@@ -68,6 +69,73 @@ describe('TelemetryStore', () => {
       useTelemetryStore.getState().setTelemetry(emptyTelemetry);
       const { result } = renderHook(() => useTelemetryValues('RPM'));
       expect(result.current).toEqual([]);
+    });
+  });
+
+  describe('useTelemetryValuesThrottled', () => {
+    // Regression test for the Standings perf fix: a full-grid array (e.g.
+    // CarIdxLapDistPct) changes on nearly every 60Hz tick once enough cars
+    // are on track, so value-based rounding alone never throttles
+    // re-renders. This proves the time-based gate actually caps render
+    // count regardless of how often the underlying value changes.
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('ignores changes between samples and picks up the latest value at the next tick', () => {
+      useTelemetryStore
+        .getState()
+        .setTelemetry({ ...mockTelemetry, Speed: { value: [1, 2] } } as Telemetry);
+
+      const { result } = renderHook(() =>
+        useTelemetryValuesThrottled('Speed', 100)
+      );
+      expect(result.current).toEqual([1, 2]);
+
+      // Several rapid changes within one sampling window.
+      act(() => {
+        useTelemetryStore
+          .getState()
+          .setTelemetry({ ...mockTelemetry, Speed: { value: [3, 4] } } as Telemetry);
+        useTelemetryStore
+          .getState()
+          .setTelemetry({ ...mockTelemetry, Speed: { value: [5, 6] } } as Telemetry);
+        useTelemetryStore
+          .getState()
+          .setTelemetry({ ...mockTelemetry, Speed: { value: [7, 8] } } as Telemetry);
+      });
+      // No re-render has happened yet — the sampler hasn't ticked.
+      expect(result.current).toEqual([1, 2]);
+
+      // Once the interval elapses, only the latest value is picked up.
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+      expect(result.current).toEqual([7, 8]);
+    });
+
+    it('does not change reference when the sampled value is unchanged', () => {
+      useTelemetryStore
+        .getState()
+        .setTelemetry({ ...mockTelemetry, Speed: { value: [1, 2] } } as Telemetry);
+
+      const { result } = renderHook(() =>
+        useTelemetryValuesThrottled('Speed', 100)
+      );
+      const firstValue = result.current;
+
+      act(() => {
+        // Same values, new array reference.
+        useTelemetryStore
+          .getState()
+          .setTelemetry({ ...mockTelemetry, Speed: { value: [1, 2] } } as Telemetry);
+        vi.advanceTimersByTime(100);
+      });
+      expect(result.current).toBe(firstValue);
     });
   });
 });

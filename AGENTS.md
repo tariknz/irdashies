@@ -288,6 +288,15 @@ npm run test -- --no-coverage
 
 ---
 
+## Benchmarks & Perf Testing
+
+Validate perf fixes with a quantitative test, not eyeballing.
+
+- **`*.perf.spec.ts`** — normal Vitest assertion test, counts renders/calls under simulated load, asserts before/after. Gates CI via `npm test`. Wrap each simulated tick in its own `act()` (one `act()` around a whole loop batches it into a single render). Use `vi.useFakeTimers()` for time-based throttles.
+- **`*.bench.ts`** — `vitest bench()`, compares wall-clock cost. Run via `npm run bench`. Not part of `npm test`; CI runs it after tests but `continue-on-error` (wall-clock too noisy on shared runners to gate on). Call `cleanup()` (`@testing-library/react`) at the end of each bench body or subscriptions leak across sampling rounds and corrupt results. Use top-level `import { bench, describe } from 'vitest'` (this repo is on Vitest 4, not the v5 fixture style).
+
+---
+
 ## Storybook
 
 Every component needs `.stories.tsx`:

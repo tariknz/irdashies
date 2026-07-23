@@ -52,6 +52,10 @@ jobs:
     - name: Run tests with coverage
       run: npm test
 
+    - name: Run benchmarks
+      run: npm run bench
+      continue-on-error: true
+
     - name: Upload coverage report
       uses: actions/upload-artifact@v7
       with:

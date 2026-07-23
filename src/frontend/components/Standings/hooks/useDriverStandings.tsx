@@ -11,6 +11,7 @@ import {
   useFocusCarIdx,
   useTelemetryValues,
   useTelemetryValuesRounded,
+  useTelemetryValuesThrottled,
   useCarLap,
   usePitLap,
   usePrevCarTrackSurface,
@@ -84,17 +85,24 @@ export const useDriverStandings = (
         }));
   const standingsSettings = useStandingsSettings();
   const useLivePositionStandings = standingsSettings?.useLivePosition ?? false;
-  const driverLivePositions = useDriverLivePositions({
-    enabled: useLivePositionStandings,
-  });
   const fastestLaps = useSessionFastestLaps(sessionNum);
   const carIdxF2Time = useTelemetryValuesRounded('CarIdxF2Time', 2);
   const carIdxEstTime = useTelemetryValuesRounded('CarIdxEstTime', 2);
   const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
   const carIdxLap = useTelemetryValues<number[]>('CarIdxLap');
-  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
+  // Sampled by time, not value delta: with a full grid, some car's lap
+  // distance crosses any rounding threshold almost every tick, so value
+  // rounding alone doesn't throttle the recompute below.
+  const carIdxLapDistPct = useTelemetryValuesThrottled('CarIdxLapDistPct');
   const carIdxTrackSurface =
     useTelemetryValues<TrackLocation[]>('CarIdxTrackSurface');
+  // Pass already-subscribed arrays down so this doesn't also re-subscribe
+  // to the same telemetry keys internally.
+  const driverLivePositions = useDriverLivePositions({
+    enabled: useLivePositionStandings,
+    carIdxLapDistPct,
+    carIdxTrackSurface,
+  });
   const radioTransmitCarIdx = useRadioActiveCarIdxs(
     (settings?.radio?.persistenceSeconds ?? 3) * 1000
   );

@@ -6,7 +6,7 @@ import {
   useSessionStore,
   useTelemetryValue,
   useTelemetryValues,
-  useTelemetryValuesRounded,
+  useTelemetryValuesThrottled,
 } from '@irdashies/context';
 import { SessionState, TrackLocation } from '@irdashies/types';
 
@@ -36,8 +36,14 @@ interface DriverData {
  */
 export const useDriverLivePositions = ({
   enabled,
+  carIdxLapDistPct: carIdxLapDistPctOverride,
+  carIdxTrackSurface: carIdxTrackSurfaceOverride,
 }: {
   enabled: boolean;
+  /** Pass an already-subscribed array to avoid a duplicate store subscription
+   * when the caller already holds this telemetry key. */
+  carIdxLapDistPct?: number[];
+  carIdxTrackSurface?: number[];
 }): Record<number, number> => {
   // Old variables, not used anymore. Left here for reference.
   // const carIdxClassPosition = useTelemetryValues<number[]>('CarIdxClassPosition');
@@ -75,9 +81,13 @@ export const useDriverLivePositions = ({
   const sessionPositions = useSessionPositions(sessionNum);
   const sessionState = useTelemetryValue('SessionState') ?? 0;
   const carIdxLapCompleted = useTelemetryValues<number[]>('CarIdxLapCompleted');
-  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
+  const ownCarIdxLapDistPct = useTelemetryValuesThrottled('CarIdxLapDistPct');
+  const carIdxLapDistPct = carIdxLapDistPctOverride ?? ownCarIdxLapDistPct;
   const carIdxClass = useTelemetryValues<number[]>('CarIdxClass');
-  const carIdxTrackSurface = useTelemetryValues<number[]>('CarIdxTrackSurface');
+  const ownCarIdxTrackSurface =
+    useTelemetryValues<number[]>('CarIdxTrackSurface');
+  const carIdxTrackSurface =
+    carIdxTrackSurfaceOverride ?? ownCarIdxTrackSurface;
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
   const p1Car = sessionPositions?.find((pos) => pos.Position === 1); // Position is 1-based
