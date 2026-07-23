@@ -81,8 +81,11 @@ export function useFuelCalculation(
   const isOnTrack = useTelemetryValue('IsOnTrack');
 
   // Use centralized total race laps calculation
-  const { isFixedLapRace, totalRaceLaps: calculatedTotalRaceLaps } =
-    useTotalRaceValue();
+  const {
+    totalRaceLaps: calculatedTotalRaceLaps,
+    estimatedLapsRemaining,
+    hasValidRaceEstimate,
+  } = useTotalRaceValue();
 
   // Check if current session is a Race
   const sessions = useStore(
@@ -1063,10 +1066,14 @@ export function useFuelCalculation(
       }
     } else if (sessionLapsRemain === TIMED_RACE_LAPS_REMAINING) {
       // Use centralized useTotalRaceLaps hook for timed race calculations
-      if (calculatedTotalRaceLaps > 0) {
+      if (
+        hasValidRaceEstimate &&
+        calculatedTotalRaceLaps > 0 &&
+        estimatedLapsRemaining > 0
+      ) {
         // Use the hook's result directly
         totalLaps = Math.ceil(calculatedTotalRaceLaps);
-        lapsRemaining = Math.max(0, totalLaps - (lap - 1) - (lapDistPct || 0));
+        lapsRemaining = estimatedLapsRemaining;
 
         // Add safety buffer for refuel calculations
         const TIME_PADDING_REFUEL = 45.0;
@@ -1545,6 +1552,8 @@ export function useFuelCalculation(
     lapDistPct,
     storeLastLapUsage,
     calculatedTotalRaceLaps,
+    estimatedLapsRemaining,
+    hasValidRaceEstimate,
     lapHistorySize,
   ]);
 
