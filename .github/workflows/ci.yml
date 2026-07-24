@@ -14,16 +14,30 @@ on:
         default: false
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build:
+  validation:
+    name: Validate (${{ matrix.check.name }})
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        check:
+          - name: Lint
+            command: npm run lint
+          - name: Storybook
+            command: npm run build-storybook
+          - name: Tests
+            command: npm test
 
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 2 # Fetch the last 2 commits to compare changes
           persist-credentials: false
 
       - name: Setup Node.js
@@ -51,42 +65,88 @@ jobs:
         if: steps.cache-deps.outputs.cache-hit != 'true'
         run: npm ci
 
-      - name: Run linting
-        run: npm run lint
-
-      - name: Build Storybook
-        run: npm run build-storybook
-
-      - name: Run tests with coverage
-        run: npm test
+      - name: Run ${{ matrix.check.name }}
+        run: ${{ matrix.check.command }}
 
       - name: Upload coverage report
+        if: matrix.check.name == 'Tests'
         uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: coverage
 
-      - name: Determine release eligibility
-        id: check_version
-        shell: pwsh
+  release-gate:
+    name: Determine release eligibility
+    if: github.event_name == 'push' || inputs.should_release
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.gate.outputs.should_release }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2 # Fetch the last 2 commits to compare versions
+          persist-credentials: false
+
+      - name: Check release conditions
+        id: gate
+        shell: bash
         env:
           DISPATCH_SHOULD_RELEASE: ${{ inputs.should_release }}
         run: |
-          $currentVersion = (Get-Content package.json | ConvertFrom-Json).version
-          $previousVersion = (git show HEAD^:package.json | ConvertFrom-Json).version
-          $versionChanged = $currentVersion -ne $previousVersion
-          $shouldRelease = (
-            ($env:GITHUB_EVENT_NAME -eq 'push' -and $versionChanged) -or
-            ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch' -and
-              $env:DISPATCH_SHOULD_RELEASE -eq 'true')
-          )
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "should_release=$DISPATCH_SHOULD_RELEASE" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
-          echo "version_changed=$($versionChanged.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
-          echo "should_release=$($shouldRelease.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
-
-          if ($versionChanged) {
+          currentVersion=$(node -p "require('./package.json').version")
+          previousVersion=$(git show HEAD^:package.json | node -e \
+            "let input = ''; process.stdin.on('data', chunk => input += chunk); process.stdin.on('end', () => console.log(JSON.parse(input).version));")
+          if [[ "$currentVersion" != "$previousVersion" ]]; then
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
             echo "Version changed from $previousVersion to $currentVersion"
-          }
+          else
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    name: Build and publish signed release
+    needs: [validation, release-gate]
+    if: needs.release-gate.outputs.should_release == 'true'
+    runs-on: windows-latest
+    permissions:
+      actions: read
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Cache node_modules and native builds
+        uses: actions/cache@v5
+        id: cache-deps
+        with:
+          path: |
+            node_modules
+            .vite
+            **/node_modules
+            **/*.node
+            **/build/Release
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/binding.gyp', '**/node_modules/**/*.node') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: npm ci
 
       # --- Signed release ----------------------------------------------------
       # Pushes release only when the version changes. Manual runs release only
@@ -101,13 +161,11 @@ jobs:
       # and the .nupkg checksums consistent for auto-updates.
 
       - name: Build unsigned artifacts (publish dry-run)
-        if: steps.check_version.outputs.should_release == 'true'
         run: npx electron-forge publish --dry-run
         env:
           POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
 
       - name: Archive packaged Windows application
-        if: steps.check_version.outputs.should_release == 'true'
         shell: pwsh
         run: |
           $packageDirectory = 'out/irdashies-win32-x64'
@@ -121,7 +179,6 @@ jobs:
 
       - name: Upload packaged application for signing
         id: upload-packaged-app
-        if: steps.check_version.outputs.should_release == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: unsigned-packaged-windows-app
@@ -129,7 +186,6 @@ jobs:
           path: packaged-windows-app.zip
 
       - name: Sign packaged application
-        if: steps.check_version.outputs.should_release == 'true'
         uses: signpath/github-action-submit-signing-request@v2
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
@@ -142,7 +198,6 @@ jobs:
           output-artifact-directory: signed-packaged-app
 
       - name: Restore and verify signed packaged application
-        if: steps.check_version.outputs.should_release == 'true'
         shell: pwsh
         run: |
           $signedArchive = Get-ChildItem `
@@ -168,11 +223,9 @@ jobs:
           Write-Output "Verified signed packaged application: $($signature.SignerCertificate.Subject)"
 
       - name: Rebuild Squirrel artifacts from signed application
-        if: steps.check_version.outputs.should_release == 'true'
         run: npx electron-forge make --skip-package
 
       - name: Verify signed application in Squirrel package
-        if: steps.check_version.outputs.should_release == 'true'
         shell: pwsh
         run: |
           $package = Get-ChildItem `
@@ -213,7 +266,6 @@ jobs:
 
       - name: Upload unsigned installer for signing
         id: upload-unsigned
-        if: steps.check_version.outputs.should_release == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: unsigned-installer
@@ -221,7 +273,6 @@ jobs:
           path: out/make/squirrel.windows/x64/*Setup.exe
 
       - name: Sign installer with SignPath
-        if: steps.check_version.outputs.should_release == 'true'
         uses: signpath/github-action-submit-signing-request@v2
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
@@ -234,7 +285,6 @@ jobs:
           output-artifact-directory: signed-installer
 
       - name: Swap in the signed installer
-        if: steps.check_version.outputs.should_release == 'true'
         shell: pwsh
         run: |
           Copy-Item signed-installer/*Setup.exe out/make/squirrel.windows/x64/ -Force
@@ -250,7 +300,6 @@ jobs:
           Write-Output "Verified signed installer: $($signature.SignerCertificate.Subject)"
 
       - name: Publish signed release
-        if: steps.check_version.outputs.should_release == 'true'
         run: npx electron-forge publish --from-dry-run
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
