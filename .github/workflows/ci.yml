@@ -152,16 +152,16 @@ jobs:
       # Pushes release only when the version changes. Manual runs release only
       # when the should_release workflow-dispatch input is enabled. Pull
       # requests never enter this flow.
-      # Flow: build unsigned (dry-run) -> sign the packaged application via
-      # SignPath -> rebuild Squirrel artifacts from the signed package -> sign
-      # Setup.exe via SignPath -> publish from the saved dry-run.
+      # Flow: package once -> sign the packaged application via SignPath -> make
+      # Squirrel artifacts once while saving a publish dry-run -> sign Setup.exe
+      # via SignPath -> publish from the saved dry-run.
       # The dry-run manifest stores paths to out/make/... (no content hashing), so
-      # rebuilding the artifacts and replacing Setup.exe are picked up by
-      # --from-dry-run. Rebuilding all Squirrel artifacts together keeps RELEASES
-      # and the .nupkg checksums consistent for auto-updates.
+      # replacing Setup.exe is picked up by --from-dry-run. Making all Squirrel
+      # artifacts together keeps RELEASES and the .nupkg checksums consistent for
+      # auto-updates.
 
-      - name: Build unsigned artifacts (publish dry-run)
-        run: npx electron-forge publish --dry-run
+      - name: Package unsigned Windows application
+        run: npx electron-forge package
         env:
           POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
 
@@ -222,12 +222,16 @@ jobs:
           }
           Write-Output "Verified signed packaged application: $($signature.SignerCertificate.Subject)"
 
-      - name: Rebuild Squirrel artifacts from signed application
-        run: npx electron-forge make --skip-package
+      - name: Build Squirrel artifacts from signed application
+        run: node tools/publish-signed-dry-run.mjs
 
       - name: Verify signed application in Squirrel package
         shell: pwsh
         run: |
+          if (-not (Test-Path -LiteralPath out/publish-dry-run -PathType Container)) {
+            throw 'Electron Forge publish dry-run state was not generated.'
+          }
+
           $package = Get-ChildItem `
             -Path out/make/squirrel.windows/x64 `
             -Filter '*.nupkg' `
