@@ -2,10 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
-  workflow_dispatch: # Manually run the signed-release flow from any branch (creates a draft release)
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      should_release:
+        description: Build, sign, and publish a draft release
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -15,103 +21,236 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 2  # Fetch the last 2 commits to compare changes
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2 # Fetch the last 2 commits to compare changes
+          persist-credentials: false
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v6
-      with:
-        node-version: '24'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
 
-    - name: Cache node_modules and native builds
-      uses: actions/cache@v5
-      id: cache-deps
-      with:
-        path: |
-          node_modules
-          .vite
-          **/node_modules
-          **/*.node
-          **/build/Release
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/binding.gyp', '**/node_modules/**/*.node') }}
-        restore-keys: |
-          ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-
-          ${{ runner.os }}-node-
+      - name: Cache node_modules and native builds
+        uses: actions/cache@v5
+        id: cache-deps
+        with:
+          path: |
+            node_modules
+            .vite
+            **/node_modules
+            **/*.node
+            **/build/Release
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/binding.gyp', '**/node_modules/**/*.node') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-
+            ${{ runner.os }}-node-
 
-    - name: Install dependencies
-      if: steps.cache-deps.outputs.cache-hit != 'true'
-      run: npm ci
+      - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: npm ci
 
-    - name: Run linting
-      run: npm run lint
+      - name: Run linting
+        run: npm run lint
 
-    - name: Build Storybook
-      run: npm run build-storybook
+      - name: Build Storybook
+        run: npm run build-storybook
 
-    - name: Run tests with coverage
-      run: npm test
+      - name: Run tests with coverage
+        run: npm test
 
-    - name: Upload coverage report
-      uses: actions/upload-artifact@v7
-      with:
-        name: coverage-report
-        path: coverage 
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: coverage
 
-    - name: Check if version changed
-      id: check_version
-      shell: pwsh
-      run: |
-        $currentVersion = (Get-Content package.json | ConvertFrom-Json).version
-        $previousVersion = (git show HEAD^:package.json | ConvertFrom-Json).version
-        if ($currentVersion -ne $previousVersion) {
-          echo "version_changed=true" >> $env:GITHUB_OUTPUT
-          echo "Version changed from $previousVersion to $currentVersion"
-        }
+      - name: Determine release eligibility
+        id: check_version
+        shell: pwsh
+        env:
+          DISPATCH_SHOULD_RELEASE: ${{ inputs.should_release }}
+        run: |
+          $currentVersion = (Get-Content package.json | ConvertFrom-Json).version
+          $previousVersion = (git show HEAD^:package.json | ConvertFrom-Json).version
+          $versionChanged = $currentVersion -ne $previousVersion
+          $shouldRelease = (
+            ($env:GITHUB_EVENT_NAME -eq 'push' -and $versionChanged) -or
+            ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch' -and
+              $env:DISPATCH_SHOULD_RELEASE -eq 'true')
+          )
 
-    # --- Signed release (only when the version bumps) ---------------------
-    # Flow: build unsigned (dry-run) -> sign Setup.exe via SignPath -> swap the
-    # signed installer back in place -> publish from the saved dry-run.
-    # The dry-run manifest stores paths to out/make/... (no content hashing), so
-    # replacing the Setup.exe file is picked up by --from-dry-run. RELEASES and
-    # the .nupkg are never touched, keeping auto-updates valid.
+          echo "version_changed=$($versionChanged.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          echo "should_release=$($shouldRelease.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
 
-    - name: Build unsigned artifacts (publish dry-run)
-      if: steps.check_version.outputs.version_changed == 'true' || github.event_name == 'workflow_dispatch'
-      run: npx electron-forge publish --dry-run
-      env:
-        POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
+          if ($versionChanged) {
+            echo "Version changed from $previousVersion to $currentVersion"
+          }
 
-    - name: Upload unsigned installer for signing
-      id: upload-unsigned
-      if: steps.check_version.outputs.version_changed == 'true' || github.event_name == 'workflow_dispatch'
-      uses: actions/upload-artifact@v7
-      with:
-        name: unsigned-installer
-        if-no-files-found: error
-        path: out/make/squirrel.windows/x64/*Setup.exe
+      # --- Signed release ----------------------------------------------------
+      # Pushes release only when the version changes. Manual runs release only
+      # when the should_release workflow-dispatch input is enabled. Pull
+      # requests never enter this flow.
+      # Flow: build unsigned (dry-run) -> sign the packaged application via
+      # SignPath -> rebuild Squirrel artifacts from the signed package -> sign
+      # Setup.exe via SignPath -> publish from the saved dry-run.
+      # The dry-run manifest stores paths to out/make/... (no content hashing), so
+      # rebuilding the artifacts and replacing Setup.exe are picked up by
+      # --from-dry-run. Rebuilding all Squirrel artifacts together keeps RELEASES
+      # and the .nupkg checksums consistent for auto-updates.
 
-    - name: Sign installer with SignPath
-      if: steps.check_version.outputs.version_changed == 'true' || github.event_name == 'workflow_dispatch'
-      uses: signpath/github-action-submit-signing-request@v2
-      with:
-        api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-        organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
-        project-slug: irdashies
-        signing-policy-slug: release-signing
-        artifact-configuration-slug: initial
-        github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
-        wait-for-completion: true
-        output-artifact-directory: signed-installer
+      - name: Build unsigned artifacts (publish dry-run)
+        if: steps.check_version.outputs.should_release == 'true'
+        run: npx electron-forge publish --dry-run
+        env:
+          POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
 
-    - name: Swap in the signed installer
-      if: steps.check_version.outputs.version_changed == 'true' || github.event_name == 'workflow_dispatch'
-      shell: pwsh
-      run: Copy-Item signed-installer/*Setup.exe out/make/squirrel.windows/x64/ -Force
+      - name: Archive packaged Windows application
+        if: steps.check_version.outputs.should_release == 'true'
+        shell: pwsh
+        run: |
+          $packageDirectory = 'out/irdashies-win32-x64'
+          if (-not (Test-Path -LiteralPath $packageDirectory -PathType Container)) {
+            throw "Packaged application not found: $packageDirectory"
+          }
+          Compress-Archive `
+            -Path "$packageDirectory/*" `
+            -DestinationPath packaged-windows-app.zip `
+            -CompressionLevel Optimal
 
-    - name: Publish signed release
-      if: steps.check_version.outputs.version_changed == 'true' || github.event_name == 'workflow_dispatch'
-      run: npx electron-forge publish --from-dry-run
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload packaged application for signing
+        id: upload-packaged-app
+        if: steps.check_version.outputs.should_release == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-packaged-windows-app
+          if-no-files-found: error
+          path: packaged-windows-app.zip
+
+      - name: Sign packaged application
+        if: steps.check_version.outputs.should_release == 'true'
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: irdashies
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: packaged-app
+          github-artifact-id: ${{ steps.upload-packaged-app.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed-packaged-app
+
+      - name: Restore and verify signed packaged application
+        if: steps.check_version.outputs.should_release == 'true'
+        shell: pwsh
+        run: |
+          $signedArchive = Get-ChildItem `
+            -LiteralPath signed-packaged-app `
+            -Filter '*.zip' `
+            -File `
+            -Recurse |
+            Select-Object -First 1
+          if (-not $signedArchive) {
+            throw 'SignPath did not return the signed packaged application ZIP.'
+          }
+
+          Expand-Archive `
+            -LiteralPath $signedArchive.FullName `
+            -DestinationPath out/irdashies-win32-x64 `
+            -Force
+
+          $appExecutable = 'out/irdashies-win32-x64/irdashies.exe'
+          $signature = Get-AuthenticodeSignature -LiteralPath $appExecutable
+          if ($signature.Status -ne 'Valid') {
+            throw "Packaged application signature is $($signature.Status): $($signature.StatusMessage)"
+          }
+          Write-Output "Verified signed packaged application: $($signature.SignerCertificate.Subject)"
+
+      - name: Rebuild Squirrel artifacts from signed application
+        if: steps.check_version.outputs.should_release == 'true'
+        run: npx electron-forge make --skip-package
+
+      - name: Verify signed application in Squirrel package
+        if: steps.check_version.outputs.should_release == 'true'
+        shell: pwsh
+        run: |
+          $package = Get-ChildItem `
+            -Path out/make/squirrel.windows/x64 `
+            -Filter '*.nupkg' `
+            -File |
+            Where-Object { $_.Name -notlike '*-delta.nupkg' } |
+            Select-Object -First 1
+          if (-not $package) {
+            throw 'Squirrel full package was not generated.'
+          }
+
+          $extractDirectory = Join-Path $env:RUNNER_TEMP 'irdashies-nupkg'
+          New-Item -ItemType Directory -Path $extractDirectory -Force | Out-Null
+          $packageArchive = Join-Path $env:RUNNER_TEMP 'irdashies-nupkg.zip'
+          Copy-Item -LiteralPath $package.FullName -Destination $packageArchive -Force
+          Expand-Archive `
+            -LiteralPath $packageArchive `
+            -DestinationPath $extractDirectory `
+            -Force
+
+          $packagedExecutable = Get-ChildItem `
+            -LiteralPath $extractDirectory `
+            -Recurse `
+            -Filter 'irdashies.exe' `
+            -File |
+            Select-Object -First 1
+          if (-not $packagedExecutable) {
+            throw 'irdashies.exe was not found in the Squirrel package.'
+          }
+
+          $signature = Get-AuthenticodeSignature `
+            -LiteralPath $packagedExecutable.FullName
+          if ($signature.Status -ne 'Valid') {
+            throw "Squirrel package contains an application with signature status $($signature.Status)."
+          }
+          Write-Output "Verified signed application in $($package.Name)."
+
+      - name: Upload unsigned installer for signing
+        id: upload-unsigned
+        if: steps.check_version.outputs.should_release == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-installer
+          if-no-files-found: error
+          path: out/make/squirrel.windows/x64/*Setup.exe
+
+      - name: Sign installer with SignPath
+        if: steps.check_version.outputs.should_release == 'true'
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: irdashies
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: initial
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed-installer
+
+      - name: Swap in the signed installer
+        if: steps.check_version.outputs.should_release == 'true'
+        shell: pwsh
+        run: |
+          Copy-Item signed-installer/*Setup.exe out/make/squirrel.windows/x64/ -Force
+          $installer = Get-ChildItem `
+            -Path out/make/squirrel.windows/x64 `
+            -Filter '*Setup.exe' `
+            -File |
+            Select-Object -First 1
+          $signature = Get-AuthenticodeSignature -LiteralPath $installer.FullName
+          if ($signature.Status -ne 'Valid') {
+            throw "Installer signature is $($signature.Status): $($signature.StatusMessage)"
+          }
+          Write-Output "Verified signed installer: $($signature.SignerCertificate.Subject)"
+
+      - name: Publish signed release
+        if: steps.check_version.outputs.should_release == 'true'
+        run: npx electron-forge publish --from-dry-run
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
