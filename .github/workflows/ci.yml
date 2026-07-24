@@ -78,6 +78,22 @@ jobs:
           name: coverage-report
           path: coverage
 
+  build:
+    name: build
+    needs: validation
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Confirm validation passed
+        env:
+          VALIDATION_RESULT: ${{ needs.validation.result }}
+        run: |
+          if [[ "$VALIDATION_RESULT" != "success" ]]; then
+            echo "Validation result: $VALIDATION_RESULT" >&2
+            exit 1
+          fi
+
   release-gate:
     name: Determine release eligibility
     if: github.event_name == 'push' || inputs.should_release
@@ -122,7 +138,7 @@ jobs:
 
   release:
     name: Build and publish signed release
-    needs: [validation, release-gate]
+    needs: [build, release-gate]
     if: needs.release-gate.outputs.should_release == 'true'
     runs-on: windows-latest
     permissions:
