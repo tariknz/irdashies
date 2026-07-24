@@ -29,6 +29,7 @@ Install the .exe and run it. The application will automatically update when a ne
 - [Package (create .exe)](#package-create-exe)
 - [Testing](#testing)
 - [Linting](#linting)
+- [Sponsors](#sponsors)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -687,6 +688,19 @@ npm run lint
 ## Developing on Mac
 
 As you may know, the iRacing SDK is only available on Windows. To develop on Mac OS, there is a mock SDK that is loaded which generates some dummy data for you to work with. This is useful for developing the UI components and widgets.
+
+## Sponsors
+
+<table>
+  <tr>
+    <td>
+      <img src="https://signpath.org/assets/favicon-50x50.png" alt="SignPath" width="50" height="50">
+    </td>
+    <td>
+      Free code signing on Windows provided by <a href="https://signpath.io/">SignPath.io</a>, certificate by <a href="https://signpath.org/">SignPath Foundation</a>.
+    </td>
+  </tr>
+</table>
 
 ## Acknowledgments
 
