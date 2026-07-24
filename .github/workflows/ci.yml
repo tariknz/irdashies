@@ -23,17 +23,20 @@ concurrency:
 jobs:
   validation:
     name: Validate (${{ matrix.check.name }})
-    runs-on: windows-latest
+    runs-on: ${{ matrix.check.runner }}
     strategy:
       fail-fast: false
       matrix:
         check:
           - name: Lint
             command: npm run lint
+            runner: ubuntu-latest
           - name: Storybook
             command: npm run build-storybook
+            runner: ubuntu-latest
           - name: Tests
             command: npm test
+            runner: windows-latest
 
     steps:
       - uses: actions/checkout@v6
@@ -94,6 +97,8 @@ jobs:
         env:
           DISPATCH_SHOULD_RELEASE: ${{ inputs.should_release }}
         run: |
+          set -euo pipefail
+
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             echo "should_release=$DISPATCH_SHOULD_RELEASE" >> "$GITHUB_OUTPUT"
             exit 0
@@ -102,6 +107,12 @@ jobs:
           currentVersion=$(node -p "require('./package.json').version")
           previousVersion=$(git show HEAD^:package.json | node -e \
             "let input = ''; process.stdin.on('data', chunk => input += chunk); process.stdin.on('end', () => console.log(JSON.parse(input).version));")
+
+          if [[ -z "$currentVersion" || -z "$previousVersion" ]]; then
+            echo "Could not determine current and previous package versions." >&2
+            exit 1
+          fi
+
           if [[ "$currentVersion" != "$previousVersion" ]]; then
             echo "should_release=true" >> "$GITHUB_OUTPUT"
             echo "Version changed from $previousVersion to $currentVersion"
