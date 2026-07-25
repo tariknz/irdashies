@@ -362,21 +362,124 @@ summary rather than carried as a manual caveat.
 widget paths show changing inputs in the coverage report. Two repetitions of
 the same A/B pair agree on direction.
 
-#### PB3 - Reduce measured renderer wake-ups and paint work
+#### PB3 - Actionable optimization sequence
 
-This is the measurement-driven entry into existing Architecture Phase 3, not a
-parallel channel design.
+PB1 and PB2 improve confidence, but they do **not** block the first optimization
+PRs. Existing live-session Phase 0 evidence already confirmed telemetry fanout
+and duplicated renderer work, while the July replay showed that full-dashboard
+cost appears when widgets are mounted rather than from empty windows alone.
 
-- [ ] Add perf-only per-widget render/update counters and per-window wake-up
-      rates.
-- [ ] Implement rate-aware channel subscriptions using the Phase 3 buckets
-      (`driverFocused`, `gapTiming`, `informational`, `static`), defaulting
-      unmigrated widgets to the legacy rate.
-- [ ] Publish only the channels required by the active widgets in each window.
-- [ ] Mount specialized providers/processors only in windows whose widgets
-      require them.
-- [ ] Migrate one measured hotspot at a time and preserve full-rate paths for
-      input controls and calculations whose precision rules prohibit throttling.
+Deliver these as separate PRs so each change remains reviewable and its effect
+can be attributed.
+
+##### OP1 - Gate renderer-global store updaters
+
+`OverlayContainer` currently mounts `SectorTimingUpdater`,
+`PushToPassUpdater`, and `PitLapUpdater` in every display renderer regardless of
+which widgets that renderer contains.
+
+- [ ] Add a typed widget-to-runtime-dependency registry outside widget folders.
+- [ ] Mount `SectorTimingUpdater` only for displays containing `map`, `flatmap`,
+      or `sectordelta`.
+- [ ] Mount `PushToPassUpdater` only for displays containing `standings` or
+      `relative`.
+- [ ] Mount `PitLapUpdater` only for displays containing `standings`,
+      `relative`, or `battle`.
+- [ ] Re-evaluate dependencies when a profile changes or a widget moves between
+      displays.
+- [ ] Add component tests proving each updater mounts once when required and
+      zero times when no local widget consumes it.
+
+**Expected result:** remove known per-tick calculations from unrelated display
+renderers without changing widget behavior or waiting for the channel bus.
+
+##### OP2 - Make specialized providers display-aware
+
+`App.tsx` currently mounts `PitLaneProvider` and `ReferenceStoreProvider` in
+every overlay renderer before the local display's active widgets are known.
+
+- [ ] Split overlay bootstrap into the always-required
+      Dashboard/Running/Session/Telemetry shell and a display-aware specialized
+      provider layer.
+- [ ] Mount `PitLaneProvider` only for displays containing `standings`,
+      `relative`, or `pitlanehelper`.
+- [ ] Mount `ReferenceStoreProvider` only for displays containing consumers of
+      reference-lap or sector data (`standings`, `relative`, `map`, `flatmap`,
+      or `sectordelta`).
+- [ ] Dispose subscriptions and release feature-store state when the last local
+      consumer disappears.
+- [ ] Keep settings-window provider behavior unchanged.
+
+**Expected result:** eliminate duplicate reference-lap and pit-lane processing
+from renderers that cannot display those results.
+
+##### OP3 - Build the Phase 3 per-window channel bus
+
+This is the existing Architecture Phase 3 design, now split into an executable
+foundation PR.
+
+- [ ] Define typed channel names and payloads in `src/types/`.
+- [ ] Add a main-process subscription registry keyed by `webContents.id`.
+- [ ] Expose `subscribe(channels)` / `unsubscribe(channels)` through preload;
+      frontend code must not import from `src/app`.
+- [ ] Remove subscriptions automatically when a renderer closes or reloads.
+- [ ] Recompute a window's manifest when its profile or display widget set
+      changes.
+- [ ] Keep the legacy telemetry bridge as an explicit compatibility channel
+      until all in-tree widgets migrate.
+- [ ] Pilot the bus with on-change session state plus low-risk Weather and Flag
+      snapshots.
+
+**Expected result:** a renderer receives only channels requested by widgets on
+its display; closed windows retain no subscription callbacks.
+
+##### OP4 - Add rate-aware publishing and migrate high-churn widgets
+
+- [ ] Add developer defaults with an optional per-widget override:
+  - `driverFocused`: native telemetry rate for Input and controls.
+  - `relative`: 20 Hz for Relative and proximity warnings.
+  - `gapTiming`: 10 Hz for Standings, Battle, and sector deltas.
+  - `informational`: 1-5 Hz for Weather and derived Fuel presentation.
+  - `static`: on-change for session metadata, track shape, and widget chrome.
+- [ ] Coalesce channel updates per window in main; do not run independent
+      renderer timers that wake only to discard data.
+- [ ] Migrate Standings, Relative, Battle, Track Map/Flat Map, Weather, and Flag
+      away from the legacy full-telemetry message.
+- [ ] Preserve exact/full-rate inputs required by the no-round rules, including
+      controls, `FuelLevel`, and `SessionTime`.
+- [ ] Emit per-window channel deliveries/second in perf mode.
+
+**Expected result:** non-input renderers stop waking at the SDK rate when their
+visible widgets only require 1-10 Hz data.
+
+##### OP5 - Move duplicated derived work to main-process processors
+
+Start only after OP3 establishes typed channel delivery, but implementation does
+not wait for every benchmark-fidelity item.
+
+- [ ] Implement `FuelProjectionProcessor` as the first end-to-end processor and
+      publish `fuel.projection`; compute history once, not once per renderer.
+- [ ] Move relative-gap and standings augmentation into processors after Fuel,
+      retaining pure-function unit tests for every derivation.
+- [ ] Key processor lifecycle to `sessionLifecycle` and release driver/session
+      state on leave, session change, and disconnect.
+- [ ] Keep raw telemetry acquisition and persistence out of frontend code.
+
+**Expected result:** expensive history and field-wide derivations run once per
+SDK tick and only subscribed windows receive immutable snapshots.
+
+##### OP6 - Remove the legacy firehose and redundant providers
+
+- [ ] Track migration status in the widget registry.
+- [ ] Stop publishing the legacy telemetry object to windows containing no
+      legacy widgets.
+- [ ] Delete renderer-side processors/providers after their final consumer
+      migrates.
+- [ ] Remove the legacy telemetry channel in one final cleanup PR once all
+      in-tree widgets use typed channels.
+
+**Expected result:** renderer work scales with its local widgets and declared
+rates rather than with every SDK tick and every feature in the application.
 
 **Exit gates:**
 
@@ -459,6 +562,7 @@ LLM agents: read this file at the start of any session that touches the architec
 
 Append-only. Newest entries at the top. Format: `YYYY-MM-DD — item — branch — outcome`.
 
+- **2026-07-26** — PB3 revised from generic profiling tasks into six executable optimization PRs. Immediate OP1/OP2 work gates unconditional per-display store updaters and providers; OP3-OP6 deliver the existing Phase 3 channel bus, rate-aware widget migrations, main-process processors, and removal of the telemetry firehose. PB1/PB2 remain parallel measurement support and are no longer described as blockers — `chore/performance-benchmark-harness` — plan revision
 - **2026-07-26** — PB0 packaged performance harness and PB1-PB4 follow-up plan: observer/empty/full/widget-filter modes, structured process/renderer/iRacing metrics, fixed-duration runner, analyzer, regression gates, and replay/live protocol. Controlled 59-car replay established a static/compositor lower bound but exposed incomplete replay telemetry, so telemetry coverage, private memory, deterministic live capture, and PresentMon are explicit gates before targeted or drastic architecture work — `chore/performance-benchmark-harness` — in review
 - **2026-05-19** — R1 reference-lap fetch dedup + R2 post-debounce write log landed on integration branch. R1: 5s-TTL invoke dedup in `referenceLapsBridge.ts` collapses 3× per-renderer `[Main] Fetching reference lap` log lines to 1 per class per transition; subsequent invokes log at DEBUG level. R2: `flushAsync` in `referenceLaps.ts` logs `[Main] Reference laps written to disk (N entries)` after each successful `fs.promises.writeFile`, giving ground-truth save-count evidence to discriminate against the misleading renderer-side log clusters. 9 new spec tests (6 new bridge spec file + 3 in referenceLaps spec). 809/809 tests pass — `feat/phase-2a-integration` — landed
 - **2026-05-19** — Working-tree identity-key implementation for mid-session leave detection reverted to HEAD on `feat/phase-2a-integration`. Decline decision from 2026-05-18 enacted before any commit landed; sessionLifecycle.ts and its spec match the post-2026-05-17 state again. The 2026-05-17 follow-up work (empty-Drivers guard, disconnect log line, Released summary, bridge stale-state nulling) was also still uncommitted and got re-applied cleanly in the same revert+restore operation, then committed separately
