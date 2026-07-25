@@ -4,6 +4,10 @@
 > **Author:** Kev (with AI-assisted analysis)
 > **Companion file:** [`ARCHITECTURE_REVIEW.md`](./ARCHITECTURE_REVIEW.md)
 > **Purpose:** Empirical evidence to inform updates to the architecture review and prioritisation of remediation work.
+>
+> **Repeatable harness:** See
+> [`PERFORMANCE_BENCHMARKS.md`](./PERFORMANCE_BENCHMARKS.md) for the current
+> replay A/B and live-session protocol.
 
 ---
 

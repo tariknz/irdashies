@@ -216,7 +216,10 @@ export const dashboardBridge: DashboardBridge = {
 
 export async function publishDashboardUpdates(
   overlayManager: OverlayManager,
-  analytics: Analytics
+  analytics: Analytics,
+  dashboardTransform: (dashboard: DashboardLayout) => DashboardLayout = (
+    dashboard
+  ) => dashboard
 ) {
   let lastProfileId = getCurrentProfileId();
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
@@ -236,7 +239,9 @@ export async function publishDashboardUpdates(
   };
 
   onDashboardUpdated((dashboard) => {
-    const merged = mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
+    const merged = dashboardTransform(
+      mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings())
+    );
     const profileId = getCurrentProfileId();
 
     if (profileId === lastProfileId) {
@@ -293,7 +298,9 @@ export async function publishDashboardUpdates(
     const currentProfileId = getCurrentProfileId();
     const dashboard = getDashboard(currentProfileId);
     if (!dashboard) return;
-    const merged = mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings());
+    const merged = dashboardTransform(
+      mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings())
+    );
     overlayManager.closeOrCreateWindows(merged);
     overlayManager.publishMessage('dashboardUpdated', merged);
   });

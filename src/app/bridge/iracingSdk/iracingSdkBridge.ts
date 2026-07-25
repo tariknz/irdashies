@@ -216,7 +216,7 @@ export async function publishIRacingSDKEvents(
           }
         }
         perfMetrics.markEnd('processTelemetry');
-        perfMetrics.tick();
+        perfMetrics.tick(telemetry);
 
         // Throttling to ~25Hz to save system resources as requested.
         // We sleep AFTER publishing to ensure each frame is sent with minimal latency.

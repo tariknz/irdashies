@@ -117,6 +117,7 @@ PITLANE_DETECTION_FIXES.md
 
 # storybook
 storybook-static/
+perf-results/
 
 # landing site
 site/dist/
