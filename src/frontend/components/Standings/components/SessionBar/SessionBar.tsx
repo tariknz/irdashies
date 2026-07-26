@@ -505,11 +505,13 @@ export const SessionBar = ({
     topSpeed: {
       enabled: effectiveBarSettings?.topSpeed?.enabled ?? false,
       render: () => {
-        if (lastLapTopSpeedMs === null) return null;
         const isMetric = displayUnits === 1;
         const factor = isMetric ? 3.6 : 2.23694;
         const unit = isMetric ? 'km/h' : 'mph';
-        const last = (lastLapTopSpeedMs * factor).toFixed(0);
+        const last =
+          lastLapTopSpeedMs !== null
+            ? `${(lastLapTopSpeedMs * factor).toFixed(0)} ${unit}`
+            : '—';
         const best =
           sessionBestTopSpeedMs !== null
             ? (sessionBestTopSpeedMs * factor).toFixed(0)
@@ -517,9 +519,7 @@ export const SessionBar = ({
         return (
           <div className="flex justify-center gap-1 items-center tabular-nums">
             <GaugeIcon />
-            <span>
-              {last} {unit}
-            </span>
+            <span>{last}</span>
             {best && <span className="text-green-400">({best})</span>}
           </div>
         );
