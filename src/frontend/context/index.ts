@@ -21,3 +21,5 @@ export * from './BattleGapStore/BattleGapStore';
 export * from './BattleGapStore/BattleGapStoreUpdater';
 export * from './shared';
 export * from './PersonalBestStore/PersonalBestStore';
+export * from './CarSpeedStore/TopSpeedStore';
+export * from './CarSpeedStore/TopSpeedStoreUpdater';

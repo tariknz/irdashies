@@ -154,6 +154,18 @@ export const defaultDashboard: {
           trackName: {
             enabled: false,
           },
+          fuelLevel: {
+            enabled: false,
+          },
+          lastLap: {
+            enabled: false,
+          },
+          bestLap: {
+            enabled: false,
+          },
+          topSpeed: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -168,6 +180,10 @@ export const defaultDashboard: {
             'trackTemperature',
             'wind',
             'trackName',
+            'fuelLevel',
+            'lastLap',
+            'bestLap',
+            'topSpeed',
           ],
         },
         footerBar: {
@@ -214,6 +230,18 @@ export const defaultDashboard: {
           trackName: {
             enabled: false,
           },
+          fuelLevel: {
+            enabled: false,
+          },
+          lastLap: {
+            enabled: false,
+          },
+          bestLap: {
+            enabled: false,
+          },
+          topSpeed: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -228,6 +256,10 @@ export const defaultDashboard: {
             'trackTemperature',
             'wind',
             'trackName',
+            'fuelLevel',
+            'lastLap',
+            'bestLap',
+            'topSpeed',
           ],
         },
         showOnlyWhenOnTrack: false,
@@ -532,6 +564,18 @@ export const defaultDashboard: {
           trackName: {
             enabled: false,
           },
+          fuelLevel: {
+            enabled: false,
+          },
+          lastLap: {
+            enabled: false,
+          },
+          bestLap: {
+            enabled: false,
+          },
+          topSpeed: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -546,6 +590,10 @@ export const defaultDashboard: {
             'trackTemperature',
             'wind',
             'trackName',
+            'fuelLevel',
+            'lastLap',
+            'bestLap',
+            'topSpeed',
           ],
         },
         footerBar: {
@@ -592,6 +640,18 @@ export const defaultDashboard: {
           trackName: {
             enabled: false,
           },
+          fuelLevel: {
+            enabled: false,
+          },
+          lastLap: {
+            enabled: false,
+          },
+          bestLap: {
+            enabled: false,
+          },
+          topSpeed: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -606,6 +666,10 @@ export const defaultDashboard: {
             'trackTemperature',
             'wind',
             'trackName',
+            'fuelLevel',
+            'lastLap',
+            'bestLap',
+            'topSpeed',
           ],
         },
         showOnlyWhenOnTrack: false,

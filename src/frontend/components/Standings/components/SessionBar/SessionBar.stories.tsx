@@ -21,6 +21,77 @@ export const Primary: Story = {
   },
 };
 
+export const FuelLevelMetric: Story = {
+  args: {
+    settings: {
+      ...standingsDefaults.headerBar,
+      fuelLevel: { enabled: true },
+      displayOrder: ['fuelLevel'],
+    },
+    position: 'header',
+  },
+};
+
+export const FuelLevelWithOtherItems: Story = {
+  args: {
+    settings: {
+      ...standingsDefaults.headerBar,
+      sessionName: { enabled: true },
+      sessionLaps: { enabled: true },
+      incidentCount: { enabled: true },
+      fuelLevel: { enabled: true },
+      displayOrder: ['sessionName', 'sessionLaps', 'incidentCount', 'fuelLevel'],
+    },
+    position: 'header',
+  },
+};
+
+export const LastLap: Story = {
+  args: {
+    settings: {
+      ...standingsDefaults.headerBar,
+      lastLap: { enabled: true },
+      displayOrder: ['lastLap'],
+    },
+    position: 'header',
+  },
+};
+
+export const BestLap: Story = {
+  args: {
+    settings: {
+      ...standingsDefaults.headerBar,
+      bestLap: { enabled: true },
+      displayOrder: ['bestLap'],
+    },
+    position: 'header',
+  },
+};
+
+export const TopSpeed: Story = {
+  args: {
+    settings: {
+      ...standingsDefaults.headerBar,
+      topSpeed: { enabled: true },
+      displayOrder: ['topSpeed'],
+    },
+    position: 'header',
+  },
+};
+
+export const LapTimesWithOtherItems: Story = {
+  args: {
+    settings: {
+      ...standingsDefaults.headerBar,
+      lastLap: { enabled: true },
+      bestLap: { enabled: true },
+      incidentCount: { enabled: true },
+      displayOrder: ['incidentCount', 'lastLap', 'bestLap'],
+    },
+    position: 'header',
+  },
+};
+
 export const Footer: Story = {
   args: {
     settings: standingsDefaults.footerBar,
