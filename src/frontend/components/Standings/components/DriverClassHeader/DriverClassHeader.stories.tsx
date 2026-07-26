@@ -114,6 +114,34 @@ export const PlayerManufacturerOverride: Story = {
   },
 };
 
+export const TwelveManufacturersCapAll: Story = {
+  args: {
+    className: 'GT3',
+    classColor: 0x00aa44,
+    totalDrivers: 36,
+    sof: 4200,
+    isMultiClass: true,
+    classHeaderStyle: {
+      compactSof: true,
+      manufacturerStats: { enabled: true, cap: null, showPlayerManufacturer: false },
+    },
+    manufacturerCounts: [
+      { carId: 56, count: 6 },
+      { carId: 122, count: 5 },
+      { carId: 145, count: 4 },
+      { carId: 160, count: 4 },
+      { carId: 1, count: 3 },
+      { carId: 3, count: 3 },
+      { carId: 10, count: 3 },
+      { carId: 20, count: 2 },
+      { carId: 30, count: 2 },
+      { carId: 40, count: 2 },
+      { carId: 50, count: 1 },
+      { carId: 60, count: 1 },
+    ],
+  },
+};
+
 export const AllClasses: Story = {
   render: () => (
     <TableWrapper>
