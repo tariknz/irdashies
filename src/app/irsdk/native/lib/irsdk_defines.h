@@ -83,16 +83,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <tchar.h>
 
+#include "./irsdk_shared_objects.h"
+
 #if defined(IRDASHIES_IRSDK_REPLAY_NAMES)
 static const _TCHAR IRSDK_DATAVALIDEVENTNAME[] =
-	_T("Local\\IRDashiesReplayDataValidEvent");
+	IRDASHIES_IRSDK_REPLAY_EVENT_NAME;
 static const _TCHAR IRSDK_MEMMAPFILENAME[] =
-	_T("Local\\IRDashiesReplayMemMapFileName");
+	IRDASHIES_IRSDK_REPLAY_MAPPING_NAME;
 #else
 static const _TCHAR IRSDK_DATAVALIDEVENTNAME[] =
-	_T("Local\\IRSDKDataValidEvent");
+	IRDASHIES_IRSDK_PRODUCTION_EVENT_NAME;
 static const _TCHAR IRSDK_MEMMAPFILENAME[] =
-	_T("Local\\IRSDKMemMapFileName");
+	IRDASHIES_IRSDK_PRODUCTION_MAPPING_NAME;
 #endif
 static const _TCHAR IRSDK_BROADCASTMSGNAME[]   = _T("IRSDK_BROADCASTMSG");
 

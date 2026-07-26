@@ -18,10 +18,8 @@ describe('FuelDatabase', () => {
   let db: FuelDatabase;
 
   beforeEach(() => {
-    // Ensure test directory exists
-    if (!fs.existsSync(testDir)) {
-      fs.mkdirSync(testDir, { recursive: true });
-    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+    fs.mkdirSync(testDir, { recursive: true });
     db = new FuelDatabase();
   });
 

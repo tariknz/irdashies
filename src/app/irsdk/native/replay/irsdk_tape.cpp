@@ -299,8 +299,10 @@ bool TapeReader::open(
     return false;
   }
 
-  if (!readExact(stream_, &fileHeader_, sizeof(fileHeader_), error) ||
-      std::memcmp(
+  if (!readExact(stream_, &fileHeader_, sizeof(fileHeader_), error)) {
+    return false;
+  }
+  if (std::memcmp(
           fileHeader_.magic,
           kMagic.data(),
           kMagic.size()) != 0) {
@@ -338,8 +340,10 @@ bool TapeReader::open(
   }
 
   std::uint64_t requiredSize = 0;
-  if (!validateSdkLayout(sdkHeader_, variables_, requiredSize, error) ||
-      requiredSize > fileHeader_.mappingSize) {
+  if (!validateSdkLayout(sdkHeader_, variables_, requiredSize, error)) {
+    return false;
+  }
+  if (requiredSize > fileHeader_.mappingSize) {
     error = "Telemetry tape mapping is smaller than its SDK layout";
     return false;
   }

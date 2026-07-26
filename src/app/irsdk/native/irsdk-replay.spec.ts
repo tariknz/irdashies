@@ -3,6 +3,7 @@ import {
   spawn,
   type ChildProcessWithoutNullStreams,
 } from 'node:child_process';
+import { once } from 'node:events';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
@@ -96,7 +97,9 @@ describeOnWindows('iRacing native record/replay boundary', () => {
 
   afterEach(async () => {
     if (publisher && publisher.exitCode === null) {
+      const closed = once(publisher, 'close');
       publisher.kill();
+      await closed;
     }
     publisher = undefined;
     if (temporaryDirectory) {

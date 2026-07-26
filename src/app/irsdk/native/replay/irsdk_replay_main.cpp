@@ -24,6 +24,7 @@
 #include <thread>
 #include <vector>
 
+#include "../lib/irsdk_shared_objects.h"
 #include "./irsdk_tape.h"
 
 namespace replay = irdashies::irsdk_replay;
@@ -39,13 +40,13 @@ struct SharedObjectNames {
 };
 
 constexpr SharedObjectNames kIRacingObjectNames = {
-    L"Local\\IRSDKMemMapFileName",
-    L"Local\\IRSDKDataValidEvent",
+    IRDASHIES_IRSDK_PRODUCTION_MAPPING_NAME,
+    IRDASHIES_IRSDK_PRODUCTION_EVENT_NAME,
     "iRacing"};
 
 constexpr SharedObjectNames kIsolatedReplayObjectNames = {
-    L"Local\\IRDashiesReplayMemMapFileName",
-    L"Local\\IRDashiesReplayDataValidEvent",
+    IRDASHIES_IRSDK_REPLAY_MAPPING_NAME,
+    IRDASHIES_IRSDK_REPLAY_EVENT_NAME,
     "irDashies replay"};
 
 BOOL WINAPI handleConsoleSignal(DWORD signal) {
@@ -580,13 +581,13 @@ int recordTelemetry(const std::vector<std::wstring>& arguments) {
     return 1;
   }
 
+  if (!error.empty()) {
+    std::cerr << '\n' << error << '\n';
+    return 1;
+  }
   std::cout << "\nCapture complete: " << frameCount << " frames, "
             << gapCount << " missed source ticks, "
             << writer.recordCount() << " records\n";
-  if (!error.empty()) {
-    std::cerr << error << '\n';
-    return 1;
-  }
   return 0;
 }
 
@@ -683,9 +684,12 @@ class SharedPublisher {
       std::string& error) {
     const auto offset =
         static_cast<std::uint64_t>(header_->sessionInfoOffset);
-    const auto end = offset + payload.size();
+    const auto previousLength =
+        static_cast<std::size_t>(std::max(header_->sessionInfoLen, 0));
+    const auto clearLength = std::max(previousLength, payload.size());
+    const auto end = offset + clearLength;
     if (offset >= mappingSize_ ||
-        payload.size() > mappingSize_ - offset ||
+        clearLength > mappingSize_ - offset ||
         overlapsUsedRegion(offset, end)) {
       error = "Session-info record exceeds the replay mapping";
       return false;
@@ -694,7 +698,7 @@ class SharedPublisher {
     std::memset(
         mapping_ + header_->sessionInfoOffset,
         0,
-        payload.size());
+        clearLength);
     if (!payload.empty()) {
       std::memcpy(
           mapping_ + header_->sessionInfoOffset,
