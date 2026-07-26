@@ -94,6 +94,11 @@ export interface ClassHeaderStyle {
   classInfo?: { colorBackground?: boolean };
   classDivider?: { bottomBorder?: boolean };
   compactSof?: boolean;
+  manufacturerStats?: {
+    enabled: boolean;
+    cap: number | null; // null = All
+    showPlayerManufacturer: boolean;
+  };
 }
 
 // ===========================

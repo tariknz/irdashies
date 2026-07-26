@@ -3,8 +3,6 @@ import { getTailwindStyle } from '@irdashies/utils/colors';
 import type { ClassHeaderStyle } from '@irdashies/types';
 import { CarManufacturer } from '../CarManufacturer/CarManufacturer';
 
-const MAX_MANUFACTURERS_SHOWN = 5;
-
 interface DriverClassHeaderProps {
   className: string | undefined;
   classColor: number | undefined;
@@ -16,6 +14,7 @@ interface DriverClassHeaderProps {
   classHeaderStyle?: ClassHeaderStyle;
   compactMode?: string;
   manufacturerCounts?: { carId: number; count: number }[];
+  playerManufacturerEntry?: { carId: number; count: number };
 }
 
 export const DriverClassHeader = ({
@@ -29,6 +28,7 @@ export const DriverClassHeader = ({
   classHeaderStyle,
   compactMode,
   manufacturerCounts,
+  playerManufacturerEntry,
 }: DriverClassHeaderProps) => {
   if (!className) {
     return (
@@ -84,8 +84,33 @@ export const DriverClassHeader = ({
             )}{' '}
             <UsersIcon className={sof ? 'ml-3' : ''} />
             <span>{totalDrivers}</span>
-            {manufacturerCounts && manufacturerCounts.length > 1 && (() => {
-              const visible = manufacturerCounts.slice(0, MAX_MANUFACTURERS_SHOWN);
+            {(() => {
+              const stats = classHeaderStyle?.manufacturerStats;
+              if (!stats?.enabled) return null;
+              if (!manufacturerCounts || manufacturerCounts.length <= 1) return null;
+
+              // undefined → default cap 5; null → All; number → specific cap
+              const rawCap = stats.cap;
+              const capValue = rawCap !== undefined ? rawCap : 5;
+
+              let visible =
+                capValue === null
+                  ? [...manufacturerCounts]
+                  : manufacturerCounts.slice(0, capValue);
+              const totalHidden = manufacturerCounts.length - visible.length;
+
+              if (
+                stats.showPlayerManufacturer &&
+                playerManufacturerEntry &&
+                totalHidden > 0 &&
+                !visible.some((v) => v.carId === playerManufacturerEntry.carId)
+              ) {
+                visible = [
+                  ...visible.slice(0, visible.length - 1),
+                  playerManufacturerEntry,
+                ];
+              }
+
               const hidden = manufacturerCounts.length - visible.length;
               return (
                 <>

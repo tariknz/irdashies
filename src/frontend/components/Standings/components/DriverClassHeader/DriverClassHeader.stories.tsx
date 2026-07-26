@@ -7,6 +7,10 @@ const TableWrapper = ({ children }: { children: React.ReactNode }) => (
   </table>
 );
 
+const mfrStatsEnabled = {
+  manufacturerStats: { enabled: true, cap: 5, showPlayerManufacturer: false },
+};
+
 export default {
   component: DriverClassHeader,
   title: 'widgets/Standings/components/DriverClassHeader',
@@ -28,7 +32,7 @@ export const Default: Story = {
     totalDrivers: 12,
     sof: 2432,
     isMultiClass: true,
-    classHeaderStyle: { compactSof: false },
+    classHeaderStyle: { compactSof: false, ...mfrStatsEnabled },
     manufacturerCounts: [
       { carId: 56, count: 7 },
       { carId: 122, count: 5 },
@@ -43,7 +47,7 @@ export const CompactSoF: Story = {
     totalDrivers: 12,
     sof: 2432,
     isMultiClass: true,
-    classHeaderStyle: { compactSof: true },
+    classHeaderStyle: { compactSof: true, ...mfrStatsEnabled },
     manufacturerCounts: [
       { carId: 56, count: 7 },
       { carId: 122, count: 5 },
@@ -58,7 +62,8 @@ export const SingleMake: Story = {
     totalDrivers: 10,
     sof: 1850,
     isMultiClass: true,
-    classHeaderStyle: { compactSof: false },
+    classHeaderStyle: { compactSof: false, ...mfrStatsEnabled },
+    // length === 1 → no manufacturer breakdown shown
     manufacturerCounts: [{ carId: 160, count: 10 }],
   },
 };
@@ -70,15 +75,42 @@ export const ManyManufacturers: Story = {
     totalDrivers: 18,
     sof: 3100,
     isMultiClass: true,
-    classHeaderStyle: { compactSof: true },
+    classHeaderStyle: {
+      compactSof: true,
+      manufacturerStats: { enabled: true, cap: 5, showPlayerManufacturer: false },
+    },
     manufacturerCounts: [
       { carId: 56, count: 5 },
       { carId: 122, count: 4 },
       { carId: 145, count: 3 },
       { carId: 160, count: 3 },
       { carId: 1, count: 2 },
-      { carId: 3, count: 1 },
+      { carId: 3, count: 1 }, // hidden as +1
     ],
+  },
+};
+
+export const PlayerManufacturerOverride: Story = {
+  args: {
+    className: 'GT3',
+    classColor: 0x00aa44,
+    totalDrivers: 18,
+    sof: 3100,
+    isMultiClass: true,
+    classHeaderStyle: {
+      compactSof: true,
+      manufacturerStats: { enabled: true, cap: 5, showPlayerManufacturer: true },
+    },
+    manufacturerCounts: [
+      { carId: 56, count: 5 },
+      { carId: 122, count: 4 },
+      { carId: 145, count: 3 },
+      { carId: 160, count: 3 },
+      { carId: 1, count: 2 },
+      { carId: 3, count: 1 }, // player's manufacturer — replaces carId:1 in slot 5
+    ],
+    // carId 3 is the player's manufacturer, not in top 5 → replaces last entry
+    playerManufacturerEntry: { carId: 3, count: 1 },
   },
 };
 
@@ -91,7 +123,7 @@ export const AllClasses: Story = {
         totalDrivers={12}
         sof={2432}
         isMultiClass={true}
-        classHeaderStyle={{ compactSof: false }}
+        classHeaderStyle={{ compactSof: false, ...mfrStatsEnabled }}
         manufacturerCounts={[
           { carId: 56, count: 7 },
           { carId: 122, count: 5 },
@@ -103,7 +135,7 @@ export const AllClasses: Story = {
         totalDrivers={12}
         sof={2432}
         isMultiClass={true}
-        classHeaderStyle={{ compactSof: true }}
+        classHeaderStyle={{ compactSof: true, ...mfrStatsEnabled }}
         manufacturerCounts={[
           { carId: 56, count: 7 },
           { carId: 122, count: 5 },
@@ -115,7 +147,7 @@ export const AllClasses: Story = {
         totalDrivers={8}
         sof={850}
         isMultiClass={true}
-        classHeaderStyle={{ compactSof: true }}
+        classHeaderStyle={{ compactSof: true, ...mfrStatsEnabled }}
         manufacturerCounts={[{ carId: 56, count: 8 }]}
       />
       <DriverClassHeader
@@ -124,7 +156,7 @@ export const AllClasses: Story = {
         totalDrivers={5}
         sof={12540}
         isMultiClass={true}
-        classHeaderStyle={{ compactSof: true }}
+        classHeaderStyle={{ compactSof: true, ...mfrStatsEnabled }}
         manufacturerCounts={[
           { carId: 56, count: 3 },
           { carId: 145, count: 2 },

@@ -132,6 +132,18 @@ export const Standings = () => {
             const manufacturerCounts = Array.from(mfrMap.values()).sort(
               (a, b) => b.count - a.count
             );
+            const playerCarId = classStandings.find((s) => s.isPlayer)?.carId;
+            const playerMfr =
+              playerCarId !== undefined
+                ? (CAR_ID_TO_CAR_MANUFACTURER[playerCarId]?.manufacturer ?? 'unknown')
+                : undefined;
+            const playerManufacturerEntry = playerMfr
+              ? manufacturerCounts.find(
+                  (m) =>
+                    (CAR_ID_TO_CAR_MANUFACTURER[m.carId]?.manufacturer ?? 'unknown') ===
+                    playerMfr
+                )
+              : undefined;
 
             return classStandings.length > 0 ? (
               <Fragment key={classId}>
@@ -149,6 +161,7 @@ export const Standings = () => {
                   classHeaderStyle={settings?.classHeaderStyle}
                   compactMode={generalSettings?.compactMode}
                   manufacturerCounts={manufacturerCounts}
+                  playerManufacturerEntry={playerManufacturerEntry}
                 />
                 {classStandings.map((result, driverIndex) => {
                   const prev = classStandings[driverIndex - 1];
