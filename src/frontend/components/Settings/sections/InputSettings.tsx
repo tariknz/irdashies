@@ -269,6 +269,32 @@ export const InputSettings = () => {
                           }
                         />
 
+                        {config.trace.includeAbs && (
+                          <SettingSelectRow<'overlay' | 'bar'>
+                            title="ABS Style"
+                            description="How ABS is shown in the trace"
+                            value={config.trace.absStyle ?? 'overlay'}
+                            options={[
+                              {
+                                label: 'Overlay',
+                                value: 'overlay',
+                              },
+                              {
+                                label: 'Bar (fill under curve)',
+                                value: 'bar',
+                              },
+                            ]}
+                            onChange={(v) =>
+                              handleConfigChange({
+                                trace: {
+                                  ...config.trace,
+                                  absStyle: v,
+                                },
+                              })
+                            }
+                          />
+                        )}
+
                         <SettingToggleRow
                           title="Show Steering Trace"
                           enabled={config.trace.includeSteer ?? true}

@@ -283,6 +283,8 @@ export interface InputConfig {
     includeBrake: boolean;
     includeClutch: boolean;
     includeAbs: boolean;
+    /** 'overlay' draws a wider stroke on top of the brake curve; 'bar' fills the area under the curve to y=0 */
+    absStyle?: 'overlay' | 'bar';
     includeSteer?: boolean;
     strokeWidth?: number;
     maxSamples?: number;
