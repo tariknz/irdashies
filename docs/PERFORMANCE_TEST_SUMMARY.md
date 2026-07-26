@@ -6,7 +6,7 @@
 > The replay A/B isolates an IPC/store delivery floor from the larger downstream
 > widget and Chromium cost, and corrects earlier conclusions that could not be
 > separated with live-session captures alone.
-
+>
 > **Date:** May 2026
 > **Author:** Kev (with AI-assisted analysis)
 > **Companion file:** [`ARCHITECTURE_REVIEW.md`](./ARCHITECTURE_REVIEW.md)

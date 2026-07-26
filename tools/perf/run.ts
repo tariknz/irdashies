@@ -3,6 +3,9 @@ import { execFileSync } from 'node:child_process';
 import { createWriteStream, promises as fs } from 'node:fs';
 import path from 'node:path';
 
+const PERF_REPLAY_READY_LOG_MARKER = '[PerfRun] Ready for replay publisher';
+const REPLAY_STARTUP_TIMEOUT_MS = 30_000;
+
 type OverlayMode = 'full' | 'empty' | 'observer';
 type RunTarget = 'dev' | 'packaged';
 
@@ -165,6 +168,9 @@ const child = spawn(childCommand, childArguments, {
 let stdoutAvailable = true;
 let replayPublisher: ReturnType<typeof spawn> | undefined;
 let startupOutput = '';
+let fatalError: Error | undefined;
+let stopping = false;
+let replayStartupTimeout: NodeJS.Timeout | undefined;
 process.stdout.on('error', (error: NodeJS.ErrnoException) => {
   if (error.code === 'EPIPE') {
     stdoutAvailable = false;
@@ -178,8 +184,41 @@ const copyOutput = (chunk: Buffer): void => {
   output.write(chunk);
 };
 
+const terminateProcessTree = (
+  target: ReturnType<typeof spawn> | undefined
+): void => {
+  if (!target || target.exitCode !== null || !target.pid) return;
+  if (process.platform === 'win32') {
+    try {
+      execFileSync('taskkill', ['/pid', String(target.pid), '/t', '/f'], {
+        stdio: 'ignore',
+      });
+    } catch {
+      // The process may have exited between the status check and taskkill.
+    }
+    return;
+  }
+  target.kill();
+};
+
+const stopChild = (): void => {
+  if (stopping) return;
+  stopping = true;
+  if (replayStartupTimeout) clearTimeout(replayStartupTimeout);
+  terminateProcessTree(replayPublisher);
+  terminateProcessTree(child);
+};
+
+const failRun = (error: Error): void => {
+  if (fatalError) return;
+  fatalError = error;
+  copyOutput(Buffer.from(`[PerfRun] Fatal error: ${error.message}\n`));
+  stopChild();
+};
+
 const startReplayPublisher = (): void => {
   if (!replayInputPath || replayPublisher) return;
+  if (replayStartupTimeout) clearTimeout(replayStartupTimeout);
   const publisherPath = path.resolve('build/Release/irsdk_replay.exe');
   const publisher = spawn(
     publisherPath,
@@ -193,7 +232,16 @@ const startReplayPublisher = (): void => {
   publisher.stdout?.on('data', copyOutput);
   publisher.stderr?.on('data', copyOutput);
   publisher.once('error', (error) => {
-    copyOutput(Buffer.from(`[PerfRun] Replay publisher error: ${error}\n`));
+    failRun(new Error(`Replay publisher failed to start: ${error.message}`));
+  });
+  publisher.once('exit', (code, signal) => {
+    if (!stopping && child.exitCode === null) {
+      failRun(
+        new Error(
+          `Replay publisher exited unexpectedly (code ${code ?? 'none'}, signal ${signal ?? 'none'})`
+        )
+      );
+    }
   });
 };
 
@@ -201,7 +249,7 @@ const copyAppOutput = (chunk: Buffer): void => {
   copyOutput(chunk);
   if (!replayInputPath || replayPublisher) return;
   startupOutput = `${startupOutput}${chunk.toString('utf8')}`.slice(-2048);
-  if (startupOutput.includes('[iracingSdkBridge] Loading')) {
+  if (startupOutput.includes(PERF_REPLAY_READY_LOG_MARKER)) {
     startReplayPublisher();
   }
 };
@@ -209,18 +257,29 @@ const copyAppOutput = (chunk: Buffer): void => {
 child.stdout.on('data', copyAppOutput);
 child.stderr.on('data', copyAppOutput);
 
-const stopChild = (): void => {
-  if (replayPublisher && !replayPublisher.killed) replayPublisher.kill();
-  if (!child.killed) child.kill();
-};
+if (replayInputPath) {
+  replayStartupTimeout = setTimeout(() => {
+    failRun(
+      new Error(
+        `App did not emit replay readiness within ${REPLAY_STARTUP_TIMEOUT_MS / 1000}s`
+      )
+    );
+  }, REPLAY_STARTUP_TIMEOUT_MS);
+}
+
 process.once('SIGINT', stopChild);
 process.once('SIGTERM', stopChild);
 
-const exitCode = await new Promise<number>((resolve) => {
+const childExitCode = await new Promise<number>((resolve) => {
   child.once('exit', (code) => resolve(code ?? 0));
 });
+if (replayStartupTimeout) clearTimeout(replayStartupTimeout);
+if (replayInputPath && !replayPublisher && !fatalError) {
+  fatalError = new Error('App exited before emitting replay readiness');
+}
 if (replayPublisher?.exitCode === null) {
-  if (!replayPublisher.killed) replayPublisher.kill();
+  stopping = true;
+  terminateProcessTree(replayPublisher);
   await new Promise<void>((resolve) => {
     const timeout = setTimeout(resolve, 5000);
     replayPublisher?.once('exit', () => {
@@ -236,7 +295,12 @@ await new Promise<void>((resolve, reject) => {
   });
 });
 
-process.stdout.write(
-  `Captured ${logPath}\nAnalyse with: npm run perf:analyze -- "${logPath}"\n`
-);
-process.exitCode = exitCode;
+if (fatalError) {
+  process.stderr.write(`Performance run failed: ${fatalError.message}\n`);
+  process.exitCode = 1;
+} else {
+  process.stdout.write(
+    `Captured ${logPath}\nAnalyse with: npm run perf:analyze -- "${logPath}"\n`
+  );
+  process.exitCode = childExitCode;
+}

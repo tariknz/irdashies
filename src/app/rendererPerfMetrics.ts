@@ -7,6 +7,10 @@ export const PERF_RENDERER_LOG_PREFIX = '[PerfRenderer:JSON] ';
 
 let telemetryCallbackTimes: FixedSampleBuffer | undefined;
 
+export function isRendererPerfMetricsEnabled(): boolean {
+  return telemetryCallbackTimes !== undefined;
+}
+
 export function recordTelemetryCallback(durationMs: number): void {
   telemetryCallbackTimes?.add(durationMs);
 }
@@ -46,6 +50,10 @@ export function startRendererPerfMetrics(): void {
     const stats = frameTimes.summarize();
     if (stats.count === 0) {
       intervalStart = now;
+      previousFrameTime = 0;
+      callbackTimes.reset();
+      framesOver25Ms = 0;
+      framesOver50Ms = 0;
       return;
     }
 

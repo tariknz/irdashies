@@ -1,6 +1,10 @@
 import { IRacingSDK } from '../../irsdk';
 import { OverlayManager } from '../../overlayManager';
 import { TelemetryPerfMetrics } from '../../perfMetrics';
+import {
+  getPerfRunConfig,
+  PERF_REPLAY_READY_LOG_MARKER,
+} from '../../perfRunConfig';
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 import logger from '../../logger';
 import type { SessionLifecycle } from '../../sessionLifecycle';
@@ -102,12 +106,11 @@ function trimTelemetry(telemetry: Telemetry): Partial<Telemetry> {
   return trimmed;
 }
 
+const perfRunConfig = getPerfRunConfig();
 const perfTelemetryDeliveryEnabled =
-  process.env.PERF_METRICS !== '1' ||
-  process.env.PERF_TELEMETRY_DELIVERY !== 'off';
+  !perfRunConfig.enabled || perfRunConfig.telemetryDelivery === 'on';
 const perfRawTelemetryEnabled =
-  process.env.PERF_METRICS === '1' &&
-  process.env.PERF_TELEMETRY_PAYLOAD === 'raw';
+  perfRunConfig.enabled && perfRunConfig.telemetryPayload === 'raw';
 
 function telemetryForRenderer(
   telemetry: Telemetry
@@ -164,6 +167,9 @@ export async function publishIRacingSDKEvents(
   const sdk = new IRacingSDK();
   sdk.autoEnableTelemetry = true;
   await sdk.ready();
+  if (perfRunConfig.enabled && process.env.IRDASHIES_IRSDK_REPLAY === '1') {
+    logger.info(PERF_REPLAY_READY_LOG_MARKER);
+  }
 
   // Seed the running state immediately so the renderer doesn't sit on the
   // previous bridge's last value (e.g. a stale demo frame) until the first

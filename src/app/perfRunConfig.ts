@@ -1,5 +1,8 @@
 import type { DashboardLayout } from '@irdashies/types';
 
+export const PERF_REPLAY_READY_LOG_MARKER =
+  '[PerfRun] Ready for replay publisher';
+
 export type PerfOverlayMode = 'full' | 'empty' | 'observer';
 
 export interface PerfRunConfig {
