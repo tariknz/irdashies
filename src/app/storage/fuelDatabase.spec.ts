@@ -3,22 +3,23 @@ import { FuelDatabase } from './fuelDatabase';
 import fs from 'node:fs';
 import { FuelLapData } from '../../types';
 
+const { testDir } = vi.hoisted(() => ({
+  testDir: `./tmp-data/fuel-database-spec-${process.pid}`,
+}));
+
 // Mock electron
 vi.mock('electron', () => ({
   app: {
-    getPath: vi.fn().mockReturnValue('./tmp-data'),
+    getPath: vi.fn().mockReturnValue(testDir),
   },
 }));
 
 describe('FuelDatabase', () => {
   let db: FuelDatabase;
-  const testDir = './tmp-data';
 
   beforeEach(() => {
-    // Ensure test directory exists
-    if (!fs.existsSync(testDir)) {
-      fs.mkdirSync(testDir);
-    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+    fs.mkdirSync(testDir, { recursive: true });
     db = new FuelDatabase();
   });
 
