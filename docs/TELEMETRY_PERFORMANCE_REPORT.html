@@ -1048,6 +1048,20 @@
           </p>
         </div>
         <div class="grid">
+          <article class="card delta-band" id="widget-progress">
+            <div class="delta">
+              <span class="metric-value">18 / 18</span>
+              <span class="metric-label">enabled widgets isolated</span>
+            </div>
+            <div class="delta">
+              <span class="metric-value">0</span>
+              <span class="metric-label">captures remaining</span>
+            </div>
+            <div class="delta">
+              <span class="metric-value">Complete</span>
+              <span class="metric-label">isolation matrix status</span>
+            </div>
+          </article>
           <div class="table-wrap">
             <table>
               <thead>
@@ -1081,9 +1095,221 @@
                   <td class="good">−60.19 MB/min</td>
                   <td>Memory window crossed a major GC</td>
                 </tr>
+                <tr>
+                  <td>Input</td>
+                  <td>2.24%</td>
+                  <td>0.44%</td>
+                  <td class="bad">+37.91 MB/min</td>
+                  <td>Active renderer: +33.51 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Map</td>
+                  <td>1.85%</td>
+                  <td>0.23%</td>
+                  <td class="bad">+16.36 MB/min</td>
+                  <td>GPU: +24.61; active renderer crossed GC</td>
+                </tr>
+                <tr>
+                  <td>Weather</td>
+                  <td>1.90%</td>
+                  <td>0.25%</td>
+                  <td class="bad">+35.35 MB/min</td>
+                  <td>Active renderer: +26.74 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Faster Cars From Behind</td>
+                  <td>1.93%</td>
+                  <td>0.31%</td>
+                  <td class="good">−3.25 MB/min</td>
+                  <td>Memory flat after GC; no frame stalls</td>
+                </tr>
+                <tr>
+                  <td>Blind Spot Monitor</td>
+                  <td>1.51%</td>
+                  <td>0.25%</td>
+                  <td class="bad">+28.76 MB/min</td>
+                  <td>Active renderer: +24.08 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Rejoin</td>
+                  <td>1.25%</td>
+                  <td>0.17%</td>
+                  <td class="good">−24.81 MB/min</td>
+                  <td>Low CPU; memory window crossed GC</td>
+                </tr>
+                <tr>
+                  <td>Flat Map</td>
+                  <td>1.49%</td>
+                  <td>0.27%</td>
+                  <td class="bad">+14.62 MB/min</td>
+                  <td>Active renderer: +9.58 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Pitlane Helper</td>
+                  <td>1.20%</td>
+                  <td>0.14%</td>
+                  <td class="bad">+16.97 MB/min</td>
+                  <td>Active renderer: +10.83 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Flag</td>
+                  <td>1.30%</td>
+                  <td>0.19%</td>
+                  <td class="bad">+31.38 MB/min</td>
+                  <td>Active renderer: +28.66 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Tachometer</td>
+                  <td>1.73%</td>
+                  <td>0.27%</td>
+                  <td class="bad">+22.47 MB/min</td>
+                  <td>Active renderer: +19.43 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Lap Time Log</td>
+                  <td>1.80%</td>
+                  <td>0.25%</td>
+                  <td class="bad">+16.49 MB/min</td>
+                  <td>Active renderer: +14.21 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Slow Car Ahead</td>
+                  <td>1.24%</td>
+                  <td>0.17%</td>
+                  <td class="bad">+12.83 MB/min</td>
+                  <td>Renderer +6.99; Browser +6.07 MB/min</td>
+                </tr>
+                <tr>
+                  <td>Sector Delta</td>
+                  <td>1.89%</td>
+                  <td>0.18%</td>
+                  <td class="bad">+15.06 MB/min</td>
+                  <td>Active renderer: +14.61 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Corner Name</td>
+                  <td>1.61%</td>
+                  <td>0.22%</td>
+                  <td class="bad">+28.02 MB/min</td>
+                  <td>Active renderer: +17.29 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Battle</td>
+                  <td>2.06%</td>
+                  <td>0.36%</td>
+                  <td class="bad">+6.75 MB/min</td>
+                  <td>Renderer +2.40; Browser +3.97 MB/min</td>
+                </tr>
               </tbody>
             </table>
           </div>
+          <article class="card chart-card" id="widget-rankings">
+            <h3>Highest active-renderer CPU</h3>
+            <p class="caption">
+              Renderer-only ranking avoids Browser-process variance
+            </p>
+            <div
+              class="bars"
+              aria-label="Per-widget active renderer CPU ranking"
+            >
+              <div class="bar-line">
+                <span class="bar-label">Standings</span>
+                <div class="bar-track">
+                  <div class="bar hot" style="width: 100%"></div>
+                </div>
+                <span class="bar-value">0.75%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Fuel</span>
+                <div class="bar-track">
+                  <div class="bar hot" style="width: 98.7%"></div>
+                </div>
+                <span class="bar-value">0.74%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Relative</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 76%"></div>
+                </div>
+                <span class="bar-value">0.57%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Input</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 58.7%"></div>
+                </div>
+                <span class="bar-value">0.44%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Battle</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 48%"></div>
+                </div>
+                <span class="bar-value">0.36%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Faster Cars</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 41.3%"></div>
+                </div>
+                <span class="bar-value">0.31%</span>
+              </div>
+            </div>
+          </article>
+          <article class="card chart-card">
+            <h3>Strongest renderer allocation signals</h3>
+            <p class="caption">
+              Private-memory slope; directional until longer confirmation runs
+            </p>
+            <div
+              class="bars"
+              aria-label="Per-widget active renderer private-memory slope ranking"
+            >
+              <div class="bar-line">
+                <span class="bar-label">Input</span>
+                <div class="bar-track">
+                  <div class="bar hot" style="width: 100%"></div>
+                </div>
+                <span class="bar-value">33.51</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Flag</span>
+                <div class="bar-track">
+                  <div class="bar hot" style="width: 85.5%"></div>
+                </div>
+                <span class="bar-value">28.66</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Weather</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 79.8%"></div>
+                </div>
+                <span class="bar-value">26.74</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Blind Spot</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 71.9%"></div>
+                </div>
+                <span class="bar-value">24.08</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Fuel</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 65.7%"></div>
+                </div>
+                <span class="bar-value">22.01</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Tachometer</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 58%"></div>
+                </div>
+                <span class="bar-value">19.43</span>
+              </div>
+            </div>
+            <p class="note">Values are MB/min in the active renderer.</p>
+          </article>
         </div>
       </section>
 
@@ -1138,15 +1364,16 @@
           <article class="card priority">
             <span class="priority-code">P2</span>
             <div>
-              <h3>Profile Fuel and the primary renderer next</h3>
+              <h3>Confirm Input, Flag, Weather, Blind Spot, and Fuel</h3>
               <p>
-                Fuel produced the clearest isolated private-memory growth. In
-                the full layout, the Primary renderer grew about 30 MB/min. Use
-                a longer replay loop with V8 allocation sampling and React
-                profiling to identify the retained owner.
+                These five widgets produced the strongest positive
+                active-renderer allocation slopes. Run longer confirmation
+                captures, beginning with Input at +33.51 MB/min, using V8
+                allocation sampling and React profiling to identify retained
+                owners.
               </p>
             </div>
-            <span class="impact">Highest measured renderer growth</span>
+            <span class="impact">Highest short-run allocation signals</span>
           </article>
           <article class="card priority">
             <span class="priority-code">P2</span>
