@@ -1,6 +1,9 @@
 import { BarbellIcon, UsersIcon } from '@phosphor-icons/react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import type { ClassHeaderStyle } from '@irdashies/types';
+import { CarManufacturer } from '../CarManufacturer/CarManufacturer';
+
+const MAX_MANUFACTURERS_SHOWN = 5;
 
 interface DriverClassHeaderProps {
   className: string | undefined;
@@ -12,6 +15,7 @@ interface DriverClassHeaderProps {
   colSpan?: number;
   classHeaderStyle?: ClassHeaderStyle;
   compactMode?: string;
+  manufacturerCounts?: { carId: number; count: number }[];
 }
 
 export const DriverClassHeader = ({
@@ -24,6 +28,7 @@ export const DriverClassHeader = ({
   colSpan,
   classHeaderStyle,
   compactMode,
+  manufacturerCounts,
 }: DriverClassHeaderProps) => {
   if (!className) {
     return (
@@ -79,6 +84,23 @@ export const DriverClassHeader = ({
             )}{' '}
             <UsersIcon className={sof ? 'ml-3' : ''} />
             <span>{totalDrivers}</span>
+            {manufacturerCounts && manufacturerCounts.length > 1 && (() => {
+              const visible = manufacturerCounts.slice(0, MAX_MANUFACTURERS_SHOWN);
+              const hidden = manufacturerCounts.length - visible.length;
+              return (
+                <>
+                  {visible.map(({ carId, count }) => (
+                    <span key={carId} className="flex items-center gap-0.5 ml-2">
+                      <CarManufacturer carId={carId} />
+                      <span>{count}</span>
+                    </span>
+                  ))}
+                  {hidden > 0 && (
+                    <span className="ml-1 text-white/50">+{hidden}</span>
+                  )}
+                </>
+              );
+            })()}
           </span>
         </div>
       </td>
