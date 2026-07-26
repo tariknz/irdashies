@@ -164,6 +164,9 @@ const child = spawn(childCommand, childArguments, {
   },
   stdio: ['inherit', 'pipe', 'pipe'],
 });
+const childSpawnError = new Promise<Error>((resolve) => {
+  child.once('error', resolve);
+});
 
 let stdoutAvailable = true;
 let replayPublisher: ReturnType<typeof spawn> | undefined;
@@ -270,9 +273,15 @@ if (replayInputPath) {
 process.once('SIGINT', stopChild);
 process.once('SIGTERM', stopChild);
 
-const childExitCode = await new Promise<number>((resolve) => {
-  child.once('exit', (code) => resolve(code ?? 0));
-});
+const childExitCode = await Promise.race([
+  new Promise<number>((resolve) => {
+    child.once('exit', (code) => resolve(code ?? 0));
+  }),
+  childSpawnError.then((error) => {
+    failRun(new Error(`App failed to start: ${error.message}`));
+    return 1;
+  }),
+]);
 if (replayStartupTimeout) clearTimeout(replayStartupTimeout);
 if (replayInputPath && !replayPublisher && !fatalError) {
   fatalError = new Error('App exited before emitting replay readiness');
