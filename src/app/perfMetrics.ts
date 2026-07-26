@@ -8,14 +8,18 @@
  * Enabled via PERF_METRICS=1 environment variable.
  */
 
-import { performance } from 'perf_hooks';
+import { monitorEventLoopDelay, performance } from 'node:perf_hooks';
 import { app, BrowserWindow } from 'electron';
+import type { NumericSampleStats, Telemetry } from '@irdashies/types';
+import { FixedSampleBuffer } from '../shared/performanceSamples';
 import logger from './logger';
 
 export interface SectionStats {
   count: number;
   avgMs: number;
+  minMs: number;
   maxMs: number;
+  p95Ms: number;
   p99Ms: number;
 }
 
@@ -25,25 +29,43 @@ export interface ProcessMetrics {
   name?: string;
   cpuPercent: number;
   memoryMB: number;
+  privateMemoryMB?: number;
 }
 
 export interface PerfReport {
+  schemaVersion: 1;
+  timestamp: string;
+  runId: string;
+  scenario: string;
+  overlayMode: string;
   intervalMs: number;
   tickCount: number;
+  tickRateHz: number;
+  tickIntervalMs: NumericSampleStats;
   sections: Record<string, SectionStats>;
+  eventLoopDelayMs: {
+    mean: number;
+    max: number;
+    p99: number;
+  };
+  iracing: {
+    frameRate: NumericSampleStats;
+    cpuUsageForeground: NumericSampleStats;
+    cpuUsageBackground: NumericSampleStats;
+    gpuUsage: NumericSampleStats;
+  };
   cpuPercent: number;
   processes?: ProcessMetrics[];
   totalAppCpuPercent?: number;
   totalAppMemoryMB?: number;
+  totalAppPrivateMemoryMB?: number;
 }
 
-const RING_BUFFER_SIZE = 1024;
 const DEFAULT_REPORT_INTERVAL_MS = 10_000;
+export const PERF_MAIN_LOG_PREFIX = '[PerfMetrics:JSON] ';
 
 class SectionBuffer {
-  private buffer: Float64Array = new Float64Array(RING_BUFFER_SIZE);
-  private writeIndex = 0;
-  private count = 0;
+  private samples = new FixedSampleBuffer();
   private startTime = 0;
 
   markStart(): void {
@@ -51,56 +73,37 @@ class SectionBuffer {
   }
 
   markEnd(): void {
-    const elapsed = performance.now() - this.startTime;
-    this.buffer[this.writeIndex] = elapsed;
-    this.writeIndex = (this.writeIndex + 1) % RING_BUFFER_SIZE;
-    if (this.count < RING_BUFFER_SIZE) this.count++;
+    this.samples.add(performance.now() - this.startTime);
   }
 
   getStats(): SectionStats {
-    if (this.count === 0) {
-      return { count: 0, avgMs: 0, maxMs: 0, p99Ms: 0 };
-    }
-
-    const samples = new Float64Array(this.count);
-    if (this.count < RING_BUFFER_SIZE) {
-      samples.set(this.buffer.subarray(0, this.count));
-    } else {
-      const tailLen = RING_BUFFER_SIZE - this.writeIndex;
-      samples.set(this.buffer.subarray(this.writeIndex, RING_BUFFER_SIZE), 0);
-      samples.set(this.buffer.subarray(0, this.writeIndex), tailLen);
-    }
-
-    samples.sort();
-
-    let sum = 0;
-    for (const sample of samples) {
-      sum += sample;
-    }
-
-    const p99Index = Math.min(
-      Math.floor(samples.length * 0.99),
-      samples.length - 1
-    );
-
+    const stats = this.samples.summarize();
     return {
-      count: this.count,
-      avgMs: sum / samples.length,
-      maxMs: samples[samples.length - 1],
-      p99Ms: samples[p99Index],
+      count: stats.count,
+      avgMs: stats.avg,
+      minMs: stats.min,
+      maxMs: stats.max,
+      p95Ms: stats.p95,
+      p99Ms: stats.p99,
     };
   }
 
   reset(): void {
-    this.writeIndex = 0;
-    this.count = 0;
+    this.samples.reset();
   }
 }
 
 export class TelemetryPerfMetrics {
   private sections = new Map<string, SectionBuffer>();
+  private tickIntervals = new FixedSampleBuffer();
+  private iracingFrameRate = new FixedSampleBuffer();
+  private iracingCpuForeground = new FixedSampleBuffer();
+  private iracingCpuBackground = new FixedSampleBuffer();
+  private iracingGpuUsage = new FixedSampleBuffer();
+  private eventLoopDelay = monitorEventLoopDelay({ resolution: 20 });
   private reportTimer: NodeJS.Timeout | null = null;
   private lastReportTime = 0;
+  private lastTickTime = 0;
   private lastCpuUsage: NodeJS.CpuUsage = { user: 0, system: 0 };
   private tickCount = 0;
   private _enabled: boolean;
@@ -116,12 +119,19 @@ export class TelemetryPerfMetrics {
   startReporting(intervalMs: number = DEFAULT_REPORT_INTERVAL_MS): void {
     if (!this._enabled) return;
     this.stopReporting();
+    const configuredInterval = Number(process.env.PERF_REPORT_INTERVAL_MS);
+    const effectiveInterval =
+      Number.isFinite(configuredInterval) && configuredInterval >= 1000
+        ? configuredInterval
+        : intervalMs;
     this.lastReportTime = performance.now();
+    this.lastTickTime = 0;
     this.lastCpuUsage = process.cpuUsage();
+    this.eventLoopDelay.enable();
     this.reportTimer = setInterval(() => {
       const report = this.report();
       this.logReport(report);
-    }, intervalMs);
+    }, effectiveInterval);
   }
 
   stopReporting(): void {
@@ -129,6 +139,7 @@ export class TelemetryPerfMetrics {
       clearInterval(this.reportTimer);
       this.reportTimer = null;
     }
+    this.eventLoopDelay.disable();
   }
 
   markStart(label: string): void {
@@ -141,9 +152,17 @@ export class TelemetryPerfMetrics {
     this.getOrCreateSection(label).markEnd();
   }
 
-  tick(): void {
+  tick(telemetry?: Telemetry | null): void {
     if (!this._enabled) return;
+    const now = performance.now();
+    if (this.lastTickTime > 0) {
+      this.tickIntervals.add(now - this.lastTickTime);
+    }
+    this.lastTickTime = now;
     this.tickCount++;
+    if (telemetry) {
+      this.observeIRacing(telemetry);
+    }
   }
 
   report(): PerfReport {
@@ -161,21 +180,50 @@ export class TelemetryPerfMetrics {
       sections[label] = buf.getStats();
     }
 
-    const { processes, totalCpu, totalMemory } = this.getProcessMetrics();
+    const { processes, totalCpu, totalMemory, totalPrivateMemory } =
+      this.getProcessMetrics();
+    const elapsedMs = now - this.lastReportTime;
+    const nanosecondsToMilliseconds = (value: number): number =>
+      Number.isFinite(value) ? value / 1_000_000 : 0;
 
     const report: PerfReport = {
-      intervalMs: now - this.lastReportTime,
+      schemaVersion: 1,
+      timestamp: new Date().toISOString(),
+      runId: process.env.PERF_RUN_ID ?? 'manual',
+      scenario: process.env.PERF_SCENARIO ?? 'unspecified',
+      overlayMode: process.env.PERF_OVERLAY_MODE ?? 'full',
+      intervalMs: elapsedMs,
       tickCount: this.tickCount,
+      tickRateHz: this.tickCount / (elapsedMs / 1000),
+      tickIntervalMs: this.tickIntervals.summarize(),
       sections,
+      eventLoopDelayMs: {
+        mean: nanosecondsToMilliseconds(this.eventLoopDelay.mean),
+        max: nanosecondsToMilliseconds(this.eventLoopDelay.max),
+        p99: nanosecondsToMilliseconds(this.eventLoopDelay.percentile(99)),
+      },
+      iracing: {
+        frameRate: this.iracingFrameRate.summarize(),
+        cpuUsageForeground: this.iracingCpuForeground.summarize(),
+        cpuUsageBackground: this.iracingCpuBackground.summarize(),
+        gpuUsage: this.iracingGpuUsage.summarize(),
+      },
       cpuPercent,
       processes,
       totalAppCpuPercent: totalCpu,
       totalAppMemoryMB: totalMemory,
+      totalAppPrivateMemoryMB: totalPrivateMemory,
     };
 
     this.lastReportTime = now;
     this.lastCpuUsage = process.cpuUsage();
     this.tickCount = 0;
+    this.tickIntervals.reset();
+    this.iracingFrameRate.reset();
+    this.iracingCpuForeground.reset();
+    this.iracingCpuBackground.reset();
+    this.iracingGpuUsage.reset();
+    this.eventLoopDelay.reset();
     for (const buf of this.sections.values()) {
       buf.reset();
     }
@@ -192,16 +240,28 @@ export class TelemetryPerfMetrics {
     return buf;
   }
 
+  private observeIRacing(telemetry: Telemetry): void {
+    this.iracingFrameRate.add(telemetry.FrameRate?.value?.[0]);
+    const percentage = (value: number | undefined): number | undefined =>
+      value === undefined ? undefined : value * 100;
+    this.iracingCpuForeground.add(percentage(telemetry.CpuUsageFG?.value?.[0]));
+    this.iracingCpuBackground.add(percentage(telemetry.CpuUsageBG?.value?.[0]));
+    this.iracingGpuUsage.add(percentage(telemetry.GpuUsage?.value?.[0]));
+  }
+
   private getProcessMetrics(): {
     processes: ProcessMetrics[];
     totalCpu: number;
     totalMemory: number;
+    totalPrivateMemory?: number;
   } {
     try {
       const metrics = app.getAppMetrics();
       const processes: ProcessMetrics[] = [];
       let totalCpu = 0;
       let totalMemory = 0;
+      let totalPrivateMemory = 0;
+      let hasPrivateMemory = false;
 
       const pidToWindowName = new Map<number, string>();
       try {
@@ -227,9 +287,17 @@ export class TelemetryPerfMetrics {
       for (const metric of metrics) {
         const cpuPercent = metric.cpu.percentCPUUsage;
         const memoryMB = metric.memory.workingSetSize / 1024;
+        const privateMemoryMB =
+          metric.memory.privateBytes === undefined
+            ? undefined
+            : metric.memory.privateBytes / 1024;
 
         totalCpu += cpuPercent;
         totalMemory += memoryMB;
+        if (privateMemoryMB !== undefined) {
+          totalPrivateMemory += privateMemoryMB;
+          hasPrivateMemory = true;
+        }
 
         let name = metric.name || undefined;
         if (metric.type === 'Tab' && pidToWindowName.has(metric.pid)) {
@@ -242,25 +310,44 @@ export class TelemetryPerfMetrics {
           name,
           cpuPercent,
           memoryMB,
+          privateMemoryMB,
         });
       }
 
       processes.sort((a, b) => b.cpuPercent - a.cpuPercent);
 
-      return { processes, totalCpu, totalMemory };
+      return {
+        processes,
+        totalCpu,
+        totalMemory,
+        totalPrivateMemory: hasPrivateMemory ? totalPrivateMemory : undefined,
+      };
     } catch {
-      return { processes: [], totalCpu: 0, totalMemory: 0 };
+      return {
+        processes: [],
+        totalCpu: 0,
+        totalMemory: 0,
+        totalPrivateMemory: undefined,
+      };
     }
   }
 
   private logReport(report: PerfReport): void {
-    const hz = report.tickCount / (report.intervalMs / 1000);
-
     const totalCpu = report.totalAppCpuPercent ?? report.cpuPercent;
     const totalMem = report.totalAppMemoryMB ?? 0;
     const lines = [
-      `[PerfMetrics] ${report.tickCount} ticks in ${(report.intervalMs / 1000).toFixed(1)}s (${hz.toFixed(1)} Hz) | App CPU: ${totalCpu.toFixed(1)}% | App Memory: ${totalMem.toFixed(0)}MB`,
+      `[PerfMetrics] ${report.tickCount} ticks in ${(report.intervalMs / 1000).toFixed(1)}s (${report.tickRateHz.toFixed(1)} Hz) | App CPU: ${totalCpu.toFixed(1)}% | App Memory: ${totalMem.toFixed(0)}MB`,
     ];
+
+    if (report.iracing.frameRate.count > 0) {
+      lines.push(
+        `  iRacing: FPS avg=${report.iracing.frameRate.avg.toFixed(1)} p1=${report.iracing.frameRate.p1.toFixed(1)} min=${report.iracing.frameRate.min.toFixed(1)} | CPU FG=${report.iracing.cpuUsageForeground.avg.toFixed(1)}% | GPU=${report.iracing.gpuUsage.avg.toFixed(1)}%`
+      );
+    }
+
+    lines.push(
+      `  eventLoop: mean=${report.eventLoopDelayMs.mean.toFixed(3)}ms max=${report.eventLoopDelayMs.max.toFixed(3)}ms p99=${report.eventLoopDelayMs.p99.toFixed(3)}ms`
+    );
 
     for (const [label, stats] of Object.entries(report.sections)) {
       if (stats.count === 0) continue;
@@ -285,5 +372,6 @@ export class TelemetryPerfMetrics {
     }
 
     logger.info(lines.join('\n'));
+    logger.info(`${PERF_MAIN_LOG_PREFIX}${JSON.stringify(report)}`);
   }
 }

@@ -102,6 +102,19 @@ function trimTelemetry(telemetry: Telemetry): Partial<Telemetry> {
   return trimmed;
 }
 
+const perfTelemetryDeliveryEnabled =
+  process.env.PERF_METRICS !== '1' ||
+  process.env.PERF_TELEMETRY_DELIVERY !== 'off';
+const perfRawTelemetryEnabled =
+  process.env.PERF_METRICS === '1' &&
+  process.env.PERF_TELEMETRY_PAYLOAD === 'raw';
+
+function telemetryForRenderer(
+  telemetry: Telemetry
+): Telemetry | Partial<Telemetry> {
+  return perfRawTelemetryEnabled ? telemetry : trimTelemetry(telemetry);
+}
+
 // Short timeout for waitForData to avoid blocking the main thread.
 // The native SDK's WaitForSingleObject blocks synchronously, so keep this
 // small to keep the event loop responsive.
@@ -138,11 +151,11 @@ export async function publishIRacingSDKEvents(
         'runningState',
         lastRunningState
       );
-    if (latestTelemetry)
+    if (latestTelemetry && perfTelemetryDeliveryEnabled)
       overlayManager.publishMessageToOverlay(
         id,
         'telemetry',
-        trimTelemetry(latestTelemetry)
+        telemetryForRenderer(latestTelemetry)
       );
     if (latestSession)
       overlayManager.publishMessageToOverlay(id, 'sessionData', latestSession);
@@ -187,16 +200,29 @@ export async function publishIRacingSDKEvents(
           wasRunning = true;
         }
         perfMetrics.markStart('processTelemetry');
+        perfMetrics.markStart('sdkTelemetryRead');
         const telemetry = sdk.getTelemetry();
+        perfMetrics.markEnd('sdkTelemetryRead');
+        perfMetrics.markStart('sdkSessionRead');
         const session = sdk.getSessionData();
+        perfMetrics.markEnd('sdkSessionRead');
 
         if (telemetry) {
           latestTelemetry = telemetry;
+          perfMetrics.markStart('lifecycleTelemetry');
           lifecycle?._onTelemetry(telemetry);
-          perfMetrics.markStart('broadcast');
-          overlayManager.publishMessage('telemetry', trimTelemetry(telemetry));
-          perfMetrics.markEnd('broadcast');
+          perfMetrics.markEnd('lifecycleTelemetry');
+          if (perfTelemetryDeliveryEnabled) {
+            perfMetrics.markStart('telemetryProjection');
+            const rendererTelemetry = telemetryForRenderer(telemetry);
+            perfMetrics.markEnd('telemetryProjection');
+            perfMetrics.markStart('broadcast');
+            overlayManager.publishMessage('telemetry', rendererTelemetry);
+            perfMetrics.markEnd('broadcast');
+          }
+          perfMetrics.markStart('telemetryCallbacks');
           telemetryCallbacks.forEach((callback) => callback(telemetry));
+          perfMetrics.markEnd('telemetryCallbacks');
         }
 
         if (session) {
@@ -207,16 +233,18 @@ export async function publishIRacingSDKEvents(
             sdk.currDataVersion !== lastSessionVersion ||
             timeSinceLastPublish >= 1000
           ) {
+            perfMetrics.markStart('sessionPublish');
             lastSessionVersion = sdk.currDataVersion;
             lastSessionPublishTime = now;
             latestSession = session;
             lifecycle?._onSession(session);
             overlayManager.publishMessage('sessionData', session);
             sessionCallbacks.forEach((callback) => callback(session));
+            perfMetrics.markEnd('sessionPublish');
           }
         }
         perfMetrics.markEnd('processTelemetry');
-        perfMetrics.tick();
+        perfMetrics.tick(telemetry);
 
         // Throttling to ~25Hz to save system resources as requested.
         // We sleep AFTER publishing to ensure each frame is sent with minimal latency.

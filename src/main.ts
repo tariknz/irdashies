@@ -30,6 +30,7 @@ import {
   flushReferenceLapsOnShutdown,
 } from './app/storage/referenceLaps';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
+import { createPerfDashboard, getPerfRunConfig } from './app/perfRunConfig';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -38,6 +39,7 @@ updateElectronApp();
 
 const overlayManager = new OverlayManager();
 const analytics = new Analytics();
+const perfRun = getPerfRunConfig();
 analytics.setupLogTransport();
 
 overlayManager.setupChromiumFlags();
@@ -53,6 +55,18 @@ app.on('ready', async () => {
   // (this instance should be quitting)
   if (!overlayManager.hasLock()) {
     return;
+  }
+
+  if (perfRun.enabled) {
+    log.info('[PerfRun] Configuration', perfRun);
+    if (perfRun.durationSeconds > 0) {
+      setTimeout(() => {
+        log.info(
+          `[PerfRun] Completed fixed ${perfRun.durationSeconds}s capture`
+        );
+        app.quit();
+      }, perfRun.durationSeconds * 1000);
+    }
   }
 
   await iRacingSDKSetup(overlayManager);
@@ -76,21 +90,44 @@ app.on('ready', async () => {
 
   ipcMain.handle('getComponentServerPort', () => getComponentServerPort());
 
-  overlayManager.createOverlays(dashboard);
+  const runDashboard = createPerfDashboard(dashboard, perfRun);
+  if (!perfRun.enabled || perfRun.overlayMode !== 'observer') {
+    // Empty mode keeps the normal overlay window count/bounds while the
+    // renderer receives a dashboard with every widget disabled. This isolates
+    // transparent-window/global-provider cost from widget rendering.
+    const windowDashboard =
+      perfRun.enabled && perfRun.overlayMode === 'empty'
+        ? dashboard
+        : runDashboard;
+    overlayManager.createOverlays(windowDashboard, {
+      createSettingsWindow: !perfRun.enabled,
+    });
+  }
 
   keybindingManager = new KeybindingManager(overlayManager);
   keybindingManager.registerAll();
   // Start the WebHID host window that reads game controllers for gamepad bindings.
-  keybindingManager.startGamepad();
+  if (!perfRun.enabled) {
+    keybindingManager.startGamepad();
+  }
 
   setupTaskbar(overlayManager, keybindingManager);
-  publishDashboardUpdates(overlayManager, analytics);
+  await publishDashboardUpdates(
+    overlayManager,
+    analytics,
+    perfRun.enabled
+      ? (updatedDashboard) => createPerfDashboard(updatedDashboard, perfRun)
+      : undefined
+  );
   setupKeybindingsBridge(keybindingManager);
 
   await analytics.init(overlayManager.getVersion(), dashboard);
 });
 
 app.on('window-all-closed', () => {
+  if (perfRun.enabled && perfRun.overlayMode === 'observer') {
+    return;
+  }
   if (process.platform !== 'darwin') {
     app.quit();
   }

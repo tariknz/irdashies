@@ -19,12 +19,15 @@ import type {
   ChromiumFlagsBridge,
   ChromiumFlagsType,
 } from '@irdashies/types';
+import { recordTelemetryCallback } from '../rendererPerfMetrics';
 
 export function exposeBridge() {
   contextBridge.exposeInMainWorld('irsdkBridge', {
     onTelemetry: (callback: (value: Telemetry) => void) => {
       const handler = (_: Electron.IpcRendererEvent, value: Telemetry) => {
+        const start = performance.now();
         callback(value);
+        recordTelemetryCallback(performance.now() - start);
       };
       ipcRenderer.on('telemetry', handler);
       return () => ipcRenderer.removeListener('telemetry', handler);
