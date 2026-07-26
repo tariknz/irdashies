@@ -1,0 +1,17 @@
+{
+  "description": "Ten-minute iRacing AI race captured from the live IRSDK shared-memory interface",
+  "captureDate": "2026-07-26",
+  "durationSeconds": 600.4,
+  "formatVersion": 1,
+  "sdkVersion": 2,
+  "tickRateHz": 60,
+  "variableCount": 333,
+  "frameBytes": 8611,
+  "mappingBytes": 1171987,
+  "recordCount": 36071,
+  "frameCount": 36000,
+  "sessionUpdateCount": 70,
+  "gapCount": 0,
+  "fileBytes": 348187160,
+  "sha256": "6E23E8ABAB49C1A0AE7C8F6D1F298D31145A6189D3029B8CA540AAD56A22B168"
+}

@@ -83,8 +83,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <tchar.h>
 
-static const _TCHAR IRSDK_DATAVALIDEVENTNAME[] = _T("Local\\IRSDKDataValidEvent");
-static const _TCHAR IRSDK_MEMMAPFILENAME[]     = _T("Local\\IRSDKMemMapFileName");
+#if defined(IRDASHIES_IRSDK_REPLAY_NAMES)
+static const _TCHAR IRSDK_DATAVALIDEVENTNAME[] =
+	_T("Local\\IRDashiesReplayDataValidEvent");
+static const _TCHAR IRSDK_MEMMAPFILENAME[] =
+	_T("Local\\IRDashiesReplayMemMapFileName");
+#else
+static const _TCHAR IRSDK_DATAVALIDEVENTNAME[] =
+	_T("Local\\IRSDKDataValidEvent");
+static const _TCHAR IRSDK_MEMMAPFILENAME[] =
+	_T("Local\\IRSDKMemMapFileName");
+#endif
 static const _TCHAR IRSDK_BROADCASTMSGNAME[]   = _T("IRSDK_BROADCASTMSG");
 
 static const int IRSDK_MAX_BUFS = 4;
