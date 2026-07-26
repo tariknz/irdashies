@@ -18,7 +18,7 @@ export async function publishIRacingSDKEvents(overlayManager: OverlayManager) {
     overlayManager.publishMessage('telemetry', telemetry);
     perfMetrics.markEnd('broadcast');
     perfMetrics.markEnd('processTelemetry');
-    perfMetrics.tick();
+    perfMetrics.tick(telemetry);
   });
 
   bridge.onRunningState((running) => {

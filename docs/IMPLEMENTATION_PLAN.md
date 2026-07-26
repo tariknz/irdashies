@@ -9,6 +9,7 @@
 > - [`ARCHITECTURE_REVIEW.md`](./ARCHITECTURE_REVIEW.md) — findings + target architecture + phased plan
 > - [`ARCHITECTURE_RULES.md`](./ARCHITECTURE_RULES.md) — enforceable rules
 > - [`PERFORMANCE_TEST_SUMMARY.md`](./PERFORMANCE_TEST_SUMMARY.md) — empirical evidence underpinning Phase 0
+> - [`TELEMETRY_PERFORMANCE_REPORT.html`](./TELEMETRY_PERFORMANCE_REPORT.html) — July 2026 deterministic replay and layer-by-layer A/B
 
 ---
 
@@ -16,6 +17,7 @@
 
 | Phase                                                 | Status                   | Branch / PR                              | Notes                                                                                                                                                                                                                                                                                                                                                                     |
 | ----------------------------------------------------- | ------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 0 replay follow-up**                          | CAPTURED                 | `chore/telemetry-performance-report`     | Deterministic native replay separates observer, empty/no-delivery, empty/delivery, full dashboard, raw payload, and focused widget costs. The existing allowlist is essential; empty delivery has a measurable IPC/store allocation floor; full CPU and memory are dominated downstream by widget/Chromium work. See `TELEMETRY_PERFORMANCE_REPORT.html`.                 |
 | **Phase 0 — Measure**                                 | DONE                     | —                                        | Baseline captured in `PERFORMANCE_TEST_SUMMARY.md`; revised 2026-05-12 after Practice 2                                                                                                                                                                                                                                                                                   |
 | **Phase 0.5 — Stop the bleeding**                     | LANDED (partial)         | merged on `main`                         | S1/S2 landed; S3/S4/L1/L2/L3/P6 still open                                                                                                                                                                                                                                                                                                                                |
 | **Phase 1 — Cheap perf wins + lifecycle bones**       | LANDED                   | merged on `main`                         | P1/P2/P4 typed subs, P5 propsAreEqual, IPC allowlist, SessionLifecycle skeleton, useResetOnDisconnect activated. Practice 3: Primary slope −85%; Standings became the sole remaining leak source                                                                                                                                                                          |
@@ -282,7 +284,127 @@ Today every renderer wakes 25 times/sec regardless of what's mounted. A weather 
 
 These do not belong to a single phase; tracked separately so they do not get lost.
 
-- [ ] **`tools/perfBench/`** — headless trace-replay harness with memory-slope assertion (per `PERFORMANCE_TEST_SUMMARY.md` §7.3). Use the existing per-session CSVs as the seed corpus.
+### Performance measurement and optimization plan (2026-07-26)
+
+This plan follows the decision rule in
+[`PERFORMANCE_BENCHMARKS.md`](./PERFORMANCE_BENCHMARKS.md): optimize the layer
+identified by measurement and do not begin the worker-thread or native phases
+without evidence that they address the measured bottleneck.
+
+#### Current evidence and limits
+
+The packaged benchmark harness was exercised against a 59-car, multi-class
+replay from a fixed cockpit camera at Race 04:24. Each observer, empty-window,
+and full-dashboard run used the same seven-minute replay segment.
+
+| Measurement                             |                  Result | Interpretation                                                        |
+| --------------------------------------- | ----------------------: | --------------------------------------------------------------------- |
+| Empty vs observer average FPS           |                  -0.06% | Window/provider substrate was FPS-neutral in this replay              |
+| Full vs empty average FPS               |                  -0.43% | Capped steady-state average hides demanding intervals                 |
+| Full vs empty, first 90s below cap      |                  -2.71% | Partial evidence of widget paint/compositor cost under GPU load       |
+| Full vs empty app CPU                   | +3.95 percentage points | Renderer work is measurable even with incomplete replay telemetry     |
+| Empty vs observer aggregate working set |               +1,160 MB | Three renderers are expensive, but shared pages may be double-counted |
+| Full vs empty aggregate working set     |                 +288 MB | Widget/configuration cost above the renderer substrate                |
+| Full `processTelemetry` p99 mean        |                 1.99 ms | Below the 3 ms gate                                                   |
+| Renderer frames over 50 ms              |                      0% | No renderer-main-thread hitch was reproduced                          |
+
+These numbers are a lower-bound static/rendering baseline, not a complete live
+workload. iRacing replays omit or freeze telemetry used by Fuel and other
+widgets, so their calculations, history, allocations, and update fanout were
+not exercised. The iRacing `FrameRate` variable is also smoothed and cannot
+replace present-to-present timing from PresentMon/ETW.
+
+#### PB0 - Land the repeatable packaged harness
+
+- [ ] Add fixed-duration `observer`, `empty`, `full`, and widget-filter run
+      modes without changing the persisted dashboard.
+- [ ] Capture structured iRacing, app/process, telemetry, event-loop, and
+      renderer-frame metrics.
+- [ ] Produce JSON and Markdown comparisons with warm-up filtering and
+      regression gates.
+- [ ] Document controlled replay and live-session protocols.
+
+**Branch:** `chore/performance-benchmark-harness`
+
+**Exit gate:** packaged observer/empty/full captures complete automatically;
+the analyzer reproduces the metrics above; lint and the full test suite pass.
+Tick these items only after the branch merges.
+
+#### PB1 - Make benchmark coverage and memory claims trustworthy
+
+- [ ] Report telemetry coverage per run: key present, valid sample count,
+      changed sample count, and effective update rate.
+- [ ] Map the changing keys to active widgets and flag widgets whose important
+      inputs were not exercised.
+- [ ] Record process private bytes and shared bytes where available; do not use
+      summed working set alone to justify a window/process rewrite.
+- [ ] Add an analysis-window option so the same high-load interval can be
+      compared without including the later FPS-capped section.
+- [ ] Record benchmark metadata: simulator mode, replay/live, field/class
+      count, display geometry, FPS cap, sync mode, and active widget types.
+
+**Exit gate:** every result states which widget inputs changed, and memory gates
+use private memory. Incomplete replay coverage must be visible in the generated
+summary rather than carried as a manual caveat.
+
+#### PB2 - Exercise real telemetry reproducibly
+
+- [ ] Add a bounded capture format for the allowlisted live telemetry frames
+      and matching session snapshots. Recording must be opt-in and batched so the
+      recorder does not become the bottleneck.
+- [ ] Feed a captured stream through the existing bridge boundary for
+      deterministic overlay playback while iRacing supplies a repeatable visual
+      replay workload.
+- [ ] Add a live A/B/A/B controller that alternates empty and full phases
+      without restarting Electron and writes phase markers into the structured log.
+- [ ] Add PresentMon/ETW present-time capture for live tests where internal
+      renderer timing is clean but visible stutter remains.
+
+**Exit gate:** Fuel, standings, relative, input, reference-lap, and other active
+widget paths show changing inputs in the coverage report. Two repetitions of
+the same A/B pair agree on direction.
+
+#### PB3 - Reduce measured renderer wake-ups and paint work
+
+This is the measurement-driven entry into existing Architecture Phase 3, not a
+parallel channel design.
+
+- [ ] Add perf-only per-widget render/update counters and per-window wake-up
+      rates.
+- [ ] Implement rate-aware channel subscriptions using the Phase 3 buckets
+      (`driverFocused`, `gapTiming`, `informational`, `static`), defaulting
+      unmigrated widgets to the legacy rate.
+- [ ] Publish only the channels required by the active widgets in each window.
+- [ ] Mount specialized providers/processors only in windows whose widgets
+      require them.
+- [ ] Migrate one measured hotspot at a time and preserve full-rate paths for
+      input controls and calculations whose precision rules prohibit throttling.
+
+**Exit gates:**
+
+- Full-vs-empty app CPU delta <= 2.5 percentage points in the controlled
+  workload.
+- Full-vs-empty average FPS regression >= -2% in the aligned below-cap window.
+- Renderer frames over 50 ms < 0.1%.
+- `processTelemetry` p99 mean < 3 ms and minimum telemetry cadence >= 20 Hz.
+- No active widget loses required precision or update smoothness.
+
+#### PB4 - Architecture gates
+
+- [ ] Consider fewer renderer processes only if private-memory measurement
+      proves duplicated renderer/provider state is material. Compare this against
+      the compositor cost of a larger transparent surface first.
+- [ ] Move derived calculations to Phase 4 processors only when render/update
+      counters identify duplicated per-renderer computation.
+- [ ] Start the Phase 5 SDK worker only if observer-mode or event-loop traces
+      correlate the blocking SDK loop with user-visible latency.
+- [ ] Keep Phase 6 native work deferred until a CPU profile identifies a
+      specific calculation that remains hot after Phase 4.
+
+**Explicitly not justified by the current replay:** a native rewrite, a single
+7680x1440 overlay window, a Fuel-specific optimization, or treating the
+31 ms SDK-loop event delay as the primary FPS cause.
+
 - [ ] **ESLint boundaries plugin** — enforce R1.x layering and R7.x widget isolation
 - [ ] **CI hash check on `_GENERATED_telemetry.ts`** — R10.4
 - [ ] **Pre-PR checklist enforcement** — either PR template additions or a CI step that scans for the checklist in the PR description
@@ -304,8 +426,8 @@ These block specific phases. They are duplicated from `ARCHITECTURE_REVIEW.md` �
 
 ### From the performance summary (still requires investigation)
 
-6. **Empty-dashboard baseline test** _(SCOPED 2026-05-19 — now tracked as Phase 2a remaining item R3)_ — substrate baseline measurement with all widgets disabled. Promoted from open question to concrete deliverable.
-7. **Single-widget isolation tests** _(MEDIUM, downgraded after Practice 5)_ — per-widget leak rate, identifies heaviest widget(s). Standings was the suspected heaviest and is now resolved; this is now an exploratory rather than gating test
+6. **Empty-dashboard baseline test** _(CAPTURED 2026-07-26)_ — deterministic replay with delivery disabled and enabled isolates a +0.54 percentage-point CPU and +10.75 MB/min working-set cost at the IPC/deserialization/store boundary before widget computation. See `TELEMETRY_PERFORMANCE_REPORT.html`.
+7. **Single-widget isolation tests** _(COMPLETE 2026-07-26)_ — all 18 enabled widgets were isolated sequentially from frame zero with the real overlay container. Active-renderer CPU leaders were Standings (0.75%), Fuel (0.74%), Relative (0.57%), Input (0.44%), and Battle (0.36%). The strongest positive active-renderer private-memory slopes were Input (+33.51 MB/min), Flag (+28.66), Weather (+26.74), Blind Spot (+24.08), and Fuel (+22.01). Memory values are directional because the 1.8-minute measured windows can cross major GCs; confirm the leaders with longer allocation profiles before treating them as leak rankings.
 8. ~~Reference-lap A/B~~ — **ADDRESSED by Phase 2a Tier 2b** (`feat/phase-2a-tier2-reflap-dedup`). Main-process cache + debounced write collapses 3× per-renderer save bursts into 1 write
 9. **PCC dashboard config delta** _(MEDIUM)_ — which widget(s) explain PCC's much lower leak rate?
 10. **NetworkService allocation** _(MEDIUM)_ — is the multi-class 178 MB jump PostHog? _Partly addressed by Phase 0.5 S5; NetworkService back to baseline_
@@ -339,6 +461,9 @@ LLM agents: read this file at the start of any session that touches the architec
 
 Append-only. Newest entries at the top. Format: `YYYY-MM-DD — item — branch — outcome`.
 
+- **2026-07-26** — Completed the deterministic single-widget matrix for all 18 enabled widgets. Each 180-second capture replayed the same tape from frame zero and discarded a 60-second warm-up. Renderer CPU leaders: Standings, Fuel, Relative, Input, Battle. Strongest short-run renderer allocation signals: Input, Flag, Weather, Blind Spot, Fuel. HTML report now includes the full table and ranked charts; longer V8 allocation captures remain necessary to confirm memory ownership — `chore/telemetry-performance-report` — captured, validation in progress
+- **2026-07-26** — Phase 0 deterministic replay follow-up: captured observer, empty delivery-off/on, full allowlisted, full raw, and Standings/Fuel/Relative isolates from one 36,000-frame native tape. Main SDK processing averages under 1 ms; delivery into empty windows creates a measurable baseline; full widget/Chromium work dominates CPU and growth; raw payloads regress direct IPC timings by roughly 2× and private-memory slope by 3.65×. Added the standalone HTML investigation report and reproducible A/B flags — `chore/telemetry-performance-report` — captured, validation in progress
+- **2026-07-26** — PB0 packaged performance harness and PB1-PB4 follow-up plan: observer/empty/full/widget-filter modes, structured process/renderer/iRacing metrics, fixed-duration runner, analyzer, regression gates, and replay/live protocol. Controlled 59-car replay established a static/compositor lower bound but exposed incomplete replay telemetry, so telemetry coverage, private memory, deterministic live capture, and PresentMon are explicit gates before targeted or drastic architecture work — `chore/performance-benchmark-harness` — in review
 - **2026-05-19** — R1 reference-lap fetch dedup + R2 post-debounce write log landed on integration branch. R1: 5s-TTL invoke dedup in `referenceLapsBridge.ts` collapses 3× per-renderer `[Main] Fetching reference lap` log lines to 1 per class per transition; subsequent invokes log at DEBUG level. R2: `flushAsync` in `referenceLaps.ts` logs `[Main] Reference laps written to disk (N entries)` after each successful `fs.promises.writeFile`, giving ground-truth save-count evidence to discriminate against the misleading renderer-side log clusters. 9 new spec tests (6 new bridge spec file + 3 in referenceLaps spec). 809/809 tests pass — `feat/phase-2a-integration` — landed
 - **2026-05-19** — Working-tree identity-key implementation for mid-session leave detection reverted to HEAD on `feat/phase-2a-integration`. Decline decision from 2026-05-18 enacted before any commit landed; sessionLifecycle.ts and its spec match the post-2026-05-17 state again. The 2026-05-17 follow-up work (empty-Drivers guard, disconnect log line, Released summary, bridge stale-state nulling) was also still uncommitted and got re-applied cleanly in the same revert+restore operation, then committed separately
 - **2026-05-18** — Spectated PCC race at GR86 Navarra (23.5 min, 4-class spectated race): zero `Driver left (session-update)` events in 20 min despite genuine driver departures. Mid-session per-driver leave detection **declined for fix** after cost/benefit review — see PERFORMANCE_TEST_LOG.md §4 "Declined for fix". Reference-lap fetch storm at session-load captured: 24 fetches in 30s where 4 would suffice — promoted to highest-priority remaining performance item (R1, landed 2026-05-19)

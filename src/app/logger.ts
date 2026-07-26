@@ -1,4 +1,5 @@
 import logger from 'electron-log/main';
+import path from 'node:path';
 
 logger.initialize();
 
@@ -6,6 +7,15 @@ logger.initialize();
 // Console: debug and above (visible in dev)
 logger.transports.file.level = 'info';
 logger.transports.console.level = 'debug';
+
+const perfLogPath = process.env.PERF_LOG_PATH;
+if (perfLogPath) {
+  // Packaged Electron apps do not reliably forward console output to the
+  // spawning process. Give each benchmark run a dedicated file so the runner
+  // can analyse the exact structured samples emitted by that app instance.
+  const resolvedPerfLogPath = path.resolve(perfLogPath);
+  logger.transports.file.resolvePathFn = () => resolvedPerfLogPath;
+}
 
 // Rotate at 5MB to prevent disk bloat
 logger.transports.file.maxSize = 5 * 1024 * 1024;

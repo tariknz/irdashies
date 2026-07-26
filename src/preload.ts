@@ -2,6 +2,8 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 import { exposeBridge } from './app/bridge/rendererExposeBridge';
 import { exposeInMainWorld } from './app/rendererExpose';
+import { startRendererPerfMetrics } from './app/rendererPerfMetrics';
 
 exposeBridge();
 exposeInMainWorld();
+startRendererPerfMetrics();
