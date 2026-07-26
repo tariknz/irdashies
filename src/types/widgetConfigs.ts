@@ -93,6 +93,7 @@ export interface ClassHeaderStyle {
   className?: { colorBackground?: boolean };
   classInfo?: { colorBackground?: boolean };
   classDivider?: { bottomBorder?: boolean };
+  compactSof?: boolean;
 }
 
 // ===========================
