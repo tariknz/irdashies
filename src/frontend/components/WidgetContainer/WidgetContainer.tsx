@@ -217,8 +217,8 @@ export const WidgetContainer = memo(
                     className="p-0.5 hover:bg-sky-600 rounded"
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => onOpenSettings(id)}
-                    title="Widget settings"
-                    aria-label="Widget settings"
+                    title={`Open settings for ${widgetName}`}
+                    aria-label={`Open settings for ${widgetName}`}
                   >
                     <GearIcon size={14} />
                   </button>
@@ -228,8 +228,8 @@ export const WidgetContainer = memo(
                     className="p-0.5 hover:bg-sky-600 rounded"
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => onDisable(id)}
-                    title="Disable widget"
-                    aria-label="Disable widget"
+                    title={`Disable ${widgetName}`}
+                    aria-label={`Disable ${widgetName}`}
                   >
                     <XIcon size={14} />
                   </button>
