@@ -73,6 +73,7 @@ export interface SessionBarConfig {
   lastLap?: { enabled: boolean };
   bestLap?: { enabled: boolean };
   topSpeed?: { enabled: boolean };
+  manufacturerPosition?: { enabled: boolean };
   displayOrder: string[];
   foreground?: { opacity: number };
 }

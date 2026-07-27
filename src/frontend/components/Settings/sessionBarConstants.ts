@@ -17,6 +17,7 @@ export const VALID_SESSION_BAR_ITEM_KEYS = [
   'lastLap',
   'bestLap',
   'topSpeed',
+  'manufacturerPosition',
 ] as const;
 
 // Labels for session bar items
@@ -38,6 +39,7 @@ export const SESSION_BAR_ITEM_LABELS: Record<string, string> = {
   lastLap: 'Last Lap',
   bestLap: 'Best Lap',
   topSpeed: 'Top Speed',
+  manufacturerPosition: 'Manufacturer Position',
 };
 
 // Default display order for session bar items (same for headerBar and footerBar)

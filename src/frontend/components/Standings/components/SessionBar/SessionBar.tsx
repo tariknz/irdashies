@@ -9,7 +9,11 @@ import {
   useTopSpeedStoreUpdater,
   useLastLapTopSpeed,
   useSessionBestTopSpeed,
+  useSessionDrivers,
+  useDriverCarIdx,
 } from '@irdashies/context';
+import { CarManufacturer } from '../CarManufacturer/CarManufacturer';
+import { CAR_ID_TO_CAR_MANUFACTURER } from '../CarManufacturer/carManufacturerMapping';
 import { formatFuel } from '../../../FuelCalculator/fuelCalculations';
 import { formatTime } from '@irdashies/utils/time';
 import {
@@ -168,6 +172,9 @@ export const SessionBar = ({
   const lastLapTopSpeedMs = useLastLapTopSpeed();
   const sessionBestTopSpeedMs = useSessionBestTopSpeed();
   useTopSpeedStoreUpdater(effectiveBarSettings?.topSpeed?.enabled ?? false);
+  const drivers = useSessionDrivers();
+  const playerCarIdx = useDriverCarIdx();
+  const carIdxPositions = useTelemetryValues('CarIdxPosition');
   const sessionBestLap =
     allBestLapTimes && allBestLapTimes.some((t) => t > 0)
       ? Math.min(...allBestLapTimes.filter((t) => t > 0))
@@ -497,6 +504,40 @@ export const SessionBar = ({
             <FlagIcon />
             <span className={color}>
               {pb > 0 ? formatTime(pb, 'mixed') : '—'}
+            </span>
+          </div>
+        );
+      },
+    },
+    manufacturerPosition: {
+      enabled: effectiveBarSettings?.manufacturerPosition?.enabled ?? false,
+      render: () => {
+        if (playerCarIdx === undefined || !drivers) return null;
+        const playerDriver = drivers.find((d) => d.CarIdx === playerCarIdx);
+        if (!playerDriver?.CarID) return null;
+        const playerMfr =
+          CAR_ID_TO_CAR_MANUFACTURER[playerDriver.CarID]?.manufacturer;
+        if (!playerMfr || playerMfr === 'unknown') return null;
+        const sameMfr = drivers.filter(
+          (d) =>
+            CAR_ID_TO_CAR_MANUFACTURER[d.CarID]?.manufacturer === playerMfr
+        );
+        const total = sameMfr.length;
+        if (total <= 1) return null;
+        const sorted = sameMfr
+          .map((d) => ({
+            carIdx: d.CarIdx,
+            pos: carIdxPositions?.[d.CarIdx] ?? 0,
+          }))
+          .filter((d) => d.pos > 0)
+          .sort((a, b) => a.pos - b.pos);
+        const rank = sorted.findIndex((d) => d.carIdx === playerCarIdx) + 1;
+        if (rank === 0) return null;
+        return (
+          <div className="flex justify-center gap-1 items-center tabular-nums">
+            <CarManufacturer carId={playerDriver.CarID} />
+            <span>
+              {rank}/{total}
             </span>
           </div>
         );
