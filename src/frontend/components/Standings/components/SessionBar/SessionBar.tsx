@@ -518,12 +518,22 @@ export const SessionBar = ({
         const playerMfr =
           CAR_ID_TO_CAR_MANUFACTURER[playerDriver.CarID]?.manufacturer;
         if (!playerMfr || playerMfr === 'unknown') return null;
+        const mfrSettings = effectiveBarSettings?.manufacturerPosition;
+        if (mfrSettings?.hideIfSingleMake) {
+          const allMfrs = new Set(
+            drivers.map(
+              (d) =>
+                CAR_ID_TO_CAR_MANUFACTURER[d.CarID]?.manufacturer ?? 'unknown'
+            )
+          );
+          if (allMfrs.size <= 1) return null;
+        }
         const sameMfr = drivers.filter(
           (d) =>
             CAR_ID_TO_CAR_MANUFACTURER[d.CarID]?.manufacturer === playerMfr
         );
         const total = sameMfr.length;
-        if (total <= 1) return null;
+        if (mfrSettings?.hideIfSingleDriver && total <= 1) return null;
         const sorted = sameMfr
           .map((d) => ({
             carIdx: d.CarIdx,

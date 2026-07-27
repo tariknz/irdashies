@@ -10,6 +10,8 @@ export interface SessionBarItemConfig {
   totalFormat?: 'hh:mm' | 'minimal';
   labelStyle?: 'none' | 'short' | 'minimal';
   speedPosition?: 'left' | 'right';
+  hideIfSingleMake?: boolean;
+  hideIfSingleDriver?: boolean;
 }
 
 interface SessionBarItemsListProps {
@@ -139,6 +141,33 @@ export const SessionBarItemsList = ({
                   <option value="Elapsed">Elapsed</option>
                   <option value="Remaining">Remaining</option>
                 </select>
+              </div>
+            )}
+
+            {item.id === 'manufacturerPosition' && itemConfig.enabled && (
+              <div className="flex flex-col gap-2 pl-4 mt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">
+                    Hide if single make in session
+                  </span>
+                  <ToggleSwitch
+                    enabled={itemConfig.hideIfSingleMake ?? false}
+                    onToggle={(v) =>
+                      updateItemConfig(item.id, { hideIfSingleMake: v })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">
+                    Hide if only driver of that make
+                  </span>
+                  <ToggleSwitch
+                    enabled={itemConfig.hideIfSingleDriver ?? false}
+                    onToggle={(v) =>
+                      updateItemConfig(item.id, { hideIfSingleDriver: v })
+                    }
+                  />
+                </div>
               </div>
             )}
 
