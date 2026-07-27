@@ -461,7 +461,7 @@ export const SessionBar = ({
       enabled: effectiveBarSettings?.fuelLevel?.enabled ?? false,
       render: () => {
         if (fuelLevelLiters === undefined) return null;
-        const units = displayUnits === 0 ? 'gal' : 'L';
+        const units = displayUnits === 1 ? 'L' : 'gal';
         return (
           <div className="flex justify-center gap-1 items-center tabular-nums">
             <GasPumpIcon />
