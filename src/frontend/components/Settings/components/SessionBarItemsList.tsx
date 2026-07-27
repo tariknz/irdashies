@@ -1,7 +1,10 @@
+import { useMemo, useCallback } from 'react';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { ToggleSwitch } from './ToggleSwitch';
 import { useSortableList } from '../../SortableList';
 import { SESSION_BAR_ITEM_LABELS } from '../sessionBarConstants';
+
+const getItemId = (item: { id: string }) => item.id;
 
 export interface SessionBarItemConfig {
   enabled: boolean;
@@ -27,12 +30,16 @@ export const SessionBarItemsList = ({
   getItemConfig,
   updateItemConfig,
 }: SessionBarItemsListProps) => {
-  const wrappedItems = items.map((id) => ({ id }));
+  const wrappedItems = useMemo(() => items.map((id) => ({ id })), [items]);
+  const handleReorder = useCallback(
+    (newItems: { id: string }[]) => onReorder(newItems.map((i) => i.id)),
+    [onReorder]
+  );
 
   const { getItemProps, displayItems } = useSortableList({
     items: wrappedItems,
-    onReorder: (newItems) => onReorder(newItems.map((i) => i.id)),
-    getItemId: (item) => item.id,
+    onReorder: handleReorder,
+    getItemId,
   });
 
   return (
