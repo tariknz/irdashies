@@ -6,7 +6,6 @@ import {
   useThrottledWeather,
   useTotalRaceValue,
   useTrackDisplayName,
-  useTopSpeedStoreUpdater,
   useLastLapTopSpeed,
   useSessionBestTopSpeed,
   useSessionDrivers,
@@ -172,7 +171,6 @@ export const SessionBar = ({
   const allBestLapTimes = useTelemetryValues('CarIdxBestLapTime');
   const lastLapTopSpeedMs = useLastLapTopSpeed();
   const sessionBestTopSpeedMs = useSessionBestTopSpeed();
-  useTopSpeedStoreUpdater(effectiveBarSettings?.topSpeed?.enabled ?? false);
   const drivers = useSessionDrivers();
   const playerCarIdx = useDriverCarIdx();
   const carIdxPositions = useTelemetryValues('CarIdxPosition');

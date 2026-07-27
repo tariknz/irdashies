@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { TopSpeedStoreUpdater } from '@irdashies/context';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import {
   useDrivingState,
@@ -309,6 +310,14 @@ export const Relative = () => {
         backgroundOpacity={settings?.background?.opacity ?? 0}
         borderWidth={borderWidth}
       >
+        <TopSpeedStoreUpdater
+          enabled={
+            !!(
+              settings?.headerBar?.topSpeed?.enabled ||
+              settings?.footerBar?.topSpeed?.enabled
+            )
+          }
+        />
         <TitleBar titleBarSettings={settings?.titleBar} />
         {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
           <SessionBar

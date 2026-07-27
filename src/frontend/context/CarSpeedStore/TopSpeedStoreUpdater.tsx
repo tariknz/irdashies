@@ -30,3 +30,13 @@ export const useTopSpeedStoreUpdater = (enabled: boolean) => {
     }
   }, [speed, lap, sessionNum, update, enabled]);
 };
+
+/**
+ * Non-rendering component that feeds Speed telemetry into the TopSpeedStore.
+ * Mount once as a sibling outside SessionBar so that the 60fps Speed
+ * subscription is isolated here and does not force SessionBar to re-render.
+ */
+export const TopSpeedStoreUpdater = ({ enabled }: { enabled: boolean }) => {
+  useTopSpeedStoreUpdater(enabled);
+  return null;
+};
