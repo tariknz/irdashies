@@ -29,6 +29,7 @@ import {
   ClockUserIcon,
   CloudRainIcon,
   FlagIcon,
+  FootballHelmetIcon,
   GasPumpIcon,
   GaugeIcon,
   RoadHorizonIcon,
@@ -175,6 +176,7 @@ export const SessionBar = ({
   const drivers = useSessionDrivers();
   const playerCarIdx = useDriverCarIdx();
   const carIdxPositions = useTelemetryValues('CarIdxPosition');
+  const carIdxClassPositions = useTelemetryValues('CarIdxClassPosition');
   const sessionBestLap =
     allBestLapTimes && allBestLapTimes.some((t) => t > 0)
       ? Math.min(...allBestLapTimes.filter((t) => t > 0))
@@ -546,6 +548,27 @@ export const SessionBar = ({
         return (
           <div className="flex justify-center gap-1 items-center tabular-nums">
             <CarManufacturer carId={playerDriver.CarID} />
+            <span>
+              {rank}/{total}
+            </span>
+          </div>
+        );
+      },
+    },
+    classRank: {
+      enabled: effectiveBarSettings?.classRank?.enabled ?? false,
+      render: () => {
+        if (playerCarIdx === undefined || !drivers) return null;
+        const playerDriver = drivers.find((d) => d.CarIdx === playerCarIdx);
+        if (!playerDriver?.CarClassID) return null;
+        const total = drivers.filter(
+          (d) => d.CarClassID === playerDriver.CarClassID
+        ).length;
+        const rank = carIdxClassPositions?.[playerCarIdx] ?? 0;
+        if (rank <= 0) return null;
+        return (
+          <div className="flex justify-center gap-1 items-center tabular-nums">
+            <FootballHelmetIcon size={14} />
             <span>
               {rank}/{total}
             </span>

@@ -78,6 +78,7 @@ export interface SessionBarConfig {
     hideIfSingleMake?: boolean;
     hideIfSingleDriver?: boolean;
   };
+  classRank?: { enabled: boolean };
   displayOrder: string[];
   foreground?: { opacity: number };
 }

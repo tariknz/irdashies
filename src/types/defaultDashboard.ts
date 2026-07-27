@@ -169,6 +169,9 @@ export const defaultDashboard: {
           manufacturerPosition: {
             enabled: false,
           },
+          classRank: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -188,6 +191,7 @@ export const defaultDashboard: {
             'bestLap',
             'topSpeed',
             'manufacturerPosition',
+            'classRank',
           ],
         },
         footerBar: {
@@ -249,6 +253,9 @@ export const defaultDashboard: {
           manufacturerPosition: {
             enabled: false,
           },
+          classRank: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -268,6 +275,7 @@ export const defaultDashboard: {
             'bestLap',
             'topSpeed',
             'manufacturerPosition',
+            'classRank',
           ],
         },
         showOnlyWhenOnTrack: false,
@@ -587,6 +595,9 @@ export const defaultDashboard: {
           manufacturerPosition: {
             enabled: false,
           },
+          classRank: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -606,6 +617,7 @@ export const defaultDashboard: {
             'bestLap',
             'topSpeed',
             'manufacturerPosition',
+            'classRank',
           ],
         },
         footerBar: {
@@ -667,6 +679,9 @@ export const defaultDashboard: {
           manufacturerPosition: {
             enabled: false,
           },
+          classRank: {
+            enabled: false,
+          },
           displayOrder: [
             'sessionName',
             'sessionTime',
@@ -686,6 +701,7 @@ export const defaultDashboard: {
             'bestLap',
             'topSpeed',
             'manufacturerPosition',
+            'classRank',
           ],
         },
         showOnlyWhenOnTrack: false,
