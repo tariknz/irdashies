@@ -39,7 +39,7 @@ const ClassRankSeeder = ({ drivers, classPositionsByIdx }: SeederProps) => {
       CarIdxClassPosition: { value: classPositionsByIdx },
     } as Telemetry);
     return () => useTelemetryStore.getState().resetTelemetry();
-  }, []);
+  }, [drivers, classPositionsByIdx]);
   return null;
 };
 

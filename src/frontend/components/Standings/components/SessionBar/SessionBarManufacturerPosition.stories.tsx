@@ -41,7 +41,7 @@ const ManufacturerPositionSeeder = ({ drivers, positionsByIdx }: SeederProps) =>
       CarIdxPosition: { value: positionsByIdx },
     } as Telemetry);
     return () => useTelemetryStore.getState().resetTelemetry();
-  }, []);
+  }, [drivers, positionsByIdx]);
   return null;
 };
 
