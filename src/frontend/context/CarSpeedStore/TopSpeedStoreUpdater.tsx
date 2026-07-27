@@ -13,13 +13,13 @@ export const useTopSpeedStoreUpdater = (enabled: boolean) => {
   const sessionNum = useTelemetryValue('SessionNum');
   const update = useTopSpeedStore((s) => s.update);
   const reset = useTopSpeedStore((s) => s.reset);
-  const prevSessionNumRef = useRef<number | undefined | null>(undefined);
+  const prevSessionNumRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (sessionNum === undefined) return;
     const prev = prevSessionNumRef.current;
     prevSessionNumRef.current = sessionNum;
-    if (sessionNum === undefined) return;
-    if (prev === undefined) return;
+    if (prev === null) return; // initial load — no reset
     if (prev === sessionNum) return;
     reset();
   }, [sessionNum, reset]);
