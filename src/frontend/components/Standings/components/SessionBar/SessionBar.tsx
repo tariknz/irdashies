@@ -29,7 +29,6 @@ import {
   ClockUserIcon,
   CloudRainIcon,
   FlagIcon,
-  FootballHelmetIcon,
   GasPumpIcon,
   GaugeIcon,
   RoadHorizonIcon,
@@ -38,6 +37,7 @@ import {
   TireIcon,
   WavesIcon,
 } from '@phosphor-icons/react';
+import { RacingHelmetIcon } from '../../../shared/RacingHelmetIcon';
 import { SessionBarConfig } from '@irdashies/types';
 import { useSessionCurrentTime } from '../../hooks/useSessionCurrentTime';
 import { SessionState } from '@irdashies/types';
@@ -568,7 +568,7 @@ export const SessionBar = ({
         if (rank <= 0) return null;
         return (
           <div className="flex justify-center gap-1 items-center tabular-nums">
-            <FootballHelmetIcon size={14} />
+            <RacingHelmetIcon size={14} />
             <span>
               {rank}/{total}
             </span>
