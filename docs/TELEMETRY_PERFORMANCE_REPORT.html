@@ -1,0 +1,1506 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>irDashies telemetry performance investigation</title>
+    <meta
+      name="description"
+      content="Controlled replay benchmark of the irDashies SDK, IPC, store, renderer, and widget pipeline."
+    />
+    <style>
+      :root {
+        color-scheme: dark;
+        --ink: #f7f8fb;
+        --muted: #a8afbd;
+        --faint: #777f90;
+        --surface: rgba(21, 25, 34, 0.78);
+        --surface-strong: #181d27;
+        --line: rgba(255, 255, 255, 0.11);
+        --line-strong: rgba(255, 255, 255, 0.2);
+        --cyan: #69e2ff;
+        --mint: #76edc3;
+        --amber: #ffc968;
+        --coral: #ff877d;
+        --violet: #a99bff;
+        --page: #090b10;
+        --page-soft: #10141d;
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(
+            circle at 8% -5%,
+            rgba(105, 226, 255, 0.13),
+            transparent 31rem
+          ),
+          radial-gradient(
+            circle at 94% 14%,
+            rgba(169, 155, 255, 0.12),
+            transparent 34rem
+          ),
+          linear-gradient(180deg, var(--page-soft), var(--page) 36rem);
+        color: var(--ink);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        font-size: 16px;
+        line-height: 1.55;
+      }
+
+      a {
+        color: var(--cyan);
+      }
+
+      code,
+      pre,
+      .eyebrow,
+      .metric-value,
+      .bar-value,
+      th {
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+      }
+
+      .shell {
+        width: min(1180px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+
+      .hero {
+        min-height: 680px;
+        display: grid;
+        align-items: center;
+        padding: 92px 0 72px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .eyebrow {
+        margin: 0 0 18px;
+        color: var(--mint);
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        max-width: 970px;
+        margin-bottom: 24px;
+        font-size: clamp(3rem, 7vw, 6.8rem);
+        font-weight: 760;
+        letter-spacing: -0.072em;
+        line-height: 0.92;
+      }
+
+      h1 .accent {
+        color: var(--cyan);
+      }
+
+      .lede {
+        max-width: 780px;
+        margin-bottom: 38px;
+        color: #ccd1dc;
+        font-size: clamp(1.05rem, 2vw, 1.35rem);
+      }
+
+      .stamp-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .stamp {
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.035);
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      nav {
+        position: sticky;
+        z-index: 10;
+        top: 0;
+        border-bottom: 1px solid var(--line);
+        background: rgba(9, 11, 16, 0.86);
+        backdrop-filter: blur(18px);
+      }
+
+      nav .shell {
+        display: flex;
+        gap: 24px;
+        overflow-x: auto;
+        padding-block: 14px;
+      }
+
+      nav a {
+        flex: none;
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 650;
+        text-decoration: none;
+      }
+
+      nav a:hover {
+        color: var(--ink);
+      }
+
+      main {
+        padding: 72px 0 120px;
+      }
+
+      section {
+        scroll-margin-top: 72px;
+        margin-bottom: 104px;
+      }
+
+      .section-head {
+        display: grid;
+        grid-template-columns: minmax(0, 0.85fr) minmax(280px, 1.15fr);
+        gap: 48px;
+        align-items: end;
+        margin-bottom: 34px;
+      }
+
+      .section-head h2 {
+        margin-bottom: 0;
+        font-size: clamp(2rem, 4.5vw, 4rem);
+        letter-spacing: -0.055em;
+        line-height: 1;
+      }
+
+      .section-head p {
+        margin-bottom: 0;
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      .verdict {
+        grid-column: span 4;
+        min-height: 290px;
+        padding: 26px;
+      }
+
+      .verdict .number {
+        display: inline-grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        margin-bottom: 46px;
+        border: 1px solid currentColor;
+        border-radius: 50%;
+        color: var(--cyan);
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 0.8rem;
+      }
+
+      .verdict h3 {
+        margin-bottom: 12px;
+        font-size: 1.28rem;
+        letter-spacing: -0.02em;
+      }
+
+      .verdict p {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .verdict.hot .number {
+        color: var(--coral);
+      }
+
+      .verdict.keep .number {
+        color: var(--mint);
+      }
+
+      .chart-card {
+        grid-column: span 6;
+        padding: 28px;
+      }
+
+      .chart-card h3 {
+        margin-bottom: 6px;
+        font-size: 1.08rem;
+      }
+
+      .caption,
+      .note {
+        color: var(--faint);
+        font-size: 0.78rem;
+      }
+
+      .bars {
+        display: grid;
+        gap: 19px;
+        margin-top: 28px;
+      }
+
+      .bar-line {
+        display: grid;
+        grid-template-columns: minmax(112px, 0.9fr) minmax(150px, 2.8fr) 74px;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .bar-label {
+        color: #dce0e8;
+        font-size: 0.82rem;
+      }
+
+      .bar-track {
+        height: 11px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.055);
+      }
+
+      .bar {
+        min-width: 3px;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--cyan), var(--violet));
+      }
+
+      .bar.hot {
+        background: linear-gradient(90deg, var(--amber), var(--coral));
+      }
+
+      .bar-value {
+        text-align: right;
+        color: var(--ink);
+        font-size: 0.78rem;
+      }
+
+      .delta-band {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        overflow: hidden;
+      }
+
+      .delta {
+        padding: 26px 28px;
+        border-right: 1px solid var(--line);
+      }
+
+      .delta:last-child {
+        border-right: 0;
+      }
+
+      .metric-value {
+        display: block;
+        margin-bottom: 7px;
+        color: var(--mint);
+        font-size: clamp(1.55rem, 3vw, 2.35rem);
+        letter-spacing: -0.055em;
+      }
+
+      .metric-label {
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .pipeline {
+        grid-column: 1 / -1;
+        padding: 28px;
+      }
+
+      .pipeline-flow {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+        margin: 26px 0 30px;
+      }
+
+      .stage {
+        position: relative;
+        min-height: 148px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        background: rgba(255, 255, 255, 0.025);
+      }
+
+      .stage::after {
+        position: absolute;
+        z-index: 2;
+        top: 50%;
+        right: -16px;
+        color: var(--faint);
+        content: '→';
+        transform: translateY(-50%);
+      }
+
+      .stage:last-child::after {
+        display: none;
+      }
+
+      .stage strong {
+        display: block;
+        margin-bottom: 24px;
+        font-size: 0.86rem;
+      }
+
+      .stage .time {
+        color: var(--cyan);
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 1.12rem;
+      }
+
+      .stage small {
+        display: block;
+        margin-top: 4px;
+        color: var(--faint);
+      }
+
+      .stage.hot {
+        border-color: rgba(255, 135, 125, 0.38);
+        background: rgba(255, 135, 125, 0.055);
+      }
+
+      .stage.hot .time {
+        color: var(--coral);
+      }
+
+      .table-wrap {
+        grid-column: 1 / -1;
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--surface);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.86rem;
+      }
+
+      th,
+      td {
+        padding: 15px 18px;
+        border-bottom: 1px solid var(--line);
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      th {
+        color: var(--faint);
+        font-size: 0.69rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      th:first-child,
+      td:first-child {
+        text-align: left;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: 0;
+      }
+
+      tbody tr:hover {
+        background: rgba(255, 255, 255, 0.025);
+      }
+
+      .bad {
+        color: var(--coral);
+      }
+
+      .good {
+        color: var(--mint);
+      }
+
+      .process-card {
+        grid-column: span 7;
+        padding: 28px;
+      }
+
+      .callout {
+        grid-column: span 5;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 28px;
+        background:
+          linear-gradient(150deg, rgba(105, 226, 255, 0.11), transparent 55%),
+          var(--surface);
+      }
+
+      .callout blockquote {
+        margin: 0;
+        font-size: clamp(1.35rem, 3vw, 2.2rem);
+        font-weight: 680;
+        letter-spacing: -0.045em;
+        line-height: 1.12;
+      }
+
+      .callout p {
+        margin: 24px 0 0;
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+
+      .priority {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: 90px 1fr minmax(180px, 0.33fr);
+        align-items: start;
+        gap: 24px;
+        padding: 26px 28px;
+      }
+
+      .priority-code {
+        color: var(--cyan);
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 1.15rem;
+      }
+
+      .priority h3 {
+        margin-bottom: 7px;
+        font-size: 1.05rem;
+      }
+
+      .priority p {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 0.87rem;
+      }
+
+      .impact {
+        color: var(--mint);
+        font-size: 0.8rem;
+        text-align: right;
+      }
+
+      .method-card {
+        grid-column: span 6;
+        padding: 28px;
+      }
+
+      .method-card dl {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        gap: 11px 20px;
+        margin: 22px 0 0;
+        font-size: 0.84rem;
+      }
+
+      dt {
+        color: var(--faint);
+      }
+
+      dd {
+        margin: 0;
+        color: #d8dce5;
+      }
+
+      pre {
+        overflow-x: auto;
+        margin: 18px 0 0;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.25);
+        color: #d9dfeb;
+        font-size: 0.76rem;
+        line-height: 1.6;
+      }
+
+      .limitations {
+        margin-top: 18px;
+        padding-left: 20px;
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .limitations li {
+        margin-bottom: 10px;
+      }
+
+      footer {
+        padding: 36px 0 56px;
+        border-top: 1px solid var(--line);
+        color: var(--faint);
+        font-size: 0.78rem;
+      }
+
+      @media (max-width: 860px) {
+        .hero {
+          min-height: auto;
+          padding-top: 72px;
+        }
+
+        .section-head {
+          grid-template-columns: 1fr;
+          gap: 18px;
+        }
+
+        .verdict,
+        .chart-card,
+        .process-card,
+        .callout,
+        .method-card {
+          grid-column: 1 / -1;
+        }
+
+        .pipeline-flow {
+          grid-template-columns: 1fr;
+        }
+
+        .stage {
+          min-height: 0;
+        }
+
+        .stage::after {
+          top: auto;
+          right: 50%;
+          bottom: -20px;
+          transform: translateX(50%) rotate(90deg);
+        }
+
+        .delta-band {
+          grid-template-columns: 1fr;
+        }
+
+        .delta {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .priority {
+          grid-template-columns: 58px 1fr;
+        }
+
+        .impact {
+          grid-column: 2;
+          text-align: left;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .shell {
+          width: min(100% - 24px, 1180px);
+        }
+
+        h1 {
+          font-size: clamp(2.75rem, 15vw, 4.5rem);
+        }
+
+        main {
+          padding-top: 54px;
+        }
+
+        section {
+          margin-bottom: 78px;
+        }
+
+        .verdict,
+        .chart-card,
+        .pipeline,
+        .process-card,
+        .callout,
+        .method-card,
+        .priority {
+          padding: 22px;
+        }
+
+        .bar-line {
+          grid-template-columns: 100px minmax(100px, 1fr) 62px;
+          gap: 8px;
+        }
+
+        .method-card dl {
+          grid-template-columns: 1fr;
+          gap: 3px;
+        }
+
+        .method-card dd {
+          margin-bottom: 10px;
+        }
+      }
+
+      @media print {
+        :root {
+          color-scheme: light;
+          --ink: #11141a;
+          --muted: #4f5663;
+          --faint: #69717e;
+          --surface: #fff;
+          --line: #d9dde4;
+          --page: #fff;
+          --page-soft: #fff;
+        }
+
+        body {
+          background: #fff;
+        }
+
+        nav {
+          display: none;
+        }
+
+        .hero {
+          min-height: 0;
+        }
+
+        .card {
+          box-shadow: none;
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="shell">
+        <p class="eyebrow">Controlled replay investigation · July 2026</p>
+        <h1>Telemetry is cheap. <span class="accent">Fan-out is not.</span></h1>
+        <p class="lede">
+          A layer-by-layer benchmark of the irDashies native SDK read,
+          projection, Electron IPC, renderer store delivery, widget computation,
+          and Chromium rendering path using one deterministic 10-minute iRacing
+          replay.
+        </p>
+        <div class="stamp-row">
+          <span class="stamp">36,000 frames</span>
+          <span class="stamp">333 telemetry variables</span>
+          <span class="stamp">3 displays at 2560×1440</span>
+          <span class="stamp">Ryzen 7 9800X3D</span>
+          <span class="stamp">Electron 43.1.1 dev target</span>
+        </div>
+      </div>
+    </header>
+
+    <nav aria-label="Report sections">
+      <div class="shell">
+        <a href="#verdict">Verdict</a>
+        <a href="#ladder">Cost ladder</a>
+        <a href="#pipeline">Pipeline</a>
+        <a href="#payload">Payload A/B</a>
+        <a href="#processes">Processes</a>
+        <a href="#widgets">Widgets</a>
+        <a href="#actions">Actions</a>
+        <a href="#method">Method</a>
+      </div>
+    </nav>
+
+    <main class="shell">
+      <section id="verdict">
+        <div class="section-head">
+          <h2>The short answer</h2>
+          <p>
+            No single “telemetry store” or native call explains the whole
+            profile. The evidence splits cleanly: IPC/store delivery creates a
+            measurable empty-dashboard floor, while subscribed widget work and
+            Chromium rendering dominate the full dashboard.
+          </p>
+        </div>
+        <div class="grid">
+          <article class="card verdict keep">
+            <span class="number">01</span>
+            <h3>The SDK is not the primary bottleneck</h3>
+            <p>
+              A normal allowlisted tick averages about 0.75 ms end to end in the
+              main-process telemetry function. Native telemetry read is the
+              largest part at roughly 0.58–0.62 ms, but the full app consumes
+              far more CPU after the message leaves that function.
+            </p>
+          </article>
+          <article class="card verdict hot">
+            <span class="number">02</span>
+            <h3>Delivery leaks before widgets render</h3>
+            <p>
+              Turning on allowlisted delivery for three empty windows adds 0.54
+              percentage points of app CPU and 10.75 MB/min of working-set
+              growth. That isolates a real IPC, deserialization, or
+              store-snapshot retention cost without widget computation.
+            </p>
+          </article>
+          <article class="card verdict hot">
+            <span class="number">03</span>
+            <h3>Widgets and paint own the full cost</h3>
+            <p>
+              Enabling the normal 18-widget dashboard adds another 7.80
+              percentage points of CPU and 40.63 MB/min of working-set growth.
+              The synchronous store callback remains only about 0.4 ms at p99,
+              placing most of the extra work downstream in derived state, React
+              updates, layout, and paint.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="ladder">
+        <div class="section-head">
+          <h2>A controlled cost ladder</h2>
+          <p>
+            Each step uses the same fixture and host. Observer has no overlay
+            renderers; Empty/off opens the three real windows but suppresses
+            telemetry delivery; Empty/on delivers the production allowlist; Full
+            enables the current 18-widget dashboard.
+          </p>
+        </div>
+        <div class="grid">
+          <article class="card chart-card">
+            <h3>Average irDashies application CPU</h3>
+            <p class="caption">Percent reported across Electron processes</p>
+            <div class="bars" aria-label="Application CPU comparison">
+              <div class="bar-line">
+                <span class="bar-label">Observer</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 1.4%"></div>
+                </div>
+                <span class="bar-value">0.13%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Empty / off</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 9.8%"></div>
+                </div>
+                <span class="bar-value">0.91%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Empty / on</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 15.7%"></div>
+                </div>
+                <span class="bar-value">1.45%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Full / on</span>
+                <div class="bar-track">
+                  <div class="bar hot" style="width: 100%"></div>
+                </div>
+                <span class="bar-value">9.25%</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="card chart-card">
+            <h3>Working-set growth</h3>
+            <p class="caption">Linear slope after a 60-second warm-up</p>
+            <div class="bars" aria-label="Working-set slope comparison">
+              <div class="bar-line">
+                <span class="bar-label">Observer</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 2.5%"></div>
+                </div>
+                <span class="bar-value">1.43</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Empty / off</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 8.5%"></div>
+                </div>
+                <span class="bar-value">4.77</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Empty / on</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 27.6%"></div>
+                </div>
+                <span class="bar-value">15.52</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Full / on</span>
+                <div class="bar-track">
+                  <div class="bar hot" style="width: 100%"></div>
+                </div>
+                <span class="bar-value">56.15</span>
+              </div>
+            </div>
+            <p class="note">
+              Values are MB/min. Full private-memory slope: 58.59 MB/min.
+            </p>
+          </article>
+
+          <article class="card delta-band">
+            <div class="delta">
+              <span class="metric-value">+0.54 pp</span>
+              <span class="metric-label"
+                >CPU cost of delivery into empty windows</span
+              >
+            </div>
+            <div class="delta">
+              <span class="metric-value">+7.80 pp</span>
+              <span class="metric-label"
+                >CPU cost added by the enabled dashboard</span
+              >
+            </div>
+            <div class="delta">
+              <span class="metric-value">0.003%</span>
+              <span class="metric-label"
+                >Full-run frames over 25 ms; no 50 ms frames</span
+              >
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="pipeline">
+        <div class="section-head">
+          <h2>Inside one telemetry tick</h2>
+          <p>
+            Main-process instrumentation measures the synchronous code directly.
+            Renderer callback timing covers deserialization and the immediate
+            TelemetryStore notification, but not all React work scheduled after
+            the callback returns.
+          </p>
+        </div>
+        <div class="grid">
+          <article class="card pipeline">
+            <p class="eyebrow">Production allowlist · full dashboard</p>
+            <div class="pipeline-flow">
+              <div class="stage">
+                <strong>Native SDK read</strong>
+                <span class="time">0.619 ms</span>
+                <small>average per processed tick</small>
+              </div>
+              <div class="stage">
+                <strong>78-key projection</strong>
+                <span class="time">0.006 ms</span>
+                <small>negligible JavaScript filter</small>
+              </div>
+              <div class="stage">
+                <strong>IPC broadcast</strong>
+                <span class="time">0.113 ms</span>
+                <small>0.208 ms mean p99</small>
+              </div>
+              <div class="stage">
+                <strong>Renderer callback</strong>
+                <span class="time">0.405 ms</span>
+                <small>mean p99 across renderers</small>
+              </div>
+              <div class="stage hot">
+                <strong>Derived work + paint</strong>
+                <span class="time">dominant</span>
+                <small>inferred from the controlled CPU delta</small>
+              </div>
+            </div>
+            <p class="note">
+              Full-run processTelemetry p99 averaged 2.07 ms, with a 5.89 ms
+              worst interval. Session reads average about 0.09 ms, with
+              occasional YAML refresh spikes. The main event-loop p99 was 35–42
+              ms in these dev runs, but the renderer stayed at 60 Hz and did not
+              reproduce visible stutter.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="payload">
+        <div class="section-head">
+          <h2>The allowlist is essential</h2>
+          <p>
+            Sending all 333 variables instead of the current 78-key allowlist
+            makes the same downstream architecture substantially more expensive.
+            Direct timings are the strongest A/B evidence because the raw
+            capture was shorter and its aggregate CPU was noisier.
+          </p>
+        </div>
+        <div class="grid">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Measure</th>
+                  <th>Allowlisted</th>
+                  <th>Raw 333 vars</th>
+                  <th>Change</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Approx. structured-clone payload</td>
+                  <td>7,542 bytes</td>
+                  <td>20,427 bytes</td>
+                  <td class="bad">2.71×</td>
+                </tr>
+                <tr>
+                  <td>Broadcast average</td>
+                  <td>0.113 ms</td>
+                  <td>0.251 ms</td>
+                  <td class="bad">2.22×</td>
+                </tr>
+                <tr>
+                  <td>Broadcast mean p99</td>
+                  <td>0.208 ms</td>
+                  <td>0.439 ms</td>
+                  <td class="bad">2.11×</td>
+                </tr>
+                <tr>
+                  <td>Renderer callback mean p99</td>
+                  <td>0.405 ms</td>
+                  <td>0.755 ms</td>
+                  <td class="bad">1.86×</td>
+                </tr>
+                <tr>
+                  <td>Private-memory slope</td>
+                  <td>58.59 MB/min</td>
+                  <td>213.83 MB/min</td>
+                  <td class="bad">3.65×</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="processes">
+        <div class="section-head">
+          <h2>Where the full dashboard spends</h2>
+          <p>
+            The Browser process, renderers, and GPU all contribute. This is why
+            a native SDK rewrite alone would not address the observed
+            application profile.
+          </p>
+        </div>
+        <div class="grid">
+          <article class="card process-card">
+            <h3>Full allowlisted process split</h3>
+            <div class="bars">
+              <div class="bar-line">
+                <span class="bar-label">Browser / main</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 100%"></div>
+                </div>
+                <span class="bar-value">3.92%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Renderers</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 90.1%"></div>
+                </div>
+                <span class="bar-value">3.53%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">GPU</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 45.9%"></div>
+                </div>
+                <span class="bar-value">1.80%</span>
+              </div>
+            </div>
+            <p class="note">
+              Renderer private-memory slopes: Primary 29.68 MB/min, Left 11.67,
+              Right 12.08. Browser was 0.92 and GPU 4.26 MB/min.
+            </p>
+          </article>
+          <article class="card callout">
+            <blockquote>
+              The store callback is a boundary, not the end of the work.
+            </blockquote>
+            <p>
+              Empty delivery proves a substrate cost. Full-dashboard deltas
+              prove a much larger downstream cost. React and Zustand profiling
+              should begin after the callback, with allocation sampling enabled.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="widgets">
+        <div class="section-head">
+          <h2>Focused widget isolates</h2>
+          <p>
+            These short runs preserve the real overlay container and use one
+            enabled widget plus a blank primary window. CPU is useful for
+            ranking; memory slopes are directional because V8 garbage collection
+            can dominate a two-minute regression window.
+          </p>
+        </div>
+        <div class="grid">
+          <article class="card delta-band" id="widget-progress">
+            <div class="delta">
+              <span class="metric-value">18 / 18</span>
+              <span class="metric-label">enabled widgets isolated</span>
+            </div>
+            <div class="delta">
+              <span class="metric-value">0</span>
+              <span class="metric-label">captures remaining</span>
+            </div>
+            <div class="delta">
+              <span class="metric-value">Complete</span>
+              <span class="metric-label">isolation matrix status</span>
+            </div>
+          </article>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Isolate</th>
+                  <th>App CPU</th>
+                  <th>Active renderer CPU</th>
+                  <th>Private slope</th>
+                  <th>Interpretation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Standings</td>
+                  <td>4.85%</td>
+                  <td>0.75%</td>
+                  <td class="good">−7.95 MB/min</td>
+                  <td>CPU cost present; memory window crossed a GC</td>
+                </tr>
+                <tr>
+                  <td>Fuel</td>
+                  <td>3.56%</td>
+                  <td>0.74%</td>
+                  <td class="bad">+32.16 MB/min</td>
+                  <td>Active renderer alone: +22.01 MB/min</td>
+                </tr>
+                <tr>
+                  <td>Relative</td>
+                  <td>3.57%</td>
+                  <td>0.57%</td>
+                  <td class="good">−60.19 MB/min</td>
+                  <td>Memory window crossed a major GC</td>
+                </tr>
+                <tr>
+                  <td>Input</td>
+                  <td>2.24%</td>
+                  <td>0.44%</td>
+                  <td class="bad">+37.91 MB/min</td>
+                  <td>Active renderer: +33.51 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Map</td>
+                  <td>1.85%</td>
+                  <td>0.23%</td>
+                  <td class="bad">+16.36 MB/min</td>
+                  <td>GPU: +24.61; active renderer crossed GC</td>
+                </tr>
+                <tr>
+                  <td>Weather</td>
+                  <td>1.90%</td>
+                  <td>0.25%</td>
+                  <td class="bad">+35.35 MB/min</td>
+                  <td>Active renderer: +26.74 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Faster Cars From Behind</td>
+                  <td>1.93%</td>
+                  <td>0.31%</td>
+                  <td class="good">−3.25 MB/min</td>
+                  <td>Memory flat after GC; no frame stalls</td>
+                </tr>
+                <tr>
+                  <td>Blind Spot Monitor</td>
+                  <td>1.51%</td>
+                  <td>0.25%</td>
+                  <td class="bad">+28.76 MB/min</td>
+                  <td>Active renderer: +24.08 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Rejoin</td>
+                  <td>1.25%</td>
+                  <td>0.17%</td>
+                  <td class="good">−24.81 MB/min</td>
+                  <td>Low CPU; memory window crossed GC</td>
+                </tr>
+                <tr>
+                  <td>Flat Map</td>
+                  <td>1.49%</td>
+                  <td>0.27%</td>
+                  <td class="bad">+14.62 MB/min</td>
+                  <td>Active renderer: +9.58 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Pitlane Helper</td>
+                  <td>1.20%</td>
+                  <td>0.14%</td>
+                  <td class="bad">+16.97 MB/min</td>
+                  <td>Active renderer: +10.83 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Flag</td>
+                  <td>1.30%</td>
+                  <td>0.19%</td>
+                  <td class="bad">+31.38 MB/min</td>
+                  <td>Active renderer: +28.66 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Tachometer</td>
+                  <td>1.73%</td>
+                  <td>0.27%</td>
+                  <td class="bad">+22.47 MB/min</td>
+                  <td>Active renderer: +19.43 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Lap Time Log</td>
+                  <td>1.80%</td>
+                  <td>0.25%</td>
+                  <td class="bad">+16.49 MB/min</td>
+                  <td>Active renderer: +14.21 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Slow Car Ahead</td>
+                  <td>1.24%</td>
+                  <td>0.17%</td>
+                  <td class="bad">+12.83 MB/min</td>
+                  <td>Renderer +6.99; Browser +6.07 MB/min</td>
+                </tr>
+                <tr>
+                  <td>Sector Delta</td>
+                  <td>1.89%</td>
+                  <td>0.18%</td>
+                  <td class="bad">+15.06 MB/min</td>
+                  <td>Active renderer: +14.61 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Corner Name</td>
+                  <td>1.61%</td>
+                  <td>0.22%</td>
+                  <td class="bad">+28.02 MB/min</td>
+                  <td>Active renderer: +17.29 MB/min private</td>
+                </tr>
+                <tr>
+                  <td>Battle</td>
+                  <td>2.06%</td>
+                  <td>0.36%</td>
+                  <td class="bad">+6.75 MB/min</td>
+                  <td>Renderer +2.40; Browser +3.97 MB/min</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <article class="card chart-card" id="widget-rankings">
+            <h3>Highest active-renderer CPU</h3>
+            <p class="caption">
+              Renderer-only ranking avoids Browser-process variance
+            </p>
+            <div
+              class="bars"
+              aria-label="Per-widget active renderer CPU ranking"
+            >
+              <div class="bar-line">
+                <span class="bar-label">Standings</span>
+                <div class="bar-track">
+                  <div class="bar hot" style="width: 100%"></div>
+                </div>
+                <span class="bar-value">0.75%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Fuel</span>
+                <div class="bar-track">
+                  <div class="bar hot" style="width: 98.7%"></div>
+                </div>
+                <span class="bar-value">0.74%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Relative</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 76%"></div>
+                </div>
+                <span class="bar-value">0.57%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Input</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 58.7%"></div>
+                </div>
+                <span class="bar-value">0.44%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Battle</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 48%"></div>
+                </div>
+                <span class="bar-value">0.36%</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Faster Cars</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 41.3%"></div>
+                </div>
+                <span class="bar-value">0.31%</span>
+              </div>
+            </div>
+          </article>
+          <article class="card chart-card">
+            <h3>Strongest renderer allocation signals</h3>
+            <p class="caption">
+              Private-memory slope; directional until longer confirmation runs
+            </p>
+            <div
+              class="bars"
+              aria-label="Per-widget active renderer private-memory slope ranking"
+            >
+              <div class="bar-line">
+                <span class="bar-label">Input</span>
+                <div class="bar-track">
+                  <div class="bar hot" style="width: 100%"></div>
+                </div>
+                <span class="bar-value">33.51</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Flag</span>
+                <div class="bar-track">
+                  <div class="bar hot" style="width: 85.5%"></div>
+                </div>
+                <span class="bar-value">28.66</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Weather</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 79.8%"></div>
+                </div>
+                <span class="bar-value">26.74</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Blind Spot</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 71.9%"></div>
+                </div>
+                <span class="bar-value">24.08</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Fuel</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 65.7%"></div>
+                </div>
+                <span class="bar-value">22.01</span>
+              </div>
+              <div class="bar-line">
+                <span class="bar-label">Tachometer</span>
+                <div class="bar-track">
+                  <div class="bar" style="width: 58%"></div>
+                </div>
+                <span class="bar-value">19.43</span>
+              </div>
+            </div>
+            <p class="note">Values are MB/min in the active renderer.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="actions">
+        <div class="section-head">
+          <h2>Recommended sequence</h2>
+          <p>
+            Change the fan-out contract before investing in a native rewrite.
+            Each recommendation maps to the existing architecture phases and
+            preserves the current allowlist safety net.
+          </p>
+        </div>
+        <div class="grid">
+          <article class="card priority">
+            <span class="priority-code">P0</span>
+            <div>
+              <h3>Protect the telemetry allowlist</h3>
+              <p>
+                Derive or validate it against declared consumers in CI. Raw
+                payloads doubled broadcast latency and nearly doubled callback
+                p99, while producing extreme allocation growth.
+              </p>
+            </div>
+            <span class="impact">Prevents a measured 2–4× regression</span>
+          </article>
+          <article class="card priority">
+            <span class="priority-code">P1</span>
+            <div>
+              <h3>Replace snapshot broadcast with per-window channels</h3>
+              <p>
+                Subscribe each renderer only to the keys and rates required by
+                its mounted widgets. Keep smooth inputs at full rate; bucket
+                position and display telemetry to their actual precision and
+                refresh needs.
+              </p>
+            </div>
+            <span class="impact">Architecture Phase 3</span>
+          </article>
+          <article class="card priority">
+            <span class="priority-code">P1</span>
+            <div>
+              <h3>Heap-profile the empty delivery boundary</h3>
+              <p>
+                Compare allocation stacks with delivery off and on. Inspect
+                Electron structured-clone objects, TelemetryStore snapshot
+                replacement, and retained selector results. Do not mutate the
+                store snapshot in place merely to reduce allocations.
+              </p>
+            </div>
+            <span class="impact">Targets +10.75 MB/min before widgets</span>
+          </article>
+          <article class="card priority">
+            <span class="priority-code">P2</span>
+            <div>
+              <h3>Confirm Input, Flag, Weather, Blind Spot, and Fuel</h3>
+              <p>
+                These five widgets produced the strongest positive
+                active-renderer allocation slopes. Run longer confirmation
+                captures, beginning with Input at +33.51 MB/min, using V8
+                allocation sampling and React profiling to identify retained
+                owners.
+              </p>
+            </div>
+            <span class="impact">Highest short-run allocation signals</span>
+          </article>
+          <article class="card priority">
+            <span class="priority-code">P2</span>
+            <div>
+              <h3>Remove the per-tick session-data fetch</h3>
+              <p>
+                Parsed YAML is already cached by data version, but the bridge
+                still calls <code>getSessionData()</code> on every processed
+                tick. Check a lightweight version first, or expose one from the
+                addon if required, and fetch the session string only when it
+                changes. Move parsing to a worker only if a live trace later
+                connects refresh spikes to visible stalls.
+              </p>
+            </div>
+            <span class="impact">Removes tail latency, not dominant CPU</span>
+          </article>
+          <article class="card priority">
+            <span class="priority-code">P3</span>
+            <div>
+              <h3>Defer native and worker-thread rewrites</h3>
+              <p>
+                The native read is the largest measured main-function section,
+                but it is still below one millisecond on average. The controlled
+                deltas show much larger costs in fan-out, renderer computation,
+                and Chromium.
+              </p>
+            </div>
+            <span class="impact">Revisit only after Phase 3 evidence</span>
+          </article>
+        </div>
+      </section>
+
+      <section id="method">
+        <div class="section-head">
+          <h2>Method and boundaries</h2>
+          <p>
+            The harness launches the Electron app first, waits for the SDK
+            bridge, and then publishes the captured native shared-memory tape.
+            Every comparison starts from frame zero and discards a 60-second
+            warm-up.
+          </p>
+        </div>
+        <div class="grid">
+          <article class="card method-card">
+            <h3>Replay fixture</h3>
+            <dl>
+              <dt>File</dt>
+              <dd>test-data/telemetry/ai-race-10min.irdt</dd>
+              <dt>SHA-256</dt>
+              <dd>6E23E8AB…A22B168</dd>
+              <dt>Duration</dt>
+              <dd>600.4 seconds at 60 Hz</dd>
+              <dt>Frames</dt>
+              <dd>36,000; zero sequence gaps</dd>
+              <dt>Variables</dt>
+              <dd>333 telemetry variables; 70 session updates</dd>
+              <dt>Raw size</dt>
+              <dd>348,187,160 bytes</dd>
+            </dl>
+          </article>
+          <article class="card method-card">
+            <h3>Host and software</h3>
+            <dl>
+              <dt>OS</dt>
+              <dd>Windows 11 Pro, build 26200</dd>
+              <dt>CPU</dt>
+              <dd>AMD Ryzen 7 9800X3D, 8 cores / 16 threads</dd>
+              <dt>Memory</dt>
+              <dd>32 GB</dd>
+              <dt>Graphics</dt>
+              <dd>NVIDIA RTX 2070 Super plus AMD integrated GPU</dd>
+              <dt>Displays</dt>
+              <dd>3 × 2560×1440 at approximately 59 Hz</dd>
+              <dt>Revision</dt>
+              <dd>9ccf1b2 on chore/telemetry-performance-report</dd>
+            </dl>
+          </article>
+          <article class="card method-card">
+            <h3>Reproduce one capture</h3>
+            <pre>
+npm run perf:run -- `
+  --mode full `
+  --run-id replay-full `
+  --duration-seconds 320 `
+  --telemetry-delivery on `
+  --telemetry-payload allowlisted `
+  --replay-input test-data/telemetry/ai-race-10min.irdt
+
+npm run perf:analyze -- `
+  perf-results/replay-full.log `
+  --warmup-seconds 60</pre>
+          </article>
+          <article class="card method-card">
+            <h3>Limitations</h3>
+            <ul class="limitations">
+              <li>
+                Windows Application Control blocked the packaged executable, so
+                all comparative overlay runs use the same Electron development
+                target. Absolute production memory may differ; within-target A/B
+                deltas remain valid.
+              </li>
+              <li>
+                FPS, CPU, and GPU fields inside the iRacing tape are historical
+                values from the recorded session and are not used to evaluate
+                the current host.
+              </li>
+              <li>
+                Five-minute captures establish direction but do not replace a
+                multi-hour live race, package build, V8 heap snapshot, or ETW
+                trace.
+              </li>
+              <li>
+                A stable 60 Hz renderer in this replay means the reported
+                long-session stutter was not reproduced. Memory growth is a risk
+                signal, not proof of the exact user-visible pause mechanism.
+              </li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="shell">
+        irDashies telemetry performance investigation · controlled replay
+        benchmark · generated 26 July 2026
+      </div>
+    </footer>
+  </body>
+</html>

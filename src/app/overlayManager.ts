@@ -12,6 +12,7 @@ import { getDashboard } from './storage/dashboards';
 import { getChromiumFlags, parseCustomSwitches } from './storage/chromiumFlags';
 import { trackSettingsWindowMovement } from './trackWindowMovement';
 import logger from './logger';
+import { createRendererPerfArguments } from './perfRendererArguments';
 
 // used for Hot Module Replacement
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
@@ -77,7 +78,10 @@ export class OverlayManager {
   /**
    * Create one overlay window per display
    */
-  public createOverlays(dashboardLayout: DashboardLayout): void {
+  public createOverlays(
+    dashboardLayout: DashboardLayout,
+    options: { createSettingsWindow?: boolean } = {}
+  ): void {
     this.currentDashboard = dashboardLayout;
     const { generalSettings } = dashboardLayout;
     this.skipTaskbar = generalSettings?.skipTaskbar ?? true;
@@ -128,8 +132,10 @@ export class OverlayManager {
       this.createWindowForDisplay(display, isPrimary);
     }
 
-    const startMinimized = generalSettings?.startMinimized ?? false;
-    this.createSettingsWindow(undefined, { startHidden: startMinimized });
+    if (options.createSettingsWindow !== false) {
+      const startMinimized = generalSettings?.startMinimized ?? false;
+      this.createSettingsWindow(undefined, { startHidden: startMinimized });
+    }
   }
 
   /**
@@ -179,6 +185,7 @@ export class OverlayManager {
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
         backgroundThrottling: false,
+        additionalArguments: createRendererPerfArguments(),
         // Enables the <webview> used by the Heart Rate widget to embed
         // HypeRate's overlay and inject transparent-background CSS (the same
         // technique OBS uses). Global-by-design: webPreferences are fixed at

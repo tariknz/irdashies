@@ -1,9 +1,20 @@
 # irDashies Performance — Empirical Test Summary
 
+> **July 2026 controlled-replay update:** This historical live-session summary is
+> now complemented by the deterministic, layer-by-layer
+> [`TELEMETRY_PERFORMANCE_REPORT.html`](./TELEMETRY_PERFORMANCE_REPORT.html).
+> The replay A/B isolates an IPC/store delivery floor from the larger downstream
+> widget and Chromium cost, and corrects earlier conclusions that could not be
+> separated with live-session captures alone.
+>
 > **Date:** May 2026
 > **Author:** Kev (with AI-assisted analysis)
 > **Companion file:** [`ARCHITECTURE_REVIEW.md`](./ARCHITECTURE_REVIEW.md)
 > **Purpose:** Empirical evidence to inform updates to the architecture review and prioritisation of remediation work.
+>
+> **Repeatable harness:** See
+> [`PERFORMANCE_BENCHMARKS.md`](./PERFORMANCE_BENCHMARKS.md) for the current
+> replay A/B and live-session protocol.
 
 ---
 
