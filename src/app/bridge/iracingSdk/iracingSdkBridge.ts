@@ -130,6 +130,8 @@ export async function publishIRacingSDKEvents(
   lifecycle?: SessionLifecycle
 ): Promise<IrSdkBridge> {
   logger.info('[iracingSdkBridge] Loading iRacing SDK bridge...');
+  const isTapeReplay = Boolean(process.env.IRDASHIES_TELEMETRY_REPLAY);
+  const sourceName = isTapeReplay ? 'telemetry replay' : 'iRacing';
 
   const perfMetrics = new TelemetryPerfMetrics();
   perfMetrics.startReporting();
@@ -167,7 +169,10 @@ export async function publishIRacingSDKEvents(
   const sdk = new IRacingSDK();
   sdk.autoEnableTelemetry = true;
   await sdk.ready();
-  if (perfRunConfig.enabled && process.env.IRDASHIES_IRSDK_REPLAY === '1') {
+  if (
+    perfRunConfig.enabled &&
+    (process.env.IRDASHIES_IRSDK_REPLAY === '1' || isTapeReplay)
+  ) {
     logger.info(PERF_REPLAY_READY_LOG_MARKER);
   }
 
@@ -202,8 +207,9 @@ export async function publishIRacingSDKEvents(
 
       while (!shouldStop && sdk.waitForData(WAIT_TIMEOUT)) {
         if (!wasRunning) {
-          logger.info('[iracingSdkBridge] iRacing is running');
+          logger.info(`[iracingSdkBridge] ${sourceName} is running`);
           wasRunning = true;
+          lifecycle?._onEnter({ replay: isTapeReplay });
         }
         perfMetrics.markStart('processTelemetry');
         perfMetrics.markStart('sdkTelemetryRead');
@@ -259,7 +265,7 @@ export async function publishIRacingSDKEvents(
 
       if (wasRunning) {
         logger.info(
-          '[iracingSdkBridge] iRacing is no longer publishing telemetry'
+          `[iracingSdkBridge] ${sourceName} is no longer publishing telemetry`
         );
         // Release the last telemetry/session snapshots so new overlay windows
         // opened during a disconnect don't get re-seeded with stale data, and
@@ -295,6 +301,7 @@ export async function publishIRacingSDKEvents(
     },
     stop: () => {
       shouldStop = true;
+      sdk.stopSDK();
       clearInterval(runningStateInterval);
       telemetryCallbacks.clear();
       sessionCallbacks.clear();

@@ -19,6 +19,7 @@ export default defineConfig({
       [
         'build/Release/irsdk_node.node',
         'build/Release/irsdk_node_replay.node',
+        'build/Release/irsdk_tape_node.node',
       ],
       '.vite/build/Release/'
     ),
@@ -53,10 +54,6 @@ function irsdkNativeModule(nodeFiles: string[], outDir: string) {
       return nodeFileMap.has(path.basename(source)) ? source : null;
     },
     transform(code: string, id: string) {
-      // check platform
-      if (process.platform !== 'win32') {
-        return code;
-      }
       const file = nodeFileMap.get(path.basename(id));
       if (file) {
         return {
@@ -74,10 +71,6 @@ function irsdkNativeModule(nodeFiles: string[], outDir: string) {
       return nodeFileMap.has(path.basename(id)) ? '' : null;
     },
     generateBundle() {
-      // check platform
-      if (process.platform !== 'win32') {
-        return;
-      }
       nodeFileMap.forEach((fileAbs, file) => {
         const out = `${outDir}/${file}`;
         if (!fs.existsSync(fileAbs)) {

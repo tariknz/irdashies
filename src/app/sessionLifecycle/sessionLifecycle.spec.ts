@@ -48,6 +48,19 @@ describe('sessionLifecycle', () => {
     lifecycle = createSessionLifecycle();
   });
 
+  describe('session entry', () => {
+    it('identifies recorded telemetry independently from live telemetry', () => {
+      const enterSpy = vi.fn();
+      lifecycle.onEnter(enterSpy);
+
+      lifecycle._onEnter({ replay: true });
+      lifecycle._onEnter({ replay: false });
+
+      expect(enterSpy).toHaveBeenNthCalledWith(1, { replay: true });
+      expect(enterSpy).toHaveBeenNthCalledWith(2, { replay: false });
+    });
+  });
+
   describe('driver joins', () => {
     it('fires onDriverJoined for each new carIdx', () => {
       const joinSpy = vi.fn();
