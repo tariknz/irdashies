@@ -1,5 +1,8 @@
 import { useMemo } from 'react';
-import { TopSpeedStoreUpdater } from '@irdashies/context';
+import {
+  SessionTimingStoreUpdater,
+  TopSpeedStoreUpdater,
+} from '@irdashies/context';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import {
   useDrivingState,
@@ -51,7 +54,6 @@ export const Relative = () => {
   const flagColor = getFlagColor(getFlag(sessionFlags).label);
 
   const p2pDisplayStates = useP2PDisplayStates();
-
 
   const lapTimeDeltasEnabled = settings?.lapTimeDeltas?.enabled ?? false;
   useLapTimesStoreUpdater(lapTimeDeltasEnabled);
@@ -318,6 +320,7 @@ export const Relative = () => {
             )
           }
         />
+        <SessionTimingStoreUpdater />
         <TitleBar titleBarSettings={settings?.titleBar} />
         {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
           <SessionBar
@@ -358,6 +361,7 @@ export const Relative = () => {
           )
         }
       />
+      <SessionTimingStoreUpdater />
       <TitleBar titleBarSettings={settings?.titleBar} />
       {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
         <SessionBar

@@ -11,7 +11,10 @@ import {
   useHighlightColor,
   useDriverTagMap,
 } from './hooks';
-import { TopSpeedStoreUpdater } from '@irdashies/context';
+import {
+  SessionTimingStoreUpdater,
+  TopSpeedStoreUpdater,
+} from '@irdashies/context';
 import {
   useGeneralSettings,
   useLapTimesStoreUpdater,
@@ -99,6 +102,7 @@ export const Standings = () => {
           )
         }
       />
+      <SessionTimingStoreUpdater />
       <TitleBar titleBarSettings={settings?.titleBar} />
       {settings?.headerBar && (settings.headerBar.enabled ?? true) && (
         <SessionBar

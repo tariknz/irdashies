@@ -23,3 +23,5 @@ export * from './shared';
 export * from './PersonalBestStore/PersonalBestStore';
 export * from './CarSpeedStore/TopSpeedStore';
 export * from './CarSpeedStore/TopSpeedStoreUpdater';
+export * from './SessionTimingStore/SessionTimingStore';
+export * from './SessionTimingStore/SessionTimingStoreUpdater';

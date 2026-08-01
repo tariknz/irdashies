@@ -1,13 +1,23 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
+import type { ComponentType } from 'react';
 import { SessionBar } from './SessionBar';
 import { getIncidentDisplay } from './getIncidentDisplay';
 import { TelemetryDecorator } from '../../../../../../.storybook/telemetryDecorator';
 import { getWidgetDefaultConfig } from '@irdashies/types';
+import { SessionTimingStoreUpdater } from '@irdashies/context';
 
 export default {
   component: SessionBar,
   title: 'widgets/Standings/components/SessionBar',
-  decorators: [TelemetryDecorator()],
+  decorators: [
+    TelemetryDecorator(),
+    (Story: ComponentType) => (
+      <>
+        <SessionTimingStoreUpdater />
+        <Story />
+      </>
+    ),
+  ],
 } as Meta;
 
 type Story = StoryObj<typeof SessionBar>;
@@ -40,7 +50,12 @@ export const FuelLevelWithOtherItems: Story = {
       sessionLaps: { enabled: true },
       incidentCount: { enabled: true },
       fuelLevel: { enabled: true },
-      displayOrder: ['sessionName', 'sessionLaps', 'incidentCount', 'fuelLevel'],
+      displayOrder: [
+        'sessionName',
+        'sessionLaps',
+        'incidentCount',
+        'fuelLevel',
+      ],
     },
     position: 'header',
   },

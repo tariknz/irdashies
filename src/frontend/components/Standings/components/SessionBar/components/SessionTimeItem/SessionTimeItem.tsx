@@ -1,7 +1,9 @@
 import { memo } from 'react';
-import { useCurrentSessionType, useTotalRaceValue } from '@irdashies/context';
+import {
+  useCurrentSessionType,
+  useSessionTimeTiming,
+} from '@irdashies/context';
 import { SessionState } from '@irdashies/types';
-import { useSessionLapCount } from '../../../../hooks';
 import { formatTotalTime } from '../../formatTotalTime';
 import { sessionBarItemWrapperClass } from '../../sessionBarItemWrapperClass';
 import type { SessionBarItemProps } from '../../sessionBarItemTypes';
@@ -9,10 +11,16 @@ import type { SessionBarItemProps } from '../../sessionBarItemTypes';
 export const SessionTimeItem = memo(
   ({ settings, standalone }: SessionBarItemProps) => {
     const session = useCurrentSessionType();
-    const { time, timeRemaining, timeTotal, state, greenFlagTimestamp } =
-      useSessionLapCount();
-    const { isFixedLapRace, totalRaceTime, adjustedRaceTime } =
-      useTotalRaceValue();
+    const {
+      time,
+      timeRemaining,
+      timeTotal,
+      state,
+      greenFlagTimestamp,
+      isFixedLapRace,
+      totalRaceTime,
+      adjustedRaceTime,
+    } = useSessionTimeTiming();
 
     let elapsedTime: number;
     let remainingTime: number;
