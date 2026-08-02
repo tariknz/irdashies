@@ -21,6 +21,7 @@ export interface InputTraceProps {
     includeThrottle?: boolean;
     includeBrake?: boolean;
     includeAbs?: boolean;
+    absStyle?: 'overlay' | 'bar';
     includeSteer?: boolean;
     strokeWidth?: number;
     maxSamples?: number;
@@ -42,6 +43,7 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
     includeThrottle = true,
     includeBrake = true,
     includeAbs = true,
+    absStyle = 'overlay',
     includeSteer = true,
     strokeWidth = 3,
     maxSamples = 400,
@@ -53,6 +55,7 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
   // Refs for persistent SVG path elements
   const throttlePathRef = useRef<SVGPathElement>(null);
   const brakePathRef = useRef<SVGPathElement>(null);
+  const brakeAbsAreaRef = useRef<SVGPathElement>(null);
   const brakeAbsPathRef = useRef<SVGPathElement>(null);
   const clutchPathRef = useRef<SVGPathElement>(null);
   const steerPathRef = useRef<SVGPathElement>(null);
@@ -162,6 +165,41 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
         return line(indices) ?? '';
       };
 
+      // Helper to generate the ABS-active line path (same curve, gated by brakeABSArray)
+      const generateAbsLineD = () => {
+        const line = d3
+          .line<number>()
+          .x((i) => xScale(i))
+          .y((i) => {
+            const pi = (wi + i) % bufferSize;
+            return yScale(Math.max(0, Math.min(1, brakeArray.current[pi])));
+          })
+          .defined((i) => {
+            const pi = (wi + i) % bufferSize;
+            return brakeABSArray.current[pi];
+          })
+          .curve(d3.curveBasis);
+        return line(indices) ?? '';
+      };
+
+      // Helper to generate the ABS area fill (brake curve → y=0, gated by brakeABSArray)
+      const generateAbsAreaD = () => {
+        const area = d3
+          .area<number>()
+          .x((i) => xScale(i))
+          .y0(yScale(0))
+          .y1((i) => {
+            const pi = (wi + i) % bufferSize;
+            return yScale(Math.max(0, Math.min(1, brakeArray.current[pi])));
+          })
+          .defined((i) => {
+            const pi = (wi + i) % bufferSize;
+            return brakeABSArray.current[pi];
+          })
+          .curve(d3.curveBasis);
+        return area(indices) ?? '';
+      };
+
       // Update path d attributes directly on persistent DOM elements
       if (includeSteer && steerPathRef.current) {
         steerPathRef.current.setAttribute(
@@ -182,35 +220,18 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
         );
       }
       if (includeBrake) {
+        if (brakePathRef.current) {
+          brakePathRef.current.setAttribute(
+            'd',
+            generatePathD(brakeArray.current)
+          );
+        }
         if (includeAbs) {
-          // Draw full brake line in normal color, ABS segments overlay on top
-          if (brakePathRef.current) {
-            brakePathRef.current.setAttribute(
-              'd',
-              generatePathD(brakeArray.current)
-            );
+          if (absStyle === 'bar' && brakeAbsAreaRef.current) {
+            brakeAbsAreaRef.current.setAttribute('d', generateAbsAreaD());
           }
           if (brakeAbsPathRef.current) {
-            const absLine = d3
-              .line<number>()
-              .x((i) => xScale(i))
-              .y((i) => {
-                const pi = (wi + i) % bufferSize;
-                return yScale(Math.max(0, Math.min(1, brakeArray.current[pi])));
-              })
-              .defined((i) => {
-                const pi = (wi + i) % bufferSize;
-                return brakeABSArray.current[pi];
-              })
-              .curve(d3.curveBasis);
-            brakeAbsPathRef.current.setAttribute('d', absLine(indices) ?? '');
-          }
-        } else {
-          if (brakePathRef.current) {
-            brakePathRef.current.setAttribute(
-              'd',
-              generatePathD(brakeArray.current)
-            );
+            brakeAbsPathRef.current.setAttribute('d', generateAbsLineD());
           }
         }
       }
@@ -226,6 +247,7 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
     includeThrottle,
     includeBrake,
     includeAbs,
+    absStyle,
     includeSteer,
     includeClutch,
     bufferSize,
@@ -281,6 +303,15 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
       )}
       {includeBrake && (
         <>
+          {/* ABS bar-style area fill — rendered below the brake line */}
+          {includeAbs && absStyle === 'bar' && (
+            <path
+              ref={brakeAbsAreaRef}
+              fill={BRAKE_ABS_COLOR}
+              fillOpacity={0.3}
+              stroke="none"
+            />
+          )}
           <path
             ref={brakePathRef}
             fill="none"
@@ -292,7 +323,11 @@ export const InputTrace = ({ input, settings }: InputTraceProps) => {
               ref={brakeAbsPathRef}
               fill="none"
               stroke={BRAKE_ABS_COLOR}
-              strokeWidth={Math.round(strokeWidth * 1.67)}
+              strokeWidth={
+                absStyle === 'bar'
+                  ? strokeWidth
+                  : Math.round(strokeWidth * 1.67)
+              }
             />
           )}
         </>

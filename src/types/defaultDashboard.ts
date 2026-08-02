@@ -326,6 +326,7 @@ export const defaultDashboard: {
           size: 100,
           showspeed: true,
           showspeedunit: true,
+          swapSpeedUnit: false,
           unit: 'auto',
         },
         abs: {
