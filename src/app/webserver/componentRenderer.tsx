@@ -1008,4 +1008,27 @@ export class WebSocketBridge implements IrSdkBridge, ChannelBridge {
       }
     });
   }
+
+  // Broadcast commands drive the local iRacing client, which a remote browser
+  // component has no access to. Present but inert to satisfy IrSdkBridge.
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  changeCameraNumber(
+    _carNumber: string,
+    _group: number,
+    _camera: number
+  ): void {
+    // Not supported in browser component mode
+  }
+
+  changeReplayPosition(_position: number, _frame: number): void {
+    // Not supported in browser component mode
+  }
+
+  triggerReplaySessionSearch(
+    _sessionNum: number,
+    _sessionTimeMs: number
+  ): void {
+    // Not supported in browser component mode
+  }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 }

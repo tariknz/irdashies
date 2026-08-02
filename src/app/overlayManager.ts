@@ -55,6 +55,7 @@ export class OverlayManager {
   private displayBoundsInfo = new Map<number, ContainerBoundsInfo>();
   private displayFullBounds = new Map<number, Electron.Rectangle>();
   private currentSettingsWindow: BrowserWindow | undefined;
+  private gantryWindow: BrowserWindow | undefined;
   private currentDashboard: DashboardLayout | undefined;
   private isLocked = true;
   private isQuitting = false;
@@ -147,6 +148,9 @@ export class OverlayManager {
       const startMinimized = generalSettings?.startMinimized ?? false;
       this.createSettingsWindow(undefined, { startHidden: startMinimized });
     }
+
+    // Separate framed window, only created when the Gantry widget is enabled.
+    this.createGantryWindow(dashboardLayout);
   }
 
   /**
@@ -569,6 +573,16 @@ export class OverlayManager {
       }
     }
 
+    // The Gantry consumes telemetry and session data, so it is forwarded
+    // everything — before the settings-window guard below.
+    if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
+      try {
+        this.gantryWindow.webContents.send(key, value);
+      } catch (e) {
+        logger.error(`Failed to send message ${key} to gantry window`, e);
+      }
+    }
+
     // Skip high-frequency telemetry messages for the settings window
     if (OverlayManager.OVERLAY_ONLY_MESSAGES.has(key)) {
       return;
@@ -644,6 +658,11 @@ export class OverlayManager {
     ) {
       this.currentSettingsWindow.destroy();
       this.currentSettingsWindow = undefined;
+    }
+
+    if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
+      this.gantryWindow.destroy();
+      this.gantryWindow = undefined;
     }
 
     app.quit();
@@ -867,6 +886,59 @@ export class OverlayManager {
    */
   public hasLock(): boolean {
     return this.hasSingleInstanceLock;
+  }
+
+  /**
+   * The Gantry is a framed, interactive race-control window rather than a
+   * transparent click-through overlay, so it gets its own BrowserWindow on the
+   * `#/gantry` route instead of being rendered by the OverlayContainer.
+   * No-op unless the Gantry widget is enabled in the dashboard.
+   */
+  public createGantryWindow(dashboardLayout?: DashboardLayout): void {
+    const gantryWidget = dashboardLayout?.widgets.find(
+      (w) => w.id === 'gantry'
+    );
+    if (!gantryWidget?.enabled) return;
+
+    if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
+      this.gantryWindow.show();
+      this.gantryWindow.focus();
+      return;
+    }
+
+    const browserWindow = new BrowserWindow({
+      title: 'irDashies - Gantry',
+      frame: true,
+      width: 1400,
+      height: 800,
+      autoHideMenuBar: true,
+      icon: getIconPath(),
+      show: false,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        backgroundThrottling: false,
+      },
+    });
+
+    this.gantryWindow = browserWindow;
+
+    browserWindow.once('ready-to-show', () => {
+      if (browserWindow.isDestroyed()) return;
+      browserWindow.show();
+    });
+
+    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+      browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/gantry`);
+    } else {
+      browserWindow.loadFile(
+        path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+        { hash: '/gantry' }
+      );
+    }
+
+    browserWindow.on('closed', () => {
+      this.gantryWindow = undefined;
+    });
   }
 
   public createSettingsWindow(

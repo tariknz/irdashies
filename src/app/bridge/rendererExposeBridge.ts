@@ -18,6 +18,10 @@ import type {
   PersonalBestLapBridge,
   ChromiumFlagsBridge,
   ChromiumFlagsType,
+  RaceControlBridge,
+  Incident,
+  IncidentThresholds,
+  SessionRetention,
 } from '@irdashies/types';
 import {
   isRendererPerfMetricsEnabled,
@@ -92,6 +96,13 @@ export function exposeBridge() {
       ipcRenderer.removeAllListeners('sessionData');
       ipcRenderer.removeAllListeners('runningState');
     },
+    // Broadcast commands are main-process only; the renderer drives them
+    // through raceControlBridge below, not through this bridge.
+    /* eslint-disable @typescript-eslint/no-empty-function */
+    changeCameraNumber: () => {},
+    changeReplayPosition: () => {},
+    triggerReplaySessionSearch: () => {},
+    /* eslint-enable @typescript-eslint/no-empty-function */
   });
 
   contextBridge.exposeInMainWorld('dashboardBridge', {
@@ -347,4 +358,22 @@ export function exposeBridge() {
     saveFlags: (flags: ChromiumFlagsType) =>
       ipcRenderer.invoke('chromiumFlags:save', flags),
   } as ChromiumFlagsBridge);
+
+  contextBridge.exposeInMainWorld('raceControlBridge', {
+    getIncidents: () => ipcRenderer.invoke('raceControl:getIncidents'),
+    onIncident: (cb: (incident: Incident) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, incident: Incident) =>
+        cb(incident);
+      ipcRenderer.on('raceControl:incident', handler);
+      return () => ipcRenderer.removeListener('raceControl:incident', handler);
+    },
+    replayIncident: (incident: Incident, seconds: number) =>
+      ipcRenderer.invoke('raceControl:replayIncident', incident, seconds),
+    clearIncidents: () => ipcRenderer.invoke('raceControl:clearIncidents'),
+    updateThresholds: (thresholds: IncidentThresholds) =>
+      ipcRenderer.invoke('raceControl:updateThresholds', thresholds),
+    updateRetention: (retention: SessionRetention) =>
+      ipcRenderer.invoke('raceControl:updateRetention', retention),
+    showGantryWindow: () => ipcRenderer.invoke('raceControl:showGantryWindow'),
+  } as RaceControlBridge);
 }

@@ -31,6 +31,7 @@ import {
   flushReferenceLapsOnShutdown,
 } from './app/storage/referenceLaps';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
+import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
 import { createPerfDashboard, getPerfRunConfig } from './app/perfRunConfig';
 import { ChannelBus, setupChannelBridge } from './app/bridge/channelBridge';
 import { connectSessionLifecycleChannel } from './app/bridge/sessionLifecycleChannel';
@@ -99,6 +100,10 @@ app.on('ready', async () => {
   setupReferenceLapsBridge();
   setupPersonalBestLapTimesBridge();
   setupChromiumFlagsBridge();
+  setupRaceControlBridge();
+  ipcMain.handle('raceControl:showGantryWindow', () => {
+    overlayManager.createGantryWindow(getOrCreateDefaultDashboard());
+  });
 
   // Start component server for browser components
   await startComponentServer(bridge, dashboardBridge, channelBus);

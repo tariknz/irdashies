@@ -22,6 +22,7 @@ import { SectorDelta } from './components/SectorDelta/SectorDelta';
 import { HeartRate } from './components/HeartRate/HeartRate';
 import { CornerNameOverlay } from './components/CornerNameOverlay';
 import { Battle } from './components/Battle/Battle';
+import { Gantry } from './components/Gantry/Gantry';
 import type { WidgetConfigMap } from '@irdashies/types';
 import type { ElementType } from 'react';
 
@@ -50,6 +51,7 @@ export {
   HeartRate,
   CornerNameOverlay,
   Battle,
+  Gantry,
 };
 
 export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
@@ -77,6 +79,7 @@ export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
   heartrate: HeartRate,
   cornername: CornerNameOverlay,
   battle: Battle,
+  gantry: Gantry,
 };
 
 export type WidgetId = keyof WidgetConfigMap;

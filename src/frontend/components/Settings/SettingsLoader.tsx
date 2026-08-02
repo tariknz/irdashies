@@ -30,6 +30,7 @@ import { SectorDeltaSettings } from './sections/SectorDeltaSettings';
 import { HeartRateSettings } from './sections/HeartRateSettings';
 import { CornerNameSettings } from './sections/CornerNameSettings';
 import { BattleSettings } from './sections/BattleSettings';
+import { GantrySettings } from './sections/GantrySettings';
 
 interface SettingsLoaderProps {
   previewMode?: boolean;
@@ -100,6 +101,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <CornerNameSettings />;
     case 'battle':
       return <BattleSettings />;
+    case 'gantry':
+      return <GantrySettings />;
     default:
       return widget ? (
         <div className="text-red-400">No settings available for {type}</div>
