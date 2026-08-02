@@ -29,7 +29,7 @@ Windows shared memory.
 
 The tool is built alongside the existing native addon:
 
-```powershell
+```bash
 npm run irsdk:build
 ```
 

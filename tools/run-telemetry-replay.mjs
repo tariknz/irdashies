@@ -15,9 +15,16 @@ if (!input) {
   );
   process.exitCode = 2;
 } else {
-  const speedText = optionValue(arguments_, '--speed') ?? '1';
+  const speedIndex = arguments_.indexOf('--speed');
+  const speedText =
+    speedIndex === -1 ? '1' : optionValue(arguments_, '--speed');
   const speed = Number(speedText);
-  if (!Number.isFinite(speed) || speed < 0.25 || speed > 100) {
+  if (
+    speedText === undefined ||
+    !Number.isFinite(speed) ||
+    speed < 0.25 ||
+    speed > 100
+  ) {
     process.stderr.write('--speed must be between 0.25 and 100\n');
     process.exitCode = 2;
   } else if (path.extname(input).toLowerCase() !== '.irdt') {

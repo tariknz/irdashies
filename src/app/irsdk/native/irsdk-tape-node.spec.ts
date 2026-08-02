@@ -1,9 +1,10 @@
 import { createRequire } from 'node:module';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { INativeSDK } from './index';
 
@@ -83,7 +84,15 @@ function createFrame(index: number): Buffer {
   return frame;
 }
 
-function createTapeFixture(): Buffer {
+interface TapeFixtureOptions {
+  includeEndRecord?: boolean;
+  qpcFrequency?: bigint;
+}
+
+function createTapeFixture({
+  includeEndRecord = true,
+  qpcFrequency = 60n,
+}: TapeFixtureOptions = {}): Buffer {
   const variables = [
     createVariableHeader({
       type: 5,
@@ -169,8 +178,10 @@ function createTapeFixture(): Buffer {
     createRecord(1, 0n, 100, 0, createFrame(0)),
     createRecord(1, 1n, 101, 0, createFrame(1)),
     createRecord(1, 2n, 102, 0, createFrame(2)),
-    createRecord(5, 3n, 102, 0),
   ];
+  if (includeEndRecord) {
+    records.push(createRecord(5, 3n, 102, 0));
+  }
 
   const fileHeader = Buffer.alloc(FILE_HEADER_SIZE);
   fileHeader.write('IRDTRCE\0', 0, 'ascii');
@@ -181,7 +192,7 @@ function createTapeFixture(): Buffer {
   fileHeader.writeUInt32LE(VARIABLE_HEADER_SIZE, 24);
   fileHeader.writeUInt32LE(variables.length, 28);
   fileHeader.writeBigUInt64LE(BigInt(mappingSize), 32);
-  fileHeader.writeBigUInt64LE(60n, 40);
+  fileHeader.writeBigUInt64LE(qpcFrequency, 40);
   fileHeader.writeBigUInt64LE(BigInt(records.length), 48);
   fileHeader.writeUInt32LE(checksum(variableBytes), 56);
 
@@ -194,15 +205,36 @@ const floatValue = (value: unknown): number =>
   new Float32Array(value as ArrayBuffer)[0];
 const intValue = (value: unknown): number =>
   new Int32Array(value as ArrayBuffer)[0];
+const addonPath = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..',
+  '..',
+  '..',
+  'build',
+  'Release',
+  'irsdk_tape_node.node'
+);
+
+function loadAddon(): { iRacingSdkNode: new () => INativeSDK } {
+  const require = createRequire(import.meta.url);
+  return require(addonPath) as { iRacingSdkNode: new () => INativeSDK };
+}
 
 describe('tape-backed native SDK', () => {
   let temporaryDirectory: string | undefined;
 
+  beforeEach(() => {
+    delete process.env.IRDASHIES_TELEMETRY_REPLAY_SPEED;
+  });
+
   afterEach(async () => {
     delete process.env.IRDASHIES_TELEMETRY_REPLAY;
     delete process.env.IRDASHIES_TELEMETRY_REPLAY_LOOP;
+    delete process.env.IRDASHIES_TELEMETRY_REPLAY_SPEED;
     if (temporaryDirectory) {
       await rm(temporaryDirectory, { recursive: true, force: true });
+      temporaryDirectory = undefined;
     }
   });
 
@@ -216,10 +248,7 @@ describe('tape-backed native SDK', () => {
     process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
     process.env.IRDASHIES_TELEMETRY_REPLAY_LOOP = '1';
 
-    const require = createRequire(import.meta.url);
-    const addon = require(
-      path.resolve('build', 'Release', 'irsdk_tape_node.node')
-    ) as { iRacingSdkNode: new () => INativeSDK };
+    const addon = loadAddon();
     const sdk = new addon.iRacingSdkNode();
 
     try {
@@ -249,6 +278,61 @@ describe('tape-backed native SDK', () => {
       expect(sdk.isRunning()).toBe(false);
       expect(sdk.waitForData(20)).toBe(true);
       expect(floatValue(sdk.getTelemetryData().Speed.value)).toBeCloseTo(50, 5);
+    } finally {
+      sdk.stopSDK();
+    }
+  });
+
+  it('reports a disconnect before looping at physical end-of-file', async () => {
+    temporaryDirectory = await mkdtemp(
+      path.join(tmpdir(), 'irdashies-tape-node-eof-')
+    );
+    const tapePath = path.join(temporaryDirectory, 'synthetic-eof.irdt');
+    await writeFile(tapePath, createTapeFixture({ includeEndRecord: false }));
+
+    process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
+    process.env.IRDASHIES_TELEMETRY_REPLAY_LOOP = '1';
+
+    const addon = loadAddon();
+    const sdk = new addon.iRacingSdkNode();
+
+    try {
+      expect(sdk.startSDK()).toBe(true);
+
+      let speed = 0;
+      while (speed < 52) {
+        expect(sdk.waitForData(20)).toBe(true);
+        speed = floatValue(sdk.getTelemetryData().Speed.value);
+      }
+
+      expect(speed).toBeCloseTo(52, 5);
+      expect(sdk.waitForData(20)).toBe(false);
+      expect(sdk.isRunning()).toBe(false);
+      expect(sdk.waitForData(20)).toBe(true);
+      expect(floatValue(sdk.getTelemetryData().Speed.value)).toBeCloseTo(50, 5);
+    } finally {
+      sdk.stopSDK();
+    }
+  });
+
+  it('returns when the requested wait timeout expires', async () => {
+    temporaryDirectory = await mkdtemp(
+      path.join(tmpdir(), 'irdashies-tape-node-timeout-')
+    );
+    const tapePath = path.join(temporaryDirectory, 'synthetic-timeout.irdt');
+    await writeFile(tapePath, createTapeFixture({ qpcFrequency: 1n }));
+
+    process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
+
+    const addon = loadAddon();
+    const sdk = new addon.iRacingSdkNode();
+
+    try {
+      expect(sdk.startSDK()).toBe(true);
+      expect(sdk.waitForData(20)).toBe(true);
+      expect(floatValue(sdk.getTelemetryData().Speed.value)).toBeCloseTo(50, 5);
+      expect(sdk.waitForData(5)).toBe(false);
+      expect(sdk.isRunning()).toBe(true);
     } finally {
       sdk.stopSDK();
     }

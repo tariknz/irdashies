@@ -32,21 +32,6 @@
       ]
     },
     {
-      "target_name": "irsdk_tape_node",
-      "sources": [
-        "irsdk_node.cc",
-        "replay/irsdk_tape.cpp",
-        "replay/irsdk_tape_utils.cpp",
-        "lib/irsdk_defines.h"
-      ],
-      "defines": [
-        "NAPI_DISABLE_CPP_EXCEPTIONS"
-      ],
-      "include_dirs": [
-        "<!(node -p \"require('node-addon-api').include_dir\")"
-      ]
-    },
-    {
       "target_name": "irsdk_replay",
       "type": "none",
       "sources": [],

@@ -111,7 +111,7 @@ void finishPlayback(bool frameWillBePublished) {
   }
 }
 
-bool loadPendingRecord(std::string& error) {
+bool loadPendingRecord(bool frameWillBePublished, std::string& error) {
   if (hasPendingRecord) {
     return true;
   }
@@ -121,7 +121,7 @@ bool loadPendingRecord(std::string& error) {
     return true;
   }
   if (result == replay::TapeReadResult::EndOfFile) {
-    finishPlayback(false);
+    finishPlayback(frameWillBePublished);
     return false;
   }
   state = PlaybackState::Failed;
@@ -166,9 +166,11 @@ bool publishFrameRecord(char* destination, std::string& error) {
 bool readTimedFrame(int timeoutMs, char* destination) {
   bool foundFrame = false;
   std::string error;
+  const auto deadline = std::chrono::steady_clock::now() +
+      std::chrono::milliseconds(std::max(timeoutMs, 0));
 
   while (state == PlaybackState::Playing) {
-    if (!loadPendingRecord(error)) {
+    if (!loadPendingRecord(foundFrame, error)) {
       if (!error.empty()) {
         std::cerr << "Telemetry tape playback failed: " << error << '\n';
       }
@@ -178,16 +180,10 @@ bool readTimedFrame(int timeoutMs, char* destination) {
     const auto target = pendingTargetTime();
     const auto now = std::chrono::steady_clock::now();
     if (target > now) {
-      if (foundFrame) {
-        return true;
+      if (foundFrame || now >= deadline) {
+        return foundFrame;
       }
-      const auto remaining = target - now;
-      const auto waitLimit = std::chrono::milliseconds(
-          std::max(timeoutMs, 1));
-      const auto typedWaitLimit =
-          std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-              waitLimit);
-      std::this_thread::sleep_for(std::min(remaining, typedWaitLimit));
+      std::this_thread::sleep_for(std::min(target - now, deadline - now));
       continue;
     }
 
