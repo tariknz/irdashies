@@ -16,7 +16,14 @@ export const ManufacturerPositionItem = memo(
     const carIdxPositions = useTelemetryValues('CarIdxPosition');
 
     if (playerCarIdx === undefined || !drivers) return null;
-    const playerDriver = drivers.find((d) => d.CarIdx === playerCarIdx);
+    // Pace cars/spectators aren't classified competitors — exclude them so
+    // manufacturer counts match what the standings list actually shows.
+    const classifiedDrivers = drivers.filter(
+      (d) => !d.CarIsPaceCar && !d.IsSpectator
+    );
+    const playerDriver = classifiedDrivers.find(
+      (d) => d.CarIdx === playerCarIdx
+    );
     if (!playerDriver?.CarID) return null;
     const playerMfr =
       CAR_ID_TO_CAR_MANUFACTURER[playerDriver.CarID]?.manufacturer;
@@ -24,13 +31,13 @@ export const ManufacturerPositionItem = memo(
     const mfrSettings = settings?.manufacturerPosition;
     if (mfrSettings?.hideIfSingleMake) {
       const allMfrs = new Set(
-        drivers.map(
+        classifiedDrivers.map(
           (d) => CAR_ID_TO_CAR_MANUFACTURER[d.CarID]?.manufacturer ?? 'unknown'
         )
       );
       if (allMfrs.size <= 1) return null;
     }
-    const sameMfr = drivers.filter(
+    const sameMfr = classifiedDrivers.filter(
       (d) => CAR_ID_TO_CAR_MANUFACTURER[d.CarID]?.manufacturer === playerMfr
     );
     const total = sameMfr.length;

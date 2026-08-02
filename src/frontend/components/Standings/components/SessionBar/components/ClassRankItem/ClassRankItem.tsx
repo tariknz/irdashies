@@ -14,9 +14,14 @@ export const ClassRankItem = memo(({ standalone }: SessionBarItemProps) => {
   const carIdxClassPositions = useTelemetryValues('CarIdxClassPosition');
 
   if (playerCarIdx === undefined || !drivers) return null;
-  const playerDriver = drivers.find((d) => d.CarIdx === playerCarIdx);
+  // Pace cars/spectators aren't classified competitors — exclude them so the
+  // class total matches what the standings list actually shows.
+  const classifiedDrivers = drivers.filter(
+    (d) => !d.CarIsPaceCar && !d.IsSpectator
+  );
+  const playerDriver = classifiedDrivers.find((d) => d.CarIdx === playerCarIdx);
   if (!playerDriver?.CarClassID) return null;
-  const total = drivers.filter(
+  const total = classifiedDrivers.filter(
     (d) => d.CarClassID === playerDriver.CarClassID
   ).length;
   const rank = carIdxClassPositions?.[playerCarIdx] ?? 0;
