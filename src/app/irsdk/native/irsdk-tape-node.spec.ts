@@ -4,7 +4,15 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from 'vitest';
 
 import type { INativeSDK } from './index';
 
@@ -222,27 +230,31 @@ function loadAddon(): { iRacingSdkNode: new () => INativeSDK } {
 }
 
 describe('tape-backed native SDK', () => {
-  let temporaryDirectory: string | undefined;
+  let temporaryDirectory: string;
+  let tapePath: string;
+
+  beforeAll(async () => {
+    temporaryDirectory = await mkdtemp(
+      path.join(tmpdir(), 'irdashies-tape-node-')
+    );
+    tapePath = path.join(temporaryDirectory, 'synthetic.irdt');
+  });
 
   beforeEach(() => {
     delete process.env.IRDASHIES_TELEMETRY_REPLAY_SPEED;
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     delete process.env.IRDASHIES_TELEMETRY_REPLAY;
     delete process.env.IRDASHIES_TELEMETRY_REPLAY_LOOP;
     delete process.env.IRDASHIES_TELEMETRY_REPLAY_SPEED;
-    if (temporaryDirectory) {
-      await rm(temporaryDirectory, { recursive: true, force: true });
-      temporaryDirectory = undefined;
-    }
+  });
+
+  afterAll(async () => {
+    await rm(temporaryDirectory, { recursive: true, force: true });
   });
 
   it('replays raw frames and embedded session YAML through INativeSDK', async () => {
-    temporaryDirectory = await mkdtemp(
-      path.join(tmpdir(), 'irdashies-tape-node-')
-    );
-    const tapePath = path.join(temporaryDirectory, 'synthetic.irdt');
     await writeFile(tapePath, createTapeFixture());
 
     process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
@@ -284,10 +296,6 @@ describe('tape-backed native SDK', () => {
   });
 
   it('reports a disconnect before looping at physical end-of-file', async () => {
-    temporaryDirectory = await mkdtemp(
-      path.join(tmpdir(), 'irdashies-tape-node-eof-')
-    );
-    const tapePath = path.join(temporaryDirectory, 'synthetic-eof.irdt');
     await writeFile(tapePath, createTapeFixture({ includeEndRecord: false }));
 
     process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
@@ -316,10 +324,6 @@ describe('tape-backed native SDK', () => {
   });
 
   it('returns when the requested wait timeout expires', async () => {
-    temporaryDirectory = await mkdtemp(
-      path.join(tmpdir(), 'irdashies-tape-node-timeout-')
-    );
-    const tapePath = path.join(temporaryDirectory, 'synthetic-timeout.irdt');
     await writeFile(tapePath, createTapeFixture({ qpcFrequency: 1n }));
 
     process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
