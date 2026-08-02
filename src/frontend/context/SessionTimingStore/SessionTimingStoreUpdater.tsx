@@ -3,21 +3,27 @@ import { useTotalRaceValue } from '../shared/useTotalRaceValue';
 import { useSessionLapCount } from '../../components/Standings/hooks/useSessionLapCount';
 import { useSessionTimingStore } from './SessionTimingStore';
 
-export const useSessionTimingStoreUpdater = () => {
+export const useSessionTimingStoreUpdater = (enabled: boolean) => {
   const sessionLapCount = useSessionLapCount();
   const totalRaceValue = useTotalRaceValue();
   const update = useSessionTimingStore((s) => s.update);
 
   useEffect(() => {
+    if (!enabled) return;
     update({ ...sessionLapCount, ...totalRaceValue });
-  }, [sessionLapCount, totalRaceValue, update]);
+  }, [enabled, sessionLapCount, totalRaceValue, update]);
 };
 
 /**
- * Mount once as a sibling near SessionBar so useSessionLapCount/useTotalRaceValue's
- * leader-car loop + effect run once instead of once per SessionBar item that needs them.
+ * Mount once (see OverlayContainer's SessionTimingUpdater) so
+ * useSessionLapCount/useTotalRaceValue's leader-car loop + effect run once
+ * instead of once per widget that needs them.
  */
-export const SessionTimingStoreUpdater = () => {
-  useSessionTimingStoreUpdater();
+export const SessionTimingStoreUpdater = ({
+  enabled,
+}: {
+  enabled: boolean;
+}) => {
+  useSessionTimingStoreUpdater(enabled);
   return null;
 };

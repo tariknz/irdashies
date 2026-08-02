@@ -7,6 +7,8 @@ import { getWidgetDefaultConfig } from '@irdashies/types';
 import {
   SessionTimingStoreUpdater,
   TopSpeedStoreUpdater,
+  TrackTemperatureStoreUpdater,
+  SessionBestLapStoreUpdater,
 } from '@irdashies/context';
 
 export default {
@@ -16,8 +18,10 @@ export default {
     TelemetryDecorator(),
     (Story: ComponentType) => (
       <>
-        <SessionTimingStoreUpdater />
+        <SessionTimingStoreUpdater enabled={true} />
         <TopSpeedStoreUpdater enabled={true} />
+        <TrackTemperatureStoreUpdater enabled={true} />
+        <SessionBestLapStoreUpdater enabled={true} />
         <Story />
       </>
     ),

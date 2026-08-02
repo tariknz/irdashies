@@ -44,8 +44,8 @@ describe('useSessionTimingStoreUpdater', () => {
     vi.mocked(useTotalRaceValue).mockReturnValue(totalRaceValueResult);
   });
 
-  it('writes the merged output of useSessionLapCount + useTotalRaceValue into the store', () => {
-    renderHook(() => useSessionTimingStoreUpdater());
+  it('writes the merged output of useSessionLapCount + useTotalRaceValue into the store when enabled', () => {
+    renderHook(() => useSessionTimingStoreUpdater(true));
 
     expect(useSessionTimingStore.getState()).toMatchObject({
       ...sessionLapCountResult,
@@ -54,7 +54,7 @@ describe('useSessionTimingStoreUpdater', () => {
   });
 
   it('re-syncs the store when the underlying hook results change', () => {
-    const { rerender } = renderHook(() => useSessionTimingStoreUpdater());
+    const { rerender } = renderHook(() => useSessionTimingStoreUpdater(true));
 
     vi.mocked(useSessionLapCount).mockReturnValue({
       ...sessionLapCountResult,
@@ -63,5 +63,15 @@ describe('useSessionTimingStoreUpdater', () => {
     rerender();
 
     expect(useSessionTimingStore.getState().currentLap).toBe(4);
+  });
+
+  it('does not write to the store when disabled', () => {
+    renderHook(() => useSessionTimingStoreUpdater(false));
+
+    expect(useSessionTimingStore.getState()).toMatchObject({
+      state: 0,
+      currentLap: 0,
+      totalLaps: 0,
+    });
   });
 });

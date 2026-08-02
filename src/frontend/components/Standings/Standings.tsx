@@ -12,10 +12,6 @@ import {
   useDriverTagMap,
 } from './hooks';
 import {
-  SessionTimingStoreUpdater,
-  TopSpeedStoreUpdater,
-} from '@irdashies/context';
-import {
   useGeneralSettings,
   useLapTimesStoreUpdater,
   useP2PDisplayStates,
@@ -94,15 +90,6 @@ export const Standings = () => {
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
       }}
     >
-      <TopSpeedStoreUpdater
-        enabled={
-          !!(
-            settings?.headerBar?.topSpeed?.enabled ||
-            settings?.footerBar?.topSpeed?.enabled
-          )
-        }
-      />
-      <SessionTimingStoreUpdater />
       <TitleBar titleBarSettings={settings?.titleBar} />
       {settings?.headerBar && (settings.headerBar.enabled ?? true) && (
         <SessionBar

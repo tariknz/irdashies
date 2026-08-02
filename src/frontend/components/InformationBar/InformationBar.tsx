@@ -2,8 +2,6 @@ import {
   useGeneralSettings,
   useDrivingState,
   useSessionVisibility,
-  SessionTimingStoreUpdater,
-  TopSpeedStoreUpdater,
 } from '@irdashies/context';
 import { SessionBar } from '../Standings/components/SessionBar/SessionBar';
 import { useInformationBarSettings } from '../Standings/hooks/useInformationBarSettings';
@@ -38,8 +36,6 @@ export const InformationBar = () => {
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 60}%`,
       }}
     >
-      <SessionTimingStoreUpdater />
-      <TopSpeedStoreUpdater enabled={!!settings?.topSpeed?.enabled} />
       <SessionBar
         settings={settings}
         opacity={settings?.foreground?.opacity}

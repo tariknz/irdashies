@@ -1,8 +1,4 @@
 import { useMemo } from 'react';
-import {
-  SessionTimingStoreUpdater,
-  TopSpeedStoreUpdater,
-} from '@irdashies/context';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import {
   useDrivingState,
@@ -312,15 +308,6 @@ export const Relative = () => {
         backgroundOpacity={settings?.background?.opacity ?? 0}
         borderWidth={borderWidth}
       >
-        <TopSpeedStoreUpdater
-          enabled={
-            !!(
-              settings?.headerBar?.topSpeed?.enabled ||
-              settings?.footerBar?.topSpeed?.enabled
-            )
-          }
-        />
-        <SessionTimingStoreUpdater />
         <TitleBar titleBarSettings={settings?.titleBar} />
         {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
           <SessionBar
@@ -353,15 +340,6 @@ export const Relative = () => {
       backgroundOpacity={settings?.background?.opacity ?? 0}
       borderWidth={borderWidth}
     >
-      <TopSpeedStoreUpdater
-        enabled={
-          !!(
-            settings?.headerBar?.topSpeed?.enabled ||
-            settings?.footerBar?.topSpeed?.enabled
-          )
-        }
-      />
-      <SessionTimingStoreUpdater />
       <TitleBar titleBarSettings={settings?.titleBar} />
       {settings?.headerBar && (settings.headerBar.enabled ?? false) && (
         <SessionBar
