@@ -124,6 +124,12 @@ function telemetryForRenderer(
 const WAIT_TIMEOUT = 16;
 // How long to sleep between connection retry attempts when iRacing isn't running.
 const RETRY_INTERVAL = 1000;
+// How often to ask the SDK for session data. The native getSessionData() copies
+// and transcodes the whole session YAML on every call even when nothing has
+// changed, and currDataVersion only refreshes as a side effect of that call, so
+// there is no cheap way to check first. Session data is published at 1 Hz at
+// most (see the publish gate below), so polling faster than this buys nothing.
+const SESSION_POLL_INTERVAL = 500;
 
 export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager,
@@ -203,6 +209,8 @@ export async function publishIRacingSDKEvents(
     while (!shouldStop) {
       let lastSessionVersion = -1;
       let lastSessionPublishTime = 0;
+      // 0 so the first tick after connecting always fetches session data.
+      let lastSessionPollTime = 0;
       let wasRunning = false;
 
       while (!shouldStop && sdk.waitForData(WAIT_TIMEOUT)) {
@@ -215,9 +223,14 @@ export async function publishIRacingSDKEvents(
         perfMetrics.markStart('sdkTelemetryRead');
         const telemetry = sdk.getTelemetry();
         perfMetrics.markEnd('sdkTelemetryRead');
-        perfMetrics.markStart('sdkSessionRead');
-        const session = sdk.getSessionData();
-        perfMetrics.markEnd('sdkSessionRead');
+        const tickTime = Date.now();
+        let session: Session | null = null;
+        if (tickTime - lastSessionPollTime >= SESSION_POLL_INTERVAL) {
+          lastSessionPollTime = tickTime;
+          perfMetrics.markStart('sdkSessionRead');
+          session = sdk.getSessionData();
+          perfMetrics.markEnd('sdkSessionRead');
+        }
 
         if (telemetry) {
           latestTelemetry = telemetry;
@@ -239,15 +252,14 @@ export async function publishIRacingSDKEvents(
 
         if (session) {
           // Only publish the session data if it has changed or if 1 second has passed since the last publish
-          const now = Date.now();
-          const timeSinceLastPublish = now - lastSessionPublishTime;
+          const timeSinceLastPublish = tickTime - lastSessionPublishTime;
           if (
             sdk.currDataVersion !== lastSessionVersion ||
             timeSinceLastPublish >= 1000
           ) {
             perfMetrics.markStart('sessionPublish');
             lastSessionVersion = sdk.currDataVersion;
-            lastSessionPublishTime = now;
+            lastSessionPublishTime = tickTime;
             latestSession = session;
             lifecycle?._onSession(session);
             overlayManager.publishMessage('sessionData', session);
