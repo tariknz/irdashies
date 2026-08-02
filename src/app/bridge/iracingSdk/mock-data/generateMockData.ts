@@ -83,9 +83,9 @@ export function generateMockData(sessionData?: {
   let playerSectorMultipliers = newSectorMultipliers();
   let playerCurrentSectorIdx = getPlayerSectorIdx(mockState.lapDistPct);
 
-  // P2P demo: carIdx 1-4 are overridden to Dallara IR18 (CarID 97) in demo session
+  // P2P demo: carIdx 1-4 are overridden to Dallara IR18 (CarID 99) in demo session
   const P2P_DEMO_CAR_IDXS = [1, 2, 3, 4];
-  const P2P_IR18_CAR_ID = 97;
+  const P2P_IR18_CAR_ID = 99;
 
   // P2P demo telemetry state
   const p2pDemo = {

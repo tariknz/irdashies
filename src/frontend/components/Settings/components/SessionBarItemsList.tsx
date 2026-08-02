@@ -1,7 +1,10 @@
+import { useMemo, useCallback } from 'react';
 import { DotsSixVerticalIcon } from '@phosphor-icons/react';
 import { ToggleSwitch } from './ToggleSwitch';
 import { useSortableList } from '../../SortableList';
 import { SESSION_BAR_ITEM_LABELS } from '../sessionBarConstants';
+
+const getItemId = (item: { id: string }) => item.id;
 
 export interface SessionBarItemConfig {
   enabled: boolean;
@@ -10,6 +13,8 @@ export interface SessionBarItemConfig {
   totalFormat?: 'hh:mm' | 'minimal';
   labelStyle?: 'none' | 'short' | 'minimal';
   speedPosition?: 'left' | 'right';
+  hideIfSingleMake?: boolean;
+  hideIfSingleDriver?: boolean;
 }
 
 interface SessionBarItemsListProps {
@@ -25,12 +30,16 @@ export const SessionBarItemsList = ({
   getItemConfig,
   updateItemConfig,
 }: SessionBarItemsListProps) => {
-  const wrappedItems = items.map((id) => ({ id }));
+  const wrappedItems = useMemo(() => items.map((id) => ({ id })), [items]);
+  const handleReorder = useCallback(
+    (newItems: { id: string }[]) => onReorder(newItems.map((i) => i.id)),
+    [onReorder]
+  );
 
   const { getItemProps, displayItems } = useSortableList({
     items: wrappedItems,
-    onReorder: (newItems) => onReorder(newItems.map((i) => i.id)),
-    getItemId: (item) => item.id,
+    onReorder: handleReorder,
+    getItemId,
   });
 
   return (
@@ -139,6 +148,33 @@ export const SessionBarItemsList = ({
                   <option value="Elapsed">Elapsed</option>
                   <option value="Remaining">Remaining</option>
                 </select>
+              </div>
+            )}
+
+            {item.id === 'manufacturerPosition' && itemConfig.enabled && (
+              <div className="flex flex-col gap-2 pl-4 mt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">
+                    Hide if single make in session
+                  </span>
+                  <ToggleSwitch
+                    enabled={itemConfig.hideIfSingleMake ?? false}
+                    onToggle={(v) =>
+                      updateItemConfig(item.id, { hideIfSingleMake: v })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-300">
+                    Hide if only driver of that make
+                  </span>
+                  <ToggleSwitch
+                    enabled={itemConfig.hideIfSingleDriver ?? false}
+                    onToggle={(v) =>
+                      updateItemConfig(item.id, { hideIfSingleDriver: v })
+                    }
+                  />
+                </div>
               </div>
             )}
 

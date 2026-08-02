@@ -51,7 +51,6 @@ export const Relative = () => {
 
   const p2pDisplayStates = useP2PDisplayStates();
 
-
   const lapTimeDeltasEnabled = settings?.lapTimeDeltas?.enabled ?? false;
   useLapTimesStoreUpdater(lapTimeDeltasEnabled);
   const numLapDeltas = settings?.lapTimeDeltas?.numLaps ?? 3;

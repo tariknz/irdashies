@@ -69,6 +69,16 @@ export interface SessionBarConfig {
   trackTemperature: { enabled: boolean; unit: TemperatureUnit };
   wind?: { enabled: boolean; speedPosition?: 'left' | 'right' };
   trackName: { enabled: boolean };
+  fuelLevel?: { enabled: boolean };
+  lastLap?: { enabled: boolean };
+  bestLap?: { enabled: boolean };
+  topSpeed?: { enabled: boolean };
+  manufacturerPosition?: {
+    enabled: boolean;
+    hideIfSingleMake?: boolean;
+    hideIfSingleDriver?: boolean;
+  };
+  classRank?: { enabled: boolean };
   displayOrder: string[];
   foreground?: { opacity: number };
 }

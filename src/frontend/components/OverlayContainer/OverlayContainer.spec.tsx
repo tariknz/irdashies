@@ -11,6 +11,10 @@ vi.mock('@irdashies/context', () => ({
   usePushToPassStoreUpdater: vi.fn(),
   useResetOnDisconnect: vi.fn(),
   usePitLapStoreUpdater: vi.fn(),
+  TopSpeedStoreUpdater: vi.fn(),
+  SessionTimingStoreUpdater: vi.fn(),
+  TrackTemperatureStoreUpdater: vi.fn(),
+  SessionBestLapStoreUpdater: vi.fn(),
 }));
 vi.mock('../TrackMap/hooks/useSectorTiming', () => ({
   useSectorTiming: vi.fn(),
@@ -18,6 +22,7 @@ vi.mock('../TrackMap/hooks/useSectorTiming', () => ({
 vi.mock('../Standings/hooks', () => ({
   useStandingsSettings: vi.fn(),
   useRelativeSettings: vi.fn(),
+  useInformationBarSettings: vi.fn(),
 }));
 
 import { useDashboard, useRunningState } from '@irdashies/context';

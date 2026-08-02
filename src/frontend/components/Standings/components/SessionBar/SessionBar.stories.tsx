@@ -1,13 +1,31 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
+import type { ComponentType } from 'react';
 import { SessionBar } from './SessionBar';
 import { getIncidentDisplay } from './getIncidentDisplay';
 import { TelemetryDecorator } from '../../../../../../.storybook/telemetryDecorator';
 import { getWidgetDefaultConfig } from '@irdashies/types';
+import {
+  SessionTimingStoreUpdater,
+  TopSpeedStoreUpdater,
+  TrackTemperatureStoreUpdater,
+  SessionBestLapStoreUpdater,
+} from '@irdashies/context';
 
 export default {
   component: SessionBar,
   title: 'widgets/Standings/components/SessionBar',
-  decorators: [TelemetryDecorator()],
+  decorators: [
+    TelemetryDecorator(),
+    (Story: ComponentType) => (
+      <>
+        <SessionTimingStoreUpdater enabled={true} />
+        <TopSpeedStoreUpdater enabled={true} />
+        <TrackTemperatureStoreUpdater enabled={true} />
+        <SessionBestLapStoreUpdater enabled={true} />
+        <Story />
+      </>
+    ),
+  ],
 } as Meta;
 
 type Story = StoryObj<typeof SessionBar>;
@@ -17,6 +35,82 @@ const standingsDefaults = getWidgetDefaultConfig('standings');
 export const Primary: Story = {
   args: {
     settings: standingsDefaults.headerBar,
+    position: 'header',
+  },
+};
+
+export const FuelLevelMetric: Story = {
+  args: {
+    settings: {
+      ...standingsDefaults.headerBar,
+      fuelLevel: { enabled: true },
+      displayOrder: ['fuelLevel'],
+    },
+    position: 'header',
+  },
+};
+
+export const FuelLevelWithOtherItems: Story = {
+  args: {
+    settings: {
+      ...standingsDefaults.headerBar,
+      sessionName: { enabled: true },
+      sessionLaps: { enabled: true },
+      incidentCount: { enabled: true },
+      fuelLevel: { enabled: true },
+      displayOrder: [
+        'sessionName',
+        'sessionLaps',
+        'incidentCount',
+        'fuelLevel',
+      ],
+    },
+    position: 'header',
+  },
+};
+
+export const LastLap: Story = {
+  args: {
+    settings: {
+      ...standingsDefaults.headerBar,
+      lastLap: { enabled: true },
+      displayOrder: ['lastLap'],
+    },
+    position: 'header',
+  },
+};
+
+export const BestLap: Story = {
+  args: {
+    settings: {
+      ...standingsDefaults.headerBar,
+      bestLap: { enabled: true },
+      displayOrder: ['bestLap'],
+    },
+    position: 'header',
+  },
+};
+
+export const TopSpeed: Story = {
+  args: {
+    settings: {
+      ...standingsDefaults.headerBar,
+      topSpeed: { enabled: true },
+      displayOrder: ['topSpeed'],
+    },
+    position: 'header',
+  },
+};
+
+export const LapTimesWithOtherItems: Story = {
+  args: {
+    settings: {
+      ...standingsDefaults.headerBar,
+      lastLap: { enabled: true },
+      bestLap: { enabled: true },
+      incidentCount: { enabled: true },
+      displayOrder: ['incidentCount', 'lastLap', 'bestLap'],
+    },
     position: 'header',
   },
 };
