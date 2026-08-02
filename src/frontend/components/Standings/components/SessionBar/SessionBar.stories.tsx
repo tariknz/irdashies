@@ -4,7 +4,10 @@ import { SessionBar } from './SessionBar';
 import { getIncidentDisplay } from './getIncidentDisplay';
 import { TelemetryDecorator } from '../../../../../../.storybook/telemetryDecorator';
 import { getWidgetDefaultConfig } from '@irdashies/types';
-import { SessionTimingStoreUpdater } from '@irdashies/context';
+import {
+  SessionTimingStoreUpdater,
+  TopSpeedStoreUpdater,
+} from '@irdashies/context';
 
 export default {
   component: SessionBar,
@@ -14,6 +17,7 @@ export default {
     (Story: ComponentType) => (
       <>
         <SessionTimingStoreUpdater />
+        <TopSpeedStoreUpdater enabled={true} />
         <Story />
       </>
     ),
