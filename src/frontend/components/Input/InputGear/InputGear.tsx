@@ -56,7 +56,7 @@ export const InputGear = memo(
           </div>
           {settings.swapSpeedUnit ? (
             <>
-              {/* Swapped: unit on top, prominent speed below */}
+              {/* Swapped: unit on top (same size as default unit), speed on bottom (same size as default speed) */}
               {settings.showspeed && settings.showspeedunit && (
                 <div
                   className="text-gray-400 leading-none"
@@ -80,12 +80,12 @@ export const InputGear = memo(
             </>
           ) : (
             <>
-              {/* Default layout: medium speed, small unit below */}
+              {/* Default: speed on top, unit on bottom */}
               {settings.showspeed && (
                 <div
                   className="text-gray-200 leading-none"
                   style={{
-                    fontSize: `min(${displaySize * (displayMultiplier / 3)}cqh, ${displaySize * 30}cqw)`,
+                    fontSize: `min(${displaySize * (displayMultiplier / 2)}cqh, ${displaySize * 45}cqw)`,
                   }}
                 >
                   {speed.toFixed(0)}
@@ -95,7 +95,7 @@ export const InputGear = memo(
                 <div
                   className="text-gray-400 leading-none"
                   style={{
-                    fontSize: `min(${displaySize * (displayMultiplier / 5)}cqh, ${displaySize * 20}cqw)`,
+                    fontSize: `min(${displaySize * (displayMultiplier / 4)}cqh, ${displaySize * 25}cqw)`,
                   }}
                 >
                   {displayUnit}

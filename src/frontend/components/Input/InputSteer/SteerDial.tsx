@@ -88,7 +88,7 @@ export function SteerDial({
               gear={gear}
               speedMs={speedMs}
               unit={unit}
-              settings={{ ...gearSettings, swapSpeedUnit: true }}
+              settings={gearSettings}
             />
           </div>
         )}
