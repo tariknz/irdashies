@@ -45,12 +45,12 @@ Napi::Object iRacingSdkNode::Init(Napi::Env env, Napi::Object exports)
 
 iRacingSdkNode::iRacingSdkNode(const Napi::CallbackInfo &info)
   : Napi::ObjectWrap<iRacingSdkNode>(info)
+  , _loggingEnabled(false)
   , _data(NULL)
   , _bufLineLen(0)
   , _sessionStatusID(0)
   , _lastSessionCt(-1)
   , _sessionData(NULL)
-  , _loggingEnabled(false)
 {
   printf("Initializing cpp class instance...\n");
 }

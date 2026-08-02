@@ -3,8 +3,14 @@ import logger from '../logger';
 
 type Callback = () => void;
 type CarIdxCallback = (carIdx: number) => void;
+export interface SessionEnterEvent {
+  replay: boolean;
+}
+type EnterCallback = (event: SessionEnterEvent) => void;
 
 export interface SessionLifecycle {
+  /** Called when a live or recorded telemetry source begins publishing. */
+  onEnter: (cb: EnterCallback) => () => void;
   /** Called when a new driver joins (carIdx newly populated in DriverInfo). */
   onDriverJoined: (cb: CarIdxCallback) => () => void;
   /** Called when a driver leaves (carIdx removed from DriverInfo). */
@@ -15,12 +21,14 @@ export interface SessionLifecycle {
   onDisconnect: (cb: Callback) => () => void;
 
   // Internal — called by iracingSdkBridge on each SDK tick.
+  _onEnter: (event: SessionEnterEvent) => void;
   _onTelemetry: (telemetry: Telemetry) => void;
   _onSession: (session: Session) => void;
   _onDisconnect: () => void;
 }
 
 export function createSessionLifecycle(): SessionLifecycle {
+  const enterCallbacks = new Set<EnterCallback>();
   const driverJoinedCallbacks = new Set<CarIdxCallback>();
   const driverLeftCallbacks = new Set<CarIdxCallback>();
   const sessionNumChangeCallbacks = new Set<Callback>();
@@ -51,6 +59,10 @@ export function createSessionLifecycle(): SessionLifecycle {
   }
 
   return {
+    onEnter(cb) {
+      enterCallbacks.add(cb);
+      return () => enterCallbacks.delete(cb);
+    },
     onDriverJoined(cb) {
       driverJoinedCallbacks.add(cb);
       return () => driverJoinedCallbacks.delete(cb);
@@ -66,6 +78,10 @@ export function createSessionLifecycle(): SessionLifecycle {
     onDisconnect(cb) {
       disconnectCallbacks.add(cb);
       return () => disconnectCallbacks.delete(cb);
+    },
+
+    _onEnter(event) {
+      fire(enterCallbacks, event);
     },
 
     _onTelemetry(telemetry) {
