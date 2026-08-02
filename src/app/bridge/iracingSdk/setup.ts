@@ -64,8 +64,9 @@ async function setupBridge(overlayManager: OverlayManager) {
       currentBridge = undefined;
     }
 
+    const isTapeReplay = Boolean(process.env.IRDASHIES_TELEMETRY_REPLAY);
     const module =
-      isDemoMode || process.platform !== 'win32'
+      isDemoMode || (process.platform !== 'win32' && !isTapeReplay)
         ? await import('./mock-data/mockSdkBridge')
         : await import('./iracingSdkBridge');
 

@@ -81,6 +81,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Constant Definitions
 
+#include <cstring>
+#include <ctime>
+
+#if defined(_WIN32)
 #include <tchar.h>
 
 #include "./irsdk_shared_objects.h"
@@ -97,6 +101,7 @@ static const _TCHAR IRSDK_MEMMAPFILENAME[] =
 	IRDASHIES_IRSDK_PRODUCTION_MAPPING_NAME;
 #endif
 static const _TCHAR IRSDK_BROADCASTMSGNAME[]   = _T("IRSDK_BROADCASTMSG");
+#endif
 
 static const int IRSDK_MAX_BUFS = 4;
 static const int IRSDK_MAX_STRING = 32;

@@ -1,7 +1,8 @@
 # Raw iRacing Telemetry Record/Replay
 
 The `irsdk_replay` Windows tool records the complete live IRSDK shared-memory
-surface. Playback uses isolated irDashies test objects by default:
+surface. Its shared-memory playback uses isolated irDashies test objects by
+default:
 
 - `Local\IRDashiesReplayMemMapFileName`
 - `Local\IRDashiesReplayDataValidEvent`
@@ -18,15 +19,23 @@ indistinguishable from live iRacing data. Any future in-app replay controls must
 identify replay mode through an out-of-band test launch flag so session
 lifecycle events can still comply with rule R3.6.
 
+For macOS and other non-Windows development, the application can instead load
+the same tape through `irsdk_tape_node`. This native addon implements the
+existing `INativeSDK` boundary directly, so telemetry and embedded session YAML
+continue through the normal `IRacingSDK` and bridge pipeline without emulating
+Windows shared memory.
+
 ## Build
 
 The tool is built alongside the existing native addon:
 
-```powershell
+```bash
 npm run irsdk:build
 ```
 
-The executable is written to `build\Release\irsdk_replay.exe`.
+On Windows, the executable is written to
+`build\Release\irsdk_replay.exe`. On every platform, the in-process tape addon
+is written to `build/Release/irsdk_tape_node.node`.
 
 ## Record a live session
 
@@ -63,6 +72,41 @@ npm run irsdk:inspect -- --input telemetry-captures\race.irdt
 ```
 
 ## Replay
+
+### In-process application replay (macOS, Windows, and Linux)
+
+Run any tape directly through irDashies:
+
+```bash
+npm run irsdk:replay:app -- --input test-data/telemetry/ai-race-10min.irdt
+```
+
+Playback supports speed factors from `0.25` through `100`, plus looping:
+
+```bash
+npm run irsdk:replay:app -- --input telemetry-captures/race.irdt --speed 2
+npm run irsdk:replay:app -- --input telemetry-captures/race.irdt --loop
+```
+
+The curated fixture has a convenience command:
+
+```bash
+npm run irsdk:replay:app:curated
+```
+
+The launcher sets these out-of-band development variables:
+
+- `IRDASHIES_TELEMETRY_REPLAY` — resolved tape path
+- `IRDASHIES_TELEMETRY_REPLAY_SPEED` — playback speed
+- `IRDASHIES_TELEMETRY_REPLAY_LOOP` — `1` to restart after disconnect
+
+Replay validates the same format, layout, schema, and payload checksums as the
+Windows tool. Recorded disconnects and loop boundaries pass through the normal
+session lifecycle, and `enter` identifies the source with `replay: true`.
+SDK broadcast commands are intentionally ignored because they cannot alter a
+recorded stream.
+
+### Windows shared-memory replay
 
 ```powershell
 npm run irsdk:replay -- --input telemetry-captures\race.irdt
@@ -138,8 +182,11 @@ npm run irsdk:inspect -- --input test-data\telemetry\ai-race-10min.irdt
 npm run irsdk:replay:curated -- --loop
 ```
 
-To run irDashies against it, set `IRDASHIES_IRSDK_REPLAY=1` before starting the
-application as described above.
+On any supported development platform, the simpler full-application path is:
+
+```bash
+npm run irsdk:replay:app:curated
+```
 
 ## Capture format
 
