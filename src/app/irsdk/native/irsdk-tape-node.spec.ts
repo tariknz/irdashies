@@ -233,11 +233,17 @@ describe('tape-backed native SDK', () => {
 
       expect(sdk.waitForData(20)).toBe(true);
       telemetry = sdk.getTelemetryData();
-      expect(floatValue(telemetry.Speed.value)).toBeCloseTo(51, 5);
+      const nextSpeed = floatValue(telemetry.Speed.value);
+      expect(nextSpeed).toBeGreaterThanOrEqual(51);
+      expect(nextSpeed).toBeLessThanOrEqual(52);
 
-      expect(sdk.waitForData(20)).toBe(true);
-      telemetry = sdk.getTelemetryData();
-      expect(floatValue(telemetry.Speed.value)).toBeCloseTo(52, 5);
+      // A busy runner can make both remaining frames due before waitForData
+      // returns. The replay source correctly catches up to the newest frame.
+      if (nextSpeed < 52) {
+        expect(sdk.waitForData(20)).toBe(true);
+        telemetry = sdk.getTelemetryData();
+        expect(floatValue(telemetry.Speed.value)).toBeCloseTo(52, 5);
+      }
 
       expect(sdk.waitForData(20)).toBe(false);
       expect(sdk.isRunning()).toBe(false);
