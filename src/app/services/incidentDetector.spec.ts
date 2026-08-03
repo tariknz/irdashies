@@ -416,6 +416,115 @@ describe('crash detection - off the racing surface', () => {
   });
 });
 
+describe('contact detection', () => {
+  const twoCars = {
+    DriverInfo: {
+      Drivers: [
+        {
+          CarIdx: 0,
+          UserName: 'Driver A',
+          CarNumber: '15',
+          TeamName: '',
+          CarIsPaceCar: 0,
+        },
+        {
+          CarIdx: 1,
+          UserName: 'Driver B',
+          CarNumber: '23',
+          TeamName: '',
+          CarIsPaceCar: 0,
+        },
+      ],
+    },
+  };
+
+  // Puts one car off the road at a given place and time. Surfaces are fed
+  // one frame at a time so each car's debounce trips independently.
+  const runOffTrack = (
+    detector: IncidentDetector,
+    carIdx: number,
+    pct: number,
+    startTime: number
+  ) => {
+    const surfaces = [TrackLocation.OnTrack, TrackLocation.OnTrack];
+    const both = [TrackLocation.OnTrack, TrackLocation.OnTrack];
+    for (let i = 0; i < 2 + defaultThresholds.offTrackDebounce; i++) {
+      const s = i < 2 ? surfaces[i] : TrackLocation.OffTrack;
+      const lap = [pct, pct];
+      const surf = [...both];
+      lap[carIdx] = pct + i * 0.00002;
+      surf[carIdx] = s;
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: lap,
+          carIdxTrackSurface: surf,
+          carIdxOnPitRoad: [false, false],
+          carIdxSessionFlags: [0, 0],
+          sessionTime: startTime + i * 0.05,
+        }),
+        20832
+      );
+    }
+  };
+
+  it('upgrades an off-track to a Crash when another car is in trouble alongside', () => {
+    // isDev so the debug snapshot (and its evidence string) is populated.
+    const detector = new IncidentDetector(defaultThresholds, true);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(twoCars);
+
+    // Car A leaves the road, then car B does so 2s later, ~25m away — the
+    // real-world spacing seen in the logged collision.
+    runOffTrack(detector, 0, 0.5655, 790.5);
+    runOffTrack(detector, 1, 0.5668, 792.5);
+
+    const forB = incidents.filter((i) => i.carIdx === 1);
+    expect(forB.some((i) => i.type === IncidentType.Crash)).toBe(true);
+    expect(
+      forB.find((i) => i.type === IncidentType.Crash)?.debug?.evidence
+    ).toContain('#15');
+  });
+
+  it('leaves a lone off-track as an OffTrack incident', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(twoCars);
+
+    runOffTrack(detector, 0, 0.5655, 790.5);
+
+    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
+    expect(incidents.some((i) => i.type === IncidentType.OffTrack)).toBe(true);
+  });
+
+  it('does not pair cars that go off far apart on track', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(twoCars);
+
+    // Same moment, but opposite sides of the circuit.
+    runOffTrack(detector, 0, 0.1, 790.5);
+    runOffTrack(detector, 1, 0.6, 790.6);
+
+    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
+  });
+
+  it('does not pair cars whose incidents are far apart in time', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(twoCars);
+
+    // Same corner, but a lap apart.
+    runOffTrack(detector, 0, 0.5655, 790.5);
+    runOffTrack(detector, 1, 0.5658, 890.5);
+
+    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
+  });
+});
+
 describe('pit entry detection', () => {
   it('fires PitEntry after pitEntryDebounce consecutive OnPitRoad frames', () => {
     const detector = new IncidentDetector(

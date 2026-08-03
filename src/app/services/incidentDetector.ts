@@ -8,6 +8,16 @@ import { IncidentType } from '../../types/raceControl';
 import { TrackLocation, GlobalFlags, SessionState } from '../irsdk/types/enums';
 import logger from '../logger';
 
+/**
+ * How far apart in time two cars' incidents can be and still be treated as one
+ * contact. Generous on purpose: in a real collision one car often spins
+ * immediately while the other runs on and only leaves the road a second or two
+ * later.
+ */
+const CONTACT_WINDOW_S = 3;
+/** How far apart on track, in metres, two cars can be and still be paired. */
+const CONTACT_DISTANCE_M = 30;
+
 interface TelemetrySnapshot {
   sessionTime: number;
   sessionNum: number;
@@ -33,6 +43,15 @@ export class IncidentDetector {
   private frameBuffers = new Map<
     number,
     IncidentDebugSnapshot['frameHistory']
+  >();
+  /**
+   * Most recent incident-worthy moment per car, used to infer car-to-car
+   * contact. Only the latest is kept, so this is bounded by field size and
+   * needs no pruning; it is cleared with carStates on a session change.
+   */
+  private lastAnomaly = new Map<
+    number,
+    { sessionTime: number; lapDistPct: number }
   >();
   private lastSubSessionId: string | null = null;
   private lastSessionNum: number | null = null;
@@ -102,6 +121,7 @@ export class IncidentDetector {
       const prevCarStates = this.carStates.size;
       this.carStates.clear();
       this.frameBuffers.clear();
+      this.lastAnomaly.clear();
 
       const phaseName =
         effectiveSessionNum != null
@@ -198,6 +218,54 @@ export class IncidentDetector {
   ): boolean {
     const last = state.lastIncidentTime[type] ?? 0;
     return nowMs - last < this.thresholds.cooldownSeconds * 1000;
+  }
+
+  /**
+   * Looks for another car that had an incident-worthy moment close by in both
+   * time and track position, which is the best available proxy for contact —
+   * iRacing's telemetry exposes no collision flag.
+   *
+   * Deliberately loose: cars involved in the same incident are often seconds
+   * apart, because one may spin immediately while the other carries on and
+   * only leaves the road later. A tight window misses those entirely. The cost
+   * is that two cars independently running wide at the same corner can be
+   * paired, which is why the evidence says "likely contact" rather than
+   * asserting it.
+   */
+  /** Remembers where and when a car got into trouble, for contact pairing. */
+  private recordAnomaly(
+    carIdx: number,
+    sessionTime: number,
+    lapDistPct: number
+  ) {
+    this.lastAnomaly.set(carIdx, { sessionTime, lapDistPct });
+  }
+
+  private findContactPartner(
+    carIdx: number,
+    sessionTime: number,
+    lapDistPct: number,
+    trackLengthM: number
+  ): { name: string; carNumber: string } | null {
+    if (!trackLengthM) return null;
+    const maxPctApart = CONTACT_DISTANCE_M / trackLengthM;
+
+    for (const [otherIdx, anomaly] of this.lastAnomaly) {
+      if (otherIdx === carIdx) continue;
+      if (Math.abs(sessionTime - anomaly.sessionTime) > CONTACT_WINDOW_S)
+        continue;
+
+      // Shortest way round the lap, so cars either side of the start/finish
+      // line still register as adjacent.
+      let gap = Math.abs(lapDistPct - anomaly.lapDistPct);
+      if (gap > 0.5) gap = 1 - gap;
+      if (gap > maxPctApart) continue;
+
+      const driver = this.sessionDrivers.get(otherIdx);
+      if (!driver || driver.isPaceCar) continue;
+      return { name: driver.name, carNumber: driver.carNumber };
+    }
+    return null;
   }
 
   private pushFrameHistory(
@@ -346,21 +414,35 @@ export class IncidentDetector {
       // --- Off-track ---
       if (surface === TrackLocation.OffTrack) {
         state.offTrackFrameCount++;
-        if (
-          state.offTrackFrameCount === this.thresholds.offTrackDebounce &&
-          !this.isCoolingDown(state, IncidentType.OffTrack, nowMs)
-        ) {
-          state.lastIncidentTime[IncidentType.OffTrack] = nowMs;
-          const debug = this.buildDebugSnapshot(
+        if (state.offTrackFrameCount === this.thresholds.offTrackDebounce) {
+          const lapDistPct = snap.carIdxLapDistPct[carIdx] ?? 0;
+          // Another car in trouble at the same place and moment turns a lone
+          // excursion into a contact, which is reported as a Crash so it is
+          // not lost among routine off-tracks.
+          const partner = this.findContactPartner(
             carIdx,
-            state,
-            'off-track',
-            `Off-track for ${state.offTrackFrameCount} frames`
+            snap.sessionTime,
+            lapDistPct,
+            trackLengthM
           );
-          this.emit({
-            ...this.createIncidentBase(carIdx, snap, IncidentType.OffTrack),
-            debug,
-          });
+          const type = partner ? IncidentType.Crash : IncidentType.OffTrack;
+
+          if (!this.isCoolingDown(state, type, nowMs)) {
+            state.lastIncidentTime[type] = nowMs;
+            const debug = this.buildDebugSnapshot(
+              carIdx,
+              state,
+              'off-track',
+              partner
+                ? `Off-track for ${state.offTrackFrameCount} frames alongside #${partner.carNumber} ${partner.name} — likely contact`
+                : `Off-track for ${state.offTrackFrameCount} frames`
+            );
+            this.emit({
+              ...this.createIncidentBase(carIdx, snap, type),
+              debug,
+            });
+          }
+          this.recordAnomaly(carIdx, snap.sessionTime, lapDistPct);
         }
       } else {
         state.offTrackFrameCount = 0;
@@ -437,6 +519,11 @@ export class IncidentDetector {
               ...this.createIncidentBase(carIdx, snap, IncidentType.Crash),
               debug,
             });
+            this.recordAnomaly(
+              carIdx,
+              snap.sessionTime,
+              snap.carIdxLapDistPct[carIdx] ?? 0
+            );
           }
         } else {
           state.slowFrameCount = 0;
@@ -479,6 +566,11 @@ export class IncidentDetector {
             ...this.createIncidentBase(carIdx, snap, IncidentType.Crash),
             debug,
           });
+          this.recordAnomaly(
+            carIdx,
+            snap.sessionTime,
+            snap.carIdxLapDistPct[carIdx] ?? 0
+          );
         }
       }
 
