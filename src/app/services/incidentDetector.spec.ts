@@ -215,6 +215,207 @@ describe('first-frame speed guard', () => {
   });
 });
 
+describe('sudden stop - session changeover', () => {
+  it('still fires for a genuine high-speed stop while racing', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    // Four frames at ~225 km/h to fill the suddenStopFrames buffer...
+    let pct = 0.5;
+    for (let i = 0; i < 5; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [pct],
+          sessionTime: 100 + i * 0.04,
+        }),
+        5000
+      );
+      pct += 0.0025;
+    }
+    // ...then barely moving: a real impact.
+    for (let i = 0; i < 3; i++) {
+      pct += 0.000005;
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [pct],
+          sessionTime: 100.2 + i * 0.04,
+        }),
+        5000
+      );
+    }
+
+    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(true);
+  });
+
+  it('does not fire when cars are gridded after a practice/qualifying to race change', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    // Car circulating at speed near the end of the previous session.
+    let pct = 0.5;
+    for (let i = 0; i < 5; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [pct],
+          sessionTime: 100 + i * 0.04,
+          sessionState: SessionState.Racing,
+        }),
+        5000
+      );
+      pct += 0.0025; // ~225 km/h
+    }
+
+    // Changeover: iRacing lifts the car off track and sets it on the grid,
+    // stationary, while the session sits in a pre-race state.
+    for (let i = 0; i < 10; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [0.9235 + i * 0.000002], // grid jitter
+          sessionTime: 9 + i * 0.04,
+          sessionState: SessionState.GetInCar,
+        }),
+        5000
+      );
+    }
+
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toHaveLength(
+      0
+    );
+  });
+});
+
+describe('crash detection - off the racing surface', () => {
+  it('fires Crash for a car that comes to rest in the gravel', () => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, slowFrameThreshold: 3 },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    // Runs wide onto the gravel, straddling the edge (surface flickers
+    // OnTrack/OffTrack) while scrubbing off speed.
+    let pct = 0.806;
+    let t = 479;
+    const surfaces = [
+      TrackLocation.OnTrack,
+      TrackLocation.OffTrack,
+      TrackLocation.OnTrack,
+      TrackLocation.OffTrack,
+      TrackLocation.OffTrack,
+    ];
+    for (const s of surfaces) {
+      pct += 0.00005;
+      t += 0.05;
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [pct],
+          carIdxTrackSurface: [s],
+          sessionTime: t,
+        }),
+        20832
+      );
+    }
+    // Buried in the gravel against the barrier: off track and barely moving.
+    // Needs enough frames to flush the ~75 km/h entries out of the 5-sample
+    // rolling average before slowFrameCount can start climbing.
+    for (let i = 0; i < 12; i++) {
+      pct += 0.0000005;
+      t += 0.05;
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [pct],
+          carIdxTrackSurface: [TrackLocation.OffTrack],
+          sessionTime: t,
+        }),
+        20832
+      );
+    }
+
+    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(true);
+  });
+
+  it('does not fire Crash for a car stationary in its pit stall', () => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, slowFrameThreshold: 3 },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    let pct = 0.1;
+    let t = 100;
+    for (let i = 0; i < 10; i++) {
+      pct += 0.0000005;
+      t += 0.05;
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [pct],
+          carIdxTrackSurface: [TrackLocation.InPitStall],
+          sessionTime: t,
+        }),
+        20832
+      );
+    }
+
+    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
+  });
+});
+
 describe('pit entry detection', () => {
   it('fires PitEntry after pitEntryDebounce consecutive OnPitRoad frames', () => {
     const detector = new IncidentDetector(

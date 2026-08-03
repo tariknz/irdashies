@@ -122,10 +122,13 @@ export class IncidentDetector {
 
       this.lastSubSessionId = subSessionId;
       this.lastSessionNum = effectiveSessionNum;
-    } else {
-      // Re-publish with no real change — preserve carStates/frameBuffers
+    } else if (prevDrivers !== this.sessionDrivers.size) {
+      // Re-publish with no session change — carStates/frameBuffers are
+      // preserved. iRacing republishes the session YAML roughly once a second,
+      // so this only logs when the driver roster actually moved; logging every
+      // republish buried the incident stream in the dev console.
       logger.debug(
-        `[IncidentDetector] updateSession: refresh (no change) subSession=${subSessionId ?? '(none)'} sessionNum=${effectiveSessionNum ?? '(none)'}; ${prevDrivers}→${this.sessionDrivers.size} drivers`
+        `[IncidentDetector] updateSession: roster changed ${prevDrivers}→${this.sessionDrivers.size} drivers (subSession=${subSessionId ?? '(none)'} sessionNum=${effectiveSessionNum ?? '(none)'})`
       );
     }
   }
@@ -402,10 +405,17 @@ export class IncidentDetector {
       }
 
       // --- Sustained slow crash ---
-      const isOnTrack = surface === TrackLocation.OnTrack;
+      // Crash detection must cover cars that are OFF the track, not just on it:
+      // a car sitting in a gravel trap or against a barrier is the most common
+      // crash there is, and it reports surface OffTrack. Restricting to OnTrack
+      // meant such a car only ever produced an OffTrack incident and never a
+      // Crash. Pit surfaces stay excluded — a stationary car in its pit stall
+      // or on pit approach is not an incident.
+      const isOnRacingSurface =
+        surface === TrackLocation.OnTrack || surface === TrackLocation.OffTrack;
       const isOnPitRoad = onPitRoad;
       const isRacing = snap.sessionState === SessionState.Racing;
-      if (!(isOnTrack && !isOnPitRoad && isRacing)) {
+      if (!(isOnRacingSurface && !isOnPitRoad && isRacing)) {
         // Not racing (formation/pace laps) or on pit road — drain the counter so
         // it doesn't carry over and fire immediately once the session goes green.
         state.slowFrameCount = 0;
@@ -437,9 +447,17 @@ export class IncidentDetector {
       // failed to refresh, and incrementing would invent evidence we don't have.
 
       // --- Sudden stop ---
+      // isRacing matters as much here as it does for sustained-slow. On a
+      // session changeover (practice/qualifying -> race) iRacing lifts cars off
+      // the track at whatever speed they were doing and sets them down
+      // stationary on the grid. That teleport writes racing speeds into the
+      // buffer and the car then reads as stopped, which looks exactly like a
+      // crash. Gridding happens in GetInCar/Warmup/ParadeLaps, so gating on
+      // Racing discards the whole sequence.
       if (
-        isOnTrack &&
+        isOnRacingSurface &&
         !isOnPitRoad &&
+        isRacing &&
         hasSpeedSample &&
         state.recentRawSpeeds.length >= this.thresholds.suddenStopFrames
       ) {
