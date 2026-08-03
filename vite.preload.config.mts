@@ -1,4 +1,4 @@
 import { defineConfig } from 'vite';
 
-// https://vitejs.dev/config
+// https://vite.dev/config/
 export default defineConfig({});
