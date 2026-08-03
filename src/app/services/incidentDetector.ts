@@ -131,16 +131,30 @@ export class IncidentDetector {
   }
 
   /** Exposed for testing. Returns speed in km/h. Returns 0 for backwards movement. */
+  /**
+   * Speed in km/h derived from lap-distance movement, or null when no usable
+   * reading can be taken this tick.
+   *
+   * Null is NOT the same as 0 km/h, and the distinction matters: we poll faster
+   * than remote cars' CarIdxLapDistPct arrives over the network, so a car that
+   * is moving perfectly normally still produces ticks where its position is
+   * unchanged. Reporting those as 0 km/h drags the rolling average down and
+   * makes a moving car look stopped — which is how a car trickling into the
+   * pits, or any car during a paused replay, gets reported as a crash.
+   */
   calculateSpeed(
     prevLapDistPct: number,
     currLapDistPct: number,
     deltaTime: number,
     trackLengthM: number
-  ): number {
-    if (deltaTime <= 0) return 0;
+  ): number | null {
+    // Clock did not advance: paused/rewound replay, or a duplicated frame.
+    if (deltaTime <= 0) return null;
     let distPct = currLapDistPct - prevLapDistPct;
     if (distPct < -0.5) distPct += 1.0; // wrap-around
-    if (distPct <= 0) return 0;
+    // No forward movement recorded. Either the position simply has not been
+    // refreshed yet, or the car nudged backwards; neither is a speed reading.
+    if (distPct <= 0) return null;
     const distanceM = trackLengthM * distPct;
     return (distanceM / deltaTime) * 3.6;
   }
@@ -292,35 +306,39 @@ export class IncidentDetector {
       }
 
       // --- Speed calculation ---
+      // A null reading means "no data this tick", not "stopped". Skipping the
+      // buffers keeps the last known speed rather than polluting the rolling
+      // average with zeroes; the speed-based detectors below sit this tick out.
       const deltaTime = snap.sessionTime - state.prevSessionTime;
-      const rawSpeed =
-        deltaTime > 0
-          ? this.calculateSpeed(
-              state.prevLapDistPct,
-              snap.carIdxLapDistPct[carIdx] ?? 0,
-              deltaTime,
-              trackLengthM
-            )
-          : 0;
+      const speedSample = this.calculateSpeed(
+        state.prevLapDistPct,
+        snap.carIdxLapDistPct[carIdx] ?? 0,
+        deltaTime,
+        trackLengthM
+      );
+      const hasSpeedSample = speedSample !== null;
+      const rawSpeed = speedSample ?? state.currentAvgSpeed;
 
-      state.recentRawSpeeds.push(rawSpeed);
-      if (state.recentRawSpeeds.length > this.thresholds.suddenStopFrames) {
-        state.recentRawSpeeds.shift();
-      }
-      state.speedHistory.push(rawSpeed);
-      if (state.speedHistory.length > 5) {
-        state.speedHistory.shift();
-      }
-      state.currentAvgSpeed =
-        state.speedHistory.reduce((a, b) => a + b, 0) /
-        state.speedHistory.length;
+      if (hasSpeedSample) {
+        state.recentRawSpeeds.push(speedSample);
+        if (state.recentRawSpeeds.length > this.thresholds.suddenStopFrames) {
+          state.recentRawSpeeds.shift();
+        }
+        state.speedHistory.push(speedSample);
+        if (state.speedHistory.length > 5) {
+          state.speedHistory.shift();
+        }
+        state.currentAvgSpeed =
+          state.speedHistory.reduce((a, b) => a + b, 0) /
+          state.speedHistory.length;
 
-      this.pushFrameHistory(carIdx, {
-        speed: rawSpeed,
-        lapDistPct: snap.carIdxLapDistPct[carIdx] ?? 0,
-        trackSurface: surface,
-        sessionTime: snap.sessionTime,
-      });
+        this.pushFrameHistory(carIdx, {
+          speed: speedSample,
+          lapDistPct: snap.carIdxLapDistPct[carIdx] ?? 0,
+          trackSurface: surface,
+          sessionTime: snap.sessionTime,
+        });
+      }
 
       // --- Off-track ---
       if (surface === TrackLocation.OffTrack) {
@@ -387,7 +405,11 @@ export class IncidentDetector {
       const isOnTrack = surface === TrackLocation.OnTrack;
       const isOnPitRoad = onPitRoad;
       const isRacing = snap.sessionState === SessionState.Racing;
-      if (isOnTrack && !isOnPitRoad && isRacing) {
+      if (!(isOnTrack && !isOnPitRoad && isRacing)) {
+        // Not racing (formation/pace laps) or on pit road — drain the counter so
+        // it doesn't carry over and fire immediately once the session goes green.
+        state.slowFrameCount = 0;
+      } else if (hasSpeedSample) {
         if (state.currentAvgSpeed < this.thresholds.slowSpeedThreshold) {
           state.slowFrameCount++;
           if (
@@ -409,16 +431,16 @@ export class IncidentDetector {
         } else {
           state.slowFrameCount = 0;
         }
-      } else {
-        // Not racing (formation/pace laps) or on pit road — drain counter so
-        // it doesn't carry over and fire immediately once the session goes green.
-        state.slowFrameCount = 0;
       }
+      // No speed reading this tick: hold slowFrameCount as-is. Resetting would
+      // let a genuinely stopped car escape detection whenever its position
+      // failed to refresh, and incrementing would invent evidence we don't have.
 
       // --- Sudden stop ---
       if (
         isOnTrack &&
         !isOnPitRoad &&
+        hasSpeedSample &&
         state.recentRawSpeeds.length >= this.thresholds.suddenStopFrames
       ) {
         const oldestSpeed = state.recentRawSpeeds[0];

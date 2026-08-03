@@ -57,10 +57,23 @@ describe('IncidentDetector - speed calculation', () => {
     expect(speed).toBeGreaterThan(0);
   });
 
-  it('returns 0 for backwards movement (collision nudge)', () => {
+  it('returns null for backwards movement (collision nudge)', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
     const speed = detector.calculateSpeed(0.5, 0.499, 0.04, 5000);
-    expect(speed).toBe(0);
+    expect(speed).toBeNull();
+  });
+
+  it('returns null when the position has not refreshed since the last tick', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    // Remote cars' lapDistPct arrives slower than we poll, so an unchanged
+    // position is "no reading yet" — not a stationary car.
+    expect(detector.calculateSpeed(0.5, 0.5, 0.04, 5000)).toBeNull();
+  });
+
+  it('returns null when the session clock has not advanced (paused replay)', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    expect(detector.calculateSpeed(0.5, 0.501, 0, 5000)).toBeNull();
+    expect(detector.calculateSpeed(0.5, 0.501, -1, 5000)).toBeNull();
   });
 });
 
@@ -407,6 +420,84 @@ describe('crash detection - sustained slow', () => {
       );
     }
     expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(true);
+  });
+
+  it('does not fire when the session clock is frozen (paused replay)', () => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, slowFrameThreshold: 3 },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
+      5000
+    );
+    // Replay paused: sessionTime and position both frozen. Previously this
+    // produced a 0 km/h reading every tick and crashed the whole field.
+    for (let i = 0; i < 10; i++) {
+      detector.processTelemetry(
+        makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
+        5000
+      );
+    }
+    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
+  });
+
+  it('does not fire for a moving car whose position updates slower than we poll', () => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, slowFrameThreshold: 3 },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
+      5000
+    );
+    // Car is doing a healthy ~180 km/h, but its networked position only
+    // refreshes every third tick — the two stale ticks in between must not be
+    // read as 0 km/h.
+    let pct = 0.5;
+    for (let i = 1; i <= 12; i++) {
+      if (i % 3 === 0) pct += 0.0004;
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [pct],
+          sessionTime: 100 + i * 0.04,
+        }),
+        5000
+      );
+    }
+    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
   });
 
   it('does not fire while car is on pit road', () => {
