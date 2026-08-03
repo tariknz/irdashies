@@ -1,6 +1,9 @@
 import { BrowserWindow, ipcMain, session } from 'electron';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import logger from '../logger';
+
+const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -48,7 +51,7 @@ export class GamepadHost {
       width: 1,
       height: 1,
       webPreferences: {
-        preload: path.join(__dirname, 'preload.js'),
+        preload: path.join(moduleDirectory, 'preload.js'),
         backgroundThrottling: false,
         partition: HID_PARTITION,
       },
@@ -64,7 +67,7 @@ export class GamepadHost {
     } else {
       this.window.loadFile(
         path.join(
-          __dirname,
+          moduleDirectory,
           `../renderer/${MAIN_WINDOW_VITE_NAME}/index-hid-host.html`
         )
       );

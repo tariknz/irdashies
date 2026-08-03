@@ -2,11 +2,14 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { fileURLToPath } from 'node:url';
 import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
 import logger from '../logger';
 import { currentDashboard } from './bridgeProxy';
 import { getGarageCoverImageAsDataUrl } from '../storage/dashboards';
 import type { WidgetId } from '../../frontend/WidgetIndex';
+
+const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 const DEFAULT_PORT = 3000;
 const FALLBACK_PORTS = [3001, 3002, 3003, 3004, 3005];
@@ -199,7 +202,10 @@ export async function startComponentServer(
 
   let staticPath: string | null = null;
   if (!isDev) {
-    staticPath = path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}`);
+    staticPath = path.join(
+      moduleDirectory,
+      `../renderer/${MAIN_WINDOW_VITE_NAME}`
+    );
   }
 
   const httpServer = http.createServer(async (req, res) => {

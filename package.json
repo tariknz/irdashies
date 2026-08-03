@@ -3,6 +3,7 @@
   "productName": "irdashies",
   "version": "0.9.0",
   "description": "iRacing Dashboards & Overlays",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/tariknz/irdashies"

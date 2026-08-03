@@ -6,6 +6,7 @@ import {
 } from 'electron';
 import type { DashboardLayout, ContainerBoundsInfo } from '@irdashies/types';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
 import { getDashboard } from './storage/dashboards';
@@ -13,6 +14,8 @@ import { getChromiumFlags, parseCustomSwitches } from './storage/chromiumFlags';
 import { trackSettingsWindowMovement } from './trackWindowMovement';
 import logger from './logger';
 import { createRendererPerfArguments } from './perfRendererArguments';
+
+const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 // used for Hot Module Replacement
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
@@ -34,7 +37,7 @@ const isAllowedGuestHost = (urlStr: string): boolean => {
 function getIconPath(): string {
   const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
   const basePath = isDev
-    ? path.join(__dirname, '../../docs/assets/icons')
+    ? path.join(moduleDirectory, '../../docs/assets/icons')
     : path.join(process.resourcesPath, 'icons');
 
   return path.join(basePath, 'logo.png');
@@ -183,7 +186,7 @@ export class OverlayManager {
       backgroundColor: '#00000000',
       icon: getIconPath(),
       webPreferences: {
-        preload: path.join(__dirname, 'preload.js'),
+        preload: path.join(moduleDirectory, 'preload.js'),
         backgroundThrottling: false,
         additionalArguments: createRendererPerfArguments(),
         // Enables the <webview> used by the Heart Rate widget to embed
@@ -244,7 +247,10 @@ export class OverlayManager {
       browserWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     } else {
       browserWindow.loadFile(
-        path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
+        path.join(
+          moduleDirectory,
+          `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`
+        )
       );
     }
 
@@ -874,7 +880,7 @@ export class OverlayManager {
       // hide() call — which is what broke the "Start minimized" setting.
       show: false,
       webPreferences: {
-        preload: path.join(__dirname, 'preload.js'),
+        preload: path.join(moduleDirectory, 'preload.js'),
         backgroundThrottling: false,
       },
     };
@@ -909,7 +915,10 @@ export class OverlayManager {
       browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#${hash}`);
     } else {
       browserWindow.loadFile(
-        path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+        path.join(
+          moduleDirectory,
+          `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`
+        ),
         { hash }
       );
     }

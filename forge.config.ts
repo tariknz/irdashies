@@ -5,23 +5,26 @@ import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    icon: path.resolve(__dirname, 'docs/assets/icons/logo'),
-    extraResource: [path.resolve(__dirname, 'docs/assets/icons')],
+    icon: path.resolve(projectRoot, 'docs/assets/icons/logo'),
+    extraResource: [path.resolve(projectRoot, 'docs/assets/icons')],
   },
   rebuildConfig: {
     force: true,
   },
   makers: [
     new MakerSquirrel({
-      iconUrl: path.resolve(__dirname, 'docs/assets/icons/logo.ico'),
-      setupIcon: path.resolve(__dirname, 'docs/assets/icons/logo.ico'),
+      iconUrl: path.resolve(projectRoot, 'docs/assets/icons/logo.ico'),
+      setupIcon: path.resolve(projectRoot, 'docs/assets/icons/logo.ico'),
     }),
     new MakerDMG({
-      icon: path.resolve(__dirname, 'docs/assets/icons/logo.icns'),
+      icon: path.resolve(projectRoot, 'docs/assets/icons/logo.icns'),
     }),
   ],
   publishers: [

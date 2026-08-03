@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/postcss';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const siteRoot = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
@@ -12,16 +15,16 @@ export default defineConfig({
     fs: {
       allow: [
         // Allow serving files from the parent project
-        path.resolve(__dirname, '..'),
+        path.resolve(siteRoot, '..'),
       ],
     },
   },
   resolve: {
     alias: {
-      '@irdashies/utils': path.resolve(__dirname, '../src/frontend/utils'),
-      '@irdashies/context': path.resolve(__dirname, '../src/frontend/context'),
-      '@irdashies/types': path.resolve(__dirname, '../src/types'),
-      '@irdashies/shared': path.resolve(__dirname, '../src/shared'),
+      '@irdashies/utils': path.resolve(siteRoot, '../src/frontend/utils'),
+      '@irdashies/context': path.resolve(siteRoot, '../src/frontend/context'),
+      '@irdashies/types': path.resolve(siteRoot, '../src/types'),
+      '@irdashies/shared': path.resolve(siteRoot, '../src/shared'),
     },
   },
   css: {

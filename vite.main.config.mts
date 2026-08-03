@@ -25,8 +25,20 @@ export default defineConfig({
     ),
   ],
   build: {
+    lib: {
+      entry: 'src/main.ts',
+      fileName: () => '[name].js',
+      formats: ['es'],
+    },
     rollupOptions: {
       external: ['bufferutil', 'utf-8-validate'],
+      output: {
+        // Bundled CommonJS dependencies still call require() for Node and
+        // Electron externals. Provide the standard ESM-compatible bridge in
+        // every generated chunk.
+        banner:
+          "import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);",
+      },
     },
   },
   resolve: {
@@ -58,8 +70,8 @@ function irsdkNativeModule(nodeFiles: string[], outDir: string) {
       if (file) {
         return {
           code: `
-            import { createRequire } from 'module';
-            const customRequire = createRequire(__filename);
+            import { createRequire } from 'node:module';
+            const customRequire = createRequire(import.meta.url);
             export const iRacingSdkNode = customRequire('./Release/${path.basename(file)}').iRacingSdkNode;
           `,
           moduleType: 'js',

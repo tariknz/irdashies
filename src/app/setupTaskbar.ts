@@ -2,6 +2,9 @@ import { nativeImage, Tray, Menu } from 'electron';
 import { OverlayManager } from './overlayManager';
 import { KeybindingManager } from './keybindingManager';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 
@@ -9,7 +12,7 @@ const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
 
 function getIconPath(): string {
   const basePath = isDev
-    ? path.join(__dirname, '../../docs/assets/icons')
+    ? path.join(moduleDirectory, '../../docs/assets/icons')
     : path.join(process.resourcesPath, 'icons');
 
   return path.join(basePath, 'logo-tray.png');

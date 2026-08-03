@@ -1,27 +1,39 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-const path = require("path");
-const fs = require("fs");
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const require = createRequire(import.meta.url);
+const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 // Prefer Debug build but fall back to Release if Debug is not built.
-const debugBinary = path.resolve(__dirname, "../build/Debug/irsdk_node.node");
-const releaseBinary = path.resolve(__dirname, "../build/Release/irsdk_node.node");
+const debugBinary = path.resolve(
+  scriptDirectory,
+  '../build/Debug/irsdk_node.node'
+);
+const releaseBinary = path.resolve(
+  scriptDirectory,
+  '../build/Release/irsdk_node.node'
+);
 let nativeBinary = null;
 if (fs.existsSync(debugBinary)) nativeBinary = debugBinary;
 else if (fs.existsSync(releaseBinary)) nativeBinary = releaseBinary;
 else {
-  console.error("Native module not found. Build the native addon (run the build script) and try again.");
+  console.error(
+    'Native module not found. Build the native addon (run the build script) and try again.'
+  );
   process.exit(1);
 }
 const NativeSDK = require(nativeBinary).iRacingSdkNode;
 
-const TARGET_FILE = "_GENERATED_telemetry.ts";
-const OUT_PATH = path.resolve(__dirname, "../../types/", TARGET_FILE);
+const TARGET_FILE = '_GENERATED_telemetry.ts';
+const OUT_PATH = path.resolve(scriptDirectory, '../../types/', TARGET_FILE);
 
 // Ensure the output directory exists (robust when script is run from different CWDs)
 fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
 
-console.log("Generating iRacing telemetry variable types.");
-console.log("Make sure the sim is running!");
+console.log('Generating iRacing telemetry variable types.');
+console.log('Make sure the sim is running!');
 
 const sdk = new NativeSDK();
 sdk.startSDK();
@@ -30,18 +42,11 @@ sdk.startSDK();
 sdk.broadcast(10, 1);
 // Wait a max of 5s
 if (!sdk.waitForData(5000)) {
-  process.stderr.write("No data. Make sure the sim is running and try again.");
+  process.stderr.write('No data. Make sure the sim is running and try again.');
   process.exit(1);
 }
 
-const varTypes = [
-  "string",
-  "boolean",
-  "number",
-  "number",
-  "number",
-  "number",
-];
+const varTypes = ['string', 'boolean', 'number', 'number', 'number', 'number'];
 
 // Get all the types
 const types = sdk.__getTelemetryTypes();
@@ -74,17 +79,20 @@ export interface TelemetryVarList {
   // Manually added entries
   dcPeakBrakeBias: TelemetryVariable<number[]>;
 
-${Object.keys(types).map((varName) => 
-  `  ${varName}: TelemetryVariable<${varTypes[types[varName]]}[]>`
-).join(";\n")};
+${Object.keys(types)
+  .map(
+    (varName) =>
+      `  ${varName}: TelemetryVariable<${varTypes[types[varName]]}[]>`
+  )
+  .join(';\n')};
 }
 `;
 
-fs.writeFile(OUT_PATH, out, "utf-8", (err) => {
+fs.writeFile(OUT_PATH, out, 'utf-8', (err) => {
   if (err) {
-    console.error("There was an error creating the file:", err);
+    console.error('There was an error creating the file:', err);
     return;
   }
-  console.log("Successfully generated types!");
+  console.log('Successfully generated types!');
   process.exit(0);
 });
