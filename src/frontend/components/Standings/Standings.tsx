@@ -57,7 +57,9 @@ export const Standings = () => {
   const pitExitAfterSF = pitExitPct !== null && pitExitPct > 0.85;
 
   // Determine whether we should hide the car manufacturer column
-  const isSingleMake = useIsSingleMake();
+  const isSingleMake = useIsSingleMake(
+    !!settings?.carManufacturer?.hideIfSingleMake
+  );
   const hideCarManufacturer = !!(
     settings?.carManufacturer?.hideIfSingleMake && isSingleMake
   );
@@ -126,8 +128,12 @@ export const Standings = () => {
               if (s.carId === undefined) continue;
               const mfr =
                 CAR_ID_TO_CAR_MANUFACTURER[s.carId]?.manufacturer ?? 'unknown';
-              if (!mfrMap.has(mfr)) mfrMap.set(mfr, { carId: s.carId, count: 0 });
-              mfrMap.get(mfr)!.count += 1;
+              const existing = mfrMap.get(mfr);
+              if (existing) {
+                existing.count += 1;
+              } else {
+                mfrMap.set(mfr, { carId: s.carId, count: 1 });
+              }
             }
             const manufacturerCounts = Array.from(mfrMap.values()).sort(
               (a, b) => b.count - a.count
@@ -135,13 +141,14 @@ export const Standings = () => {
             const playerCarId = classStandings.find((s) => s.isPlayer)?.carId;
             const playerMfr =
               playerCarId !== undefined
-                ? (CAR_ID_TO_CAR_MANUFACTURER[playerCarId]?.manufacturer ?? 'unknown')
+                ? (CAR_ID_TO_CAR_MANUFACTURER[playerCarId]?.manufacturer ??
+                  'unknown')
                 : undefined;
             const playerManufacturerEntry = playerMfr
               ? manufacturerCounts.find(
                   (m) =>
-                    (CAR_ID_TO_CAR_MANUFACTURER[m.carId]?.manufacturer ?? 'unknown') ===
-                    playerMfr
+                    (CAR_ID_TO_CAR_MANUFACTURER[m.carId]?.manufacturer ??
+                      'unknown') === playerMfr
                 )
               : undefined;
 
