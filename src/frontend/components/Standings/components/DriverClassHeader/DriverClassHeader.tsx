@@ -1,6 +1,7 @@
 import { BarbellIcon, UsersIcon } from '@phosphor-icons/react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import type { ClassHeaderStyle } from '@irdashies/types';
+import { CarManufacturer } from '../CarManufacturer/CarManufacturer';
 
 interface DriverClassHeaderProps {
   className: string | undefined;
@@ -12,6 +13,8 @@ interface DriverClassHeaderProps {
   colSpan?: number;
   classHeaderStyle?: ClassHeaderStyle;
   compactMode?: string;
+  manufacturerCounts?: { carId: number; count: number }[];
+  playerManufacturerEntry?: { carId: number; count: number };
 }
 
 export const DriverClassHeader = ({
@@ -24,6 +27,8 @@ export const DriverClassHeader = ({
   colSpan,
   classHeaderStyle,
   compactMode,
+  manufacturerCounts,
+  playerManufacturerEntry,
 }: DriverClassHeaderProps) => {
   if (!className) {
     return (
@@ -67,13 +72,60 @@ export const DriverClassHeader = ({
           >
             {sof ? (
               <>
-                <BarbellIcon /> <span>{sof?.toFixed(0)}</span>
+                <BarbellIcon />{' '}
+                <span>
+                  {classHeaderStyle?.compactSof && sof >= 1000
+                    ? `${(sof / 1000).toFixed(1)}k`
+                    : sof.toFixed(0)}
+                </span>
               </>
             ) : (
               ''
             )}{' '}
             <UsersIcon className={sof ? 'ml-3' : ''} />
             <span>{totalDrivers}</span>
+            {(() => {
+              const stats = classHeaderStyle?.manufacturerStats;
+              if (!stats?.enabled) return null;
+              if (!manufacturerCounts || manufacturerCounts.length <= 1) return null;
+
+              // undefined → default cap 5; null → All; number → specific cap
+              const rawCap = stats.cap;
+              const capValue = rawCap !== undefined ? rawCap : 5;
+
+              let visible =
+                capValue === null
+                  ? [...manufacturerCounts]
+                  : manufacturerCounts.slice(0, capValue);
+              const totalHidden = manufacturerCounts.length - visible.length;
+
+              if (
+                stats.showPlayerManufacturer &&
+                playerManufacturerEntry &&
+                totalHidden > 0 &&
+                !visible.some((v) => v.carId === playerManufacturerEntry.carId)
+              ) {
+                visible = [
+                  ...visible.slice(0, visible.length - 1),
+                  playerManufacturerEntry,
+                ];
+              }
+
+              const hidden = manufacturerCounts.length - visible.length;
+              return (
+                <>
+                  {visible.map(({ carId, count }) => (
+                    <span key={carId} className="flex items-center gap-0.5 ml-2">
+                      <CarManufacturer carId={carId} />
+                      <span>{count}</span>
+                    </span>
+                  ))}
+                  {hidden > 0 && (
+                    <span className="ml-1 text-white/50">+{hidden}</span>
+                  )}
+                </>
+              );
+            })()}
           </span>
         </div>
       </td>

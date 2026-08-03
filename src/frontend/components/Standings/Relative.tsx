@@ -65,7 +65,9 @@ export const Relative = () => {
   const pitExitPct = usePitLaneStore((s) => s.pitExitPct);
   const pitExitAfterSF = pitExitPct !== null && pitExitPct > 0.85;
 
-  const isSingleMake = useIsSingleMake();
+  const isSingleMake = useIsSingleMake(
+    !!settings?.carManufacturer?.hideIfSingleMake
+  );
   const hideCarManufacturer = !!(
     settings?.carManufacturer?.hideIfSingleMake && isSingleMake
   );

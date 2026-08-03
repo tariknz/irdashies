@@ -26,6 +26,7 @@ import {
 } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 import { computeStintLap } from './components/DriverInfoRow/cells/lapCountUtils';
+import { CAR_ID_TO_CAR_MANUFACTURER } from './components/CarManufacturer/carManufacturerMapping';
 
 export const Standings = () => {
   const settings = useStandingsSettings();
@@ -56,7 +57,9 @@ export const Standings = () => {
   const pitExitAfterSF = pitExitPct !== null && pitExitPct > 0.85;
 
   // Determine whether we should hide the car manufacturer column
-  const isSingleMake = useIsSingleMake();
+  const isSingleMake = useIsSingleMake(
+    !!settings?.carManufacturer?.hideIfSingleMake
+  );
   const hideCarManufacturer = !!(
     settings?.carManufacturer?.hideIfSingleMake && isSingleMake
   );
@@ -120,6 +123,35 @@ export const Standings = () => {
                   ? (classColorHex ?? highlightHex)
                   : highlightHex;
 
+            const mfrMap = new Map<string, { carId: number; count: number }>();
+            for (const s of classStandings) {
+              if (s.carId === undefined) continue;
+              const mfr =
+                CAR_ID_TO_CAR_MANUFACTURER[s.carId]?.manufacturer ?? 'unknown';
+              const existing = mfrMap.get(mfr);
+              if (existing) {
+                existing.count += 1;
+              } else {
+                mfrMap.set(mfr, { carId: s.carId, count: 1 });
+              }
+            }
+            const manufacturerCounts = Array.from(mfrMap.values()).sort(
+              (a, b) => b.count - a.count
+            );
+            const playerCarId = classStandings.find((s) => s.isPlayer)?.carId;
+            const playerMfr =
+              playerCarId !== undefined
+                ? (CAR_ID_TO_CAR_MANUFACTURER[playerCarId]?.manufacturer ??
+                  'unknown')
+                : undefined;
+            const playerManufacturerEntry = playerMfr
+              ? manufacturerCounts.find(
+                  (m) =>
+                    (CAR_ID_TO_CAR_MANUFACTURER[m.carId]?.manufacturer ??
+                      'unknown') === playerMfr
+                )
+              : undefined;
+
             return classStandings.length > 0 ? (
               <Fragment key={classId}>
                 <DriverClassHeader
@@ -135,6 +167,8 @@ export const Standings = () => {
                   colSpan={100}
                   classHeaderStyle={settings?.classHeaderStyle}
                   compactMode={generalSettings?.compactMode}
+                  manufacturerCounts={manufacturerCounts}
+                  playerManufacturerEntry={playerManufacturerEntry}
                 />
                 {classStandings.map((result, driverIndex) => {
                   const prev = classStandings[driverIndex - 1];
