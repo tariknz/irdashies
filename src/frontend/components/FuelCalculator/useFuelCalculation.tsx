@@ -120,10 +120,13 @@ export function useFuelCalculation(
   useEffect(() => {
     const currentCarName = projection?.carName;
 
-    const currentContext =
+    const storageContext =
       trackId !== undefined && currentCarName !== undefined
         ? `${trackId}:${currentCarName}`
         : null;
+    const currentContext = storageContext
+      ? `${projection?.isReplay ? 'replay' : 'live'}:${storageContext}`
+      : null;
 
     const contextChanged =
       currentContext !== null && currentContext !== loadedContextRef.current;
@@ -144,8 +147,8 @@ export function useFuelCalculation(
       clearAllData();
       setQualifyConsumption(null);
 
-      if (settings?.enableStorage ?? true) {
-        const [tId, cName] = currentContext.split(':');
+      if ((settings?.enableStorage ?? true) && !projection?.isReplay) {
+        const [tId, cName] = storageContext?.split(':') ?? [];
         logger.info(
           `[FuelCalculator] Loading historical data for: Track=${tId}, Car=${cName}`
         );
@@ -193,6 +196,7 @@ export function useFuelCalculation(
     setQualifyConsumption,
     settings?.enableStorage,
     projection?.carName,
+    projection?.isReplay,
   ]);
 
   useEffect(() => {
@@ -205,6 +209,7 @@ export function useFuelCalculation(
   useEffect(() => {
     if (
       !(settings?.enableStorage ?? true) ||
+      projection?.isReplay ||
       storedTrackId === undefined ||
       storedCarName === undefined
     ) {
@@ -220,6 +225,7 @@ export function useFuelCalculation(
     }
   }, [
     projection?.completedLaps,
+    projection?.isReplay,
     settings?.enableStorage,
     storedCarName,
     storedTrackId,
@@ -265,7 +271,8 @@ export function useFuelCalculation(
           if (
             storedTrackId !== undefined &&
             storedCarName !== undefined &&
-            (settings?.enableStorage ?? true)
+            (settings?.enableStorage ?? true) &&
+            !projection?.isReplay
           ) {
             window.fuelCalculatorBridge.saveQualifyMax(
               storedTrackId,
@@ -285,6 +292,7 @@ export function useFuelCalculation(
     storedCarName,
     settings?.enableStorage,
     projection?.sessionType,
+    projection?.isReplay,
   ]);
 
   // Monitor for Race Finish

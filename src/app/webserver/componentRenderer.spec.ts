@@ -31,6 +31,7 @@ class FakeWebSocket {
 }
 
 const projection: FuelProjectionSnapshot = {
+  isReplay: false,
   fuelLevel: 40,
   fuelLevelPct: 0.5,
   currentLap: 2,

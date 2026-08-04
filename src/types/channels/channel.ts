@@ -22,6 +22,8 @@ export interface FuelProjectionEngineSnapshot {
 }
 
 export interface FuelProjectionSnapshot {
+  /** True for recorded tape sources; recorded laps must not touch live storage. */
+  isReplay: boolean;
   fuelLevel: number;
   fuelLevelPct: number;
   currentLap: number;

@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import type {
   ChannelBridge,
   ChannelName,
   ChannelPayloads,
+  FuelCalculatorBridge,
   FuelProjectionSnapshot,
 } from '@irdashies/types';
 import { defaultFuelCalculatorSettings } from './defaults';
@@ -11,6 +12,7 @@ import { useFuelCalculation } from './useFuelCalculation';
 import { useFuelStore } from './FuelStore';
 
 const projection: FuelProjectionSnapshot = {
+  isReplay: false,
   fuelLevel: 41.750274658203125,
   fuelLevelPct: 0.4,
   currentLap: 3,
@@ -95,5 +97,45 @@ describe('useFuelCalculation channel parity', () => {
     expect(result.current?.lastLapUsage).toBeCloseTo(3.6420249938964844);
     expect(result.current?.avgLaps).toBeCloseTo(3.6037120819091797);
     expect(result.current?.currentLap).toBe(3);
+  });
+
+  it('does not load or save live history for recorded replay', async () => {
+    const getHistoricalLaps = vi.fn(async () => []);
+    const saveLap = vi.fn(async () => undefined);
+    window.fuelCalculatorBridge = {
+      getHistoricalLaps,
+      saveLap,
+      clearHistory: vi.fn(async () => undefined),
+      clearAllHistory: vi.fn(async () => undefined),
+      getQualifyMax: vi.fn(async () => null),
+      saveQualifyMax: vi.fn(async () => undefined),
+      startNewLog: vi.fn(async () => undefined),
+      logData: vi.fn(async () => undefined),
+    } satisfies FuelCalculatorBridge;
+    window.channelBridge = {
+      subscribe: <K extends ChannelName>(
+        _channel: K,
+        callback: (payload: ChannelPayloads[K]) => void
+      ) => {
+        callback({
+          ...projection,
+          isReplay: true,
+          trackId: 'roadamerica full',
+          carName: 'bmwm4gt3',
+        } as ChannelPayloads[K]);
+        return () => undefined;
+      },
+    };
+
+    const { result } = renderHook(() =>
+      useFuelCalculation(defaultFuelCalculatorSettings.safetyMargin, {
+        ...defaultFuelCalculatorSettings,
+        enableStorage: true,
+      })
+    );
+
+    await waitFor(() => expect(result.current).not.toBeNull());
+    expect(getHistoricalLaps).not.toHaveBeenCalled();
+    expect(saveLap).not.toHaveBeenCalled();
   });
 });

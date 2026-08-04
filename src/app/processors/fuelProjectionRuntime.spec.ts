@@ -99,7 +99,11 @@ describe('FuelProjectionRuntime', () => {
 
     expect(publish).toHaveBeenCalledWith(
       'fuel.projection',
-      expect.objectContaining({ fuelLevel: 40, currentLap: 1 })
+      expect.objectContaining({
+        fuelLevel: 40,
+        currentLap: 1,
+        isReplay: true,
+      })
     );
   });
 });

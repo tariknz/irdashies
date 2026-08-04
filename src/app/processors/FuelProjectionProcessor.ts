@@ -22,6 +22,7 @@ export interface FuelProjectionProcessorOptions {
   persistence?: FuelProjectionPersistence;
   persistLaps?: boolean;
   clock?: () => number;
+  sourceReplay?: boolean;
 }
 
 const noPersistence: FuelProjectionPersistence = {
@@ -77,11 +78,13 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
   private lastCommands: readonly FuelEngineCommand[] = [];
   private aggregationEnabled = true;
   private session?: Session;
+  private sourceReplay: boolean;
   private latest: FuelProjectionSnapshot;
 
   constructor(options: FuelProjectionProcessorOptions = {}) {
     this.persistence = options.persistence ?? noPersistence;
     this.persistLaps = options.persistLaps ?? false;
+    this.sourceReplay = options.sourceReplay ?? false;
     this.engine = new FuelProjectionEngine(
       { now: options.clock ?? (() => this.clockMilliseconds) },
       { debug: () => undefined }
@@ -91,6 +94,11 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
 
   init(session: Session): void {
     this.session = session;
+  }
+
+  setSourceReplay(replay: boolean): void {
+    this.sourceReplay = replay;
+    this.latest = { ...this.latest, isReplay: replay };
   }
 
   onFrame(frame: Telemetry): void {
@@ -137,6 +145,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
         validLaps.length
       : 0;
     this.latest = {
+      isReplay: this.sourceReplay,
       fuelLevel,
       fuelLevelPct: value(frame, 'FuelLevelPct'),
       currentLap: lap,
@@ -224,6 +233,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
 
   private emptySnapshot(): FuelProjectionSnapshot {
     return {
+      isReplay: this.sourceReplay,
       fuelLevel: 0,
       fuelLevelPct: 0,
       currentLap: 0,

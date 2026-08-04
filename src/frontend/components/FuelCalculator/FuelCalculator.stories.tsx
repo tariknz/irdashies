@@ -119,6 +119,7 @@ const previewFuelData: FuelCalculation = {
 };
 
 const previewProjection = {
+  isReplay: false,
   fuelLevel: previewFuelData.fuelLevel,
   fuelLevelPct: previewFuelData.fuelLevel / 60,
   currentLap: previewFuelData.currentLap,
