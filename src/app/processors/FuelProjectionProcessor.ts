@@ -58,6 +58,27 @@ const values = (frame: Telemetry, key: keyof Telemetry): readonly number[] => {
 const isGreenFlag = (flags: number): boolean =>
   (flags & (0x00004000 | 0x00008000 | 0x00010000)) === 0;
 
+const median = (numbers: readonly number[]): number => {
+  const sorted = [...numbers].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[middle - 1] + sorted[middle]) / 2
+    : sorted[middle];
+};
+
+const filteredMedian = (numbers: readonly number[]): number => {
+  if (numbers.length < 3) return median(numbers);
+  const mean =
+    numbers.reduce((sum, number) => sum + number, 0) / numbers.length;
+  const variance =
+    numbers.reduce((sum, number) => sum + (number - mean) ** 2, 0) /
+    numbers.length;
+  const threshold = Math.sqrt(variance);
+  return median(
+    numbers.filter((number) => Math.abs(number - mean) <= threshold)
+  );
+};
+
 const validateLap = (
   fuelUsed: number,
   lapTime: number,
@@ -90,7 +111,9 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
   private aggregationEnabled = true;
   private session?: Session;
   private sourceReplay: boolean;
-  private readonly carLapTimes: number[] = [];
+  private previousCarLapTimes?: readonly number[];
+  private readonly carLapTimeHistory: number[][] = [];
+  private readonly averageCarLapTimes: number[] = [];
   private latest: FuelProjectionSnapshot;
 
   constructor(options: FuelProjectionProcessorOptions = {}) {
@@ -127,11 +150,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
     const driverInfo = this.session?.DriverInfo;
     const maxFuel = driverInfo?.DriverCarFuelMaxLtr;
     const maxFuelPct = driverInfo?.DriverCarMaxFuelPct;
-    const lastLapTimes = values(frame, 'CarIdxLastLapTime');
-    for (let index = 0; index < lastLapTimes.length; index++) {
-      const lastLapTime = lastLapTimes[index];
-      if (lastLapTime > 1) this.carLapTimes[index] = lastLapTime;
-    }
+    this.updateAverageLapTimes(values(frame, 'CarIdxLastLapTime'));
     const raceProjection = this.calculateRaceProjection(
       frame,
       sessionInfo?.SessionType,
@@ -252,7 +271,9 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
     this.engine.reset();
     this.lastCommands = [];
     this.laps.length = 0;
-    this.carLapTimes.length = 0;
+    this.previousCarLapTimes = undefined;
+    this.carLapTimeHistory.length = 0;
+    this.averageCarLapTimes.length = 0;
     this.latest = this.emptySnapshot();
   }
 
@@ -310,8 +331,8 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
     )?.CarClassEstLapTime;
     const bestLapTimes = values(frame, 'CarIdxBestLapTime');
     const averageLapTime =
-      this.carLapTimes[projectionCarIdx] > 0
-        ? this.carLapTimes[projectionCarIdx]
+      this.averageCarLapTimes[projectionCarIdx] > 0
+        ? this.averageCarLapTimes[projectionCarIdx]
         : classEstimate && classEstimate > 0
           ? classEstimate
           : (bestLapTimes[playerCarIdx] ?? 0);
@@ -348,5 +369,21 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
       totalRaceLaps = configuredLaps;
     }
     return { totalRaceLaps, isFixedLapRace };
+  }
+
+  private updateAverageLapTimes(lastLapTimes: readonly number[]): void {
+    const previous = this.previousCarLapTimes;
+    this.previousCarLapTimes = lastLapTimes;
+    if (!previous || previous.length !== lastLapTimes.length) return;
+
+    for (let index = 0; index < lastLapTimes.length; index++) {
+      const lapTime = lastLapTimes[index];
+      if (lapTime <= 0 || lapTime === previous[index]) continue;
+      const history = [...(this.carLapTimeHistory[index] ?? []), lapTime].slice(
+        -10
+      );
+      this.carLapTimeHistory[index] = history;
+      this.averageCarLapTimes[index] = filteredMedian(history);
+    }
   }
 }
