@@ -37,7 +37,16 @@ const formatInterval = (
 };
 
 export const GantryStandings = memo(({ followedCarIdx }: Props) => {
-  const standingsByClass = useDriverStandings(undefined, { showAll: true });
+  // Gap and interval are only calculated when the settings say they are
+  // enabled, so passing nothing leaves both columns empty. The cast is needed
+  // because the settings type marks these fields required.
+  const standingsByClass = useDriverStandings(
+    {
+      gap: { enabled: true },
+      interval: { enabled: true },
+    } as Parameters<typeof useDriverStandings>[0],
+    { showAll: true }
+  );
   const followedRef = useRef<HTMLDivElement | null>(null);
 
   // Clicking a row points the sim's camera at that car. Only meaningful in a

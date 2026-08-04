@@ -48,6 +48,8 @@ export const LapGraphView = memo(() => {
         name: d.driver.name,
         carNumber: d.driver.carNum,
         classColor: activeClass.color,
+        isPlayer: d.isPlayer,
+        position: d.classPosition ?? Number.MAX_SAFE_INTEGER,
         gaps: lapGaps[d.carIdx],
       }));
   }, [activeClass, lapGaps]);

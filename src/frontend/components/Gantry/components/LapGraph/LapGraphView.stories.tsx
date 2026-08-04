@@ -77,6 +77,30 @@ const LapGapDecorator: Decorator = (Story) => (
   </>
 );
 
+// Player's default class in the mock session (2264) has 11 drivers - enough
+// to exercise the 8-colour cap, the muted context lines and the "+N others"
+// legend entry.
+const ManyDriversLoader = () => {
+  const recordLapGap = useLapGapStore((s) => s.recordLapGap);
+  useEffect(() => {
+    const carIdxs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    for (const carIdx of carIdxs) {
+      const spread = carIdx * 1.7;
+      for (let lap = 1; lap <= 10; lap++) {
+        recordLapGap(carIdx, lap, spread + lap * (0.3 + carIdx * 0.05));
+      }
+    }
+  }, [recordLapGap]);
+  return null;
+};
+
+const ManyDriversDecorator: Decorator = (Story) => (
+  <>
+    <ManyDriversLoader />
+    <Story />
+  </>
+);
+
 const meta: Meta<typeof LapGraphView> = {
   component: LapGraphView,
   parameters: { layout: 'fullscreen' },
@@ -86,6 +110,10 @@ type Story = StoryObj<typeof LapGraphView>;
 
 export const WithData: Story = {
   decorators: [TelemetryDecorator(), LapGapDecorator],
+};
+
+export const ManyDrivers: Story = {
+  decorators: [TelemetryDecorator(), ManyDriversDecorator],
 };
 
 export const Empty: Story = {
