@@ -3,6 +3,7 @@ import log from './app/logger';
 import {
   iRacingSDKSetup,
   getCurrentBridge,
+  getSessionLifecycle,
 } from './app/bridge/iracingSdk/setup';
 import { getOrCreateDefaultDashboard } from './app/storage/dashboards';
 import { setupTaskbar, KeybindingManager } from './app';
@@ -31,6 +32,8 @@ import {
 } from './app/storage/referenceLaps';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { createPerfDashboard, getPerfRunConfig } from './app/perfRunConfig';
+import { ChannelBus, setupChannelBridge } from './app/bridge/channelBridge';
+import { connectSessionLifecycleChannel } from './app/bridge/sessionLifecycleChannel';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -49,6 +52,8 @@ overlayManager.setupAutoStart();
 
 // Hoisted so the quit handler can tear down the WebHID host window cleanly.
 let keybindingManager: KeybindingManager | undefined;
+const channelBus = new ChannelBus();
+let disconnectLifecycleChannel: (() => void) | undefined;
 
 app.on('ready', async () => {
   // Don't start services if we don't have the single instance lock
@@ -69,6 +74,11 @@ app.on('ready', async () => {
     }
   }
 
+  setupChannelBridge(channelBus);
+  disconnectLifecycleChannel = connectSessionLifecycleChannel(
+    getSessionLifecycle(),
+    channelBus
+  );
   await iRacingSDKSetup(overlayManager);
 
   // Perform one-time cleanup of old reference laps
@@ -140,6 +150,8 @@ app.on('quit', () => {
 app.on('before-quit', () => {
   overlayManager.markQuitting();
   keybindingManager?.stopGamepad();
+  disconnectLifecycleChannel?.();
+  channelBus.dispose();
   // Synchronous flush so any pending debounced reference-lap write completes
   // before the process exits.
   flushReferenceLapsOnShutdown();
