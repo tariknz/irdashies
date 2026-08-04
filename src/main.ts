@@ -32,6 +32,7 @@ import {
 } from './app/storage/referenceLaps';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
+import { flushIncidentsOnShutdown } from './app/storage/incidentStorage';
 import { createPerfDashboard, getPerfRunConfig } from './app/perfRunConfig';
 import { ChannelBus, setupChannelBridge } from './app/bridge/channelBridge';
 import { connectSessionLifecycleChannel } from './app/bridge/sessionLifecycleChannel';
@@ -105,6 +106,23 @@ app.on('ready', async () => {
     overlayManager.createGantryWindow(getOrCreateDefaultDashboard());
   });
 
+  // Local-only feature modules (git-excluded src/local/). Empty glob => no-op.
+  // The negative pattern keeps co-located *.spec.ts test files out of the bundle.
+  const localMainModules = import.meta.glob(
+    ['./local/main/*.ts', '!./local/main/*.spec.ts'],
+    { eager: true }
+  ) as Record<
+    string,
+    {
+      register?: (deps: {
+        overlayManager: OverlayManager;
+      }) => void | Promise<void>;
+    }
+  >;
+  for (const mod of Object.values(localMainModules)) {
+    await mod.register?.({ overlayManager });
+  }
+
   // Start component server for browser components
   await startComponentServer(bridge, dashboardBridge, channelBus);
 
@@ -166,4 +184,6 @@ app.on('before-quit', () => {
   // Synchronous flush so any pending debounced reference-lap write completes
   // before the process exits.
   flushReferenceLapsOnShutdown();
+  // Incident writes are debounced, so anything still pending would be lost.
+  flushIncidentsOnShutdown();
 });

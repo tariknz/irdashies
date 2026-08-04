@@ -84,7 +84,9 @@ export const setupRaceControlBridge = () => {
             `[RaceControl] session changed: ${currentSessionId || '(none)'} -> ${sessionId}`
           );
           currentSessionId = sessionId;
-          pruneOldSessions(retention);
+          void pruneOldSessions(retention).catch((err) =>
+            logger.error('[RaceControl] Failed to prune old sessions:', err)
+          );
         }
       }) ?? undefined;
 
@@ -143,7 +145,9 @@ export const setupRaceControlBridge = () => {
   });
 
   ipcMain.handle('raceControl:clearIncidents', () => {
-    clearIncidents(currentSessionId);
+    // Returned so the IPC reply waits for the delete; clearIncidents became
+    // async, and without this the renderer could reload before it completed.
+    return clearIncidents(currentSessionId);
   });
 
   ipcMain.handle(
