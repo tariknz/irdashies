@@ -12,7 +12,6 @@ import { useDriverStandings } from '../../../Standings/hooks/useDriverStandings'
 import { useHighlightColor } from '../../../Standings/hooks/useHighlightColor';
 
 interface Props {
-  standingsByClass: ReturnType<typeof useDriverStandings>;
   followedCarIdx: number | null;
 }
 
@@ -36,68 +35,67 @@ const formatInterval = (
   return interval.toFixed(1);
 };
 
-export const GantryStandings = memo(
-  ({ standingsByClass, followedCarIdx }: Props) => {
-    const followedRef = useRef<HTMLDivElement | null>(null);
-    const highlightColor = useHighlightColor();
-    const highlightColorHex = `#${highlightColor.toString(16).padStart(6, '0')}`;
+export const GantryStandings = memo(({ followedCarIdx }: Props) => {
+  const standingsByClass = useDriverStandings(undefined, { showAll: true });
+  const followedRef = useRef<HTMLDivElement | null>(null);
+  const highlightColor = useHighlightColor();
+  const highlightColorHex = `#${highlightColor.toString(16).padStart(6, '0')}`;
 
-    useEffect(() => {
-      followedRef.current?.scrollIntoView({
-        block: 'nearest',
-        behavior: 'smooth',
-      });
-    }, [followedCarIdx]);
+  useEffect(() => {
+    followedRef.current?.scrollIntoView({
+      block: 'nearest',
+      behavior: 'smooth',
+    });
+  }, [followedCarIdx]);
 
-    const isMultiClass = standingsByClass.length > 1;
+  const isMultiClass = standingsByClass.length > 1;
 
-    return (
-      <div className="flex flex-col h-full overflow-hidden">
-        <div className="flex-1 overflow-y-auto min-h-0">
-          {standingsByClass.map(([classId, classDrivers]) => {
-            const firstDriver = classDrivers[0];
-            const carClass = firstDriver?.carClass;
-            const classColorHex =
-              carClass?.color !== undefined
-                ? `#${carClass.color.toString(16).padStart(6, '0')}`
-                : '#94a3b8';
-            return (
-              <div key={classId}>
-                {/* Class header */}
-                <div
-                  className="flex items-center gap-2 bg-slate-900 px-2 py-0.5 border-y border-slate-700/30"
-                  style={{
-                    borderLeftColor: classColorHex,
-                    borderLeftWidth: 2,
-                  }}
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {standingsByClass.map(([classId, classDrivers]) => {
+          const firstDriver = classDrivers[0];
+          const carClass = firstDriver?.carClass;
+          const classColorHex =
+            carClass?.color !== undefined
+              ? `#${carClass.color.toString(16).padStart(6, '0')}`
+              : '#94a3b8';
+          return (
+            <div key={classId}>
+              {/* Class header */}
+              <div
+                className="flex items-center gap-2 bg-slate-900 px-2 py-0.5 border-y border-slate-700/30"
+                style={{
+                  borderLeftColor: classColorHex,
+                  borderLeftWidth: 2,
+                }}
+              >
+                <span
+                  className="text-xs font-extrabold uppercase tracking-widest"
+                  style={{ color: classColorHex }}
                 >
-                  <span
-                    className="text-xs font-extrabold uppercase tracking-widest"
-                    style={{ color: classColorHex }}
-                  >
-                    {carClass?.name}
-                  </span>
-                </div>
-                {/* Driver rows */}
-                {classDrivers.map((driver, idx) => (
-                  <GantryDriverRow
-                    key={driver.carIdx}
-                    driver={driver}
-                    idx={idx}
-                    followedCarIdx={followedCarIdx}
-                    followedRef={followedRef}
-                    isMultiClass={isMultiClass}
-                    highlightColorHex={highlightColorHex}
-                  />
-                ))}
+                  {carClass?.name}
+                </span>
               </div>
-            );
-          })}
-        </div>
+              {/* Driver rows */}
+              {classDrivers.map((driver, idx) => (
+                <GantryDriverRow
+                  key={driver.carIdx}
+                  driver={driver}
+                  idx={idx}
+                  followedCarIdx={followedCarIdx}
+                  followedRef={followedRef}
+                  isMultiClass={isMultiClass}
+                  highlightColorHex={highlightColorHex}
+                />
+              ))}
+            </div>
+          );
+        })}
       </div>
-    );
-  }
-);
+    </div>
+  );
+});
 GantryStandings.displayName = 'GantryStandings';
 
 interface GantryDriverRowProps {

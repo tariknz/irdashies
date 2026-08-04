@@ -6,6 +6,8 @@ import { useLapTimesStore } from '../LapTimesStore/LapTimesStore';
 import { usePitLapStore } from '../PitLapStore/PitLapStore';
 import { useBattleGapStore } from '../BattleGapStore/BattleGapStore';
 import { useFuelStore } from '../../components/FuelCalculator/FuelStore';
+import { useLapGapStore } from '../LapGapStore/LapGapStore';
+import { useRaceControlStore } from '../RaceControlStore/RaceControlStore';
 import logger from '@irdashies/utils/logger';
 
 /**
@@ -28,6 +30,8 @@ export const useResetOnDisconnect = (running: boolean) => {
       usePitLapStore.getState().reset();
       useBattleGapStore.getState().reset();
       useFuelStore.getState().clearAllData();
+      useLapGapStore.getState().reset();
+      useRaceControlStore.getState().clearIncidents();
     }
     prevRunning.current = running;
   }, [running]);

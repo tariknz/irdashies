@@ -9,10 +9,14 @@ export const LapGapStoreUpdater = memo(() => {
   const carIdxLap = useTelemetryValuesRounded('CarIdxLap', 0);
   const prevLapsRef = useRef<number[]>([]);
   const recordLapGap = useLapGapStore((s) => s.recordLapGap);
-  // Pass gap enabled so the hook populates driver.gap
-  const standingsByClass = useDriverStandings({
-    gap: { enabled: true },
-  } as Parameters<typeof useDriverStandings>[0]);
+  // Pass gap enabled so the hook populates driver.gap, and showAll so every
+  // car is returned instead of the buffer-sliced list around the player
+  const standingsByClass = useDriverStandings(
+    {
+      gap: { enabled: true },
+    } as Parameters<typeof useDriverStandings>[0],
+    { showAll: true }
+  );
   // Flatten all drivers from all classes into a single lookup
   const allDrivers = useMemo(
     () => standingsByClass.flatMap(([, classDrivers]) => classDrivers),

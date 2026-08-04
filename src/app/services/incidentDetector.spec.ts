@@ -1013,21 +1013,40 @@ describe('dev mode debug snapshots', () => {
     expect(incidents[0].debug).toBeUndefined();
   });
 
-  it('frameHistory contains up to 10 most recent frames', () => {
+  it('frameHistory keeps roughly 3 seconds of frames, capped', () => {
     const { detector, incidents } = setupDetector(true);
-    // Run 15 frames before triggering pit entry
-    for (let i = 0; i < 15; i++) {
+    // More frames than the cap, so the ceiling is what gets asserted rather
+    // than however many happened to be produced.
+    for (let i = 0; i < 80; i++) {
       detector.processTelemetry(
         makeTelemetry({
           carIdxOnPitRoad: [false],
-          sessionTime: 100 + i * 0.04,
+          sessionTime: 100 + i * 0.05,
           carIdxLapDistPct: [0.5 + i * 0.001],
         }),
         5000
       );
     }
-    triggerPitEntry(detector, 100.64);
-    expect(incidents[0].debug?.frameHistory.length).toBe(10);
+    triggerPitEntry(detector, 104.5);
+    expect(incidents[0].debug?.frameHistory.length).toBe(60);
+  });
+
+  it('frameHistory holds fewer frames than the cap early in a session', () => {
+    const { detector, incidents } = setupDetector(true);
+    for (let i = 0; i < 15; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxOnPitRoad: [false],
+          sessionTime: 100 + i * 0.05,
+          carIdxLapDistPct: [0.5 + i * 0.001],
+        }),
+        5000
+      );
+    }
+    triggerPitEntry(detector, 100.8);
+    const len = incidents[0].debug?.frameHistory.length ?? 0;
+    expect(len).toBeGreaterThan(0);
+    expect(len).toBeLessThan(60);
   });
 });
 

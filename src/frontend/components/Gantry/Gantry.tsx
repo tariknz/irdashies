@@ -1,30 +1,11 @@
-import React, { memo, useMemo, useRef, useEffect, useState } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import { GantryTabBar } from './components/GantryTabBar/GantryTabBar';
 import { GantryStandings } from './components/GantryStandings/GantryStandings';
 import { GantryIncidents } from './components/GantryIncidents/GantryIncidents';
 import { LapGraphView } from './components/LapGraph/LapGraphView';
-import { useRaceControlBridge } from '@irdashies/context';
-import { useDriverStandings } from '../Standings/hooks/useDriverStandings';
+import { useRaceControlBridge, useSessionDrivers } from '@irdashies/context';
 
 type GantryView = 'standings-incidents' | 'lap-graph';
-type Standings = ReturnType<typeof useDriverStandings>;
-
-/**
- * Calls useDriverStandings() and fires onSnapshot once on first non-empty result,
- * then the parent unmounts this component — tearing down all telemetry subscriptions.
- * To switch to live standings in future, render this unconditionally (no guard).
- */
-const StandingsFetcher = memo(
-  ({ onSnapshot }: { onSnapshot: (s: Standings) => void }) => {
-    const standings = useDriverStandings(undefined, { showAll: true });
-    const onSnapshotRef = useRef(onSnapshot);
-    useEffect(() => {
-      if (standings.length > 0) onSnapshotRef.current(standings);
-    }, [standings]);
-    return null;
-  }
-);
-StandingsFetcher.displayName = 'StandingsFetcher';
 
 const GantryInner = memo(() => {
   const [activeView, setActiveView] = useState<GantryView>(
@@ -34,28 +15,26 @@ const GantryInner = memo(() => {
 
   useRaceControlBridge(); // subscribe to incidents on mount
 
-  // Snapshot standings on first non-empty load — StandingsFetcher unmounts after
-  // capture, releasing all telemetry subscriptions.
-  const [standingsByClass, setStandingsByClass] = useState<Standings>([]);
-  const snapshotCaptured = standingsByClass.length > 0;
-
+  // Roster for the follow-driver dropdown — sourced from the session (not
+  // standings) so it only changes when drivers join/leave, not every tick.
+  // The raw roster includes the pace car and spectators, which the previous
+  // standings-derived list excluded; filter them so the dropdown stays to
+  // drivers you can actually follow.
+  const sessionDrivers = useSessionDrivers();
   const drivers = useMemo(
     () =>
-      standingsByClass
-        .flatMap(([, classDrivers]) => classDrivers)
-        .map((s) => ({
-          carIdx: s.carIdx,
-          name: s.driver.name,
-          carNumber: s.driver.carNum,
+      (sessionDrivers ?? [])
+        .filter((d) => !d.CarIsPaceCar && !d.IsSpectator)
+        .map((d) => ({
+          carIdx: d.CarIdx,
+          name: d.UserName,
+          carNumber: d.CarNumber,
         })),
-    [standingsByClass]
+    [sessionDrivers]
   );
 
   return (
     <div className="w-full h-full flex flex-col bg-slate-900/(--bg-opacity) text-white overflow-hidden">
-      {!snapshotCaptured && (
-        <StandingsFetcher onSnapshot={setStandingsByClass} />
-      )}
       <GantryTabBar
         activeView={activeView}
         onViewChange={setActiveView}
@@ -66,10 +45,7 @@ const GantryInner = memo(() => {
       {activeView === 'standings-incidents' && (
         <div className="flex flex-1 overflow-hidden">
           <div className="w-1/2 border-r border-slate-700/50 overflow-hidden">
-            <GantryStandings
-              standingsByClass={standingsByClass}
-              followedCarIdx={followedCarIdx}
-            />
+            <GantryStandings followedCarIdx={followedCarIdx} />
           </div>
           <div className="w-1/2 overflow-hidden">
             <GantryIncidents />
@@ -78,7 +54,7 @@ const GantryInner = memo(() => {
       )}
       {activeView === 'lap-graph' && (
         <div className="flex-1 overflow-hidden">
-          <LapGraphView standingsByClass={standingsByClass} />
+          <LapGraphView />
         </div>
       )}
     </div>

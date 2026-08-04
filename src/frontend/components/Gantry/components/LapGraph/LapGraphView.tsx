@@ -4,11 +4,8 @@ import { useLapGapStore } from '@irdashies/context';
 import { LapGapChart } from './LapGapChart';
 import type { ChartDriver } from './LapGapChart';
 
-interface Props {
-  standingsByClass: ReturnType<typeof useDriverStandings>;
-}
-
-export const LapGraphView = memo(({ standingsByClass }: Props) => {
+export const LapGraphView = memo(() => {
+  const standingsByClass = useDriverStandings(undefined, { showAll: true });
   const lapGaps = useLapGapStore((s) => s.lapGaps);
 
   const classes = useMemo(

@@ -4,6 +4,10 @@ import { shallow } from 'zustand/shallow';
 import { IncidentType } from '../../../types/raceControl';
 import type { Incident } from '../../../types/raceControl';
 
+// Endurance sessions can generate thousands of incidents; cap the list so
+// memory doesn't grow unbounded over a long race.
+const MAX_INCIDENTS = 500;
+
 interface RaceControlState {
   incidents: Incident[];
   activeTypeFilters: Set<IncidentType>;
@@ -24,7 +28,9 @@ export const useRaceControlStore = create<RaceControlState>((set) => ({
   addIncident: (incident) =>
     set((s) => {
       if (s.incidents.some((i) => i.id === incident.id)) return s;
-      return { incidents: [incident, ...s.incidents] };
+      return {
+        incidents: [incident, ...s.incidents].slice(0, MAX_INCIDENTS),
+      };
     }),
 
   clearIncidents: () => set({ incidents: [] }),

@@ -17,6 +17,13 @@ import logger from '../logger';
 const CONTACT_WINDOW_S = 3;
 /** How far apart on track, in metres, two cars can be and still be paired. */
 const CONTACT_DISTANCE_M = 30;
+/**
+ * Frames of per-car history kept for incident debug snapshots (dev only).
+ * At ~20Hz this is roughly 3 seconds. Ten frames — half a second — consistently
+ * showed only the aftermath: a spun car was already accelerating away again by
+ * the time the snapshot began, so the impact itself was never in the capture.
+ */
+const FRAME_HISTORY_LENGTH = 60;
 
 interface TelemetrySnapshot {
   sessionTime: number;
@@ -153,10 +160,9 @@ export class IncidentDetector {
     }
   }
 
-  /** Exposed for testing. Returns speed in km/h. Returns 0 for backwards movement. */
   /**
    * Speed in km/h derived from lap-distance movement, or null when no usable
-   * reading can be taken this tick.
+   * reading can be taken this tick. Exposed for testing.
    *
    * Null is NOT the same as 0 km/h, and the distinction matters: we poll faster
    * than remote cars' CarIdxLapDistPct arrives over the network, so a car that
@@ -275,7 +281,7 @@ export class IncidentDetector {
     if (!this.isDev) return;
     const buf = this.frameBuffers.get(carIdx) ?? [];
     buf.push(entry);
-    if (buf.length > 10) buf.shift();
+    if (buf.length > FRAME_HISTORY_LENGTH) buf.shift();
     this.frameBuffers.set(carIdx, buf);
   }
 
