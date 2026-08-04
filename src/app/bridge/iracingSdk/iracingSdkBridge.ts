@@ -8,6 +8,8 @@ import {
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 import logger from '../../logger';
 import type { SessionLifecycle } from '../../sessionLifecycle';
+import type { ChannelBus } from '../channelBridge';
+import { FuelProjectionRuntime } from '../../processors/fuelProjectionRuntime';
 
 // Keys consumed by the renderer. Anything outside this set is dropped before
 // the telemetry object crosses the IPC boundary — reducing structured-clone
@@ -133,7 +135,8 @@ const SESSION_POLL_INTERVAL = 500;
 
 export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager,
-  lifecycle?: SessionLifecycle
+  lifecycle?: SessionLifecycle,
+  channelBus?: ChannelBus
 ): Promise<IrSdkBridge> {
   logger.info('[iracingSdkBridge] Loading iRacing SDK bridge...');
   const isTapeReplay = Boolean(process.env.IRDASHIES_TELEMETRY_REPLAY);
@@ -141,6 +144,10 @@ export async function publishIRacingSDKEvents(
 
   const perfMetrics = new TelemetryPerfMetrics();
   perfMetrics.startReporting();
+  const fuelProjectionRuntime =
+    lifecycle && channelBus
+      ? new FuelProjectionRuntime(channelBus, lifecycle, perfMetrics)
+      : undefined;
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
@@ -237,6 +244,7 @@ export async function publishIRacingSDKEvents(
           perfMetrics.markStart('lifecycleTelemetry');
           lifecycle?._onTelemetry(telemetry);
           perfMetrics.markEnd('lifecycleTelemetry');
+          fuelProjectionRuntime?.onFrame(telemetry);
           if (perfTelemetryDeliveryEnabled) {
             perfMetrics.markStart('telemetryProjection');
             const rendererTelemetry = telemetryForRenderer(telemetry);
@@ -262,6 +270,7 @@ export async function publishIRacingSDKEvents(
             lastSessionPublishTime = tickTime;
             latestSession = session;
             lifecycle?._onSession(session);
+            fuelProjectionRuntime?.onSession(session);
             overlayManager.publishMessage('sessionData', session);
             sessionCallbacks.forEach((callback) => callback(session));
             perfMetrics.markEnd('sessionPublish');
@@ -318,6 +327,7 @@ export async function publishIRacingSDKEvents(
       telemetryCallbacks.clear();
       sessionCallbacks.clear();
       runningStateCallbacks.clear();
+      fuelProjectionRuntime?.dispose();
       perfMetrics.stopReporting();
     },
   };

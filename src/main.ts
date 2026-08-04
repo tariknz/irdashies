@@ -79,7 +79,7 @@ app.on('ready', async () => {
     getSessionLifecycle(),
     channelBus
   );
-  await iRacingSDKSetup(overlayManager);
+  await iRacingSDKSetup(overlayManager, channelBus);
 
   // Perform one-time cleanup of old reference laps
   validateReferenceLapFile();
