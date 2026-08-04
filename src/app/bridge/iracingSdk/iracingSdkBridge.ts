@@ -124,6 +124,12 @@ function telemetryForRenderer(
 const WAIT_TIMEOUT = 16;
 // How long to sleep between connection retry attempts when iRacing isn't running.
 const RETRY_INTERVAL = 1000;
+// How often to ask the SDK for session data. The native getSessionData() copies
+// and transcodes the whole session YAML on every call even when nothing has
+// changed, and currDataVersion only refreshes as a side effect of that call, so
+// there is no cheap way to check first. Polling at 2 Hz bounds session-change
+// detection latency to about 500 ms while avoiding work on every telemetry tick.
+const SESSION_POLL_INTERVAL = 500;
 
 export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager,
@@ -202,7 +208,9 @@ export async function publishIRacingSDKEvents(
   (async () => {
     while (!shouldStop) {
       let lastSessionVersion = -1;
-      let lastSessionPublishTime = 0;
+      // Negative infinity makes the first tick fetch and publish immediately.
+      let lastSessionPublishTime = Number.NEGATIVE_INFINITY;
+      let lastSessionPollTime = Number.NEGATIVE_INFINITY;
       let wasRunning = false;
 
       while (!shouldStop && sdk.waitForData(WAIT_TIMEOUT)) {
@@ -215,9 +223,14 @@ export async function publishIRacingSDKEvents(
         perfMetrics.markStart('sdkTelemetryRead');
         const telemetry = sdk.getTelemetry();
         perfMetrics.markEnd('sdkTelemetryRead');
-        perfMetrics.markStart('sdkSessionRead');
-        const session = sdk.getSessionData();
-        perfMetrics.markEnd('sdkSessionRead');
+        const tickTime = performance.now();
+        let session: Session | null = null;
+        if (tickTime - lastSessionPollTime >= SESSION_POLL_INTERVAL) {
+          lastSessionPollTime = tickTime;
+          perfMetrics.markStart('sdkSessionRead');
+          session = sdk.getSessionData();
+          perfMetrics.markEnd('sdkSessionRead');
+        }
 
         if (telemetry) {
           latestTelemetry = telemetry;
@@ -238,16 +251,15 @@ export async function publishIRacingSDKEvents(
         }
 
         if (session) {
-          // Only publish the session data if it has changed or if 1 second has passed since the last publish
-          const now = Date.now();
-          const timeSinceLastPublish = now - lastSessionPublishTime;
+          // Publish changes at the next poll and refresh unchanged data at 1 Hz.
+          const timeSinceLastPublish = tickTime - lastSessionPublishTime;
           if (
             sdk.currDataVersion !== lastSessionVersion ||
             timeSinceLastPublish >= 1000
           ) {
             perfMetrics.markStart('sessionPublish');
             lastSessionVersion = sdk.currDataVersion;
-            lastSessionPublishTime = now;
+            lastSessionPublishTime = tickTime;
             latestSession = session;
             lifecycle?._onSession(session);
             overlayManager.publishMessage('sessionData', session);
