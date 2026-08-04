@@ -78,12 +78,16 @@ async function assertTapeAvailable(expectedBytes: number): Promise<void> {
   let tapeStat;
   try {
     tapeStat = await stat(TAPE_PATH);
-  } catch {
+  } catch (error: unknown) {
+    if (!isRecord(error) || error.code !== 'ENOENT') {
+      throw error;
+    }
     throw new Error(
       `Curated telemetry tape is missing. Run: git lfs pull --include="${path.relative(
         REPOSITORY_ROOT,
         TAPE_PATH
-      )}"`
+      )}"`,
+      { cause: error }
     );
   }
   if (tapeStat.size !== expectedBytes) {
