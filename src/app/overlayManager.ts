@@ -11,6 +11,7 @@ import { readData, writeData } from './storage/storage';
 import { getDashboard } from './storage/dashboards';
 import { getChromiumFlags, parseCustomSwitches } from './storage/chromiumFlags';
 import { trackSettingsWindowMovement } from './trackWindowMovement';
+import { sanitizeWindowBounds } from './windowBounds';
 import logger from './logger';
 import { createRendererPerfArguments } from './perfRendererArguments';
 
@@ -936,5 +937,25 @@ export class OverlayManager {
 }
 
 function loadWindowBounds(): Electron.Rectangle | undefined {
-  return readData<Electron.Rectangle>('settingsWindowBounds');
+  const saved = readData<Electron.Rectangle>('settingsWindowBounds');
+  if (!saved) return undefined;
+
+  // Saved bounds outlive the display arrangement that produced them, so they
+  // are validated against the displays connected right now — otherwise a
+  // window saved on a monitor that has since been unplugged or rearranged is
+  // restored somewhere unreachable.
+  const bounds = sanitizeWindowBounds(
+    saved,
+    screen.getAllDisplays().map((display) => display.workArea),
+    screen.getPrimaryDisplay().workArea
+  );
+
+  if (bounds && (bounds.x !== saved.x || bounds.y !== saved.y)) {
+    logger.info(
+      `[OverlayManager] Saved settings window bounds were off-screen ` +
+        `(x=${saved.x}, y=${saved.y}); moved to x=${bounds.x}, y=${bounds.y}`
+    );
+  }
+
+  return bounds;
 }
