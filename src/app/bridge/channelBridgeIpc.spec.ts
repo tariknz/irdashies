@@ -7,6 +7,7 @@ type Handler = (
 ) => void;
 
 const handlers = vi.hoisted(() => new Map<string, Handler>());
+const windowListeners = vi.hoisted(() => new Map<string, () => void>());
 
 class FakeSender {
   readonly id = 42;
@@ -28,7 +29,12 @@ vi.mock('electron', () => ({
     removeHandler: (channel: string) => handlers.delete(channel),
   },
   BrowserWindow: {
-    fromWebContents: () => ({ isVisible: () => true }),
+    fromWebContents: () => ({
+      isVisible: () => true,
+      on: (event: string, listener: () => void) =>
+        windowListeners.set(event, listener),
+      removeListener: (event: string) => windowListeners.delete(event),
+    }),
   },
 }));
 
@@ -39,7 +45,10 @@ import {
 } from './channelBridge';
 
 describe('channel bridge IPC boundary', () => {
-  beforeEach(() => handlers.clear());
+  beforeEach(() => {
+    handlers.clear();
+    windowListeners.clear();
+  });
 
   it('validates requests and removes subscriptions when a renderer dies', () => {
     const bus = new ChannelBus();

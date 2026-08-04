@@ -167,4 +167,27 @@ describe('ChannelBus', () => {
       2
     );
   });
+
+  it('retains the latest pending snapshot until a hidden renderer is shown', () => {
+    const { bus, clock } = createBus();
+    const target = createTarget();
+    bus.subscribe(target, 'snapshot', 10);
+    bus.publish('snapshot', 1);
+    clock.advance(20);
+    bus.publish('snapshot', 2);
+
+    target.visible = false;
+    clock.advance(80);
+    bus.publish('snapshot', 3);
+    expect(target.send).toHaveBeenCalledTimes(1);
+
+    target.visible = true;
+    bus.rendererBecameVisible(target.id);
+    expect(target.send).toHaveBeenCalledTimes(2);
+    expect(target.send).toHaveBeenLastCalledWith(
+      CHANNEL_DELIVERY,
+      'snapshot',
+      3
+    );
+  });
 });

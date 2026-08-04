@@ -96,12 +96,13 @@ export class ChannelBus {
     const subscription: Subscription = { target, rateHz };
     subscribers.set(target.id, subscription);
 
-    if (
-      definition.kind === 'snapshot' &&
-      this.latestSnapshots.has(channel) &&
-      target.isVisible()
-    ) {
-      this.deliver(channel, subscription, this.latestSnapshots.get(channel));
+    if (definition.kind === 'snapshot' && this.latestSnapshots.has(channel)) {
+      const latest = this.latestSnapshots.get(channel);
+      if (target.isVisible()) {
+        this.deliver(channel, subscription, latest);
+      } else {
+        subscription.pending = latest;
+      }
     }
   }
 
@@ -133,8 +134,25 @@ export class ChannelBus {
         this.remove(channel, rendererId);
         continue;
       }
-      if (!subscription.target.isVisible()) continue;
+      if (!subscription.target.isVisible()) {
+        if (definition.kind === 'snapshot') subscription.pending = payload;
+        continue;
+      }
       this.queueDelivery(channel, subscription, payload);
+    }
+  }
+
+  rendererBecameVisible(rendererId: number): void {
+    for (const [channel, subscribers] of this.subscriptions) {
+      const subscription = subscribers.get(rendererId);
+      if (
+        subscription?.pending === undefined ||
+        subscription.target.isDestroyed() ||
+        !subscription.target.isVisible()
+      ) {
+        continue;
+      }
+      this.queueDelivery(channel, subscription, subscription.pending);
     }
   }
 
@@ -208,14 +226,14 @@ export class ChannelBus {
     subscription.timer = this.schedule(() => {
       subscription.timer = undefined;
       const pending = subscription.pending;
-      subscription.pending = undefined;
-      if (
-        pending !== undefined &&
-        !subscription.target.isDestroyed() &&
-        subscription.target.isVisible()
-      ) {
-        this.deliver(channel, subscription, pending);
+      if (pending === undefined) return;
+      if (subscription.target.isDestroyed()) {
+        subscription.pending = undefined;
+        return;
       }
+      if (!subscription.target.isVisible()) return;
+      subscription.pending = undefined;
+      this.deliver(channel, subscription, pending);
     }, intervalMs - elapsed);
   }
 
@@ -256,7 +274,7 @@ const targetFor = (sender: Electron.WebContents): RendererTarget => ({
 });
 
 export const setupChannelBridge = (bus: ChannelBus): (() => void) => {
-  const trackedSenders = new Set<number>();
+  const rendererCleanup = new Map<number, () => void>();
   ipcMain.handle(
     CHANNEL_SUBSCRIBE,
     (event, channel: unknown, rate: unknown) => {
@@ -264,11 +282,18 @@ export const setupChannelBridge = (bus: ChannelBus): (() => void) => {
       if (rate !== undefined && typeof rate !== 'number') {
         throw new Error('Invalid channel rate');
       }
-      if (!trackedSenders.has(event.sender.id)) {
-        trackedSenders.add(event.sender.id);
-        event.sender.once('destroyed', () => {
-          trackedSenders.delete(event.sender.id);
+      if (!rendererCleanup.has(event.sender.id)) {
+        const window = BrowserWindow.fromWebContents(event.sender);
+        const onShow = () => bus.rendererBecameVisible(event.sender.id);
+        window?.on('show', onShow);
+        const cleanup = () => {
+          window?.removeListener('show', onShow);
+          rendererCleanup.delete(event.sender.id);
           bus.removeRenderer(event.sender.id);
+        };
+        rendererCleanup.set(event.sender.id, cleanup);
+        event.sender.once('destroyed', () => {
+          cleanup();
         });
       }
       bus.subscribe(targetFor(event.sender), channel, rate);
@@ -281,6 +306,8 @@ export const setupChannelBridge = (bus: ChannelBus): (() => void) => {
   return () => {
     ipcMain.removeHandler(CHANNEL_SUBSCRIBE);
     ipcMain.removeHandler(CHANNEL_UNSUBSCRIBE);
+    for (const cleanup of rendererCleanup.values()) cleanup();
+    rendererCleanup.clear();
     bus.dispose();
   };
 };
