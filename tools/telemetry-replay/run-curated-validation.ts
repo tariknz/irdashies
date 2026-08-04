@@ -8,6 +8,7 @@ import {
   type ReplayMetadata,
   type ReplayProbeResult,
 } from './validator';
+import { createFuelStateProbe } from './fuel-probe';
 
 const REPOSITORY_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -129,7 +130,7 @@ async function main(): Promise<void> {
       sessionUpdateCount: metadata.sessionUpdateCount,
       gapCount: metadata.gapCount,
     },
-    probes: [telemetryStateProbe],
+    probes: [telemetryStateProbe, createFuelStateProbe()],
   });
   const golden = {
     tapeSha256: result.metadata.sha256,
