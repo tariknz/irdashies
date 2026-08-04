@@ -75,4 +75,51 @@ describe('FuelProjectionProcessor', () => {
       completedLaps: [],
     });
   });
+
+  it('resets completed laps when the session number changes', () => {
+    const processor = new FuelProjectionProcessor();
+    processor.onFrame(
+      frame({
+        FuelLevel: 20,
+        Lap: 1,
+        LapDistPct: 0.01,
+        SessionFlags: 4,
+        SessionTime: 10,
+      })
+    );
+    processor.onFrame(
+      frame({
+        FuelLevel: 18,
+        Lap: 2,
+        LapDistPct: 0.01,
+        SessionFlags: 4,
+        SessionTime: 80,
+      })
+    );
+    expect(processor.snapshot().completedLaps).toHaveLength(1);
+
+    processor.onLifecycle({ type: 'sessionNumChange' });
+
+    expect(processor.snapshot().completedLaps).toEqual([]);
+    expect(processor.snapshot().engine.lastLap).toBe(0);
+  });
+
+  it('does not aggregate replay frames and resumes from clean state live', () => {
+    const processor = new FuelProjectionProcessor();
+    processor.onLifecycle({ type: 'enter', replay: true });
+
+    processor.onFrame(
+      frame({ FuelLevel: 20, Lap: 5, LapDistPct: 0.9, SessionTime: 100 })
+    );
+    expect(processor.snapshot()).toMatchObject({ fuelLevel: 0, currentLap: 0 });
+
+    processor.onLifecycle({ type: 'enter', replay: false });
+    processor.onFrame(
+      frame({ FuelLevel: 19, Lap: 1, LapDistPct: 0.1, SessionTime: 10 })
+    );
+    expect(processor.snapshot()).toMatchObject({
+      fuelLevel: 19,
+      currentLap: 1,
+    });
+  });
 });

@@ -46,4 +46,31 @@ describe('FuelProjectionRuntime', () => {
     runtime.onFrame(telemetry);
     expect(publish).not.toHaveBeenCalled();
   });
+
+  it('remembers replay mode for subscribers that activate later', () => {
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    const lifecycle = createSessionLifecycle();
+    const runtime = new FuelProjectionRuntime(bus, lifecycle, {
+      markStart: vi.fn(),
+      markEnd: vi.fn(),
+    });
+    lifecycle._onEnter({ replay: true });
+
+    bus.subscribe(
+      {
+        id: 2,
+        isDestroyed: () => false,
+        isVisible: () => true,
+        send: vi.fn(),
+      },
+      'fuel.projection'
+    );
+    runtime.onFrame(telemetry);
+
+    expect(publish).toHaveBeenCalledWith(
+      'fuel.projection',
+      expect.objectContaining({ fuelLevel: 0, currentLap: 0 })
+    );
+  });
 });

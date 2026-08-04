@@ -70,6 +70,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
   private readonly persistence: FuelProjectionPersistence;
   private readonly persistLaps: boolean;
   private lastCommands: readonly FuelEngineCommand[] = [];
+  private aggregationEnabled = true;
   private latest: FuelProjectionSnapshot;
 
   constructor(options: FuelProjectionProcessorOptions = {}) {
@@ -89,6 +90,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
   }
 
   onFrame(frame: Telemetry): void {
+    if (!this.aggregationEnabled) return;
     const sessionTime = value(frame, 'SessionTime');
     this.clockMilliseconds = Math.round(sessionTime * 1000);
     const fuelLevel = value(frame, 'FuelLevel');
@@ -144,7 +146,17 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
   }
 
   onLifecycle(event: SessionLifecycleEvent): void {
-    if (event.type === 'disconnect') this.reset();
+    if (event.type === 'enter') {
+      this.reset();
+      this.aggregationEnabled = !event.replay;
+      return;
+    }
+    if (event.type === 'sessionNumChange') {
+      this.reset();
+      return;
+    }
+    this.reset();
+    this.aggregationEnabled = false;
   }
 
   snapshot(): FuelProjectionSnapshot {

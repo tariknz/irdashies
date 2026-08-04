@@ -15,6 +15,7 @@ interface PerformanceSections {
 export class FuelProjectionRuntime {
   private processor?: FuelProjectionProcessor;
   private latestSession?: Session;
+  private replaySource?: boolean;
   private readonly disconnects: (() => void)[];
 
   constructor(
@@ -61,11 +62,21 @@ export class FuelProjectionRuntime {
   private activate(): void {
     if (this.processor) return;
     this.processor = new FuelProjectionProcessor();
+    if (this.replaySource !== undefined) {
+      this.processor.onLifecycle({
+        type: 'enter',
+        replay: this.replaySource,
+      });
+    }
     if (this.latestSession) this.processor.init(this.latestSession);
   }
 
   private onLifecycle(event: SessionLifecycleEvent): void {
+    if (event.type === 'enter') this.replaySource = event.replay;
     this.processor?.onLifecycle(event);
-    if (event.type === 'disconnect') this.latestSession = undefined;
+    if (event.type === 'disconnect') {
+      this.latestSession = undefined;
+      this.replaySource = undefined;
+    }
   }
 }
