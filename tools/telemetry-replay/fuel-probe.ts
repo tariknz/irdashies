@@ -1,16 +1,12 @@
-import {
-  FuelProjectionEngine,
-  type FuelEngineCommand,
-} from '../../src/shared/fuel';
-import {
-  isGreenFlag,
-  validateLapData,
-} from '../../src/frontend/components/FuelCalculator/fuelCalculations';
+import type { Telemetry } from '../../src/types';
+import { FuelProjectionProcessor } from '../../src/app/processors/FuelProjectionProcessor';
 import type { ReplayProbe, TelemetryFrame } from './validator';
 
 interface FuelProbeState {
-  commands: readonly FuelEngineCommand[];
-  state: ReturnType<FuelProjectionEngine['snapshot']>;
+  commands: ReturnType<
+    FuelProjectionProcessor['validationSnapshot']
+  >['commands'];
+  state: ReturnType<FuelProjectionProcessor['validationSnapshot']>['state'];
 }
 
 const numberValue = (frame: TelemetryFrame, name: string): number => {
@@ -23,11 +19,9 @@ const numberValue = (frame: TelemetryFrame, name: string): number => {
 
 export const createFuelStateProbe = (): ReplayProbe<FuelProbeState> => {
   let elapsedMilliseconds = 0;
-  const engine = new FuelProjectionEngine(
-    { now: () => elapsedMilliseconds },
-    { debug: () => undefined }
-  );
-  const laps: FuelEngineCommand[] = [];
+  const processor = new FuelProjectionProcessor({
+    clock: () => elapsedMilliseconds,
+  });
   let previousOnTrack = false;
   let previousOnPitRoad = false;
   let previousFlags: number | undefined;
@@ -53,37 +47,12 @@ export const createFuelStateProbe = (): ReplayProbe<FuelProbeState> => {
       const onPitRoad = Boolean(frame.OnPitRoad);
       const flags = numberValue(frame, 'SessionFlags');
       const lap = numberValue(frame, 'Lap');
-      const commands = engine.onFrame(
-        {
-          fuelLevel: numberValue(frame, 'FuelLevel'),
-          lap,
-          lapDistPct: numberValue(frame, 'LapDistPct'),
-          onPitRoad,
-          playerCarTowTime: numberValue(frame, 'PlayerCarTowTime'),
-          sessionFlags: flags,
-          sessionNum: numberValue(frame, 'SessionNum'),
-          sessionTime: numberValue(frame, 'SessionTime'),
-        },
-        {
-          getRecentLaps: (count) =>
-            laps
-              .filter(
-                (
-                  command
-                ): command is Extract<
-                  FuelEngineCommand,
-                  { type: 'lapCompleted' }
-                > => command.type === 'lapCompleted'
-              )
-              .map(({ lap: completedLap }) => completedLap)
-              .slice(-count)
-              .reverse(),
-        },
-        validateLapData,
-        isGreenFlag,
-        { persistLaps: false }
-      );
-      laps.push(...commands);
+      const telemetry = Object.fromEntries(
+        Object.entries(frame).map(([name, entry]) => [name, { value: [entry] }])
+      ) as unknown as Telemetry;
+      processor.onFrame(telemetry);
+      const validation = processor.validationSnapshot();
+      const commands = validation.commands;
 
       checkpoint = undefined;
       if (onTrack && !previousOnTrack) checkpoint = 'onTrack:enter';
@@ -99,14 +68,14 @@ export const createFuelStateProbe = (): ReplayProbe<FuelProbeState> => {
 
       return {
         commands,
-        state: engine.snapshot(),
+        state: validation.state,
       };
     },
     checkpoint() {
       return checkpoint;
     },
     onDisconnect() {
-      engine.reset();
+      processor.onLifecycle({ type: 'disconnect' });
     },
   };
 };

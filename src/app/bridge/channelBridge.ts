@@ -29,6 +29,8 @@ interface ChannelBusOptions {
   onDeliver?: (rendererId: number, channel: string) => void;
 }
 
+type SubscriberCountListener = (channel: string, count: number) => void;
+
 interface Subscription {
   target: RendererTarget;
   rateHz: number | 'event';
@@ -60,6 +62,8 @@ export class ChannelBus {
   private readonly latestSnapshots = new Map<string, unknown>();
   private readonly publicationCounts = new Map<string, number>();
   private readonly deliveryCounts = new Map<string, number>();
+  private readonly subscriberCountListeners =
+    new Set<SubscriberCountListener>();
 
   constructor(options: ChannelBusOptions = {}) {
     this.registry = options.registry ?? channelRegistry;
@@ -95,6 +99,7 @@ export class ChannelBus {
     }
     const subscription: Subscription = { target, rateHz };
     subscribers.set(target.id, subscription);
+    this.notifySubscriberCount(channel);
 
     if (definition.kind === 'snapshot' && this.latestSnapshots.has(channel)) {
       const latest = this.latestSnapshots.get(channel);
@@ -158,6 +163,11 @@ export class ChannelBus {
 
   subscriberCount(channel: string): number {
     return this.subscriptions.get(channel)?.size ?? 0;
+  }
+
+  onSubscriberCountChanged(listener: SubscriberCountListener): () => void {
+    this.subscriberCountListeners.add(listener);
+    return () => this.subscriberCountListeners.delete(listener);
   }
 
   metricsSnapshot(): ChannelBusMetricsSnapshot {
@@ -261,8 +271,16 @@ export class ChannelBus {
     const subscribers = this.subscriptions.get(channel);
     const subscription = subscribers?.get(rendererId);
     subscription?.timer?.cancel();
-    subscribers?.delete(rendererId);
+    const removed = subscribers?.delete(rendererId) ?? false;
     if (subscribers?.size === 0) this.subscriptions.delete(channel);
+    if (removed) this.notifySubscriberCount(channel);
+  }
+
+  private notifySubscriberCount(channel: string): void {
+    const count = this.subscriberCount(channel);
+    this.subscriberCountListeners.forEach((listener) =>
+      listener(channel, count)
+    );
   }
 }
 

@@ -6,6 +6,7 @@ import {
   createSessionLifecycle,
   type SessionLifecycle,
 } from '../../sessionLifecycle';
+import type { ChannelBus } from '../channelBridge';
 
 let isDemoMode = false;
 let currentBridge: IrSdkBridge | undefined;
@@ -35,7 +36,10 @@ export function onBridgeChanged(callback: (bridge: IrSdkBridge) => void) {
   return () => onBridgeChangedCallbacks.delete(callback);
 }
 
-export async function iRacingSDKSetup(overlayManager: OverlayManager) {
+export async function iRacingSDKSetup(
+  overlayManager: OverlayManager,
+  channelBus?: ChannelBus
+) {
   ipcMain.on('toggleDemoMode', async (_, value: boolean) => {
     isDemoMode = value;
     if (currentBridge) {
@@ -51,13 +55,16 @@ export async function iRacingSDKSetup(overlayManager: OverlayManager) {
       await import('../dashboard/dashboardBridge');
     notifyDemoModeChanged(value);
 
-    await setupBridge(overlayManager);
+    await setupBridge(overlayManager, channelBus);
   });
 
-  await setupBridge(overlayManager);
+  await setupBridge(overlayManager, channelBus);
 }
 
-async function setupBridge(overlayManager: OverlayManager) {
+async function setupBridge(
+  overlayManager: OverlayManager,
+  channelBus?: ChannelBus
+) {
   try {
     if (currentBridge) {
       currentBridge.stop();
@@ -72,7 +79,11 @@ async function setupBridge(overlayManager: OverlayManager) {
 
     const { publishIRacingSDKEvents } = module;
     const lifecycle = isDemoMode ? undefined : getSessionLifecycle();
-    currentBridge = await publishIRacingSDKEvents(overlayManager, lifecycle);
+    currentBridge = await publishIRacingSDKEvents(
+      overlayManager,
+      lifecycle,
+      channelBus
+    );
 
     if (onBridgeChangedCallbacks.size > 0 && currentBridge) {
       const bridge = currentBridge;
