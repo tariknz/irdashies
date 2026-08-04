@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Session, Telemetry } from '@irdashies/types';
 import { FuelProjectionProcessor } from './FuelProjectionProcessor';
 
-const frame = (values: Record<string, number>): Telemetry =>
+const frame = (values: Record<string, number | boolean>): Telemetry =>
   Object.fromEntries(
     Object.entries(values).map(([key, entry]) => [key, { value: [entry] }])
   ) as unknown as Telemetry;
@@ -74,6 +74,17 @@ describe('FuelProjectionProcessor', () => {
       currentLap: 0,
       completedLaps: [],
     });
+  });
+
+  it('preserves boolean track and pit state in the snapshot', () => {
+    const processor = new FuelProjectionProcessor();
+
+    processor.onFrame(
+      frame({ FuelLevel: 20, IsOnTrack: true, OnPitRoad: true })
+    );
+
+    expect(processor.snapshot().isOnTrack).toBe(true);
+    expect(processor.snapshot().engine.wasOnPitRoad).toBe(true);
   });
 
   it('resets completed laps when the session number changes', () => {

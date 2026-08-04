@@ -38,6 +38,11 @@ const value = (
   return typeof candidate === 'number' ? candidate : fallback;
 };
 
+const booleanValue = (frame: Telemetry, key: keyof Telemetry): boolean => {
+  const candidate = frame[key]?.value?.[0];
+  return candidate === true || candidate === 1;
+};
+
 const isGreenFlag = (flags: number): boolean =>
   (flags & (0x00004000 | 0x00008000 | 0x00010000)) === 0;
 
@@ -107,7 +112,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
         fuelLevel,
         lap,
         lapDistPct,
-        onPitRoad: Boolean(value(frame, 'OnPitRoad')),
+        onPitRoad: booleanValue(frame, 'OnPitRoad'),
         playerCarTowTime: value(frame, 'PlayerCarTowTime'),
         sessionFlags: value(frame, 'SessionFlags'),
         sessionNum,
@@ -156,7 +161,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
       sessionNum,
       sessionLaps: sessionInfo?.SessionLaps ?? 0,
       sessionType: sessionInfo?.SessionType,
-      isOnTrack: Boolean(value(frame, 'IsOnTrack')),
+      isOnTrack: booleanValue(frame, 'IsOnTrack'),
       trackId:
         this.session?.WeekendInfo?.TrackName ??
         this.session?.WeekendInfo?.TrackID,
