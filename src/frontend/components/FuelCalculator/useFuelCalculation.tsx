@@ -7,11 +7,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFuelProjectionSnapshot } from '@irdashies/context';
-import {
-  useFuelStore,
-  selectLapHistorySize,
-  selectLastLapUsage,
-} from './FuelStore';
+import { useFuelStore, selectLapHistorySize } from './FuelStore';
 import type { FuelCalculation, FuelCalculatorSettings } from './types';
 import { useFuelLogger } from './useFuelLogger';
 import {
@@ -79,13 +75,10 @@ export function useFuelCalculation(
   );
 
   // Subscribe to lapStartFuel to calculate live usage
-  const lapStartFuel = useFuelStore((state) => state.lapStartFuel);
+  const lapStartFuel = projection?.engine.lapStartFuel ?? 0;
 
   // Subscribe to lap history size to trigger recalculation when laps are added
   const lapHistorySize = useFuelStore(selectLapHistorySize);
-
-  // Subscribe to last lap data directly to ensure immediate reactivity
-  const storeLastLapUsage = useFuelStore(selectLastLapUsage);
 
   // Ref to track the currently loaded context (Track + Car) to avoid redundant clears/loads
 
@@ -205,10 +198,7 @@ export function useFuelCalculation(
   useEffect(() => {
     if (!projection) return;
     const state = useFuelStore.getState();
-    const historical = state
-      .getLapHistory()
-      .filter((completed) => completed.isHistorical);
-    state.setLapHistory([...projection.completedLaps, ...historical]);
+    state.setProjectionLaps(projection.completedLaps);
     useFuelStore.setState(projection.engine);
   }, [projection]);
 
@@ -399,7 +389,23 @@ export function useFuelCalculation(
     }
 
     // Get lap history
-    const lapHistory = useFuelStore.getState().getLapHistory();
+    const liveLapNumbers = new Set(
+      projection?.completedLaps.map((completed) => completed.lapNumber) ?? []
+    );
+    const historicalLaps = useFuelStore
+      .getState()
+      .getLapHistory()
+      .filter(
+        (completed) =>
+          completed.isHistorical && !liveLapNumbers.has(completed.lapNumber)
+      );
+    const lapHistory = [
+      ...(projection?.completedLaps ?? []),
+      ...historicalLaps,
+    ].sort(
+      (a, b) =>
+        (b.timestamp ?? 0) - (a.timestamp ?? 0) || b.lapNumber - a.lapNumber
+    );
 
     if (lapHistory.length < 1) {
       return emptyCalculation;
@@ -454,11 +460,8 @@ export function useFuelCalculation(
     // Calculate averages - use reactive store value for immediate update
     // storeLastLapUsage is subscribed directly and updates immediately when addLapData is called
     const lastLapUsage =
-      storeLastLapUsage > 0
-        ? storeLastLapUsage
-        : lapHistory.length > 0
-          ? lapHistory[0].fuelUsed
-          : 0;
+      projection?.lastLapUsage ??
+      (lapHistory.length > 0 ? lapHistory[0].fuelUsed : 0);
 
     const avgLaps =
       lastLapsForAvg.length > 0
@@ -992,7 +995,6 @@ export function useFuelCalculation(
     qualifyConsumption,
     fuelTankCapacityFromSession,
     lapDistPct,
-    storeLastLapUsage,
     calculatedTotalRaceLaps,
     lapHistorySize,
     projection,
