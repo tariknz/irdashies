@@ -4,7 +4,10 @@ import path from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { createSyntheticTape } from './fixture';
+import {
+  createSyntheticTape,
+  SYNTHETIC_SECOND_FRAME_PAYLOAD_OFFSET,
+} from './fixture';
 import { validateReplay, type ReplayProbe } from './validator';
 
 const temporaryDirectories: string[] = [];
@@ -70,7 +73,7 @@ describe('headless telemetry replay validator', () => {
 
   it('rejects a corrupted record payload', async () => {
     const tape = createSyntheticTape();
-    tape[tape.length - 41] ^= 0xff;
+    tape[SYNTHETIC_SECOND_FRAME_PAYLOAD_OFFSET] ^= 0xff;
     const directory = await mkdtemp(path.join(tmpdir(), 'irdashies-replay-'));
     temporaryDirectories.push(directory);
     const corruptPath = path.join(directory, 'corrupt.irdt');
@@ -78,6 +81,6 @@ describe('headless telemetry replay validator', () => {
 
     await expect(
       validateReplay({ path: corruptPath, probes: [probe] })
-    ).rejects.toThrow('checksum mismatch');
+    ).rejects.toThrow('Telemetry tape record checksum mismatch');
   });
 });

@@ -67,7 +67,7 @@ const canonicalJson = (value: unknown): string => {
     return `[${value.map(canonicalJson).join(',')}]`;
   }
   const entries = Object.entries(value as Record<string, unknown>).sort(
-    ([a], [b]) => a.localeCompare(b)
+    ([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)
   );
   return `{${entries
     .map(([key, entry]) => `${JSON.stringify(key)}:${canonicalJson(entry)}`)
@@ -191,6 +191,9 @@ export async function validateReplay({
       const record = await reader.readRecord();
       if (!record) break;
       records += 1;
+      // Session data is sampled like production: a revision on a poll boundary
+      // is visible immediately; between boundaries, only the latest pending
+      // revision survives until the next poll.
       while (
         record.kind === 'sessionInfo'
           ? nextSessionPoll < record.elapsedTicks

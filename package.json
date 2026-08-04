@@ -20,7 +20,7 @@
     "irsdk:replay:curated": "build\\Release\\irsdk_replay.exe play --input test-data\\telemetry\\ai-race-10min.irdt",
     "irsdk:replay:app": "node tools/run-telemetry-replay.mjs",
     "irsdk:replay:app:curated": "node tools/run-telemetry-replay.mjs --input test-data/telemetry/ai-race-10min.irdt --loop",
-    "test:replay:curated": "npx tsx tools/telemetry-replay/run-curated-validation.ts",
+    "test:replay:curated": "tsx tools/telemetry-replay/run-curated-validation.ts",
     "test:replay:curated:update": "npm run test:replay:curated -- --update",
     "package": "electron-forge package",
     "make": "electron-forge make",

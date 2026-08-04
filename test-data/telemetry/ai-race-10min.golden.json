@@ -2,6 +2,8 @@
   "tapeSha256": "6E23E8ABAB49C1A0AE7C8F6D1F298D31145A6189D3029B8CA540AAD56A22B168",
   "sessionPollMilliseconds": 500,
   "appliedSessionUpdateCount": 70,
+  "disconnectCount": 0,
+  "endCount": 1,
   "probes": [
     {
       "name": "telemetry-state",

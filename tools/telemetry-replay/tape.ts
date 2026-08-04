@@ -1,10 +1,10 @@
 import { createHash } from 'node:crypto';
 import { open, type FileHandle } from 'node:fs/promises';
 
-const FILE_HEADER_SIZE = 96;
-const SDK_HEADER_SIZE = 112;
-const VARIABLE_HEADER_SIZE = 144;
-const RECORD_HEADER_SIZE = 40;
+export const FILE_HEADER_SIZE = 96;
+export const SDK_HEADER_SIZE = 112;
+export const VARIABLE_HEADER_SIZE = 144;
+export const RECORD_HEADER_SIZE = 40;
 const MAX_VARIABLES = 4096;
 const MAX_PAYLOAD_SIZE = 64 * 1024 * 1024;
 const FNV_OFFSET = 2166136261;
@@ -152,6 +152,9 @@ export class TapeReader {
       }
 
       const frameSize = sdkHeader.readInt32LE(36);
+      if (frameSize <= 0 || frameSize > MAX_PAYLOAD_SIZE) {
+        throw new Error('Invalid telemetry tape SDK metadata');
+      }
       const variables = new Map<string, TapeVariable>();
       for (let index = 0; index < variableCount; index += 1) {
         const base = index * VARIABLE_HEADER_SIZE;
@@ -190,9 +193,7 @@ export class TapeReader {
       if (
         header.mappingSize === 0n ||
         header.qpcFrequency === 0n ||
-        header.tickRate <= 0 ||
-        header.frameSize <= 0 ||
-        header.frameSize > MAX_PAYLOAD_SIZE
+        header.tickRate <= 0
       ) {
         throw new Error('Invalid telemetry tape SDK metadata');
       }

@@ -81,7 +81,7 @@ The curated validator should complete in under 10 seconds on a normal developmen
 - The synthetic fixture runs in the normal test suite.
 - The curated tape processes all 36,000 frames and 70 session revisions.
 - Golden updates are explicit and never occur during a normal validation run.
-- A mismatch reports the probe, source tick, session time, checkpoint, expected hash, and actual state.
+- A mismatch reports the differing golden field, probe, expected and actual hashes, and the latest readable checkpoint state.
 
 ### PR 2 — Deterministic Fuel engine extraction
 

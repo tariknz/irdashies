@@ -1,9 +1,23 @@
-const FILE_HEADER_SIZE = 96;
-const SDK_HEADER_SIZE = 112;
-const VARIABLE_HEADER_SIZE = 144;
-const RECORD_HEADER_SIZE = 40;
+import {
+  FILE_HEADER_SIZE,
+  RECORD_HEADER_SIZE,
+  SDK_HEADER_SIZE,
+  VARIABLE_HEADER_SIZE,
+} from './tape';
+
 const FNV_OFFSET = 2166136261;
 const FNV_PRIME = 16777619;
+const SESSION_PAYLOAD = Buffer.from('---\nSessionInfo: test\n...\n');
+
+export const SYNTHETIC_SECOND_FRAME_PAYLOAD_OFFSET =
+  FILE_HEADER_SIZE +
+  SDK_HEADER_SIZE +
+  2 * VARIABLE_HEADER_SIZE +
+  RECORD_HEADER_SIZE +
+  SESSION_PAYLOAD.length +
+  RECORD_HEADER_SIZE +
+  12 +
+  RECORD_HEADER_SIZE;
 
 const checksum = (data: Uint8Array): number => {
   let value = FNV_OFFSET;
@@ -71,7 +85,7 @@ export function createSyntheticTape(): Buffer {
     return payload;
   };
   const records = [
-    record(2, 0n, -1, 1, Buffer.from('---\nSessionInfo: test\n...\n')),
+    record(2, 0n, -1, 1, SESSION_PAYLOAD),
     record(1, 0n, 10, 0, frame(1, 20)),
     record(1, 1n, 11, 0, frame(1.5, 19.9)),
     record(5, 2n, 11, 0),
