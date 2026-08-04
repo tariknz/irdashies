@@ -44,6 +44,17 @@ const booleanValue = (frame: Telemetry, key: keyof Telemetry): boolean => {
   return candidate === true || candidate === 1;
 };
 
+const values = (frame: Telemetry, key: keyof Telemetry): readonly number[] => {
+  const candidates = frame[key]?.value;
+  return Array.isArray(candidates)
+    ? candidates.map((candidate) =>
+        typeof candidate === 'number' && Number.isFinite(candidate)
+          ? candidate
+          : 0
+      )
+    : [];
+};
+
 const isGreenFlag = (flags: number): boolean =>
   (flags & (0x00004000 | 0x00008000 | 0x00010000)) === 0;
 
@@ -79,6 +90,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
   private aggregationEnabled = true;
   private session?: Session;
   private sourceReplay: boolean;
+  private readonly carLapTimes: number[] = [];
   private latest: FuelProjectionSnapshot;
 
   constructor(options: FuelProjectionProcessorOptions = {}) {
@@ -115,6 +127,16 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
     const driverInfo = this.session?.DriverInfo;
     const maxFuel = driverInfo?.DriverCarFuelMaxLtr;
     const maxFuelPct = driverInfo?.DriverCarMaxFuelPct;
+    const lastLapTimes = values(frame, 'CarIdxLastLapTime');
+    for (let index = 0; index < lastLapTimes.length; index++) {
+      const lastLapTime = lastLapTimes[index];
+      if (lastLapTime > 1) this.carLapTimes[index] = lastLapTime;
+    }
+    const raceProjection = this.calculateRaceProjection(
+      frame,
+      sessionInfo?.SessionType,
+      sessionInfo?.SessionLaps
+    );
     const commands = this.engine.onFrame(
       {
         fuelLevel,
@@ -169,6 +191,8 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
       sessionState: value(frame, 'SessionState'),
       sessionNum,
       sessionLaps: sessionInfo?.SessionLaps ?? 0,
+      calculatedTotalRaceLaps: raceProjection.totalRaceLaps,
+      isFixedLapRace: raceProjection.isFixedLapRace,
       sessionType: sessionInfo?.SessionType,
       isOnTrack: booleanValue(frame, 'IsOnTrack'),
       trackId:
@@ -228,6 +252,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
     this.engine.reset();
     this.lastCommands = [];
     this.laps.length = 0;
+    this.carLapTimes.length = 0;
     this.latest = this.emptySnapshot();
   }
 
@@ -248,9 +273,80 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
       sessionState: 0,
       sessionNum: 0,
       sessionLaps: 0,
+      calculatedTotalRaceLaps: 0,
+      isFixedLapRace: false,
       isOnTrack: false,
       completedLaps: this.laps,
       engine: this.engine.snapshot(),
     };
+  }
+
+  private calculateRaceProjection(
+    frame: Telemetry,
+    sessionType?: string,
+    sessionLaps?: string
+  ): { totalRaceLaps: number; isFixedLapRace: boolean } {
+    const timeRemaining = value(frame, 'SessionTimeRemain');
+    const isFixedLapRace = !(timeRemaining > 0 && timeRemaining !== 604800);
+    if (sessionType !== 'Race') return { totalRaceLaps: 0, isFixedLapRace };
+
+    const driverCarIdx = this.session?.DriverInfo?.DriverCarIdx ?? 0;
+    const cameraCarIdx = value(frame, 'CamCarIdx', -1);
+    const playerCarIdx = cameraCarIdx >= 0 ? cameraCarIdx : driverCarIdx;
+    const carLaps = values(frame, 'CarIdxLap');
+    const positions = values(frame, 'CarIdxPosition');
+    const lapDistances = values(frame, 'CarIdxLapDistPct');
+    const playerLap = carLaps[playerCarIdx] ?? value(frame, 'Lap');
+    let leaderCarIdx = -1;
+    for (let index = 0; index < positions.length; index++) {
+      if (positions[index] === 1) {
+        leaderCarIdx = index;
+        break;
+      }
+    }
+    const projectionCarIdx = leaderCarIdx >= 0 ? leaderCarIdx : playerCarIdx;
+    const classEstimate = this.session?.DriverInfo?.Drivers?.find(
+      (driver) => driver.CarIdx === projectionCarIdx
+    )?.CarClassEstLapTime;
+    const bestLapTimes = values(frame, 'CarIdxBestLapTime');
+    const averageLapTime =
+      this.carLapTimes[projectionCarIdx] > 0
+        ? this.carLapTimes[projectionCarIdx]
+        : classEstimate && classEstimate > 0
+          ? classEstimate
+          : (bestLapTimes[playerCarIdx] ?? 0);
+    const configuredLaps = Number.parseInt(sessionLaps ?? '0', 10) || 0;
+
+    if (value(frame, 'SessionState') >= 5) {
+      return { totalRaceLaps: playerLap, isFixedLapRace };
+    }
+    if (isFixedLapRace) {
+      let totalRaceLaps = configuredLaps;
+      const leaderLap = carLaps[leaderCarIdx] ?? 0;
+      const leaderDistance = lapDistances[leaderCarIdx] ?? 0;
+      const playerDistance = value(frame, 'LapDistPct');
+      if (playerLap > 0 && leaderLap > 0) {
+        const distanceBehind =
+          leaderLap + leaderDistance - (playerLap + playerDistance);
+        if (distanceBehind > 0) totalRaceLaps -= Math.floor(distanceBehind);
+      }
+      return { totalRaceLaps, isFixedLapRace };
+    }
+    if (averageLapTime <= 0) {
+      return { totalRaceLaps: 0, isFixedLapRace };
+    }
+
+    const leaderLap = carLaps[leaderCarIdx] ?? playerLap;
+    const leaderDistance = lapDistances[leaderCarIdx] ?? 0;
+    let totalRaceLaps =
+      playerLap === 0
+        ? value(frame, 'SessionTimeTotal') / averageLapTime
+        : timeRemaining / averageLapTime + (leaderLap - 1) + leaderDistance;
+    const distanceBehind = leaderLap - playerLap;
+    if (distanceBehind > 1) totalRaceLaps -= Math.floor(distanceBehind);
+    if (configuredLaps > 0 && totalRaceLaps > configuredLaps) {
+      totalRaceLaps = configuredLaps;
+    }
+    return { totalRaceLaps, isFixedLapRace };
   }
 }

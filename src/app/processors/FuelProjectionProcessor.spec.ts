@@ -87,6 +87,43 @@ describe('FuelProjectionProcessor', () => {
     expect(processor.snapshot().engine.wasOnPitRoad).toBe(true);
   });
 
+  it('projects timed-race distance using class pace', () => {
+    const processor = new FuelProjectionProcessor();
+    processor.init({
+      DriverInfo: {
+        DriverCarIdx: 0,
+        Drivers: [{ CarIdx: 0, CarClassEstLapTime: 90 }],
+      },
+      SessionInfo: {
+        Sessions: [
+          { SessionNum: 0, SessionType: 'Race', SessionLaps: 'unlimited' },
+        ],
+      },
+    } as unknown as Session);
+
+    processor.onFrame({
+      FuelLevel: { value: [45.39] },
+      Lap: { value: [2] },
+      LapDistPct: { value: [0.1] },
+      SessionNum: { value: [0] },
+      SessionState: { value: [4] },
+      SessionLapsRemain: { value: [32767] },
+      SessionTimeRemain: { value: [1620] },
+      SessionTimeTotal: { value: [1800] },
+      CamCarIdx: { value: [0] },
+      CarIdxLap: { value: [2] },
+      CarIdxLapDistPct: { value: [0.1] },
+      CarIdxPosition: { value: [1] },
+      CarIdxLastLapTime: { value: [1] },
+      CarIdxBestLapTime: { value: [1] },
+    } as unknown as Telemetry);
+
+    expect(processor.snapshot()).toMatchObject({
+      calculatedTotalRaceLaps: 19.1,
+      isFixedLapRace: false,
+    });
+  });
+
   it('resets completed laps when the session number changes', () => {
     const processor = new FuelProjectionProcessor();
     processor.onFrame(

@@ -46,6 +46,8 @@ const projection: FuelProjectionSnapshot = {
   sessionState: 4,
   sessionNum: 0,
   sessionLaps: 12,
+  calculatedTotalRaceLaps: 12,
+  isFixedLapRace: true,
   sessionType: 'Race',
   isOnTrack: true,
   completedLaps: [],

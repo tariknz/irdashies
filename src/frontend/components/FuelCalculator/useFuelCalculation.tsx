@@ -55,8 +55,8 @@ export function useFuelCalculation(
   const sessionState = projection?.sessionState;
   const sessionLaps = projection?.sessionLaps;
   const isOnTrack = projection?.isOnTrack;
-  const isFixedLapRace = sessionLapsRemain !== TIMED_RACE_LAPS_REMAINING;
-  const calculatedTotalRaceLaps = 0;
+  const isFixedLapRace = projection?.isFixedLapRace ?? false;
+  const calculatedTotalRaceLaps = projection?.calculatedTotalRaceLaps ?? 0;
   const isRace = projection?.sessionType === 'Race';
   const fuelTankCapacityFromSession = projection?.fuelTankCapacity;
   const trackId = projection?.trackId;
