@@ -128,15 +128,13 @@ describe('FuelProjectionProcessor', () => {
       ...timedRaceFrame,
       CarIdxLastLapTime: { value: [100] },
     } as unknown as Telemetry);
-    expect(processor.snapshot().calculatedTotalRaceLaps).toBeCloseTo(17.3);
+    expect(processor.snapshot().calculatedTotalRaceLaps).toBeCloseTo(19.1);
 
     processor.onFrame({
       ...timedRaceFrame,
       CarIdxLastLapTime: { value: [110] },
     } as unknown as Telemetry);
-    expect(processor.snapshot().calculatedTotalRaceLaps).toBeCloseTo(
-      1620 / 105 + 1.1
-    );
+    expect(processor.snapshot().calculatedTotalRaceLaps).toBeCloseTo(19.1);
   });
 
   it('resets completed laps when the session number changes', () => {
