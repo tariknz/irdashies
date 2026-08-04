@@ -79,6 +79,31 @@ describe('FuelProjectionEngine', () => {
     expect(commands.map(({ type }) => type)).toEqual(['lapCompleted']);
   });
 
+  it('does not leak adapter state into snapshots', () => {
+    const engine = new FuelProjectionEngine(
+      { now: () => 1234 },
+      { debug: vi.fn() },
+      {
+        lastLap: 2,
+        lapHistory: new Map(),
+      } as Partial<import('./FuelProjectionEngine').FuelEngineState> & {
+        lapHistory: Map<never, never>;
+      }
+    );
+
+    expect(engine.snapshot()).toEqual({
+      accumulatedRefuel: 0,
+      isLapDistPctReset: false,
+      lapCrossingTime: 0,
+      lapStartFuel: 0,
+      lastLap: 2,
+      lastLapDistPct: 0,
+      lastSessionFlags: 0,
+      wasOnPitRoad: false,
+    });
+    expect(engine.snapshot()).not.toHaveProperty('lapHistory');
+  });
+
   it('accounts for refuelling without producing negative consumption', () => {
     const engine = createEngine();
     engine.onFrame(frame(), history, validLap, isGreen, {

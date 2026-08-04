@@ -74,6 +74,25 @@ const defaultState = (): FuelEngineState => ({
   wasOnPitRoad: false,
 });
 
+const createState = (
+  initialState: Partial<FuelEngineState> = {}
+): FuelEngineState => {
+  const defaults = defaultState();
+  return {
+    accumulatedRefuel:
+      initialState.accumulatedRefuel ?? defaults.accumulatedRefuel,
+    isLapDistPctReset:
+      initialState.isLapDistPctReset ?? defaults.isLapDistPctReset,
+    lapCrossingTime: initialState.lapCrossingTime ?? defaults.lapCrossingTime,
+    lapStartFuel: initialState.lapStartFuel ?? defaults.lapStartFuel,
+    lastLap: initialState.lastLap ?? defaults.lastLap,
+    lastLapDistPct: initialState.lastLapDistPct ?? defaults.lastLapDistPct,
+    lastSessionFlags:
+      initialState.lastSessionFlags ?? defaults.lastSessionFlags,
+    wasOnPitRoad: initialState.wasOnPitRoad ?? defaults.wasOnPitRoad,
+  };
+};
+
 /**
  * Stateful, deterministic core of the legacy Fuel calculator.
  *
@@ -97,7 +116,7 @@ export class FuelProjectionEngine {
     private readonly logger: FuelEngineLogger,
     initialState: Partial<FuelEngineState> = {}
   ) {
-    this.state = { ...defaultState(), ...initialState };
+    this.state = createState(initialState);
   }
 
   snapshot(): Readonly<FuelEngineState> {
@@ -105,7 +124,7 @@ export class FuelProjectionEngine {
   }
 
   reset(initialState: Partial<FuelEngineState> = {}): void {
-    this.state = { ...defaultState(), ...initialState };
+    this.state = createState(initialState);
     this.previousFuelLevel = undefined;
     this.lastRefuelTime = undefined;
     this.lastSessionTime = undefined;

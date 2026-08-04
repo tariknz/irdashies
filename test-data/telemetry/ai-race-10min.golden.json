@@ -397,7 +397,7 @@
       "name": "fuel-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "596a3c94066d0937b0b210d6e433049ee3d0f968f9984d704fe9bf8a8d3a47f5",
+      "rollingHash": "ac94993b802f0709830466482c402864d491603245209fbdc89794fb9b086b1b",
       "checkpoints": {
         "firstFrame": {
           "commands": [],
@@ -573,7 +573,21 @@
         },
         "lap:1": {
           "commands": [
-            "lapCompleted"
+            {
+              "type": "lapCompleted",
+              "lap": {
+                "lapNumber": 1,
+                "fuelUsed": 3.565399169921875,
+                "lapTime": 139.73333333336973,
+                "isGreenFlag": true,
+                "isValidForCalc": true,
+                "isOutLap": false,
+                "isInLap": false,
+                "wasTowed": false,
+                "timestamp": 208971,
+                "sessionNum": 0
+              }
+            }
           ],
           "state": {
             "accumulatedRefuel": 0,
@@ -658,7 +672,21 @@
         },
         "lap:2": {
           "commands": [
-            "lapCompleted"
+            {
+              "type": "lapCompleted",
+              "lap": {
+                "lapNumber": 2,
+                "fuelUsed": 3.6420249938964844,
+                "lapTime": 131.3166666665473,
+                "isGreenFlag": true,
+                "isValidForCalc": true,
+                "isOutLap": false,
+                "isInLap": false,
+                "wasTowed": false,
+                "timestamp": 340270,
+                "sessionNum": 0
+              }
+            }
           ],
           "state": {
             "accumulatedRefuel": 0,
@@ -773,7 +801,21 @@
         },
         "lap:3": {
           "commands": [
-            "lapCompleted"
+            {
+              "type": "lapCompleted",
+              "lap": {
+                "lapNumber": 3,
+                "fuelUsed": 3.703784942626953,
+                "lapTime": 129.26666666654927,
+                "isGreenFlag": true,
+                "isValidForCalc": true,
+                "isOutLap": false,
+                "isInLap": false,
+                "wasTowed": false,
+                "timestamp": 469551,
+                "sessionNum": 0
+              }
+            }
           ],
           "state": {
             "accumulatedRefuel": 0,

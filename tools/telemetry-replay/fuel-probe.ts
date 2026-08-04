@@ -9,7 +9,7 @@ import {
 import type { ReplayProbe, TelemetryFrame } from './validator';
 
 interface FuelProbeState {
-  commands: FuelEngineCommand['type'][];
+  commands: readonly FuelEngineCommand[];
   state: ReturnType<FuelProjectionEngine['snapshot']>;
 }
 
@@ -98,7 +98,7 @@ export const createFuelStateProbe = (): ReplayProbe<FuelProbeState> => {
       previousFlags = flags;
 
       return {
-        commands: commands.map(({ type }) => type),
+        commands,
         state: engine.snapshot(),
       };
     },
