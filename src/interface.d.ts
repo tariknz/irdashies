@@ -9,9 +9,11 @@ import type {
   GamepadHostBridge,
   ChromiumFlagsBridge,
 } from '@irdashies/types';
+import type { ChannelBridge } from '@irdashies/types';
 
 declare global {
   interface Window {
+    channelBridge: ChannelBridge;
     irsdkBridge: IrSdkBridge;
     dashboardBridge: DashboardBridge;
     pitLaneBridge: PitLaneBridge;
