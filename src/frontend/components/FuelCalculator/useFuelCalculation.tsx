@@ -18,7 +18,6 @@ import {
   selectLapHistorySize,
   selectLastLapUsage,
 } from './FuelStore';
-import { FuelLapData } from '@irdashies/types';
 import type { FuelCalculation, FuelCalculatorSettings } from './types';
 import { useFuelLogger } from './useFuelLogger';
 import {
@@ -27,12 +26,12 @@ import {
   calculateAvgLapTime,
   findFuelMinMax,
   getGreenFlagLaps,
-  detectLapCrossing,
   isGreenFlag,
   isFinalLap,
   isCheckeredFlag,
 } from './fuelCalculations';
 import logger from '@irdashies/utils/logger';
+import { FuelProjectionEngine } from '@irdashies/shared';
 
 /** Enable debug logging (set to true for testing/troubleshooting) */
 const DEBUG_LOGGING = false;
@@ -49,17 +48,8 @@ const MAX_REASONABLE_LAPS = 5000;
 /** Intrinsic safety margin value (0.25 units) */
 const INTRINSIC_MARGIN_VALUE = 0.25;
 
-/** Minimum valid lap time to record (seconds) */
-const MIN_LAP_TIME = 10;
-
 /** Lap distance segments for consistent projection */
 const LAP_DIST_SEGMENTS = [0.1, 0.25, 0.5, 0.75, 1.0];
-
-/** Maximum allowed change in projected usage (percentage) */
-const MAX_PROJECTION_CHANGE_PERCENT = 0.5; // 50%
-
-/** Threshold for detecting lapDistPct reset */
-const LAP_DIST_RESET_THRESHOLD = 0.5;
 
 export function useFuelCalculation(
   safetyMargin = 0.3,
@@ -127,8 +117,6 @@ export function useFuelCalculation(
   const updateSessionInfo = useFuelStore((state) => state.updateSessionInfo);
   const clearAllData = useFuelStore((state) => state.clearAllData);
   const addLapData = useFuelStore((state) => state.addLapData);
-  const updateLapCrossing = useFuelStore((state) => state.updateLapCrossing);
-  const updateLapDistPct = useFuelStore((state) => state.updateLapDistPct);
   const setContextInfo = useFuelStore((state) => state.setContextInfo);
   const storedTrackId = useFuelStore((state) => state.trackId);
   const storedCarName = useFuelStore((state) => state.carName);
@@ -152,179 +140,24 @@ export function useFuelCalculation(
 
   const loadedContextRef = useRef<string | null>(null);
 
-  // Refs for smoothing projected lap usage
-  const smoothedProjectedUsageRef = useRef<number>(0);
-  const lastSmoothedLapRef = useRef<number>(-1);
-
-  // Ref to track previous fuel level for refuel detection
-  const prevFuelLevelRef = useRef<number | undefined>(undefined);
-
-  // Ref to track previous session time for reset detection
-  const lastSessionTimeRef = useRef<number | undefined>(undefined);
-
-  // Ref to track last refuel time for debouncing
-  const lastRefuelTimeRef = useRef<number | undefined>(undefined);
-
-  // Ref to track consumption trend and segment data
-  const consumptionSegmentsRef = useRef<{ distPct: number; usage: number }[]>(
-    []
-  );
-  const lastProjectedUsageRef = useRef<number | null>(null);
-
-  // Track lapDistPct history to detect resets
-
-  const lapDistPctHistoryRef = useRef<number[]>([]);
-  const lapDistPctResetDetectedRef = useRef(false);
-  const lastValidLapDistPctRef = useRef<number | undefined>(undefined);
+  const fuelEngineRef = useRef<FuelProjectionEngine | null>(null);
+  if (fuelEngineRef.current === null) {
+    const initial = useFuelStore.getState();
+    fuelEngineRef.current = new FuelProjectionEngine(
+      { now: () => Date.now() },
+      {
+        debug: DEBUG_LOGGING
+          ? (message) => logger.debug(`[FuelCalculator] ${message}`)
+          : () => undefined,
+      },
+      initial
+    );
+  }
 
   // Race Finish Detection
 
   const [isRaceFinished, setIsRaceFinished] = useState(false);
   const checkFlagLapRef = useRef<number | null>(null);
-
-  // --------------------------------------------------------------------------
-  // Detect lapDistPct resets
-  // --------------------------------------------------------------------------
-
-  useEffect(() => {
-    if (lapDistPct === undefined) return;
-
-    // Maintain history of last 10 values
-    lapDistPctHistoryRef.current.push(lapDistPct);
-    if (lapDistPctHistoryRef.current.length > 10) {
-      lapDistPctHistoryRef.current.shift();
-    }
-
-    // Detect reset: if lapDistPct dropped drastically
-    if (
-      lastValidLapDistPctRef.current !== undefined &&
-      lapDistPct < lastValidLapDistPctRef.current - LAP_DIST_RESET_THRESHOLD
-    ) {
-      lapDistPctResetDetectedRef.current = true;
-      if (DEBUG_LOGGING) {
-        logger.info(
-          `[FuelCalculator] lapDistPct RESET DETECTED: ${lastValidLapDistPctRef.current.toFixed(4)} -> ${lapDistPct.toFixed(4)}`
-        );
-      }
-
-      // Clear projection data when reset detected
-      consumptionSegmentsRef.current = [];
-      lastProjectedUsageRef.current = null;
-      smoothedProjectedUsageRef.current = 0;
-    }
-    // If it is increasing normally after a reset, mark as non-reset
-    else if (
-      lapDistPctResetDetectedRef.current &&
-      lastValidLapDistPctRef.current !== undefined &&
-      lapDistPct > lastValidLapDistPctRef.current + 0.05
-    ) {
-      lapDistPctResetDetectedRef.current = false;
-    }
-
-    // Update last valid value
-    lastValidLapDistPctRef.current = lapDistPct;
-  }, [lapDistPct]);
-
-  // --------------------------------------------------------------------------
-  // Definitive projection calculation with reset handling
-  // --------------------------------------------------------------------------
-
-  const calculateDefinitiveProjectedUsage = useMemo(() => {
-    return (
-      currentLapUsage: number,
-      lapDistPct: number,
-      lastLapUsage: number,
-      avgConsumption: number,
-      qualifyConsumption: number | null,
-      _lapStartFuel: number,
-      _currentFuel: number,
-      isLapDistPctReset: boolean
-    ): number => {
-      // Use appropriate historical reference
-
-      let historicalReference = avgConsumption;
-      // Prefer last lap if valid and similar to average
-      if (
-        lastLapUsage > 0 &&
-        avgConsumption > 0 &&
-        Math.abs(lastLapUsage - avgConsumption) / avgConsumption < 0.2
-      ) {
-        historicalReference = lastLapUsage;
-      } else if (historicalReference === 0 && qualifyConsumption) {
-        historicalReference = qualifyConsumption;
-      }
-
-      if (historicalReference <= 0) historicalReference = 3.2; // Fallback default
-
-      // Detect Refuel on Out Lap
-
-      // If we have more fuel now than at the start of the lap, it is impossible to calculate consumption
-      // for the current lap. Use Historical Average to avoid drop to 0.1
-      if (_currentFuel > _lapStartFuel) {
-        if (DEBUG_LOGGING) {
-          // logger.info('[FuelCalculator] Refuel detected during lap - enforcing historical avg');
-        }
-        lastProjectedUsageRef.current = historicalReference;
-        return historicalReference;
-      }
-
-      // If reset detected or invalid lapDistPct
-      if (isLapDistPctReset || lapDistPct > 0.99 || lapDistPct < 0.001) {
-        return historicalReference;
-      }
-
-      const rawProjection = currentLapUsage / lapDistPct;
-
-      // Limit extreme values
-
-      const minReasonable = 0.1; // Minimum 0.1L per lap
-      const maxReasonable = 20.0; // Maximum 20L per lap
-
-      const safeProjection = Math.max(
-        minReasonable,
-        Math.min(maxReasonable, rawProjection)
-      );
-
-      // Determine confidence based on progress
-      // Increase historical weight throughout the lap.
-      let confidence = 0;
-
-      // From 0% to 50% of the lap: Confidence rises from 0.0 to 0.5 (More conservative at start)
-      if (lapDistPct < 0.5) {
-        confidence = (lapDistPct / 0.5) * 0.5;
-      }
-      // From 50% to 100% of the lap: Confidence rises from 0.5 to 0.8 (Max 80% Live)
-      else {
-        confidence = 0.5 + ((lapDistPct - 0.5) / 0.5) * 0.3;
-      }
-
-      // Mix projection with history
-      let projected =
-        safeProjection * confidence + historicalReference * (1 - confidence);
-
-      // Apply safety margin based on confidence
-      const safetyMultiplier = 1.02 + 0.05 * (1 - confidence); // Reduced margin
-      projected = projected * safetyMultiplier;
-
-      // Limit drastic variation if we already have a stable previous projection in the same lap
-      if (
-        lastProjectedUsageRef.current !== null &&
-        lastProjectedUsageRef.current > 0
-      ) {
-        const maxChange =
-          lastProjectedUsageRef.current * MAX_PROJECTION_CHANGE_PERCENT;
-        const minAllowed =
-          lastProjectedUsageRef.current * (1 - MAX_PROJECTION_CHANGE_PERCENT);
-        const maxAllowed =
-          lastProjectedUsageRef.current * (1 + MAX_PROJECTION_CHANGE_PERCENT);
-
-        projected = Math.max(minAllowed, Math.min(maxAllowed, projected));
-      }
-
-      lastProjectedUsageRef.current = projected;
-      return projected;
-    };
-  }, []);
 
   // --------------------------------------------------------------------------
   // Main Telemetry Processing
@@ -352,19 +185,6 @@ export function useFuelCalculation(
 
     prevIsOnTrackRef.current = isOnTrack;
   }, [isOnTrack, settings?.enableLogging]);
-
-  // Clear segment data at start of each lap
-  useEffect(() => {
-    if (lapDistPct !== undefined && lapDistPct < 0.01) {
-      // Reset segment data at the very beginning of lap
-      consumptionSegmentsRef.current = [];
-      if (DEBUG_LOGGING) {
-        logger.info(
-          `[FuelCalculator] Reset segment data at start of lap (lapDistPct: ${lapDistPct.toFixed(4)})`
-        );
-      }
-    }
-  }, [lapDistPct]);
 
   useEffect(() => {
     const currentCarName = (
@@ -395,6 +215,7 @@ export function useFuelCalculation(
       // This ONLY clears browser memory for the current session, NOT the database historical array.
       clearAllData();
       setQualifyConsumption(null);
+      fuelEngineRef.current?.reset();
 
       if (settings?.enableStorage ?? true) {
         const [tId, cName] = currentContext.split(':');
@@ -446,51 +267,10 @@ export function useFuelCalculation(
     settings?.enableStorage,
   ]);
 
-  // Update session flags state
-  const lastSessionFlagsRef = useRef<number | undefined>(undefined);
-  useEffect(() => {
-    if (
-      sessionFlags !== undefined &&
-      lastSessionFlagsRef.current !== sessionFlags
-    ) {
-      useFuelStore.setState({ lastSessionFlags: sessionFlags });
-      lastSessionFlagsRef.current = sessionFlags;
-    }
-  }, [sessionFlags]);
-
   const playerCarTowTime = useTelemetryValue('PlayerCarTowTime');
-  const wasTowedDuringLapRef = useRef(false);
 
-  // Monitor tow time to detect incidents
-  const wasOnPitRoadDuringLapRef = useRef(false);
-
-  useEffect(() => {
-    if (playerCarTowTime !== undefined && playerCarTowTime > 0) {
-      wasTowedDuringLapRef.current = true;
-    }
-  }, [playerCarTowTime]);
-
-  // Monitor Pit Road status
-  useEffect(() => {
-    if (onPitRoad) {
-      wasOnPitRoadDuringLapRef.current = true;
-    }
-  }, [onPitRoad]);
-
-  // Track if the ENTIRE lap was under Green Flag conditions
-
-  // This ensures rolling start formation laps (Yellow) or caution laps are not counted
-  const isLapFullyGreenRef = useRef(true);
-
-  useEffect(() => {
-    if (sessionFlags !== undefined) {
-      if (!isGreenFlag(sessionFlags)) {
-        isLapFullyGreenRef.current = false;
-      }
-    }
-  }, [sessionFlags]);
-
-  // Detect lap crossings and process fuel data - OPTIMIZED VERSION
+  // Adapt telemetry subscriptions to the deterministic engine and execute its
+  // persistence commands outside the calculation core.
 
   useEffect(() => {
     if (
@@ -504,202 +284,36 @@ export function useFuelCalculation(
       return;
 
     const state = useFuelStore.getState();
-
-    // Detect Refueling
-
-    if (prevFuelLevelRef.current !== undefined) {
-      const fuelDelta = fuelLevel - prevFuelLevelRef.current;
-      const timeDelta = sessionTime - (lastRefuelTimeRef.current || 0);
-
-      // Detect if: significant increase AND not recently
-      if (fuelDelta > 0.05 && timeDelta > 5) {
-        if (DEBUG_LOGGING)
-          logger.info(
-            `[FuelCalculator] Refuel Detected: +${fuelDelta.toFixed(3)}L`
-          );
-        useFuelStore.getState().addRefuel(fuelDelta);
-        lastRefuelTimeRef.current = sessionTime;
-      }
-    }
-    prevFuelLevelRef.current = fuelLevel;
-
-    // Track segment usage for projection
-    if (state.lastLapDistPct !== undefined && lapDistPct !== undefined) {
-      // Only track if not in reset state
-      if (
-        !lapDistPctResetDetectedRef.current &&
-        lapDistPct > state.lastLapDistPct
-      ) {
-        const segmentUsage = state.lapStartFuel - fuelLevel;
-        consumptionSegmentsRef.current.push({
-          distPct: lapDistPct,
-          usage: segmentUsage,
-        });
-
-        // Keep only recent segments
-        if (consumptionSegmentsRef.current.length > 10) {
-          consumptionSegmentsRef.current.shift();
-        }
-      }
-    }
-
-    // Detect lap crossing
-    const distCrossing = detectLapCrossing(lapDistPct, state.lastLapDistPct);
-    const lapIncremented = lap > state.lastLap;
-
-    // Check for Session Reset
-    if (lap < state.lastLap) {
-      if (
-        lastSessionTimeRef.current !== undefined &&
-        sessionTime > lastSessionTimeRef.current
-      ) {
-        if (DEBUG_LOGGING)
-          logger.info(`[FuelCalculator] Ignored lap counter drop`);
-        updateLapDistPct(lapDistPct);
-        lastSessionTimeRef.current = sessionTime;
-        return;
-      }
-
-      // Lap count went backwards - reset
-      if (DEBUG_LOGGING)
-        logger.info(`[FuelCalculator] Lap reset detected, resetting state`);
-      updateLapCrossing(
-        lapDistPct,
+    const commands = fuelEngineRef.current?.onFrame(
+      {
         fuelLevel,
-        sessionTime,
         lap,
-        onPitRoad === 1
-      );
-      lastSessionTimeRef.current = sessionTime;
-
-      // Clear ALL projection data on lap reset
-      consumptionSegmentsRef.current = [];
-      lastProjectedUsageRef.current = null;
-      smoothedProjectedUsageRef.current = 0;
-      lapDistPctResetDetectedRef.current = false;
-
-      return;
-    }
-
-    lastSessionTimeRef.current = sessionTime;
-
-    const isCrossing =
-      distCrossing || (lapIncremented && lap - state.lastLap === 1);
-
-    if (isCrossing) {
-      const timeSinceLastCrossing = sessionTime - state.lapCrossingTime;
-
-      if (
-        !lapIncremented &&
-        timeSinceLastCrossing > 0 &&
-        timeSinceLastCrossing < MIN_LAP_TIME
-      ) {
-        if (DEBUG_LOGGING) {
-          logger.info(
-            `[FuelCalculator] Ignored crossing (time since last: ${timeSinceLastCrossing.toFixed(3)}s < ${MIN_LAP_TIME}s)`
-          );
-        }
-        updateLapDistPct(lapDistPct);
-        return;
-      }
-
-      const completedLap = lap - 1;
-      const fuelUsed = state.lapStartFuel + state.accumulatedRefuel - fuelLevel;
-      const lapTime = timeSinceLastCrossing;
-
-      if (DEBUG_LOGGING) {
-        logger.info(
-          `[FuelCalculator] Lap ${completedLap} complete - Used: ${fuelUsed.toFixed(3)}L, Time: ${lapTime.toFixed(2)}s`
+        lapDistPct,
+        onPitRoad: onPitRoad === 1,
+        playerCarTowTime: playerCarTowTime ?? 0,
+        sessionFlags,
+        sessionNum,
+        sessionTime,
+      },
+      state,
+      validateLapData,
+      isGreenFlag,
+      { persistLaps: settings?.enableStorage ?? true }
+    );
+    for (const command of commands ?? []) {
+      if (command.type === 'lapCompleted') {
+        addLapData(command.lap);
+      } else if (storedTrackId !== undefined && storedCarName !== undefined) {
+        window.fuelCalculatorBridge.saveLap(
+          storedTrackId,
+          storedCarName,
+          command.lap
         );
       }
-
-      // Record lap data
-      if (completedLap >= 1 && fuelUsed > 0 && lapTime >= MIN_LAP_TIME) {
-        const recentLaps = state.getRecentLaps(10);
-        const isGreen = isLapFullyGreenRef.current;
-        const isOutlier = !validateLapData(fuelUsed, lapTime, recentLaps);
-        const wasTowed = wasTowedDuringLapRef.current;
-
-        // Strict Validation: Only count formatted green laps for consumption stats
-        // This excludes "Rolling Start" formation laps which are technically Lap 1 but Yellow
-        const isValid = !wasTowed && !isOutlier && isGreen;
-
-        const lapData: FuelLapData = {
-          lapNumber: completedLap,
-          fuelUsed,
-          lapTime,
-          isGreenFlag: isGreen,
-          isValidForCalc: isValid,
-          isOutLap: state.wasOnPitRoad,
-          isInLap: wasOnPitRoadDuringLapRef.current,
-          wasTowed,
-          timestamp: Date.now(),
-          sessionNum,
-        };
-
-        if (DEBUG_LOGGING || wasTowed) {
-          logger.info(
-            `[FuelCalculator]   -> Valid: ${lapData.isValidForCalc}, Green: ${lapData.isGreenFlag}`
-          );
-        }
-
-        addLapData(lapData);
-
-        if (
-          storedTrackId !== undefined &&
-          storedCarName !== undefined &&
-          (settings?.enableStorage ?? true)
-        ) {
-          window.fuelCalculatorBridge.saveLap(
-            storedTrackId,
-            storedCarName,
-            lapData
-          );
-        }
-      }
-
-      // Reset flags for new lap
-      wasTowedDuringLapRef.current = false;
-      wasOnPitRoadDuringLapRef.current = false;
-
-      // Clear ALL projection data for new lap
-      consumptionSegmentsRef.current = [];
-      lastProjectedUsageRef.current = null;
-      smoothedProjectedUsageRef.current = 0;
-      lastSmoothedLapRef.current = -1;
-      lapDistPctResetDetectedRef.current = false;
-
-      const nextLap = Math.max(lap, completedLap + 1);
-
-      updateLapCrossing(
-        lapDistPct,
-        fuelLevel,
-        sessionTime,
-        nextLap,
-        onPitRoad === 1
-      );
-
-      if (DEBUG_LOGGING) {
-        logger.info(
-          `[FuelCalculator] Starting lap ${nextLap} - ALL projection data cleared`
-        );
-      }
-
-      // Reset Green Flag tracking for the NEW lap
-      // Initialize with current flag state (if currently green, start true)
-      isLapFullyGreenRef.current = isGreenFlag(sessionFlags);
-    } else if (state.lastLapDistPct === 0) {
-      // Initialize
-      updateLapCrossing(
-        lapDistPct,
-        fuelLevel,
-        sessionTime,
-        lap,
-        onPitRoad === 1
-      );
-    } else {
-      // Always update distance
-      updateLapDistPct(lapDistPct);
+    }
+    const engineState = fuelEngineRef.current?.snapshot();
+    if (engineState) {
+      useFuelStore.setState(engineState);
     }
   }, [
     lapDistPct,
@@ -710,8 +324,6 @@ export function useFuelCalculation(
     onPitRoad,
     playerCarTowTime,
     addLapData,
-    updateLapCrossing,
-    updateLapDistPct,
     sessionNum,
     storedTrackId,
     storedCarName,
@@ -1247,68 +859,21 @@ export function useFuelCalculation(
     // Calculate fuel at finish
     const fuelAtFinish = fuelLevel - lapsRemaining * trendAdjustedConsumption;
 
-    // Consistent projected lap usage with reset detection
-    let projectedLapUsage = 0;
-
-    // Reset smoothing when lap changes
-    if (lastSmoothedLapRef.current !== lap) {
-      smoothedProjectedUsageRef.current = 0;
-      lastSmoothedLapRef.current = lap || 0;
-      if (DEBUG_LOGGING) {
-        logger.info(`[FuelCalculator] Reset smoothing for lap ${lap}`);
-      }
-    }
-
-    // Use definitive projection calculation with reset detection
-    const isLapDistPctReset = lapDistPctResetDetectedRef.current;
-    const definitiveProjection = calculateDefinitiveProjectedUsage(
-      currentLapUsage,
-      lapDistPct || 0,
-      lastLapUsage,
-      avgLaps,
-      qualifyConsumption,
-      lapStartFuel,
-      fuelLevel,
-      isLapDistPctReset
-    );
-
-    // Apply smoothing with adaptive factor
-    const baseSmoothingFactor = 0.1;
-    let progressBasedFactor = Math.min(
-      0.3,
-      baseSmoothingFactor * (1 + (lapDistPct || 0) * 2)
-    );
-
-    // DAMPENING AT END OF LAP: Reduce sensitivity near finish line to prevent spikes
-    // driven by final corner acceleration or lap distance anomalies.
-    if ((lapDistPct || 0) > 0.9) {
-      progressBasedFactor = 0.05; // Very slow updates at end of lap to lock in value
-    }
-
-    if (smoothedProjectedUsageRef.current === 0) {
-      smoothedProjectedUsageRef.current = definitiveProjection;
-    } else {
-      // Clamp the change to prevent massive spikes in a single frame
-      const maxChange = 0.2; // Max 0.2L change per update
-      let targetValue = definitiveProjection;
-
-      const potentialChange = targetValue - smoothedProjectedUsageRef.current;
-      if (Math.abs(potentialChange) > maxChange) {
-        targetValue =
-          smoothedProjectedUsageRef.current +
-          Math.sign(potentialChange) * maxChange;
-      }
-
-      smoothedProjectedUsageRef.current =
-        smoothedProjectedUsageRef.current +
-        (targetValue - smoothedProjectedUsageRef.current) * progressBasedFactor;
-    }
-
-    projectedLapUsage = smoothedProjectedUsageRef.current;
+    const projectedLapUsage =
+      fuelEngineRef.current?.project({
+        currentLapUsage,
+        lapDistPct: lapDistPct || 0,
+        lastLapUsage,
+        avgConsumption: avgLaps,
+        qualifyConsumption,
+        lapStartFuel,
+        currentFuel: fuelLevel,
+        lap,
+      }) ?? 0;
 
     // Detailed log for debug
     if (DEBUG_LOGGING) {
-      if (isLapDistPctReset) {
+      if (fuelEngineRef.current?.snapshot().isLapDistPctReset) {
         logger.info(
           `[FuelCalculator] RESET STATE - lapDistPct: ${lapDistPct?.toFixed(4)}, ` +
             `Projection: ${projectedLapUsage.toFixed(3)}L, ` +
@@ -1327,7 +892,7 @@ export function useFuelCalculation(
           sessionTimeRemain,
           avgLapTime,
           lapsRemaining: lapsRemaining,
-          calculatedProjection: definitiveProjection,
+          calculatedProjection: projectedLapUsage,
         });
       }
     }
@@ -1541,7 +1106,6 @@ export function useFuelCalculation(
     settings,
     qualifyConsumption,
     fuelTankCapacityFromSession,
-    calculateDefinitiveProjectedUsage,
     lapDistPct,
     storeLastLapUsage,
     calculatedTotalRaceLaps,
@@ -1588,7 +1152,8 @@ export function useFuelCalculation(
         storedTrackId,
         storedCarName,
         qualifyConsumption,
-        lapDistPctResetDetected: lapDistPctResetDetectedRef.current,
+        lapDistPctResetDetected:
+          fuelEngineRef.current?.snapshot().isLapDistPctReset ?? false,
       },
       calculation,
     }),

@@ -23,6 +23,11 @@ export interface ReplayProbe<State> {
   readonly variables: readonly string[];
   onSessionInfo?(yaml: string, context: ReplayFrameContext): void;
   onFrame(frame: TelemetryFrame, context: ReplayFrameContext): State;
+  checkpoint?(
+    state: State,
+    frame: TelemetryFrame,
+    context: ReplayFrameContext
+  ): string | undefined;
   onDisconnect?(context: ReplayFrameContext): void;
 }
 
@@ -232,6 +237,12 @@ export async function validateReplay({
             runtime.frameCount += 1;
             if (runtime.frameCount === 1)
               runtime.checkpoints.firstFrame = state;
+            const checkpoint = runtime.probe.checkpoint?.(
+              state,
+              frame,
+              context
+            );
+            if (checkpoint) runtime.checkpoints[checkpoint] = state;
             runtime.checkpoints.lastFrame = state;
           }
           break;
