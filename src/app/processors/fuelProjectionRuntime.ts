@@ -12,6 +12,11 @@ interface PerformanceSections {
   markEnd(label: string): void;
 }
 
+interface FuelProjectionRuntimeOptions {
+  /** Recorded tapes are chronological and safe to aggregate. */
+  aggregateReplay?: boolean;
+}
+
 export class FuelProjectionRuntime {
   private processor?: FuelProjectionProcessor;
   private latestSession?: Session;
@@ -21,7 +26,8 @@ export class FuelProjectionRuntime {
   constructor(
     private readonly bus: ChannelBus,
     lifecycle: SessionLifecycle,
-    private readonly metrics: PerformanceSections
+    private readonly metrics: PerformanceSections,
+    private readonly options: FuelProjectionRuntimeOptions = {}
   ) {
     this.disconnects = [
       bus.onSubscriberCountChanged((channel, count) => {
@@ -30,7 +36,10 @@ export class FuelProjectionRuntime {
         else this.processor = undefined;
       }),
       lifecycle.onEnter(({ replay }) =>
-        this.onLifecycle({ type: 'enter', replay })
+        this.onLifecycle({
+          type: 'enter',
+          replay: replay && !this.options.aggregateReplay,
+        })
       ),
       lifecycle.onSessionNumChange(() =>
         this.onLifecycle({ type: 'sessionNumChange' })

@@ -23,10 +23,24 @@ export interface FuelProjectionEngineSnapshot {
 
 export interface FuelProjectionSnapshot {
   fuelLevel: number;
+  fuelLevelPct: number;
   currentLap: number;
+  lapDistPct: number;
   currentLapUsage: number;
   projectedLapUsage: number;
   lastLapUsage: number;
+  sessionLapsRemain: number;
+  sessionTimeRemain: number;
+  sessionTimeTotal: number;
+  sessionFlags: number;
+  sessionState: number;
+  sessionNum: number;
+  sessionLaps: number | string;
+  sessionType?: string;
+  isOnTrack: boolean;
+  trackId?: string | number;
+  carName?: string;
+  fuelTankCapacity?: number;
   completedLaps: readonly FuelLapData[];
   engine: FuelProjectionEngineSnapshot;
 }

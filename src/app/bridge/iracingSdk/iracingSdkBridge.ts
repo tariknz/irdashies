@@ -146,7 +146,9 @@ export async function publishIRacingSDKEvents(
   perfMetrics.startReporting();
   const fuelProjectionRuntime =
     lifecycle && channelBus
-      ? new FuelProjectionRuntime(channelBus, lifecycle, perfMetrics)
+      ? new FuelProjectionRuntime(channelBus, lifecycle, perfMetrics, {
+          aggregateReplay: isTapeReplay,
+        })
       : undefined;
 
   let shouldStop = false;

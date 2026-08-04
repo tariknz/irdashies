@@ -96,7 +96,7 @@ app.on('ready', async () => {
   setupChromiumFlagsBridge();
 
   // Start component server for browser components
-  await startComponentServer(bridge, dashboardBridge);
+  await startComponentServer(bridge, dashboardBridge, channelBus);
 
   ipcMain.handle('getComponentServerPort', () => getComponentServerPort());
 

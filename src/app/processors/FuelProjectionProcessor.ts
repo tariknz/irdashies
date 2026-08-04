@@ -71,6 +71,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
   private readonly persistLaps: boolean;
   private lastCommands: readonly FuelEngineCommand[] = [];
   private aggregationEnabled = true;
+  private session?: Session;
   private latest: FuelProjectionSnapshot;
 
   constructor(options: FuelProjectionProcessorOptions = {}) {
@@ -84,9 +85,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
   }
 
   init(session: Session): void {
-    // Session fields needed by the complete renderer projection are added when
-    // the Fuel widget migrates. The deterministic lap engine is frame-driven.
-    void session;
+    this.session = session;
   }
 
   onFrame(frame: Telemetry): void {
@@ -96,6 +95,13 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
     const fuelLevel = value(frame, 'FuelLevel');
     const lap = value(frame, 'Lap');
     const lapDistPct = value(frame, 'LapDistPct');
+    const sessionNum = value(frame, 'SessionNum');
+    const sessionInfo = this.session?.SessionInfo?.Sessions?.find(
+      (candidate) => candidate.SessionNum === sessionNum
+    );
+    const driverInfo = this.session?.DriverInfo;
+    const maxFuel = driverInfo?.DriverCarFuelMaxLtr;
+    const maxFuelPct = driverInfo?.DriverCarMaxFuelPct;
     const commands = this.engine.onFrame(
       {
         fuelLevel,
@@ -104,7 +110,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
         onPitRoad: Boolean(value(frame, 'OnPitRoad')),
         playerCarTowTime: value(frame, 'PlayerCarTowTime'),
         sessionFlags: value(frame, 'SessionFlags'),
-        sessionNum: value(frame, 'SessionNum'),
+        sessionNum,
         sessionTime,
       },
       { getRecentLaps: (count) => this.laps.slice(0, count) },
@@ -127,7 +133,9 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
       : 0;
     this.latest = {
       fuelLevel,
+      fuelLevelPct: value(frame, 'FuelLevelPct'),
       currentLap: lap,
+      lapDistPct,
       currentLapUsage,
       projectedLapUsage: this.engine.project({
         avgConsumption: average,
@@ -140,6 +148,25 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
         qualifyConsumption: null,
       }),
       lastLapUsage: this.laps[0]?.fuelUsed ?? 0,
+      sessionLapsRemain: value(frame, 'SessionLapsRemain'),
+      sessionTimeRemain: value(frame, 'SessionTimeRemain'),
+      sessionTimeTotal: value(frame, 'SessionTimeTotal'),
+      sessionFlags: value(frame, 'SessionFlags'),
+      sessionState: value(frame, 'SessionState'),
+      sessionNum,
+      sessionLaps: sessionInfo?.SessionLaps ?? 0,
+      sessionType: sessionInfo?.SessionType,
+      isOnTrack: Boolean(value(frame, 'IsOnTrack')),
+      trackId:
+        this.session?.WeekendInfo?.TrackName ??
+        this.session?.WeekendInfo?.TrackID,
+      carName: driverInfo?.Drivers?.find(
+        (driver) => driver.CarIdx === driverInfo.DriverCarIdx
+      )?.CarPath,
+      fuelTankCapacity:
+        maxFuel !== undefined && maxFuelPct !== undefined
+          ? maxFuel * maxFuelPct
+          : maxFuel,
       completedLaps: this.laps,
       engine,
     };
@@ -156,6 +183,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
       return;
     }
     this.reset();
+    this.session = undefined;
     this.aggregationEnabled = false;
   }
 
@@ -192,10 +220,20 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
   private emptySnapshot(): FuelProjectionSnapshot {
     return {
       fuelLevel: 0,
+      fuelLevelPct: 0,
       currentLap: 0,
+      lapDistPct: 0,
       currentLapUsage: 0,
       projectedLapUsage: 0,
       lastLapUsage: 0,
+      sessionLapsRemain: 0,
+      sessionTimeRemain: 0,
+      sessionTimeTotal: 0,
+      sessionFlags: 0,
+      sessionState: 0,
+      sessionNum: 0,
+      sessionLaps: 0,
+      isOnTrack: false,
       completedLaps: this.laps,
       engine: this.engine.snapshot(),
     };

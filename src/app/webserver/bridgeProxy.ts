@@ -4,6 +4,7 @@ import type { Telemetry, Session, DashboardLayout } from '@irdashies/types';
 import type { IrSdkBridge, DashboardBridge } from '@irdashies/types';
 import { getIsDemoMode } from '../bridge/iracingSdk/setup';
 import logger from '../logger';
+import type { ChannelBus } from '../bridge/channelBridge';
 
 // Export current state so it can be accessed by other parts of the app
 export let currentDashboard: DashboardLayout | null = null;
@@ -15,11 +16,13 @@ export let currentDashboard: DashboardLayout | null = null;
 export function createBridgeProxy(
   httpServer: HTTPServer,
   irsdkBridge: IrSdkBridge,
-  dashboardBridge?: DashboardBridge
+  dashboardBridge?: DashboardBridge,
+  channelBus?: ChannelBus
 ) {
   const wss = new WebSocketServer({ server: httpServer });
 
   const clients = new Set<WebSocket>();
+  let nextChannelTargetId = -1;
   let currentTelemetry: Telemetry | null = null;
   let currentSession: Session | null = null;
   let isRunning = false;
@@ -103,6 +106,18 @@ export function createBridgeProxy(
 
   wss.on('connection', (ws: WebSocket) => {
     clients.add(ws);
+    const channelTarget = {
+      id: nextChannelTargetId--,
+      isDestroyed: () => ws.readyState === WebSocket.CLOSED,
+      isVisible: () => ws.readyState === WebSocket.OPEN,
+      send: (_delivery: string, channel: string, payload: unknown) => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(
+            JSON.stringify({ type: 'channel', data: { channel, payload } })
+          );
+        }
+      },
+    };
 
     if (unsubscribeFunctions.length === 0) {
       logger.info('No active subscriptions, subscribing to bridge...');
@@ -127,6 +142,26 @@ export function createBridgeProxy(
         const parsed = JSON.parse(message.toString());
 
         switch (parsed.type) {
+          case 'channelSubscribe': {
+            const channel = parsed.data?.channel;
+            const rate = parsed.data?.requestedRateHz;
+            if (
+              typeof channel !== 'string' ||
+              (rate !== undefined && typeof rate !== 'number')
+            ) {
+              throw new Error('Invalid channel subscription');
+            }
+            channelBus?.subscribe(channelTarget, channel, rate);
+            break;
+          }
+          case 'channelUnsubscribe': {
+            const channel = parsed.data?.channel;
+            if (typeof channel !== 'string') {
+              throw new Error('Invalid channel unsubscribe');
+            }
+            channelBus?.unsubscribe(channelTarget.id, channel);
+            break;
+          }
           case 'getDashboard':
             ws.send(
               JSON.stringify({
@@ -296,6 +331,7 @@ export function createBridgeProxy(
 
     ws.on('close', () => {
       clients.delete(ws);
+      channelBus?.removeRenderer(channelTarget.id);
 
       if (clients.size === 0) {
         logger.info('No clients connected, unsubscribing from bridge...');

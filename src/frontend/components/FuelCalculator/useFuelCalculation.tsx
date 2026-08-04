@@ -2,17 +2,11 @@
 /* eslint-disable no-useless-assignment */
 /**
  * Hook for calculating fuel metrics from telemetry data
- * Follows irdashies pattern using useTelemetryValues and Zustand store
+ * Applies renderer settings to the main-process fuel projection snapshot.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  useSessionLaps,
-  useSessionStore,
-  useTelemetryValue,
-  useTotalRaceValue,
-} from '@irdashies/context';
-import { useStore } from 'zustand';
+import { useFuelProjectionSnapshot } from '@irdashies/context';
 import {
   useFuelStore,
   selectLapHistorySize,
@@ -21,17 +15,14 @@ import {
 import type { FuelCalculation, FuelCalculatorSettings } from './types';
 import { useFuelLogger } from './useFuelLogger';
 import {
-  validateLapData,
   calculateSimpleAverage,
   calculateAvgLapTime,
   findFuelMinMax,
   getGreenFlagLaps,
-  isGreenFlag,
   isFinalLap,
   isCheckeredFlag,
 } from './fuelCalculations';
 import logger from '@irdashies/utils/logger';
-import { FuelProjectionEngine } from '@irdashies/shared';
 
 /** Enable debug logging (set to true for testing/troubleshooting) */
 const DEBUG_LOGGING = false;
@@ -55,68 +46,28 @@ export function useFuelCalculation(
   safetyMargin = 0.3,
   settings?: FuelCalculatorSettings
 ): FuelCalculation | null {
-  const fuelLevel = useTelemetryValue('FuelLevel');
-  const fuelLevelPct = useTelemetryValue('FuelLevelPct');
-  const lap = useTelemetryValue('Lap');
-  const lapDistPct = useTelemetryValue('LapDistPct');
-  const sessionLapsRemain = useTelemetryValue('SessionLapsRemain');
-  const sessionTimeRemain = useTelemetryValue('SessionTimeRemain');
-  const sessionTimeTotal = useTelemetryValue('SessionTimeTotal');
-  const sessionFlags = useTelemetryValue('SessionFlags');
-  const sessionTime = useTelemetryValue('SessionTime');
-  const sessionNum = useTelemetryValue('SessionNum');
-  const sessionState = useTelemetryValue('SessionState');
-  const sessionLaps = useSessionLaps(sessionNum);
-  const onPitRoad = useTelemetryValue('OnPitRoad');
-  const isOnTrack = useTelemetryValue('IsOnTrack');
-
-  // Use centralized total race laps calculation
-  const { isFixedLapRace, totalRaceLaps: calculatedTotalRaceLaps } =
-    useTotalRaceValue();
-
-  // Check if current session is a Race
-  const sessions = useStore(
-    useSessionStore,
-    (state) => state.session?.SessionInfo?.Sessions
-  );
-  const isRace =
-    sessionNum !== undefined && sessions?.[sessionNum]?.SessionType === 'Race';
-
-  // Get fuel tank capacity from DriverInfo
-  const driverCarFuelMaxLtr = useStore(
-    useSessionStore,
-    (state) => state.session?.DriverInfo?.DriverCarFuelMaxLtr
-  );
-
-  // Get maximum fuel percentage allowed by session (e.g., 0.6 for 60% tank limit)
-  const driverCarMaxFuelPct = useStore(
-    useSessionStore,
-    (state) => state.session?.DriverInfo?.DriverCarMaxFuelPct
-  );
-
-  // Calculate actual tank capacity respecting session limits
-  const fuelTankCapacityFromSession =
-    driverCarFuelMaxLtr !== undefined && driverCarMaxFuelPct !== undefined
-      ? driverCarFuelMaxLtr * driverCarMaxFuelPct
-      : driverCarFuelMaxLtr;
-
-  // Get track ID to detect track changes
-  const rawTrackId = useStore(
-    useSessionStore,
-    (state) => state.session?.WeekendInfo?.TrackID
-  );
-  const trackName = useStore(
-    useSessionStore,
-    (state) => state.session?.WeekendInfo?.TrackName
-  );
-
-  // Use TrackName as primary key to prevent ID collisions
-  const trackId = trackName ?? rawTrackId;
+  const projection = useFuelProjectionSnapshot();
+  const fuelLevel = projection?.fuelLevel;
+  const fuelLevelPct = projection?.fuelLevelPct;
+  const lap = projection?.currentLap;
+  const lapDistPct = projection?.lapDistPct;
+  const sessionLapsRemain = projection?.sessionLapsRemain;
+  const sessionTimeRemain = projection?.sessionTimeRemain;
+  const sessionTimeTotal = projection?.sessionTimeTotal;
+  const sessionFlags = projection?.sessionFlags;
+  const sessionNum = projection?.sessionNum;
+  const sessionState = projection?.sessionState;
+  const sessionLaps = projection?.sessionLaps;
+  const isOnTrack = projection?.isOnTrack;
+  const isFixedLapRace = sessionLapsRemain !== TIMED_RACE_LAPS_REMAINING;
+  const calculatedTotalRaceLaps = 0;
+  const isRace = projection?.sessionType === 'Race';
+  const fuelTankCapacityFromSession = projection?.fuelTankCapacity;
+  const trackId = projection?.trackId;
 
   // Store actions (stable references)
   const updateSessionInfo = useFuelStore((state) => state.updateSessionInfo);
   const clearAllData = useFuelStore((state) => state.clearAllData);
-  const addLapData = useFuelStore((state) => state.addLapData);
   const setContextInfo = useFuelStore((state) => state.setContextInfo);
   const storedTrackId = useFuelStore((state) => state.trackId);
   const storedCarName = useFuelStore((state) => state.carName);
@@ -139,20 +90,7 @@ export function useFuelCalculation(
   // Ref to track the currently loaded context (Track + Car) to avoid redundant clears/loads
 
   const loadedContextRef = useRef<string | null>(null);
-
-  const fuelEngineRef = useRef<FuelProjectionEngine | null>(null);
-  if (fuelEngineRef.current === null) {
-    const initial = useFuelStore.getState();
-    fuelEngineRef.current = new FuelProjectionEngine(
-      { now: () => Date.now() },
-      {
-        debug: DEBUG_LOGGING
-          ? (message) => logger.debug(`[FuelCalculator] ${message}`)
-          : () => undefined,
-      },
-      initial
-    );
-  }
+  const savedLapKeysRef = useRef(new Set<string>());
 
   // Race Finish Detection
 
@@ -187,11 +125,7 @@ export function useFuelCalculation(
   }, [isOnTrack, settings?.enableLogging]);
 
   useEffect(() => {
-    const currentCarName = (
-      useSessionStore.getState().session?.DriverInfo as {
-        DriverCarName?: string;
-      }
-    )?.DriverCarName;
+    const currentCarName = projection?.carName;
 
     const currentContext =
       trackId !== undefined && currentCarName !== undefined
@@ -210,12 +144,12 @@ export function useFuelCalculation(
 
       // Update ref immediately to prevent race conditions from additional renders
       loadedContextRef.current = currentContext;
+      savedLapKeysRef.current.clear();
 
       // ALWAYS clear current volatile data ONLY when context really changes to prevent leakage
       // This ONLY clears browser memory for the current session, NOT the database historical array.
       clearAllData();
       setQualifyConsumption(null);
-      fuelEngineRef.current?.reset();
 
       if (settings?.enableStorage ?? true) {
         const [tId, cName] = currentContext.split(':');
@@ -265,78 +199,45 @@ export function useFuelCalculation(
     setContextInfo,
     setQualifyConsumption,
     settings?.enableStorage,
+    projection?.carName,
   ]);
 
-  const playerCarTowTime = useTelemetryValue('PlayerCarTowTime');
-
-  // Adapt telemetry subscriptions to the deterministic engine and execute its
-  // persistence commands outside the calculation core.
+  useEffect(() => {
+    if (!projection) return;
+    const state = useFuelStore.getState();
+    const historical = state
+      .getLapHistory()
+      .filter((completed) => completed.isHistorical);
+    state.setLapHistory([...projection.completedLaps, ...historical]);
+    useFuelStore.setState(projection.engine);
+  }, [projection]);
 
   useEffect(() => {
     if (
-      lapDistPct === undefined ||
-      fuelLevel === undefined ||
-      sessionTime === undefined ||
-      lap === undefined ||
-      sessionFlags === undefined ||
-      onPitRoad === undefined
-    )
+      !(settings?.enableStorage ?? true) ||
+      storedTrackId === undefined ||
+      storedCarName === undefined
+    ) {
       return;
-
-    const state = useFuelStore.getState();
-    const commands = fuelEngineRef.current?.onFrame(
-      {
-        fuelLevel,
-        lap,
-        lapDistPct,
-        onPitRoad: onPitRoad === 1,
-        playerCarTowTime: playerCarTowTime ?? 0,
-        sessionFlags,
-        sessionNum,
-        sessionTime,
-      },
-      state,
-      validateLapData,
-      isGreenFlag,
-      { persistLaps: settings?.enableStorage ?? true }
-    );
-    for (const command of commands ?? []) {
-      if (command.type === 'lapCompleted') {
-        addLapData(command.lap);
-      } else if (storedTrackId !== undefined && storedCarName !== undefined) {
-        window.fuelCalculatorBridge.saveLap(
-          storedTrackId,
-          storedCarName,
-          command.lap
-        );
-      }
     }
-    const engineState = fuelEngineRef.current?.snapshot();
-    if (engineState) {
-      useFuelStore.setState(engineState);
+    for (const completed of projection?.completedLaps ?? []) {
+      const key = `${completed.sessionNum ?? -1}:${completed.lapNumber}:${completed.timestamp ?? 0}`;
+      if (savedLapKeysRef.current.has(key)) continue;
+      savedLapKeysRef.current.add(key);
+      window.fuelCalculatorBridge
+        ?.saveLap(storedTrackId, storedCarName, completed)
+        .catch(logger.error);
     }
   }, [
-    lapDistPct,
-    fuelLevel,
-    sessionTime,
-    lap,
-    sessionFlags,
-    onPitRoad,
-    playerCarTowTime,
-    addLapData,
-    sessionNum,
-    storedTrackId,
-    storedCarName,
+    projection?.completedLaps,
     settings?.enableStorage,
+    storedCarName,
+    storedTrackId,
   ]);
 
   // Track Max Qualifying Consumption
   useEffect(() => {
-    const currentSessionType = useSessionStore
-      .getState()
-      .session?.SessionInfo?.Sessions?.find(
-        (s) => s.SessionNum === sessionNum
-      )?.SessionType;
+    const currentSessionType = projection?.sessionType;
 
     const isQualifying =
       currentSessionType && currentSessionType.includes('Qualify');
@@ -393,6 +294,7 @@ export function useFuelCalculation(
     storedTrackId,
     storedCarName,
     settings?.enableStorage,
+    projection?.sessionType,
   ]);
 
   // Monitor for Race Finish
@@ -859,21 +761,11 @@ export function useFuelCalculation(
     // Calculate fuel at finish
     const fuelAtFinish = fuelLevel - lapsRemaining * trendAdjustedConsumption;
 
-    const projectedLapUsage =
-      fuelEngineRef.current?.project({
-        currentLapUsage,
-        lapDistPct: lapDistPct || 0,
-        lastLapUsage,
-        avgConsumption: avgLaps,
-        qualifyConsumption,
-        lapStartFuel,
-        currentFuel: fuelLevel,
-        lap,
-      }) ?? 0;
+    const projectedLapUsage = projection?.projectedLapUsage ?? 0;
 
     // Detailed log for debug
     if (DEBUG_LOGGING) {
-      if (fuelEngineRef.current?.snapshot().isLapDistPctReset) {
+      if (projection?.engine.isLapDistPctReset) {
         logger.info(
           `[FuelCalculator] RESET STATE - lapDistPct: ${lapDistPct?.toFixed(4)}, ` +
             `Projection: ${projectedLapUsage.toFixed(3)}L, ` +
@@ -886,8 +778,7 @@ export function useFuelCalculation(
           tankCapacity: fuelTankCapacity,
           calculatedFromPct:
             fuelLevelPct && fuelLevelPct > 0 ? fuelLevel / fuelLevelPct : 'N/A',
-          driverCarFuelMaxLtr,
-          driverCarMaxFuelPct,
+          fuelTankCapacityFromSession,
           sessionLapsRemain,
           sessionTimeRemain,
           avgLapTime,
@@ -915,11 +806,7 @@ export function useFuelCalculation(
     let fuelStatus: 'safe' | 'caution' | 'danger' = 'safe';
 
     const currentFuelPctValue = (fuelLevelPct ?? 0) * 100;
-    const sessionType = useSessionStore
-      .getState()
-      .session?.SessionInfo?.Sessions?.find(
-        (s) => s.SessionNum === sessionNum
-      )?.SessionType;
+    const sessionType = projection?.sessionType;
 
     const isQualifyingOrPractice =
       sessionType &&
@@ -1099,8 +986,6 @@ export function useFuelCalculation(
     sessionTimeRemain,
     sessionTimeTotal,
     sessionFlags,
-    driverCarFuelMaxLtr,
-    driverCarMaxFuelPct,
     safetyMargin,
     lapStartFuel,
     settings,
@@ -1110,6 +995,7 @@ export function useFuelCalculation(
     storeLastLapUsage,
     calculatedTotalRaceLaps,
     lapHistorySize,
+    projection,
   ]);
 
   // Wrap calculation to apply overrides (Race Finish)
@@ -1152,8 +1038,7 @@ export function useFuelCalculation(
         storedTrackId,
         storedCarName,
         qualifyConsumption,
-        lapDistPctResetDetected:
-          fuelEngineRef.current?.snapshot().isLapDistPctReset ?? false,
+        lapDistPctResetDetected: projection?.engine.isLapDistPctReset ?? false,
       },
       calculation,
     }),
@@ -1171,6 +1056,7 @@ export function useFuelCalculation(
       storedTrackId,
       storedCarName,
       qualifyConsumption,
+      projection,
       calculation,
     ]
   );

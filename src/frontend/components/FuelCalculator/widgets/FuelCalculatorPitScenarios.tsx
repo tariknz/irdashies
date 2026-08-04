@@ -1,6 +1,6 @@
 import React from 'react';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
-import { useTelemetryValue, useSessionType } from '@irdashies/context';
+import { useFuelProjectionSnapshot } from '@irdashies/context';
 
 interface FuelCalculatorWidgetProps {
   fuelData: FuelCalculation | null;
@@ -137,8 +137,7 @@ export const FuelCalculatorPitScenarios: React.FC<
       ? `${widgetStyle.fontSize}px`
       : '12px';
 
-  const sessionNum = useTelemetryValue('SessionNum');
-  const sessionType = useSessionType(sessionNum);
+  const sessionType = useFuelProjectionSnapshot()?.sessionType;
   const isTesting = sessionType === 'Offline Testing';
 
   // Determine visibility based on settings (default true if missing)

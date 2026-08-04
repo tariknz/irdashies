@@ -11,7 +11,7 @@ import {
   SessionProvider,
   TelemetryProvider,
 } from '@irdashies/context';
-import type { DashboardBridge } from '@irdashies/types';
+import type { DashboardBridge, FuelCalculatorBridge } from '@irdashies/types';
 
 // Get profileId from URL params
 const urlParams = new URLSearchParams(window.location.search);
@@ -29,6 +29,17 @@ async function initializeDashboardView() {
   const bridge = new WebSocketBridge();
 
   await bridge.connect(wsUrl);
+  window.channelBridge = bridge;
+  window.fuelCalculatorBridge = {
+    getHistoricalLaps: async () => [],
+    saveLap: async () => undefined,
+    clearHistory: async () => undefined,
+    clearAllHistory: async () => undefined,
+    getQualifyMax: async () => null,
+    saveQualifyMax: async () => undefined,
+    startNewLog: async () => undefined,
+    logData: async () => undefined,
+  } satisfies FuelCalculatorBridge;
 
   const rootElement = document.getElementById('root');
   if (!rootElement) {
