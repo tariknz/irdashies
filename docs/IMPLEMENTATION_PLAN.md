@@ -225,6 +225,10 @@ Lower-urgency investigations kept on the plan to avoid losing them. The Empty Da
 
 Replaces the single firehose `'telemetry'` IPC broadcast with per-channel publish/subscribe so each renderer only receives the data its mounted widgets ask for, at the rate they ask for it.
 
+The detailed PR sequence, design decisions, merge gates, and curated replay
+validation strategy are documented in
+[`PHASE_3_CHANNEL_BRIDGE_PLAN.md`](./PHASE_3_CHANNEL_BRIDGE_PLAN.md).
+
 **Core plumbing:**
 
 - [ ] `publishChannel(channel, payload)` / `useChannelSnapshot(channel)` plumbing
