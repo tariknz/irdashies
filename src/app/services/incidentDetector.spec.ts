@@ -409,6 +409,11 @@ describe('contact detection', () => {
 
   // Puts one car off the road at a given place and time. Surfaces are fed
   // one frame at a time so each car's debounce trips independently.
+  //
+  // Only safe for negative assertions or a single call: the idle car holds a
+  // fixed position, so a second call at a different position makes it appear
+  // to jump, which fabricates a speed spike and then a speed loss. Tests that
+  // depend on speed should drive both cars continuously instead.
   const runOffTrack = (
     detector: IncidentDetector,
     carIdx: number,
@@ -443,16 +448,76 @@ describe('contact detection', () => {
     detector.onIncident((i) => incidents.push(i));
     detector.updateSession(twoCars);
 
-    // Car A leaves the road, then car B does so 2s later, ~25m away — the
-    // real-world spacing seen in the logged collision.
-    runOffTrack(detector, 0, 0.5655, 790.5);
-    runOffTrack(detector, 1, 0.5668, 792.5);
+    // Car A is hit and slows sharply; car B runs on and leaves the road ~2s
+    // later, ~25m away — the spacing seen in the logged collision. Positions
+    // advance every tick for both so no artificial speed spike is introduced.
+    const FAST = 0.0000753; // ~113 km/h on a 20.8km track at 20Hz
+    const pct = [0.5655, 0.5653];
+    let t = 790;
+    for (let i = 0; i < 30; i++) {
+      // Car A is hit at tick 10 and loses most of its speed. Car B is
+      // unaffected and keeps its pace, leaving the road shortly after.
+      pct[0] += i < 10 ? FAST : FAST * 0.15;
+      pct[1] += FAST;
+      t += 0.05;
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [pct[0], pct[1]],
+          carIdxTrackSurface: [
+            i >= 12 && i <= 16 ? TrackLocation.OffTrack : TrackLocation.OnTrack,
+            i >= 20 && i <= 24 ? TrackLocation.OffTrack : TrackLocation.OnTrack,
+          ],
+          carIdxOnPitRoad: [false, false],
+          carIdxSessionFlags: [0, 0],
+          sessionTime: t,
+        }),
+        20832
+      );
+    }
 
     const forB = incidents.filter((i) => i.carIdx === 1);
     expect(forB.some((i) => i.type === IncidentType.Crash)).toBe(true);
     expect(
       forB.find((i) => i.type === IncidentType.Crash)?.debug?.evidence
     ).toContain('#15');
+  });
+
+  it('does not pair two cars that run wide at the same corner without losing speed', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(twoCars);
+
+    // Both cars miss the apex at a steady ~113 km/h and carry straight on at
+    // unchanged pace — close together and moments apart, but nobody was hit.
+    // Positions advance every tick for both cars so no artificial speed spike
+    // is introduced.
+    const STEP = 0.0000753; // ~113 km/h on a 20.8km track at 20Hz
+    const pct = [0.2263, 0.2255];
+    let t = 329;
+    for (let i = 0; i < 30; i++) {
+      pct[0] += STEP;
+      pct[1] += STEP;
+      t += 0.05;
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [pct[0], pct[1]],
+          carIdxTrackSurface: [
+            i >= 10 && i <= 14 ? TrackLocation.OffTrack : TrackLocation.OnTrack,
+            i >= 18 && i <= 22 ? TrackLocation.OffTrack : TrackLocation.OnTrack,
+          ],
+          carIdxOnPitRoad: [false, false],
+          carIdxSessionFlags: [0, 0],
+          sessionTime: t,
+        }),
+        20832
+      );
+    }
+
+    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
+    expect(
+      incidents.filter((i) => i.type === IncidentType.OffTrack).length
+    ).toBe(2);
   });
 
   it('leaves a lone off-track as an OffTrack incident', () => {

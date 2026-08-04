@@ -18,6 +18,14 @@ const CONTACT_WINDOW_S = 3;
 /** How far apart on track, in metres, two cars can be and still be paired. */
 const CONTACT_DISTANCE_M = 30;
 /**
+ * Contact is only inferred when at least one of the pair actually lost speed.
+ * Two cars running wide at the same corner at unchanged pace have not hit each
+ * other — they have both just missed the apex, which is a routine off-track.
+ */
+const CONTACT_SPEED_LOSS_RATIO = 0.7;
+/** Per-tick decay on the peak speed, giving a window of roughly two seconds. */
+const PEAK_SPEED_DECAY = 0.98;
+/**
  * Frames of per-car history kept for incident debug snapshots (dev only).
  * At ~20Hz this is roughly 3 seconds. Ten frames — half a second — consistently
  * showed only the aftermath: a spun car was already accelerating away again by
@@ -58,7 +66,7 @@ export class IncidentDetector {
    */
   private lastAnomaly = new Map<
     number,
-    { sessionTime: number; lapDistPct: number }
+    { sessionTime: number; lapDistPct: number; lostSpeed: boolean }
   >();
   private lastSubSessionId: string | null = null;
   private lastSessionNum: number | null = null;
@@ -216,6 +224,7 @@ export class IncidentDetector {
         speedHistory: [],
         currentAvgSpeed: 0,
         recentRawSpeeds: [],
+        recentPeakSpeed: 0,
         slowFrameCount: 0,
         offTrackFrameCount: 0,
         onPitRoadFrameCount: 0,
@@ -250,20 +259,33 @@ export class IncidentDetector {
    * paired, which is why the evidence says "likely contact" rather than
    * asserting it.
    */
+  /**
+   * True when the car is meaningfully slower than it was a moment ago. Used to
+   * tell a car that was hit from one that simply ran wide at unchanged pace.
+   */
+  private hasLostSpeed(state: CarIncidentState): boolean {
+    if (state.recentPeakSpeed <= 0) return false;
+    return (
+      state.currentAvgSpeed < state.recentPeakSpeed * CONTACT_SPEED_LOSS_RATIO
+    );
+  }
+
   /** Remembers where and when a car got into trouble, for contact pairing. */
   private recordAnomaly(
     carIdx: number,
     sessionTime: number,
-    lapDistPct: number
+    lapDistPct: number,
+    lostSpeed: boolean
   ) {
-    this.lastAnomaly.set(carIdx, { sessionTime, lapDistPct });
+    this.lastAnomaly.set(carIdx, { sessionTime, lapDistPct, lostSpeed });
   }
 
   private findContactPartner(
     carIdx: number,
     sessionTime: number,
     lapDistPct: number,
-    trackLengthM: number
+    trackLengthM: number,
+    lostSpeed: boolean
   ): { name: string; carNumber: string } | null {
     if (!trackLengthM) return null;
     const maxPctApart = CONTACT_DISTANCE_M / trackLengthM;
@@ -272,6 +294,11 @@ export class IncidentDetector {
       if (otherIdx === carIdx) continue;
       if (Math.abs(sessionTime - anomaly.sessionTime) > CONTACT_WINDOW_S)
         continue;
+
+      // Proximity alone pairs cars that independently ran wide at the same
+      // corner, which happens constantly at some tracks. Require that the
+      // incident actually cost somebody speed.
+      if (!lostSpeed && !anomaly.lostSpeed) continue;
 
       // Shortest way round the lap, so cars either side of the start/finish
       // line still register as adjacent.
@@ -421,6 +448,13 @@ export class IncidentDetector {
           state.speedHistory.reduce((a, b) => a + b, 0) /
           state.speedHistory.length;
 
+        // Decayed peak, so "has this car lost speed" compares against what it
+        // was doing a moment ago rather than its fastest all lap.
+        state.recentPeakSpeed = Math.max(
+          speedSample,
+          state.recentPeakSpeed * PEAK_SPEED_DECAY
+        );
+
         this.pushFrameHistory(carIdx, {
           speed: speedSample,
           lapDistPct: snap.carIdxLapDistPct[carIdx] ?? 0,
@@ -437,11 +471,13 @@ export class IncidentDetector {
           // Another car in trouble at the same place and moment turns a lone
           // excursion into a contact, which is reported as a Crash so it is
           // not lost among routine off-tracks.
+          const lostSpeed = this.hasLostSpeed(state);
           const partner = this.findContactPartner(
             carIdx,
             snap.sessionTime,
             lapDistPct,
-            trackLengthM
+            trackLengthM,
+            lostSpeed
           );
           const type = partner ? IncidentType.Crash : IncidentType.OffTrack;
 
@@ -460,7 +496,7 @@ export class IncidentDetector {
               debug,
             });
           }
-          this.recordAnomaly(carIdx, snap.sessionTime, lapDistPct);
+          this.recordAnomaly(carIdx, snap.sessionTime, lapDistPct, lostSpeed);
         }
       } else {
         state.offTrackFrameCount = 0;
@@ -544,10 +580,12 @@ export class IncidentDetector {
               ...this.createIncidentBase(carIdx, snap, IncidentType.Crash),
               debug,
             });
+            // A car that crashed has lost speed by definition.
             this.recordAnomaly(
               carIdx,
               snap.sessionTime,
-              snap.carIdxLapDistPct[carIdx] ?? 0
+              snap.carIdxLapDistPct[carIdx] ?? 0,
+              true
             );
           }
         } else {
@@ -591,10 +629,12 @@ export class IncidentDetector {
             ...this.createIncidentBase(carIdx, snap, IncidentType.Crash),
             debug,
           });
+          // A car that crashed has lost speed by definition.
           this.recordAnomaly(
             carIdx,
             snap.sessionTime,
-            snap.carIdxLapDistPct[carIdx] ?? 0
+            snap.carIdxLapDistPct[carIdx] ?? 0,
+            true
           );
         }
       }

@@ -71,6 +71,8 @@ export interface CarIncidentState {
   speedHistory: number[];
   currentAvgSpeed: number;
   recentRawSpeeds: number[];
+  /** Highest recent speed, decayed each tick so it reflects the last ~2s. */
+  recentPeakSpeed: number;
   slowFrameCount: number;
   offTrackFrameCount: number;
   onPitRoadFrameCount: number;
