@@ -150,6 +150,13 @@ export const setupRaceControlBridge = () => {
     return clearIncidents(currentSessionId);
   });
 
+  ipcMain.handle('raceControl:focusDriver', (_event, carNumber: string) => {
+    const bridge = getCurrentBridge();
+    if (!bridge) return;
+    logger.info(`[RaceControl] focusDriver #${carNumber}`);
+    bridge.changeCameraNumber(carNumber, 0, 0);
+  });
+
   ipcMain.handle(
     'raceControl:replayIncident',
     (_event, incident: Incident, seconds: number) => {

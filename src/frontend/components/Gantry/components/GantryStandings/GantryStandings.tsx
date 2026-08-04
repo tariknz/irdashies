@@ -1,5 +1,6 @@
-import { memo, useEffect, useRef, useMemo } from 'react';
+import { memo, useCallback, useEffect, useRef, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
+import logger from '@irdashies/utils/logger';
 import { formatTime } from '@irdashies/utils/time';
 import { Compound } from '../../../Standings/components/Compound/Compound';
 import { DriverRatingBadge } from '../../../Standings/components/DriverRatingBadge/DriverRatingBadge';
@@ -38,6 +39,14 @@ const formatInterval = (
 export const GantryStandings = memo(({ followedCarIdx }: Props) => {
   const standingsByClass = useDriverStandings(undefined, { showAll: true });
   const followedRef = useRef<HTMLDivElement | null>(null);
+
+  // Clicking a row points the sim's camera at that car. Only meaningful in a
+  // replay or when spectating; iRacing ignores it while you are driving.
+  const handleFocusDriver = useCallback((carNumber: string) => {
+    window.raceControlBridge
+      ?.focusDriver(carNumber)
+      .catch((err) => logger.warn('[Gantry] focusDriver failed:', err));
+  }, []);
   const highlightColor = useHighlightColor();
   const highlightColorHex = `#${highlightColor.toString(16).padStart(6, '0')}`;
 
@@ -87,6 +96,7 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
                   followedRef={followedRef}
                   isMultiClass={isMultiClass}
                   highlightColorHex={highlightColorHex}
+                  onFocusDriver={handleFocusDriver}
                 />
               ))}
             </div>
@@ -105,6 +115,7 @@ interface GantryDriverRowProps {
   followedRef: React.RefObject<HTMLDivElement | null>;
   isMultiClass: boolean;
   highlightColorHex: string;
+  onFocusDriver: (carNumber: string) => void;
 }
 
 const GantryDriverRow = memo(
@@ -115,6 +126,7 @@ const GantryDriverRow = memo(
     followedRef,
     isMultiClass,
     highlightColorHex,
+    onFocusDriver,
   }: GantryDriverRowProps) => {
     const isPlayer = driver.isPlayer;
     const isFollowed = driver.carIdx === followedCarIdx;
@@ -146,6 +158,16 @@ const GantryDriverRow = memo(
     return (
       <div
         ref={isFollowed ? followedRef : undefined}
+        role="button"
+        tabIndex={0}
+        title={`Watch ${driver.driver.name}`}
+        onClick={() => onFocusDriver(driver.driver.carNum)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onFocusDriver(driver.driver.carNum);
+          }
+        }}
         style={
           isFollowed
             ? ({ '--tw-ring-color': highlightColorHex } as React.CSSProperties)
@@ -153,6 +175,7 @@ const GantryDriverRow = memo(
         }
         className={[
           'flex items-center px-1 py-px text-xs border-b border-white/5 transition-opacity duration-150',
+          'cursor-pointer hover:bg-sky-500/20 focus:outline-none focus:ring-1 focus:ring-sky-400',
           idx % 2 === 0 ? 'bg-slate-800/70' : 'bg-slate-900/70',
           isPlayer ? 'bg-yellow-500/20 text-amber-300' : '',
           isFollowed ? 'ring-1 relative z-10' : '',

@@ -41,6 +41,23 @@ const makeTelemetry = (
   ...overrides,
 });
 
+// A one-car Race session. SessionType matters: sustained-slow only reports in
+// a race, because stopping is routine in practice and qualifying.
+const raceSession = () => ({
+  SessionInfo: { Sessions: [{ SessionNum: 0, SessionType: 'Race' }] },
+  DriverInfo: {
+    Drivers: [
+      {
+        CarIdx: 0,
+        UserName: 'Test',
+        CarNumber: '99',
+        TeamName: '',
+        CarIsPaceCar: 0,
+      },
+    ],
+  },
+});
+
 describe('IncidentDetector - speed calculation', () => {
   it('calculates speed from lapDistPct delta and track length', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
@@ -220,19 +237,7 @@ describe('sudden stop - session changeover', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     // Four frames at ~225 km/h to fill the suddenStopFrames buffer...
     let pct = 0.5;
@@ -265,19 +270,7 @@ describe('sudden stop - session changeover', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     // Car circulating at speed near the end of the previous session.
     let pct = 0.5;
@@ -320,19 +313,7 @@ describe('crash detection - off the racing surface', () => {
     );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     // Runs wide onto the gravel, straddling the edge (surface flickers
     // OnTrack/OffTrack) while scrubbing off speed.
@@ -383,19 +364,7 @@ describe('crash detection - off the racing surface', () => {
     );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     let pct = 0.1;
     let t = 100;
@@ -533,19 +502,7 @@ describe('pit entry detection', () => {
     );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     // Seed frame (not on pit road)
     detector.processTelemetry(
@@ -582,19 +539,7 @@ describe('pit entry detection', () => {
     );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     // Seed, then one blip on pit road, then back off
     detector.processTelemetry(
@@ -620,19 +565,7 @@ describe('off-track detection', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     // 1 off-track frame, debounce is 3 → no incident
     detector.processTelemetry(
@@ -649,19 +582,7 @@ describe('off-track detection', () => {
     );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     // Seed frame (on-track) so detector has prev state before we count
     // off-track frames for the debounce.
@@ -693,19 +614,7 @@ describe('crash detection - sustained slow', () => {
     );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     // Seed frame first (establishes prev state; no detection runs).
     detector.processTelemetry(
@@ -739,19 +648,7 @@ describe('crash detection - sustained slow', () => {
     );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     detector.processTelemetry(
       makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
@@ -775,19 +672,7 @@ describe('crash detection - sustained slow', () => {
     );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     detector.processTelemetry(
       makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
@@ -810,14 +695,18 @@ describe('crash detection - sustained slow', () => {
     expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
   });
 
-  it('does not fire while car is on pit road', () => {
+  it('does not fire when a car parks after a qualifying run', () => {
     const detector = new IncidentDetector(
       { ...defaultThresholds, slowFrameThreshold: 3 },
       false
     );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
+    // Same session state (Racing = green phase) but a Qualify session type.
     detector.updateSession({
+      SessionInfo: {
+        Sessions: [{ SessionNum: 0, SessionType: 'Open Qualify' }],
+      },
       DriverInfo: {
         Drivers: [
           {
@@ -830,6 +719,39 @@ describe('crash detection - sustained slow', () => {
         ],
       },
     });
+
+    // Slows from ~45 km/h and stops on track, as a driver does at the end of
+    // a qualifying run.
+    let pct = 0.5265;
+    let t = 251;
+    for (const step of [0.00025, 0.0002, 0.00012, 0.00005, 0.00001]) {
+      pct += step;
+      t += 0.05;
+      detector.processTelemetry(
+        makeTelemetry({ carIdxLapDistPct: [pct], sessionTime: t }),
+        5000
+      );
+    }
+    for (let i = 0; i < 12; i++) {
+      pct += 0.0000005;
+      t += 0.05;
+      detector.processTelemetry(
+        makeTelemetry({ carIdxLapDistPct: [pct], sessionTime: t }),
+        5000
+      );
+    }
+
+    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
+  });
+
+  it('does not fire while car is on pit road', () => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, slowFrameThreshold: 3 },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(raceSession());
 
     for (let i = 0; i < 3; i++) {
       detector.processTelemetry(
@@ -854,19 +776,7 @@ describe('crash detection - sustained slow', () => {
     );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     // Seed frame
     detector.processTelemetry(
@@ -902,19 +812,7 @@ describe('crash detection - sustained slow', () => {
     );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     // Pre-green: 10 stationary frames — counter is drained each frame
     detector.processTelemetry(
@@ -960,19 +858,7 @@ describe('dev mode debug snapshots', () => {
     const detector = new IncidentDetector(defaultThresholds, isDev);
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
     return { detector, incidents };
   };
 
@@ -1055,19 +941,7 @@ describe('flag detection', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     // No flag initially
     detector.processTelemetry(makeTelemetry({ carIdxSessionFlags: [0] }), 5000);
@@ -1089,19 +963,7 @@ describe('flag detection', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     // No flag initially
     detector.processTelemetry(makeTelemetry({ carIdxSessionFlags: [0] }), 5000);
@@ -1123,19 +985,7 @@ describe('flag detection', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    detector.updateSession({
-      DriverInfo: {
-        Drivers: [
-          {
-            CarIdx: 0,
-            UserName: 'Test',
-            CarNumber: '99',
-            TeamName: '',
-            CarIsPaceCar: 0,
-          },
-        ],
-      },
-    });
+    detector.updateSession(raceSession());
 
     // No flag initially
     detector.processTelemetry(makeTelemetry({ carIdxSessionFlags: [0] }), 5000);

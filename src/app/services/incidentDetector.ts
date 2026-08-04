@@ -62,6 +62,13 @@ export class IncidentDetector {
   >();
   private lastSubSessionId: string | null = null;
   private lastSessionNum: number | null = null;
+  /**
+   * SessionNum -> session type ('Race', 'Practice', 'Open Qualify', ...).
+   * Keyed by number and resolved against the telemetry snapshot rather than
+   * stored as a single value, because the session-data callback does not
+   * always know the current SessionNum yet on the first publish.
+   */
+  private sessionTypesByNum = new Map<number, string>();
 
   constructor(
     private thresholds: IncidentThresholds,
@@ -124,18 +131,23 @@ export class IncidentDetector {
       });
     });
 
+    this.sessionTypesByNum.clear();
+    session.SessionInfo?.Sessions?.forEach((s) => {
+      if (s.SessionNum != null && s.SessionType) {
+        this.sessionTypesByNum.set(s.SessionNum, s.SessionType);
+      }
+    });
+
+    const phaseName =
+      effectiveSessionNum != null
+        ? (this.sessionTypesByNum.get(effectiveSessionNum) ?? 'unknown')
+        : 'unknown';
+
     if (shouldReset) {
       const prevCarStates = this.carStates.size;
       this.carStates.clear();
       this.frameBuffers.clear();
       this.lastAnomaly.clear();
-
-      const phaseName =
-        effectiveSessionNum != null
-          ? (session.SessionInfo?.Sessions?.find(
-              (s) => s.SessionNum === effectiveSessionNum
-            )?.SessionType ?? 'unknown')
-          : 'unknown';
 
       if (isFirstUpdate) {
         logger.info(
@@ -503,7 +515,14 @@ export class IncidentDetector {
         surface === TrackLocation.OnTrack || surface === TrackLocation.OffTrack;
       const isOnPitRoad = onPitRoad;
       const isRacing = snap.sessionState === SessionState.Racing;
-      if (!(isOnRacingSurface && !isOnPitRoad && isRacing)) {
+      // SessionState.Racing only means the session is in its green phase — it
+      // is just as true during qualifying. Stopping is routine outside a race:
+      // drivers park after a qualifying run or end a practice stint, and every
+      // one of those was being reported as a crash. A genuine impact still gets
+      // caught by sudden-stop, which stays enabled in every session.
+      const isRaceSession =
+        this.sessionTypesByNum.get(snap.sessionNum) === 'Race';
+      if (!(isOnRacingSurface && !isOnPitRoad && isRacing && isRaceSession)) {
         // Not racing (formation/pace laps) or on pit road — drain the counter so
         // it doesn't carry over and fire immediately once the session goes green.
         state.slowFrameCount = 0;

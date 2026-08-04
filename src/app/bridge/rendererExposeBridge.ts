@@ -369,6 +369,8 @@ export function exposeBridge() {
     },
     replayIncident: (incident: Incident, seconds: number) =>
       ipcRenderer.invoke('raceControl:replayIncident', incident, seconds),
+    focusDriver: (carNumber: string) =>
+      ipcRenderer.invoke('raceControl:focusDriver', carNumber),
     clearIncidents: () => ipcRenderer.invoke('raceControl:clearIncidents'),
     updateThresholds: (thresholds: IncidentThresholds) =>
       ipcRenderer.invoke('raceControl:updateThresholds', thresholds),
