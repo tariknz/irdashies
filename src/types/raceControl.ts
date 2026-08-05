@@ -82,7 +82,6 @@ export interface CarIncidentState {
 
 export interface RaceControlBridge {
   getIncidents: () => Promise<Incident[]>;
-  onIncident: (cb: (incident: Incident) => void) => () => void;
   replayIncident: (incident: Incident, seconds: number) => Promise<void>;
   /** Points the sim's camera at a car, without moving the replay position. */
   focusDriver: (carNumber: string) => Promise<void>;

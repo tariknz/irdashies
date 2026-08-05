@@ -32,11 +32,20 @@ import {
 } from './app/storage/referenceLaps';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
-import { flushIncidentsOnShutdown } from './app/storage/incidentStorage';
+import {
+  flushIncidentsOnShutdown,
+  appendIncident,
+} from './app/storage/incidentStorage';
 import { createPerfDashboard, getPerfRunConfig } from './app/perfRunConfig';
 import { ChannelBus, setupChannelBridge } from './app/bridge/channelBridge';
 import { connectSessionLifecycleChannel } from './app/bridge/sessionLifecycleChannel';
 import { setupLegacyRendererSubscriptions } from './app/bridge/legacyRendererSubscriptions';
+import {
+  IncidentRuntime,
+  type IncidentPersistence,
+  type PerformanceSections,
+} from './app/processors/incidentRuntime';
+import { getActivePerfMetrics } from './app/perfMetrics';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -58,6 +67,20 @@ let keybindingManager: KeybindingManager | undefined;
 const channelBus = new ChannelBus();
 let disconnectLifecycleChannel: (() => void) | undefined;
 let disposeLegacySubscriptions: (() => void) | undefined;
+let incidentRuntime: IncidentRuntime | undefined;
+// Resolved per call: the runtime outlives any single SDK bridge, so it must
+// not hold a reference to a metrics instance that has stopped reporting.
+const incidentPerfMetrics: PerformanceSections = {
+  markStart: (label) => getActivePerfMetrics()?.markStart(label),
+  markEnd: (label) => getActivePerfMetrics()?.markEnd(label),
+};
+const incidentPersistence: IncidentPersistence = {
+  save: (sessionId, incident) => {
+    appendIncident(sessionId, incident).catch((err) =>
+      log.error('[RaceControl] Failed to persist incident:', err)
+    );
+  },
+};
 
 app.on('ready', async () => {
   // Don't start services if we don't have the single instance lock
@@ -101,7 +124,14 @@ app.on('ready', async () => {
   setupReferenceLapsBridge();
   setupPersonalBestLapTimesBridge();
   setupChromiumFlagsBridge();
-  setupRaceControlBridge();
+  incidentRuntime = new IncidentRuntime(
+    channelBus,
+    getSessionLifecycle(),
+    incidentPerfMetrics,
+    incidentPersistence,
+    { isDev: !app.isPackaged }
+  );
+  setupRaceControlBridge(incidentRuntime);
   ipcMain.handle('raceControl:showGantryWindow', () => {
     overlayManager.createGantryWindow(getOrCreateDefaultDashboard());
   });
@@ -180,6 +210,7 @@ app.on('before-quit', () => {
   keybindingManager?.stopGamepad();
   disconnectLifecycleChannel?.();
   disposeLegacySubscriptions?.();
+  incidentRuntime?.dispose();
   channelBus.dispose();
   // Synchronous flush so any pending debounced reference-lap write completes
   // before the process exits.

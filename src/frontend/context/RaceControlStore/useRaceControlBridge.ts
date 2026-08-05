@@ -7,10 +7,11 @@ export const useRaceControlBridge = () => {
 
   useEffect(() => {
     if (!window.raceControlBridge) return;
-
     window.raceControlBridge.getIncidents().then(setIncidents);
+  }, [setIncidents]);
 
-    const cleanup = window.raceControlBridge.onIncident(addIncident);
-    return cleanup;
-  }, [setIncidents, addIncident]);
+  useEffect(() => {
+    if (!window.channelBridge) return;
+    return window.channelBridge.subscribe('raceControl.incidents', addIncident);
+  }, [addIncident]);
 };

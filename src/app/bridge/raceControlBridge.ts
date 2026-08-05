@@ -1,53 +1,82 @@
-import { ipcMain, BrowserWindow, app } from 'electron';
+import { ipcMain } from 'electron';
+import type { Session, Telemetry } from '@irdashies/types';
 import { getCurrentBridge, onBridgeChanged } from './iracingSdk/setup';
-import { IncidentDetector } from '../services/incidentDetector';
 import {
   loadIncidents,
-  appendIncident,
   clearIncidents,
   pruneOldSessions,
 } from '../storage/incidentStorage';
-import type { Incident, IncidentThresholds } from '../../types/raceControl';
+import type { IncidentThresholds } from '../../types/raceControl';
 import logger from '../logger';
 
-/** Parse "5.12 km" → 5120 (metres) */
-function parseTrackLengthM(str: string): number {
-  return parseFloat(str) * 1000;
+/** Small interface over IncidentRuntime — keeps this bridge decoupled from
+ * processor internals while still reaching updateThresholds/session state. */
+export interface IncidentRuntimeHandle {
+  onSession: (session: Session) => void;
+  onFrame: (frame: Telemetry) => void;
+  updateThresholds: (thresholds: IncidentThresholds) => void;
+  getCurrentSessionId: () => string;
+  onSessionIdChanged: (cb: (sessionId: string) => void) => () => void;
 }
 
-const defaultThresholds: IncidentThresholds = {
-  slowSpeedThreshold: 15,
-  slowFrameThreshold: 10,
-  suddenStopFromSpeed: 80,
-  suddenStopToSpeed: 20,
-  suddenStopFrames: 3,
-  offTrackDebounce: 3,
-  pitEntryDebounce: 3,
-  cooldownSeconds: 5,
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+const thresholdKeys: (keyof IncidentThresholds)[] = [
+  'slowSpeedThreshold',
+  'slowFrameThreshold',
+  'suddenStopFromSpeed',
+  'suddenStopToSpeed',
+  'suddenStopFrames',
+  'offTrackDebounce',
+  'pitEntryDebounce',
+  'cooldownSeconds',
+];
+
+const isValidThresholds = (value: unknown): value is IncidentThresholds => {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Record<string, unknown>;
+  return thresholdKeys.every(
+    (key) => isFiniteNumber(candidate[key]) && (candidate[key] as number) >= 0
+  );
 };
 
-export const setupRaceControlBridge = () => {
-  const isDev = !app.isPackaged;
-  const detector = new IncidentDetector(defaultThresholds, isDev);
-  let cachedTrackLengthM = 0;
-  let currentSessionId = '';
-  let currentSessionNum: number | null = null;
-  let lastSession: Parameters<typeof detector.updateSession>[0] | null = null;
+const isValidRetention = (value: unknown): value is 'all' | 5 | 10 | 20 =>
+  value === 'all' || value === 5 || value === 10 || value === 20;
+
+const isValidCarNumber = (value: unknown): value is string =>
+  typeof value === 'string' && value.length > 0 && value.length <= 8;
+
+interface ReplayIncidentPayload {
+  sessionTime: number;
+  sessionNum: number;
+  carNumber: string;
+  carIdx?: number;
+  driverName?: string;
+  type?: string;
+}
+
+const isValidReplayIncident = (
+  value: unknown
+): value is ReplayIncidentPayload => {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Record<string, unknown>;
+  return (
+    isFiniteNumber(candidate.sessionTime) &&
+    isFiniteNumber(candidate.sessionNum) &&
+    isValidCarNumber(candidate.carNumber)
+  );
+};
+
+const isValidReplaySeconds = (value: unknown): value is number =>
+  isFiniteNumber(value) && value >= 0 && value <= 300;
+
+export const setupRaceControlBridge = (runtime: IncidentRuntimeHandle) => {
   let retention: 'all' | 5 | 10 | 20 = 'all';
 
-  const broadcast = (incident: Incident) => {
-    BrowserWindow.getAllWindows().forEach((win) => {
-      win.webContents.send('raceControl:incident', incident);
-    });
-  };
-
-  detector.onIncident((incident) => {
-    logger.info(
-      `[RaceControl] incident emitted type=${incident.type} car=${incident.carIdx} (${incident.driverName} #${incident.carNumber}) lap=${incident.lapNum} lapDistPct=${incident.lapDistPct.toFixed(3)} sessionTime=${incident.sessionTime.toFixed(2)} id=${incident.id}`
-    );
-    broadcast(incident);
-    appendIncident(currentSessionId, incident).catch((err) =>
-      logger.error('[RaceControl] Failed to persist incident:', err)
+  runtime.onSessionIdChanged(() => {
+    void pruneOldSessions(retention).catch((err) =>
+      logger.error('[RaceControl] Failed to prune old sessions:', err)
     );
   });
 
@@ -63,64 +92,11 @@ export const setupRaceControlBridge = () => {
     if (!bridge) return;
 
     unsubscribeSession =
-      bridge.onSessionData((session) => {
-        lastSession = session;
-        detector.updateSession(session, currentSessionNum ?? undefined);
-        const trackLen = session?.WeekendInfo?.TrackLength;
-        if (trackLen) {
-          const parsed = parseTrackLengthM(trackLen);
-          if (Number.isFinite(parsed) && parsed > 0) {
-            cachedTrackLengthM = parsed;
-          } else {
-            logger.warn(
-              '[RaceControl] Could not parse track length:',
-              trackLen
-            );
-          }
-        }
-        const sessionId = session?.WeekendInfo?.SubSessionID?.toString() ?? '';
-        if (sessionId && sessionId !== currentSessionId) {
-          logger.info(
-            `[RaceControl] session changed: ${currentSessionId || '(none)'} -> ${sessionId}`
-          );
-          currentSessionId = sessionId;
-          void pruneOldSessions(retention).catch((err) =>
-            logger.error('[RaceControl] Failed to prune old sessions:', err)
-          );
-        }
-      }) ?? undefined;
-
+      bridge.onSessionData((session) => runtime.onSession(session)) ??
+      undefined;
     unsubscribeTelemetry =
-      bridge.onTelemetry((telemetry) => {
-        if (!cachedTrackLengthM) return;
-        const snap = {
-          sessionTime: telemetry.SessionTime?.value?.[0] ?? 0,
-          sessionNum: telemetry.SessionNum?.value?.[0] ?? 0,
-          sessionState: telemetry.SessionState?.value?.[0] ?? 0,
-          replayFrameNum: telemetry.ReplayFrameNum?.value?.[0] ?? 0,
-          carIdxLapDistPct: telemetry.CarIdxLapDistPct?.value ?? [],
-          carIdxLap: telemetry.CarIdxLap?.value ?? [],
-          carIdxTrackSurface: telemetry.CarIdxTrackSurface?.value ?? [],
-          carIdxSessionFlags: telemetry.CarIdxSessionFlags?.value ?? [],
-          carIdxOnPitRoad: telemetry.CarIdxOnPitRoad?.value ?? [],
-        };
-
-        // Detect session-phase change (e.g. Practice → Qualify → Race within
-        // the same SubSessionID). When it changes, immediately re-run
-        // updateSession so detector resets cleanly before next tick.
-        if (snap.sessionNum !== currentSessionNum) {
-          const prev = currentSessionNum;
-          currentSessionNum = snap.sessionNum;
-          logger.info(
-            `[RaceControl] telemetry SessionNum changed: ${prev ?? '(none)'} -> ${snap.sessionNum}`
-          );
-          if (lastSession) {
-            detector.updateSession(lastSession, currentSessionNum);
-          }
-        }
-
-        detector.processTelemetry(snap, cachedTrackLengthM);
-      }) ?? undefined;
+      bridge.onTelemetry((telemetry) => runtime.onFrame(telemetry)) ??
+      undefined;
   };
 
   wireToTelemetryBridge();
@@ -128,29 +104,41 @@ export const setupRaceControlBridge = () => {
 
   ipcMain.handle(
     'raceControl:updateThresholds',
-    (_event, thresholds: IncidentThresholds) => {
-      detector.updateThresholds(thresholds);
+    (_event, thresholds: unknown) => {
+      if (!isValidThresholds(thresholds)) {
+        logger.warn('[RaceControl] Rejected invalid thresholds payload');
+        return;
+      }
+      runtime.updateThresholds(thresholds);
     }
   );
 
-  ipcMain.handle(
-    'raceControl:updateRetention',
-    (_event, r: 'all' | 5 | 10 | 20) => {
-      retention = r;
+  ipcMain.handle('raceControl:updateRetention', (_event, value: unknown) => {
+    if (!isValidRetention(value)) {
+      logger.warn('[RaceControl] Rejected invalid retention value:', value);
+      return;
     }
-  );
+    retention = value;
+  });
 
   ipcMain.handle('raceControl:getIncidents', () => {
-    return loadIncidents(currentSessionId);
+    return loadIncidents(runtime.getCurrentSessionId());
   });
 
   ipcMain.handle('raceControl:clearIncidents', () => {
     // Returned so the IPC reply waits for the delete; clearIncidents became
     // async, and without this the renderer could reload before it completed.
-    return clearIncidents(currentSessionId);
+    return clearIncidents(runtime.getCurrentSessionId());
   });
 
-  ipcMain.handle('raceControl:focusDriver', (_event, carNumber: string) => {
+  ipcMain.handle('raceControl:focusDriver', (_event, carNumber: unknown) => {
+    if (!isValidCarNumber(carNumber)) {
+      logger.warn(
+        '[RaceControl] Rejected invalid focusDriver carNumber:',
+        carNumber
+      );
+      return;
+    }
     const bridge = getCurrentBridge();
     if (!bridge) return;
     logger.info(`[RaceControl] focusDriver #${carNumber}`);
@@ -159,7 +147,20 @@ export const setupRaceControlBridge = () => {
 
   ipcMain.handle(
     'raceControl:replayIncident',
-    (_event, incident: Incident, seconds: number) => {
+    (_event, incident: unknown, seconds: unknown) => {
+      if (!isValidReplayIncident(incident)) {
+        logger.warn(
+          '[RaceControl] Rejected invalid replayIncident incident payload'
+        );
+        return;
+      }
+      if (!isValidReplaySeconds(seconds)) {
+        logger.warn(
+          '[RaceControl] Rejected invalid replayIncident seconds:',
+          seconds
+        );
+        return;
+      }
       const bridge = getCurrentBridge();
       if (!bridge) return;
       const targetTimeMs = Math.max(
@@ -167,7 +168,7 @@ export const setupRaceControlBridge = () => {
         Math.round((incident.sessionTime - seconds) * 1000)
       );
       logger.info(
-        `[RaceControl] replayIncident car=${incident.carIdx} (${incident.driverName} #${incident.carNumber}) type=${incident.type} sessionTime=${incident.sessionTime.toFixed(2)} sessionNum=${incident.sessionNum} offset=-${seconds}s targetTimeMs=${targetTimeMs}`
+        `[RaceControl] replayIncident car=${incident.carIdx ?? 'unknown'} (${incident.driverName ?? 'unknown'} #${incident.carNumber}) type=${incident.type ?? 'unknown'} sessionTime=${incident.sessionTime.toFixed(2)} sessionNum=${incident.sessionNum} offset=-${seconds}s targetTimeMs=${targetTimeMs}`
       );
       bridge.changeCameraNumber(incident.carNumber, 0, 0);
       bridge.triggerReplaySessionSearch(incident.sessionNum, targetTimeMs);

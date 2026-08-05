@@ -361,12 +361,6 @@ export function exposeBridge() {
 
   contextBridge.exposeInMainWorld('raceControlBridge', {
     getIncidents: () => ipcRenderer.invoke('raceControl:getIncidents'),
-    onIncident: (cb: (incident: Incident) => void) => {
-      const handler = (_: Electron.IpcRendererEvent, incident: Incident) =>
-        cb(incident);
-      ipcRenderer.on('raceControl:incident', handler);
-      return () => ipcRenderer.removeListener('raceControl:incident', handler);
-    },
     replayIncident: (incident: Incident, seconds: number) =>
       ipcRenderer.invoke('raceControl:replayIncident', incident, seconds),
     focusDriver: (carNumber: string) =>

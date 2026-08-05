@@ -1,4 +1,5 @@
 import type { FuelLapData } from '../fuelCalculatorBridge';
+import type { Incident } from '../raceControl';
 
 export type SessionLifecycleEvent =
   | { type: 'enter'; replay: boolean }
@@ -8,6 +9,7 @@ export type SessionLifecycleEvent =
 export interface ChannelPayloads {
   'fuel.projection': FuelProjectionSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
+  'raceControl.incidents': Incident;
 }
 
 export interface FuelProjectionEngineSnapshot {
@@ -70,6 +72,7 @@ export const channelRegistry = {
     maxRateHz: 25,
   },
   'session.lifecycle': { kind: 'event' },
+  'raceControl.incidents': { kind: 'event' },
 } as const satisfies ChannelRegistry;
 
 export interface ChannelBridge {
