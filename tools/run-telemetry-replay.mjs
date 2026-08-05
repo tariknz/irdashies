@@ -31,18 +31,25 @@ if (!input) {
     process.stderr.write('--input must be an .irdt telemetry tape\n');
     process.exitCode = 2;
   } else {
-    const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-    const child = spawn(npmCommand, ['start'], {
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        IRDASHIES_TELEMETRY_REPLAY: path.resolve(input),
-        IRDASHIES_TELEMETRY_REPLAY_SPEED: speedText,
-        IRDASHIES_TELEMETRY_REPLAY_LOOP: arguments_.includes('--loop')
-          ? '1'
-          : '0',
-      },
-    });
+    const env = {
+      ...process.env,
+      IRDASHIES_TELEMETRY_REPLAY: path.resolve(input),
+      IRDASHIES_TELEMETRY_REPLAY_SPEED: speedText,
+      IRDASHIES_TELEMETRY_REPLAY_LOOP: arguments_.includes('--loop')
+        ? '1'
+        : '0',
+    };
+    // Node refuses to spawn .cmd/.bat without a shell (the CVE-2024-27980
+    // mitigation, Node >= 18.20 / 20.12), so Windows needs one or the spawn
+    // throws EINVAL. The command goes in as a single string rather than a
+    // command plus argument vector because Node 24 emits DEP0190 whenever a
+    // non-empty args array meets shell: true. Nothing user-supplied reaches
+    // the command line either way — the tape path and speed travel through
+    // env, so the shell has nothing extra to re-parse.
+    const child =
+      process.platform === 'win32'
+        ? spawn('npm.cmd start', { shell: true, stdio: 'inherit', env })
+        : spawn('npm', ['start'], { stdio: 'inherit', env });
     child.on('error', (error) => {
       process.stderr.write(`Could not start irDashies: ${error.message}\n`);
       process.exitCode = 1;
