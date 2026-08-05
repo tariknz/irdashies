@@ -10,7 +10,10 @@ import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
 import { getDashboard } from './storage/dashboards';
 import { getChromiumFlags, parseCustomSwitches } from './storage/chromiumFlags';
-import { trackSettingsWindowMovement } from './trackWindowMovement';
+import {
+  markCorrectedBounds,
+  trackSettingsWindowMovement,
+} from './trackWindowMovement';
 import { sanitizeWindowBounds } from './windowBounds';
 import logger from './logger';
 import { createRendererPerfArguments } from './perfRendererArguments';
@@ -890,7 +893,13 @@ export class OverlayManager {
     // Reveal the window once its content is ready, unless it should start
     // minimized to the system tray (the "Start minimized" general setting).
     browserWindow.once('ready-to-show', () => {
-      if (browserWindow.isDestroyed() || startHidden) return;
+      if (browserWindow.isDestroyed()) return;
+
+      // Runs before the startHidden check: a window that starts in the tray is
+      // shown later, and would otherwise be revealed somewhere unreachable.
+      ensureWindowOnScreen(browserWindow);
+
+      if (startHidden) return;
       browserWindow.show();
       browserWindow.focus();
     });
@@ -934,6 +943,41 @@ export class OverlayManager {
 
     return browserWindow;
   }
+}
+
+/**
+ * Correct a window that has ended up where no display covers it.
+ *
+ * Validating the saved bounds on the way in only guards the restore path. This
+ * checks where the window actually landed, so it also catches a window placed
+ * off-screen by something other than a stale saved position — Electron's own
+ * default placement, or a display set that was not fully enumerated when the
+ * window was created. #539 was reported on a freshly installed Windows with no
+ * saved bounds at all, which the restore-path check cannot explain, so the
+ * guard is deliberately cause-agnostic: it asks only whether the window can be
+ * reached, never why it could not be.
+ */
+function ensureWindowOnScreen(browserWindow: BrowserWindow): void {
+  const actual = browserWindow.getBounds();
+  const corrected = sanitizeWindowBounds(
+    actual,
+    screen.getAllDisplays().map((display) => display.workArea),
+    screen.getPrimaryDisplay().workArea
+  );
+
+  if (!corrected) return;
+  if (corrected.x === actual.x && corrected.y === actual.y) return;
+
+  logger.warn(
+    `[OverlayManager] Settings window opened off-screen at x=${actual.x}, ` +
+      `y=${actual.y}; moved to x=${corrected.x}, y=${corrected.y}`
+  );
+
+  // Flagged before the move so the saved position survives it. Rescuing a
+  // window must not overwrite where the user put it, or reconnecting the
+  // monitor would no longer bring it back.
+  markCorrectedBounds(browserWindow, corrected);
+  browserWindow.setBounds(corrected);
 }
 
 function loadWindowBounds(): Electron.Rectangle | undefined {
