@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useRef } from 'react';
 import { useTelemetryValuesRounded } from '../TelemetryStore/TelemetryStore';
 import { useLapGapStore } from './LapGapStore';
 import { useDriverStandings } from '../../components/Standings/hooks/useDriverStandings';
+import { useSessionLifecycle } from '../ChannelStore/useSessionLifecycle';
 
 // useDriverStandings returns [classId, Standings[]][] — an array of [classId, drivers] tuples.
 // Standings.gap is { value?: number, laps: number }. Use .value for the seconds gap.
@@ -25,6 +26,16 @@ export const LapGapStoreUpdater = memo(() => {
   // Mirror latest standings in a ref to avoid stale closure in useEffect
   const allDriversRef = useRef(allDrivers);
   allDriversRef.current = allDrivers;
+
+  useSessionLifecycle((event) => {
+    if (event.type === 'sessionNumChange' || event.type === 'disconnect') {
+      useLapGapStore.getState().reset();
+      // prevLapsRef holds stale lap numbers from the old session; without
+      // clearing it, new laps compare lower than the stale ones and no gaps
+      // get recorded until cars pass their old lap count
+      prevLapsRef.current = [];
+    }
+  });
 
   useEffect(() => {
     if (!carIdxLap) return;
