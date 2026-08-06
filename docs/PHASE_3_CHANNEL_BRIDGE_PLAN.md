@@ -218,6 +218,26 @@ Turn the completed Fuel migration into measurable renderer and IPC savings.
   - Renderer frames over 50 ms below 0.1%.
   - Steady-state app memory slope below 5 MB/min.
 
+#### Widget runtime metadata and rate guidance
+
+Runtime transport metadata is discovered from
+`src/frontend/components/*/widgetRuntimeDefinition.ts`. A migrated widget must
+explicitly set `legacyTelemetry: false` and list every typed channel it needs.
+Widgets without runtime metadata remain legacy consumers so incremental
+migrations fail safe.
+
+Choose the lowest named preset that preserves the widget's observable behavior:
+
+- `driverFocused` — 25 Hz for positional or rapidly changing driver data.
+- `gapTiming` — 5 Hz for projections, gaps, and sortable timing data.
+- `informational` — 1 Hz for weather and slowly changing labels.
+- `static` — event/snapshot delivery with no polling-rate request.
+
+Use `channelRates` on the widget runtime definition when one channel needs a
+different rate from the preset. Multiple consumers in one renderer are still
+coalesced at the highest requested rate. Full-rate input and precision-sensitive
+calculation paths must not be moved to a lower preset.
+
 ## 4. Validation Strategy
 
 ### Every PR

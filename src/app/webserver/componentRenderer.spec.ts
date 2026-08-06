@@ -147,4 +147,27 @@ describe('WebSocketBridge channels', () => {
 
     expect(callback).not.toHaveBeenCalled();
   });
+
+  it('subscribes to legacy streams only while a consumer exists', async () => {
+    vi.stubGlobal('WebSocket', FakeWebSocket);
+
+    const bridge = new WebSocketBridge();
+    const connecting = bridge.connect('http://localhost:3000');
+    const socket = FakeWebSocket.latest;
+    socket?.onopen?.();
+    await connecting;
+
+    expect(socket?.sent).toEqual([]);
+    const unsubscribe = bridge.onTelemetry(vi.fn());
+    expect(JSON.parse(socket?.sent.at(-1) ?? '{}')).toEqual({
+      type: 'legacySubscribe',
+      data: { stream: 'telemetry' },
+    });
+
+    unsubscribe?.();
+    expect(JSON.parse(socket?.sent.at(-1) ?? '{}')).toEqual({
+      type: 'legacyUnsubscribe',
+      data: { stream: 'telemetry' },
+    });
+  });
 });

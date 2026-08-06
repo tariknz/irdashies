@@ -6,6 +6,7 @@ import { readRendererPerfArguments } from './perfRendererArguments';
 export const PERF_RENDERER_LOG_PREFIX = '[PerfRenderer:JSON] ';
 
 let telemetryCallbackTimes: FixedSampleBuffer | undefined;
+let channelCallbackTimes: FixedSampleBuffer | undefined;
 
 export function isRendererPerfMetricsEnabled(): boolean {
   return telemetryCallbackTimes !== undefined;
@@ -13,6 +14,10 @@ export function isRendererPerfMetricsEnabled(): boolean {
 
 export function recordTelemetryCallback(durationMs: number): void {
   telemetryCallbackTimes?.add(durationMs);
+}
+
+export function recordChannelCallback(durationMs: number): void {
+  channelCallbackTimes?.add(durationMs);
 }
 
 export function startRendererPerfMetrics(): void {
@@ -27,6 +32,8 @@ export function startRendererPerfMetrics(): void {
   const frameTimes = new FixedSampleBuffer(4096);
   const callbackTimes = new FixedSampleBuffer(4096);
   telemetryCallbackTimes = callbackTimes;
+  const channelTimes = new FixedSampleBuffer(4096);
+  channelCallbackTimes = channelTimes;
   let intervalStart = performance.now();
   let previousFrameTime = 0;
   let framesOver25Ms = 0;
@@ -52,6 +59,7 @@ export function startRendererPerfMetrics(): void {
       intervalStart = now;
       previousFrameTime = 0;
       callbackTimes.reset();
+      channelTimes.reset();
       framesOver25Ms = 0;
       framesOver50Ms = 0;
       return;
@@ -68,6 +76,9 @@ export function startRendererPerfMetrics(): void {
       intervalMs: now - intervalStart,
       frameTimeMs: stats,
       telemetryCallbackMs: callbackTimes.summarize(),
+      channelCallbackMs: channelTimes.summarize(),
+      telemetryWakeups: callbackTimes.summarize().count,
+      channelWakeups: channelTimes.summarize().count,
       framesOver25Ms,
       framesOver50Ms,
     };
@@ -81,6 +92,7 @@ export function startRendererPerfMetrics(): void {
     intervalStart = now;
     frameTimes.reset();
     callbackTimes.reset();
+    channelTimes.reset();
     framesOver25Ms = 0;
     framesOver50Ms = 0;
   }, reportIntervalMs);

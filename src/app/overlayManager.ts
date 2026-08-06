@@ -13,6 +13,7 @@ import { getChromiumFlags, parseCustomSwitches } from './storage/chromiumFlags';
 import { trackSettingsWindowMovement } from './trackWindowMovement';
 import logger from './logger';
 import { createRendererPerfArguments } from './perfRendererArguments';
+import type { LegacyRendererStream } from './bridge/legacyRendererSubscriptions';
 
 // used for Hot Module Replacement
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
@@ -52,6 +53,10 @@ export class OverlayManager {
   private overlayAlwaysOnTop = true;
   private hasSingleInstanceLock = false;
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
+  private legacyStreamSubscribers = new Map<
+    LegacyRendererStream,
+    Set<number>
+  >();
 
   /** Padding around the widget bounding box when shrink-wrapping */
   private static readonly SHRINK_WRAP_PADDING = 20;
@@ -249,11 +254,17 @@ export class OverlayManager {
     }
 
     this.displayWindows.set(display.id, browserWindow);
+    const rendererId = browserWindow.webContents.id;
+
+    browserWindow.webContents.on('did-start-loading', () => {
+      this.removeLegacyRenderer(rendererId);
+    });
 
     browserWindow.on('closed', () => {
       logger.info(`Display ${display.id} overlay window closed`);
       this.displayWindows.delete(display.id);
       this.displayBoundsInfo.delete(display.id);
+      this.removeLegacyRenderer(rendererId);
     });
 
     browserWindow.webContents.on('render-process-gone', (_event, details) => {
@@ -266,6 +277,7 @@ export class OverlayManager {
       // Clean up stale entry so recreate doesn't early-return
       this.displayWindows.delete(display.id);
       this.displayBoundsInfo.delete(display.id);
+      this.removeLegacyRenderer(rendererId);
 
       // Small delay so Electron can fully clean up before a new window is created
       setTimeout(() => {
@@ -546,6 +558,12 @@ export class OverlayManager {
     // Send to all display overlay windows
     for (const win of this.displayWindows.values()) {
       if (win.isDestroyed()) continue;
+      if (
+        (key === 'telemetry' || key === 'sessionData') &&
+        !this.legacyStreamSubscribers.get(key)?.has(win.webContents.id)
+      ) {
+        continue;
+      }
       try {
         win.webContents.send(key, value);
       } catch (e) {
@@ -568,6 +586,35 @@ export class OverlayManager {
       } catch (e) {
         logger.error(`Failed to send message ${key} to settings window`, e);
       }
+    }
+  }
+
+  public subscribeLegacyStream(
+    rendererId: number,
+    stream: LegacyRendererStream
+  ): void {
+    let subscribers = this.legacyStreamSubscribers.get(stream);
+    if (!subscribers) {
+      subscribers = new Set();
+      this.legacyStreamSubscribers.set(stream, subscribers);
+    }
+    subscribers.add(rendererId);
+  }
+
+  public unsubscribeLegacyStream(
+    rendererId: number,
+    stream: LegacyRendererStream
+  ): void {
+    this.legacyStreamSubscribers.get(stream)?.delete(rendererId);
+  }
+
+  public hasLegacyStreamSubscribers(stream: LegacyRendererStream): boolean {
+    return (this.legacyStreamSubscribers.get(stream)?.size ?? 0) > 0;
+  }
+
+  private removeLegacyRenderer(rendererId: number): void {
+    for (const subscribers of this.legacyStreamSubscribers.values()) {
+      subscribers.delete(rendererId);
     }
   }
 

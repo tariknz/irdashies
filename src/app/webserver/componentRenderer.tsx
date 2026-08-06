@@ -266,6 +266,12 @@ export class WebSocketBridge implements IrSdkBridge, ChannelBridge {
           for (const channel of this.channelCallbacks.keys()) {
             this.sendChannelSubscription(channel);
           }
+          if (this.telemetryCallbacks.size > 0) {
+            this.sendLegacySubscription('telemetry', true);
+          }
+          if (this.sessionCallbacks.size > 0) {
+            this.sendLegacySubscription('sessionData', true);
+          }
           resolve();
         };
 
@@ -362,14 +368,41 @@ export class WebSocketBridge implements IrSdkBridge, ChannelBridge {
 
   onTelemetry(callback: (data: Telemetry) => void): (() => void) | undefined {
     if (!callback) return undefined;
+    const wasEmpty = this.telemetryCallbacks.size === 0;
     this.telemetryCallbacks.add(callback);
-    return () => this.telemetryCallbacks.delete(callback);
+    if (wasEmpty) this.sendLegacySubscription('telemetry', true);
+    return () => {
+      this.telemetryCallbacks.delete(callback);
+      if (this.telemetryCallbacks.size === 0) {
+        this.sendLegacySubscription('telemetry', false);
+      }
+    };
   }
 
   onSessionData(callback: (data: Session) => void): (() => void) | undefined {
     if (!callback) return undefined;
+    const wasEmpty = this.sessionCallbacks.size === 0;
     this.sessionCallbacks.add(callback);
-    return () => this.sessionCallbacks.delete(callback);
+    if (wasEmpty) this.sendLegacySubscription('sessionData', true);
+    return () => {
+      this.sessionCallbacks.delete(callback);
+      if (this.sessionCallbacks.size === 0) {
+        this.sendLegacySubscription('sessionData', false);
+      }
+    };
+  }
+
+  private sendLegacySubscription(
+    stream: 'telemetry' | 'sessionData',
+    subscribe: boolean
+  ): void {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+    this.socket.send(
+      JSON.stringify({
+        type: subscribe ? 'legacySubscribe' : 'legacyUnsubscribe',
+        data: { stream },
+      })
+    );
   }
 
   onRunningState(

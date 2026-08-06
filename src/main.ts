@@ -34,6 +34,7 @@ import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { createPerfDashboard, getPerfRunConfig } from './app/perfRunConfig';
 import { ChannelBus, setupChannelBridge } from './app/bridge/channelBridge';
 import { connectSessionLifecycleChannel } from './app/bridge/sessionLifecycleChannel';
+import { setupLegacyRendererSubscriptions } from './app/bridge/legacyRendererSubscriptions';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -75,6 +76,7 @@ app.on('ready', async () => {
   }
 
   setupChannelBridge(channelBus);
+  setupLegacyRendererSubscriptions(overlayManager);
   disconnectLifecycleChannel = connectSessionLifecycleChannel(
     getSessionLifecycle(),
     channelBus
