@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { useTelemetryValue, useThrottledWeather } from '@irdashies/context';
+import { resolveSpeedUnit, speedFromMs } from '@irdashies/utils/units';
 import { WindArrow } from '../../../../../shared/WindArrow';
 import { sessionBarItemWrapperClass } from '../../sessionBarItemWrapperClass';
 import type { SessionBarItemProps } from '../../sessionBarItemTypes';
@@ -10,11 +11,11 @@ export const WindItem = memo(
     const { windDirection, windVelocity, windYaw } = useThrottledWeather();
     const relativeWindDirection = (windDirection ?? 0) - (windYaw ?? 0);
 
-    const isMetric = displayUnits === 1;
+    const speedUnit = resolveSpeedUnit('auto', displayUnits);
     const speedPosition = settings?.wind?.speedPosition ?? 'right';
     const speed =
       windVelocity !== undefined
-        ? Math.round(windVelocity * (isMetric ? 3.6 : 2.23694))
+        ? Math.round(speedFromMs(windVelocity, speedUnit))
         : '-';
     const speedEl = <span>{speed}</span>;
     const arrowEl = (

@@ -1,5 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getWindIntensityClass } from '../../../domain/weather/wind';
+import { speedFromMs } from '@irdashies/utils/units';
 
 export interface WindDirectionProps {
   speedMs?: number;
@@ -10,7 +11,9 @@ export interface WindDirectionProps {
 export const WindDirection = memo(
   ({ speedMs, direction, metric = true }: WindDirectionProps) => {
     const speed =
-      speedMs !== undefined ? speedMs * (metric ? 3.6 : 2.23694) : undefined;
+      speedMs !== undefined
+        ? speedFromMs(speedMs, metric ? 'km/h' : 'mph')
+        : undefined;
     const [normalizedAngle, setNormalizedAngle] = useState(0);
     const prevAngleRef = useRef(0);
     const containerRef = useRef<HTMLDivElement | null>(null);

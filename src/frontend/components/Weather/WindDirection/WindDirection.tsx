@@ -1,6 +1,7 @@
 import { WindIcon } from '@phosphor-icons/react';
 import { memo, useRef, useEffect, useState } from 'react';
 import { getWindIntensityClass } from '../../../domain/weather/wind';
+import { speedFromMs } from '@irdashies/utils/units';
 
 export interface WindDirectionProps {
   speedMs?: number;
@@ -46,7 +47,7 @@ export const WindDirection = memo(
     // Convert m/s to user's preferred unit
     const speed =
       speedMs !== undefined
-        ? speedMs * (metric ? 3.6 : 2.23694) // km/h or mph
+        ? speedFromMs(speedMs, metric ? 'km/h' : 'mph')
         : undefined;
 
     const [normalizedAngle, setNormalizedAngle] = useState<number>(0);

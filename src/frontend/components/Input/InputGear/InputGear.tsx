@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { resolveSpeedUnit, speedFromMs } from '@irdashies/utils/units';
 
 export interface InputGearProps {
   gear?: number;
@@ -16,10 +17,14 @@ export interface InputGearProps {
 
 export const InputGear = memo(
   ({ gear, speedMs, unit, settings }: InputGearProps) => {
-    const isMetric =
-      (unit === 1 && settings.unit === 'auto') || settings.unit === 'km/h';
-    const speed = (speedMs ?? 0) * (isMetric ? 3.6 : 2.23694);
-    const displayUnit = isMetric ? 'km/h' : 'mph';
+    // 'none' is vestigial — the settings UI only offers auto/mph/km/h — but the
+    // type still permits it, and it previously fell through to mph. Kept that
+    // way rather than quietly changing behaviour for a hand-edited config.
+    const displayUnit = resolveSpeedUnit(
+      settings.unit === 'none' ? 'mph' : settings.unit,
+      unit
+    );
+    const speed = speedFromMs(speedMs ?? 0, displayUnit);
     let gearText;
     switch (gear) {
       case -1:

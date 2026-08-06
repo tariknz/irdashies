@@ -16,6 +16,7 @@ import { useDriverRelatives } from '../Standings/hooks/useDriverRelatives';
 import { useRejoinSettings } from './hooks/useRejoinSettings';
 import { getDemoRejoinData } from './demoData';
 import type { Standings } from '../Standings/createStandings';
+import { speedFromMs } from '@irdashies/utils/units';
 
 export const RejoinIndicator = () => {
   const { isDemoMode } = useDashboard();
@@ -78,7 +79,7 @@ export const RejoinIndicator = () => {
   }
 
   // Read telemetry and computed car speed for the focused car index
-  const speedKmH = (carSpeedForPlayer ?? 0) * 3.6;
+  const speedKmH = speedFromMs(carSpeedForPlayer ?? 0, 'km/h');
 
   const gap = Math.abs(carBehind?.delta ?? Number.POSITIVE_INFINITY);
   const gapLabel = Number.isFinite(gap) ? gap.toFixed(1) : '--';

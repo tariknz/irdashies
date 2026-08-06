@@ -1,3 +1,5 @@
+import { msFromSpeed } from '@irdashies/utils/units';
+
 export interface WindDemoData {
   speedMs: number;
   direction: number;
@@ -18,7 +20,7 @@ export const getDemoWindData = (
   metric: boolean
 ): WindDemoData => {
   const demoValue = WIND_DEMO_VALUES[index % WIND_DEMO_VALUES.length];
-  const speedMs = demoValue.speed / (metric ? 3.6 : 2.23694);
+  const speedMs = msFromSpeed(demoValue.speed, metric ? 'km/h' : 'mph');
 
   return {
     speedMs,

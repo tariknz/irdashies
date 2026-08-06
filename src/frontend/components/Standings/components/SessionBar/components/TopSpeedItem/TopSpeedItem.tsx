@@ -5,6 +5,7 @@ import {
   useSessionBestTopSpeed,
   useTelemetryValue,
 } from '@irdashies/context';
+import { resolveSpeedUnit, speedFromMs } from '@irdashies/utils/units';
 import { sessionBarItemWrapperClass } from '../../sessionBarItemWrapperClass';
 import type { SessionBarItemProps } from '../../sessionBarItemTypes';
 
@@ -13,16 +14,14 @@ export const TopSpeedItem = memo(({ standalone }: SessionBarItemProps) => {
   const lastLapTopSpeedMs = useLastLapTopSpeed();
   const sessionBestTopSpeedMs = useSessionBestTopSpeed();
 
-  const isMetric = displayUnits === 1;
-  const factor = isMetric ? 3.6 : 2.23694;
-  const unit = isMetric ? 'km/h' : 'mph';
+  const unit = resolveSpeedUnit('auto', displayUnits);
   const last =
     lastLapTopSpeedMs !== null
-      ? `${(lastLapTopSpeedMs * factor).toFixed(0)} ${unit}`
+      ? `${speedFromMs(lastLapTopSpeedMs, unit).toFixed(0)} ${unit}`
       : '—';
   const best =
     sessionBestTopSpeedMs !== null
-      ? (sessionBestTopSpeedMs * factor).toFixed(0)
+      ? speedFromMs(sessionBestTopSpeedMs, unit).toFixed(0)
       : null;
 
   return (
