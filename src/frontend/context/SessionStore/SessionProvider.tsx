@@ -15,7 +15,6 @@ export const SessionProvider = ({ bridge }: SessionProviderProps) => {
     if (bridge instanceof Promise) {
       bridge.then((resolved) => {
         if (cancelled) {
-          resolved.stop();
           return;
         }
         unsub = resolved.onSessionData((session) => {
@@ -25,7 +24,6 @@ export const SessionProvider = ({ bridge }: SessionProviderProps) => {
       return () => {
         cancelled = true;
         if (unsub) unsub();
-        bridge.then((resolved) => resolved.stop());
       };
     }
 
@@ -36,7 +34,6 @@ export const SessionProvider = ({ bridge }: SessionProviderProps) => {
     return () => {
       cancelled = true;
       if (unsub) unsub();
-      bridge.stop();
     };
   }, [bridge, setSession]);
 

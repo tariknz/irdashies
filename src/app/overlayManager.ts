@@ -14,6 +14,12 @@ import { trackSettingsWindowMovement } from './trackWindowMovement';
 import logger from './logger';
 import { createRendererPerfArguments } from './perfRendererArguments';
 
+type LegacyRendererStream = 'telemetry' | 'sessionData';
+interface LegacyStreamSubscriptions {
+  has(rendererId: number, stream: LegacyRendererStream): boolean;
+  hasAny(stream: LegacyRendererStream): boolean;
+}
+
 // used for Hot Module Replacement
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -52,6 +58,7 @@ export class OverlayManager {
   private overlayAlwaysOnTop = true;
   private hasSingleInstanceLock = false;
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
+  private legacyStreamSubscriptions?: LegacyStreamSubscriptions;
 
   /** Padding around the widget bounding box when shrink-wrapping */
   private static readonly SHRINK_WRAP_PADDING = 20;
@@ -249,7 +256,6 @@ export class OverlayManager {
     }
 
     this.displayWindows.set(display.id, browserWindow);
-
     browserWindow.on('closed', () => {
       logger.info(`Display ${display.id} overlay window closed`);
       this.displayWindows.delete(display.id);
@@ -546,6 +552,12 @@ export class OverlayManager {
     // Send to all display overlay windows
     for (const win of this.displayWindows.values()) {
       if (win.isDestroyed()) continue;
+      if (
+        (key === 'telemetry' || key === 'sessionData') &&
+        !this.legacyStreamSubscriptions?.has(win.webContents.id, key)
+      ) {
+        continue;
+      }
       try {
         win.webContents.send(key, value);
       } catch (e) {
@@ -569,6 +581,16 @@ export class OverlayManager {
         logger.error(`Failed to send message ${key} to settings window`, e);
       }
     }
+  }
+
+  public setLegacyStreamSubscriptions(
+    subscriptions: LegacyStreamSubscriptions
+  ): void {
+    this.legacyStreamSubscriptions = subscriptions;
+  }
+
+  public hasLegacyStreamSubscribers(stream: LegacyRendererStream): boolean {
+    return this.legacyStreamSubscriptions?.hasAny(stream) ?? false;
   }
 
   /**

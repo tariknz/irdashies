@@ -5,13 +5,9 @@ import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import { DashboardView } from './frontend/components/DashboardView/DashboardView';
 import { ThemeManager } from './frontend/components/ThemeManager/ThemeManager';
-import {
-  DashboardProvider,
-  RunningStateProvider,
-  SessionProvider,
-  TelemetryProvider,
-} from '@irdashies/context';
+import { DashboardProvider, RunningStateProvider } from '@irdashies/context';
 import type { DashboardBridge, FuelCalculatorBridge } from '@irdashies/types';
+import { RendererDataProviders } from './frontend/components/RendererDataProviders/RendererDataProviders';
 
 // Get profileId from URL params
 const urlParams = new URLSearchParams(window.location.search);
@@ -55,8 +51,7 @@ async function initializeDashboardView() {
         profileId={profileId}
       >
         <RunningStateProvider bridge={bridge}>
-          <SessionProvider bridge={bridge} />
-          <TelemetryProvider bridge={bridge} />
+          <RendererDataProviders browser />
           <ThemeManager>
             <DashboardView />
           </ThemeManager>

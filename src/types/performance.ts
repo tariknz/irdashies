@@ -20,6 +20,9 @@ export interface RendererPerfSample {
   intervalMs: number;
   frameTimeMs: NumericSampleStats;
   telemetryCallbackMs?: NumericSampleStats;
+  channelCallbackMs?: NumericSampleStats;
+  telemetryWakeups?: number;
+  channelWakeups?: number;
   framesOver25Ms: number;
   framesOver50Ms: number;
 }

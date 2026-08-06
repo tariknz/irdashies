@@ -15,6 +15,7 @@ import type { DashboardWidget } from '@irdashies/types';
 import { useDragWidget, useResizeWidget } from '../WidgetContainer';
 import { ResizeHandles } from '../WidgetContainer/ResizeHandle';
 import logger from '@irdashies/utils/logger';
+import { WidgetRuntimeProvider } from '../../widgetRuntime';
 
 interface WidgetPosition {
   x: number;
@@ -164,7 +165,9 @@ const DashboardWidgetItem = memo(
               }
             `}</style>
             <div className="widget-content w-full h-full">
-              <WidgetComponent {...widget.config} />
+              <WidgetRuntimeProvider widgetType={widget.type || widget.id}>
+                <WidgetComponent {...widget.config} />
+              </WidgetRuntimeProvider>
             </div>
           </div>
         </div>
@@ -223,8 +226,7 @@ export const DashboardView = () => {
     enabledWidgets.forEach((widget) => {
       const widgetConfig = widget.config as Record<string, unknown>;
       const browserPos = widgetConfig?.browserPosition as
-        | WidgetPosition
-        | undefined;
+        WidgetPosition | undefined;
 
       // Use saved browserPosition if available, otherwise use layout dimensions from Electron config
       if (browserPos && typeof browserPos.x === 'number') {

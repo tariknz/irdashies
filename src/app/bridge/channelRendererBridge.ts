@@ -10,6 +10,10 @@ import {
   CHANNEL_SUBSCRIBE,
   CHANNEL_UNSUBSCRIBE,
 } from './channelBridge';
+import {
+  isRendererPerfMetricsEnabled,
+  recordChannelCallback,
+} from '../rendererPerfMetrics';
 
 interface LocalConsumer {
   callback: (payload: never) => void;
@@ -31,7 +35,13 @@ export const createChannelRendererBridge = (): ChannelBridge => {
       const subscription = subscriptions.get(channel);
       if (!subscription) return;
       for (const consumer of subscription.consumers) {
+        if (!isRendererPerfMetricsEnabled()) {
+          consumer.callback(payload as never);
+          continue;
+        }
+        const start = performance.now();
         consumer.callback(payload as never);
+        recordChannelCallback(performance.now() - start);
       }
     }
   );

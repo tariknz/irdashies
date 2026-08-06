@@ -247,7 +247,10 @@ export async function publishIRacingSDKEvents(
           lifecycle?._onTelemetry(telemetry);
           perfMetrics.markEnd('lifecycleTelemetry');
           fuelProjectionRuntime?.onFrame(telemetry);
-          if (perfTelemetryDeliveryEnabled) {
+          if (
+            perfTelemetryDeliveryEnabled &&
+            overlayManager.hasLegacyStreamSubscribers('telemetry')
+          ) {
             perfMetrics.markStart('telemetryProjection');
             const rendererTelemetry = telemetryForRenderer(telemetry);
             perfMetrics.markEnd('telemetryProjection');

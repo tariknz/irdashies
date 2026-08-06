@@ -16,7 +16,6 @@ export const TelemetryProvider = ({ bridge }: TelemetryProviderProps) => {
     if (bridge instanceof Promise) {
       bridge.then((resolved) => {
         if (cancelled) {
-          resolved.stop();
           return;
         }
         unsub = resolved.onTelemetry((telemetry) => {
@@ -26,7 +25,6 @@ export const TelemetryProvider = ({ bridge }: TelemetryProviderProps) => {
       return () => {
         cancelled = true;
         if (unsub) unsub();
-        bridge.then((resolved) => resolved.stop());
       };
     }
 
@@ -37,7 +35,6 @@ export const TelemetryProvider = ({ bridge }: TelemetryProviderProps) => {
     return () => {
       cancelled = true;
       if (unsub) unsub();
-      bridge.stop();
     };
     // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, [bridge]);
