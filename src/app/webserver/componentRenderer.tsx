@@ -1,9 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type {
-  ChannelBridge,
-  ChannelName,
-  ChannelPayloads,
-  IrSdkBridge,
+import {
+  channelRegistry,
+  type ChannelBridge,
+  type ChannelName,
+  type ChannelPayloads,
+  type IrSdkBridge,
+  type Session,
+  type Telemetry,
 } from '../../types';
 import logger from '../../frontend/utils/logger';
 
@@ -21,8 +24,8 @@ const debugLog = (...args: any[]) => {
  */
 export class WebSocketBridge implements IrSdkBridge, ChannelBridge {
   private socket: WebSocket | null;
-  private telemetryCallbacks: Set<(data: any) => void>;
-  private sessionCallbacks: Set<(data: any) => void>;
+  private telemetryCallbacks: Set<(data: Telemetry) => void>;
+  private sessionCallbacks: Set<(data: Session) => void>;
   private runningCallbacks: Set<(running: boolean) => void>;
   private channelCallbacks = new Map<
     ChannelName,
@@ -342,8 +345,11 @@ export class WebSocketBridge implements IrSdkBridge, ChannelBridge {
 
   private sendChannelSubscription(channel: ChannelName): void {
     if (this.socket?.readyState !== WebSocket.OPEN) return;
+    const definition = channelRegistry[channel];
+    const defaultRate =
+      definition.kind === 'snapshot' ? definition.defaultRateHz : undefined;
     const rates = [...(this.channelCallbacks.get(channel) ?? [])]
-      .map((consumer) => consumer.rate)
+      .map((consumer) => consumer.rate ?? defaultRate)
       .filter((rate): rate is number => rate !== undefined);
     const requestedRateHz = rates.length > 0 ? Math.max(...rates) : undefined;
     this.socket.send(
@@ -354,13 +360,13 @@ export class WebSocketBridge implements IrSdkBridge, ChannelBridge {
     );
   }
 
-  onTelemetry(callback: (data: any) => void): (() => void) | undefined {
+  onTelemetry(callback: (data: Telemetry) => void): (() => void) | undefined {
     if (!callback) return undefined;
     this.telemetryCallbacks.add(callback);
     return () => this.telemetryCallbacks.delete(callback);
   }
 
-  onSessionData(callback: (data: any) => void): (() => void) | undefined {
+  onSessionData(callback: (data: Session) => void): (() => void) | undefined {
     if (!callback) return undefined;
     this.sessionCallbacks.add(callback);
     return () => this.sessionCallbacks.delete(callback);
@@ -387,6 +393,7 @@ export class WebSocketBridge implements IrSdkBridge, ChannelBridge {
     this.telemetryCallbacks.clear();
     this.sessionCallbacks.clear();
     this.runningCallbacks.clear();
+    this.channelCallbacks.clear();
     this.dashboardUpdateCallbacks.clear();
     this.demoModeCallbacks.clear();
   }

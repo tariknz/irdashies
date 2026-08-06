@@ -84,6 +84,7 @@ export function useFuelCalculation(
 
   const loadedContextRef = useRef<string | null>(null);
   const savedLapKeysRef = useRef(new Set<string>());
+  const pendingLapKeysRef = useRef(new Set<string>());
 
   // Race Finish Detection
 
@@ -141,6 +142,7 @@ export function useFuelCalculation(
       // Update ref immediately to prevent race conditions from additional renders
       loadedContextRef.current = currentContext;
       savedLapKeysRef.current.clear();
+      pendingLapKeysRef.current.clear();
 
       // ALWAYS clear current volatile data ONLY when context really changes to prevent leakage
       // This ONLY clears browser memory for the current session, NOT the database historical array.
@@ -207,25 +209,38 @@ export function useFuelCalculation(
   }, [projection]);
 
   useEffect(() => {
+    const persistence = window.fuelCalculatorBridge;
     if (
+      !persistence ||
       !(settings?.enableStorage ?? true) ||
       projection?.isReplay ||
-      storedTrackId === undefined ||
-      storedCarName === undefined
+      projection?.trackId === undefined ||
+      projection.carName === undefined ||
+      storedTrackId !== projection.trackId ||
+      storedCarName !== projection.carName
     ) {
       return;
     }
     for (const completed of projection?.completedLaps ?? []) {
-      const key = `${completed.sessionNum ?? -1}:${completed.lapNumber}:${completed.timestamp ?? 0}`;
-      if (savedLapKeysRef.current.has(key)) continue;
-      savedLapKeysRef.current.add(key);
-      window.fuelCalculatorBridge
-        ?.saveLap(storedTrackId, storedCarName, completed)
-        .catch(logger.error);
+      const key = `${projection.trackId}:${projection.carName}:${completed.sessionNum ?? -1}:${completed.lapNumber}:${completed.timestamp ?? 0}`;
+      if (
+        savedLapKeysRef.current.has(key) ||
+        pendingLapKeysRef.current.has(key)
+      ) {
+        continue;
+      }
+      pendingLapKeysRef.current.add(key);
+      persistence
+        .saveLap(projection.trackId, projection.carName, completed)
+        .then(() => savedLapKeysRef.current.add(key))
+        .catch(logger.error)
+        .finally(() => pendingLapKeysRef.current.delete(key));
     }
   }, [
     projection?.completedLaps,
+    projection?.carName,
     projection?.isReplay,
+    projection?.trackId,
     settings?.enableStorage,
     storedCarName,
     storedTrackId,

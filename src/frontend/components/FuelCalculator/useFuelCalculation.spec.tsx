@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import type {
   ChannelBridge,
   ChannelName,
@@ -124,7 +124,7 @@ describe('useFuelCalculation channel parity', () => {
           isReplay: true,
           trackId: 'roadamerica full',
           carName: 'bmwm4gt3',
-        } as ChannelPayloads[K]);
+        } as unknown as ChannelPayloads[K]);
         return () => undefined;
       },
     };
@@ -139,5 +139,104 @@ describe('useFuelCalculation channel parity', () => {
     await waitFor(() => expect(result.current).not.toBeNull());
     expect(getHistoricalLaps).not.toHaveBeenCalled();
     expect(saveLap).not.toHaveBeenCalled();
+  });
+
+  it('persists completed laps under the projection context', async () => {
+    const saveLap = vi.fn(async () => undefined);
+    window.fuelCalculatorBridge = {
+      getHistoricalLaps: vi.fn(async () => []),
+      saveLap,
+      clearHistory: vi.fn(async () => undefined),
+      clearAllHistory: vi.fn(async () => undefined),
+      getQualifyMax: vi.fn(async () => null),
+      saveQualifyMax: vi.fn(async () => undefined),
+      startNewLog: vi.fn(async () => undefined),
+      logData: vi.fn(async () => undefined),
+    } satisfies FuelCalculatorBridge;
+    useFuelStore.setState({ trackId: 'old-track', carName: 'old-car' });
+    window.channelBridge = {
+      subscribe: <K extends ChannelName>(
+        _channel: K,
+        callback: (payload: ChannelPayloads[K]) => void
+      ) => {
+        callback({
+          ...projection,
+          trackId: 'new-track',
+          carName: 'new-car',
+          completedLaps: projection.completedLaps.slice(0, 1),
+        } as unknown as ChannelPayloads[K]);
+        return () => undefined;
+      },
+    };
+
+    renderHook(() =>
+      useFuelCalculation(defaultFuelCalculatorSettings.safetyMargin, {
+        ...defaultFuelCalculatorSettings,
+        enableStorage: true,
+      })
+    );
+
+    await waitFor(() => expect(saveLap).toHaveBeenCalledOnce());
+    expect(saveLap).toHaveBeenCalledWith(
+      'new-track',
+      'new-car',
+      projection.completedLaps[0]
+    );
+  });
+
+  it('retries lap persistence after a failed save', async () => {
+    const saveLap = vi
+      .fn<FuelCalculatorBridge['saveLap']>()
+      .mockRejectedValueOnce(new Error('write failed'))
+      .mockResolvedValue(undefined);
+    window.fuelCalculatorBridge = {
+      getHistoricalLaps: vi.fn(async () => []),
+      saveLap,
+      clearHistory: vi.fn(async () => undefined),
+      clearAllHistory: vi.fn(async () => undefined),
+      getQualifyMax: vi.fn(async () => null),
+      saveQualifyMax: vi.fn(async () => undefined),
+      startNewLog: vi.fn(async () => undefined),
+      logData: vi.fn(async () => undefined),
+    } satisfies FuelCalculatorBridge;
+    const subscribers = new Set<(snapshot: FuelProjectionSnapshot) => void>();
+    const liveProjection = {
+      ...projection,
+      trackId: 'new-track',
+      carName: 'new-car',
+      completedLaps: projection.completedLaps.slice(0, 1),
+    };
+    window.channelBridge = {
+      subscribe: <K extends ChannelName>(
+        _channel: K,
+        callback: (payload: ChannelPayloads[K]) => void
+      ) => {
+        const typedCallback = callback as (
+          snapshot: FuelProjectionSnapshot
+        ) => void;
+        subscribers.add(typedCallback);
+        typedCallback(liveProjection);
+        return () => subscribers.delete(typedCallback);
+      },
+    };
+
+    renderHook(() =>
+      useFuelCalculation(defaultFuelCalculatorSettings.safetyMargin, {
+        ...defaultFuelCalculatorSettings,
+        enableStorage: true,
+      })
+    );
+    await waitFor(() => expect(saveLap).toHaveBeenCalledOnce());
+    await act(async () => {
+      await Promise.resolve();
+      subscribers.forEach((subscriber) =>
+        subscriber({
+          ...liveProjection,
+          completedLaps: [...liveProjection.completedLaps],
+        })
+      );
+    });
+
+    await waitFor(() => expect(saveLap).toHaveBeenCalledTimes(2));
   });
 });

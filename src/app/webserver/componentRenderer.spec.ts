@@ -106,4 +106,43 @@ describe('WebSocketBridge channels', () => {
       data: { channel: 'fuel.projection' },
     });
   });
+
+  it('preserves the channel default when another consumer requests less', async () => {
+    vi.stubGlobal('WebSocket', FakeWebSocket);
+
+    const bridge = new WebSocketBridge();
+    bridge.subscribe('fuel.projection', vi.fn());
+    const connecting = bridge.connect('http://localhost:3000');
+    const socket = FakeWebSocket.latest;
+    socket?.onopen?.();
+    await connecting;
+    bridge.subscribe('fuel.projection', vi.fn(), 2);
+
+    expect(JSON.parse(socket?.sent.at(-1) ?? '{}')).toEqual({
+      type: 'channelSubscribe',
+      data: { channel: 'fuel.projection', requestedRateHz: 5 },
+    });
+  });
+
+  it('drops channel callbacks when stopped', async () => {
+    vi.stubGlobal('WebSocket', FakeWebSocket);
+
+    const bridge = new WebSocketBridge();
+    const callback = vi.fn();
+    bridge.subscribe('fuel.projection', callback);
+    const connecting = bridge.connect('http://localhost:3000');
+    const socket = FakeWebSocket.latest;
+    socket?.onopen?.();
+    await connecting;
+    bridge.stop();
+
+    socket?.onmessage?.({
+      data: JSON.stringify({
+        type: 'channel',
+        data: { channel: 'fuel.projection', payload: projection },
+      }),
+    } as MessageEvent);
+
+    expect(callback).not.toHaveBeenCalled();
+  });
 });

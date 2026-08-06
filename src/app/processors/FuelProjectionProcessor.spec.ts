@@ -137,6 +137,37 @@ describe('FuelProjectionProcessor', () => {
     expect(processor.snapshot().calculatedTotalRaceLaps).toBeCloseTo(19.1);
   });
 
+  it('uses fractional distance when correcting a timed race for lapping', () => {
+    const processor = new FuelProjectionProcessor();
+    processor.init({
+      DriverInfo: {
+        DriverCarIdx: 1,
+        Drivers: [
+          { CarIdx: 0, CarClassEstLapTime: 100 },
+          { CarIdx: 1, CarClassEstLapTime: 100 },
+        ],
+      },
+      SessionInfo: {
+        Sessions: [
+          { SessionNum: 0, SessionType: 'Race', SessionLaps: 'unlimited' },
+        ],
+      },
+    } as unknown as Session);
+
+    processor.onFrame({
+      SessionNum: { value: [0] },
+      SessionState: { value: [4] },
+      SessionTimeRemain: { value: [900] },
+      CamCarIdx: { value: [1] },
+      CarIdxLap: { value: [10, 8] },
+      CarIdxLapDistPct: { value: [0.1, 0.8] },
+      CarIdxPosition: { value: [1, 10] },
+      CarIdxBestLapTime: { value: [100, 100] },
+    } as unknown as Telemetry);
+
+    expect(processor.snapshot().calculatedTotalRaceLaps).toBeCloseTo(17.1);
+  });
+
   it('resets completed laps when the session number changes', () => {
     const processor = new FuelProjectionProcessor();
     processor.onFrame(

@@ -329,12 +329,15 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
 
     const leaderLap = carLaps[leaderCarIdx] ?? playerLap;
     const leaderDistance = lapDistances[leaderCarIdx] ?? 0;
+    const playerDistance =
+      lapDistances[playerCarIdx] ?? value(frame, 'LapDistPct');
     let totalRaceLaps =
       playerLap === 0
         ? value(frame, 'SessionTimeTotal') / averageLapTime
         : timeRemaining / averageLapTime + (leaderLap - 1) + leaderDistance;
-    const distanceBehind = leaderLap - playerLap;
-    if (distanceBehind > 1) totalRaceLaps -= Math.floor(distanceBehind);
+    const distanceBehind =
+      leaderLap + leaderDistance - (playerLap + playerDistance);
+    totalRaceLaps -= Math.max(0, Math.floor(distanceBehind));
     if (configuredLaps > 0 && totalRaceLaps > configuredLaps) {
       totalRaceLaps = configuredLaps;
     }

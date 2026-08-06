@@ -1,4 +1,5 @@
 import type { Decorator } from '@storybook/react-vite';
+import { useEffect, useRef } from 'react';
 import type {
   ChannelBridge,
   ChannelName,
@@ -22,7 +23,18 @@ export const ChannelSnapshotDecorator = (
   };
 
   const DecoratorComponent: Decorator = (Story) => {
+    const previousBridge = useRef(window.channelBridge);
     window.channelBridge = bridge;
+    useEffect(
+      () => () => {
+        if (previousBridge.current === undefined) {
+          Reflect.deleteProperty(window, 'channelBridge');
+        } else {
+          window.channelBridge = previousBridge.current;
+        }
+      },
+      []
+    );
     return <Story />;
   };
   return DecoratorComponent;
