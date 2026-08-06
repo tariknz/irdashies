@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatFuel } from '../fuelCalculations';
 import type { FuelCalculation, FuelCalculatorSettings } from '../types';
-import { useTelemetryValue, useSessionType } from '@irdashies/context';
+import { useFuelProjectionSnapshot } from '@irdashies/context';
 
 interface FuelCalculatorWidgetProps {
   fuelData: FuelCalculation | null;
@@ -29,8 +29,7 @@ export const FuelCalculatorTargetMessage: React.FC<
   customStyles,
   compactMode,
 }) => {
-  const sessionNum = useTelemetryValue('SessionNum');
-  const sessionType = useSessionType(sessionNum);
+  const sessionType = useFuelProjectionSnapshot()?.sessionType;
   const isTesting =
     sessionType === 'Offline Testing' || sessionType === 'Practice';
 

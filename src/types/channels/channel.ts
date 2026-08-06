@@ -22,11 +22,29 @@ export interface FuelProjectionEngineSnapshot {
 }
 
 export interface FuelProjectionSnapshot {
+  /** True for recorded tape sources; recorded laps must not touch live storage. */
+  isReplay: boolean;
   fuelLevel: number;
+  fuelLevelPct: number;
   currentLap: number;
+  lapDistPct: number;
   currentLapUsage: number;
   projectedLapUsage: number;
   lastLapUsage: number;
+  sessionLapsRemain: number;
+  sessionTimeRemain: number;
+  sessionTimeTotal: number;
+  sessionFlags: number;
+  sessionState: number;
+  sessionNum: number;
+  sessionLaps: number | string;
+  calculatedTotalRaceLaps: number;
+  isFixedLapRace: boolean;
+  sessionType?: string;
+  isOnTrack: boolean;
+  trackId?: string | number;
+  carName?: string;
+  fuelTankCapacity?: number;
   completedLaps: readonly FuelLapData[];
   engine: FuelProjectionEngineSnapshot;
 }

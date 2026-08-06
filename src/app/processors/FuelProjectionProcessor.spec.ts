@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Session, Telemetry } from '@irdashies/types';
 import { FuelProjectionProcessor } from './FuelProjectionProcessor';
 
-const frame = (values: Record<string, number>): Telemetry =>
+const frame = (values: Record<string, number | boolean>): Telemetry =>
   Object.fromEntries(
     Object.entries(values).map(([key, entry]) => [key, { value: [entry] }])
   ) as unknown as Telemetry;
@@ -74,6 +74,98 @@ describe('FuelProjectionProcessor', () => {
       currentLap: 0,
       completedLaps: [],
     });
+  });
+
+  it('preserves boolean track and pit state in the snapshot', () => {
+    const processor = new FuelProjectionProcessor();
+
+    processor.onFrame(
+      frame({ FuelLevel: 20, IsOnTrack: true, OnPitRoad: true })
+    );
+
+    expect(processor.snapshot().isOnTrack).toBe(true);
+    expect(processor.snapshot().engine.wasOnPitRoad).toBe(true);
+  });
+
+  it('projects timed-race distance using class pace', () => {
+    const processor = new FuelProjectionProcessor();
+    processor.init({
+      DriverInfo: {
+        DriverCarIdx: 0,
+        Drivers: [{ CarIdx: 0, CarClassEstLapTime: 90 }],
+      },
+      SessionInfo: {
+        Sessions: [
+          { SessionNum: 0, SessionType: 'Race', SessionLaps: 'unlimited' },
+        ],
+      },
+    } as unknown as Session);
+
+    const timedRaceFrame = {
+      FuelLevel: { value: [45.39] },
+      Lap: { value: [2] },
+      LapDistPct: { value: [0.1] },
+      SessionNum: { value: [0] },
+      SessionState: { value: [4] },
+      SessionLapsRemain: { value: [32767] },
+      SessionTimeRemain: { value: [1620] },
+      SessionTimeTotal: { value: [1800] },
+      CamCarIdx: { value: [0] },
+      CarIdxLap: { value: [2] },
+      CarIdxLapDistPct: { value: [0.1] },
+      CarIdxPosition: { value: [1] },
+      CarIdxLastLapTime: { value: [1] },
+      CarIdxBestLapTime: { value: [1] },
+    } as unknown as Telemetry;
+    processor.onFrame(timedRaceFrame);
+
+    expect(processor.snapshot()).toMatchObject({
+      calculatedTotalRaceLaps: 19.1,
+      isFixedLapRace: false,
+    });
+
+    processor.onFrame({
+      ...timedRaceFrame,
+      CarIdxLastLapTime: { value: [100] },
+    } as unknown as Telemetry);
+    expect(processor.snapshot().calculatedTotalRaceLaps).toBeCloseTo(19.1);
+
+    processor.onFrame({
+      ...timedRaceFrame,
+      CarIdxLastLapTime: { value: [110] },
+    } as unknown as Telemetry);
+    expect(processor.snapshot().calculatedTotalRaceLaps).toBeCloseTo(19.1);
+  });
+
+  it('uses fractional distance when correcting a timed race for lapping', () => {
+    const processor = new FuelProjectionProcessor();
+    processor.init({
+      DriverInfo: {
+        DriverCarIdx: 1,
+        Drivers: [
+          { CarIdx: 0, CarClassEstLapTime: 100 },
+          { CarIdx: 1, CarClassEstLapTime: 100 },
+        ],
+      },
+      SessionInfo: {
+        Sessions: [
+          { SessionNum: 0, SessionType: 'Race', SessionLaps: 'unlimited' },
+        ],
+      },
+    } as unknown as Session);
+
+    processor.onFrame({
+      SessionNum: { value: [0] },
+      SessionState: { value: [4] },
+      SessionTimeRemain: { value: [900] },
+      CamCarIdx: { value: [1] },
+      CarIdxLap: { value: [10, 8] },
+      CarIdxLapDistPct: { value: [0.1, 0.8] },
+      CarIdxPosition: { value: [1, 10] },
+      CarIdxBestLapTime: { value: [100, 100] },
+    } as unknown as Telemetry);
+
+    expect(processor.snapshot().calculatedTotalRaceLaps).toBeCloseTo(17.1);
   });
 
   it('resets completed laps when the session number changes', () => {

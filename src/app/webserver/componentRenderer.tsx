@@ -1,5 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { IrSdkBridge } from '../../types';
+import {
+  channelRegistry,
+  type ChannelBridge,
+  type ChannelName,
+  type ChannelPayloads,
+  type IrSdkBridge,
+  type Session,
+  type Telemetry,
+} from '../../types';
 import logger from '../../frontend/utils/logger';
 
 const isDebugMode = () =>
@@ -14,11 +22,18 @@ const debugLog = (...args: any[]) => {
 /**
  * Web-based bridge that connects to the WebSocket server
  */
-export class WebSocketBridge implements IrSdkBridge {
+export class WebSocketBridge implements IrSdkBridge, ChannelBridge {
   private socket: WebSocket | null;
-  private telemetryCallbacks: Set<(data: any) => void>;
-  private sessionCallbacks: Set<(data: any) => void>;
+  private telemetryCallbacks: Set<(data: Telemetry) => void>;
+  private sessionCallbacks: Set<(data: Session) => void>;
   private runningCallbacks: Set<(running: boolean) => void>;
+  private channelCallbacks = new Map<
+    ChannelName,
+    Set<{
+      callback: (data: ChannelPayloads[ChannelName]) => void;
+      rate?: number;
+    }>
+  >();
   private isConnecting: boolean;
   private connectionPromise: Promise<void> | null;
   private isConnected: boolean;
@@ -122,6 +137,17 @@ export class WebSocketBridge implements IrSdkBridge {
             }
           });
           break;
+        case 'channel': {
+          const channel = data?.channel as ChannelName;
+          this.channelCallbacks.get(channel)?.forEach((consumer) => {
+            try {
+              consumer.callback(data.payload);
+            } catch (e) {
+              logger.error('Error in channel callback:', e);
+            }
+          });
+          break;
+        }
         case 'sessionData':
           this.sessionCallbacks.forEach((cb) => {
             try {
@@ -237,6 +263,9 @@ export class WebSocketBridge implements IrSdkBridge {
           this.isConnecting = false;
           this.isConnected = true;
           this.reconnectAttempts = 0;
+          for (const channel of this.channelCallbacks.keys()) {
+            this.sendChannelSubscription(channel);
+          }
           resolve();
         };
 
@@ -280,13 +309,64 @@ export class WebSocketBridge implements IrSdkBridge {
     return this.connectionPromise;
   }
 
-  onTelemetry(callback: (data: any) => void): (() => void) | undefined {
+  subscribe<K extends ChannelName>(
+    channel: K,
+    callback: (payload: ChannelPayloads[K]) => void,
+    requestedRateHz?: number
+  ): () => void {
+    let callbacks = this.channelCallbacks.get(channel);
+    if (!callbacks) {
+      callbacks = new Set();
+      this.channelCallbacks.set(channel, callbacks);
+    }
+    const consumer = {
+      callback: callback as (data: ChannelPayloads[ChannelName]) => void,
+      rate: requestedRateHz,
+    };
+    callbacks.add(consumer);
+    this.sendChannelSubscription(channel);
+    let active = true;
+    return () => {
+      if (!active) return;
+      active = false;
+      callbacks?.delete(consumer);
+      if (callbacks?.size === 0) {
+        this.channelCallbacks.delete(channel);
+        if (this.socket?.readyState === WebSocket.OPEN) {
+          this.socket.send(
+            JSON.stringify({ type: 'channelUnsubscribe', data: { channel } })
+          );
+        }
+      } else {
+        this.sendChannelSubscription(channel);
+      }
+    };
+  }
+
+  private sendChannelSubscription(channel: ChannelName): void {
+    if (this.socket?.readyState !== WebSocket.OPEN) return;
+    const definition = channelRegistry[channel];
+    const defaultRate =
+      definition.kind === 'snapshot' ? definition.defaultRateHz : undefined;
+    const rates = [...(this.channelCallbacks.get(channel) ?? [])]
+      .map((consumer) => consumer.rate ?? defaultRate)
+      .filter((rate): rate is number => rate !== undefined);
+    const requestedRateHz = rates.length > 0 ? Math.max(...rates) : undefined;
+    this.socket.send(
+      JSON.stringify({
+        type: 'channelSubscribe',
+        data: { channel, requestedRateHz },
+      })
+    );
+  }
+
+  onTelemetry(callback: (data: Telemetry) => void): (() => void) | undefined {
     if (!callback) return undefined;
     this.telemetryCallbacks.add(callback);
     return () => this.telemetryCallbacks.delete(callback);
   }
 
-  onSessionData(callback: (data: any) => void): (() => void) | undefined {
+  onSessionData(callback: (data: Session) => void): (() => void) | undefined {
     if (!callback) return undefined;
     this.sessionCallbacks.add(callback);
     return () => this.sessionCallbacks.delete(callback);
@@ -313,6 +393,7 @@ export class WebSocketBridge implements IrSdkBridge {
     this.telemetryCallbacks.clear();
     this.sessionCallbacks.clear();
     this.runningCallbacks.clear();
+    this.channelCallbacks.clear();
     this.dashboardUpdateCallbacks.clear();
     this.demoModeCallbacks.clear();
   }
@@ -858,9 +939,7 @@ export class WebSocketBridge implements IrSdkBridge {
     });
   }
 
-  async getPlayerIconImageAsDataUrl(
-    imagePath: string
-  ): Promise<string | null> {
+  async getPlayerIconImageAsDataUrl(imagePath: string): Promise<string | null> {
     return new Promise((resolve) => {
       if (this.socket && this.socket.readyState === WebSocket.OPEN) {
         const requestId = Math.random().toString(36).substring(7);
