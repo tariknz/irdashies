@@ -55,6 +55,7 @@ overlayManager.setupAutoStart();
 let keybindingManager: KeybindingManager | undefined;
 const channelBus = new ChannelBus();
 let disconnectLifecycleChannel: (() => void) | undefined;
+let disposeLegacySubscriptions: (() => void) | undefined;
 
 app.on('ready', async () => {
   // Don't start services if we don't have the single instance lock
@@ -76,7 +77,9 @@ app.on('ready', async () => {
   }
 
   setupChannelBridge(channelBus);
-  setupLegacyRendererSubscriptions(overlayManager);
+  const legacySubscriptions = setupLegacyRendererSubscriptions();
+  disposeLegacySubscriptions = legacySubscriptions.dispose;
+  overlayManager.setLegacyStreamSubscriptions(legacySubscriptions.registry);
   disconnectLifecycleChannel = connectSessionLifecycleChannel(
     getSessionLifecycle(),
     channelBus
@@ -153,6 +156,7 @@ app.on('before-quit', () => {
   overlayManager.markQuitting();
   keybindingManager?.stopGamepad();
   disconnectLifecycleChannel?.();
+  disposeLegacySubscriptions?.();
   channelBus.dispose();
   // Synchronous flush so any pending debounced reference-lap write completes
   // before the process exits.

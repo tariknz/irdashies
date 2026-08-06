@@ -24,28 +24,30 @@ import {
   recordTelemetryCallback,
 } from '../rendererPerfMetrics';
 import {
-  LEGACY_STREAM_SUBSCRIBE,
-  LEGACY_STREAM_UNSUBSCRIBE,
+  LEGACY_STREAM_BRIDGE,
   type LegacyRendererStream,
 } from './legacyRendererSubscriptions';
+import { createSubscriptionBridgeClient, defineBridge } from './defineBridge';
 
 export function exposeBridge() {
+  const legacySubscriptions =
+    createSubscriptionBridgeClient<LegacyRendererStream>(LEGACY_STREAM_BRIDGE);
   const legacyListenerCounts = new Map<LegacyRendererStream, number>();
   const addLegacyListener = (stream: LegacyRendererStream) => {
     const count = legacyListenerCounts.get(stream) ?? 0;
     legacyListenerCounts.set(stream, count + 1);
-    if (count === 0) void ipcRenderer.invoke(LEGACY_STREAM_SUBSCRIBE, stream);
+    if (count === 0) void legacySubscriptions.subscribe(stream);
   };
   const removeLegacyListener = (stream: LegacyRendererStream) => {
     const count = legacyListenerCounts.get(stream) ?? 0;
     if (count <= 1) {
       legacyListenerCounts.delete(stream);
-      void ipcRenderer.invoke(LEGACY_STREAM_UNSUBSCRIBE, stream);
+      void legacySubscriptions.unsubscribe(stream);
       return;
     }
     legacyListenerCounts.set(stream, count - 1);
   };
-  contextBridge.exposeInMainWorld('irsdkBridge', {
+  defineBridge<IrSdkBridge>('irsdkBridge', {
     onTelemetry: (callback: (value: Telemetry) => void) => {
       const handler = (_: Electron.IpcRendererEvent, value: Telemetry) => {
         if (!isRendererPerfMetricsEnabled()) {
@@ -83,14 +85,14 @@ export function exposeBridge() {
     },
     stop: () => {
       for (const stream of legacyListenerCounts.keys()) {
-        void ipcRenderer.invoke(LEGACY_STREAM_UNSUBSCRIBE, stream);
+        void legacySubscriptions.unsubscribe(stream);
       }
       legacyListenerCounts.clear();
       ipcRenderer.removeAllListeners('telemetry');
       ipcRenderer.removeAllListeners('sessionData');
       ipcRenderer.removeAllListeners('runningState');
     },
-  } as IrSdkBridge);
+  });
 
   contextBridge.exposeInMainWorld('dashboardBridge', {
     onEditModeToggled: (callback: (value: boolean) => void) => {

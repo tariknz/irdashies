@@ -1,29 +1,16 @@
-import { ipcMain } from 'electron';
-import type { OverlayManager } from '../overlayManager';
+import { defineRendererSubscriptionBridge } from './defineBridge';
 
-export const LEGACY_STREAM_SUBSCRIBE = 'legacy-stream:subscribe';
-export const LEGACY_STREAM_UNSUBSCRIBE = 'legacy-stream:unsubscribe';
+export const LEGACY_STREAM_BRIDGE = 'legacy-stream';
 
 export type LegacyRendererStream = 'telemetry' | 'sessionData';
 
-const isLegacyRendererStream = (
+export const isLegacyRendererStream = (
   value: unknown
 ): value is LegacyRendererStream =>
   value === 'telemetry' || value === 'sessionData';
 
-export const setupLegacyRendererSubscriptions = (
-  overlayManager: OverlayManager
-): void => {
-  ipcMain.handle(LEGACY_STREAM_SUBSCRIBE, (event, stream: unknown) => {
-    if (!isLegacyRendererStream(stream)) {
-      throw new Error('Invalid legacy renderer stream');
-    }
-    overlayManager.subscribeLegacyStream(event.sender.id, stream);
+export const setupLegacyRendererSubscriptions = () =>
+  defineRendererSubscriptionBridge<LegacyRendererStream>({
+    name: LEGACY_STREAM_BRIDGE,
+    isValidKey: isLegacyRendererStream,
   });
-  ipcMain.handle(LEGACY_STREAM_UNSUBSCRIBE, (event, stream: unknown) => {
-    if (!isLegacyRendererStream(stream)) {
-      throw new Error('Invalid legacy renderer stream');
-    }
-    overlayManager.unsubscribeLegacyStream(event.sender.id, stream);
-  });
-};
