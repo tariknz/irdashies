@@ -116,8 +116,10 @@ describe('WebSocketBridge channels', () => {
     const socket = FakeWebSocket.latest;
     socket?.onopen?.();
     await connecting;
+    const messagesBeforeSecondConsumer = socket?.sent.length ?? 0;
     bridge.subscribe('fuel.projection', vi.fn(), 2);
 
+    expect(socket?.sent).toHaveLength(messagesBeforeSecondConsumer + 1);
     expect(JSON.parse(socket?.sent.at(-1) ?? '{}')).toEqual({
       type: 'channelSubscribe',
       data: { channel: 'fuel.projection', requestedRateHz: 5 },
