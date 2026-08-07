@@ -8,7 +8,7 @@ import { useLapTimesStore } from './LapTimesStore';
  * is active in the consuming widget. Multiple widgets can call this safely.
  */
 export const useLapTimesStoreUpdater = (enabled: boolean) => {
-  const snapshot = useLapTimesSnapshot();
+  const snapshot = useLapTimesSnapshot(enabled);
   const applySnapshot = useLapTimesStore((state) => state.applySnapshot);
 
   useEffect(() => {
