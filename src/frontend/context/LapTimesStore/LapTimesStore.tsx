@@ -1,4 +1,5 @@
 import { create, useStore } from 'zustand';
+import { useStoreWithEqualityFn } from 'zustand/traditional';
 import logger from '@irdashies/utils/logger';
 import type { LapTimesSnapshot } from '@irdashies/types';
 
@@ -48,6 +49,15 @@ export const useLapTimes = (): number[] =>
 // Stable empty array reference to prevent unnecessary re-renders
 const EMPTY_LAP_HISTORY: number[][] = [];
 
+const lapTimeHistoryEqual = (left: number[][], right: number[][]): boolean =>
+  left === right ||
+  (left.length === right.length &&
+    left.every(
+      (leftHistory, carIdx) =>
+        leftHistory.length === right[carIdx].length &&
+        leftHistory.every((lapTime, index) => lapTime === right[carIdx][index])
+    ));
+
 /**
  * @returns Raw lap time history for each car. Returns array of arrays where [carIdx][lapIndex] contains lap time in seconds
  * Most recent lap is at the end of each car's array. Returns up to LAP_TIME_AVG_WINDOW laps per car.
@@ -55,9 +65,10 @@ const EMPTY_LAP_HISTORY: number[][] = [];
  * The snapshot store preserves this reference between channel publications.
  */
 export const useLapTimeHistory = (): number[][] => {
-  return useStore(
+  return useStoreWithEqualityFn(
     useLapTimesStore,
     (state: LapTimesState) =>
-      state.lapTimeBuffer?.lapTimeHistory ?? EMPTY_LAP_HISTORY
+      state.lapTimeBuffer?.lapTimeHistory ?? EMPTY_LAP_HISTORY,
+    lapTimeHistoryEqual
   );
 };

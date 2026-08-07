@@ -1,5 +1,6 @@
+import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useLapTimesStore } from './LapTimesStore';
+import { useLapTimeHistory, useLapTimesStore } from './LapTimesStore';
 
 describe('LapTimesStore', () => {
   beforeEach(() => useLapTimesStore.getState().reset());
@@ -42,5 +43,31 @@ describe('LapTimesStore', () => {
       lapTimes: [],
       sessionNum: null,
     });
+  });
+
+  it('does not rerender history consumers for equal snapshot values', () => {
+    let renders = 0;
+    const { result } = renderHook(() => {
+      renders += 1;
+      return useLapTimeHistory();
+    });
+    const snapshot = {
+      lapTimes: [90],
+      lapTimeHistory: [[90, 89]],
+      sessionNum: 1,
+      version: 1,
+    };
+
+    act(() => useLapTimesStore.getState().applySnapshot(snapshot));
+    expect(result.current).toEqual([[90, 89]]);
+    expect(renders).toBe(2);
+
+    act(() =>
+      useLapTimesStore.getState().applySnapshot({
+        ...snapshot,
+        version: 2,
+      })
+    );
+    expect(renders).toBe(2);
   });
 });

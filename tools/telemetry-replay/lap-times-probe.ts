@@ -31,10 +31,7 @@ export const createLapTimesProbe = (): ReplayProbe<
           (max, history) => Math.max(max, history.length),
           0
         );
-        if (
-          (maxHistory === 1 || maxHistory === 5 || maxHistory === 10) &&
-          !recordedDepths.has(maxHistory)
-        ) {
+        if (maxHistory === 1 && !recordedDepths.has(maxHistory)) {
           recordedDepths.add(maxHistory);
           checkpoint = `history-depth:${maxHistory}`;
         }

@@ -29,6 +29,11 @@ const filterOutliers = (lapTimes: readonly number[]): readonly number[] => {
   return lapTimes.filter((time) => Math.abs(time - mean) <= threshold);
 };
 
+const paceFor = (history: readonly (readonly number[])[]): number[] =>
+  history.map((samples) =>
+    samples.length ? median(filterOutliers(samples)) : 0
+  );
+
 const numericValues = (
   frame: Telemetry,
   key: keyof Telemetry
@@ -82,7 +87,7 @@ export class LapTimesProcessor implements TelemetryProcessor<LapTimesSnapshot> {
       this.lastLapTimes = [...lapTimes];
       this.history = lapTimes.map(() => []);
       this.latest = {
-        lapTimes: [],
+        lapTimes: paceFor(this.history),
         lapTimeHistory: this.history,
         sessionNum,
         version: this.latest.version + 1,
@@ -93,7 +98,7 @@ export class LapTimesProcessor implements TelemetryProcessor<LapTimesSnapshot> {
       this.lastLapTimes = [...lapTimes];
       this.history = lapTimes.map((_, carIdx) => this.history[carIdx] ?? []);
       this.latest = {
-        ...this.latest,
+        lapTimes: paceFor(this.history),
         lapTimeHistory: this.history,
         sessionNum,
         version: this.latest.version + 1,
@@ -115,9 +120,7 @@ export class LapTimesProcessor implements TelemetryProcessor<LapTimesSnapshot> {
 
     this.history = history;
     this.latest = {
-      lapTimes: history.map((samples) =>
-        samples.length ? median(filterOutliers(samples)) : 0
-      ),
+      lapTimes: paceFor(history),
       lapTimeHistory: history,
       sessionNum,
       version: this.latest.version + 1,

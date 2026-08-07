@@ -12,7 +12,6 @@ import {
   SessionProvider,
   TelemetryProvider,
   useLapTimesStoreUpdater,
-  useLapTimesStore,
   usePitLapStoreUpdater,
   useDrivingState,
   useWeekendInfoNumCarClasses,
@@ -35,7 +34,7 @@ import {
   type CalculationResult,
   type RaceResult,
 } from '@irdashies/utils/iratingGain';
-import { useState, useEffect, Fragment, useMemo } from 'react';
+import { useState, Fragment, useMemo } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import type { ResolvedDriverTag } from './hooks/useDriverTagMap';
@@ -1318,33 +1317,20 @@ const DEMO_LAP_TIMES: Record<number, number> = {
 };
 
 const NUM_CARS = 64;
-
-/**
- * Seeds the LapTimesStore with realistic rolling lap history for demo purposes.
- * Applies a channel-shaped snapshot with realistic rolling history.
- */
-const LapHistorySeeder = () => {
-  const applySnapshot = useLapTimesStore((s) => s.applySnapshot);
-
-  useEffect(() => {
-    const baseTimes = Array.from({ length: NUM_CARS }, (_, idx) =>
-      DEMO_LAP_TIMES[idx] !== undefined ? DEMO_LAP_TIMES[idx] : 0
-    );
-
-    const variations = [0, 0.3, -0.2, 0.5, -0.4, 0.1];
-    const lapTimeHistory = baseTimes.map((base) =>
+const AVG_LAP_TIME_SNAPSHOT = (() => {
+  const lapTimes = Array.from({ length: NUM_CARS }, (_, idx) =>
+    DEMO_LAP_TIMES[idx] !== undefined ? DEMO_LAP_TIMES[idx] : 0
+  );
+  const variations = [0, 0.3, -0.2, 0.5, -0.4, 0.1];
+  return {
+    lapTimes,
+    lapTimeHistory: lapTimes.map((base) =>
       base > 0 ? variations.map((variation) => base + variation) : []
-    );
-    applySnapshot({
-      lapTimes: baseTimes,
-      lapTimeHistory,
-      sessionNum: 0,
-      version: 1,
-    });
-  }, [applySnapshot]);
-
-  return null;
-};
+    ),
+    sessionNum: 0,
+    version: 1,
+  };
+})();
 
 const baseConfig = {
   badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
@@ -1470,13 +1456,11 @@ export const WithFlags: Story = {
 
 export const AvgLapTime: Story = {
   name: 'Avg Lap Time Column',
-  render: () => (
-    <>
-      <LapHistorySeeder />
-      <Standings />
-    </>
-  ),
+  render: () => <Standings />,
   decorators: [
+    ChannelSnapshotDecorator({
+      'lap-times.snapshot': AVG_LAP_TIME_SNAPSHOT,
+    }),
     TelemetryDecoratorWithConfig(undefined, {
       standings: {
         avgLapTime: { enabled: true, numLaps: 5, timeFormat: 'mixed' },

@@ -13,7 +13,7 @@ describe('LapTimesProcessor', () => {
     const processor = new LapTimesProcessor();
     processor.onFrame(frame([90.5, 91.2]));
     expect(processor.snapshot()).toMatchObject({
-      lapTimes: [],
+      lapTimes: [0, 0],
       lapTimeHistory: [[], []],
       sessionNum: 1,
     });
@@ -59,9 +59,35 @@ describe('LapTimesProcessor', () => {
     processor.onFrame(frame([89], 2));
 
     expect(processor.snapshot()).toMatchObject({
-      lapTimes: [],
+      lapTimes: [0],
       lapTimeHistory: [[]],
       sessionNum: 2,
+    });
+  });
+
+  it('resets when SessionNum changes between frames', () => {
+    const processor = new LapTimesProcessor();
+    processor.onFrame(frame([90], 1));
+    processor.onFrame(frame([89], 1));
+    processor.onFrame(frame([88], 2));
+
+    expect(processor.snapshot()).toMatchObject({
+      lapTimes: [],
+      lapTimeHistory: [],
+      sessionNum: 2,
+    });
+  });
+
+  it('stops aggregating after a disconnect', () => {
+    const processor = new LapTimesProcessor();
+    processor.onFrame(frame([90]));
+    processor.onLifecycle({ type: 'disconnect' });
+    processor.onFrame(frame([89]));
+
+    expect(processor.snapshot()).toMatchObject({
+      lapTimes: [],
+      lapTimeHistory: [],
+      sessionNum: null,
     });
   });
 
@@ -82,6 +108,9 @@ describe('LapTimesProcessor', () => {
     processor.onFrame(frame([90]));
     processor.onFrame(frame([89]));
     processor.onFrame(frame([89, 92]));
-    expect(processor.snapshot().lapTimeHistory).toEqual([[89], []]);
+    expect(processor.snapshot()).toMatchObject({
+      lapTimes: [89, 0],
+      lapTimeHistory: [[89], []],
+    });
   });
 });
