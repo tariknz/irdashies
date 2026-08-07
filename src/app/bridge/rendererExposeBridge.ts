@@ -23,9 +23,31 @@ import {
   isRendererPerfMetricsEnabled,
   recordTelemetryCallback,
 } from '../rendererPerfMetrics';
+import {
+  LEGACY_STREAM_BRIDGE,
+  type LegacyRendererStream,
+} from './legacyRendererSubscriptions';
+import { createSubscriptionBridgeClient, defineBridge } from './defineBridge';
 
 export function exposeBridge() {
-  contextBridge.exposeInMainWorld('irsdkBridge', {
+  const legacySubscriptions =
+    createSubscriptionBridgeClient<LegacyRendererStream>(LEGACY_STREAM_BRIDGE);
+  const legacyListenerCounts = new Map<LegacyRendererStream, number>();
+  const addLegacyListener = (stream: LegacyRendererStream) => {
+    const count = legacyListenerCounts.get(stream) ?? 0;
+    legacyListenerCounts.set(stream, count + 1);
+    if (count === 0) void legacySubscriptions.subscribe(stream);
+  };
+  const removeLegacyListener = (stream: LegacyRendererStream) => {
+    const count = legacyListenerCounts.get(stream) ?? 0;
+    if (count <= 1) {
+      legacyListenerCounts.delete(stream);
+      void legacySubscriptions.unsubscribe(stream);
+      return;
+    }
+    legacyListenerCounts.set(stream, count - 1);
+  };
+  defineBridge<IrSdkBridge>('irsdkBridge', {
     onTelemetry: (callback: (value: Telemetry) => void) => {
       const handler = (_: Electron.IpcRendererEvent, value: Telemetry) => {
         if (!isRendererPerfMetricsEnabled()) {
@@ -36,15 +58,23 @@ export function exposeBridge() {
         callback(value);
         recordTelemetryCallback(performance.now() - start);
       };
+      addLegacyListener('telemetry');
       ipcRenderer.on('telemetry', handler);
-      return () => ipcRenderer.removeListener('telemetry', handler);
+      return () => {
+        ipcRenderer.removeListener('telemetry', handler);
+        removeLegacyListener('telemetry');
+      };
     },
     onSessionData: (callback: (value: Session) => void) => {
       const handler = (_: Electron.IpcRendererEvent, value: Session) => {
         callback(value);
       };
+      addLegacyListener('sessionData');
       ipcRenderer.on('sessionData', handler);
-      return () => ipcRenderer.removeListener('sessionData', handler);
+      return () => {
+        ipcRenderer.removeListener('sessionData', handler);
+        removeLegacyListener('sessionData');
+      };
     },
     onRunningState: (callback: (value: boolean) => void) => {
       const handler = (_: Electron.IpcRendererEvent, value: boolean) => {
@@ -54,11 +84,15 @@ export function exposeBridge() {
       return () => ipcRenderer.removeListener('runningState', handler);
     },
     stop: () => {
+      for (const stream of legacyListenerCounts.keys()) {
+        void legacySubscriptions.unsubscribe(stream);
+      }
+      legacyListenerCounts.clear();
       ipcRenderer.removeAllListeners('telemetry');
       ipcRenderer.removeAllListeners('sessionData');
       ipcRenderer.removeAllListeners('runningState');
     },
-  } as IrSdkBridge);
+  });
 
   contextBridge.exposeInMainWorld('dashboardBridge', {
     onEditModeToggled: (callback: (value: boolean) => void) => {

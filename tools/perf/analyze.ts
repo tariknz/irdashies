@@ -120,6 +120,8 @@ export interface PerfSummary {
     frameTimeP99MeanMs: number;
     worstFrameMs: number;
     telemetryCallbackRateHz: number;
+    channelCallbackRateHz: number;
+    totalWakeupRateHz: number;
     telemetryCallbackP99MeanMs: number;
     telemetryCallbackP99WorstMs: number;
     framesOver25MsPercent: number;
@@ -247,6 +249,18 @@ export function summarizeCapture(
     renderer
       .filter((sample) => sample.telemetryCallbackMs !== undefined)
       .reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
+  const rendererSeconds =
+    renderer.reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
+  const telemetryWakeups = renderer.reduce(
+    (sum, sample) =>
+      sum + (sample.telemetryWakeups ?? sample.telemetryCallbackMs?.count ?? 0),
+    0
+  );
+  const channelWakeups = renderer.reduce(
+    (sum, sample) =>
+      sum + (sample.channelWakeups ?? sample.channelCallbackMs?.count ?? 0),
+    0
+  );
   const processTelemetry = effectiveMain
     .map((sample) => sample.sections.processTelemetry)
     .filter((value): value is SectionStats => value !== undefined);
@@ -537,6 +551,12 @@ export function summarizeCapture(
               (sum, stats) => sum + stats.count,
               0
             ) / rendererTelemetrySeconds,
+      channelCallbackRateHz:
+        rendererSeconds === 0 ? 0 : channelWakeups / rendererSeconds,
+      totalWakeupRateHz:
+        rendererSeconds === 0
+          ? 0
+          : (telemetryWakeups + channelWakeups) / rendererSeconds,
       telemetryCallbackP99MeanMs: weightedAverage(
         rendererTelemetryCallbacks.map((stats) => ({
           value: stats.p99,

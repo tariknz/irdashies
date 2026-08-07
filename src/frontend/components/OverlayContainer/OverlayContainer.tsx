@@ -16,6 +16,7 @@ import { TopSpeedUpdater } from './TopSpeedUpdater';
 import { SessionTimingUpdater } from './SessionTimingUpdater';
 import { TrackTemperatureUpdater } from './TrackTemperatureUpdater';
 import { SessionBestLapUpdater } from './SessionBestLapUpdater';
+import { WidgetRuntimeProvider } from '../../widgetRuntime';
 
 export const OverlayContainer = memo(() => {
   const {
@@ -194,7 +195,9 @@ export const OverlayContainer = memo(() => {
                 label={`widget:${widget.type || widget.id}`}
                 resetAfterMs={2000}
               >
-                <WidgetComponent {...widget.config} />
+                <WidgetRuntimeProvider widgetType={widget.type || widget.id}>
+                  <WidgetComponent {...widget.config} />
+                </WidgetRuntimeProvider>
               </ErrorBoundary>
             ) : null}
           </WidgetContainer>

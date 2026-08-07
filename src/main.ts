@@ -34,6 +34,7 @@ import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { createPerfDashboard, getPerfRunConfig } from './app/perfRunConfig';
 import { ChannelBus, setupChannelBridge } from './app/bridge/channelBridge';
 import { connectSessionLifecycleChannel } from './app/bridge/sessionLifecycleChannel';
+import { setupLegacyRendererSubscriptions } from './app/bridge/legacyRendererSubscriptions';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -54,6 +55,7 @@ overlayManager.setupAutoStart();
 let keybindingManager: KeybindingManager | undefined;
 const channelBus = new ChannelBus();
 let disconnectLifecycleChannel: (() => void) | undefined;
+let disposeLegacySubscriptions: (() => void) | undefined;
 
 app.on('ready', async () => {
   // Don't start services if we don't have the single instance lock
@@ -75,6 +77,9 @@ app.on('ready', async () => {
   }
 
   setupChannelBridge(channelBus);
+  const legacySubscriptions = setupLegacyRendererSubscriptions();
+  disposeLegacySubscriptions = legacySubscriptions.dispose;
+  overlayManager.setLegacyStreamSubscriptions(legacySubscriptions.registry);
   disconnectLifecycleChannel = connectSessionLifecycleChannel(
     getSessionLifecycle(),
     channelBus
@@ -96,7 +101,7 @@ app.on('ready', async () => {
   setupChromiumFlagsBridge();
 
   // Start component server for browser components
-  await startComponentServer(bridge, dashboardBridge);
+  await startComponentServer(bridge, dashboardBridge, channelBus);
 
   ipcMain.handle('getComponentServerPort', () => getComponentServerPort());
 
@@ -151,6 +156,7 @@ app.on('before-quit', () => {
   overlayManager.markQuitting();
   keybindingManager?.stopGamepad();
   disconnectLifecycleChannel?.();
+  disposeLegacySubscriptions?.();
   channelBus.dispose();
   // Synchronous flush so any pending debounced reference-lap write completes
   // before the process exits.

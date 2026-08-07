@@ -3,6 +3,7 @@ import { useEffect, type ReactNode, useState } from 'react';
 import { FuelCalculator } from './FuelCalculator';
 import {
   DynamicTelemetrySelector,
+  ChannelSnapshotDecorator,
   TelemetryDecorator,
 } from '@irdashies/storybook';
 import { useFuelStore } from './FuelStore';
@@ -117,11 +118,46 @@ const previewFuelData: FuelCalculation = {
   maxQualify: null,
 };
 
+const previewProjection = {
+  isReplay: false,
+  fuelLevel: previewFuelData.fuelLevel,
+  fuelLevelPct: previewFuelData.fuelLevel / 60,
+  currentLap: previewFuelData.currentLap,
+  lapDistPct: 0.55,
+  currentLapUsage: previewFuelData.currentLapUsage ?? 0,
+  projectedLapUsage: previewFuelData.projectedLapUsage ?? 0,
+  lastLapUsage: previewFuelData.lastLapUsage,
+  sessionLapsRemain: previewFuelData.lapsRemaining,
+  sessionTimeRemain: 2700,
+  sessionTimeTotal: 3600,
+  sessionFlags: 0,
+  sessionState: 4,
+  sessionNum: 0,
+  sessionLaps: previewFuelData.totalLaps,
+  calculatedTotalRaceLaps: previewFuelData.totalLaps,
+  isFixedLapRace: true,
+  sessionType: 'Race',
+  isOnTrack: true,
+  fuelTankCapacity: 60,
+  completedLaps: [],
+  engine: {
+    accumulatedRefuel: 0,
+    isLapDistPctReset: false,
+    lapCrossingTime: 180,
+    lapStartFuel: 33.9,
+    lastLap: 2,
+    lastLapDistPct: 0.55,
+    lastSessionFlags: 0,
+    wasOnPitRoad: false,
+  },
+};
+
 export default {
   component: FuelCalculator,
   title: 'widgets/FuelCalculator',
   args: baselineArgs,
   decorators: [
+    ChannelSnapshotDecorator({ 'fuel.projection': previewProjection }),
     (Story, context) => (
       <OverlayFrame
         height={

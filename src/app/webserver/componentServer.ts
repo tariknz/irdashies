@@ -186,7 +186,8 @@ async function serveStaticFile(filePath: string, res: http.ServerResponse) {
  */
 export async function startComponentServer(
   irsdkBridge?: IrSdkBridge,
-  dashboardBridge?: DashboardBridge
+  dashboardBridge?: DashboardBridge,
+  channelBus?: import('../bridge/channelBridge').ChannelBus
 ) {
   const { getDashboard, getCurrentProfileId } =
     await import('../storage/dashboards');
@@ -458,7 +459,8 @@ export async function startComponentServer(
       const { resubscribeToBridge } = createBridgeProxy(
         httpServer,
         irsdkBridge,
-        dashboardBridge
+        dashboardBridge,
+        channelBus
       );
 
       const { onBridgeChanged } = await import('../bridge/iracingSdk/setup');

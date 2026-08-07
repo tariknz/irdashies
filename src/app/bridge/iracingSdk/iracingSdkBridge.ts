@@ -146,7 +146,9 @@ export async function publishIRacingSDKEvents(
   perfMetrics.startReporting();
   const fuelProjectionRuntime =
     lifecycle && channelBus
-      ? new FuelProjectionRuntime(channelBus, lifecycle, perfMetrics)
+      ? new FuelProjectionRuntime(channelBus, lifecycle, perfMetrics, {
+          aggregateReplay: isTapeReplay,
+        })
       : undefined;
 
   let shouldStop = false;
@@ -245,7 +247,10 @@ export async function publishIRacingSDKEvents(
           lifecycle?._onTelemetry(telemetry);
           perfMetrics.markEnd('lifecycleTelemetry');
           fuelProjectionRuntime?.onFrame(telemetry);
-          if (perfTelemetryDeliveryEnabled) {
+          if (
+            perfTelemetryDeliveryEnabled &&
+            overlayManager.hasLegacyStreamSubscribers('telemetry')
+          ) {
             perfMetrics.markStart('telemetryProjection');
             const rendererTelemetry = telemetryForRenderer(telemetry);
             perfMetrics.markEnd('telemetryProjection');

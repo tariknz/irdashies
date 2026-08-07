@@ -12,6 +12,11 @@ interface PerformanceSections {
   markEnd(label: string): void;
 }
 
+interface FuelProjectionRuntimeOptions {
+  /** Recorded tapes are chronological and safe to aggregate. */
+  aggregateReplay?: boolean;
+}
+
 export class FuelProjectionRuntime {
   private processor?: FuelProjectionProcessor;
   private latestSession?: Session;
@@ -21,7 +26,8 @@ export class FuelProjectionRuntime {
   constructor(
     private readonly bus: ChannelBus,
     lifecycle: SessionLifecycle,
-    private readonly metrics: PerformanceSections
+    private readonly metrics: PerformanceSections,
+    private readonly options: FuelProjectionRuntimeOptions = {}
   ) {
     this.disconnects = [
       bus.onSubscriberCountChanged((channel, count) => {
@@ -29,9 +35,14 @@ export class FuelProjectionRuntime {
         if (count > 0) this.activate();
         else this.processor = undefined;
       }),
-      lifecycle.onEnter(({ replay }) =>
-        this.onLifecycle({ type: 'enter', replay })
-      ),
+      lifecycle.onEnter(({ replay }) => {
+        this.replaySource = replay;
+        this.processor?.setSourceReplay(replay);
+        this.onLifecycle({
+          type: 'enter',
+          replay: replay && !this.options.aggregateReplay,
+        });
+      }),
       lifecycle.onSessionNumChange(() =>
         this.onLifecycle({ type: 'sessionNumChange' })
       ),
@@ -61,18 +72,19 @@ export class FuelProjectionRuntime {
 
   private activate(): void {
     if (this.processor) return;
-    this.processor = new FuelProjectionProcessor();
+    this.processor = new FuelProjectionProcessor({
+      sourceReplay: this.replaySource ?? false,
+    });
     if (this.replaySource !== undefined) {
       this.processor.onLifecycle({
         type: 'enter',
-        replay: this.replaySource,
+        replay: this.replaySource && !this.options.aggregateReplay,
       });
     }
     if (this.latestSession) this.processor.init(this.latestSession);
   }
 
   private onLifecycle(event: SessionLifecycleEvent): void {
-    if (event.type === 'enter') this.replaySource = event.replay;
     this.processor?.onLifecycle(event);
     if (event.type === 'disconnect') {
       this.latestSession = undefined;

@@ -73,4 +73,37 @@ describe('FuelProjectionRuntime', () => {
       expect.objectContaining({ fuelLevel: 0, currentLap: 0 })
     );
   });
+
+  it('aggregates chronological tape replay when explicitly enabled', () => {
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    const lifecycle = createSessionLifecycle();
+    const runtime = new FuelProjectionRuntime(
+      bus,
+      lifecycle,
+      { markStart: vi.fn(), markEnd: vi.fn() },
+      { aggregateReplay: true }
+    );
+    lifecycle._onEnter({ replay: true });
+    bus.subscribe(
+      {
+        id: 3,
+        isDestroyed: () => false,
+        isVisible: () => true,
+        send: vi.fn(),
+      },
+      'fuel.projection'
+    );
+
+    runtime.onFrame(telemetry);
+
+    expect(publish).toHaveBeenCalledWith(
+      'fuel.projection',
+      expect.objectContaining({
+        fuelLevel: 40,
+        currentLap: 1,
+        isReplay: true,
+      })
+    );
+  });
 });
