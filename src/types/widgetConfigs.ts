@@ -652,6 +652,26 @@ export interface BattleConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
+export type SessionRetention = 'all' | 5 | 10 | 20;
+
+export interface GantryConfig {
+  /** Display units for speed values. Stored thresholds stay in km/h. */
+  speedUnit: 'mph' | 'km/h' | 'auto';
+  // Incident detection thresholds
+  slowSpeedThreshold: number;
+  slowFrameThreshold: number;
+  suddenStopFromSpeed: number;
+  suddenStopToSpeed: number;
+  suddenStopFrames: number;
+  offTrackDebounce: number;
+  pitEntryDebounce: number;
+  cooldownSeconds: number;
+  // Persistence
+  sessionRetention: SessionRetention;
+}
+
+export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
@@ -688,6 +708,7 @@ export interface WidgetConfigMap {
   heartrate: HeartRateConfig;
   cornername: CornerNameOverlayConfig;
   battle: BattleConfig;
+  gantry: GantryConfig;
 }
 
 export type TypedDashboardWidget<
@@ -724,7 +745,8 @@ export type SettingsTabType =
   | 'history'
   | 'telemetry'
   | 'dashboard'
-  | 'chromium';
+  | 'chromium'
+  | 'incidents';
 
 /** Available widgets for the Fuel Calculator */
 export type FuelWidgetType =

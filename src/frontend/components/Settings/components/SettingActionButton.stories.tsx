@@ -15,3 +15,13 @@ export const Default: Story = {
     onClick: () => alert('Button clicked!'),
   },
 };
+
+export const WithTitleAndDescription: Story = {
+  args: {
+    label: 'Show Window',
+    title: 'Gantry Window',
+    description:
+      'Re-opens the Gantry race control window if you closed it earlier.',
+    onClick: () => alert('Button clicked!'),
+  },
+};

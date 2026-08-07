@@ -14,3 +14,4 @@ export * from './TachometerSettings';
 export * from './TwitchChatSettings';
 export * from './LapTimeLogSettings';
 export * from './SectorDeltaSettings';
+export * from './GantrySettings';

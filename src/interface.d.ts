@@ -8,6 +8,7 @@ import type {
   KeybindingsBridge,
   GamepadHostBridge,
   ChromiumFlagsBridge,
+  RaceControlBridge,
 } from '@irdashies/types';
 import type { ChannelBridge } from '@irdashies/types';
 
@@ -24,5 +25,6 @@ declare global {
     /** Present only in the hidden WebHID host renderer (src/hidHost.ts). */
     gamepadHost?: GamepadHostBridge;
     chromiumFlagsBridge: ChromiumFlagsBridge;
+    raceControlBridge: RaceControlBridge;
   }
 }
