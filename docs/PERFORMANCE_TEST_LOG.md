@@ -80,6 +80,85 @@ When new scenarios are added (e.g. to test specific findings), document them her
 
 ---
 
+### 2026-08-06 · Phase 3 Fuel pilot · PR #656 deterministic A/B · Fuel-only
+
+**Scenario:** Fuel-only dashboard replaying the curated ten-minute AI-race tape
+from frame zero. Baseline and candidate used separate worktrees on the same
+Windows machine, identical saved dashboard/settings, two-overlay window layout,
+and the same 348,187,160-byte tape (`gapCount: 0`). Each build received a
+separate 60-second warm-up followed by a 420-second capture; analysis discarded
+the first 60 seconds of each measured run.
+
+**Baseline:** `0d74f2766fd27a9db3f86c5ca27cf2626b3b5e7a` (after PR #652)
+
+**Candidate:** `e3dd77aad84f0a5ec8393ae29478459bbce8aff1` (after PR #656)
+
+**Raw artifacts:**
+
+- Baseline: `C:\Users\tarik\projects\irdashies-perf-656-baseline\perf-results\2026-08-06T10-29-50-363Z-pr656-baseline-fuel-r1.log`
+- Candidate: `C:\Users\tarik\projects\irdashies-perf-656-candidate\perf-results\2026-08-06T10-38-42-515Z-pr656-candidate-fuel-r1.log`
+- Candidate A/B summary: `2026-08-06T10-38-42-515Z-pr656-candidate-fuel-r1.comparison.summary.md`
+
+**Top-line numbers (60-second analysis warm-up, 5.84-minute steady-state
+window, 71 main samples):**
+
+| Metric                                      |         Baseline |         Candidate |                 Change |
+| ------------------------------------------- | ---------------: | ----------------: | ---------------------: |
+| App CPU                                     |            0.88% |             0.76% |      −0.12 pp (−14.3%) |
+| Main-process CPU                            |           0.135% |            0.117% |     −0.017 pp (−12.9%) |
+| Fuel renderer CPU                           |           0.309% |            0.265% |     −0.044 pp (−14.4%) |
+| App-wide renderer wake-ups                  |          42.27/s |           24.37/s |             **−42.4%** |
+| Legacy telemetry deliveries                 |          42.27/s |        **0.00/s** |              **−100%** |
+| `fuel.projection` delivery to Fuel renderer | configured 5 Hz¹ | ~4.87 Hz measured |               retained |
+| `processTelemetry` mean                     |         0.733 ms |          0.612 ms |                 −16.5% |
+| `processTelemetry` p99 mean                 |         1.736 ms |          1.362 ms |                 −21.5% |
+| Telemetry average / minimum                 | 21.14 / 20.94 Hz |  21.11 / 20.20 Hz |      stable; both pass |
+| Frames over 50 ms                           |           0.000% |            0.000% |              unchanged |
+| Working-set slope                           |     16.35 MB/min |      11.16 MB/min | −31.8%; both fail gate |
+| Private-memory slope                        |     15.73 MB/min |      10.63 MB/min | −32.4%; both fail gate |
+
+¹ PR #652 did not record channel-callback metrics, so its channel delivery rate
+cannot be reconstructed directly from the baseline log. Both builds configure
+`fuel.projection` at 5 Hz. The candidate recorded 24.37 local callback
+invocations per second across five Fuel consumers, equivalent to approximately
+4.87 renderer deliveries per second.
+
+**Correctness and lap coverage:** Both captures crossed completed-lap
+boundaries. Visual captures showed populated five-lap average, min/max,
+fuel-to-add, pit-window, fuel-at-end, time-empty, and confidence calculations in
+both builds. No visible behavior difference was found. There were no replay
+gaps, dropped-update messages, application failures, or unexpected process
+exits. Both runs emitted the same single Chromium Mojo startup warning.
+
+**Gate result:** `processTelemetry` p99, minimum telemetry cadence, and frames
+over 50 ms passed for both builds. The candidate mechanically passed the FPS
+A/B gates, but the tape's iRacing FPS/GPU variables are historical and are not
+host-performance evidence. The steady-state memory-slope gate failed in both
+builds.
+
+**Findings:**
+
+1. **PR #656 validates the Phase 3 Fuel-only subscription boundary.** The Fuel
+   renderer continued receiving `fuel.projection` at its configured rate and
+   stopped receiving the legacy telemetry firehose entirely.
+2. **The deterministic wake-up reduction is conclusive.** App-wide renderer
+   wake-ups fell 42.4%, and the renderer without active Fuel widgets correctly
+   received neither telemetry nor channel wake-ups.
+3. **No functional or frame-pacing regression was observed.** Fuel remained
+   populated after completed laps and both captures recorded zero steady-state
+   frames over 50 ms.
+4. **CPU and memory movements are directional, not conclusive.** App CPU, Fuel
+   renderer CPU, `processTelemetry`, peak memory, and memory slopes all moved
+   favorably, but this is one A/B pair. Repeat before assigning the exact
+   magnitude to PR #656. The memory-slope gate remains open.
+
+**Conclusion:** PR #656 improved the intended architectural performance path
+without a detected regression. It proves the Fuel pilot can opt out of legacy
+telemetry; it does not, by itself, establish that the broader memory-slope
+problem is resolved.
+
+---
+
 ### 2026-05-18 · Combined Phase 2a · PCC race spectated · GR86 at Navarra
 
 **Scenario:** Real multiplayer PCC race at Navarra, 4 classes, 42 drivers. User joined and spectated the first ~15 min of the race rather than driving. 23.5 min log capturing warmup → race start → 15 min of spectating → end.
@@ -931,18 +1010,18 @@ Live record of which architecture review findings have empirical support. Update
 
 ### Confirmed implicated, fix validated
 
-| ID                     | Description                                                             | Validation                                                                                                                                   |
-| ---------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **L1**                 | Synchronous `writeFileSync` on main process                             | Phase 0.5 — tick dips eliminated                                                                                                             |
-| **L2**                 | YAML re-parsed on every `getSessionData` call                           | Phase 0.5 — multi-class startup cost eliminated                                                                                              |
-| **S5**                 | Analytics forwards every warn/error log line to PostHog                 | Phase 0.5 — NetworkService returned to 53 MB baseline                                                                                        |
-| **P1**                 | Full 340-key telemetry payload structured-cloned to every overlay 25 Hz | Phase 1 — Primary slope −97%, broadcast latency −54%                                                                                         |
-| **P2**                 | `useDriverPositions` subscribes to raw `CarIdxLapDistPct`               | Phase 1 — implicit in P1 fix; Primary leak elimination consistent with replacement                                                           |
-| **P4**                 | `SectorTimingStore.tick()` subscribes to raw `LapDistPct`/`SessionTime` | Phase 1 — implicit in P1 fix                                                                                                                 |
-| **H3**                 | Spurious `reset()` calls at boot on undefined→0 SDK-connect transitions | Phase 2a Tier 1 — no duplicate "Resetting lap time history" log lines in P5 boot                                                             |
-| **H4**                 | `PitLapStore.updatePitLaps` clone storm on uneventful ticks             | Phase 2a Tier 1 — Left renderer slope dropped 95%; combined PR shows Standings at −0.4 MB/min (declining)                                    |
-| **Standings widget**   | Per-driver allocation pattern in Standings                              | Phase 2a Tier 1 (via H4) and H1 rewrite — slope now under target across multi-class scenarios                                                |
-| **Main process slope** | Persistent +2–6 MB/min steady-state growth in main process              | Phase 2a combined — Main slope dropped to +0.5 MB/min in combined PR test, at target. Likely attributed to Tier 2a session-boundary cleanup. |
+| ID                     | Description                                                             | Validation                                                                                                                                                    |
+| ---------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **L1**                 | Synchronous `writeFileSync` on main process                             | Phase 0.5 — tick dips eliminated                                                                                                                              |
+| **L2**                 | YAML re-parsed on every `getSessionData` call                           | Phase 0.5 — multi-class startup cost eliminated                                                                                                               |
+| **S5**                 | Analytics forwards every warn/error log line to PostHog                 | Phase 0.5 — NetworkService returned to 53 MB baseline                                                                                                         |
+| **P1**                 | Full 340-key telemetry payload structured-cloned to every overlay 25 Hz | Phase 1 — Primary slope −97%, broadcast latency −54%. Phase 3 Fuel pilot / PR #656 — Fuel-only legacy deliveries −100% and app-wide renderer wake-ups −42.4%. |
+| **P2**                 | `useDriverPositions` subscribes to raw `CarIdxLapDistPct`               | Phase 1 — implicit in P1 fix; Primary leak elimination consistent with replacement                                                                            |
+| **P4**                 | `SectorTimingStore.tick()` subscribes to raw `LapDistPct`/`SessionTime` | Phase 1 — implicit in P1 fix                                                                                                                                  |
+| **H3**                 | Spurious `reset()` calls at boot on undefined→0 SDK-connect transitions | Phase 2a Tier 1 — no duplicate "Resetting lap time history" log lines in P5 boot                                                                              |
+| **H4**                 | `PitLapStore.updatePitLaps` clone storm on uneventful ticks             | Phase 2a Tier 1 — Left renderer slope dropped 95%; combined PR shows Standings at −0.4 MB/min (declining)                                                     |
+| **Standings widget**   | Per-driver allocation pattern in Standings                              | Phase 2a Tier 1 (via H4) and H1 rewrite — slope now under target across multi-class scenarios                                                                 |
+| **Main process slope** | Persistent +2–6 MB/min steady-state growth in main process              | Phase 2a combined — Main slope dropped to +0.5 MB/min in combined PR test, at target. Likely attributed to Tier 2a session-boundary cleanup.                  |
 
 ### Partially fixed, work outstanding
 
