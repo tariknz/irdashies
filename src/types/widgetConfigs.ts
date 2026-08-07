@@ -655,6 +655,8 @@ export interface BattleConfig {
 export type SessionRetention = 'all' | 5 | 10 | 20;
 
 export interface GantryConfig {
+  /** Display units for speed values. Stored thresholds stay in km/h. */
+  units: 'auto' | 'Metric' | 'Imperial';
   // Incident detection thresholds
   slowSpeedThreshold: number;
   slowFrameThreshold: number;
@@ -743,7 +745,8 @@ export type SettingsTabType =
   | 'history'
   | 'telemetry'
   | 'dashboard'
-  | 'chromium';
+  | 'chromium'
+  | 'incidents';
 
 /** Available widgets for the Fuel Calculator */
 export type FuelWidgetType =

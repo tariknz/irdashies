@@ -1,5 +1,6 @@
 interface SettingButtonGroupRowProps<T extends string> {
   title: string;
+  description?: string;
   value: T;
   options: { label: string; value: T }[];
   onChange: (value: T) => void;
@@ -7,13 +8,19 @@ interface SettingButtonGroupRowProps<T extends string> {
 
 export function SettingButtonGroupRow<T extends string>({
   title,
+  description,
   value,
   options,
   onChange,
 }: SettingButtonGroupRowProps<T>) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-md text-slate-300">{title}</span>
+      <div className="max-w-[70%]">
+        <span className="text-md text-slate-300">{title}</span>
+        {description && (
+          <p className="text-sm text-slate-500 mt-1">{description}</p>
+        )}
+      </div>
       <div className="flex items-center gap-2">
         {options.map((opt) => {
           const isActive = opt.value === value;
