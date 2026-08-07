@@ -1,5 +1,10 @@
 import { useMemo } from 'react';
 import { useTelemetryValue, useSessionStore } from '@irdashies/context';
+import {
+  kphFromSpeed,
+  speedFromKph,
+  speedFromMs,
+} from '@irdashies/utils/units';
 
 export interface PitSpeedResult {
   deltaKph: number;
@@ -24,13 +29,15 @@ export const usePitSpeed = (): PitSpeedResult => {
     const limitValue = parseFloat(limitString.split(' ')[0]);
     const limitUnit = limitString.split(' ')[1]?.toLowerCase();
 
-    // Determine limit in both units
-    const limitKph = limitUnit === 'mph' ? limitValue * 1.60934 : limitValue;
-    const limitMph = limitUnit === 'kph' ? limitValue / 1.60934 : limitValue;
+    // Determine limit in both units. iRacing writes the limit in whichever unit
+    // the track uses, so normalise via km/h rather than trusting one of them.
+    const limitKph =
+      limitUnit === 'mph' ? kphFromSpeed(limitValue, 'mph') : limitValue;
+    const limitMph = speedFromKph(limitKph, 'mph');
 
     // Current speed (convert m/s to km/h and mph)
-    const speedKph = speed * 3.6;
-    const speedMph = speed * 2.23694;
+    const speedKph = speedFromMs(speed, 'km/h');
+    const speedMph = speedFromMs(speed, 'mph');
 
     // Calculate deltas
     const deltaKph = speedKph - limitKph;

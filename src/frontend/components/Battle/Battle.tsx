@@ -1,4 +1,6 @@
 import { memo, useMemo } from 'react';
+import { resolveSpeedUnit, speedFromKph } from '@irdashies/utils/units';
+import type { SpeedUnit } from '@irdashies/utils/units';
 import {
   useDrivingState,
   useSessionVisibility,
@@ -87,7 +89,7 @@ interface BattleRowProps {
   stintLaps?: number;
   lastTimeFormat?: import('@irdashies/types').TimeFormat;
   speedKph?: number;
-  isMetricSpeed?: boolean;
+  speedUnit?: SpeedUnit;
   rowIndex: number;
 }
 
@@ -107,7 +109,7 @@ const BattleRow = memo(
     stintLaps,
     lastTimeFormat = 'mixed',
     speedKph,
-    isMetricSpeed = true,
+    speedUnit = 'km/h',
     rowIndex,
   }: BattleRowProps) => {
     const onTrack = entry?.onTrack ?? true;
@@ -216,7 +218,7 @@ const BattleRow = memo(
       } else if (key === 'speed' && settings?.speed?.enabled) {
         const displaySpeed =
           speedKph != null && speedKph > 0
-            ? Math.round(isMetricSpeed ? speedKph : speedKph / 1.60934)
+            ? Math.round(speedFromKph(speedKph, speedUnit))
             : null;
         cols.push(
           <td
@@ -385,10 +387,11 @@ export const Battle = () => {
 
   // Speed: derived from CarIdxLapDistPct movement, in km/h.
   const carSpeeds = useCarIdxSpeed();
-  const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
-  const speedUnit = settings?.speed?.unit ?? 'auto';
-  const isMetricSpeed =
-    speedUnit === 'auto' ? displayUnits === 1 : speedUnit === 'km/h';
+  const displayUnits = useTelemetryValue('DisplayUnits');
+  const resolvedSpeedUnit = resolveSpeedUnit(
+    settings?.speed?.unit,
+    displayUnits
+  );
 
   const stintLaps = (carIdx: number) => {
     const currentLap = carLaps?.[carIdx] ?? 0;
@@ -449,7 +452,7 @@ export const Battle = () => {
             speedKph={
               aheadEntry != null ? carSpeeds[aheadEntry.carIdx] : undefined
             }
-            isMetricSpeed={isMetricSpeed}
+            speedUnit={resolvedSpeedUnit}
             rowIndex={0}
           />
           <BattleRow
@@ -468,7 +471,7 @@ export const Battle = () => {
             speedKph={
               playerEntry != null ? carSpeeds[playerEntry.carIdx] : undefined
             }
-            isMetricSpeed={isMetricSpeed}
+            speedUnit={resolvedSpeedUnit}
             rowIndex={1}
           />
           <BattleRow
@@ -496,7 +499,7 @@ export const Battle = () => {
             speedKph={
               behindEntry != null ? carSpeeds[behindEntry.carIdx] : undefined
             }
-            isMetricSpeed={isMetricSpeed}
+            speedUnit={resolvedSpeedUnit}
             rowIndex={2}
           />
         </tbody>

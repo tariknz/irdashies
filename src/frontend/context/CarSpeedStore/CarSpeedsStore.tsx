@@ -1,5 +1,6 @@
 import type { Telemetry } from '@irdashies/types';
 import { create, useStore } from 'zustand';
+import { speedFromMs } from '@irdashies/utils/units';
 
 export interface CarSpeedBuffer {
   lastLapDistPct: number[];
@@ -65,7 +66,9 @@ export const useCarSpeedsStore = create<CarSpeedsState>((set, get) => ({
         if (wentBackwards && startedNewLap) distancePercent += 1.0;
 
         const distance = trackLength * distancePercent; // meters
-        const speed = deltaTime > 0 ? (distance / deltaTime) * 3.6 : 0; // m/s to km/h
+        // Stored in km/h throughout; converted here once from m/s.
+        const speed =
+          deltaTime > 0 ? speedFromMs(distance / deltaTime, 'km/h') : 0;
         if (!newHistory[idx]) newHistory[idx] = [];
         newHistory[idx].push(speed);
         if (newHistory[idx].length > SPEED_AVG_WINDOW) newHistory[idx].shift();
