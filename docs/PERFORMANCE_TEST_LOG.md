@@ -93,29 +93,29 @@ the first 60 seconds of each measured run.
 
 **Candidate:** `e3dd77aad84f0a5ec8393ae29478459bbce8aff1` (after PR #656)
 
-**Raw artifacts:**
+**Raw artifacts (local-only; not committed):**
 
-- Baseline: `C:\Users\tarik\projects\irdashies-perf-656-baseline\perf-results\2026-08-06T10-29-50-363Z-pr656-baseline-fuel-r1.log`
-- Candidate: `C:\Users\tarik\projects\irdashies-perf-656-candidate\perf-results\2026-08-06T10-38-42-515Z-pr656-candidate-fuel-r1.log`
-- Candidate A/B summary: `2026-08-06T10-38-42-515Z-pr656-candidate-fuel-r1.comparison.summary.md`
+- Baseline worktree: `perf-results/2026-08-06T10-29-50-363Z-pr656-baseline-fuel-r1.log`
+- Candidate worktree: `perf-results/2026-08-06T10-38-42-515Z-pr656-candidate-fuel-r1.log`
+- Candidate A/B summary: `perf-results/2026-08-06T10-38-42-515Z-pr656-candidate-fuel-r1.comparison.summary.md`
 
 **Top-line numbers (60-second analysis warm-up, 5.84-minute steady-state
 window, 71 main samples):**
 
-| Metric                                      |         Baseline |         Candidate |                 Change |
-| ------------------------------------------- | ---------------: | ----------------: | ---------------------: |
-| App CPU                                     |            0.88% |             0.76% |      −0.12 pp (−14.3%) |
-| Main-process CPU                            |           0.135% |            0.117% |     −0.017 pp (−12.9%) |
-| Fuel renderer CPU                           |           0.309% |            0.265% |     −0.044 pp (−14.4%) |
-| App-wide renderer wake-ups                  |          42.27/s |           24.37/s |             **−42.4%** |
-| Legacy telemetry deliveries                 |          42.27/s |        **0.00/s** |              **−100%** |
-| `fuel.projection` delivery to Fuel renderer | configured 5 Hz¹ | ~4.87 Hz measured |               retained |
-| `processTelemetry` mean                     |         0.733 ms |          0.612 ms |                 −16.5% |
-| `processTelemetry` p99 mean                 |         1.736 ms |          1.362 ms |                 −21.5% |
-| Telemetry average / minimum                 | 21.14 / 20.94 Hz |  21.11 / 20.20 Hz |      stable; both pass |
-| Frames over 50 ms                           |           0.000% |            0.000% |              unchanged |
-| Working-set slope                           |     16.35 MB/min |      11.16 MB/min | −31.8%; both fail gate |
-| Private-memory slope                        |     15.73 MB/min |      10.63 MB/min | −32.4%; both fail gate |
+| Metric                                      |          Baseline |         Candidate |                  Change |
+| ------------------------------------------- | ----------------: | ----------------: | ----------------------: |
+| App CPU                                     |             0.88% |             0.76% |       −0.12 pp (−13.6%) |
+| Main-process CPU                            |            0.135% |            0.117% |      −0.018 pp (−13.3%) |
+| Fuel renderer CPU                           |            0.309% |            0.265% |      −0.044 pp (−14.2%) |
+| App-wide renderer wake-ups                  |           42.27/s |           24.37/s |              **−42.4%** |
+| Legacy telemetry deliveries                 |           42.27/s |        **0.00/s** |               **−100%** |
+| `fuel.projection` delivery to Fuel renderer | not instrumented¹ | ~4.87 Hz measured | candidate-only evidence |
+| `processTelemetry` mean                     |          0.733 ms |          0.612 ms |                  −16.5% |
+| `processTelemetry` p99 mean                 |          1.736 ms |          1.362 ms |                  −21.5% |
+| Telemetry average / minimum                 |  21.14 / 20.94 Hz |  21.11 / 20.20 Hz |       stable; both pass |
+| Frames over 50 ms                           |            0.000% |            0.000% |               unchanged |
+| Working-set slope                           |      16.35 MB/min |      11.16 MB/min |  −31.8%; both fail gate |
+| Private-memory slope                        |      15.73 MB/min |      10.63 MB/min |  −32.4%; both fail gate |
 
 ¹ PR #652 did not record channel-callback metrics, so its channel delivery rate
 cannot be reconstructed directly from the baseline log. Both builds configure
@@ -138,9 +138,10 @@ builds.
 
 **Findings:**
 
-1. **PR #656 validates the Phase 3 Fuel-only subscription boundary.** The Fuel
-   renderer continued receiving `fuel.projection` at its configured rate and
-   stopped receiving the legacy telemetry firehose entirely.
+1. **PR #656 validates the Phase 3 Fuel-only subscription boundary.** The
+   candidate Fuel renderer received `fuel.projection` at approximately 4.87 Hz
+   under its 5 Hz configuration and stopped receiving the legacy telemetry
+   firehose entirely. The baseline channel rate was not instrumented.
 2. **The deterministic wake-up reduction is conclusive.** App-wide renderer
    wake-ups fell 42.4%, and the renderer without active Fuel widgets correctly
    received neither telemetry nor channel wake-ups.
