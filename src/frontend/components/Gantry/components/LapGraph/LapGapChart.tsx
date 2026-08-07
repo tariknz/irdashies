@@ -1,4 +1,5 @@
 import { memo, useRef, useState, useMemo } from 'react';
+import { Tooltip } from '../Tooltip/Tooltip';
 
 export interface ChartDriver {
   carIdx: number;
@@ -203,36 +204,54 @@ export const LapGapChart = memo(({ drivers }: Props) => {
           {legendDrivers.map((d) => {
             const color = colorByCarIdx.get(d.carIdx) as string;
             const isActive = activeCarIdx === d.carIdx;
+            const isPinned = selectedCarIdx === d.carIdx;
             return (
-              <button
+              <Tooltip
                 key={d.carIdx}
-                type="button"
-                aria-pressed={isActive}
-                onClick={() => toggleSelected(d.carIdx)}
-                onMouseEnter={() => setHoveredCarIdx(d.carIdx)}
-                onMouseLeave={() => setHoveredCarIdx(null)}
-                className={[
-                  'flex items-center gap-1.5 rounded px-1 py-0.5 text-[10px] leading-none cursor-pointer transition-colors',
-                  isActive ? 'bg-slate-700/60' : 'hover:bg-slate-800/60',
-                ].join(' ')}
+                placement="bottom"
+                content={
+                  isPinned
+                    ? `Click to unpin #${d.carNumber} ${shortName(d.name)} and bring the rest of the field back to full strength.`
+                    : `Hovering highlights #${d.carNumber} ${shortName(d.name)} on the chart. Click to pin the line so it stays highlighted and the others stay dimmed.`
+                }
               >
-                <span
-                  className="w-2 h-2 rounded-full shrink-0"
-                  style={{ backgroundColor: color }}
-                />
-                <span className="text-white font-bold">#{d.carNumber}</span>
-                <span className="text-slate-300">{shortName(d.name)}</span>
-              </button>
+                <button
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={() => toggleSelected(d.carIdx)}
+                  onMouseEnter={() => setHoveredCarIdx(d.carIdx)}
+                  onMouseLeave={() => setHoveredCarIdx(null)}
+                  className={[
+                    'flex items-center gap-1.5 rounded px-1 py-0.5 text-[10px] leading-none cursor-pointer transition-colors',
+                    isActive ? 'bg-slate-700/60' : 'hover:bg-slate-800/60',
+                  ].join(' ')}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: color }}
+                  />
+                  <span className="text-white font-bold">#{d.carNumber}</span>
+                  <span className="text-slate-300">{shortName(d.name)}</span>
+                </button>
+              </Tooltip>
             );
           })}
           {otherCount > 0 && (
-            <span className="flex items-center gap-1.5 px-1 py-0.5 text-[10px] leading-none text-slate-500">
+            <Tooltip
+              placement="bottom"
+              content={`${otherCount} more ${otherCount === 1 ? 'driver is' : 'drivers are'} plotted in grey without a legend entry — only the leading ${MAX_COLORED} get a colour. Hover a grey line on the chart to identify it.`}
+            >
               <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: MUTED_STROKE }}
-              />
-              +{otherCount} others
-            </span>
+                tabIndex={0}
+                className="flex items-center gap-1.5 px-1 py-0.5 text-[10px] leading-none text-slate-500 cursor-help focus:outline-none focus:ring-1 focus:ring-sky-400 rounded"
+              >
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: MUTED_STROKE }}
+                />
+                +{otherCount} others
+              </span>
+            </Tooltip>
           )}
         </div>
       )}

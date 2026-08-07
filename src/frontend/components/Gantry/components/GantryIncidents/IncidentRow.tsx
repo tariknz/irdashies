@@ -2,6 +2,7 @@ import { memo, useState } from 'react';
 import { Copy } from '@phosphor-icons/react';
 import type { Incident } from '@irdashies/types';
 import { IncidentType } from '@irdashies/types';
+import { Tooltip } from '../Tooltip/Tooltip';
 
 const TYPE_STYLES: Record<IncidentType, { label: string; classes: string }> = {
   [IncidentType.PitEntry]: {
@@ -91,28 +92,41 @@ export const IncidentRow = memo(
             </span>
           )}
           {([5, 10, 30] as const).map((seconds) => (
-            <button
+            // Disabled buttons emit no mouse events, so the span carries them.
+            <Tooltip
               key={seconds}
-              onClick={() => handleReplay(seconds)}
-              disabled={!canReplay}
-              className={[
-                'px-2 py-0.5 rounded text-xs font-bold',
+              content={
                 canReplay
-                  ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 hover:bg-indigo-500/30'
-                  : 'bg-white/5 text-slate-600 border border-slate-700 cursor-not-allowed',
-              ].join(' ')}
+                  ? `Jumps the sim's replay to ${seconds} seconds before this incident and points the camera at #${incident.carNumber}.`
+                  : 'Only works while a replay is playing. The sim is running live, so there is no replay position to jump to.'
+              }
             >
-              -{seconds}s
-            </button>
+              <span className="inline-flex">
+                <button
+                  onClick={() => handleReplay(seconds)}
+                  disabled={!canReplay}
+                  className={[
+                    'px-2 py-0.5 rounded text-xs font-bold',
+                    canReplay
+                      ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 hover:bg-indigo-500/30'
+                      : 'bg-white/5 text-slate-600 border border-slate-700 cursor-not-allowed',
+                  ].join(' ')}
+                >
+                  -{seconds}s
+                </button>
+              </span>
+            </Tooltip>
           ))}
           {isDev && incident.debug && (
-            <button
-              onClick={handleCopyLog}
-              className="ml-1 flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-600"
-            >
-              <Copy size={10} />
-              {copied ? 'Copied!' : 'Log'}
-            </button>
+            <Tooltip content="Copies this incident's detection snapshot — trigger, evidence, thresholds and recent frames — to the clipboard. Development builds only.">
+              <button
+                onClick={handleCopyLog}
+                className="ml-1 flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-600"
+              >
+                <Copy size={10} />
+                {copied ? 'Copied!' : 'Log'}
+              </button>
+            </Tooltip>
           )}
         </div>
       </div>

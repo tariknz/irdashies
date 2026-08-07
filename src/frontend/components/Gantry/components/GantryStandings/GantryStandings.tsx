@@ -11,10 +11,103 @@ import {
 import type { Gap } from '../../../Standings/createStandings';
 import { useDriverStandings } from '../../../Standings/hooks/useDriverStandings';
 import { useHighlightColor } from '../../../Standings/hooks/useHighlightColor';
+import { Tooltip } from '../Tooltip/Tooltip';
 
 interface Props {
   followedCarIdx: number | null;
 }
+
+const DELTA_TOOLTIPS = [
+  "How that driver's third-most-recent lap compared with your lap of the same age. Green means they were slower than you, red means faster.",
+  "How that driver's second-most-recent lap compared with your lap of the same age. Green means they were slower than you, red means faster.",
+  "How that driver's last completed lap compared with your last lap. Green means they were slower than you, red means faster.",
+];
+
+const HeaderCell = memo(
+  ({
+    label,
+    tip,
+    className,
+  }: {
+    label: string;
+    tip: string;
+    className: string;
+  }) => (
+    <Tooltip content={tip} placement="bottom">
+      <span
+        tabIndex={0}
+        className={`${className} cursor-help focus:outline-none focus:ring-1 focus:ring-sky-400`}
+      >
+        {label}
+      </span>
+    </Tooltip>
+  )
+);
+HeaderCell.displayName = 'HeaderCell';
+
+const StandingsHeader = memo(() => (
+  <div className="flex items-center px-1 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-900 border-b border-slate-700/50 flex-none">
+    <HeaderCell
+      label="P"
+      tip="Running order within the car class. Rows are grouped by class, leader first."
+      className="w-6 text-center"
+    />
+    <HeaderCell
+      label="#"
+      tip="Car number. The coloured bar to its left is the car's class."
+      className="w-8 text-center border-l-2 border-transparent px-1"
+    />
+    <HeaderCell
+      label="Driver"
+      tip="Driver surname. Click any row to point the sim camera at that car — this only does anything in a replay or while spectating."
+      className="flex-1 truncate px-1 text-left"
+    />
+    <HeaderCell
+      label="T"
+      tip="Tyre compound currently fitted, for cars that report one."
+      className="w-5 text-center"
+    />
+    <HeaderCell
+      label="iR"
+      tip="Driver's iRating at the start of the event."
+      className="w-16 text-right"
+    />
+    <HeaderCell
+      label="Pit"
+      tip="Shows PIT while the car is on pit road, and DNF once it has retired or been disqualified."
+      className="w-5 text-center"
+    />
+    <HeaderCell
+      label="Gap"
+      tip="Time behind the class leader. A value such as 1L means whole laps down; the leader's own row reads 'gap'."
+      className="w-12 text-right px-1"
+    />
+    <HeaderCell
+      label="Int"
+      tip="Time behind the car directly ahead in class. The leader's own row reads 'int'."
+      className="w-12 text-right px-1"
+    />
+    <HeaderCell
+      label="Best"
+      tip="Fastest lap this car has set in the session. Purple marks the fastest lap set by anyone."
+      className="w-14 text-right"
+    />
+    <HeaderCell
+      label="Last"
+      tip="Most recently completed lap. Purple is a session best, green is that driver's personal best."
+      className="w-14 text-right px-2"
+    />
+    {(['L-3', 'L-2', 'L-1'] as const).map((label, i) => (
+      <HeaderCell
+        key={label}
+        label={label}
+        tip={DELTA_TOOLTIPS[i]}
+        className="w-9 text-right px-0.5"
+      />
+    ))}
+  </div>
+));
+StandingsHeader.displayName = 'StandingsHeader';
 
 const formatGap = (
   gap: Gap | undefined,
@@ -70,6 +163,7 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      <StandingsHeader />
       <div className="flex-1 overflow-y-auto min-h-0">
         {standingsByClass.map(([classId, classDrivers]) => {
           const firstDriver = classDrivers[0];
@@ -88,12 +182,18 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
                   borderLeftWidth: 2,
                 }}
               >
-                <span
-                  className="text-xs font-extrabold uppercase tracking-widest"
-                  style={{ color: classColorHex }}
+                <Tooltip
+                  content="Car class group. Position, gap and interval are all worked out within the class, not against the whole field."
+                  placement="bottom"
                 >
-                  {carClass?.name}
-                </span>
+                  <span
+                    tabIndex={0}
+                    className="text-xs font-extrabold uppercase tracking-widest cursor-help focus:outline-none focus:ring-1 focus:ring-sky-400"
+                    style={{ color: classColorHex }}
+                  >
+                    {carClass?.name}
+                  </span>
+                </Tooltip>
               </div>
               {/* Driver rows */}
               {classDrivers.map((driver, idx) => (
@@ -169,7 +269,7 @@ const GantryDriverRow = memo(
         ref={isFollowed ? followedRef : undefined}
         role="button"
         tabIndex={0}
-        title={`Watch ${driver.driver.name}`}
+        title={`Click to point the sim camera at ${driver.driver.name} (works in a replay or while spectating)`}
         onClick={() => onFocusDriver(driver.driver.carNum)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {

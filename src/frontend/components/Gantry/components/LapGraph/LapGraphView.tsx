@@ -3,6 +3,7 @@ import { useDriverStandings } from '../../../Standings/hooks/useDriverStandings'
 import { useLapGapStore } from '@irdashies/context';
 import { LapGapChart } from './LapGapChart';
 import type { ChartDriver } from './LapGapChart';
+import { Tooltip } from '../Tooltip/Tooltip';
 
 export const LapGraphView = memo(() => {
   const standingsByClass = useDriverStandings(undefined, { showAll: true });
@@ -68,17 +69,23 @@ export const LapGraphView = memo(() => {
               style={{ backgroundColor: activeColorHex }}
             />
           )}
-          <select
-            className="bg-slate-800 border border-slate-600 rounded text-xs text-white px-2 py-0.5 cursor-pointer focus:outline-none focus:border-slate-400"
-            value={activeClassId ?? ''}
-            onChange={(e) => setSelectedClassId(e.target.value || null)}
+          <Tooltip
+            placement="bottom"
+            content="Chooses which car class the graph plots. Gaps are measured to that class's leader, so only one class is shown at a time."
           >
-            {classes.map((cls) => (
-              <option key={cls.classId} value={cls.classId}>
-                {cls.name}
-              </option>
-            ))}
-          </select>
+            <select
+              aria-label="Lap graph car class"
+              className="bg-slate-800 border border-slate-600 rounded text-xs text-white px-2 py-0.5 cursor-pointer focus:outline-none focus:border-slate-400"
+              value={activeClassId ?? ''}
+              onChange={(e) => setSelectedClassId(e.target.value || null)}
+            >
+              {classes.map((cls) => (
+                <option key={cls.classId} value={cls.classId}>
+                  {cls.name}
+                </option>
+              ))}
+            </select>
+          </Tooltip>
         </div>
       )}
 
