@@ -7,7 +7,17 @@ export type SessionLifecycleEvent =
 
 export interface ChannelPayloads {
   'fuel.projection': FuelProjectionSnapshot;
+  'lap-times.snapshot': LapTimesSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
+}
+
+export interface LapTimesSnapshot {
+  /** Median filtered pace for each car index. */
+  lapTimes: readonly number[];
+  /** At most the ten most recent observed lap times per car index. */
+  lapTimeHistory: readonly (readonly number[])[];
+  sessionNum: number | null;
+  version: number;
 }
 
 export interface FuelProjectionEngineSnapshot {
@@ -65,6 +75,11 @@ export type ChannelRegistry = Readonly<Record<ChannelName, ChannelDefinition>>;
 
 export const channelRegistry = {
   'fuel.projection': {
+    kind: 'snapshot',
+    defaultRateHz: 5,
+    maxRateHz: 25,
+  },
+  'lap-times.snapshot': {
     kind: 'snapshot',
     defaultRateHz: 5,
     maxRateHz: 25,

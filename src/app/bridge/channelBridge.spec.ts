@@ -104,6 +104,19 @@ describe('ChannelBus', () => {
     });
   });
 
+  it('can discard a cached snapshot without affecting subscribers', () => {
+    const { bus } = createBus();
+    bus.publish('snapshot', { value: 7 });
+    bus.clearSnapshot('snapshot');
+    const target = createTarget();
+    bus.subscribe(target, 'snapshot');
+
+    expect(target.send).not.toHaveBeenCalled();
+    expect(() => bus.clearSnapshot('event')).toThrow(
+      'Cannot clear event channel'
+    );
+  });
+
   it('suppresses hidden renderers and removes destroyed renderers', () => {
     const { bus } = createBus();
     const target = createTarget();

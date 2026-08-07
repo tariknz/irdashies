@@ -4,6 +4,7 @@ import {
   TelemetryDecorator,
   DynamicTelemetrySelector,
   TelemetryDecoratorWithConfig,
+  ChannelSnapshotDecorator,
 } from '@irdashies/storybook';
 import {
   DashboardProvider,
@@ -327,6 +328,16 @@ const RelativeWithoutHeaderFooter = () => {
 export default {
   component: Relative,
   title: 'widgets/Relative',
+  decorators: [
+    ChannelSnapshotDecorator({
+      'lap-times.snapshot': {
+        lapTimes: [],
+        lapTimeHistory: [],
+        sessionNum: null,
+        version: 0,
+      },
+    }),
+  ],
   parameters: {
     controls: {
       exclude: ['telemetryPath'],
