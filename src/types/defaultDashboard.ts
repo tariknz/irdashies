@@ -1420,7 +1420,7 @@ export const defaultDashboard: {
         height: 1080,
       },
       config: {
-        units: 'auto',
+        speedUnit: 'auto',
         slowSpeedThreshold: 15,
         slowFrameThreshold: 10,
         suddenStopFromSpeed: 80,

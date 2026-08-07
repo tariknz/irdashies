@@ -16,14 +16,24 @@ import { SettingDivider } from '../components/SettingDivider';
 import { SettingNumberRow } from '../components/SettingNumberRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 import {
-  resolveGantryUnits,
-  speedFromDisplay,
-  speedMaxToDisplay,
-  speedMinToDisplay,
-  speedToDisplay,
-} from '../../Gantry/hooks/gantryUnits';
+  kphFromSpeed,
+  resolveSpeedUnit,
+  speedFromKph,
+  type SpeedUnit,
+} from '@irdashies/utils/units';
 
 const SETTING_ID = 'gantry';
+
+// Thresholds are stored in km/h; only the inputs convert. Bounds round inward
+// so a converted bound always lands back inside the stored range.
+const toDisplay = (kph: number, unit: SpeedUnit) =>
+  Math.round(speedFromKph(kph, unit));
+const fromDisplay = (value: number, unit: SpeedUnit) =>
+  Math.round(kphFromSpeed(value, unit));
+const minToDisplay = (kph: number, unit: SpeedUnit) =>
+  Math.ceil(speedFromKph(kph, unit));
+const maxToDisplay = (kph: number, unit: SpeedUnit) =>
+  Math.floor(speedFromKph(kph, unit));
 
 const defaultConfig = getWidgetDefaultConfig('gantry');
 
@@ -153,10 +163,10 @@ export const GantrySettings = memo(() => {
   if (!currentDashboard) return <>Loading...</>;
 
   const config = settings.config;
-  const unitSetting = config.units ?? 'auto';
-  const { isMetric, speedUnit } = resolveGantryUnits(unitSetting, displayUnits);
+  const unitSetting = config.speedUnit ?? 'auto';
+  const speedUnit = resolveSpeedUnit(unitSetting, displayUnits);
   // This window has no TelemetryProvider, so Auto cannot read iRacing's setting
-  // here and falls back to km/h.
+  // here and falls back to the shared default.
   const autoUnresolved = unitSetting === 'auto' && displayUnits === undefined;
 
   return (
@@ -218,20 +228,20 @@ export const GantrySettings = memo(() => {
 
                 <SettingDivider />
 
-                <SettingButtonGroupRow<GantryConfig['units']>
+                <SettingButtonGroupRow<GantryConfig['speedUnit']>
                   title="Speed Units"
                   description={`Units for the speed settings on the Incidents tab. Values are always saved in km/h, so switching units never changes how incidents are detected.${
                     autoUnresolved
-                      ? " Auto follows iRacing's own unit setting, which this window cannot read, so it shows km/h here. Pick km/h or mph to choose explicitly."
+                      ? ` Auto follows iRacing's own unit setting, which this window cannot read, so it shows ${speedUnit} here. Pick km/h or mph to choose explicitly.`
                       : ''
                   }`}
                   value={unitSetting}
                   options={[
                     { label: 'Auto', value: 'auto' },
-                    { label: 'km/h', value: 'Metric' },
-                    { label: 'mph', value: 'Imperial' },
+                    { label: 'km/h', value: 'km/h' },
+                    { label: 'mph', value: 'mph' },
                   ]}
-                  onChange={(v) => handleConfigChange({ units: v })}
+                  onChange={(v) => handleConfigChange({ speedUnit: v })}
                 />
 
                 <SettingSelectRow
@@ -264,24 +274,24 @@ export const GantrySettings = memo(() => {
                       description={field.description}
                       value={
                         field.isSpeed
-                          ? speedToDisplay(config[field.key], isMetric)
+                          ? toDisplay(config[field.key], speedUnit)
                           : config[field.key]
                       }
                       min={
                         field.isSpeed
-                          ? speedMinToDisplay(field.min, isMetric)
+                          ? minToDisplay(field.min, speedUnit)
                           : field.min
                       }
                       max={
                         field.isSpeed
-                          ? speedMaxToDisplay(field.max, isMetric)
+                          ? maxToDisplay(field.max, speedUnit)
                           : field.max
                       }
                       step={1}
                       onChange={(v) =>
                         handleConfigChange({
                           [field.key]: field.isSpeed
-                            ? speedFromDisplay(v, isMetric)
+                            ? fromDisplay(v, speedUnit)
                             : v,
                         } as Partial<GantryConfig>)
                       }

@@ -656,7 +656,7 @@ export type SessionRetention = 'all' | 5 | 10 | 20;
 
 export interface GantryConfig {
   /** Display units for speed values. Stored thresholds stay in km/h. */
-  units: 'auto' | 'Metric' | 'Imperial';
+  speedUnit: 'mph' | 'km/h' | 'auto';
   // Incident detection thresholds
   slowSpeedThreshold: number;
   slowFrameThreshold: number;
