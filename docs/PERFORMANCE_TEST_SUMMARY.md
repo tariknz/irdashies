@@ -1,5 +1,16 @@
 # irDashies Performance — Empirical Test Summary
 
+> **August 2026 Phase 3 Fuel update:** A deterministic 420-second A/B of
+> `0d74f276` against `e3dd77aa` validated the first channel-only widget path.
+> The candidate Fuel renderer measured approximately 4.87 Hz
+> `fuel.projection` delivery under its 5 Hz configuration and received zero
+> legacy telemetry callbacks; the baseline channel rate was not instrumented.
+> App-wide renderer wake-ups fell 42.4% with no visible Fuel or frame-pacing
+> regression. CPU and memory metrics also moved favorably, but their exact
+> changes remain inconclusive from one pair, and both builds failed the
+> `<5 MB/min` memory-slope gate. See the newest entry in
+> [`PERFORMANCE_TEST_LOG.md`](./PERFORMANCE_TEST_LOG.md).
+>
 > **July 2026 controlled-replay update:** This historical live-session summary is
 > now complemented by the deterministic, layer-by-layer
 > [`TELEMETRY_PERFORMANCE_REPORT.html`](./TELEMETRY_PERFORMANCE_REPORT.html).
