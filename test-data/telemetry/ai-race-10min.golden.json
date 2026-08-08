@@ -3917,6 +3917,654 @@
           "revision": 78
         }
       }
+    },
+    {
+      "name": "sector-timing-state",
+      "schemaVersion": 1,
+      "frameCount": 36000,
+      "rollingHash": "8b97c6169a6ffdd27d86da09320a344fe4bc9136934a3be0fbb57bb7bac87be9",
+      "checkpoints": {
+        "firstFrame": {
+          "sectors": [],
+          "currentSectorIdx": 0,
+          "sectorEntryTime": 0,
+          "sectorEntryValid": false,
+          "inclusive": {
+            "currentLapSectorTimes": [],
+            "previousLapSectorTimes": [],
+            "currentLapSectorUnclean": [],
+            "previousLapSectorUnclean": [],
+            "sessionBestSectorTimes": [],
+            "previousSessionBestSectorTimes": []
+          },
+          "clean": {
+            "currentLapSectorTimes": [],
+            "previousLapSectorTimes": [],
+            "currentLapSectorUnclean": [],
+            "previousLapSectorUnclean": [],
+            "sessionBestSectorTimes": [],
+            "previousSessionBestSectorTimes": []
+          },
+          "sessionNum": null,
+          "version": 0
+        },
+        "lastFrame": {
+          "sectors": [
+            {
+              "SectorNum": 0,
+              "SectorStartPct": 0
+            },
+            {
+              "SectorNum": 1,
+              "SectorStartPct": 0.143086
+            },
+            {
+              "SectorNum": 2,
+              "SectorStartPct": 0.326681
+            },
+            {
+              "SectorNum": 3,
+              "SectorStartPct": 0.478771
+            },
+            {
+              "SectorNum": 4,
+              "SectorStartPct": 0.760854
+            },
+            {
+              "SectorNum": 5,
+              "SectorStartPct": 0.865939
+            }
+          ],
+          "currentSectorIdx": 5,
+          "sectorEntryTime": 674.9880529333781,
+          "sectorEntryValid": true,
+          "inclusive": {
+            "currentLapSectorTimes": [
+              15.789849019373492,
+              21.78957801389174,
+              24.319744970683246,
+              37.548511371450445,
+              15.077844742505249,
+              null
+            ],
+            "previousLapSectorTimes": [
+              15.789849019373492,
+              21.78957801389174,
+              24.319744970683246,
+              37.548511371450445,
+              15.077844742505249,
+              17.151754535557757
+            ],
+            "currentLapSectorUnclean": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "previousLapSectorUnclean": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "sessionBestSectorTimes": [
+              15.789849019373492,
+              21.78957801389174,
+              23.68826531787778,
+              34.29390115916249,
+              15.077844742505249,
+              17.151754535557757
+            ],
+            "previousSessionBestSectorTimes": [
+              16.17528901355712,
+              21.952445664117818,
+              25.052240846659856,
+              37.023387669347784,
+              15.399739000557474,
+              17.494046900362548
+            ]
+          },
+          "clean": {
+            "currentLapSectorTimes": [
+              15.789849019373492,
+              21.78957801389174,
+              24.319744970683246,
+              37.548511371450445,
+              15.077844742505249,
+              null
+            ],
+            "previousLapSectorTimes": [
+              15.789849019373492,
+              21.78957801389174,
+              24.319744970683246,
+              37.548511371450445,
+              15.077844742505249,
+              17.151754535557757
+            ],
+            "currentLapSectorUnclean": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "previousLapSectorUnclean": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "sessionBestSectorTimes": [
+              15.789849019373492,
+              21.78957801389174,
+              23.68826531787778,
+              34.29390115916249,
+              15.077844742505249,
+              17.151754535557757
+            ],
+            "previousSessionBestSectorTimes": [
+              16.17528901355712,
+              21.952445664117818,
+              25.052240846659856,
+              37.023387669347784,
+              15.399739000557474,
+              17.494046900362548
+            ]
+          },
+          "sessionNum": 0,
+          "version": 36
+        },
+        "session:0": {
+          "sourceTick": -1,
+          "elapsedSeconds": 0.5,
+          "revision": 9
+        },
+        "first-sector-crossing": {
+          "sectors": [
+            {
+              "SectorNum": 0,
+              "SectorStartPct": 0
+            },
+            {
+              "SectorNum": 1,
+              "SectorStartPct": 0.143086
+            },
+            {
+              "SectorNum": 2,
+              "SectorStartPct": 0.326681
+            },
+            {
+              "SectorNum": 3,
+              "SectorStartPct": 0.478771
+            },
+            {
+              "SectorNum": 4,
+              "SectorStartPct": 0.760854
+            },
+            {
+              "SectorNum": 5,
+              "SectorStartPct": 0.865939
+            }
+          ],
+          "currentSectorIdx": 5,
+          "sectorEntryTime": 135.97904939045384,
+          "sectorEntryValid": true,
+          "inclusive": {
+            "currentLapSectorTimes": [
+              null,
+              null,
+              null,
+              null,
+              24.298443115305886,
+              null
+            ],
+            "previousLapSectorTimes": [
+              null,
+              null,
+              null,
+              null,
+              24.298443115305886,
+              null
+            ],
+            "currentLapSectorUnclean": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "previousLapSectorUnclean": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "sessionBestSectorTimes": [
+              null,
+              null,
+              null,
+              null,
+              24.298443115305886,
+              null
+            ],
+            "previousSessionBestSectorTimes": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          },
+          "clean": {
+            "currentLapSectorTimes": [
+              null,
+              null,
+              null,
+              null,
+              24.298443115305886,
+              null
+            ],
+            "previousLapSectorTimes": [
+              null,
+              null,
+              null,
+              null,
+              24.298443115305886,
+              null
+            ],
+            "currentLapSectorUnclean": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "previousLapSectorUnclean": [
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ],
+            "sessionBestSectorTimes": [
+              null,
+              null,
+              null,
+              null,
+              24.298443115305886,
+              null
+            ],
+            "previousSessionBestSectorTimes": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          },
+          "sessionNum": 0,
+          "version": 12
+        },
+        "session:1": {
+          "sourceTick": 5459,
+          "elapsedSeconds": 63.5,
+          "revision": 10
+        },
+        "session:2": {
+          "sourceTick": 8939,
+          "elapsedSeconds": 121.5,
+          "revision": 11
+        },
+        "session:3": {
+          "sourceTick": 13319,
+          "elapsedSeconds": 194.5,
+          "revision": 12
+        },
+        "session:4": {
+          "sourceTick": 13439,
+          "elapsedSeconds": 196.5,
+          "revision": 13
+        },
+        "session:5": {
+          "sourceTick": 13559,
+          "elapsedSeconds": 198.5,
+          "revision": 14
+        },
+        "session:6": {
+          "sourceTick": 13679,
+          "elapsedSeconds": 200.5,
+          "revision": 15
+        },
+        "session:7": {
+          "sourceTick": 13799,
+          "elapsedSeconds": 202.5,
+          "revision": 16
+        },
+        "session:8": {
+          "sourceTick": 13919,
+          "elapsedSeconds": 204.5,
+          "revision": 17
+        },
+        "session:9": {
+          "sourceTick": 14039,
+          "elapsedSeconds": 206.5,
+          "revision": 18
+        },
+        "session:10": {
+          "sourceTick": 14159,
+          "elapsedSeconds": 208.5,
+          "revision": 19
+        },
+        "session:11": {
+          "sourceTick": 14279,
+          "elapsedSeconds": 210.5,
+          "revision": 20
+        },
+        "session:12": {
+          "sourceTick": 14399,
+          "elapsedSeconds": 212.5,
+          "revision": 21
+        },
+        "session:13": {
+          "sourceTick": 14519,
+          "elapsedSeconds": 214.5,
+          "revision": 22
+        },
+        "session:14": {
+          "sourceTick": 20579,
+          "elapsedSeconds": 315.5,
+          "revision": 23
+        },
+        "session:15": {
+          "sourceTick": 20819,
+          "elapsedSeconds": 319.5,
+          "revision": 24
+        },
+        "session:16": {
+          "sourceTick": 20939,
+          "elapsedSeconds": 321.5,
+          "revision": 25
+        },
+        "session:17": {
+          "sourceTick": 21059,
+          "elapsedSeconds": 323.5,
+          "revision": 26
+        },
+        "session:18": {
+          "sourceTick": 21299,
+          "elapsedSeconds": 327.5,
+          "revision": 27
+        },
+        "session:19": {
+          "sourceTick": 21419,
+          "elapsedSeconds": 329.5,
+          "revision": 28
+        },
+        "session:20": {
+          "sourceTick": 21539,
+          "elapsedSeconds": 331.5,
+          "revision": 29
+        },
+        "session:21": {
+          "sourceTick": 21659,
+          "elapsedSeconds": 333.5,
+          "revision": 30
+        },
+        "session:22": {
+          "sourceTick": 21779,
+          "elapsedSeconds": 335.5,
+          "revision": 31
+        },
+        "session:23": {
+          "sourceTick": 21899,
+          "elapsedSeconds": 337.5,
+          "revision": 32
+        },
+        "session:24": {
+          "sourceTick": 22019,
+          "elapsedSeconds": 339.5,
+          "revision": 33
+        },
+        "session:25": {
+          "sourceTick": 22139,
+          "elapsedSeconds": 341.5,
+          "revision": 34
+        },
+        "session:26": {
+          "sourceTick": 22259,
+          "elapsedSeconds": 343.5,
+          "revision": 35
+        },
+        "session:27": {
+          "sourceTick": 22379,
+          "elapsedSeconds": 345.5,
+          "revision": 36
+        },
+        "session:28": {
+          "sourceTick": 22499,
+          "elapsedSeconds": 347.5,
+          "revision": 37
+        },
+        "session:29": {
+          "sourceTick": 22619,
+          "elapsedSeconds": 349.5,
+          "revision": 38
+        },
+        "session:30": {
+          "sourceTick": 22739,
+          "elapsedSeconds": 351.5,
+          "revision": 39
+        },
+        "session:31": {
+          "sourceTick": 27839,
+          "elapsedSeconds": 436.5,
+          "revision": 40
+        },
+        "session:32": {
+          "sourceTick": 27959,
+          "elapsedSeconds": 438.5,
+          "revision": 41
+        },
+        "session:33": {
+          "sourceTick": 28079,
+          "elapsedSeconds": 440.5,
+          "revision": 42
+        },
+        "session:34": {
+          "sourceTick": 28199,
+          "elapsedSeconds": 442.5,
+          "revision": 43
+        },
+        "session:35": {
+          "sourceTick": 28319,
+          "elapsedSeconds": 444.5,
+          "revision": 44
+        },
+        "session:36": {
+          "sourceTick": 28559,
+          "elapsedSeconds": 448.5,
+          "revision": 45
+        },
+        "session:37": {
+          "sourceTick": 28799,
+          "elapsedSeconds": 452.5,
+          "revision": 46
+        },
+        "session:38": {
+          "sourceTick": 28919,
+          "elapsedSeconds": 454.5,
+          "revision": 47
+        },
+        "session:39": {
+          "sourceTick": 29039,
+          "elapsedSeconds": 456.5,
+          "revision": 48
+        },
+        "session:40": {
+          "sourceTick": 29159,
+          "elapsedSeconds": 458.5,
+          "revision": 49
+        },
+        "session:41": {
+          "sourceTick": 29279,
+          "elapsedSeconds": 460.5,
+          "revision": 50
+        },
+        "session:42": {
+          "sourceTick": 29399,
+          "elapsedSeconds": 462.5,
+          "revision": 51
+        },
+        "session:43": {
+          "sourceTick": 29639,
+          "elapsedSeconds": 466.5,
+          "revision": 52
+        },
+        "session:44": {
+          "sourceTick": 29759,
+          "elapsedSeconds": 468.5,
+          "revision": 53
+        },
+        "session:45": {
+          "sourceTick": 29879,
+          "elapsedSeconds": 470.5,
+          "revision": 54
+        },
+        "session:46": {
+          "sourceTick": 29999,
+          "elapsedSeconds": 472.5,
+          "revision": 55
+        },
+        "session:47": {
+          "sourceTick": 30119,
+          "elapsedSeconds": 474.5,
+          "revision": 56
+        },
+        "session:48": {
+          "sourceTick": 30239,
+          "elapsedSeconds": 476.5,
+          "revision": 57
+        },
+        "session:49": {
+          "sourceTick": 30359,
+          "elapsedSeconds": 478.5,
+          "revision": 58
+        },
+        "session:50": {
+          "sourceTick": 30479,
+          "elapsedSeconds": 480.5,
+          "revision": 59
+        },
+        "session:51": {
+          "sourceTick": 34859,
+          "elapsedSeconds": 553.5,
+          "revision": 60
+        },
+        "session:52": {
+          "sourceTick": 35219,
+          "elapsedSeconds": 559.5,
+          "revision": 61
+        },
+        "session:53": {
+          "sourceTick": 35339,
+          "elapsedSeconds": 561.5,
+          "revision": 62
+        },
+        "session:54": {
+          "sourceTick": 35459,
+          "elapsedSeconds": 563.5,
+          "revision": 63
+        },
+        "session:55": {
+          "sourceTick": 35699,
+          "elapsedSeconds": 567.5,
+          "revision": 64
+        },
+        "session:56": {
+          "sourceTick": 36059,
+          "elapsedSeconds": 573.5,
+          "revision": 65
+        },
+        "session:57": {
+          "sourceTick": 36179,
+          "elapsedSeconds": 575.5,
+          "revision": 66
+        },
+        "session:58": {
+          "sourceTick": 36239,
+          "elapsedSeconds": 576.5,
+          "revision": 67
+        },
+        "session:59": {
+          "sourceTick": 36299,
+          "elapsedSeconds": 577.5,
+          "revision": 68
+        },
+        "session:60": {
+          "sourceTick": 36419,
+          "elapsedSeconds": 579.5,
+          "revision": 69
+        },
+        "session:61": {
+          "sourceTick": 36539,
+          "elapsedSeconds": 581.5,
+          "revision": 70
+        },
+        "session:62": {
+          "sourceTick": 36659,
+          "elapsedSeconds": 583.5,
+          "revision": 71
+        },
+        "session:63": {
+          "sourceTick": 36779,
+          "elapsedSeconds": 585.5,
+          "revision": 72
+        },
+        "session:64": {
+          "sourceTick": 36899,
+          "elapsedSeconds": 587.5,
+          "revision": 73
+        },
+        "session:65": {
+          "sourceTick": 37019,
+          "elapsedSeconds": 589.5,
+          "revision": 74
+        },
+        "session:66": {
+          "sourceTick": 37139,
+          "elapsedSeconds": 591.5,
+          "revision": 75
+        },
+        "session:67": {
+          "sourceTick": 37259,
+          "elapsedSeconds": 593.5,
+          "revision": 76
+        },
+        "session:68": {
+          "sourceTick": 37499,
+          "elapsedSeconds": 597.5,
+          "revision": 77
+        },
+        "session:69": {
+          "sourceTick": 37619,
+          "elapsedSeconds": 599.5,
+          "revision": 78
+        }
+      }
     }
   ]
 }

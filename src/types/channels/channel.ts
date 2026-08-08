@@ -1,5 +1,6 @@
 import type { FuelLapData } from '../fuelCalculatorBridge';
 import type { ReferenceLap } from '../referenceLaps';
+import type { Sector } from '../session';
 
 export type SessionLifecycleEvent =
   | { type: 'enter'; replay: boolean }
@@ -12,7 +13,30 @@ export interface ChannelPayloads {
   'lap-times.snapshot': LapTimesSnapshot;
   'reference-laps.snapshot': ReferenceLapsSnapshot;
   'relative-gaps.snapshot': RelativeGapsSnapshot;
+  'sector-timing.snapshot': SectorTimingSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
+}
+
+export interface SectorTimingResultSnapshot {
+  currentLapSectorTimes: readonly (number | null)[];
+  previousLapSectorTimes: readonly (number | null)[];
+  currentLapSectorUnclean: readonly boolean[];
+  previousLapSectorUnclean: readonly boolean[];
+  sessionBestSectorTimes: readonly (number | null)[];
+  previousSessionBestSectorTimes: readonly (number | null)[];
+}
+
+export interface SectorTimingSnapshot {
+  sectors: readonly Sector[];
+  currentSectorIdx: number;
+  sectorEntryTime: number;
+  sectorEntryValid: boolean;
+  /** Timing view which includes sectors completed after leaving the track. */
+  inclusive: SectorTimingResultSnapshot;
+  /** Timing view which ignores sectors completed after leaving the track. */
+  clean: SectorTimingResultSnapshot;
+  sessionNum: number | null;
+  version: number;
 }
 
 export interface RelativeGapsSnapshot {
@@ -126,6 +150,11 @@ export const channelRegistry = {
   'relative-gaps.snapshot': {
     kind: 'snapshot',
     defaultRateHz: 5,
+    maxRateHz: 25,
+  },
+  'sector-timing.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 10,
     maxRateHz: 25,
   },
   'session.lifecycle': { kind: 'event' },
