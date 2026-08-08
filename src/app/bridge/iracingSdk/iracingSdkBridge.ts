@@ -11,6 +11,7 @@ import type { SessionLifecycle } from '../../sessionLifecycle';
 import type { ChannelBus } from '../channelBridge';
 import { FuelProjectionRuntime } from '../../processors/fuelProjectionRuntime';
 import { LapTimesRuntime } from '../../processors/lapTimesRuntime';
+import { CarSpeedsRuntime } from '../../processors/carSpeedsRuntime';
 
 // Keys consumed by the renderer. Anything outside this set is dropped before
 // the telemetry object crosses the IPC boundary — reducing structured-clone
@@ -155,6 +156,10 @@ export async function publishIRacingSDKEvents(
     lifecycle && channelBus
       ? new LapTimesRuntime(channelBus, lifecycle, perfMetrics, isTapeReplay)
       : undefined;
+  const carSpeedsRuntime =
+    lifecycle && channelBus
+      ? new CarSpeedsRuntime(channelBus, lifecycle, perfMetrics, isTapeReplay)
+      : undefined;
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
@@ -253,6 +258,7 @@ export async function publishIRacingSDKEvents(
           perfMetrics.markEnd('lifecycleTelemetry');
           fuelProjectionRuntime?.onFrame(telemetry);
           lapTimesRuntime?.onFrame(telemetry);
+          carSpeedsRuntime?.onFrame(telemetry);
           if (
             perfTelemetryDeliveryEnabled &&
             overlayManager.hasLegacyStreamSubscribers('telemetry')
@@ -282,6 +288,7 @@ export async function publishIRacingSDKEvents(
             latestSession = session;
             lifecycle?._onSession(session);
             fuelProjectionRuntime?.onSession(session);
+            carSpeedsRuntime?.onSession(session);
             overlayManager.publishMessage('sessionData', session);
             sessionCallbacks.forEach((callback) => callback(session));
             perfMetrics.markEnd('sessionPublish');
@@ -340,6 +347,7 @@ export async function publishIRacingSDKEvents(
       runningStateCallbacks.clear();
       fuelProjectionRuntime?.dispose();
       lapTimesRuntime?.dispose();
+      carSpeedsRuntime?.dispose();
       perfMetrics.stopReporting();
     },
   };

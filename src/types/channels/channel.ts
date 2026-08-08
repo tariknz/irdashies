@@ -6,9 +6,17 @@ export type SessionLifecycleEvent =
   | { type: 'disconnect' };
 
 export interface ChannelPayloads {
+  'car-speeds.snapshot': CarSpeedsSnapshot;
   'fuel.projection': FuelProjectionSnapshot;
   'lap-times.snapshot': LapTimesSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
+}
+
+export interface CarSpeedsSnapshot {
+  /** Smoothed speed in km/h for each car index. */
+  carSpeeds: readonly number[];
+  sessionNum: number | null;
+  version: number;
 }
 
 export interface LapTimesSnapshot {
@@ -74,6 +82,11 @@ export type ChannelDefinition =
 export type ChannelRegistry = Readonly<Record<ChannelName, ChannelDefinition>>;
 
 export const channelRegistry = {
+  'car-speeds.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 10,
+    maxRateHz: 25,
+  },
   'fuel.projection': {
     kind: 'snapshot',
     defaultRateHz: 5,

@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSessionStore } from '../SessionStore/SessionStore';
 import { useTelemetryStore } from '../TelemetryStore/TelemetryStore';
-import { useCarSpeedsStore } from '../CarSpeedStore/CarSpeedsStore';
 import { useLapTimesStore } from '../LapTimesStore/LapTimesStore';
 import { usePitLapStore } from '../PitLapStore/PitLapStore';
 import { useBattleGapStore } from '../BattleGapStore/BattleGapStore';
@@ -23,7 +22,6 @@ export const useResetOnDisconnect = (running: boolean) => {
       );
       useSessionStore.getState().resetSession();
       useTelemetryStore.getState().resetTelemetry();
-      useCarSpeedsStore.getState().resetCarSpeeds();
       useLapTimesStore.getState().reset();
       usePitLapStore.getState().reset();
       useBattleGapStore.getState().reset();

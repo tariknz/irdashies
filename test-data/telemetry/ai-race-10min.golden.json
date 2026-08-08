@@ -9,7 +9,7 @@
       "name": "telemetry-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "9a9d82cff972c111b762b06f3c600a173766faef588ee10c315c6f4d1943b930",
+      "rollingHash": "165f345dd95765f5d5a550711148c3a37cb9e259924039412385d38c3fefd19b",
       "checkpoints": {
         "firstFrame": {
           "SessionTime": 90.93333384195805,
@@ -91,6 +91,80 @@
             -1,
             -1,
             -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "CarIdxLapDistPct": [
+            0.7130685448646545,
+            0.7224264740943909,
+            0.7177411317825317,
+            0.7193050384521484,
+            0.7208675146102905,
+            0.7161844968795776,
+            0.714627206325531,
+            0.7239900231361389,
+            0.7161864638328552,
+            0.7208501696586609,
+            0.7146272659301758,
+            0.7192975878715515,
+            0.7177389860153198,
+            0.7224164009094238,
+            0.7083827257156372,
+            0.7068517804145813,
+            0.7099493145942688,
+            0.7036920189857483,
+            0.7115092277526855,
+            0.7130683660507202,
+            0.7068240642547607,
+            0.7052672505378723,
+            0.7037054896354675,
+            0.7115105390548706,
+            0.7083991765975952,
+            0.7052467465400696,
+            0.7099594473838806,
+            0.7255429029464722,
+            0.728661060333252,
+            0.7255426049232483,
+            0.7333386540412903,
+            0.7333387732505798,
+            0.7317798137664795,
+            0.7302201390266418,
+            0.7302205562591553,
+            0.727101743221283,
+            0.7286607623100281,
+            0.727101743221283,
+            0.7239783406257629,
+            0.7317795157432556,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            0.7357015013694763,
             -1,
             -1,
             -1,
@@ -180,6 +254,80 @@
             -1,
             -1,
             -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "CarIdxLapDistPct": [
+            0.9838072061538696,
+            0.17118757963180542,
+            0.11973629891872406,
+            0.03863552212715149,
+            0.16171380877494812,
+            0.024828128516674042,
+            0.030659889802336693,
+            0.18139587342739105,
+            0.05918304994702339,
+            0.09988341480493546,
+            0.023040927946567535,
+            0.060179658234119415,
+            0.13382656872272491,
+            0.1693619042634964,
+            0.9525558352470398,
+            0.9878035187721252,
+            0.9746412634849548,
+            0.927636981010437,
+            0.9854276776313782,
+            0.005266515072435141,
+            0.9245884418487549,
+            0.9649486541748047,
+            0.9656694531440735,
+            0.005637424997985363,
+            0.9961481690406799,
+            0.9263294339179993,
+            0.9983218908309937,
+            0.15786908566951752,
+            0.23273049294948578,
+            0.1591598242521286,
+            0.38764017820358276,
+            0.37657952308654785,
+            0.37402045726776123,
+            0.2527914345264435,
+            0.358221173286438,
+            0.19513735175132751,
+            0.20213523507118225,
+            0.2001984864473343,
+            0.10965584963560104,
+            0.3082989454269409,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            -1,
+            0.0511188879609108,
             -1,
             -1,
             -1,
@@ -1769,6 +1917,598 @@
           ],
           "sessionNum": 0,
           "version": 2
+        },
+        "session:3": {
+          "sourceTick": 13319,
+          "elapsedSeconds": 194.5,
+          "revision": 12
+        },
+        "session:4": {
+          "sourceTick": 13439,
+          "elapsedSeconds": 196.5,
+          "revision": 13
+        },
+        "session:5": {
+          "sourceTick": 13559,
+          "elapsedSeconds": 198.5,
+          "revision": 14
+        },
+        "session:6": {
+          "sourceTick": 13679,
+          "elapsedSeconds": 200.5,
+          "revision": 15
+        },
+        "session:7": {
+          "sourceTick": 13799,
+          "elapsedSeconds": 202.5,
+          "revision": 16
+        },
+        "session:8": {
+          "sourceTick": 13919,
+          "elapsedSeconds": 204.5,
+          "revision": 17
+        },
+        "session:9": {
+          "sourceTick": 14039,
+          "elapsedSeconds": 206.5,
+          "revision": 18
+        },
+        "session:10": {
+          "sourceTick": 14159,
+          "elapsedSeconds": 208.5,
+          "revision": 19
+        },
+        "session:11": {
+          "sourceTick": 14279,
+          "elapsedSeconds": 210.5,
+          "revision": 20
+        },
+        "session:12": {
+          "sourceTick": 14399,
+          "elapsedSeconds": 212.5,
+          "revision": 21
+        },
+        "session:13": {
+          "sourceTick": 14519,
+          "elapsedSeconds": 214.5,
+          "revision": 22
+        },
+        "session:14": {
+          "sourceTick": 20579,
+          "elapsedSeconds": 315.5,
+          "revision": 23
+        },
+        "session:15": {
+          "sourceTick": 20819,
+          "elapsedSeconds": 319.5,
+          "revision": 24
+        },
+        "session:16": {
+          "sourceTick": 20939,
+          "elapsedSeconds": 321.5,
+          "revision": 25
+        },
+        "session:17": {
+          "sourceTick": 21059,
+          "elapsedSeconds": 323.5,
+          "revision": 26
+        },
+        "session:18": {
+          "sourceTick": 21299,
+          "elapsedSeconds": 327.5,
+          "revision": 27
+        },
+        "session:19": {
+          "sourceTick": 21419,
+          "elapsedSeconds": 329.5,
+          "revision": 28
+        },
+        "session:20": {
+          "sourceTick": 21539,
+          "elapsedSeconds": 331.5,
+          "revision": 29
+        },
+        "session:21": {
+          "sourceTick": 21659,
+          "elapsedSeconds": 333.5,
+          "revision": 30
+        },
+        "session:22": {
+          "sourceTick": 21779,
+          "elapsedSeconds": 335.5,
+          "revision": 31
+        },
+        "session:23": {
+          "sourceTick": 21899,
+          "elapsedSeconds": 337.5,
+          "revision": 32
+        },
+        "session:24": {
+          "sourceTick": 22019,
+          "elapsedSeconds": 339.5,
+          "revision": 33
+        },
+        "session:25": {
+          "sourceTick": 22139,
+          "elapsedSeconds": 341.5,
+          "revision": 34
+        },
+        "session:26": {
+          "sourceTick": 22259,
+          "elapsedSeconds": 343.5,
+          "revision": 35
+        },
+        "session:27": {
+          "sourceTick": 22379,
+          "elapsedSeconds": 345.5,
+          "revision": 36
+        },
+        "session:28": {
+          "sourceTick": 22499,
+          "elapsedSeconds": 347.5,
+          "revision": 37
+        },
+        "session:29": {
+          "sourceTick": 22619,
+          "elapsedSeconds": 349.5,
+          "revision": 38
+        },
+        "session:30": {
+          "sourceTick": 22739,
+          "elapsedSeconds": 351.5,
+          "revision": 39
+        },
+        "session:31": {
+          "sourceTick": 27839,
+          "elapsedSeconds": 436.5,
+          "revision": 40
+        },
+        "session:32": {
+          "sourceTick": 27959,
+          "elapsedSeconds": 438.5,
+          "revision": 41
+        },
+        "session:33": {
+          "sourceTick": 28079,
+          "elapsedSeconds": 440.5,
+          "revision": 42
+        },
+        "session:34": {
+          "sourceTick": 28199,
+          "elapsedSeconds": 442.5,
+          "revision": 43
+        },
+        "session:35": {
+          "sourceTick": 28319,
+          "elapsedSeconds": 444.5,
+          "revision": 44
+        },
+        "session:36": {
+          "sourceTick": 28559,
+          "elapsedSeconds": 448.5,
+          "revision": 45
+        },
+        "session:37": {
+          "sourceTick": 28799,
+          "elapsedSeconds": 452.5,
+          "revision": 46
+        },
+        "session:38": {
+          "sourceTick": 28919,
+          "elapsedSeconds": 454.5,
+          "revision": 47
+        },
+        "session:39": {
+          "sourceTick": 29039,
+          "elapsedSeconds": 456.5,
+          "revision": 48
+        },
+        "session:40": {
+          "sourceTick": 29159,
+          "elapsedSeconds": 458.5,
+          "revision": 49
+        },
+        "session:41": {
+          "sourceTick": 29279,
+          "elapsedSeconds": 460.5,
+          "revision": 50
+        },
+        "session:42": {
+          "sourceTick": 29399,
+          "elapsedSeconds": 462.5,
+          "revision": 51
+        },
+        "session:43": {
+          "sourceTick": 29639,
+          "elapsedSeconds": 466.5,
+          "revision": 52
+        },
+        "session:44": {
+          "sourceTick": 29759,
+          "elapsedSeconds": 468.5,
+          "revision": 53
+        },
+        "session:45": {
+          "sourceTick": 29879,
+          "elapsedSeconds": 470.5,
+          "revision": 54
+        },
+        "session:46": {
+          "sourceTick": 29999,
+          "elapsedSeconds": 472.5,
+          "revision": 55
+        },
+        "session:47": {
+          "sourceTick": 30119,
+          "elapsedSeconds": 474.5,
+          "revision": 56
+        },
+        "session:48": {
+          "sourceTick": 30239,
+          "elapsedSeconds": 476.5,
+          "revision": 57
+        },
+        "session:49": {
+          "sourceTick": 30359,
+          "elapsedSeconds": 478.5,
+          "revision": 58
+        },
+        "session:50": {
+          "sourceTick": 30479,
+          "elapsedSeconds": 480.5,
+          "revision": 59
+        },
+        "session:51": {
+          "sourceTick": 34859,
+          "elapsedSeconds": 553.5,
+          "revision": 60
+        },
+        "session:52": {
+          "sourceTick": 35219,
+          "elapsedSeconds": 559.5,
+          "revision": 61
+        },
+        "session:53": {
+          "sourceTick": 35339,
+          "elapsedSeconds": 561.5,
+          "revision": 62
+        },
+        "session:54": {
+          "sourceTick": 35459,
+          "elapsedSeconds": 563.5,
+          "revision": 63
+        },
+        "session:55": {
+          "sourceTick": 35699,
+          "elapsedSeconds": 567.5,
+          "revision": 64
+        },
+        "session:56": {
+          "sourceTick": 36059,
+          "elapsedSeconds": 573.5,
+          "revision": 65
+        },
+        "session:57": {
+          "sourceTick": 36179,
+          "elapsedSeconds": 575.5,
+          "revision": 66
+        },
+        "session:58": {
+          "sourceTick": 36239,
+          "elapsedSeconds": 576.5,
+          "revision": 67
+        },
+        "session:59": {
+          "sourceTick": 36299,
+          "elapsedSeconds": 577.5,
+          "revision": 68
+        },
+        "session:60": {
+          "sourceTick": 36419,
+          "elapsedSeconds": 579.5,
+          "revision": 69
+        },
+        "session:61": {
+          "sourceTick": 36539,
+          "elapsedSeconds": 581.5,
+          "revision": 70
+        },
+        "session:62": {
+          "sourceTick": 36659,
+          "elapsedSeconds": 583.5,
+          "revision": 71
+        },
+        "session:63": {
+          "sourceTick": 36779,
+          "elapsedSeconds": 585.5,
+          "revision": 72
+        },
+        "session:64": {
+          "sourceTick": 36899,
+          "elapsedSeconds": 587.5,
+          "revision": 73
+        },
+        "session:65": {
+          "sourceTick": 37019,
+          "elapsedSeconds": 589.5,
+          "revision": 74
+        },
+        "session:66": {
+          "sourceTick": 37139,
+          "elapsedSeconds": 591.5,
+          "revision": 75
+        },
+        "session:67": {
+          "sourceTick": 37259,
+          "elapsedSeconds": 593.5,
+          "revision": 76
+        },
+        "session:68": {
+          "sourceTick": 37499,
+          "elapsedSeconds": 597.5,
+          "revision": 77
+        },
+        "session:69": {
+          "sourceTick": 37619,
+          "elapsedSeconds": 599.5,
+          "revision": 78
+        }
+      }
+    },
+    {
+      "name": "car-speeds-state",
+      "schemaVersion": 1,
+      "frameCount": 36000,
+      "rollingHash": "f51f524285c0f4900d8214a50a58da1eeab6f8e703307fcec4346b0d5f8f1e1d",
+      "checkpoints": {
+        "firstFrame": {
+          "carSpeeds": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "sessionNum": 0,
+          "version": 1
+        },
+        "lastFrame": {
+          "carSpeeds": [
+            223,
+            121,
+            168,
+            260,
+            167,
+            251,
+            257,
+            129,
+            266,
+            159,
+            253,
+            266,
+            190,
+            127,
+            198,
+            222,
+            214,
+            177,
+            225,
+            236,
+            177,
+            210,
+            208,
+            232,
+            228,
+            178,
+            229,
+            207,
+            228,
+            201,
+            179,
+            139,
+            126,
+            253,
+            90,
+            160,
+            166,
+            149,
+            149,
+            285,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "sessionNum": 0,
+          "version": 6025
+        },
+        "session:0": {
+          "sourceTick": -1,
+          "elapsedSeconds": 0.5,
+          "revision": 9
+        },
+        "first-moving-snapshot": {
+          "carSpeeds": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "sessionNum": 0,
+          "version": 32
+        },
+        "session:1": {
+          "sourceTick": 5459,
+          "elapsedSeconds": 63.5,
+          "revision": 10
+        },
+        "session:2": {
+          "sourceTick": 8939,
+          "elapsedSeconds": 121.5,
+          "revision": 11
         },
         "session:3": {
           "sourceTick": 13319,

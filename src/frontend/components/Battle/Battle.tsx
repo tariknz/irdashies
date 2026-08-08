@@ -386,7 +386,7 @@ export const Battle = () => {
   useBattleGapStoreUpdater({ liveGapAhead, liveGapBehind });
 
   // Speed: derived from CarIdxLapDistPct movement, in km/h.
-  const carSpeeds = useCarIdxSpeed();
+  const carSpeeds = useCarIdxSpeed(settings?.speed?.enabled ?? false);
   const displayUnits = useTelemetryValue('DisplayUnits');
   const resolvedSpeedUnit = resolveSpeedUnit(
     settings?.speed?.unit,

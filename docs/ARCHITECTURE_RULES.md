@@ -66,12 +66,12 @@ Imports flow **downward** in this list. A layer may import from any layer below 
 | Time delta display (0.1 s)                     | `useTelemetryValuesRounded` | 2dp       |
 | Reference-lap interpolation                    | `useTelemetryValuesRounded` | 4dp       |
 | Throttle / Brake / Clutch / SteeringWheelAngle | `useTelemetryValues`        | —         |
-| `CarSpeedsStore` inputs                        | `useTelemetryValues`        | —         |
+| `CarSpeedsProcessor` inputs                    | full precision              | —         |
 | `FuelLevel` / `SessionTime` thresholds         | `useTelemetryValues`        | —         |
 
 ### 2.3 No-round list (do not round, ever)
 
-`Throttle`, `Brake`, `Clutch`, `SteeringWheelAngle`, `FuelLevel`, `FuelLevelPct`, `SessionTime`, anything fed into `CarSpeedsStore`, anything fed into a fuel-projection threshold.
+`Throttle`, `Brake`, `Clutch`, `SteeringWheelAngle`, `FuelLevel`, `FuelLevelPct`, `SessionTime`, anything fed into `CarSpeedsProcessor`, anything fed into a fuel-projection threshold.
 
 **Enforcement:** `grep -rn "useTelemetryValues(['\"]CarIdx" src/frontend` should return only no-round-list entries.
 
@@ -154,9 +154,7 @@ Imports flow **downward** in this list. A layer may import from any layer below 
      id: 'mywidget',
      component: MyWidget,
      settingsComponent: MyWidgetSettings,
-     defaultConfig: {
-       /* ... */
-     },
+     defaultConfig: {/* ... */},
      displayName: 'My Widget',
      alwaysEnabled: false,
      settingsVersion: 1,
