@@ -12,10 +12,17 @@ export interface ChannelPayloads {
   'fuel.projection': FuelProjectionSnapshot;
   'lap-times.snapshot': LapTimesSnapshot;
   'reference-laps.snapshot': ReferenceLapsSnapshot;
+  'radio.snapshot': RadioSnapshot;
   'relative-gaps.snapshot': RelativeGapsSnapshot;
   'sector-timing.snapshot': SectorTimingSnapshot;
   'standings.snapshot': StandingsSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
+}
+
+export interface RadioSnapshot {
+  /** Cars transmitting on the current SDK frame, excluding the idle sentinel. */
+  transmittingCarIdxs: readonly number[];
+  version: number;
 }
 
 export interface StandingsSnapshot {
@@ -165,6 +172,11 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 5,
     maxRateHz: 5,
+  },
+  'radio.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 25,
+    maxRateHz: 25,
   },
   'relative-gaps.snapshot': {
     kind: 'snapshot',

@@ -40,16 +40,20 @@ describe('widget runtime metadata', () => {
       channels: [
         'lap-times.snapshot',
         'reference-laps.snapshot',
+        'radio.snapshot',
         'standings.snapshot',
       ],
+      channelRates: { 'radio.snapshot': 25 },
     });
     expect(getWidgetRuntimeDefinition('relative')).toMatchObject({
       legacyTelemetry: true,
       channels: [
         'lap-times.snapshot',
+        'radio.snapshot',
         'relative-gaps.snapshot',
         'standings.snapshot',
       ],
+      channelRates: { 'radio.snapshot': 25 },
     });
   });
 

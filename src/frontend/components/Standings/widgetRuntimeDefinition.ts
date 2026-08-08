@@ -6,7 +6,9 @@ export default {
   channels: [
     'lap-times.snapshot',
     'reference-laps.snapshot',
+    'radio.snapshot',
     'standings.snapshot',
   ],
   ratePreset: 'gapTiming',
+  channelRates: { 'radio.snapshot': 25 },
 } satisfies WidgetRuntimeDefinition;
