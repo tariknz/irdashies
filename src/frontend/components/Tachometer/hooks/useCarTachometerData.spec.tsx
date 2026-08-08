@@ -10,14 +10,16 @@ vi.mock('@irdashies/context', async (importOriginal) => {
     ...actual,
     useSessionStore: vi.fn(),
     useDriverCarIdx: vi.fn(),
-    useTelemetryValue: vi.fn(),
+    useDriverControlsSnapshot: vi.fn(),
   };
 });
 vi.mock('../../../utils/carData');
 
 const mockUseSessionStore = vi.mocked(Context.useSessionStore);
 const mockUseDriverCarIdx = vi.mocked(Context.useDriverCarIdx);
-const mockUseTelemetryValue = vi.mocked(Context.useTelemetryValue);
+const mockUseDriverControlsSnapshot = vi.mocked(
+  Context.useDriverControlsSnapshot
+);
 
 describe('useCarTachometerData', () => {
   beforeEach(() => {
@@ -25,7 +27,7 @@ describe('useCarTachometerData', () => {
 
     // Default mocks
     mockUseDriverCarIdx.mockReturnValue(0);
-    mockUseTelemetryValue.mockReturnValue(1); // Gear 1
+    mockUseDriverControlsSnapshot.mockReturnValue({ gear: 1, version: 1 });
     mockUseSessionStore.mockReturnValue({
       session: {
         DriverInfo: {

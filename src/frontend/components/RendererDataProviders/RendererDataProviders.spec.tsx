@@ -32,7 +32,7 @@ describe('RendererDataProviders', () => {
   it('preserves legacy providers when any unmigrated widget is enabled', () => {
     dashboard.widgets = [
       { id: 'fuel', enabled: true, layout },
-      { id: 'input', enabled: true, layout },
+      { id: 'pitlanehelper', enabled: true, layout },
     ];
 
     render(<RendererDataProviders />);
