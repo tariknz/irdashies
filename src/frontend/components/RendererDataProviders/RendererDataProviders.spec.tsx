@@ -54,4 +54,16 @@ describe('RendererDataProviders', () => {
     expect(screen.getByTestId('session-provider')).toBeInTheDocument();
     expect(screen.getByTestId('pitlane-provider')).toBeInTheDocument();
   });
+
+  it('keeps session data for Input and Tachometer without raw telemetry', () => {
+    dashboard.widgets = [
+      { id: 'input', enabled: true, layout },
+      { id: 'tachometer', enabled: true, layout },
+    ];
+
+    render(<RendererDataProviders />);
+
+    expect(screen.queryByTestId('telemetry-provider')).not.toBeInTheDocument();
+    expect(screen.getByTestId('session-provider')).toBeInTheDocument();
+  });
 });

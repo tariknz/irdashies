@@ -4,9 +4,11 @@ import {
   TelemetryDecorator,
   TelemetryDecoratorWithConfig,
   ChannelSnapshotDecorator,
+  trackStateStorySnapshot,
 } from '@irdashies/storybook';
 
 const driverControls = ChannelSnapshotDecorator({
+  'track-state.snapshot': trackStateStorySnapshot,
   'driver-controls.snapshot': {
     brake: 0.35,
     throttle: 0.72,

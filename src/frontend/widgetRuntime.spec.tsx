@@ -37,12 +37,14 @@ describe('widget runtime metadata', () => {
   it('discovers Input and Tachometer as driver-control channel consumers', () => {
     expect(getWidgetRuntimeDefinition('input')).toMatchObject({
       legacyTelemetry: false,
-      channels: ['driver-controls.snapshot'],
+      sessionData: true,
+      channels: ['driver-controls.snapshot', 'track-state.snapshot'],
       channelRates: { 'driver-controls.snapshot': 60 },
     });
     expect(getWidgetRuntimeDefinition('tachometer')).toMatchObject({
       legacyTelemetry: false,
-      channels: ['driver-controls.snapshot'],
+      sessionData: true,
+      channels: ['driver-controls.snapshot', 'track-state.snapshot'],
     });
     expect(
       rendererNeedsLegacyTelemetry([widget('input'), widget('tachometer')])

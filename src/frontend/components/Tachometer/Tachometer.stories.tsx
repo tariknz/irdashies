@@ -3,6 +3,7 @@ import { Tachometer } from './Tachometer';
 import {
   ChannelSnapshotDecorator,
   TelemetryDecorator,
+  trackStateStorySnapshot,
 } from '@irdashies/storybook';
 
 const meta: Meta<typeof Tachometer> = {
@@ -11,6 +12,7 @@ const meta: Meta<typeof Tachometer> = {
   decorators: [
     TelemetryDecorator(),
     ChannelSnapshotDecorator({
+      'track-state.snapshot': trackStateStorySnapshot,
       'driver-controls.snapshot': {
         gear: 4,
         rpm: 6200,
