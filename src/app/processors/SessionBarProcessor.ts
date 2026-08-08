@@ -40,14 +40,19 @@ export class SessionBarProcessor implements TelemetryProcessor<SessionBarSnapsho
       this.reset(sessionNum);
     const currentLap = n(frame, 'Lap') ?? 0;
     const speed = n(frame, 'Speed') ?? 0;
-    if (this.lap >= 0 && currentLap !== this.lap) {
+    if (this.lap >= 0 && currentLap > this.lap) {
       this.latest.lastLapTopSpeed = this.lapTop || null;
+      this.latest.sessionBestTopSpeed =
+        Math.max(
+          this.latest.sessionBestTopSpeed ?? 0,
+          this.latest.lastLapTopSpeed ?? 0
+        ) || null;
+      this.lapTop = 0;
+    } else if (this.lap >= 0 && currentLap < this.lap) {
       this.lapTop = 0;
     }
     this.lap = currentLap;
     this.lapTop = Math.max(this.lapTop, speed);
-    this.latest.sessionBestTopSpeed =
-      Math.max(this.latest.sessionBestTopSpeed ?? 0, speed) || null;
     if (time < this.lastTime || time - this.lastTime < 0.2 - 1e-6) return;
     this.lastTime = time;
     const info = this.session?.SessionInfo?.Sessions?.find(
@@ -107,6 +112,9 @@ export class SessionBarProcessor implements TelemetryProcessor<SessionBarSnapsho
       sessionTimeOfDay: n(frame, 'SessionTimeOfDay'),
       playerCarIdx,
       playerCarId: player?.CarID,
+      playerClassified: Boolean(
+        player && !player.CarIsPaceCar && !player.IsSpectator
+      ),
       playerOverallPosition:
         typeof positions[playerCarIdx ?? -1] === 'number'
           ? (positions[playerCarIdx ?? -1] as number)
@@ -138,11 +146,30 @@ export class SessionBarProcessor implements TelemetryProcessor<SessionBarSnapsho
   }
   private empty(): SessionBarSnapshot {
     return {
+      sessionName: undefined,
+      trackDisplayName: undefined,
       displayUnits: 0,
+      brakeBias: undefined,
       brakeBiasIsClio: false,
       incidents: 0,
+      incidentLimit: undefined,
+      incidentWarningInitialLimit: undefined,
+      incidentWarningSubsequentLimit: undefined,
       trackWetness: 0,
+      precipitation: undefined,
+      airTemp: undefined,
+      trackTemp: undefined,
+      windDirection: undefined,
+      windVelocity: undefined,
+      windYaw: undefined,
+      fuelLevel: undefined,
+      lastLapTime: undefined,
+      bestLapTime: undefined,
+      sessionBestLap: undefined,
+      sessionTimeOfDay: undefined,
       playerCarIdx: null,
+      playerCarId: undefined,
+      playerClassified: false,
       playerOverallPosition: 0,
       playerClassPosition: 0,
       playerClassSize: 0,

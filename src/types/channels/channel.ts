@@ -45,6 +45,7 @@ export interface SessionBarSnapshot {
   sessionTimeOfDay?: number;
   playerCarIdx: number | null;
   playerCarId?: number;
+  playerClassified: boolean;
   playerOverallPosition: number;
   playerClassPosition: number;
   playerClassSize: number;

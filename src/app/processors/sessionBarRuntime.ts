@@ -58,6 +58,10 @@ export class SessionBarRuntime {
     this.publish();
   }
   dispose(): void {
+    if (this.processor) {
+      this.processor.onLifecycle({ type: 'disconnect' });
+      this.bus.publish('session-bar.snapshot', this.processor.snapshot());
+    }
     this.deactivate();
     this.disconnects.forEach((d) => d());
   }

@@ -9,7 +9,13 @@ export const ManufacturerPositionItem = memo(
   ({ settings, standalone }: SessionBarItemProps) => {
     const snapshot = useSessionBarSnapshot();
     const playerCarId = snapshot?.playerCarId;
-    if (!playerCarId || !snapshot) return null;
+    if (
+      !playerCarId ||
+      !snapshot ||
+      !snapshot.playerClassified ||
+      snapshot.playerOverallPosition <= 0
+    )
+      return null;
     const playerMfr = CAR_ID_TO_CAR_MANUFACTURER[playerCarId]?.manufacturer;
     if (!playerMfr || playerMfr === 'unknown') return null;
     const mfrSettings = settings?.manufacturerPosition;

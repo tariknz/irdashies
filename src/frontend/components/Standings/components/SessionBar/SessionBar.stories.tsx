@@ -37,6 +37,7 @@ export default {
         sessionTimeOfDay: 43200,
         playerCarIdx: 0,
         playerCarId: 67,
+        playerClassified: true,
         playerOverallPosition: 2,
         playerClassPosition: 2,
         playerClassSize: 12,

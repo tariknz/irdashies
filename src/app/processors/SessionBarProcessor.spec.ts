@@ -48,10 +48,13 @@ describe('SessionBarProcessor', () => {
     processor.onFrame({
       SessionTime: { value: [1.2] },
       SessionNum: { value: [1] },
-      Lap: { value: [2] },
+      Lap: { value: [3] },
       Speed: { value: [40] },
     } as unknown as Telemetry);
-    expect(processor.snapshot().sessionBestTopSpeed).toBe(70);
+    expect(processor.snapshot()).toMatchObject({
+      lastLapTopSpeed: 70,
+      sessionBestTopSpeed: 70,
+    });
     processor.onLifecycle({ type: 'disconnect' });
     expect(processor.snapshot()).toMatchObject({
       sessionNum: null,
