@@ -24,7 +24,7 @@ describe('useRadioActiveCarIdxs', () => {
     expect(result.current).toEqual([5]);
   });
 
-  it('filters out the -1 idle sentinel', () => {
+  it('returns no active cars for an empty radio snapshot', () => {
     vi.mocked(useRadioSnapshot).mockReturnValue({
       transmittingCarIdxs: [],
       version: 1,
@@ -61,6 +61,35 @@ describe('useRadioActiveCarIdxs', () => {
     // After the full window elapses, the car clears even with no new telemetry.
     act(() => {
       vi.advanceTimersByTime(2100);
+    });
+    expect(result.current).toEqual([]);
+  });
+
+  it('starts the persistence window when a long transmission ends', () => {
+    const { result, rerender } = renderHook(
+      ({ value }) => {
+        vi.mocked(useRadioSnapshot).mockReturnValue({
+          transmittingCarIdxs: value,
+          version: 1,
+        });
+        return useRadioActiveCarIdxs(3000);
+      },
+      { initialProps: { value: [5] } }
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(result.current).toEqual([5]);
+
+    rerender({ value: [] });
+    act(() => {
+      vi.advanceTimersByTime(2900);
+    });
+    expect(result.current).toEqual([5]);
+
+    act(() => {
+      vi.advanceTimersByTime(200);
     });
     expect(result.current).toEqual([]);
   });

@@ -11,6 +11,7 @@ export class RadioProcessor implements TelemetryProcessor<RadioSnapshot> {
   readonly tickRateHz = 'event';
 
   private enabled = true;
+  private readonly candidateCarIdxs: number[] = [];
   private readonly latest: RadioSnapshot = {
     transmittingCarIdxs: [],
     version: 0,
@@ -24,22 +25,28 @@ export class RadioProcessor implements TelemetryProcessor<RadioSnapshot> {
     if (!this.enabled) return;
     const source = frame.RadioTransmitCarIdx?.value;
     const target = this.latest.transmittingCarIdxs as number[];
-    let targetIndex = 0;
-    let changed = false;
+    const candidate = this.candidateCarIdxs;
+    candidate.length = 0;
     if (Array.isArray(source)) {
       for (const value of source) {
-        if (typeof value === 'number' && value >= 0) {
-          if (target[targetIndex] !== value) {
-            target[targetIndex] = value;
-            changed = true;
-          }
-          targetIndex += 1;
-        }
+        if (
+          typeof value === 'number' &&
+          value >= 0 &&
+          !candidate.includes(value)
+        )
+          candidate.push(value);
       }
     }
-    if (target.length !== targetIndex) changed = true;
-    target.length = targetIndex;
-    if (changed) this.latest.version += 1;
+    candidate.sort((a, b) => a - b);
+    let changed = target.length !== candidate.length;
+    for (let index = 0; index < candidate.length; index += 1) {
+      if (target[index] !== candidate[index]) changed = true;
+    }
+    if (!changed) return;
+    target.length = candidate.length;
+    for (let index = 0; index < candidate.length; index += 1)
+      target[index] = candidate[index];
+    this.latest.version += 1;
   }
 
   onLifecycle(event: SessionLifecycleEvent): void {

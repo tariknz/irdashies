@@ -24,8 +24,9 @@ export const useRadioActiveCarIdxs = (persistenceMs: number): number[] => {
     [radioTransmitCarIdx]
   );
 
-  // carIdx -> timestamp the icon should clear (last transmit frame + window).
+  // carIdx -> timestamp the icon should clear (key-up + persistence window).
   const expiryRef = useRef<Map<number, number>>(new Map());
+  const previousTransmittingRef = useRef<readonly number[]>([]);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
   );
@@ -37,17 +38,24 @@ export const useRadioActiveCarIdxs = (persistenceMs: number): number[] => {
 
     if (persistenceMs <= 0) {
       expiry.clear();
+      previousTransmittingRef.current = transmitting;
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       return;
     }
 
-    // (Re)stamp each heard car's clear deadline. Seeing a car again before its
-    // deadline simply pushes it out — this is the debounce that keeps the icon
-    // solidly lit through rapid flip-flapping.
+    // Start the full persistence window when a transmission ends. This matters
+    // when a driver talks longer than the configured window: stamping only the
+    // key-down event would let the deadline expire before key-up.
     const now = Date.now();
-    for (const carIdx of transmitting) {
-      expiry.set(carIdx, now + persistenceMs);
+    let transmissionEnded = false;
+    for (const carIdx of previousTransmittingRef.current) {
+      if (!transmitting.includes(carIdx)) {
+        expiry.set(carIdx, now + persistenceMs);
+        transmissionEnded = true;
+      }
     }
+    previousTransmittingRef.current = transmitting;
+    if (transmissionEnded) forceRender();
 
     // Schedule a re-render at the soonest deadline so the icon clears even on an
     // idle grid where no new telemetry arrives to trigger renders. Reschedules

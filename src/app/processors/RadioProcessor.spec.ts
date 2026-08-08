@@ -28,6 +28,20 @@ describe('RadioProcessor', () => {
     });
   });
 
+  it('does not republish reordered or duplicate transmitter indexes', () => {
+    const processor = new RadioProcessor();
+    processor.onFrame(frame([8, 5]));
+    expect(processor.snapshot()).toEqual({
+      transmittingCarIdxs: [5, 8],
+      version: 1,
+    });
+    processor.onFrame(frame([5, 5, 8]));
+    expect(processor.snapshot()).toEqual({
+      transmittingCarIdxs: [5, 8],
+      version: 1,
+    });
+  });
+
   it('clears on lifecycle transitions and ignores replay scrubbing', () => {
     const processor = new RadioProcessor();
     processor.onFrame(frame([5]));
