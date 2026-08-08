@@ -15,18 +15,38 @@ const numberValue = (frame: Telemetry, key: keyof Telemetry): number | null => {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 };
 
-const numberArray = (frame: Telemetry, key: keyof Telemetry): number[] => {
+const copyNumberArray = (
+  frame: Telemetry,
+  key: keyof Telemetry,
+  target: number[]
+): void => {
   const value = frame[key]?.value;
-  return Array.isArray(value)
-    ? value.map((entry) =>
-        typeof entry === 'number' && Number.isFinite(entry) ? entry : 0
-      )
-    : [];
+  if (!Array.isArray(value)) {
+    target.length = 0;
+    return;
+  }
+  target.length = value.length;
+  for (let index = 0; index < value.length; index += 1) {
+    const entry = value[index];
+    target[index] =
+      typeof entry === 'number' && Number.isFinite(entry) ? entry : 0;
+  }
 };
 
-const booleanArray = (frame: Telemetry, key: keyof Telemetry): boolean[] => {
+const copyBooleanArray = (
+  frame: Telemetry,
+  key: keyof Telemetry,
+  target: boolean[]
+): void => {
   const value = frame[key]?.value;
-  return Array.isArray(value) ? value.map(Boolean) : [];
+  if (!Array.isArray(value)) {
+    target.length = 0;
+    return;
+  }
+  target.length = value.length;
+  for (let index = 0; index < value.length; index += 1) {
+    target[index] = Boolean(value[index]);
+  }
 };
 
 export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot> {
@@ -36,9 +56,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
   private driverCarIdx: number | null = null;
   private lastUpdateTime: number | null = null;
   private enabled = true;
-  private pitLaps: number[] = [];
-  private actualTrackSurface: number[] = [];
-  private previousTrackSurface: number[] = [];
+  private readonly actualTrackSurface: number[] = [];
   private latest: StandingsSnapshot = this.emptySnapshot();
 
   init(session: Session): void {
@@ -75,46 +93,57 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     }
     this.lastUpdateTime = sessionTime;
 
-    const carIdxOnPitRoad = booleanArray(frame, 'CarIdxOnPitRoad');
-    const carIdxLap = numberArray(frame, 'CarIdxLap');
-    const carIdxTrackSurface = numberArray(frame, 'CarIdxTrackSurface');
+    copyBooleanArray(frame, 'CarIdxOnPitRoad', this.latest.carIdxOnPitRoad);
+    copyNumberArray(frame, 'CarIdxLap', this.latest.carIdxLap);
+    copyNumberArray(
+      frame,
+      'CarIdxTrackSurface',
+      this.latest.carIdxTrackSurface
+    );
+    copyNumberArray(frame, 'CarIdxF2Time', this.latest.carIdxF2Time);
+    copyNumberArray(frame, 'CarIdxEstTime', this.latest.carIdxEstTime);
+    copyNumberArray(frame, 'CarIdxLapDistPct', this.latest.carIdxLapDistPct);
+    copyNumberArray(
+      frame,
+      'CarIdxTireCompound',
+      this.latest.carIdxTireCompound
+    );
+    copyNumberArray(
+      frame,
+      'CarIdxSessionFlags',
+      this.latest.carIdxSessionFlags
+    );
+    const carIdxOnPitRoad = this.latest.carIdxOnPitRoad;
+    const carIdxLap = this.latest.carIdxLap;
+    const carIdxTrackSurface = this.latest.carIdxTrackSurface;
     const maxLength = Math.max(
       carIdxOnPitRoad.length,
       carIdxLap.length,
       carIdxTrackSurface.length
     );
-    this.pitLaps.length = maxLength;
-    this.previousTrackSurface.length = maxLength;
+    this.latest.lastPitLap.length = maxLength;
+    this.latest.previousCarTrackSurface.length = maxLength;
     this.actualTrackSurface.length = maxLength;
     const sessionState = numberValue(frame, 'SessionState') ?? 0;
     for (let carIdx = 0; carIdx < maxLength; carIdx += 1) {
-      if (carIdxOnPitRoad[carIdx]) this.pitLaps[carIdx] = carIdxLap[carIdx];
+      if (carIdxOnPitRoad[carIdx]) {
+        this.latest.lastPitLap[carIdx] = carIdxLap[carIdx];
+      }
       const surface = carIdxTrackSurface[carIdx] ?? -1;
       if (
         surface >= 0 &&
         sessionState < SessionState.Checkered &&
         this.actualTrackSurface[carIdx] !== surface
       ) {
-        this.previousTrackSurface[carIdx] = this.actualTrackSurface[carIdx];
+        this.latest.previousCarTrackSurface[carIdx] =
+          this.actualTrackSurface[carIdx];
         this.actualTrackSurface[carIdx] = surface;
       }
     }
 
-    this.latest = {
-      focusCarIdx,
-      sessionNum,
-      carIdxF2Time: numberArray(frame, 'CarIdxF2Time'),
-      carIdxEstTime: numberArray(frame, 'CarIdxEstTime'),
-      carIdxOnPitRoad,
-      carIdxLap,
-      carIdxLapDistPct: numberArray(frame, 'CarIdxLapDistPct'),
-      carIdxTrackSurface,
-      carIdxTireCompound: numberArray(frame, 'CarIdxTireCompound'),
-      carIdxSessionFlags: numberArray(frame, 'CarIdxSessionFlags'),
-      lastPitLap: this.pitLaps.slice(),
-      previousCarTrackSurface: this.previousTrackSurface.slice(),
-      version: this.latest.version + 1,
-    };
+    this.latest.focusCarIdx = focusCarIdx;
+    this.latest.sessionNum = sessionNum;
+    this.latest.version += 1;
   }
 
   onLifecycle(event: SessionLifecycleEvent): void {
@@ -133,10 +162,20 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
   private reset(sessionNum: number | null): void {
     const version = this.latest.version + 1;
     this.lastUpdateTime = null;
-    this.pitLaps.length = 0;
     this.actualTrackSurface.length = 0;
-    this.previousTrackSurface.length = 0;
-    this.latest = { ...this.emptySnapshot(), sessionNum, version };
+    this.latest.focusCarIdx = null;
+    this.latest.sessionNum = sessionNum;
+    this.latest.carIdxF2Time.length = 0;
+    this.latest.carIdxEstTime.length = 0;
+    this.latest.carIdxOnPitRoad.length = 0;
+    this.latest.carIdxLap.length = 0;
+    this.latest.carIdxLapDistPct.length = 0;
+    this.latest.carIdxTrackSurface.length = 0;
+    this.latest.carIdxTireCompound.length = 0;
+    this.latest.carIdxSessionFlags.length = 0;
+    this.latest.lastPitLap.length = 0;
+    this.latest.previousCarTrackSurface.length = 0;
+    this.latest.version = version;
   }
 
   private emptySnapshot(): StandingsSnapshot {

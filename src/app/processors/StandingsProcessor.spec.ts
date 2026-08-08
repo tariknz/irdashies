@@ -55,6 +55,23 @@ describe('StandingsProcessor', () => {
     expect(processor.snapshot().version).toBe(2);
   });
 
+  it('reuses projection buffers between accepted frames', () => {
+    const processor = new StandingsProcessor();
+    processor.init(session);
+    processor.onFrame(frame(10));
+    const first = processor.snapshot();
+    const firstLapBuffer = first.carIdxLap;
+    const firstPitBuffer = first.carIdxOnPitRoad;
+    const firstHistoryBuffer = first.lastPitLap;
+
+    processor.onFrame(frame(10.2));
+
+    expect(processor.snapshot()).toBe(first);
+    expect(processor.snapshot().carIdxLap).toBe(firstLapBuffer);
+    expect(processor.snapshot().carIdxOnPitRoad).toBe(firstPitBuffer);
+    expect(processor.snapshot().lastPitLap).toBe(firstHistoryBuffer);
+  });
+
   it('tracks pit laps and previous track surfaces', () => {
     const processor = new StandingsProcessor();
     processor.init(session);
