@@ -45,14 +45,22 @@ describe('widget runtime metadata', () => {
     });
     expect(getWidgetRuntimeDefinition('relative')).toMatchObject({
       legacyTelemetry: true,
-      channels: ['lap-times.snapshot', 'relative-gaps.snapshot'],
+      channels: [
+        'lap-times.snapshot',
+        'relative-gaps.snapshot',
+        'standings.snapshot',
+      ],
     });
   });
 
   it('declares car-speed consumers at the processor rate', () => {
     expect(getWidgetRuntimeDefinition('battle')).toMatchObject({
       legacyTelemetry: true,
-      channels: ['car-speeds.snapshot', 'relative-gaps.snapshot'],
+      channels: [
+        'car-speeds.snapshot',
+        'relative-gaps.snapshot',
+        'standings.snapshot',
+      ],
       channelRates: { 'car-speeds.snapshot': 10 },
     });
     expect(getWidgetRuntimeDefinition('slowcarahead')).toMatchObject({

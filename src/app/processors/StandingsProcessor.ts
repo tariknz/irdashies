@@ -4,7 +4,7 @@ import type {
   StandingsSnapshot,
   Telemetry,
 } from '@irdashies/types';
-import { SessionState } from '@irdashies/types';
+import { SessionState, TrackLocation } from '@irdashies/types';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 
 const UPDATE_INTERVAL_SECONDS = 0.2;
@@ -54,12 +54,25 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
   readonly tickRateHz = 5;
 
   private driverCarIdx: number | null = null;
+  private session?: Session;
   private lastUpdateTime: number | null = null;
   private enabled = true;
   private readonly actualTrackSurface: number[] = [];
+  private readonly classBuffers = new Map<number, number[]>();
+  private readonly activeClassIds: number[] = [];
+  private readonly resultClassPosition: number[] = [];
+  private readonly resultLapsComplete: number[] = [];
+  private resultsSessionNum: number | null = null;
+  private readonly effectiveProgress: number[] = [];
+  private readonly lastProgress: number[] = [];
+  private readonly livePreviousSurface: (number | undefined)[] = [];
+  private sortLaps: unknown[] = [];
+  private sortSessionState = 0;
   private latest: StandingsSnapshot = this.emptySnapshot();
 
   init(session: Session): void {
+    this.session = session;
+    this.resultsSessionNum = null;
     const driverCarIdx = session.DriverInfo?.DriverCarIdx;
     this.driverCarIdx =
       typeof driverCarIdx === 'number' && driverCarIdx >= 0
@@ -113,6 +126,8 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       'CarIdxSessionFlags',
       this.latest.carIdxSessionFlags
     );
+    const sessionState = numberValue(frame, 'SessionState') ?? 0;
+    this.updateLiveClassPositions(frame, sessionNum, sessionState);
     const carIdxOnPitRoad = this.latest.carIdxOnPitRoad;
     const carIdxLap = this.latest.carIdxLap;
     const carIdxTrackSurface = this.latest.carIdxTrackSurface;
@@ -124,7 +139,6 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.latest.lastPitLap.length = maxLength;
     this.latest.previousCarTrackSurface.length = maxLength;
     this.actualTrackSurface.length = maxLength;
-    const sessionState = numberValue(frame, 'SessionState') ?? 0;
     for (let carIdx = 0; carIdx < maxLength; carIdx += 1) {
       if (carIdxOnPitRoad[carIdx]) {
         this.latest.lastPitLap[carIdx] = carIdxLap[carIdx];
@@ -163,6 +177,16 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     const version = this.latest.version + 1;
     this.lastUpdateTime = null;
     this.actualTrackSurface.length = 0;
+    this.activeClassIds.length = 0;
+    this.classBuffers.forEach((buffer) => {
+      buffer.length = 0;
+    });
+    this.effectiveProgress.length = 0;
+    this.lastProgress.length = 0;
+    this.livePreviousSurface.length = 0;
+    this.resultsSessionNum = null;
+    this.resultClassPosition.length = 0;
+    this.resultLapsComplete.length = 0;
     this.latest.focusCarIdx = null;
     this.latest.sessionNum = sessionNum;
     this.latest.carIdxF2Time.length = 0;
@@ -175,6 +199,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.latest.carIdxSessionFlags.length = 0;
     this.latest.lastPitLap.length = 0;
     this.latest.previousCarTrackSurface.length = 0;
+    this.latest.liveClassPosition.length = 0;
     this.latest.version = version;
   }
 
@@ -192,7 +217,107 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       carIdxSessionFlags: [],
       lastPitLap: [],
       previousCarTrackSurface: [],
+      liveClassPosition: [],
       version: 0,
     };
   }
+
+  private updateLiveClassPositions(
+    frame: Telemetry,
+    sessionNum: number | null,
+    sessionState: number
+  ): void {
+    const target = this.latest.liveClassPosition;
+    target.length = 0;
+    const session = this.session?.SessionInfo?.Sessions?.find(
+      (entry) => entry.SessionNum === sessionNum
+    );
+    if (
+      session?.SessionType !== 'Race' ||
+      (sessionState !== SessionState.Racing &&
+        sessionState !== SessionState.Checkered)
+    ) {
+      return;
+    }
+    if (this.resultsSessionNum !== sessionNum) {
+      this.resultsSessionNum = sessionNum;
+      this.resultClassPosition.length = 0;
+      this.resultLapsComplete.length = 0;
+      for (const result of session.ResultsPositions ?? []) {
+        this.resultClassPosition[result.CarIdx] = result.ClassPosition;
+        this.resultLapsComplete[result.CarIdx] = result.LapsComplete;
+      }
+    }
+
+    const laps = frame.CarIdxLapCompleted?.value;
+    const distances = frame.CarIdxLapDistPct?.value;
+    const classes = frame.CarIdxClass?.value;
+    const surfaces = frame.CarIdxTrackSurface?.value;
+    if (
+      !Array.isArray(laps) ||
+      !Array.isArray(distances) ||
+      !Array.isArray(classes)
+    )
+      return;
+    const paceCarIdx = this.session?.DriverInfo?.PaceCarIdx ?? -1;
+    this.activeClassIds.length = 0;
+    this.classBuffers.forEach((buffer) => {
+      buffer.length = 0;
+    });
+    for (let carIdx = 0; carIdx < laps.length; carIdx += 1) {
+      if (carIdx === paceCarIdx) continue;
+      const classId = Number(classes[carIdx] ?? -1);
+      const distance = Number(distances[carIdx] ?? 0);
+      const surface = Number(surfaces?.[carIdx] ?? TrackLocation.OnTrack);
+      const previousSurface = this.livePreviousSurface[carIdx];
+      const isTow =
+        surface === TrackLocation.InPitStall &&
+        previousSurface !== undefined &&
+        previousSurface !== TrackLocation.ApproachingPits;
+      if (surface !== previousSurface)
+        this.livePreviousSurface[carIdx] = surface;
+      const rawProgress = Number(laps[carIdx] ?? 0) + distance;
+      if (isTow) {
+        this.effectiveProgress[carIdx] =
+          this.lastProgress[carIdx] ?? rawProgress;
+      } else {
+        this.lastProgress[carIdx] = rawProgress;
+        this.effectiveProgress[carIdx] = rawProgress;
+      }
+      let drivers = this.classBuffers.get(classId);
+      if (!drivers) {
+        drivers = [];
+        this.classBuffers.set(classId, drivers);
+      }
+      if (drivers.length === 0) this.activeClassIds.push(classId);
+      drivers.push(carIdx);
+    }
+    if (this.activeClassIds.length === 1 && this.activeClassIds[0] === -1)
+      return;
+
+    this.sortLaps = laps;
+    this.sortSessionState = sessionState;
+    for (const classId of this.activeClassIds) {
+      const drivers = this.classBuffers.get(classId);
+      if (!drivers) continue;
+      drivers.sort(this.compareDrivers);
+      for (let index = 0; index < drivers.length; index += 1) {
+        target[drivers[index]] = index + 1;
+      }
+    }
+  }
+
+  private readonly compareDrivers = (a: number, b: number): number => {
+    const aLap = Number(this.sortLaps[a] ?? -1);
+    const bLap = Number(this.sortLaps[b] ?? -1);
+    const aCompleted = aLap === -1 ? (this.resultLapsComplete[a] ?? -1) : aLap;
+    const bCompleted = bLap === -1 ? (this.resultLapsComplete[b] ?? -1) : bLap;
+    if (aCompleted !== bCompleted) return bCompleted - aCompleted;
+    if (this.sortSessionState === SessionState.Checkered) {
+      const aPosition = this.resultClassPosition[a] ?? Number.MAX_SAFE_INTEGER;
+      const bPosition = this.resultClassPosition[b] ?? Number.MAX_SAFE_INTEGER;
+      if (aPosition !== bPosition) return aPosition - bPosition;
+    }
+    return this.effectiveProgress[b] - this.effectiveProgress[a];
+  };
 }

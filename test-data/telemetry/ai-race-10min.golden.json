@@ -4570,7 +4570,7 @@
       "name": "standings-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "8b8fa869ba316a4cb83f889b82ff851cdaee33b9b8d4016b58e7ccfc2633802b",
+      "rollingHash": "68b370332fe11bbedad1865803f4fd35123d92f2df3b31993559ad78ad82fa3c",
       "checkpoints": {
         "firstFrame": {
           "focusCarIdx": 0,
@@ -5315,6 +5315,7 @@
             null,
             null
           ],
+          "liveClassPosition": [],
           "version": 1
         },
         "lastFrame": {
@@ -6060,6 +6061,7 @@
             null,
             null
           ],
+          "liveClassPosition": [],
           "version": 3000
         },
         "session:0": {
@@ -6810,6 +6812,7 @@
             null,
             null
           ],
+          "liveClassPosition": [],
           "version": 317
         },
         "session:1": {

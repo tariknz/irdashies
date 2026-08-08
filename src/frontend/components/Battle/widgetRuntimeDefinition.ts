@@ -3,7 +3,11 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 export default {
   id: 'battle',
   legacyTelemetry: true,
-  channels: ['car-speeds.snapshot', 'relative-gaps.snapshot'],
+  channels: [
+    'car-speeds.snapshot',
+    'relative-gaps.snapshot',
+    'standings.snapshot',
+  ],
   ratePreset: 'driverFocused',
   channelRates: { 'car-speeds.snapshot': 10 },
 } satisfies WidgetRuntimeDefinition;

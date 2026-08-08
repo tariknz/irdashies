@@ -91,6 +91,40 @@ describe('StandingsProcessor', () => {
     ]);
   });
 
+  it('projects live positions within each class for race sessions', () => {
+    const processor = new StandingsProcessor();
+    processor.init({
+      DriverInfo: { DriverCarIdx: 1, PaceCarIdx: 0 },
+      SessionInfo: {
+        Sessions: [
+          {
+            SessionNum: 2,
+            SessionType: 'Race',
+            ResultsPositions: [
+              { CarIdx: 1, ClassPosition: 1, LapsComplete: 2 },
+              { CarIdx: 2, ClassPosition: 0, LapsComplete: 2 },
+              { CarIdx: 3, ClassPosition: 0, LapsComplete: 1 },
+            ],
+          },
+        ],
+      },
+    } as Session);
+    processor.onFrame(
+      frame(10, {
+        CarIdxLapCompleted: { value: [0, 2, 2, 1] },
+        CarIdxLapDistPct: { value: [0, 0.4, 0.7, 0.9] },
+        CarIdxClass: { value: [-1, 10, 10, 20] },
+      })
+    );
+
+    expect(processor.snapshot().liveClassPosition).toEqual([
+      undefined,
+      2,
+      1,
+      1,
+    ]);
+  });
+
   it('resets accumulated state on session changes and disconnect', () => {
     const processor = new StandingsProcessor();
     processor.init(session);
