@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { DashboardWidget } from '@irdashies/types';
 import {
   getWidgetRuntimeDefinition,
+  rendererNeedsChannel,
   rendererNeedsLegacyTelemetry,
   useWidgetChannelRate,
   WidgetRuntimeProvider,
@@ -36,18 +37,18 @@ describe('widget runtime metadata', () => {
   it('declares lap-time channels without prematurely removing legacy data', () => {
     expect(getWidgetRuntimeDefinition('standings')).toMatchObject({
       legacyTelemetry: true,
-      channels: ['lap-times.snapshot'],
+      channels: ['lap-times.snapshot', 'reference-laps.snapshot'],
     });
     expect(getWidgetRuntimeDefinition('relative')).toMatchObject({
       legacyTelemetry: true,
-      channels: ['lap-times.snapshot'],
+      channels: ['lap-times.snapshot', 'reference-laps.snapshot'],
     });
   });
 
   it('declares car-speed consumers at the processor rate', () => {
     expect(getWidgetRuntimeDefinition('battle')).toMatchObject({
       legacyTelemetry: true,
-      channels: ['car-speeds.snapshot'],
+      channels: ['car-speeds.snapshot', 'reference-laps.snapshot'],
       channelRates: { 'car-speeds.snapshot': 10 },
     });
     expect(getWidgetRuntimeDefinition('slowcarahead')).toMatchObject({
@@ -55,6 +56,18 @@ describe('widget runtime metadata', () => {
       channels: ['car-speeds.snapshot'],
       channelRates: { 'car-speeds.snapshot': 10 },
     });
+  });
+
+  it('activates reference laps only for consumers', () => {
+    expect(
+      rendererNeedsChannel([widget('relative')], 'reference-laps.snapshot')
+    ).toBe(true);
+    expect(
+      rendererNeedsChannel([widget('standings')], 'reference-laps.snapshot')
+    ).toBe(true);
+    expect(
+      rendererNeedsChannel([widget('input')], 'reference-laps.snapshot')
+    ).toBe(false);
   });
 
   it('maps the Fuel rate preset to its channel subscription', () => {

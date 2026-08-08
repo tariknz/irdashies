@@ -12,6 +12,7 @@ import type { ChannelBus } from '../channelBridge';
 import { FuelProjectionRuntime } from '../../processors/fuelProjectionRuntime';
 import { LapTimesRuntime } from '../../processors/lapTimesRuntime';
 import { CarSpeedsRuntime } from '../../processors/carSpeedsRuntime';
+import { ReferenceLapRuntime } from '../../processors/referenceLapRuntime';
 
 // Keys consumed by the renderer. Anything outside this set is dropped before
 // the telemetry object crosses the IPC boundary — reducing structured-clone
@@ -160,6 +161,23 @@ export async function publishIRacingSDKEvents(
     lifecycle && channelBus
       ? new CarSpeedsRuntime(channelBus, lifecycle, perfMetrics, isTapeReplay)
       : undefined;
+  const referenceLapStorage =
+    lifecycle && channelBus
+      ? await import('../../storage/referenceLaps')
+      : undefined;
+  const referenceLapRuntime =
+    lifecycle && channelBus && referenceLapStorage
+      ? new ReferenceLapRuntime(
+          channelBus,
+          lifecycle,
+          perfMetrics,
+          {
+            load: referenceLapStorage.getReferenceLap,
+            save: referenceLapStorage.saveReferenceLap,
+          },
+          isTapeReplay
+        )
+      : undefined;
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
@@ -259,6 +277,7 @@ export async function publishIRacingSDKEvents(
           fuelProjectionRuntime?.onFrame(telemetry);
           lapTimesRuntime?.onFrame(telemetry);
           carSpeedsRuntime?.onFrame(telemetry);
+          referenceLapRuntime?.onFrame(telemetry);
           if (
             perfTelemetryDeliveryEnabled &&
             overlayManager.hasLegacyStreamSubscribers('telemetry')
@@ -289,6 +308,7 @@ export async function publishIRacingSDKEvents(
             lifecycle?._onSession(session);
             fuelProjectionRuntime?.onSession(session);
             carSpeedsRuntime?.onSession(session);
+            referenceLapRuntime?.onSession(session);
             overlayManager.publishMessage('sessionData', session);
             sessionCallbacks.forEach((callback) => callback(session));
             perfMetrics.markEnd('sessionPublish');
@@ -348,6 +368,7 @@ export async function publishIRacingSDKEvents(
       fuelProjectionRuntime?.dispose();
       lapTimesRuntime?.dispose();
       carSpeedsRuntime?.dispose();
+      referenceLapRuntime?.dispose();
       perfMetrics.stopReporting();
     },
   };

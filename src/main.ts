@@ -22,7 +22,6 @@ import { updateElectronApp } from 'update-electron-app';
 // @ts-expect-error no types for squirrel
 import started from 'electron-squirrel-startup';
 import { Analytics } from './app/analytics';
-import { setupReferenceLapsBridge } from './app/bridge/referenceLapsBridge';
 import { setupKeybindingsBridge } from './app/bridge/keybindingsBridge';
 import { setupLogBridge } from './app/bridge/logBridge';
 import { setupPersonalBestLapTimesBridge } from './app/bridge/personalBestLapTimesBridge';
@@ -96,7 +95,6 @@ app.on('ready', async () => {
   setupLogBridge();
   setupFuelCalculatorBridge();
   setupPitLaneBridge();
-  setupReferenceLapsBridge();
   setupPersonalBestLapTimesBridge();
   setupChromiumFlagsBridge();
 

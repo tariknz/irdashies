@@ -10,8 +10,6 @@ import type {
   ContainerBoundsInfo,
   FuelCalculatorBridge,
   FuelLapData,
-  ReferenceLap,
-  ReferenceLapBridge,
   KeybindingsBridge,
   KeybindingActionId,
   GamepadHostBridge,
@@ -283,26 +281,6 @@ export function exposeBridge() {
       return ipcRenderer.invoke('fuel:logData', data);
     },
   } as FuelCalculatorBridge);
-
-  contextBridge.exposeInMainWorld('referenceLapsBridge', {
-    getReferenceLap: (seriesId: number, trackId: number, classId: number) => {
-      return ipcRenderer.invoke('reference:get', seriesId, trackId, classId);
-    },
-    saveReferenceLap: (
-      seriesId: number,
-      trackId: number,
-      classId: number,
-      lap: ReferenceLap
-    ) => {
-      return ipcRenderer.invoke(
-        'reference:save',
-        seriesId,
-        trackId,
-        classId,
-        lap
-      );
-    },
-  } as ReferenceLapBridge);
 
   contextBridge.exposeInMainWorld('keybindingsBridge', {
     getKeybindings: () => ipcRenderer.invoke('keybindings:get'),

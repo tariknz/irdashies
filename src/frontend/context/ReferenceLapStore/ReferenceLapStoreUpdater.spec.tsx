@@ -1,207 +1,71 @@
-import { renderHook } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useReferenceLapStoreUpdater } from './ReferenceLapStoreUpdater';
-import { useSessionStore } from '../SessionStore/SessionStore';
-import { useTelemetryStore } from '../TelemetryStore/TelemetryStore';
+import { act, renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type {
+  ChannelBridge,
+  ReferenceLap,
+  ReferenceLapsSnapshot,
+} from '@irdashies/types';
 import { useReferenceLapStore } from './ReferenceLapStore';
-import { ReferenceLapBridge, Session, Telemetry } from '@irdashies/types';
+import { useReferenceLapStoreUpdater } from './ReferenceLapStoreUpdater';
+
+const lap = (finishTime: number): ReferenceLap => ({
+  startTime: 0,
+  finishTime,
+  times: new Float32Array([0, finishTime]),
+  pointPos: new Float32Array([0, 0.5]),
+  tangents: new Float32Array(2),
+  interval: 0.5,
+  pointsCount: 2,
+  lastTrackedPct: 0.99,
+  isCleanLap: true,
+});
 
 describe('useReferenceLapStoreUpdater', () => {
-  const mockBridge = {
-    getReferenceLap: vi.fn(),
-    saveReferenceLap: vi.fn(),
-  } as unknown as ReferenceLapBridge;
+  beforeEach(() => useReferenceLapStore.getState().completeSession());
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    useReferenceLapStore.getState().completeSession();
-    // Initialize store state
-    useReferenceLapStore.setState({
-      trackId: -1,
-    });
-  });
+  it('mirrors channel snapshots into the compatibility store', () => {
+    let listener: ((snapshot: ReferenceLapsSnapshot) => void) | undefined;
+    const unsubscribe = vi.fn();
+    const bridge = {
+      subscribe: vi.fn((_channel, callback) => {
+        listener = callback as (snapshot: ReferenceLapsSnapshot) => void;
+        return unsubscribe;
+      }),
+    } as unknown as ChannelBridge;
 
-  it('should call collectBulkData when SessionTime is 0', () => {
-    const collectBulkDataSpy = vi.spyOn(
-      useReferenceLapStore.getState(),
-      'collectBulkData'
-    );
-
-    renderHook(() => useReferenceLapStoreUpdater(mockBridge));
-
-    // 1. Set up session
-    useSessionStore.setState({
-      session: {
-        WeekendInfo: {
-          SeriesID: 1,
-          TrackID: 2,
-          SubSessionID: 3,
-          TrackLength: '5 km',
-        },
-        DriverInfo: {
-          PaceCarIdx: -1,
-          Drivers: [{ CarIdx: 1, CarClassID: 10 }],
-        },
-      } as unknown as Session,
-    });
-
-    // 2. Trigger telemetry with SessionTime 0
-    useTelemetryStore.setState({
-      telemetry: {
-        SessionNum: { value: [0] },
-        CarIdxLapDistPct: { value: [0, 0.1] },
-        CarIdxOnPitRoad: { value: [false, false] },
-        SessionTime: { value: [0] },
-      } as unknown as Telemetry,
-    });
-
-    expect(collectBulkDataSpy).toHaveBeenCalled();
-  });
-
-  it('should not crash when PaceCarIdx is -1', () => {
-    renderHook(() => useReferenceLapStoreUpdater(mockBridge));
-
-    expect(() => {
-      useSessionStore.setState({
-        session: {
-          WeekendInfo: {
-            SeriesID: 1,
-            TrackID: 2,
-            SubSessionID: 3,
-            TrackLength: '5 km',
-          },
-          DriverInfo: {
-            PaceCarIdx: -1,
-            Drivers: [{ CarIdx: 1, CarClassID: 10 }],
-          },
-        } as unknown as Session,
+    const { unmount } = renderHook(() => useReferenceLapStoreUpdater(bridge));
+    const best = lap(60);
+    const persisted = lap(61);
+    act(() => {
+      listener?.({
+        bestLaps: [[4, best]],
+        persistedLaps: [[12, persisted]],
+        sessionNum: 1,
+        version: 1,
       });
-    }).not.toThrow();
+    });
+
+    expect(useReferenceLapStore.getState().bestLaps.get(4)).toBe(best);
+    expect(useReferenceLapStore.getState().persistedLaps.get(12)).toBe(
+      persisted
+    );
+    act(() => {
+      listener?.({
+        bestLaps: [],
+        persistedLaps: [[12, persisted]],
+        sessionNum: 1,
+        version: 2,
+      });
+    });
+    expect(useReferenceLapStore.getState().bestLaps.get(4)).toBeUndefined();
+    unmount();
+    expect(unsubscribe).toHaveBeenCalledOnce();
+    expect(useReferenceLapStore.getState().bestLaps.size).toBe(0);
   });
 
-  it('should handle missing telemetry fields gracefully', () => {
-    const collectBulkDataSpy = vi.spyOn(
-      useReferenceLapStore.getState(),
-      'collectBulkData'
-    );
-    renderHook(() => useReferenceLapStoreUpdater(mockBridge));
-
-    // Trigger telemetry with missing fields
-    useTelemetryStore.setState({
-      telemetry: {
-        SessionNum: { value: [0] },
-        // Missing other fields
-      } as unknown as Telemetry,
-    });
-
-    expect(collectBulkDataSpy).not.toHaveBeenCalled();
-  });
-
-  it('should not initialize when SeriesID is 0 or negative', () => {
-    const initializeSpy = vi.spyOn(
-      useReferenceLapStore.getState(),
-      'initialize'
-    );
-    renderHook(() => useReferenceLapStoreUpdater(mockBridge));
-
-    // Case: SeriesID is 0
-    useSessionStore.setState({
-      session: {
-        WeekendInfo: {
-          SeriesID: 0,
-          TrackID: 2,
-          SubSessionID: 3,
-          TrackLength: '5 km',
-        },
-        DriverInfo: { PaceCarIdx: -1, Drivers: [] },
-      } as unknown as Session,
-    });
-    expect(initializeSpy).not.toHaveBeenCalled();
-
-    // Case: SeriesID is -2
-    useSessionStore.setState({
-      session: {
-        WeekendInfo: {
-          SeriesID: -2,
-          TrackID: 2,
-          SubSessionID: 3,
-          TrackLength: '5 km',
-        },
-        DriverInfo: { PaceCarIdx: -1, Drivers: [] },
-      } as unknown as Session,
-    });
-    expect(initializeSpy).not.toHaveBeenCalled();
-  });
-
-  it('should not initialize when TrackID is 0 or negative', () => {
-    const initializeSpy = vi.spyOn(
-      useReferenceLapStore.getState(),
-      'initialize'
-    );
-    renderHook(() => useReferenceLapStoreUpdater(mockBridge));
-
-    // Case: TrackID is 0
-    useSessionStore.setState({
-      session: {
-        WeekendInfo: {
-          SeriesID: 1,
-          TrackID: 0,
-          SubSessionID: 3,
-          TrackLength: '5 km',
-        },
-        DriverInfo: { PaceCarIdx: -1, Drivers: [] },
-      } as unknown as Session,
-    });
-    expect(initializeSpy).not.toHaveBeenCalled();
-
-    // Case: TrackID is -2
-    useSessionStore.setState({
-      session: {
-        WeekendInfo: {
-          SeriesID: 1,
-          TrackID: -2,
-          SubSessionID: 3,
-          TrackLength: '5 km',
-        },
-        DriverInfo: { PaceCarIdx: -1, Drivers: [] },
-      } as unknown as Session,
-    });
-    expect(initializeSpy).not.toHaveBeenCalled();
-  });
-
-  it('should filter out class IDs that are 0 or negative', () => {
-    const initializeSpy = vi.spyOn(
-      useReferenceLapStore.getState(),
-      'initialize'
-    );
-    renderHook(() => useReferenceLapStoreUpdater(mockBridge));
-
-    useSessionStore.setState({
-      session: {
-        WeekendInfo: {
-          SeriesID: 1,
-          TrackID: 2,
-          SubSessionID: 3,
-          TrackLength: '5 km',
-        },
-        DriverInfo: {
-          PaceCarIdx: -1,
-          Drivers: [
-            { CarIdx: 1, CarClassID: 10 },
-            { CarIdx: 2, CarClassID: 0 },
-            { CarIdx: 3, CarClassID: -1 },
-            { CarIdx: 4, CarClassID: 20 },
-          ],
-        },
-      } as unknown as Session,
-    });
-
-    expect(initializeSpy).toHaveBeenCalledWith(
-      expect.anything(), // bridge
-      1, // seriesId
-      2, // trackId
-      5000, // trackLength
-      [10, 20] // classList - should only have 10 and 20
-    );
+  it('does nothing when the channel bridge is unavailable', () => {
+    expect(() =>
+      renderHook(() => useReferenceLapStoreUpdater(undefined))
+    ).not.toThrow();
   });
 });
