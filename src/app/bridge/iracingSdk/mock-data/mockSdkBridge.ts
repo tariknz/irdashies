@@ -21,10 +21,9 @@ export async function publishIRacingSDKEvents(
   perfMetrics.startReporting();
 
   const bridge = generateMockData();
-  const lapTimesRuntime =
-    channelBus && lifecycle
-      ? new LapTimesRuntime(channelBus, lifecycle, perfMetrics)
-      : undefined;
+  const lapTimesRuntime = channelBus
+    ? new LapTimesRuntime(channelBus, lifecycle, perfMetrics)
+    : undefined;
   const carSpeedsRuntime = channelBus
     ? new CarSpeedsRuntime(channelBus, lifecycle, perfMetrics)
     : undefined;

@@ -21,7 +21,7 @@ export class LapTimesRuntime {
 
   constructor(
     private readonly bus: ChannelBus,
-    lifecycle: SessionLifecycle,
+    lifecycle: SessionLifecycle | undefined,
     private readonly metrics: PerformanceSections,
     private readonly aggregateReplay = false
   ) {
@@ -31,18 +31,22 @@ export class LapTimesRuntime {
         if (count > 0) this.activate();
         else this.deactivateIfUnused();
       }),
-      lifecycle.onEnter(({ replay }) => {
-        this.replaySource = replay;
-        this.onLifecycle({
-          type: 'enter',
-          replay: replay && !this.aggregateReplay,
-        });
-      }),
-      lifecycle.onSessionNumChange(() =>
-        this.onLifecycle({ type: 'sessionNumChange' })
-      ),
-      lifecycle.onDisconnect(() => this.onLifecycle({ type: 'disconnect' })),
     ];
+    if (lifecycle) {
+      this.disconnects.push(
+        lifecycle.onEnter(({ replay }) => {
+          this.replaySource = replay;
+          this.onLifecycle({
+            type: 'enter',
+            replay: replay && !this.aggregateReplay,
+          });
+        }),
+        lifecycle.onSessionNumChange(() =>
+          this.onLifecycle({ type: 'sessionNumChange' })
+        ),
+        lifecycle.onDisconnect(() => this.onLifecycle({ type: 'disconnect' }))
+      );
+    }
   }
 
   onFrame(frame: Telemetry): void {

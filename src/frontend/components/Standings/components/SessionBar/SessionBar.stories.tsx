@@ -2,7 +2,10 @@ import { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentType } from 'react';
 import { SessionBar } from './SessionBar';
 import { getIncidentDisplay } from './getIncidentDisplay';
-import { TelemetryDecorator } from '../../../../../../.storybook/telemetryDecorator';
+import {
+  ChannelSnapshotDecorator,
+  TelemetryDecorator,
+} from '@irdashies/storybook';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import {
   SessionTimingStoreUpdater,
@@ -16,6 +19,24 @@ export default {
   title: 'widgets/Standings/components/SessionBar',
   decorators: [
     TelemetryDecorator(),
+    ChannelSnapshotDecorator({
+      'session-timing.snapshot': {
+        sessionType: 'Race',
+        state: 4,
+        currentLap: 8,
+        totalLaps: 20,
+        time: 960,
+        timeTotal: 2400,
+        timeRemaining: 1440,
+        greenFlagTimestamp: 0,
+        isFixedLapRace: true,
+        totalRaceLaps: 20,
+        totalRaceTime: 2400,
+        adjustedRaceTime: 2400,
+        sessionNum: 0,
+        version: 1,
+      },
+    }),
     (Story: ComponentType) => (
       <>
         <SessionTimingStoreUpdater enabled={true} />
