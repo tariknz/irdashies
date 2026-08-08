@@ -1,4 +1,8 @@
-import type { Session, SessionLifecycleEvent, Telemetry } from '@irdashies/types';
+import type {
+  Session,
+  SessionLifecycleEvent,
+  Telemetry,
+} from '@irdashies/types';
 import type { ChannelBus } from '../bridge/channelBridge';
 import type { SessionLifecycle } from '../sessionLifecycle';
 import { TrackStateProcessor } from './TrackStateProcessor';
@@ -28,7 +32,9 @@ export class TrackStateRuntime {
     ];
     if (lifecycle) {
       this.disconnects.push(
-        lifecycle.onSessionNumChange(() => this.onLifecycle({ type: 'sessionNumChange' })),
+        lifecycle.onSessionNumChange(() =>
+          this.onLifecycle({ type: 'sessionNumChange' })
+        ),
         lifecycle.onDisconnect(() => this.onLifecycle({ type: 'disconnect' }))
       );
     }

@@ -1,7 +1,7 @@
 import type { TrackStateSnapshot } from '@irdashies/types';
 
 export const trackStateStorySnapshot = {
-  focusCarIdx: 0,
+  focusCarIdx: null,
   carIdxLapDistPct: [],
   carIdxOnPitRoad: [],
   carIdxTrackSurface: [],

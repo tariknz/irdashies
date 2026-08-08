@@ -13,8 +13,8 @@ describe('TrackStateProcessor', () => {
     processor.onFrame(
       frame({
         CamCarIdx: [2],
-        CarIdxLapDistPct: [0.1, 0.2, 0.3],
-        CarIdxOnPitRoad: [false, true, false],
+        CarIdxLapDistPct: [0.1004, 0.2005, 0.30049],
+        CarIdxOnPitRoad: [0, 1, 0],
         CarIdxTrackSurface: [3, 2, 3],
         CarIdxClassPosition: [1, 2, 3],
         CarLeftRight: [2],
@@ -28,7 +28,7 @@ describe('TrackStateProcessor', () => {
 
     expect(processor.snapshot()).toMatchObject({
       focusCarIdx: 2,
-      carIdxLapDistPct: [0.1, 0.2, 0.3],
+      carIdxLapDistPct: [0.1, 0.201, 0.3],
       carIdxOnPitRoad: [false, true, false],
       carIdxTrackSurface: [3, 2, 3],
       carIdxClassPosition: [1, 2, 3],
@@ -57,6 +57,17 @@ describe('TrackStateProcessor', () => {
       isOnTrack: false,
       sessionNum: null,
       version: 2,
+    });
+  });
+
+  it('ignores sub-millipercent position movement', () => {
+    const processor = new TrackStateProcessor();
+    processor.onFrame(frame({ CarIdxLapDistPct: [0.12341] }));
+    processor.onFrame(frame({ CarIdxLapDistPct: [0.12344] }));
+
+    expect(processor.snapshot()).toMatchObject({
+      carIdxLapDistPct: [0.123],
+      version: 1,
     });
   });
 });
