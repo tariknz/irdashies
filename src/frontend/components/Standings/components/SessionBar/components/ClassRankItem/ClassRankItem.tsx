@@ -8,7 +8,7 @@ export const ClassRankItem = memo(({ standalone }: SessionBarItemProps) => {
   const snapshot = useSessionBarSnapshot();
   const total = snapshot?.playerClassSize ?? 0;
   const rank = snapshot?.playerClassPosition ?? 0;
-  if (rank <= 0) return null;
+  if (!snapshot?.playerClassified || rank <= 0 || total <= 0) return null;
 
   return (
     <div className={sessionBarItemWrapperClass(standalone)}>
