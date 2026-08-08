@@ -4,11 +4,23 @@ import { PitlaneHelper } from './PitlaneHelper';
 import * as context from '@irdashies/context';
 
 // Mock all the context hooks
-vi.mock('@irdashies/context', () => ({
-  useTelemetryValue: vi.fn(),
-  useDashboard: vi.fn(),
-  useSessionVisibility: vi.fn(),
-}));
+vi.mock('@irdashies/context', () => {
+  const useTelemetryValue = vi.fn();
+  return {
+    useTelemetryValue,
+    useTrackStateSnapshot: vi.fn(() => ({
+      playerTrackSurface: useTelemetryValue('PlayerTrackSurface'),
+      onPitRoad: useTelemetryValue('OnPitRoad'),
+      displayUnits: useTelemetryValue('DisplayUnits'),
+    })),
+    useDriverControlsSnapshot: vi.fn(() => ({
+      throttle: useTelemetryValue('Throttle'),
+      clutch: useTelemetryValue('Clutch'),
+    })),
+    useDashboard: vi.fn(),
+    useSessionVisibility: vi.fn(),
+  };
+});
 
 // Mock the custom hooks
 vi.mock('./hooks/usePitlaneHelperSettings', () => ({

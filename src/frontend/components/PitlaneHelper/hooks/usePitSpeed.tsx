@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useTelemetryValue, useSessionStore } from '@irdashies/context';
+import { useTrackStateSnapshot, useSessionStore } from '@irdashies/context';
 import {
   kphFromSpeed,
   speedFromKph,
@@ -21,7 +21,7 @@ export interface PitSpeedResult {
 
 export const usePitSpeed = (): PitSpeedResult => {
   const session = useSessionStore((state) => state.session);
-  const speed = useTelemetryValue('Speed') ?? 0;
+  const speed = useTrackStateSnapshot()?.speed ?? 0;
 
   return useMemo(() => {
     // Parse pit speed limit (format: "60.00 kph" or "35.00 mph")

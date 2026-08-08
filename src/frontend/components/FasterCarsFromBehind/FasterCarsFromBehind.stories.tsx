@@ -5,6 +5,8 @@ import {
 } from './FasterCarsFromBehind';
 import {
   ChannelSnapshotDecorator,
+  trackStateStorySnapshot,
+  standingsStorySnapshot,
   TelemetryDecorator,
 } from '@irdashies/storybook';
 import type { RelativeGapsSnapshot } from '@irdashies/types';
@@ -72,6 +74,8 @@ export const Primary: Story = {
     TelemetryDecorator('/test-data/1747384033336'),
     ChannelSnapshotDecorator({
       'relative-gaps.snapshot': relativeGapsStorySnapshot,
+      'standings.snapshot': standingsStorySnapshot,
+      'track-state.snapshot': trackStateStorySnapshot,
     }),
   ],
 };

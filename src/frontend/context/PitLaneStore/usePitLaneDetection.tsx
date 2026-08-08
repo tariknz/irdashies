@@ -1,9 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { usePitLaneStore, detectPitTransitions } from './PitLaneStore';
-import {
-  useTelemetryValues,
-  useTelemetryValuesRounded,
-} from '../TelemetryStore/TelemetryStore';
+import { useTrackStateSnapshot } from '../ChannelStore';
 import { useSessionStore } from '../SessionStore/SessionStore';
 import type { PitLaneBridge } from '@irdashies/types';
 
@@ -17,15 +14,10 @@ export const usePitLaneDetection = (
   const trackId = useSessionStore(
     (state) => state.session?.WeekendInfo?.TrackID?.toString() ?? null
   );
-  const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad') as
-    | boolean[]
-    | undefined;
-  const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface') as
-    | number[]
-    | undefined;
-  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3) as
-    | number[]
-    | undefined;
+  const trackState = useTrackStateSnapshot();
+  const carIdxOnPitRoad = trackState?.carIdxOnPitRoad;
+  const carIdxTrackSurface = trackState?.carIdxTrackSurface;
+  const carIdxLapDistPct = trackState?.carIdxLapDistPct;
 
   const { currentTrackId, pitEntryPct, pitExitPct, setCurrentTrack, reset } =
     usePitLaneStore();
@@ -33,9 +25,9 @@ export const usePitLaneDetection = (
   // Use refs to track previous values and only call detectPitTransitions when data actually changes
   // This prevents running expensive operations at 60 FPS when nothing has changed
   const prevTelemetryRef = useRef<{
-    carIdxOnPitRoad?: boolean[];
-    carIdxTrackSurface?: number[];
-    carIdxLapDistPct?: number[];
+    carIdxOnPitRoad?: readonly boolean[];
+    carIdxTrackSurface?: readonly number[];
+    carIdxLapDistPct?: readonly number[];
   }>({});
 
   const persistenceRef = useRef<{

@@ -3,16 +3,26 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useDriverProgress } from './useDriverProgress';
 
-vi.mock('@irdashies/context', () => ({
-  useFocusCarIdx: vi.fn(),
-  useSessionDrivers: vi.fn(),
-  useTelemetryValuesRounded: vi.fn(),
-  useSessionStore: vi.fn(),
-  useTelemetryValues: vi.fn(),
-  useSessionQualifyingResults: vi.fn(),
-  useSessionQualifyPositions: vi.fn(),
-  useTelemetryValue: vi.fn(),
-}));
+vi.mock('@irdashies/context', () => {
+  const useTelemetryValuesRounded = vi.fn();
+  const useTelemetryValues = vi.fn();
+  const useTelemetryValue = vi.fn();
+  return {
+    useFocusCarIdx: vi.fn(),
+    useSessionDrivers: vi.fn(),
+    useTelemetryValuesRounded,
+    useSessionStore: vi.fn(),
+    useTelemetryValues,
+    useSessionQualifyingResults: vi.fn(),
+    useSessionQualifyPositions: vi.fn(),
+    useTelemetryValue,
+    useTrackStateSnapshot: vi.fn(() => ({
+      carIdxLapDistPct: useTelemetryValuesRounded('CarIdxLapDistPct', 3),
+      carIdxClassPosition: useTelemetryValues('CarIdxClassPosition'),
+      sessionNum: useTelemetryValue('SessionNum'),
+    })),
+  };
+});
 
 import {
   useFocusCarIdx,

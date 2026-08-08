@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import {
-  useTelemetryValuesRounded,
-  useTelemetryValue,
+  useTrackStateSnapshot,
   useDriverCarIdx,
   useTrackLength,
 } from '@irdashies/context';
@@ -17,14 +16,16 @@ interface BlindSpotMonitorState {
   disableTransition: boolean;
 }
 
+const EMPTY_POSITIONS: readonly number[] = [];
+
 export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
-  const carLeftRight =
-    useTelemetryValue<CarLeftRight>('CarLeftRight') ?? CarLeftRight.Off;
-  const lapDistPcts = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
+  const trackState = useTrackStateSnapshot();
+  const carLeftRight = trackState?.carLeftRight ?? CarLeftRight.Off;
+  const lapDistPcts = trackState?.carIdxLapDistPct ?? EMPTY_POSITIONS;
   const driverCarIdx = useDriverCarIdx() ?? 0;
   const trackLength = useTrackLength();
   const settings = useBlindSpotMonitorSettings();
-  const isOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
+  const isOnTrack = trackState?.isOnTrack ?? false;
 
   const [leftCarIdx, setLeftCarIdx] = useState<number | null>(null);
   const [rightCarIdx, setRightCarIdx] = useState<number | null>(null);

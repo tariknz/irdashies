@@ -2,7 +2,12 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
   id: 'fastercarsfrombehind',
-  legacyTelemetry: true,
-  channels: ['relative-gaps.snapshot', 'standings.snapshot'],
+  legacyTelemetry: false,
+  sessionData: true,
+  channels: [
+    'relative-gaps.snapshot',
+    'standings.snapshot',
+    'track-state.snapshot',
+  ],
   ratePreset: 'gapTiming',
 } satisfies WidgetRuntimeDefinition;

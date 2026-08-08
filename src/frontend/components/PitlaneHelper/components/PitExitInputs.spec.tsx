@@ -4,9 +4,16 @@ import { PitExitInputs } from './PitExitInputs';
 import * as context from '@irdashies/context';
 
 // Mock the context hooks
-vi.mock('@irdashies/context', () => ({
-  useTelemetryValue: vi.fn(),
-}));
+vi.mock('@irdashies/context', () => {
+  const useTelemetryValue = vi.fn();
+  return {
+    useTelemetryValue,
+    useDriverControlsSnapshot: vi.fn(() => ({
+      throttle: useTelemetryValue('Throttle'),
+      clutch: useTelemetryValue('Clutch'),
+    })),
+  };
+});
 
 describe('PitExitInputs', () => {
   beforeEach(() => {

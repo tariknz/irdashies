@@ -14,9 +14,11 @@ import {
   drawSectorColors,
   drawSectorDividers,
 } from './trackDrawingUtils';
+
+const EMPTY_PIT_STATE: readonly boolean[] = [];
 import type { SectorColor } from '@irdashies/context';
 import type { Sector } from '@irdashies/types';
-import { useTelemetryValues, useCarIdxOffTrack } from '@irdashies/context';
+import { useTrackStateSnapshot, useCarIdxOffTrack } from '@irdashies/context';
 
 export interface DriverIdentity {
   driver: Driver;
@@ -133,7 +135,8 @@ export const TrackCanvas = ({
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
 
   const driversOffTrack = useCarIdxOffTrack();
-  const carIdxIsOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
+  const carIdxIsOnPitRoad =
+    useTrackStateSnapshot()?.carIdxOnPitRoad ?? EMPTY_PIT_STATE;
 
   // Memoize Path2D objects to avoid re-creating them on every render
   const insidePath = trackDrawing?.active?.inside;

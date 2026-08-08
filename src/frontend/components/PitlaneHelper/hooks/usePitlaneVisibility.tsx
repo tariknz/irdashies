@@ -1,8 +1,6 @@
 import { useMemo } from 'react';
 import {
-  useTelemetryValue,
-  useTelemetryValues,
-  useTelemetryValuesRounded,
+  useTrackStateSnapshot,
   useFocusCarIdx,
   useTrackLength,
   useSessionStore,
@@ -13,13 +11,12 @@ import { usePitlaneHelperSettings } from './usePitlaneHelperSettings';
 export const usePitlaneVisibility = (): boolean => {
   const config = usePitlaneHelperSettings();
   const session = useSessionStore((state) => state.session);
-  const isOnTrack = (useTelemetryValue('IsOnTrack') ?? 0) as number;
-  const surface = (useTelemetryValue('PlayerTrackSurface') ?? 3) as number;
+  const trackState = useTrackStateSnapshot();
+  const isOnTrack = trackState?.isOnTrack ?? false;
+  const surface = trackState?.playerTrackSurface ?? 3;
   const focusCarIdx = useFocusCarIdx();
-  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
-  const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad') as
-    | boolean[]
-    | undefined;
+  const carIdxLapDistPct = trackState?.carIdxLapDistPct;
+  const carIdxOnPitRoad = trackState?.carIdxOnPitRoad;
   const trackLength = useTrackLength() ?? 0;
   const pitExitPct = usePitLaneStore((state) => state.pitExitPct);
 

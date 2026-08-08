@@ -4,10 +4,19 @@ import { usePitLimiterWarning } from './usePitLimiterWarning';
 import * as context from '@irdashies/context';
 import { EngineWarnings } from '@irdashies/types';
 
-vi.mock('@irdashies/context', () => ({
-  useTelemetryValue: vi.fn(),
-  useSessionStore: vi.fn(),
-}));
+vi.mock('@irdashies/context', () => {
+  const useTelemetryValue = vi.fn();
+  return {
+    useTelemetryValue,
+    useTrackStateSnapshot: vi.fn(() => ({
+      onPitRoad: useTelemetryValue('OnPitRoad'),
+      pitSpeedLimiterToggle: useTelemetryValue('dcPitSpeedLimiterToggle'),
+      pitstopActive: useTelemetryValue('PitstopActive'),
+      engineWarnings: useTelemetryValue('EngineWarnings'),
+    })),
+    useSessionStore: vi.fn(),
+  };
+});
 
 describe('usePitLimiterWarning', () => {
   const mockSessionStore = {
@@ -81,7 +90,7 @@ describe('usePitLimiterWarning', () => {
 
       // Now should warn to disable
       expect(result.current.showWarning).toBe(true);
-      expect(result.current.warningText).toBe('⚠ DISABLE LIMITER');
+      expect(result.current.warningText).toBe('DISABLE LIMITER');
       expect(result.current.isTeamRaceWarning).toBe(false);
     });
 
@@ -113,7 +122,7 @@ describe('usePitLimiterWarning', () => {
       const { result } = renderHook(() => usePitLimiterWarning(true));
 
       expect(result.current.showWarning).toBe(true);
-      expect(result.current.warningText).toBe('⚠ ACTIVATE LIMITER');
+      expect(result.current.warningText).toBe('ACTIVATE LIMITER');
       expect(result.current.isTeamRaceWarning).toBe(false);
     });
 
@@ -187,7 +196,7 @@ describe('usePitLimiterWarning', () => {
 
       // Should show "activate limiter" warning during pitstop (not the team race warning yet)
       expect(result.current.showWarning).toBe(true);
-      expect(result.current.warningText).toBe('⚠ ACTIVATE LIMITER');
+      expect(result.current.warningText).toBe('ACTIVATE LIMITER');
       expect(result.current.isTeamRaceWarning).toBe(false);
 
       // Second render: pitstop completed
@@ -202,7 +211,7 @@ describe('usePitLimiterWarning', () => {
       rerender();
 
       expect(result.current.showWarning).toBe(true);
-      expect(result.current.warningText).toBe('⚠ ACTIVATE LIMITER');
+      expect(result.current.warningText).toBe('ACTIVATE LIMITER');
       expect(result.current.isTeamRaceWarning).toBe(true);
     });
   });
@@ -255,7 +264,7 @@ describe('usePitLimiterWarning', () => {
 
       // No limiter engaged, should warn to activate
       expect(result.current.showWarning).toBe(true);
-      expect(result.current.warningText).toBe('⚠ ACTIVATE LIMITER');
+      expect(result.current.warningText).toBe('ACTIVATE LIMITER');
     });
 
     it('detects limiter when combined with other warnings', () => {
@@ -296,7 +305,7 @@ describe('usePitLimiterWarning', () => {
 
       // Auto-limiter + manual toggle in auto series should warn to disable
       expect(result.current.showWarning).toBe(true);
-      expect(result.current.warningText).toBe('⚠ DISABLE LIMITER');
+      expect(result.current.warningText).toBe('DISABLE LIMITER');
     });
   });
 });

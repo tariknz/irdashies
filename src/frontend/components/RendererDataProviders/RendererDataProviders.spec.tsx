@@ -32,12 +32,26 @@ describe('RendererDataProviders', () => {
   it('preserves legacy providers when any unmigrated widget is enabled', () => {
     dashboard.widgets = [
       { id: 'fuel', enabled: true, layout },
-      { id: 'pitlanehelper', enabled: true, layout },
+      { id: 'lap-time-log', enabled: true, layout },
     ];
 
     render(<RendererDataProviders />);
 
     expect(screen.getByTestId('telemetry-provider')).toBeInTheDocument();
     expect(screen.getByTestId('session-provider')).toBeInTheDocument();
+  });
+
+  it('mounts session and pit-lane providers without legacy telemetry', () => {
+    Object.defineProperty(window, 'pitLaneBridge', {
+      configurable: true,
+      value: {},
+    });
+    dashboard.widgets = [{ id: 'pitlanehelper', enabled: true, layout }];
+
+    render(<RendererDataProviders />);
+
+    expect(screen.queryByTestId('telemetry-provider')).not.toBeInTheDocument();
+    expect(screen.getByTestId('session-provider')).toBeInTheDocument();
+    expect(screen.getByTestId('pitlane-provider')).toBeInTheDocument();
   });
 });

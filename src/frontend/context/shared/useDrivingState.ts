@@ -1,15 +1,15 @@
-import { useTelemetryValue } from '@irdashies/context';
+import { useTrackStateSnapshot } from '../ChannelStore';
 
 export const useDrivingState = () => {
-  const isOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
-  const inPitStall = useTelemetryValue<boolean>('PlayerCarInPitStall') ?? false;
-  const onPitRoad = useTelemetryValue<boolean>('CarIdxOnPitRoad') ?? false;
-  const isInGarageDirect = useTelemetryValue<boolean>('IsInGarage') ?? false;
-  const isGarageVisible =
-    useTelemetryValue<boolean>('IsGarageVisible') ?? false;
+  const snapshot = useTrackStateSnapshot();
+  const isOnTrack = snapshot?.isOnTrack ?? false;
+  const inPitStall = snapshot?.playerCarInPitStall ?? false;
+  const focusCarIdx = snapshot?.focusCarIdx ?? -1;
+  const onPitRoad = snapshot?.carIdxOnPitRoad[focusCarIdx] ?? false;
+  const isInGarageDirect = snapshot?.isInGarage ?? false;
+  const isGarageVisible = snapshot?.isGarageVisible ?? false;
   const isInGarage = isInGarageDirect || isGarageVisible;
-  const isReplayPlaying =
-    useTelemetryValue<boolean>('IsReplayPlaying') ?? false;
+  const isReplayPlaying = snapshot?.isReplayPlaying ?? false;
 
   const isDriving =
     (isOnTrack || inPitStall || onPitRoad) && !isInGarage && !isReplayPlaying;

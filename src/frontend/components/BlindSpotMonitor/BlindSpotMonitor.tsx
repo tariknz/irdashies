@@ -5,7 +5,7 @@ import { BlindSpotMonitorSimpleIndicator } from './components/BlindSpotMonitorSi
 import {
   useDashboard,
   useSessionVisibility,
-  useTelemetryValue,
+  useTrackStateSnapshot,
 } from '@irdashies/context';
 import { CarLeftRight } from '@irdashies/types';
 
@@ -136,7 +136,7 @@ export const BlindSpotMonitor = () => {
   const state = useBlindSpotMonitor();
   const settings = useBlindSpotMonitorSettings();
   const { isDemoMode } = useDashboard();
-  const isOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
+  const isOnTrack = useTrackStateSnapshot()?.isOnTrack ?? false;
 
   const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
   const activeState = isDemoMode ? DEMO_STATE_SIMPLE : state;

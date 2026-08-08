@@ -8,7 +8,7 @@ import { TrackCanvas } from './TrackCanvas';
 import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
 import {
   useSessionVisibility,
-  useTelemetryValue,
+  useTrackStateSnapshot,
   useSessionStore,
   useSectorColors,
   useSectorTimingStore,
@@ -21,7 +21,7 @@ export const TrackMap = () => {
   const { drivers: driversTrackData, identities } = useDriverProgress();
   const settings = useTrackMapSettings();
   const highlightColor = useHighlightColor();
-  const isOnTrack = useTelemetryValue('IsOnTrack');
+  const isOnTrack = useTrackStateSnapshot()?.isOnTrack;
   const sessionSectorColors = useSectorColors();
   const ghostColors = useGhostSectorColors();
   const sectorColors = ghostColors ?? sessionSectorColors;

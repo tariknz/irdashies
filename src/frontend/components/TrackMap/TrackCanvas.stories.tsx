@@ -5,6 +5,10 @@ import tracks from './tracks/tracks.json';
 import { BROKEN_TRACKS } from './tracks/brokenTracks';
 import { useTelemetryStore } from '@irdashies/context';
 import type { Telemetry } from '@irdashies/types';
+import {
+  ChannelSnapshotDecorator,
+  trackStateStorySnapshot,
+} from '@irdashies/storybook';
 
 // Inline data URL for a recognisable car-shaped icon. Embedding it inline keeps
 // the story self-contained — no bridge or filesystem access required.
@@ -27,6 +31,11 @@ const SAMPLE_ICON_DATA_URL =
 export default {
   component: TrackCanvas,
   title: 'widgets/TrackMap/components/TrackCanvas',
+  decorators: [
+    ChannelSnapshotDecorator({
+      'track-state.snapshot': trackStateStorySnapshot,
+    }),
+  ],
   args: {
     turnLabels: {
       enabled: false,

@@ -17,9 +17,9 @@ interface PitLaneState {
 
 // Store previous frame state outside Zustand to avoid triggering re-renders
 // This runs at 60 FPS so we can't afford to update state on every frame
-let previousCarIdxOnPitRoad: boolean[] = [];
-let previousCarIdxTrackSurface: number[] = [];
-let previousCarIdxLapDistPct: number[] = [];
+let previousCarIdxOnPitRoad: readonly boolean[] = [];
+let previousCarIdxTrackSurface: readonly number[] = [];
+let previousCarIdxLapDistPct: readonly number[] = [];
 
 // Track surface constants from iRacing SDK
 const SURFACE_NOT_IN_WORLD = -1;
@@ -104,9 +104,9 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
  * @param carIdxLapDistPct Current frame's lap distance percentages
  */
 export const detectPitTransitions = (
-  carIdxOnPitRoad: boolean[],
-  carIdxTrackSurface: number[],
-  carIdxLapDistPct: number[]
+  carIdxOnPitRoad: readonly boolean[],
+  carIdxTrackSurface: readonly number[],
+  carIdxLapDistPct: readonly number[]
 ) => {
   const state = usePitLaneStore.getState();
 

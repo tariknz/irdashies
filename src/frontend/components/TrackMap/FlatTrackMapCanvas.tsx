@@ -17,7 +17,7 @@ export interface FlatTrackMapCanvasProps {
   trackOutlineWidth?: number;
   invertTrackColors?: boolean;
   driverLivePositions?: Record<number, number>;
-  carIdxIsOnPitRoad?: number[];
+  carIdxIsOnPitRoad?: readonly boolean[];
 }
 
 const HORIZONTAL_PADDING = 40; // Fixed padding on each side

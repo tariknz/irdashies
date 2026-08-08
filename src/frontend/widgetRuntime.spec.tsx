@@ -28,7 +28,7 @@ describe('widget runtime metadata', () => {
   it('keeps unknown and unmigrated widgets on the legacy path', () => {
     expect(
       rendererNeedsLegacyTelemetry([widget('fuel'), widget('pitlanehelper')])
-    ).toBe(true);
+    ).toBe(false);
     expect(rendererNeedsLegacyTelemetry([widget('instance', 'unknown')])).toBe(
       true
     );
@@ -78,17 +78,18 @@ describe('widget runtime metadata', () => {
 
   it('declares car-speed consumers at the processor rate', () => {
     expect(getWidgetRuntimeDefinition('battle')).toMatchObject({
-      legacyTelemetry: true,
+      legacyTelemetry: false,
       channels: [
         'car-speeds.snapshot',
         'relative-gaps.snapshot',
         'standings.snapshot',
+        'track-state.snapshot',
       ],
       channelRates: { 'car-speeds.snapshot': 10, 'standings.snapshot': 5 },
     });
     expect(getWidgetRuntimeDefinition('slowcarahead')).toMatchObject({
-      legacyTelemetry: true,
-      channels: ['car-speeds.snapshot'],
+      legacyTelemetry: false,
+      channels: ['car-speeds.snapshot', 'track-state.snapshot'],
       channelRates: { 'car-speeds.snapshot': 10 },
     });
   });

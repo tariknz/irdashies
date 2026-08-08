@@ -164,7 +164,7 @@ export const drawDrivers = (
   showCarNumbers: boolean,
   displayMode: 'carNumber' | 'sessionPosition' | 'livePosition' = 'carNumber',
   driverLivePositions: Record<number, number>,
-  carIdxIsOnPitRoad?: number[],
+  carIdxIsOnPitRoad?: readonly boolean[],
   hidePlayer?: boolean
 ) => {
   const safePosition = (pos: number | undefined): number =>

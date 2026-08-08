@@ -2,14 +2,16 @@
   useCarIdxOffTrack,
   useFocusCarIdx,
   useSessionDrivers,
-  useTelemetryValues,
-  useTelemetryValuesRounded,
+  useTrackStateSnapshot,
   useTrackLength,
 } from '@irdashies/context';
 import { useCallback, useMemo } from 'react';
 import { Driver } from '@irdashies/types';
 import { useCarIdxSpeed } from '@irdashies/context';
 import { useSlowCarAheadSettings } from './useSlowCarAheadSettings';
+
+const EMPTY_POSITIONS: readonly number[] = [];
+const EMPTY_PIT_STATE: readonly boolean[] = [];
 
 /**
  * Determines the closest slow car ahead, if one exists.
@@ -18,8 +20,9 @@ export const useSlowCarAhead = () => {
   const trackLength = useTrackLength();
   const driverIdx = useFocusCarIdx();
   const drivers = useSessionDrivers();
-  const driversLapDist = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
-  const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
+  const trackState = useTrackStateSnapshot();
+  const driversLapDist = trackState?.carIdxLapDistPct ?? EMPTY_POSITIONS;
+  const carIdxOnPitRoad = trackState?.carIdxOnPitRoad ?? EMPTY_PIT_STATE;
   const carIdxOffTrack = useCarIdxOffTrack();
   const carSpeeds = useCarIdxSpeed();
   const settings = useSlowCarAheadSettings();

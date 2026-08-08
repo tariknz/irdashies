@@ -12,7 +12,7 @@ import {
   useBattleGapSnapshot,
   useWeekendInfoNumCarClasses,
   useCarIdxSpeed,
-  useTelemetryValue,
+  useTrackStateSnapshot,
   useSessionStore,
 } from '@irdashies/context';
 import { formatTime } from '@irdashies/utils/time';
@@ -389,7 +389,7 @@ export const Battle = () => {
 
   // Speed: derived from CarIdxLapDistPct movement, in km/h.
   const carSpeeds = useCarIdxSpeed(settings?.speed?.enabled ?? false);
-  const displayUnits = useTelemetryValue('DisplayUnits');
+  const displayUnits = useTrackStateSnapshot()?.displayUnits;
   const resolvedSpeedUnit = resolveSpeedUnit(
     settings?.speed?.unit,
     displayUnits

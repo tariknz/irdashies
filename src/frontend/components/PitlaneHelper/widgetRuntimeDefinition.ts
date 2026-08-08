@@ -1,10 +1,11 @@
 import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
-  id: 'slowcarahead',
+  id: 'pitlanehelper',
   legacyTelemetry: false,
   sessionData: true,
-  channels: ['car-speeds.snapshot', 'track-state.snapshot'],
+  pitLaneData: true,
+  channels: ['driver-controls.snapshot', 'track-state.snapshot'],
   ratePreset: 'driverFocused',
-  channelRates: { 'car-speeds.snapshot': 10 },
+  channelRates: { 'driver-controls.snapshot': 60 },
 } satisfies WidgetRuntimeDefinition;

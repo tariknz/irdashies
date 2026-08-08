@@ -1,13 +1,9 @@
 import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
-  id: 'rejoin',
+  id: 'blindspotmonitor',
   legacyTelemetry: false,
   sessionData: true,
-  channels: [
-    'relative-gaps.snapshot',
-    'standings.snapshot',
-    'track-state.snapshot',
-  ],
-  ratePreset: 'gapTiming',
+  channels: ['track-state.snapshot'],
+  ratePreset: 'driverFocused',
 } satisfies WidgetRuntimeDefinition;

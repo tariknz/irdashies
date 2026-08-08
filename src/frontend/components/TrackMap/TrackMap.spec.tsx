@@ -12,14 +12,20 @@ vi.mock('./hooks/useGhostSectorColors', () => ({
 vi.mock('../Standings/hooks/useDriverLivePositions', () => ({
   useDriverLivePositions: vi.fn(() => ({})),
 }));
-vi.mock('@irdashies/context', () => ({
-  useDashboard: vi.fn(),
-  useSessionVisibility: vi.fn(),
-  useTelemetryValue: vi.fn(),
-  useSessionStore: vi.fn(() => []),
-  useSectorColors: vi.fn(() => []),
-  useSectorTimingStore: vi.fn(() => 0),
-}));
+vi.mock('@irdashies/context', () => {
+  const useTelemetryValue = vi.fn();
+  return {
+    useDashboard: vi.fn(),
+    useSessionVisibility: vi.fn(),
+    useTelemetryValue,
+    useTrackStateSnapshot: vi.fn(() => ({
+      isOnTrack: useTelemetryValue('IsOnTrack'),
+    })),
+    useSessionStore: vi.fn(() => []),
+    useSectorColors: vi.fn(() => []),
+    useSectorTimingStore: vi.fn(() => 0),
+  };
+});
 vi.mock('./TrackCanvas', () => ({
   TrackCanvas: () => <div>Track Canvas</div>,
 }));
