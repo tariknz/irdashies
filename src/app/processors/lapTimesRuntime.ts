@@ -47,6 +47,7 @@ export class LapTimesRuntime {
         lifecycle.onDisconnect(() => this.onLifecycle({ type: 'disconnect' }))
       );
     }
+    if (bus.subscriberCount('lap-times.snapshot') > 0) this.activate();
   }
 
   onFrame(frame: Telemetry): void {

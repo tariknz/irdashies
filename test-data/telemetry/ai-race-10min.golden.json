@@ -8083,10 +8083,11 @@
       "name": "session-bar-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "b43be5d97b82373fcc4ace22050a46cc61a2cc17c2b5de2de40f6500a643b39b",
+      "rollingHash": "88ff2b04cbf847e4a5deeec53490d8045d0e848dfb75359792fcc99848355619",
       "checkpoints": {
         "firstFrame": {
           "displayUnits": 1,
+          "brakeBias": 51,
           "brakeBiasIsClio": false,
           "incidents": 0,
           "trackWetness": 1,
@@ -8116,6 +8117,7 @@
           "sessionName": "Race",
           "trackDisplayName": "Road America",
           "displayUnits": 1,
+          "brakeBias": 51,
           "brakeBiasIsClio": false,
           "incidents": 2,
           "incidentLimit": 25,

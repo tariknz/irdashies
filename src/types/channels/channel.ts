@@ -49,8 +49,8 @@ export interface SessionBarSnapshot {
   playerOverallPosition: number;
   playerClassPosition: number;
   playerClassSize: number;
-  competitorCarIds: number[];
-  competitorPositions: number[];
+  competitorCarIds: readonly number[];
+  competitorPositions: readonly number[];
   lastLapTopSpeed: number | null;
   sessionBestTopSpeed: number | null;
   sessionNum: number | null;

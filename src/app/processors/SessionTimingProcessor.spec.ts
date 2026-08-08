@@ -79,6 +79,7 @@ describe('SessionTimingProcessor', () => {
       })
     );
     expect(processor.snapshot().currentLap).toBe(3);
+    expect(processor.snapshot().totalRaceLaps).toBe(3);
   });
 
   it('resets on session changes and ignores replay scrubbing', () => {

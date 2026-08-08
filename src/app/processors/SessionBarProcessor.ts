@@ -6,6 +6,14 @@ import type {
 } from '@irdashies/types';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 
+type MutableSessionBarSnapshot = Omit<
+  SessionBarSnapshot,
+  'competitorCarIds' | 'competitorPositions'
+> & {
+  competitorCarIds: number[];
+  competitorPositions: number[];
+};
+
 const n = (f: Telemetry, k: keyof Telemetry): number | undefined => {
   const v = f[k]?.value?.[0];
   return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
@@ -135,7 +143,14 @@ export class SessionBarProcessor implements TelemetryProcessor<SessionBarSnapsho
     } else this.reset(null);
   }
   snapshot(): SessionBarSnapshot {
-    return this.latest;
+    return {
+      ...this.latest,
+      competitorCarIds: [...this.latest.competitorCarIds],
+      competitorPositions: [...this.latest.competitorPositions],
+    };
+  }
+  snapshotVersion(): number {
+    return this.latest.version;
   }
   private reset(sessionNum: number | null): void {
     const version = this.latest.version + 1;
@@ -144,7 +159,7 @@ export class SessionBarProcessor implements TelemetryProcessor<SessionBarSnapsho
     this.lap = -1;
     this.lapTop = 0;
   }
-  private empty(): SessionBarSnapshot {
+  private empty(): MutableSessionBarSnapshot {
     return {
       sessionName: undefined,
       trackDisplayName: undefined,

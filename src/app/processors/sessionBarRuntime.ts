@@ -92,8 +92,8 @@ export class SessionBarRuntime {
   }
   private publish(): void {
     if (!this.processor) return;
+    if (this.processor.snapshotVersion() === this.published) return;
     const snapshot = this.processor.snapshot();
-    if (snapshot.version === this.published) return;
     this.published = snapshot.version;
     this.metrics.markStart('sessionBarPublication');
     this.bus.publish('session-bar.snapshot', snapshot);

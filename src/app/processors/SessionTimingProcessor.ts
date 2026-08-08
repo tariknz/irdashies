@@ -117,12 +117,16 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
         ? sessionInfo.SessionLaps
         : 0;
     const fixedLapRace = !(timeRemaining > 0 && timeRemaining !== 604800);
+    const displayLap =
+      state >= SessionState.Checkered
+        ? (this.checkeredLap ?? currentLap)
+        : currentLap;
     const raceValues = this.calculateRaceValues(
       frame,
       sessionType,
       state,
       focusCarIdx,
-      currentLap,
+      displayLap,
       leaderCarIdx,
       leaderLap,
       leaderLapDistPct,
@@ -135,10 +139,7 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
     this.latest = {
       sessionType,
       state,
-      currentLap:
-        state >= SessionState.Checkered
-          ? (this.checkeredLap ?? currentLap)
-          : currentLap,
+      currentLap: displayLap,
       totalLaps,
       time: sessionTime,
       timeTotal,

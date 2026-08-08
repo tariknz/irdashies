@@ -21,6 +21,7 @@ export const createSessionBarProbe = (): ReplayProbe<SessionBarSnapshot> => {
       'CarIdxClassPosition',
       'CarIdxPosition',
       'DisplayUnits',
+      'dcBrakeBias',
       'FuelLevel',
       'Lap',
       'LapBestLapTime',

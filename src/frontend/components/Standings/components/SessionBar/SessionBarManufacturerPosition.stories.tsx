@@ -10,7 +10,10 @@ import {
 import { mockDashboardBridge } from '../../../../../../.storybook/mockDashboardBridge';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import type { Telemetry } from '@irdashies/types';
-import { ChannelSnapshotDecorator } from '@irdashies/storybook';
+import {
+  ChannelSnapshotDecorator,
+  TelemetryDecorator,
+} from '@irdashies/storybook';
 
 // carId 56 = NASCAR Cup Series Toyota Camry, carId 30 = Ford Mustang FR500S
 const TOYOTA_CAR_ID = 56;
@@ -88,6 +91,7 @@ export default {
   component: SessionBar,
   title: 'widgets/Standings/components/SessionBar/ManufacturerPosition',
   decorators: [
+    TelemetryDecorator(),
     ChannelSnapshotDecorator({
       'session-bar.snapshot': {
         displayUnits: 1,
