@@ -30,7 +30,12 @@ export const useCarBehind = ({
     }
 
     // Get all cars behind the player (negative delta means behind: other - player < 0)
-    const carsBehind = drivers.filter((driver) => driver.delta < 0);
+    const carsBehind = drivers.filter(
+      (driver): driver is typeof driver & { delta: number } =>
+        typeof driver.delta === 'number' &&
+        Number.isFinite(driver.delta) &&
+        driver.delta < 0
+    );
 
     const filtered = carsBehind.filter((car) => {
       // Check distance threshold

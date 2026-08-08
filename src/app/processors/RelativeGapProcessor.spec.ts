@@ -112,6 +112,22 @@ describe('RelativeGapProcessor', () => {
     expect(processor.snapshot().deltas[1]).toBeCloseTo(5);
   });
 
+  it('falls back when class estimated lap times are invalid', () => {
+    const invalidSession = session();
+    invalidSession.DriverInfo.Drivers[0].CarClassEstLapTime = 0;
+    invalidSession.DriverInfo.Drivers[1].CarClassEstLapTime = Number.NaN;
+    invalidSession.DriverInfo.Drivers[2].CarClassEstLapTime = Infinity;
+    const processor = new RelativeGapProcessor({ snapshot: emptyReferences });
+    processor.init(invalidSession);
+
+    processor.onFrame(frame());
+
+    expect(processor.snapshot().deltas).toEqual([0, 5, -2]);
+    expect(
+      processor.snapshot().deltas.every((delta) => Number.isFinite(delta))
+    ).toBe(true);
+  });
+
   it('follows the camera car and wraps track distance', () => {
     const processor = new RelativeGapProcessor({ snapshot: emptyReferences });
     processor.init(session());
@@ -163,5 +179,8 @@ describe('RelativeGapProcessor', () => {
     processor.onLifecycle({ type: 'enter', replay: true });
     processor.onFrame(frame({ sessionTime: 3 }));
     expect(processor.snapshot().deltas).toEqual([]);
+    processor.onLifecycle({ type: 'enter', replay: false });
+    processor.onFrame(frame({ sessionTime: 4 }));
+    expect(processor.snapshot().deltas).toEqual([0, 5, -6]);
   });
 });

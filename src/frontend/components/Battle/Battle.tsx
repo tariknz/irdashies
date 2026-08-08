@@ -310,7 +310,9 @@ export const Battle = () => {
   const relativeDeltaMap = useMemo(() => {
     const map = new Map<number, number>();
     for (const r of relatives) {
-      if (r.delta != null) map.set(r.carIdx, r.delta);
+      if (r.delta != null && Number.isFinite(r.delta)) {
+        map.set(r.carIdx, r.delta);
+      }
     }
     return map;
   }, [relatives]);

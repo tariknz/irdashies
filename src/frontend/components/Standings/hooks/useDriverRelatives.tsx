@@ -26,7 +26,10 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
 
   const calculateDelta = useCallback(
     (opponentCarIdx: number) => {
-      return snapshot?.deltas[opponentCarIdx] ?? NaN;
+      const delta = snapshot?.deltas[opponentCarIdx];
+      return typeof delta === 'number' && Number.isFinite(delta)
+        ? delta
+        : undefined;
     },
     [snapshot?.deltas]
   );

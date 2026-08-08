@@ -13,6 +13,11 @@ const FALLBACK_LAP_TIME = 90;
 const UPDATE_INTERVAL_SECONDS = 0.2;
 const TIME_EPSILON = 1e-6;
 
+const lapTimeOrFallback = (value: number | undefined): number =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? value
+    : FALLBACK_LAP_TIME;
+
 export interface ReferenceLapSource {
   snapshot(): ReferenceLapsSnapshot;
 }
@@ -232,10 +237,12 @@ export class RelativeGapProcessor implements TelemetryProcessor<RelativeGapsSnap
     ) {
       return null;
     }
-    const aheadLapTime =
-      this.driverAt(aheadIdx)?.CarClassEstLapTime ?? FALLBACK_LAP_TIME;
-    const behindLapTime =
-      this.driverAt(behindIdx)?.CarClassEstLapTime ?? FALLBACK_LAP_TIME;
+    const aheadLapTime = lapTimeOrFallback(
+      this.driverAt(aheadIdx)?.CarClassEstLapTime
+    );
+    const behindLapTime = lapTimeOrFallback(
+      this.driverAt(behindIdx)?.CarClassEstLapTime
+    );
     const scaledAheadTime = aheadTime * (behindLapTime / aheadLapTime);
     let delta = targetAhead
       ? scaledAheadTime - behindTime

@@ -9,7 +9,6 @@ import {
   getTimeAtPosition,
 } from '../relativeGapHelpers';
 import { ReferenceLap } from '@irdashies/types';
-import { TelemetryVarList } from '../../../../app/irsdk/types';
 
 // Mock the context hooks
 vi.mock('@irdashies/context', async (importOriginal) => {
@@ -18,8 +17,6 @@ vi.mock('@irdashies/context', async (importOriginal) => {
     ...actual,
     useFocusCarIdx: vi.fn(),
     useRelativeGapsSnapshot: vi.fn(),
-    useTelemetryValues: vi.fn(),
-    useTelemetryValuesRounded: vi.fn(),
     useSessionStore: vi.fn(),
     REFERENCE_INTERVAL: 0.0025,
   };
@@ -66,13 +63,8 @@ const generateReferenceLap = (lapTime: number): ReferenceLap => {
 };
 
 // Import mocked functions after vi.mock
-const {
-  useFocusCarIdx,
-  useRelativeGapsSnapshot,
-  useTelemetryValues,
-  useTelemetryValuesRounded,
-  useSessionStore,
-} = await import('@irdashies/context');
+const { useFocusCarIdx, useRelativeGapsSnapshot, useSessionStore } =
+  await import('@irdashies/context');
 const { useDriverStandings } = await import('./useDriverPositions');
 
 const mockDrivers: Standings[] = [
@@ -169,70 +161,16 @@ const mockDrivers: Standings[] = [
 ];
 
 describe('useDriverRelatives', () => {
-  const mockCarIdxLapDistPct = [0.5, 0.6, 0.4]; // Player, Ahead, Behind
-  // CarIdxEstTime: same class cars, delta = otherEstTime - playerEstTime
-  const mockCarIdxEstTime = [99, 109, 89]; // Player, Ahead (+10), Behind (-10)
-
   beforeEach(() => {
     vi.clearAllMocks();
 
     vi.mocked(useFocusCarIdx).mockReturnValue(0);
-    // Delegate rounded calls to the same mock — precision is irrelevant for static test data
-    vi.mocked(useTelemetryValuesRounded).mockImplementation(
-      (key: keyof TelemetryVarList) =>
-        vi.mocked(useTelemetryValues)(key) as number[]
-    );
-    vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
-      if (key === 'CarIdxLapDistPct') return mockCarIdxLapDistPct;
-      if (key === 'CarIdxEstTime') return mockCarIdxEstTime;
-      if (key === 'CarIdxLap') return [1, 1, 1];
-      if (key === 'CarIdxTrackSurface') return [3, 3, 3];
-      if (key === 'SessionTime') return [100];
-      return [];
-    });
-    vi.mocked(useRelativeGapsSnapshot).mockImplementation(() => {
-      const focusCarIdx = vi.mocked(useFocusCarIdx)();
-      if (focusCarIdx === undefined) return undefined;
-      const pcts = vi.mocked(useTelemetryValues)(
-        'CarIdxLapDistPct'
-      ) as number[];
-      const estimatedTimes = vi.mocked(useTelemetryValues)(
-        'CarIdxEstTime'
-      ) as number[];
-      const drivers = vi.mocked(useDriverStandings)();
-      const focusDriver = drivers.find(
-        (driver) => driver.carIdx === focusCarIdx
-      );
-      const relativePcts = pcts.map((pct) => {
-        let relativePct = pct - pcts[focusCarIdx];
-        if (relativePct > 0.5) relativePct -= 1;
-        else if (relativePct < -0.5) relativePct += 1;
-        return relativePct;
-      });
-      const deltas = relativePcts.map((relativePct, carIdx) => {
-        if (carIdx === focusCarIdx) return 0;
-        const targetAhead = relativePct > 0 && relativePct <= 0.5;
-        const aheadIdx = targetAhead ? carIdx : focusCarIdx;
-        const behindIdx = targetAhead ? focusCarIdx : carIdx;
-        return calculateClassEstimatedDelta(
-          getStats(
-            estimatedTimes[aheadIdx],
-            drivers.find((driver) => driver.carIdx === aheadIdx)
-          ),
-          getStats(
-            estimatedTimes[behindIdx],
-            drivers.find((driver) => driver.carIdx === behindIdx) ?? focusDriver
-          ),
-          targetAhead
-        );
-      });
-      return {
-        focusCarIdx,
-        relativePcts,
-        deltas,
-        sessionNum: 1,
-        version: 1,
-      };
+    vi.mocked(useRelativeGapsSnapshot).mockReturnValue({
+      focusCarIdx: 0,
+      relativePcts: [0, 0.1, -0.1],
+      deltas: [0, 10, -10],
+      sessionNum: 1,
+      version: 1,
     });
     vi.mocked(useDriverStandings).mockReturnValue(mockDrivers);
     vi.mocked(useSessionStore).mockImplementation((selector) =>
@@ -296,6 +234,7 @@ describe('useDriverRelatives', () => {
 
   it('should return empty array when no player is found', () => {
     vi.mocked(useFocusCarIdx).mockReturnValue(undefined);
+    vi.mocked(useRelativeGapsSnapshot).mockReturnValue(undefined);
 
     const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
     expect(result.current).toEqual([]);
@@ -324,48 +263,23 @@ describe('useDriverRelatives', () => {
     expect(result.current).toHaveLength(3);
   });
 
-  it.each([
-    [0.1, 0.2, 0.8], // Player near start, Car ahead near start, Car behind near finish
-    [0.2, 0.3, 0.9],
-    [0, 0.1, 0.7],
-    [0.9, 0, 0.6],
-  ])(
-    'should handle cars crossing the start/finish line',
-    (playerDistPct, aheadDistPct, behindDistPct) => {
-      const mockCarIdxLapDistPctWithCrossing = [
-        playerDistPct,
-        aheadDistPct,
-        behindDistPct,
-      ];
+  it('preserves channel ordering across the start/finish line', () => {
+    vi.mocked(useRelativeGapsSnapshot).mockReturnValue({
+      focusCarIdx: 0,
+      relativePcts: [0, 0.1, -0.3],
+      deltas: [0, 10, -30],
+      sessionNum: 1,
+      version: 2,
+    });
 
-      vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
-        if (key === 'CarIdxLapDistPct') return mockCarIdxLapDistPctWithCrossing;
-        // Same-class cars use CarIdxEstTime for gap calculation
-        // Player=99, Ahead=109 (+10s), Behind=69 (-30s to match expected test values)
-        if (key === 'CarIdxEstTime') return [99, 109, 69];
-        return [];
-      });
+    const { result } = renderHook(() => useDriverRelatives({ buffer: 1 }));
 
-      const { result } = renderHook(() => useDriverRelatives({ buffer: 1 }));
-
-      // Car ahead should still be ahead by 10%
-      expect(result.current[0].carIdx).toBe(1);
-      expect(result.current[0].relativePct).toBeCloseTo(0.1);
-      // Delta uses CarIdxEstTime: 109 - 99 = +10
-      expect(result.current[0].delta).toBeCloseTo(10);
-
-      // Player should be in the middle
-      expect(result.current[1].carIdx).toBe(0);
-      expect(result.current[1].relativePct).toBe(0);
-      expect(result.current[1].delta).toBe(0);
-
-      // Car behind should be behind by 30%
-      expect(result.current[2].carIdx).toBe(2);
-      expect(result.current[2].relativePct).toBeCloseTo(-0.3);
-      // Delta uses CarIdxEstTime: 69 - 99 = -30
-      expect(result.current[2].delta).toBeCloseTo(-30);
-    }
-  );
+    expect(result.current.map((driver) => driver.carIdx)).toEqual([1, 0, 2]);
+    expect(result.current.map((driver) => driver.relativePct)).toEqual([
+      0.1, 0, -0.3,
+    ]);
+    expect(result.current.map((driver) => driver.delta)).toEqual([10, 0, -30]);
+  });
 
   it('should filter out off-track cars', () => {
     const mockDriversWithOffTrack = [
@@ -399,12 +313,12 @@ describe('useDriverRelatives', () => {
       opponentLMP2,
     ]);
 
-    vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
-      // Player (Idx 0) at 50% (50s into 100s lap)
-      // Opponent (Idx 2) at 40% (32s into 80s lap)
-      if (key === 'CarIdxLapDistPct') return [0.5, 0.6, 0.4];
-      if (key === 'CarIdxEstTime') return [50, 60, 32];
-      return [];
+    vi.mocked(useRelativeGapsSnapshot).mockReturnValue({
+      focusCarIdx: 0,
+      relativePcts: [0, 0.1, -0.1],
+      deltas: [0, 10, -8],
+      sessionNum: 1,
+      version: 2,
     });
 
     const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
@@ -435,12 +349,12 @@ describe('useDriverRelatives', () => {
       opponentLMP2,
     ]);
 
-    vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
-      // Player (Idx 0) at 50% (50s into 100s lap)
-      // Opponent (Idx 2) at 60% (48s into 80s lap)
-      if (key === 'CarIdxLapDistPct') return [0.5, 0.6, 0.6];
-      if (key === 'CarIdxEstTime') return [50, 60, 48];
-      return [];
+    vi.mocked(useRelativeGapsSnapshot).mockReturnValue({
+      focusCarIdx: 0,
+      relativePcts: [0, 0.1, 0.1],
+      deltas: [0, 10, 10],
+      sessionNum: 1,
+      version: 2,
     });
 
     const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
@@ -460,10 +374,12 @@ describe('useDriverRelatives', () => {
     // Opponent is actually ~2 seconds behind.
     // Raw EstTime: Player = 1.0, Opponent = 99.0 (Lap is 100s)
 
-    vi.mocked(useTelemetryValues).mockImplementation((key: string) => {
-      if (key === 'CarIdxLapDistPct') return [0.01, 0.05, 0.99];
-      if (key === 'CarIdxEstTime') return [1.0, 5.0, 99.0];
-      return [];
+    vi.mocked(useRelativeGapsSnapshot).mockReturnValue({
+      focusCarIdx: 0,
+      relativePcts: [0, 0.04, -0.02],
+      deltas: [0, 4, -2],
+      sessionNum: 1,
+      version: 2,
     });
 
     const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
@@ -472,6 +388,25 @@ describe('useDriverRelatives', () => {
     // Raw delta would be 99 - 1 = 98s.
     // Normalized delta (98 - 100) = -2s.
     expect(opponentBehind?.delta).toBeCloseTo(-2);
+  });
+
+  it('preserves a missing channel delta as undefined', () => {
+    vi.mocked(useRelativeGapsSnapshot).mockReturnValue({
+      focusCarIdx: 0,
+      relativePcts: [0, 0.1, -0.1],
+      deltas: [0, null, Number.NaN],
+      sessionNum: 1,
+      version: 2,
+    });
+
+    const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
+
+    expect(result.current.find((driver) => driver.carIdx === 1)?.delta).toBe(
+      undefined
+    );
+    expect(result.current.find((driver) => driver.carIdx === 2)?.delta).toBe(
+      undefined
+    );
   });
 });
 
