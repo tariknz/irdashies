@@ -12,6 +12,7 @@ import { RadioRuntime } from '../../../processors/radioRuntime';
 import { SessionTimingRuntime } from '../../../processors/sessionTimingRuntime';
 import { LapTimesRuntime } from '../../../processors/lapTimesRuntime';
 import { SessionBarRuntime } from '../../../processors/sessionBarRuntime';
+import { DriverControlsRuntime } from '../../../processors/driverControlsRuntime';
 
 export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager,
@@ -64,6 +65,9 @@ export async function publishIRacingSDKEvents(
   const sessionBarRuntime = channelBus
     ? new SessionBarRuntime(channelBus, lifecycle, perfMetrics)
     : undefined;
+  const driverControlsRuntime = channelBus
+    ? new DriverControlsRuntime(channelBus, lifecycle, perfMetrics)
+    : undefined;
 
   bridge.onSessionData((session) => {
     carSpeedsRuntime?.onSession(session);
@@ -73,6 +77,7 @@ export async function publishIRacingSDKEvents(
     standingsRuntime?.onSession(session);
     sessionTimingRuntime?.onSession(session);
     sessionBarRuntime?.onSession(session);
+    driverControlsRuntime?.onSession(session);
     overlayManager.publishMessage('sessionData', session);
   });
 
@@ -87,6 +92,7 @@ export async function publishIRacingSDKEvents(
     radioRuntime?.onFrame(telemetry);
     sessionTimingRuntime?.onFrame(telemetry);
     sessionBarRuntime?.onFrame(telemetry);
+    driverControlsRuntime?.onFrame(telemetry);
     perfMetrics.markStart('broadcast');
     overlayManager.publishMessage('telemetry', telemetry);
     perfMetrics.markEnd('broadcast');
@@ -110,6 +116,7 @@ export async function publishIRacingSDKEvents(
       radioRuntime?.dispose();
       sessionTimingRuntime?.dispose();
       sessionBarRuntime?.dispose();
+      driverControlsRuntime?.dispose();
       referenceLapRuntime?.dispose();
       perfMetrics.stopReporting();
       originalStop();

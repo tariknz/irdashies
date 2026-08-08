@@ -9,6 +9,7 @@ export type SessionLifecycleEvent =
 
 export interface ChannelPayloads {
   'car-speeds.snapshot': CarSpeedsSnapshot;
+  'driver-controls.snapshot': DriverControlsSnapshot;
   'fuel.projection': FuelProjectionSnapshot;
   'lap-times.snapshot': LapTimesSnapshot;
   'reference-laps.snapshot': ReferenceLapsSnapshot;
@@ -19,6 +20,28 @@ export interface ChannelPayloads {
   'session-bar.snapshot': SessionBarSnapshot;
   'standings.snapshot': StandingsSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
+}
+
+export interface DriverControlsSnapshot {
+  brake?: number;
+  brakeRaw?: number;
+  throttle?: number;
+  throttleRaw?: number;
+  clutch?: number;
+  clutchRaw?: number;
+  gear?: number;
+  speed?: number;
+  displayUnits?: number;
+  steeringWheelAngle?: number;
+  brakeAbsActive?: boolean;
+  rpm?: number;
+  shiftGrindRpm?: number;
+  oilTemp?: number;
+  waterTemp?: number;
+  engineWarnings?: number;
+  shiftRpm?: number;
+  blinkRpm?: number;
+  version: number;
 }
 
 export interface SessionBarSnapshot {
@@ -212,6 +235,11 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 10,
     maxRateHz: 25,
+  },
+  'driver-controls.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 25,
+    maxRateHz: 60,
   },
   'fuel.projection': {
     kind: 'snapshot',

@@ -9,3 +9,4 @@ export * from './useSessionBarSnapshot';
 export * from './useSectorTimingSnapshot';
 export * from './useStandingsSnapshot';
 export * from './useCarSpeedsSnapshot';
+export * from './useDriverControlsSnapshot';

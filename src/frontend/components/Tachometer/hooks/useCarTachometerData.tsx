@@ -1,21 +1,15 @@
 import { useEffect, useState, useCallback } from 'react';
-import {
-  useSessionStore,
-  useDriverCarIdx,
-  useTelemetryValue,
-} from '@irdashies/context';
+import { useSessionStore, useDriverCarIdx } from '@irdashies/context';
 import { loadCarData, getGearKey, type CarData } from '../../../utils/carData';
 
 /**
  * Hook for car-specific tachometer data from lovely-car-data
  */
-export const useCarTachometerData = () => {
+export const useCarTachometerData = (gear = 0) => {
   const [carData, setCarData] = useState<CarData | null>(null);
 
   const driverCarIdx = useDriverCarIdx();
   const session = useSessionStore((state) => state.session);
-  const gear = useTelemetryValue('Gear') ?? 0;
-
   // Get current car path and game
   const carPath = session?.DriverInfo?.Drivers?.find(
     (driver) => driver.CarIdx === driverCarIdx

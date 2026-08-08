@@ -10,12 +10,14 @@ vi.mock('@irdashies/context', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@irdashies/context')>();
   return {
     ...actual,
-    useTelemetryValue: vi.fn(),
+    useDriverControlsSnapshot: vi.fn(),
   };
 });
 vi.mock('./useCarTachometerData');
 
-const mockUseTelemetryValue = vi.mocked(Context.useTelemetryValue);
+const mockUseDriverControlsSnapshot = vi.mocked(
+  Context.useDriverControlsSnapshot
+);
 const mockUseCarTachometerData = vi.mocked(
   CarTachometerData.useCarTachometerData
 );
@@ -25,10 +27,10 @@ describe('useCustomShiftPoints', () => {
     vi.clearAllMocks();
 
     // Default mocks
-    mockUseTelemetryValue.mockImplementation((key) => {
-      if (key === 'Gear') return 1;
-      if (key === 'RPM') return 6500;
-      return 0;
+    mockUseDriverControlsSnapshot.mockReturnValue({
+      gear: 1,
+      rpm: 6500,
+      version: 1,
     });
 
     mockUseCarTachometerData.mockReturnValue({
@@ -88,10 +90,10 @@ describe('useCustomShiftPoints', () => {
   });
 
   it('does not show shift indicator when RPM below custom shift point', () => {
-    mockUseTelemetryValue.mockImplementation((key) => {
-      if (key === 'Gear') return 1;
-      if (key === 'RPM') return 5500; // Below shift point
-      return 0;
+    mockUseDriverControlsSnapshot.mockReturnValue({
+      gear: 1,
+      rpm: 5500,
+      version: 2,
     });
 
     const settings: ShiftPointSettings = {
@@ -118,10 +120,10 @@ describe('useCustomShiftPoints', () => {
   });
 
   it('does not show shift indicator in neutral or reverse', () => {
-    mockUseTelemetryValue.mockImplementation((key) => {
-      if (key === 'Gear') return 0; // Neutral
-      if (key === 'RPM') return 6500;
-      return 0;
+    mockUseDriverControlsSnapshot.mockReturnValue({
+      gear: 0,
+      rpm: 6500,
+      version: 2,
     });
 
     const settings: ShiftPointSettings = {

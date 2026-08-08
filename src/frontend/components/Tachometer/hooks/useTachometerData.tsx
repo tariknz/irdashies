@@ -1,5 +1,4 @@
-import { useTelemetryValue, useSessionStore } from '@irdashies/context';
-import type { Telemetry } from '@irdashies/types';
+import { useDriverControlsSnapshot, useSessionStore } from '@irdashies/context';
 import { useCarTachometerData } from './useCarTachometerData';
 
 /**
@@ -7,13 +6,14 @@ import { useCarTachometerData } from './useCarTachometerData';
  * Encapsulates all RPM and shift light logic with car-specific data integration.
  */
 export const useTachometerData = () => {
-  const rpm = useTelemetryValue('RPM') ?? 0;
-  const gear = useTelemetryValue('Gear') ?? 1;
-  const shiftGrindRpm = useTelemetryValue('ShiftGrindRPM') ?? 0;
-  const oilTemp = useTelemetryValue('OilTemp') ?? 0;
-  const waterTemp = useTelemetryValue('WaterTemp') ?? 0;
-  const engineWarnings = useTelemetryValue('EngineWarnings') ?? 0;
-  const { carData, gearRpmThresholds, hasCarData } = useCarTachometerData();
+  const snapshot = useDriverControlsSnapshot();
+  const rpm = snapshot?.rpm ?? 0;
+  const gear = snapshot?.gear ?? 1;
+  const shiftGrindRpm = snapshot?.shiftGrindRpm ?? 0;
+  const oilTemp = snapshot?.oilTemp ?? 0;
+  const waterTemp = snapshot?.waterTemp ?? 0;
+  const engineWarnings = snapshot?.engineWarnings ?? 0;
+  const { carData, gearRpmThresholds, hasCarData } = useCarTachometerData(gear);
 
   // Get car-specific redline from session data
   const driverCarRedLine = useSessionStore(
@@ -35,11 +35,9 @@ export const useTachometerData = () => {
     (shiftGrindRpm > 0 ? shiftGrindRpm : null) || // Second: telemetry shift grind RPM
     7500; // Conservative fallback for safety
 
-  // iRacing shift lights telemetry values
-  const shiftRpm =
-    useTelemetryValue('DriverCarSLShiftRPM' as keyof Telemetry) ?? 0; // Purple LEDs
-  const blinkRpm =
-    useTelemetryValue('DriverCarSLBlinkRPM' as keyof Telemetry) ?? 0; // Blinking LEDs
+  // iRacing shift-light thresholds projected from session data
+  const shiftRpm = snapshot?.shiftRpm ?? 0; // Purple LEDs
+  const blinkRpm = snapshot?.blinkRpm ?? 0; // Blinking LEDs
 
   return {
     rpm,

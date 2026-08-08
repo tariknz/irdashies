@@ -27,11 +27,26 @@ describe('widget runtime metadata', () => {
 
   it('keeps unknown and unmigrated widgets on the legacy path', () => {
     expect(
-      rendererNeedsLegacyTelemetry([widget('fuel'), widget('input')])
+      rendererNeedsLegacyTelemetry([widget('fuel'), widget('pitlanehelper')])
     ).toBe(true);
     expect(rendererNeedsLegacyTelemetry([widget('instance', 'unknown')])).toBe(
       true
     );
+  });
+
+  it('discovers Input and Tachometer as driver-control channel consumers', () => {
+    expect(getWidgetRuntimeDefinition('input')).toMatchObject({
+      legacyTelemetry: false,
+      channels: ['driver-controls.snapshot'],
+      channelRates: { 'driver-controls.snapshot': 60 },
+    });
+    expect(getWidgetRuntimeDefinition('tachometer')).toMatchObject({
+      legacyTelemetry: false,
+      channels: ['driver-controls.snapshot'],
+    });
+    expect(
+      rendererNeedsLegacyTelemetry([widget('input'), widget('tachometer')])
+    ).toBe(false);
   });
 
   it('declares lap-time channels without prematurely removing legacy data', () => {
