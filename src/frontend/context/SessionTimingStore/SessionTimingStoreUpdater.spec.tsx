@@ -2,13 +2,12 @@ import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useSessionTimingStoreUpdater } from './SessionTimingStoreUpdater';
 import { useSessionTimingStore } from './SessionTimingStore';
-import { useSessionLapCount } from '../../components/Standings/hooks/useSessionLapCount';
-import { useTotalRaceValue } from '../shared/useTotalRaceValue';
+import { useSessionTimingSnapshot } from '../ChannelStore';
 
-vi.mock('../../components/Standings/hooks/useSessionLapCount');
-vi.mock('../shared/useTotalRaceValue');
+vi.mock('../ChannelStore');
 
-const sessionLapCountResult = {
+const snapshot = {
+  sessionType: 'Race',
   state: 4,
   currentLap: 3,
   totalLaps: 20,
@@ -16,13 +15,12 @@ const sessionLapCountResult = {
   timeTotal: 3600,
   timeRemaining: 3477,
   greenFlagTimestamp: 100,
-};
-
-const totalRaceValueResult = {
   isFixedLapRace: true,
   totalRaceLaps: 20,
   totalRaceTime: 2400,
   adjustedRaceTime: 2350,
+  sessionNum: 0,
+  version: 1,
 };
 
 describe('useSessionTimingStoreUpdater', () => {
@@ -40,25 +38,35 @@ describe('useSessionTimingStoreUpdater', () => {
       totalRaceTime: 0,
       adjustedRaceTime: 0,
     });
-    vi.mocked(useSessionLapCount).mockReturnValue(sessionLapCountResult);
-    vi.mocked(useTotalRaceValue).mockReturnValue(totalRaceValueResult);
+    vi.mocked(useSessionTimingSnapshot).mockReturnValue(snapshot);
   });
 
-  it('writes the merged output of useSessionLapCount + useTotalRaceValue into the store when enabled', () => {
+  it('writes the channel snapshot into the store when enabled', () => {
     renderHook(() => useSessionTimingStoreUpdater(true));
 
     expect(useSessionTimingStore.getState()).toMatchObject({
-      ...sessionLapCountResult,
-      ...totalRaceValueResult,
+      sessionType: 'Race',
+      state: 4,
+      currentLap: 3,
+      totalLaps: 20,
+      time: 123,
+      timeTotal: 3600,
+      timeRemaining: 3477,
+      greenFlagTimestamp: 100,
+      isFixedLapRace: true,
+      totalRaceLaps: 20,
+      totalRaceTime: 2400,
+      adjustedRaceTime: 2350,
     });
   });
 
   it('re-syncs the store when the underlying hook results change', () => {
     const { rerender } = renderHook(() => useSessionTimingStoreUpdater(true));
 
-    vi.mocked(useSessionLapCount).mockReturnValue({
-      ...sessionLapCountResult,
+    vi.mocked(useSessionTimingSnapshot).mockReturnValue({
+      ...snapshot,
       currentLap: 4,
+      version: 2,
     });
     rerender();
 

@@ -1,8 +1,5 @@
 import { memo } from 'react';
-import {
-  useCurrentSessionType,
-  useSessionTimeTiming,
-} from '@irdashies/context';
+import { useSessionTimeTiming } from '@irdashies/context';
 import { SessionState } from '@irdashies/types';
 import { formatTotalTime } from '../../formatTotalTime';
 import { sessionBarItemWrapperClass } from '../../sessionBarItemWrapperClass';
@@ -10,8 +7,8 @@ import type { SessionBarItemProps } from '../../sessionBarItemTypes';
 
 export const SessionTimeItem = memo(
   ({ settings, standalone }: SessionBarItemProps) => {
-    const session = useCurrentSessionType();
     const {
+      sessionType: session,
       time,
       timeRemaining,
       timeTotal,

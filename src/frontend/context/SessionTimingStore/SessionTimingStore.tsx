@@ -3,6 +3,7 @@ import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/shallow';
 
 interface SessionTimingData {
+  sessionType?: string;
   state: number;
   currentLap: number;
   totalLaps: number;
@@ -21,6 +22,7 @@ interface SessionTimingState extends SessionTimingData {
 }
 
 export const useSessionTimingStore = create<SessionTimingState>((set) => ({
+  sessionType: undefined,
   state: 0,
   currentLap: 0,
   totalLaps: 0,
@@ -43,6 +45,7 @@ export const useSessionTimeTiming = () =>
   useStoreWithEqualityFn(
     useSessionTimingStore,
     (s) => ({
+      sessionType: s.sessionType,
       time: s.time,
       timeRemaining: s.timeRemaining,
       timeTotal: s.timeTotal,
@@ -59,6 +62,7 @@ export const useSessionLapsTiming = () =>
   useStoreWithEqualityFn(
     useSessionTimingStore,
     (s) => ({
+      sessionType: s.sessionType,
       currentLap: s.currentLap,
       totalLaps: s.totalLaps,
       state: s.state,

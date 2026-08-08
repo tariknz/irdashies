@@ -6,6 +6,7 @@ export default {
   channels: [
     'lap-times.snapshot',
     'radio.snapshot',
+    'session-timing.snapshot',
     'relative-gaps.snapshot',
     'standings.snapshot',
   ],

@@ -1,4 +1,8 @@
-import type { SessionLifecycleEvent, Telemetry } from '@irdashies/types';
+import type {
+  LapTimesSnapshot,
+  SessionLifecycleEvent,
+  Telemetry,
+} from '@irdashies/types';
 import type { ChannelBus } from '../bridge/channelBridge';
 import type { SessionLifecycle } from '../sessionLifecycle';
 import { LapTimesProcessor } from './LapTimesProcessor';
@@ -12,6 +16,7 @@ export class LapTimesRuntime {
   private processor?: LapTimesProcessor;
   private replaySource?: boolean;
   private publishedVersion = -1;
+  private externalConsumers = 0;
   private readonly disconnects: (() => void)[];
 
   constructor(
@@ -24,7 +29,7 @@ export class LapTimesRuntime {
       bus.onSubscriberCountChanged((channel, count) => {
         if (channel !== 'lap-times.snapshot') return;
         if (count > 0) this.activate();
-        else this.processor = undefined;
+        else this.deactivateIfUnused();
       }),
       lifecycle.onEnter(({ replay }) => {
         this.replaySource = replay;
@@ -47,6 +52,7 @@ export class LapTimesRuntime {
     this.metrics.markEnd('lapTimesProcessing');
     const snapshot = this.processor.snapshot();
     if (snapshot.version === this.publishedVersion) return;
+    if (this.bus.subscriberCount('lap-times.snapshot') === 0) return;
     this.publishedVersion = snapshot.version;
     this.metrics.markStart('lapTimesPublication');
     this.bus.publish('lap-times.snapshot', snapshot);
@@ -58,8 +64,31 @@ export class LapTimesRuntime {
     this.processor = undefined;
   }
 
+  acquire(): () => void {
+    this.externalConsumers += 1;
+    this.activate();
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      this.externalConsumers -= 1;
+      this.deactivateIfUnused();
+    };
+  }
+
+  snapshot(): LapTimesSnapshot | undefined {
+    return this.processor?.snapshot();
+  }
+
   private activate(): void {
-    if (this.processor) return;
+    if (this.processor) {
+      if (this.bus.subscriberCount('lap-times.snapshot') > 0) {
+        const snapshot = this.processor.snapshot();
+        this.bus.publish('lap-times.snapshot', snapshot);
+        this.publishedVersion = snapshot.version;
+      }
+      return;
+    }
     this.bus.clearSnapshot('lap-times.snapshot');
     this.processor = new LapTimesProcessor();
     this.publishedVersion = -1;
@@ -68,6 +97,17 @@ export class LapTimesRuntime {
         type: 'enter',
         replay: this.replaySource && !this.aggregateReplay,
       });
+    }
+  }
+
+  private deactivateIfUnused(): void {
+    if (
+      this.externalConsumers === 0 &&
+      this.bus.subscriberCount('lap-times.snapshot') === 0
+    ) {
+      this.processor = undefined;
+      this.publishedVersion = -1;
+      this.bus.clearSnapshot('lap-times.snapshot');
     }
   }
 

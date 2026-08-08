@@ -1,8 +1,5 @@
 import { memo } from 'react';
-import {
-  useCurrentSessionType,
-  useSessionLapsTiming,
-} from '@irdashies/context';
+import { useSessionLapsTiming } from '@irdashies/context';
 import { SessionState } from '@irdashies/types';
 import { formatLapTotal } from '../../formatLapTotal';
 import { sessionBarItemWrapperClass } from '../../sessionBarItemWrapperClass';
@@ -10,9 +7,14 @@ import type { SessionBarItemProps } from '../../sessionBarItemTypes';
 
 export const SessionLapsItem = memo(
   ({ settings, standalone }: SessionBarItemProps) => {
-    const session = useCurrentSessionType();
-    const { currentLap, totalLaps, state, totalRaceLaps, isFixedLapRace } =
-      useSessionLapsTiming();
+    const {
+      sessionType: session,
+      currentLap,
+      totalLaps,
+      state,
+      totalRaceLaps,
+      isFixedLapRace,
+    } = useSessionLapsTiming();
 
     const lapDisplay = Math.max(currentLap, 0);
     const lapsTotal = session === 'Race' ? totalRaceLaps : totalLaps;

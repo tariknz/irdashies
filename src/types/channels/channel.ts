@@ -15,8 +15,26 @@ export interface ChannelPayloads {
   'radio.snapshot': RadioSnapshot;
   'relative-gaps.snapshot': RelativeGapsSnapshot;
   'sector-timing.snapshot': SectorTimingSnapshot;
+  'session-timing.snapshot': SessionTimingSnapshot;
   'standings.snapshot': StandingsSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
+}
+
+export interface SessionTimingSnapshot {
+  sessionType?: string;
+  state: number;
+  currentLap: number;
+  totalLaps: number;
+  time: number;
+  timeTotal: number;
+  timeRemaining: number;
+  greenFlagTimestamp: number;
+  isFixedLapRace: boolean;
+  totalRaceLaps: number;
+  totalRaceTime: number;
+  adjustedRaceTime: number;
+  sessionNum: number | null;
+  version: number;
 }
 
 export interface RadioSnapshot {
@@ -187,6 +205,11 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 10,
     maxRateHz: 25,
+  },
+  'session-timing.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 5,
+    maxRateHz: 10,
   },
   'standings.snapshot': {
     kind: 'snapshot',
