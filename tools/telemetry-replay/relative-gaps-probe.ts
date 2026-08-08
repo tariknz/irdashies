@@ -53,7 +53,11 @@ export const createRelativeGapsProbe = (): ReplayProbe<
         observedDelta = true;
         checkpoint = 'first-relative-delta';
       }
-      return snapshot;
+      return {
+        ...snapshot,
+        relativePcts: [...snapshot.relativePcts],
+        deltas: [...snapshot.deltas],
+      };
     },
     checkpoint() {
       return checkpoint;

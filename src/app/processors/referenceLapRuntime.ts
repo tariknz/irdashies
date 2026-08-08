@@ -45,6 +45,7 @@ export class ReferenceLapRuntime {
             this.activate();
           }
         } else {
+          this.processor?.pause();
           this.bus.clearSnapshot('reference-laps.snapshot');
           this.publishedVersion = -1;
         }
@@ -76,6 +77,7 @@ export class ReferenceLapRuntime {
       if (released) return;
       released = true;
       this.internalConsumers = Math.max(0, this.internalConsumers - 1);
+      if (!this.hasDemand()) this.processor?.pause();
     };
   }
 

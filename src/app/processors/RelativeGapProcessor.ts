@@ -103,9 +103,16 @@ export class RelativeGapProcessor implements TelemetryProcessor<RelativeGapsSnap
     if (!this.enabled) return;
     const sessionTime = numericValue(frame, 'SessionTime');
     if (sessionTime === null) return;
+    const cameraCarIdx = numericValue(frame, 'CamCarIdx');
+    const focusCarIdx =
+      cameraCarIdx !== null && cameraCarIdx >= 0
+        ? cameraCarIdx
+        : this.driverCarIdx;
+    const focusChanged = focusCarIdx !== this.latest.focusCarIdx;
     const timeWentBackwards =
       this.lastUpdateTime !== null && sessionTime < this.lastUpdateTime;
     if (
+      !focusChanged &&
       !timeWentBackwards &&
       this.lastUpdateTime !== null &&
       sessionTime - this.lastUpdateTime < UPDATE_INTERVAL_SECONDS - TIME_EPSILON
@@ -122,11 +129,6 @@ export class RelativeGapProcessor implements TelemetryProcessor<RelativeGapsSnap
     ) {
       this.reset(sessionNum);
     }
-    const cameraCarIdx = numericValue(frame, 'CamCarIdx');
-    const focusCarIdx =
-      cameraCarIdx !== null && cameraCarIdx >= 0
-        ? cameraCarIdx
-        : this.driverCarIdx;
     const lapDistPcts = numericArray(frame, 'CarIdxLapDistPct');
     if (focusCarIdx === null || lapDistPcts.length === 0) {
       this.relativePcts.length = 0;

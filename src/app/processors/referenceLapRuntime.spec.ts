@@ -123,4 +123,28 @@ describe('ReferenceLapRuntime', () => {
     );
     expect(lastSnapshot().bestLaps).toHaveLength(1);
   });
+
+  it('discards an incomplete lap when processing demand reaches zero', () => {
+    const bus = new ChannelBus();
+    const save = vi.fn();
+    const runtime = new ReferenceLapRuntime(
+      bus,
+      undefined,
+      { markStart: vi.fn(), markEnd: vi.fn() },
+      { load: () => null, save }
+    );
+    const release = runtime.acquireConsumer();
+    runtime.onSession(session);
+    runtime.onFrame(telemetry(0.001, 0));
+    runtime.onFrame(telemetry(0.001, 0.01));
+    for (let point = 1; point < 100; point += 1) {
+      runtime.onFrame(telemetry((point + 0.1) / 100, point * 0.6));
+    }
+
+    release();
+    runtime.acquireConsumer();
+    runtime.onFrame(telemetry(0.001, 100));
+
+    expect(save).not.toHaveBeenCalled();
+  });
 });

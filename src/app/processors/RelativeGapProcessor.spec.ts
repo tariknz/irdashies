@@ -72,6 +72,19 @@ describe('RelativeGapProcessor', () => {
     expect(processor.snapshot().version).toBe(version + 1);
   });
 
+  it('updates immediately when the camera focus changes while time is paused', () => {
+    const processor = new RelativeGapProcessor({ snapshot: emptyReferences });
+    processor.init(session());
+    processor.onFrame(frame({ sessionTime: 1, cameraCarIdx: 0 }));
+    const version = processor.snapshot().version;
+
+    processor.onFrame(frame({ sessionTime: 1, cameraCarIdx: 1 }));
+
+    expect(processor.snapshot().focusCarIdx).toBe(1);
+    expect(processor.snapshot().version).toBe(version + 1);
+    expect(processor.snapshot().relativePcts[1]).toBe(0);
+  });
+
   it('uses the behind car reference lap after its first three laps', () => {
     const referenceLap = {
       startTime: 0,
