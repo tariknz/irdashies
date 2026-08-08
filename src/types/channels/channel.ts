@@ -31,6 +31,8 @@ export interface StandingsSnapshot {
   carIdxSessionFlags: number[];
   lastPitLap: (number | undefined)[];
   previousCarTrackSurface: (number | undefined)[];
+  /** Current calculated in-class position, indexed by CarIdx. */
+  liveClassPosition: (number | undefined)[];
   version: number;
 }
 
