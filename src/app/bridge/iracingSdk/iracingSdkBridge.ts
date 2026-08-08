@@ -15,6 +15,7 @@ import { CarSpeedsRuntime } from '../../processors/carSpeedsRuntime';
 import { ReferenceLapRuntime } from '../../processors/referenceLapRuntime';
 import { RelativeGapRuntime } from '../../processors/relativeGapRuntime';
 import { SectorTimingRuntime } from '../../processors/sectorTimingRuntime';
+import { StandingsRuntime } from '../../processors/standingsRuntime';
 
 // Keys consumed by the renderer. Anything outside this set is dropped before
 // the telemetry object crosses the IPC boundary — reducing structured-clone
@@ -199,6 +200,10 @@ export async function publishIRacingSDKEvents(
           isTapeReplay
         )
       : undefined;
+  const standingsRuntime =
+    lifecycle && channelBus
+      ? new StandingsRuntime(channelBus, lifecycle, perfMetrics, isTapeReplay)
+      : undefined;
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
@@ -301,6 +306,7 @@ export async function publishIRacingSDKEvents(
           referenceLapRuntime?.onFrame(telemetry);
           relativeGapRuntime?.onFrame(telemetry);
           sectorTimingRuntime?.onFrame(telemetry);
+          standingsRuntime?.onFrame(telemetry);
           if (
             perfTelemetryDeliveryEnabled &&
             overlayManager.hasLegacyStreamSubscribers('telemetry')
@@ -334,6 +340,7 @@ export async function publishIRacingSDKEvents(
             referenceLapRuntime?.onSession(session);
             relativeGapRuntime?.onSession(session);
             sectorTimingRuntime?.onSession(session);
+            standingsRuntime?.onSession(session);
             overlayManager.publishMessage('sessionData', session);
             sessionCallbacks.forEach((callback) => callback(session));
             perfMetrics.markEnd('sessionPublish');
@@ -395,6 +402,7 @@ export async function publishIRacingSDKEvents(
       carSpeedsRuntime?.dispose();
       relativeGapRuntime?.dispose();
       sectorTimingRuntime?.dispose();
+      standingsRuntime?.dispose();
       referenceLapRuntime?.dispose();
       perfMetrics.stopReporting();
     },

@@ -14,7 +14,24 @@ export interface ChannelPayloads {
   'reference-laps.snapshot': ReferenceLapsSnapshot;
   'relative-gaps.snapshot': RelativeGapsSnapshot;
   'sector-timing.snapshot': SectorTimingSnapshot;
+  'standings.snapshot': StandingsSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
+}
+
+export interface StandingsSnapshot {
+  focusCarIdx: number | null;
+  sessionNum: number | null;
+  carIdxF2Time: number[];
+  carIdxEstTime: number[];
+  carIdxOnPitRoad: boolean[];
+  carIdxLap: number[];
+  carIdxLapDistPct: number[];
+  carIdxTrackSurface: number[];
+  carIdxTireCompound: number[];
+  carIdxSessionFlags: number[];
+  lastPitLap: number[];
+  previousCarTrackSurface: number[];
+  version: number;
 }
 
 export interface SectorTimingResultSnapshot {
@@ -156,6 +173,11 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 10,
     maxRateHz: 25,
+  },
+  'standings.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 5,
+    maxRateHz: 10,
   },
   'session.lifecycle': { kind: 'event' },
 } as const satisfies ChannelRegistry;

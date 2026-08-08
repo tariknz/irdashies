@@ -30,7 +30,7 @@
 | **Phase 2a remaining items**                          | R1+R2 LANDED, R3 PENDING | `feat/phase-2a-integration` for R1+R2    | R1 (reference-lap fetch dedup) + R2 (post-debounce write log) landed 2026-05-19. R3 (Empty Dashboard substrate baseline test) is a test run, not code work — pending.                                                                                                                                                                                                     |
 | **Phase 2b — Architectural cleanup (remaining)**      | NOT STARTED              | —                                        | A1, A4, A5, A6, A7 completion, A9. Lower urgency now Standings memory issue is resolved                                                                                                                                                                                                                                                                                   |
 | **Phase 3 — Channel-based bridge**                    | LANDED; MEMORY GATE OPEN | PRs #646, #649–#652, #656, #658          | Typed rate-aware channels, per-window subscriptions, deterministic replay validation, Fuel processor/renderer migration, conditional legacy telemetry, and performance instrumentation are on `main`. The Fuel-only A/B removed legacy deliveries and reduced app-wide renderer wake-ups by 42.4%; both baseline and candidate still failed the memory-slope gate.        |
-| **Phase 4 — Main-process processors**                 | IN PROGRESS              | PRs #659–#663                            | Fuel was pulled forward into Phase 3. Lap times, car speeds, reference laps, and relative gaps are on `main`; sector timing is in PR #663. Standings remains before the legacy telemetry stream can be removed or restricted to development.                                                                                                                              |
+| **Phase 4 — Main-process processors**                 | IN PROGRESS              | PRs #659–#664                            | Fuel was pulled forward into Phase 3. Lap times, car speeds, reference laps, relative gaps, and sector timing are on `main`; the Standings driver-state migration is in PR #664. Legacy telemetry removal or development-only restriction remains.                                                                                                                        |
 | **Phase 5 — Worker-thread SDK loop**                  | NOT STARTED              | —                                        |                                                                                                                                                                                                                                                                                                                                                                           |
 | **Phase 6 — Native optimisations**                    | DEFERRED                 | —                                        | Only if Phase 4 profiling demands                                                                                                                                                                                                                                                                                                                                         |
 
@@ -270,8 +270,8 @@ Today every renderer wakes 25 times/sec regardless of what's mounted. A weather 
 - [x] CarSpeedsProcessor — PR #660
 - [x] ReferenceLapProcessor — PR #661; moved ahead of relative gaps because it is their interpolation dependency
 - [x] RelativeGapProcessor — PR #662
-- [ ] SectorTimingProcessor — PR #663 in review
-- [ ] StandingsProcessor
+- [x] SectorTimingProcessor — PR #663
+- [ ] StandingsProcessor — PR #664 in review
 - [ ] Legacy `'telemetry'` channel removed or dev-only
 
 ### Phase 5 — Worker-thread SDK loop
@@ -464,6 +464,8 @@ LLM agents: read this file at the start of any session that touches the architec
 ## 6. Activity log
 
 Append-only. Newest entries at the top. Format: `YYYY-MM-DD — item — branch — outcome`.
+
+- **2026-08-08** — Sector Timing PR #663 merged. Opened Standings PR #664 with a demand-driven 5 Hz typed driver-state snapshot, live/mock runtime wiring, renderer core-data migration, pit-lap/surface tracking, and an eighth curated replay probe. Standings remains on legacy telemetry for its live-position, radio, and session-bar consumers; removing those dependencies and restricting the legacy stream is the remaining Phase 4 work — `feat/standings-processor` — in review
 
 - **2026-08-08** — Relative Gaps PR #662 merged. Opened Sector Timing PR #663 with a demand-driven typed snapshot, clean and incident-inclusive timing views, live/mock runtime wiring, renderer subscription adapter, and a seventh curated replay probe; Standings and legacy telemetry removal remain — `feat/sector-timing-processor` — in review
 - **2026-08-08** — Phase 3 delivery status reconciled with merged PRs #646, #649–#652, #656, and performance evidence #658. Phase 4 progress recorded: Fuel #651, Lap Times #659, Car Speeds #660, and Reference Laps #661 are on `main`; Relative Gaps is in PR #662; Sector Timing, Standings, and legacy telemetry removal remain — `feat/relative-gap-processor` — documentation updated
