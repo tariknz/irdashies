@@ -165,6 +165,14 @@ export class ChannelBus {
     return this.subscriptions.get(channel)?.size ?? 0;
   }
 
+  clearSnapshot(channel: string): void {
+    const definition = this.definition(channel);
+    if (definition.kind !== 'snapshot') {
+      throw new Error(`Cannot clear event channel: ${channel}`);
+    }
+    this.latestSnapshots.delete(channel);
+  }
+
   onSubscriberCountChanged(listener: SubscriberCountListener): () => void {
     this.subscriberCountListeners.add(listener);
     return () => this.subscriberCountListeners.delete(listener);

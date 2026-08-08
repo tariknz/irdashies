@@ -265,7 +265,7 @@ Today every renderer wakes 25 times/sec regardless of what's mounted. A weather 
 
 ### Phase 4 — Main-process processors
 
-- [ ] LapTimesProcessor
+- [x] LapTimesProcessor
 - [ ] CarSpeedsProcessor
 - [ ] RelativeGapProcessor
 - [ ] ReferenceLapProcessor

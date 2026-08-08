@@ -36,4 +36,21 @@ describe('ChannelSnapshotStore', () => {
     removeSecond();
     expect(unsubscribe).toHaveBeenCalledOnce();
   });
+
+  it('does not subscribe to the bridge when disabled', () => {
+    const bridge = {
+      subscribe: vi.fn(() => vi.fn()),
+    } as unknown as ChannelBridge;
+    const store = new ChannelSnapshotStore(
+      'session.lifecycle',
+      undefined,
+      bridge,
+      false
+    );
+
+    const unsubscribe = store.subscribe(vi.fn());
+
+    expect(bridge.subscribe).not.toHaveBeenCalled();
+    unsubscribe();
+  });
 });

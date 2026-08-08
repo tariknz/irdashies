@@ -14,14 +14,15 @@ export class ChannelSnapshotStore<K extends ChannelName> {
   constructor(
     private readonly channel: K,
     private readonly rateHz?: number,
-    private readonly bridge: ChannelBridge = window.channelBridge
+    private readonly bridge: ChannelBridge = window.channelBridge,
+    private readonly enabled = true
   ) {}
 
   getSnapshot = (): ChannelPayloads[K] | undefined => this.snapshot;
 
   subscribe = (listener: ChangeListener): (() => void) => {
     this.listeners.add(listener);
-    if (this.listeners.size === 1) {
+    if (this.enabled && this.listeners.size === 1) {
       this.unsubscribeBridge = this.bridge.subscribe(
         this.channel,
         (snapshot) => {

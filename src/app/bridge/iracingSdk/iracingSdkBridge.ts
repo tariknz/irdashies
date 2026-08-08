@@ -10,6 +10,7 @@ import logger from '../../logger';
 import type { SessionLifecycle } from '../../sessionLifecycle';
 import type { ChannelBus } from '../channelBridge';
 import { FuelProjectionRuntime } from '../../processors/fuelProjectionRuntime';
+import { LapTimesRuntime } from '../../processors/lapTimesRuntime';
 
 // Keys consumed by the renderer. Anything outside this set is dropped before
 // the telemetry object crosses the IPC boundary — reducing structured-clone
@@ -150,6 +151,10 @@ export async function publishIRacingSDKEvents(
           aggregateReplay: isTapeReplay,
         })
       : undefined;
+  const lapTimesRuntime =
+    lifecycle && channelBus
+      ? new LapTimesRuntime(channelBus, lifecycle, perfMetrics, isTapeReplay)
+      : undefined;
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
@@ -247,6 +252,7 @@ export async function publishIRacingSDKEvents(
           lifecycle?._onTelemetry(telemetry);
           perfMetrics.markEnd('lifecycleTelemetry');
           fuelProjectionRuntime?.onFrame(telemetry);
+          lapTimesRuntime?.onFrame(telemetry);
           if (
             perfTelemetryDeliveryEnabled &&
             overlayManager.hasLegacyStreamSubscribers('telemetry')
@@ -333,6 +339,7 @@ export async function publishIRacingSDKEvents(
       sessionCallbacks.clear();
       runningStateCallbacks.clear();
       fuelProjectionRuntime?.dispose();
+      lapTimesRuntime?.dispose();
       perfMetrics.stopReporting();
     },
   };
