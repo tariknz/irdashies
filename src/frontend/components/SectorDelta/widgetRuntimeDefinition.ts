@@ -1,8 +1,8 @@
 import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
-  id: 'relative',
+  id: 'sectordelta',
   legacyTelemetry: true,
-  channels: ['lap-times.snapshot', 'reference-laps.snapshot'],
-  ratePreset: 'gapTiming',
+  channels: ['reference-laps.snapshot'],
+  ratePreset: 'static',
 } satisfies WidgetRuntimeDefinition;

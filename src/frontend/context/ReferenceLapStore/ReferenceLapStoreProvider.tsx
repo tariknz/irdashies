@@ -1,8 +1,8 @@
-import { ReferenceLapBridge } from '@irdashies/types';
+import type { ChannelBridge } from '@irdashies/types';
 import { useReferenceLapStoreUpdater } from './ReferenceLapStoreUpdater';
 
 export interface ReferenceRegistryProviderProps {
-  bridge: ReferenceLapBridge;
+  bridge?: ChannelBridge;
 }
 
 /**

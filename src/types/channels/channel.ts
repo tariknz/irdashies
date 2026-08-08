@@ -1,4 +1,5 @@
 import type { FuelLapData } from '../fuelCalculatorBridge';
+import type { ReferenceLap } from '../referenceLaps';
 
 export type SessionLifecycleEvent =
   | { type: 'enter'; replay: boolean }
@@ -9,7 +10,15 @@ export interface ChannelPayloads {
   'car-speeds.snapshot': CarSpeedsSnapshot;
   'fuel.projection': FuelProjectionSnapshot;
   'lap-times.snapshot': LapTimesSnapshot;
+  'reference-laps.snapshot': ReferenceLapsSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
+}
+
+export interface ReferenceLapsSnapshot {
+  bestLaps: readonly (readonly [number, ReferenceLap])[];
+  persistedLaps: readonly (readonly [number, ReferenceLap])[];
+  sessionNum: number | null;
+  version: number;
 }
 
 export interface CarSpeedsSnapshot {
@@ -96,6 +105,11 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 5,
     maxRateHz: 25,
+  },
+  'reference-laps.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 5,
+    maxRateHz: 5,
   },
   'session.lifecycle': { kind: 'event' },
 } as const satisfies ChannelRegistry;

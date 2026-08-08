@@ -6,7 +6,10 @@ import {
   TelemetryProvider,
   useDashboard,
 } from '@irdashies/context';
-import { rendererNeedsLegacyTelemetry } from '../../widgetRuntime';
+import {
+  rendererNeedsChannel,
+  rendererNeedsLegacyTelemetry,
+} from '../../widgetRuntime';
 
 const isWidgetOnDisplay = (
   widget: { layout: { x: number; y: number; width: number; height: number } },
@@ -28,7 +31,7 @@ export const RendererDataProviders = ({
   browser?: boolean;
 }) => {
   const { currentDashboard, containerBoundsInfo } = useDashboard();
-  const needsLegacyTelemetry = useMemo(() => {
+  const runtimeNeeds = useMemo(() => {
     const enabledWidgets =
       currentDashboard?.widgets.filter((widget) => widget.enabled) ?? [];
     const widgets =
@@ -46,20 +49,27 @@ export const RendererDataProviders = ({
               onThisDisplay || (containerBoundsInfo.isPrimary && !onAnyDisplay)
             );
           });
-    return rendererNeedsLegacyTelemetry(widgets);
+    return {
+      legacyTelemetry: rendererNeedsLegacyTelemetry(widgets),
+      referenceLaps: rendererNeedsChannel(widgets, 'reference-laps.snapshot'),
+    };
   }, [browser, containerBoundsInfo, currentDashboard?.widgets]);
 
-  if (!needsLegacyTelemetry) return null;
+  if (!runtimeNeeds.legacyTelemetry && !runtimeNeeds.referenceLaps) return null;
 
   return (
     <>
-      <SessionProvider bridge={window.irsdkBridge} />
-      <TelemetryProvider bridge={window.irsdkBridge} />
-      {window.pitLaneBridge ? (
+      {runtimeNeeds.legacyTelemetry ? (
+        <>
+          <SessionProvider bridge={window.irsdkBridge} />
+          <TelemetryProvider bridge={window.irsdkBridge} />
+        </>
+      ) : null}
+      {runtimeNeeds.legacyTelemetry && window.pitLaneBridge ? (
         <PitLaneProvider bridge={window.pitLaneBridge} />
       ) : null}
-      {window.referenceLapsBridge ? (
-        <ReferenceStoreProvider bridge={window.referenceLapsBridge} />
+      {runtimeNeeds.referenceLaps ? (
+        <ReferenceStoreProvider bridge={window.channelBridge} />
       ) : null}
     </>
   );

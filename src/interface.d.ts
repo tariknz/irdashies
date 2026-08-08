@@ -3,7 +3,6 @@ import type {
   IrSdkBridge,
   PitLaneBridge,
   FuelCalculatorBridge,
-  ReferenceLapBridge,
   LogBridge,
   KeybindingsBridge,
   GamepadHostBridge,
@@ -18,7 +17,6 @@ declare global {
     dashboardBridge: DashboardBridge;
     pitLaneBridge: PitLaneBridge;
     fuelCalculatorBridge: FuelCalculatorBridge;
-    referenceLapsBridge: ReferenceLapBridge;
     logBridge: LogBridge;
     keybindingsBridge: KeybindingsBridge;
     /** Present only in the hidden WebHID host renderer (src/hidHost.ts). */

@@ -50,6 +50,16 @@ export const rendererNeedsLegacyTelemetry = (
   widgets: readonly DashboardWidget[]
 ): boolean => widgets.some(widgetUsesLegacyTelemetry);
 
+export const rendererNeedsChannel = (
+  widgets: readonly DashboardWidget[],
+  channel: ChannelName
+): boolean =>
+  widgets.some((widget) =>
+    getWidgetRuntimeDefinition(widget.type || widget.id).channels?.includes(
+      channel
+    )
+  );
+
 const WidgetRuntimeContext = createContext<WidgetRuntimeDefinition | undefined>(
   undefined
 );
