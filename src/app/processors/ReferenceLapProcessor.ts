@@ -21,20 +21,6 @@ export interface ReferenceLapPersistence {
   ): void;
 }
 
-const numericValues = (frame: Telemetry, key: keyof Telemetry): number[] => {
-  const values = frame[key]?.value;
-  return Array.isArray(values)
-    ? values.map((value) =>
-        typeof value === 'number' && Number.isFinite(value) ? value : -1
-      )
-    : [];
-};
-
-const booleanValues = (frame: Telemetry, key: keyof Telemetry): boolean[] => {
-  const values = frame[key]?.value;
-  return Array.isArray(values) ? values.map(Boolean) : [];
-};
-
 const numericValue = (
   frame: Telemetry,
   key: keyof Telemetry
@@ -126,7 +112,7 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
   private activeLaps = new Map<number, ReferenceLap>();
   private bestLaps = new Map<number, ReferenceLap>();
   private persistedLaps = new Map<number, ReferenceLap>();
-  private drivers: Driver[] = [];
+  private drivers: (Driver | undefined)[] = [];
   private seriesId = -1;
   private trackId = -1;
   private sessionIdentity = '';
@@ -144,7 +130,9 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
     const trackId = session.WeekendInfo?.TrackID ?? -1;
     const trackLength = trackLengthFrom(session);
     const sessionIdentity = `${seriesId}:${trackId}:${session.WeekendInfo?.SubSessionID ?? -1}:${trackLength}`;
-    const drivers = session.DriverInfo?.Drivers ?? [];
+    const drivers = (session.DriverInfo?.Drivers ?? []) as (
+      Driver | undefined
+    )[];
     this.drivers = drivers;
     if (
       trackId <= 0 ||
@@ -163,11 +151,16 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
     this.persistedLaps.clear();
     const paceCarIdx = session.DriverInfo?.PaceCarIdx ?? -1;
     const paceClassId = drivers[paceCarIdx]?.CarClassID ?? -1;
-    const classIds = new Set(
-      drivers
-        .map((driver) => driver.CarClassID)
-        .filter((classId) => classId > 0 && classId !== paceClassId)
-    );
+    const classIds = new Set<number>();
+    for (const driver of drivers) {
+      if (
+        driver &&
+        driver.CarClassID > 0 &&
+        driver.CarClassID !== paceClassId
+      ) {
+        classIds.add(driver.CarClassID);
+      }
+    }
     for (const classId of classIds) {
       const lap =
         seriesId > 0 ? this.persistence.load(seriesId, trackId, classId) : null;
@@ -187,16 +180,29 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
       this.resetSession(sessionNum);
     }
     this.sessionNum = sessionNum;
-    const distances = numericValues(frame, 'CarIdxLapDistPct');
-    const pitRoad = booleanValues(frame, 'CarIdxOnPitRoad');
+    const distances = frame.CarIdxLapDistPct?.value;
+    const pitRoad = frame.CarIdxOnPitRoad?.value;
     const sessionTime = numericValue(frame, 'SessionTime');
-    if (!distances.length || sessionTime === null) return;
+    if (
+      !Array.isArray(distances) ||
+      distances.length === 0 ||
+      sessionTime === null
+    ) {
+      return;
+    }
 
     for (const driver of this.drivers) {
+      if (!driver) continue;
       const carIdx = driver.CarIdx;
       const trackPct = distances[carIdx];
-      if (trackPct === undefined || trackPct < 0) continue;
-      const clean = !pitRoad[carIdx];
+      if (
+        typeof trackPct !== 'number' ||
+        !Number.isFinite(trackPct) ||
+        trackPct < 0
+      ) {
+        continue;
+      }
+      const clean = !pitRoad?.[carIdx];
       const active = this.activeLaps.get(carIdx);
       if (!active) {
         this.activeLaps.set(

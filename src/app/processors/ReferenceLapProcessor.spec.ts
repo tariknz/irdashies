@@ -94,4 +94,53 @@ describe('ReferenceLapProcessor', () => {
     expect(processor.snapshot().bestLaps).toEqual([]);
     expect(save).not.toHaveBeenCalled();
   });
+
+  it('skips sparse driver entries without stopping telemetry processing', () => {
+    const sparseSession = session();
+    sparseSession.DriverInfo.Drivers = [
+      undefined,
+      { CarIdx: 1, CarClassID: 12 },
+    ] as unknown as Session['DriverInfo']['Drivers'];
+    const processor = new ReferenceLapProcessor({
+      load: () => null,
+      save: vi.fn(),
+    });
+
+    expect(() => processor.init(sparseSession)).not.toThrow();
+    expect(() =>
+      processor.onFrame({
+        CarIdxLapDistPct: { value: [-1, 0.001] },
+        CarIdxOnPitRoad: { value: [false, false] },
+        SessionTime: { value: [0] },
+        SessionNum: { value: [1] },
+      } as unknown as Telemetry)
+    ).not.toThrow();
+  });
+
+  it('reads telemetry arrays directly without mapping per frame', () => {
+    const processor = new ReferenceLapProcessor({
+      load: () => null,
+      save: vi.fn(),
+    });
+    processor.init(session());
+    const distances = [0.001];
+    const pitRoad = [false];
+    distances.map = vi.fn(() => {
+      throw new Error('distance array copied');
+    });
+    pitRoad.map = vi.fn(() => {
+      throw new Error('pit-road array copied');
+    });
+
+    expect(() =>
+      processor.onFrame({
+        CarIdxLapDistPct: { value: distances },
+        CarIdxOnPitRoad: { value: pitRoad },
+        SessionTime: { value: [0] },
+        SessionNum: { value: [1] },
+      } as unknown as Telemetry)
+    ).not.toThrow();
+    expect(distances.map).not.toHaveBeenCalled();
+    expect(pitRoad.map).not.toHaveBeenCalled();
+  });
 });
