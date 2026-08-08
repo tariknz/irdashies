@@ -1,5 +1,5 @@
 import * as yaml from 'js-yaml';
-import type { Session, Telemetry } from '../../src/types';
+import type { Session, Telemetry } from '@irdashies/types';
 import { CarSpeedsProcessor } from '../../src/app/processors/CarSpeedsProcessor';
 import type { ReplayProbe, TelemetryFrame } from './validator';
 

@@ -21,7 +21,7 @@ export class CarSpeedsRuntime {
 
   constructor(
     private readonly bus: ChannelBus,
-    lifecycle: SessionLifecycle,
+    lifecycle: SessionLifecycle | undefined,
     private readonly metrics: PerformanceSections,
     private readonly aggregateReplay = false
   ) {
@@ -31,18 +31,23 @@ export class CarSpeedsRuntime {
         if (count > 0) this.activate();
         else this.processor = undefined;
       }),
-      lifecycle.onEnter(({ replay }) => {
-        this.replaySource = replay;
-        this.onLifecycle({
-          type: 'enter',
-          replay: replay && !this.aggregateReplay,
-        });
-      }),
-      lifecycle.onSessionNumChange(() =>
-        this.onLifecycle({ type: 'sessionNumChange' })
-      ),
-      lifecycle.onDisconnect(() => this.onLifecycle({ type: 'disconnect' })),
     ];
+    if (lifecycle) {
+      this.disconnects.push(
+        lifecycle.onEnter(({ replay }) => {
+          this.replaySource = replay;
+          this.onLifecycle({
+            type: 'enter',
+            replay: replay && !this.aggregateReplay,
+          });
+        }),
+        lifecycle.onSessionNumChange(() =>
+          this.onLifecycle({ type: 'sessionNumChange' })
+        ),
+        lifecycle.onDisconnect(() => this.onLifecycle({ type: 'disconnect' }))
+      );
+    }
+    if (bus.subscriberCount('car-speeds.snapshot') > 0) this.activate();
   }
 
   onSession(session: Session): void {
@@ -64,6 +69,11 @@ export class CarSpeedsRuntime {
   }
 
   dispose(): void {
+    if (this.processor) {
+      this.processor.onLifecycle({ type: 'disconnect' });
+      this.bus.publish('car-speeds.snapshot', this.processor.snapshot());
+    }
+    this.bus.clearSnapshot('car-speeds.snapshot');
     this.disconnects.forEach((disconnect) => disconnect());
     this.processor = undefined;
   }

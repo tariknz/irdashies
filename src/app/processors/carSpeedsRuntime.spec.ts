@@ -21,6 +21,23 @@ const target = {
 };
 
 describe('CarSpeedsRuntime', () => {
+  it('activates when subscribers predate runtime replacement', () => {
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    bus.subscribe(target, 'car-speeds.snapshot');
+    const runtime = new CarSpeedsRuntime(bus, createSessionLifecycle(), {
+      markStart: vi.fn(),
+      markEnd: vi.fn(),
+    });
+    runtime.onSession(session);
+    runtime.onFrame(telemetry(0.1, 1));
+    runtime.onFrame(telemetry(0.11, 1.1));
+    expect(publish).toHaveBeenLastCalledWith(
+      'car-speeds.snapshot',
+      expect.objectContaining({ carSpeeds: [360] })
+    );
+  });
+
   it('activates on demand and uses the latest session', () => {
     const bus = new ChannelBus();
     const publish = vi.spyOn(bus, 'publish');
@@ -76,5 +93,28 @@ describe('CarSpeedsRuntime', () => {
       'car-speeds.snapshot',
       expect.objectContaining({ carSpeeds: [360] })
     );
+  });
+
+  it('publishes a reset and clears the cached snapshot on dispose', () => {
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    const clearSnapshot = vi.spyOn(bus, 'clearSnapshot');
+    bus.subscribe(target, 'car-speeds.snapshot');
+    const runtime = new CarSpeedsRuntime(bus, undefined, {
+      markStart: vi.fn(),
+      markEnd: vi.fn(),
+    });
+    runtime.onSession(session);
+    runtime.onFrame(telemetry(0.1, 1));
+    runtime.onFrame(telemetry(0.11, 1.1));
+
+    runtime.dispose();
+
+    expect(publish).toHaveBeenLastCalledWith('car-speeds.snapshot', {
+      carSpeeds: [],
+      sessionNum: null,
+      version: 3,
+    });
+    expect(clearSnapshot).toHaveBeenLastCalledWith('car-speeds.snapshot');
   });
 });
