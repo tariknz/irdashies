@@ -168,9 +168,6 @@ function GhostLapSeeder() {
     const ghostLap = buildMockGhostLap(GHOST_BOUNDARIES, GHOST_SECTOR_TIMES);
 
     useReferenceLapStore.setState({
-      trackId: 1,
-      pointsCount: ghostLap.pointsCount,
-      interval: ghostLap.interval,
       persistedLaps: new Map([[PLAYER_CLASS_ID, ghostLap]]),
     });
   }, []);

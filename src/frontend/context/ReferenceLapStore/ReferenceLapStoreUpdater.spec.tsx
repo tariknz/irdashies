@@ -49,9 +49,23 @@ describe('useReferenceLapStoreUpdater', () => {
     expect(useReferenceLapStore.getState().persistedLaps.get(12)).toBe(
       persisted
     );
-    expect(useReferenceLapStore.getState().activeLaps.size).toBe(0);
+    act(() => {
+      listener?.({
+        bestLaps: [],
+        persistedLaps: [[12, persisted]],
+        sessionNum: 1,
+        version: 2,
+      });
+    });
+    expect(useReferenceLapStore.getState().bestLaps.get(4)).toBeUndefined();
     unmount();
     expect(unsubscribe).toHaveBeenCalledOnce();
     expect(useReferenceLapStore.getState().bestLaps.size).toBe(0);
+  });
+
+  it('does nothing when the channel bridge is unavailable', () => {
+    expect(() =>
+      renderHook(() => useReferenceLapStoreUpdater(undefined))
+    ).not.toThrow();
   });
 });

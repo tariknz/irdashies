@@ -19,6 +19,7 @@ export class ReferenceLapRuntime {
   private processor?: ReferenceLapProcessor;
   private latestSession?: Session;
   private replaySource?: boolean;
+  private hasSubscribers: boolean;
   private publishedVersion = -1;
   private readonly disconnects: (() => void)[];
 
@@ -29,12 +30,19 @@ export class ReferenceLapRuntime {
     private readonly persistence: ReferenceLapPersistence,
     private readonly aggregateReplay = false
   ) {
+    this.hasSubscribers = bus.subscriberCount('reference-laps.snapshot') > 0;
     this.disconnects = [
       bus.onSubscriberCountChanged((channel, count) => {
         if (channel !== 'reference-laps.snapshot') return;
-        if (count > 0) this.activate();
-        else {
-          this.processor = undefined;
+        this.hasSubscribers = count > 0;
+        if (this.hasSubscribers) {
+          if (this.processor) {
+            this.publishedVersion = -1;
+            this.publishIfChanged();
+          } else {
+            this.activate();
+          }
+        } else {
           this.bus.clearSnapshot('reference-laps.snapshot');
           this.publishedVersion = -1;
         }
@@ -55,7 +63,7 @@ export class ReferenceLapRuntime {
         lifecycle.onDisconnect(() => this.onLifecycle({ type: 'disconnect' }))
       );
     }
-    if (bus.subscriberCount('reference-laps.snapshot') > 0) this.activate();
+    if (this.hasSubscribers) this.activate();
   }
 
   onSession(session: Session): void {
@@ -65,7 +73,7 @@ export class ReferenceLapRuntime {
   }
 
   onFrame(frame: Telemetry): void {
-    if (!this.processor) return;
+    if (!this.processor || !this.hasSubscribers) return;
     this.metrics.markStart('referenceLapProcessing');
     this.processor.onFrame(frame);
     this.metrics.markEnd('referenceLapProcessing');
@@ -111,7 +119,7 @@ export class ReferenceLapRuntime {
   }
 
   private publishIfChanged(): void {
-    if (!this.processor) return;
+    if (!this.processor || !this.hasSubscribers) return;
     const snapshot = this.processor.snapshot();
     if (snapshot.version === this.publishedVersion) return;
     this.publishedVersion = snapshot.version;

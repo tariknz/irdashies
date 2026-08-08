@@ -112,6 +112,7 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
   private activeLaps = new Map<number, ReferenceLap>();
   private bestLaps = new Map<number, ReferenceLap>();
   private persistedLaps = new Map<number, ReferenceLap>();
+  private loadedClassIds = new Set<number>();
   private drivers: (Driver | undefined)[] = [];
   private seriesId = -1;
   private trackId = -1;
@@ -134,11 +135,11 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
       Driver | undefined
     )[];
     this.drivers = drivers;
-    if (
-      trackId <= 0 ||
-      trackLength <= 0 ||
-      sessionIdentity === this.sessionIdentity
-    ) {
+    if (trackId <= 0 || trackLength <= 0) return;
+    if (sessionIdentity === this.sessionIdentity) {
+      if (this.loadPersistedForDrivers(session.DriverInfo?.PaceCarIdx ?? -1)) {
+        this.publish();
+      }
       return;
     }
     this.seriesId = seriesId;
@@ -149,23 +150,8 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
     this.activeLaps.clear();
     this.bestLaps.clear();
     this.persistedLaps.clear();
-    const paceCarIdx = session.DriverInfo?.PaceCarIdx ?? -1;
-    const paceClassId = drivers[paceCarIdx]?.CarClassID ?? -1;
-    const classIds = new Set<number>();
-    for (const driver of drivers) {
-      if (
-        driver &&
-        driver.CarClassID > 0 &&
-        driver.CarClassID !== paceClassId
-      ) {
-        classIds.add(driver.CarClassID);
-      }
-    }
-    for (const classId of classIds) {
-      const lap =
-        seriesId > 0 ? this.persistence.load(seriesId, trackId, classId) : null;
-      if (lap) this.persistedLaps.set(classId, lap);
-    }
+    this.loadedClassIds.clear();
+    this.loadPersistedForDrivers(session.DriverInfo?.PaceCarIdx ?? -1);
     this.publish();
   }
 
@@ -261,7 +247,14 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
 
   private promote(driver: Driver, lap: ReferenceLap): void {
     const lapTime = lap.finishTime - lap.startTime;
-    if (!lap.isCleanLap || lapTime <= 0 || driver.CarClassID <= 0) return;
+    if (
+      !lap.isCleanLap ||
+      lap.pointPos.includes(-1) ||
+      lapTime <= 0 ||
+      driver.CarClassID <= 0
+    ) {
+      return;
+    }
     const persisted = this.persistedLaps.get(driver.CarClassID);
     const persistedTime = persisted
       ? persisted.finishTime - persisted.startTime
@@ -284,6 +277,32 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
       }
     }
     this.publish();
+  }
+
+  private loadPersistedForDrivers(paceCarIdx: number): boolean {
+    const paceClassId = this.drivers[paceCarIdx]?.CarClassID ?? -1;
+    let changed = false;
+    for (const driver of this.drivers) {
+      const classId = driver?.CarClassID;
+      if (
+        !classId ||
+        classId <= 0 ||
+        classId === paceClassId ||
+        this.loadedClassIds.has(classId)
+      ) {
+        continue;
+      }
+      this.loadedClassIds.add(classId);
+      const lap =
+        this.seriesId > 0
+          ? this.persistence.load(this.seriesId, this.trackId, classId)
+          : null;
+      if (lap) {
+        this.persistedLaps.set(classId, lap);
+        changed = true;
+      }
+    }
+    return changed;
   }
 
   private resetSession(sessionNum: number | null): void {

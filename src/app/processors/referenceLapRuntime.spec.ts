@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Session } from '@irdashies/types';
+import type {
+  ReferenceLapsSnapshot,
+  Session,
+  Telemetry,
+} from '@irdashies/types';
 import { ChannelBus } from '../bridge/channelBridge';
 import { createSessionLifecycle } from '../sessionLifecycle';
 import { ReferenceLapRuntime } from './referenceLapRuntime';
@@ -23,6 +27,14 @@ const target = {
   isVisible: () => true,
   send: vi.fn(),
 };
+
+const telemetry = (pct: number, time: number) =>
+  ({
+    CarIdxLapDistPct: { value: [pct] },
+    CarIdxOnPitRoad: { value: [false] },
+    SessionTime: { value: [time] },
+    SessionNum: { value: [1] },
+  }) as unknown as Telemetry;
 
 describe('ReferenceLapRuntime', () => {
   it('activates for subscribers that predate the runtime', () => {
@@ -77,5 +89,38 @@ describe('ReferenceLapRuntime', () => {
       expect.objectContaining({ bestLaps: [] })
     );
     expect(clearSnapshot).toHaveBeenCalledWith('reference-laps.snapshot');
+  });
+
+  it('pauses without discarding best laps when subscribers return', () => {
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    const metrics = { markStart: vi.fn(), markEnd: vi.fn() };
+    bus.subscribe(target, 'reference-laps.snapshot');
+    const runtime = new ReferenceLapRuntime(bus, undefined, metrics, {
+      load: () => null,
+      save: vi.fn(),
+    });
+    runtime.onSession(session);
+    runtime.onFrame(telemetry(0.001, 0));
+    runtime.onFrame(telemetry(0.001, 0.01));
+    for (let point = 1; point < 100; point += 1) {
+      runtime.onFrame(telemetry((point + 0.1) / 100, point * 0.6));
+    }
+    runtime.onFrame(telemetry(0.001, 60));
+    const lastSnapshot = () =>
+      publish.mock.calls.at(-1)?.[1] as ReferenceLapsSnapshot;
+    expect(lastSnapshot().bestLaps).toHaveLength(1);
+
+    bus.unsubscribe(target.id, 'reference-laps.snapshot');
+    const processingCalls = metrics.markStart.mock.calls.length;
+    runtime.onFrame(telemetry(0.1, 61));
+    expect(metrics.markStart).toHaveBeenCalledTimes(processingCalls);
+
+    bus.subscribe({ ...target, id: 2 }, 'reference-laps.snapshot');
+    expect(publish).toHaveBeenLastCalledWith(
+      'reference-laps.snapshot',
+      expect.objectContaining({ bestLaps: expect.any(Array) })
+    );
+    expect(lastSnapshot().bestLaps).toHaveLength(1);
   });
 });

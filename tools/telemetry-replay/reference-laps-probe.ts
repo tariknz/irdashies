@@ -30,6 +30,7 @@ export const createReferenceLapsProbe =
     });
     let previousBestCount = 0;
     let checkpoint: string | undefined;
+    let needsEnter = false;
 
     return {
       name: 'reference-laps-state',
@@ -41,6 +42,11 @@ export const createReferenceLapsProbe =
         'SessionTime',
       ],
       onSessionInfo(sessionYaml) {
+        if (needsEnter) {
+          processor.onLifecycle({ type: 'enter', replay: false });
+          previousBestCount = 0;
+          needsEnter = false;
+        }
         processor.init(yaml.load(sessionYaml, { json: true }) as Session);
       },
       onFrame(frame) {
@@ -63,6 +69,7 @@ export const createReferenceLapsProbe =
       },
       onDisconnect() {
         processor.onLifecycle({ type: 'disconnect' });
+        needsEnter = true;
       },
     };
   };

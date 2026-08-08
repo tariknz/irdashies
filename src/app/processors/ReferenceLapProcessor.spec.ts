@@ -40,7 +40,7 @@ describe('ReferenceLapProcessor', () => {
     expect(snapshot.bestLaps).toHaveLength(1);
     expect(snapshot.persistedLaps).toHaveLength(1);
     expect(snapshot.bestLaps[0][1].finishTime).toBe(60);
-    expect(snapshot.bestLaps[0][1].tangents.some(Number.isFinite)).toBe(true);
+    expect(snapshot.bestLaps[0][1].tangents.every(Number.isFinite)).toBe(true);
     expect(save).toHaveBeenCalledOnce();
   });
 
@@ -55,6 +55,22 @@ describe('ReferenceLapProcessor', () => {
     }
     processor.onFrame(frame(0.001, 100));
     expect(processor.snapshot().bestLaps).toEqual([]);
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it('rejects a lap with unsampled tail buckets', () => {
+    const save = vi.fn();
+    const processor = new ReferenceLapProcessor({ load: () => null, save });
+    processor.init(session());
+    processor.onFrame(frame(0.001, 0));
+    processor.onFrame(frame(0.001, 0.01));
+    for (let point = 1; point < 96; point += 1) {
+      processor.onFrame(frame((point + 0.1) / 100, point * 0.6));
+    }
+    processor.onFrame(frame(0.001, 60));
+
+    expect(processor.snapshot().bestLaps).toEqual([]);
+    expect(processor.snapshot().persistedLaps).toEqual([]);
     expect(save).not.toHaveBeenCalled();
   });
 
@@ -83,6 +99,34 @@ describe('ReferenceLapProcessor', () => {
     });
   });
 
+  it('loads persisted laps for classes that join mid-session', () => {
+    const persisted = {
+      startTime: 0,
+      finishTime: 60,
+      times: new Float32Array(2),
+      pointPos: new Float32Array(2),
+      tangents: new Float32Array(2),
+      interval: 0.5,
+      pointsCount: 2,
+      lastTrackedPct: 0.99,
+      isCleanLap: true,
+    };
+    const load = vi.fn((_seriesId, _trackId, classId) =>
+      classId === 13 ? persisted : null
+    );
+    const processor = new ReferenceLapProcessor({ load, save: vi.fn() });
+    const updatedSession = session();
+    processor.init(updatedSession);
+    updatedSession.DriverInfo.Drivers.push({
+      CarIdx: 1,
+      CarClassID: 13,
+    } as never);
+    processor.init(updatedSession);
+
+    expect(load).toHaveBeenCalledWith(7, 9, 13);
+    expect(processor.snapshot().persistedLaps).toContainEqual([13, persisted]);
+  });
+
   it('does not aggregate or persist replay-scrubbed telemetry', () => {
     const save = vi.fn();
     const processor = new ReferenceLapProcessor({ load: () => null, save });
@@ -101,20 +145,29 @@ describe('ReferenceLapProcessor', () => {
       undefined,
       { CarIdx: 1, CarClassID: 12 },
     ] as unknown as Session['DriverInfo']['Drivers'];
+    const save = vi.fn();
     const processor = new ReferenceLapProcessor({
       load: () => null,
-      save: vi.fn(),
+      save,
     });
 
     expect(() => processor.init(sparseSession)).not.toThrow();
-    expect(() =>
-      processor.onFrame({
-        CarIdxLapDistPct: { value: [-1, 0.001] },
+    const sparseFrame = (pct: number, time: number) =>
+      ({
+        CarIdxLapDistPct: { value: [-1, pct] },
         CarIdxOnPitRoad: { value: [false, false] },
-        SessionTime: { value: [0] },
+        SessionTime: { value: [time] },
         SessionNum: { value: [1] },
-      } as unknown as Telemetry)
-    ).not.toThrow();
+      }) as unknown as Telemetry;
+    expect(() => processor.onFrame(sparseFrame(0.001, 0))).not.toThrow();
+    processor.onFrame(sparseFrame(0.001, 0.01));
+    for (let point = 1; point < 100; point += 1) {
+      processor.onFrame(sparseFrame((point + 0.1) / 100, point * 0.6));
+    }
+    processor.onFrame(sparseFrame(0.001, 60));
+
+    expect(processor.snapshot().bestLaps[0]?.[0]).toBe(1);
+    expect(save).toHaveBeenCalledOnce();
   });
 
   it('reads telemetry arrays directly without mapping per frame', () => {

@@ -17,13 +17,8 @@ export const EMPTY_REFERENCE_LAP: Readonly<ReferenceLap> = {
 };
 
 export interface ReferenceRegistryState {
-  activeLaps: Map<number, ReferenceLap>;
   bestLaps: Map<number, ReferenceLap>;
   persistedLaps: Map<number, ReferenceLap>;
-  trackId: number | null;
-  trackLength: number | null;
-  interval: number;
-  pointsCount: number;
   getReferenceLap(
     carIdx: number,
     classId: number,
@@ -33,13 +28,8 @@ export interface ReferenceRegistryState {
 }
 
 const emptyState = () => ({
-  activeLaps: new Map<number, ReferenceLap>(),
   bestLaps: new Map<number, ReferenceLap>(),
   persistedLaps: new Map<number, ReferenceLap>(),
-  trackId: null,
-  trackLength: null,
-  interval: 0,
-  pointsCount: 0,
 });
 
 /** Compatibility selector store; collection and persistence live in main. */
