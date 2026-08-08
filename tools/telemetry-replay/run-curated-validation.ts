@@ -10,6 +10,7 @@ import {
 } from './validator';
 import { createFuelStateProbe } from './fuel-probe';
 import { createLapTimesProbe } from './lap-times-probe';
+import { createCarSpeedsProbe } from './car-speeds-probe';
 
 const REPOSITORY_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -135,6 +136,7 @@ async function main(): Promise<void> {
       telemetryStateProbe,
       createFuelStateProbe(),
       createLapTimesProbe(),
+      createCarSpeedsProbe(),
     ],
   });
   const golden = {

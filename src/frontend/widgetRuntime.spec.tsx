@@ -44,6 +44,19 @@ describe('widget runtime metadata', () => {
     });
   });
 
+  it('declares car-speed consumers at the processor rate', () => {
+    expect(getWidgetRuntimeDefinition('battle')).toMatchObject({
+      legacyTelemetry: true,
+      channels: ['car-speeds.snapshot'],
+      channelRates: { 'car-speeds.snapshot': 10 },
+    });
+    expect(getWidgetRuntimeDefinition('slowcarahead')).toMatchObject({
+      legacyTelemetry: true,
+      channels: ['car-speeds.snapshot'],
+      channelRates: { 'car-speeds.snapshot': 10 },
+    });
+  });
+
   it('maps the Fuel rate preset to its channel subscription', () => {
     const { result } = renderHook(
       () => useWidgetChannelRate('fuel.projection'),
