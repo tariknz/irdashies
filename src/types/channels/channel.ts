@@ -29,8 +29,8 @@ export interface StandingsSnapshot {
   carIdxTrackSurface: number[];
   carIdxTireCompound: number[];
   carIdxSessionFlags: number[];
-  lastPitLap: number[];
-  previousCarTrackSurface: number[];
+  lastPitLap: (number | undefined)[];
+  previousCarTrackSurface: (number | undefined)[];
   version: number;
 }
 
