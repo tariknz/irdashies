@@ -3922,7 +3922,7 @@
       "name": "sector-timing-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "5d171102d2dd7418e721052ccd206ea11898addf42fdd69589a55c72256af3fc",
+      "rollingHash": "8b97c6169a6ffdd27d86da09320a344fe4bc9136934a3be0fbb57bb7bac87be9",
       "checkpoints": {
         "firstFrame": {
           "sectors": [],
@@ -3945,9 +3945,6 @@
             "sessionBestSectorTimes": [],
             "previousSessionBestSectorTimes": []
           },
-          "lapDistPct": 0,
-          "sessionTime": 0,
-          "isOnTrack": false,
           "sessionNum": null,
           "version": 0
         },
@@ -4081,11 +4078,8 @@
               17.494046900362548
             ]
           },
-          "lapDistPct": 0.9838072061538696,
-          "sessionTime": 690.9166671749958,
-          "isOnTrack": true,
           "sessionNum": 0,
-          "version": 35971
+          "version": 36
         },
         "session:0": {
           "sourceTick": -1,
@@ -4222,11 +4216,8 @@
               null
             ]
           },
-          "lapDistPct": 0.8659598231315613,
-          "sessionTime": 135.9833338419623,
-          "isOnTrack": true,
           "sessionNum": 0,
-          "version": 2676
+          "version": 12
         },
         "session:1": {
           "sourceTick": 5459,

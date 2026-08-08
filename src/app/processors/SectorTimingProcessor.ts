@@ -69,11 +69,12 @@ const cloneResult = (
 
 export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSnapshot> {
   readonly channel = 'sector-timing.snapshot';
-  readonly tickRateHz = 25;
+  readonly tickRateHz = 'event';
 
   private lastLapDistPct = -1;
   private lastSessionTime = -1;
   private sectorEntryUnclean = false;
+  private wasOnTrack = false;
   private enabled = true;
   private latest: SectorTimingSnapshot = this.emptySnapshot();
 
@@ -106,13 +107,14 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
     ) {
       this.resetState(this.latest.sectors, sessionNum);
     }
-    if (this.latest.isOnTrack && !isOnTrack && this.latest.sectorEntryValid) {
+    if (this.wasOnTrack && !isOnTrack && this.latest.sectorEntryValid) {
       this.sectorEntryUnclean = true;
     }
     if (!isOnTrack) {
-      this.publishTelemetry(lapDistPct, sessionTime, false, sessionNum);
+      this.wasOnTrack = false;
       return;
     }
+    this.wasOnTrack = true;
     if (this.lastLapDistPct < 0) {
       this.lastLapDistPct = lapDistPct;
       this.lastSessionTime = sessionTime;
@@ -120,9 +122,6 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
         ...this.latest,
         currentSectorIdx: getSectorIdx(lapDistPct, this.latest.sectors),
         sectorEntryTime: sessionTime,
-        lapDistPct,
-        sessionTime,
-        isOnTrack,
         sessionNum,
         version: this.latest.version + 1,
       };
@@ -148,7 +147,7 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
       this.completeSector(crossingTime, 0, true);
       this.lastLapDistPct = lapDistPct;
       this.lastSessionTime = sessionTime;
-      this.publishTelemetry(lapDistPct, sessionTime, true, sessionNum);
+      this.publishEvent(sessionNum);
       return;
     }
 
@@ -179,7 +178,7 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
         sectorEntryTime: sessionTime,
         sectorEntryValid: false,
       };
-      this.publishTelemetry(lapDistPct, sessionTime, true, sessionNum);
+      this.publishEvent(sessionNum);
       return;
     }
 
@@ -198,9 +197,9 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
           sessionTime
         );
         this.completeSector(crossingTime, nextSectorIdx, false);
+        this.publishEvent(sessionNum);
       }
     }
-    this.publishTelemetry(lapDistPct, sessionTime, true, sessionNum);
   }
 
   onLifecycle(event: SessionLifecycleEvent): void {
@@ -293,17 +292,9 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
     return result;
   }
 
-  private publishTelemetry(
-    lapDistPct: number,
-    sessionTime: number,
-    isOnTrack: boolean,
-    sessionNum: number | null
-  ): void {
+  private publishEvent(sessionNum: number | null): void {
     this.latest = {
       ...this.latest,
-      lapDistPct,
-      sessionTime,
-      isOnTrack,
       sessionNum,
       version: this.latest.version + 1,
     };
@@ -316,6 +307,7 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
     this.lastLapDistPct = -1;
     this.lastSessionTime = -1;
     this.sectorEntryUnclean = false;
+    this.wasOnTrack = false;
     this.latest = this.emptySnapshot(
       sectors,
       sessionNum,
@@ -335,9 +327,6 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
       sectorEntryValid: false,
       inclusive: emptyResult(sectors.length),
       clean: emptyResult(sectors.length),
-      lapDistPct: 0,
-      sessionTime: 0,
-      isOnTrack: false,
       sessionNum,
       version,
     };

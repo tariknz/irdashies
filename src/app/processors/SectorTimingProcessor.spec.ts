@@ -97,6 +97,19 @@ describe('SectorTimingProcessor', () => {
     ]);
   });
 
+  it('keeps the public snapshot stable between sector events', () => {
+    const processor = new SectorTimingProcessor();
+    processor.init(session);
+    processor.onFrame(frame(0.1, 10));
+    const snapshot = processor.snapshot();
+
+    processor.onFrame(frame(0.2, 20));
+    processor.onFrame(frame(0.3, 30));
+
+    expect(processor.snapshot()).toBe(snapshot);
+    expect(processor.snapshot().version).toBe(snapshot.version);
+  });
+
   it('invalidates active resets without discarding completed sectors', () => {
     const processor = new SectorTimingProcessor();
     processor.init(session);

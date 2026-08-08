@@ -18,9 +18,6 @@ const snapshot = {
   sectorEntryValid: true,
   inclusive: result(12, true),
   clean: result(13, false),
-  lapDistPct: 0.2,
-  sessionTime: 20,
-  isOnTrack: true,
   sessionNum: 1,
   version: 1,
 } satisfies SectorTimingSnapshot;

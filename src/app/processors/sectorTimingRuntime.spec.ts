@@ -61,6 +61,31 @@ describe('SectorTimingRuntime', () => {
     expect(publish).toHaveBeenCalledOnce();
   });
 
+  it('publishes only when sector timing state changes', () => {
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    bus.subscribe(target, 'sector-timing.snapshot');
+    const runtime = new SectorTimingRuntime(bus, undefined, {
+      markStart: vi.fn(),
+      markEnd: vi.fn(),
+    });
+    runtime.onSession(session);
+    const at = (lapDistPct: number, sessionTime: number) =>
+      ({
+        ...telemetry,
+        LapDistPct: { value: [lapDistPct] },
+        SessionTime: { value: [sessionTime] },
+      }) as unknown as Telemetry;
+
+    runtime.onFrame(at(0.1, 10));
+    runtime.onFrame(at(0.2, 20));
+    runtime.onFrame(at(0.3, 30));
+    expect(publish).toHaveBeenCalledTimes(1);
+
+    runtime.onFrame(at(0.6, 60));
+    expect(publish).toHaveBeenCalledTimes(2);
+  });
+
   it('clears the cached snapshot when disposed', () => {
     const bus = new ChannelBus();
     const clearSnapshot = vi.spyOn(bus, 'clearSnapshot');

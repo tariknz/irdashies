@@ -35,9 +35,6 @@ export interface SectorTimingSnapshot {
   inclusive: SectorTimingResultSnapshot;
   /** Timing view which ignores sectors completed after leaving the track. */
   clean: SectorTimingResultSnapshot;
-  lapDistPct: number;
-  sessionTime: number;
-  isOnTrack: boolean;
   sessionNum: number | null;
   version: number;
 }
