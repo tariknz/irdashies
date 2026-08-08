@@ -66,6 +66,10 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
   private readonly effectiveProgress: number[] = [];
   private readonly lastProgress: number[] = [];
   private readonly livePreviousSurface: (number | undefined)[] = [];
+  private readonly checkeredLapSnapshot: (number | undefined)[] = [];
+  private checkeredSnapshotActive = false;
+  private p1CarIdx: number | null = null;
+  private p1LapAtCheckered: number | null = null;
   private sortLaps: unknown[] = [];
   private sortSessionState = 0;
   private latest: StandingsSnapshot = this.emptySnapshot();
@@ -184,6 +188,10 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.effectiveProgress.length = 0;
     this.lastProgress.length = 0;
     this.livePreviousSurface.length = 0;
+    this.checkeredLapSnapshot.length = 0;
+    this.checkeredSnapshotActive = false;
+    this.p1CarIdx = null;
+    this.p1LapAtCheckered = null;
     this.resultsSessionNum = null;
     this.resultClassPosition.length = 0;
     this.resultLapsComplete.length = 0;
@@ -243,9 +251,11 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       this.resultsSessionNum = sessionNum;
       this.resultClassPosition.length = 0;
       this.resultLapsComplete.length = 0;
+      this.p1CarIdx = null;
       for (const result of session.ResultsPositions ?? []) {
         this.resultClassPosition[result.CarIdx] = result.ClassPosition;
         this.resultLapsComplete[result.CarIdx] = result.LapsComplete;
+        if (result.Position === 1) this.p1CarIdx = result.CarIdx;
       }
     }
 
@@ -260,6 +270,27 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     )
       return;
     const paceCarIdx = this.session?.DriverInfo?.PaceCarIdx ?? -1;
+    const p1Lap =
+      this.p1CarIdx === null ? null : Number(laps[this.p1CarIdx] ?? 0);
+    if (sessionState !== SessionState.Checkered) {
+      this.checkeredSnapshotActive = false;
+      this.p1LapAtCheckered = null;
+    } else if (this.p1LapAtCheckered === null) {
+      this.p1LapAtCheckered = p1Lap;
+    } else if (
+      !this.checkeredSnapshotActive &&
+      p1Lap !== null &&
+      p1Lap > this.p1LapAtCheckered
+    ) {
+      this.checkeredLapSnapshot.length = laps.length;
+      for (let carIdx = 0; carIdx < laps.length; carIdx += 1)
+        this.checkeredLapSnapshot[carIdx] = Number(laps[carIdx] ?? 0);
+      if (this.p1CarIdx !== null) {
+        this.checkeredLapSnapshot[this.p1CarIdx] =
+          (this.checkeredLapSnapshot[this.p1CarIdx] ?? 0) - 1;
+      }
+      this.checkeredSnapshotActive = true;
+    }
     this.activeClassIds.length = 0;
     this.classBuffers.forEach((buffer) => {
       buffer.length = 0;
@@ -313,10 +344,20 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     const aCompleted = aLap === -1 ? (this.resultLapsComplete[a] ?? -1) : aLap;
     const bCompleted = bLap === -1 ? (this.resultLapsComplete[b] ?? -1) : bLap;
     if (aCompleted !== bCompleted) return bCompleted - aCompleted;
-    if (this.sortSessionState === SessionState.Checkered) {
-      const aPosition = this.resultClassPosition[a] ?? Number.MAX_SAFE_INTEGER;
-      const bPosition = this.resultClassPosition[b] ?? Number.MAX_SAFE_INTEGER;
-      if (aPosition !== bPosition) return aPosition - bPosition;
+    if (
+      this.sortSessionState === SessionState.Checkered &&
+      this.checkeredSnapshotActive
+    ) {
+      const aFinished = aCompleted > (this.checkeredLapSnapshot[a] ?? 0);
+      const bFinished = bCompleted > (this.checkeredLapSnapshot[b] ?? 0);
+      if (aFinished !== bFinished) return aFinished ? 1 : -1;
+      if (aFinished) {
+        const aPosition =
+          this.resultClassPosition[a] ?? Number.MAX_SAFE_INTEGER;
+        const bPosition =
+          this.resultClassPosition[b] ?? Number.MAX_SAFE_INTEGER;
+        return aPosition - bPosition;
+      }
     }
     return this.effectiveProgress[b] - this.effectiveProgress[a];
   };

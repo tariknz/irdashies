@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Session, Telemetry } from '@irdashies/types';
+import { SessionState } from '@irdashies/types';
 import { StandingsProcessor } from './StandingsProcessor';
 
 const session = {
@@ -123,6 +124,46 @@ describe('StandingsProcessor', () => {
       1,
       1,
     ]);
+  });
+
+  it('keeps unfinished cars ordered by live progress under checkered', () => {
+    const processor = new StandingsProcessor();
+    processor.init({
+      DriverInfo: { DriverCarIdx: 1, PaceCarIdx: 0 },
+      SessionInfo: {
+        Sessions: [
+          {
+            SessionNum: 2,
+            SessionType: 'Race',
+            ResultsPositions: [
+              {
+                Position: 1,
+                CarIdx: 1,
+                ClassPosition: 0,
+                LapsComplete: 2,
+              },
+              {
+                Position: 2,
+                CarIdx: 2,
+                ClassPosition: 1,
+                LapsComplete: 2,
+              },
+            ],
+          },
+        ],
+      },
+    } as Session);
+
+    processor.onFrame(
+      frame(10, {
+        SessionState: { value: [SessionState.Checkered] },
+        CarIdxLapCompleted: { value: [0, 2, 2] },
+        CarIdxLapDistPct: { value: [0, 0.7, 0.9] },
+        CarIdxClass: { value: [-1, 10, 10] },
+      })
+    );
+
+    expect(processor.snapshot().liveClassPosition).toEqual([undefined, 2, 1]);
   });
 
   it('resets accumulated state on session changes and disconnect', () => {

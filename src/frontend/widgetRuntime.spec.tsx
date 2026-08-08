@@ -61,7 +61,7 @@ describe('widget runtime metadata', () => {
         'relative-gaps.snapshot',
         'standings.snapshot',
       ],
-      channelRates: { 'car-speeds.snapshot': 10 },
+      channelRates: { 'car-speeds.snapshot': 10, 'standings.snapshot': 5 },
     });
     expect(getWidgetRuntimeDefinition('slowcarahead')).toMatchObject({
       legacyTelemetry: true,

@@ -9,5 +9,5 @@ export default {
     'standings.snapshot',
   ],
   ratePreset: 'driverFocused',
-  channelRates: { 'car-speeds.snapshot': 10 },
+  channelRates: { 'car-speeds.snapshot': 10, 'standings.snapshot': 5 },
 } satisfies WidgetRuntimeDefinition;

@@ -23,6 +23,7 @@ const copySnapshot = (snapshot: StandingsSnapshot): StandingsSnapshot => ({
   carIdxSessionFlags: [...snapshot.carIdxSessionFlags],
   lastPitLap: [...snapshot.lastPitLap],
   previousCarTrackSurface: [...snapshot.previousCarTrackSurface],
+  liveClassPosition: [...snapshot.liveClassPosition],
 });
 
 export const createStandingsProbe = (): ReplayProbe<StandingsSnapshot> => {
@@ -38,7 +39,9 @@ export const createStandingsProbe = (): ReplayProbe<StandingsSnapshot> => {
       'CarIdxEstTime',
       'CarIdxF2Time',
       'CarIdxLap',
+      'CarIdxLapCompleted',
       'CarIdxLapDistPct',
+      'CarIdxClass',
       'CarIdxOnPitRoad',
       'CarIdxSessionFlags',
       'CarIdxTireCompound',
