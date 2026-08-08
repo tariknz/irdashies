@@ -7,12 +7,7 @@ import {
   TelemetryDecorator,
 } from '@irdashies/storybook';
 import { getWidgetDefaultConfig } from '@irdashies/types';
-import {
-  SessionTimingStoreUpdater,
-  TopSpeedStoreUpdater,
-  TrackTemperatureStoreUpdater,
-  SessionBestLapStoreUpdater,
-} from '@irdashies/context';
+import { SessionTimingStoreUpdater } from '@irdashies/context';
 
 export default {
   component: SessionBar,
@@ -20,6 +15,38 @@ export default {
   decorators: [
     TelemetryDecorator(),
     ChannelSnapshotDecorator({
+      'session-bar.snapshot': {
+        sessionName: 'Race',
+        trackDisplayName: 'Okayama International Circuit',
+        displayUnits: 1,
+        brakeBias: 52.4,
+        brakeBiasIsClio: false,
+        incidents: 2,
+        incidentLimit: 17,
+        trackWetness: 1,
+        precipitation: 0,
+        airTemp: 24,
+        trackTemp: 31,
+        windDirection: 1,
+        windVelocity: 3,
+        windYaw: 0,
+        fuelLevel: 32.5,
+        lastLapTime: 92.4,
+        bestLapTime: 91.8,
+        sessionBestLap: 90.9,
+        sessionTimeOfDay: 43200,
+        playerCarIdx: 0,
+        playerCarId: 67,
+        playerOverallPosition: 2,
+        playerClassPosition: 2,
+        playerClassSize: 12,
+        competitorCarIds: [67],
+        competitorPositions: [2],
+        lastLapTopSpeed: 58,
+        sessionBestTopSpeed: 60,
+        sessionNum: 0,
+        version: 1,
+      },
       'session-timing.snapshot': {
         sessionType: 'Race',
         state: 4,
@@ -40,9 +67,6 @@ export default {
     (Story: ComponentType) => (
       <>
         <SessionTimingStoreUpdater enabled={true} />
-        <TopSpeedStoreUpdater enabled={true} />
-        <TrackTemperatureStoreUpdater enabled={true} />
-        <SessionBestLapStoreUpdater enabled={true} />
         <Story />
       </>
     ),

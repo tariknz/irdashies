@@ -7,6 +7,7 @@ export default {
     'lap-times.snapshot',
     'radio.snapshot',
     'session-timing.snapshot',
+    'session-bar.snapshot',
     'relative-gaps.snapshot',
     'standings.snapshot',
   ],

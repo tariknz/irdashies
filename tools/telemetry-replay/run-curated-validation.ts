@@ -17,6 +17,7 @@ import { createSectorTimingProbe } from './sector-timing-probe';
 import { createStandingsProbe } from './standings-probe';
 import { createRadioProbe } from './radio-probe';
 import { createSessionTimingProbe } from './session-timing-probe';
+import { createSessionBarProbe } from './session-bar-probe';
 
 const REPOSITORY_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -149,6 +150,7 @@ async function main(): Promise<void> {
       createStandingsProbe(),
       createRadioProbe(),
       createSessionTimingProbe(),
+      createSessionBarProbe(),
     ],
   });
   const golden = {

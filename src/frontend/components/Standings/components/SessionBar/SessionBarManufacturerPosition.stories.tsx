@@ -27,7 +27,10 @@ interface SeederProps {
   positionsByIdx: number[];
 }
 
-const ManufacturerPositionSeeder = ({ drivers, positionsByIdx }: SeederProps) => {
+const ManufacturerPositionSeeder = ({
+  drivers,
+  positionsByIdx,
+}: SeederProps) => {
   useEffect(() => {
     useSessionStore.setState({
       session: {

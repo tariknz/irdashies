@@ -8,6 +8,7 @@ export default {
     'reference-laps.snapshot',
     'radio.snapshot',
     'session-timing.snapshot',
+    'session-bar.snapshot',
     'standings.snapshot',
   ],
   ratePreset: 'gapTiming',

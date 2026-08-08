@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { useDriverIncidents } from '../../../../hooks';
+import { useSessionBarSnapshot } from '@irdashies/context';
 import { getIncidentDisplay } from '../../getIncidentDisplay';
 import { sessionBarItemWrapperClass } from '../../sessionBarItemWrapperClass';
 import type { SessionBarItemProps } from '../../sessionBarItemTypes';
@@ -10,7 +10,7 @@ export const IncidentCountItem = memo(({ standalone }: SessionBarItemProps) => {
     incidents,
     incidentWarningInitialLimit,
     incidentWarningSubsequentLimit,
-  } = useDriverIncidents();
+  } = useSessionBarSnapshot() ?? { incidents: 0 };
 
   return (
     <div className={sessionBarItemWrapperClass(standalone)}>

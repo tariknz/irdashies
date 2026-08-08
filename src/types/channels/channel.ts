@@ -16,8 +16,44 @@ export interface ChannelPayloads {
   'relative-gaps.snapshot': RelativeGapsSnapshot;
   'sector-timing.snapshot': SectorTimingSnapshot;
   'session-timing.snapshot': SessionTimingSnapshot;
+  'session-bar.snapshot': SessionBarSnapshot;
   'standings.snapshot': StandingsSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
+}
+
+export interface SessionBarSnapshot {
+  sessionName?: string;
+  trackDisplayName?: string;
+  displayUnits: number;
+  brakeBias?: number;
+  brakeBiasIsClio: boolean;
+  incidents: number;
+  incidentLimit?: number | string;
+  incidentWarningInitialLimit?: number;
+  incidentWarningSubsequentLimit?: number;
+  trackWetness: number;
+  precipitation?: number;
+  airTemp?: number;
+  trackTemp?: number;
+  windDirection?: number;
+  windVelocity?: number;
+  windYaw?: number;
+  fuelLevel?: number;
+  lastLapTime?: number;
+  bestLapTime?: number;
+  sessionBestLap?: number;
+  sessionTimeOfDay?: number;
+  playerCarIdx: number | null;
+  playerCarId?: number;
+  playerOverallPosition: number;
+  playerClassPosition: number;
+  playerClassSize: number;
+  competitorCarIds: number[];
+  competitorPositions: number[];
+  lastLapTopSpeed: number | null;
+  sessionBestTopSpeed: number | null;
+  sessionNum: number | null;
+  version: number;
 }
 
 export interface SessionTimingSnapshot {
@@ -207,6 +243,11 @@ export const channelRegistry = {
     maxRateHz: 25,
   },
   'session-timing.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 5,
+    maxRateHz: 10,
+  },
+  'session-bar.snapshot': {
     kind: 'snapshot',
     defaultRateHz: 5,
     maxRateHz: 10,

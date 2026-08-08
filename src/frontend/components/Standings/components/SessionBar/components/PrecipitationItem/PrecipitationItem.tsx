@@ -1,11 +1,11 @@
 import { memo } from 'react';
 import { CloudRainIcon } from '@phosphor-icons/react';
-import { useThrottledWeather } from '@irdashies/context';
+import { useSessionBarSnapshot } from '@irdashies/context';
 import { sessionBarItemWrapperClass } from '../../sessionBarItemWrapperClass';
 import type { SessionBarItemProps } from '../../sessionBarItemTypes';
 
 export const PrecipitationItem = memo(({ standalone }: SessionBarItemProps) => {
-  const { precipitation } = useThrottledWeather();
+  const precipitation = useSessionBarSnapshot()?.precipitation;
   const hasPrecipitation =
     precipitation !== undefined && precipitation !== null;
   const precipitationPercent = hasPrecipitation

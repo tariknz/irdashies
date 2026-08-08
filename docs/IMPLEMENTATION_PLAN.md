@@ -276,7 +276,7 @@ Today every renderer wakes 25 times/sec regardless of what's mounted. A weather 
 - [x] Radio transmit state — `radio.snapshot`, event-driven and demand-activated; PR #666
 - [ ] Session-bar telemetry migration
   - [x] Shared race/session timing projection — `session-timing.snapshot`, demand-driven at 5 Hz; PR #667 in review
-  - [ ] Auxiliary items still reading legacy telemetry (weather, fuel/units, brake bias, incidents, lap results, and player position)
+  - [x] Auxiliary items (weather, fuel/units, brake bias, incidents, lap results, player position, and top speed) — `session-bar.snapshot`; PR #667
 - [ ] Legacy `'telemetry'` channel removed or dev-only
 
 ### Phase 5 — Worker-thread SDK loop
