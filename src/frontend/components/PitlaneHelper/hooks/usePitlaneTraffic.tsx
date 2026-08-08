@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import {
-  useTelemetryValues,
-  useTelemetryValuesRounded,
+  useTrackStateSnapshot,
   useFocusCarIdx,
 } from '@irdashies/context';
 
@@ -13,8 +12,9 @@ export interface PitlaneTrafficResult {
 
 export const usePitlaneTraffic = (enabled: boolean): PitlaneTrafficResult => {
   const focusCarIdx = useFocusCarIdx();
-  const carIdxOnPitRoadRaw = useTelemetryValues('CarIdxOnPitRoad');
-  const carIdxLapDistPctRaw = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
+  const trackState = useTrackStateSnapshot();
+  const carIdxOnPitRoadRaw = trackState?.carIdxOnPitRoad;
+  const carIdxLapDistPctRaw = trackState?.carIdxLapDistPct;
 
   return useMemo(() => {
     const carIdxOnPitRoad = carIdxOnPitRoadRaw ?? [];

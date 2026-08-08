@@ -3,6 +3,8 @@ import { Battle } from './Battle';
 import {
   ChannelSnapshotDecorator,
   TelemetryDecorator,
+  trackStateStorySnapshot,
+  standingsStorySnapshot,
 } from '@irdashies/storybook';
 import type { RelativeGapsSnapshot } from '@irdashies/types';
 
@@ -34,6 +36,8 @@ export const Primary: Story = {
         version: 1,
       },
       'relative-gaps.snapshot': relativeGapsStorySnapshot,
+      'standings.snapshot': standingsStorySnapshot,
+      'track-state.snapshot': trackStateStorySnapshot,
     }),
   ],
 };

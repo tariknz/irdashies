@@ -10,3 +10,4 @@ export * from './useSectorTimingSnapshot';
 export * from './useStandingsSnapshot';
 export * from './useCarSpeedsSnapshot';
 export * from './useDriverControlsSnapshot';
+export * from './useTrackStateSnapshot';

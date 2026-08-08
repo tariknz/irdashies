@@ -20,6 +20,7 @@ import { RadioRuntime } from '../../processors/radioRuntime';
 import { SessionTimingRuntime } from '../../processors/sessionTimingRuntime';
 import { SessionBarRuntime } from '../../processors/sessionBarRuntime';
 import { DriverControlsRuntime } from '../../processors/driverControlsRuntime';
+import { TrackStateRuntime } from '../../processors/trackStateRuntime';
 
 // Keys consumed by the renderer. Anything outside this set is dropped before
 // the telemetry object crosses the IPC boundary — reducing structured-clone
@@ -227,6 +228,9 @@ export async function publishIRacingSDKEvents(
   const driverControlsRuntime = channelBus
     ? new DriverControlsRuntime(channelBus, lifecycle, perfMetrics)
     : undefined;
+  const trackStateRuntime = channelBus
+    ? new TrackStateRuntime(channelBus, lifecycle, perfMetrics)
+    : undefined;
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
@@ -334,6 +338,7 @@ export async function publishIRacingSDKEvents(
           sessionTimingRuntime?.onFrame(telemetry);
           sessionBarRuntime?.onFrame(telemetry);
           driverControlsRuntime?.onFrame(telemetry);
+          trackStateRuntime?.onFrame(telemetry);
           if (
             perfTelemetryDeliveryEnabled &&
             overlayManager.hasLegacyStreamSubscribers('telemetry')
@@ -371,6 +376,7 @@ export async function publishIRacingSDKEvents(
             sessionTimingRuntime?.onSession(session);
             sessionBarRuntime?.onSession(session);
             driverControlsRuntime?.onSession(session);
+            trackStateRuntime?.onSession(session);
             overlayManager.publishMessage('sessionData', session);
             sessionCallbacks.forEach((callback) => callback(session));
             perfMetrics.markEnd('sessionPublish');
@@ -437,6 +443,7 @@ export async function publishIRacingSDKEvents(
       sessionTimingRuntime?.dispose();
       sessionBarRuntime?.dispose();
       driverControlsRuntime?.dispose();
+      trackStateRuntime?.dispose();
       referenceLapRuntime?.dispose();
       perfMetrics.stopReporting();
     },

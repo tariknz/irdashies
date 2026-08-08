@@ -5,7 +5,7 @@ import { usePitlaneVisibility } from './hooks/usePitlaneVisibility';
 import { usePitLimiterWarning } from './hooks/usePitLimiterWarning';
 import { usePitlaneTraffic } from './hooks/usePitlaneTraffic';
 import {
-  useTelemetryValue,
+  useTrackStateSnapshot,
   useDashboard,
   useSessionVisibility,
 } from '@irdashies/context';
@@ -35,9 +35,10 @@ export const PitlaneHelper = () => {
 
   const isSessionVisible = useSessionVisibility(config?.sessionVisibility);
 
-  const surface = (useTelemetryValue('PlayerTrackSurface') ?? 3) as number;
-  const onPitRoadTelemetry = useTelemetryValue<boolean>('OnPitRoad') ?? false;
-  const displayUnits = useTelemetryValue('DisplayUnits') as number | undefined;
+  const trackState = useTrackStateSnapshot();
+  const surface = trackState?.playerTrackSurface ?? 3;
+  const onPitRoadTelemetry = trackState?.onPitRoad ?? false;
+  const displayUnits = trackState?.displayUnits;
 
   // Core data hooks - must be called in same order every render
   const speed = usePitSpeed();

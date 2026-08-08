@@ -5,8 +5,7 @@
  */
 
 import {
-  useTelemetryValues,
-  useTelemetryValue,
+  useTrackStateSnapshot,
   useFocusCarIdx,
   useDrivingState,
   useSessionVisibility,
@@ -27,12 +26,12 @@ export const RejoinIndicator = () => {
     settings?.config?.sessionVisibility
   );
   const playerIndex = useFocusCarIdx();
-  const playerInPitStall =
-    useTelemetryValue<number>('PlayerCarInPitStall') === 1;
-  const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
-  const carSpeedForPlayer = useTelemetryValue('Speed');
-  const sessionTime = useTelemetryValue<number>('SessionTime') ?? 0;
-  const sessionState = useTelemetryValue<number>('SessionState') ?? 0;
+  const trackState = useTrackStateSnapshot();
+  const playerInPitStall = trackState?.playerCarInPitStall ?? false;
+  const carIdxOnPitRoad = trackState?.carIdxOnPitRoad ?? [];
+  const carSpeedForPlayer = trackState?.speed;
+  const sessionTime = trackState?.sessionTime ?? 0;
+  const sessionState = trackState?.sessionState ?? 0;
   const { isDriving } = useDrivingState();
   const drivers = useDriverRelatives({ buffer: 3 });
 

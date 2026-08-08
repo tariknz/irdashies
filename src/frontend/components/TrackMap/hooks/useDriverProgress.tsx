@@ -5,21 +5,22 @@ import {
   useSessionQualifyingResults,
   useSessionQualifyPositions,
   useSessionStore,
-  useTelemetryValue,
-  useTelemetryValues,
-  useTelemetryValuesRounded,
+  useTrackStateSnapshot,
 } from '@irdashies/context';
+
+const EMPTY_POSITIONS: readonly number[] = [];
 
 // Drivers progress logic
 export const useDriverProgress = () => {
   const driverIdx = useFocusCarIdx();
   const drivers = useSessionDrivers();
-  const driversLapDist = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
+  const trackState = useTrackStateSnapshot();
+  const driversLapDist = trackState?.carIdxLapDistPct ?? EMPTY_POSITIONS;
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
 
   const qualifyingResultsRaw = useSessionQualifyingResults();
-  const sessionNum = useTelemetryValue('SessionNum');
+  const sessionNum = trackState?.sessionNum ?? undefined;
   const sessionQualifyPositions = useSessionQualifyPositions(sessionNum);
 
   // Heat race fallback: QualifyResultsInfo.Results may be null, use QualifyPositions instead
@@ -31,9 +32,7 @@ export const useDriverProgress = () => {
       }));
 
   // Get class position data from telemetry
-  const carIdxClassPosition = useTelemetryValues<number[]>(
-    'CarIdxClassPosition'
-  );
+  const carIdxClassPosition = trackState?.carIdxClassPosition;
 
   // Stable identity data — only recomputes when driver roster, player focus,
   // or class positions change. Does NOT depend on driversLapDist.

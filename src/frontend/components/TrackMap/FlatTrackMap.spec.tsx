@@ -8,10 +8,16 @@ vi.mock('./hooks/useDriverProgress');
 vi.mock('../Standings/hooks/useDriverLivePositions');
 vi.mock('./hooks/useFlatTrackMapSettings');
 vi.mock('./hooks/useHighlightColor');
-vi.mock('@irdashies/context', () => ({
-  useSessionVisibility: vi.fn(),
-  useTelemetryValue: vi.fn(),
-}));
+vi.mock('@irdashies/context', () => {
+  const useTelemetryValue = vi.fn();
+  return {
+    useSessionVisibility: vi.fn(),
+    useTelemetryValue,
+    useTrackStateSnapshot: vi.fn(() => ({
+      isOnTrack: useTelemetryValue('IsOnTrack'),
+    })),
+  };
+});
 vi.mock('./FlatTrackMapCanvas', () => ({
   FlatTrackMapCanvas: () => <div>Flat Track Canvas</div>,
 }));

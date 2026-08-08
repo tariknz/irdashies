@@ -14,6 +14,8 @@ const RATE_PRESETS: Readonly<Record<WidgetRatePreset, number | undefined>> = {
 export interface WidgetRuntimeDefinition {
   id: string;
   legacyTelemetry?: boolean;
+  sessionData?: boolean;
+  pitLaneData?: boolean;
   channels?: readonly ChannelName[];
   ratePreset?: WidgetRatePreset;
   channelRates?: Partial<Record<ChannelName, number>>;
@@ -58,6 +60,22 @@ export const rendererNeedsChannel = (
     getWidgetRuntimeDefinition(widget.type || widget.id).channels?.includes(
       channel
     )
+  );
+
+export const rendererNeedsSessionData = (
+  widgets: readonly DashboardWidget[]
+): boolean =>
+  widgets.some(
+    (widget) =>
+      getWidgetRuntimeDefinition(widget.type || widget.id).sessionData === true
+  );
+
+export const rendererNeedsPitLaneData = (
+  widgets: readonly DashboardWidget[]
+): boolean =>
+  widgets.some(
+    (widget) =>
+      getWidgetRuntimeDefinition(widget.type || widget.id).pitLaneData === true
   );
 
 const WidgetRuntimeContext = createContext<WidgetRuntimeDefinition | undefined>(

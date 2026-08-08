@@ -19,7 +19,34 @@ export interface ChannelPayloads {
   'session-timing.snapshot': SessionTimingSnapshot;
   'session-bar.snapshot': SessionBarSnapshot;
   'standings.snapshot': StandingsSnapshot;
+  'track-state.snapshot': TrackStateSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
+}
+
+export interface TrackStateSnapshot {
+  focusCarIdx: number | null;
+  carIdxLapDistPct: readonly number[];
+  carIdxOnPitRoad: readonly boolean[];
+  carIdxTrackSurface: readonly number[];
+  carIdxClassPosition: readonly number[];
+  carLeftRight: number;
+  isOnTrack: boolean;
+  playerCarInPitStall: boolean;
+  playerTrackSurface: number;
+  onPitRoad: boolean;
+  isInGarage: boolean;
+  isGarageVisible: boolean;
+  isReplayPlaying: boolean;
+  sessionTime: number;
+  sessionState: number;
+  speed: number;
+  displayUnits: number;
+  pitSpeedLimiterToggle: boolean;
+  pitstopActive: boolean;
+  engineWarnings: number;
+  lapDistPct: number;
+  sessionNum: number | null;
+  version: number;
 }
 
 export interface DriverControlsSnapshot {
@@ -285,6 +312,11 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 5,
     maxRateHz: 10,
+  },
+  'track-state.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 25,
+    maxRateHz: 25,
   },
   'session.lifecycle': { kind: 'event' },
 } as const satisfies ChannelRegistry;

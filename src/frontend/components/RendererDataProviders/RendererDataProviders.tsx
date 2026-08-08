@@ -9,6 +9,8 @@ import {
 import {
   rendererNeedsChannel,
   rendererNeedsLegacyTelemetry,
+  rendererNeedsPitLaneData,
+  rendererNeedsSessionData,
 } from '../../widgetRuntime';
 
 const isWidgetOnDisplay = (
@@ -52,20 +54,28 @@ export const RendererDataProviders = ({
     return {
       legacyTelemetry: rendererNeedsLegacyTelemetry(widgets),
       referenceLaps: rendererNeedsChannel(widgets, 'reference-laps.snapshot'),
+      sessionData: rendererNeedsSessionData(widgets),
+      pitLaneData: rendererNeedsPitLaneData(widgets),
     };
   }, [browser, containerBoundsInfo, currentDashboard?.widgets]);
 
-  if (!runtimeNeeds.legacyTelemetry && !runtimeNeeds.referenceLaps) return null;
+  if (
+    !runtimeNeeds.legacyTelemetry &&
+    !runtimeNeeds.referenceLaps &&
+    !runtimeNeeds.sessionData &&
+    !runtimeNeeds.pitLaneData
+  )
+    return null;
 
   return (
     <>
-      {runtimeNeeds.legacyTelemetry ? (
-        <>
-          <SessionProvider bridge={window.irsdkBridge} />
-          <TelemetryProvider bridge={window.irsdkBridge} />
-        </>
+      {runtimeNeeds.legacyTelemetry || runtimeNeeds.sessionData ? (
+        <SessionProvider bridge={window.irsdkBridge} />
       ) : null}
-      {runtimeNeeds.legacyTelemetry && window.pitLaneBridge ? (
+      {runtimeNeeds.legacyTelemetry ? (
+        <TelemetryProvider bridge={window.irsdkBridge} />
+      ) : null}
+      {runtimeNeeds.pitLaneData && window.pitLaneBridge ? (
         <PitLaneProvider bridge={window.pitLaneBridge} />
       ) : null}
       {runtimeNeeds.referenceLaps ? (

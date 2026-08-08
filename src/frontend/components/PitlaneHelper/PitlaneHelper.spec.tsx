@@ -5,10 +5,23 @@ import * as context from '@irdashies/context';
 
 // Mock all the context hooks
 vi.mock('@irdashies/context', () => ({
-  useTelemetryValue: vi.fn(),
+  useTrackStateSnapshot: vi.fn(),
+  useDriverControlsSnapshot: vi.fn(),
   useDashboard: vi.fn(),
   useSessionVisibility: vi.fn(),
 }));
+
+const mockSnapshots = (read: (key: string) => unknown) => {
+  vi.mocked(context.useTrackStateSnapshot).mockReturnValue({
+    playerTrackSurface: read('PlayerTrackSurface'),
+    onPitRoad: read('OnPitRoad'),
+    displayUnits: read('DisplayUnits'),
+  } as never);
+  vi.mocked(context.useDriverControlsSnapshot).mockReturnValue({
+    throttle: read('Throttle'),
+    clutch: read('Clutch'),
+  } as never);
+};
 
 // Mock the custom hooks
 vi.mock('./hooks/usePitlaneHelperSettings', () => ({
@@ -160,7 +173,7 @@ describe('PitlaneHelper', () => {
 
   describe('Telemetry Detection - Surface vs OnPitRoad', () => {
     it('detects on track (Surface=3, OnPitRoad=false)', () => {
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'PlayerTrackSurface') return 3;
         if (key === 'OnPitRoad') return false;
         return undefined;
@@ -178,7 +191,7 @@ describe('PitlaneHelper', () => {
     });
 
     it('detects blend zone (Surface=2, OnPitRoad=false) BEFORE pit entry line', () => {
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'PlayerTrackSurface') return 2;
         if (key === 'OnPitRoad') return false;
         return undefined;
@@ -196,7 +209,7 @@ describe('PitlaneHelper', () => {
     });
 
     it('detects blend zone without pit entry data (Surface=2, OnPitRoad=false, no distance)', () => {
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'PlayerTrackSurface') return 2;
         if (key === 'OnPitRoad') return false;
         return undefined;
@@ -214,7 +227,7 @@ describe('PitlaneHelper', () => {
     });
 
     it('detects on pit road AFTER crossing pit entry line (OnPitRoad=true)', () => {
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'PlayerTrackSurface') return 2;
         if (key === 'OnPitRoad') return true; // Crossed pit entry line
         return undefined;
@@ -232,7 +245,7 @@ describe('PitlaneHelper', () => {
     });
 
     it('detects in pitbox (Surface=1)', () => {
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'PlayerTrackSurface') return 1;
         if (key === 'OnPitRoad') return true;
         return undefined;
@@ -252,7 +265,7 @@ describe('PitlaneHelper', () => {
 
   describe('Countdown Bar Display Logic', () => {
     it('shows pit entry countdown when approaching (not on pit road)', () => {
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'PlayerTrackSurface') return 3;
         if (key === 'OnPitRoad') return false;
         return undefined;
@@ -269,7 +282,7 @@ describe('PitlaneHelper', () => {
     });
 
     it('shows pitbox countdown when on pit road', () => {
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'OnPitRoad') return true;
         return undefined;
       });
@@ -285,7 +298,7 @@ describe('PitlaneHelper', () => {
     });
 
     it('shows past pitbox countdown when past pitbox', () => {
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'OnPitRoad') return true;
         return undefined;
       });
@@ -306,7 +319,7 @@ describe('PitlaneHelper', () => {
     });
 
     it('shows both pitbox and pit exit countdown side-by-side when past pitbox', () => {
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'OnPitRoad') return true;
         return undefined;
       });
@@ -330,7 +343,7 @@ describe('PitlaneHelper', () => {
     });
 
     it('hides pit exit countdown when distance exceeds 150m', () => {
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'OnPitRoad') return true;
         return undefined;
       });
@@ -347,7 +360,7 @@ describe('PitlaneHelper', () => {
     });
 
     it('hides pit entry countdown when distance exceeds approachDistance', () => {
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'OnPitRoad') return false;
         return undefined;
       });
@@ -421,7 +434,7 @@ describe('PitlaneHelper', () => {
         ...defaultConfig,
         speedUnit: 'auto',
       });
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'DisplayUnits') return 1; // metric
         return undefined;
       });
@@ -449,7 +462,7 @@ describe('PitlaneHelper', () => {
         ...defaultConfig,
         speedUnit: 'auto',
       });
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'DisplayUnits') return 0; // imperial
         return undefined;
       });
@@ -559,7 +572,7 @@ describe('PitlaneHelper', () => {
     });
 
     it('shows early pitbox warning when on pit road and pitbox is close to entry', () => {
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'OnPitRoad') return true;
         return undefined;
       });
@@ -576,7 +589,7 @@ describe('PitlaneHelper', () => {
     });
 
     it('hides early pitbox warning when not on pit road', () => {
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'OnPitRoad') return false;
         return undefined;
       });
@@ -597,7 +610,7 @@ describe('PitlaneHelper', () => {
         enableEarlyPitboxWarning: false,
       });
 
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'OnPitRoad') return true;
         return undefined;
       });
@@ -622,7 +635,7 @@ describe('PitlaneHelper', () => {
         pitExitInputs: { throttle: true, clutch: true },
       });
 
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'OnPitRoad') return true;
         return undefined;
       });
@@ -645,7 +658,7 @@ describe('PitlaneHelper', () => {
         pitExitInputs: { throttle: true, clutch: true },
       });
 
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'OnPitRoad') return false;
         return undefined;
       });
@@ -663,7 +676,7 @@ describe('PitlaneHelper', () => {
         pitExitInputs: { throttle: true, clutch: true },
       });
 
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'OnPitRoad') return true;
         return undefined;
       });
@@ -687,7 +700,7 @@ describe('PitlaneHelper', () => {
         pitExitInputs: { throttle: true, clutch: true },
       });
 
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'OnPitRoad') return true;
         return undefined;
       });
@@ -711,7 +724,7 @@ describe('PitlaneHelper', () => {
         pitExitInputs: { throttle: true, clutch: true },
       });
 
-      vi.mocked(context.useTelemetryValue).mockImplementation((key) => {
+      mockSnapshots((key) => {
         if (key === 'OnPitRoad') return true;
         return undefined;
       });

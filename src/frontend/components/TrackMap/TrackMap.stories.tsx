@@ -3,11 +3,20 @@ import { TrackMap } from './TrackMap';
 import {
   TelemetryDecorator,
   TelemetryDecoratorWithConfig,
+  ChannelSnapshotDecorator,
+  trackStateStorySnapshot,
+  standingsStorySnapshot,
 } from '@irdashies/storybook';
 
 export default {
   component: TrackMap,
   title: 'widgets/TrackMap',
+  decorators: [
+    ChannelSnapshotDecorator({
+      'track-state.snapshot': trackStateStorySnapshot,
+      'standings.snapshot': standingsStorySnapshot,
+    }),
+  ],
 } as Meta;
 
 type Story = StoryObj<typeof TrackMap>;
