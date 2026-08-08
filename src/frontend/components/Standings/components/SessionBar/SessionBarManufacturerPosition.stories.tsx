@@ -10,6 +10,10 @@ import {
 import { mockDashboardBridge } from '../../../../../../.storybook/mockDashboardBridge';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import type { Telemetry } from '@irdashies/types';
+import {
+  ChannelSnapshotDecorator,
+  TelemetryDecorator,
+} from '@irdashies/storybook';
 
 // carId 56 = NASCAR Cup Series Toyota Camry, carId 30 = Ford Mustang FR500S
 const TOYOTA_CAR_ID = 56;
@@ -27,7 +31,10 @@ interface SeederProps {
   positionsByIdx: number[];
 }
 
-const ManufacturerPositionSeeder = ({ drivers, positionsByIdx }: SeederProps) => {
+const ManufacturerPositionSeeder = ({
+  drivers,
+  positionsByIdx,
+}: SeederProps) => {
   useEffect(() => {
     useSessionStore.setState({
       session: {
@@ -84,6 +91,35 @@ export default {
   component: SessionBar,
   title: 'widgets/Standings/components/SessionBar/ManufacturerPosition',
   decorators: [
+    TelemetryDecorator(),
+    ChannelSnapshotDecorator({
+      'session-bar.snapshot': {
+        displayUnits: 1,
+        brakeBiasIsClio: false,
+        incidents: 0,
+        trackWetness: 1,
+        playerCarIdx: PLAYER_CAR_IDX,
+        playerCarId: TOYOTA_CAR_ID,
+        playerClassified: true,
+        playerOverallPosition: 3,
+        playerClassPosition: 3,
+        playerClassSize: 5,
+        competitorCarIds: [
+          TOYOTA_CAR_ID,
+          TOYOTA_CAR_ID,
+          TOYOTA_CAR_ID,
+          TOYOTA_CAR_ID,
+          TOYOTA_CAR_ID,
+          FORD_CAR_ID,
+          FORD_CAR_ID,
+        ],
+        competitorPositions: [1, 2, 4, 5, 3, 6, 7],
+        lastLapTopSpeed: null,
+        sessionBestTopSpeed: null,
+        sessionNum: 0,
+        version: 1,
+      },
+    }),
     (Story: ComponentType) => (
       <DashboardProvider bridge={mockDashboardBridge}>
         <Story />

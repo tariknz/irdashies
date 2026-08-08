@@ -1,7 +1,6 @@
 import { render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useCurrentSessionType, useGeneralSettings } from '@irdashies/context';
-import { useBrakeBias } from '../../hooks/useBrakeBias';
+import { useGeneralSettings, useSessionBarSnapshot } from '@irdashies/context';
 import { useCurrentTime } from '../../hooks/useCurrentTime';
 import { SessionBar } from './SessionBar';
 import type { SessionBarConfig } from '@irdashies/types';
@@ -11,10 +10,9 @@ vi.mock('@irdashies/context', async () => {
   return {
     ...actual,
     useGeneralSettings: vi.fn(),
-    useCurrentSessionType: vi.fn(),
+    useSessionBarSnapshot: vi.fn(),
   };
 });
-vi.mock('../../hooks/useBrakeBias');
 vi.mock('../../hooks/useCurrentTime');
 
 const baseSettings = {
@@ -38,9 +36,10 @@ describe('SessionBar', () => {
     vi.mocked(useGeneralSettings).mockReturnValue({
       compactMode: 'normal',
     } as never);
-    vi.mocked(useCurrentSessionType).mockReturnValue('Race');
+    vi.mocked(useSessionBarSnapshot).mockReturnValue({
+      sessionName: 'Race',
+    } as never);
     vi.mocked(useCurrentTime).mockReturnValue('1:23 PM');
-    vi.mocked(useBrakeBias).mockReturnValue(undefined);
   });
 
   it('renders enabled items in the given displayOrder', () => {

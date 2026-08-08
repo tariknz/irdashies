@@ -12,10 +12,7 @@ import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { SectorTimingUpdater } from './SectorTimingUpdater';
 import { PushToPassUpdater } from './PushToPassUpdater';
 import { PitLapUpdater } from './PitLapUpdater';
-import { TopSpeedUpdater } from './TopSpeedUpdater';
 import { SessionTimingUpdater } from './SessionTimingUpdater';
-import { TrackTemperatureUpdater } from './TrackTemperatureUpdater';
-import { SessionBestLapUpdater } from './SessionBestLapUpdater';
 import { WidgetRuntimeProvider } from '../../widgetRuntime';
 
 export const OverlayContainer = memo(() => {
@@ -168,10 +165,7 @@ export const OverlayContainer = memo(() => {
       />
       <PushToPassUpdater />
       <PitLapUpdater />
-      <TopSpeedUpdater />
       <SessionTimingUpdater />
-      <TrackTemperatureUpdater />
-      <SessionBestLapUpdater />
       {widgetsForThisDisplay.map((widget, index) => {
         // Transiently hidden via a per-widget hotkey — skip rendering.
         if (hiddenWidgetIds.has(widget.id)) {

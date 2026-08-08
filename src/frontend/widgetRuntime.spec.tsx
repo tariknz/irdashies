@@ -41,6 +41,8 @@ describe('widget runtime metadata', () => {
         'lap-times.snapshot',
         'reference-laps.snapshot',
         'radio.snapshot',
+        'session-timing.snapshot',
+        'session-bar.snapshot',
         'standings.snapshot',
       ],
       channelRates: { 'radio.snapshot': 25 },
@@ -50,6 +52,8 @@ describe('widget runtime metadata', () => {
       channels: [
         'lap-times.snapshot',
         'radio.snapshot',
+        'session-timing.snapshot',
+        'session-bar.snapshot',
         'relative-gaps.snapshot',
         'standings.snapshot',
       ],

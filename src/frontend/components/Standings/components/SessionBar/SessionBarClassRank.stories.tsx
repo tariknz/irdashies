@@ -10,6 +10,10 @@ import {
 import { mockDashboardBridge } from '../../../../../../.storybook/mockDashboardBridge';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import type { Telemetry } from '@irdashies/types';
+import {
+  ChannelSnapshotDecorator,
+  TelemetryDecorator,
+} from '@irdashies/storybook';
 
 const PLAYER_CAR_IDX = 4;
 const PLAYER_CLASS_ID = 1;
@@ -72,6 +76,26 @@ export default {
   component: SessionBar,
   title: 'widgets/Standings/components/SessionBar/ClassRank',
   decorators: [
+    TelemetryDecorator(),
+    ChannelSnapshotDecorator({
+      'session-bar.snapshot': {
+        displayUnits: 1,
+        brakeBiasIsClio: false,
+        incidents: 0,
+        trackWetness: 1,
+        playerCarIdx: PLAYER_CAR_IDX,
+        playerClassified: true,
+        playerOverallPosition: 3,
+        playerClassPosition: 3,
+        playerClassSize: 6,
+        competitorCarIds: [],
+        competitorPositions: [],
+        lastLapTopSpeed: null,
+        sessionBestTopSpeed: null,
+        sessionNum: 0,
+        version: 1,
+      },
+    }),
     (Story: ComponentType) => (
       <DashboardProvider bridge={mockDashboardBridge}>
         <Story />

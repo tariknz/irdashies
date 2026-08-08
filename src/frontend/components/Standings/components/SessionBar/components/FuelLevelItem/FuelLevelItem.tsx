@@ -1,13 +1,13 @@
 import { memo } from 'react';
 import { GasPumpIcon } from '@phosphor-icons/react';
-import { useTelemetryValue } from '@irdashies/context';
+import { useSessionBarSnapshot } from '@irdashies/context';
 import { formatFuel } from '../../../../../FuelCalculator/fuelCalculations';
 import { sessionBarItemWrapperClass } from '../../sessionBarItemWrapperClass';
 import type { SessionBarItemProps } from '../../sessionBarItemTypes';
 
 export const FuelLevelItem = memo(({ standalone }: SessionBarItemProps) => {
-  const fuelLevelLiters = useTelemetryValue('FuelLevel');
-  const displayUnits = useTelemetryValue('DisplayUnits');
+  const { fuelLevel: fuelLevelLiters, displayUnits } =
+    useSessionBarSnapshot() ?? { displayUnits: 0 };
 
   if (fuelLevelLiters === undefined) return null;
 

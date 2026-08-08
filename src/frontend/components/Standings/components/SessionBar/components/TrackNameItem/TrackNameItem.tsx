@@ -1,10 +1,10 @@
 import { memo } from 'react';
-import { useTrackDisplayName } from '@irdashies/context';
+import { useSessionBarSnapshot } from '@irdashies/context';
 import { sessionBarItemWrapperClass } from '../../sessionBarItemWrapperClass';
 import type { SessionBarItemProps } from '../../sessionBarItemTypes';
 
 export const TrackNameItem = memo(({ standalone }: SessionBarItemProps) => {
-  const trackDisplayName = useTrackDisplayName();
+  const trackDisplayName = useSessionBarSnapshot()?.trackDisplayName;
 
   return (
     <div className={sessionBarItemWrapperClass(standalone)}>

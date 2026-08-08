@@ -1,7 +1,10 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { ComponentProps } from 'react';
 import { SessionBar } from '../Standings/components/SessionBar/SessionBar';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import {
+  ChannelSnapshotDecorator,
+  TelemetryDecorator,
+} from '@irdashies/storybook';
 import { SessionBarConfig } from '@irdashies/types';
 
 /**
@@ -11,7 +14,31 @@ import { SessionBarConfig } from '@irdashies/types';
 const meta: Meta = {
   title: 'widgets/InformationBar',
   component: SessionBar,
-  decorators: [TelemetryDecorator()],
+  decorators: [
+    TelemetryDecorator(),
+    ChannelSnapshotDecorator({
+      'session-bar.snapshot': {
+        sessionName: 'Race',
+        displayUnits: 1,
+        brakeBiasIsClio: false,
+        incidents: 2,
+        trackWetness: 1,
+        airTemp: 24,
+        trackTemp: 31,
+        playerCarIdx: 0,
+        playerClassified: true,
+        playerOverallPosition: 2,
+        playerClassPosition: 2,
+        playerClassSize: 20,
+        competitorCarIds: [],
+        competitorPositions: [],
+        lastLapTopSpeed: null,
+        sessionBestTopSpeed: null,
+        sessionNum: 0,
+        version: 1,
+      },
+    }),
+  ],
   parameters: {
     layout: 'fullscreen',
   },

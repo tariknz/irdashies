@@ -88,6 +88,53 @@ describe('mockSdkBridge processor channels', () => {
     );
   });
 
+  it('publishes session timing without a lifecycle in demo mode', async () => {
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    bus.subscribe(
+      {
+        id: 3,
+        isDestroyed: () => false,
+        isVisible: () => true,
+        send: vi.fn(),
+      },
+      'session-timing.snapshot'
+    );
+    const bridge = await publishIRacingSDKEvents(
+      { publishMessage: vi.fn() } as never,
+      undefined,
+      bus
+    );
+    try {
+      callbacks.session?.({
+        DriverInfo: { DriverCarIdx: 0, Drivers: [{ CarIdx: 0 }] },
+        SessionInfo: {
+          Sessions: [{ SessionNum: 1, SessionType: 'Race', SessionLaps: 20 }],
+        },
+      } as unknown as Session);
+      callbacks.telemetry?.({
+        SessionTime: { value: [120] },
+        SessionNum: { value: [1] },
+        SessionState: { value: [4] },
+        SessionTimeTotal: { value: [2400] },
+        SessionTimeRemain: { value: [2280] },
+        CamCarIdx: { value: [0] },
+        CarIdxLap: { value: [2] },
+        CarIdxPosition: { value: [1] },
+        CarIdxLapDistPct: { value: [0.25] },
+        CarIdxBestLapTime: { value: [60] },
+        CarIdxLastLapTime: { value: [60] },
+      } as unknown as Telemetry);
+
+      expect(publish).toHaveBeenCalledWith(
+        'session-timing.snapshot',
+        expect.objectContaining({ currentLap: 2, sessionType: 'Race' })
+      );
+    } finally {
+      bridge.stop();
+    }
+  });
+
   it('feeds mock data through the relative-gap runtime', async () => {
     const bus = new ChannelBus();
     const publish = vi.spyOn(bus, 'publish');

@@ -1,14 +1,13 @@
 import { memo } from 'react';
 import { TimerIcon } from '@phosphor-icons/react';
-import { useSessionBestLap, useTelemetryValue } from '@irdashies/context';
+import { useSessionBarSnapshot } from '@irdashies/context';
 import { formatTime } from '@irdashies/utils/time';
 import { sessionBarItemWrapperClass } from '../../sessionBarItemWrapperClass';
 import type { SessionBarItemProps } from '../../sessionBarItemTypes';
 
 export const LastLapItem = memo(({ standalone }: SessionBarItemProps) => {
-  const lastLapTime = useTelemetryValue('LapLastLapTime');
-  const bestLapTime = useTelemetryValue('LapBestLapTime');
-  const sessionBestLap = useSessionBestLap();
+  const { lastLapTime, bestLapTime, sessionBestLap } =
+    useSessionBarSnapshot() ?? {};
 
   const t = lastLapTime ?? 0;
   const pb = bestLapTime ?? 0;

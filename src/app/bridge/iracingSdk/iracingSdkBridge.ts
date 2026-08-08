@@ -17,6 +17,8 @@ import { RelativeGapRuntime } from '../../processors/relativeGapRuntime';
 import { SectorTimingRuntime } from '../../processors/sectorTimingRuntime';
 import { StandingsRuntime } from '../../processors/standingsRuntime';
 import { RadioRuntime } from '../../processors/radioRuntime';
+import { SessionTimingRuntime } from '../../processors/sessionTimingRuntime';
+import { SessionBarRuntime } from '../../processors/sessionBarRuntime';
 
 // Keys consumed by the renderer. Anything outside this set is dropped before
 // the telemetry object crosses the IPC boundary — reducing structured-clone
@@ -208,6 +210,19 @@ export async function publishIRacingSDKEvents(
     lifecycle && channelBus
       ? new RadioRuntime(channelBus, lifecycle, perfMetrics, isTapeReplay)
       : undefined;
+  const sessionTimingRuntime =
+    lifecycle && channelBus && lapTimesRuntime
+      ? new SessionTimingRuntime(
+          channelBus,
+          lifecycle,
+          perfMetrics,
+          lapTimesRuntime,
+          isTapeReplay
+        )
+      : undefined;
+  const sessionBarRuntime = channelBus
+    ? new SessionBarRuntime(channelBus, lifecycle, perfMetrics, isTapeReplay)
+    : undefined;
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
@@ -312,6 +327,8 @@ export async function publishIRacingSDKEvents(
           sectorTimingRuntime?.onFrame(telemetry);
           standingsRuntime?.onFrame(telemetry);
           radioRuntime?.onFrame(telemetry);
+          sessionTimingRuntime?.onFrame(telemetry);
+          sessionBarRuntime?.onFrame(telemetry);
           if (
             perfTelemetryDeliveryEnabled &&
             overlayManager.hasLegacyStreamSubscribers('telemetry')
@@ -346,6 +363,8 @@ export async function publishIRacingSDKEvents(
             relativeGapRuntime?.onSession(session);
             sectorTimingRuntime?.onSession(session);
             standingsRuntime?.onSession(session);
+            sessionTimingRuntime?.onSession(session);
+            sessionBarRuntime?.onSession(session);
             overlayManager.publishMessage('sessionData', session);
             sessionCallbacks.forEach((callback) => callback(session));
             perfMetrics.markEnd('sessionPublish');
@@ -409,6 +428,8 @@ export async function publishIRacingSDKEvents(
       sectorTimingRuntime?.dispose();
       standingsRuntime?.dispose();
       radioRuntime?.dispose();
+      sessionTimingRuntime?.dispose();
+      sessionBarRuntime?.dispose();
       referenceLapRuntime?.dispose();
       perfMetrics.stopReporting();
     },

@@ -15,8 +15,63 @@ export interface ChannelPayloads {
   'radio.snapshot': RadioSnapshot;
   'relative-gaps.snapshot': RelativeGapsSnapshot;
   'sector-timing.snapshot': SectorTimingSnapshot;
+  'session-timing.snapshot': SessionTimingSnapshot;
+  'session-bar.snapshot': SessionBarSnapshot;
   'standings.snapshot': StandingsSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
+}
+
+export interface SessionBarSnapshot {
+  sessionName?: string;
+  trackDisplayName?: string;
+  displayUnits: number;
+  brakeBias?: number;
+  brakeBiasIsClio: boolean;
+  incidents: number;
+  incidentLimit?: number | string;
+  incidentWarningInitialLimit?: number;
+  incidentWarningSubsequentLimit?: number;
+  trackWetness: number;
+  precipitation?: number;
+  airTemp?: number;
+  trackTemp?: number;
+  windDirection?: number;
+  windVelocity?: number;
+  windYaw?: number;
+  fuelLevel?: number;
+  lastLapTime?: number;
+  bestLapTime?: number;
+  sessionBestLap?: number;
+  sessionTimeOfDay?: number;
+  playerCarIdx: number | null;
+  playerCarId?: number;
+  playerClassified: boolean;
+  playerOverallPosition: number;
+  playerClassPosition: number;
+  playerClassSize: number;
+  competitorCarIds: readonly number[];
+  competitorPositions: readonly number[];
+  lastLapTopSpeed: number | null;
+  sessionBestTopSpeed: number | null;
+  sessionNum: number | null;
+  version: number;
+}
+
+export interface SessionTimingSnapshot {
+  sessionType?: string;
+  state: number;
+  currentLap: number;
+  totalLaps: number;
+  time: number;
+  timeTotal: number;
+  timeRemaining: number;
+  greenFlagTimestamp: number;
+  isFixedLapRace: boolean;
+  totalRaceLaps: number;
+  totalRaceTime: number;
+  adjustedRaceTime: number;
+  sessionNum: number | null;
+  version: number;
 }
 
 export interface RadioSnapshot {
@@ -187,6 +242,16 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 10,
     maxRateHz: 25,
+  },
+  'session-timing.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 5,
+    maxRateHz: 10,
+  },
+  'session-bar.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 5,
+    maxRateHz: 10,
   },
   'standings.snapshot': {
     kind: 'snapshot',

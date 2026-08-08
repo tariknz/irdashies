@@ -30,7 +30,7 @@
 | **Phase 2a remaining items**                          | R1+R2 LANDED, R3 PENDING | `feat/phase-2a-integration` for R1+R2    | R1 (reference-lap fetch dedup) + R2 (post-debounce write log) landed 2026-05-19. R3 (Empty Dashboard substrate baseline test) is a test run, not code work — pending.                                                                                                                                                                                                     |
 | **Phase 2b — Architectural cleanup (remaining)**      | NOT STARTED              | —                                        | A1, A4, A5, A6, A7 completion, A9. Lower urgency now Standings memory issue is resolved                                                                                                                                                                                                                                                                                   |
 | **Phase 3 — Channel-based bridge**                    | LANDED; MEMORY GATE OPEN | PRs #646, #649–#652, #656, #658          | Typed rate-aware channels, per-window subscriptions, deterministic replay validation, Fuel processor/renderer migration, conditional legacy telemetry, and performance instrumentation are on `main`. The Fuel-only A/B removed legacy deliveries and reduced app-wide renderer wake-ups by 42.4%; both baseline and candidate still failed the memory-slope gate.        |
-| **Phase 4 — Main-process processors**                 | IN PROGRESS              | PRs #659–#666                            | Fuel, lap times, car speeds, reference laps, relative gaps, sector timing, Standings core state, and live positions are on `main`. Radio migration is in PR #666; session-bar migration and legacy telemetry removal or development-only restriction remain.                                                                                                              |
+| **Phase 4 — Main-process processors**                 | IN PROGRESS              | PRs #659–#667                            | Fuel, lap times, car speeds, reference laps, relative gaps, sector timing, Standings core state, live positions, and radio are on `main`. The complete Session Bar migration is in PR #667; legacy telemetry removal or development-only restriction remains.                                                                                                             |
 | **Phase 5 — Worker-thread SDK loop**                  | NOT STARTED              | —                                        |                                                                                                                                                                                                                                                                                                                                                                           |
 | **Phase 6 — Native optimisations**                    | DEFERRED                 | —                                        | Only if Phase 4 profiling demands                                                                                                                                                                                                                                                                                                                                         |
 
@@ -273,8 +273,10 @@ Today every renderer wakes 25 times/sec regardless of what's mounted. A weather 
 - [x] SectorTimingProcessor — PR #663
 - [x] StandingsProcessor — PR #664
 - [x] Standings live-position projection — PR #665
-- [ ] Radio transmit state — `radio.snapshot`, event-driven and demand-activated; PR #666 in review
+- [x] Radio transmit state — `radio.snapshot`, event-driven and demand-activated; PR #666
 - [ ] Session-bar telemetry migration
+  - [ ] Shared race/session timing projection — `session-timing.snapshot`, demand-driven at 5 Hz; PR #667 in review
+  - [ ] Auxiliary items (weather, fuel/units, brake bias, incidents, lap results, player position, and top speed) — `session-bar.snapshot`; PR #667 in review
 - [ ] Legacy `'telemetry'` channel removed or dev-only
 
 ### Phase 5 — Worker-thread SDK loop
@@ -465,6 +467,8 @@ LLM agents: read this file at the start of any session that touches the architec
 ---
 
 ## 6. Activity log
+
+- **2026-08-09** — PR #666 merged. Opened PR #667 for the complete Session Bar migration: shared race/session timing plus auxiliary weather, fuel, incident, lap-result, position, and top-speed data now use demand-driven snapshots wired for live/tape and mock sources. Legacy telemetry restriction remains the next Phase 4 step — `feat/session-bar-channel` — in review
 
 - **2026-08-09** — PR #665 merged. Opened PR #666 for the next explicit Phase 4 slice: move bursty `RadioTransmitCarIdx` state to a demand-activated, event-driven `radio.snapshot` channel while retaining renderer-configured icon persistence. Session-bar migration follows; legacy telemetry restriction/removal remains the Phase 4 exit step — `feat/radio-channel` — in review
 

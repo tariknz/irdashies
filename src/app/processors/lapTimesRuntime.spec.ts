@@ -18,6 +18,21 @@ const target = {
 };
 
 describe('LapTimesRuntime', () => {
+  it('activates for a subscriber that predates construction', () => {
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    bus.subscribe(target, 'lap-times.snapshot');
+    const runtime = new LapTimesRuntime(bus, undefined, {
+      markStart: vi.fn(),
+      markEnd: vi.fn(),
+    });
+    runtime.onFrame(telemetry(90));
+    expect(publish).toHaveBeenCalledWith(
+      'lap-times.snapshot',
+      expect.objectContaining({ sessionNum: 1 })
+    );
+  });
+
   it('activates on demand and publishes only changed snapshots', () => {
     const bus = new ChannelBus();
     const publish = vi.spyOn(bus, 'publish');

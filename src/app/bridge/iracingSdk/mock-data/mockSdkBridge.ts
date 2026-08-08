@@ -9,6 +9,9 @@ import { RelativeGapRuntime } from '../../../processors/relativeGapRuntime';
 import { SectorTimingRuntime } from '../../../processors/sectorTimingRuntime';
 import { StandingsRuntime } from '../../../processors/standingsRuntime';
 import { RadioRuntime } from '../../../processors/radioRuntime';
+import { SessionTimingRuntime } from '../../../processors/sessionTimingRuntime';
+import { LapTimesRuntime } from '../../../processors/lapTimesRuntime';
+import { SessionBarRuntime } from '../../../processors/sessionBarRuntime';
 
 export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager,
@@ -19,6 +22,9 @@ export async function publishIRacingSDKEvents(
   perfMetrics.startReporting();
 
   const bridge = generateMockData();
+  const lapTimesRuntime = channelBus
+    ? new LapTimesRuntime(channelBus, lifecycle, perfMetrics)
+    : undefined;
   const carSpeedsRuntime = channelBus
     ? new CarSpeedsRuntime(channelBus, lifecycle, perfMetrics)
     : undefined;
@@ -46,6 +52,18 @@ export async function publishIRacingSDKEvents(
   const radioRuntime = channelBus
     ? new RadioRuntime(channelBus, lifecycle, perfMetrics)
     : undefined;
+  const sessionTimingRuntime =
+    channelBus && lapTimesRuntime
+      ? new SessionTimingRuntime(
+          channelBus,
+          lifecycle,
+          perfMetrics,
+          lapTimesRuntime
+        )
+      : undefined;
+  const sessionBarRuntime = channelBus
+    ? new SessionBarRuntime(channelBus, lifecycle, perfMetrics)
+    : undefined;
 
   bridge.onSessionData((session) => {
     carSpeedsRuntime?.onSession(session);
@@ -53,17 +71,22 @@ export async function publishIRacingSDKEvents(
     relativeGapRuntime?.onSession(session);
     sectorTimingRuntime?.onSession(session);
     standingsRuntime?.onSession(session);
+    sessionTimingRuntime?.onSession(session);
+    sessionBarRuntime?.onSession(session);
     overlayManager.publishMessage('sessionData', session);
   });
 
   bridge.onTelemetry((telemetry) => {
     perfMetrics.markStart('processTelemetry');
+    lapTimesRuntime?.onFrame(telemetry);
     carSpeedsRuntime?.onFrame(telemetry);
     referenceLapRuntime?.onFrame(telemetry);
     relativeGapRuntime?.onFrame(telemetry);
     sectorTimingRuntime?.onFrame(telemetry);
     standingsRuntime?.onFrame(telemetry);
     radioRuntime?.onFrame(telemetry);
+    sessionTimingRuntime?.onFrame(telemetry);
+    sessionBarRuntime?.onFrame(telemetry);
     perfMetrics.markStart('broadcast');
     overlayManager.publishMessage('telemetry', telemetry);
     perfMetrics.markEnd('broadcast');
@@ -80,10 +103,13 @@ export async function publishIRacingSDKEvents(
     ...bridge,
     stop: () => {
       carSpeedsRuntime?.dispose();
+      lapTimesRuntime?.dispose();
       relativeGapRuntime?.dispose();
       sectorTimingRuntime?.dispose();
       standingsRuntime?.dispose();
       radioRuntime?.dispose();
+      sessionTimingRuntime?.dispose();
+      sessionBarRuntime?.dispose();
       referenceLapRuntime?.dispose();
       perfMetrics.stopReporting();
       originalStop();

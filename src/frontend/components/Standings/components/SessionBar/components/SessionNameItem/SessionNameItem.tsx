@@ -1,10 +1,10 @@
 import { memo } from 'react';
-import { useCurrentSessionType } from '@irdashies/context';
+import { useSessionBarSnapshot } from '@irdashies/context';
 import { sessionBarItemWrapperClass } from '../../sessionBarItemWrapperClass';
 import type { SessionBarItemProps } from '../../sessionBarItemTypes';
 
 export const SessionNameItem = memo(({ standalone }: SessionBarItemProps) => {
-  const session = useCurrentSessionType();
+  const session = useSessionBarSnapshot()?.sessionName;
 
   return (
     <div className={sessionBarItemWrapperClass(standalone)}>
