@@ -1,22 +1,44 @@
-import { useEffect, useState } from 'react';
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useEffect, useRef, useState } from 'react';
+import type { Decorator, Meta, StoryObj } from '@storybook/react-vite';
 import { SpeakerHighIcon } from '@phosphor-icons/react';
-import { useTelemetryStore } from '@irdashies/context';
-import type { Telemetry } from '@irdashies/types';
+import type { ChannelPayloads } from '@irdashies/types';
 import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
 
 const DEMO_CAR_IDX = 7;
 
-// Push only the key the hook reads straight into the telemetry store.
-//
-// These stories intentionally do NOT use TelemetryDecorator: the mock bridge
-// streams a full telemetry frame at 60Hz and would clobber anything we inject
-// within ~16ms. Driving the store directly lets us flip-flap
-// RadioTransmitCarIdx deterministically and watch the *real* hook debounce it.
-const setRadioTransmit = (carIdxs: number[]) =>
-  useTelemetryStore.getState().setTelemetry({
-    RadioTransmitCarIdx: { value: carIdxs },
-  } as Telemetry);
+const subscribers = new Set<
+  (snapshot: ChannelPayloads['radio.snapshot']) => void
+>();
+let version = 0;
+const setRadioTransmit = (carIdxs: number[]) => {
+  version += 1;
+  subscribers.forEach((subscriber) =>
+    subscriber({ transmittingCarIdxs: carIdxs, version })
+  );
+};
+
+const RadioChannelDecorator: Decorator = (Story) => {
+  const previousBridge = useRef(window.channelBridge);
+  window.channelBridge = {
+    subscribe: (channel, callback) => {
+      if (channel !== 'radio.snapshot') return () => undefined;
+      const subscriber = callback as (
+        snapshot: ChannelPayloads['radio.snapshot']
+      ) => void;
+      subscribers.add(subscriber);
+      subscriber({ transmittingCarIdxs: [], version });
+      return () => subscribers.delete(subscriber);
+    },
+  };
+  useEffect(
+    () => () => {
+      subscribers.clear();
+      window.channelBridge = previousBridge.current;
+    },
+    []
+  );
+  return <Story />;
+};
 
 type DemoMode = 'flip-flap' | 'single-burst';
 
@@ -30,12 +52,12 @@ const RadioDebounceHarness = ({
   const [rawTransmitting, setRawTransmitting] = useState(false);
 
   useEffect(() => {
-    setRadioTransmit([-1]);
+    setRadioTransmit([]);
 
     const timers: ReturnType<typeof setTimeout>[] = [];
     const transmit = (on: boolean) => {
       setRawTransmitting(on);
-      setRadioTransmit(on ? [DEMO_CAR_IDX] : [-1]);
+      setRadioTransmit(on ? [DEMO_CAR_IDX] : []);
     };
 
     if (mode === 'flip-flap') {
@@ -48,7 +70,7 @@ const RadioDebounceHarness = ({
       }, 500);
       return () => {
         clearInterval(id);
-        useTelemetryStore.getState().resetTelemetry();
+        setRadioTransmit([]);
       };
     }
 
@@ -57,7 +79,7 @@ const RadioDebounceHarness = ({
     timers.push(setTimeout(() => transmit(false), 1600));
     return () => {
       timers.forEach(clearTimeout);
-      useTelemetryStore.getState().resetTelemetry();
+      setRadioTransmit([]);
     };
   }, [mode]);
 
@@ -106,6 +128,7 @@ const RadioDebounceHarness = ({
 const meta: Meta<typeof RadioDebounceHarness> = {
   title: 'widgets/Standings/hooks/useRadioActiveCarIdxs',
   component: RadioDebounceHarness,
+  decorators: [RadioChannelDecorator],
 };
 
 export default meta;

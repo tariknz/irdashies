@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, it, vi, expect, beforeEach, afterEach } from 'vitest';
-import { useTelemetryValues } from '@irdashies/context';
+import { useRadioSnapshot } from '@irdashies/context';
 import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
 
 vi.mock('@irdashies/context');
@@ -16,13 +16,19 @@ describe('useRadioActiveCarIdxs', () => {
   });
 
   it('passes the live value straight through when persistence is disabled', () => {
-    vi.mocked(useTelemetryValues).mockReturnValue([5] as number[]);
+    vi.mocked(useRadioSnapshot).mockReturnValue({
+      transmittingCarIdxs: [5],
+      version: 1,
+    });
     const { result } = renderHook(() => useRadioActiveCarIdxs(0));
     expect(result.current).toEqual([5]);
   });
 
   it('filters out the -1 idle sentinel', () => {
-    vi.mocked(useTelemetryValues).mockReturnValue([-1] as number[]);
+    vi.mocked(useRadioSnapshot).mockReturnValue({
+      transmittingCarIdxs: [],
+      version: 1,
+    });
     const { result } = renderHook(() => useRadioActiveCarIdxs(0));
     expect(result.current).toEqual([]);
   });
@@ -30,7 +36,10 @@ describe('useRadioActiveCarIdxs', () => {
   it('keeps a car active for the persistence window after it stops transmitting', () => {
     const { result, rerender } = renderHook(
       ({ value }) => {
-        vi.mocked(useTelemetryValues).mockReturnValue(value as number[]);
+        vi.mocked(useRadioSnapshot).mockReturnValue({
+          transmittingCarIdxs: value.filter((carIdx) => carIdx >= 0),
+          version: 1,
+        });
         return useRadioActiveCarIdxs(3000);
       },
       { initialProps: { value: [5] } }
@@ -59,7 +68,10 @@ describe('useRadioActiveCarIdxs', () => {
   it('refreshes the window each time a car is seen transmitting again', () => {
     const { result, rerender } = renderHook(
       ({ value }) => {
-        vi.mocked(useTelemetryValues).mockReturnValue(value as number[]);
+        vi.mocked(useRadioSnapshot).mockReturnValue({
+          transmittingCarIdxs: value.filter((carIdx) => carIdx >= 0),
+          version: 1,
+        });
         return useRadioActiveCarIdxs(3000);
       },
       { initialProps: { value: [5] } }
@@ -85,7 +97,10 @@ describe('useRadioActiveCarIdxs', () => {
   it('stays solidly lit while a car flip-flaps the radio rapidly', () => {
     const { result, rerender } = renderHook(
       ({ value }) => {
-        vi.mocked(useTelemetryValues).mockReturnValue(value as number[]);
+        vi.mocked(useRadioSnapshot).mockReturnValue({
+          transmittingCarIdxs: value.filter((carIdx) => carIdx >= 0),
+          version: 1,
+        });
         return useRadioActiveCarIdxs(3000);
       },
       { initialProps: { value: [5] } }

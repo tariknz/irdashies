@@ -16,6 +16,7 @@ import { ReferenceLapRuntime } from '../../processors/referenceLapRuntime';
 import { RelativeGapRuntime } from '../../processors/relativeGapRuntime';
 import { SectorTimingRuntime } from '../../processors/sectorTimingRuntime';
 import { StandingsRuntime } from '../../processors/standingsRuntime';
+import { RadioRuntime } from '../../processors/radioRuntime';
 
 // Keys consumed by the renderer. Anything outside this set is dropped before
 // the telemetry object crosses the IPC boundary — reducing structured-clone
@@ -75,7 +76,6 @@ const TELEMETRY_ALLOWLIST = new Set<keyof Telemetry>([
   'LapDeltaToSessionLastlLap_OK',
   'Precipitation',
   'RPM',
-  'RadioTransmitCarIdx',
   'RelativeHumidity',
   'ReplayFrameNum',
   'SessionFlags',
@@ -204,6 +204,10 @@ export async function publishIRacingSDKEvents(
     lifecycle && channelBus
       ? new StandingsRuntime(channelBus, lifecycle, perfMetrics, isTapeReplay)
       : undefined;
+  const radioRuntime =
+    lifecycle && channelBus
+      ? new RadioRuntime(channelBus, lifecycle, perfMetrics, isTapeReplay)
+      : undefined;
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
@@ -307,6 +311,7 @@ export async function publishIRacingSDKEvents(
           relativeGapRuntime?.onFrame(telemetry);
           sectorTimingRuntime?.onFrame(telemetry);
           standingsRuntime?.onFrame(telemetry);
+          radioRuntime?.onFrame(telemetry);
           if (
             perfTelemetryDeliveryEnabled &&
             overlayManager.hasLegacyStreamSubscribers('telemetry')
@@ -403,6 +408,7 @@ export async function publishIRacingSDKEvents(
       relativeGapRuntime?.dispose();
       sectorTimingRuntime?.dispose();
       standingsRuntime?.dispose();
+      radioRuntime?.dispose();
       referenceLapRuntime?.dispose();
       perfMetrics.stopReporting();
     },

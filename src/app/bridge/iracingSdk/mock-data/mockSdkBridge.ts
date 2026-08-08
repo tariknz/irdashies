@@ -8,6 +8,7 @@ import { ReferenceLapRuntime } from '../../../processors/referenceLapRuntime';
 import { RelativeGapRuntime } from '../../../processors/relativeGapRuntime';
 import { SectorTimingRuntime } from '../../../processors/sectorTimingRuntime';
 import { StandingsRuntime } from '../../../processors/standingsRuntime';
+import { RadioRuntime } from '../../../processors/radioRuntime';
 
 export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager,
@@ -42,6 +43,9 @@ export async function publishIRacingSDKEvents(
   const standingsRuntime = channelBus
     ? new StandingsRuntime(channelBus, lifecycle, perfMetrics)
     : undefined;
+  const radioRuntime = channelBus
+    ? new RadioRuntime(channelBus, lifecycle, perfMetrics)
+    : undefined;
 
   bridge.onSessionData((session) => {
     carSpeedsRuntime?.onSession(session);
@@ -59,6 +63,7 @@ export async function publishIRacingSDKEvents(
     relativeGapRuntime?.onFrame(telemetry);
     sectorTimingRuntime?.onFrame(telemetry);
     standingsRuntime?.onFrame(telemetry);
+    radioRuntime?.onFrame(telemetry);
     perfMetrics.markStart('broadcast');
     overlayManager.publishMessage('telemetry', telemetry);
     perfMetrics.markEnd('broadcast');
@@ -78,6 +83,7 @@ export async function publishIRacingSDKEvents(
       relativeGapRuntime?.dispose();
       sectorTimingRuntime?.dispose();
       standingsRuntime?.dispose();
+      radioRuntime?.dispose();
       referenceLapRuntime?.dispose();
       perfMetrics.stopReporting();
       originalStop();

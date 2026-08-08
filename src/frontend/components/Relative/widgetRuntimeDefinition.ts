@@ -5,8 +5,10 @@ export default {
   legacyTelemetry: true,
   channels: [
     'lap-times.snapshot',
+    'radio.snapshot',
     'relative-gaps.snapshot',
     'standings.snapshot',
   ],
   ratePreset: 'gapTiming',
+  channelRates: { 'radio.snapshot': 25 },
 } satisfies WidgetRuntimeDefinition;

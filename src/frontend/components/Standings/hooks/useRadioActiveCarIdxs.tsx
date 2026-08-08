@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useReducer, useRef } from 'react';
-import { useTelemetryValues } from '@irdashies/context';
+import { useRadioSnapshot } from '@irdashies/context';
+
+const EMPTY_CAR_IDXS: readonly number[] = [];
 
 /**
  * Tracks which car indices should show the radio/speaker icon.
@@ -14,12 +16,11 @@ import { useTelemetryValues } from '@irdashies/context';
  * When `persistenceMs <= 0` the live transmitting set is returned unchanged.
  */
 export const useRadioActiveCarIdxs = (persistenceMs: number): number[] => {
-  const radioTransmitCarIdx = useTelemetryValues<number[]>(
-    'RadioTransmitCarIdx'
-  );
+  const radioTransmitCarIdx =
+    useRadioSnapshot()?.transmittingCarIdxs ?? EMPTY_CAR_IDXS;
 
   const transmitting = useMemo(
-    () => radioTransmitCarIdx.filter((carIdx) => carIdx >= 0),
+    () => [...radioTransmitCarIdx],
     [radioTransmitCarIdx]
   );
 
