@@ -7,13 +7,7 @@ import {
   useSessionQualifyingResults,
   useSessionQualifyPositions,
   useSessionType,
-  useTelemetryValue,
-  useFocusCarIdx,
-  useTelemetryValues,
-  useTelemetryValuesRounded,
-  useCarLap,
-  usePitLap,
-  usePrevCarTrackSurface,
+  useStandingsSnapshot,
   useLapTimeHistory,
   useWeekendInfoEventType,
 } from '@irdashies/context';
@@ -32,6 +26,10 @@ import { useStandingsSettings } from './useStandingsSettings';
 import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
 import { TrackLocation } from '@irdashies/types';
 import type { SessionResults } from '@irdashies/types';
+
+const EMPTY_NUMBERS: number[] = [];
+const EMPTY_BOOLEANS: boolean[] = [];
+const EMPTY_TRACK_LOCATIONS: TrackLocation[] = [];
 
 export const useDriverStandings = (
   settings?: StandingsWidgetSettings['config']
@@ -53,9 +51,10 @@ export const useDriverStandings = (
 
   const sessionDrivers = useSessionDrivers();
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
-  const driverCarIdx = useFocusCarIdx();
+  const standingsSnapshot = useStandingsSnapshot();
+  const driverCarIdx = standingsSnapshot?.focusCarIdx ?? undefined;
   const qualifyingResultsRaw = useSessionQualifyingResults();
-  const sessionNum = useTelemetryValue('SessionNum');
+  const sessionNum = standingsSnapshot?.sessionNum ?? undefined;
   const sessionType = useSessionType(sessionNum);
   const positions = useSessionPositions(sessionNum);
   const sessionQualifyPositions = useSessionQualifyPositions(sessionNum);
@@ -88,23 +87,26 @@ export const useDriverStandings = (
     enabled: useLivePositionStandings,
   });
   const fastestLaps = useSessionFastestLaps(sessionNum);
-  const carIdxF2Time = useTelemetryValuesRounded('CarIdxF2Time', 2);
-  const carIdxEstTime = useTelemetryValuesRounded('CarIdxEstTime', 2);
-  const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
-  const carIdxLap = useTelemetryValues<number[]>('CarIdxLap');
-  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
-  const carIdxTrackSurface =
-    useTelemetryValues<TrackLocation[]>('CarIdxTrackSurface');
+  const carIdxF2Time = standingsSnapshot?.carIdxF2Time ?? EMPTY_NUMBERS;
+  const carIdxEstTime = standingsSnapshot?.carIdxEstTime ?? EMPTY_NUMBERS;
+  const carIdxOnPitRoad = standingsSnapshot?.carIdxOnPitRoad ?? EMPTY_BOOLEANS;
+  const carIdxLap = standingsSnapshot?.carIdxLap ?? EMPTY_NUMBERS;
+  const carIdxLapDistPct = standingsSnapshot?.carIdxLapDistPct ?? EMPTY_NUMBERS;
+  const carIdxTrackSurface = (standingsSnapshot?.carIdxTrackSurface ??
+    EMPTY_TRACK_LOCATIONS) as TrackLocation[];
   const radioTransmitCarIdx = useRadioActiveCarIdxs(
     (settings?.radio?.persistenceSeconds ?? 3) * 1000
   );
-  const carIdxTireCompound = useTelemetryValues<number[]>('CarIdxTireCompound');
-  const carIdxSessionFlags = useTelemetryValues<number[]>('CarIdxSessionFlags');
+  const carIdxTireCompound =
+    standingsSnapshot?.carIdxTireCompound ?? EMPTY_NUMBERS;
+  const carIdxSessionFlags =
+    standingsSnapshot?.carIdxSessionFlags ?? EMPTY_NUMBERS;
   const isOfficial = useSessionIsOfficial();
   const eventType = useWeekendInfoEventType();
-  const lastPitLap = usePitLap();
-  const lastLap = useCarLap();
-  const prevCarTrackSurface = usePrevCarTrackSurface();
+  const lastPitLap = standingsSnapshot?.lastPitLap ?? EMPTY_NUMBERS;
+  const lastLap = carIdxLap;
+  const prevCarTrackSurface =
+    standingsSnapshot?.previousCarTrackSurface ?? EMPTY_NUMBERS;
   const driverClass = useMemo(() => {
     return sessionDrivers?.find((driver) => driver.CarIdx === driverCarIdx)
       ?.CarClassID;

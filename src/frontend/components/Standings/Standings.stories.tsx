@@ -5,6 +5,7 @@ import {
   DynamicTelemetrySelector,
   TelemetryDecoratorWithConfig,
   ChannelSnapshotDecorator,
+  standingsStorySnapshot,
   mockDashboardBridge,
 } from '@irdashies/storybook';
 import {
@@ -251,6 +252,7 @@ export default {
         sessionNum: null,
         version: 0,
       },
+      'standings.snapshot': standingsStorySnapshot,
     }),
   ],
 } as Meta;
@@ -1460,6 +1462,7 @@ export const AvgLapTime: Story = {
   decorators: [
     ChannelSnapshotDecorator({
       'lap-times.snapshot': AVG_LAP_TIME_SNAPSHOT,
+      'standings.snapshot': standingsStorySnapshot,
     }),
     TelemetryDecoratorWithConfig(undefined, {
       standings: {

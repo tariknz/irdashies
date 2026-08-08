@@ -135,9 +135,9 @@ export const createDriverStandings = (
     }[];
     sessionType?: string;
   },
-  lastPitLap: number[],
+  lastPitLap: (number | undefined)[],
   lastLap: number[],
-  prevCarTrackSurface: TrackLocation[],
+  prevCarTrackSurface: (number | undefined)[],
   numLapsToShow?: number,
   lapDeltasVsPlayer?: number[][] // NEW: Pre-calculated deltas from LapTimesStore
 ): Standings[] => {
@@ -447,8 +447,8 @@ export const groupStandingsByClass = (
     const validDrivers = drivers
       .filter(
         (d) =>
-          d.position !== undefined &&  //Check for valid position
-          d.fastestTime !== undefined &&   //Check for valid time to filter qualifying positions with no set time
+          d.position !== undefined && //Check for valid position
+          d.fastestTime !== undefined && //Check for valid time to filter qualifying positions with no set time
           d.fastestTime > 0
       )
       .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
