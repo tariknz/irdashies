@@ -58,7 +58,6 @@ function SectorStoreSeeder({
       sectorEntryValid: true,
       currentSectorIdx: 2,
       sectorEntryTime: 0,
-      lastLapDistPct: 0.8,
     });
   }, [store, sectorColors, currentLapSectorTimes, sessionBestSectorTimes]);
   return null;

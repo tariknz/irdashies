@@ -161,7 +161,11 @@ export const OverlayContainer = memo(() => {
         editMode ? 'bg-blue-900/20' : '',
       ].join(' ')}
     >
-      <SectorTimingUpdater />
+      <SectorTimingUpdater
+        enabled={widgetsForThisDisplay.some((widget) =>
+          ['sectordelta', 'map', 'flatmap'].includes(widget.type || widget.id)
+        )}
+      />
       <PushToPassUpdater />
       <PitLapUpdater />
       <TopSpeedUpdater />

@@ -4,6 +4,7 @@ import { OverlayContainer } from './OverlayContainer';
 
 vi.mock('../../WidgetIndex', () => ({
   WIDGET_MAP: {},
+  getWidget: vi.fn(() => undefined),
 }));
 vi.mock('@irdashies/context', () => ({
   useDashboard: vi.fn(),
@@ -15,9 +16,8 @@ vi.mock('@irdashies/context', () => ({
   SessionTimingStoreUpdater: vi.fn(),
   TrackTemperatureStoreUpdater: vi.fn(),
   SessionBestLapStoreUpdater: vi.fn(),
-}));
-vi.mock('../TrackMap/hooks/useSectorTiming', () => ({
-  useSectorTiming: vi.fn(),
+  useSectorTimingSnapshot: vi.fn(),
+  useSectorTimingStore: vi.fn(() => vi.fn()),
 }));
 vi.mock('../Standings/hooks', () => ({
   useStandingsSettings: vi.fn(),
@@ -25,8 +25,11 @@ vi.mock('../Standings/hooks', () => ({
   useInformationBarSettings: vi.fn(),
 }));
 
-import { useDashboard, useRunningState } from '@irdashies/context';
-import { useSectorTiming } from '../TrackMap/hooks/useSectorTiming';
+import {
+  useDashboard,
+  useRunningState,
+  useSectorTimingSnapshot,
+} from '@irdashies/context';
 
 describe('OverlayContainer', () => {
   beforeEach(() => {
@@ -45,9 +48,31 @@ describe('OverlayContainer', () => {
     } as unknown as ReturnType<typeof useDashboard>);
   });
 
-  it('starts sector timing updates even when no track map is rendered', () => {
+  it('does not subscribe to sector timing without a sector consumer', () => {
     render(<OverlayContainer />);
 
-    expect(useSectorTiming).toHaveBeenCalledTimes(1);
+    expect(useSectorTimingSnapshot).toHaveBeenCalledWith(false);
+  });
+
+  it('subscribes when Sector Delta is enabled', () => {
+    vi.mocked(useDashboard).mockReturnValue({
+      currentDashboard: {
+        widgets: [
+          {
+            id: 'sectordelta',
+            enabled: true,
+            layout: { x: 0, y: 0, width: 100, height: 100 },
+          },
+        ],
+      },
+      editMode: false,
+      onDashboardUpdated: vi.fn(),
+      bridge: { toggleLockOverlays: vi.fn() },
+      containerBoundsInfo: null,
+    } as unknown as ReturnType<typeof useDashboard>);
+
+    render(<OverlayContainer />);
+
+    expect(useSectorTimingSnapshot).toHaveBeenCalledWith(true);
   });
 });
