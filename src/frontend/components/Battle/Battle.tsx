@@ -290,7 +290,7 @@ export const Battle = () => {
   // This is what makes mid-lap overtakes appear immediately in the widget.
   const liveClassPositions = useDriverLivePositions({ enabled: true });
 
-  // useDriverRelatives provides live (60fps, reference-lap interpolated) gap timing.
+  // useDriverRelatives provides live 5 Hz, reference-lap-interpolated gap timing.
   // Use a large buffer so the entire field is included with live deltas attached —
   // we look up the position-neighbours by carIdx, so they must always be present
   // regardless of physical track proximity.
@@ -306,7 +306,7 @@ export const Battle = () => {
   const gapSnapshot = useBattleGapSnapshot();
 
   // Build a carIdx → live delta map from relatives for O(1) lookups.
-  // Updates every frame as relatives recomputes from telemetry.
+  // Updates when the relative-gaps channel publishes.
   const relativeDeltaMap = useMemo(() => {
     const map = new Map<number, number>();
     for (const r of relatives) {

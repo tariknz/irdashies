@@ -1,8 +1,8 @@
 import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
-  id: 'relative',
+  id: 'fastercarsfrombehind',
   legacyTelemetry: true,
-  channels: ['lap-times.snapshot', 'relative-gaps.snapshot'],
+  channels: ['relative-gaps.snapshot'],
   ratePreset: 'gapTiming',
 } satisfies WidgetRuntimeDefinition;

@@ -17,7 +17,11 @@ import {
 } from '@irdashies/context';
 import { mockDashboardBridge } from '@irdashies/storybook';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
-import type { DashboardBridge, RelativeWidgetSettings } from '@irdashies/types';
+import type {
+  DashboardBridge,
+  RelativeGapsSnapshot,
+  RelativeWidgetSettings,
+} from '@irdashies/types';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { useState, useMemo } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
@@ -29,6 +33,16 @@ import {
   useHighlightColor,
 } from './hooks';
 import type { ResolvedDriverTag } from './hooks/useDriverTagMap';
+
+const relativeGapsStorySnapshot = {
+  focusCarIdx: 30,
+  relativePcts: Array.from({ length: 64 }, (_, carIdx) =>
+    Math.max(-0.49, Math.min(0.49, (carIdx - 30) * 0.012))
+  ),
+  deltas: Array.from({ length: 64 }, (_, carIdx) => (carIdx - 30) * 1.2),
+  sessionNum: 0,
+  version: 1,
+} satisfies RelativeGapsSnapshot;
 
 // Create a custom decorator that combines TelemetryDecoratorWithConfig with generalSettings override
 function TelemetryDecoratorWithConfigAndGeneralSettings(
@@ -336,6 +350,7 @@ export default {
         sessionNum: null,
         version: 0,
       },
+      'relative-gaps.snapshot': relativeGapsStorySnapshot,
     }),
   ],
   parameters: {

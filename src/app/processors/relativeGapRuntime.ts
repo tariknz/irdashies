@@ -6,22 +6,30 @@ import type {
 } from '@irdashies/types';
 import type { ChannelBus } from '../bridge/channelBridge';
 import type { SessionLifecycle } from '../sessionLifecycle';
-import {
-  ReferenceLapProcessor,
-  type ReferenceLapPersistence,
-} from './ReferenceLapProcessor';
+import { RelativeGapProcessor } from './RelativeGapProcessor';
 
 interface PerformanceSections {
   markStart(label: string): void;
   markEnd(label: string): void;
 }
 
-export class ReferenceLapRuntime {
-  private processor?: ReferenceLapProcessor;
+interface ReferenceLapRuntimeSource {
+  acquireConsumer(): () => void;
+  snapshot(): ReferenceLapsSnapshot | undefined;
+}
+
+const EMPTY_REFERENCES: ReferenceLapsSnapshot = {
+  bestLaps: [],
+  persistedLaps: [],
+  sessionNum: null,
+  version: 0,
+};
+
+export class RelativeGapRuntime {
+  private processor?: RelativeGapProcessor;
   private latestSession?: Session;
   private replaySource?: boolean;
-  private hasSubscribers: boolean;
-  private internalConsumers = 0;
+  private releaseReferenceLaps?: () => void;
   private publishedVersion = -1;
   private readonly disconnects: (() => void)[];
 
@@ -29,25 +37,14 @@ export class ReferenceLapRuntime {
     private readonly bus: ChannelBus,
     lifecycle: SessionLifecycle | undefined,
     private readonly metrics: PerformanceSections,
-    private readonly persistence: ReferenceLapPersistence,
+    private readonly referenceLaps: ReferenceLapRuntimeSource,
     private readonly aggregateReplay = false
   ) {
-    this.hasSubscribers = bus.subscriberCount('reference-laps.snapshot') > 0;
     this.disconnects = [
       bus.onSubscriberCountChanged((channel, count) => {
-        if (channel !== 'reference-laps.snapshot') return;
-        this.hasSubscribers = count > 0;
-        if (this.hasDemand()) {
-          if (this.processor) {
-            this.publishedVersion = -1;
-            this.publishIfChanged();
-          } else {
-            this.activate();
-          }
-        } else {
-          this.bus.clearSnapshot('reference-laps.snapshot');
-          this.publishedVersion = -1;
-        }
+        if (channel !== 'relative-gaps.snapshot') return;
+        if (count > 0) this.activate();
+        else this.deactivate();
       }),
     ];
     if (lifecycle) {
@@ -65,56 +62,38 @@ export class ReferenceLapRuntime {
         lifecycle.onDisconnect(() => this.onLifecycle({ type: 'disconnect' }))
       );
     }
-    if (this.hasSubscribers) this.activate();
-  }
-
-  acquireConsumer(): () => void {
-    this.internalConsumers += 1;
-    this.activate();
-    let released = false;
-    return () => {
-      if (released) return;
-      released = true;
-      this.internalConsumers = Math.max(0, this.internalConsumers - 1);
-    };
-  }
-
-  snapshot(): ReferenceLapsSnapshot | undefined {
-    return this.processor?.snapshot();
+    if (bus.subscriberCount('relative-gaps.snapshot') > 0) this.activate();
   }
 
   onSession(session: Session): void {
     this.latestSession = session;
     this.processor?.init(session);
-    this.publishIfChanged();
   }
 
   onFrame(frame: Telemetry): void {
-    if (!this.processor || !this.hasDemand()) return;
-    this.metrics.markStart('referenceLapProcessing');
+    if (!this.processor) return;
+    this.metrics.markStart('relativeGapProcessing');
     this.processor.onFrame(frame);
-    this.metrics.markEnd('referenceLapProcessing');
+    this.metrics.markEnd('relativeGapProcessing');
     this.publishIfChanged();
   }
 
   dispose(): void {
     if (this.processor) {
       this.processor.onLifecycle({ type: 'disconnect' });
-      this.bus.publish('reference-laps.snapshot', this.processor.snapshot());
+      this.bus.publish('relative-gaps.snapshot', this.processor.snapshot());
     }
-    this.bus.clearSnapshot('reference-laps.snapshot');
+    this.deactivate();
     this.disconnects.forEach((disconnect) => disconnect());
-    this.processor = undefined;
   }
 
   private activate(): void {
     if (this.processor) return;
-    this.bus.clearSnapshot('reference-laps.snapshot');
-    this.processor = new ReferenceLapProcessor(
-      this.aggregateReplay
-        ? { load: () => null, save: () => undefined }
-        : this.persistence
-    );
+    this.bus.clearSnapshot('relative-gaps.snapshot');
+    this.releaseReferenceLaps = this.referenceLaps.acquireConsumer();
+    this.processor = new RelativeGapProcessor({
+      snapshot: () => this.referenceLaps.snapshot() ?? EMPTY_REFERENCES,
+    });
     this.publishedVersion = -1;
     if (this.latestSession) this.processor.init(this.latestSession);
     if (this.replaySource !== undefined) {
@@ -123,12 +102,20 @@ export class ReferenceLapRuntime {
         replay: this.replaySource && !this.aggregateReplay,
       });
     }
-    this.publishIfChanged();
+  }
+
+  private deactivate(): void {
+    this.releaseReferenceLaps?.();
+    this.releaseReferenceLaps = undefined;
+    this.processor = undefined;
+    this.publishedVersion = -1;
+    this.bus.clearSnapshot('relative-gaps.snapshot');
   }
 
   private onLifecycle(event: SessionLifecycleEvent): void {
     this.processor?.onLifecycle(event);
-    this.publishIfChanged();
+    if (this.processor) this.publishIfChanged();
+    else this.bus.clearSnapshot('relative-gaps.snapshot');
     if (event.type === 'disconnect') {
       this.latestSession = undefined;
       this.replaySource = undefined;
@@ -136,16 +123,12 @@ export class ReferenceLapRuntime {
   }
 
   private publishIfChanged(): void {
-    if (!this.processor || !this.hasSubscribers) return;
+    if (!this.processor) return;
     const snapshot = this.processor.snapshot();
     if (snapshot.version === this.publishedVersion) return;
     this.publishedVersion = snapshot.version;
-    this.metrics.markStart('referenceLapPublication');
-    this.bus.publish('reference-laps.snapshot', snapshot);
-    this.metrics.markEnd('referenceLapPublication');
-  }
-
-  private hasDemand(): boolean {
-    return this.hasSubscribers || this.internalConsumers > 0;
+    this.metrics.markStart('relativeGapPublication');
+    this.bus.publish('relative-gaps.snapshot', snapshot);
+    this.metrics.markEnd('relativeGapPublication');
   }
 }

@@ -1,116 +1,34 @@
 import { useCallback, useMemo } from 'react';
 import {
   useSessionStore,
-  useTelemetryValues,
-  useTelemetryValuesRounded,
   useFocusCarIdx,
-  useReferenceLapStore,
+  useRelativeGapsSnapshot,
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
-import {
-  calculateClassEstimatedDelta,
-  calculateReferenceDelta,
-  getStats,
-} from '../relativeGapHelpers';
 import { Standings } from '../createStandings';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();
-  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 4);
-  const carIdxIsOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
-  const carIdxEstTime = useTelemetryValuesRounded('CarIdxEstTime', 2);
-  // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
-  const focusCarIdx = useFocusCarIdx();
+  const snapshot = useRelativeGapsSnapshot();
+  const rendererFocusCarIdx = useFocusCarIdx();
+  // Keep ordering and deltas on the same processor tick during camera changes.
+  const focusCarIdx = snapshot?.focusCarIdx ?? rendererFocusCarIdx;
   const paceCarIdx =
     useSessionStore((s) => s.session?.DriverInfo?.PaceCarIdx) ?? -1;
-  const { getReferenceLap } = useReferenceLapStore();
-
-  // Driver lookup map
-  const driverMap = useMemo(
-    () => new Map(drivers.map((d) => [d.carIdx, d])),
-    [drivers]
-  );
 
   const calculateRelativePct = useCallback(
-    (opponentIdx: number) => {
-      if (focusCarIdx === undefined) {
-        return NaN;
-      }
-
-      const playerDistPct = carIdxLapDistPct[focusCarIdx];
-      const opponentDistPct = carIdxLapDistPct[opponentIdx];
-
-      const relativePct = opponentDistPct - playerDistPct;
-
-      if (relativePct > 0.5) {
-        return relativePct - 1.0;
-      } else if (relativePct < -0.5) {
-        return relativePct + 1.0;
-      }
-
-      return relativePct;
+    (opponentIdx: number): number => {
+      const relativePct = snapshot?.relativePcts[opponentIdx];
+      return relativePct ?? NaN;
     },
-    [focusCarIdx, carIdxLapDistPct]
+    [snapshot?.relativePcts]
   );
 
   const calculateDelta = useCallback(
-    (opponentCarIdx: number, relativeDistPct: number) => {
-      const focusIdx = focusCarIdx ?? 0;
-
-      if (focusIdx === opponentCarIdx) {
-        return 0;
-      }
-
-      const isTargetAhead = relativeDistPct > 0 && relativeDistPct <= 0.5;
-
-      const aheadIdx = isTargetAhead ? opponentCarIdx : focusIdx;
-      const behindIdx = !isTargetAhead ? opponentCarIdx : focusIdx;
-
-      const isOnPitRoadAhead = carIdxIsOnPitRoad[aheadIdx] === 1;
-      const isOnPitRoadBehind = carIdxIsOnPitRoad[behindIdx] === 1;
-      const isAnyoneOnPitRoad = isOnPitRoadAhead || isOnPitRoadBehind;
-
-      const behindDriver = driverMap.get(behindIdx);
-      const classId = behindDriver?.carClass.id ?? -1;
-      const isFirstThreeLaps = (behindDriver?.lap ?? -1) <= 3;
-      const refLap = getReferenceLap(behindIdx, classId, isFirstThreeLaps);
-
-      const isInPitOrHasNoData = isAnyoneOnPitRoad || refLap.finishTime < 0;
-
-      let calculatedDelta: number;
-
-      if (isInPitOrHasNoData) {
-        const aheadEstTime = carIdxEstTime[aheadIdx];
-        const aheadDriver = driverMap.get(aheadIdx);
-
-        const behindEstTime = carIdxEstTime[behindIdx];
-
-        calculatedDelta = calculateClassEstimatedDelta(
-          getStats(aheadEstTime, aheadDriver),
-          getStats(behindEstTime, behindDriver),
-          isTargetAhead
-        );
-      } else {
-        const focusTrckPct = carIdxLapDistPct[focusIdx];
-        const opponentTrckPct = carIdxLapDistPct[opponentCarIdx];
-
-        calculatedDelta = calculateReferenceDelta(
-          refLap,
-          opponentTrckPct,
-          focusTrckPct
-        );
-      }
-
-      return calculatedDelta;
+    (opponentCarIdx: number) => {
+      return snapshot?.deltas[opponentCarIdx] ?? NaN;
     },
-    [
-      carIdxEstTime,
-      carIdxIsOnPitRoad,
-      carIdxLapDistPct,
-      driverMap,
-      focusCarIdx,
-      getReferenceLap,
-    ]
+    [snapshot?.deltas]
   );
 
   const isValidDriver = useCallback(
@@ -158,7 +76,7 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
     // D. Final Map (Attach Delta)
     return visibleDrivers.map((d) => ({
       ...d,
-      delta: calculateDelta(d.carIdx, d.relativePct),
+      delta: calculateDelta(d.carIdx),
     }));
   }, [
     buffer,

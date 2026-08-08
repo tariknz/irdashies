@@ -5,6 +5,7 @@ import type { SessionLifecycle } from '../../../sessionLifecycle';
 import type { ChannelBus } from '../../channelBridge';
 import { CarSpeedsRuntime } from '../../../processors/carSpeedsRuntime';
 import { ReferenceLapRuntime } from '../../../processors/referenceLapRuntime';
+import { RelativeGapRuntime } from '../../../processors/relativeGapRuntime';
 
 export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager,
@@ -24,10 +25,20 @@ export async function publishIRacingSDKEvents(
         save: () => undefined,
       })
     : undefined;
+  const relativeGapRuntime =
+    channelBus && referenceLapRuntime
+      ? new RelativeGapRuntime(
+          channelBus,
+          lifecycle,
+          perfMetrics,
+          referenceLapRuntime
+        )
+      : undefined;
 
   bridge.onSessionData((session) => {
     carSpeedsRuntime?.onSession(session);
     referenceLapRuntime?.onSession(session);
+    relativeGapRuntime?.onSession(session);
     overlayManager.publishMessage('sessionData', session);
   });
 
@@ -35,6 +46,7 @@ export async function publishIRacingSDKEvents(
     perfMetrics.markStart('processTelemetry');
     carSpeedsRuntime?.onFrame(telemetry);
     referenceLapRuntime?.onFrame(telemetry);
+    relativeGapRuntime?.onFrame(telemetry);
     perfMetrics.markStart('broadcast');
     overlayManager.publishMessage('telemetry', telemetry);
     perfMetrics.markEnd('broadcast');
@@ -51,6 +63,7 @@ export async function publishIRacingSDKEvents(
     ...bridge,
     stop: () => {
       carSpeedsRuntime?.dispose();
+      relativeGapRuntime?.dispose();
       referenceLapRuntime?.dispose();
       perfMetrics.stopReporting();
       originalStop();

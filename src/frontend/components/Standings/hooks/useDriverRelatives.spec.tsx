@@ -17,6 +17,7 @@ vi.mock('@irdashies/context', async (importOriginal) => {
   return {
     ...actual,
     useFocusCarIdx: vi.fn(),
+    useRelativeGapsSnapshot: vi.fn(),
     useTelemetryValues: vi.fn(),
     useTelemetryValuesRounded: vi.fn(),
     useSessionStore: vi.fn(),
@@ -67,6 +68,7 @@ const generateReferenceLap = (lapTime: number): ReferenceLap => {
 // Import mocked functions after vi.mock
 const {
   useFocusCarIdx,
+  useRelativeGapsSnapshot,
   useTelemetryValues,
   useTelemetryValuesRounded,
   useSessionStore,
@@ -187,6 +189,50 @@ describe('useDriverRelatives', () => {
       if (key === 'CarIdxTrackSurface') return [3, 3, 3];
       if (key === 'SessionTime') return [100];
       return [];
+    });
+    vi.mocked(useRelativeGapsSnapshot).mockImplementation(() => {
+      const focusCarIdx = vi.mocked(useFocusCarIdx)();
+      if (focusCarIdx === undefined) return undefined;
+      const pcts = vi.mocked(useTelemetryValues)(
+        'CarIdxLapDistPct'
+      ) as number[];
+      const estimatedTimes = vi.mocked(useTelemetryValues)(
+        'CarIdxEstTime'
+      ) as number[];
+      const drivers = vi.mocked(useDriverStandings)();
+      const focusDriver = drivers.find(
+        (driver) => driver.carIdx === focusCarIdx
+      );
+      const relativePcts = pcts.map((pct) => {
+        let relativePct = pct - pcts[focusCarIdx];
+        if (relativePct > 0.5) relativePct -= 1;
+        else if (relativePct < -0.5) relativePct += 1;
+        return relativePct;
+      });
+      const deltas = relativePcts.map((relativePct, carIdx) => {
+        if (carIdx === focusCarIdx) return 0;
+        const targetAhead = relativePct > 0 && relativePct <= 0.5;
+        const aheadIdx = targetAhead ? carIdx : focusCarIdx;
+        const behindIdx = targetAhead ? focusCarIdx : carIdx;
+        return calculateClassEstimatedDelta(
+          getStats(
+            estimatedTimes[aheadIdx],
+            drivers.find((driver) => driver.carIdx === aheadIdx)
+          ),
+          getStats(
+            estimatedTimes[behindIdx],
+            drivers.find((driver) => driver.carIdx === behindIdx) ?? focusDriver
+          ),
+          targetAhead
+        );
+      });
+      return {
+        focusCarIdx,
+        relativePcts,
+        deltas,
+        sessionNum: 1,
+        version: 1,
+      };
     });
     vi.mocked(useDriverStandings).mockReturnValue(mockDrivers);
     vi.mocked(useSessionStore).mockImplementation((selector) =>

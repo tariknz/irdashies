@@ -13,6 +13,7 @@ import { FuelProjectionRuntime } from '../../processors/fuelProjectionRuntime';
 import { LapTimesRuntime } from '../../processors/lapTimesRuntime';
 import { CarSpeedsRuntime } from '../../processors/carSpeedsRuntime';
 import { ReferenceLapRuntime } from '../../processors/referenceLapRuntime';
+import { RelativeGapRuntime } from '../../processors/relativeGapRuntime';
 
 // Keys consumed by the renderer. Anything outside this set is dropped before
 // the telemetry object crosses the IPC boundary — reducing structured-clone
@@ -178,6 +179,16 @@ export async function publishIRacingSDKEvents(
           isTapeReplay
         )
       : undefined;
+  const relativeGapRuntime =
+    lifecycle && channelBus && referenceLapRuntime
+      ? new RelativeGapRuntime(
+          channelBus,
+          lifecycle,
+          perfMetrics,
+          referenceLapRuntime,
+          isTapeReplay
+        )
+      : undefined;
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
@@ -278,6 +289,7 @@ export async function publishIRacingSDKEvents(
           lapTimesRuntime?.onFrame(telemetry);
           carSpeedsRuntime?.onFrame(telemetry);
           referenceLapRuntime?.onFrame(telemetry);
+          relativeGapRuntime?.onFrame(telemetry);
           if (
             perfTelemetryDeliveryEnabled &&
             overlayManager.hasLegacyStreamSubscribers('telemetry')
@@ -309,6 +321,7 @@ export async function publishIRacingSDKEvents(
             fuelProjectionRuntime?.onSession(session);
             carSpeedsRuntime?.onSession(session);
             referenceLapRuntime?.onSession(session);
+            relativeGapRuntime?.onSession(session);
             overlayManager.publishMessage('sessionData', session);
             sessionCallbacks.forEach((callback) => callback(session));
             perfMetrics.markEnd('sessionPublish');
@@ -368,6 +381,7 @@ export async function publishIRacingSDKEvents(
       fuelProjectionRuntime?.dispose();
       lapTimesRuntime?.dispose();
       carSpeedsRuntime?.dispose();
+      relativeGapRuntime?.dispose();
       referenceLapRuntime?.dispose();
       perfMetrics.stopReporting();
     },
