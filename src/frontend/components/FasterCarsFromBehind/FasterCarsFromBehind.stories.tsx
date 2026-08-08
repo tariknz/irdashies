@@ -3,7 +3,21 @@ import {
   FasterCarsFromBehind,
   FasterCarsFromBehindDisplay,
 } from './FasterCarsFromBehind';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import {
+  ChannelSnapshotDecorator,
+  TelemetryDecorator,
+} from '@irdashies/storybook';
+import type { RelativeGapsSnapshot } from '@irdashies/types';
+
+const relativeGapsStorySnapshot = {
+  focusCarIdx: 30,
+  relativePcts: Array.from({ length: 64 }, (_, carIdx) =>
+    Math.max(-0.49, Math.min(0.49, (carIdx - 30) * 0.012))
+  ),
+  deltas: Array.from({ length: 64 }, (_, carIdx) => (carIdx - 30) * 1.2),
+  sessionNum: 0,
+  version: 1,
+} satisfies RelativeGapsSnapshot;
 
 // Mock the settings hook for stories
 const mockSettings = {
@@ -54,7 +68,12 @@ type Story = StoryObj<typeof FasterCarsFromBehindDisplay>;
 
 export const Primary: Story = {
   render: () => <FasterCarsFromBehind />,
-  decorators: [TelemetryDecorator('/test-data/1747384033336')],
+  decorators: [
+    TelemetryDecorator('/test-data/1747384033336'),
+    ChannelSnapshotDecorator({
+      'relative-gaps.snapshot': relativeGapsStorySnapshot,
+    }),
+  ],
 };
 
 export const Display: Story = {

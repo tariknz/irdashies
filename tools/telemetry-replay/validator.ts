@@ -229,7 +229,10 @@ export async function validateReplay({
               ? frame.SessionTime
               : undefined;
           for (const runtime of runtimes) {
-            const state = runtime.probe.onFrame(frame, context);
+            const probeFrame = Object.fromEntries(
+              runtime.probe.variables.map((name) => [name, frame[name]])
+            );
+            const state = runtime.probe.onFrame(probeFrame, context);
             const frameHash = createHash('sha256')
               .update(canonicalJson(state))
               .digest('hex');
@@ -239,7 +242,7 @@ export async function validateReplay({
               runtime.checkpoints.firstFrame = state;
             const checkpoint = runtime.probe.checkpoint?.(
               state,
-              frame,
+              probeFrame,
               context
             );
             if (checkpoint) runtime.checkpoints[checkpoint] = state;

@@ -71,6 +71,28 @@ describe('headless telemetry replay validator', () => {
     ).rejects.toThrow('Replay probe requested unknown variable: MissingField');
   });
 
+  it('isolates each probe from fields requested by other probes', async () => {
+    const frameProbe: ReplayProbe<Record<string, unknown>> = {
+      name: 'session-time-frame',
+      schemaVersion: 1,
+      variables: ['SessionTime'],
+      onFrame: (frame) => frame,
+    };
+    const alone = await validateReplay({
+      path: await tapePath(),
+      probes: [frameProbe],
+    });
+    const withFuelProbe = await validateReplay({
+      path: await tapePath(),
+      probes: [frameProbe, probe],
+    });
+
+    expect(withFuelProbe.probes[0]).toEqual(alone.probes[0]);
+    expect(withFuelProbe.probes[0].checkpoints.firstFrame).toEqual({
+      SessionTime: 1,
+    });
+  });
+
   it('rejects a corrupted record payload', async () => {
     const tape = createSyntheticTape();
     tape[SYNTHETIC_SECOND_FRAME_PAYLOAD_OFFSET] ^= 0xff;

@@ -11,7 +11,19 @@ export interface ChannelPayloads {
   'fuel.projection': FuelProjectionSnapshot;
   'lap-times.snapshot': LapTimesSnapshot;
   'reference-laps.snapshot': ReferenceLapsSnapshot;
+  'relative-gaps.snapshot': RelativeGapsSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
+}
+
+export interface RelativeGapsSnapshot {
+  /** Car currently centred by relative displays. */
+  focusCarIdx: number | null;
+  /** Signed wrapped track distance from the focus car, indexed by CarIdx. */
+  relativePcts: readonly (number | null)[];
+  /** Signed time delta from the focus car, indexed by CarIdx. */
+  deltas: readonly (number | null)[];
+  sessionNum: number | null;
+  version: number;
 }
 
 export interface ReferenceLapsSnapshot {
@@ -110,6 +122,11 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 5,
     maxRateHz: 5,
+  },
+  'relative-gaps.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 5,
+    maxRateHz: 25,
   },
   'session.lifecycle': { kind: 'event' },
 } as const satisfies ChannelRegistry;

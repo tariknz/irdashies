@@ -245,6 +245,11 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
     return this.latest;
   }
 
+  /** Discards an incomplete lap when processing demand is paused. */
+  pause(): void {
+    this.activeLaps.clear();
+  }
+
   private promote(driver: Driver, lap: ReferenceLap): void {
     const lapTime = lap.finishTime - lap.startTime;
     if (

@@ -12,6 +12,7 @@ import { createFuelStateProbe } from './fuel-probe';
 import { createLapTimesProbe } from './lap-times-probe';
 import { createCarSpeedsProbe } from './car-speeds-probe';
 import { createReferenceLapsProbe } from './reference-laps-probe';
+import { createRelativeGapsProbe } from './relative-gaps-probe';
 
 const REPOSITORY_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -139,6 +140,7 @@ async function main(): Promise<void> {
       createLapTimesProbe(),
       createCarSpeedsProbe(),
       createReferenceLapsProbe(),
+      createRelativeGapsProbe(),
     ],
   });
   const golden = {

@@ -41,14 +41,14 @@ describe('widget runtime metadata', () => {
     });
     expect(getWidgetRuntimeDefinition('relative')).toMatchObject({
       legacyTelemetry: true,
-      channels: ['lap-times.snapshot', 'reference-laps.snapshot'],
+      channels: ['lap-times.snapshot', 'relative-gaps.snapshot'],
     });
   });
 
   it('declares car-speed consumers at the processor rate', () => {
     expect(getWidgetRuntimeDefinition('battle')).toMatchObject({
       legacyTelemetry: true,
-      channels: ['car-speeds.snapshot', 'reference-laps.snapshot'],
+      channels: ['car-speeds.snapshot', 'relative-gaps.snapshot'],
       channelRates: { 'car-speeds.snapshot': 10 },
     });
     expect(getWidgetRuntimeDefinition('slowcarahead')).toMatchObject({
@@ -61,13 +61,16 @@ describe('widget runtime metadata', () => {
   it('activates reference laps only for consumers', () => {
     expect(
       rendererNeedsChannel([widget('relative')], 'reference-laps.snapshot')
-    ).toBe(true);
+    ).toBe(false);
     expect(
       rendererNeedsChannel([widget('standings')], 'reference-laps.snapshot')
     ).toBe(true);
     expect(
       rendererNeedsChannel([widget('input')], 'reference-laps.snapshot')
     ).toBe(false);
+    expect(
+      rendererNeedsChannel([widget('relative')], 'relative-gaps.snapshot')
+    ).toBe(true);
   });
 
   it('maps the Fuel rate preset to its channel subscription', () => {

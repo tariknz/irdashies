@@ -44,7 +44,7 @@ const telemetry = (pct: number, time: number) =>
     SessionNum: { value: [1] },
   }) as unknown as Telemetry;
 
-describe('mockSdkBridge car-speed channel', () => {
+describe('mockSdkBridge processor channels', () => {
   beforeEach(() => {
     callbacks.telemetry = undefined;
     callbacks.session = undefined;
@@ -68,20 +68,76 @@ describe('mockSdkBridge car-speed channel', () => {
       bus
     );
 
-    callbacks.session?.({
-      WeekendInfo: { TrackLength: '1 km' },
-    } as Session);
-    callbacks.telemetry?.(telemetry(0.1, 1));
-    callbacks.telemetry?.(telemetry(0.11, 1.1));
+    try {
+      callbacks.session?.({
+        WeekendInfo: { TrackLength: '1 km' },
+      } as Session);
+      callbacks.telemetry?.(telemetry(0.1, 1));
+      callbacks.telemetry?.(telemetry(0.11, 1.1));
 
-    expect(publish).toHaveBeenCalledWith(
-      'car-speeds.snapshot',
-      expect.objectContaining({ carSpeeds: [360] })
-    );
-    bridge.stop();
+      expect(publish).toHaveBeenCalledWith(
+        'car-speeds.snapshot',
+        expect.objectContaining({ carSpeeds: [360] })
+      );
+    } finally {
+      bridge.stop();
+    }
     expect(publish).toHaveBeenLastCalledWith(
       'car-speeds.snapshot',
       expect.objectContaining({ carSpeeds: [] })
     );
+  });
+
+  it('feeds mock data through the relative-gap runtime', async () => {
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    bus.subscribe(
+      {
+        id: 2,
+        isDestroyed: () => false,
+        isVisible: () => true,
+        send: vi.fn(),
+      },
+      'relative-gaps.snapshot'
+    );
+    const bridge = await publishIRacingSDKEvents(
+      { publishMessage: vi.fn() } as never,
+      undefined,
+      bus
+    );
+    try {
+      callbacks.session?.({
+        WeekendInfo: {
+          SeriesID: 1,
+          TrackID: 1,
+          SubSessionID: 1,
+          TrackLength: '1 km',
+        },
+        DriverInfo: {
+          DriverCarIdx: 0,
+          PaceCarIdx: -1,
+          Drivers: [
+            { CarIdx: 0, CarClassID: 1, CarClassEstLapTime: 100 },
+            { CarIdx: 1, CarClassID: 1, CarClassEstLapTime: 100 },
+          ],
+        },
+      } as Session);
+      callbacks.telemetry?.({
+        CarIdxLapDistPct: { value: [0.2, 0.25] },
+        CarIdxEstTime: { value: [20, 25] },
+        CarIdxLap: { value: [4, 4] },
+        CarIdxOnPitRoad: { value: [false, false] },
+        CamCarIdx: { value: [0] },
+        SessionTime: { value: [1] },
+        SessionNum: { value: [1] },
+      } as unknown as Telemetry);
+
+      expect(publish).toHaveBeenCalledWith(
+        'relative-gaps.snapshot',
+        expect.objectContaining({ deltas: [0, 5] })
+      );
+    } finally {
+      bridge.stop();
+    }
   });
 });
