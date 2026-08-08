@@ -1,8 +1,28 @@
 # Phase 3 — Channel-Based Bridge Implementation Plan
 
-> **Status:** Planning
+> **Status:** Delivered on `main`; memory-slope gate remains open (PRs #646, #649–#652, #656; performance record #658)
 > **Architecture phase:** Phase 3 — Channel-based bridge
 > **Primary objective:** Replace the renderer-wide telemetry firehose incrementally with typed, per-window channel subscriptions while preserving observable widget behavior.
+
+## Delivery record
+
+The Phase 3 Fuel pilot and reusable channel rails are complete:
+
+- PR #646 added the deterministic curated replay harness.
+- PR #649 extracted the deterministic Fuel projection engine.
+- PR #650 added the typed, rate-aware, visibility-aware channel bus.
+- PR #651 added the Fuel projection processor.
+- PR #652 migrated the Fuel renderer to `fuel.projection`, including browser-source delivery.
+- PR #656 conditioned legacy telemetry by mounted widget and added runtime rate metadata and wake-up instrumentation.
+- PR #658 recorded the Windows Fuel-only A/B: legacy telemetry deliveries fell 100% and app-wide renderer wake-ups fell 42.4%, with no observed correctness regression.
+
+The existing memory-slope gate failed for both baseline and candidate in that
+single A/B pair. The candidate moved directionally lower, but repeated pairs
+are still required before attributing the memory change to Phase 3.
+
+The legacy telemetry stream intentionally remains for widgets not yet migrated.
+Those migrations are tracked as Phase 4 in
+[`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md).
 
 ## 1. Outcomes
 

@@ -29,8 +29,8 @@
 | **Phase 2a mid-session leave detection** (2026-05-18) | DECLINED & REVERTED      | —                                        | Identity-key approach was implemented and tested 2026-05-18, then declined the same day after cost/benefit review (see [`PERFORMANCE_TEST_LOG.md`](./PERFORMANCE_TEST_LOG.md) §4 "Declined for fix"). Working-tree changes reverted 2026-05-19 before any commit landed on the integration branch. Preserved here for institutional memory; no further action.            |
 | **Phase 2a remaining items**                          | R1+R2 LANDED, R3 PENDING | `feat/phase-2a-integration` for R1+R2    | R1 (reference-lap fetch dedup) + R2 (post-debounce write log) landed 2026-05-19. R3 (Empty Dashboard substrate baseline test) is a test run, not code work — pending.                                                                                                                                                                                                     |
 | **Phase 2b — Architectural cleanup (remaining)**      | NOT STARTED              | —                                        | A1, A4, A5, A6, A7 completion, A9. Lower urgency now Standings memory issue is resolved                                                                                                                                                                                                                                                                                   |
-| **Phase 3 — Channel-based bridge**                    | NOT STARTED              | —                                        | Would close remaining processTelemetry p99 gap to <3 ms. Also the layer where per-widget rate throttling lives and where renderer subscribers can wire to sessionLifecycle leave events.                                                                                                                                                                                  |
-| **Phase 4 — Main-process processors**                 | NOT STARTED              | —                                        | Depends on Phase 3                                                                                                                                                                                                                                                                                                                                                        |
+| **Phase 3 — Channel-based bridge**                    | LANDED; MEMORY GATE OPEN | PRs #646, #649–#652, #656, #658          | Typed rate-aware channels, per-window subscriptions, deterministic replay validation, Fuel processor/renderer migration, conditional legacy telemetry, and performance instrumentation are on `main`. The Fuel-only A/B removed legacy deliveries and reduced app-wide renderer wake-ups by 42.4%; both baseline and candidate still failed the memory-slope gate.        |
+| **Phase 4 — Main-process processors**                 | IN PROGRESS              | PRs #659–#662                            | Fuel was pulled forward into Phase 3. Lap times, car speeds, and reference laps are on `main`; relative gaps are in PR #662. Sector timing and standings remain before the legacy telemetry stream can be removed or restricted to development.                                                                                                                           |
 | **Phase 5 — Worker-thread SDK loop**                  | NOT STARTED              | —                                        |                                                                                                                                                                                                                                                                                                                                                                           |
 | **Phase 6 — Native optimisations**                    | DEFERRED                 | —                                        | Only if Phase 4 profiling demands                                                                                                                                                                                                                                                                                                                                         |
 
@@ -231,30 +231,30 @@ validation strategy are documented in
 
 **Core plumbing:**
 
-- [ ] `publishChannel(channel, payload)` / `useChannelSnapshot(channel)` plumbing
-- [ ] Per-window subscription map driven by preload `subscribe(channels[])`. Unsubscribes when widgets unmount or the window closes (replaces today's app-wide `TELEMETRY_ALLOWLIST` with per-window allowlists)
-- [ ] Pilot migration: Fuel widget runs entirely off `'fuel.projection'`
+- [x] `publishChannel(channel, payload)` / `useChannelSnapshot(channel)` plumbing — PR #650
+- [x] Per-window subscription map driven by preload subscriptions, including visibility and lifecycle cleanup — PRs #650 and #656
+- [x] Pilot migration: Fuel widget runs entirely off `'fuel.projection'` — PR #652
 
 **Per-widget update-rate throttling** (new, 2026-05-15):
 
 Today every renderer wakes 25 times/sec regardless of what's mounted. A weather widget only needs ~1 Hz; a brake-input bar wants 60 Hz. The channel bus is the right plumbing layer to control this because it owns the publish path per subscriber.
 
-- [ ] **Rate-aware subscriptions** — `subscribe([{channel, rateHz}])` carries an optional `rateHz` per channel. The main-process publisher coalesces frames so each subscriber receives at most `rateHz` updates/sec for that channel. Subscribers that don't specify a rate default to the channel's native publish rate (25 Hz for telemetry, on-change for session)
-- [ ] **Developer-configurable rate** — Two complementary mechanisms (the same plumbing supports both, decision deferred to Q16 below):
-  - **Per-widget property** — `WidgetDefinition.updateRateHz?: number | Partial<Record<Channel, number>>`. Lets a widget author declare "I'm fine at 5 Hz" without changing global config
-  - **Group / preset** — Named buckets the dashboard config picks from: `{ driverFocused: 25, gapTiming: 10, informational: 2, static: 0 }` (0 = on-change only). Widget authors pick a bucket; advanced users can override per-widget
-- [ ] **Default rate guidance** (codified in `ARCHITECTURE_RULES.md`):
+- [x] **Rate-aware subscriptions** — each renderer/channel subscription carries an optional rate; the channel bus coalesces delivery to the latest snapshot — PR #650
+- [x] **Developer-configurable rate in code** — runtime definitions provide named presets plus per-channel overrides — PR #656:
+  - **Per-channel override** — `WidgetRuntimeDefinition.channelRates` lets a widget author request a specific rate for one channel.
+  - **Group / preset** — `WidgetRuntimeDefinition.ratePreset` selects `driverFocused` (25 Hz), `gapTiming` (5 Hz), `informational` (1 Hz), or `static` (event/snapshot only).
+- [x] **Default rate guidance** codified in runtime definitions and `ARCHITECTURE_RULES.md`:
 
   | Bucket          |      Rate | Example widgets                                  |
   | --------------- | --------: | ------------------------------------------------ |
-  | `driverFocused` |  25–60 Hz | Inputs, Steering, Pedal trace, Relative          |
-  | `gapTiming`     |   5–10 Hz | Standings positions, Sector deltas, Battle       |
-  | `informational` |    1–5 Hz | Weather, Track temperature, Fuel projection      |
+  | `driverFocused` |  25–60 Hz | Rapid driver-state consumers such as Battle      |
+  | `gapTiming`     |   5–10 Hz | Relative, Standings positions, and sector deltas |
+  | `informational` |    1–5 Hz | Weather, track temperature, and Fuel projection  |
   | `static`        | on-change | Track map background, Session bar, Widget chrome |
 
-- [ ] **Settings UI exposure** — Once the mechanism is wired, expose the rate per widget (or the group selection) in the widget's settings panel for power users
-- [ ] **Migration safety** — Default any unmigrated widget to the legacy 25 Hz path so the rollout can be incremental
-- [ ] **Telemetry / instrumentation** — Add a debug overlay or PerfMetrics line that shows wake-ups per renderer per second so we can confirm the throttling is taking effect
+- [ ] **Settings UI exposure** — optional follow-up; developer configuration is complete, but no end-user override is exposed yet
+- [x] **Migration safety** — widgets without migrated runtime metadata remain on the legacy path — PR #656
+- [x] **Telemetry / instrumentation** — channel delivery, legacy delivery, and renderer wake-up metrics are captured by the performance harness — PRs #656 and #658
 
 **Exit criteria for Phase 3:**
 
@@ -265,12 +265,12 @@ Today every renderer wakes 25 times/sec regardless of what's mounted. A weather 
 
 ### Phase 4 — Main-process processors
 
-- [x] LapTimesProcessor
-- [x] CarSpeedsProcessor
-- [ ] RelativeGapProcessor
-- [ ] ReferenceLapProcessor
+- [x] FuelProjectionProcessor — PR #651; deliberately pulled forward into the Phase 3 Fuel pilot
+- [x] LapTimesProcessor — PR #659
+- [x] CarSpeedsProcessor — PR #660
+- [x] ReferenceLapProcessor — PR #661; moved ahead of relative gaps because it is their interpolation dependency
+- [ ] RelativeGapProcessor — PR #662 in progress; check when merged
 - [ ] SectorTimingProcessor
-- [ ] FuelProjectionProcessor
 - [ ] StandingsProcessor
 - [ ] Legacy `'telemetry'` channel removed or dev-only
 
@@ -465,6 +465,7 @@ LLM agents: read this file at the start of any session that touches the architec
 
 Append-only. Newest entries at the top. Format: `YYYY-MM-DD — item — branch — outcome`.
 
+- **2026-08-08** — Phase 3 delivery status reconciled with merged PRs #646, #649–#652, #656, and performance evidence #658. Phase 4 progress recorded: Fuel #651, Lap Times #659, Car Speeds #660, and Reference Laps #661 are on `main`; Relative Gaps is in PR #662; Sector Timing, Standings, and legacy telemetry removal remain — `feat/relative-gap-processor` — documentation updated
 - **2026-07-26** — Completed the deterministic single-widget matrix for all 18 enabled widgets. Each 180-second capture replayed the same tape from frame zero and discarded a 60-second warm-up. Renderer CPU leaders: Standings, Fuel, Relative, Input, Battle. Strongest short-run renderer allocation signals: Input, Flag, Weather, Blind Spot, Fuel. HTML report now includes the full table and ranked charts; longer V8 allocation captures remain necessary to confirm memory ownership — `chore/telemetry-performance-report` — captured, validation in progress
 - **2026-07-26** — Phase 0 deterministic replay follow-up: captured observer, empty delivery-off/on, full allowlisted, full raw, and Standings/Fuel/Relative isolates from one 36,000-frame native tape. Main SDK processing averages under 1 ms; delivery into empty windows creates a measurable baseline; full widget/Chromium work dominates CPU and growth; raw payloads regress direct IPC timings by roughly 2× and private-memory slope by 3.65×. Added the standalone HTML investigation report and reproducible A/B flags — `chore/telemetry-performance-report` — captured, validation in progress
 - **2026-07-26** — PB0 packaged performance harness and PB1-PB4 follow-up plan: observer/empty/full/widget-filter modes, structured process/renderer/iRacing metrics, fixed-duration runner, analyzer, regression gates, and replay/live protocol. Controlled 59-car replay established a static/compositor lower bound but exposed incomplete replay telemetry, so telemetry coverage, private memory, deterministic live capture, and PresentMon are explicit gates before targeted or drastic architecture work — `chore/performance-benchmark-harness` — in review
