@@ -4,6 +4,7 @@ import type {
   SessionLifecycleEvent,
   Telemetry,
 } from '@irdashies/types';
+import { CarLeftRight } from '@irdashies/types';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 
 const scalar = (frame: Telemetry, key: string): unknown =>
@@ -37,19 +38,22 @@ export class BlindSpotProcessor implements TelemetryProcessor<BlindSpotSnapshot>
   }
 
   onFrame(frame: Telemetry): void {
-    let changed = copyPositions(
-      this.latest.carIdxLapDistPct as number[],
-      frame
-    );
-    const carLeftRight = scalar(frame, 'CarLeftRight');
+    const rawCarLeftRight = scalar(frame, 'CarLeftRight');
+    const carLeftRight =
+      typeof rawCarLeftRight === 'number' ? rawCarLeftRight : CarLeftRight.Off;
     const isOnTrack = scalar(frame, 'IsOnTrack');
-    changed =
-      this.set(
-        'carLeftRight',
-        typeof carLeftRight === 'number' ? carLeftRight : 0
-      ) || changed;
+    let changed = this.set('carLeftRight', carLeftRight);
     changed =
       this.set('isOnTrack', isOnTrack === true || isOnTrack === 1) || changed;
+
+    const positions = this.latest.carIdxLapDistPct as number[];
+    if (carLeftRight > CarLeftRight.Clear) {
+      changed = copyPositions(positions, frame) || changed;
+    } else if (positions.length > 0) {
+      positions.length = 0;
+      changed = true;
+    }
+
     if (changed) this.latest.version += 1;
   }
 

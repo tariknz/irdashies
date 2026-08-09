@@ -22,6 +22,34 @@ describe('BlindSpotProcessor', () => {
     });
   });
 
+  it('does not copy or publish moving positions while there is no overlap', () => {
+    const processor = new BlindSpotProcessor();
+    processor.onFrame(frame(1, [0.1, 0.2]));
+    const idleVersion = processor.snapshot().version;
+
+    processor.onFrame(frame(1, [0.11, 0.21]));
+
+    expect(processor.snapshot()).toMatchObject({
+      carLeftRight: 1,
+      carIdxLapDistPct: [],
+      isOnTrack: true,
+      version: idleVersion,
+    });
+  });
+
+  it('stops publishing positions when an overlap clears', () => {
+    const processor = new BlindSpotProcessor();
+    processor.onFrame(frame(2, [0.5, 0.5005]));
+    processor.onFrame(frame(1, [0.51, 0.52]));
+
+    expect(processor.snapshot()).toMatchObject({
+      carLeftRight: 1,
+      carIdxLapDistPct: [],
+      isOnTrack: true,
+      version: 2,
+    });
+  });
+
   it('clears safety state at lifecycle boundaries', () => {
     const processor = new BlindSpotProcessor();
     processor.onFrame(frame(3, [0.5, 0.6]));
