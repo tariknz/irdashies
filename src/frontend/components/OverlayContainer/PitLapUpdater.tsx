@@ -1,5 +1,5 @@
 import { usePitLapStoreUpdater } from '@irdashies/context';
-import { useStandingsSettings, useRelativeSettings } from '../Standings/hooks';
+import { useStandingsSettings, useRelativeSettings } from '@irdashies/domain';
 import { useBattleSettings } from '../Battle/hooks/useBattleSettings';
 
 export const PitLapUpdater = () => {

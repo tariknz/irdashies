@@ -1,7 +1,7 @@
 import { ReferenceLap } from '@irdashies/types';
-import { getBucketIndex } from '@irdashies/context';
+import { getBucketIndex } from '@irdashies/utils/referenceLap';
 import { Standings } from './createStandings';
-import { interpolateAtPoint } from './interpolation';
+import { interpolateAtPoint } from '@irdashies/utils/referenceLapInterpolation';
 
 const FALLBACK_LAPTIME = 90;
 // Helper to grab clean numbers (prevents null/undefined mess)

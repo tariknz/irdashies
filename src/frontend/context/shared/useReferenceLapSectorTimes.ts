@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useDriverCarIdx, useSessionStore } from '../SessionStore/SessionStore';
 import { useReferenceLapStore } from '../ReferenceLapStore/ReferenceLapStore';
 import { useSectorTimingStore } from '../SectorTimingStore/SectorTimingStore';
-import { interpolateAtPoint } from '../../components/Standings/interpolation';
+import { interpolateAtPoint } from '@irdashies/utils/referenceLapInterpolation';
 
 /**
  * Derives per-sector times from the persisted (ghost) reference lap for the

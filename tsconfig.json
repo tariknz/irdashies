@@ -16,6 +16,8 @@
       "@irdashies/storybook": ["./.storybook"],
       "@irdashies/utils/*": ["./src/frontend/utils/*"],
       "@irdashies/context": ["./src/frontend/context"],
+      "@irdashies/domain": ["./src/frontend/domain"],
+      "@irdashies/domain/*": ["./src/frontend/domain/*"],
       "@irdashies/types": ["./src/types"],
       "@irdashies/shared": ["./src/shared"]
     },

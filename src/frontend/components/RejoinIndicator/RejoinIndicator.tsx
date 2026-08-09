@@ -11,10 +11,9 @@ import {
   useSessionVisibility,
   useDashboard,
 } from '@irdashies/context';
-import { useDriverRelatives } from '../Standings/hooks/useDriverRelatives';
+import { useDriverRelatives, type Standings } from '@irdashies/domain';
 import { useRejoinSettings } from './hooks/useRejoinSettings';
 import { getDemoRejoinData } from './demoData';
-import type { Standings } from '../Standings/createStandings';
 import { speedFromMs } from '@irdashies/utils/units';
 
 export const RejoinIndicator = () => {

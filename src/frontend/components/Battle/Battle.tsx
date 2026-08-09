@@ -18,10 +18,13 @@ import {
 import { formatTime } from '@irdashies/utils/time';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { useBattleSettings } from './hooks/useBattleSettings';
-import { useHighlightColor, useDriverRelatives } from '../Standings/hooks';
-import { useDriverStandings } from '../Standings/hooks/useDriverPositions';
-import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
-import type { Standings } from '../Standings/createStandings';
+import {
+  useHighlightColor,
+  useDriverRelatives,
+  useDriverStandings,
+  useDriverLivePositions,
+  type Standings,
+} from '@irdashies/domain';
 
 // Format an absolute gap value for display
 const formatGap = (gap: number | null | undefined, dp: number): string => {
