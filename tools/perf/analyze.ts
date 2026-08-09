@@ -390,7 +390,7 @@ const channelCount = (
   channel: string
 ): number =>
   samples.reduce(
-    (sum, sample) => sum + (sample.channelMetrics?.[field][channel] ?? 0),
+    (sum, sample) => sum + (sample.channelMetrics?.[field]?.[channel] ?? 0),
     0
   );
 
@@ -1432,7 +1432,16 @@ export function parseCliArgs(args: string[]): {
   analysisWindow: AnalysisWindow;
   requireConclusive: boolean;
 } {
-  const positional = args.filter((arg) => !arg.startsWith('--'));
+  const valueFlags = new Set([
+    '--baseline',
+    '--warmup-seconds',
+    '--analysis-start-seconds',
+    '--analysis-end-seconds',
+  ]);
+  const positional = args.filter(
+    (arg, index) =>
+      !arg.startsWith('--') && !valueFlags.has(args[index - 1] ?? '')
+  );
   const baselineIndex = args.indexOf('--baseline');
   const warmupIndex = args.indexOf('--warmup-seconds');
   const startIndex = args.indexOf('--analysis-start-seconds');

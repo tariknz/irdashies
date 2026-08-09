@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type {
   NumericSampleStats,
@@ -351,5 +352,39 @@ describe('performance analysis', () => {
     expect(
       parseCliArgs(['candidate.log', '--allow-inconclusive']).requireConclusive
     ).toBe(false);
+  });
+
+  it('accepts value flags before the candidate path', () => {
+    const options = parseCliArgs([
+      '--analysis-start-seconds',
+      '60',
+      '--warmup-seconds',
+      '10',
+      'candidate.log',
+      '--baseline',
+      'baseline.log',
+    ]);
+
+    expect(options.candidatePath).toBe(path.resolve('candidate.log'));
+    expect(options.baselinePath).toBe(path.resolve('baseline.log'));
+    expect(options.warmupSeconds).toBe(10);
+    expect(options.analysisWindow.startSeconds).toBe(60);
+  });
+
+  it('treats missing nested channel metrics as zero', () => {
+    const sample = mainSample(0, 100);
+    sample.channelMetrics = {
+      processorExecutions: { 'standings.snapshot': 100 },
+      publications: undefined,
+      deliveries: { 'standings.snapshot': 20 },
+    } as never;
+
+    const summary = summarizeCapture(capture([sample]), 0);
+
+    expect(summary.channels['standings.snapshot']).toMatchObject({
+      processorExecutions: 100,
+      publications: 0,
+      deliveries: 20,
+    });
   });
 });

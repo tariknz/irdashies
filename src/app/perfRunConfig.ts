@@ -30,6 +30,21 @@ const PERF_OVERLAY_MODES = new Set<PerfOverlayMode>([
   'observer',
 ]);
 
+export const parsePerfVisibilityPhases = (
+  value: string
+): PerfVisibilityPhase[] =>
+  value
+    .split(',')
+    .map((entry) => entry.trim().match(/^(visible|hidden):(\d+)$/))
+    .filter((match): match is RegExpMatchArray => match !== null)
+    .map((match) => ({
+      visibility: match[1] as PerfVisibilityPhase['visibility'],
+      durationSeconds: Number(match[2]),
+    }))
+    .filter(
+      (phase) => phase.durationSeconds >= 10 && phase.durationSeconds <= 86_400
+    );
+
 export function getPerfRunConfig(
   env: NodeJS.ProcessEnv = process.env
 ): PerfRunConfig {
@@ -49,17 +64,9 @@ export function getPerfRunConfig(
     requestedDuration <= 86_400
       ? requestedDuration
       : 0;
-  const visibilityPhases = (env.PERF_VISIBILITY_PHASES ?? '')
-    .split(',')
-    .map((entry) => entry.trim().match(/^(visible|hidden):(\d+)$/))
-    .filter((match): match is RegExpMatchArray => match !== null)
-    .map((match) => ({
-      visibility: match[1] as PerfVisibilityPhase['visibility'],
-      durationSeconds: Number(match[2]),
-    }))
-    .filter(
-      (phase) => phase.durationSeconds >= 10 && phase.durationSeconds <= 86_400
-    );
+  const visibilityPhases = parsePerfVisibilityPhases(
+    env.PERF_VISIBILITY_PHASES ?? ''
+  );
 
   return {
     enabled: env.PERF_METRICS === '1',

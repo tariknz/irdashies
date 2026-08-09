@@ -201,7 +201,11 @@ export class ChannelBus {
       if (subscription.lastDeliveredAt !== undefined) continue;
 
       const definition = this.definition(channel);
-      if (definition.kind === 'snapshot' && this.latestSnapshots.has(channel)) {
+      if (
+        this.deliveryEnabled &&
+        definition.kind === 'snapshot' &&
+        this.latestSnapshots.has(channel)
+      ) {
         this.deliver(channel, subscription, this.latestSnapshots.get(channel));
       }
     }

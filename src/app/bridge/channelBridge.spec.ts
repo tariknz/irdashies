@@ -179,6 +179,29 @@ describe('ChannelBus', () => {
     });
   });
 
+  it('does not seed a reactivated renderer when delivery is disabled', () => {
+    const first = createTarget(1);
+    const second = createTarget(2);
+    const bus = new ChannelBus({ registry, deliveryEnabled: false });
+    bus.subscribe(first, 'snapshot');
+    bus.subscribe(second, 'snapshot');
+
+    second.visible = false;
+    bus.rendererBecameHidden(second.id);
+    bus.publish('snapshot', { value: 1 });
+
+    second.visible = true;
+    bus.rendererBecameVisible(second.id);
+
+    expect(bus.subscriberCount('snapshot')).toBe(2);
+    expect(first.send).not.toHaveBeenCalled();
+    expect(second.send).not.toHaveBeenCalled();
+    expect(bus.metricsSnapshot()).toMatchObject({
+      channelPublications: { snapshot: 1 },
+      channelDeliveries: {},
+    });
+  });
+
   it('reschedules a pending snapshot when the requested rate changes', () => {
     const { bus, clock } = createBus();
     const target = createTarget();
