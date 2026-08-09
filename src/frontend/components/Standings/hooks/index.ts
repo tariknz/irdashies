@@ -14,3 +14,4 @@ export * from './useSessionBestLapTime';
 export * from './useSessionLapCount';
 export * from './useTrackMapSettings';
 export * from './useDriverTagMap';
+export * from './useManufacturerCounts';
