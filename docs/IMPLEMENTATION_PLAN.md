@@ -282,6 +282,9 @@ Today every renderer wakes 25 times/sec regardless of what's mounted. A weather 
   2. [x] Positional, pit-state, and warning consumers — demand-driven `track-state.snapshot`, channel-only Pitlane Helper, maps, Battle, Blind Spot, Rejoin, Faster Cars From Behind, and Slow Car Ahead; merged as PR #669
   3. [x] Remaining low-frequency consumers; Telemetry Inspector is the sole raw consumer — merged as PR #670
   4. [x] Replace the generic renderer telemetry IPC/provider with a dedicated demand-driven 10 Hz Telemetry Inspector bridge — merged as PR #671. Packaged re-profiling is tracked separately as the Phase 4.1 evidence gate.
+- [x] Run the complete deterministic replay suite
+- [x] Re-profile packaged Phase 4 against the final Phase 3 baseline on Windows — CPU, cadence, latency, and frame-pacing gates pass; memory gate remains open at +7.63 MB/min working set and +10.47 MB/min private memory
+- [ ] Capture a main-process allocation/retention profile focused on processor snapshots, reusable projection buffers, and channel publication ownership
 
 ### Phase 5 — Worker-thread SDK loop
 
@@ -289,7 +292,7 @@ Today every renderer wakes 25 times/sec regardless of what's mounted. A weather 
 
 ### Phase 6 — Native optimisations (only if needed)
 
-- [ ] _Pending Phase 4 re-profile_
+- [ ] Deferred: Phase 4 profile found no CPU-hot processor or calculation; do not begin without new evidence
 
 ---
 
@@ -473,6 +476,7 @@ LLM agents: read this file at the start of any session that touches the architec
 ## 6. Activity log
 
 - **2026-08-09** — PR #671 merged, completing Phase 4 delivery: removed the generic renderer telemetry provider/API, isolated raw inspection behind the demand-driven 10 Hz Telemetry Inspector stream, and resolved the legacy compatibility window. Packaged performance validation and the Phase 4.1 stabilization cleanup remain open.
+- **2026-08-09** — Completed the packaged Windows Phase 4 performance re-profile against final Phase 3 commit `6fbc334`. Matched observer/empty/full captures and a 420-second full-dashboard A/B pass CPU, cadence, latency, and frame-pacing gates. Phase 4 working-memory slope is +7.63 MB/min and private-memory slope is +10.47 MB/min; the approximately +2 MB/min regression against Phase 3 is concentrated in main-process private memory. Phase 5 and Phase 6 remain unjustified; main-process allocation retention is the next investigation — documentation updated
 
 - **2026-08-09** — PR #670 merged. Started final Phase 4 cleanup: remove raw telemetry from the normal `IrSdkBridge`, isolate arbitrary telemetry/session inspection behind a per-window 10 Hz diagnostic bridge for Electron and browser sources, and retain raw stores only as the Inspector's presentation state before replay validation and re-profiling — `feat/telemetry-inspector-debug-bridge` — in progress
 
