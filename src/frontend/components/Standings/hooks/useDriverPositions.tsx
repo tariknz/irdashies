@@ -1,18 +1,15 @@
 import { useMemo } from 'react';
 import {
-  useTelemetryValue,
-  useTelemetry,
+  useStandingsSnapshot,
+  useSessionTimingSnapshot,
   useSessionDrivers,
   useSessionQualifyingResults,
   useSessionIsOfficial,
   useCurrentSessionType,
   useCarLap,
-  usePitLap,
-  usePrevCarTrackSurface,
   useFocusCarIdx,
   useSessionPositions,
   useSessionFastestLaps,
-  useTelemetryValuesRounded,
 } from '@irdashies/context';
 
 import {
@@ -25,6 +22,10 @@ import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useRelativeSettings } from './useRelativeSettings';
 import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
+
+const EMPTY_NUMBERS: number[] = [];
+const EMPTY_BOOLEANS: boolean[] = [];
+const EMPTY_OPTIONAL_NUMBERS: (number | undefined)[] = [];
 
 const getLastTimeState = (
   lastTime: number | undefined,
@@ -42,47 +43,49 @@ const getLastTimeState = (
 };
 
 export const useDriverPositions = () => {
-  const carIdxPosition = useTelemetry('CarIdxPosition');
-  const carIdxClassPosition = useTelemetry('CarIdxClassPosition');
-  const carIdxBestLap = useTelemetry('CarIdxBestLapTime');
-  const carIdxLastLapTime = useTelemetry('CarIdxLastLapTime');
-  const carIdxF2Time = useTelemetryValuesRounded('CarIdxF2Time', 2);
-  const carIdxLapNum = useTelemetry('CarIdxLap');
-  const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
-  const prevCarTrackSurface = usePrevCarTrackSurface();
-  const lastPitLap = usePitLap();
+  const snapshot = useStandingsSnapshot();
+  const carIdxPosition = snapshot?.carIdxPosition ?? EMPTY_NUMBERS;
+  const carIdxClassPosition = snapshot?.carIdxClassPosition ?? EMPTY_NUMBERS;
+  const carIdxBestLap = snapshot?.carIdxBestLapTime ?? EMPTY_NUMBERS;
+  const carIdxLastLapTime = snapshot?.carIdxLastLapTime ?? EMPTY_NUMBERS;
+  const carIdxF2Time = snapshot?.carIdxF2Time ?? EMPTY_NUMBERS;
+  const carIdxLapNum = snapshot?.carIdxLap ?? EMPTY_NUMBERS;
+  const carIdxTrackSurface = snapshot?.carIdxTrackSurface ?? EMPTY_NUMBERS;
+  const prevCarTrackSurface =
+    snapshot?.previousCarTrackSurface ?? EMPTY_OPTIONAL_NUMBERS;
+  const lastPitLap = snapshot?.lastPitLap ?? EMPTY_OPTIONAL_NUMBERS;
   const lastLap = useCarLap();
-  const carIdxLapDstPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
+  const carIdxLapDstPct = snapshot?.carIdxLapDistPct ?? EMPTY_NUMBERS;
 
   const positions = useMemo(() => {
     return (
-      carIdxPosition?.value?.map((position, carIdx) => ({
+      carIdxPosition.map((position, carIdx) => ({
         carIdx,
         position,
-        classPosition: carIdxClassPosition?.value?.[carIdx],
+        classPosition: carIdxClassPosition[carIdx],
         delta: carIdxF2Time[carIdx], // only to leader currently, need to handle non-race sessions
-        bestLap: carIdxBestLap?.value?.[carIdx],
+        bestLap: carIdxBestLap[carIdx],
         lastLap: lastLap[carIdx] ?? -1,
-        lastLapTime: carIdxLastLapTime?.value?.[carIdx] ?? -1,
-        lapNum: carIdxLapNum?.value?.[carIdx],
+        lastLapTime: carIdxLastLapTime[carIdx] ?? -1,
+        lapNum: carIdxLapNum[carIdx],
         lapDstPct: carIdxLapDstPct[carIdx] ?? 0,
         lastPitLap: lastPitLap[carIdx] ?? undefined,
         prevCarTrackSurface: prevCarTrackSurface[carIdx] ?? undefined,
-        carTrackSurface: carIdxTrackSurface?.value?.[carIdx],
+        carTrackSurface: carIdxTrackSurface[carIdx],
       })) ?? []
     );
   }, [
-    carIdxPosition?.value,
-    carIdxClassPosition?.value,
-    carIdxBestLap?.value,
-    carIdxLastLapTime?.value,
+    carIdxPosition,
+    carIdxClassPosition,
+    carIdxBestLap,
+    carIdxLastLapTime,
     lastLap,
     carIdxF2Time,
-    carIdxLapNum?.value,
+    carIdxLapNum,
     carIdxLapDstPct,
     lastPitLap,
     prevCarTrackSurface,
-    carIdxTrackSurface?.value,
+    carIdxTrackSurface,
   ]);
 
   return positions;
@@ -113,37 +116,30 @@ export const useDrivers = () => {
 };
 
 export const useCarState = () => {
-  const carIdxTrackSurface = useTelemetry('CarIdxTrackSurface');
-  const carIdxOnPitRoad = useTelemetry<boolean[]>('CarIdxOnPitRoad');
-  const carIdxTireCompound = useTelemetry<number[]>('CarIdxTireCompound');
-  const carIdxSessionFlags = useTelemetry<number[]>('CarIdxSessionFlags');
+  const snapshot = useStandingsSnapshot();
+  const carIdxTrackSurface = snapshot?.carIdxTrackSurface ?? EMPTY_NUMBERS;
+  const carIdxOnPitRoad = snapshot?.carIdxOnPitRoad ?? EMPTY_BOOLEANS;
+  const carIdxTireCompound = snapshot?.carIdxTireCompound ?? EMPTY_NUMBERS;
+  const carIdxSessionFlags = snapshot?.carIdxSessionFlags ?? EMPTY_NUMBERS;
 
   return useMemo(() => {
     return (
-      carIdxTrackSurface?.value?.map((onTrack, index) => ({
+      carIdxTrackSurface.map((onTrack, index) => ({
         carIdx: index,
         onTrack: onTrack > -1,
-        onPitRoad: carIdxOnPitRoad?.value?.[index],
-        tireCompound: carIdxTireCompound?.value?.[index],
-        dnf: !!(
-          (carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Disqualify
-        ),
-        repair: !!(
-          (carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Repair
-        ),
-        penalty: !!(
-          (carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Black
-        ),
-        slowdown: !!(
-          (carIdxSessionFlags?.value?.[index] ?? 0) & GlobalFlags.Furled
-        ),
+        onPitRoad: carIdxOnPitRoad[index],
+        tireCompound: carIdxTireCompound[index],
+        dnf: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Disqualify),
+        repair: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Repair),
+        penalty: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Black),
+        slowdown: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Furled),
       })) ?? []
     );
   }, [
-    carIdxTrackSurface?.value,
-    carIdxOnPitRoad?.value,
-    carIdxTireCompound?.value,
-    carIdxSessionFlags?.value,
+    carIdxTrackSurface,
+    carIdxOnPitRoad,
+    carIdxTireCompound,
+    carIdxSessionFlags,
   ]);
 };
 
@@ -165,10 +161,11 @@ export const useDriverStandings = () => {
   const playerCarIdx = useFocusCarIdx();
   const sessionType = useCurrentSessionType();
   const qualifyingPositions = useSessionQualifyingResults();
-  const sessionState = useTelemetryValue('SessionState') ?? 0;
-  const sessionNum = useTelemetryValue('SessionNum');
-  const sessionPositions = useSessionPositions(sessionNum);
-  const sessionFastestLaps = useSessionFastestLaps(sessionNum);
+  const timing = useSessionTimingSnapshot();
+  const sessionState = timing?.state ?? 0;
+  const sessionNum = timing?.sessionNum;
+  const sessionPositions = useSessionPositions(sessionNum ?? undefined);
+  const sessionFastestLaps = useSessionFastestLaps(sessionNum ?? undefined);
   const fastestLapCarIdx = sessionFastestLaps?.[0]?.CarIdx;
   const isOfficial = useSessionIsOfficial();
 

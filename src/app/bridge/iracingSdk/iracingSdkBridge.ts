@@ -21,6 +21,7 @@ import { SessionTimingRuntime } from '../../processors/sessionTimingRuntime';
 import { SessionBarRuntime } from '../../processors/sessionBarRuntime';
 import { DriverControlsRuntime } from '../../processors/driverControlsRuntime';
 import { TrackStateRuntime } from '../../processors/trackStateRuntime';
+import { LapLogRuntime } from '../../processors/lapLogRuntime';
 
 // Keys consumed by the renderer. Anything outside this set is dropped before
 // the telemetry object crosses the IPC boundary — reducing structured-clone
@@ -231,6 +232,9 @@ export async function publishIRacingSDKEvents(
   const trackStateRuntime = channelBus
     ? new TrackStateRuntime(channelBus, lifecycle, perfMetrics)
     : undefined;
+  const lapLogRuntime = channelBus
+    ? new LapLogRuntime(channelBus, lifecycle, perfMetrics)
+    : undefined;
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
@@ -339,6 +343,7 @@ export async function publishIRacingSDKEvents(
           sessionBarRuntime?.onFrame(telemetry);
           driverControlsRuntime?.onFrame(telemetry);
           trackStateRuntime?.onFrame(telemetry);
+          lapLogRuntime?.onFrame(telemetry);
           if (
             perfTelemetryDeliveryEnabled &&
             overlayManager.hasLegacyStreamSubscribers('telemetry')
@@ -377,6 +382,7 @@ export async function publishIRacingSDKEvents(
             sessionBarRuntime?.onSession(session);
             driverControlsRuntime?.onSession(session);
             trackStateRuntime?.onSession(session);
+            lapLogRuntime?.onSession(session);
             overlayManager.publishMessage('sessionData', session);
             sessionCallbacks.forEach((callback) => callback(session));
             perfMetrics.markEnd('sessionPublish');
@@ -444,6 +450,7 @@ export async function publishIRacingSDKEvents(
       sessionBarRuntime?.dispose();
       driverControlsRuntime?.dispose();
       trackStateRuntime?.dispose();
+      lapLogRuntime?.dispose();
       referenceLapRuntime?.dispose();
       perfMetrics.stopReporting();
     },

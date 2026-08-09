@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { useGarageCoverSettings } from './hooks/useGarageCoverSettings';
 import { useGarageCoverImage } from './hooks/useGarageCoverImage';
 import logoSvg from '../../assets/icons/logo.svg';
-import { useTelemetryValue } from '@irdashies/context';
+import { useTrackStateSnapshot } from '@irdashies/context';
 
 export const GarageCover = () => {
-  const isInGarageDirect = useTelemetryValue<boolean>('IsInGarage') ?? false;
-  const isGarageVisible =
-    useTelemetryValue<boolean>('IsGarageVisible') ?? false;
-  const isOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
+  const trackState = useTrackStateSnapshot();
+  const isInGarageDirect = trackState?.isInGarage ?? false;
+  const isGarageVisible = trackState?.isGarageVisible ?? false;
+  const isOnTrack = trackState?.isOnTrack ?? false;
 
   // Combining both garage-specific flags ensures the fastest possible
   // detection of the garage screen without false positives from other

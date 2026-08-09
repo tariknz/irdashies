@@ -2,7 +2,13 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
   id: 'sectordelta',
-  legacyTelemetry: true,
-  channels: ['reference-laps.snapshot', 'sector-timing.snapshot'],
+  legacyTelemetry: false,
+  sessionData: true,
+  channels: [
+    'reference-laps.snapshot',
+    'sector-timing.snapshot',
+    'track-state.snapshot',
+  ],
   ratePreset: 'static',
+  channelRates: { 'track-state.snapshot': 25 },
 } satisfies WidgetRuntimeDefinition;

@@ -1,9 +1,9 @@
 import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
-  id: 'infobar',
+  id: 'cornername',
   legacyTelemetry: false,
   sessionData: true,
-  channels: ['session-timing.snapshot', 'session-bar.snapshot'],
-  ratePreset: 'gapTiming',
+  channels: ['track-state.snapshot'],
+  ratePreset: 'driverFocused',
 } satisfies WidgetRuntimeDefinition;

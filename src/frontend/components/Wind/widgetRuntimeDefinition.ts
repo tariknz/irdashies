@@ -1,9 +1,9 @@
 import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
-  id: 'infobar',
+  id: 'wind',
   legacyTelemetry: false,
   sessionData: true,
-  channels: ['session-timing.snapshot', 'session-bar.snapshot'],
-  ratePreset: 'gapTiming',
+  channels: ['session-bar.snapshot', 'track-state.snapshot'],
+  ratePreset: 'informational',
 } satisfies WidgetRuntimeDefinition;

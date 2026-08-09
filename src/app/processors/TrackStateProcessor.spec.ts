@@ -22,6 +22,7 @@ describe('TrackStateProcessor', () => {
         OnPitRoad: [true],
         Speed: [41.5],
         EngineWarnings: [16],
+        SessionFlags: [32],
         SessionNum: [1],
       })
     );
@@ -37,6 +38,7 @@ describe('TrackStateProcessor', () => {
       onPitRoad: true,
       speed: 41.5,
       engineWarnings: 16,
+      sessionFlags: 32,
       sessionNum: 1,
       version: 1,
     });

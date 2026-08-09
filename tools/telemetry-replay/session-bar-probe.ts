@@ -28,6 +28,7 @@ export const createSessionBarProbe = (): ReplayProbe<SessionBarSnapshot> => {
       'LapLastLapTime',
       'PlayerCarTeamIncidentCount',
       'Precipitation',
+      'RelativeHumidity',
       'SessionNum',
       'SessionTime',
       'SessionTimeOfDay',

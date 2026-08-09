@@ -2,7 +2,8 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
   id: 'standings',
-  legacyTelemetry: true,
+  legacyTelemetry: false,
+  sessionData: true,
   channels: [
     'lap-times.snapshot',
     'reference-laps.snapshot',
@@ -10,6 +11,7 @@ export default {
     'session-timing.snapshot',
     'session-bar.snapshot',
     'standings.snapshot',
+    'track-state.snapshot',
   ],
   ratePreset: 'gapTiming',
   channelRates: { 'radio.snapshot': 25 },

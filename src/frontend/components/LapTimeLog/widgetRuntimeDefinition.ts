@@ -1,9 +1,9 @@
 import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
-  id: 'infobar',
+  id: 'laptimelog',
   legacyTelemetry: false,
   sessionData: true,
-  channels: ['session-timing.snapshot', 'session-bar.snapshot'],
-  ratePreset: 'gapTiming',
+  channels: ['lap-log.snapshot'],
+  ratePreset: 'driverFocused',
 } satisfies WidgetRuntimeDefinition;

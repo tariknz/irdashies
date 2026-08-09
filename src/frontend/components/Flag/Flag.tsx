@@ -1,5 +1,8 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { useTelemetryValue, useSessionVisibility } from '@irdashies/context';
+import {
+  useTrackStateSnapshot,
+  useSessionVisibility,
+} from '@irdashies/context';
 import type { GeneralSettingsType } from '@irdashies/types';
 import { useFlagSettings } from './hooks/useFlagSettings';
 import { useBlinkState } from './hooks/useBlinkState';
@@ -10,8 +13,9 @@ import { getFlag } from '@irdashies/utils/getFlag';
 export const Flag = () => {
   const settings = useFlagSettings();
 
-  const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
-  const isPlayerOnTrack = useTelemetryValue<boolean>('IsOnTrack') ?? false;
+  const trackState = useTrackStateSnapshot();
+  const sessionFlags = trackState?.sessionFlags ?? 0;
+  const isPlayerOnTrack = trackState?.isOnTrack ?? false;
   const isVisibleInSession = useSessionVisibility(settings.sessionVisibility);
 
   const blinkOn = useBlinkState(settings.animate, settings.blinkPeriod);

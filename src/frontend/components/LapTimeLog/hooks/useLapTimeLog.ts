@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  useTelemetryValue,
-  useTelemetryValues,
-  useTelemetryValuesRounded,
+  useLapLogSnapshot,
   usePersonalBestStore,
   useSessionStore,
   useDriverCarIdx,
@@ -52,18 +50,17 @@ export const useLapTimeLog = () => {
   const [savedDelta, setSavedDelta] = useState<number>(0);
 
   // Telemetry
-  const lapCompleted = useTelemetryValue<number>('LapCompleted') ?? 0;
-  const currentLapTime = useTelemetryValue<number>('LapCurrentLapTime') ?? 0;
-  const lastLapTime = useTelemetryValue<number>('LapLastLapTime') ?? 0;
-  const bestLapTime = useTelemetryValue<number>('LapBestLapTime') ?? 0;
-  const carIdxBestLapTime = useTelemetryValues<number[]>('CarIdxBestLapTime');
-  const sessionNum = useTelemetryValue<number>('SessionNum') ?? 0;
-  const sessionTime = useTelemetryValuesRounded('SessionTime', 0)[0] ?? 0;
-  const playerTrackSurface =
-    useTelemetryValue<number>('PlayerTrackSurface') ?? 0;
-  const incidentCount =
-    useTelemetryValue<number>('PlayerCarMyIncidentCount') ?? 0;
-  const lapDistPct = useTelemetryValue<number>('LapDistPct') ?? 0;
+  const snapshot = useLapLogSnapshot();
+  const lapCompleted = snapshot?.lapCompleted ?? 0;
+  const currentLapTime = snapshot?.currentLapTime ?? 0;
+  const lastLapTime = snapshot?.lastLapTime ?? 0;
+  const bestLapTime = snapshot?.bestLapTime ?? 0;
+  const carIdxBestLapTime = snapshot?.carIdxBestLapTime;
+  const sessionNum = snapshot?.sessionNum ?? 0;
+  const sessionTime = snapshot?.sessionTime ?? 0;
+  const playerTrackSurface = snapshot?.playerTrackSurface ?? 0;
+  const incidentCount = snapshot?.incidentCount ?? 0;
+  const lapDistPct = snapshot?.lapDistPct ?? 0;
 
   // Refs
   const lastLoggedLap = useRef<number>(lapCompleted);
@@ -101,17 +98,14 @@ export const useLapTimeLog = () => {
   const deltaMethod = settings?.delta?.method ?? 'bestlap';
   const referenceTime = deltaMethod === 'lastlap' ? lastLapTime : bestLapTime;
 
-  const deltaMethodMap = {
-    lastlap: 'LapDeltaToSessionLastlLap',
-    bestlap: 'LapDeltaToSessionBestLap',
-  } as const;
-  const liveDelta = useTelemetryValue<number>(deltaMethodMap[deltaMethod]) ?? 0;
-
-  const deltaCheckMap = {
-    lastlap: 'LapDeltaToSessionLastlLap_OK',
-    bestlap: 'LapDeltaToSessionBestLap_OK',
-  } as const;
-  const deltaCheck = useTelemetryValue<number>(deltaCheckMap[deltaMethod]) ?? 0;
+  const liveDelta =
+    (deltaMethod === 'lastlap'
+      ? snapshot?.deltaToSessionLastLap
+      : snapshot?.deltaToSessionBestLap) ?? 0;
+  const deltaCheck =
+    (deltaMethod === 'lastlap'
+      ? snapshot?.deltaToSessionLastLapOk
+      : snapshot?.deltaToSessionBestLapOk) ?? false;
 
   // 1. handles resets/restarts
   useEffect(() => {

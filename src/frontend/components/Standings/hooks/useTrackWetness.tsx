@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useTelemetry } from '@irdashies/context';
+import { useSessionBarSnapshot } from '@irdashies/context';
 
 const wetnessLevels: Record<number, string> = {
   0: '',
@@ -13,11 +13,11 @@ const wetnessLevels: Record<number, string> = {
 };
 
 export const useTrackWetness = () => {
-  const trackWetnessVal = useTelemetry('TrackWetness');
+  const trackWetnessVal = useSessionBarSnapshot()?.trackWetness;
   const trackWetness = useMemo(() => {
-    const wetnessLevel = trackWetnessVal?.value[0] ?? 0;
+    const wetnessLevel = trackWetnessVal ?? 0;
     return wetnessLevels[wetnessLevel] ?? '';
-  }, [trackWetnessVal?.value]);
+  }, [trackWetnessVal]);
 
   return { trackWetness };
 };

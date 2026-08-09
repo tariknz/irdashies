@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useTelemetryValue } from '@irdashies/context';
+import { useSessionBarSnapshot } from '@irdashies/context';
 
 export const useSessionCurrentTime = () => {
   const options: Intl.DateTimeFormatOptions = useMemo(
@@ -10,8 +10,8 @@ export const useSessionCurrentTime = () => {
     []
   );
   // session time of day is in seconds
-  const sessionTime = useTelemetryValue('SessionTimeOfDay');
-  
+  const sessionTime = useSessionBarSnapshot()?.sessionTimeOfDay;
+
   const formattedTime = useMemo(() => {
     if (sessionTime == null) return '';
     const date = new Date();

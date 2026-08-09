@@ -118,6 +118,14 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       this.latest.carIdxTrackSurface
     );
     copyNumberArray(frame, 'CarIdxF2Time', this.latest.carIdxF2Time);
+    copyNumberArray(frame, 'CarIdxPosition', this.latest.carIdxPosition);
+    copyNumberArray(
+      frame,
+      'CarIdxClassPosition',
+      this.latest.carIdxClassPosition
+    );
+    copyNumberArray(frame, 'CarIdxBestLapTime', this.latest.carIdxBestLapTime);
+    copyNumberArray(frame, 'CarIdxLastLapTime', this.latest.carIdxLastLapTime);
     copyNumberArray(frame, 'CarIdxEstTime', this.latest.carIdxEstTime);
     copyNumberArray(frame, 'CarIdxLapDistPct', this.latest.carIdxLapDistPct);
     copyNumberArray(
@@ -130,7 +138,12 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       'CarIdxSessionFlags',
       this.latest.carIdxSessionFlags
     );
+    copyBooleanArray(frame, 'CarIdxP2P_Status', this.latest.carIdxP2PStatus);
+    copyNumberArray(frame, 'CarIdxP2P_Count', this.latest.carIdxP2PCount);
     const sessionState = numberValue(frame, 'SessionState') ?? 0;
+    this.latest.sessionUniqueId = numberValue(frame, 'SessionUniqueID') ?? 0;
+    this.latest.sessionTime = sessionTime;
+    this.latest.sessionState = sessionState;
     this.updateLiveClassPositions(frame, sessionNum, sessionState);
     const carIdxOnPitRoad = this.latest.carIdxOnPitRoad;
     const carIdxLap = this.latest.carIdxLap;
@@ -198,6 +211,10 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.latest.focusCarIdx = null;
     this.latest.sessionNum = sessionNum;
     this.latest.carIdxF2Time.length = 0;
+    this.latest.carIdxPosition.length = 0;
+    this.latest.carIdxClassPosition.length = 0;
+    this.latest.carIdxBestLapTime.length = 0;
+    this.latest.carIdxLastLapTime.length = 0;
     this.latest.carIdxEstTime.length = 0;
     this.latest.carIdxOnPitRoad.length = 0;
     this.latest.carIdxLap.length = 0;
@@ -205,6 +222,11 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.latest.carIdxTrackSurface.length = 0;
     this.latest.carIdxTireCompound.length = 0;
     this.latest.carIdxSessionFlags.length = 0;
+    this.latest.carIdxP2PStatus.length = 0;
+    this.latest.carIdxP2PCount.length = 0;
+    this.latest.sessionUniqueId = 0;
+    this.latest.sessionTime = 0;
+    this.latest.sessionState = 0;
     this.latest.lastPitLap.length = 0;
     this.latest.previousCarTrackSurface.length = 0;
     this.latest.liveClassPosition.length = 0;
@@ -216,6 +238,10 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       focusCarIdx: null,
       sessionNum: null,
       carIdxF2Time: [],
+      carIdxPosition: [],
+      carIdxClassPosition: [],
+      carIdxBestLapTime: [],
+      carIdxLastLapTime: [],
       carIdxEstTime: [],
       carIdxOnPitRoad: [],
       carIdxLap: [],
@@ -223,6 +249,11 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       carIdxTrackSurface: [],
       carIdxTireCompound: [],
       carIdxSessionFlags: [],
+      carIdxP2PStatus: [],
+      carIdxP2PCount: [],
+      sessionUniqueId: 0,
+      sessionTime: 0,
+      sessionState: 0,
       lastPitLap: [],
       previousCarTrackSurface: [],
       liveClassPosition: [],

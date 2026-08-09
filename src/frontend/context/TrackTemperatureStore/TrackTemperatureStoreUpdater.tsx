@@ -1,16 +1,15 @@
 import { useEffect } from 'react';
-import { useTelemetry } from '@irdashies/context';
+import { useSessionBarSnapshot } from '../ChannelStore';
 import { useTrackTemperatureStore } from './TrackTemperatureStore';
 
 export const useTrackTemperatureStoreUpdater = (enabled: boolean) => {
-  const trackTempVal = useTelemetry('TrackTempCrew');
-  const airTempVal = useTelemetry('AirTemp');
+  const snapshot = useSessionBarSnapshot();
   const update = useTrackTemperatureStore((s) => s.update);
 
   useEffect(() => {
     if (!enabled) return;
-    update(trackTempVal?.value?.[0], airTempVal?.value?.[0]);
-  }, [enabled, trackTempVal?.value, airTempVal?.value, update]);
+    update(snapshot?.trackTemp, snapshot?.airTemp);
+  }, [enabled, snapshot?.trackTemp, snapshot?.airTemp, update]);
 };
 
 /**
