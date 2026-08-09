@@ -3,19 +3,7 @@ import { OverlayManager } from '../../../overlayManager';
 import { TelemetryPerfMetrics } from '../../../perfMetrics';
 import type { SessionLifecycle } from '../../../sessionLifecycle';
 import type { ChannelBus } from '../../channelBridge';
-import { CarSpeedsRuntime } from '../../../processors/carSpeedsRuntime';
-import { ReferenceLapRuntime } from '../../../processors/referenceLapRuntime';
-import { RelativeGapRuntime } from '../../../processors/relativeGapRuntime';
-import { SectorTimingRuntime } from '../../../processors/sectorTimingRuntime';
-import { StandingsRuntime } from '../../../processors/standingsRuntime';
-import { RadioRuntime } from '../../../processors/radioRuntime';
-import { SessionTimingRuntime } from '../../../processors/sessionTimingRuntime';
-import { LapTimesRuntime } from '../../../processors/lapTimesRuntime';
-import { SessionBarRuntime } from '../../../processors/sessionBarRuntime';
-import { DriverControlsRuntime } from '../../../processors/driverControlsRuntime';
-import { TrackStateRuntime } from '../../../processors/trackStateRuntime';
-import { LapLogRuntime } from '../../../processors/lapLogRuntime';
-import { FuelProjectionRuntime } from '../../../processors/fuelProjectionRuntime';
+import { createDefaultProcessorHost } from '../../../processors/processorRegistry';
 import { TELEMETRY_INSPECTOR_RATE_HZ } from '@irdashies/types';
 
 export async function publishIRacingSDKEvents(
@@ -28,91 +16,26 @@ export async function publishIRacingSDKEvents(
   perfMetrics.startReporting();
 
   const bridge = generateMockData();
-  const fuelProjectionRuntime = channelBus
-    ? new FuelProjectionRuntime(channelBus, lifecycle, perfMetrics)
-    : undefined;
-  const lapTimesRuntime = channelBus
-    ? new LapTimesRuntime(channelBus, lifecycle, perfMetrics)
-    : undefined;
-  const carSpeedsRuntime = channelBus
-    ? new CarSpeedsRuntime(channelBus, lifecycle, perfMetrics)
-    : undefined;
-  const referenceLapRuntime = channelBus
-    ? new ReferenceLapRuntime(channelBus, lifecycle, perfMetrics, {
-        load: () => null,
-        save: () => undefined,
+  const processorHost = channelBus
+    ? createDefaultProcessorHost({
+        bus: channelBus,
+        lifecycle,
+        metrics: perfMetrics,
+        referenceLapPersistence: {
+          load: () => null,
+          save: () => undefined,
+        },
       })
-    : undefined;
-  const relativeGapRuntime =
-    channelBus && referenceLapRuntime
-      ? new RelativeGapRuntime(
-          channelBus,
-          lifecycle,
-          perfMetrics,
-          referenceLapRuntime
-        )
-      : undefined;
-  const sectorTimingRuntime = channelBus
-    ? new SectorTimingRuntime(channelBus, lifecycle, perfMetrics)
-    : undefined;
-  const standingsRuntime = channelBus
-    ? new StandingsRuntime(channelBus, lifecycle, perfMetrics)
-    : undefined;
-  const radioRuntime = channelBus
-    ? new RadioRuntime(channelBus, lifecycle, perfMetrics)
-    : undefined;
-  const sessionTimingRuntime =
-    channelBus && lapTimesRuntime
-      ? new SessionTimingRuntime(
-          channelBus,
-          lifecycle,
-          perfMetrics,
-          lapTimesRuntime
-        )
-      : undefined;
-  const sessionBarRuntime = channelBus
-    ? new SessionBarRuntime(channelBus, lifecycle, perfMetrics)
-    : undefined;
-  const driverControlsRuntime = channelBus
-    ? new DriverControlsRuntime(channelBus, lifecycle, perfMetrics)
-    : undefined;
-  const trackStateRuntime = channelBus
-    ? new TrackStateRuntime(channelBus, lifecycle, perfMetrics)
-    : undefined;
-  const lapLogRuntime = channelBus
-    ? new LapLogRuntime(channelBus, lifecycle, perfMetrics)
     : undefined;
 
   bridge.onSessionData((session) => {
-    fuelProjectionRuntime?.onSession(session);
-    carSpeedsRuntime?.onSession(session);
-    referenceLapRuntime?.onSession(session);
-    relativeGapRuntime?.onSession(session);
-    sectorTimingRuntime?.onSession(session);
-    standingsRuntime?.onSession(session);
-    sessionTimingRuntime?.onSession(session);
-    sessionBarRuntime?.onSession(session);
-    driverControlsRuntime?.onSession(session);
-    trackStateRuntime?.onSession(session);
-    lapLogRuntime?.onSession(session);
+    processorHost?.onSession(session);
     overlayManager.publishMessage('sessionData', session);
   });
 
   bridge.onTelemetry((telemetry) => {
     perfMetrics.markStart('processTelemetry');
-    fuelProjectionRuntime?.onFrame(telemetry);
-    lapTimesRuntime?.onFrame(telemetry);
-    carSpeedsRuntime?.onFrame(telemetry);
-    referenceLapRuntime?.onFrame(telemetry);
-    relativeGapRuntime?.onFrame(telemetry);
-    sectorTimingRuntime?.onFrame(telemetry);
-    standingsRuntime?.onFrame(telemetry);
-    radioRuntime?.onFrame(telemetry);
-    sessionTimingRuntime?.onFrame(telemetry);
-    sessionBarRuntime?.onFrame(telemetry);
-    driverControlsRuntime?.onFrame(telemetry);
-    trackStateRuntime?.onFrame(telemetry);
-    lapLogRuntime?.onFrame(telemetry);
+    processorHost?.onFrame(telemetry);
     const tickTime = performance.now();
     if (
       overlayManager.hasTelemetryInspectorSubscribers() &&
@@ -137,19 +60,7 @@ export async function publishIRacingSDKEvents(
     ...bridge,
     stop: () => {
       overlayManager.clearLatestSessionData?.();
-      fuelProjectionRuntime?.dispose();
-      carSpeedsRuntime?.dispose();
-      lapTimesRuntime?.dispose();
-      relativeGapRuntime?.dispose();
-      sectorTimingRuntime?.dispose();
-      standingsRuntime?.dispose();
-      radioRuntime?.dispose();
-      sessionTimingRuntime?.dispose();
-      sessionBarRuntime?.dispose();
-      driverControlsRuntime?.dispose();
-      trackStateRuntime?.dispose();
-      lapLogRuntime?.dispose();
-      referenceLapRuntime?.dispose();
+      processorHost?.dispose();
       perfMetrics.stopReporting();
       originalStop();
     },
