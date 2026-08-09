@@ -79,6 +79,7 @@ interface DriverRowInfoProps {
   hideCarManufacturer?: boolean;
   resolvedTag?: ResolvedDriverTag;
   hasAnyDriverTag?: boolean;
+  hasAnyCountryFlag?: boolean;
   compactMode?: string;
   p2pDisplayState?: P2PDisplayState;
   currentLap?: number;
@@ -231,6 +232,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     hideCarManufacturer,
     resolvedTag,
     hasAnyDriverTag,
+    hasAnyCountryFlag,
     compactMode,
     p2pDisplayState,
     currentLap,
@@ -342,7 +344,8 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         id: 'countryFlags',
         shouldRender:
           (displayOrder ? displayOrder.includes('countryFlags') : true) &&
-          (config?.countryFlags?.enabled ?? true),
+          (config?.countryFlags?.enabled ?? true) &&
+          (hasAnyCountryFlag ?? true),
         component: (
           <CountryFlagsCell
             key="countryFlags"
@@ -696,6 +699,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     tagSettings,
     resolvedTag,
     hasAnyDriverTag,
+    hasAnyCountryFlag,
     hidden,
     badgeMinimal,
     statusBadgesMinimal,

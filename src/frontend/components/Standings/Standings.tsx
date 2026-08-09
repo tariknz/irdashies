@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useMemo } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { SessionBar } from './components/SessionBar/SessionBar';
@@ -41,6 +41,13 @@ export const Standings = () => {
   const p2pDisplayStates = useP2PDisplayStates();
 
   const standings = useDriverStandings(settings);
+  const hasAnyCountryFlag = useMemo(
+    () =>
+      standings.some(([, classStandings]) =>
+        classStandings.some((result) => (result.driver?.flairId ?? 0) > 0)
+      ),
+    [standings]
+  );
   const manufacturerCountsByClass = useManufacturerCounts(
     !!settings?.classHeaderStyle?.manufacturerStats?.enabled
   );
@@ -189,6 +196,7 @@ export const Standings = () => {
                         carIdx={result.carIdx}
                         resolvedTag={tagMap.get(result.carIdx)}
                         hasAnyDriverTag={hasAnyTag}
+                        hasAnyCountryFlag={hasAnyCountryFlag}
                         classColor={result.carClass.color}
                         carNumber={
                           (settings?.carNumber?.enabled ?? true)
