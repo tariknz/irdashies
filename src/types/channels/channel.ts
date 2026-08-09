@@ -8,6 +8,7 @@ export type SessionLifecycleEvent =
   | { type: 'disconnect' };
 
 export interface ChannelPayloads {
+  'blind-spot.snapshot': BlindSpotSnapshot;
   'car-speeds.snapshot': CarSpeedsSnapshot;
   'driver-controls.snapshot': DriverControlsSnapshot;
   'fuel.projection': FuelProjectionSnapshot;
@@ -48,6 +49,13 @@ export interface TrackStateSnapshot {
   engineWarnings: number;
   lapDistPct: number;
   sessionNum: number | null;
+  version: number;
+}
+
+export interface BlindSpotSnapshot {
+  carLeftRight: number;
+  carIdxLapDistPct: readonly number[];
+  isOnTrack: boolean;
   version: number;
 }
 
@@ -288,6 +296,11 @@ export type ChannelDefinition =
 export type ChannelRegistry = Readonly<Record<ChannelName, ChannelDefinition>>;
 
 export const channelRegistry = {
+  'blind-spot.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 60,
+    maxRateHz: 60,
+  },
   'car-speeds.snapshot': {
     kind: 'snapshot',
     defaultRateHz: 10,

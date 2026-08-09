@@ -1,9 +1,7 @@
-import type {
-  LapTimesSnapshot,
-  ReferenceLapsSnapshot,
-} from '@irdashies/types';
+import type { LapTimesSnapshot, ReferenceLapsSnapshot } from '@irdashies/types';
 import type { ReferenceLapPersistence } from './ReferenceLapProcessor';
 import { CarSpeedsProcessor } from './CarSpeedsProcessor';
+import { BlindSpotProcessor } from './BlindSpotProcessor';
 import { DriverControlsProcessor } from './DriverControlsProcessor';
 import { FuelProjectionProcessor } from './FuelProjectionProcessor';
 import { LapLogProcessor } from './LapLogProcessor';
@@ -58,10 +56,14 @@ export const createProcessorDefinitions = ({
   referenceLapPersistence,
 }: ProcessorRegistryOptions): readonly AnyProcessorDefinition[] => [
   defineProcessor({
+    channel: 'blind-spot.snapshot',
+    metricsPrefix: 'blindSpot',
+    create: () => new BlindSpotProcessor(),
+  }),
+  defineProcessor({
     channel: 'fuel.projection',
     metricsPrefix: 'fuelProjection',
-    create: ({ sourceReplay }) =>
-      new FuelProjectionProcessor({ sourceReplay }),
+    create: ({ sourceReplay }) => new FuelProjectionProcessor({ sourceReplay }),
   }),
   defineProcessor({
     channel: 'lap-times.snapshot',
@@ -90,8 +92,7 @@ export const createProcessorDefinitions = ({
     metricsPrefix: 'relativeGap',
     create: ({ snapshot }) =>
       new RelativeGapProcessor({
-        snapshot: () =>
-          snapshot('reference-laps.snapshot') ?? noReferenceLaps,
+        snapshot: () => snapshot('reference-laps.snapshot') ?? noReferenceLaps,
       }),
   }),
   defineProcessor({

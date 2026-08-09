@@ -17,6 +17,7 @@ import {
 } from './frontend/context/ChannelStore/ChannelSnapshotStore';
 
 const SNAPSHOT_CHANNELS = [
+  'blind-spot.snapshot',
   'car-speeds.snapshot',
   'driver-controls.snapshot',
   'fuel.projection',
@@ -211,10 +212,7 @@ class SyntheticSourceAdapter {
 interface RendererStores {
   readonly stores: Map<
     SnapshotChannel,
-    ChannelSelectionStore<
-      SnapshotChannel,
-      ChannelPayloads[SnapshotChannel]
-    >
+    ChannelSelectionStore<SnapshotChannel, ChannelPayloads[SnapshotChannel]>
   >;
   readonly changes: Map<SnapshotChannel, ReturnType<typeof vi.fn>>;
   snapshot<K extends SnapshotChannel>(
@@ -229,10 +227,7 @@ const attachStores = (
 ): RendererStores => {
   const stores = new Map<
     SnapshotChannel,
-    ChannelSelectionStore<
-      SnapshotChannel,
-      ChannelPayloads[SnapshotChannel]
-    >
+    ChannelSelectionStore<SnapshotChannel, ChannelPayloads[SnapshotChannel]>
   >();
   const changes = new Map<SnapshotChannel, ReturnType<typeof vi.fn>>();
   const unsubscribes: (() => void)[] = [];
