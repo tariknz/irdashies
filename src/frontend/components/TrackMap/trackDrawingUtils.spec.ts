@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { drawDrivers } from './trackDrawingUtils';
+import { drawDrivers, getCachedTextVisualOffset } from './trackDrawingUtils';
 
 describe('trackDrawingUtils', () => {
   let ctx: CanvasRenderingContext2D;
@@ -29,6 +29,17 @@ describe('trackDrawingUtils', () => {
       shadowOffsetX: 0,
       shadowOffsetY: 0,
     } as any;
+  });
+
+  it('reuses text metrics until the font or label changes', () => {
+    const cache = { font: '', text: '', visualOffset: 0 };
+
+    expect(getCachedTextVisualOffset(ctx, '12', cache)).toBe(3);
+    expect(getCachedTextVisualOffset(ctx, '12', cache)).toBe(3);
+    expect(ctx.measureText).toHaveBeenCalledTimes(1);
+
+    getCachedTextVisualOffset(ctx, '13', cache);
+    expect(ctx.measureText).toHaveBeenCalledTimes(2);
   });
 
   describe('drawDrivers', () => {

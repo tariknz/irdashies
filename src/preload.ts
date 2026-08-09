@@ -5,7 +5,7 @@ import { exposeInMainWorld } from './app/rendererExpose';
 import { startRendererPerfMetrics } from './app/rendererPerfMetrics';
 import { exposeChannelBridge } from './app/bridge/channelRendererBridge';
 
+startRendererPerfMetrics();
 exposeBridge();
 exposeInMainWorld();
 exposeChannelBridge();
-startRendererPerfMetrics();

@@ -6,6 +6,7 @@ import type {
 } from '../../src/types/performance';
 import {
   compareSummaries,
+  comparisonMarkdown,
   parseCliArgs,
   parsePerfLog,
   summarizeCapture,
@@ -123,11 +124,7 @@ describe('performance analysis', () => {
 
   it('summarizes memory slope and telemetry metrics', () => {
     const summary = summarizeCapture(
-      capture([
-        mainSample(0, 100),
-        mainSample(60, 102),
-        mainSample(120, 104),
-      ]),
+      capture([mainSample(0, 100), mainSample(60, 102), mainSample(120, 104)]),
       0
     );
 
@@ -157,6 +154,7 @@ describe('performance analysis', () => {
         intervalMs: 5000,
         frameTimeMs: stats(16),
         telemetryCallbackMs: stats(0.2, { count: 100, p99: 0.7 }),
+        trackMapAnimationFrameMs: stats(0.4, { count: 250, p99: 1.1 }),
         framesOver25Ms: 0,
         framesOver50Ms: 0,
       },
@@ -165,6 +163,24 @@ describe('performance analysis', () => {
 
     expect(summary.renderer.telemetryCallbackRateHz).toBe(20);
     expect(summary.renderer.telemetryCallbackP99MeanMs).toBe(0.7);
+    expect(summary.renderer.trackMapAnimationFrameRateHz).toBe(50);
+    expect(summary.renderer.trackMapAnimationFrameP99MeanMs).toBe(1.1);
+    expect(summary.renderer.trackMapAnimationFrameP99WorstMs).toBe(1.1);
+
+    const candidate = {
+      ...summary,
+      renderer: {
+        ...summary.renderer,
+        trackMapAnimationFrameRateHz: 60,
+        trackMapAnimationFrameP99MeanMs: 1.6,
+      },
+    };
+    const comparison = compareSummaries(summary, candidate);
+    expect(comparison.delta.trackMapAnimationFrameRateHz).toBe(10);
+    expect(comparison.delta.trackMapAnimationFrameP99Ms).toBeCloseTo(0.5);
+    expect(comparisonMarkdown(comparison)).toContain(
+      '| Track-map animation-frame p99 mean | 0.500 ms |'
+    );
   });
 
   it('flags a material iRacing FPS regression with conclusive evidence', () => {
@@ -225,7 +241,9 @@ describe('performance analysis', () => {
 
     expect(summary.evidence.privateMemoryAvailable).toBe(false);
     expect(summary.evidence.conclusive).toBe(false);
-    expect(comparison.checks.every((check) => check.passed === null)).toBe(true);
+    expect(comparison.checks.every((check) => check.passed === null)).toBe(
+      true
+    );
   });
 
   it('requires publication rather than processor execution for visible coverage', () => {

@@ -172,6 +172,9 @@ export interface PerfSummary {
     totalWakeupRateHz: number;
     telemetryCallbackP99MeanMs: number;
     telemetryCallbackP99WorstMs: number;
+    trackMapAnimationFrameRateHz: number;
+    trackMapAnimationFrameP99MeanMs: number;
+    trackMapAnimationFrameP99WorstMs: number;
     framesOver25MsPercent: number;
     framesOver50MsPercent: number;
   };
@@ -226,6 +229,8 @@ export interface PerfComparison {
     peakMemoryMB: number;
     processTelemetryP99Ms: number;
     eventLoopP99Ms: number;
+    trackMapAnimationFrameRateHz: number;
+    trackMapAnimationFrameP99Ms: number;
   };
   checks: {
     name: string;
@@ -325,9 +330,10 @@ interface IntervalBounds {
   end: number;
 }
 
-const sampleBounds = (
-  sample: { timestamp: string; intervalMs?: number }
-): IntervalBounds => {
+const sampleBounds = (sample: {
+  timestamp: string;
+  intervalMs?: number;
+}): IntervalBounds => {
   const end = Date.parse(sample.timestamp);
   return {
     start: end - Math.max(0, sample.intervalMs ?? 0),
@@ -380,9 +386,7 @@ const coveredDurationSeconds = (
   return coveredMs / 1000;
 };
 
-type ChannelMetricField = keyof NonNullable<
-  MainPerfSample['channelMetrics']
->;
+type ChannelMetricField = keyof NonNullable<MainPerfSample['channelMetrics']>;
 
 const isMetricMap = (value: unknown): value is Record<string, number> =>
   typeof value === 'object' &&
@@ -407,13 +411,10 @@ const channelCount = (
   field: ChannelMetricField,
   channel: string
 ): number =>
-  samples.reduce(
-    (sum, sample) => {
-      const metrics = sample.channelMetrics?.[field];
-      return sum + (isMetricMap(metrics) ? (metrics[channel] ?? 0) : 0);
-    },
-    0
-  );
+  samples.reduce((sum, sample) => {
+    const metrics = sample.channelMetrics?.[field];
+    return sum + (isMetricMap(metrics) ? (metrics[channel] ?? 0) : 0);
+  }, 0);
 
 const summarizeChannels = (
   samples: readonly MainPerfSample[],
@@ -491,8 +492,8 @@ export function summarizeCapture(
     ...capture.main.map((sample) => Date.parse(sample.timestamp))
   );
   const analysisEnd = configuredAnalysisEnd ?? lastSampleEnd + 1;
-  const main = capture.main.filter(
-    (sample) => overlaps(sampleBounds(sample), analysisStart, analysisEnd)
+  const main = capture.main.filter((sample) =>
+    overlaps(sampleBounds(sample), analysisStart, analysisEnd)
   );
   if (main.length === 0) {
     throw new Error('No PerfMetrics samples fall inside the analysis window.');
@@ -525,6 +526,13 @@ export function summarizeCapture(
   const rendererTelemetrySeconds =
     renderer
       .filter((sample) => sample.telemetryCallbackMs !== undefined)
+      .reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
+  const trackMapAnimationFrames = renderer
+    .map((sample) => sample.trackMapAnimationFrameMs)
+    .filter((stats): stats is NumericSampleStats => stats !== undefined);
+  const trackMapAnimationSeconds =
+    renderer
+      .filter((sample) => sample.trackMapAnimationFrameMs !== undefined)
       .reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
   const rendererSeconds =
     renderer.reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
@@ -630,22 +638,21 @@ export function summarizeCapture(
         phase.start < analysisEnd
     );
   const hasVisibilitySchedule = (capture.visibility ?? []).length > 0;
-  const phaseWindows =
-    hasVisibilitySchedule
-      ? configuredPhases.map((phase) => ({
-          index: phase.marker.index,
-          visibility: phase.marker.visibility,
-          start: Math.max(analysisStart, phase.start),
-          end: Math.min(analysisEnd, phase.end),
-        }))
-      : [
-          {
-            index: 0,
-            visibility: 'visible' as const,
-            start: analysisStart,
-            end: analysisEnd,
-          },
-        ];
+  const phaseWindows = hasVisibilitySchedule
+    ? configuredPhases.map((phase) => ({
+        index: phase.marker.index,
+        visibility: phase.marker.visibility,
+        start: Math.max(analysisStart, phase.start),
+        end: Math.min(analysisEnd, phase.end),
+      }))
+    : [
+        {
+          index: 0,
+          visibility: 'visible' as const,
+          start: analysisStart,
+          end: analysisEnd,
+        },
+      ];
   const samplesForPhase = (phase: (typeof phaseWindows)[number]) =>
     effectiveMain.filter((sample) => {
       const bounds = sampleBounds(sample);
@@ -776,9 +783,9 @@ export function summarizeCapture(
       ? (lastPrivateTimestamp - firstPrivateTimestamp) / 1000
       : 0;
   const privateMemoryMaxGapSeconds = maximum(
-    privateTimestamps.slice(1).map(
-      (timestamp, index) => (timestamp - privateTimestamps[index]) / 1000
-    )
+    privateTimestamps
+      .slice(1)
+      .map((timestamp, index) => (timestamp - privateTimestamps[index]) / 1000)
   );
   const requiredPrivateSpanSeconds =
     Math.min(durationSeconds, MIN_ANALYSIS_SECONDS) * MIN_PRIVATE_SPAN_RATIO;
@@ -815,7 +822,7 @@ export function summarizeCapture(
       ? ['private-memory samples are unavailable or incomplete']
       : !privateMemorySamplingAdequate
         ? ['private-memory sampling span or cadence is insufficient']
-      : []),
+        : []),
     ...(!inputCoverageAvailable
       ? ['widget input coverage metadata is unavailable']
       : !inputCoverageComplete
@@ -1096,6 +1103,22 @@ export function summarizeCapture(
       telemetryCallbackP99WorstMs: maximum(
         rendererTelemetryCallbacks.map((stats) => stats.p99)
       ),
+      trackMapAnimationFrameRateHz:
+        trackMapAnimationSeconds === 0
+          ? 0
+          : trackMapAnimationFrames.reduce(
+              (sum, stats) => sum + stats.count,
+              0
+            ) / trackMapAnimationSeconds,
+      trackMapAnimationFrameP99MeanMs: weightedAverage(
+        trackMapAnimationFrames.map((stats) => ({
+          value: stats.p99,
+          weight: stats.count,
+        }))
+      ),
+      trackMapAnimationFrameP99WorstMs: maximum(
+        trackMapAnimationFrames.map((stats) => stats.p99)
+      ),
       framesOver25MsPercent:
         rendererFrameCount === 0
           ? 0
@@ -1175,6 +1198,12 @@ export function compareSummaries(
         baseline.telemetry.processTelemetryP99MeanMs,
       eventLoopP99Ms:
         candidate.eventLoop.p99MeanMs - baseline.eventLoop.p99MeanMs,
+      trackMapAnimationFrameRateHz:
+        candidate.renderer.trackMapAnimationFrameRateHz -
+        baseline.renderer.trackMapAnimationFrameRateHz,
+      trackMapAnimationFrameP99Ms:
+        candidate.renderer.trackMapAnimationFrameP99MeanMs -
+        baseline.renderer.trackMapAnimationFrameP99MeanMs,
     },
     checks: [
       {
@@ -1306,6 +1335,8 @@ export function summaryMarkdown(summary: PerfSummary): string {
 | Renderer frame-time p99 mean | ${format(summary.renderer.frameTimeP99MeanMs)} ms |
 | Renderer telemetry callbacks / second | ${format(summary.renderer.telemetryCallbackRateHz)} |
 | Renderer telemetry callback p99, mean / worst interval | ${format(summary.renderer.telemetryCallbackP99MeanMs, 3)} / ${format(summary.renderer.telemetryCallbackP99WorstMs, 3)} ms |
+| Track-map animation frames / second | ${format(summary.renderer.trackMapAnimationFrameRateHz)} |
+| Track-map animation-frame p99, mean / worst interval | ${format(summary.renderer.trackMapAnimationFrameP99MeanMs, 3)} / ${format(summary.renderer.trackMapAnimationFrameP99WorstMs, 3)} ms |
 | Renderer frames over 25 / 50 ms | ${format(summary.renderer.framesOver25MsPercent, 3)}% / ${format(summary.renderer.framesOver50MsPercent, 3)}% |
 | Worst renderer frame | ${format(summary.renderer.worstFrameMs)} ms |
 
@@ -1374,6 +1405,8 @@ export function comparisonMarkdown(comparison: PerfComparison): string {
 | irDashies peak memory | ${format(delta.peakMemoryMB)} MB |
 | processTelemetry p99 mean | ${format(delta.processTelemetryP99Ms)} ms |
 | Main event-loop p99 mean | ${format(delta.eventLoopP99Ms)} ms |
+| Track-map animation frames / second | ${format(delta.trackMapAnimationFrameRateHz)} Hz |
+| Track-map animation-frame p99 mean | ${format(delta.trackMapAnimationFrameP99Ms, 3)} ms |
 
 | Check | Status | Actual | Target |
 | --- | --- | ---: | ---: |

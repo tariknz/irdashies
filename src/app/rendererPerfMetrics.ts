@@ -1,5 +1,8 @@
 import { ipcRenderer } from 'electron';
-import type { RendererPerfSample } from '@irdashies/types';
+import type {
+  RendererPerfMeasureName,
+  RendererPerfSample,
+} from '@irdashies/types';
 import { FixedSampleBuffer } from '../shared/performanceSamples';
 import { readRendererPerfArguments } from './perfRendererArguments';
 
@@ -7,6 +10,7 @@ export const PERF_RENDERER_LOG_PREFIX = '[PerfRenderer:JSON] ';
 
 let telemetryCallbackTimes: FixedSampleBuffer | undefined;
 let channelCallbackTimes: FixedSampleBuffer | undefined;
+let trackMapAnimationFrameTimes: FixedSampleBuffer | undefined;
 
 export function isRendererPerfMetricsEnabled(): boolean {
   return telemetryCallbackTimes !== undefined;
@@ -18,6 +22,15 @@ export function recordTelemetryCallback(durationMs: number): void {
 
 export function recordChannelCallback(durationMs: number): void {
   channelCallbackTimes?.add(durationMs);
+}
+
+export function recordRendererMeasure(
+  name: RendererPerfMeasureName,
+  durationMs: number
+): void {
+  if (name === 'trackMapAnimationFrame') {
+    trackMapAnimationFrameTimes?.add(durationMs);
+  }
 }
 
 export function startRendererPerfMetrics(): void {
@@ -34,6 +47,8 @@ export function startRendererPerfMetrics(): void {
   telemetryCallbackTimes = callbackTimes;
   const channelTimes = new FixedSampleBuffer(4096);
   channelCallbackTimes = channelTimes;
+  const trackMapFrameTimes = new FixedSampleBuffer(4096);
+  trackMapAnimationFrameTimes = trackMapFrameTimes;
   let intervalStart = performance.now();
   let previousFrameTime = 0;
   let framesOver25Ms = 0;
@@ -60,6 +75,7 @@ export function startRendererPerfMetrics(): void {
       previousFrameTime = 0;
       callbackTimes.reset();
       channelTimes.reset();
+      trackMapFrameTimes.reset();
       framesOver25Ms = 0;
       framesOver50Ms = 0;
       return;
@@ -77,6 +93,7 @@ export function startRendererPerfMetrics(): void {
       frameTimeMs: stats,
       telemetryCallbackMs: callbackTimes.summarize(),
       channelCallbackMs: channelTimes.summarize(),
+      trackMapAnimationFrameMs: trackMapFrameTimes.summarize(),
       telemetryWakeups: callbackTimes.summarize().count,
       channelWakeups: channelTimes.summarize().count,
       framesOver25Ms,
@@ -93,6 +110,7 @@ export function startRendererPerfMetrics(): void {
     frameTimes.reset();
     callbackTimes.reset();
     channelTimes.reset();
+    trackMapFrameTimes.reset();
     framesOver25Ms = 0;
     framesOver50Ms = 0;
   }, reportIntervalMs);
