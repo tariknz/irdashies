@@ -392,11 +392,20 @@ export const setupChannelBridge = (bus: ChannelBus): (() => void) => {
         const window = BrowserWindow.fromWebContents(event.sender);
         const onShow = () => bus.rendererBecameVisible(event.sender.id);
         const onHide = () => bus.rendererBecameHidden(event.sender.id);
+        // `minimize`/`restore` are distinct from `hide`/`show`: Electron never
+        // emits `show` when a window returns from the minimised state. Without
+        // the `restore` listener a subscription deactivated by `publish()` — it
+        // deactivates on `isVisible() === false` but never reactivates — would
+        // stay dead for the life of the renderer.
         window?.on('show', onShow);
         window?.on('hide', onHide);
+        window?.on('restore', onShow);
+        window?.on('minimize', onHide);
         const cleanup = () => {
           window?.removeListener('show', onShow);
           window?.removeListener('hide', onHide);
+          window?.removeListener('restore', onShow);
+          window?.removeListener('minimize', onHide);
           rendererCleanup.delete(event.sender.id);
           bus.removeRenderer(event.sender.id);
         };
