@@ -5,5 +5,5 @@ export default {
   sessionData: true,
   channels: ['blind-spot.snapshot'],
   ratePreset: 'driverFocused',
-  channelRates: { 'blind-spot.snapshot': 60 },
+  channelRates: { 'blind-spot.snapshot': 25 },
 } satisfies WidgetRuntimeDefinition;

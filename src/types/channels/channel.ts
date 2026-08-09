@@ -298,8 +298,8 @@ export type ChannelRegistry = Readonly<Record<ChannelName, ChannelDefinition>>;
 export const channelRegistry = {
   'blind-spot.snapshot': {
     kind: 'snapshot',
-    defaultRateHz: 60,
-    maxRateHz: 60,
+    defaultRateHz: 25,
+    maxRateHz: 25,
   },
   'car-speeds.snapshot': {
     kind: 'snapshot',

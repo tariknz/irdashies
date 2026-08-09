@@ -24,7 +24,7 @@ const copyPositions = (target: number[], frame: Telemetry): boolean => {
 
 export class BlindSpotProcessor implements TelemetryProcessor<BlindSpotSnapshot> {
   readonly channel = 'blind-spot.snapshot';
-  readonly tickRateHz = 60;
+  readonly tickRateHz = 25;
 
   private readonly latest: BlindSpotSnapshot = {
     carLeftRight: 0,
