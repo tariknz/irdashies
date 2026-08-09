@@ -40,6 +40,21 @@ import {
 import { ChannelBus, setupChannelBridge } from './app/bridge/channelBridge';
 import { connectSessionLifecycleChannel } from './app/bridge/sessionLifecycleChannel';
 import { setupRendererDataSubscriptions } from './app/bridge/rendererDataSubscriptions';
+import { PerfHeapProfiler } from './app/perfHeapProfiler';
+
+const safeErrorDetails = (error: unknown) => {
+  const code =
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof error.code === 'string'
+      ? error.code
+      : undefined;
+  return {
+    name: error instanceof Error ? error.name : 'UnknownError',
+    ...(code ? { code } : {}),
+  };
+};
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -136,12 +151,46 @@ app.on('ready', async () => {
         runId: process.env.PERF_RUN_ID ?? 'manual',
       })}`
     );
-    if (perfRun.durationSeconds > 0) {
-      setTimeout(() => {
-        log.info(
-          `[PerfRun] Completed fixed ${perfRun.durationSeconds}s capture`
+    const heapProfilePath = process.env.PERF_HEAP_PROFILE_PATH;
+    if (heapProfilePath && perfRun.durationSeconds <= 0) {
+      log.error(
+        `[PerfRun] PERF_HEAP_PROFILE_PATH requires a fixed capture duration`
+      );
+      app.quit();
+      return;
+    }
+    let heapProfiler: PerfHeapProfiler | undefined;
+    if (heapProfilePath) {
+      try {
+        heapProfiler = new PerfHeapProfiler(heapProfilePath);
+        await heapProfiler.start();
+        log.info(`[PerfRun] Main-process heap sampling started`);
+      } catch (error) {
+        heapProfiler = undefined;
+        log.error(
+          `[PerfRun] Main-process heap sampling failed`,
+          safeErrorDetails(error)
         );
-        app.quit();
+      }
+    }
+    if (perfRun.durationSeconds > 0) {
+      setTimeout(async () => {
+        try {
+          if (heapProfiler) {
+            await heapProfiler.stop();
+            log.info(`[PerfRun] Main-process heap profile written`);
+          }
+        } catch (error) {
+          log.error(
+            `[PerfRun] Main-process heap profile export failed`,
+            safeErrorDetails(error)
+          );
+        } finally {
+          log.info(
+            `[PerfRun] Completed fixed ${perfRun.durationSeconds}s capture`
+          );
+          app.quit();
+        }
       }, perfRun.durationSeconds * 1000);
     }
 
@@ -155,8 +204,7 @@ app.on('ready', async () => {
         }
         log.info(
           `${PERF_VISIBILITY_LOG_PREFIX}${JSON.stringify({
-            timestamp:
-              index === 0 ? captureOrigin : new Date().toISOString(),
+            timestamp: index === 0 ? captureOrigin : new Date().toISOString(),
             runId: process.env.PERF_RUN_ID ?? 'manual',
             index,
             visibility: phase.visibility,
