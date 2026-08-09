@@ -286,7 +286,7 @@ export const DashboardProvider: React.FC<{
 export const useDashboard = (): DashboardContextProps => {
   const context = useContext(DashboardContext);
   if (!context) {
-    throw new Error('useTelemetry requires a raw telemetry store');
+    throw new Error('useDashboard must be used within a DashboardProvider');
   }
   return context;
 };

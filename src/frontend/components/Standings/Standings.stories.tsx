@@ -12,8 +12,6 @@ import {
 } from '@irdashies/storybook';
 import {
   DashboardProvider,
-  SessionProvider,
-  StoryTelemetryProvider,
   useLapTimesStoreUpdater,
   usePitLapStoreUpdater,
   useDrivingState,
@@ -25,7 +23,6 @@ import {
   useSessionDrivers,
   type P2PDisplayState,
 } from '@irdashies/context';
-import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
 import type {
   DashboardBridge,
   StandingsConfig,
@@ -1144,28 +1141,22 @@ export const HeaderOnlyAllVisible: Story = {
 
 export const CompactMode: Story = {
   decorators: [
+    TelemetryDecorator(),
     (Story) => (
-      <>
-        <SessionProvider bridge={generateMockDataFromPath()} />
-        <StoryTelemetryProvider bridge={generateMockDataFromPath()} />
-        <DashboardProvider bridge={createMockBridgeWithCompactMode()}>
-          <Story />
-        </DashboardProvider>
-      </>
+      <DashboardProvider bridge={createMockBridgeWithCompactMode()}>
+        <Story />
+      </DashboardProvider>
     ),
   ],
 };
 
 export const CompactUltraMode: Story = {
   decorators: [
+    TelemetryDecorator(),
     (Story) => (
-      <>
-        <SessionProvider bridge={generateMockDataFromPath()} />
-        <StoryTelemetryProvider bridge={generateMockDataFromPath()} />
-        <DashboardProvider bridge={createMockBridgeWithCompactUltraMode()}>
-          <Story />
-        </DashboardProvider>
-      </>
+      <DashboardProvider bridge={createMockBridgeWithCompactUltraMode()}>
+        <Story />
+      </DashboardProvider>
     ),
   ],
 };

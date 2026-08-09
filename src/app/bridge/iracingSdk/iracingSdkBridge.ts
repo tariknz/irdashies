@@ -243,7 +243,6 @@ export async function publishIRacingSDKEvents(
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
-  let latestTelemetry: Telemetry | null = null;
   let latestSession: Session | null = null;
 
   const telemetryCallbacks = new Set<(value: Telemetry) => void>();
@@ -260,12 +259,6 @@ export async function publishIRacingSDKEvents(
         id,
         'runningState',
         lastRunningState
-      );
-    if (latestTelemetry && perfTelemetryDeliveryEnabled)
-      overlayManager.publishMessageToOverlay(
-        id,
-        'telemetryInspector:telemetry',
-        telemetryForRenderer(latestTelemetry)
       );
     if (latestSession)
       overlayManager.publishMessageToOverlay(id, 'sessionData', latestSession);
@@ -333,7 +326,6 @@ export async function publishIRacingSDKEvents(
         }
 
         if (telemetry) {
-          latestTelemetry = telemetry;
           perfMetrics.markStart('lifecycleTelemetry');
           lifecycle?._onTelemetry(telemetry);
           perfMetrics.markEnd('lifecycleTelemetry');
@@ -416,7 +408,6 @@ export async function publishIRacingSDKEvents(
         // opened during a disconnect don't get re-seeded with stale data, and
         // so the references don't sit in main-process memory indefinitely.
         // They get repopulated on the next successful waitForData tick.
-        latestTelemetry = null;
         latestSession = null;
         overlayManager.clearLatestSessionData?.();
         lifecycle?._onDisconnect();
