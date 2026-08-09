@@ -26,6 +26,7 @@ async function initializeDashboardView() {
 
   await bridge.connect(wsUrl);
   window.channelBridge = bridge;
+  window.telemetryInspectorBridge = bridge;
   window.fuelCalculatorBridge = {
     getHistoricalLaps: async () => [],
     saveLap: async () => undefined,

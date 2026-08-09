@@ -5,7 +5,12 @@ import {
   getPerfRunConfig,
   PERF_REPLAY_READY_LOG_MARKER,
 } from '../../perfRunConfig';
-import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
+import {
+  TELEMETRY_INSPECTOR_RATE_HZ,
+  type IrSdkSourceBridge,
+  type Session,
+  type Telemetry,
+} from '@irdashies/types';
 import logger from '../../logger';
 import type { SessionLifecycle } from '../../sessionLifecycle';
 import type { ChannelBus } from '../channelBridge';
@@ -148,7 +153,7 @@ export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager,
   lifecycle?: SessionLifecycle,
   channelBus?: ChannelBus
-): Promise<IrSdkBridge> {
+): Promise<IrSdkSourceBridge> {
   logger.info('[iracingSdkBridge] Loading iRacing SDK bridge...');
   const isTapeReplay = Boolean(process.env.IRDASHIES_TELEMETRY_REPLAY);
   const sourceName = isTapeReplay ? 'telemetry replay' : 'iRacing';
@@ -259,7 +264,7 @@ export async function publishIRacingSDKEvents(
     if (latestTelemetry && perfTelemetryDeliveryEnabled)
       overlayManager.publishMessageToOverlay(
         id,
-        'telemetry',
+        'telemetryInspector:telemetry',
         telemetryForRenderer(latestTelemetry)
       );
     if (latestSession)
@@ -302,6 +307,7 @@ export async function publishIRacingSDKEvents(
   (async () => {
     while (!shouldStop) {
       let lastSessionVersion = -1;
+      let lastInspectorTelemetryPublishTime = Number.NEGATIVE_INFINITY;
       // Negative infinity makes the first tick fetch and publish immediately.
       let lastSessionPublishTime = Number.NEGATIVE_INFINITY;
       let lastSessionPollTime = Number.NEGATIVE_INFINITY;
@@ -346,13 +352,19 @@ export async function publishIRacingSDKEvents(
           lapLogRuntime?.onFrame(telemetry);
           if (
             perfTelemetryDeliveryEnabled &&
-            overlayManager.hasLegacyStreamSubscribers('telemetry')
+            overlayManager.hasTelemetryInspectorSubscribers() &&
+            tickTime - lastInspectorTelemetryPublishTime >=
+              1000 / TELEMETRY_INSPECTOR_RATE_HZ
           ) {
+            lastInspectorTelemetryPublishTime = tickTime;
             perfMetrics.markStart('telemetryProjection');
             const rendererTelemetry = telemetryForRenderer(telemetry);
             perfMetrics.markEnd('telemetryProjection');
             perfMetrics.markStart('broadcast');
-            overlayManager.publishMessage('telemetry', rendererTelemetry);
+            overlayManager.publishMessage(
+              'telemetryInspector:telemetry',
+              rendererTelemetry
+            );
             perfMetrics.markEnd('broadcast');
           }
           perfMetrics.markStart('telemetryCallbacks');

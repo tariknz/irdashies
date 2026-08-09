@@ -18,10 +18,10 @@ import { sanitizeWindowBounds } from './windowBounds';
 import logger from './logger';
 import { createRendererPerfArguments } from './perfRendererArguments';
 
-type LegacyRendererStream = 'telemetry' | 'sessionData';
-interface LegacyStreamSubscriptions {
-  has(rendererId: number, stream: LegacyRendererStream): boolean;
-  hasAny(stream: LegacyRendererStream): boolean;
+type RendererDataStream = 'sessionData' | 'telemetryInspector';
+interface RendererDataSubscriptions {
+  has(rendererId: number, stream: RendererDataStream): boolean;
+  hasAny(stream: RendererDataStream): boolean;
 }
 
 // used for Hot Module Replacement
@@ -62,7 +62,7 @@ export class OverlayManager {
   private overlayAlwaysOnTop = true;
   private hasSingleInstanceLock = false;
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
-  private legacyStreamSubscriptions?: LegacyStreamSubscriptions;
+  private rendererDataSubscriptions?: RendererDataSubscriptions;
 
   /** Padding around the widget bounding box when shrink-wrapping */
   private static readonly SHRINK_WRAP_PADDING = 20;
@@ -548,7 +548,7 @@ export class OverlayManager {
    */
   // High-frequency messages that only the overlay container needs
   private static readonly OVERLAY_ONLY_MESSAGES = new Set([
-    'telemetry',
+    'telemetryInspector:telemetry',
     'runningState',
   ]);
 
@@ -557,8 +557,19 @@ export class OverlayManager {
     for (const win of this.displayWindows.values()) {
       if (win.isDestroyed()) continue;
       if (
-        (key === 'telemetry' || key === 'sessionData') &&
-        !this.legacyStreamSubscriptions?.has(win.webContents.id, key)
+        (key === 'telemetryInspector:telemetry' || key === 'sessionData') &&
+        !win.isVisible()
+      ) {
+        continue;
+      }
+      if (
+        (key === 'telemetryInspector:telemetry' || key === 'sessionData') &&
+        !this.rendererDataSubscriptions?.has(
+          win.webContents.id,
+          key === 'telemetryInspector:telemetry'
+            ? 'telemetryInspector'
+            : 'sessionData'
+        )
       ) {
         continue;
       }
@@ -587,14 +598,16 @@ export class OverlayManager {
     }
   }
 
-  public setLegacyStreamSubscriptions(
-    subscriptions: LegacyStreamSubscriptions
+  public setRendererDataSubscriptions(
+    subscriptions: RendererDataSubscriptions
   ): void {
-    this.legacyStreamSubscriptions = subscriptions;
+    this.rendererDataSubscriptions = subscriptions;
   }
 
-  public hasLegacyStreamSubscribers(stream: LegacyRendererStream): boolean {
-    return this.legacyStreamSubscriptions?.hasAny(stream) ?? false;
+  public hasTelemetryInspectorSubscribers(): boolean {
+    return (
+      this.rendererDataSubscriptions?.hasAny('telemetryInspector') ?? false
+    );
   }
 
   /**

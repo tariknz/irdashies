@@ -2,7 +2,6 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
   id: 'battle',
-  legacyTelemetry: false,
   sessionData: true,
   channels: [
     'car-speeds.snapshot',

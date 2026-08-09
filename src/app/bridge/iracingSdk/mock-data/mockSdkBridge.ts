@@ -15,6 +15,7 @@ import { SessionBarRuntime } from '../../../processors/sessionBarRuntime';
 import { DriverControlsRuntime } from '../../../processors/driverControlsRuntime';
 import { TrackStateRuntime } from '../../../processors/trackStateRuntime';
 import { LapLogRuntime } from '../../../processors/lapLogRuntime';
+import { TELEMETRY_INSPECTOR_RATE_HZ } from '@irdashies/types';
 
 export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager,
@@ -22,6 +23,7 @@ export async function publishIRacingSDKEvents(
   channelBus?: ChannelBus
 ) {
   const perfMetrics = new TelemetryPerfMetrics();
+  let lastInspectorTelemetryPublishTime = Number.NEGATIVE_INFINITY;
   perfMetrics.startReporting();
 
   const bridge = generateMockData();
@@ -105,9 +107,17 @@ export async function publishIRacingSDKEvents(
     driverControlsRuntime?.onFrame(telemetry);
     trackStateRuntime?.onFrame(telemetry);
     lapLogRuntime?.onFrame(telemetry);
-    perfMetrics.markStart('broadcast');
-    overlayManager.publishMessage('telemetry', telemetry);
-    perfMetrics.markEnd('broadcast');
+    const tickTime = performance.now();
+    if (
+      overlayManager.hasTelemetryInspectorSubscribers() &&
+      tickTime - lastInspectorTelemetryPublishTime >=
+        1000 / TELEMETRY_INSPECTOR_RATE_HZ
+    ) {
+      lastInspectorTelemetryPublishTime = tickTime;
+      perfMetrics.markStart('broadcast');
+      overlayManager.publishMessage('telemetryInspector:telemetry', telemetry);
+      perfMetrics.markEnd('broadcast');
+    }
     perfMetrics.markEnd('processTelemetry');
     perfMetrics.tick(telemetry);
   });

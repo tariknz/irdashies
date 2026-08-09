@@ -2,7 +2,6 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
   id: 'pitlanehelper',
-  legacyTelemetry: false,
   sessionData: true,
   pitLaneData: true,
   channels: ['driver-controls.snapshot', 'track-state.snapshot'],

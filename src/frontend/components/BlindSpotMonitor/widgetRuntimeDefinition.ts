@@ -2,7 +2,6 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
   id: 'blindspotmonitor',
-  legacyTelemetry: false,
   sessionData: true,
   channels: ['track-state.snapshot'],
   ratePreset: 'driverFocused',

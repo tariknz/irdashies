@@ -4,7 +4,7 @@ import type { DashboardWidget } from '@irdashies/types';
 import {
   getWidgetRuntimeDefinition,
   rendererNeedsChannel,
-  rendererNeedsLegacyTelemetry,
+  rendererNeedsTelemetryInspector,
   useWidgetChannelRate,
   WidgetRuntimeProvider,
 } from './widgetRuntime';
@@ -19,19 +19,16 @@ const widget = (id: string, type?: string): DashboardWidget => ({
 describe('widget runtime metadata', () => {
   it('discovers Fuel as a channel-only widget', () => {
     expect(getWidgetRuntimeDefinition('fuel')).toMatchObject({
-      legacyTelemetry: false,
       channels: ['fuel.projection'],
     });
-    expect(rendererNeedsLegacyTelemetry([widget('fuel')])).toBe(false);
+    expect(rendererNeedsTelemetryInspector([widget('fuel')])).toBe(false);
   });
 
-  it('keeps unknown and unmigrated widgets on the legacy path', () => {
+  it('does not opt unknown widgets into diagnostic telemetry', () => {
+    expect(rendererNeedsTelemetryInspector([widget('fuel')])).toBe(false);
     expect(
-      rendererNeedsLegacyTelemetry([widget('fuel'), widget('pitlanehelper')])
+      rendererNeedsTelemetryInspector([widget('instance', 'unknown')])
     ).toBe(false);
-    expect(rendererNeedsLegacyTelemetry([widget('instance', 'unknown')])).toBe(
-      true
-    );
   });
 
   it('reserves raw telemetry for the explicit Telemetry Inspector path', () => {
@@ -61,11 +58,11 @@ describe('widget runtime metadata', () => {
       'battle',
     ];
     expect(
-      rendererNeedsLegacyTelemetry(normalWidgets.map((id) => widget(id)))
+      rendererNeedsTelemetryInspector(normalWidgets.map((id) => widget(id)))
     ).toBe(false);
-    expect(rendererNeedsLegacyTelemetry([widget('telemetryinspector')])).toBe(
-      true
-    );
+    expect(
+      rendererNeedsTelemetryInspector([widget('telemetryinspector')])
+    ).toBe(true);
     for (const id of ['cornername', 'flag', 'garagecover', 'sectordelta']) {
       expect(rendererNeedsChannel([widget(id)], 'track-state.snapshot')).toBe(
         true
@@ -75,24 +72,21 @@ describe('widget runtime metadata', () => {
 
   it('discovers Input and Tachometer as driver-control channel consumers', () => {
     expect(getWidgetRuntimeDefinition('input')).toMatchObject({
-      legacyTelemetry: false,
       sessionData: true,
       channels: ['driver-controls.snapshot', 'track-state.snapshot'],
       channelRates: { 'driver-controls.snapshot': 60 },
     });
     expect(getWidgetRuntimeDefinition('tachometer')).toMatchObject({
-      legacyTelemetry: false,
       sessionData: true,
       channels: ['driver-controls.snapshot', 'track-state.snapshot'],
     });
     expect(
-      rendererNeedsLegacyTelemetry([widget('input'), widget('tachometer')])
+      rendererNeedsTelemetryInspector([widget('input'), widget('tachometer')])
     ).toBe(false);
   });
 
   it('declares standings and relative as channel-only consumers', () => {
     expect(getWidgetRuntimeDefinition('standings')).toMatchObject({
-      legacyTelemetry: false,
       channels: [
         'lap-times.snapshot',
         'reference-laps.snapshot',
@@ -105,7 +99,6 @@ describe('widget runtime metadata', () => {
       channelRates: { 'radio.snapshot': 25 },
     });
     expect(getWidgetRuntimeDefinition('relative')).toMatchObject({
-      legacyTelemetry: false,
       channels: [
         'lap-times.snapshot',
         'radio.snapshot',
@@ -121,7 +114,6 @@ describe('widget runtime metadata', () => {
 
   it('declares car-speed consumers at the processor rate', () => {
     expect(getWidgetRuntimeDefinition('battle')).toMatchObject({
-      legacyTelemetry: false,
       channels: [
         'car-speeds.snapshot',
         'relative-gaps.snapshot',
@@ -131,7 +123,6 @@ describe('widget runtime metadata', () => {
       channelRates: { 'car-speeds.snapshot': 10, 'standings.snapshot': 5 },
     });
     expect(getWidgetRuntimeDefinition('slowcarahead')).toMatchObject({
-      legacyTelemetry: false,
       channels: ['car-speeds.snapshot', 'track-state.snapshot'],
       channelRates: { 'car-speeds.snapshot': 10 },
     });

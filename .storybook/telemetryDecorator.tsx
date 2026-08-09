@@ -3,7 +3,7 @@ import {
   DashboardProvider,
   RunningStateProvider,
   SessionProvider,
-  TelemetryProvider,
+  StoryTelemetryProvider,
 } from '@irdashies/context';
 import { generateMockDataFromPath } from '../src/app/bridge/iracingSdk/mock-data/generateMockData';
 import { mockDashboardBridge } from './mockDashboardBridge';
@@ -15,7 +15,7 @@ export const TelemetryDecorator: (path?: string) => Decorator = (path) => {
   const DecoratorComponent = (Story: ComponentType) => (
     <>
       <SessionProvider bridge={generateMockDataFromPath(path)} />
-      <TelemetryProvider bridge={generateMockDataFromPath(path)} />
+      <StoryTelemetryProvider bridge={generateMockDataFromPath(path)} />
       <DashboardProvider bridge={mockDashboardBridge}>
         <RunningStateProvider bridge={generateMockDataFromPath(path)}>
           <Story />
@@ -71,7 +71,7 @@ export const TelemetryDecoratorWithConfig: (
     return (
       <>
         <SessionProvider bridge={generateMockDataFromPath(path)} />
-        <TelemetryProvider bridge={generateMockDataFromPath(path)} />
+        <StoryTelemetryProvider bridge={generateMockDataFromPath(path)} />
         <DashboardProvider bridge={bridge}>
           <RunningStateProvider bridge={generateMockDataFromPath(path)}>
             <Story />

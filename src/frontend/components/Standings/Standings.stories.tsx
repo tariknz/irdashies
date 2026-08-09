@@ -13,7 +13,7 @@ import {
 import {
   DashboardProvider,
   SessionProvider,
-  TelemetryProvider,
+  StoryTelemetryProvider,
   useLapTimesStoreUpdater,
   usePitLapStoreUpdater,
   useDrivingState,
@@ -1147,7 +1147,7 @@ export const CompactMode: Story = {
     (Story) => (
       <>
         <SessionProvider bridge={generateMockDataFromPath()} />
-        <TelemetryProvider bridge={generateMockDataFromPath()} />
+        <StoryTelemetryProvider bridge={generateMockDataFromPath()} />
         <DashboardProvider bridge={createMockBridgeWithCompactMode()}>
           <Story />
         </DashboardProvider>
@@ -1161,7 +1161,7 @@ export const CompactUltraMode: Story = {
     (Story) => (
       <>
         <SessionProvider bridge={generateMockDataFromPath()} />
-        <TelemetryProvider bridge={generateMockDataFromPath()} />
+        <StoryTelemetryProvider bridge={generateMockDataFromPath()} />
         <DashboardProvider bridge={createMockBridgeWithCompactUltraMode()}>
           <Story />
         </DashboardProvider>
