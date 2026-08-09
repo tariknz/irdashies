@@ -88,7 +88,7 @@ interface DriverRowInfoProps {
 // Helper function to provide dummy data for hidden rows
 const getDummyData = () => ({
   position: 1,
-  carNumber: '1',
+  carNumber: '333',
   name: 'Driver Name',
   teamName: 'Team Name',
   delta: 0,
