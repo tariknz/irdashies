@@ -39,6 +39,7 @@ export const createTrackStateProbe = (): ReplayProbe<TrackStateSnapshot> => {
       'IsReplayPlaying',
       'SessionTime',
       'SessionState',
+      'SessionFlags',
       'Speed',
       'DisplayUnits',
       'dcPitSpeedLimiterToggle',

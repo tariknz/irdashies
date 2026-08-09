@@ -16,6 +16,7 @@ export const trackStateStorySnapshot = {
   isReplayPlaying: false,
   sessionTime: 10,
   sessionState: 4,
+  sessionFlags: 0,
   speed: 0,
   displayUnits: 1,
   pitSpeedLimiterToggle: false,

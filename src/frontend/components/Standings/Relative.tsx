@@ -9,7 +9,7 @@ import {
   useLapTimesStoreUpdater,
   useLapTimeHistory,
   useFocusCarIdx,
-  useTelemetryValue,
+  useTrackStateSnapshot,
   useP2PDisplayStates,
   usePitStopDuration,
   usePitLaneStore,
@@ -40,7 +40,7 @@ export const Relative = () => {
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
-  const sessionFlags = useTelemetryValue<number>('SessionFlags') ?? 0;
+  const sessionFlags = useTrackStateSnapshot()?.sessionFlags ?? 0;
   const flagInfo = getFlag(sessionFlags);
   const flagContourSetting = settings?.stylingOptions?.flagContour;
   const flagContourEnabled =

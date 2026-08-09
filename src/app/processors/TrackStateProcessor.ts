@@ -85,6 +85,7 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
     isReplayPlaying: false,
     sessionTime: 0,
     sessionState: 0,
+    sessionFlags: 0,
     speed: 0,
     displayUnits: 0,
     pitSpeedLimiterToggle: false,
@@ -151,6 +152,8 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
       this.set('sessionTime', numberValue(frame, 'SessionTime')) || changed;
     changed =
       this.set('sessionState', numberValue(frame, 'SessionState')) || changed;
+    changed =
+      this.set('sessionFlags', numberValue(frame, 'SessionFlags')) || changed;
     changed = this.set('speed', numberValue(frame, 'Speed')) || changed;
     changed =
       this.set('displayUnits', numberValue(frame, 'DisplayUnits')) || changed;
@@ -189,6 +192,7 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
     this.latest.isReplayPlaying = false;
     this.latest.sessionTime = 0;
     this.latest.sessionState = 0;
+    this.latest.sessionFlags = 0;
     this.latest.speed = 0;
     this.latest.displayUnits = 0;
     this.latest.pitSpeedLimiterToggle = false;

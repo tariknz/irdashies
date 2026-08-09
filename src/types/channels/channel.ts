@@ -40,6 +40,7 @@ export interface TrackStateSnapshot {
   isReplayPlaying: boolean;
   sessionTime: number;
   sessionState: number;
+  sessionFlags: number;
   speed: number;
   displayUnits: number;
   pitSpeedLimiterToggle: boolean;

@@ -60,11 +60,17 @@ describe('widget runtime metadata', () => {
       'cornername',
       'battle',
     ];
-    expect(rendererNeedsLegacyTelemetry(normalWidgets.map((id) => widget(id))))
-      .toBe(false);
+    expect(
+      rendererNeedsLegacyTelemetry(normalWidgets.map((id) => widget(id)))
+    ).toBe(false);
     expect(rendererNeedsLegacyTelemetry([widget('telemetryinspector')])).toBe(
       true
     );
+    for (const id of ['cornername', 'flag', 'garagecover', 'sectordelta']) {
+      expect(rendererNeedsChannel([widget(id)], 'track-state.snapshot')).toBe(
+        true
+      );
+    }
   });
 
   it('discovers Input and Tachometer as driver-control channel consumers', () => {

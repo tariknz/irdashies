@@ -10327,7 +10327,7 @@
       "name": "track-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "f8cc9ef9e82401b6e0d9dcddefe146a39abf8ff8d39704deab907caa55c6d461",
+      "rollingHash": "382b2a33bff4f802f3cdcc9f2113f5f1a994f051489b1f32293540472c0a0fb6",
       "checkpoints": {
         "firstFrame": {
           "focusCarIdx": 0,
@@ -10637,6 +10637,7 @@
           "isReplayPlaying": false,
           "sessionTime": 90.93333384195805,
           "sessionState": 3,
+          "sessionFlags": 537133568,
           "speed": 0.00012638090993277729,
           "displayUnits": 1,
           "pitSpeedLimiterToggle": false,
@@ -10954,6 +10955,7 @@
           "isReplayPlaying": false,
           "sessionTime": 690.9166671749958,
           "sessionState": 4,
+          "sessionFlags": 268697600,
           "speed": 62.47682571411133,
           "displayUnits": 1,
           "pitSpeedLimiterToggle": false,
