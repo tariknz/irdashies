@@ -15,17 +15,17 @@ export const useTrackTemperature = (
   const airTempVal = snapshot?.airTemp;
 
   const trackTemp = useMemo(() => {
-    const trackTemp = trackTempVal ?? 0;
+    if (trackTempVal === undefined) return '';
     const displayTemp =
-      trackTempUnit === 'Imperial' ? (trackTemp * 9) / 5 + 32 : trackTemp;
+      trackTempUnit === 'Imperial' ? (trackTempVal * 9) / 5 + 32 : trackTempVal;
     const unit = trackTempUnit === 'Imperial' ? 'F' : 'C';
     return `${Math.round(displayTemp)}°${unit}`;
   }, [trackTempVal, trackTempUnit]);
 
   const airTemp = useMemo(() => {
-    const airTemp = airTempVal ?? 0;
+    if (airTempVal === undefined) return '';
     const displayTemp =
-      airTempUnit === 'Imperial' ? (airTemp * 9) / 5 + 32 : airTemp;
+      airTempUnit === 'Imperial' ? (airTempVal * 9) / 5 + 32 : airTempVal;
     const unit = airTempUnit === 'Imperial' ? 'F' : 'C';
     return `${Math.round(displayTemp)}°${unit}`;
   }, [airTempVal, airTempUnit]);

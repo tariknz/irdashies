@@ -9,15 +9,19 @@ import { useTopSpeedStore } from './TopSpeedStore';
  */
 export const useTopSpeedStoreUpdater = (enabled: boolean) => {
   const snapshot = useSessionBarSnapshot();
+  const hasSnapshot = snapshot !== undefined;
+  const lastLapTopSpeed = snapshot?.lastLapTopSpeed ?? null;
+  const sessionBestTopSpeed = snapshot?.sessionBestTopSpeed ?? null;
+  const sessionNum = snapshot?.sessionNum ?? null;
 
   useEffect(() => {
-    if (!enabled || !snapshot) return;
+    if (!enabled || !hasSnapshot) return;
     useTopSpeedStore.setState({
-      lastLapTopSpeed: snapshot.lastLapTopSpeed,
-      sessionBestTopSpeed: snapshot.sessionBestTopSpeed,
-      sessionNum: snapshot.sessionNum,
+      lastLapTopSpeed,
+      sessionBestTopSpeed,
+      sessionNum,
     });
-  }, [enabled, snapshot]);
+  }, [enabled, hasSnapshot, lastLapTopSpeed, sessionBestTopSpeed, sessionNum]);
 };
 
 /**

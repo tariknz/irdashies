@@ -10,4 +10,5 @@ export default {
     'track-state.snapshot',
   ],
   ratePreset: 'static',
+  channelRates: { 'track-state.snapshot': 25 },
 } satisfies WidgetRuntimeDefinition;

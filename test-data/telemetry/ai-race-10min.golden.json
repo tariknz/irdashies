@@ -10325,7 +10325,7 @@
     },
     {
       "name": "track-state",
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "frameCount": 36000,
       "rollingHash": "382b2a33bff4f802f3cdcc9f2113f5f1a994f051489b1f32293540472c0a0fb6",
       "checkpoints": {

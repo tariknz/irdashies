@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
 import { useSessionBarSnapshot } from '@irdashies/context';
 
+type TemperatureUnit = 'Metric' | 'Imperial';
+
 interface UseTrackTemperatureOptions {
-  airTempUnit?: 'Metric' | 'Imperial';
-  trackTempUnit?: 'Metric' | 'Imperial';
+  airTempUnit?: TemperatureUnit;
+  trackTempUnit?: TemperatureUnit;
 }
 
 export const useTrackTemperature = (
@@ -15,24 +17,22 @@ export const useTrackTemperature = (
   const airTempVal = snapshot?.airTemp;
 
   const trackTemp = useMemo(() => {
-    const trackTemp = trackTempVal ?? 0;
-    if (trackTemp === null || trackTemp === undefined) return '';
+    if (trackTempVal === undefined) return '';
 
     // Convert to Fahrenheit if Imperial unit is selected
     const displayTemp =
-      trackTempUnit === 'Imperial' ? (trackTemp * 9) / 5 + 32 : trackTemp;
+      trackTempUnit === 'Imperial' ? (trackTempVal * 9) / 5 + 32 : trackTempVal;
 
     const unit = trackTempUnit === 'Imperial' ? 'F' : 'C';
     return `${displayTemp.toFixed(0)}°${unit}`;
   }, [trackTempVal, trackTempUnit]);
 
   const airTemp = useMemo(() => {
-    const airTemp = airTempVal ?? 0;
-    if (airTemp === null || airTemp === undefined) return '';
+    if (airTempVal === undefined) return '';
 
     // Convert to Fahrenheit if Imperial unit is selected
     const displayTemp =
-      airTempUnit === 'Imperial' ? (airTemp * 9) / 5 + 32 : airTemp;
+      airTempUnit === 'Imperial' ? (airTempVal * 9) / 5 + 32 : airTempVal;
 
     const unit = airTempUnit === 'Imperial' ? 'F' : 'C';
     return `${displayTemp.toFixed(0)}°${unit}`;

@@ -22,7 +22,7 @@ export const createTrackStateProbe = (): ReplayProbe<TrackStateSnapshot> => {
   const processor = new TrackStateProcessor();
   return {
     name: 'track-state',
-    schemaVersion: 1,
+    schemaVersion: 2,
     variables: [
       'CamCarIdx',
       'CarIdxLapDistPct',
