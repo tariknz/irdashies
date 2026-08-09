@@ -147,14 +147,19 @@ app.on('ready', async () => {
     }
     if (perfRun.durationSeconds > 0) {
       setTimeout(async () => {
-        if (heapProfiler) {
-          await heapProfiler.stop();
-          log.info(`[PerfRun] Main-process heap profile written`);
+        try {
+          if (heapProfiler) {
+            await heapProfiler.stop();
+            log.info(`[PerfRun] Main-process heap profile written`);
+          }
+        } catch (error) {
+          log.error(`[PerfRun] Main-process heap profile export failed`, error);
+        } finally {
+          log.info(
+            `[PerfRun] Completed fixed ${perfRun.durationSeconds}s capture`
+          );
+          app.quit();
         }
-        log.info(
-          `[PerfRun] Completed fixed ${perfRun.durationSeconds}s capture`
-        );
-        app.quit();
       }, perfRun.durationSeconds * 1000);
     }
 

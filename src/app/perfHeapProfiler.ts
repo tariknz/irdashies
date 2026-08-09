@@ -32,12 +32,19 @@ export class PerfHeapProfiler {
 
   async stop(): Promise<void> {
     if (!this.started) return;
-    const result = await post<{ profile: unknown }>(
-      this.session,
-      'HeapProfiler.stopSampling'
-    );
-    await fs.writeFile(this.outputPath, JSON.stringify(result.profile), 'utf8');
-    this.started = false;
-    this.session.disconnect();
+    try {
+      const result = await post<{ profile: unknown }>(
+        this.session,
+        'HeapProfiler.stopSampling'
+      );
+      await fs.writeFile(
+        this.outputPath,
+        JSON.stringify(result.profile),
+        'utf8'
+      );
+    } finally {
+      this.started = false;
+      this.session.disconnect();
+    }
   }
 }
