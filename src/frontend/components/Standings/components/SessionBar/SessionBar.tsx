@@ -14,6 +14,16 @@ interface SessionBarProps {
   opacity?: number;
 }
 
+// Local-only feature slots (git-excluded src/local/). Empty glob => no-op.
+// The negative pattern keeps co-located *.spec.tsx test files out of the bundle.
+const localSlots = import.meta.glob(
+  [
+    '../../../../../local/slots/*.tsx',
+    '!../../../../../local/slots/*.spec.tsx',
+  ],
+  { eager: true }
+) as Record<string, { default: React.ComponentType }>;
+
 export const SessionBar = ({
   settings: effectiveBarSettings,
   position = 'header',
@@ -66,6 +76,9 @@ export const SessionBar = ({
           />
         );
       })}
+      {Object.entries(localSlots).map(([path, mod]) => (
+        <mod.default key={path} />
+      ))}
     </div>
   );
 };
