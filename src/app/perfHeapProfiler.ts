@@ -20,14 +20,21 @@ export class PerfHeapProfiler {
   constructor(private readonly outputPath: string) {}
 
   async start(): Promise<void> {
-    this.session.connect();
-    await post(this.session, 'HeapProfiler.enable');
-    await post(this.session, 'HeapProfiler.startSampling', {
-      samplingInterval: 32 * 1024,
-      includeObjectsCollectedByMajorGC: false,
-      includeObjectsCollectedByMinorGC: false,
-    });
-    this.started = true;
+    let connected = false;
+    try {
+      this.session.connect();
+      connected = true;
+      await post(this.session, 'HeapProfiler.enable');
+      await post(this.session, 'HeapProfiler.startSampling', {
+        samplingInterval: 32 * 1024,
+        includeObjectsCollectedByMajorGC: false,
+        includeObjectsCollectedByMinorGC: false,
+      });
+      this.started = true;
+    } catch (error) {
+      if (connected) this.session.disconnect();
+      throw error;
+    }
   }
 
   async stop(): Promise<void> {

@@ -138,12 +138,23 @@ app.on('ready', async () => {
       })}`
     );
     const heapProfilePath = process.env.PERF_HEAP_PROFILE_PATH;
-    const heapProfiler = heapProfilePath
-      ? new PerfHeapProfiler(heapProfilePath)
-      : undefined;
-    if (heapProfiler) {
-      await heapProfiler.start();
-      log.info(`[PerfRun] Main-process heap sampling started`);
+    if (heapProfilePath && perfRun.durationSeconds <= 0) {
+      log.error(
+        `[PerfRun] PERF_HEAP_PROFILE_PATH requires a fixed capture duration`
+      );
+      app.quit();
+      return;
+    }
+    let heapProfiler: PerfHeapProfiler | undefined;
+    if (heapProfilePath) {
+      try {
+        heapProfiler = new PerfHeapProfiler(heapProfilePath);
+        await heapProfiler.start();
+        log.info(`[PerfRun] Main-process heap sampling started`);
+      } catch (error) {
+        heapProfiler = undefined;
+        log.error(`[PerfRun] Main-process heap sampling failed`, error);
+      }
     }
     if (perfRun.durationSeconds > 0) {
       setTimeout(async () => {
