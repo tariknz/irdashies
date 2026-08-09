@@ -85,6 +85,13 @@ describe('widget runtime metadata', () => {
     ).toBe(false);
   });
 
+  it('requests a dedicated 25 Hz blind-spot snapshot', () => {
+    expect(getWidgetRuntimeDefinition('blindspotmonitor')).toMatchObject({
+      channels: ['blind-spot.snapshot'],
+      channelRates: { 'blind-spot.snapshot': 25 },
+    });
+  });
+
   it('declares standings and relative as channel-only consumers', () => {
     expect(getWidgetRuntimeDefinition('standings')).toMatchObject({
       channels: [

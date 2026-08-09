@@ -1,8 +1,8 @@
-import { useMemo, useState, useEffect } from 'react';
-import type { TrackStateSnapshot } from '@irdashies/types';
+import { useMemo, useState, useEffect, useRef } from 'react';
+import type { BlindSpotSnapshot } from '@irdashies/types';
 import { shallow } from 'zustand/shallow';
 import {
-  useTrackStateSelector,
+  useBlindSpotSelector,
   useDriverCarIdx,
   useTrackLength,
 } from '@irdashies/context';
@@ -10,6 +10,7 @@ import { useBlindSpotMonitorSettings } from './useBlindSpotMonitorSettings';
 import { CarLeftRight } from '@irdashies/types';
 
 interface BlindSpotMonitorState {
+  isOnTrack: boolean;
   show: boolean;
   leftState: CarLeftRight;
   rightState: CarLeftRight;
@@ -19,13 +20,8 @@ interface BlindSpotMonitorState {
 }
 
 const EMPTY_POSITIONS: readonly number[] = [];
-const EMPTY_BLIND_SPOT_TELEMETRY: readonly [
-  CarLeftRight,
-  readonly number[],
-  boolean,
-] = [CarLeftRight.Off, EMPTY_POSITIONS, false];
-
-const selectBlindSpotTelemetry = (snapshot: TrackStateSnapshot) =>
+const TELEPORT_THRESHOLD = 0.5;
+const selectBlindSpotTelemetry = (snapshot: BlindSpotSnapshot) =>
   [
     snapshot.carLeftRight as CarLeftRight,
     snapshot.carIdxLapDistPct,
@@ -41,26 +37,26 @@ const blindSpotTelemetryEqual = (
   previous[2] === next[2];
 
 export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
-  const [carLeftRight, lapDistPcts, isOnTrack] =
-    useTrackStateSelector(selectBlindSpotTelemetry, {
+  const [carLeftRight, lapDistPcts, isOnTrack] = useBlindSpotSelector(
+    selectBlindSpotTelemetry,
+    {
       equality: blindSpotTelemetryEqual,
-    }) ?? EMPTY_BLIND_SPOT_TELEMETRY;
+    }
+  ) ?? [CarLeftRight.Off, EMPTY_POSITIONS, false];
   const driverCarIdx = useDriverCarIdx() ?? 0;
   const trackLength = useTrackLength();
   const settings = useBlindSpotMonitorSettings();
 
   const [leftCarIdx, setLeftCarIdx] = useState<number | null>(null);
   const [rightCarIdx, setRightCarIdx] = useState<number | null>(null);
-  const [prevPercents, setPrevPercents] = useState<{
+  const prevPercentsRef = useRef<{
     left: number | null;
     right: number | null;
-  }>({
-    left: null,
-    right: null,
-  });
+  }>({ left: null, right: null });
 
   const result = useMemo(() => {
     const defaultState = {
+      isOnTrack,
       show: false,
       leftState: CarLeftRight.Off,
       rightState: CarLeftRight.Off,
@@ -127,9 +123,10 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       leftPercent =
         is3Wide && leftCarIdx === null ? 0 : calculatePercent(leftCarIdx);
 
+      const previousLeft = prevPercentsRef.current.left;
       if (
-        prevPercents.left !== null &&
-        Math.abs(prevPercents.left - leftPercent) > 0.5
+        previousLeft !== null &&
+        Math.abs(previousLeft - leftPercent) > TELEPORT_THRESHOLD
       ) {
         disableTransition = true;
       }
@@ -145,15 +142,17 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       rightPercent =
         is3Wide && rightCarIdx === null ? 0 : calculatePercent(rightCarIdx);
 
+      const previousRight = prevPercentsRef.current.right;
       if (
-        prevPercents.right !== null &&
-        Math.abs(prevPercents.right - rightPercent) > 0.5
+        previousRight !== null &&
+        Math.abs(previousRight - rightPercent) > TELEPORT_THRESHOLD
       ) {
         disableTransition = true;
       }
     }
 
     return {
+      isOnTrack,
       show: true,
       leftState,
       rightState,
@@ -170,14 +169,13 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     isOnTrack,
     leftCarIdx,
     rightCarIdx,
-    prevPercents,
   ]);
 
   useEffect(() => {
     if (carLeftRight <= CarLeftRight.Clear) {
       setLeftCarIdx(null);
       setRightCarIdx(null);
-      setPrevPercents({ left: null, right: null });
+      prevPercentsRef.current = { left: null, right: null };
       return;
     }
 
@@ -225,10 +223,10 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       // If BOTH are null (fresh 3-wide), we stay at 0%
     }
 
-    setPrevPercents({
+    prevPercentsRef.current = {
       left: result.leftPercent !== 0 ? result.leftPercent : null,
       right: result.rightPercent !== 0 ? result.rightPercent : null,
-    });
+    };
   }, [
     result.show,
     carLeftRight,

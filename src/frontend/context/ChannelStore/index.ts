@@ -10,5 +10,6 @@ export * from './useSessionBarSnapshot';
 export * from './useSectorTimingSnapshot';
 export * from './useStandingsSnapshot';
 export * from './useCarSpeedsSnapshot';
+export * from './useBlindSpotSnapshot';
 export * from './useDriverControlsSnapshot';
 export * from './useTrackStateSnapshot';
