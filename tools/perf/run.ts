@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { createWriteStream, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { readWidgetInputRequirements } from './widgetInputMetadata';
+import { parsePerfVisibilityPhases } from '../../src/app/perfRunConfig';
 
 const PERF_REPLAY_READY_LOG_MARKER = '[PerfRun] Ready for replay publisher';
 const REPLAY_STARTUP_TIMEOUT_MS = 30_000;
@@ -69,12 +70,10 @@ function parseArgs(args: string[]): RunOptions {
   const interval = Number(argumentValue(args, '--interval-ms') ?? 5000);
   const duration = Number(argumentValue(args, '--duration-seconds') ?? 0);
   const visibilityPhases = argumentValue(args, '--visibility-phases') ?? '';
-  const phaseDuration = visibilityPhases
-    .split(',')
-    .map((entry) => entry.trim().match(/^(?:visible|hidden):(\d+)$/)?.[1])
-    .map(Number)
-    .filter((value) => Number.isFinite(value) && value >= 10)
-    .reduce((sum, value) => sum + value, 0);
+  const phaseDuration = parsePerfVisibilityPhases(visibilityPhases).reduce(
+    (sum, phase) => sum + phase.durationSeconds,
+    0
+  );
   const durationSeconds =
     Number.isFinite(duration) && duration >= 10
       ? duration

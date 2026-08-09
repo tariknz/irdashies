@@ -384,13 +384,34 @@ type ChannelMetricField = keyof NonNullable<
   MainPerfSample['channelMetrics']
 >;
 
+const isMetricMap = (value: unknown): value is Record<string, number> =>
+  typeof value === 'object' &&
+  value !== null &&
+  !Array.isArray(value) &&
+  Object.values(value).every(
+    (metric) => typeof metric === 'number' && Number.isFinite(metric)
+  );
+
+const hasCompleteChannelMetrics = (sample: MainPerfSample): boolean => {
+  const metrics = sample.channelMetrics;
+  return (
+    metrics !== undefined &&
+    isMetricMap(metrics.processorExecutions) &&
+    isMetricMap(metrics.publications) &&
+    isMetricMap(metrics.deliveries)
+  );
+};
+
 const channelCount = (
   samples: readonly MainPerfSample[],
   field: ChannelMetricField,
   channel: string
 ): number =>
   samples.reduce(
-    (sum, sample) => sum + (sample.channelMetrics?.[field][channel] ?? 0),
+    (sum, sample) => {
+      const metrics = sample.channelMetrics?.[field];
+      return sum + (isMetricMap(metrics) ? (metrics[channel] ?? 0) : 0);
+    },
     0
   );
 
@@ -647,8 +668,7 @@ export function summarizeCapture(
     const phaseDurationSeconds = Math.max(0, (phase.end - phase.start) / 1000);
     const phaseChannels = summarizeChannels(samples, phaseDurationSeconds);
     const hasMetrics =
-      samples.length > 0 &&
-      samples.every((sample) => sample.channelMetrics !== undefined);
+      samples.length > 0 && samples.every(hasCompleteChannelMetrics);
     const visibleInputsChanged = requiredChannels.every(
       (channel) => (phaseChannels[channel]?.publications ?? 0) > 0
     );
@@ -776,7 +796,7 @@ export function summarizeCapture(
     ) &&
     phaseWindows.length > 0 &&
     phaseWindows.every((phase) => samplesForPhase(phase).length > 0) &&
-    effectiveMain.every((sample) => sample.channelMetrics !== undefined);
+    effectiveMain.every(hasCompleteChannelMetrics);
   const inputCoverageComplete =
     inputCoverageAvailable &&
     phaseEvidence.every((phase) => phase.expectedBehaviorSatisfied);
@@ -1432,7 +1452,16 @@ export function parseCliArgs(args: string[]): {
   analysisWindow: AnalysisWindow;
   requireConclusive: boolean;
 } {
-  const positional = args.filter((arg) => !arg.startsWith('--'));
+  const valueFlags = new Set([
+    '--baseline',
+    '--warmup-seconds',
+    '--analysis-start-seconds',
+    '--analysis-end-seconds',
+  ]);
+  const positional = args.filter(
+    (arg, index) =>
+      !arg.startsWith('--') && !valueFlags.has(args[index - 1] ?? '')
+  );
   const baselineIndex = args.indexOf('--baseline');
   const warmupIndex = args.indexOf('--warmup-seconds');
   const startIndex = args.indexOf('--analysis-start-seconds');

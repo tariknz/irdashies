@@ -4,6 +4,7 @@ import {
   activePerfWidgetTypes,
   createPerfDashboard,
   getPerfRunConfig,
+  parsePerfVisibilityPhases,
 } from './perfRunConfig';
 
 const dashboard: DashboardLayout = {
@@ -72,6 +73,17 @@ describe('performance run configuration', () => {
 
     expect(result.widgets.every((widget) => !widget.enabled)).toBe(true);
     expect(dashboard.widgets.every((widget) => widget.enabled)).toBe(true);
+  });
+
+  it('rejects visibility phases outside the shared duration bounds', () => {
+    expect(
+      parsePerfVisibilityPhases(
+        'visible:9,visible:10,hidden:86400,hidden:86401'
+      )
+    ).toEqual([
+      { visibility: 'visible', durationSeconds: 10 },
+      { visibility: 'hidden', durationSeconds: 86_400 },
+    ]);
   });
 
   it('isolates selected widget types', () => {
