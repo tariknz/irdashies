@@ -1,6 +1,9 @@
 import { useLayoutEffect, useRef } from 'react';
+import { perfMetrics } from '@irdashies/utils/perfMetrics';
 
 export const TRACK_POSITION_INTERVAL_MS = 1000 / 25;
+const MIN_POSITION_INTERVAL_MS = 1000 / 60;
+const MAX_POSITION_INTERVAL_MS = 100;
 
 type ProgressSource = readonly {
   progress: number;
@@ -55,12 +58,20 @@ export class ProgressInterpolator {
   private previousDriverIds = new Int32Array(0);
   private count = 0;
   private startedAt = 0;
+  private lastTargetsAt = -1;
   private initialized = false;
 
-  constructor(private readonly durationMs = TRACK_POSITION_INTERVAL_MS) {}
+  constructor(private durationMs = TRACK_POSITION_INTERVAL_MS) {}
 
   setTargets(source: ProgressSource, now: number): boolean {
     if (this.initialized) this.advance(now);
+    if (this.lastTargetsAt >= 0 && now > this.lastTargetsAt) {
+      this.durationMs = Math.min(
+        MAX_POSITION_INTERVAL_MS,
+        Math.max(MIN_POSITION_INTERVAL_MS, now - this.lastTargetsAt)
+      );
+    }
+    this.lastTargetsAt = now;
     this.ensureCapacity(source.length);
     const previousCount = this.count;
     for (let i = 0; i < previousCount; i++) {
@@ -162,9 +173,18 @@ export const useProgressAnimation = (
     const interpolator = interpolatorRef.current;
     if (!interpolator) return;
 
-    const frame = (now: number) => {
-      const active = interpolator.advance(now);
+    let frameTime = 0;
+    const measuredFrame = () => {
+      const active = interpolator.advance(frameTime);
       drawRef.current(interpolator.getValues(), interpolator.getCount());
+      return active;
+    };
+    const frame = (now: number) => {
+      frameTime = now;
+      const active = perfMetrics.measure(
+        'trackMapAnimationFrame',
+        measuredFrame
+      );
       frameRef.current = active ? requestAnimationFrame(frame) : 0;
     };
 

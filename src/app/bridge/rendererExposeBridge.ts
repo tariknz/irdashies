@@ -17,10 +17,12 @@ import type {
   ChromiumFlagsBridge,
   ChromiumFlagsType,
   TelemetryInspectorBridge,
+  RendererPerfBridge,
 } from '@irdashies/types';
 import {
   isRendererPerfMetricsEnabled,
   recordTelemetryCallback,
+  recordRendererMeasure,
 } from '../rendererPerfMetrics';
 import {
   RENDERER_DATA_SUBSCRIPTION_BRIDGE,
@@ -29,6 +31,13 @@ import {
 import { createSubscriptionBridgeClient, defineBridge } from './defineBridge';
 
 export function exposeBridge() {
+  defineBridge<RendererPerfBridge>('rendererPerfBridge', {
+    recordMeasure: (name, durationMs) => {
+      if (name !== 'trackMapAnimationFrame') return;
+      if (!Number.isFinite(durationMs) || durationMs < 0) return;
+      recordRendererMeasure(name, durationMs);
+    },
+  });
   const rendererDataSubscriptions =
     createSubscriptionBridgeClient<RendererDataStream>(
       RENDERER_DATA_SUBSCRIPTION_BRIDGE

@@ -39,6 +39,16 @@ describe('ProgressInterpolator', () => {
     expect(interpolator.getValues()[0]).toBeCloseTo(0.4);
   });
 
+  it('adapts interpolation to the observed snapshot cadence', () => {
+    const interpolator = new ProgressInterpolator();
+    interpolator.setTargets([{ progress: 0.1 }], 0);
+    interpolator.setTargets([{ progress: 0.3 }], 50);
+
+    expect(interpolator.advance(75)).toBe(true);
+    expect(interpolator.getValues()[0]).toBeCloseTo(0.2);
+    expect(interpolator.advance(100)).toBe(false);
+  });
+
   it('reuses its output collection throughout the frame path', () => {
     const interpolator = new ProgressInterpolator(40);
     interpolator.setTargets([{ progress: 0.1 }, { progress: 0.2 }], 0);
@@ -89,7 +99,11 @@ describe('useProgressAnimation', () => {
     vi.stubGlobal('cancelAnimationFrame', vi.fn());
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    delete window.rendererPerfBridge;
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
 
   it('stops RAF when settled without per-frame React renders', () => {
     let renderCount = 0;
@@ -116,6 +130,30 @@ describe('useProgressAnimation', () => {
     expect(callbacks).toHaveLength(0);
     expect(renderCount).toBe(2);
     expect(drawCount).toBeGreaterThan(2);
+  });
+
+  it('records RAF work in renderer performance metrics', () => {
+    const recordMeasure = vi.fn();
+    window.rendererPerfBridge = { recordMeasure };
+
+    const Harness = ({ progress }: { progress: number }) => {
+      const stableDrivers = useRef([{ progress }]);
+      if (stableDrivers.current[0].progress !== progress) {
+        stableDrivers.current = [{ progress }];
+      }
+      useProgressAnimation(stableDrivers.current, () => undefined);
+      return null;
+    };
+
+    const view = render(<Harness progress={0.1} />);
+    view.rerender(<Harness progress={0.3} />);
+    act(() => callbacks.shift()?.(20));
+
+    expect(recordMeasure).toHaveBeenCalledWith(
+      'trackMapAnimationFrame',
+      expect.any(Number)
+    );
+    delete window.rendererPerfBridge;
   });
 
   it('cancels an active frame on unmount', () => {
