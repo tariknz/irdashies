@@ -188,6 +188,29 @@ export const Primary: Story = {
   args: { ...baselineArgs, previewData: previewFuelData },
 };
 
+/** Guards the widest consumption label at a font size that exceeded the old fixed column. */
+export const Avg10AtLargerFontSize: Story = {
+  decorators: [
+    (Story) => (
+      <MockFuelDataProvider>
+        <Story />
+      </MockFuelDataProvider>
+    ),
+    TelemetryDecorator(),
+  ],
+  args: {
+    ...baselineArgs,
+    avgLapsCount: 10,
+    widgetStyles: {
+      fuelGrid: {
+        labelFontSize: 14,
+        valueFontSize: 15,
+      },
+    },
+    previewData: previewFuelData,
+  },
+};
+
 /** Fuel required at the next stop fits within the car's usable tank capacity. */
 export const RefuelFitsTank: Story = {
   decorators: [
