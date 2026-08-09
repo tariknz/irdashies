@@ -13,7 +13,7 @@ const RATE_PRESETS: Readonly<Record<WidgetRatePreset, number | undefined>> = {
 
 export interface WidgetRuntimeDefinition {
   id: string;
-  legacyTelemetry?: boolean;
+  telemetryInspector?: boolean;
   sessionData?: boolean;
   pitLaneData?: boolean;
   channels?: readonly ChannelName[];
@@ -35,22 +35,24 @@ for (const module of Object.values(discoveredDefinitions)) {
   definitions.set(module.default.id, module.default);
 }
 
-const LEGACY_DEFINITION: WidgetRuntimeDefinition = {
-  id: 'legacy',
-  legacyTelemetry: true,
+const DEFAULT_DEFINITION: WidgetRuntimeDefinition = {
+  id: 'default',
+  telemetryInspector: false,
 };
 
 export const getWidgetRuntimeDefinition = (
   widgetType: string
-): WidgetRuntimeDefinition => definitions.get(widgetType) ?? LEGACY_DEFINITION;
+): WidgetRuntimeDefinition => definitions.get(widgetType) ?? DEFAULT_DEFINITION;
 
-export const widgetUsesLegacyTelemetry = (widget: DashboardWidget): boolean =>
-  getWidgetRuntimeDefinition(widget.type || widget.id).legacyTelemetry !==
-  false;
+export const widgetUsesTelemetryInspector = (
+  widget: DashboardWidget
+): boolean =>
+  getWidgetRuntimeDefinition(widget.type || widget.id).telemetryInspector ===
+  true;
 
-export const rendererNeedsLegacyTelemetry = (
+export const rendererNeedsTelemetryInspector = (
   widgets: readonly DashboardWidget[]
-): boolean => widgets.some(widgetUsesLegacyTelemetry);
+): boolean => widgets.some(widgetUsesTelemetryInspector);
 
 export const rendererNeedsChannel = (
   widgets: readonly DashboardWidget[],

@@ -2,7 +2,6 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
   id: 'infobar',
-  legacyTelemetry: false,
   sessionData: true,
   channels: ['session-timing.snapshot', 'session-bar.snapshot'],
   ratePreset: 'gapTiming',

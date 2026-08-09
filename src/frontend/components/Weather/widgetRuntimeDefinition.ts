@@ -2,7 +2,6 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
   id: 'weather',
-  legacyTelemetry: false,
   sessionData: true,
   channels: ['session-bar.snapshot', 'track-state.snapshot'],
   ratePreset: 'informational',

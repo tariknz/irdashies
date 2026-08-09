@@ -7,6 +7,7 @@ import type {
   KeybindingsBridge,
   GamepadHostBridge,
   ChromiumFlagsBridge,
+  TelemetryInspectorBridge,
 } from '@irdashies/types';
 import type { ChannelBridge } from '@irdashies/types';
 
@@ -14,6 +15,7 @@ declare global {
   interface Window {
     channelBridge: ChannelBridge;
     irsdkBridge: IrSdkBridge;
+    telemetryInspectorBridge: TelemetryInspectorBridge;
     dashboardBridge: DashboardBridge;
     pitLaneBridge: PitLaneBridge;
     fuelCalculatorBridge: FuelCalculatorBridge;

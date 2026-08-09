@@ -16,62 +16,48 @@ import type {
   PersonalBestLapBridge,
   ChromiumFlagsBridge,
   ChromiumFlagsType,
+  TelemetryInspectorBridge,
 } from '@irdashies/types';
 import {
   isRendererPerfMetricsEnabled,
   recordTelemetryCallback,
 } from '../rendererPerfMetrics';
 import {
-  LEGACY_STREAM_BRIDGE,
-  type LegacyRendererStream,
-} from './legacyRendererSubscriptions';
+  RENDERER_DATA_SUBSCRIPTION_BRIDGE,
+  type RendererDataStream,
+} from './rendererDataSubscriptions';
 import { createSubscriptionBridgeClient, defineBridge } from './defineBridge';
 
 export function exposeBridge() {
-  const legacySubscriptions =
-    createSubscriptionBridgeClient<LegacyRendererStream>(LEGACY_STREAM_BRIDGE);
-  const legacyListenerCounts = new Map<LegacyRendererStream, number>();
-  const addLegacyListener = (stream: LegacyRendererStream) => {
-    const count = legacyListenerCounts.get(stream) ?? 0;
-    legacyListenerCounts.set(stream, count + 1);
-    if (count === 0) void legacySubscriptions.subscribe(stream);
+  const rendererDataSubscriptions =
+    createSubscriptionBridgeClient<RendererDataStream>(
+      RENDERER_DATA_SUBSCRIPTION_BRIDGE
+    );
+  const rendererDataListenerCounts = new Map<RendererDataStream, number>();
+  const addRendererDataListener = (stream: RendererDataStream) => {
+    const count = rendererDataListenerCounts.get(stream) ?? 0;
+    rendererDataListenerCounts.set(stream, count + 1);
+    if (count === 0) void rendererDataSubscriptions.subscribe(stream);
   };
-  const removeLegacyListener = (stream: LegacyRendererStream) => {
-    const count = legacyListenerCounts.get(stream) ?? 0;
+  const removeRendererDataListener = (stream: RendererDataStream) => {
+    const count = rendererDataListenerCounts.get(stream) ?? 0;
     if (count <= 1) {
-      legacyListenerCounts.delete(stream);
-      void legacySubscriptions.unsubscribe(stream);
+      rendererDataListenerCounts.delete(stream);
+      void rendererDataSubscriptions.unsubscribe(stream);
       return;
     }
-    legacyListenerCounts.set(stream, count - 1);
+    rendererDataListenerCounts.set(stream, count - 1);
   };
   defineBridge<IrSdkBridge>('irsdkBridge', {
-    onTelemetry: (callback: (value: Telemetry) => void) => {
-      const handler = (_: Electron.IpcRendererEvent, value: Telemetry) => {
-        if (!isRendererPerfMetricsEnabled()) {
-          callback(value);
-          return;
-        }
-        const start = performance.now();
-        callback(value);
-        recordTelemetryCallback(performance.now() - start);
-      };
-      addLegacyListener('telemetry');
-      ipcRenderer.on('telemetry', handler);
-      return () => {
-        ipcRenderer.removeListener('telemetry', handler);
-        removeLegacyListener('telemetry');
-      };
-    },
     onSessionData: (callback: (value: Session) => void) => {
       const handler = (_: Electron.IpcRendererEvent, value: Session) => {
         callback(value);
       };
-      addLegacyListener('sessionData');
+      addRendererDataListener('sessionData');
       ipcRenderer.on('sessionData', handler);
       return () => {
         ipcRenderer.removeListener('sessionData', handler);
-        removeLegacyListener('sessionData');
+        removeRendererDataListener('sessionData');
       };
     },
     onRunningState: (callback: (value: boolean) => void) => {
@@ -82,13 +68,43 @@ export function exposeBridge() {
       return () => ipcRenderer.removeListener('runningState', handler);
     },
     stop: () => {
-      for (const stream of legacyListenerCounts.keys()) {
-        void legacySubscriptions.unsubscribe(stream);
+      for (const stream of rendererDataListenerCounts.keys()) {
+        void rendererDataSubscriptions.unsubscribe(stream);
       }
-      legacyListenerCounts.clear();
-      ipcRenderer.removeAllListeners('telemetry');
+      rendererDataListenerCounts.clear();
       ipcRenderer.removeAllListeners('sessionData');
       ipcRenderer.removeAllListeners('runningState');
+      ipcRenderer.removeAllListeners('telemetryInspector:telemetry');
+    },
+  });
+  defineBridge<TelemetryInspectorBridge>('telemetryInspectorBridge', {
+    onTelemetry: (callback: (value: Telemetry) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, value: Telemetry) => {
+        if (!isRendererPerfMetricsEnabled()) {
+          callback(value);
+          return;
+        }
+        const start = performance.now();
+        callback(value);
+        recordTelemetryCallback(performance.now() - start);
+      };
+      addRendererDataListener('telemetryInspector');
+      ipcRenderer.on('telemetryInspector:telemetry', handler);
+      return () => {
+        ipcRenderer.removeListener('telemetryInspector:telemetry', handler);
+        removeRendererDataListener('telemetryInspector');
+      };
+    },
+    onSessionData: (callback: (value: Session) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, value: Session) => {
+        callback(value);
+      };
+      addRendererDataListener('sessionData');
+      ipcRenderer.on('sessionData', handler);
+      return () => {
+        ipcRenderer.removeListener('sessionData', handler);
+        removeRendererDataListener('sessionData');
+      };
     },
   });
 

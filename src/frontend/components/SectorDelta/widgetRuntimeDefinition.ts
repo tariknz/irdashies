@@ -2,7 +2,6 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
   id: 'sectordelta',
-  legacyTelemetry: false,
   sessionData: true,
   channels: [
     'reference-laps.snapshot',

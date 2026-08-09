@@ -3,12 +3,12 @@ import {
   PitLaneProvider,
   ReferenceStoreProvider,
   SessionProvider,
-  TelemetryProvider,
+  TelemetryInspectorProvider,
   useDashboard,
 } from '@irdashies/context';
 import {
   rendererNeedsChannel,
-  rendererNeedsLegacyTelemetry,
+  rendererNeedsTelemetryInspector,
   rendererNeedsPitLaneData,
   rendererNeedsSessionData,
 } from '../../widgetRuntime';
@@ -52,7 +52,7 @@ export const RendererDataProviders = ({
             );
           });
     return {
-      legacyTelemetry: rendererNeedsLegacyTelemetry(widgets),
+      telemetryInspector: rendererNeedsTelemetryInspector(widgets),
       referenceLaps: rendererNeedsChannel(widgets, 'reference-laps.snapshot'),
       sessionData: rendererNeedsSessionData(widgets),
       pitLaneData: rendererNeedsPitLaneData(widgets),
@@ -60,7 +60,7 @@ export const RendererDataProviders = ({
   }, [browser, containerBoundsInfo, currentDashboard?.widgets]);
 
   if (
-    !runtimeNeeds.legacyTelemetry &&
+    !runtimeNeeds.telemetryInspector &&
     !runtimeNeeds.referenceLaps &&
     !runtimeNeeds.sessionData &&
     !runtimeNeeds.pitLaneData
@@ -69,11 +69,11 @@ export const RendererDataProviders = ({
 
   return (
     <>
-      {runtimeNeeds.legacyTelemetry || runtimeNeeds.sessionData ? (
+      {runtimeNeeds.sessionData ? (
         <SessionProvider bridge={window.irsdkBridge} />
       ) : null}
-      {runtimeNeeds.legacyTelemetry ? (
-        <TelemetryProvider bridge={window.irsdkBridge} />
+      {runtimeNeeds.telemetryInspector ? (
+        <TelemetryInspectorProvider bridge={window.telemetryInspectorBridge} />
       ) : null}
       {runtimeNeeds.pitLaneData && window.pitLaneBridge ? (
         <PitLaneProvider bridge={window.pitLaneBridge} />

@@ -12,7 +12,7 @@ import {
 import {
   DashboardProvider,
   SessionProvider,
-  TelemetryProvider,
+  StoryTelemetryProvider,
   useDrivingState,
   usePitLapStoreUpdater,
   useWeekendInfoNumCarClasses,
@@ -104,7 +104,7 @@ function TelemetryDecoratorWithConfigAndGeneralSettings(
       return (
         <>
           <SessionProvider bridge={generateMockDataFromPath(path)} />
-          <TelemetryProvider bridge={generateMockDataFromPath(path)} />
+          <StoryTelemetryProvider bridge={generateMockDataFromPath(path)} />
           <DashboardProvider bridge={mockBridge}>
             <Story />
           </DashboardProvider>

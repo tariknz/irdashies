@@ -2,7 +2,6 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
   id: 'rejoin',
-  legacyTelemetry: false,
   sessionData: true,
   channels: [
     'relative-gaps.snapshot',

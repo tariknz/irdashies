@@ -2,7 +2,6 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
   id: 'relative',
-  legacyTelemetry: false,
   sessionData: true,
   channels: [
     'lap-times.snapshot',

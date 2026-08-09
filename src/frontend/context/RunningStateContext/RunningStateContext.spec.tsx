@@ -8,7 +8,6 @@ describe('RunningStateContext', () => {
   const mockBridge: IrSdkBridge = {
     onRunningState: vi.fn(),
     onSessionData: vi.fn(),
-    onTelemetry: vi.fn(),
     stop: vi.fn(),
   };
 

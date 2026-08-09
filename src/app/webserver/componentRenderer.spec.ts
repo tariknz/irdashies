@@ -148,7 +148,7 @@ describe('WebSocketBridge channels', () => {
     expect(callback).not.toHaveBeenCalled();
   });
 
-  it('subscribes to legacy streams only while a consumer exists', async () => {
+  it('subscribes to Inspector telemetry only while a consumer exists', async () => {
     vi.stubGlobal('WebSocket', FakeWebSocket);
 
     const bridge = new WebSocketBridge();
@@ -160,14 +160,14 @@ describe('WebSocketBridge channels', () => {
     expect(socket?.sent).toEqual([]);
     const unsubscribe = bridge.onTelemetry(vi.fn());
     expect(JSON.parse(socket?.sent.at(-1) ?? '{}')).toEqual({
-      type: 'legacySubscribe',
-      data: { stream: 'telemetry' },
+      type: 'telemetryInspectorSubscribe',
+      data: { stream: 'telemetryInspector' },
     });
 
     unsubscribe?.();
     expect(JSON.parse(socket?.sent.at(-1) ?? '{}')).toEqual({
-      type: 'legacyUnsubscribe',
-      data: { stream: 'telemetry' },
+      type: 'telemetryInspectorUnsubscribe',
+      data: { stream: 'telemetryInspector' },
     });
   });
 });

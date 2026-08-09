@@ -33,7 +33,7 @@ import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { createPerfDashboard, getPerfRunConfig } from './app/perfRunConfig';
 import { ChannelBus, setupChannelBridge } from './app/bridge/channelBridge';
 import { connectSessionLifecycleChannel } from './app/bridge/sessionLifecycleChannel';
-import { setupLegacyRendererSubscriptions } from './app/bridge/legacyRendererSubscriptions';
+import { setupRendererDataSubscriptions } from './app/bridge/rendererDataSubscriptions';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -54,7 +54,7 @@ overlayManager.setupAutoStart();
 let keybindingManager: KeybindingManager | undefined;
 const channelBus = new ChannelBus();
 let disconnectLifecycleChannel: (() => void) | undefined;
-let disposeLegacySubscriptions: (() => void) | undefined;
+let disposeRendererDataSubscriptions: (() => void) | undefined;
 
 app.on('ready', async () => {
   // Don't start services if we don't have the single instance lock
@@ -76,9 +76,11 @@ app.on('ready', async () => {
   }
 
   setupChannelBridge(channelBus);
-  const legacySubscriptions = setupLegacyRendererSubscriptions();
-  disposeLegacySubscriptions = legacySubscriptions.dispose;
-  overlayManager.setLegacyStreamSubscriptions(legacySubscriptions.registry);
+  const rendererDataSubscriptions = setupRendererDataSubscriptions();
+  disposeRendererDataSubscriptions = rendererDataSubscriptions.dispose;
+  overlayManager.setRendererDataSubscriptions(
+    rendererDataSubscriptions.registry
+  );
   disconnectLifecycleChannel = connectSessionLifecycleChannel(
     getSessionLifecycle(),
     channelBus
@@ -154,7 +156,7 @@ app.on('before-quit', () => {
   overlayManager.markQuitting();
   keybindingManager?.stopGamepad();
   disconnectLifecycleChannel?.();
-  disposeLegacySubscriptions?.();
+  disposeRendererDataSubscriptions?.();
   channelBus.dispose();
   // Synchronous flush so any pending debounced reference-lap write completes
   // before the process exits.

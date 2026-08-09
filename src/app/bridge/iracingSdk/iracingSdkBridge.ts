@@ -5,7 +5,12 @@ import {
   getPerfRunConfig,
   PERF_REPLAY_READY_LOG_MARKER,
 } from '../../perfRunConfig';
-import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
+import {
+  TELEMETRY_INSPECTOR_RATE_HZ,
+  type IrSdkSourceBridge,
+  type Session,
+  type Telemetry,
+} from '@irdashies/types';
 import logger from '../../logger';
 import type { SessionLifecycle } from '../../sessionLifecycle';
 import type { ChannelBus } from '../channelBridge';
@@ -148,7 +153,7 @@ export async function publishIRacingSDKEvents(
   overlayManager: OverlayManager,
   lifecycle?: SessionLifecycle,
   channelBus?: ChannelBus
-): Promise<IrSdkBridge> {
+): Promise<IrSdkSourceBridge> {
   logger.info('[iracingSdkBridge] Loading iRacing SDK bridge...');
   const isTapeReplay = Boolean(process.env.IRDASHIES_TELEMETRY_REPLAY);
   const sourceName = isTapeReplay ? 'telemetry replay' : 'iRacing';
@@ -238,7 +243,6 @@ export async function publishIRacingSDKEvents(
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
-  let latestTelemetry: Telemetry | null = null;
   let latestSession: Session | null = null;
 
   const telemetryCallbacks = new Set<(value: Telemetry) => void>();
@@ -255,12 +259,6 @@ export async function publishIRacingSDKEvents(
         id,
         'runningState',
         lastRunningState
-      );
-    if (latestTelemetry && perfTelemetryDeliveryEnabled)
-      overlayManager.publishMessageToOverlay(
-        id,
-        'telemetry',
-        telemetryForRenderer(latestTelemetry)
       );
     if (latestSession)
       overlayManager.publishMessageToOverlay(id, 'sessionData', latestSession);
@@ -302,6 +300,7 @@ export async function publishIRacingSDKEvents(
   (async () => {
     while (!shouldStop) {
       let lastSessionVersion = -1;
+      let lastInspectorTelemetryPublishTime = Number.NEGATIVE_INFINITY;
       // Negative infinity makes the first tick fetch and publish immediately.
       let lastSessionPublishTime = Number.NEGATIVE_INFINITY;
       let lastSessionPollTime = Number.NEGATIVE_INFINITY;
@@ -327,7 +326,6 @@ export async function publishIRacingSDKEvents(
         }
 
         if (telemetry) {
-          latestTelemetry = telemetry;
           perfMetrics.markStart('lifecycleTelemetry');
           lifecycle?._onTelemetry(telemetry);
           perfMetrics.markEnd('lifecycleTelemetry');
@@ -346,13 +344,19 @@ export async function publishIRacingSDKEvents(
           lapLogRuntime?.onFrame(telemetry);
           if (
             perfTelemetryDeliveryEnabled &&
-            overlayManager.hasLegacyStreamSubscribers('telemetry')
+            overlayManager.hasTelemetryInspectorSubscribers() &&
+            tickTime - lastInspectorTelemetryPublishTime >=
+              1000 / TELEMETRY_INSPECTOR_RATE_HZ
           ) {
+            lastInspectorTelemetryPublishTime = tickTime;
             perfMetrics.markStart('telemetryProjection');
             const rendererTelemetry = telemetryForRenderer(telemetry);
             perfMetrics.markEnd('telemetryProjection');
             perfMetrics.markStart('broadcast');
-            overlayManager.publishMessage('telemetry', rendererTelemetry);
+            overlayManager.publishMessage(
+              'telemetryInspector:telemetry',
+              rendererTelemetry
+            );
             perfMetrics.markEnd('broadcast');
           }
           perfMetrics.markStart('telemetryCallbacks');
@@ -404,8 +408,8 @@ export async function publishIRacingSDKEvents(
         // opened during a disconnect don't get re-seeded with stale data, and
         // so the references don't sit in main-process memory indefinitely.
         // They get repopulated on the next successful waitForData tick.
-        latestTelemetry = null;
         latestSession = null;
+        overlayManager.clearLatestSessionData?.();
         lifecycle?._onDisconnect();
       }
 
@@ -434,6 +438,7 @@ export async function publishIRacingSDKEvents(
     },
     stop: () => {
       shouldStop = true;
+      overlayManager.clearLatestSessionData?.();
       sdk.stopSDK();
       clearInterval(runningStateInterval);
       telemetryCallbacks.clear();

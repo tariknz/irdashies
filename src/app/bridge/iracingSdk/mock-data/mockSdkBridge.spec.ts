@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { IrSdkSourceBridge, Session, Telemetry } from '@irdashies/types';
 import { ChannelBus } from '../../channelBridge';
 
 const callbacks = vi.hoisted(() => ({
@@ -9,7 +9,7 @@ const callbacks = vi.hoisted(() => ({
 const stop = vi.hoisted(() => vi.fn());
 
 vi.mock('./generateMockData', () => ({
-  generateMockData: (): IrSdkBridge => ({
+  generateMockData: (): IrSdkSourceBridge => ({
     onTelemetry(callback) {
       callbacks.telemetry = callback;
       return () => undefined;
@@ -51,6 +51,36 @@ describe('mockSdkBridge processor channels', () => {
     stop.mockReset();
   });
 
+  afterEach(() => vi.restoreAllMocks());
+
+  it('publishes subscribed Inspector telemetry at no more than 10 Hz', async () => {
+    const publishMessage = vi.fn();
+    const now = vi
+      .spyOn(performance, 'now')
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(50)
+      .mockReturnValueOnce(100);
+    const bridge = await publishIRacingSDKEvents({
+      publishMessage,
+      hasTelemetryInspectorSubscribers: () => true,
+    } as never);
+
+    try {
+      callbacks.telemetry?.(telemetry(0.1, 1));
+      callbacks.telemetry?.(telemetry(0.11, 1.05));
+      callbacks.telemetry?.(telemetry(0.12, 1.1));
+      expect(now).toHaveBeenCalledTimes(3);
+      expect(publishMessage).toHaveBeenCalledTimes(2);
+      expect(publishMessage).toHaveBeenNthCalledWith(
+        1,
+        'telemetryInspector:telemetry',
+        expect.anything()
+      );
+    } finally {
+      bridge.stop();
+    }
+  });
+
   it('feeds mock session and telemetry through the car-speed runtime', async () => {
     const bus = new ChannelBus();
     const publish = vi.spyOn(bus, 'publish');
@@ -61,7 +91,10 @@ describe('mockSdkBridge processor channels', () => {
       send: vi.fn(),
     };
     bus.subscribe(target, 'car-speeds.snapshot');
-    const overlayManager = { publishMessage: vi.fn() };
+    const overlayManager = {
+      publishMessage: vi.fn(),
+      hasTelemetryInspectorSubscribers: () => false,
+    };
     const bridge = await publishIRacingSDKEvents(
       overlayManager as never,
       undefined,
@@ -78,6 +111,10 @@ describe('mockSdkBridge processor channels', () => {
       expect(publish).toHaveBeenCalledWith(
         'car-speeds.snapshot',
         expect.objectContaining({ carSpeeds: [360] })
+      );
+      expect(overlayManager.publishMessage).not.toHaveBeenCalledWith(
+        'telemetryInspector:telemetry',
+        expect.anything()
       );
     } finally {
       bridge.stop();
@@ -101,7 +138,10 @@ describe('mockSdkBridge processor channels', () => {
       'session-timing.snapshot'
     );
     const bridge = await publishIRacingSDKEvents(
-      { publishMessage: vi.fn() } as never,
+      {
+        publishMessage: vi.fn(),
+        hasTelemetryInspectorSubscribers: () => false,
+      } as never,
       undefined,
       bus
     );
@@ -148,7 +188,10 @@ describe('mockSdkBridge processor channels', () => {
       'relative-gaps.snapshot'
     );
     const bridge = await publishIRacingSDKEvents(
-      { publishMessage: vi.fn() } as never,
+      {
+        publishMessage: vi.fn(),
+        hasTelemetryInspectorSubscribers: () => false,
+      } as never,
       undefined,
       bus
     );
