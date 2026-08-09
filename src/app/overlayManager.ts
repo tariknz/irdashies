@@ -17,12 +17,10 @@ import {
 import { sanitizeWindowBounds } from './windowBounds';
 import logger from './logger';
 import { createRendererPerfArguments } from './perfRendererArguments';
-
-type RendererDataStream = 'sessionData' | 'telemetryInspector';
-interface RendererDataSubscriptions {
-  has(rendererId: number, stream: RendererDataStream): boolean;
-  hasAny(stream: RendererDataStream): boolean;
-}
+import {
+  refreshSessionDataForVisibleWindow,
+  type RendererDataSubscriptions,
+} from './rendererDataVisibility';
 
 // used for Hot Module Replacement
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
@@ -63,6 +61,7 @@ export class OverlayManager {
   private hasSingleInstanceLock = false;
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
   private rendererDataSubscriptions?: RendererDataSubscriptions;
+  private latestSessionData: unknown;
 
   /** Padding around the widget bounding box when shrink-wrapping */
   private static readonly SHRINK_WRAP_PADDING = 20;
@@ -260,6 +259,13 @@ export class OverlayManager {
     }
 
     this.displayWindows.set(display.id, browserWindow);
+    browserWindow.on('show', () => {
+      refreshSessionDataForVisibleWindow(
+        browserWindow,
+        this.rendererDataSubscriptions,
+        this.latestSessionData
+      );
+    });
     browserWindow.on('closed', () => {
       logger.info(`Display ${display.id} overlay window closed`);
       this.displayWindows.delete(display.id);
@@ -553,6 +559,8 @@ export class OverlayManager {
   ]);
 
   public publishMessage(key: string, value: unknown): void {
+    if (key === 'sessionData') this.latestSessionData = value;
+
     // Send to all display overlay windows
     for (const win of this.displayWindows.values()) {
       if (win.isDestroyed()) continue;
@@ -602,6 +610,10 @@ export class OverlayManager {
     subscriptions: RendererDataSubscriptions
   ): void {
     this.rendererDataSubscriptions = subscriptions;
+  }
+
+  public clearLatestSessionData(): void {
+    this.latestSessionData = undefined;
   }
 
   public hasTelemetryInspectorSubscribers(): boolean {

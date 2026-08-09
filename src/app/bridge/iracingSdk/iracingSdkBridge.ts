@@ -418,6 +418,7 @@ export async function publishIRacingSDKEvents(
         // They get repopulated on the next successful waitForData tick.
         latestTelemetry = null;
         latestSession = null;
+        overlayManager.clearLatestSessionData?.();
         lifecycle?._onDisconnect();
       }
 
@@ -446,6 +447,7 @@ export async function publishIRacingSDKEvents(
     },
     stop: () => {
       shouldStop = true;
+      overlayManager.clearLatestSessionData?.();
       sdk.stopSDK();
       clearInterval(runningStateInterval);
       telemetryCallbacks.clear();

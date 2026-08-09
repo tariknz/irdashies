@@ -130,6 +130,7 @@ export async function publishIRacingSDKEvents(
   return {
     ...bridge,
     stop: () => {
+      overlayManager.clearLatestSessionData?.();
       carSpeedsRuntime?.dispose();
       lapTimesRuntime?.dispose();
       relativeGapRuntime?.dispose();
