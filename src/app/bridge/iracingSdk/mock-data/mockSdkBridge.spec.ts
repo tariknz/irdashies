@@ -125,6 +125,59 @@ describe('mockSdkBridge processor channels', () => {
     );
   });
 
+  it('feeds mock session and telemetry through the fuel runtime', async () => {
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    bus.subscribe(
+      {
+        id: 4,
+        isDestroyed: () => false,
+        isVisible: () => true,
+        send: vi.fn(),
+      },
+      'fuel.projection'
+    );
+    const bridge = await publishIRacingSDKEvents(
+      {
+        publishMessage: vi.fn(),
+        hasTelemetryInspectorSubscribers: () => false,
+      } as never,
+      undefined,
+      bus
+    );
+
+    try {
+      callbacks.session?.({
+        DriverInfo: {
+          DriverCarIdx: 0,
+          Drivers: [{ CarIdx: 0, CarPath: 'mock-car' }],
+        },
+        SessionInfo: {
+          Sessions: [{ SessionNum: 1, SessionType: 'Race', SessionLaps: 20 }],
+        },
+      } as unknown as Session);
+      callbacks.telemetry?.({
+        FuelLevel: { value: [40] },
+        FuelLevelPct: { value: [0.8] },
+        Lap: { value: [1] },
+        LapDistPct: { value: [0.1] },
+        SessionTime: { value: [10] },
+        SessionNum: { value: [1] },
+      } as unknown as Telemetry);
+
+      expect(publish).toHaveBeenCalledWith(
+        'fuel.projection',
+        expect.objectContaining({
+          fuelLevel: 40,
+          currentLap: 1,
+          carName: 'mock-car',
+        })
+      );
+    } finally {
+      bridge.stop();
+    }
+  });
+
   it('publishes session timing without a lifecycle in demo mode', async () => {
     const bus = new ChannelBus();
     const publish = vi.spyOn(bus, 'publish');

@@ -302,7 +302,6 @@ export async function publishIRacingSDKEvents(
       let lastSessionVersion = -1;
       let lastInspectorTelemetryPublishTime = Number.NEGATIVE_INFINITY;
       // Negative infinity makes the first tick fetch and publish immediately.
-      let lastSessionPublishTime = Number.NEGATIVE_INFINITY;
       let lastSessionPollTime = Number.NEGATIVE_INFINITY;
       let wasRunning = false;
 
@@ -365,15 +364,11 @@ export async function publishIRacingSDKEvents(
         }
 
         if (session) {
-          // Publish changes at the next poll and refresh unchanged data at 1 Hz.
-          const timeSinceLastPublish = tickTime - lastSessionPublishTime;
-          if (
-            sdk.currDataVersion !== lastSessionVersion ||
-            timeSinceLastPublish >= 1000
-          ) {
+          // Session YAML is large. Publish it only when the SDK revision changes;
+          // late subscribers are seeded from latestSession below.
+          if (sdk.currDataVersion !== lastSessionVersion) {
             perfMetrics.markStart('sessionPublish');
             lastSessionVersion = sdk.currDataVersion;
-            lastSessionPublishTime = tickTime;
             latestSession = session;
             lifecycle?._onSession(session);
             fuelProjectionRuntime?.onSession(session);
@@ -426,6 +421,7 @@ export async function publishIRacingSDKEvents(
     },
     onSessionData: (callback: (value: Session) => void) => {
       sessionCallbacks.add(callback);
+      if (latestSession) callback(latestSession);
       return () => {
         sessionCallbacks.delete(callback);
       };

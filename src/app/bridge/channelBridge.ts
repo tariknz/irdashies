@@ -34,6 +34,7 @@ type SubscriberCountListener = (channel: string, count: number) => void;
 interface Subscription {
   target: RendererTarget;
   rateHz: number | 'event';
+  active: boolean;
   lastDeliveredAt?: number;
   pending?: unknown;
   timer?: TimerHandle;
@@ -86,7 +87,9 @@ export class ChannelBus {
       existing.rateHz = rateHz;
       existing.timer?.cancel();
       existing.timer = undefined;
-      if (existing.pending !== undefined && target.isVisible()) {
+      const active = target.isVisible();
+      this.setSubscriptionActive(channel, existing, active);
+      if (existing.pending !== undefined && active) {
         this.queueDelivery(channel, existing, existing.pending);
       }
       return;
@@ -97,17 +100,25 @@ export class ChannelBus {
       subscribers = new Map();
       this.subscriptions.set(channel, subscribers);
     }
-    const subscription: Subscription = { target, rateHz };
+    const active = target.isVisible();
+    const subscription: Subscription = { target, rateHz, active };
     subscribers.set(target.id, subscription);
-    this.notifySubscriberCount(channel);
+    if (active) {
+      this.notifySubscriberCount(channel);
+    } else if (
+      definition.kind === 'snapshot' &&
+      this.subscriberCount(channel) === 0
+    ) {
+      this.latestSnapshots.delete(channel);
+    }
 
-    if (definition.kind === 'snapshot' && this.latestSnapshots.has(channel)) {
+    if (
+      active &&
+      definition.kind === 'snapshot' &&
+      this.latestSnapshots.has(channel)
+    ) {
       const latest = this.latestSnapshots.get(channel);
-      if (target.isVisible()) {
-        this.deliver(channel, subscription, latest);
-      } else {
-        subscription.pending = latest;
-      }
+      this.deliver(channel, subscription, latest);
     }
   }
 
@@ -126,42 +137,76 @@ export class ChannelBus {
   publish(channel: string, payload: unknown): void;
   publish(channel: string, payload: unknown): void {
     const definition = this.definition(channel);
-    if (definition.kind === 'snapshot') {
+    const subscribers = this.subscriptions.get(channel);
+    const hasRegisteredSubscribers = (subscribers?.size ?? 0) > 0;
+    if (
+      definition.kind === 'snapshot' &&
+      (!hasRegisteredSubscribers || this.subscriberCount(channel) > 0)
+    ) {
       this.latestSnapshots.set(channel, payload);
     }
 
-    const subscribers = this.subscriptions.get(channel);
     if (!subscribers) return;
     for (const [rendererId, subscription] of subscribers) {
-      this.onPublish?.(rendererId, channel);
-      this.increment(this.publicationCounts, rendererId, channel);
       if (subscription.target.isDestroyed()) {
         this.remove(channel, rendererId);
         continue;
       }
       if (!subscription.target.isVisible()) {
-        if (definition.kind === 'snapshot') subscription.pending = payload;
+        this.setSubscriptionActive(channel, subscription, false);
         continue;
       }
+      if (!subscription.active) continue;
+      this.onPublish?.(rendererId, channel);
+      this.increment(this.publicationCounts, rendererId, channel);
       this.queueDelivery(channel, subscription, payload);
+    }
+  }
+
+  rendererBecameHidden(rendererId: number): void {
+    for (const [channel, subscribers] of this.subscriptions) {
+      const subscription = subscribers.get(rendererId);
+      if (!subscription) continue;
+      this.setSubscriptionActive(channel, subscription, false);
     }
   }
 
   rendererBecameVisible(rendererId: number): void {
     for (const [channel, subscribers] of this.subscriptions) {
       const subscription = subscribers.get(rendererId);
-      if (
-        subscription?.pending === undefined ||
-        subscription.target.isDestroyed() ||
-        !subscription.target.isVisible()
-      ) {
+      if (!subscription) continue;
+      if (subscription.target.isDestroyed()) {
+        this.remove(channel, rendererId);
         continue;
       }
-      this.queueDelivery(channel, subscription, subscription.pending);
+      if (!subscription.target.isVisible()) continue;
+
+      const becameActive = this.setSubscriptionActive(
+        channel,
+        subscription,
+        true
+      );
+      if (!becameActive) continue;
+      if (subscription.lastDeliveredAt !== undefined) continue;
+
+      const definition = this.definition(channel);
+      if (definition.kind === 'snapshot' && this.latestSnapshots.has(channel)) {
+        this.deliver(channel, subscription, this.latestSnapshots.get(channel));
+      }
     }
   }
 
   subscriberCount(channel: string): number {
+    const subscribers = this.subscriptions.get(channel);
+    if (!subscribers) return 0;
+    let count = 0;
+    for (const subscription of subscribers.values()) {
+      if (subscription.active) count += 1;
+    }
+    return count;
+  }
+
+  registeredSubscriberCount(channel: string): number {
     return this.subscriptions.get(channel)?.size ?? 0;
   }
 
@@ -247,9 +292,14 @@ export class ChannelBus {
       if (pending === undefined) return;
       if (subscription.target.isDestroyed()) {
         subscription.pending = undefined;
+        this.remove(channel, subscription.target.id);
         return;
       }
-      if (!subscription.target.isVisible()) return;
+      if (!subscription.target.isVisible()) {
+        this.setSubscriptionActive(channel, subscription, false);
+        return;
+      }
+      if (!subscription.active) return;
       subscription.pending = undefined;
       this.deliver(channel, subscription, pending);
     }, intervalMs - elapsed);
@@ -281,7 +331,37 @@ export class ChannelBus {
     subscription?.timer?.cancel();
     const removed = subscribers?.delete(rendererId) ?? false;
     if (subscribers?.size === 0) this.subscriptions.delete(channel);
-    if (removed) this.notifySubscriberCount(channel);
+    if (removed && subscription?.active) {
+      if (this.subscriberCount(channel) === 0) {
+        this.clearCachedSnapshot(channel);
+      }
+      this.notifySubscriberCount(channel);
+    }
+  }
+
+  private setSubscriptionActive(
+    channel: string,
+    subscription: Subscription,
+    active: boolean
+  ): boolean {
+    if (subscription.active === active) return false;
+    subscription.active = active;
+    subscription.timer?.cancel();
+    subscription.timer = undefined;
+    subscription.pending = undefined;
+    subscription.lastDeliveredAt = undefined;
+    if (!active && this.subscriberCount(channel) === 0) {
+      this.clearCachedSnapshot(channel);
+    }
+    this.notifySubscriberCount(channel);
+    return true;
+  }
+
+  private clearCachedSnapshot(channel: string): void {
+    const definition = this.definition(channel);
+    if (definition.kind === 'snapshot') {
+      this.latestSnapshots.delete(channel);
+    }
   }
 
   private notifySubscriberCount(channel: string): void {
@@ -311,9 +391,21 @@ export const setupChannelBridge = (bus: ChannelBus): (() => void) => {
       if (!rendererCleanup.has(event.sender.id)) {
         const window = BrowserWindow.fromWebContents(event.sender);
         const onShow = () => bus.rendererBecameVisible(event.sender.id);
+        const onHide = () => bus.rendererBecameHidden(event.sender.id);
+        // `minimize`/`restore` are distinct from `hide`/`show`: Electron never
+        // emits `show` when a window returns from the minimised state. Without
+        // the `restore` listener a subscription deactivated by `publish()` — it
+        // deactivates on `isVisible() === false` but never reactivates — would
+        // stay dead for the life of the renderer.
         window?.on('show', onShow);
+        window?.on('hide', onHide);
+        window?.on('restore', onShow);
+        window?.on('minimize', onHide);
         const cleanup = () => {
           window?.removeListener('show', onShow);
+          window?.removeListener('hide', onHide);
+          window?.removeListener('restore', onShow);
+          window?.removeListener('minimize', onHide);
           rendererCleanup.delete(event.sender.id);
           bus.removeRenderer(event.sender.id);
         };
