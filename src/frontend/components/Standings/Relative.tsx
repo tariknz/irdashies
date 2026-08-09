@@ -34,6 +34,10 @@ export const Relative = () => {
   const buffer = settings?.buffer ?? 3;
   const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({ buffer });
+  const hasAnyCountryFlag = useMemo(
+    () => standings.some((result) => (result.driver?.flairId ?? 0) > 0),
+    [standings]
+  );
   const highlightColor = useHighlightColor();
   const { tagMap, hasAnyTag } = useDriverTagMap(settings?.driverTag?.enabled);
   const numCarClasses = useWeekendInfoNumCarClasses();
@@ -136,6 +140,7 @@ export const Relative = () => {
           pitExitAfterSF={pitExitAfterSF}
           hideCarManufacturer={hideCarManufacturer}
           hasAnyDriverTag={hasAnyTag}
+          hasAnyCountryFlag={hasAnyCountryFlag}
           compactMode={generalSettings?.compactMode}
         />
       ));
@@ -193,6 +198,7 @@ export const Relative = () => {
             deltaDecimalPlaces={settings?.delta?.precision}
             hideCarManufacturer={hideCarManufacturer}
             hasAnyDriverTag={hasAnyTag}
+            hasAnyCountryFlag={hasAnyCountryFlag}
             compactMode={generalSettings?.compactMode}
           />
         );
@@ -204,6 +210,7 @@ export const Relative = () => {
           carIdx={result.carIdx}
           resolvedTag={tagMap.get(result.carIdx)}
           hasAnyDriverTag={hasAnyTag}
+          hasAnyCountryFlag={hasAnyCountryFlag}
           classColor={result.carClass.color}
           carNumber={
             (settings?.carNumber?.enabled ?? true)
@@ -285,6 +292,7 @@ export const Relative = () => {
     isTeamRacing,
     tagMap,
     hasAnyTag,
+    hasAnyCountryFlag,
     generalSettings?.compactMode,
     lapTimeDeltasEnabled,
     numLapDeltas,
