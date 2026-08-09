@@ -25,6 +25,7 @@ interface ChannelBusOptions {
   registry?: Readonly<Record<string, ChannelDefinition>>;
   now?: () => number;
   schedule?: (callback: () => void, delayMs: number) => TimerHandle;
+  deliveryEnabled?: boolean;
   onPublish?: (rendererId: number, channel: string) => void;
   onDeliver?: (rendererId: number, channel: string) => void;
 }
@@ -43,6 +44,8 @@ interface Subscription {
 export interface ChannelBusMetricsSnapshot {
   publications: Readonly<Record<string, number>>;
   deliveries: Readonly<Record<string, number>>;
+  channelPublications: Readonly<Record<string, number>>;
+  channelDeliveries: Readonly<Record<string, number>>;
 }
 
 const systemSchedule = (callback: () => void, delayMs: number): TimerHandle => {
@@ -59,10 +62,13 @@ export class ChannelBus {
   ) => TimerHandle;
   private readonly onPublish?: (rendererId: number, channel: string) => void;
   private readonly onDeliver?: (rendererId: number, channel: string) => void;
+  private readonly deliveryEnabled: boolean;
   private readonly subscriptions = new Map<string, Map<number, Subscription>>();
   private readonly latestSnapshots = new Map<string, unknown>();
   private readonly publicationCounts = new Map<string, number>();
   private readonly deliveryCounts = new Map<string, number>();
+  private readonly channelPublicationCounts = new Map<string, number>();
+  private readonly channelDeliveryCounts = new Map<string, number>();
   private readonly subscriberCountListeners =
     new Set<SubscriberCountListener>();
 
@@ -70,6 +76,7 @@ export class ChannelBus {
     this.registry = options.registry ?? channelRegistry;
     this.now = options.now ?? (() => performance.now());
     this.schedule = options.schedule ?? systemSchedule;
+    this.deliveryEnabled = options.deliveryEnabled ?? true;
     this.onPublish = options.onPublish;
     this.onDeliver = options.onDeliver;
   }
@@ -116,6 +123,7 @@ export class ChannelBus {
     }
 
     if (
+      this.deliveryEnabled &&
       active &&
       definition.kind === 'snapshot' &&
       hadCachedSnapshotBeforeSubscribe
@@ -139,6 +147,7 @@ export class ChannelBus {
   publish(channel: string, payload: unknown): void;
   publish(channel: string, payload: unknown): void {
     const definition = this.definition(channel);
+    this.incrementChannel(this.channelPublicationCounts, channel);
     const subscribers = this.subscriptions.get(channel);
     const hasRegisteredSubscribers = (subscribers?.size ?? 0) > 0;
     if (
@@ -148,7 +157,7 @@ export class ChannelBus {
       this.latestSnapshots.set(channel, payload);
     }
 
-    if (!subscribers) return;
+    if (!subscribers || !this.deliveryEnabled) return;
     for (const [rendererId, subscription] of subscribers) {
       if (subscription.target.isDestroyed()) {
         this.remove(channel, rendererId);
@@ -229,6 +238,8 @@ export class ChannelBus {
     return {
       publications: Object.fromEntries(this.publicationCounts),
       deliveries: Object.fromEntries(this.deliveryCounts),
+      channelPublications: Object.fromEntries(this.channelPublicationCounts),
+      channelDeliveries: Object.fromEntries(this.channelDeliveryCounts),
     };
   }
 
@@ -316,6 +327,7 @@ export class ChannelBus {
     subscription.lastDeliveredAt = this.now();
     this.onDeliver?.(subscription.target.id, channel);
     this.increment(this.deliveryCounts, subscription.target.id, channel);
+    this.incrementChannel(this.channelDeliveryCounts, channel);
   }
 
   private increment(
@@ -325,6 +337,13 @@ export class ChannelBus {
   ): void {
     const key = `${rendererId}:${channel}`;
     counters.set(key, (counters.get(key) ?? 0) + 1);
+  }
+
+  private incrementChannel(
+    counters: Map<string, number>,
+    channel: string
+  ): void {
+    counters.set(channel, (counters.get(channel) ?? 0) + 1);
   }
 
   private remove(channel: string, rendererId: number): void {

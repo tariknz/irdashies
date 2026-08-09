@@ -160,6 +160,22 @@ describe('ChannelBus', () => {
     expect(bus.metricsSnapshot()).toEqual({
       publications: { '9:event': 2 },
       deliveries: { '9:event': 2 },
+      channelPublications: { event: 2 },
+      channelDeliveries: { event: 2 },
+    });
+  });
+
+  it('keeps processor demand and publication counts with delivery disabled', () => {
+    const target = createTarget();
+    const bus = new ChannelBus({ registry, deliveryEnabled: false });
+    bus.subscribe(target, 'snapshot');
+    bus.publish('snapshot', 1);
+
+    expect(bus.subscriberCount('snapshot')).toBe(1);
+    expect(target.send).not.toHaveBeenCalled();
+    expect(bus.metricsSnapshot()).toMatchObject({
+      channelPublications: { snapshot: 1 },
+      channelDeliveries: {},
     });
   });
 

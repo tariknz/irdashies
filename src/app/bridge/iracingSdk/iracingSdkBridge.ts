@@ -146,7 +146,7 @@ export async function publishIRacingSDKEvents(
   const isTapeReplay = Boolean(process.env.IRDASHIES_TELEMETRY_REPLAY);
   const sourceName = isTapeReplay ? 'telemetry replay' : 'iRacing';
 
-  const perfMetrics = new TelemetryPerfMetrics();
+  const perfMetrics = new TelemetryPerfMetrics(undefined, channelBus);
   perfMetrics.startReporting();
   const referenceLapStorage = channelBus
     ? await import('../../storage/referenceLaps')
