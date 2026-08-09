@@ -1,73 +1,83 @@
 import { useSessionDrivers } from '@irdashies/context';
+import type { Driver } from '@irdashies/types';
+import { useMemo } from 'react';
+import { getCarClassDisplayName } from './getCarClassDisplayName';
 
 export interface CarClassStats {
   shortName: string;
   color: number;
   total: number;
-  sof: number;
+  sof: number | undefined;
 }
 
 interface InternalStats {
-  shortName: string;
   color: number;
   total: number;
+  ratedDrivers: number;
   sumExp: number; // Σ 2^(-Ri / 1600)
+  drivers: Driver[];
 }
 
 export const useCarClassStats = () => {
   const sessionDrivers = useSessionDrivers();
 
-  // Only include actual race participants
-  const raceDrivers = sessionDrivers?.filter(
-    driver =>
-      !driver.IsSpectator &&
-      !driver.CarIsPaceCar &&
-      driver.IRating > 0
-  );
+  return useMemo(() => {
+    // Only include actual race participants
+    const raceDrivers = sessionDrivers?.filter(
+      (driver) => !driver.IsSpectator && !driver.CarIsPaceCar
+    );
 
-  const intermediate = raceDrivers?.reduce(
-    (acc, driver) => {
-      const expValue = Math.pow(2, -driver.IRating / 1600);
+    const intermediate = raceDrivers?.reduce(
+      (acc, driver) => {
+        const hasIRating = driver.IRating > 0;
+        const expValue = hasIRating ? Math.pow(2, -driver.IRating / 1600) : 0;
 
-      if (acc[driver.CarClassID]) {
-        acc[driver.CarClassID].total += 1;
-        acc[driver.CarClassID].sumExp += expValue;
+        if (acc[driver.CarClassID]) {
+          acc[driver.CarClassID].total += 1;
+          acc[driver.CarClassID].sumExp += expValue;
+          if (hasIRating) acc[driver.CarClassID].ratedDrivers += 1;
+          acc[driver.CarClassID].drivers.push(driver);
+          return acc;
+        }
+
+        acc[driver.CarClassID] = {
+          total: 1,
+          ratedDrivers: hasIRating ? 1 : 0,
+          sumExp: expValue,
+          color: driver.CarClassColor,
+          drivers: [driver],
+        };
+
         return acc;
-      }
+      },
+      {} as Record<string, InternalStats>
+    );
 
-      acc[driver.CarClassID] = {
-        total: 1,
-        sumExp: expValue,
-        color: driver.CarClassColor,
-        shortName: driver.CarClassShortName,
-      };
+    return intermediate
+      ? Object.fromEntries(
+          Object.entries(intermediate).map(([classId, stats]) => {
+            const sof =
+              stats.ratedDrivers > 0
+                ? Math.round(
+                    (1600 / Math.log(2)) *
+                      Math.log(stats.ratedDrivers / stats.sumExp)
+                  )
+                : undefined;
 
-      return acc;
-    },
-    {} as Record<string, InternalStats>
-  );
-
-  const classStats = intermediate
-    ? Object.fromEntries(
-        Object.entries(intermediate).map(([classId, stats]) => {
-          const sof =
-            Math.round(
-              (1600 / Math.log(2)) *
-            Math.log(stats.total / stats.sumExp)
-        );
-
-          return [
-            classId,
-            {
-              shortName: stats.shortName,
-              color: stats.color,
-              total: stats.total,
-              sof,
-            } as CarClassStats,
-          ];
-        })
-      )
-    : undefined;
-
-  return classStats;
+            return [
+              classId,
+              {
+                shortName: getCarClassDisplayName(
+                  Number(classId),
+                  stats.drivers
+                ),
+                color: stats.color,
+                total: stats.total,
+                sof,
+              } as CarClassStats,
+            ];
+          })
+        )
+      : undefined;
+  }, [sessionDrivers]);
 };
