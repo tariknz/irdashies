@@ -13,6 +13,8 @@ without changing the saved dashboard:
 - iRacing-reported FPS, foreground/background CPU usage, and GPU usage
 - irDashies total and per-process CPU and working-set memory
 - telemetry tick cadence and `processTelemetry` / IPC broadcast percentiles
+- per-channel processor executions, publications, deliveries, and effective rates
+- active-widget input coverage and observed channel change rates
 - native telemetry/session reads, lifecycle work, payload projection, session
   publication, and renderer telemetry-callback percentiles
 - Electron main-process event-loop stalls
@@ -94,6 +96,19 @@ npm run perf:run -- --mode empty --scenario replay-empty-off --duration-seconds 
 npm run perf:run -- --mode empty --scenario replay-empty-on --duration-seconds 420 --telemetry-delivery on --replay-input $replay
 ```
 
+`--telemetry-delivery` controls only the dedicated raw Telemetry Inspector
+stream. To isolate typed channel delivery while keeping subscribers and
+processors active, use `--channel-delivery`:
+
+```powershell
+npm run perf:run -- --mode full --scenario channels-off --duration-seconds 420 --channel-delivery off --replay-input $replay
+npm run perf:run -- --mode full --scenario channels-on --duration-seconds 420 --channel-delivery on --replay-input $replay
+```
+
+The off run still records processor executions and channel publications. It
+suppresses snapshot seeding, coalescing timers, structured cloning, IPC sends,
+and renderer callbacks, making the on/off delta attributable to delivery.
+
 ### 3. Full dashboard
 
 This loads the current dashboard, but omits the settings and gamepad-host
@@ -121,6 +136,46 @@ npm run perf:run -- --mode full --widgets map --scenario replay-map --duration-s
 
 Use the widget type from `WidgetIndex.tsx`, not a widget instance ID.
 
+The runner reads each selected widget's `widgetRuntimeDefinition.ts` and embeds
+its declared input channels in the structured scenario metadata. The analyzer
+reports whether every declared channel was exercised and its publication
+(change) and delivery rates. A memory claim is inconclusive when an active
+widget's declared inputs did not change during the measured window.
+
+## Visibility phases
+
+Use a fixed visibility schedule to verify that hidden windows stop channel
+demand and resume cleanly. If `--duration-seconds` is omitted, the phase
+durations determine the capture duration.
+
+```powershell
+npm run perf:run -- --mode full --scenario visibility-demand --visibility-phases visible:120,hidden:120,visible:120 --replay-input $replay
+```
+
+The app emits one capture-origin marker after overlays are created. Phase zero
+and the fixed-duration timer start from that same origin; analyzer window
+offsets are relative to it rather than process startup or the first periodic
+report. Each transition is also written as a structured visibility marker.
+
+Evidence is evaluated per phase. Visible phases require at least one
+publication from every declared active-widget input. Hidden phases instead
+require zero demand-driven processor executions and zero channel deliveries.
+Intervals that straddle a transition are excluded from that phase's evidence
+so visible work cannot be attributed to the hidden phase.
+
+## Scenario metadata
+
+Record the conditions required to reproduce the run:
+
+```powershell
+npm run perf:run -- --target packaged --mode full --scenario phase4-full --duration-seconds 420 --replay-input $replay --field-count 59 --class-count 4 --display-geometry 7680x1440 --fps-cap 120 --sync-mode gsync
+```
+
+The runner always records target, live/replay mode, requested and active widget
+types, channel/Inspector delivery modes, telemetry payload mode, and widget
+input requirements. The optional field count, class count, display geometry,
+FPS cap, and sync mode flags complete the controlled-workload record.
+
 ## Analyse and compare
 
 Each run writes `perf-results/<run-id>.log`. Analyse a single run:
@@ -135,6 +190,20 @@ Compare the empty or full dashboard against the observer:
 npm run perf:analyze -- perf-results/<candidate>.log --baseline perf-results/<observer>.log --warmup-seconds 60
 ```
 
+Use a fixed interval when the relevant workload occupies only part of the
+capture:
+
+```powershell
+npm run perf:analyze -- perf-results/<candidate>.log --baseline perf-results/<baseline>.log --warmup-seconds 0 --analysis-start-seconds 120 --analysis-end-seconds 360
+```
+
+Analysis rejects inconclusive evidence by default after writing the summary.
+It exits non-zero when the measured interval is shorter than five minutes,
+private bytes are incomplete or too sparsely sampled, scenario/widget metadata
+is missing or inconsistent, or a visibility phase violates its workload
+expectations. Use `--allow-inconclusive` only for exploratory inspection of a
+partial run.
+
 The analyzer writes adjacent `.summary.json` and `.summary.md` files. Its
 initial regression gates are:
 
@@ -144,11 +213,21 @@ initial regression gates are:
 | iRacing sampled FPS p1 mean vs observer | no worse than -5% |
 | `processTelemetry` p99 mean             |            < 3 ms |
 | Minimum interval telemetry rate         |          >= 20 Hz |
-| Steady-state app memory slope           |        < 5 MB/min |
+| Steady-state app private-memory slope   |        < 5 MB/min |
 | Renderer frames over 50 ms              |            < 0.1% |
 
 Treat a failed gate as a signal to inspect, not proof of causality. Repeat any
 failed A/B pair once before making an architectural decision.
+
+Private memory is the acceptance metric because aggregate working set includes
+shared Chromium pages and can double-count them across processes. Working-set
+slope remains in the report as diagnostic context. The private-memory gate is
+reported as **INCONCLUSIVE**, never pass/fail, unless the analysis contains at
+least five minutes of private-byte samples covering every included Electron
+process, at least two observations with adequate span and no gap over 60
+seconds, consistent scenario metadata, and valid per-phase channel evidence.
+When either side of an A/B comparison is inconclusive, every comparison check
+is reported as **INCONCLUSIVE**.
 
 ## Live-session benchmark
 

@@ -1,4 +1,6 @@
-import { useSessionBarSnapshot } from '../ChannelStore';
+import type { SessionBarSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
+import { useSessionBarSelector } from '../ChannelStore';
 
 export interface WeatherData {
   trackMoisture: number | undefined;
@@ -8,6 +10,25 @@ export interface WeatherData {
   humidity: number | undefined;
   precipitation: number | undefined;
 }
+
+const EMPTY_WEATHER: readonly [
+  number | undefined,
+  number | undefined,
+  number | undefined,
+  number | undefined,
+  number | undefined,
+  number | undefined,
+] = [undefined, undefined, undefined, undefined, undefined, undefined];
+
+const selectWeather = (snapshot: SessionBarSnapshot) =>
+  [
+    snapshot.trackWetness,
+    snapshot.windYaw,
+    snapshot.windDirection,
+    snapshot.windVelocity,
+    snapshot.relativeHumidity,
+    snapshot.precipitation,
+  ] as const;
 
 /**
  * Subscribes to weather telemetry data but only updates React state
@@ -19,14 +40,16 @@ export interface WeatherData {
  * reflects the player's own car heading.
  */
 export const useThrottledWeather = (): WeatherData => {
-  const data = useSessionBarSnapshot();
+  const data =
+    useSessionBarSelector(selectWeather, { equality: shallow }) ??
+    EMPTY_WEATHER;
 
   return {
-    trackMoisture: data?.trackWetness,
-    windYaw: data?.windYaw,
-    windDirection: data?.windDirection,
-    windVelocity: data?.windVelocity,
-    humidity: data?.relativeHumidity,
-    precipitation: data?.precipitation,
+    trackMoisture: data[0],
+    windYaw: data[1],
+    windDirection: data[2],
+    windVelocity: data[3],
+    humidity: data[4],
+    precipitation: data[5],
   };
 };

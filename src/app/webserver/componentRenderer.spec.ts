@@ -100,6 +100,10 @@ describe('WebSocketBridge channels', () => {
     ]);
 
     unsubscribeSecond();
+    expect(JSON.parse(socket?.sent.at(-1) ?? '{}')).toEqual({
+      type: 'channelSubscribe',
+      data: { channel: 'fuel.projection', requestedRateHz: 5 },
+    });
     unsubscribeFirst();
     expect(JSON.parse(socket?.sent.at(-1) ?? '{}')).toEqual({
       type: 'channelUnsubscribe',
@@ -111,19 +115,26 @@ describe('WebSocketBridge channels', () => {
     vi.stubGlobal('WebSocket', FakeWebSocket);
 
     const bridge = new WebSocketBridge();
-    bridge.subscribe('fuel.projection', vi.fn());
+    const unsubscribeDefault = bridge.subscribe('fuel.projection', vi.fn());
     const connecting = bridge.connect('http://localhost:3000');
     const socket = FakeWebSocket.latest;
     socket?.onopen?.();
     await connecting;
     const messagesBeforeSecondConsumer = socket?.sent.length ?? 0;
-    bridge.subscribe('fuel.projection', vi.fn(), 2);
+    const unsubscribeSlow = bridge.subscribe('fuel.projection', vi.fn(), 2);
 
     expect(socket?.sent).toHaveLength(messagesBeforeSecondConsumer + 1);
     expect(JSON.parse(socket?.sent.at(-1) ?? '{}')).toEqual({
       type: 'channelSubscribe',
       data: { channel: 'fuel.projection', requestedRateHz: 5 },
     });
+
+    unsubscribeDefault();
+    expect(JSON.parse(socket?.sent.at(-1) ?? '{}')).toEqual({
+      type: 'channelSubscribe',
+      data: { channel: 'fuel.projection', requestedRateHz: 2 },
+    });
+    unsubscribeSlow();
   });
 
   it('drops channel callbacks when stopped', async () => {

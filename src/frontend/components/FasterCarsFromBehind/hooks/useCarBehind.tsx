@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { useDriverRelatives } from '../../Standings/hooks/useDriverRelatives';
-import { useDriverStandings } from '../../Standings/hooks/useDriverPositions';
+import { useDriverRelatives, useDriverStandings } from '@irdashies/domain';
 import { useFasterCarsSettings } from './useFasterCarsSettings';
 
 export const useCarBehind = ({

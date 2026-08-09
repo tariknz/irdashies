@@ -5,7 +5,7 @@ import { useHighlightColor } from './hooks/useHighlightColor';
 import { useGhostSectorColors } from './hooks/useGhostSectorColors';
 import { usePlayerIconImage } from './hooks/usePlayerIconImage';
 import { TrackCanvas } from './TrackCanvas';
-import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
+import { useDriverLivePositions } from '@irdashies/domain';
 import {
   useSessionVisibility,
   useTrackStateSnapshot,

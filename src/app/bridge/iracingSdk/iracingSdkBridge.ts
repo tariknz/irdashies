@@ -14,19 +14,7 @@ import {
 import logger from '../../logger';
 import type { SessionLifecycle } from '../../sessionLifecycle';
 import type { ChannelBus } from '../channelBridge';
-import { FuelProjectionRuntime } from '../../processors/fuelProjectionRuntime';
-import { LapTimesRuntime } from '../../processors/lapTimesRuntime';
-import { CarSpeedsRuntime } from '../../processors/carSpeedsRuntime';
-import { ReferenceLapRuntime } from '../../processors/referenceLapRuntime';
-import { RelativeGapRuntime } from '../../processors/relativeGapRuntime';
-import { SectorTimingRuntime } from '../../processors/sectorTimingRuntime';
-import { StandingsRuntime } from '../../processors/standingsRuntime';
-import { RadioRuntime } from '../../processors/radioRuntime';
-import { SessionTimingRuntime } from '../../processors/sessionTimingRuntime';
-import { SessionBarRuntime } from '../../processors/sessionBarRuntime';
-import { DriverControlsRuntime } from '../../processors/driverControlsRuntime';
-import { TrackStateRuntime } from '../../processors/trackStateRuntime';
-import { LapLogRuntime } from '../../processors/lapLogRuntime';
+import { createDefaultProcessorHost } from '../../processors/processorRegistry';
 
 // Keys consumed by the renderer. Anything outside this set is dropped before
 // the telemetry object crosses the IPC boundary — reducing structured-clone
@@ -158,88 +146,24 @@ export async function publishIRacingSDKEvents(
   const isTapeReplay = Boolean(process.env.IRDASHIES_TELEMETRY_REPLAY);
   const sourceName = isTapeReplay ? 'telemetry replay' : 'iRacing';
 
-  const perfMetrics = new TelemetryPerfMetrics();
+  const perfMetrics = new TelemetryPerfMetrics(undefined, channelBus);
   perfMetrics.startReporting();
-  const fuelProjectionRuntime =
-    lifecycle && channelBus
-      ? new FuelProjectionRuntime(channelBus, lifecycle, perfMetrics, {
-          aggregateReplay: isTapeReplay,
-        })
-      : undefined;
-  const lapTimesRuntime =
-    lifecycle && channelBus
-      ? new LapTimesRuntime(channelBus, lifecycle, perfMetrics, isTapeReplay)
-      : undefined;
-  const carSpeedsRuntime =
-    lifecycle && channelBus
-      ? new CarSpeedsRuntime(channelBus, lifecycle, perfMetrics, isTapeReplay)
-      : undefined;
-  const referenceLapStorage =
-    lifecycle && channelBus
-      ? await import('../../storage/referenceLaps')
-      : undefined;
-  const referenceLapRuntime =
-    lifecycle && channelBus && referenceLapStorage
-      ? new ReferenceLapRuntime(
-          channelBus,
+  const referenceLapStorage = channelBus
+    ? await import('../../storage/referenceLaps')
+    : undefined;
+  const processorHost =
+    channelBus && referenceLapStorage
+      ? createDefaultProcessorHost({
+          bus: channelBus,
           lifecycle,
-          perfMetrics,
-          {
+          metrics: perfMetrics,
+          aggregateReplay: isTapeReplay,
+          referenceLapPersistence: {
             load: referenceLapStorage.getReferenceLap,
             save: referenceLapStorage.saveReferenceLap,
           },
-          isTapeReplay
-        )
+        })
       : undefined;
-  const relativeGapRuntime =
-    lifecycle && channelBus && referenceLapRuntime
-      ? new RelativeGapRuntime(
-          channelBus,
-          lifecycle,
-          perfMetrics,
-          referenceLapRuntime,
-          isTapeReplay
-        )
-      : undefined;
-  const sectorTimingRuntime =
-    lifecycle && channelBus
-      ? new SectorTimingRuntime(
-          channelBus,
-          lifecycle,
-          perfMetrics,
-          isTapeReplay
-        )
-      : undefined;
-  const standingsRuntime =
-    lifecycle && channelBus
-      ? new StandingsRuntime(channelBus, lifecycle, perfMetrics, isTapeReplay)
-      : undefined;
-  const radioRuntime =
-    lifecycle && channelBus
-      ? new RadioRuntime(channelBus, lifecycle, perfMetrics, isTapeReplay)
-      : undefined;
-  const sessionTimingRuntime =
-    lifecycle && channelBus && lapTimesRuntime
-      ? new SessionTimingRuntime(
-          channelBus,
-          lifecycle,
-          perfMetrics,
-          lapTimesRuntime,
-          isTapeReplay
-        )
-      : undefined;
-  const sessionBarRuntime = channelBus
-    ? new SessionBarRuntime(channelBus, lifecycle, perfMetrics, isTapeReplay)
-    : undefined;
-  const driverControlsRuntime = channelBus
-    ? new DriverControlsRuntime(channelBus, lifecycle, perfMetrics)
-    : undefined;
-  const trackStateRuntime = channelBus
-    ? new TrackStateRuntime(channelBus, lifecycle, perfMetrics)
-    : undefined;
-  const lapLogRuntime = channelBus
-    ? new LapLogRuntime(channelBus, lifecycle, perfMetrics)
-    : undefined;
 
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
@@ -302,7 +226,6 @@ export async function publishIRacingSDKEvents(
       let lastSessionVersion = -1;
       let lastInspectorTelemetryPublishTime = Number.NEGATIVE_INFINITY;
       // Negative infinity makes the first tick fetch and publish immediately.
-      let lastSessionPublishTime = Number.NEGATIVE_INFINITY;
       let lastSessionPollTime = Number.NEGATIVE_INFINITY;
       let wasRunning = false;
 
@@ -329,19 +252,7 @@ export async function publishIRacingSDKEvents(
           perfMetrics.markStart('lifecycleTelemetry');
           lifecycle?._onTelemetry(telemetry);
           perfMetrics.markEnd('lifecycleTelemetry');
-          fuelProjectionRuntime?.onFrame(telemetry);
-          lapTimesRuntime?.onFrame(telemetry);
-          carSpeedsRuntime?.onFrame(telemetry);
-          referenceLapRuntime?.onFrame(telemetry);
-          relativeGapRuntime?.onFrame(telemetry);
-          sectorTimingRuntime?.onFrame(telemetry);
-          standingsRuntime?.onFrame(telemetry);
-          radioRuntime?.onFrame(telemetry);
-          sessionTimingRuntime?.onFrame(telemetry);
-          sessionBarRuntime?.onFrame(telemetry);
-          driverControlsRuntime?.onFrame(telemetry);
-          trackStateRuntime?.onFrame(telemetry);
-          lapLogRuntime?.onFrame(telemetry);
+          processorHost?.onFrame(telemetry);
           if (
             perfTelemetryDeliveryEnabled &&
             overlayManager.hasTelemetryInspectorSubscribers() &&
@@ -365,28 +276,14 @@ export async function publishIRacingSDKEvents(
         }
 
         if (session) {
-          // Publish changes at the next poll and refresh unchanged data at 1 Hz.
-          const timeSinceLastPublish = tickTime - lastSessionPublishTime;
-          if (
-            sdk.currDataVersion !== lastSessionVersion ||
-            timeSinceLastPublish >= 1000
-          ) {
+          // Session YAML is large. Publish it only when the SDK revision changes;
+          // late subscribers are seeded from latestSession below.
+          if (sdk.currDataVersion !== lastSessionVersion) {
             perfMetrics.markStart('sessionPublish');
             lastSessionVersion = sdk.currDataVersion;
-            lastSessionPublishTime = tickTime;
             latestSession = session;
             lifecycle?._onSession(session);
-            fuelProjectionRuntime?.onSession(session);
-            carSpeedsRuntime?.onSession(session);
-            referenceLapRuntime?.onSession(session);
-            relativeGapRuntime?.onSession(session);
-            sectorTimingRuntime?.onSession(session);
-            standingsRuntime?.onSession(session);
-            sessionTimingRuntime?.onSession(session);
-            sessionBarRuntime?.onSession(session);
-            driverControlsRuntime?.onSession(session);
-            trackStateRuntime?.onSession(session);
-            lapLogRuntime?.onSession(session);
+            processorHost?.onSession(session);
             overlayManager.publishMessage('sessionData', session);
             sessionCallbacks.forEach((callback) => callback(session));
             perfMetrics.markEnd('sessionPublish');
@@ -426,6 +323,7 @@ export async function publishIRacingSDKEvents(
     },
     onSessionData: (callback: (value: Session) => void) => {
       sessionCallbacks.add(callback);
+      if (latestSession) callback(latestSession);
       return () => {
         sessionCallbacks.delete(callback);
       };
@@ -444,19 +342,7 @@ export async function publishIRacingSDKEvents(
       telemetryCallbacks.clear();
       sessionCallbacks.clear();
       runningStateCallbacks.clear();
-      fuelProjectionRuntime?.dispose();
-      lapTimesRuntime?.dispose();
-      carSpeedsRuntime?.dispose();
-      relativeGapRuntime?.dispose();
-      sectorTimingRuntime?.dispose();
-      standingsRuntime?.dispose();
-      radioRuntime?.dispose();
-      sessionTimingRuntime?.dispose();
-      sessionBarRuntime?.dispose();
-      driverControlsRuntime?.dispose();
-      trackStateRuntime?.dispose();
-      lapLogRuntime?.dispose();
-      referenceLapRuntime?.dispose();
+      processorHost?.dispose();
       perfMetrics.stopReporting();
     },
   };

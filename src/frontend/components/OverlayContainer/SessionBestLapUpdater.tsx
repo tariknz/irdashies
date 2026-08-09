@@ -3,7 +3,7 @@ import {
   useStandingsSettings,
   useRelativeSettings,
   useInformationBarSettings,
-} from '../Standings/hooks';
+} from '@irdashies/domain';
 
 export const SessionBestLapUpdater = () => {
   const standingsSettings = useStandingsSettings();

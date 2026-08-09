@@ -5,18 +5,21 @@ import * as context from '@irdashies/context';
 
 // Mock all the context hooks
 vi.mock('@irdashies/context', () => ({
-  useTrackStateSnapshot: vi.fn(),
+  useTrackStateSelector: vi.fn(),
   useDriverControlsSnapshot: vi.fn(),
   useDashboard: vi.fn(),
   useSessionVisibility: vi.fn(),
 }));
 
 const mockSnapshots = (read: (key: string) => unknown) => {
-  vi.mocked(context.useTrackStateSnapshot).mockReturnValue({
+  const trackState = {
     playerTrackSurface: read('PlayerTrackSurface'),
     onPitRoad: read('OnPitRoad'),
     displayUnits: read('DisplayUnits'),
-  } as never);
+  };
+  vi.mocked(context.useTrackStateSelector).mockImplementation(
+    (selector) => selector(trackState as never) as never
+  );
   vi.mocked(context.useDriverControlsSnapshot).mockReturnValue({
     throttle: read('Throttle'),
     clutch: read('Clutch'),

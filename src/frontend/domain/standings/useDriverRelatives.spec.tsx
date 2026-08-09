@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useDriverRelatives } from './useDriverRelatives';
-import type { Standings } from '../createStandings';
+import type { Standings } from './createStandings';
 import {
   calculateClassEstimatedDelta,
   calculateReferenceDelta,
   getStats,
   getTimeAtPosition,
-} from '../relativeGapHelpers';
+} from './relativeGapHelpers';
 import { ReferenceLap } from '@irdashies/types';
 
 // Mock the context hooks

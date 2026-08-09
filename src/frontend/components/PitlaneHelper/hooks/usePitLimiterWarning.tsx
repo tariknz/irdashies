@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useTrackStateSnapshot, useSessionStore } from '@irdashies/context';
-import { EngineWarnings } from '@irdashies/types';
+import { useTrackStateSelector, useSessionStore } from '@irdashies/context';
+import { EngineWarnings, type TrackStateSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
 
 export interface PitLimiterWarningResult {
   showWarning: boolean;
@@ -8,15 +9,28 @@ export interface PitLimiterWarningResult {
   warningText: string;
 }
 
+const EMPTY_LIMITER_STATE: readonly [boolean, boolean, boolean, number] = [
+  false,
+  false,
+  false,
+  0,
+];
+
+const selectLimiterState = (snapshot: TrackStateSnapshot) =>
+  [
+    snapshot.onPitRoad,
+    snapshot.pitSpeedLimiterToggle,
+    snapshot.pitstopActive,
+    snapshot.engineWarnings,
+  ] as const;
+
 export const usePitLimiterWarning = (
   enabled: boolean
 ): PitLimiterWarningResult => {
   const session = useSessionStore((state) => state.session);
-  const trackState = useTrackStateSnapshot();
-  const onPitRoad = trackState?.onPitRoad ?? false;
-  const limiterActive = trackState?.pitSpeedLimiterToggle ?? false;
-  const pitstopActive = trackState?.pitstopActive ?? false;
-  const engineWarnings = trackState?.engineWarnings ?? 0;
+  const [onPitRoad, limiterActive, pitstopActive, engineWarnings] =
+    useTrackStateSelector(selectLimiterState, { equality: shallow }) ??
+    EMPTY_LIMITER_STATE;
   const isTeamRacing = (session?.WeekendInfo?.TeamRacing ?? 0) === 1;
 
   // Check if pit speed limiter is actively engaged (manual OR auto)

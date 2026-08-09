@@ -1,18 +1,28 @@
 import { useMemo } from 'react';
-import { useSessionBarSnapshot } from '@irdashies/context';
+import type { SessionBarSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
+import { useSessionBarSelector } from '@irdashies/context';
 
 interface UseTrackTemperatureOptions {
   airTempUnit?: 'Metric' | 'Imperial';
   trackTempUnit?: 'Metric' | 'Imperial';
 }
 
+const EMPTY_TEMPERATURES: readonly [number | undefined, number | undefined] = [
+  undefined,
+  undefined,
+];
+
+const selectTemperatures = (snapshot: SessionBarSnapshot) =>
+  [snapshot.trackTemp, snapshot.airTemp] as const;
+
 export const useTrackTemperature = (
   options: UseTrackTemperatureOptions = {}
 ) => {
   const { airTempUnit = 'Metric', trackTempUnit = 'Metric' } = options;
-  const snapshot = useSessionBarSnapshot();
-  const trackTempVal = snapshot?.trackTemp;
-  const airTempVal = snapshot?.airTemp;
+  const [trackTempVal, airTempVal] =
+    useSessionBarSelector(selectTemperatures, { equality: shallow }) ??
+    EMPTY_TEMPERATURES;
 
   const trackTemp = useMemo(() => {
     if (trackTempVal === undefined) return '';

@@ -19,11 +19,13 @@ import {
   augmentStandingsWithGap,
   augmentStandingsWithInterval,
   augmentStandingsWithPositionChange,
-} from '../createStandings';
+} from '@irdashies/domain';
 import type { StandingsWidgetSettings } from '@irdashies/types';
-import { useDriverLivePositions } from './useDriverLivePositions';
-import { useStandingsSettings } from './useStandingsSettings';
-import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
+import {
+  useDriverLivePositions,
+  useStandingsSettings,
+  useRadioActiveCarIdxs,
+} from '@irdashies/domain';
 import { TrackLocation } from '@irdashies/types';
 import type { SessionResults } from '@irdashies/types';
 

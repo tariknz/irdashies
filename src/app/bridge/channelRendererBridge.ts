@@ -1,8 +1,9 @@
 import { ipcRenderer } from 'electron';
-import type {
-  ChannelBridge,
-  ChannelName,
-  ChannelPayloads,
+import {
+  channelRegistry,
+  type ChannelBridge,
+  type ChannelName,
+  type ChannelPayloads,
 } from '@irdashies/types';
 import { defineBridge } from './defineBridge';
 import {
@@ -47,8 +48,11 @@ export const createChannelRendererBridge = (): ChannelBridge => {
   );
 
   const sync = (channel: ChannelName, subscription: LocalSubscription) => {
+    const definition = channelRegistry[channel];
+    const defaultRate =
+      definition.kind === 'snapshot' ? definition.defaultRateHz : undefined;
     const rates = [...subscription.consumers]
-      .map((consumer) => consumer.rate)
+      .map((consumer) => consumer.rate ?? defaultRate)
       .filter((rate): rate is number => rate !== undefined);
     const requestedRate = rates.length > 0 ? Math.max(...rates) : undefined;
     if (

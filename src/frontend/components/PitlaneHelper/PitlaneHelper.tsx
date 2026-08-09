@@ -5,7 +5,7 @@ import { usePitlaneVisibility } from './hooks/usePitlaneVisibility';
 import { usePitLimiterWarning } from './hooks/usePitLimiterWarning';
 import { usePitlaneTraffic } from './hooks/usePitlaneTraffic';
 import {
-  useTrackStateSnapshot,
+  useTrackStateSelector,
   useDashboard,
   useSessionVisibility,
 } from '@irdashies/context';
@@ -16,10 +16,27 @@ import {
   PitLimiterWarningResult,
   PitlaneTrafficResult,
 } from './demoData';
-import type { PitlaneHelperWidgetSettings } from '@irdashies/types';
+import type {
+  PitlaneHelperWidgetSettings,
+  TrackStateSnapshot,
+} from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
 import { PitCountdownBar } from './components/PitCountdownBar';
 import { PitExitInputs } from './components/PitExitInputs';
 import { PitSpeedBar } from './components/PitSpeedBar';
+
+const EMPTY_PIT_STATE: readonly [number, boolean, number | undefined] = [
+  3,
+  false,
+  undefined,
+];
+
+const selectPitState = (snapshot: TrackStateSnapshot) =>
+  [
+    snapshot.playerTrackSurface,
+    snapshot.onPitRoad,
+    snapshot.displayUnits,
+  ] as const;
 
 // Calculate color for countdown bars based on distance
 const getCountdownColor = (distance: number, maxDistance: number): string => {
@@ -35,10 +52,9 @@ export const PitlaneHelper = () => {
 
   const isSessionVisible = useSessionVisibility(config?.sessionVisibility);
 
-  const trackState = useTrackStateSnapshot();
-  const surface = trackState?.playerTrackSurface ?? 3;
-  const onPitRoadTelemetry = trackState?.onPitRoad ?? false;
-  const displayUnits = trackState?.displayUnits;
+  const [surface, onPitRoadTelemetry, displayUnits] =
+    useTrackStateSelector(selectPitState, { equality: shallow }) ??
+    EMPTY_PIT_STATE;
 
   // Core data hooks - must be called in same order every render
   const speed = usePitSpeed();

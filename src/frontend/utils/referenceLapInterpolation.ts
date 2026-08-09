@@ -1,4 +1,4 @@
-import { getBucketIndex } from '@irdashies/context';
+import { getBucketIndex } from './referenceLap';
 import { ReferenceLap } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
 
