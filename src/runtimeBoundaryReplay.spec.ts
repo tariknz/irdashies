@@ -6,13 +6,15 @@ import type {
   Session,
   Telemetry,
 } from '@irdashies/types';
-import { channelRegistry } from '@irdashies/types';
 import { CHANNEL_DELIVERY, ChannelBus } from './app/bridge/channelBridge';
 import { createDefaultProcessorHost } from './app/processors/processorRegistry';
 import type { ProcessorHost } from './app/processors/ProcessorHost';
 import { createSessionLifecycle } from './app/sessionLifecycle';
 import type { SessionLifecycle } from './app/sessionLifecycle';
-import { ChannelSnapshotStore } from './frontend/context/ChannelStore/ChannelSnapshotStore';
+import {
+  ChannelSelectionStore,
+  ChannelSnapshotStore,
+} from './frontend/context/ChannelStore/ChannelSnapshotStore';
 
 const SNAPSHOT_CHANNELS = [
   'car-speeds.snapshot',
@@ -207,7 +209,13 @@ class SyntheticSourceAdapter {
 }
 
 interface RendererStores {
-  readonly stores: Map<SnapshotChannel, ChannelSnapshotStore<SnapshotChannel>>;
+  readonly stores: Map<
+    SnapshotChannel,
+    ChannelSelectionStore<
+      SnapshotChannel,
+      ChannelPayloads[SnapshotChannel]
+    >
+  >;
   readonly changes: Map<SnapshotChannel, ReturnType<typeof vi.fn>>;
   snapshot<K extends SnapshotChannel>(
     channel: K
@@ -221,21 +229,20 @@ const attachStores = (
 ): RendererStores => {
   const stores = new Map<
     SnapshotChannel,
-    ChannelSnapshotStore<SnapshotChannel>
+    ChannelSelectionStore<
+      SnapshotChannel,
+      ChannelPayloads[SnapshotChannel]
+    >
   >();
   const changes = new Map<SnapshotChannel, ReturnType<typeof vi.fn>>();
   const unsubscribes: (() => void)[] = [];
   for (const channel of channels) {
-    const definition = channelRegistry[channel];
-    const store = new ChannelSnapshotStore(
-      channel,
-      definition.maxRateHz,
-      bridge
-    );
+    const store = new ChannelSnapshotStore(channel, bridge);
+    const selection = store.createSelection((snapshot) => snapshot);
     const listener = vi.fn();
-    stores.set(channel, store);
+    stores.set(channel, selection);
     changes.set(channel, listener);
-    unsubscribes.push(store.subscribe(listener));
+    unsubscribes.push(selection.subscribe(listener));
   }
   return {
     stores,
