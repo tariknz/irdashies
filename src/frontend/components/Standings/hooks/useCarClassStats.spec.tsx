@@ -130,4 +130,14 @@ describe('useCarClassStats', () => {
       sof: 1446,
     });
   });
+
+  it('reuses class stats while driver metadata is unchanged', () => {
+    vi.mocked(useSessionDrivers).mockReturnValue(mockDrivers);
+    const { result, rerender } = renderHook(() => useCarClassStats());
+    const initialStats = result.current;
+
+    rerender();
+
+    expect(result.current).toBe(initialStats);
+  });
 });
