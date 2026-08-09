@@ -25,7 +25,9 @@ const a = (f: Telemetry, k: keyof Telemetry): readonly unknown[] => {
 
 export class SessionBarProcessor implements TelemetryProcessor<SessionBarSnapshot> {
   readonly channel = 'session-bar.snapshot';
-  readonly tickRateHz = 5;
+  // Sample every source frame so the per-lap top speed remains accurate. The
+  // channel bus still limits renderer delivery to its configured 5 Hz.
+  readonly tickRateHz = 25;
   private session?: Session;
   private lastTime = -Infinity;
   private lap = -1;
