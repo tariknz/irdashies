@@ -4,12 +4,16 @@ import type { Session } from '@irdashies/types';
 const mockGetSessionData = vi.hoisted(() => vi.fn());
 const mockWaitForData = vi.hoisted(() => vi.fn());
 const mockStopSDK = vi.hoisted(() => vi.fn());
+const mockSdkState = vi.hoisted(() => ({ sessionVersion: 1 }));
 
 vi.mock('../../irsdk', () => ({
   IRacingSDK: class {
     autoEnableTelemetry = false;
-    currDataVersion = 1;
     sessionStatusOK = true;
+
+    get currDataVersion() {
+      return mockSdkState.sessionVersion;
+    }
 
     ready = vi.fn().mockResolvedValue(true);
     waitForData = mockWaitForData;
@@ -53,6 +57,7 @@ describe('publishIRacingSDKEvents session polling', () => {
     mockWaitForData.mockReset();
     mockWaitForData.mockReturnValue(true);
     mockStopSDK.mockReset();
+    mockSdkState.sessionVersion = 1;
   });
 
   afterEach(() => {
@@ -97,6 +102,49 @@ describe('publishIRacingSDKEvents session polling', () => {
     await vi.advanceTimersByTimeAsync(1000);
     expect(mockGetSessionData).toHaveBeenCalledTimes(2);
 
+    bridge.stop();
+  });
+
+  it('publishes session data only when its SDK revision changes', async () => {
+    const overlayManager = createOverlayManager();
+    const bridge = await publishIRacingSDKEvents(overlayManager as never);
+
+    expect(overlayManager.publishMessage).toHaveBeenCalledTimes(2);
+    expect(overlayManager.publishMessage).toHaveBeenCalledWith(
+      'sessionData',
+      expect.any(Object)
+    );
+
+    await vi.advanceTimersByTimeAsync(1_100);
+    expect(
+      overlayManager.publishMessage.mock.calls.filter(
+        ([channel]) => channel === 'sessionData'
+      )
+    ).toHaveLength(1);
+
+    mockSdkState.sessionVersion = 2;
+    await vi.advanceTimersByTimeAsync(500);
+    expect(
+      overlayManager.publishMessage.mock.calls.filter(
+        ([channel]) => channel === 'sessionData'
+      )
+    ).toHaveLength(2);
+
+    bridge.stop();
+  });
+
+  it('seeds a late session subscriber with the latest revision', async () => {
+    const session = { WeekendInfo: {} } as Session;
+    mockGetSessionData.mockReturnValue(session);
+    const bridge = await publishIRacingSDKEvents(
+      createOverlayManager() as never
+    );
+    const callback = vi.fn();
+
+    bridge.onSessionData(callback);
+
+    expect(callback).toHaveBeenCalledOnce();
+    expect(callback).toHaveBeenCalledWith(session);
     bridge.stop();
   });
 });

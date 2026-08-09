@@ -15,6 +15,7 @@ import { SessionBarRuntime } from '../../../processors/sessionBarRuntime';
 import { DriverControlsRuntime } from '../../../processors/driverControlsRuntime';
 import { TrackStateRuntime } from '../../../processors/trackStateRuntime';
 import { LapLogRuntime } from '../../../processors/lapLogRuntime';
+import { FuelProjectionRuntime } from '../../../processors/fuelProjectionRuntime';
 import { TELEMETRY_INSPECTOR_RATE_HZ } from '@irdashies/types';
 
 export async function publishIRacingSDKEvents(
@@ -27,6 +28,9 @@ export async function publishIRacingSDKEvents(
   perfMetrics.startReporting();
 
   const bridge = generateMockData();
+  const fuelProjectionRuntime = channelBus
+    ? new FuelProjectionRuntime(channelBus, lifecycle, perfMetrics)
+    : undefined;
   const lapTimesRuntime = channelBus
     ? new LapTimesRuntime(channelBus, lifecycle, perfMetrics)
     : undefined;
@@ -80,6 +84,7 @@ export async function publishIRacingSDKEvents(
     : undefined;
 
   bridge.onSessionData((session) => {
+    fuelProjectionRuntime?.onSession(session);
     carSpeedsRuntime?.onSession(session);
     referenceLapRuntime?.onSession(session);
     relativeGapRuntime?.onSession(session);
@@ -95,6 +100,7 @@ export async function publishIRacingSDKEvents(
 
   bridge.onTelemetry((telemetry) => {
     perfMetrics.markStart('processTelemetry');
+    fuelProjectionRuntime?.onFrame(telemetry);
     lapTimesRuntime?.onFrame(telemetry);
     carSpeedsRuntime?.onFrame(telemetry);
     referenceLapRuntime?.onFrame(telemetry);
@@ -131,6 +137,7 @@ export async function publishIRacingSDKEvents(
     ...bridge,
     stop: () => {
       overlayManager.clearLatestSessionData?.();
+      fuelProjectionRuntime?.dispose();
       carSpeedsRuntime?.dispose();
       lapTimesRuntime?.dispose();
       relativeGapRuntime?.dispose();

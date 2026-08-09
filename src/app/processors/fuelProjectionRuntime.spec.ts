@@ -12,6 +12,31 @@ const telemetry = {
 } as unknown as Telemetry;
 
 describe('FuelProjectionRuntime', () => {
+  it('activates when the channel was subscribed before construction', () => {
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    bus.subscribe(
+      {
+        id: 4,
+        isDestroyed: () => false,
+        isVisible: () => true,
+        send: vi.fn(),
+      },
+      'fuel.projection'
+    );
+
+    const runtime = new FuelProjectionRuntime(bus, undefined, {
+      markStart: vi.fn(),
+      markEnd: vi.fn(),
+    });
+    runtime.onFrame(telemetry);
+
+    expect(publish).toHaveBeenCalledWith(
+      'fuel.projection',
+      expect.objectContaining({ fuelLevel: 40 })
+    );
+  });
+
   it('processes and publishes only while the channel has subscribers', () => {
     const bus = new ChannelBus();
     const publish = vi.spyOn(bus, 'publish');
@@ -104,6 +129,70 @@ describe('FuelProjectionRuntime', () => {
         currentLap: 1,
         isReplay: true,
       })
+    );
+  });
+
+  it('clears cached snapshots when the final subscriber leaves', () => {
+    const bus = new ChannelBus();
+    const first = {
+      id: 5,
+      isDestroyed: () => false,
+      isVisible: () => true,
+      send: vi.fn(),
+    };
+    bus.subscribe(first, 'fuel.projection');
+    const runtime = new FuelProjectionRuntime(bus, undefined, {
+      markStart: vi.fn(),
+      markEnd: vi.fn(),
+    });
+    runtime.onFrame(telemetry);
+    bus.unsubscribe(first.id, 'fuel.projection');
+
+    const second = {
+      ...first,
+      id: 6,
+      send: vi.fn(),
+    };
+    bus.subscribe(second, 'fuel.projection');
+
+    expect(second.send).not.toHaveBeenCalled();
+    runtime.onFrame({
+      ...telemetry,
+      FuelLevel: { value: [20] },
+    } as unknown as Telemetry);
+    expect(second.send).toHaveBeenCalledWith(
+      'channels:delivery',
+      'fuel.projection',
+      expect.objectContaining({ fuelLevel: 20 })
+    );
+  });
+
+  it('clears cached state on dispose and restarts from a fresh processor', () => {
+    const bus = new ChannelBus();
+    const target = {
+      id: 7,
+      isDestroyed: () => false,
+      isVisible: () => true,
+      send: vi.fn(),
+    };
+    bus.subscribe(target, 'fuel.projection');
+    const metrics = { markStart: vi.fn(), markEnd: vi.fn() };
+    const first = new FuelProjectionRuntime(bus, undefined, metrics);
+    first.onFrame(telemetry);
+    first.dispose();
+    target.send.mockClear();
+    const publish = vi.spyOn(bus, 'publish');
+
+    const restarted = new FuelProjectionRuntime(bus, undefined, metrics);
+    expect(target.send).not.toHaveBeenCalled();
+    restarted.onFrame({
+      ...telemetry,
+      FuelLevel: { value: [15] },
+    } as unknown as Telemetry);
+
+    expect(publish).toHaveBeenCalledWith(
+      'fuel.projection',
+      expect.objectContaining({ fuelLevel: 15 })
     );
   });
 });

@@ -8,6 +8,7 @@ type Handler = (
 
 const handlers = vi.hoisted(() => new Map<string, Handler>());
 const windowListeners = vi.hoisted(() => new Map<string, () => void>());
+const windowState = vi.hoisted(() => ({ visible: true }));
 
 class FakeSender {
   readonly id = 42;
@@ -30,7 +31,7 @@ vi.mock('electron', () => ({
   },
   BrowserWindow: {
     fromWebContents: () => ({
-      isVisible: () => true,
+      isVisible: () => windowState.visible,
       on: (event: string, listener: () => void) =>
         windowListeners.set(event, listener),
       removeListener: (event: string) => windowListeners.delete(event),
@@ -48,6 +49,7 @@ describe('channel bridge IPC boundary', () => {
   beforeEach(() => {
     handlers.clear();
     windowListeners.clear();
+    windowState.visible = true;
   });
 
   it('validates requests and removes subscriptions when a renderer dies', () => {
@@ -65,7 +67,19 @@ describe('channel bridge IPC boundary', () => {
 
     subscribe({ sender }, 'session.lifecycle');
     expect(bus.subscriberCount('session.lifecycle')).toBe(1);
+    expect(bus.registeredSubscriberCount('session.lifecycle')).toBe(1);
+
+    windowState.visible = false;
+    windowListeners.get('hide')?.();
+    expect(bus.subscriberCount('session.lifecycle')).toBe(0);
+    expect(bus.registeredSubscriberCount('session.lifecycle')).toBe(1);
+
+    windowState.visible = true;
+    windowListeners.get('show')?.();
+    expect(bus.subscriberCount('session.lifecycle')).toBe(1);
+
     sender.destroy();
     expect(bus.subscriberCount('session.lifecycle')).toBe(0);
+    expect(bus.registeredSubscriberCount('session.lifecycle')).toBe(0);
   });
 });
