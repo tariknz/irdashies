@@ -392,4 +392,26 @@ describe('performance analysis', () => {
       'phase channel metrics are incomplete'
     );
   });
+
+  it('rejects non-numeric channel metric values', () => {
+    const sample = mainSample(0, 100);
+    sample.channelMetrics = {
+      processorExecutions: { 'standings.snapshot': 100 },
+      publications: { 'standings.snapshot': '20' },
+      deliveries: { 'standings.snapshot': Number.NaN },
+    } as never;
+
+    const summary = summarizeCapture(capture([sample]), 0);
+
+    expect(summary.channels['standings.snapshot']).toMatchObject({
+      processorExecutions: 100,
+      publications: 0,
+      deliveries: 0,
+    });
+    expect(summary.evidence.inputCoverageAvailable).toBe(false);
+    expect(summary.evidence.conclusive).toBe(false);
+    expect(summary.phaseEvidence[0].reasons).toContain(
+      'phase channel metrics are incomplete'
+    );
+  });
 });

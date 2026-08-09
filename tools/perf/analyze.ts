@@ -385,7 +385,12 @@ type ChannelMetricField = keyof NonNullable<
 >;
 
 const isMetricMap = (value: unknown): value is Record<string, number> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
+  typeof value === 'object' &&
+  value !== null &&
+  !Array.isArray(value) &&
+  Object.values(value).every(
+    (metric) => typeof metric === 'number' && Number.isFinite(metric)
+  );
 
 const hasCompleteChannelMetrics = (sample: MainPerfSample): boolean => {
   const metrics = sample.channelMetrics;
@@ -403,7 +408,10 @@ const channelCount = (
   channel: string
 ): number =>
   samples.reduce(
-    (sum, sample) => sum + (sample.channelMetrics?.[field]?.[channel] ?? 0),
+    (sum, sample) => {
+      const metrics = sample.channelMetrics?.[field];
+      return sum + (isMetricMap(metrics) ? (metrics[channel] ?? 0) : 0);
+    },
     0
   );
 
