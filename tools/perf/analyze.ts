@@ -229,6 +229,8 @@ export interface PerfComparison {
     peakMemoryMB: number;
     processTelemetryP99Ms: number;
     eventLoopP99Ms: number;
+    trackMapAnimationFrameRateHz: number;
+    trackMapAnimationFrameP99Ms: number;
   };
   checks: {
     name: string;
@@ -1196,6 +1198,12 @@ export function compareSummaries(
         baseline.telemetry.processTelemetryP99MeanMs,
       eventLoopP99Ms:
         candidate.eventLoop.p99MeanMs - baseline.eventLoop.p99MeanMs,
+      trackMapAnimationFrameRateHz:
+        candidate.renderer.trackMapAnimationFrameRateHz -
+        baseline.renderer.trackMapAnimationFrameRateHz,
+      trackMapAnimationFrameP99Ms:
+        candidate.renderer.trackMapAnimationFrameP99MeanMs -
+        baseline.renderer.trackMapAnimationFrameP99MeanMs,
     },
     checks: [
       {
@@ -1397,6 +1405,8 @@ export function comparisonMarkdown(comparison: PerfComparison): string {
 | irDashies peak memory | ${format(delta.peakMemoryMB)} MB |
 | processTelemetry p99 mean | ${format(delta.processTelemetryP99Ms)} ms |
 | Main event-loop p99 mean | ${format(delta.eventLoopP99Ms)} ms |
+| Track-map animation frames / second | ${format(delta.trackMapAnimationFrameRateHz)} Hz |
+| Track-map animation-frame p99 mean | ${format(delta.trackMapAnimationFrameP99Ms, 3)} ms |
 
 | Check | Status | Actual | Target |
 | --- | --- | ---: | ---: |

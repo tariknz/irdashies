@@ -3,6 +3,7 @@ import { TrackDriver, TrackDrawing } from './TrackCanvas';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
 import { useCarIdxOffTrack } from '@irdashies/context';
 import { progressToFlatX, useProgressAnimation } from './useProgressAnimation';
+import { getCachedTextVisualOffset } from './trackDrawingUtils';
 
 export interface FlatTrackMapCanvasProps {
   trackDrawing: TrackDrawing;
@@ -81,6 +82,7 @@ export const FlatTrackMapCanvas = ({
         .map((entry, interpolationIndex) => ({
           ...entry,
           interpolationIndex,
+          textMetricsCache: { font: '', text: '', visualOffset: 0 },
         }))
         .sort((a, b) => Number(a.isPlayer) - Number(b.isPlayer)),
     [drivers]
@@ -276,9 +278,12 @@ export const FlatTrackMapCanvas = ({
           displayText = driver.CarNumber;
         }
         if (displayText) {
-          const m = ctx.measureText(displayText);
-          const visualOffset =
-            (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+          const cache = orderedDriver.textMetricsCache;
+          const visualOffset = getCachedTextVisualOffset(
+            ctx,
+            displayText,
+            cache
+          );
           ctx.fillText(displayText, x, centerY + visualOffset);
         }
       }

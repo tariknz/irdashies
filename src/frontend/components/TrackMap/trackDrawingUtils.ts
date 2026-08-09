@@ -3,6 +3,28 @@ import { TrackDrawing, TrackDriver, TurnLabels } from './TrackCanvas';
 import type { Sector } from '@irdashies/types';
 import type { SectorColor } from '@irdashies/context';
 
+export interface TextMetricsCache {
+  font: string;
+  text: string;
+  visualOffset: number;
+}
+
+export const getCachedTextVisualOffset = (
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  cache: TextMetricsCache
+) => {
+  const font = ctx.font;
+  if (cache.font !== font || cache.text !== text) {
+    const metrics = ctx.measureText(text);
+    cache.font = font;
+    cache.text = text;
+    cache.visualOffset =
+      (metrics.actualBoundingBoxAscent - metrics.actualBoundingBoxDescent) / 2;
+  }
+  return cache.visualOffset;
+};
+
 export const setupCanvasContext = (
   ctx: CanvasRenderingContext2D,
   scale: number,
@@ -185,85 +207,92 @@ export const drawDrivers = (
     : Object.values(positionedDriverData).sort((a, b) =>
         compareDriverDrawOrder(a, b, carIdxIsOnPitRoad)
       );
-  positionedDrivers.forEach(
-    ({ driver, position, isPlayer, sessionPosition }) => {
-      const color = driverColors[driver.CarIdx];
-      if (!color) return;
+  positionedDrivers.forEach((entry) => {
+    const { driver, position, isPlayer, sessionPosition } = entry;
+    const color = driverColors[driver.CarIdx];
+    if (!color) return;
 
-      if (isPlayer && hidePlayer) return;
+    if (isPlayer && hidePlayer) return;
 
-      const circleRadius = isPlayer ? playerCircleSize : driverCircleSize;
-      const fontSize = circleRadius * (trackmapFontSize / 100);
-      const originalColor = color.fill;
-      let fillColor = color.fill;
-      let textColor = color.text;
-      const livePosition =
-        driverLivePositions[driver.CarIdx] ?? sessionPosition;
+    const circleRadius = isPlayer ? playerCircleSize : driverCircleSize;
+    const fontSize = circleRadius * (trackmapFontSize / 100);
+    const originalColor = color.fill;
+    let fillColor = color.fill;
+    let textColor = color.text;
+    const livePosition = driverLivePositions[driver.CarIdx] ?? sessionPosition;
 
-      // highlight leader?
-      if (!isPlayer && invertLeaderColor && livePosition === 1) {
-        fillColor = 'white';
-        textColor = originalColor;
-      }
+    // highlight leader?
+    if (!isPlayer && invertLeaderColor && livePosition === 1) {
+      fillColor = 'white';
+      textColor = originalColor;
+    }
 
-      // on pit road?
-      const onPitRoad = !!carIdxIsOnPitRoad?.[driver.CarIdx];
-      if (onPitRoad) {
-        fillColor = '#999999';
-        textColor = 'white';
-      }
+    // on pit road?
+    const onPitRoad = !!carIdxIsOnPitRoad?.[driver.CarIdx];
+    if (onPitRoad) {
+      fillColor = '#999999';
+      textColor = 'white';
+    }
 
-      ctx.fillStyle = fillColor;
-      ctx.beginPath();
-      ctx.arc(position.x, position.y, circleRadius, 0, 2 * Math.PI);
-      ctx.fill();
+    ctx.fillStyle = fillColor;
+    ctx.beginPath();
+    ctx.arc(position.x, position.y, circleRadius, 0, 2 * Math.PI);
+    ctx.fill();
 
-      // draw a border?
-      if (driversOffTrack[driver.CarIdx]) {
-        ctx.strokeStyle = getColor('yellow', 400);
-        ctx.lineWidth = 10;
-        ctx.stroke();
-      } else if (
-        !isPlayer &&
-        !onPitRoad &&
-        invertLeaderColor &&
-        livePosition === 1
-      ) {
-        ctx.strokeStyle = originalColor;
-        ctx.lineWidth = 4;
-        ctx.stroke();
-      }
+    // draw a border?
+    if (driversOffTrack[driver.CarIdx]) {
+      ctx.strokeStyle = getColor('yellow', 400);
+      ctx.lineWidth = 10;
+      ctx.stroke();
+    } else if (
+      !isPlayer &&
+      !onPitRoad &&
+      invertLeaderColor &&
+      livePosition === 1
+    ) {
+      ctx.strokeStyle = originalColor;
+      ctx.lineWidth = 4;
+      ctx.stroke();
+    }
 
-      if (showCarNumbers) {
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = textColor;
-        ctx.font = `${fontSize}px sans-serif`;
-        const displayText = onPitRoad
-          ? 'P'
-          : displayMode === 'livePosition'
-            ? livePosition && livePosition > 0
-              ? livePosition.toString()
+    if (showCarNumbers) {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = textColor;
+      ctx.font = `${fontSize}px sans-serif`;
+      const displayText = onPitRoad
+        ? 'P'
+        : displayMode === 'livePosition'
+          ? livePosition && livePosition > 0
+            ? livePosition.toString()
+            : ''
+          : displayMode === 'sessionPosition'
+            ? sessionPosition && sessionPosition > 0
+              ? sessionPosition.toString()
               : ''
-            : displayMode === 'sessionPosition'
-              ? sessionPosition && sessionPosition > 0
-                ? sessionPosition.toString()
-                : ''
-              : driver.CarNumber;
-        if (displayText) {
-          const m = ctx.measureText(displayText);
-          const visualOffset =
-            (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
-          ctx.fillText(displayText, position.x, position.y + visualOffset);
+            : driver.CarNumber;
+      if (displayText) {
+        const cache = entry.textMetricsCache;
+        let visualOffset: number;
+        if (cache) {
+          visualOffset = getCachedTextVisualOffset(ctx, displayText, cache);
+        } else {
+          const metrics = ctx.measureText(displayText);
+          visualOffset =
+            (metrics.actualBoundingBoxAscent -
+              metrics.actualBoundingBoxDescent) /
+            2;
         }
+        ctx.fillText(displayText, position.x, position.y + visualOffset);
       }
     }
-  );
+  });
 };
 
 export type PositionedTrackDriver = TrackDriver & {
   position: { x: number; y: number };
   sessionPosition?: number;
+  textMetricsCache?: TextMetricsCache;
 };
 
 // ---------------------------------------------------------------------------

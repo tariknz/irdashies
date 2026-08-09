@@ -221,6 +221,7 @@ export const TrackCanvas = ({
           classPosition,
           sessionPosition: classPosition,
           position: { x: 0, y: 0 },
+          textMetricsCache: { font: '', text: '', visualOffset: 0 },
           interpolationIndex,
         })
       )

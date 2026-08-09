@@ -6,6 +6,7 @@ import type {
 } from '../../src/types/performance';
 import {
   compareSummaries,
+  comparisonMarkdown,
   parseCliArgs,
   parsePerfLog,
   summarizeCapture,
@@ -165,6 +166,21 @@ describe('performance analysis', () => {
     expect(summary.renderer.trackMapAnimationFrameRateHz).toBe(50);
     expect(summary.renderer.trackMapAnimationFrameP99MeanMs).toBe(1.1);
     expect(summary.renderer.trackMapAnimationFrameP99WorstMs).toBe(1.1);
+
+    const candidate = {
+      ...summary,
+      renderer: {
+        ...summary.renderer,
+        trackMapAnimationFrameRateHz: 60,
+        trackMapAnimationFrameP99MeanMs: 1.6,
+      },
+    };
+    const comparison = compareSummaries(summary, candidate);
+    expect(comparison.delta.trackMapAnimationFrameRateHz).toBe(10);
+    expect(comparison.delta.trackMapAnimationFrameP99Ms).toBeCloseTo(0.5);
+    expect(comparisonMarkdown(comparison)).toContain(
+      '| Track-map animation-frame p99 mean | 0.500 ms |'
+    );
   });
 
   it('flags a material iRacing FPS regression with conclusive evidence', () => {
