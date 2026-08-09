@@ -209,7 +209,7 @@ export const FlatTrackMapCanvas = ({
       const { driver, isPlayer, classPosition, interpolationIndex } =
         orderedDriver;
       if (interpolationIndex >= count) continue;
-      let color = driverColors[driver.CarIdx];
+      const color = driverColors[driver.CarIdx];
       if (!color) continue;
 
       const x = progressToFlatX(
@@ -221,20 +221,24 @@ export const FlatTrackMapCanvas = ({
         (isPlayer ? playerCircleSize : driverCircleSize) * circleScale;
       const fontSize = radius * (trackmapFontSize / 100);
       const originalColor = color.fill;
+      let fillColor = color.fill;
+      let textColor = color.text;
       const livePosition = driverLivePositions[driver.CarIdx] ?? classPosition;
 
       // highlight leader?
       if (!isPlayer && invertLeaderColor && livePosition === 1) {
-        color = { fill: 'white', text: originalColor };
+        fillColor = 'white';
+        textColor = originalColor;
       }
 
       // on pit road?
       const onPitRoad = !!carIdxIsOnPitRoad?.[driver.CarIdx];
       if (onPitRoad) {
-        color = { fill: '#999999', text: 'white' };
+        fillColor = '#999999';
+        textColor = 'white';
       }
 
-      ctx.fillStyle = color.fill;
+      ctx.fillStyle = fillColor;
       ctx.beginPath();
       ctx.arc(x, centerY, radius, 0, 2 * Math.PI);
       ctx.fill();
@@ -251,7 +255,7 @@ export const FlatTrackMapCanvas = ({
       }
 
       if (showCarNumbers) {
-        ctx.fillStyle = color.text;
+        ctx.fillStyle = textColor;
         ctx.font = `${fontSize}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';

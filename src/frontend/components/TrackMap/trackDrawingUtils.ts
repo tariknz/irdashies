@@ -146,9 +146,26 @@ export const drawTurnNames = (
   });
 };
 
+/** Pit-road cars first, then lower positions, with the player drawn last. */
+export const compareDriverDrawOrder = (
+  a: PositionedTrackDriver,
+  b: PositionedTrackDriver,
+  carIdxIsOnPitRoad?: readonly boolean[]
+) => {
+  const safePosition = (position: number | undefined) =>
+    position !== undefined && isFinite(position) ? position : 0;
+  const aOnPit = !!carIdxIsOnPitRoad?.[a.driver.CarIdx];
+  const bOnPit = !!carIdxIsOnPitRoad?.[b.driver.CarIdx];
+  if (aOnPit !== bOnPit) return aOnPit ? -1 : 1;
+  if (a.isPlayer !== b.isPlayer) {
+    return Number(a.isPlayer) - Number(b.isPlayer);
+  }
+  return safePosition(b.sessionPosition) - safePosition(a.sessionPosition);
+};
+
 export const drawDrivers = (
   ctx: CanvasRenderingContext2D,
-  calculatePositions:
+  positionedDriverData:
     PositionedTrackDriver[] | Record<number, PositionedTrackDriver>,
   driverColors: Record<number, { fill: string; text: string }>,
   invertLeaderColor: boolean,
@@ -162,24 +179,15 @@ export const drawDrivers = (
   carIdxIsOnPitRoad?: readonly boolean[],
   hidePlayer?: boolean
 ) => {
-  const safePosition = (pos: number | undefined): number =>
-    pos !== undefined && isFinite(pos) ? pos : 0;
-  const positionedDrivers = Array.isArray(calculatePositions)
-    ? calculatePositions
-    : Object.values(calculatePositions).sort((a, b) => {
-        const aOnPit = !!carIdxIsOnPitRoad?.[a.driver.CarIdx];
-        const bOnPit = !!carIdxIsOnPitRoad?.[b.driver.CarIdx];
-        if (aOnPit !== bOnPit) return aOnPit ? -1 : 1; // pit cars drawn first (under track drivers)
-        if (a.isPlayer !== b.isPlayer) {
-          return Number(a.isPlayer) - Number(b.isPlayer); // draws player last to be on top
-        }
-        return (
-          safePosition(b.sessionPosition) - safePosition(a.sessionPosition)
-        ); // draws leader on top
-      });
+  // Arrays are pre-sorted by the RAF caller to avoid per-frame allocations.
+  const positionedDrivers = Array.isArray(positionedDriverData)
+    ? positionedDriverData
+    : Object.values(positionedDriverData).sort((a, b) =>
+        compareDriverDrawOrder(a, b, carIdxIsOnPitRoad)
+      );
   positionedDrivers.forEach(
     ({ driver, position, isPlayer, sessionPosition }) => {
-      let color = driverColors[driver.CarIdx];
+      const color = driverColors[driver.CarIdx];
       if (!color) return;
 
       if (isPlayer && hidePlayer) return;
@@ -187,21 +195,25 @@ export const drawDrivers = (
       const circleRadius = isPlayer ? playerCircleSize : driverCircleSize;
       const fontSize = circleRadius * (trackmapFontSize / 100);
       const originalColor = color.fill;
+      let fillColor = color.fill;
+      let textColor = color.text;
       const livePosition =
         driverLivePositions[driver.CarIdx] ?? sessionPosition;
 
       // highlight leader?
       if (!isPlayer && invertLeaderColor && livePosition === 1) {
-        color = { fill: 'white', text: originalColor };
+        fillColor = 'white';
+        textColor = originalColor;
       }
 
       // on pit road?
       const onPitRoad = !!carIdxIsOnPitRoad?.[driver.CarIdx];
       if (onPitRoad) {
-        color = { fill: '#999999', text: 'white' };
+        fillColor = '#999999';
+        textColor = 'white';
       }
 
-      ctx.fillStyle = color.fill;
+      ctx.fillStyle = fillColor;
       ctx.beginPath();
       ctx.arc(position.x, position.y, circleRadius, 0, 2 * Math.PI);
       ctx.fill();
@@ -225,7 +237,7 @@ export const drawDrivers = (
       if (showCarNumbers) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = color.text;
+        ctx.fillStyle = textColor;
         ctx.font = `${fontSize}px sans-serif`;
         const displayText = onPitRoad
           ? 'P'

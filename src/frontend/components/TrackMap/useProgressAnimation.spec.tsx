@@ -59,6 +59,28 @@ describe('ProgressInterpolator', () => {
       expect(interpolator.getValues()).toBe(output);
     }
   });
+
+  it('preserves existing drivers by CarIdx when the roster changes', () => {
+    const interpolator = new ProgressInterpolator(40);
+    interpolator.setTargets(
+      [
+        { progress: 0.1, driver: { CarIdx: 7 } },
+        { progress: 0.5, driver: { CarIdx: 3 } },
+      ],
+      0
+    );
+    interpolator.setTargets(
+      [
+        { progress: 0.7, driver: { CarIdx: 3 } },
+        { progress: 0.9, driver: { CarIdx: 9 } },
+      ],
+      0
+    );
+
+    expect(interpolator.getValues()[0]).toBeCloseTo(0.5);
+    expect(interpolator.getValues()[1]).toBeCloseTo(0.9);
+    expect(interpolator.getCount()).toBe(2);
+  });
 });
 
 describe('map projection', () => {
@@ -122,6 +144,7 @@ describe('useProgressAnimation', () => {
     const view = render(<Harness progress={0.1} />);
     view.rerender(<Harness progress={0.3} />);
     expect(callbacks).toHaveLength(1);
+    expect(drawCount).toBe(2);
 
     act(() => callbacks.shift()?.(20));
     expect(callbacks).toHaveLength(1);

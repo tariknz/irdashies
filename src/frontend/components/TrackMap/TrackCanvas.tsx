@@ -13,6 +13,7 @@ import {
   drawDrivers,
   drawSectorColors,
   drawSectorDividers,
+  compareDriverDrawOrder,
   type PositionedTrackDriver,
 } from './trackDrawingUtils';
 import {
@@ -208,8 +209,6 @@ export const TrackCanvas = ({
   const positionedDrivers = useMemo<
     (PositionedTrackDriver & { interpolationIndex: number })[]
   >(() => {
-    const safePosition = (position: number | undefined) =>
-      position !== undefined && isFinite(position) ? position : 0;
     return drivers
       .map(
         (
@@ -225,17 +224,7 @@ export const TrackCanvas = ({
           interpolationIndex,
         })
       )
-      .sort((a, b) => {
-        const aOnPit = !!carIdxIsOnPitRoad?.[a.driver.CarIdx];
-        const bOnPit = !!carIdxIsOnPitRoad?.[b.driver.CarIdx];
-        if (aOnPit !== bOnPit) return aOnPit ? -1 : 1;
-        if (a.isPlayer !== b.isPlayer) {
-          return Number(a.isPlayer) - Number(b.isPlayer);
-        }
-        return (
-          safePosition(b.sessionPosition) - safePosition(a.sessionPosition)
-        );
-      });
+      .sort((a, b) => compareDriverDrawOrder(a, b, carIdxIsOnPitRoad));
   }, [drivers, carIdxIsOnPitRoad]);
 
   // Canvas setup and resize handling

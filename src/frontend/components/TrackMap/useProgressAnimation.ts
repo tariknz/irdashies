@@ -163,15 +163,28 @@ export const useProgressAnimation = (
   const interpolatorRef = useRef<ProgressInterpolator | null>(null);
   const drawRef = useRef(draw);
   const frameRef = useRef(0);
-  drawRef.current = draw;
+  const previousDriversRef = useRef<ProgressSource | null>(null);
 
   if (!interpolatorRef.current) {
     interpolatorRef.current = new ProgressInterpolator();
   }
 
+  // Commit the latest draw callback before target updates or RAF work. Skip
+  // the repaint when the target effect below will paint this same commit.
+  useLayoutEffect(() => {
+    drawRef.current = draw;
+    if (previousDriversRef.current !== drivers) return;
+    const interpolator = interpolatorRef.current;
+    if (!interpolator) return;
+    const drawCommittedAppearance = () =>
+      draw(interpolator.getValues(), interpolator.getCount());
+    perfMetrics.measure('trackMapAnimationFrame', drawCommittedAppearance);
+  });
+
   useLayoutEffect(() => {
     const interpolator = interpolatorRef.current;
     if (!interpolator) return;
+    previousDriversRef.current = drivers;
 
     let frameTime = 0;
     const measuredFrame = () => {
@@ -189,7 +202,9 @@ export const useProgressAnimation = (
     };
 
     const active = interpolator.setTargets(drivers, performance.now());
-    drawRef.current(interpolator.getValues(), interpolator.getCount());
+    const drawSnapshot = () =>
+      drawRef.current(interpolator.getValues(), interpolator.getCount());
+    perfMetrics.measure('trackMapAnimationFrame', drawSnapshot);
     if (active && frameRef.current === 0) {
       frameRef.current = requestAnimationFrame(frame);
     }
@@ -201,19 +216,4 @@ export const useProgressAnimation = (
       }
     };
   }, [drivers]);
-
-  // Redraw with the latest appearance/settings after any React render without
-  // changing interpolation state or scheduling an animation frame.
-  useLayoutEffect(() => {
-    const interpolator = interpolatorRef.current;
-    if (!interpolator) return;
-    drawRef.current(interpolator.getValues(), interpolator.getCount());
-  });
-
-  useLayoutEffect(
-    () => () => {
-      if (frameRef.current !== 0) cancelAnimationFrame(frameRef.current);
-    },
-    []
-  );
 };
