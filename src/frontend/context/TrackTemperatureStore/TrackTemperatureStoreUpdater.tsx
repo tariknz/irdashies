@@ -1,15 +1,27 @@
 import { useEffect } from 'react';
-import { useSessionBarSnapshot } from '../ChannelStore';
+import type { SessionBarSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
+import { useSessionBarSelector } from '../ChannelStore';
 import { useTrackTemperatureStore } from './TrackTemperatureStore';
 
+const EMPTY_TEMPERATURES: readonly [number | undefined, number | undefined] = [
+  undefined,
+  undefined,
+];
+
+const selectTemperatures = (snapshot: SessionBarSnapshot) =>
+  [snapshot.trackTemp, snapshot.airTemp] as const;
+
 export const useTrackTemperatureStoreUpdater = (enabled: boolean) => {
-  const snapshot = useSessionBarSnapshot();
+  const [trackTemp, airTemp] =
+    useSessionBarSelector(selectTemperatures, { equality: shallow }) ??
+    EMPTY_TEMPERATURES;
   const update = useTrackTemperatureStore((s) => s.update);
 
   useEffect(() => {
     if (!enabled) return;
-    update(snapshot?.trackTemp, snapshot?.airTemp);
-  }, [enabled, snapshot?.trackTemp, snapshot?.airTemp, update]);
+    update(trackTemp, airTemp);
+  }, [enabled, trackTemp, airTemp, update]);
 };
 
 /**

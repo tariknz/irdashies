@@ -1,5 +1,5 @@
 import { useDriverCarIdx } from '../SessionStore/SessionStore';
-import { useTrackStateSnapshot } from '../ChannelStore';
+import { trackStateSelectors, useTrackStateSelector } from '../ChannelStore';
 
 /**
  * Hook to get the car index that should be the "focus" for relative displays.
@@ -17,7 +17,7 @@ import { useTrackStateSnapshot } from '../ChannelStore';
  */
 export const useFocusCarIdx = (): number | undefined => {
   const driverCarIdx = useDriverCarIdx();
-  const camCarIdx = useTrackStateSnapshot()?.focusCarIdx;
+  const camCarIdx = useTrackStateSelector(trackStateSelectors.focusCarIdx);
 
   // If we have a valid camera target, always use that
   // This works in all scenarios: racing, spectating, replays, spotting

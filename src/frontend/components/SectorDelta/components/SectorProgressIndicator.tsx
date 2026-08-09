@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
-import { useTrackStateSnapshot } from '@irdashies/context';
+import { trackStateSelectors, useTrackStateSelector } from '@irdashies/context';
 
 /**
  * Track-progress overlay for the active card. Subscribes to LapDistPct
@@ -21,7 +21,7 @@ export const SectorProgressIndicator = ({
   const fillRef = useRef<HTMLDivElement>(null);
   const topBarRef = useRef<HTMLDivElement>(null);
   const bottomBarRef = useRef<HTMLDivElement>(null);
-  const lapDistPct = useTrackStateSnapshot()?.lapDistPct ?? 0;
+  const lapDistPct = useTrackStateSelector(trackStateSelectors.lapDistPct) ?? 0;
 
   useLayoutEffect(() => {
     const apply = () => {

@@ -1,8 +1,31 @@
 import { useEffect, useRef } from 'react';
+import type { TrackStateSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
 import { usePitLaneStore, detectPitTransitions } from './PitLaneStore';
-import { useTrackStateSnapshot } from '../ChannelStore';
+import { useTrackStateSelector } from '../ChannelStore';
 import { useSessionStore } from '../SessionStore/SessionStore';
 import type { PitLaneBridge } from '@irdashies/types';
+
+const EMPTY_PIT_LANE_TELEMETRY: readonly [
+  readonly boolean[],
+  readonly number[],
+  readonly number[],
+] = [[], [], []];
+
+const selectPitLaneTelemetry = (snapshot: TrackStateSnapshot) =>
+  [
+    snapshot.carIdxOnPitRoad,
+    snapshot.carIdxTrackSurface,
+    snapshot.carIdxLapDistPct,
+  ] as const;
+
+const pitLaneTelemetryEqual = (
+  previous: ReturnType<typeof selectPitLaneTelemetry>,
+  next: ReturnType<typeof selectPitLaneTelemetry>
+) =>
+  shallow(previous[0], next[0]) &&
+  shallow(previous[1], next[1]) &&
+  shallow(previous[2], next[2]);
 
 /**
  * Hook that monitors telemetry and detects pit entry/exit positions.
@@ -14,10 +37,10 @@ export const usePitLaneDetection = (
   const trackId = useSessionStore(
     (state) => state.session?.WeekendInfo?.TrackID?.toString() ?? null
   );
-  const trackState = useTrackStateSnapshot();
-  const carIdxOnPitRoad = trackState?.carIdxOnPitRoad;
-  const carIdxTrackSurface = trackState?.carIdxTrackSurface;
-  const carIdxLapDistPct = trackState?.carIdxLapDistPct;
+  const [carIdxOnPitRoad, carIdxTrackSurface, carIdxLapDistPct] =
+    useTrackStateSelector(selectPitLaneTelemetry, {
+      equality: pitLaneTelemetryEqual,
+    }) ?? EMPTY_PIT_LANE_TELEMETRY;
 
   const { currentTrackId, pitEntryPct, pitExitPct, setCurrentTrack, reset } =
     usePitLaneStore();
@@ -69,9 +92,9 @@ export const usePitLaneDetection = (
   // Detect pit entry/exit transitions
   useEffect(() => {
     if (
-      !carIdxOnPitRoad ||
-      !carIdxTrackSurface ||
-      !carIdxLapDistPct ||
+      carIdxOnPitRoad.length === 0 ||
+      carIdxTrackSurface.length === 0 ||
+      carIdxLapDistPct.length === 0 ||
       !trackId
     ) {
       return;

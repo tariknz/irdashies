@@ -2,13 +2,23 @@ import { useState, useEffect } from 'react';
 import { useGarageCoverSettings } from './hooks/useGarageCoverSettings';
 import { useGarageCoverImage } from './hooks/useGarageCoverImage';
 import logoSvg from '../../assets/icons/logo.svg';
-import { useTrackStateSnapshot } from '@irdashies/context';
+import type { TrackStateSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
+import { useTrackStateSelector } from '@irdashies/context';
+
+const EMPTY_GARAGE_STATE: readonly [boolean, boolean, boolean] = [
+  false,
+  false,
+  false,
+];
+
+const selectGarageState = (snapshot: TrackStateSnapshot) =>
+  [snapshot.isInGarage, snapshot.isGarageVisible, snapshot.isOnTrack] as const;
 
 export const GarageCover = () => {
-  const trackState = useTrackStateSnapshot();
-  const isInGarageDirect = trackState?.isInGarage ?? false;
-  const isGarageVisible = trackState?.isGarageVisible ?? false;
-  const isOnTrack = trackState?.isOnTrack ?? false;
+  const [isInGarageDirect, isGarageVisible, isOnTrack] =
+    useTrackStateSelector(selectGarageState, { equality: shallow }) ??
+    EMPTY_GARAGE_STATE;
 
   // Combining both garage-specific flags ensures the fastest possible
   // detection of the garage screen without false positives from other

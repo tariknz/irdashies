@@ -9,15 +9,17 @@ vi.mock('../TelemetryStore/TelemetryStore', () => ({
 }));
 
 vi.mock('../ChannelStore', () => ({
-  useTrackStateSnapshot: vi.fn(() => ({
-    isOnTrack: useTelemetryValue('IsOnTrack'),
-    playerCarInPitStall: useTelemetryValue('PlayerCarInPitStall'),
-    focusCarIdx: 0,
-    carIdxOnPitRoad: [useTelemetryValue('CarIdxOnPitRoad')],
-    isInGarage: useTelemetryValue('IsInGarage'),
-    isGarageVisible: useTelemetryValue('IsGarageVisible'),
-    isReplayPlaying: useTelemetryValue('IsReplayPlaying'),
-  })),
+  useTrackStateSelector: vi.fn((selector) =>
+    selector({
+      isOnTrack: useTelemetryValue('IsOnTrack'),
+      playerCarInPitStall: useTelemetryValue('PlayerCarInPitStall'),
+      focusCarIdx: 0,
+      carIdxOnPitRoad: [useTelemetryValue('CarIdxOnPitRoad')],
+      isInGarage: useTelemetryValue('IsInGarage'),
+      isGarageVisible: useTelemetryValue('IsGarageVisible'),
+      isReplayPlaying: useTelemetryValue('IsReplayPlaying'),
+    })
+  ),
 }));
 
 describe('useDrivingState', () => {

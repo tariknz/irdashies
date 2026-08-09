@@ -1,18 +1,19 @@
-import { useTrackStateSnapshot } from '../ChannelStore';
+import type { TrackStateSnapshot } from '@irdashies/types';
+import { useTrackStateSelector } from '../ChannelStore';
+
+const selectIsDriving = (snapshot: TrackStateSnapshot): boolean => {
+  const focusCarIdx = snapshot.focusCarIdx ?? -1;
+  const onPitRoad = snapshot.carIdxOnPitRoad[focusCarIdx] ?? false;
+  const isInGarage = snapshot.isInGarage || snapshot.isGarageVisible;
+  return (
+    (snapshot.isOnTrack || snapshot.playerCarInPitStall || onPitRoad) &&
+    !isInGarage &&
+    !snapshot.isReplayPlaying
+  );
+};
 
 export const useDrivingState = () => {
-  const snapshot = useTrackStateSnapshot();
-  const isOnTrack = snapshot?.isOnTrack ?? false;
-  const inPitStall = snapshot?.playerCarInPitStall ?? false;
-  const focusCarIdx = snapshot?.focusCarIdx ?? -1;
-  const onPitRoad = snapshot?.carIdxOnPitRoad[focusCarIdx] ?? false;
-  const isInGarageDirect = snapshot?.isInGarage ?? false;
-  const isGarageVisible = snapshot?.isGarageVisible ?? false;
-  const isInGarage = isInGarageDirect || isGarageVisible;
-  const isReplayPlaying = snapshot?.isReplayPlaying ?? false;
-
-  const isDriving =
-    (isOnTrack || inPitStall || onPitRoad) && !isInGarage && !isReplayPlaying;
+  const isDriving = useTrackStateSelector(selectIsDriving) ?? false;
 
   return {
     isDriving,

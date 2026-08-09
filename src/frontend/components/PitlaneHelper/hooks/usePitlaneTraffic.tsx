@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
-import {
-  useTrackStateSnapshot,
-  useFocusCarIdx,
-} from '@irdashies/context';
+import type { TrackStateSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
+import { useTrackStateSelector, useFocusCarIdx } from '@irdashies/context';
 
 export interface PitlaneTrafficResult {
   carsAhead: number;
@@ -10,15 +9,28 @@ export interface PitlaneTrafficResult {
   totalCars: number;
 }
 
+const EMPTY_TRAFFIC: readonly [readonly boolean[], readonly number[]] = [
+  [],
+  [],
+];
+
+const selectTraffic = (snapshot: TrackStateSnapshot) =>
+  [snapshot.carIdxOnPitRoad, snapshot.carIdxLapDistPct] as const;
+
+const trafficEqual = (
+  previous: ReturnType<typeof selectTraffic>,
+  next: ReturnType<typeof selectTraffic>
+) => shallow(previous[0], next[0]) && shallow(previous[1], next[1]);
+
 export const usePitlaneTraffic = (enabled: boolean): PitlaneTrafficResult => {
   const focusCarIdx = useFocusCarIdx();
-  const trackState = useTrackStateSnapshot();
-  const carIdxOnPitRoadRaw = trackState?.carIdxOnPitRoad;
-  const carIdxLapDistPctRaw = trackState?.carIdxLapDistPct;
+  const [carIdxOnPitRoadRaw, carIdxLapDistPctRaw] =
+    useTrackStateSelector(selectTraffic, { equality: trafficEqual }) ??
+    EMPTY_TRAFFIC;
 
   return useMemo(() => {
-    const carIdxOnPitRoad = carIdxOnPitRoadRaw ?? [];
-    const carIdxLapDistPct = carIdxLapDistPctRaw ?? [];
+    const carIdxOnPitRoad = carIdxOnPitRoadRaw;
+    const carIdxLapDistPct = carIdxLapDistPctRaw;
 
     if (!enabled || focusCarIdx === undefined) {
       return { carsAhead: 0, carsBehind: 0, totalCars: 0 };

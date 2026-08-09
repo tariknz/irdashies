@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { GhostIcon, WarningIcon } from '@phosphor-icons/react';
-import { useSectorDeltas, useSectorTimingStore } from '@irdashies/context';
 import {
+  trackStateSelectors,
+  useSectorDeltas,
+  useSectorTimingStore,
   useSessionVisibility,
-  useTrackStateSnapshot,
+  useTrackStateSelector,
 } from '@irdashies/context';
 import { useReferenceLapSectorTimes } from '@irdashies/context';
 import type { SectorDeltaConfig } from '@irdashies/types';
@@ -92,7 +94,7 @@ export const SectorDelta = ({
     previousSessionBestSectorTimes,
     currentSectorIdx,
   } = useSectorDeltas();
-  const isOnTrack = useTrackStateSnapshot()?.isOnTrack;
+  const isOnTrack = useTrackStateSelector(trackStateSelectors.isOnTrack);
   const { refSectorTimes, hasReferenceLap } = useReferenceLapSectorTimes();
 
   const useGhost = ghostComparison === 'prefer-ghost' && hasReferenceLap;

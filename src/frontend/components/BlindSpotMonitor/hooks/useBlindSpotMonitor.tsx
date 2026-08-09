@@ -1,6 +1,8 @@
 import { useMemo, useState, useEffect } from 'react';
+import type { TrackStateSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
 import {
-  useTrackStateSnapshot,
+  useTrackStateSelector,
   useDriverCarIdx,
   useTrackLength,
 } from '@irdashies/context';
@@ -17,15 +19,35 @@ interface BlindSpotMonitorState {
 }
 
 const EMPTY_POSITIONS: readonly number[] = [];
+const EMPTY_BLIND_SPOT_TELEMETRY: readonly [
+  CarLeftRight,
+  readonly number[],
+  boolean,
+] = [CarLeftRight.Off, EMPTY_POSITIONS, false];
+
+const selectBlindSpotTelemetry = (snapshot: TrackStateSnapshot) =>
+  [
+    snapshot.carLeftRight as CarLeftRight,
+    snapshot.carIdxLapDistPct,
+    snapshot.isOnTrack,
+  ] as const;
+
+const blindSpotTelemetryEqual = (
+  previous: ReturnType<typeof selectBlindSpotTelemetry>,
+  next: ReturnType<typeof selectBlindSpotTelemetry>
+) =>
+  previous[0] === next[0] &&
+  shallow(previous[1], next[1]) &&
+  previous[2] === next[2];
 
 export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
-  const trackState = useTrackStateSnapshot();
-  const carLeftRight = trackState?.carLeftRight ?? CarLeftRight.Off;
-  const lapDistPcts = trackState?.carIdxLapDistPct ?? EMPTY_POSITIONS;
+  const [carLeftRight, lapDistPcts, isOnTrack] =
+    useTrackStateSelector(selectBlindSpotTelemetry, {
+      equality: blindSpotTelemetryEqual,
+    }) ?? EMPTY_BLIND_SPOT_TELEMETRY;
   const driverCarIdx = useDriverCarIdx() ?? 0;
   const trackLength = useTrackLength();
   const settings = useBlindSpotMonitorSettings();
-  const isOnTrack = trackState?.isOnTrack ?? false;
 
   const [leftCarIdx, setLeftCarIdx] = useState<number | null>(null);
   const [rightCarIdx, setRightCarIdx] = useState<number | null>(null);

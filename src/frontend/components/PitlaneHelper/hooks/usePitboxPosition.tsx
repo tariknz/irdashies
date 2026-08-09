@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
+import { shallow } from 'zustand/shallow';
 import {
-  useTrackStateSnapshot,
+  trackStateSelectors,
+  useTrackStateSelector,
   useSessionStore,
   useFocusCarIdx,
   useTrackLength,
@@ -24,7 +26,10 @@ export const usePitboxPosition = (
 ): PitboxPositionResult => {
   const session = useSessionStore((state) => state.session);
   const focusCarIdx = useFocusCarIdx();
-  const carIdxLapDistPct = useTrackStateSnapshot()?.carIdxLapDistPct;
+  const carIdxLapDistPct = useTrackStateSelector(
+    trackStateSelectors.carIdxLapDistPct,
+    { equality: shallow }
+  );
   const trackLength = useTrackLength() ?? 0;
   const { pitEntryPct, pitExitPct } = usePitLaneStore();
 
