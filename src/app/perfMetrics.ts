@@ -11,6 +11,7 @@
 import { monitorEventLoopDelay, performance } from 'node:perf_hooks';
 import { app, BrowserWindow } from 'electron';
 import type { NumericSampleStats, Telemetry } from '@irdashies/types';
+import type { ChannelBusMetricsSnapshot } from './bridge/channelBridge';
 import { FixedSampleBuffer } from '../shared/performanceSamples';
 import logger from './logger';
 
@@ -59,10 +60,47 @@ export interface PerfReport {
   totalAppCpuPercent?: number;
   totalAppMemoryMB?: number;
   totalAppPrivateMemoryMB?: number;
+  scenarioMetadata?: Record<string, unknown>;
+  channelMetrics?: {
+    processorExecutions: Record<string, number>;
+    publications: Record<string, number>;
+    deliveries: Record<string, number>;
+  };
 }
+
+interface ChannelMetricsSource {
+  metricsSnapshot(): ChannelBusMetricsSnapshot;
+}
+
+const PROCESSOR_CHANNELS: Readonly<Record<string, string>> = {
+  carSpeedsProcessing: 'car-speeds.snapshot',
+  driverControlsProcessing: 'driver-controls.snapshot',
+  fuelProjectionProcessing: 'fuel.projection',
+  lapLogProcessing: 'lap-log.snapshot',
+  lapTimesProcessing: 'lap-times.snapshot',
+  radioProcessing: 'radio.snapshot',
+  referenceLapProcessing: 'reference-laps.snapshot',
+  relativeGapProcessing: 'relative-gaps.snapshot',
+  sectorTimingProcessing: 'sector-timing.snapshot',
+  sessionBarProcessing: 'session-bar.snapshot',
+  sessionTimingProcessing: 'session-timing.snapshot',
+  standingsProcessing: 'standings.snapshot',
+  trackStateProcessing: 'track-state.snapshot',
+};
 
 const DEFAULT_REPORT_INTERVAL_MS = 10_000;
 export const PERF_MAIN_LOG_PREFIX = '[PerfMetrics:JSON] ';
+
+export const sumCompletePrivateMemoryMB = (
+  privateBytes: readonly (number | undefined)[]
+): number | undefined =>
+  privateBytes.length > 0 &&
+  privateBytes.every(
+    (value): value is number =>
+      typeof value === 'number' && Number.isFinite(value) && value >= 0
+  )
+    ? privateBytes.reduce((sum, value) => sum + (value ?? 0), 0) / 1024
+    : undefined;
 
 class SectionBuffer {
   private samples = new FixedSampleBuffer();
@@ -107,8 +145,13 @@ export class TelemetryPerfMetrics {
   private lastCpuUsage: NodeJS.CpuUsage = { user: 0, system: 0 };
   private tickCount = 0;
   private _enabled: boolean;
+  private previousChannelPublications: Readonly<Record<string, number>> = {};
+  private previousChannelDeliveries: Readonly<Record<string, number>> = {};
 
-  constructor(enabled?: boolean) {
+  constructor(
+    enabled?: boolean,
+    private readonly channelMetricsSource?: ChannelMetricsSource
+  ) {
     this._enabled = enabled ?? process.env.PERF_METRICS === '1';
   }
 
@@ -128,6 +171,10 @@ export class TelemetryPerfMetrics {
     this.lastTickTime = 0;
     this.lastCpuUsage = process.cpuUsage();
     this.eventLoopDelay.enable();
+    const channelMetrics = this.channelMetricsSource?.metricsSnapshot();
+    this.previousChannelPublications =
+      channelMetrics?.channelPublications ?? {};
+    this.previousChannelDeliveries = channelMetrics?.channelDeliveries ?? {};
     this.reportTimer = setInterval(() => {
       const report = this.report();
       this.logReport(report);
@@ -213,6 +260,8 @@ export class TelemetryPerfMetrics {
       totalAppCpuPercent: totalCpu,
       totalAppMemoryMB: totalMemory,
       totalAppPrivateMemoryMB: totalPrivateMemory,
+      scenarioMetadata: this.scenarioMetadata(),
+      channelMetrics: this.channelMetrics(sections),
     };
 
     this.lastReportTime = now;
@@ -240,6 +289,68 @@ export class TelemetryPerfMetrics {
     return buf;
   }
 
+  private scenarioMetadata(): Record<string, unknown> | undefined {
+    try {
+      const configured = JSON.parse(
+        process.env.PERF_SCENARIO_METADATA ?? '{}'
+      ) as unknown;
+      const metadata =
+        typeof configured === 'object' && configured !== null
+          ? (configured as Record<string, unknown>)
+          : {};
+      const activeWidgetTypes = JSON.parse(
+        process.env.PERF_ACTIVE_WIDGET_TYPES ?? '[]'
+      ) as unknown;
+      return {
+        ...metadata,
+        activeWidgetTypes: Array.isArray(activeWidgetTypes)
+          ? activeWidgetTypes.filter(
+              (value): value is string => typeof value === 'string'
+            )
+          : [],
+      };
+    } catch {
+      return undefined;
+    }
+  }
+
+  private channelMetrics(
+    sections: Record<string, SectionStats>
+  ): PerfReport['channelMetrics'] {
+    if (!this.channelMetricsSource) return undefined;
+    const current = this.channelMetricsSource.metricsSnapshot();
+    const difference = (
+      values: Readonly<Record<string, number>>,
+      previous: Readonly<Record<string, number>>
+    ): Record<string, number> =>
+      Object.fromEntries(
+        Object.entries(values).map(([key, value]) => [
+          key,
+          Math.max(0, value - (previous[key] ?? 0)),
+        ])
+      );
+    const publications = difference(
+      current.channelPublications,
+      this.previousChannelPublications
+    );
+    const deliveries = difference(
+      current.channelDeliveries,
+      this.previousChannelDeliveries
+    );
+    this.previousChannelPublications = current.channelPublications;
+    this.previousChannelDeliveries = current.channelDeliveries;
+    return {
+      processorExecutions: Object.fromEntries(
+        Object.entries(PROCESSOR_CHANNELS).map(([section, channel]) => [
+          channel,
+          sections[section]?.count ?? 0,
+        ])
+      ),
+      publications,
+      deliveries,
+    };
+  }
+
   private observeIRacing(telemetry: Telemetry): void {
     this.iracingFrameRate.add(telemetry.FrameRate?.value?.[0]);
     const percentage = (value: number | undefined): number | undefined =>
@@ -260,8 +371,9 @@ export class TelemetryPerfMetrics {
       const processes: ProcessMetrics[] = [];
       let totalCpu = 0;
       let totalMemory = 0;
-      let totalPrivateMemory = 0;
-      let hasPrivateMemory = false;
+      const totalPrivateMemory = sumCompletePrivateMemoryMB(
+        metrics.map((metric) => metric.memory.privateBytes)
+      );
 
       const pidToWindowName = new Map<number, string>();
       try {
@@ -294,11 +406,6 @@ export class TelemetryPerfMetrics {
 
         totalCpu += cpuPercent;
         totalMemory += memoryMB;
-        if (privateMemoryMB !== undefined) {
-          totalPrivateMemory += privateMemoryMB;
-          hasPrivateMemory = true;
-        }
-
         let name = metric.name || undefined;
         if (metric.type === 'Tab' && pidToWindowName.has(metric.pid)) {
           name = pidToWindowName.get(metric.pid);
@@ -320,7 +427,7 @@ export class TelemetryPerfMetrics {
         processes,
         totalCpu,
         totalMemory,
-        totalPrivateMemory: hasPrivateMemory ? totalPrivateMemory : undefined,
+        totalPrivateMemory,
       };
     } catch {
       return {

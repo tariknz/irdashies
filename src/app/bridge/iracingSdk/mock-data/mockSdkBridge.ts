@@ -11,7 +11,7 @@ export async function publishIRacingSDKEvents(
   lifecycle?: SessionLifecycle,
   channelBus?: ChannelBus
 ) {
-  const perfMetrics = new TelemetryPerfMetrics();
+  const perfMetrics = new TelemetryPerfMetrics(undefined, channelBus);
   let lastInspectorTelemetryPublishTime = Number.NEGATIVE_INFINITY;
   perfMetrics.startReporting();
 
