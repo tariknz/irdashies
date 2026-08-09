@@ -5,13 +5,13 @@ import {
   useStandingsSettings,
   useRelativeSettings,
   useInformationBarSettings,
-} from '../Standings/hooks';
+} from '@irdashies/domain';
 import { TopSpeedUpdater } from './TopSpeedUpdater';
 
 vi.mock('@irdashies/context', () => ({
   TopSpeedStoreUpdater: vi.fn(() => null),
 }));
-vi.mock('../Standings/hooks', () => ({
+vi.mock('@irdashies/domain', () => ({
   useStandingsSettings: vi.fn(),
   useRelativeSettings: vi.fn(),
   useInformationBarSettings: vi.fn(),

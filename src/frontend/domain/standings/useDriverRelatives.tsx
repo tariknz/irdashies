@@ -5,7 +5,7 @@ import {
   useRelativeGapsSnapshot,
 } from '@irdashies/context';
 import { useDriverStandings } from './useDriverPositions';
-import { Standings } from '../createStandings';
+import { Standings } from './createStandings';
 
 export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
   const drivers = useDriverStandings();

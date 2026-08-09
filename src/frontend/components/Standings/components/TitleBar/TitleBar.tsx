@@ -7,7 +7,7 @@ import {
 import { SessionState } from '@irdashies/types';
 import { useMemo } from 'react';
 import { seriesMapping } from '../../../../utils/seriesMapping';
-import { useHighlightColor } from '../../hooks/useHighlightColor';
+import { useHighlightColor } from '@irdashies/domain';
 import { useSessionLapCount } from '../../hooks/useSessionLapCount';
 
 interface TitleBarProps {

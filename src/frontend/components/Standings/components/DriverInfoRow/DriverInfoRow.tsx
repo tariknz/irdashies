@@ -3,7 +3,7 @@ import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
 import { useDashboard, type P2PDisplayState } from '@irdashies/context';
 import type { ResolvedDriverTag } from '../../hooks';
-import type { Gap, LastTimeState } from '../../createStandings';
+import type { Gap, LastTimeState } from '@irdashies/domain';
 import type {
   RelativeWidgetSettings,
   StandingsWidgetSettings,

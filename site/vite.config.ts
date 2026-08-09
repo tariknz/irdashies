@@ -20,6 +20,7 @@ export default defineConfig({
     alias: {
       '@irdashies/utils': path.resolve(__dirname, '../src/frontend/utils'),
       '@irdashies/context': path.resolve(__dirname, '../src/frontend/context'),
+      '@irdashies/domain': path.resolve(__dirname, '../src/frontend/domain'),
       '@irdashies/types': path.resolve(__dirname, '../src/types'),
       '@irdashies/shared': path.resolve(__dirname, '../src/shared'),
     },

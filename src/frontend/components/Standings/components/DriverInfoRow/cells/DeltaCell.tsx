@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Gap } from '../../../createStandings';
+import type { Gap } from '@irdashies/domain';
 import { formatGap } from '@irdashies/utils/time';
 
 interface DeltaCellProps {

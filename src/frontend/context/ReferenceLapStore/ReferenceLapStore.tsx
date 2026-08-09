@@ -1,8 +1,8 @@
 import type { ReferenceLap } from '@irdashies/types';
+import { getBucketIndex } from '@irdashies/utils/referenceLap';
 import { create } from 'zustand';
 
-export const getBucketIndex = (trackPct: number, pointsCount: number): number =>
-  Math.min(Math.max(Math.floor(trackPct * pointsCount), 0), pointsCount - 1);
+export { getBucketIndex };
 
 export const EMPTY_REFERENCE_LAP: Readonly<ReferenceLap> = {
   startTime: -1,

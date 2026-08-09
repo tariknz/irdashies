@@ -3,7 +3,7 @@ import type { Decorator, Meta, StoryObj } from '@storybook/react-vite';
 import { SpeakerHighIcon } from '@phosphor-icons/react';
 import type { ChannelPayloads } from '@irdashies/types';
 import { TelemetryDecorator } from '@irdashies/storybook';
-import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
+import { useRadioActiveCarIdxs } from '@irdashies/domain';
 
 const DEMO_CAR_IDX = 7;
 

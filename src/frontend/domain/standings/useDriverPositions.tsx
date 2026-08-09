@@ -17,7 +17,7 @@ import {
   augmentStandingsWithIRating,
   groupStandingsByClass,
   type LastTimeState,
-} from '../createStandings';
+} from './createStandings';
 import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useRelativeSettings } from './useRelativeSettings';

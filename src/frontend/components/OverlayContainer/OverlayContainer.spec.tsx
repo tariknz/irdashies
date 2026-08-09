@@ -19,7 +19,7 @@ vi.mock('@irdashies/context', () => ({
   useSectorTimingSnapshot: vi.fn(),
   useSectorTimingStore: vi.fn(() => vi.fn()),
 }));
-vi.mock('../Standings/hooks', () => ({
+vi.mock('@irdashies/domain', () => ({
   useStandingsSettings: vi.fn(),
   useRelativeSettings: vi.fn(),
   useInformationBarSettings: vi.fn(),

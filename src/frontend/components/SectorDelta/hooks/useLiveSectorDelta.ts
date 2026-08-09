@@ -6,7 +6,7 @@ import {
   useTrackStateSnapshot,
   useDriverCarIdx,
 } from '@irdashies/context';
-import { calculateReferenceDelta } from '../../Standings/relativeGapHelpers';
+import { calculateReferenceDelta } from '@irdashies/domain';
 
 /**
  * Returns a live delta (seconds) for the current sector vs the reference lap.

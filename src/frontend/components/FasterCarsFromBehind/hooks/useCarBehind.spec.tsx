@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useCarBehind } from './useCarBehind';
-import type { Standings } from '../../Standings/createStandings';
-import * as driverRelativesModule from '../../Standings/hooks/useDriverRelatives';
-import * as driverStandingsModule from '../../Standings/hooks/useDriverPositions';
+import type { Standings } from '@irdashies/domain';
+import * as driverRelativesModule from '@irdashies/domain/standings/useDriverRelatives';
+import * as driverStandingsModule from '@irdashies/domain/standings/useDriverPositions';
 import * as fasterCarsSettingsModule from './useFasterCarsSettings';
 
 type DriverRelative = Standings & { relativePct: number; delta: number };
 
 // Mock the hooks
-vi.mock('../../Standings/hooks/useDriverRelatives');
-vi.mock('../../Standings/hooks/useDriverPositions');
+vi.mock('@irdashies/domain/standings/useDriverRelatives');
+vi.mock('@irdashies/domain/standings/useDriverPositions');
 vi.mock('./useFasterCarsSettings');
 
 describe('useCarBehind', () => {

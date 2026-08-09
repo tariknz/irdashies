@@ -9,7 +9,7 @@ import {
   useSessionVisibility,
   useTrackStateSnapshot,
 } from '@irdashies/context';
-import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
+import { useDriverLivePositions } from '@irdashies/domain';
 
 const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 
