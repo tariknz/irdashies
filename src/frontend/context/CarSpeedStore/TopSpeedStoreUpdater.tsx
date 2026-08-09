@@ -1,6 +1,18 @@
 import { useEffect } from 'react';
-import { useSessionBarSnapshot } from '../ChannelStore';
+import type { SessionBarSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
+import { useSessionBarSelector } from '../ChannelStore';
 import { useTopSpeedStore } from './TopSpeedStore';
+
+const EMPTY_TOP_SPEEDS: readonly [number | null, number | null, number | null] =
+  [null, null, null];
+
+const selectTopSpeeds = (snapshot: SessionBarSnapshot) =>
+  [
+    snapshot.lastLapTopSpeed,
+    snapshot.sessionBestTopSpeed,
+    snapshot.sessionNum,
+  ] as const;
 
 /**
  * Hook that feeds live Speed + Lap telemetry into the TopSpeedStore.
@@ -8,11 +20,12 @@ import { useTopSpeedStore } from './TopSpeedStore';
  * Multiple callers are safe — updates are idempotent.
  */
 export const useTopSpeedStoreUpdater = (enabled: boolean) => {
-  const snapshot = useSessionBarSnapshot();
-  const hasSnapshot = snapshot !== undefined;
-  const lastLapTopSpeed = snapshot?.lastLapTopSpeed ?? null;
-  const sessionBestTopSpeed = snapshot?.sessionBestTopSpeed ?? null;
-  const sessionNum = snapshot?.sessionNum ?? null;
+  const selected = useSessionBarSelector(selectTopSpeeds, {
+    equality: shallow,
+  });
+  const hasSnapshot = selected !== undefined;
+  const [lastLapTopSpeed, sessionBestTopSpeed, sessionNum] =
+    selected ?? EMPTY_TOP_SPEEDS;
 
   useEffect(() => {
     if (!enabled || !hasSnapshot) return;

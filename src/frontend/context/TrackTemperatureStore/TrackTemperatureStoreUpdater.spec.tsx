@@ -2,10 +2,10 @@ import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTrackTemperatureStoreUpdater } from './TrackTemperatureStoreUpdater';
 import { useTrackTemperatureStore } from './TrackTemperatureStore';
-import { useSessionBarSnapshot } from '../ChannelStore';
+import { useSessionBarSelector } from '../ChannelStore';
 
 vi.mock('../ChannelStore', () => {
-  return { useSessionBarSnapshot: vi.fn() };
+  return { useSessionBarSelector: vi.fn() };
 });
 
 describe('useTrackTemperatureStoreUpdater', () => {
@@ -14,10 +14,7 @@ describe('useTrackTemperatureStoreUpdater', () => {
       trackTempC: undefined,
       airTempC: undefined,
     });
-    vi.mocked(useSessionBarSnapshot).mockReturnValue({
-      trackTemp: 28,
-      airTemp: 22,
-    } as ReturnType<typeof useSessionBarSnapshot>);
+    vi.mocked(useSessionBarSelector).mockReturnValue([28, 22]);
   });
 
   it('writes raw Celsius values into the store when enabled', () => {

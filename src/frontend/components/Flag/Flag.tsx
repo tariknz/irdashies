@@ -1,21 +1,26 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import {
-  useTrackStateSnapshot,
+  useTrackStateSelector,
   useSessionVisibility,
 } from '@irdashies/context';
-import type { GeneralSettingsType } from '@irdashies/types';
+import type { GeneralSettingsType, TrackStateSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
 import { useFlagSettings } from './hooks/useFlagSettings';
 import { useBlinkState } from './hooks/useBlinkState';
 import { getLedColor } from './hooks/getLedColor';
 import { getTextColorClass } from './hooks/getTextColorClass';
 import { getFlag } from '@irdashies/utils/getFlag';
 
+const EMPTY_FLAG_STATE: readonly [number, boolean] = [0, false];
+const selectFlagState = (snapshot: TrackStateSnapshot) =>
+  [snapshot.sessionFlags, snapshot.isOnTrack] as const;
+
 export const Flag = () => {
   const settings = useFlagSettings();
 
-  const trackState = useTrackStateSnapshot();
-  const sessionFlags = trackState?.sessionFlags ?? 0;
-  const isPlayerOnTrack = trackState?.isOnTrack ?? false;
+  const [sessionFlags, isPlayerOnTrack] =
+    useTrackStateSelector(selectFlagState, { equality: shallow }) ??
+    EMPTY_FLAG_STATE;
   const isVisibleInSession = useSessionVisibility(settings.sessionVisibility);
 
   const blinkOn = useBlinkState(settings.animate, settings.blinkPeriod);

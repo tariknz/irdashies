@@ -1,10 +1,32 @@
 import { useEffect, useMemo } from 'react';
+import type { StandingsSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
 import { useDriverCarIdx, useSessionStore } from '../SessionStore/SessionStore';
-import { useStandingsSnapshot } from '../ChannelStore';
+import { useStandingsSelector } from '../ChannelStore';
 import { usePushToPassStore } from './PushToPassStore';
 
+const selectPushToPassTelemetry = (snapshot: StandingsSnapshot) =>
+  [
+    snapshot.carIdxP2PStatus,
+    snapshot.carIdxP2PCount,
+    Math.floor(snapshot.sessionTime),
+    snapshot.sessionUniqueId,
+  ] as const;
+
+const pushToPassTelemetryEqual = (
+  previous: ReturnType<typeof selectPushToPassTelemetry>,
+  next: ReturnType<typeof selectPushToPassTelemetry>
+) =>
+  shallow(previous[0], next[0]) &&
+  shallow(previous[1], next[1]) &&
+  previous[2] === next[2] &&
+  previous[3] === next[3];
+
 export const usePushToPassStoreUpdater = (enabled: boolean) => {
-  const snapshot = useStandingsSnapshot(enabled);
+  const telemetry = useStandingsSelector(selectPushToPassTelemetry, {
+    enabled,
+    equality: pushToPassTelemetryEqual,
+  });
   const sessionDrivers = useSessionStore((s) => s.session?.DriverInfo?.Drivers);
   const playerCarIdx = useDriverCarIdx();
   const update = usePushToPassStore((s) => s.update);
@@ -16,14 +38,14 @@ export const usePushToPassStoreUpdater = (enabled: boolean) => {
   }, [sessionDrivers]);
 
   useEffect(() => {
-    if (!enabled || !snapshot) return;
+    if (!enabled || !telemetry) return;
     update(
-      snapshot.carIdxP2PStatus,
-      snapshot.carIdxP2PCount,
+      telemetry[0],
+      telemetry[1],
       carIdxToCarId,
-      Math.floor(snapshot.sessionTime),
-      snapshot.sessionUniqueId,
+      telemetry[2],
+      telemetry[3],
       playerCarIdx
     );
-  }, [enabled, snapshot, carIdxToCarId, playerCarIdx, update]);
+  }, [enabled, telemetry, carIdxToCarId, playerCarIdx, update]);
 };

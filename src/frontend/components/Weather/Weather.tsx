@@ -1,7 +1,9 @@
 import {
   useDashboard,
-  useSessionBarSnapshot,
-  useTrackStateSnapshot,
+  sessionBarSelectors,
+  trackStateSelectors,
+  useSessionBarSelector,
+  useTrackStateSelector,
   useSessionVisibility,
   useThrottledWeather,
 } from '@irdashies/context';
@@ -30,8 +32,8 @@ type WeatherColumnId =
 export const Weather = () => {
   const { isDemoMode } = useDashboard();
   const settings = useWeatherSettings();
-  const displayUnits = useSessionBarSnapshot()?.displayUnits;
-  const isOnTrack = useTrackStateSnapshot()?.isOnTrack;
+  const displayUnits = useSessionBarSelector(sessionBarSelectors.displayUnits);
+  const isOnTrack = useTrackStateSelector(trackStateSelectors.isOnTrack);
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
   // Determine actual unit to use: auto uses iRacing's DisplayUnits setting

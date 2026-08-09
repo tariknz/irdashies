@@ -5,7 +5,7 @@ import { EngineWarnings } from '@irdashies/types';
 import { usePitLimiterWarning } from './usePitLimiterWarning';
 
 vi.mock('@irdashies/context', () => ({
-  useTrackStateSnapshot: vi.fn(),
+  useTrackStateSelector: vi.fn(),
   useSessionStore: vi.fn(),
 }));
 
@@ -17,13 +17,16 @@ const trackState = (
     engineWarnings: number;
   }> = {}
 ) => {
-  vi.mocked(context.useTrackStateSnapshot).mockReturnValue({
+  const snapshot = {
     onPitRoad: false,
     pitSpeedLimiterToggle: false,
     pitstopActive: false,
     engineWarnings: 0,
     ...values,
-  } as never);
+  };
+  vi.mocked(context.useTrackStateSelector).mockImplementation(
+    (selector) => selector(snapshot as never) as never
+  );
 };
 
 const sessionStore = { session: { WeekendInfo: { TeamRacing: 0 } } };
@@ -40,7 +43,7 @@ describe('usePitLimiterWarning', () => {
 
   it('reads the typed track-state snapshot', () => {
     renderHook(() => usePitLimiterWarning(true));
-    expect(context.useTrackStateSnapshot).toHaveBeenCalledOnce();
+    expect(context.useTrackStateSelector).toHaveBeenCalledOnce();
   });
 
   it('warns when entering pit road without a limiter', () => {
@@ -67,9 +70,7 @@ describe('usePitLimiterWarning', () => {
 
   it('warns when a manual toggle follows auto-limiter detection', () => {
     trackState({ onPitRoad: false });
-    const { result, rerender } = renderHook(() =>
-      usePitLimiterWarning(true)
-    );
+    const { result, rerender } = renderHook(() => usePitLimiterWarning(true));
 
     trackState({
       onPitRoad: true,
@@ -90,9 +91,7 @@ describe('usePitLimiterWarning', () => {
   it('warns a team after pitstop completion without a limiter', () => {
     sessionStore.session.WeekendInfo.TeamRacing = 1;
     trackState({ pitstopActive: true });
-    const { result, rerender } = renderHook(() =>
-      usePitLimiterWarning(true)
-    );
+    const { result, rerender } = renderHook(() => usePitLimiterWarning(true));
 
     trackState({ pitstopActive: false });
     rerender();
@@ -118,9 +117,7 @@ describe('usePitLimiterWarning', () => {
   it('clears the team warning when the limiter is activated', () => {
     sessionStore.session.WeekendInfo.TeamRacing = 1;
     trackState({ pitstopActive: true });
-    const { result, rerender } = renderHook(() =>
-      usePitLimiterWarning(true)
-    );
+    const { result, rerender } = renderHook(() => usePitLimiterWarning(true));
     trackState({ pitstopActive: false });
     rerender();
 

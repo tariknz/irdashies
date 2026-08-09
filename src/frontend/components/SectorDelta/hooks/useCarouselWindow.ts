@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useTrackStateSnapshot } from '@irdashies/context';
+import { trackStateSelectors, useTrackStateSelector } from '@irdashies/context';
 
 const GAP = 4; // gap-1 = 4px
 
@@ -37,7 +37,7 @@ export function useCarouselWindow(
   alwaysScroll: boolean | null | undefined = false
 ) {
   const effectiveAlwaysScroll = alwaysScroll ?? false;
-  const lapDistPct = useTrackStateSnapshot()?.lapDistPct ?? 0;
+  const lapDistPct = useTrackStateSelector(trackStateSelectors.lapDistPct) ?? 0;
   const isWindowed =
     effectiveAlwaysScroll ||
     (maxSectorsShown != null && totalSectors > maxSectorsShown);
