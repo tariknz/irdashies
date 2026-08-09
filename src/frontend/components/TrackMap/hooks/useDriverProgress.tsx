@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import {
   useFocusCarIdx,
   useSessionDrivers,
@@ -9,16 +9,6 @@ import {
 } from '@irdashies/context';
 
 const EMPTY_POSITIONS: readonly number[] = [];
-const POSITION_UPDATE_INTERVAL_MS = 1000 / 25;
-
-const interpolateProgress = (from: number, to: number, amount: number) => {
-  let delta = to - from;
-  if (delta > 0.5) delta -= 1;
-  if (delta < -0.5) delta += 1;
-
-  const progress = from + delta * amount;
-  return progress < 0 ? progress + 1 : progress >= 1 ? progress - 1 : progress;
-};
 
 // Drivers progress logic
 export const useDriverProgress = () => {
@@ -118,50 +108,5 @@ export const useDriverProgress = () => {
       .filter((d) => d.progress > -1); // ignore drivers not on track
   }, [driverIdentities, driversLapDist]);
 
-  const [smoothedDrivers, setSmoothedDrivers] = useState(driversTrackData);
-  const displayedDriversRef = useRef(driversTrackData);
-
-  useEffect(() => {
-    if (typeof requestAnimationFrame === 'undefined') {
-      displayedDriversRef.current = driversTrackData;
-      setSmoothedDrivers(driversTrackData);
-      return;
-    }
-
-    const startingProgress = new Map(
-      displayedDriversRef.current.map(({ driver, progress }) => [
-        driver.CarIdx,
-        progress,
-      ])
-    );
-    const startedAt = performance.now();
-    let animationFrame: number | undefined;
-
-    const animate = (now: number) => {
-      const amount = Math.min(
-        1,
-        (now - startedAt) / POSITION_UPDATE_INTERVAL_MS
-      );
-      const nextDrivers = driversTrackData.map((entry) => {
-        const from = startingProgress.get(entry.driver.CarIdx);
-        return from === undefined
-          ? entry
-          : {
-              ...entry,
-              progress: interpolateProgress(from, entry.progress, amount),
-            };
-      });
-
-      displayedDriversRef.current = nextDrivers;
-      setSmoothedDrivers(nextDrivers);
-      if (amount < 1) animationFrame = requestAnimationFrame(animate);
-    };
-
-    animationFrame = requestAnimationFrame(animate);
-    return () => {
-      if (animationFrame !== undefined) cancelAnimationFrame(animationFrame);
-    };
-  }, [driversTrackData]);
-
-  return { drivers: smoothedDrivers, identities: driverIdentities };
+  return { drivers: driversTrackData, identities: driverIdentities };
 };
