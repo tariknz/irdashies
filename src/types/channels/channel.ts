@@ -12,6 +12,7 @@ export interface ChannelPayloads {
   'driver-controls.snapshot': DriverControlsSnapshot;
   'fuel.projection': FuelProjectionSnapshot;
   'lap-times.snapshot': LapTimesSnapshot;
+  'lap-log.snapshot': LapLogSnapshot;
   'reference-laps.snapshot': ReferenceLapsSnapshot;
   'radio.snapshot': RadioSnapshot;
   'relative-gaps.snapshot': RelativeGapsSnapshot;
@@ -83,6 +84,7 @@ export interface SessionBarSnapshot {
   incidentWarningSubsequentLimit?: number;
   trackWetness: number;
   precipitation?: number;
+  relativeHumidity?: number;
   airTemp?: number;
   trackTemp?: number;
   windDirection?: number;
@@ -104,6 +106,24 @@ export interface SessionBarSnapshot {
   lastLapTopSpeed: number | null;
   sessionBestTopSpeed: number | null;
   sessionNum: number | null;
+  version: number;
+}
+
+export interface LapLogSnapshot {
+  lapCompleted: number;
+  currentLapTime: number;
+  lastLapTime: number;
+  bestLapTime: number;
+  carIdxBestLapTime: readonly number[];
+  sessionNum: number | null;
+  sessionTime: number;
+  playerTrackSurface: number;
+  incidentCount: number;
+  lapDistPct: number;
+  deltaToSessionLastLap: number;
+  deltaToSessionLastLapOk: boolean;
+  deltaToSessionBestLap: number;
+  deltaToSessionBestLapOk: boolean;
   version: number;
 }
 
@@ -134,6 +154,10 @@ export interface StandingsSnapshot {
   focusCarIdx: number | null;
   sessionNum: number | null;
   carIdxF2Time: number[];
+  carIdxPosition: number[];
+  carIdxClassPosition: number[];
+  carIdxBestLapTime: number[];
+  carIdxLastLapTime: number[];
   carIdxEstTime: number[];
   carIdxOnPitRoad: boolean[];
   carIdxLap: number[];
@@ -141,6 +165,11 @@ export interface StandingsSnapshot {
   carIdxTrackSurface: number[];
   carIdxTireCompound: number[];
   carIdxSessionFlags: number[];
+  carIdxP2PStatus: boolean[];
+  carIdxP2PCount: number[];
+  sessionUniqueId: number;
+  sessionTime: number;
+  sessionState: number;
   lastPitLap: (number | undefined)[];
   previousCarTrackSurface: (number | undefined)[];
   /** Current calculated in-class position, indexed by CarIdx. */
@@ -276,6 +305,11 @@ export const channelRegistry = {
   'lap-times.snapshot': {
     kind: 'snapshot',
     defaultRateHz: 5,
+    maxRateHz: 25,
+  },
+  'lap-log.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 25,
     maxRateHz: 25,
   },
   'reference-laps.snapshot': {

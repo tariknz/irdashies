@@ -6,6 +6,8 @@ import {
   TelemetryDecoratorWithConfig,
   ChannelSnapshotDecorator,
   standingsStorySnapshot,
+  sessionBarStorySnapshot,
+  trackStateStorySnapshot,
   mockDashboardBridge,
 } from '@irdashies/storybook';
 import {
@@ -253,6 +255,8 @@ export default {
         version: 0,
       },
       'standings.snapshot': standingsStorySnapshot,
+      'track-state.snapshot': trackStateStorySnapshot,
+      'session-bar.snapshot': sessionBarStorySnapshot,
     }),
   ],
 } as Meta;
@@ -1463,6 +1467,8 @@ export const AvgLapTime: Story = {
     ChannelSnapshotDecorator({
       'lap-times.snapshot': AVG_LAP_TIME_SNAPSHOT,
       'standings.snapshot': standingsStorySnapshot,
+      'track-state.snapshot': trackStateStorySnapshot,
+      'session-bar.snapshot': sessionBarStorySnapshot,
     }),
     TelemetryDecoratorWithConfig(undefined, {
       standings: {

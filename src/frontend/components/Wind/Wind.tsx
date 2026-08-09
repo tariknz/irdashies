@@ -2,7 +2,8 @@ import { memo } from 'react';
 import {
   useDashboard,
   useSessionVisibility,
-  useTelemetryValue,
+  useSessionBarSnapshot,
+  useTrackStateSnapshot,
   useThrottledWeather,
 } from '@irdashies/context';
 import { useWindSettings } from './hooks/useWindSettings';
@@ -12,8 +13,8 @@ import { useWindDemoData } from '../../domain/weather/useWindDemoData';
 export const Wind = memo(() => {
   const { isDemoMode } = useDashboard();
   const settings = useWindSettings();
-  const displayUnits = useTelemetryValue('DisplayUnits');
-  const isOnTrack = useTelemetryValue('IsOnTrack');
+  const displayUnits = useSessionBarSnapshot()?.displayUnits;
+  const isOnTrack = useTrackStateSnapshot()?.isOnTrack;
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
   const unitSetting = settings?.units ?? 'auto';

@@ -6,13 +6,22 @@ import {
   useReferenceLapStore,
   useSessionStore,
 } from '@irdashies/context';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import {
+  ChannelSnapshotDecorator,
+  TelemetryDecorator,
+  trackStateStorySnapshot,
+} from '@irdashies/storybook';
 import type { ReferenceLap } from '@irdashies/types';
 
 export default {
   component: SectorDelta,
   title: 'widgets/SectorDelta',
-  decorators: [TelemetryDecorator()],
+  decorators: [
+    ChannelSnapshotDecorator({
+      'track-state.snapshot': trackStateStorySnapshot,
+    }),
+    TelemetryDecorator(),
+  ],
   args: {
     background: { opacity: 80 },
     showOnlyWhenOnTrack: false,

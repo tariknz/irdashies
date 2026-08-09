@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useBattleGapStore } from './BattleGapStore';
 import { useFocusCarIdx } from '../shared/useFocusCarIdx';
-import { useTelemetryValues } from '../TelemetryStore/TelemetryStore';
+import { useStandingsSnapshot } from '../ChannelStore';
 
 interface BattleGapStoreUpdaterProps {
   /** Live gap to the car immediately ahead of the player (negative = ahead) */
@@ -19,7 +19,7 @@ export const useBattleGapStoreUpdater = ({
   liveGapBehind,
 }: BattleGapStoreUpdaterProps) => {
   const focusCarIdx = useFocusCarIdx();
-  const carIdxLap = useTelemetryValues('CarIdxLap');
+  const carIdxLap = useStandingsSnapshot()?.carIdxLap;
   const snapshot = useBattleGapStore((s) => s.snapshot);
   const reset = useBattleGapStore((s) => s.reset);
 

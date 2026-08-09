@@ -5,6 +5,9 @@ import {
   DynamicTelemetrySelector,
   TelemetryDecoratorWithConfig,
   ChannelSnapshotDecorator,
+  standingsStorySnapshot,
+  sessionBarStorySnapshot,
+  trackStateStorySnapshot,
 } from '@irdashies/storybook';
 import {
   DashboardProvider,
@@ -351,6 +354,9 @@ export default {
         version: 0,
       },
       'relative-gaps.snapshot': relativeGapsStorySnapshot,
+      'standings.snapshot': standingsStorySnapshot,
+      'track-state.snapshot': trackStateStorySnapshot,
+      'session-bar.snapshot': sessionBarStorySnapshot,
     }),
   ],
   parameters: {

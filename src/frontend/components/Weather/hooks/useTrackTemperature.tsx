@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useTelemetryValue } from '@irdashies/context';
+import { useSessionBarSnapshot } from '@irdashies/context';
 
 interface UseTrackTemperatureOptions {
   airTempUnit?: 'Metric' | 'Imperial';
@@ -10,8 +10,9 @@ export const useTrackTemperature = (
   options: UseTrackTemperatureOptions = {}
 ) => {
   const { airTempUnit = 'Metric', trackTempUnit = 'Metric' } = options;
-  const trackTempVal = useTelemetryValue('TrackTempCrew');
-  const airTempVal = useTelemetryValue('AirTemp');
+  const snapshot = useSessionBarSnapshot();
+  const trackTempVal = snapshot?.trackTemp;
+  const airTempVal = snapshot?.airTemp;
 
   const trackTemp = useMemo(() => {
     const trackTemp = trackTempVal ?? 0;

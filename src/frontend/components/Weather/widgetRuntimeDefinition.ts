@@ -1,13 +1,9 @@
 import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
-  id: 'sectordelta',
+  id: 'weather',
   legacyTelemetry: false,
   sessionData: true,
-  channels: [
-    'reference-laps.snapshot',
-    'sector-timing.snapshot',
-    'track-state.snapshot',
-  ],
-  ratePreset: 'static',
+  channels: ['session-bar.snapshot', 'track-state.snapshot'],
+  ratePreset: 'informational',
 } satisfies WidgetRuntimeDefinition;

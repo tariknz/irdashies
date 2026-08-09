@@ -1,13 +1,9 @@
 import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 
 export default {
-  id: 'sectordelta',
+  id: 'laptimelog',
   legacyTelemetry: false,
   sessionData: true,
-  channels: [
-    'reference-laps.snapshot',
-    'sector-timing.snapshot',
-    'track-state.snapshot',
-  ],
-  ratePreset: 'static',
+  channels: ['lap-log.snapshot'],
+  ratePreset: 'driverFocused',
 } satisfies WidgetRuntimeDefinition;

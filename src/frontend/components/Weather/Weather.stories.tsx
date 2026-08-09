@@ -3,6 +3,9 @@ import { Weather } from './Weather';
 import {
   TelemetryDecorator,
   TelemetryDecoratorWithConfig,
+  ChannelSnapshotDecorator,
+  sessionBarStorySnapshot,
+  trackStateStorySnapshot,
 } from '@irdashies/storybook';
 
 export default {
@@ -14,6 +17,10 @@ type Story = StoryObj<typeof Weather>;
 
 export const Primary: Story = {
   decorators: [
+    ChannelSnapshotDecorator({
+      'session-bar.snapshot': sessionBarStorySnapshot,
+      'track-state.snapshot': trackStateStorySnapshot,
+    }),
     (Story, context) => (
       <div style={{ width: '150px' }}>
         {TelemetryDecorator('/test-data/1731637331038')(Story, context)}
@@ -24,6 +31,10 @@ export const Primary: Story = {
 
 export const Horizontal: Story = {
   decorators: [
+    ChannelSnapshotDecorator({
+      'session-bar.snapshot': sessionBarStorySnapshot,
+      'track-state.snapshot': trackStateStorySnapshot,
+    }),
     (Story, context) => (
       <div style={{ width: '640px' }}>
         {TelemetryDecoratorWithConfig('/test-data/1731637331038', {
@@ -38,6 +49,10 @@ export const Horizontal: Story = {
 
 export const HorizontalFull: Story = {
   decorators: [
+    ChannelSnapshotDecorator({
+      'session-bar.snapshot': sessionBarStorySnapshot,
+      'track-state.snapshot': trackStateStorySnapshot,
+    }),
     (Story, context) => (
       <div style={{ width: '900px' }}>
         {TelemetryDecoratorWithConfig('/test-data/1731637331038', {

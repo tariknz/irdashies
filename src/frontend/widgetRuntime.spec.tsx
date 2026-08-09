@@ -34,6 +34,39 @@ describe('widget runtime metadata', () => {
     );
   });
 
+  it('reserves raw telemetry for the explicit Telemetry Inspector path', () => {
+    const normalWidgets = [
+      'standings',
+      'input',
+      'relative',
+      'map',
+      'flatmap',
+      'weather',
+      'wind',
+      'fastercarsfrombehind',
+      'fuel',
+      'blindspotmonitor',
+      'garagecover',
+      'rejoin',
+      'pitlanehelper',
+      'tachometer',
+      'flag',
+      'twitchchat',
+      'laptimelog',
+      'infobar',
+      'slowcarahead',
+      'sectordelta',
+      'heartrate',
+      'cornername',
+      'battle',
+    ];
+    expect(rendererNeedsLegacyTelemetry(normalWidgets.map((id) => widget(id))))
+      .toBe(false);
+    expect(rendererNeedsLegacyTelemetry([widget('telemetryinspector')])).toBe(
+      true
+    );
+  });
+
   it('discovers Input and Tachometer as driver-control channel consumers', () => {
     expect(getWidgetRuntimeDefinition('input')).toMatchObject({
       legacyTelemetry: false,
@@ -51,9 +84,9 @@ describe('widget runtime metadata', () => {
     ).toBe(false);
   });
 
-  it('declares lap-time channels without prematurely removing legacy data', () => {
+  it('declares standings and relative as channel-only consumers', () => {
     expect(getWidgetRuntimeDefinition('standings')).toMatchObject({
-      legacyTelemetry: true,
+      legacyTelemetry: false,
       channels: [
         'lap-times.snapshot',
         'reference-laps.snapshot',
@@ -61,11 +94,12 @@ describe('widget runtime metadata', () => {
         'session-timing.snapshot',
         'session-bar.snapshot',
         'standings.snapshot',
+        'track-state.snapshot',
       ],
       channelRates: { 'radio.snapshot': 25 },
     });
     expect(getWidgetRuntimeDefinition('relative')).toMatchObject({
-      legacyTelemetry: true,
+      legacyTelemetry: false,
       channels: [
         'lap-times.snapshot',
         'radio.snapshot',
@@ -73,6 +107,7 @@ describe('widget runtime metadata', () => {
         'session-bar.snapshot',
         'relative-gaps.snapshot',
         'standings.snapshot',
+        'track-state.snapshot',
       ],
       channelRates: { 'radio.snapshot': 25 },
     });

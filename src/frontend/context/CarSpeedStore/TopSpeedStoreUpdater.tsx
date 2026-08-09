@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { useTelemetryValue } from '../TelemetryStore/TelemetryStore';
+import { useEffect } from 'react';
+import { useSessionBarSnapshot } from '../ChannelStore';
 import { useTopSpeedStore } from './TopSpeedStore';
 
 /**
@@ -8,27 +8,16 @@ import { useTopSpeedStore } from './TopSpeedStore';
  * Multiple callers are safe — updates are idempotent.
  */
 export const useTopSpeedStoreUpdater = (enabled: boolean) => {
-  const speed = useTelemetryValue('Speed');
-  const lap = useTelemetryValue('Lap');
-  const sessionNum = useTelemetryValue('SessionNum');
-  const update = useTopSpeedStore((s) => s.update);
-  const reset = useTopSpeedStore((s) => s.reset);
-  const prevSessionNumRef = useRef<number | null>(null);
+  const snapshot = useSessionBarSnapshot();
 
   useEffect(() => {
-    if (sessionNum === undefined) return;
-    const prev = prevSessionNumRef.current;
-    prevSessionNumRef.current = sessionNum;
-    if (prev === null) return; // initial load — no reset
-    if (prev === sessionNum) return;
-    reset();
-  }, [sessionNum, reset]);
-
-  useEffect(() => {
-    if (enabled && speed !== undefined && lap !== undefined) {
-      update(speed, lap, sessionNum ?? null);
-    }
-  }, [speed, lap, sessionNum, update, enabled]);
+    if (!enabled || !snapshot) return;
+    useTopSpeedStore.setState({
+      lastLapTopSpeed: snapshot.lastLapTopSpeed,
+      sessionBestTopSpeed: snapshot.sessionBestTopSpeed,
+      sessionNum: snapshot.sessionNum,
+    });
+  }, [enabled, snapshot]);
 };
 
 /**
