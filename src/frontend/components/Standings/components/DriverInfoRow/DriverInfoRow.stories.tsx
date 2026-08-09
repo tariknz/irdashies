@@ -61,6 +61,32 @@ export const Primary: Story = {
   },
 };
 
+export const CarNumberWidthNormal: Story = {
+  name: 'Car Number Width - Normal',
+  args: {
+    ...Primary.args,
+    carNumber: '1',
+  },
+};
+
+export const CarNumberWidthCompact: Story = {
+  name: 'Car Number Width - Compact',
+  args: {
+    ...Primary.args,
+    carNumber: '1',
+    compactMode: 'compact',
+  },
+};
+
+export const CarNumberWidthUltraCompact: Story = {
+  name: 'Car Number Width - Ultra Compact',
+  args: {
+    ...Primary.args,
+    carNumber: '1',
+    compactMode: 'ultra',
+  },
+};
+
 export const HasFastestLap: Story = {
   args: {
     ...Primary.args,
