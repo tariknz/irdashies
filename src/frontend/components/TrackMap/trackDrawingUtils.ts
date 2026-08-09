@@ -148,13 +148,8 @@ export const drawTurnNames = (
 
 export const drawDrivers = (
   ctx: CanvasRenderingContext2D,
-  calculatePositions: Record<
-    number,
-    TrackDriver & {
-      position: { x: number; y: number };
-      sessionPosition?: number;
-    }
-  >,
+  calculatePositions:
+    PositionedTrackDriver[] | Record<number, PositionedTrackDriver>,
   driverColors: Record<number, { fill: string; text: string }>,
   invertLeaderColor: boolean,
   driversOffTrack: boolean[],
@@ -169,17 +164,21 @@ export const drawDrivers = (
 ) => {
   const safePosition = (pos: number | undefined): number =>
     pos !== undefined && isFinite(pos) ? pos : 0;
-  Object.values(calculatePositions)
-    .sort((a, b) => {
-      const aOnPit = !!carIdxIsOnPitRoad?.[a.driver.CarIdx];
-      const bOnPit = !!carIdxIsOnPitRoad?.[b.driver.CarIdx];
-      if (aOnPit !== bOnPit) return aOnPit ? -1 : 1; // pit cars drawn first (under track drivers)
-      if (a.isPlayer !== b.isPlayer) {
-        return Number(a.isPlayer) - Number(b.isPlayer); // draws player last to be on top
-      }
-      return safePosition(b.sessionPosition) - safePosition(a.sessionPosition); // draws leader on top
-    })
-    .forEach(({ driver, position, isPlayer, sessionPosition }) => {
+  const positionedDrivers = Array.isArray(calculatePositions)
+    ? calculatePositions
+    : Object.values(calculatePositions).sort((a, b) => {
+        const aOnPit = !!carIdxIsOnPitRoad?.[a.driver.CarIdx];
+        const bOnPit = !!carIdxIsOnPitRoad?.[b.driver.CarIdx];
+        if (aOnPit !== bOnPit) return aOnPit ? -1 : 1; // pit cars drawn first (under track drivers)
+        if (a.isPlayer !== b.isPlayer) {
+          return Number(a.isPlayer) - Number(b.isPlayer); // draws player last to be on top
+        }
+        return (
+          safePosition(b.sessionPosition) - safePosition(a.sessionPosition)
+        ); // draws leader on top
+      });
+  positionedDrivers.forEach(
+    ({ driver, position, isPlayer, sessionPosition }) => {
       let color = driverColors[driver.CarIdx];
       if (!color) return;
 
@@ -246,7 +245,13 @@ export const drawDrivers = (
           ctx.fillText(displayText, position.x, position.y + visualOffset);
         }
       }
-    });
+    }
+  );
+};
+
+export type PositionedTrackDriver = TrackDriver & {
+  position: { x: number; y: number };
+  sessionPosition?: number;
 };
 
 // ---------------------------------------------------------------------------
