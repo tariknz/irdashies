@@ -102,6 +102,9 @@ export class ChannelBus {
     }
     const active = target.isVisible();
     const subscription: Subscription = { target, rateHz, active };
+    const hadCachedSnapshotBeforeSubscribe =
+      definition.kind === 'snapshot' && this.latestSnapshots.has(channel);
+    const cachedSnapshotBeforeSubscribe = this.latestSnapshots.get(channel);
     subscribers.set(target.id, subscription);
     if (active) {
       this.notifySubscriberCount(channel);
@@ -115,10 +118,9 @@ export class ChannelBus {
     if (
       active &&
       definition.kind === 'snapshot' &&
-      this.latestSnapshots.has(channel)
+      hadCachedSnapshotBeforeSubscribe
     ) {
-      const latest = this.latestSnapshots.get(channel);
-      this.deliver(channel, subscription, latest);
+      this.deliver(channel, subscription, cachedSnapshotBeforeSubscribe);
     }
   }
 
