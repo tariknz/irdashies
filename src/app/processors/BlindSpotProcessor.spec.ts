@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { Telemetry } from '@irdashies/types';
+import type { Session, Telemetry } from '@irdashies/types';
+import recordedSession from '../../../test-data/1747384033336/session.json';
+import recordedOverlapFrame from '../../../test-data/1747384033336/telemetry.json';
+import recordedClearFrame from '../../../test-data/1770713920383/telemetry.json';
 import { BlindSpotProcessor } from './BlindSpotProcessor';
 
 const frame = (carLeftRight: number, positions: number[], isOnTrack = true) =>
@@ -10,6 +13,28 @@ const frame = (carLeftRight: number, positions: number[], isOnTrack = true) =>
   }) as unknown as Telemetry;
 
 describe('BlindSpotProcessor', () => {
+  it('processes recorded telemetry through the complete lifecycle', () => {
+    const processor = new BlindSpotProcessor();
+    processor.init(recordedSession as unknown as Session);
+    processor.onFrame(recordedOverlapFrame as unknown as Telemetry);
+
+    expect(processor.snapshot()).toMatchObject({
+      carLeftRight: 2,
+      carIdxLapDistPct: recordedOverlapFrame.CarIdxLapDistPct.value,
+      isOnTrack: true,
+      version: 1,
+    });
+
+    processor.onFrame(recordedClearFrame as unknown as Telemetry);
+
+    expect(processor.snapshot()).toMatchObject({
+      carLeftRight: 1,
+      carIdxLapDistPct: [],
+      isOnTrack: true,
+      version: 2,
+    });
+  });
+
   it('publishes overlap state and full-precision positions together', () => {
     const processor = new BlindSpotProcessor();
     processor.onFrame(frame(2, [0.123456, 0.123789]));
