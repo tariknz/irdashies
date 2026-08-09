@@ -40,6 +40,7 @@ import {
 import { ChannelBus, setupChannelBridge } from './app/bridge/channelBridge';
 import { connectSessionLifecycleChannel } from './app/bridge/sessionLifecycleChannel';
 import { setupRendererDataSubscriptions } from './app/bridge/rendererDataSubscriptions';
+import { PerfHeapProfiler } from './app/perfHeapProfiler';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -136,8 +137,20 @@ app.on('ready', async () => {
         runId: process.env.PERF_RUN_ID ?? 'manual',
       })}`
     );
+    const heapProfilePath = process.env.PERF_HEAP_PROFILE_PATH;
+    const heapProfiler = heapProfilePath
+      ? new PerfHeapProfiler(heapProfilePath)
+      : undefined;
+    if (heapProfiler) {
+      await heapProfiler.start();
+      log.info(`[PerfRun] Main-process heap sampling started`);
+    }
     if (perfRun.durationSeconds > 0) {
-      setTimeout(() => {
+      setTimeout(async () => {
+        if (heapProfiler) {
+          await heapProfiler.stop();
+          log.info(`[PerfRun] Main-process heap profile written`);
+        }
         log.info(
           `[PerfRun] Completed fixed ${perfRun.durationSeconds}s capture`
         );
@@ -155,8 +168,7 @@ app.on('ready', async () => {
         }
         log.info(
           `${PERF_VISIBILITY_LOG_PREFIX}${JSON.stringify({
-            timestamp:
-              index === 0 ? captureOrigin : new Date().toISOString(),
+            timestamp: index === 0 ? captureOrigin : new Date().toISOString(),
             runId: process.env.PERF_RUN_ID ?? 'manual',
             index,
             visibility: phase.visibility,
