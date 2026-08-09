@@ -42,6 +42,20 @@ import { connectSessionLifecycleChannel } from './app/bridge/sessionLifecycleCha
 import { setupRendererDataSubscriptions } from './app/bridge/rendererDataSubscriptions';
 import { PerfHeapProfiler } from './app/perfHeapProfiler';
 
+const safeErrorDetails = (error: unknown) => {
+  const code =
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof error.code === 'string'
+      ? error.code
+      : undefined;
+  return {
+    name: error instanceof Error ? error.name : 'UnknownError',
+    ...(code ? { code } : {}),
+  };
+};
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
 
@@ -153,7 +167,10 @@ app.on('ready', async () => {
         log.info(`[PerfRun] Main-process heap sampling started`);
       } catch (error) {
         heapProfiler = undefined;
-        log.error(`[PerfRun] Main-process heap sampling failed`, error);
+        log.error(
+          `[PerfRun] Main-process heap sampling failed`,
+          safeErrorDetails(error)
+        );
       }
     }
     if (perfRun.durationSeconds > 0) {
@@ -164,7 +181,10 @@ app.on('ready', async () => {
             log.info(`[PerfRun] Main-process heap profile written`);
           }
         } catch (error) {
-          log.error(`[PerfRun] Main-process heap profile export failed`, error);
+          log.error(
+            `[PerfRun] Main-process heap profile export failed`,
+            safeErrorDetails(error)
+          );
         } finally {
           log.info(
             `[PerfRun] Completed fixed ${perfRun.durationSeconds}s capture`
