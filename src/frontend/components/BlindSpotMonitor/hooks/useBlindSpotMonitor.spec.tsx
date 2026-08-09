@@ -36,6 +36,7 @@ describe('useBlindSpotMonitor', () => {
     });
 
     expect(result.current.show).toBe(true);
+    expect(result.current.isOnTrack).toBe(true);
     expect(result.current.leftState).toBe(CarLeftRight.CarLeft);
 
     blindSpotSnapshot = snapshot(0.5005);

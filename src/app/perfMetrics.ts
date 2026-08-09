@@ -73,6 +73,7 @@ interface ChannelMetricsSource {
 }
 
 const PROCESSOR_CHANNELS: Readonly<Record<string, string>> = {
+  blindSpotProcessing: 'blind-spot.snapshot',
   carSpeedsProcessing: 'car-speeds.snapshot',
   driverControlsProcessing: 'driver-controls.snapshot',
   fuelProjectionProcessing: 'fuel.projection',

@@ -10,6 +10,7 @@ import { useBlindSpotMonitorSettings } from './useBlindSpotMonitorSettings';
 import { CarLeftRight } from '@irdashies/types';
 
 interface BlindSpotMonitorState {
+  isOnTrack: boolean;
   show: boolean;
   leftState: CarLeftRight;
   rightState: CarLeftRight;
@@ -55,6 +56,7 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
 
   const result = useMemo(() => {
     const defaultState = {
+      isOnTrack,
       show: false,
       leftState: CarLeftRight.Off,
       rightState: CarLeftRight.Off,
@@ -150,6 +152,7 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     }
 
     return {
+      isOnTrack,
       show: true,
       leftState,
       rightState,
