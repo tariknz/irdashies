@@ -384,6 +384,19 @@ type ChannelMetricField = keyof NonNullable<
   MainPerfSample['channelMetrics']
 >;
 
+const isMetricMap = (value: unknown): value is Record<string, number> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const hasCompleteChannelMetrics = (sample: MainPerfSample): boolean => {
+  const metrics = sample.channelMetrics;
+  return (
+    metrics !== undefined &&
+    isMetricMap(metrics.processorExecutions) &&
+    isMetricMap(metrics.publications) &&
+    isMetricMap(metrics.deliveries)
+  );
+};
+
 const channelCount = (
   samples: readonly MainPerfSample[],
   field: ChannelMetricField,
@@ -647,8 +660,7 @@ export function summarizeCapture(
     const phaseDurationSeconds = Math.max(0, (phase.end - phase.start) / 1000);
     const phaseChannels = summarizeChannels(samples, phaseDurationSeconds);
     const hasMetrics =
-      samples.length > 0 &&
-      samples.every((sample) => sample.channelMetrics !== undefined);
+      samples.length > 0 && samples.every(hasCompleteChannelMetrics);
     const visibleInputsChanged = requiredChannels.every(
       (channel) => (phaseChannels[channel]?.publications ?? 0) > 0
     );
@@ -776,7 +788,7 @@ export function summarizeCapture(
     ) &&
     phaseWindows.length > 0 &&
     phaseWindows.every((phase) => samplesForPhase(phase).length > 0) &&
-    effectiveMain.every((sample) => sample.channelMetrics !== undefined);
+    effectiveMain.every(hasCompleteChannelMetrics);
   const inputCoverageComplete =
     inputCoverageAvailable &&
     phaseEvidence.every((phase) => phase.expectedBehaviorSatisfied);

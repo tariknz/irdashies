@@ -386,5 +386,10 @@ describe('performance analysis', () => {
       publications: 0,
       deliveries: 20,
     });
+    expect(summary.evidence.inputCoverageAvailable).toBe(false);
+    expect(summary.evidence.conclusive).toBe(false);
+    expect(summary.phaseEvidence[0].reasons).toContain(
+      'phase channel metrics are incomplete'
+    );
   });
 });
