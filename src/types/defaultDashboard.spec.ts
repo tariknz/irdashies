@@ -182,6 +182,7 @@ describe('getWidgetDefaultConfig', () => {
     expect(config).toBeDefined();
     expect(config.background).toBeDefined();
     expect(config.displayOrder).toBeDefined();
+    expect(config.iratingChange.estimateInPractice).toBe(false);
   });
 
   it('returns the fuel config', () => {
