@@ -33,6 +33,17 @@ const EMPTY_NUMBERS: number[] = [];
 const EMPTY_BOOLEANS: boolean[] = [];
 const EMPTY_TRACK_LOCATIONS: TrackLocation[] = [];
 
+export const shouldCalculateIRatingChange = (
+  eventType: string | undefined,
+  isOfficial: boolean,
+  sessionType: string | undefined,
+  estimateInPractice: boolean
+) =>
+  (eventType === 'Race' && isOfficial) ||
+  (eventType === 'Practice' &&
+    sessionType === 'Practice' &&
+    estimateInPractice);
+
 export const useDriverStandings = (
   settings?: StandingsWidgetSettings['config']
 ) => {
@@ -173,11 +184,16 @@ export const useDriverStandings = (
         ? augmentStandingsWithPositionChange(groupedByClass, qualifyingResults)
         : groupedByClass;
 
-    // Calculate iRating changes for official race weekends
-    const iratingAugmentedGroupedByClass =
-      eventType === 'Race' && isOfficial
-        ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
-        : positionChangeAugmentedGroupedByClass;
+    // Official race weekends retain the existing behavior. Practice estimates
+    // are opt-in because they are hypothetical and do not affect iRating.
+    const iratingAugmentedGroupedByClass = shouldCalculateIRatingChange(
+      eventType,
+      isOfficial,
+      sessionType,
+      settings?.iratingChange?.estimateInPractice ?? false
+    )
+      ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
+      : positionChangeAugmentedGroupedByClass;
 
     // Calculate gap to class leader when enabled OR when interval is enabled (interval needs gap data)
     const gapAugmentedGroupedByClass =
@@ -226,6 +242,7 @@ export const useDriverStandings = (
     useLivePositionStandings,
     isOfficial,
     eventType,
+    settings?.iratingChange?.estimateInPractice,
     gapEnabled,
     intervalEnabled,
     carIdxLap,

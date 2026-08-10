@@ -19,6 +19,7 @@ export const defaultDashboard: {
         useLivePosition: false,
         iratingChange: {
           enabled: true,
+          estimateInPractice: false,
         },
         positionChange: {
           enabled: false,
