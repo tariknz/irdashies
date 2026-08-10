@@ -1040,6 +1040,22 @@ export const StandingsSettings = () => {
               {/* STYLING TAB */}
               {activeTab === 'styling' && (
                 <>
+                  <SettingsSection title="Scale">
+                    <SettingSliderRow
+                      title="Widget Scale"
+                      description="Scale the entire standings widget"
+                      value={settings.config.scale ?? 100}
+                      units="%"
+                      min={50}
+                      max={200}
+                      step={5}
+                      onChange={(v) =>
+                        handleConfigChange({
+                          scale: v,
+                        })
+                      }
+                    />
+                  </SettingsSection>
                   <SettingsSection title="Class Header">
                     <SettingToggleRow
                       title="Class Name Background"
