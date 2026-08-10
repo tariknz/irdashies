@@ -43,7 +43,7 @@ export const SessionBarItemsList = ({
   });
 
   return (
-    <div className="space-y-3 pl-4">
+    <div className="space-y-3">
       {displayItems.map((item) => {
         const { dragHandleProps, itemProps } = getItemProps(item);
         const itemConfig = getItemConfig(item.id);
