@@ -8,11 +8,7 @@ describe('RunningStateContext', () => {
   const mockBridge: IrSdkBridge = {
     onRunningState: vi.fn(),
     onSessionData: vi.fn(),
-    onTelemetry: vi.fn(),
     stop: vi.fn(),
-    changeCameraNumber: vi.fn(),
-    changeReplayPosition: vi.fn(),
-    triggerReplaySessionSearch: vi.fn(),
   };
 
   const TestComponent: React.FC = () => {

@@ -19,3 +19,4 @@ export * from './chromiumFlags';
 export * from './performance';
 export * from './gamepadToken';
 export * from './channels';
+export * from './telemetryInspectorBridge';

@@ -5,8 +5,11 @@ import { useTrackId } from './hooks/useTrackId';
 import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
 import tracks from './tracks/tracks.json';
 import { TrackDrawing } from './TrackCanvas';
-import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';
-import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
+import {
+  useSessionVisibility,
+  useTrackStateSnapshot,
+} from '@irdashies/context';
+import { useDriverLivePositions } from '@irdashies/domain';
 
 const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 
@@ -15,7 +18,7 @@ export const FlatTrackMap = () => {
   const { drivers: driversTrackData } = useDriverProgress();
   const settings = useFlatTrackMapSettings();
   const highlightColor = useHighlightColor();
-  const isOnTrack = useTelemetryValue('IsOnTrack');
+  const isOnTrack = useTrackStateSnapshot()?.isOnTrack;
   const driverLivePositions = useDriverLivePositions({
     enabled: (settings?.displayMode ?? 'carNumber') === 'livePosition',
   });

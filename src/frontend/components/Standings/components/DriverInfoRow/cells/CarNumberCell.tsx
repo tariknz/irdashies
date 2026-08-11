@@ -30,7 +30,7 @@ export const CarNumberCell = memo(
         data-column="carNumber"
         className={`w-auto ${colorClass} ${borderClass} text-white text-right ${pxClass} whitespace-nowrap`}
       >
-        {`#${carNumber}`}
+        <span className="inline-block min-w-[4ch]">{`#${carNumber}`}</span>
       </td>
     );
   }

@@ -1,8 +1,13 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { ComponentProps } from 'react';
+import type { ComponentType } from 'react';
 import { SessionBar } from '../Standings/components/SessionBar/SessionBar';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import {
+  ChannelSnapshotDecorator,
+  TelemetryDecorator,
+} from '@irdashies/storybook';
 import { SessionBarConfig } from '@irdashies/types';
+import { SessionTimingStoreUpdater } from '@irdashies/context';
 
 /**
  * InformationBar wraps the core SessionBar logic into a standalone widget.
@@ -11,7 +16,53 @@ import { SessionBarConfig } from '@irdashies/types';
 const meta: Meta = {
   title: 'widgets/InformationBar',
   component: SessionBar,
-  decorators: [TelemetryDecorator()],
+  decorators: [
+    TelemetryDecorator(),
+    ChannelSnapshotDecorator({
+      'session-bar.snapshot': {
+        sessionName: 'Race',
+        displayUnits: 1,
+        brakeBiasIsClio: false,
+        incidents: 2,
+        trackWetness: 1,
+        airTemp: 24,
+        trackTemp: 31,
+        playerCarIdx: 0,
+        playerClassified: true,
+        playerOverallPosition: 2,
+        playerClassPosition: 2,
+        playerClassSize: 20,
+        competitorCarIds: [],
+        competitorPositions: [],
+        lastLapTopSpeed: null,
+        sessionBestTopSpeed: null,
+        sessionNum: 0,
+        version: 1,
+      },
+      'session-timing.snapshot': {
+        sessionType: 'Race',
+        state: 4,
+        currentLap: 8,
+        totalLaps: 20,
+        time: 960,
+        timeTotal: 2400,
+        timeRemaining: 1440,
+        greenFlagTimestamp: 0,
+        isFixedLapRace: true,
+        totalRaceLaps: 20,
+        totalRaceTime: 2400,
+        adjustedRaceTime: 2400,
+        sessionNum: 0,
+        version: 1,
+      },
+    }),
+    (Story: ComponentType) => (
+      <>
+        <SessionTimingStoreUpdater enabled={true} />
+        <Story />
+      </>
+    ),
+  ],
   parameters: {
     layout: 'fullscreen',
   },

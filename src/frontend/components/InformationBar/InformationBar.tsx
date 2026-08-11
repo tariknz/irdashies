@@ -4,7 +4,7 @@ import {
   useSessionVisibility,
 } from '@irdashies/context';
 import { SessionBar } from '../Standings/components/SessionBar/SessionBar';
-import { useInformationBarSettings } from '../Standings/hooks/useInformationBarSettings';
+import { useInformationBarSettings } from '@irdashies/domain';
 
 export const InformationBar = () => {
   const settings = useInformationBarSettings();

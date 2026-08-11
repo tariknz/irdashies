@@ -1,10 +1,10 @@
-import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
+import type { IrSdkSourceBridge, Session, Telemetry } from '@irdashies/types';
 import mockSessionInfo from '../../../irsdk/node/utils/mock-data/session.json';
 import mockTelemetry from '../../../irsdk/node/utils/mock-data/telemetry.json';
 
 export async function generateMockDataFromPath(
   path?: string
-): Promise<IrSdkBridge> {
+): Promise<IrSdkSourceBridge> {
   if (!path) {
     return generateMockData();
   }
@@ -23,7 +23,7 @@ export async function generateMockDataFromPath(
 export function generateMockData(sessionData?: {
   telemetry: Telemetry | Telemetry[];
   sessionInfo: Session | Session[];
-}): IrSdkBridge {
+}): IrSdkSourceBridge {
   let telemetryInterval: NodeJS.Timeout | null = null;
   let sessionInfoInterval: NodeJS.Timeout | null = null;
   let runningStateInterval: NodeJS.Timeout | null = null;

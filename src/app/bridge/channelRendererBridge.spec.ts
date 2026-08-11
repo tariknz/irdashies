@@ -25,7 +25,7 @@ import { createChannelRendererBridge } from './channelRendererBridge';
 
 interface TestSnapshotBridge {
   subscribe(
-    channel: 'test.snapshot',
+    channel: 'fuel.projection',
     callback: (payload: number) => void,
     requestedRateHz?: number
   ): () => void;
@@ -43,36 +43,65 @@ describe('channel renderer bridge', () => {
     const callbackA = vi.fn();
     const callbackB = vi.fn();
 
-    const unsubscribeA = bridge.subscribe('test.snapshot', callbackA, 5);
-    const unsubscribeB = bridge.subscribe('test.snapshot', callbackB, 20);
+    const unsubscribeA = bridge.subscribe('fuel.projection', callbackA, 5);
+    const unsubscribeB = bridge.subscribe('fuel.projection', callbackB, 20);
 
     expect(invoke).toHaveBeenNthCalledWith(
       1,
       CHANNEL_SUBSCRIBE,
-      'test.snapshot',
+      'fuel.projection',
       5
     );
     expect(invoke).toHaveBeenNthCalledWith(
       2,
       CHANNEL_SUBSCRIBE,
-      'test.snapshot',
+      'fuel.projection',
       20
     );
 
-    listeners.get(CHANNEL_DELIVERY)?.({}, 'test.snapshot', 12);
+    listeners.get(CHANNEL_DELIVERY)?.({}, 'fuel.projection', 12);
     expect(callbackA).toHaveBeenCalledOnce();
     expect(callbackB).toHaveBeenCalledOnce();
 
     unsubscribeB();
     expect(invoke).toHaveBeenLastCalledWith(
       CHANNEL_SUBSCRIBE,
-      'test.snapshot',
+      'fuel.projection',
       5
     );
     unsubscribeA();
     expect(invoke).toHaveBeenLastCalledWith(
       CHANNEL_UNSUBSCRIBE,
-      'test.snapshot'
+      'fuel.projection'
+    );
+  });
+
+  it('treats an omitted rate as the channel default and downgrades when it leaves', () => {
+    const bridge =
+      createChannelRendererBridge() as unknown as TestSnapshotBridge;
+
+    const unsubscribeDefault = bridge.subscribe('fuel.projection', vi.fn());
+    const unsubscribeSlow = bridge.subscribe('fuel.projection', vi.fn(), 2);
+
+    expect(invoke).toHaveBeenNthCalledWith(
+      1,
+      CHANNEL_SUBSCRIBE,
+      'fuel.projection',
+      5
+    );
+    expect(invoke).toHaveBeenCalledOnce();
+
+    unsubscribeDefault();
+    expect(invoke).toHaveBeenLastCalledWith(
+      CHANNEL_SUBSCRIBE,
+      'fuel.projection',
+      2
+    );
+
+    unsubscribeSlow();
+    expect(invoke).toHaveBeenLastCalledWith(
+      CHANNEL_UNSUBSCRIBE,
+      'fuel.projection'
     );
   });
 });

@@ -1,13 +1,16 @@
 import { memo, useEffect, useMemo, useRef } from 'react';
-import { useTelemetryValuesRounded } from '../TelemetryStore/TelemetryStore';
 import { useLapGapStore } from './LapGapStore';
 import { useDriverStandings } from '../../components/Standings/hooks/useDriverStandings';
 import { useSessionLifecycle } from '../ChannelStore/useSessionLifecycle';
+import {
+  standingsSelectors,
+  useStandingsSelector,
+} from '../ChannelStore/useStandingsSnapshot';
 
 // useDriverStandings returns [classId, Standings[]][] — an array of [classId, drivers] tuples.
 // Standings.gap is { value?: number, laps: number }. Use .value for the seconds gap.
 export const LapGapStoreUpdater = memo(() => {
-  const carIdxLap = useTelemetryValuesRounded('CarIdxLap', 0);
+  const carIdxLap = useStandingsSelector(standingsSelectors.carIdxLap);
   const prevLapsRef = useRef<number[]>([]);
   const recordLapGap = useLapGapStore((s) => s.recordLapGap);
   // Pass gap enabled so the hook populates driver.gap, and showAll so every

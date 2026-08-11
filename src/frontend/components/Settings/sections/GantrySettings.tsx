@@ -7,7 +7,8 @@ import {
   SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
-import { useDashboard, useTelemetryValue } from '@irdashies/context';
+import { useDashboard, useTrackStateSelector } from '@irdashies/context';
+import type { TrackStateSnapshot } from '@irdashies/types';
 import { TabButton } from '../components/TabButton';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingActionButton } from '../components/SettingActionButton';
@@ -23,6 +24,9 @@ import {
 } from '@irdashies/utils/units';
 
 const SETTING_ID = 'gantry';
+
+const selectDisplayUnits = (snapshot: TrackStateSnapshot) =>
+  snapshot.displayUnits;
 
 // Thresholds are stored in km/h; only the inputs convert. Bounds round inward
 // so a converted bound always lands back inside the stored range.
@@ -141,7 +145,7 @@ const thresholdKeys = thresholdFields.map((f) => f.key);
 
 export const GantrySettings = memo(() => {
   const { currentDashboard } = useDashboard();
-  const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
+  const displayUnits = useTrackStateSelector(selectDisplayUnits); // 0 = imperial, 1 = metric
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as GantryWidgetSettings | undefined;
@@ -165,8 +169,8 @@ export const GantrySettings = memo(() => {
   const config = settings.config;
   const unitSetting = config.speedUnit ?? 'auto';
   const speedUnit = resolveSpeedUnit(unitSetting, displayUnits);
-  // This window has no TelemetryProvider, so Auto cannot read iRacing's setting
-  // here and falls back to the shared default.
+  // The track-state channel only publishes while the sim is connected, so Auto
+  // falls back to the shared default until then.
   const autoUnresolved = unitSetting === 'auto' && displayUnits === undefined;
 
   return (
@@ -232,7 +236,7 @@ export const GantrySettings = memo(() => {
                   title="Speed Units"
                   description={`Units for the speed settings on the Incidents tab. Values are always saved in km/h, so switching units never changes how incidents are detected.${
                     autoUnresolved
-                      ? ` Auto follows iRacing's own unit setting, which this window cannot read, so it shows ${speedUnit} here. Pick km/h or mph to choose explicitly.`
+                      ? ` Auto follows iRacing's own unit setting, which is only known while the sim is running, so it shows ${speedUnit} for now.`
                       : ''
                   }`}
                   value={unitSetting}

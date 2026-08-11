@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useMemo } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { SessionBar } from './components/SessionBar/SessionBar';
@@ -10,6 +10,7 @@ import {
   useStandingsSettings,
   useHighlightColor,
   useDriverTagMap,
+  useManufacturerCounts,
 } from './hooks';
 import {
   useGeneralSettings,
@@ -26,7 +27,6 @@ import {
 } from '@irdashies/context';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 import { computeStintLap } from './components/DriverInfoRow/cells/lapCountUtils';
-import { CAR_ID_TO_CAR_MANUFACTURER } from './components/CarManufacturer/carManufacturerMapping';
 
 export const Standings = () => {
   const settings = useStandingsSettings();
@@ -41,6 +41,16 @@ export const Standings = () => {
   const p2pDisplayStates = useP2PDisplayStates();
 
   const standings = useDriverStandings(settings);
+  const hasAnyCountryFlag = useMemo(
+    () =>
+      standings.some(([, classStandings]) =>
+        classStandings.some((result) => (result.driver?.flairId ?? 0) > 0)
+      ),
+    [standings]
+  );
+  const manufacturerCountsByClass = useManufacturerCounts(
+    !!settings?.classHeaderStyle?.manufacturerStats?.enabled
+  );
   const classStats = useCarClassStats();
   const { tagMap, hasAnyTag } = useDriverTagMap(settings?.driverTag?.enabled);
   const numCarClasses = useWeekendInfoNumCarClasses();
@@ -123,34 +133,7 @@ export const Standings = () => {
                   ? (classColorHex ?? highlightHex)
                   : highlightHex;
 
-            const mfrMap = new Map<string, { carId: number; count: number }>();
-            for (const s of classStandings) {
-              if (s.carId === undefined) continue;
-              const mfr =
-                CAR_ID_TO_CAR_MANUFACTURER[s.carId]?.manufacturer ?? 'unknown';
-              const existing = mfrMap.get(mfr);
-              if (existing) {
-                existing.count += 1;
-              } else {
-                mfrMap.set(mfr, { carId: s.carId, count: 1 });
-              }
-            }
-            const manufacturerCounts = Array.from(mfrMap.values()).sort(
-              (a, b) => b.count - a.count
-            );
-            const playerCarId = classStandings.find((s) => s.isPlayer)?.carId;
-            const playerMfr =
-              playerCarId !== undefined
-                ? (CAR_ID_TO_CAR_MANUFACTURER[playerCarId]?.manufacturer ??
-                  'unknown')
-                : undefined;
-            const playerManufacturerEntry = playerMfr
-              ? manufacturerCounts.find(
-                  (m) =>
-                    (CAR_ID_TO_CAR_MANUFACTURER[m.carId]?.manufacturer ??
-                      'unknown') === playerMfr
-                )
-              : undefined;
+            const manufacturerStats = manufacturerCountsByClass[classId];
 
             return classStandings.length > 0 ? (
               <Fragment key={classId}>
@@ -167,8 +150,8 @@ export const Standings = () => {
                   colSpan={100}
                   classHeaderStyle={settings?.classHeaderStyle}
                   compactMode={generalSettings?.compactMode}
-                  manufacturerCounts={manufacturerCounts}
-                  playerManufacturerEntry={playerManufacturerEntry}
+                  manufacturerCounts={manufacturerStats?.counts}
+                  playerManufacturerEntry={manufacturerStats?.playerEntry}
                 />
                 {classStandings.map((result, driverIndex) => {
                   const prev = classStandings[driverIndex - 1];
@@ -213,6 +196,7 @@ export const Standings = () => {
                         carIdx={result.carIdx}
                         resolvedTag={tagMap.get(result.carIdx)}
                         hasAnyDriverTag={hasAnyTag}
+                        hasAnyCountryFlag={hasAnyCountryFlag}
                         classColor={result.carClass.color}
                         carNumber={
                           (settings?.carNumber?.enabled ?? true)

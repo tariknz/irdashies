@@ -8,9 +8,8 @@ import {
   DriverName as formatDriverName,
   extractDriverName,
 } from '../../../Standings/components/DriverName/DriverName';
-import type { Gap } from '../../../Standings/createStandings';
+import { type Gap, useHighlightColor } from '@irdashies/domain';
 import { useDriverStandings } from '../../../Standings/hooks/useDriverStandings';
-import { useHighlightColor } from '../../../Standings/hooks/useHighlightColor';
 import { Tooltip } from '../Tooltip/Tooltip';
 
 interface Props {

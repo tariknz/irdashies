@@ -6,13 +6,22 @@ import {
   useReferenceLapStore,
   useSessionStore,
 } from '@irdashies/context';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import {
+  ChannelSnapshotDecorator,
+  TelemetryDecorator,
+  trackStateStorySnapshot,
+} from '@irdashies/storybook';
 import type { ReferenceLap } from '@irdashies/types';
 
 export default {
   component: SectorDelta,
   title: 'widgets/SectorDelta',
-  decorators: [TelemetryDecorator()],
+  decorators: [
+    ChannelSnapshotDecorator({
+      'track-state.snapshot': trackStateStorySnapshot,
+    }),
+    TelemetryDecorator(),
+  ],
   args: {
     background: { opacity: 80 },
     showOnlyWhenOnTrack: false,
@@ -58,7 +67,6 @@ function SectorStoreSeeder({
       sectorEntryValid: true,
       currentSectorIdx: 2,
       sectorEntryTime: 0,
-      lastLapDistPct: 0.8,
     });
   }, [store, sectorColors, currentLapSectorTimes, sessionBestSectorTimes]);
   return null;
@@ -168,9 +176,6 @@ function GhostLapSeeder() {
     const ghostLap = buildMockGhostLap(GHOST_BOUNDARIES, GHOST_SECTOR_TIMES);
 
     useReferenceLapStore.setState({
-      trackId: 1,
-      pointsCount: ghostLap.pointsCount,
-      interval: ghostLap.interval,
       persistedLaps: new Map([[PLAYER_CLASS_ID, ghostLap]]),
     });
   }, []);

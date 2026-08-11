@@ -1,30 +1,41 @@
 import { useMemo } from 'react';
-import { useTelemetryValue } from '@irdashies/context';
+import type { SessionBarSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
+import { useSessionBarSelector } from '@irdashies/context';
 
 interface UseTrackTemperatureOptions {
   airTempUnit?: 'Metric' | 'Imperial';
   trackTempUnit?: 'Metric' | 'Imperial';
 }
 
+const EMPTY_TEMPERATURES: readonly [number | undefined, number | undefined] = [
+  undefined,
+  undefined,
+];
+
+const selectTemperatures = (snapshot: SessionBarSnapshot) =>
+  [snapshot.trackTemp, snapshot.airTemp] as const;
+
 export const useTrackTemperature = (
   options: UseTrackTemperatureOptions = {}
 ) => {
   const { airTempUnit = 'Metric', trackTempUnit = 'Metric' } = options;
-  const trackTempVal = useTelemetryValue('TrackTempCrew');
-  const airTempVal = useTelemetryValue('AirTemp');
+  const [trackTempVal, airTempVal] =
+    useSessionBarSelector(selectTemperatures, { equality: shallow }) ??
+    EMPTY_TEMPERATURES;
 
   const trackTemp = useMemo(() => {
-    const trackTemp = trackTempVal ?? 0;
+    if (trackTempVal === undefined) return '';
     const displayTemp =
-      trackTempUnit === 'Imperial' ? (trackTemp * 9) / 5 + 32 : trackTemp;
+      trackTempUnit === 'Imperial' ? (trackTempVal * 9) / 5 + 32 : trackTempVal;
     const unit = trackTempUnit === 'Imperial' ? 'F' : 'C';
     return `${Math.round(displayTemp)}°${unit}`;
   }, [trackTempVal, trackTempUnit]);
 
   const airTemp = useMemo(() => {
-    const airTemp = airTempVal ?? 0;
+    if (airTempVal === undefined) return '';
     const displayTemp =
-      airTempUnit === 'Imperial' ? (airTemp * 9) / 5 + 32 : airTemp;
+      airTempUnit === 'Imperial' ? (airTempVal * 9) / 5 + 32 : airTempVal;
     const unit = airTempUnit === 'Imperial' ? 'F' : 'C';
     return `${Math.round(displayTemp)}°${unit}`;
   }, [airTempVal, airTempUnit]);

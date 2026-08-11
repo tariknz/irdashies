@@ -1,37 +1,39 @@
 import { useEffect } from 'react';
-import { useTelemetryValue, useTelemetryValues, useTelemetryStore } from '../TelemetryStore/TelemetryStore';
+import type { StandingsSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
+import { useStandingsSelector } from '../ChannelStore';
 import { usePitLapStore } from './PitLapStore';
-import { useStore } from 'zustand';
 
-/**
- * Hook that automatically updates the PitLapStore with telemetry data.
- * This ensures pit lap tracking is always up-to-date without manual updates in components.
- *
- * Use this hook in components that need pit lap tracking (e.g., Standings overlay).
- */
+const selectPitLapTelemetry = (snapshot: StandingsSnapshot) =>
+  [
+    snapshot.carIdxOnPitRoad,
+    snapshot.carIdxLap,
+    snapshot.sessionUniqueId,
+    Math.floor(snapshot.sessionTime),
+    snapshot.carIdxTrackSurface,
+    snapshot.sessionState,
+  ] as const;
+
+const pitLapTelemetryEqual = (
+  previous: ReturnType<typeof selectPitLapTelemetry>,
+  next: ReturnType<typeof selectPitLapTelemetry>
+) =>
+  shallow(previous[0], next[0]) &&
+  shallow(previous[1], next[1]) &&
+  previous[2] === next[2] &&
+  previous[3] === next[3] &&
+  shallow(previous[4], next[4]) &&
+  previous[5] === next[5];
+
 export const usePitLapStoreUpdater = (enabled: boolean) => {
-  const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
-  const carIdxLap = useTelemetryValues<number[]>('CarIdxLap');
-  const sessionUniqueID = useTelemetryValue('SessionUniqueID');
-  const carIdxTrackSurface = useTelemetryValues<number[]>('CarIdxTrackSurface');
-  const sessionState = useTelemetryValue('SessionState');
-  const updatePitLapTimes = usePitLapStore(state => state.updatePitLaps);
-
-  const throttledSessionTime = useStore(useTelemetryStore, (state) => {
-    const rawTime = state.telemetry?.SessionTime?.value?.[0];
-    if (rawTime == null) return null;
-    return Math.floor(rawTime);
+  const telemetry = useStandingsSelector(selectPitLapTelemetry, {
+    enabled,
+    equality: pitLapTelemetryEqual,
   });
+  const updatePitLapTimes = usePitLapStore((state) => state.updatePitLaps);
 
   useEffect(() => {
-    if (!enabled) return;
-    updatePitLapTimes(
-      carIdxOnPitRoad ?? [],
-      carIdxLap ?? [],
-      sessionUniqueID ?? 0,
-      throttledSessionTime ?? 0,
-      carIdxTrackSurface ?? [],
-      sessionState ?? 0
-    );
-  }, [enabled, carIdxOnPitRoad, carIdxLap, sessionUniqueID, throttledSessionTime, carIdxTrackSurface, sessionState, updatePitLapTimes]);
+    if (!enabled || !telemetry) return;
+    updatePitLapTimes(...telemetry);
+  }, [enabled, telemetry, updatePitLapTimes]);
 };

@@ -1,17 +1,29 @@
 import { useEffect } from 'react';
-import { useTotalRaceValue } from '../shared/useTotalRaceValue';
-import { useSessionLapCount } from '../../components/Standings/hooks/useSessionLapCount';
+import { useSessionTimingSnapshot } from '../ChannelStore';
 import { useSessionTimingStore } from './SessionTimingStore';
 
 export const useSessionTimingStoreUpdater = (enabled: boolean) => {
-  const sessionLapCount = useSessionLapCount();
-  const totalRaceValue = useTotalRaceValue();
+  const snapshot = useSessionTimingSnapshot(enabled);
   const update = useSessionTimingStore((s) => s.update);
 
   useEffect(() => {
     if (!enabled) return;
-    update({ ...sessionLapCount, ...totalRaceValue });
-  }, [enabled, sessionLapCount, totalRaceValue, update]);
+    if (!snapshot) return;
+    update({
+      sessionType: snapshot.sessionType,
+      state: snapshot.state,
+      currentLap: snapshot.currentLap,
+      totalLaps: snapshot.totalLaps,
+      time: snapshot.time,
+      timeTotal: snapshot.timeTotal,
+      timeRemaining: snapshot.timeRemaining,
+      greenFlagTimestamp: snapshot.greenFlagTimestamp,
+      isFixedLapRace: snapshot.isFixedLapRace,
+      totalRaceLaps: snapshot.totalRaceLaps,
+      totalRaceTime: snapshot.totalRaceTime,
+      adjustedRaceTime: snapshot.adjustedRaceTime,
+    });
+  }, [enabled, snapshot, update]);
 };
 
 /**

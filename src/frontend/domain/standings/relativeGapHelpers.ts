@@ -1,0 +1,207 @@
+import { ReferenceLap } from '@irdashies/types';
+import { getBucketIndex } from '@irdashies/utils/referenceLap';
+import { Standings } from './createStandings';
+import { interpolateAtPoint } from '@irdashies/utils/referenceLapInterpolation';
+
+const FALLBACK_LAPTIME = 90;
+// Helper to grab clean numbers (prevents null/undefined mess)
+export function getStats(estTime: number, driver: Standings | undefined) {
+  const stats = {
+    estTime,
+    classEstTime: driver?.carClass.estLapTime ?? FALLBACK_LAPTIME,
+  };
+
+  return stats;
+}
+
+/**
+ * Calculates the time gap between two cars using class-normalized estimated times.
+ *
+ * logic:
+ * The Reference Ruler is ALWAYS the car physically BEHIND.
+ * We scale the car AHEAD to match the class performance of the car BEHIND.
+ *
+ * @param carAhead - Stats for the car physically further along the track (0.9 vs 0.1).
+ * @param carBehind - Stats for the car physically earlier on the track.
+ * @param isTargetAhead - TRUE if we want the gap TO the car ahead (Positive), FALSE if TO the car behind (Negative).
+ */
+
+export function calculateClassEstimatedDelta(
+  carAhead: { estTime: number; classEstTime: number },
+  carBehind: { estTime: number; classEstTime: number },
+  isTargetAhead: boolean
+): number {
+  // 1. Normalize: Scale the 'Ahead' car's time into 'Behind' car's units
+  // Ratio > 1.0 means Behind is Slower (GT3 chasing GTP) -> Gap gets larger
+  // Ratio < 1.0 means Behind is Faster (GTP chasing GT3) -> Gap gets smaller
+  const scalingRatio = carBehind.classEstTime / carAhead.classEstTime;
+  const aheadTimeScaled = carAhead.estTime * scalingRatio;
+
+  const referenceLapTime = carBehind.classEstTime;
+  let delta: number;
+
+  if (isTargetAhead) {
+    // Scenario: We want the gap TO the car Ahead (Expected: Positive)
+    // Formula: (Ahead) - (Behind)
+    delta = aheadTimeScaled - carBehind.estTime;
+
+    // Wrap Check: If delta is huge negative (e.g. -100s), Ahead actually lapped Behind
+    if (delta < -referenceLapTime / 2) {
+      delta += referenceLapTime;
+    }
+  } else {
+    // Scenario: We want the gap TO the car Behind (Expected: Negative)
+    // Formula: (Behind) - (Ahead)
+    delta = carBehind.estTime - aheadTimeScaled;
+
+    // Wrap Check: If delta is huge positive (e.g. +100s), Behind actually lapped Ahead
+    if (delta > referenceLapTime / 2) {
+      delta -= referenceLapTime;
+    }
+  }
+
+  return delta;
+}
+
+export function calculateClassEstimatedGap(
+  carAhead: { estTime: number; classEstTime: number },
+  carBehind: { estTime: number; classEstTime: number }
+): number {
+  // 1. Normalize: Scale the 'Ahead' car's time into 'Behind' car's units
+  // Ratio > 1.0 means Behind is Slower (GT3 chasing GTP) -> Gap gets larger
+  // Ratio < 1.0 means Behind is Faster (GTP chasing GT3) -> Gap gets smaller
+  const scalingRatio = carBehind.classEstTime / carAhead.classEstTime;
+  const aheadTimeScaled = carAhead.estTime * scalingRatio;
+
+  const referenceLapTime = carBehind.classEstTime;
+  let delta = aheadTimeScaled - carBehind.estTime;
+
+  if (delta < 0) {
+    delta += referenceLapTime;
+  }
+  // if (isTargetAhead) {
+  //   // Scenario: We want the gap TO the car Ahead (Expected: Positive)
+  //   // Formula: (Ahead) - (Behind)
+  //
+  //   // Wrap Check: If delta is huge negative (e.g. -100s), Ahead actually lapped Behind
+  //   if (delta < -referenceLapTime / 2) {
+  //     delta += referenceLapTime;
+  //   }
+  // } else {
+  //   // Scenario: We want the gap TO the car Behind (Expected: Negative)
+  //   // Formula: (Behind) - (Ahead)
+  //   delta = carBehind.estTime - aheadTimeScaled;
+  //
+  //   // Wrap Check: If delta is huge positive (e.g. +100s), Behind actually lapped Ahead
+  //   if (delta > referenceLapTime / 2) {
+  //     delta -= referenceLapTime;
+  //   }
+  // }
+
+  return delta;
+}
+
+export function getTimeAtPosition(refLap: ReferenceLap, trackPct: number) {
+  // 1. Normalize the target to find the exact grid key (p0)
+  const prevPosKey = getBucketIndex(trackPct, refLap.pointsCount);
+
+  // 2. Calculate the next key (p1)
+  // We manually add the interval and re-normalize to handle floating point math
+  const nextPosKey = getBucketIndex(
+    trackPct + refLap.interval,
+    refLap.pointsCount
+  );
+
+  // 3. Fast Lookup
+  const p0time = refLap.times[prevPosKey];
+  const p0tangent = refLap.tangents[prevPosKey];
+  const p0pos = refLap.pointPos[prevPosKey];
+
+  const prevPosRef = {
+    timeElapsedSinceStart: p0time,
+    tangent: p0tangent,
+    trackPct: p0pos,
+  };
+
+  const p1time = refLap.times[nextPosKey];
+  const p1tangent = refLap.tangents[nextPosKey];
+  const p1pos = refLap.pointPos[nextPosKey];
+
+  const nextPosRef = {
+    timeElapsedSinceStart: p1time,
+    tangent: p1tangent,
+    trackPct: p1pos,
+  };
+
+  const sectorDistance = nextPosRef.trackPct - prevPosRef.trackPct;
+  const distanceCovered = trackPct - prevPosRef.trackPct;
+
+  const fraction =
+    sectorDistance === 0 ? distanceCovered : distanceCovered / sectorDistance;
+
+  const timeDiff =
+    nextPosRef.timeElapsedSinceStart - prevPosRef.timeElapsedSinceStart;
+
+  return prevPosRef.timeElapsedSinceStart + fraction * timeDiff;
+}
+
+/**
+ * Calculates the signed time delta between an opponent and the player.
+ *
+ * The delta is the shortest time distance between the two cars. Will wrap around if distance between cars is more than or equal to half a lap.
+ * A positive value indicates the opponent is ahead of the player.
+ *
+ * @param referenceLap - The performance profile used for interpolation (should be from the chasing car).
+ * @param opponentTrackPct - The opponent's current track position (0.0 - 1.0).
+ * @param playerTrackPct - The player's current track position (0.0 - 1.0).
+ * @returns The time delta in seconds.
+ */
+export function calculateReferenceDelta(
+  referenceLap: ReferenceLap,
+  opponentTrackPct: number,
+  playerTrackPct: number
+): number {
+  const timePlayer = interpolateAtPoint(referenceLap, playerTrackPct) ?? 0;
+  const timeOpponent = interpolateAtPoint(referenceLap, opponentTrackPct) ?? 0;
+
+  let calculatedDelta = timeOpponent - timePlayer;
+  const lapTime = referenceLap.finishTime - referenceLap.startTime;
+  const trackPctDiff = opponentTrackPct - playerTrackPct;
+
+  if (trackPctDiff <= -0.5) {
+    calculatedDelta += lapTime;
+  } else if (trackPctDiff >= 0.5) {
+    calculatedDelta -= lapTime;
+  }
+
+  return calculatedDelta;
+}
+
+/**
+ * Calculates the forward time gap from the player to an opponent.
+ *
+ * This calculates the time it would take to reach the opponent's current position
+ * based on the provided reference lap, always looking forward along the track.
+ *
+ * @param referenceLap - The performance profile used for interpolation (should be from the chasing car).
+ * @param opponentTrackPct - The opponent's current normalized track position (0.0 - 1.0).
+ * @param playerTrackPct - The player's current normalized track position (0.0 - 1.0).
+ * @returns The forward time gap in seconds.
+ */
+export function calculateReferenceGap(
+  referenceLap: ReferenceLap,
+  opponentTrackPct: number,
+  playerTrackPct: number
+): number {
+  const timePlayer = interpolateAtPoint(referenceLap, playerTrackPct) ?? 0;
+  const timeOpponent = interpolateAtPoint(referenceLap, opponentTrackPct) ?? 0;
+
+  let calculatedDelta = timeOpponent - timePlayer;
+  const lapTime = referenceLap.finishTime - referenceLap.startTime;
+
+  if (opponentTrackPct < playerTrackPct) {
+    calculatedDelta += lapTime;
+  }
+
+  return calculatedDelta;
+}

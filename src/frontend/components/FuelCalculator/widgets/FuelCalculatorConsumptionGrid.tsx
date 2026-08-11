@@ -342,7 +342,7 @@ export const FuelCalculatorConsumptionGrid: React.FC<
   return (
     <div
       style={containerStyle}
-      className={`grid w-full grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)] select-none overflow-hidden ${gridPadding} ${rowGap}`}
+      className={`grid w-full grid-cols-[max-content_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)] select-none overflow-hidden ${gridPadding} ${rowGap}`}
     >
       <div
         className="col-span-4 flex items-center justify-between pb-1 text-slate-500 font-semibold tracking-wide uppercase"

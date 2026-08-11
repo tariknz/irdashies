@@ -1,10 +1,6 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import {
-  useDriverCarIdx,
-  useSessionDrivers,
-  useTelemetryValues,
-} from '@irdashies/context';
+import { useSessionBarSnapshot } from '@irdashies/context';
 import { ManufacturerPositionItem } from './ManufacturerPositionItem';
 
 vi.mock('@irdashies/context');
@@ -14,22 +10,32 @@ const TOYOTA_CAR_ID = 56;
 
 describe('ManufacturerPositionItem', () => {
   it('excludes pace cars and spectators from the manufacturer total', () => {
-    vi.mocked(useDriverCarIdx).mockReturnValue(1);
-    vi.mocked(useSessionDrivers).mockReturnValue([
-      { CarIdx: 0, CarID: TOYOTA_CAR_ID },
-      { CarIdx: 1, CarID: TOYOTA_CAR_ID }, // player
-      { CarIdx: 2, CarID: TOYOTA_CAR_ID },
-      // Pace car happens to report the same CarID but isn't a real competitor
-      { CarIdx: 3, CarID: TOYOTA_CAR_ID, CarIsPaceCar: 1 },
-      // Spectator also shares the player's CarID
-      { CarIdx: 4, CarID: TOYOTA_CAR_ID, IsSpectator: 1 },
-    ] as never);
-    vi.mocked(useTelemetryValues).mockReturnValue([1, 2, 3, 0, 0] as never);
+    vi.mocked(useSessionBarSnapshot).mockReturnValue({
+      playerCarId: TOYOTA_CAR_ID,
+      playerClassified: true,
+      playerOverallPosition: 2,
+      competitorCarIds: [TOYOTA_CAR_ID, TOYOTA_CAR_ID, TOYOTA_CAR_ID],
+      competitorPositions: [1, 2, 3],
+    } as never);
 
     const { container } = render(
       <ManufacturerPositionItem settings={undefined} standalone={false} />
     );
 
     expect(container.textContent).toBe('2/3');
+  });
+
+  it('hides an unclassified player', () => {
+    vi.mocked(useSessionBarSnapshot).mockReturnValue({
+      playerCarId: TOYOTA_CAR_ID,
+      playerClassified: false,
+      playerOverallPosition: 0,
+      competitorCarIds: [TOYOTA_CAR_ID],
+      competitorPositions: [1],
+    } as never);
+    const { container } = render(
+      <ManufacturerPositionItem settings={undefined} standalone={false} />
+    );
+    expect(container).toBeEmptyDOMElement();
   });
 });

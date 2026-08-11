@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
+import type { TrackStateSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
 import {
-  useTelemetryValue,
-  useTelemetryValues,
-  useTelemetryValuesRounded,
+  useTrackStateSelector,
   useFocusCarIdx,
   useTrackLength,
   useSessionStore,
@@ -10,16 +10,38 @@ import {
 } from '@irdashies/context';
 import { usePitlaneHelperSettings } from './usePitlaneHelperSettings';
 
+const EMPTY_VISIBILITY_STATE: readonly [
+  boolean,
+  number,
+  readonly number[],
+  readonly boolean[],
+] = [false, 3, [], []];
+
+const selectVisibilityState = (snapshot: TrackStateSnapshot) =>
+  [
+    snapshot.isOnTrack,
+    snapshot.playerTrackSurface,
+    snapshot.carIdxLapDistPct,
+    snapshot.carIdxOnPitRoad,
+  ] as const;
+
+const visibilityStateEqual = (
+  previous: ReturnType<typeof selectVisibilityState>,
+  next: ReturnType<typeof selectVisibilityState>
+) =>
+  previous[0] === next[0] &&
+  previous[1] === next[1] &&
+  shallow(previous[2], next[2]) &&
+  shallow(previous[3], next[3]);
+
 export const usePitlaneVisibility = (): boolean => {
   const config = usePitlaneHelperSettings();
   const session = useSessionStore((state) => state.session);
-  const isOnTrack = (useTelemetryValue('IsOnTrack') ?? 0) as number;
-  const surface = (useTelemetryValue('PlayerTrackSurface') ?? 3) as number;
+  const [isOnTrack, surface, carIdxLapDistPct, carIdxOnPitRoad] =
+    useTrackStateSelector(selectVisibilityState, {
+      equality: visibilityStateEqual,
+    }) ?? EMPTY_VISIBILITY_STATE;
   const focusCarIdx = useFocusCarIdx();
-  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
-  const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad') as
-    | boolean[]
-    | undefined;
   const trackLength = useTrackLength() ?? 0;
   const pitExitPct = usePitLaneStore((state) => state.pitExitPct);
 

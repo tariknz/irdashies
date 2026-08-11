@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useTelemetryValue } from '@irdashies/context';
+import { useSessionBarSnapshot } from '@irdashies/context';
 
 /**
  * Hook to get the Track Precipitation.
@@ -10,9 +10,9 @@ import { useTelemetryValue } from '@irdashies/context';
 
 export const usePrecipitation = () => {
   // Precipitation is given as a decimal (0.0 to 1.0), convert to percentage
-  const precipitationBase = (useTelemetryValue('Precipitation') ?? 0) * 100;
+  const precipitationBase = (useSessionBarSnapshot()?.precipitation ?? 0) * 100;
   const precipitationVal = Math.round(precipitationBase * 10) / 10;
-  
+
   const precipitation = useMemo(() => {
     const precipitationLevel = precipitationVal ?? 0;
     return `${precipitationLevel}%`;

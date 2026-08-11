@@ -1,4 +1,4 @@
-import { useTelemetryValue } from '@irdashies/context';
+import { useDriverControlsSnapshot } from '@irdashies/context';
 import { useCarTachometerData } from './useCarTachometerData';
 import type { ShiftPointSettings } from '@irdashies/types';
 
@@ -6,9 +6,10 @@ import type { ShiftPointSettings } from '@irdashies/types';
  * Hook for custom shift point logic
  */
 export const useCustomShiftPoints = (settings?: ShiftPointSettings) => {
-  const { carData } = useCarTachometerData();
-  const gear = useTelemetryValue('Gear') ?? 0;
-  const rpm = useTelemetryValue('RPM') ?? 0;
+  const snapshot = useDriverControlsSnapshot();
+  const gear = snapshot?.gear ?? 0;
+  const rpm = snapshot?.rpm ?? 0;
+  const { carData } = useCarTachometerData(gear);
 
   // Get current car's shift config (only if enabled)
   const carConfig = carData && settings?.carConfigs[carData.carId];

@@ -3,13 +3,17 @@ import { IncidentType } from '@irdashies/types';
 import {
   useRaceControlStore,
   useFilteredIncidents,
-  useTelemetryValue,
+  useTrackStateSelector,
 } from '@irdashies/context';
+import type { TrackStateSnapshot } from '@irdashies/types';
 import { IncidentRow } from './IncidentRow';
 import { Tooltip } from '../Tooltip/Tooltip';
 
 const SETTINGS_HINT =
   'Thresholds live in Settings > Gantry > Incident Detection.';
+
+const selectIsReplayPlaying = (snapshot: TrackStateSnapshot) =>
+  snapshot.isReplayPlaying;
 
 const CHIP_STYLES: Record<
   IncidentType,
@@ -64,9 +68,7 @@ export const GantryIncidents = memo(() => {
   const setDriverFilter = useRaceControlStore((s) => s.setDriverFilter);
   const allIncidents = useRaceControlStore((s) => s.incidents);
   const incidents = useFilteredIncidents();
-  const isReplayPlaying = Boolean(
-    useTelemetryValue<boolean>('IsReplayPlaying')
-  );
+  const isReplayPlaying = Boolean(useTrackStateSelector(selectIsReplayPlaying));
 
   const uniqueDrivers = useMemo(() => {
     const seen = new Map<number, string>();

@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { useTelemetryValue } from '@irdashies/context';
+import { useDriverControlsSnapshot } from '@irdashies/context';
 
 export interface PitExitInputsProps {
   showThrottle: boolean | undefined;
@@ -17,9 +17,7 @@ const InputBarColumn = ({ value, color, label }: InputBarColumnProps) => (
     <span className="text-xs text-white font-medium tabular-nums leading-none">
       {Math.round(value * 100)}
     </span>
-    <div
-      className="relative w-full min-w-5 bg-slate-700/50 rounded overflow-hidden min-h-10 h-full"
-    >
+    <div className="relative w-full min-w-5 bg-slate-700/50 rounded overflow-hidden min-h-10 h-full">
       <div
         className="absolute bottom-0 w-full transition-[height] duration-50 ease-out"
         style={{ height: `${value * 100}%`, backgroundColor: color }}
@@ -34,8 +32,9 @@ const InputBarColumn = ({ value, color, label }: InputBarColumnProps) => (
  */
 export const PitExitInputs = memo(
   ({ showThrottle, showClutch }: PitExitInputsProps) => {
-    const throttle = useTelemetryValue('Throttle') ?? 0;
-    const clutchRaw = useTelemetryValue('Clutch') ?? 1;
+    const controls = useDriverControlsSnapshot();
+    const throttle = controls?.throttle ?? 0;
+    const clutchRaw = controls?.clutch ?? 1;
 
     // 0=disengaged (pedal pressed) to 1=fully engaged (pedal not pressed) so invert
     const clutch = 1 - clutchRaw;

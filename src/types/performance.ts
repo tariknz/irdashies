@@ -21,8 +21,15 @@ export interface RendererPerfSample {
   frameTimeMs: NumericSampleStats;
   telemetryCallbackMs?: NumericSampleStats;
   channelCallbackMs?: NumericSampleStats;
+  trackMapAnimationFrameMs?: NumericSampleStats;
   telemetryWakeups?: number;
   channelWakeups?: number;
   framesOver25Ms: number;
   framesOver50Ms: number;
+}
+
+export type RendererPerfMeasureName = 'trackMapAnimationFrame';
+
+export interface RendererPerfBridge {
+  recordMeasure: (name: RendererPerfMeasureName, durationMs: number) => void;
 }

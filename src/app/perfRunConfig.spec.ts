@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { DashboardLayout } from '@irdashies/types';
-import { createPerfDashboard, getPerfRunConfig } from './perfRunConfig';
+import {
+  activePerfWidgetTypes,
+  createPerfDashboard,
+  getPerfRunConfig,
+  parsePerfVisibilityPhases,
+} from './perfRunConfig';
 
 const dashboard: DashboardLayout = {
   widgets: [
@@ -28,6 +33,8 @@ describe('performance run configuration', () => {
         PERF_DURATION_SECONDS: '60',
         PERF_TELEMETRY_DELIVERY: 'off',
         PERF_TELEMETRY_PAYLOAD: 'raw',
+        PERF_CHANNEL_DELIVERY: 'off',
+        PERF_VISIBILITY_PHASES: 'visible:120,hidden:90,bad:10,visible:0',
       })
     ).toMatchObject({
       enabled: true,
@@ -36,6 +43,11 @@ describe('performance run configuration', () => {
       durationSeconds: 60,
       telemetryDelivery: 'off',
       telemetryPayload: 'raw',
+      channelDelivery: 'off',
+      visibilityPhases: [
+        { visibility: 'visible', durationSeconds: 120 },
+        { visibility: 'hidden', durationSeconds: 90 },
+      ],
     });
 
     expect(
@@ -55,10 +67,23 @@ describe('performance run configuration', () => {
       durationSeconds: 0,
       telemetryDelivery: 'on',
       telemetryPayload: 'allowlisted',
+      channelDelivery: 'on',
+      visibilityPhases: [],
     });
 
     expect(result.widgets.every((widget) => !widget.enabled)).toBe(true);
     expect(dashboard.widgets.every((widget) => widget.enabled)).toBe(true);
+  });
+
+  it('rejects visibility phases outside the shared duration bounds', () => {
+    expect(
+      parsePerfVisibilityPhases(
+        'visible:9,visible:10,hidden:86400,hidden:86401'
+      )
+    ).toEqual([
+      { visibility: 'visible', durationSeconds: 10 },
+      { visibility: 'hidden', durationSeconds: 86_400 },
+    ]);
   });
 
   it('isolates selected widget types', () => {
@@ -70,11 +95,14 @@ describe('performance run configuration', () => {
       durationSeconds: 0,
       telemetryDelivery: 'on',
       telemetryPayload: 'allowlisted',
+      channelDelivery: 'on',
+      visibilityPhases: [],
     });
 
     expect(result.widgets.map((widget) => widget.enabled)).toEqual([
       true,
       false,
     ]);
+    expect(activePerfWidgetTypes(result)).toEqual(['standings']);
   });
 });

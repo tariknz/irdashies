@@ -17,9 +17,9 @@ interface PitLaneState {
 
 // Store previous frame state outside Zustand to avoid triggering re-renders
 // This runs at 60 FPS so we can't afford to update state on every frame
-let previousCarIdxOnPitRoad: boolean[] = [];
-let previousCarIdxTrackSurface: number[] = [];
-let previousCarIdxLapDistPct: number[] = [];
+let previousCarIdxOnPitRoad: readonly boolean[] = [];
+let previousCarIdxTrackSurface: readonly number[] = [];
+let previousCarIdxLapDistPct: readonly number[] = [];
 
 // Track surface constants from iRacing SDK
 const SURFACE_NOT_IN_WORLD = -1;
@@ -54,8 +54,10 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
     // Update if:
     // 1. Not set yet (null), OR
     // 2. New detection is significantly different from stored value
-    if (state.pitEntryPct === null ||
-        Math.abs(state.pitEntryPct - pct) > TOLERANCE) {
+    if (
+      state.pitEntryPct === null ||
+      Math.abs(state.pitEntryPct - pct) > TOLERANCE
+    ) {
       set({ pitEntryPct: pct });
     }
   },
@@ -67,8 +69,10 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
     // Update if:
     // 1. Not set yet (null), OR
     // 2. New detection is significantly different from stored value
-    if (state.pitExitPct === null ||
-        Math.abs(state.pitExitPct - pct) > TOLERANCE) {
+    if (
+      state.pitExitPct === null ||
+      Math.abs(state.pitExitPct - pct) > TOLERANCE
+    ) {
       set({ pitExitPct: pct });
     }
   },
@@ -104,9 +108,9 @@ export const usePitLaneStore = create<PitLaneState>((set, get) => ({
  * @param carIdxLapDistPct Current frame's lap distance percentages
  */
 export const detectPitTransitions = (
-  carIdxOnPitRoad: boolean[],
-  carIdxTrackSurface: number[],
-  carIdxLapDistPct: number[]
+  carIdxOnPitRoad: readonly boolean[],
+  carIdxTrackSurface: readonly number[],
+  carIdxLapDistPct: readonly number[]
 ) => {
   const state = usePitLaneStore.getState();
 
@@ -124,7 +128,8 @@ export const detectPitTransitions = (
   for (let i = 0; i < carIdxOnPitRoad.length; i++) {
     const isOnPitRoad = carIdxOnPitRoad[i] ?? false;
     const wasOnPitRoad = previousCarIdxOnPitRoad[i] ?? false;
-    const previousSurface = previousCarIdxTrackSurface[i] ?? SURFACE_NOT_IN_WORLD;
+    const previousSurface =
+      previousCarIdxTrackSurface[i] ?? SURFACE_NOT_IN_WORLD;
     const currentLapDistPct = carIdxLapDistPct[i];
     const prevLapDistPct = previousCarIdxLapDistPct[i];
 
@@ -140,7 +145,12 @@ export const detectPitTransitions = (
     // When this transition occurs, surface has already changed to 2 (OnPitRoad)
     // REJECT if previousSurface=1 (car leaving pitbox also triggers OnPitRoad false->true)
     // ACCEPT if previousSurface=3 (car was on track) or previousSurface=2 (car entering from track)
-    if (carExistedInPrevFrame && !wasOnPitRoad && isOnPitRoad && state.pitEntryPct === null) {
+    if (
+      carExistedInPrevFrame &&
+      !wasOnPitRoad &&
+      isOnPitRoad &&
+      state.pitEntryPct === null
+    ) {
       // Reject if car was in pit stall (leaving pitbox case)
       const wasInPitStall = previousSurface === SURFACE_IN_PIT_STALL;
 
@@ -163,7 +173,12 @@ export const detectPitTransitions = (
     // Detect pit exit: OnPitRoad goes true -> false
     // When this transition occurs, surface is still 2 (OnPitRoad/exit road)
     // Surface will change to 3 (OnTrack) shortly after, but we detect on OnPitRoad transition
-    if (carExistedInPrevFrame && wasOnPitRoad && !isOnPitRoad && state.pitExitPct === null) {
+    if (
+      carExistedInPrevFrame &&
+      wasOnPitRoad &&
+      !isOnPitRoad &&
+      state.pitExitPct === null
+    ) {
       state.updatePitExit(currentLapDistPct);
     }
   }

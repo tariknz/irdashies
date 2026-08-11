@@ -9,6 +9,18 @@ import {
   type ReplayProbeResult,
 } from './validator';
 import { createFuelStateProbe } from './fuel-probe';
+import { createLapTimesProbe } from './lap-times-probe';
+import { createCarSpeedsProbe } from './car-speeds-probe';
+import { createReferenceLapsProbe } from './reference-laps-probe';
+import { createRelativeGapsProbe } from './relative-gaps-probe';
+import { createSectorTimingProbe } from './sector-timing-probe';
+import { createStandingsProbe } from './standings-probe';
+import { createRadioProbe } from './radio-probe';
+import { createSessionTimingProbe } from './session-timing-probe';
+import { createSessionBarProbe } from './session-bar-probe';
+import { createDriverControlsProbe } from './driver-controls-probe';
+import { createTrackStateProbe } from './track-state-probe';
+import { createLapLogProbe } from './lap-log-probe';
 
 const REPOSITORY_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -130,7 +142,22 @@ async function main(): Promise<void> {
       sessionUpdateCount: metadata.sessionUpdateCount,
       gapCount: metadata.gapCount,
     },
-    probes: [telemetryStateProbe, createFuelStateProbe()],
+    probes: [
+      telemetryStateProbe,
+      createFuelStateProbe(),
+      createLapTimesProbe(),
+      createCarSpeedsProbe(),
+      createReferenceLapsProbe(),
+      createRelativeGapsProbe(),
+      createSectorTimingProbe(),
+      createStandingsProbe(),
+      createRadioProbe(),
+      createSessionTimingProbe(),
+      createSessionBarProbe(),
+      createDriverControlsProbe(),
+      createTrackStateProbe(),
+      createLapLogProbe(),
+    ],
   });
   const golden = {
     tapeSha256: result.metadata.sha256,
@@ -172,8 +199,15 @@ async function main(): Promise<void> {
     }
     const expectedGolden = parsedGolden;
     if (JSON.stringify(golden) !== JSON.stringify(expectedGolden)) {
-      const actualProbe = golden.probes[0];
-      const expectedProbe = expectedGolden.probes[0];
+      const actualProbe =
+        golden.probes.find(
+          (probe, index) =>
+            JSON.stringify(probe) !==
+            JSON.stringify(expectedGolden.probes[index])
+        ) ?? golden.probes[0];
+      const expectedProbe = expectedGolden.probes.find(
+        (probe) => probe.name === actualProbe.name
+      );
       const changedField = (
         Object.keys(golden) as (keyof CuratedGolden)[]
       ).find(

@@ -1,6 +1,10 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { CornerNameOverlay } from './CornerNameOverlay';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import {
+  ChannelSnapshotDecorator,
+  TelemetryDecorator,
+  trackStateStorySnapshot,
+} from '@irdashies/storybook';
 
 // Real recorded sessions are used so the bundled-data lookup resolves naturally
 // from WeekendInfo.TrackName — no manual store overrides. As the recording
@@ -17,6 +21,12 @@ export default {
     opacity: 0.9,
   },
   decorators: [
+    ChannelSnapshotDecorator({
+      'track-state.snapshot': {
+        ...trackStateStorySnapshot,
+        lapDistPct: 0.5,
+      },
+    }),
     (Story) => (
       <div className="w-72">
         <Story />

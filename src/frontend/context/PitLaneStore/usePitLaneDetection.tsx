@@ -1,11 +1,31 @@
 import { useEffect, useRef } from 'react';
+import type { TrackStateSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
 import { usePitLaneStore, detectPitTransitions } from './PitLaneStore';
-import {
-  useTelemetryValues,
-  useTelemetryValuesRounded,
-} from '../TelemetryStore/TelemetryStore';
+import { useTrackStateSelector } from '../ChannelStore';
 import { useSessionStore } from '../SessionStore/SessionStore';
 import type { PitLaneBridge } from '@irdashies/types';
+
+const EMPTY_PIT_LANE_TELEMETRY: readonly [
+  readonly boolean[],
+  readonly number[],
+  readonly number[],
+] = [[], [], []];
+
+const selectPitLaneTelemetry = (snapshot: TrackStateSnapshot) =>
+  [
+    snapshot.carIdxOnPitRoad,
+    snapshot.carIdxTrackSurface,
+    snapshot.carIdxLapDistPct,
+  ] as const;
+
+const pitLaneTelemetryEqual = (
+  previous: ReturnType<typeof selectPitLaneTelemetry>,
+  next: ReturnType<typeof selectPitLaneTelemetry>
+) =>
+  shallow(previous[0], next[0]) &&
+  shallow(previous[1], next[1]) &&
+  shallow(previous[2], next[2]);
 
 /**
  * Hook that monitors telemetry and detects pit entry/exit positions.
@@ -17,15 +37,10 @@ export const usePitLaneDetection = (
   const trackId = useSessionStore(
     (state) => state.session?.WeekendInfo?.TrackID?.toString() ?? null
   );
-  const carIdxOnPitRoad = useTelemetryValues('CarIdxOnPitRoad') as
-    | boolean[]
-    | undefined;
-  const carIdxTrackSurface = useTelemetryValues('CarIdxTrackSurface') as
-    | number[]
-    | undefined;
-  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3) as
-    | number[]
-    | undefined;
+  const [carIdxOnPitRoad, carIdxTrackSurface, carIdxLapDistPct] =
+    useTrackStateSelector(selectPitLaneTelemetry, {
+      equality: pitLaneTelemetryEqual,
+    }) ?? EMPTY_PIT_LANE_TELEMETRY;
 
   const { currentTrackId, pitEntryPct, pitExitPct, setCurrentTrack, reset } =
     usePitLaneStore();
@@ -33,9 +48,9 @@ export const usePitLaneDetection = (
   // Use refs to track previous values and only call detectPitTransitions when data actually changes
   // This prevents running expensive operations at 60 FPS when nothing has changed
   const prevTelemetryRef = useRef<{
-    carIdxOnPitRoad?: boolean[];
-    carIdxTrackSurface?: number[];
-    carIdxLapDistPct?: number[];
+    carIdxOnPitRoad?: readonly boolean[];
+    carIdxTrackSurface?: readonly number[];
+    carIdxLapDistPct?: readonly number[];
   }>({});
 
   const persistenceRef = useRef<{
@@ -77,9 +92,9 @@ export const usePitLaneDetection = (
   // Detect pit entry/exit transitions
   useEffect(() => {
     if (
-      !carIdxOnPitRoad ||
-      !carIdxTrackSurface ||
-      !carIdxLapDistPct ||
+      carIdxOnPitRoad.length === 0 ||
+      carIdxTrackSurface.length === 0 ||
+      carIdxLapDistPct.length === 0 ||
       !trackId
     ) {
       return;

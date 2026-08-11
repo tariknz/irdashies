@@ -1,145 +1,41 @@
 import { create, useStore } from 'zustand';
+import { useStoreWithEqualityFn } from 'zustand/traditional';
 import logger from '@irdashies/utils/logger';
+import type { LapTimesSnapshot } from '@irdashies/types';
 
 export interface LapTimeBuffer {
-  lastLapTimes: number[];
   lapTimeHistory: number[][]; // [carIdx][sample]
-  version: number; // Incremented when lapTimeHistory changes
+  version: number;
 }
 
 interface LapTimesState {
   lapTimeBuffer: LapTimeBuffer | null;
   lapTimes: number[];
   sessionNum: number | null;
-  updateLapTimes: (
-    carIdxLastLapTime: number[],
-    sessionNum: number | null
-  ) => void;
   reset: () => void;
+  applySnapshot: (snapshot: LapTimesSnapshot) => void;
 }
 
-const LAP_TIME_AVG_WINDOW = 10; // Average over last 10 laps
-const OUTLIER_THRESHOLD = 1.0; // Outlier detection threshold
-
-// Helper function to calculate median
-function median(numbers: number[]): number {
-  if (numbers.length === 0) return 0;
-  if (numbers.length === 1) return numbers[0];
-
-  const sorted = [...numbers].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-
-  if (sorted.length % 2 === 0) {
-    return (sorted[middle - 1] + sorted[middle]) / 2;
-  } else {
-    return sorted[middle];
-  }
-}
-
-// Helper function to calculate standard deviation
-function standardDeviation(numbers: number[]): number {
-  const mean = numbers.reduce((a, b) => a + b, 0) / numbers.length;
-  const squareDiffs = numbers.map((value) => {
-    const diff = value - mean;
-    return diff * diff;
-  });
-  const avgSquareDiff =
-    squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
-  return Math.sqrt(avgSquareDiff);
-}
-
-// Helper function to filter outliers
-function filterOutliers(lapTimes: number[]): number[] {
-  if (lapTimes.length < 3) return lapTimes;
-
-  const mean = lapTimes.reduce((a, b) => a + b, 0) / lapTimes.length;
-  const stdDev = standardDeviation(lapTimes);
-  const threshold = stdDev * OUTLIER_THRESHOLD;
-
-  return lapTimes.filter((time) => Math.abs(time - mean) <= threshold);
-}
-
-export const useLapTimesStore = create<LapTimesState>((set, get) => ({
+export const useLapTimesStore = create<LapTimesState>((set) => ({
   lapTimeBuffer: null,
   lapTimes: [],
   sessionNum: null,
-  updateLapTimes: (carIdxLastLapTime, sessionNum) => {
-    const { lapTimeBuffer, sessionNum: prevSessionNum } = get();
-
-    // Auto-reset only if session changed
-    if (
-      prevSessionNum !== null &&
-      sessionNum !== null &&
-      sessionNum !== prevSessionNum
-    ) {
-      logger.info(`[LapTimesStore] Session changed, resetting`);
-      set({
-        lapTimeBuffer: null,
-        lapTimes: [],
-        sessionNum,
-      });
-      return;
-    }
-
-    if (!carIdxLastLapTime.length) {
-      set({ lapTimes: carIdxLastLapTime.map(() => 0) });
-      return;
-    }
-
-    // Reuse existing arrays; only clone the specific sub-array that changes
-    const newHistory: number[][] =
-      lapTimeBuffer?.lapTimeHistory ?? carIdxLastLapTime.map(() => []);
-
-    let historyChanged = false;
-
-    if (
-      lapTimeBuffer &&
-      lapTimeBuffer.lastLapTimes.length === carIdxLastLapTime.length
-    ) {
-      carIdxLastLapTime.forEach((lapTime, idx) => {
-        const prevLapTime = lapTimeBuffer.lastLapTimes[idx];
-        // Only add to history if it's a new valid lap time
-        if (lapTime > 0 && lapTime !== prevLapTime) {
-          newHistory[idx] = [...(newHistory[idx] ?? []), lapTime];
-          if (newHistory[idx].length > LAP_TIME_AVG_WINDOW)
-            newHistory[idx] = newHistory[idx].slice(-LAP_TIME_AVG_WINDOW);
-          historyChanged = true;
-        }
-      });
-    } else if (!lapTimeBuffer) {
-      // First run: just record the current values as a baseline.
-      // Don't add them to history — they may be stale from a previous
-      // session. History only grows when we see a value *change*.
-    }
-
-    // Only recalculate averages when history actually changed
-    const avgLapTimes = historyChanged
-      ? newHistory.map((arr) => {
-          if (arr.length === 0) return 0;
-          if (arr.length === 1) return arr[0];
-          const filteredTimes = filterOutliers(arr);
-          return median(filteredTimes);
-        })
-      : get().lapTimes;
-
-    set({
-      lapTimeBuffer: {
-        lastLapTimes: carIdxLastLapTime,
-        lapTimeHistory: newHistory,
-        version: historyChanged
-          ? (lapTimeBuffer?.version ?? 0) + 1
-          : (lapTimeBuffer?.version ?? 0),
-      },
-      lapTimes: avgLapTimes,
-      sessionNum,
-    });
-  },
   reset: () => {
     logger.info('[LapTimesStore] Resetting lap time history');
     set({
       lapTimeBuffer: null,
       lapTimes: [],
       sessionNum: null,
+    });
+  },
+  applySnapshot: (snapshot) => {
+    set({
+      lapTimeBuffer: {
+        lapTimeHistory: snapshot.lapTimeHistory.map((history) => [...history]),
+        version: snapshot.version,
+      },
+      lapTimes: [...snapshot.lapTimes],
+      sessionNum: snapshot.sessionNum,
     });
   },
 }));
@@ -153,29 +49,26 @@ export const useLapTimes = (): number[] =>
 // Stable empty array reference to prevent unnecessary re-renders
 const EMPTY_LAP_HISTORY: number[][] = [];
 
-// Track the last version seen to enable O(1) equality checks
-let lastSeenVersion = -1;
-let lastSeenHistory: number[][] = EMPTY_LAP_HISTORY;
+const lapTimeHistoryEqual = (left: number[][], right: number[][]): boolean =>
+  left === right ||
+  (left.length === right.length &&
+    left.every(
+      (leftHistory, carIdx) =>
+        leftHistory.length === right[carIdx].length &&
+        leftHistory.every((lapTime, index) => lapTime === right[carIdx][index])
+    ));
 
 /**
  * @returns Raw lap time history for each car. Returns array of arrays where [carIdx][lapIndex] contains lap time in seconds
  * Most recent lap is at the end of each car's array. Returns up to LAP_TIME_AVG_WINDOW laps per car.
  *
- * Performance: Uses version-based equality checking for O(1) comparison instead of deep array comparison.
+ * The snapshot store preserves this reference between channel publications.
  */
 export const useLapTimeHistory = (): number[][] => {
-  return useStore(useLapTimesStore, (state: LapTimesState) => {
-    const buffer = state.lapTimeBuffer;
-    if (!buffer) return EMPTY_LAP_HISTORY;
-
-    const currentVersion = buffer.version;
-
-    if (currentVersion === lastSeenVersion) {
-      return lastSeenHistory;
-    }
-
-    lastSeenVersion = currentVersion;
-    lastSeenHistory = [...buffer.lapTimeHistory]; // shallow copy for new reference
-    return lastSeenHistory;
-  });
+  return useStoreWithEqualityFn(
+    useLapTimesStore,
+    (state: LapTimesState) =>
+      state.lapTimeBuffer?.lapTimeHistory ?? EMPTY_LAP_HISTORY,
+    lapTimeHistoryEqual
+  );
 };

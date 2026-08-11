@@ -3,10 +3,10 @@ import {
   useSectorTimingStore,
   useSessionStore,
   useReferenceLapStore,
-  useTelemetryValueRounded,
+  useTrackStateSnapshot,
   useDriverCarIdx,
 } from '@irdashies/context';
-import { calculateReferenceDelta } from '../../Standings/relativeGapHelpers';
+import { calculateReferenceDelta } from '@irdashies/domain';
 
 /**
  * Returns a live delta (seconds) for the current sector vs the reference lap.
@@ -24,8 +24,9 @@ import { calculateReferenceDelta } from '../../Standings/relativeGapHelpers';
 export const useLiveSectorDelta = (): number | null => {
   // 4dp matches the reference-lap interpolation step (REFERENCE_INTERVAL = 0.0025);
   // 2dp on SessionTime gives 10ms resolution which exceeds the 0.1s display.
-  const lapDistPct = useTelemetryValueRounded('LapDistPct', 4) ?? 0;
-  const sessionTime = useTelemetryValueRounded('SessionTime', 2) ?? 0;
+  const trackState = useTrackStateSnapshot();
+  const lapDistPct = Math.round((trackState?.lapDistPct ?? 0) * 10000) / 10000;
+  const sessionTime = Math.round((trackState?.sessionTime ?? 0) * 100) / 100;
 
   const sectorEntryTime = useSectorTimingStore((s) => s.sectorEntryTime);
   const sectorEntryValid = useSectorTimingStore((s) => s.sectorEntryValid);

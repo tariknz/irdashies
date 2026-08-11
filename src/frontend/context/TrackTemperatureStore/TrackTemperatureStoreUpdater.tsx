@@ -1,16 +1,27 @@
 import { useEffect } from 'react';
-import { useTelemetry } from '@irdashies/context';
+import type { SessionBarSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
+import { useSessionBarSelector } from '../ChannelStore';
 import { useTrackTemperatureStore } from './TrackTemperatureStore';
 
+const EMPTY_TEMPERATURES: readonly [number | undefined, number | undefined] = [
+  undefined,
+  undefined,
+];
+
+const selectTemperatures = (snapshot: SessionBarSnapshot) =>
+  [snapshot.trackTemp, snapshot.airTemp] as const;
+
 export const useTrackTemperatureStoreUpdater = (enabled: boolean) => {
-  const trackTempVal = useTelemetry('TrackTempCrew');
-  const airTempVal = useTelemetry('AirTemp');
+  const [trackTemp, airTemp] =
+    useSessionBarSelector(selectTemperatures, { equality: shallow }) ??
+    EMPTY_TEMPERATURES;
   const update = useTrackTemperatureStore((s) => s.update);
 
   useEffect(() => {
     if (!enabled) return;
-    update(trackTempVal?.value?.[0], airTempVal?.value?.[0]);
-  }, [enabled, trackTempVal?.value, airTempVal?.value, update]);
+    update(trackTemp, airTemp);
+  }, [enabled, trackTemp, airTemp, update]);
 };
 
 /**

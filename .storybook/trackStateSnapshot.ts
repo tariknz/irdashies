@@ -1,0 +1,28 @@
+import type { TrackStateSnapshot } from '@irdashies/types';
+
+export const trackStateStorySnapshot = {
+  focusCarIdx: null,
+  carIdxLapDistPct: [],
+  carIdxOnPitRoad: [],
+  carIdxTrackSurface: [],
+  carIdxClassPosition: [],
+  carLeftRight: 0,
+  isOnTrack: true,
+  playerCarInPitStall: false,
+  playerTrackSurface: 3,
+  onPitRoad: false,
+  isInGarage: false,
+  isGarageVisible: false,
+  isReplayPlaying: false,
+  sessionTime: 10,
+  sessionState: 4,
+  sessionFlags: 0,
+  speed: 0,
+  displayUnits: 1,
+  pitSpeedLimiterToggle: false,
+  pitstopActive: false,
+  engineWarnings: 0,
+  lapDistPct: 0,
+  sessionNum: 0,
+  version: 1,
+} satisfies TrackStateSnapshot;

@@ -1,13 +1,13 @@
 import {
   useCurrentSessionType,
   useTotalRaceLaps,
-  useTelemetryValue,
+  useTrackStateSnapshot,
   useWeekendInfoSeriesID,
 } from '@irdashies/context';
 import { SessionState } from '@irdashies/types';
 import { useMemo } from 'react';
 import { seriesMapping } from '../../../../utils/seriesMapping';
-import { useHighlightColor } from '../../hooks/useHighlightColor';
+import { useHighlightColor } from '@irdashies/domain';
 import { useSessionLapCount } from '../../hooks/useSessionLapCount';
 
 interface TitleBarProps {
@@ -25,7 +25,7 @@ export const TitleBar = ({ titleBarSettings }: TitleBarProps) => {
 
   const { state: sessionState, currentLap } = useSessionLapCount();
   const { totalRaceLaps } = useTotalRaceLaps();
-  const lapDistPct = useTelemetryValue('LapDistPct');
+  const lapDistPct = useTrackStateSnapshot()?.lapDistPct;
 
   // Get highlight color from dashboard settings
   const highlightColor = useHighlightColor();

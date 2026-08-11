@@ -5,7 +5,6 @@ import {
   DashboardProvider,
   RunningStateProvider,
   SessionProvider,
-  TelemetryProvider,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
@@ -85,7 +84,8 @@ const App = () => {
         <DashboardProvider bridge={window.dashboardBridge}>
           <RunningStateProvider bridge={window.irsdkBridge}>
             <SessionProvider bridge={window.irsdkBridge} />
-            <TelemetryProvider bridge={window.irsdkBridge} />
+            {/* Per-car data comes from typed channels, which subscribe
+                through window.channelBridge and need no provider. */}
             <GantryApp />
           </RunningStateProvider>
         </DashboardProvider>

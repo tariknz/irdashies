@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { useTelemetryValue, useThrottledWeather } from '@irdashies/context';
+import { useSessionBarSnapshot } from '@irdashies/context';
 import { resolveSpeedUnit, speedFromMs } from '@irdashies/utils/units';
 import { WindArrow } from '../../../../../shared/WindArrow';
 import { sessionBarItemWrapperClass } from '../../sessionBarItemWrapperClass';
@@ -7,8 +7,8 @@ import type { SessionBarItemProps } from '../../sessionBarItemTypes';
 
 export const WindItem = memo(
   ({ settings, standalone }: SessionBarItemProps) => {
-    const displayUnits = useTelemetryValue('DisplayUnits'); // 0 = imperial, 1 = metric
-    const { windDirection, windVelocity, windYaw } = useThrottledWeather();
+    const { displayUnits, windDirection, windVelocity, windYaw } =
+      useSessionBarSnapshot() ?? { displayUnits: 0 };
     const relativeWindDirection = (windDirection ?? 0) - (windYaw ?? 0);
 
     const speedUnit = resolveSpeedUnit('auto', displayUnits);

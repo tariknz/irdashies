@@ -1,7 +1,13 @@
 import { useMemo } from 'react';
-import { useTelemetryValues } from '../index';
+import { shallow } from 'zustand/shallow';
+import { trackStateSelectors, useTrackStateSelector } from '../ChannelStore';
+
+const EMPTY_TRACK_SURFACES: readonly number[] = [];
 export const useCarIdxOffTrack = (): boolean[] => {
-  const trackSurface = useTelemetryValues<number[]>('CarIdxTrackSurface');
+  const trackSurface =
+    useTrackStateSelector(trackStateSelectors.carIdxTrackSurface, {
+      equality: shallow,
+    }) ?? EMPTY_TRACK_SURFACES;
   return useMemo(
     () => trackSurface.map((surface) => surface === 0),
     [trackSurface]

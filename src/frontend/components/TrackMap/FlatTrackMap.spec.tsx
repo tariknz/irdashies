@@ -5,13 +5,19 @@ import { render } from '@testing-library/react';
 
 vi.mock('./hooks/useTrackId');
 vi.mock('./hooks/useDriverProgress');
-vi.mock('../Standings/hooks/useDriverLivePositions');
+vi.mock('@irdashies/domain/standings/useDriverLivePositions');
 vi.mock('./hooks/useFlatTrackMapSettings');
 vi.mock('./hooks/useHighlightColor');
-vi.mock('@irdashies/context', () => ({
-  useSessionVisibility: vi.fn(),
-  useTelemetryValue: vi.fn(),
-}));
+vi.mock('@irdashies/context', () => {
+  const useTelemetryValue = vi.fn();
+  return {
+    useSessionVisibility: vi.fn(),
+    useTelemetryValue,
+    useTrackStateSnapshot: vi.fn(() => ({
+      isOnTrack: useTelemetryValue('IsOnTrack'),
+    })),
+  };
+});
 vi.mock('./FlatTrackMapCanvas', () => ({
   FlatTrackMapCanvas: () => <div>Flat Track Canvas</div>,
 }));
@@ -21,7 +27,7 @@ vi.mock('./tracks/tracks.json', () => ({
 
 import { useTrackId } from './hooks/useTrackId';
 import { useDriverProgress } from './hooks/useDriverProgress';
-import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
+import { useDriverLivePositions } from '@irdashies/domain';
 import { useFlatTrackMapSettings } from './hooks/useFlatTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
 import { useSessionVisibility, useTelemetryValue } from '@irdashies/context';

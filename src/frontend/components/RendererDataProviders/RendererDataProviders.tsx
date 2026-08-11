@@ -3,10 +3,15 @@ import {
   PitLaneProvider,
   ReferenceStoreProvider,
   SessionProvider,
-  TelemetryProvider,
+  TelemetryInspectorProvider,
   useDashboard,
 } from '@irdashies/context';
-import { rendererNeedsLegacyTelemetry } from '../../widgetRuntime';
+import {
+  rendererNeedsChannel,
+  rendererNeedsTelemetryInspector,
+  rendererNeedsPitLaneData,
+  rendererNeedsSessionData,
+} from '../../widgetRuntime';
 
 const isWidgetOnDisplay = (
   widget: { layout: { x: number; y: number; width: number; height: number } },
@@ -28,7 +33,7 @@ export const RendererDataProviders = ({
   browser?: boolean;
 }) => {
   const { currentDashboard, containerBoundsInfo } = useDashboard();
-  const needsLegacyTelemetry = useMemo(() => {
+  const runtimeNeeds = useMemo(() => {
     const enabledWidgets =
       currentDashboard?.widgets.filter((widget) => widget.enabled) ?? [];
     const widgets =
@@ -46,20 +51,35 @@ export const RendererDataProviders = ({
               onThisDisplay || (containerBoundsInfo.isPrimary && !onAnyDisplay)
             );
           });
-    return rendererNeedsLegacyTelemetry(widgets);
+    return {
+      telemetryInspector: rendererNeedsTelemetryInspector(widgets),
+      referenceLaps: rendererNeedsChannel(widgets, 'reference-laps.snapshot'),
+      sessionData: rendererNeedsSessionData(widgets),
+      pitLaneData: rendererNeedsPitLaneData(widgets),
+    };
   }, [browser, containerBoundsInfo, currentDashboard?.widgets]);
 
-  if (!needsLegacyTelemetry) return null;
+  if (
+    !runtimeNeeds.telemetryInspector &&
+    !runtimeNeeds.referenceLaps &&
+    !runtimeNeeds.sessionData &&
+    !runtimeNeeds.pitLaneData
+  )
+    return null;
 
   return (
     <>
-      <SessionProvider bridge={window.irsdkBridge} />
-      <TelemetryProvider bridge={window.irsdkBridge} />
-      {window.pitLaneBridge ? (
+      {runtimeNeeds.sessionData ? (
+        <SessionProvider bridge={window.irsdkBridge} />
+      ) : null}
+      {runtimeNeeds.telemetryInspector ? (
+        <TelemetryInspectorProvider bridge={window.telemetryInspectorBridge} />
+      ) : null}
+      {runtimeNeeds.pitLaneData && window.pitLaneBridge ? (
         <PitLaneProvider bridge={window.pitLaneBridge} />
       ) : null}
-      {window.referenceLapsBridge ? (
-        <ReferenceStoreProvider bridge={window.referenceLapsBridge} />
+      {runtimeNeeds.referenceLaps ? (
+        <ReferenceStoreProvider bridge={window.channelBridge} />
       ) : null}
     </>
   );

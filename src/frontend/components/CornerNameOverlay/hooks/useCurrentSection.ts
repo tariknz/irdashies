@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { useTelemetryValueRounded } from '@irdashies/context';
-import type { LovelyTrackSection } from '@irdashies/types';
+import { useTrackStateSelector } from '@irdashies/context';
+import type { LovelyTrackSection, TrackStateSnapshot } from '@irdashies/types';
 import { useLovelyTrackData } from './useLovelyTrackData';
 
 interface CurrentSectionResult {
@@ -8,6 +8,9 @@ interface CurrentSectionResult {
   progress: number; // 0-1 within the current section
   lapDistPct: number; // normalized [0,1), 0 when telemetry isn't ready
 }
+
+const selectRoundedLapDistPct = (snapshot: TrackStateSnapshot) =>
+  Math.round(snapshot.lapDistPct * 1000) / 1000;
 
 /**
  * Determines the current track section from LapDistPct. Returns the matched
@@ -18,7 +21,7 @@ interface CurrentSectionResult {
 export const useCurrentSection = (): CurrentSectionResult => {
   const { sections } = useLovelyTrackData();
   // 3dp ≈ 5m on a 5km track — matches SectorDelta precision
-  const rawLapDistPct = useTelemetryValueRounded('LapDistPct', 3);
+  const rawLapDistPct = useTrackStateSelector(selectRoundedLapDistPct);
 
   return useMemo(() => {
     if (sections.length === 0 || rawLapDistPct == null) {

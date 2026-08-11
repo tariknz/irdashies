@@ -5,6 +5,7 @@ import {
   type ChannelName,
   type ChannelPayloads,
   type IrSdkBridge,
+  type TelemetryInspectorBridge,
   type Session,
   type Telemetry,
 } from '../../types';
@@ -22,7 +23,9 @@ const debugLog = (...args: any[]) => {
 /**
  * Web-based bridge that connects to the WebSocket server
  */
-export class WebSocketBridge implements IrSdkBridge, ChannelBridge {
+export class WebSocketBridge
+  implements IrSdkBridge, TelemetryInspectorBridge, ChannelBridge
+{
   private socket: WebSocket | null;
   private telemetryCallbacks: Set<(data: Telemetry) => void>;
   private sessionCallbacks: Set<(data: Session) => void>;
@@ -267,10 +270,10 @@ export class WebSocketBridge implements IrSdkBridge, ChannelBridge {
             this.sendChannelSubscription(channel);
           }
           if (this.telemetryCallbacks.size > 0) {
-            this.sendLegacySubscription('telemetry', true);
+            this.sendTelemetryInspectorSubscription('telemetryInspector', true);
           }
           if (this.sessionCallbacks.size > 0) {
-            this.sendLegacySubscription('sessionData', true);
+            this.sendTelemetryInspectorSubscription('sessionData', true);
           }
           resolve();
         };
@@ -370,11 +373,12 @@ export class WebSocketBridge implements IrSdkBridge, ChannelBridge {
     if (!callback) return undefined;
     const wasEmpty = this.telemetryCallbacks.size === 0;
     this.telemetryCallbacks.add(callback);
-    if (wasEmpty) this.sendLegacySubscription('telemetry', true);
+    if (wasEmpty)
+      this.sendTelemetryInspectorSubscription('telemetryInspector', true);
     return () => {
       this.telemetryCallbacks.delete(callback);
       if (this.telemetryCallbacks.size === 0) {
-        this.sendLegacySubscription('telemetry', false);
+        this.sendTelemetryInspectorSubscription('telemetryInspector', false);
       }
     };
   }
@@ -383,23 +387,25 @@ export class WebSocketBridge implements IrSdkBridge, ChannelBridge {
     if (!callback) return undefined;
     const wasEmpty = this.sessionCallbacks.size === 0;
     this.sessionCallbacks.add(callback);
-    if (wasEmpty) this.sendLegacySubscription('sessionData', true);
+    if (wasEmpty) this.sendTelemetryInspectorSubscription('sessionData', true);
     return () => {
       this.sessionCallbacks.delete(callback);
       if (this.sessionCallbacks.size === 0) {
-        this.sendLegacySubscription('sessionData', false);
+        this.sendTelemetryInspectorSubscription('sessionData', false);
       }
     };
   }
 
-  private sendLegacySubscription(
-    stream: 'telemetry' | 'sessionData',
+  private sendTelemetryInspectorSubscription(
+    stream: 'telemetryInspector' | 'sessionData',
     subscribe: boolean
   ): void {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
     this.socket.send(
       JSON.stringify({
-        type: subscribe ? 'legacySubscribe' : 'legacyUnsubscribe',
+        type: subscribe
+          ? 'telemetryInspectorSubscribe'
+          : 'telemetryInspectorUnsubscribe',
         data: { stream },
       })
     );

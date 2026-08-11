@@ -13,10 +13,18 @@ import {
   drawDrivers,
   drawSectorColors,
   drawSectorDividers,
+  compareDriverDrawOrder,
+  type PositionedTrackDriver,
 } from './trackDrawingUtils';
+import {
+  progressToTrackPoint,
+  useProgressAnimation,
+} from './useProgressAnimation';
+
+const EMPTY_PIT_STATE: readonly boolean[] = [];
 import type { SectorColor } from '@irdashies/context';
 import type { Sector } from '@irdashies/types';
-import { useTelemetryValues, useCarIdxOffTrack } from '@irdashies/context';
+import { useTrackStateSnapshot, useCarIdxOffTrack } from '@irdashies/context';
 
 export interface DriverIdentity {
   driver: Driver;
@@ -133,7 +141,8 @@ export const TrackCanvas = ({
   const shouldShow = shouldShowTrack(trackId, trackDrawing);
 
   const driversOffTrack = useCarIdxOffTrack();
-  const carIdxIsOnPitRoad = useTelemetryValues('CarIdxOnPitRoad');
+  const carIdxIsOnPitRoad =
+    useTrackStateSnapshot()?.carIdxOnPitRoad ?? EMPTY_PIT_STATE;
 
   // Memoize Path2D objects to avoid re-creating them on every render
   const insidePath = trackDrawing?.active?.inside;
@@ -196,72 +205,28 @@ export const TrackCanvas = ({
     trackPathPoints: trackDrawing?.active?.trackPathPoints,
   });
 
-  // Position calculation based on the percentage of the track completed
-  // with linear interpolation between track points for sub-pixel smoothness
-  const calculatePositions = useMemo(() => {
-    if (
-      !trackDrawing?.active?.trackPathPoints ||
-      !trackDrawing?.startFinish?.point?.length ||
-      !trackDrawing?.active?.totalLength
-    ) {
-      return {};
-    }
-
-    const trackPathPoints = trackDrawing.active.trackPathPoints;
-    const direction = trackDrawing.startFinish.direction;
-    const intersectionLength = trackDrawing.startFinish.point.length;
-    const totalLength = trackDrawing.active.totalLength;
-
-    const result: Record<
-      number,
-      TrackDriver & {
-        position: { x: number; y: number };
-        sessionPosition?: number;
-      }
-    > = {};
-
-    for (const {
-      driver,
-      progress,
-      isPlayer,
-      classPosition: sessionPosition,
-    } of drivers) {
-      // Calculate position based on progress
-      const adjustedLength = (totalLength * progress) % totalLength;
-      const length =
-        direction === 'anticlockwise'
-          ? (intersectionLength + adjustedLength) % totalLength
-          : (intersectionLength - adjustedLength + totalLength) % totalLength;
-
-      // --- Linear Interpolation between points ---
-      const floatIndex = (length / totalLength) * (trackPathPoints.length - 1);
-      const index1 = Math.floor(floatIndex);
-      const index2 = Math.min(index1 + 1, trackPathPoints.length - 1);
-      const t = floatIndex - index1;
-
-      const p1 = trackPathPoints[index1];
-      const p2 = trackPathPoints[index2];
-
-      result[driver.CarIdx] = {
-        position: {
-          x: p1.x + (p2.x - p1.x) * t,
-          y: p1.y + (p2.y - p1.y) * t,
-        },
-        driver,
-        isPlayer,
-        progress,
-        sessionPosition,
-      };
-    }
-
-    return result;
-  }, [
-    drivers,
-    trackDrawing?.active?.trackPathPoints,
-    trackDrawing?.startFinish?.point?.length,
-    trackDrawing?.startFinish?.direction,
-    trackDrawing?.active?.totalLength,
-  ]);
+  // Snapshot-level collection setup. RAF frames mutate only position/progress.
+  const positionedDrivers = useMemo<
+    (PositionedTrackDriver & { interpolationIndex: number })[]
+  >(() => {
+    return drivers
+      .map(
+        (
+          { driver, progress, isPlayer, classPosition },
+          interpolationIndex
+        ) => ({
+          driver,
+          progress,
+          isPlayer,
+          classPosition,
+          sessionPosition: classPosition,
+          position: { x: 0, y: 0 },
+          textMetricsCache: { font: '', text: '', visualOffset: 0 },
+          interpolationIndex,
+        })
+      )
+      .sort((a, b) => compareDriverDrawOrder(a, b, carIdxIsOnPitRoad));
+  }, [drivers, carIdxIsOnPitRoad]);
 
   // Canvas setup and resize handling
   useEffect(() => {
@@ -435,12 +400,28 @@ export const TrackCanvas = ({
     sfIntersectionLength,
   ]);
 
-  // Dynamic layer — runs on every position tick, blits static cache then draws drivers
-  useLayoutEffect(() => {
+  // Dynamic layer — interpolates and paints imperatively between 25 Hz snapshots.
+  useProgressAnimation(drivers, (progressValues, count) => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx || !cacheCanvasRef.current) return;
     if (canvasSize.width === 0 || canvasSize.height === 0) return;
+    if (!trackPathPoints || !totalLength || sfIntersectionLength === undefined)
+      return;
+
+    for (const entry of positionedDrivers) {
+      if (entry.interpolationIndex >= count) continue;
+      const progress = progressValues[entry.interpolationIndex];
+      entry.progress = progress;
+      progressToTrackPoint(
+        progress,
+        trackPathPoints,
+        totalLength,
+        sfIntersectionLength,
+        sfDirection,
+        entry.position
+      );
+    }
 
     // Blit static cache (identity transform to avoid double DPR scaling)
     ctx.save();
@@ -462,7 +443,7 @@ export const TrackCanvas = ({
     const hasIconOverlay = !!playerIconDataUrl;
     drawDrivers(
       ctx,
-      calculatePositions,
+      positionedDrivers,
       driverColors,
       invertLeaderColor,
       driversOffTrack,
@@ -486,9 +467,13 @@ export const TrackCanvas = ({
       if (pitEl) pitEl.style.display = 'none';
       return;
     }
-    const playerEntry = Object.values(calculatePositions).find(
-      (e) => e.isPlayer
-    );
+    let playerEntry: PositionedTrackDriver | undefined;
+    for (const entry of positionedDrivers) {
+      if (entry.isPlayer) {
+        playerEntry = entry;
+        break;
+      }
+    }
     if (!playerEntry) {
       if (iconEl) iconEl.style.display = 'none';
       if (pitEl) pitEl.style.display = 'none';
@@ -516,24 +501,7 @@ export const TrackCanvas = ({
         pitEl.style.display = 'none';
       }
     }
-  }, [
-    calculatePositions,
-    canvasSize,
-    showCarNumbers,
-    displayMode,
-    driversOffTrack,
-    driverLivePositions,
-    carIdxIsOnPitRoad,
-    driverCircleSize,
-    playerCircleSize,
-    trackmapFontSize,
-    turnLabels,
-    driverColors,
-    invertLeaderColor,
-    isMinimalCar,
-    isMinimalTrack,
-    playerIconDataUrl,
-  ]);
+  });
 
   const renderIconOverlay = () =>
     playerIconDataUrl ? (

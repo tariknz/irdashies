@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import type { LastTimeState } from '../../../createStandings';
+import type { LastTimeState } from '@irdashies/domain';
 
 interface LastTimeCellProps {
   lastTimeString: string;

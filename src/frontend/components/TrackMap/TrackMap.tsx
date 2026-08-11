@@ -5,10 +5,10 @@ import { useHighlightColor } from './hooks/useHighlightColor';
 import { useGhostSectorColors } from './hooks/useGhostSectorColors';
 import { usePlayerIconImage } from './hooks/usePlayerIconImage';
 import { TrackCanvas } from './TrackCanvas';
-import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
+import { useDriverLivePositions } from '@irdashies/domain';
 import {
   useSessionVisibility,
-  useTelemetryValue,
+  useTrackStateSnapshot,
   useSessionStore,
   useSectorColors,
   useSectorTimingStore,
@@ -21,7 +21,7 @@ export const TrackMap = () => {
   const { drivers: driversTrackData, identities } = useDriverProgress();
   const settings = useTrackMapSettings();
   const highlightColor = useHighlightColor();
-  const isOnTrack = useTelemetryValue('IsOnTrack');
+  const isOnTrack = useTrackStateSnapshot()?.isOnTrack;
   const sessionSectorColors = useSectorColors();
   const ghostColors = useGhostSectorColors();
   const sectorColors = ghostColors ?? sessionSectorColors;

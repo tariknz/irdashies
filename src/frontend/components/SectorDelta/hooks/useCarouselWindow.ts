@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useTelemetryStore } from '@irdashies/context';
+import { trackStateSelectors, useTrackStateSelector } from '@irdashies/context';
 
 const GAP = 4; // gap-1 = 4px
 
@@ -37,6 +37,7 @@ export function useCarouselWindow(
   alwaysScroll: boolean | null | undefined = false
 ) {
   const effectiveAlwaysScroll = alwaysScroll ?? false;
+  const lapDistPct = useTrackStateSelector(trackStateSelectors.lapDistPct) ?? 0;
   const isWindowed =
     effectiveAlwaysScroll ||
     (maxSectorsShown != null && totalSectors > maxSectorsShown);
@@ -99,8 +100,6 @@ export function useCarouselWindow(
     const apply = () => {
       const node = stripRef.current;
       if (!node) return;
-      const lapDistPct =
-        useTelemetryStore.getState().telemetry?.LapDistPct?.value?.[0] ?? 0;
       const span = currentSectorEnd - currentSectorStart;
       const progress =
         span > 0
@@ -114,7 +113,7 @@ export function useCarouselWindow(
     };
 
     apply();
-    return useTelemetryStore.subscribe(apply);
+    return undefined;
   }, [
     isWindowed,
     slotWidth,
@@ -124,6 +123,7 @@ export function useCarouselWindow(
     currentSectorIdx,
     currentSectorStart,
     currentSectorEnd,
+    lapDistPct,
   ]);
 
   return {

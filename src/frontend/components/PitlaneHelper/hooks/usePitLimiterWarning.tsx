@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useTelemetryValue, useSessionStore } from '@irdashies/context';
-import { EngineWarnings } from '@irdashies/types';
+import { useTrackStateSelector, useSessionStore } from '@irdashies/context';
+import { EngineWarnings, type TrackStateSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
 
 export interface PitLimiterWarningResult {
   showWarning: boolean;
@@ -8,14 +9,28 @@ export interface PitLimiterWarningResult {
   warningText: string;
 }
 
+const EMPTY_LIMITER_STATE: readonly [boolean, boolean, boolean, number] = [
+  false,
+  false,
+  false,
+  0,
+];
+
+const selectLimiterState = (snapshot: TrackStateSnapshot) =>
+  [
+    snapshot.onPitRoad,
+    snapshot.pitSpeedLimiterToggle,
+    snapshot.pitstopActive,
+    snapshot.engineWarnings,
+  ] as const;
+
 export const usePitLimiterWarning = (
   enabled: boolean
 ): PitLimiterWarningResult => {
   const session = useSessionStore((state) => state.session);
-  const onPitRoad = useTelemetryValue('OnPitRoad') ?? false;
-  const limiterActive = useTelemetryValue('dcPitSpeedLimiterToggle') ?? false;
-  const pitstopActive = useTelemetryValue('PitstopActive') ?? false;
-  const engineWarnings = useTelemetryValue('EngineWarnings') ?? 0;
+  const [onPitRoad, limiterActive, pitstopActive, engineWarnings] =
+    useTrackStateSelector(selectLimiterState, { equality: shallow }) ??
+    EMPTY_LIMITER_STATE;
   const isTeamRacing = (session?.WeekendInfo?.TeamRacing ?? 0) === 1;
 
   // Check if pit speed limiter is actively engaged (manual OR auto)
@@ -112,7 +127,7 @@ export const usePitLimiterWarning = (
       return {
         showWarning: true,
         isTeamRaceWarning: true,
-        warningText: '⚠ ACTIVATE LIMITER',
+        warningText: 'ACTIVATE LIMITER',
       };
     }
 
@@ -122,7 +137,7 @@ export const usePitLimiterWarning = (
       return {
         showWarning: true,
         isTeamRaceWarning: false,
-        warningText: '⚠ DISABLE LIMITER',
+        warningText: 'DISABLE LIMITER',
       };
     }
 
@@ -131,7 +146,7 @@ export const usePitLimiterWarning = (
       return {
         showWarning: true,
         isTeamRaceWarning: false,
-        warningText: '⚠ ACTIVATE LIMITER',
+        warningText: 'ACTIVATE LIMITER',
       };
     }
 

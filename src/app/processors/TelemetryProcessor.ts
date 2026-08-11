@@ -4,8 +4,8 @@ import type {
   Telemetry,
 } from '@irdashies/types';
 
-export interface TelemetryProcessor<Snapshot> {
-  readonly channel: string;
+export interface TelemetryProcessor<Snapshot, Channel extends string = string> {
+  readonly channel: Channel;
   readonly tickRateHz: number | 'event';
   init(session: Session): void;
   onFrame(frame: Telemetry): void;

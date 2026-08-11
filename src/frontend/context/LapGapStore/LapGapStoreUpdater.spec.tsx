@@ -6,7 +6,7 @@ import { LapGapStoreUpdater } from './LapGapStoreUpdater';
 import { useLapGapStore } from './LapGapStore';
 import { useDriverStandings } from '../../components/Standings/hooks/useDriverStandings';
 
-// Backed by useSyncExternalStore (like the real telemetry hook) so that
+// Backed by useSyncExternalStore (like the real channel hook) so that
 // emitLap triggers a genuine re-render of the memoized updater component,
 // rather than relying on parent-driven rerenders that memo would bail out of.
 const lapListeners = new Set<() => void>();
@@ -16,8 +16,11 @@ const emitLap = (next: number[]) => {
   lapListeners.forEach((listener) => listener());
 };
 
-vi.mock('../TelemetryStore/TelemetryStore', () => ({
-  useTelemetryValuesRounded: () =>
+vi.mock('../ChannelStore/useStandingsSnapshot', () => ({
+  standingsSelectors: {
+    carIdxLap: (snapshot: { carIdxLap: number[] }) => snapshot.carIdxLap,
+  },
+  useStandingsSelector: () =>
     useSyncExternalStore(
       (listener: () => void) => {
         lapListeners.add(listener);

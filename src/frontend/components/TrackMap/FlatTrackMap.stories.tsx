@@ -1,10 +1,21 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { FlatTrackMap } from './FlatTrackMap';
-import { TelemetryDecorator } from '@irdashies/storybook';
+import {
+  ChannelSnapshotDecorator,
+  TelemetryDecorator,
+  trackStateStorySnapshot,
+  standingsStorySnapshot,
+} from '@irdashies/storybook';
 
 export default {
   component: FlatTrackMap,
   title: 'widgets/FlatTrackMap',
+  decorators: [
+    ChannelSnapshotDecorator({
+      'track-state.snapshot': trackStateStorySnapshot,
+      'standings.snapshot': standingsStorySnapshot,
+    }),
+  ],
 } as Meta;
 
 type Story = StoryObj<typeof FlatTrackMap>;

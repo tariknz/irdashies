@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
-import { useTelemetryStore } from '@irdashies/context';
+import { trackStateSelectors, useTrackStateSelector } from '@irdashies/context';
 
 /**
  * Track-progress overlay for the active card. Subscribes to LapDistPct
@@ -21,11 +21,10 @@ export const SectorProgressIndicator = ({
   const fillRef = useRef<HTMLDivElement>(null);
   const topBarRef = useRef<HTMLDivElement>(null);
   const bottomBarRef = useRef<HTMLDivElement>(null);
+  const lapDistPct = useTrackStateSelector(trackStateSelectors.lapDistPct) ?? 0;
 
   useLayoutEffect(() => {
     const apply = () => {
-      const lapDistPct =
-        useTelemetryStore.getState().telemetry?.LapDistPct?.value?.[0] ?? 0;
       const span = sectorEnd - sectorStart;
       const progress =
         span > 0
@@ -38,8 +37,7 @@ export const SectorProgressIndicator = ({
     };
 
     apply();
-    return useTelemetryStore.subscribe(apply);
-  }, [sectorStart, sectorEnd]);
+  }, [sectorStart, sectorEnd, lapDistPct]);
 
   return (
     <>

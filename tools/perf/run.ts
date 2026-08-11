@@ -2,6 +2,8 @@ import { spawn } from 'node:child_process';
 import { execFileSync } from 'node:child_process';
 import { createWriteStream, promises as fs } from 'node:fs';
 import path from 'node:path';
+import { readWidgetInputRequirements } from './widgetInputMetadata';
+import { parsePerfVisibilityPhases } from '../../src/app/perfRunConfig';
 
 const PERF_REPLAY_READY_LOG_MARKER = '[PerfRun] Ready for replay publisher';
 const REPLAY_STARTUP_TIMEOUT_MS = 30_000;
@@ -19,7 +21,18 @@ interface RunOptions {
   runId: string;
   telemetryDelivery: 'on' | 'off';
   telemetryPayload: 'allowlisted' | 'raw';
+  channelDelivery: 'on' | 'off';
+  visibilityPhases: string;
   replayInput: string;
+  metadata: {
+    target: RunTarget;
+    simulatorMode: 'live' | 'replay';
+    fieldCount?: number;
+    classCount?: number;
+    displayGeometry?: string;
+    fpsCap?: number;
+    syncMode?: string;
+  };
 }
 
 function argumentValue(args: string[], name: string): string | undefined {
@@ -29,6 +42,14 @@ function argumentValue(args: string[], name: string): string | undefined {
 
 function safeName(value: string): string {
   return value.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '');
+}
+
+function optionalFiniteNumber(
+  args: string[],
+  name: string
+): number | undefined {
+  const value = Number(argumentValue(args, name));
+  return Number.isFinite(value) && value >= 0 ? value : undefined;
 }
 
 function parseArgs(args: string[]): RunOptions {
@@ -48,7 +69,19 @@ function parseArgs(args: string[]): RunOptions {
   );
   const interval = Number(argumentValue(args, '--interval-ms') ?? 5000);
   const duration = Number(argumentValue(args, '--duration-seconds') ?? 0);
+  const visibilityPhases = argumentValue(args, '--visibility-phases') ?? '';
+  const phaseDuration = parsePerfVisibilityPhases(visibilityPhases).reduce(
+    (sum, phase) => sum + phase.durationSeconds,
+    0
+  );
+  const durationSeconds =
+    Number.isFinite(duration) && duration >= 10
+      ? duration
+      : phaseDuration >= 10
+        ? phaseDuration
+        : 0;
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const replayInput = argumentValue(args, '--replay-input') ?? '';
 
   return {
     scenario,
@@ -56,7 +89,7 @@ function parseArgs(args: string[]): RunOptions {
     target,
     widgets,
     intervalMs: Number.isFinite(interval) && interval >= 1000 ? interval : 5000,
-    durationSeconds: Number.isFinite(duration) && duration >= 10 ? duration : 0,
+    durationSeconds,
     runId: safeName(
       argumentValue(args, '--run-id') ?? `${timestamp}-${scenario}`
     ),
@@ -66,11 +99,24 @@ function parseArgs(args: string[]): RunOptions {
       argumentValue(args, '--telemetry-payload') === 'raw'
         ? 'raw'
         : 'allowlisted',
-    replayInput: argumentValue(args, '--replay-input') ?? '',
+    channelDelivery:
+      argumentValue(args, '--channel-delivery') === 'off' ? 'off' : 'on',
+    visibilityPhases,
+    replayInput,
+    metadata: {
+      target,
+      simulatorMode: replayInput ? 'replay' : 'live',
+      fieldCount: optionalFiniteNumber(args, '--field-count'),
+      classCount: optionalFiniteNumber(args, '--class-count'),
+      displayGeometry: argumentValue(args, '--display-geometry'),
+      fpsCap: optionalFiniteNumber(args, '--fps-cap'),
+      syncMode: argumentValue(args, '--sync-mode'),
+    },
   };
 }
 
 const options = parseArgs(process.argv.slice(2));
+const widgetInputRequirements = await readWidgetInputRequirements();
 const outputDirectory = path.resolve('perf-results');
 await fs.mkdir(outputDirectory, { recursive: true });
 const logPath = path.join(outputDirectory, `${options.runId}.log`);
@@ -127,6 +173,10 @@ process.stdout.write(
     `Target: ${options.target}`,
     `Telemetry delivery: ${options.telemetryDelivery}`,
     `Telemetry payload: ${options.telemetryPayload}`,
+    `Channel delivery: ${options.channelDelivery}`,
+    options.visibilityPhases
+      ? `Visibility phases: ${options.visibilityPhases}`
+      : '',
     replayInputPath ? `Replay: ${replayInputPath}` : '',
     options.widgets ? `Widgets: ${options.widgets}` : '',
     options.durationSeconds > 0
@@ -157,6 +207,19 @@ const child = spawn(childCommand, childArguments, {
     PERF_LOG_PATH: logPath,
     PERF_TELEMETRY_DELIVERY: options.telemetryDelivery,
     PERF_TELEMETRY_PAYLOAD: options.telemetryPayload,
+    PERF_CHANNEL_DELIVERY: options.channelDelivery,
+    PERF_VISIBILITY_PHASES: options.visibilityPhases,
+    PERF_SCENARIO_METADATA: JSON.stringify({
+      ...options.metadata,
+      requestedWidgetTypes: options.widgets
+        .split(',')
+        .map((widget) => widget.trim())
+        .filter(Boolean),
+      channelDelivery: options.channelDelivery,
+      telemetryDelivery: options.telemetryDelivery,
+      telemetryPayload: options.telemetryPayload,
+      widgetInputRequirements,
+    }),
     IRDASHIES_IRSDK_REPLAY: replayInputPath
       ? '1'
       : process.env.IRDASHIES_IRSDK_REPLAY,

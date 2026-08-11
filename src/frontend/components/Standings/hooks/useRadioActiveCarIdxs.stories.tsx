@@ -1,22 +1,48 @@
 import { useEffect, useState } from 'react';
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { Decorator, Meta, StoryObj } from '@storybook/react-vite';
 import { SpeakerHighIcon } from '@phosphor-icons/react';
-import { useTelemetryStore } from '@irdashies/context';
-import type { Telemetry } from '@irdashies/types';
-import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
+import type { ChannelPayloads } from '@irdashies/types';
+import { TelemetryDecorator } from '@irdashies/storybook';
+import { useRadioActiveCarIdxs } from '@irdashies/domain';
 
 const DEMO_CAR_IDX = 7;
 
-// Push only the key the hook reads straight into the telemetry store.
-//
-// These stories intentionally do NOT use TelemetryDecorator: the mock bridge
-// streams a full telemetry frame at 60Hz and would clobber anything we inject
-// within ~16ms. Driving the store directly lets us flip-flap
-// RadioTransmitCarIdx deterministically and watch the *real* hook debounce it.
-const setRadioTransmit = (carIdxs: number[]) =>
-  useTelemetryStore.getState().setTelemetry({
-    RadioTransmitCarIdx: { value: carIdxs },
-  } as Telemetry);
+const subscribers = new Set<
+  (snapshot: ChannelPayloads['radio.snapshot']) => void
+>();
+let version = 0;
+const setRadioTransmit = (carIdxs: number[]) => {
+  version += 1;
+  subscribers.forEach((subscriber) =>
+    subscriber({ transmittingCarIdxs: carIdxs, version })
+  );
+};
+
+const RadioChannelDecorator: Decorator = (Story) => {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const previousBridge = window.channelBridge;
+    window.channelBridge = {
+      subscribe: (channel, callback, requestedRateHz) => {
+        if (channel !== 'radio.snapshot') {
+          return previousBridge?.subscribe(channel, callback, requestedRateHz);
+        }
+        const subscriber = callback as (
+          snapshot: ChannelPayloads['radio.snapshot']
+        ) => void;
+        subscribers.add(subscriber);
+        subscriber({ transmittingCarIdxs: [], version });
+        return () => subscribers.delete(subscriber);
+      },
+    };
+    setReady(true);
+    return () => {
+      subscribers.clear();
+      window.channelBridge = previousBridge;
+    };
+  }, []);
+  return ready ? <Story /> : <></>;
+};
 
 type DemoMode = 'flip-flap' | 'single-burst';
 
@@ -30,17 +56,17 @@ const RadioDebounceHarness = ({
   const [rawTransmitting, setRawTransmitting] = useState(false);
 
   useEffect(() => {
-    setRadioTransmit([-1]);
+    setRadioTransmit([]);
 
     const timers: ReturnType<typeof setTimeout>[] = [];
     const transmit = (on: boolean) => {
       setRawTransmitting(on);
-      setRadioTransmit(on ? [DEMO_CAR_IDX] : [-1]);
+      setRadioTransmit(on ? [DEMO_CAR_IDX] : []);
     };
 
     if (mode === 'flip-flap') {
       // Rapidly key the radio on/off — the bug that used to make the icon
-      // strobe. Each "on" frame re-arms the debounce, so it stays solidly lit.
+      // strobe. Each completed burst starts a fresh persistence window.
       let on = false;
       const id = setInterval(() => {
         on = !on;
@@ -48,7 +74,7 @@ const RadioDebounceHarness = ({
       }, 500);
       return () => {
         clearInterval(id);
-        useTelemetryStore.getState().resetTelemetry();
+        setRadioTransmit([]);
       };
     }
 
@@ -57,7 +83,7 @@ const RadioDebounceHarness = ({
     timers.push(setTimeout(() => transmit(false), 1600));
     return () => {
       timers.forEach(clearTimeout);
-      useTelemetryStore.getState().resetTelemetry();
+      setRadioTransmit([]);
     };
   }, [mode]);
 
@@ -96,7 +122,7 @@ const RadioDebounceHarness = ({
 
       <p className="text-xs text-slate-400">
         {mode === 'flip-flap'
-          ? `Raw signal flips every 500ms, but the icon stays lit — each transmit frame re-arms the ${persistenceSeconds}s window.`
+          ? `Raw signal flips every 500ms, but each completed burst starts a fresh ${persistenceSeconds}s persistence window.`
           : `A single burst lights the icon, then it lingers for ${persistenceSeconds}s after the last transmit frame before clearing.`}
       </p>
     </div>
@@ -106,6 +132,7 @@ const RadioDebounceHarness = ({
 const meta: Meta<typeof RadioDebounceHarness> = {
   title: 'widgets/Standings/hooks/useRadioActiveCarIdxs',
   component: RadioDebounceHarness,
+  decorators: [TelemetryDecorator(), RadioChannelDecorator],
 };
 
 export default meta;

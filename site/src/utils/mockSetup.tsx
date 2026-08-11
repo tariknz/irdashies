@@ -1,7 +1,7 @@
 import { type ReactNode, useMemo } from 'react';
 import {
   SessionProvider,
-  TelemetryProvider,
+  StoryTelemetryProvider,
   RunningStateProvider,
   DashboardProvider,
 } from '@irdashies/context';
@@ -131,7 +131,7 @@ export function LivePreviewProvider({
     <DashboardProvider bridge={dashboardBridge}>
       <RunningStateProvider bridge={bridge}>
         <SessionProvider bridge={bridge} />
-        <TelemetryProvider bridge={bridge} />
+        <StoryTelemetryProvider bridge={bridge} />
         {children}
       </RunningStateProvider>
     </DashboardProvider>

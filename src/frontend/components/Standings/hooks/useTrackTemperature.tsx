@@ -1,41 +1,42 @@
 import { useMemo } from 'react';
-import { useTelemetry } from '@irdashies/context';
+import { useSessionBarSnapshot } from '@irdashies/context';
+
+type TemperatureUnit = 'Metric' | 'Imperial';
 
 interface UseTrackTemperatureOptions {
-  airTempUnit?: 'Metric' | 'Imperial';
-  trackTempUnit?: 'Metric' | 'Imperial';
+  airTempUnit?: TemperatureUnit;
+  trackTempUnit?: TemperatureUnit;
 }
 
-export const useTrackTemperature = (options: UseTrackTemperatureOptions = {}) => {
+export const useTrackTemperature = (
+  options: UseTrackTemperatureOptions = {}
+) => {
   const { airTempUnit = 'Metric', trackTempUnit = 'Metric' } = options;
-  const trackTempVal = useTelemetry('TrackTempCrew');
-  const airTempVal = useTelemetry('AirTemp');
+  const snapshot = useSessionBarSnapshot();
+  const trackTempVal = snapshot?.trackTemp;
+  const airTempVal = snapshot?.airTemp;
 
   const trackTemp = useMemo(() => {
-    const trackTemp = trackTempVal?.value[0] ?? 0;
-    if (trackTemp === null || trackTemp === undefined) return '';
+    if (trackTempVal === undefined) return '';
 
     // Convert to Fahrenheit if Imperial unit is selected
-    const displayTemp = trackTempUnit === 'Imperial'
-      ? (trackTemp * 9/5) + 32
-      : trackTemp;
+    const displayTemp =
+      trackTempUnit === 'Imperial' ? (trackTempVal * 9) / 5 + 32 : trackTempVal;
 
     const unit = trackTempUnit === 'Imperial' ? 'F' : 'C';
     return `${displayTemp.toFixed(0)}°${unit}`;
-  }, [trackTempVal?.value, trackTempUnit]);
+  }, [trackTempVal, trackTempUnit]);
 
   const airTemp = useMemo(() => {
-    const airTemp = airTempVal?.value[0] ?? 0;
-    if (airTemp === null || airTemp === undefined) return '';
+    if (airTempVal === undefined) return '';
 
     // Convert to Fahrenheit if Imperial unit is selected
-    const displayTemp = airTempUnit === 'Imperial'
-      ? (airTemp * 9/5) + 32
-      : airTemp;
+    const displayTemp =
+      airTempUnit === 'Imperial' ? (airTempVal * 9) / 5 + 32 : airTempVal;
 
     const unit = airTempUnit === 'Imperial' ? 'F' : 'C';
     return `${displayTemp.toFixed(0)}°${unit}`;
-  }, [airTempVal?.value, airTempUnit]);
+  }, [airTempVal, airTempUnit]);
 
   return { trackTemp, airTemp };
 };

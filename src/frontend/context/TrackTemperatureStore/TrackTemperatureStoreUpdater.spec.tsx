@@ -2,14 +2,10 @@ import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTrackTemperatureStoreUpdater } from './TrackTemperatureStoreUpdater';
 import { useTrackTemperatureStore } from './TrackTemperatureStore';
-import { useTelemetry } from '@irdashies/context';
+import { useSessionBarSelector } from '../ChannelStore';
 
-vi.mock('@irdashies/context', async () => {
-  const actual = await vi.importActual('@irdashies/context');
-  return {
-    ...actual,
-    useTelemetry: vi.fn(),
-  };
+vi.mock('../ChannelStore', () => {
+  return { useSessionBarSelector: vi.fn() };
 });
 
 describe('useTrackTemperatureStoreUpdater', () => {
@@ -18,11 +14,7 @@ describe('useTrackTemperatureStoreUpdater', () => {
       trackTempC: undefined,
       airTempC: undefined,
     });
-    vi.mocked(useTelemetry).mockImplementation(((key: string) => {
-      if (key === 'TrackTempCrew') return { value: [28] };
-      if (key === 'AirTemp') return { value: [22] };
-      return undefined;
-    }) as typeof useTelemetry);
+    vi.mocked(useSessionBarSelector).mockReturnValue([28, 22]);
   });
 
   it('writes raw Celsius values into the store when enabled', () => {

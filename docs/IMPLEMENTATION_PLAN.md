@@ -15,24 +15,24 @@
 
 ## 1. Current status at a glance
 
-| Phase                                                 | Status                   | Branch / PR                              | Notes                                                                                                                                                                                                                                                                                                                                                                     |
-| ----------------------------------------------------- | ------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Phase 0 replay follow-up**                          | CAPTURED                 | `chore/telemetry-performance-report`     | Deterministic native replay separates observer, empty/no-delivery, empty/delivery, full dashboard, raw payload, and focused widget costs. The existing allowlist is essential; empty delivery has a measurable IPC/store allocation floor; full CPU and memory are dominated downstream by widget/Chromium work. See `TELEMETRY_PERFORMANCE_REPORT.html`.                 |
-| **Phase 0 — Measure**                                 | DONE                     | —                                        | Baseline captured in `PERFORMANCE_TEST_SUMMARY.md`; revised 2026-05-12 after Practice 2                                                                                                                                                                                                                                                                                   |
-| **Phase 0.5 — Stop the bleeding**                     | LANDED (partial)         | merged on `main`                         | S1/S2 landed; S3/S4/L1/L2/L3/P6 still open                                                                                                                                                                                                                                                                                                                                |
-| **Phase 1 — Cheap perf wins + lifecycle bones**       | LANDED                   | merged on `main`                         | P1/P2/P4 typed subs, P5 propsAreEqual, IPC allowlist, SessionLifecycle skeleton, useResetOnDisconnect activated. Practice 3: Primary slope −85%; Standings became the sole remaining leak source                                                                                                                                                                          |
-| **Phase 2a Tier 1 — PitLapStore + LapTimes hygiene**  | LANDED                   | `feat/phase-2a-tier1-allocations`        | H3 + H4. Practice 5: Left renderer slope dropped from +13.0 → +0.7 MB/min (95% reduction, under target). PCC race confirms +5.7 MB/min app slope during 20-min race phase (under <+5 target).                                                                                                                                                                             |
-| **Phase 2a H1 — createStandings rewrite**             | LANDED                   | `feat/phase-2a-h1-standings-rewrite`     | O(N²) → O(N) `find()` removal; `groupStandingsByClass` Map-based; `useReferenceLapStore.getState()` hoisted out of inner loop. 2026-05-16 Clio Cup VIR test: no regression vs Tier 1, Standings CPU 2.3% vs 3.1% baseline. Memory benefit not isolable.                                                                                                                   |
-| **Phase 2a Tier 2a — Disconnect leave cleanup**       | LANDED                   | `feat/phase-2a-tier2-disconnect-cleanup` | `sessionLifecycle._onDisconnect` emits synthetic per-driver leaves; `useDriverLivePositions` clears driver-keyed refs on `running` true→false. **GR86 Miami 2026-05-18 validated**: 196 `Driver left (disconnect)` lines symmetric with 196 joins, 4 `Released N per-driver slots` summaries match 4 disconnect events.                                                   |
-| **Phase 2a Tier 2b — Reference-lap dedup**            | LANDED                   | `feat/phase-2a-tier2-reflap-dedup`       | Main-process in-memory cache + debounced async write. Collapses 3× per-renderer save bursts into one async write. **Note**: PCC, SFL, combined PR, and Miami tests all still show 3× clusters in renderer-side log lines — filesystem-level write count verification still needed to confirm debounce is engaging at the FS layer.                                        |
-| **Phase 2a integration PR**                           | READY TO MERGE           | `feat/phase-2a-integration`              | Cherry-picks of Tier 1 + H1 + Tier 2a + Tier 2b + post-test docs + 2026-05-17 follow-ups (disconnect log line, empty-Drivers guard, bridge stale-state nulling) + 2026-05-19 R1+R2 (reference-lap fetch dedup, post-debounce write log). Combined PR test 2026-05-17 owner-confirmed good; spectated PCC 2026-05-18 confirms architectural state. **809/809 tests pass.** |
-| **Phase 2a mid-session leave detection** (2026-05-18) | DECLINED & REVERTED      | —                                        | Identity-key approach was implemented and tested 2026-05-18, then declined the same day after cost/benefit review (see [`PERFORMANCE_TEST_LOG.md`](./PERFORMANCE_TEST_LOG.md) §4 "Declined for fix"). Working-tree changes reverted 2026-05-19 before any commit landed on the integration branch. Preserved here for institutional memory; no further action.            |
-| **Phase 2a remaining items**                          | R1+R2 LANDED, R3 PENDING | `feat/phase-2a-integration` for R1+R2    | R1 (reference-lap fetch dedup) + R2 (post-debounce write log) landed 2026-05-19. R3 (Empty Dashboard substrate baseline test) is a test run, not code work — pending.                                                                                                                                                                                                     |
-| **Phase 2b — Architectural cleanup (remaining)**      | NOT STARTED              | —                                        | A1, A4, A5, A6, A7 completion, A9. Lower urgency now Standings memory issue is resolved                                                                                                                                                                                                                                                                                   |
-| **Phase 3 — Channel-based bridge**                    | NOT STARTED              | —                                        | Would close remaining processTelemetry p99 gap to <3 ms. Also the layer where per-widget rate throttling lives and where renderer subscribers can wire to sessionLifecycle leave events.                                                                                                                                                                                  |
-| **Phase 4 — Main-process processors**                 | NOT STARTED              | —                                        | Depends on Phase 3                                                                                                                                                                                                                                                                                                                                                        |
-| **Phase 5 — Worker-thread SDK loop**                  | NOT STARTED              | —                                        |                                                                                                                                                                                                                                                                                                                                                                           |
-| **Phase 6 — Native optimisations**                    | DEFERRED                 | —                                        | Only if Phase 4 profiling demands                                                                                                                                                                                                                                                                                                                                         |
+| Phase                                                 | Status                         | Branch / PR                              | Notes                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------------------------------- | ------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 0 replay follow-up**                          | CAPTURED                       | `chore/telemetry-performance-report`     | Deterministic native replay separates observer, empty/no-delivery, empty/delivery, full dashboard, raw payload, and focused widget costs. The existing allowlist is essential; empty delivery has a measurable IPC/store allocation floor; full CPU and memory are dominated downstream by widget/Chromium work. See `TELEMETRY_PERFORMANCE_REPORT.html`.                 |
+| **Phase 0 — Measure**                                 | DONE                           | —                                        | Baseline captured in `PERFORMANCE_TEST_SUMMARY.md`; revised 2026-05-12 after Practice 2                                                                                                                                                                                                                                                                                   |
+| **Phase 0.5 — Stop the bleeding**                     | LANDED (partial)               | merged on `main`                         | S1/S2 landed; S3/S4/L1/L2/L3/P6 still open                                                                                                                                                                                                                                                                                                                                |
+| **Phase 1 — Cheap perf wins + lifecycle bones**       | LANDED                         | merged on `main`                         | P1/P2/P4 typed subs, P5 propsAreEqual, IPC allowlist, SessionLifecycle skeleton, useResetOnDisconnect activated. Practice 3: Primary slope −85%; Standings became the sole remaining leak source                                                                                                                                                                          |
+| **Phase 2a Tier 1 — PitLapStore + LapTimes hygiene**  | LANDED                         | `feat/phase-2a-tier1-allocations`        | H3 + H4. Practice 5: Left renderer slope dropped from +13.0 → +0.7 MB/min (95% reduction, under target). PCC race confirms +5.7 MB/min app slope during 20-min race phase (under <+5 target).                                                                                                                                                                             |
+| **Phase 2a H1 — createStandings rewrite**             | LANDED                         | `feat/phase-2a-h1-standings-rewrite`     | O(N²) → O(N) `find()` removal; `groupStandingsByClass` Map-based; `useReferenceLapStore.getState()` hoisted out of inner loop. 2026-05-16 Clio Cup VIR test: no regression vs Tier 1, Standings CPU 2.3% vs 3.1% baseline. Memory benefit not isolable.                                                                                                                   |
+| **Phase 2a Tier 2a — Disconnect leave cleanup**       | LANDED                         | `feat/phase-2a-tier2-disconnect-cleanup` | `sessionLifecycle._onDisconnect` emits synthetic per-driver leaves; `useDriverLivePositions` clears driver-keyed refs on `running` true→false. **GR86 Miami 2026-05-18 validated**: 196 `Driver left (disconnect)` lines symmetric with 196 joins, 4 `Released N per-driver slots` summaries match 4 disconnect events.                                                   |
+| **Phase 2a Tier 2b — Reference-lap dedup**            | LANDED                         | `feat/phase-2a-tier2-reflap-dedup`       | Main-process in-memory cache + debounced async write. Collapses 3× per-renderer save bursts into one async write. **Note**: PCC, SFL, combined PR, and Miami tests all still show 3× clusters in renderer-side log lines — filesystem-level write count verification still needed to confirm debounce is engaging at the FS layer.                                        |
+| **Phase 2a integration PR**                           | READY TO MERGE                 | `feat/phase-2a-integration`              | Cherry-picks of Tier 1 + H1 + Tier 2a + Tier 2b + post-test docs + 2026-05-17 follow-ups (disconnect log line, empty-Drivers guard, bridge stale-state nulling) + 2026-05-19 R1+R2 (reference-lap fetch dedup, post-debounce write log). Combined PR test 2026-05-17 owner-confirmed good; spectated PCC 2026-05-18 confirms architectural state. **809/809 tests pass.** |
+| **Phase 2a mid-session leave detection** (2026-05-18) | DECLINED & REVERTED            | —                                        | Identity-key approach was implemented and tested 2026-05-18, then declined the same day after cost/benefit review (see [`PERFORMANCE_TEST_LOG.md`](./PERFORMANCE_TEST_LOG.md) §4 "Declined for fix"). Working-tree changes reverted 2026-05-19 before any commit landed on the integration branch. Preserved here for institutional memory; no further action.            |
+| **Phase 2a remaining items**                          | R1+R2 LANDED, R3 PENDING       | `feat/phase-2a-integration` for R1+R2    | R1 (reference-lap fetch dedup) + R2 (post-debounce write log) landed 2026-05-19. R3 (Empty Dashboard substrate baseline test) is a test run, not code work — pending.                                                                                                                                                                                                     |
+| **Phase 2b — Architectural cleanup (remaining)**      | NOT STARTED                    | —                                        | A1, A4, A5, A6, A7 completion, A9. Lower urgency now Standings memory issue is resolved                                                                                                                                                                                                                                                                                   |
+| **Phase 3 — Channel-based bridge**                    | LANDED; MEMORY GATE OPEN       | PRs #646, #649–#652, #656, #658          | Typed rate-aware channels, per-window subscriptions, deterministic replay validation, Fuel processor/renderer migration, conditional legacy telemetry, and performance instrumentation are on `main`. The Fuel-only A/B removed legacy deliveries and reduced app-wide renderer wake-ups by 42.4%; both baseline and candidate still failed the memory-slope gate.        |
+| **Phase 4 — Main-process processors**                 | LANDED; VALIDATED; MEMORY OPEN | PRs #659–#681                            | Phase 4.1 packaged validation preserves CPU/cadence/latency/frame pacing, but reproduces main private-memory growth at +5.60 MB/min (previously +5.82). V8 retained-allocation sampling does not implicate processor snapshots; logging and external/native/V8-capacity accounting are next. Phase 5/6 remain unjustified.                                                |
+| **Phase 5 — Worker-thread SDK loop**                  | NOT STARTED                    | —                                        |                                                                                                                                                                                                                                                                                                                                                                           |
+| **Phase 6 — Native optimisations**                    | DEFERRED                       | —                                        | Only if Phase 4 profiling demands                                                                                                                                                                                                                                                                                                                                         |
 
 ---
 
@@ -231,30 +231,30 @@ validation strategy are documented in
 
 **Core plumbing:**
 
-- [ ] `publishChannel(channel, payload)` / `useChannelSnapshot(channel)` plumbing
-- [ ] Per-window subscription map driven by preload `subscribe(channels[])`. Unsubscribes when widgets unmount or the window closes (replaces today's app-wide `TELEMETRY_ALLOWLIST` with per-window allowlists)
-- [ ] Pilot migration: Fuel widget runs entirely off `'fuel.projection'`
+- [x] `publishChannel(channel, payload)` / `useChannelSnapshot(channel)` plumbing — PR #650
+- [x] Per-window subscription map driven by preload subscriptions, including visibility and lifecycle cleanup — PRs #650 and #656
+- [x] Pilot migration: Fuel widget runs entirely off `'fuel.projection'` — PR #652
 
 **Per-widget update-rate throttling** (new, 2026-05-15):
 
 Today every renderer wakes 25 times/sec regardless of what's mounted. A weather widget only needs ~1 Hz; a brake-input bar wants 60 Hz. The channel bus is the right plumbing layer to control this because it owns the publish path per subscriber.
 
-- [ ] **Rate-aware subscriptions** — `subscribe([{channel, rateHz}])` carries an optional `rateHz` per channel. The main-process publisher coalesces frames so each subscriber receives at most `rateHz` updates/sec for that channel. Subscribers that don't specify a rate default to the channel's native publish rate (25 Hz for telemetry, on-change for session)
-- [ ] **Developer-configurable rate** — Two complementary mechanisms (the same plumbing supports both, decision deferred to Q16 below):
-  - **Per-widget property** — `WidgetDefinition.updateRateHz?: number | Partial<Record<Channel, number>>`. Lets a widget author declare "I'm fine at 5 Hz" without changing global config
-  - **Group / preset** — Named buckets the dashboard config picks from: `{ driverFocused: 25, gapTiming: 10, informational: 2, static: 0 }` (0 = on-change only). Widget authors pick a bucket; advanced users can override per-widget
-- [ ] **Default rate guidance** (codified in `ARCHITECTURE_RULES.md`):
+- [x] **Rate-aware subscriptions** — each renderer/channel subscription carries an optional rate; the channel bus coalesces delivery to the latest snapshot — PR #650
+- [x] **Developer-configurable rate in code** — runtime definitions provide named presets plus per-channel overrides — PR #656:
+  - **Per-channel override** — `WidgetRuntimeDefinition.channelRates` lets a widget author request a specific rate for one channel.
+  - **Group / preset** — `WidgetRuntimeDefinition.ratePreset` selects `driverFocused` (25 Hz), `gapTiming` (5 Hz), `informational` (1 Hz), or `static` (event/snapshot only).
+- [x] **Default rate guidance** codified in runtime definitions and `ARCHITECTURE_RULES.md`:
 
   | Bucket          |      Rate | Example widgets                                  |
   | --------------- | --------: | ------------------------------------------------ |
-  | `driverFocused` |  25–60 Hz | Inputs, Steering, Pedal trace, Relative          |
-  | `gapTiming`     |   5–10 Hz | Standings positions, Sector deltas, Battle       |
-  | `informational` |    1–5 Hz | Weather, Track temperature, Fuel projection      |
+  | `driverFocused` |  25–60 Hz | Rapid driver-state consumers such as Battle      |
+  | `gapTiming`     |   5–10 Hz | Relative, Standings positions, and sector deltas |
+  | `informational` |    1–5 Hz | Weather, track temperature, and Fuel projection  |
   | `static`        | on-change | Track map background, Session bar, Widget chrome |
 
-- [ ] **Settings UI exposure** — Once the mechanism is wired, expose the rate per widget (or the group selection) in the widget's settings panel for power users
-- [ ] **Migration safety** — Default any unmigrated widget to the legacy 25 Hz path so the rollout can be incremental
-- [ ] **Telemetry / instrumentation** — Add a debug overlay or PerfMetrics line that shows wake-ups per renderer per second so we can confirm the throttling is taking effect
+- [ ] **Settings UI exposure** — optional follow-up; developer configuration is complete, but no end-user override is exposed yet
+- [x] **Migration safety** — widgets without migrated runtime metadata remain on the legacy path — PR #656
+- [x] **Telemetry / instrumentation** — channel delivery, legacy delivery, and renderer wake-up metrics are captured by the performance harness — PRs #656 and #658
 
 **Exit criteria for Phase 3:**
 
@@ -265,14 +265,26 @@ Today every renderer wakes 25 times/sec regardless of what's mounted. A weather 
 
 ### Phase 4 — Main-process processors
 
-- [ ] LapTimesProcessor
-- [ ] CarSpeedsProcessor
-- [ ] RelativeGapProcessor
-- [ ] ReferenceLapProcessor
-- [ ] SectorTimingProcessor
-- [ ] FuelProjectionProcessor
-- [ ] StandingsProcessor
-- [ ] Legacy `'telemetry'` channel removed or dev-only
+- [x] FuelProjectionProcessor — PR #651; deliberately pulled forward into the Phase 3 Fuel pilot
+- [x] LapTimesProcessor — PR #659
+- [x] CarSpeedsProcessor — PR #660
+- [x] ReferenceLapProcessor — PR #661; moved ahead of relative gaps because it is their interpolation dependency
+- [x] RelativeGapProcessor — PR #662
+- [x] SectorTimingProcessor — PR #663
+- [x] StandingsProcessor — PR #664
+- [x] Standings live-position projection — PR #665
+- [x] Radio transmit state — `radio.snapshot`, event-driven and demand-activated; PR #666
+- [x] Session-bar telemetry migration — PR #667
+  - [x] Shared race/session timing projection — `session-timing.snapshot`, demand-driven at 5 Hz
+  - [x] Auxiliary items (weather, fuel/units, brake bias, incidents, lap results, player position, and top speed) — `session-bar.snapshot`
+- [x] Direct telemetry migration and legacy removal
+  1. [x] Input and Tachometer — full-precision `driver-controls.snapshot`; merged as PR #668
+  2. [x] Positional, pit-state, and warning consumers — demand-driven `track-state.snapshot`, channel-only Pitlane Helper, maps, Battle, Blind Spot, Rejoin, Faster Cars From Behind, and Slow Car Ahead; merged as PR #669
+  3. [x] Remaining low-frequency consumers; Telemetry Inspector is the sole raw consumer — merged as PR #670
+  4. [x] Replace the generic renderer telemetry IPC/provider with a dedicated demand-driven 10 Hz Telemetry Inspector bridge — merged as PR #671. Packaged re-profiling is tracked separately as the Phase 4.1 evidence gate.
+- [x] Run the complete deterministic replay suite
+- [x] Re-profile packaged Phase 4 against the final Phase 3 baseline on Windows — CPU, cadence, latency, and frame-pacing gates pass; memory gate remains open at +7.63 MB/min working set and +10.47 MB/min private memory
+- [x] Capture a main-process allocation/retention profile focused on processor snapshots, reusable projection buffers, and channel publication ownership — 2.50 MiB sampled live; processors only 161.2 KiB (6.3%), while logging serialization leads at 52.5%; private-memory growth is primarily outside sampled retained JS allocations
 
 ### Phase 5 — Worker-thread SDK loop
 
@@ -280,7 +292,7 @@ Today every renderer wakes 25 times/sec regardless of what's mounted. A weather 
 
 ### Phase 6 — Native optimisations (only if needed)
 
-- [ ] _Pending Phase 4 re-profile_
+- [ ] Deferred: Phase 4 profile found no CPU-hot processor or calculation; do not begin without new evidence
 
 ---
 
@@ -425,7 +437,7 @@ These block specific phases. They are duplicated from `ARCHITECTURE_REVIEW.md` �
 1. Domain folder name: `frontend/domain/` vs `derived/` vs `shared/` _(blocks Phase 2 A1)_
 2. Channel subscription model: push-only vs push+pull _(blocks Phase 3)_
 3. Settings migrator location: per-widget vs central registry _(blocks Phase 2 A6)_
-4. Backwards-compat window for the legacy `'telemetry'` channel _(blocks Phase 4)_
+4. ~~Backwards-compat window for the legacy `'telemetry'` channel~~ — **RESOLVED by PR #671**. Normal widgets have no raw telemetry path; arbitrary raw delivery remains available only through the explicit, demand-driven Telemetry Inspector stream.
 5. Long-term native direction: stay TS vs Rust + napi-rs _(blocks Phase 6)_
 
 ### From the performance summary (still requires investigation)
@@ -463,8 +475,28 @@ LLM agents: read this file at the start of any session that touches the architec
 
 ## 6. Activity log
 
+- **2026-08-09** — Completed final Phase 4.1 packaged Windows validation at `28cbf61e` against Phase 3 `6fbc334`. CPU, telemetry p99/cadence, event-loop latency, and frame pacing remain stable; main-process private growth reproduces at +5.60 MB/min versus the previous +5.82. A matched V8 retained-allocation profile sampled only 161.2 KiB in processor code (6.3%) and was led by logging serialization (52.5%), directing follow-up toward logging plus external/native/V8-capacity accounting. Phase 4 is validated with its memory gate open; Phase 5/6 remain deferred — `chore/phase-4-1-performance-evidence` — captured
+- **2026-08-09** — PR #671 merged, completing Phase 4 delivery: removed the generic renderer telemetry provider/API, isolated raw inspection behind the demand-driven 10 Hz Telemetry Inspector stream, and resolved the legacy compatibility window. Packaged performance validation and the Phase 4.1 stabilization cleanup remain open.
+- **2026-08-09** — Completed the packaged Windows Phase 4 performance re-profile against final Phase 3 commit `6fbc334`. Matched observer/empty/full captures and a 420-second full-dashboard A/B pass CPU, cadence, latency, and frame-pacing gates. Phase 4 working-memory slope is +7.63 MB/min and private-memory slope is +10.47 MB/min; the approximately +2 MB/min regression against Phase 3 is concentrated in main-process private memory. Phase 5 and Phase 6 remain unjustified; main-process allocation retention is the next investigation — documentation updated
+
+- **2026-08-09** — PR #670 merged. Started final Phase 4 cleanup: remove raw telemetry from the normal `IrSdkBridge`, isolate arbitrary telemetry/session inspection behind a per-window 10 Hz diagnostic bridge for Electron and browser sources, and retain raw stores only as the Inspector's presentation state before replay validation and re-profiling — `feat/telemetry-inspector-debug-bridge` — in progress
+
+- **2026-08-09** — PR #669 merged. Started the penultimate Phase 4 slice: migrate all normal remaining widgets and shared updaters to typed snapshots, add a demand-driven `lap-log.snapshot`, and make Telemetry Inspector the sole explicit raw-stream consumer before the final legacy deletion/re-profile PR — `feat/remaining-telemetry-channels` — in progress
+
+- **2026-08-09** — PR #668 merged. Opened PR #669 for the second final Phase 4 slice: a reusable-buffer, demand-driven 25 Hz `track-state.snapshot` for positional, pit-state, and warning data; migrated Pitlane Helper, Track Map, Flat Track Map, Battle, Blind Spot, Rejoin, Faster Cars From Behind, and Slow Car Ahead off the legacy renderer firehose; decoupled session and pit-lane providers from raw telemetry; added processor/runtime tests, Storybook snapshots, and a thirteenth curated replay probe — `feat/positional-status-channels` — in review
+- **2026-08-09** — PR #667 merged. Opened PR #668 for the first of four final Phase 4 slices: Input and Tachometer move to a full-precision, demand-driven `driver-controls.snapshot`; positional/warning consumers, low-frequency/debug consumers, and final legacy deletion follow as separate reviewable PRs — `feat/driver-controls-channel` — in review
+- **2026-08-09** — PR #666 merged. Opened PR #667 for the complete Session Bar migration: shared race/session timing plus auxiliary weather, fuel, incident, lap-result, position, and top-speed data now use demand-driven snapshots wired for live/tape and mock sources — `feat/session-bar-channel` — merged as PR #667
+
+- **2026-08-09** — PR #665 merged. Opened PR #666 for the next explicit Phase 4 slice: move bursty `RadioTransmitCarIdx` state to a demand-activated, event-driven `radio.snapshot` channel while retaining renderer-configured icon persistence. Session-bar migration follows; legacy telemetry restriction/removal remains the Phase 4 exit step — `feat/radio-channel` — in review
+
+- **2026-08-08** — Standings PR #664 merged. Opened PR #665 to move live in-class position calculation from renderer telemetry hooks into the demand-driven Standings processor with reusable projection buffers and conditional renderer subscriptions. Radio and session-bar telemetry remain after this slice — `feat/standings-live-positions` — in review
+
 Append-only. Newest entries at the top. Format: `YYYY-MM-DD — item — branch — outcome`.
 
+- **2026-08-08** — Sector Timing PR #663 merged. Opened Standings PR #664 with a demand-driven 5 Hz typed driver-state snapshot, live/mock runtime wiring, renderer core-data migration, pit-lap/surface tracking, and an eighth curated replay probe. Standings remains on legacy telemetry for its live-position, radio, and session-bar consumers; removing those dependencies and restricting the legacy stream is the remaining Phase 4 work — `feat/standings-processor` — in review
+
+- **2026-08-08** — Relative Gaps PR #662 merged. Opened Sector Timing PR #663 with a demand-driven typed snapshot, clean and incident-inclusive timing views, live/mock runtime wiring, renderer subscription adapter, and a seventh curated replay probe; Standings and legacy telemetry removal remain — `feat/sector-timing-processor` — in review
+- **2026-08-08** — Phase 3 delivery status reconciled with merged PRs #646, #649–#652, #656, and performance evidence #658. Phase 4 progress recorded: Fuel #651, Lap Times #659, Car Speeds #660, and Reference Laps #661 are on `main`; Relative Gaps is in PR #662; Sector Timing, Standings, and legacy telemetry removal remain — `feat/relative-gap-processor` — documentation updated
 - **2026-07-26** — Completed the deterministic single-widget matrix for all 18 enabled widgets. Each 180-second capture replayed the same tape from frame zero and discarded a 60-second warm-up. Renderer CPU leaders: Standings, Fuel, Relative, Input, Battle. Strongest short-run renderer allocation signals: Input, Flag, Weather, Blind Spot, Fuel. HTML report now includes the full table and ranked charts; longer V8 allocation captures remain necessary to confirm memory ownership — `chore/telemetry-performance-report` — captured, validation in progress
 - **2026-07-26** — Phase 0 deterministic replay follow-up: captured observer, empty delivery-off/on, full allowlisted, full raw, and Standings/Fuel/Relative isolates from one 36,000-frame native tape. Main SDK processing averages under 1 ms; delivery into empty windows creates a measurable baseline; full widget/Chromium work dominates CPU and growth; raw payloads regress direct IPC timings by roughly 2× and private-memory slope by 3.65×. Added the standalone HTML investigation report and reproducible A/B flags — `chore/telemetry-performance-report` — captured, validation in progress
 - **2026-07-26** — PB0 packaged performance harness and PB1-PB4 follow-up plan: observer/empty/full/widget-filter modes, structured process/renderer/iRacing metrics, fixed-duration runner, analyzer, regression gates, and replay/live protocol. Controlled 59-car replay established a static/compositor lower bound but exposed incomplete replay telemetry, so telemetry coverage, private memory, deterministic live capture, and PresentMon are explicit gates before targeted or drastic architecture work — `chore/performance-benchmark-harness` — in review

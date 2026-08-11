@@ -1,6 +1,6 @@
 import { OverlayManager } from '../../overlayManager';
 import { ipcMain } from 'electron';
-import type { IrSdkBridge } from '@irdashies/types';
+import type { IrSdkSourceBridge } from '@irdashies/types';
 import logger from '../../logger';
 import {
   createSessionLifecycle,
@@ -9,8 +9,8 @@ import {
 import type { ChannelBus } from '../channelBridge';
 
 let isDemoMode = false;
-let currentBridge: IrSdkBridge | undefined;
-const onBridgeChangedCallbacks = new Set<(bridge: IrSdkBridge) => void>();
+let currentBridge: IrSdkSourceBridge | undefined;
+const onBridgeChangedCallbacks = new Set<(bridge: IrSdkSourceBridge) => void>();
 
 // Singleton lifecycle — created once; survives bridge restarts so subscribers
 // registered before a demo-mode toggle are preserved.
@@ -23,7 +23,7 @@ export function getSessionLifecycle(): SessionLifecycle {
   return sessionLifecycle;
 }
 
-export function getCurrentBridge(): IrSdkBridge | undefined {
+export function getCurrentBridge(): IrSdkSourceBridge | undefined {
   return currentBridge;
 }
 
@@ -31,7 +31,7 @@ export function getIsDemoMode(): boolean {
   return isDemoMode;
 }
 
-export function onBridgeChanged(callback: (bridge: IrSdkBridge) => void) {
+export function onBridgeChanged(callback: (bridge: IrSdkSourceBridge) => void) {
   onBridgeChangedCallbacks.add(callback);
   return () => onBridgeChangedCallbacks.delete(callback);
 }

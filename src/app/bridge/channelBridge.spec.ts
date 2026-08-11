@@ -104,6 +104,19 @@ describe('ChannelBus', () => {
     });
   });
 
+  it('can discard a cached snapshot without affecting subscribers', () => {
+    const { bus } = createBus();
+    bus.publish('snapshot', { value: 7 });
+    bus.clearSnapshot('snapshot');
+    const target = createTarget();
+    bus.subscribe(target, 'snapshot');
+
+    expect(target.send).not.toHaveBeenCalled();
+    expect(() => bus.clearSnapshot('event')).toThrow(
+      'Cannot clear event channel'
+    );
+  });
+
   it('suppresses hidden renderers and removes destroyed renderers', () => {
     const { bus } = createBus();
     const target = createTarget();
@@ -147,6 +160,45 @@ describe('ChannelBus', () => {
     expect(bus.metricsSnapshot()).toEqual({
       publications: { '9:event': 2 },
       deliveries: { '9:event': 2 },
+      channelPublications: { event: 2 },
+      channelDeliveries: { event: 2 },
+    });
+  });
+
+  it('keeps processor demand and publication counts with delivery disabled', () => {
+    const target = createTarget();
+    const bus = new ChannelBus({ registry, deliveryEnabled: false });
+    bus.subscribe(target, 'snapshot');
+    bus.publish('snapshot', 1);
+
+    expect(bus.subscriberCount('snapshot')).toBe(1);
+    expect(target.send).not.toHaveBeenCalled();
+    expect(bus.metricsSnapshot()).toMatchObject({
+      channelPublications: { snapshot: 1 },
+      channelDeliveries: {},
+    });
+  });
+
+  it('does not seed a reactivated renderer when delivery is disabled', () => {
+    const first = createTarget(1);
+    const second = createTarget(2);
+    const bus = new ChannelBus({ registry, deliveryEnabled: false });
+    bus.subscribe(first, 'snapshot');
+    bus.subscribe(second, 'snapshot');
+
+    second.visible = false;
+    bus.rendererBecameHidden(second.id);
+    bus.publish('snapshot', { value: 1 });
+
+    second.visible = true;
+    bus.rendererBecameVisible(second.id);
+
+    expect(bus.subscriberCount('snapshot')).toBe(2);
+    expect(first.send).not.toHaveBeenCalled();
+    expect(second.send).not.toHaveBeenCalled();
+    expect(bus.metricsSnapshot()).toMatchObject({
+      channelPublications: { snapshot: 1 },
+      channelDeliveries: {},
     });
   });
 
@@ -168,26 +220,82 @@ describe('ChannelBus', () => {
     );
   });
 
-  it('retains the latest pending snapshot until a hidden renderer is shown', () => {
+  it('keeps hidden subscriptions registered without counting them as demand', () => {
     const { bus, clock } = createBus();
     const target = createTarget();
+    const subscriberCounts: number[] = [];
+    bus.onSubscriberCountChanged((channel, count) => {
+      if (channel === 'snapshot') subscriberCounts.push(count);
+    });
     bus.subscribe(target, 'snapshot', 10);
     bus.publish('snapshot', 1);
-    clock.advance(20);
     bus.publish('snapshot', 2);
 
     target.visible = false;
-    clock.advance(80);
+    bus.rendererBecameHidden(target.id);
+    clock.advance(100);
     bus.publish('snapshot', 3);
+
+    expect(bus.registeredSubscriberCount('snapshot')).toBe(1);
+    expect(bus.subscriberCount('snapshot')).toBe(0);
     expect(target.send).toHaveBeenCalledTimes(1);
 
     target.visible = true;
     bus.rendererBecameVisible(target.id);
+    expect(bus.registeredSubscriberCount('snapshot')).toBe(1);
+    expect(bus.subscriberCount('snapshot')).toBe(1);
+    expect(target.send).toHaveBeenCalledTimes(1);
+
+    bus.publish('snapshot', 4);
     expect(target.send).toHaveBeenCalledTimes(2);
     expect(target.send).toHaveBeenLastCalledWith(
       CHANNEL_DELIVERY,
       'snapshot',
-      3
+      4
     );
+    expect(subscriberCounts).toEqual([1, 0, 1]);
+  });
+
+  it('seeds a shown renderer from the live cache when other demand remains', () => {
+    const { bus, clock } = createBus();
+    const first = createTarget(1);
+    const second = createTarget(2);
+    bus.subscribe(first, 'snapshot', 10);
+    bus.subscribe(second, 'snapshot', 10);
+    bus.publish('snapshot', 1);
+
+    second.visible = false;
+    bus.rendererBecameHidden(second.id);
+    clock.advance(100);
+    bus.publish('snapshot', 2);
+
+    second.visible = true;
+    bus.rendererBecameVisible(second.id);
+
+    expect(bus.subscriberCount('snapshot')).toBe(2);
+    expect(second.send).toHaveBeenCalledTimes(2);
+    expect(second.send).toHaveBeenLastCalledWith(
+      CHANNEL_DELIVERY,
+      'snapshot',
+      2
+    );
+  });
+
+  it('does not duplicate a fresh snapshot published during reactivation', () => {
+    const { bus } = createBus();
+    const target = createTarget();
+    target.visible = false;
+    bus.subscribe(target, 'snapshot', 10);
+    bus.onSubscriberCountChanged((channel, count) => {
+      if (channel === 'snapshot' && count > 0) {
+        bus.publish('snapshot', 7);
+      }
+    });
+
+    target.visible = true;
+    bus.rendererBecameVisible(target.id);
+
+    expect(target.send).toHaveBeenCalledOnce();
+    expect(target.send).toHaveBeenCalledWith(CHANNEL_DELIVERY, 'snapshot', 7);
   });
 });

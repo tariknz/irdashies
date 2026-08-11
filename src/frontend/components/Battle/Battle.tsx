@@ -12,16 +12,19 @@ import {
   useBattleGapSnapshot,
   useWeekendInfoNumCarClasses,
   useCarIdxSpeed,
-  useTelemetryValue,
+  useTrackStateSnapshot,
   useSessionStore,
 } from '@irdashies/context';
 import { formatTime } from '@irdashies/utils/time';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { useBattleSettings } from './hooks/useBattleSettings';
-import { useHighlightColor, useDriverRelatives } from '../Standings/hooks';
-import { useDriverStandings } from '../Standings/hooks/useDriverPositions';
-import { useDriverLivePositions } from '../Standings/hooks/useDriverLivePositions';
-import type { Standings } from '../Standings/createStandings';
+import {
+  useHighlightColor,
+  useDriverRelatives,
+  useDriverStandings,
+  useDriverLivePositions,
+  type Standings,
+} from '@irdashies/domain';
 
 // Format an absolute gap value for display
 const formatGap = (gap: number | null | undefined, dp: number): string => {
@@ -290,7 +293,7 @@ export const Battle = () => {
   // This is what makes mid-lap overtakes appear immediately in the widget.
   const liveClassPositions = useDriverLivePositions({ enabled: true });
 
-  // useDriverRelatives provides live (60fps, reference-lap interpolated) gap timing.
+  // useDriverRelatives provides live 5 Hz, reference-lap-interpolated gap timing.
   // Use a large buffer so the entire field is included with live deltas attached —
   // we look up the position-neighbours by carIdx, so they must always be present
   // regardless of physical track proximity.
@@ -306,11 +309,13 @@ export const Battle = () => {
   const gapSnapshot = useBattleGapSnapshot();
 
   // Build a carIdx → live delta map from relatives for O(1) lookups.
-  // Updates every frame as relatives recomputes from telemetry.
+  // Updates when the relative-gaps channel publishes.
   const relativeDeltaMap = useMemo(() => {
     const map = new Map<number, number>();
     for (const r of relatives) {
-      if (r.delta != null) map.set(r.carIdx, r.delta);
+      if (r.delta != null && Number.isFinite(r.delta)) {
+        map.set(r.carIdx, r.delta);
+      }
     }
     return map;
   }, [relatives]);
@@ -386,8 +391,8 @@ export const Battle = () => {
   useBattleGapStoreUpdater({ liveGapAhead, liveGapBehind });
 
   // Speed: derived from CarIdxLapDistPct movement, in km/h.
-  const carSpeeds = useCarIdxSpeed();
-  const displayUnits = useTelemetryValue('DisplayUnits');
+  const carSpeeds = useCarIdxSpeed(settings?.speed?.enabled ?? false);
+  const displayUnits = useTrackStateSnapshot()?.displayUnits;
   const resolvedSpeedUnit = resolveSpeedUnit(
     settings?.speed?.unit,
     displayUnits

@@ -1,8 +1,5 @@
 import { usePushToPassStoreUpdater } from '@irdashies/context';
-import {
-  useStandingsSettings,
-  useRelativeSettings,
-} from '../Standings/hooks';
+import { useStandingsSettings, useRelativeSettings } from '@irdashies/domain';
 
 export const PushToPassUpdater = () => {
   const standingsSettings = useStandingsSettings();

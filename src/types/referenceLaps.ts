@@ -16,17 +16,3 @@ export interface ReferenceLap {
   lastTrackedPct: number;
   isCleanLap: boolean;
 }
-
-export interface ReferenceLapBridge {
-  getReferenceLap: (
-    seriesId: number,
-    trackId: number,
-    classId: number
-  ) => Promise<ReferenceLap>;
-  saveReferenceLap: (
-    seriesId: number,
-    trackId: number,
-    classId: number,
-    lap: ReferenceLap
-  ) => Promise<void>;
-}

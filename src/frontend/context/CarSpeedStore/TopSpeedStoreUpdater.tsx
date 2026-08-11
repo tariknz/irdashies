@@ -1,6 +1,18 @@
-import { useEffect, useRef } from 'react';
-import { useTelemetryValue } from '../TelemetryStore/TelemetryStore';
+import { useEffect } from 'react';
+import type { SessionBarSnapshot } from '@irdashies/types';
+import { shallow } from 'zustand/shallow';
+import { useSessionBarSelector } from '../ChannelStore';
 import { useTopSpeedStore } from './TopSpeedStore';
+
+const EMPTY_TOP_SPEEDS: readonly [number | null, number | null, number | null] =
+  [null, null, null];
+
+const selectTopSpeeds = (snapshot: SessionBarSnapshot) =>
+  [
+    snapshot.lastLapTopSpeed,
+    snapshot.sessionBestTopSpeed,
+    snapshot.sessionNum,
+  ] as const;
 
 /**
  * Hook that feeds live Speed + Lap telemetry into the TopSpeedStore.
@@ -8,27 +20,21 @@ import { useTopSpeedStore } from './TopSpeedStore';
  * Multiple callers are safe — updates are idempotent.
  */
 export const useTopSpeedStoreUpdater = (enabled: boolean) => {
-  const speed = useTelemetryValue('Speed');
-  const lap = useTelemetryValue('Lap');
-  const sessionNum = useTelemetryValue('SessionNum');
-  const update = useTopSpeedStore((s) => s.update);
-  const reset = useTopSpeedStore((s) => s.reset);
-  const prevSessionNumRef = useRef<number | null>(null);
+  const selected = useSessionBarSelector(selectTopSpeeds, {
+    equality: shallow,
+  });
+  const hasSnapshot = selected !== undefined;
+  const [lastLapTopSpeed, sessionBestTopSpeed, sessionNum] =
+    selected ?? EMPTY_TOP_SPEEDS;
 
   useEffect(() => {
-    if (sessionNum === undefined) return;
-    const prev = prevSessionNumRef.current;
-    prevSessionNumRef.current = sessionNum;
-    if (prev === null) return; // initial load — no reset
-    if (prev === sessionNum) return;
-    reset();
-  }, [sessionNum, reset]);
-
-  useEffect(() => {
-    if (enabled && speed !== undefined && lap !== undefined) {
-      update(speed, lap, sessionNum ?? null);
-    }
-  }, [speed, lap, sessionNum, update, enabled]);
+    if (!enabled || !hasSnapshot) return;
+    useTopSpeedStore.setState({
+      lastLapTopSpeed,
+      sessionBestTopSpeed,
+      sessionNum,
+    });
+  }, [enabled, hasSnapshot, lastLapTopSpeed, sessionBestTopSpeed, sessionNum]);
 };
 
 /**

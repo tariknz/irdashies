@@ -4,14 +4,15 @@ import {
   TelemetryDecorator,
   DynamicTelemetrySelector,
   TelemetryDecoratorWithConfig,
+  ChannelSnapshotDecorator,
+  standingsStorySnapshot,
+  sessionBarStorySnapshot,
+  trackStateStorySnapshot,
   mockDashboardBridge,
 } from '@irdashies/storybook';
 import {
   DashboardProvider,
-  SessionProvider,
-  TelemetryProvider,
   useLapTimesStoreUpdater,
-  useLapTimesStore,
   usePitLapStoreUpdater,
   useDrivingState,
   useWeekendInfoNumCarClasses,
@@ -22,7 +23,6 @@ import {
   useSessionDrivers,
   type P2PDisplayState,
 } from '@irdashies/context';
-import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
 import type {
   DashboardBridge,
   StandingsConfig,
@@ -34,7 +34,7 @@ import {
   type CalculationResult,
   type RaceResult,
 } from '@irdashies/utils/iratingGain';
-import { useState, useEffect, Fragment, useMemo } from 'react';
+import { useState, Fragment, useMemo } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import type { ResolvedDriverTag } from './hooks/useDriverTagMap';
@@ -243,6 +243,19 @@ const StandingsWithoutHeaderFooter = () => {
 export default {
   component: Standings,
   title: 'widgets/Standings',
+  decorators: [
+    ChannelSnapshotDecorator({
+      'lap-times.snapshot': {
+        lapTimes: [],
+        lapTimeHistory: [],
+        sessionNum: null,
+        version: 0,
+      },
+      'standings.snapshot': standingsStorySnapshot,
+      'track-state.snapshot': trackStateStorySnapshot,
+      'session-bar.snapshot': sessionBarStorySnapshot,
+    }),
+  ],
 } as Meta;
 
 type Story = StoryObj<typeof Standings>;
@@ -1128,28 +1141,22 @@ export const HeaderOnlyAllVisible: Story = {
 
 export const CompactMode: Story = {
   decorators: [
+    TelemetryDecorator(),
     (Story) => (
-      <>
-        <SessionProvider bridge={generateMockDataFromPath()} />
-        <TelemetryProvider bridge={generateMockDataFromPath()} />
-        <DashboardProvider bridge={createMockBridgeWithCompactMode()}>
-          <Story />
-        </DashboardProvider>
-      </>
+      <DashboardProvider bridge={createMockBridgeWithCompactMode()}>
+        <Story />
+      </DashboardProvider>
     ),
   ],
 };
 
 export const CompactUltraMode: Story = {
   decorators: [
+    TelemetryDecorator(),
     (Story) => (
-      <>
-        <SessionProvider bridge={generateMockDataFromPath()} />
-        <TelemetryProvider bridge={generateMockDataFromPath()} />
-        <DashboardProvider bridge={createMockBridgeWithCompactUltraMode()}>
-          <Story />
-        </DashboardProvider>
-      </>
+      <DashboardProvider bridge={createMockBridgeWithCompactUltraMode()}>
+        <Story />
+      </DashboardProvider>
     ),
   ],
 };
@@ -1307,39 +1314,20 @@ const DEMO_LAP_TIMES: Record<number, number> = {
 };
 
 const NUM_CARS = 64;
-
-/**
- * Seeds the LapTimesStore with realistic rolling lap history for demo purposes.
- * Calls updateLapTimes 5 times with slightly varied lap times per car to simulate
- * 5 laps of history.
- */
-const LapHistorySeeder = () => {
-  const updateLapTimes = useLapTimesStore((s) => s.updateLapTimes);
-
-  useEffect(() => {
-    const baseTimes = Array.from({ length: NUM_CARS }, (_, idx) =>
-      DEMO_LAP_TIMES[idx] !== undefined ? DEMO_LAP_TIMES[idx] : 0
-    );
-
-    // Simulate 5 completed laps by calling updateLapTimes with slightly varied
-    // times. Each call must differ from the previous to be recorded as a new lap.
-    const variations = [0, 0.3, -0.2, 0.5, -0.4, 0.1];
-    let prev = baseTimes.map(() => -1);
-
-    for (const variation of variations) {
-      const lapTimes = baseTimes.map((base) =>
-        base > 0 ? base + variation : 0
-      );
-      // Ensure values differ from previous call so the store records the lap
-      if (lapTimes.some((t, i) => t !== prev[i] && t > 0)) {
-        updateLapTimes(lapTimes, 0);
-      }
-      prev = lapTimes;
-    }
-  }, [updateLapTimes]);
-
-  return null;
-};
+const AVG_LAP_TIME_SNAPSHOT = (() => {
+  const lapTimes = Array.from({ length: NUM_CARS }, (_, idx) =>
+    DEMO_LAP_TIMES[idx] !== undefined ? DEMO_LAP_TIMES[idx] : 0
+  );
+  const variations = [0, 0.3, -0.2, 0.5, -0.4, 0.1];
+  return {
+    lapTimes,
+    lapTimeHistory: lapTimes.map((base) =>
+      base > 0 ? variations.map((variation) => base + variation) : []
+    ),
+    sessionNum: 0,
+    version: 1,
+  };
+})();
 
 const baseConfig = {
   badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
@@ -1465,13 +1453,14 @@ export const WithFlags: Story = {
 
 export const AvgLapTime: Story = {
   name: 'Avg Lap Time Column',
-  render: () => (
-    <>
-      <LapHistorySeeder />
-      <Standings />
-    </>
-  ),
+  render: () => <Standings />,
   decorators: [
+    ChannelSnapshotDecorator({
+      'lap-times.snapshot': AVG_LAP_TIME_SNAPSHOT,
+      'standings.snapshot': standingsStorySnapshot,
+      'track-state.snapshot': trackStateStorySnapshot,
+      'session-bar.snapshot': sessionBarStorySnapshot,
+    }),
     TelemetryDecoratorWithConfig(undefined, {
       standings: {
         avgLapTime: { enabled: true, numLaps: 5, timeFormat: 'mixed' },

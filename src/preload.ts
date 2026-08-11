@@ -5,10 +5,10 @@ import { exposeInMainWorld } from './app/rendererExpose';
 import { startRendererPerfMetrics } from './app/rendererPerfMetrics';
 import { exposeChannelBridge } from './app/bridge/channelRendererBridge';
 
+startRendererPerfMetrics();
 exposeBridge();
 exposeInMainWorld();
 exposeChannelBridge();
-startRendererPerfMetrics();
 
 // Local-only feature bridges (git-excluded src/local/). Empty glob => no-op.
 // The negative pattern keeps co-located *.spec.ts test files out of the bundle.

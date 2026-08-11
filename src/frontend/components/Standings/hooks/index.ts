@@ -2,13 +2,16 @@ export * from './useBrakeBias';
 export * from './useCarClassStats';
 export * from './useDriverIncidents';
 export * from './useDriverStandings';
-export * from './useDriverRelatives';
+export {
+  useDriverRelatives,
+  useHighlightColor,
+  useInformationBarSettings,
+  useRadioActiveCarIdxs,
+  useRelativeSettings,
+  useStandingsSettings,
+} from '@irdashies/domain';
 export * from './useSessionBestLapTime';
 export * from './useSessionLapCount';
-export * from './useStandingsSettings';
-export * from './useRelativeSettings';
-export * from './useHighlightColor';
 export * from './useTrackMapSettings';
 export * from './useDriverTagMap';
-export * from './useInformationBarSettings';
-export * from './useRadioActiveCarIdxs';
+export * from './useManufacturerCounts';

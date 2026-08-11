@@ -1,22 +1,11 @@
-import { useSessionStore, useTelemetryValue } from '@irdashies/context';
+import { useSessionBarSnapshot } from '@irdashies/context';
 
 export const useDriverIncidents = () => {
-  const incidentLimit = useSessionStore(
-    (state) => state.session?.WeekendInfo?.WeekendOptions?.IncidentLimit
-  );
-  const incidentWarningInitialLimit = useSessionStore(
-    (state) =>
-      state.session?.WeekendInfo?.WeekendOptions?.IncidentWarningInitialLimit
-  );
-  const incidentWarningSubsequentLimit = useSessionStore(
-    (state) =>
-      state.session?.WeekendInfo?.WeekendOptions?.IncidentWarningSubsequentLimit
-  );
-  const incidents = useTelemetryValue('PlayerCarTeamIncidentCount') || 0;
+  const snapshot = useSessionBarSnapshot();
   return {
-    incidents,
-    incidentLimit,
-    incidentWarningInitialLimit,
-    incidentWarningSubsequentLimit,
+    incidents: snapshot?.incidents ?? 0,
+    incidentLimit: snapshot?.incidentLimit,
+    incidentWarningInitialLimit: snapshot?.incidentWarningInitialLimit,
+    incidentWarningSubsequentLimit: snapshot?.incidentWarningSubsequentLimit,
   };
 };

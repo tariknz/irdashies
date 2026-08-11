@@ -2,8 +2,15 @@ import type { DashboardLayout } from '@irdashies/types';
 
 export const PERF_REPLAY_READY_LOG_MARKER =
   '[PerfRun] Ready for replay publisher';
+export const PERF_VISIBILITY_LOG_PREFIX = '[PerfVisibility:JSON] ';
+export const PERF_CAPTURE_ORIGIN_LOG_PREFIX = '[PerfRunOrigin:JSON] ';
 
 export type PerfOverlayMode = 'full' | 'empty' | 'observer';
+
+export interface PerfVisibilityPhase {
+  visibility: 'visible' | 'hidden';
+  durationSeconds: number;
+}
 
 export interface PerfRunConfig {
   enabled: boolean;
@@ -13,6 +20,8 @@ export interface PerfRunConfig {
   durationSeconds: number;
   telemetryDelivery: 'on' | 'off';
   telemetryPayload: 'allowlisted' | 'raw';
+  channelDelivery: 'on' | 'off';
+  visibilityPhases: PerfVisibilityPhase[];
 }
 
 const PERF_OVERLAY_MODES = new Set<PerfOverlayMode>([
@@ -20,6 +29,21 @@ const PERF_OVERLAY_MODES = new Set<PerfOverlayMode>([
   'empty',
   'observer',
 ]);
+
+export const parsePerfVisibilityPhases = (
+  value: string
+): PerfVisibilityPhase[] =>
+  value
+    .split(',')
+    .map((entry) => entry.trim().match(/^(visible|hidden):(\d+)$/))
+    .filter((match): match is RegExpMatchArray => match !== null)
+    .map((match) => ({
+      visibility: match[1] as PerfVisibilityPhase['visibility'],
+      durationSeconds: Number(match[2]),
+    }))
+    .filter(
+      (phase) => phase.durationSeconds >= 10 && phase.durationSeconds <= 86_400
+    );
 
 export function getPerfRunConfig(
   env: NodeJS.ProcessEnv = process.env
@@ -40,6 +64,9 @@ export function getPerfRunConfig(
     requestedDuration <= 86_400
       ? requestedDuration
       : 0;
+  const visibilityPhases = parsePerfVisibilityPhases(
+    env.PERF_VISIBILITY_PHASES ?? ''
+  );
 
   return {
     enabled: env.PERF_METRICS === '1',
@@ -54,7 +81,19 @@ export function getPerfRunConfig(
     telemetryDelivery: env.PERF_TELEMETRY_DELIVERY === 'off' ? 'off' : 'on',
     telemetryPayload:
       env.PERF_TELEMETRY_PAYLOAD === 'raw' ? 'raw' : 'allowlisted',
+    channelDelivery: env.PERF_CHANNEL_DELIVERY === 'off' ? 'off' : 'on',
+    visibilityPhases,
   };
+}
+
+export function activePerfWidgetTypes(dashboard: DashboardLayout): string[] {
+  return [
+    ...new Set(
+      dashboard.widgets
+        .filter((widget) => widget.enabled)
+        .map((widget) => widget.type ?? widget.id)
+    ),
+  ].sort();
 }
 
 export function createPerfDashboard(
