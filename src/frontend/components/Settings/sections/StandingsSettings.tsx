@@ -59,7 +59,12 @@ const sortableSettings: SortableSetting[] = [
   },
   { id: 'driverTag', label: 'Driver Tag', configKey: 'driverTag' },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
-  { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
+  {
+    id: 'iratingChange',
+    label: 'iRating Change',
+    configKey: 'iratingChange',
+    hasSubSetting: true,
+  },
   {
     id: 'positionChange',
     label: 'Position Change',
@@ -144,6 +149,28 @@ const DisplaySettingsList = ({
             }}
             sortableProps={sortableProps}
           >
+            {setting.hasSubSetting &&
+              setting.configKey === 'iratingChange' &&
+              settings.config.iratingChange.enabled && (
+                <div className="flex items-center justify-between gap-3 pl-8 mt-2 indent-8">
+                  <span className="text-sm text-slate-300">
+                    Estimate During Practice
+                  </span>
+                  <ToggleSwitch
+                    enabled={
+                      settings.config.iratingChange.estimateInPractice ?? false
+                    }
+                    onToggle={(enabled) =>
+                      handleConfigChange({
+                        iratingChange: {
+                          ...settings.config.iratingChange,
+                          estimateInPractice: enabled,
+                        },
+                      })
+                    }
+                  />
+                </div>
+              )}
             {setting.hasSubSetting &&
               setting.configKey === 'lapTimeDeltas' &&
               settings.config.lapTimeDeltas.enabled && (
@@ -287,8 +314,7 @@ const DisplaySettingsList = ({
                         [setting.configKey]: {
                           ...cv,
                           pitLapDisplayMode: e.target.value as
-                            | 'lastPitLap'
-                            | 'lapsSinceLastPit',
+                            'lastPitLap' | 'lapsSinceLastPit',
                         },
                       });
                     }}
@@ -1014,6 +1040,22 @@ export const StandingsSettings = () => {
               {/* STYLING TAB */}
               {activeTab === 'styling' && (
                 <>
+                  <SettingsSection title="Scale">
+                    <SettingSliderRow
+                      title="Widget Scale"
+                      description="Scale the entire standings widget"
+                      value={settings.config.scale ?? 100}
+                      units="%"
+                      min={50}
+                      max={200}
+                      step={5}
+                      onChange={(v) =>
+                        handleConfigChange({
+                          scale: v,
+                        })
+                      }
+                    />
+                  </SettingsSection>
                   <SettingsSection title="Class Header">
                     <SettingToggleRow
                       title="Class Name Background"
@@ -1092,24 +1134,26 @@ export const StandingsSettings = () => {
                             manufacturerStats: {
                               enabled: newValue,
                               cap:
-                                settings.config.classHeaderStyle?.manufacturerStats
-                                  ?.cap ?? 5,
+                                settings.config.classHeaderStyle
+                                  ?.manufacturerStats?.cap ?? 5,
                               showPlayerManufacturer:
-                                settings.config.classHeaderStyle?.manufacturerStats
-                                  ?.showPlayerManufacturer ?? false,
+                                settings.config.classHeaderStyle
+                                  ?.manufacturerStats?.showPlayerManufacturer ??
+                                false,
                             },
                           },
                         })
                       }
                     />
                     {(settings.config.classHeaderStyle?.manufacturerStats
-                      ?.enabled ?? false) && (
+                      ?.enabled ??
+                      false) && (
                       <>
                         <SettingSelectRow
                           title="Max manufacturers to show"
                           value={
-                            settings.config.classHeaderStyle?.manufacturerStats
-                              ?.cap?.toString() ?? 'all'
+                            settings.config.classHeaderStyle?.manufacturerStats?.cap?.toString() ??
+                            'all'
                           }
                           options={[
                             ...Array.from({ length: 10 }, (_, i) => ({

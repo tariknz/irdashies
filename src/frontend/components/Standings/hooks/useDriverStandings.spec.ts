@@ -1,5 +1,40 @@
 import { describe, it, expect } from 'vitest';
-import { calculateLapDeltas } from './useDriverStandings';
+import {
+  calculateLapDeltas,
+  shouldCalculateIRatingChange,
+} from './useDriverStandings';
+
+describe('shouldCalculateIRatingChange', () => {
+  it('calculates changes for official race weekends', () => {
+    expect(shouldCalculateIRatingChange('Race', true, 'Race', false)).toBe(
+      true
+    );
+  });
+
+  it('calculates hypothetical changes in practice when enabled', () => {
+    expect(
+      shouldCalculateIRatingChange('Practice', false, 'Practice', true)
+    ).toBe(true);
+  });
+
+  it('does not calculate hypothetical changes in practice by default', () => {
+    expect(
+      shouldCalculateIRatingChange('Practice', false, 'Practice', false)
+    ).toBe(false);
+  });
+
+  it('does not calculate hypothetical changes during offline testing', () => {
+    expect(shouldCalculateIRatingChange('Test', false, 'Practice', true)).toBe(
+      false
+    );
+  });
+
+  it('does not extend estimates to qualifying sessions', () => {
+    expect(
+      shouldCalculateIRatingChange('Practice', false, 'Open Qualify', true)
+    ).toBe(false);
+  });
+});
 
 describe('calculateLapDeltas', () => {
   it('should return undefined when disabled', () => {

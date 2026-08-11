@@ -16,9 +16,11 @@ export const defaultDashboard: {
         height: 774,
       },
       config: {
+        scale: 100,
         useLivePosition: false,
         iratingChange: {
           enabled: true,
+          estimateInPractice: false,
         },
         positionChange: {
           enabled: false,
