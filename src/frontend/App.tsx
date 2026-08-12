@@ -5,6 +5,7 @@ import {
   DashboardProvider,
   RunningStateProvider,
   SessionProvider,
+  useRunningState,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
@@ -13,6 +14,7 @@ import { ProfileSwitchOverlay } from './components/ProfileSwitchOverlay/ProfileS
 import { OverlayContainer } from './components/OverlayContainer';
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 import { RendererDataProviders } from './components/RendererDataProviders/RendererDataProviders';
+import { WidgetRuntimeProvider } from './widgetRuntime';
 import { Gantry } from './components/Gantry/Gantry';
 import { LapGapStoreUpdater } from '@irdashies/context';
 
@@ -52,13 +54,18 @@ const SettingsApp = () => {
  * HideUIWrapper (whose global hide targets transparent overlays).
  */
 const GantryApp = () => {
+  const { running } = useRunningState();
   return (
-    <ThemeManager>
-      <LapGapStoreUpdater />
-      <div className="w-full h-full bg-slate-900 text-white">
-        <Gantry />
-      </div>
-    </ThemeManager>
+    // The runtime provider supplies Gantry's declared channel rates; without
+    // it every channel hook here would fall back to the unthrottled default.
+    <WidgetRuntimeProvider widgetType="gantry">
+      <ThemeManager>
+        <LapGapStoreUpdater enabled={running} />
+        <div className="w-full h-full bg-slate-900 text-white">
+          <Gantry />
+        </div>
+      </ThemeManager>
+    </WidgetRuntimeProvider>
   );
 };
 
