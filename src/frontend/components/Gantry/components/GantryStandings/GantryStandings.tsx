@@ -2,14 +2,14 @@ import { memo, useCallback, useEffect, useRef, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import logger from '@irdashies/utils/logger';
 import { formatTime } from '@irdashies/utils/time';
-import { Compound } from '../../../Standings/components/Compound/Compound';
-import { DriverRatingBadge } from '../../../Standings/components/DriverRatingBadge/DriverRatingBadge';
+import { Compound } from '../../../shared/Compound/Compound';
+import { DriverRatingBadge } from '../../../shared/DriverRatingBadge/DriverRatingBadge';
 import {
   DriverName as formatDriverName,
   extractDriverName,
-} from '../../../Standings/components/DriverName/DriverName';
+} from '../../../shared/DriverName/DriverName';
 import { type Gap, useHighlightColor } from '@irdashies/domain';
-import { useDriverStandings } from '../../../Standings/hooks/useDriverStandings';
+import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import { Tooltip } from '../Tooltip/Tooltip';
 
 interface Props {

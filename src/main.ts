@@ -155,10 +155,12 @@ app.on('ready', async () => {
     incidentPersistence,
     { isDev: !app.isPackaged }
   );
-  setupRaceControlBridge(incidentRuntime);
-  ipcMain.handle('raceControl:showGantryWindow', () => {
-    overlayManager.createGantryWindow(getOrCreateDefaultDashboard());
-  });
+  setupRaceControlBridge(incidentRuntime, dashboard);
+  // Returns false when the Gantry widget is disabled, so Settings can explain
+  // why the button did nothing instead of appearing to be broken.
+  ipcMain.handle('raceControl:showGantryWindow', () =>
+    overlayManager.createGantryWindow(getOrCreateDefaultDashboard())
+  );
 
   // Local-only feature modules (git-excluded src/local/). Empty glob => no-op.
   // The negative pattern keeps co-located *.spec.ts test files out of the bundle.

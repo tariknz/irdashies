@@ -90,10 +90,10 @@ const mockIncidents: Incident[] = [
 ];
 
 const RaceControlLoader = () => {
-  const setIncidents = useRaceControlStore((s) => s.setIncidents);
+  const hydrateIncidents = useRaceControlStore((s) => s.hydrateIncidents);
   useEffect(() => {
-    setIncidents(mockIncidents);
-  }, [setIncidents]);
+    hydrateIncidents(mockIncidents);
+  }, [hydrateIncidents]);
   return null;
 };
 

@@ -156,9 +156,29 @@ export const GantrySettings = memo(() => {
       defaultConfig,
   });
 
+  // `useState` only reads its initialiser on the first render. If this mounts
+  // before the dashboard has loaded — or the user switches profile — the local
+  // copy keeps the defaults, so the fields below show defaults and the next
+  // edit writes them back over the persisted config. Re-seed whenever the
+  // saved widget changes, using the same guarded set-during-render sync as
+  // BaseSettingsSection so there is no stale first paint.
+  const [prevSaved, setPrevSaved] = useState(savedSettings);
+  if (JSON.stringify(savedSettings) !== JSON.stringify(prevSaved)) {
+    setPrevSaved(savedSettings);
+    if (savedSettings) {
+      setSettings({
+        enabled: savedSettings.enabled ?? true,
+        config:
+          (savedSettings.config as GantryWidgetSettings['config']) ??
+          defaultConfig,
+      });
+    }
+  }
+
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
     () => (localStorage.getItem('gantryTab') as SettingsTabType) || 'options'
   );
+  const [showDisabledHint, setShowDisabledHint] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('gantryTab', activeTab);
@@ -225,9 +245,17 @@ export const GantrySettings = memo(() => {
               <SettingsSection title="Options">
                 <SettingActionButton
                   title="Gantry Window"
-                  description="The Gantry runs in its own resizable window rather than as an on-screen overlay. Use this to bring it back if you closed it."
+                  description={`The Gantry runs in its own resizable window rather than as an on-screen overlay. Use this to bring it back if you closed it.${
+                    showDisabledHint
+                      ? ' Turn the Gantry on above to open its window.'
+                      : ''
+                  }`}
                   label="Show Window"
-                  onClick={() => window.raceControlBridge?.showGantryWindow()}
+                  onClick={() =>
+                    void window.raceControlBridge
+                      ?.showGantryWindow()
+                      .then((opened) => setShowDisabledHint(!opened))
+                  }
                 />
 
                 <SettingDivider />

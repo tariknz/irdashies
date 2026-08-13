@@ -88,5 +88,6 @@ export interface RaceControlBridge {
   clearIncidents: () => Promise<void>;
   updateThresholds: (thresholds: IncidentThresholds) => Promise<void>;
   updateRetention: (retention: 'all' | 5 | 10 | 20) => Promise<void>;
-  showGantryWindow: () => Promise<void>;
+  /** Resolves false when the Gantry widget is disabled and nothing opened. */
+  showGantryWindow: () => Promise<boolean>;
 }

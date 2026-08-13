@@ -5,7 +5,7 @@ import {
   DriverName as formatDriverName,
   extractDriverName,
   type DriverNameFormat,
-} from '../../DriverName/DriverName';
+} from '../../../../shared/DriverName/DriverName';
 
 // Shared timestamp per animation frame — all components in the same ~16ms
 // window get the exact same Date.now(), eliminating per-component phase spread.

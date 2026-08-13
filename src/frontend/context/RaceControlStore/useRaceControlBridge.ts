@@ -1,17 +1,63 @@
 import { useEffect } from 'react';
-import { useRaceControlStore } from './RaceControlStore';
+import logger from '@irdashies/utils/logger';
+import { currentHydrationEpoch, useRaceControlStore } from './RaceControlStore';
 
 export const useRaceControlBridge = () => {
-  const setIncidents = useRaceControlStore((s) => s.setIncidents);
+  const hydrateIncidents = useRaceControlStore((s) => s.hydrateIncidents);
   const addIncident = useRaceControlStore((s) => s.addIncident);
-
-  useEffect(() => {
-    if (!window.raceControlBridge) return;
-    window.raceControlBridge.getIncidents().then(setIncidents);
-  }, [setIncidents]);
+  const clearIncidents = useRaceControlStore((s) => s.clearIncidents);
 
   useEffect(() => {
     if (!window.channelBridge) return;
     return window.channelBridge.subscribe('raceControl.incidents', addIncident);
   }, [addIncident]);
+
+  useEffect(() => {
+    const bridge = window.raceControlBridge;
+    if (!bridge) return;
+
+    let cancelled = false;
+
+    const load = () => {
+      // Snapshot the epoch first: if the list is cleared while this request is
+      // in flight, the response is stale and gets dropped instead of
+      // resurrecting incidents the user just dismissed.
+      const epoch = currentHydrationEpoch();
+      bridge
+        .getIncidents()
+        .then((incidents) => {
+          if (cancelled) return;
+          hydrateIncidents(incidents, epoch);
+        })
+        .catch((err) =>
+          logger.error('[RaceControl] Failed to load incidents', err)
+        );
+    };
+
+    // Reads whatever session main is on right now, which covers a Gantry
+    // opened mid-session. The subscription below only catches later changes.
+    load();
+
+    let lastSessionId: string | undefined;
+    const unsubscribe = window.channelBridge?.subscribe(
+      'raceControl.sessionId',
+      (sessionId) => {
+        // '' means disconnected, not a new session. Leave the list alone so a
+        // disconnect doesn't wipe the incidents the user is still reviewing.
+        if (!sessionId || sessionId === lastSessionId) return;
+        const isFirstValue = lastSessionId === undefined;
+        lastSessionId = sessionId;
+        // Each session has its own incident file, so the previous session's
+        // list must go. Incidents detected between here and the response are
+        // merged in by `hydrateIncidents` rather than lost.
+        if (!isFirstValue) clearIncidents();
+        load();
+      }
+    );
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, [hydrateIncidents, clearIncidents]);
 };

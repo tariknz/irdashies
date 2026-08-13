@@ -3,7 +3,7 @@ import { DriverNameView, DriverNameViewProps } from './DriverNameView';
 
 export default {
   component: DriverNameView,
-  title: 'widgets/Standings/components/DriverNameView',
+  title: 'shared/DriverNameView',
 } as Meta;
 
 type Story = StoryObj<DriverNameViewProps>;

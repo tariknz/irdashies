@@ -121,6 +121,34 @@ describe('IncidentRuntime', () => {
     expect(runtime.getCurrentSessionId()).toBe('');
   });
 
+  it('publishes the session id so a Gantry opened mid-session can reload', () => {
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    const metrics = newMetrics();
+    const persistence = { save: vi.fn() };
+    const lifecycle = createSessionLifecycle();
+    const runtime = new IncidentRuntime(bus, lifecycle, metrics, persistence);
+
+    runtime.onSession({
+      WeekendInfo: { SubSessionID: 777 },
+    } as unknown as Session);
+    expect(publish).toHaveBeenCalledWith('raceControl.sessionId', '777');
+
+    // Republishing an unchanged id would make the renderer drop and reload the
+    // list on every session YAML tick.
+    publish.mockClear();
+    runtime.onSession({
+      WeekendInfo: { SubSessionID: 777 },
+    } as unknown as Session);
+    expect(publish).not.toHaveBeenCalledWith(
+      'raceControl.sessionId',
+      expect.anything()
+    );
+
+    lifecycle._onDisconnect();
+    expect(publish).toHaveBeenCalledWith('raceControl.sessionId', '');
+  });
+
   it('disposes lifecycle subscriptions so later events no longer reach the processor', () => {
     const bus = new ChannelBus();
     const metrics = newMetrics();
