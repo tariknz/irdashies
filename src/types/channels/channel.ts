@@ -25,6 +25,11 @@ export interface ChannelPayloads {
   'track-state.snapshot': TrackStateSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
   'raceControl.incidents': Incident;
+  /**
+   * Fires when the SubSessionID the incident store is keyed on changes; '' when
+   * disconnected. The Gantry reloads its persisted incidents on each change.
+   */
+  'raceControl.sessionId': string;
 }
 
 export interface TrackStateSnapshot {
@@ -370,6 +375,7 @@ export const channelRegistry = {
   },
   'session.lifecycle': { kind: 'event' },
   'raceControl.incidents': { kind: 'event' },
+  'raceControl.sessionId': { kind: 'event' },
 } as const satisfies ChannelRegistry;
 
 export interface ChannelBridge {

@@ -17,7 +17,10 @@ import {
 } from './frontend/context/ChannelStore/ChannelSnapshotStore';
 
 /** Event channels publish one occurrence at a time, so they have no snapshot. */
-type EventChannelName = 'session.lifecycle' | 'raceControl.incidents';
+type EventChannelName =
+  | 'session.lifecycle'
+  | 'raceControl.incidents'
+  | 'raceControl.sessionId';
 type SnapshotChannelName = Exclude<ChannelName, EventChannelName>;
 
 const SNAPSHOT_CHANNELS = [

@@ -59,6 +59,7 @@ export class IncidentRuntime {
         `[RaceControl] session changed: ${this.currentSessionId || '(none)'} -> ${sessionId}`
       );
       this.currentSessionId = sessionId;
+      this.bus.publish('raceControl.sessionId', sessionId);
       this.sessionIdChangeListeners.forEach((cb) => cb(sessionId));
     }
   }
@@ -98,6 +99,11 @@ export class IncidentRuntime {
 
   private onDisconnect(): void {
     this.processor.onLifecycle({ type: 'disconnect' });
-    this.currentSessionId = '';
+    if (this.currentSessionId) {
+      this.currentSessionId = '';
+      // Channel only — `sessionIdChangeListeners` drives retention pruning,
+      // which should run when a session starts, not when the sim goes away.
+      this.bus.publish('raceControl.sessionId', '');
+    }
   }
 }
