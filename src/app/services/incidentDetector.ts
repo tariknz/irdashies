@@ -89,6 +89,21 @@ export class IncidentDetector {
     this.thresholds = thresholds;
   }
 
+  /**
+   * Drops per-car detection state: speed history, debounce counters and
+   * cooldowns. The driver roster and session-type map are session facts rather
+   * than detection state, so they survive.
+   *
+   * Returns how many car states were dropped, for logging.
+   */
+  resetCarStates(): number {
+    const cleared = this.carStates.size;
+    this.carStates.clear();
+    this.frameBuffers.clear();
+    this.lastAnomaly.clear();
+    return cleared;
+  }
+
   updateSession(
     session: {
       WeekendInfo?: {
@@ -152,10 +167,7 @@ export class IncidentDetector {
         : 'unknown';
 
     if (shouldReset) {
-      const prevCarStates = this.carStates.size;
-      this.carStates.clear();
-      this.frameBuffers.clear();
-      this.lastAnomaly.clear();
+      const prevCarStates = this.resetCarStates();
 
       if (isFirstUpdate) {
         logger.info(

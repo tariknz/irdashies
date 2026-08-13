@@ -38,6 +38,7 @@ export class IncidentProcessor implements TelemetryProcessor<Incident[]> {
   private currentSessionNum: number | null = null;
   private lastSession: Session | null = null;
   private emittedThisFrame: Incident[] = [];
+  private wasReplayPlaying = false;
 
   constructor(options: IncidentProcessorOptions = {}) {
     this.detector = new IncidentDetector(
@@ -66,6 +67,25 @@ export class IncidentProcessor implements TelemetryProcessor<Incident[]> {
   onFrame(frame: Telemetry): void {
     this.emittedThisFrame = [];
     if (!this.trackLengthM) return;
+
+    // Reviewing an incident scrubs the sim's replay, and those frames arrive
+    // here looking live. Re-detecting them appends duplicates to the session
+    // file, and because the debounce counters use strict equality a counter can
+    // complete on a different frame than it did live, minting a brand new id
+    // for the same event. Skip detection entirely, and drop the per-car state
+    // on the way back to live so replay speeds cannot seed a live incident.
+    const isReplayPlaying = Boolean(frame.IsReplayPlaying?.value?.[0]);
+    if (isReplayPlaying) {
+      this.wasReplayPlaying = true;
+      return;
+    }
+    if (this.wasReplayPlaying) {
+      this.wasReplayPlaying = false;
+      const cleared = this.detector.resetCarStates();
+      logger.info(
+        `[RaceControl] replay ended; cleared ${cleared} car states before resuming detection`
+      );
+    }
 
     const snap = {
       sessionTime: frame.SessionTime?.value?.[0] ?? 0,
@@ -101,6 +121,16 @@ export class IncidentProcessor implements TelemetryProcessor<Incident[]> {
       this.lastSession = null;
       this.trackLengthM = 0;
       this.currentSessionNum = null;
+      this.wasReplayPlaying = false;
+      this.detector.resetCarStates();
+      return;
+    }
+    // Entering a session must not inherit the previous one's speed history or
+    // debounce counters. sessionNumChange is deliberately not handled here —
+    // onFrame already owns that transition.
+    if (event.type === 'enter') {
+      this.wasReplayPlaying = false;
+      this.detector.resetCarStates();
     }
   }
 

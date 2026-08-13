@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Session, Telemetry } from '@irdashies/types';
 import { IncidentProcessor } from './IncidentProcessor';
 import { IncidentType } from '../../types/raceControl';
@@ -37,6 +37,10 @@ const frame = (overrides: Record<string, unknown> = {}): Telemetry =>
   }) as unknown as Telemetry;
 
 describe('IncidentProcessor', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('does nothing until track length is known from init()', () => {
     const processor = new IncidentProcessor();
     processor.onFrame(frame({ CarIdxOnPitRoad: { value: [true] } }));
@@ -161,6 +165,122 @@ describe('IncidentProcessor', () => {
 
     // Track length is now unknown again, so onFrame should no-op.
     processor.onFrame(frame({ CarIdxOnPitRoad: { value: [true] } }));
+    expect(processor.snapshot()).toEqual([]);
+  });
+
+  describe('in-sim replay', () => {
+    /** Drives a pit entry: one off-pit frame, then pitEntryDebounce (3) on-pit. */
+    const pitEntryAt = (
+      processor: IncidentProcessor,
+      startTime: number,
+      replaying: boolean
+    ) => {
+      const replayFlag = replaying
+        ? { IsReplayPlaying: { value: [true] } }
+        : {};
+      processor.onFrame(
+        frame({
+          CarIdxOnPitRoad: { value: [false] },
+          SessionTime: { value: [startTime] },
+          ...replayFlag,
+        })
+      );
+      for (let i = 1; i <= 3; i++) {
+        processor.onFrame(
+          frame({
+            CarIdxOnPitRoad: { value: [true] },
+            SessionTime: { value: [startTime + i * 0.04] },
+            ...replayFlag,
+          })
+        );
+      }
+    };
+
+    it('emits nothing while a replay is playing', () => {
+      const processor = new IncidentProcessor();
+      processor.init(raceSession());
+
+      pitEntryAt(processor, 100, true);
+
+      expect(processor.snapshot()).toEqual([]);
+    });
+
+    it('does not re-detect an incident when that part of the race is replayed', () => {
+      // The per-type cooldown is wall-clock based (Date.now), not session
+      // time, so without advancing the clock it would suppress the second
+      // detection on its own and this test would pass even with no gate.
+      vi.useFakeTimers();
+      const processor = new IncidentProcessor();
+      processor.init(raceSession());
+
+      pitEntryAt(processor, 100, false);
+      expect(processor.snapshot()).toHaveLength(1);
+
+      // Past the 5s default cooldown, so a replayed re-detection would fire.
+      vi.advanceTimersByTime(10_000);
+
+      pitEntryAt(processor, 200, true);
+      expect(processor.snapshot()).toEqual([]);
+    });
+
+    it('drops stale car state when playback returns to live', () => {
+      const processor = new IncidentProcessor();
+      processor.init(raceSession());
+
+      // Two off-track frames live — one short of the debounce of 3.
+      for (let i = 0; i < 2; i++) {
+        processor.onFrame(
+          frame({
+            CarIdxTrackSurface: { value: [TrackLocation.OffTrack] },
+            SessionTime: { value: [100 + i * 0.04] },
+          })
+        );
+      }
+      expect(processor.snapshot()).toEqual([]);
+
+      // A replayed off-track frame would otherwise be the third in a row.
+      processor.onFrame(
+        frame({
+          CarIdxTrackSurface: { value: [TrackLocation.OffTrack] },
+          IsReplayPlaying: { value: [true] },
+          SessionTime: { value: [300] },
+        })
+      );
+      expect(processor.snapshot()).toEqual([]);
+
+      // Back live: the counter restarted, so this must not complete the
+      // pre-replay debounce either.
+      processor.onFrame(
+        frame({
+          CarIdxTrackSurface: { value: [TrackLocation.OffTrack] },
+          SessionTime: { value: [100.08] },
+        })
+      );
+      expect(processor.snapshot()).toEqual([]);
+    });
+  });
+
+  it('clears car state when entering a session', () => {
+    const processor = new IncidentProcessor();
+    processor.init(raceSession());
+
+    for (let i = 0; i < 2; i++) {
+      processor.onFrame(
+        frame({
+          CarIdxTrackSurface: { value: [TrackLocation.OffTrack] },
+          SessionTime: { value: [100 + i * 0.04] },
+        })
+      );
+    }
+
+    processor.onLifecycle({ type: 'enter', replay: false });
+
+    processor.onFrame(
+      frame({
+        CarIdxTrackSurface: { value: [TrackLocation.OffTrack] },
+        SessionTime: { value: [100.08] },
+      })
+    );
     expect(processor.snapshot()).toEqual([]);
   });
 });
