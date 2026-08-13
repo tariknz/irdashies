@@ -9,7 +9,10 @@ import { generateMockData } from '../../../src/app/bridge/iracingSdk/mock-data/g
 import type { DashboardBridge, IrSdkSourceBridge } from '@irdashies/types';
 import { defaultDashboard } from '@irdashies/types';
 import type { TypedDashboardWidget } from '@irdashies/types';
-import { createPreviewChannelRuntime } from './previewChannelRuntime';
+import {
+  createPreviewChannelRuntime,
+  shieldSourceFromStop,
+} from './previewChannelRuntime';
 
 /**
  * The mock SDK source and the channel runtime built on it are page-lifetime
@@ -25,7 +28,7 @@ let previewSource: IrSdkSourceBridge | undefined;
 
 function getPreviewSource(): IrSdkSourceBridge {
   if (!previewSource) {
-    previewSource = generateMockData();
+    previewSource = shieldSourceFromStop(generateMockData());
     window.channelBridge = createPreviewChannelRuntime(previewSource).bridge;
   }
   return previewSource;

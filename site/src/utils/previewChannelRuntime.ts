@@ -47,6 +47,23 @@ const noopMetrics = {
   markEnd: () => undefined,
 };
 
+/**
+ * Wraps the mock SDK source so consumers cannot tear it down.
+ *
+ * `generateMockData().stop()` clears every registered callback and clears its
+ * interval handles without nulling them, so its "start the interval only once"
+ * guards then block any restart — one `stop()` kills telemetry permanently.
+ * `RunningStateProvider` calls `stop()` on unmount, and StrictMode unmounts
+ * once on mount, so the preview would lose telemetry before a visitor ever
+ * saw it. The preview owns this source for the life of the page; nothing
+ * mounted inside it gets to end that.
+ */
+export function shieldSourceFromStop(
+  source: IrSdkSourceBridge
+): IrSdkSourceBridge {
+  return { ...source, stop: () => undefined };
+}
+
 export function createPreviewChannelRuntime(
   source: IrSdkSourceBridge
 ): PreviewChannelRuntime {

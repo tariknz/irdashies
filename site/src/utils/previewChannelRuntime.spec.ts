@@ -5,7 +5,10 @@ import type {
   Session,
   Telemetry,
 } from '@irdashies/types';
-import { createPreviewChannelRuntime } from './previewChannelRuntime';
+import {
+  createPreviewChannelRuntime,
+  shieldSourceFromStop,
+} from './previewChannelRuntime';
 import mockTelemetry from '../../../src/app/irsdk/node/utils/mock-data/telemetry.json';
 import mockSession from '../../../src/app/irsdk/node/utils/mock-data/session.json';
 
@@ -66,6 +69,11 @@ const createFakeSource = () => {
       telemetryCallbacks.forEach((cb) => cb(frame)),
     telemetrySubscriberCount: () => telemetryCallbacks.size,
     sessionSubscriberCount: () => sessionCallbacks.size,
+    /** Mirrors generateMockData's stop(), which drops every subscriber. */
+    wipeAllSubscribers: () => {
+      telemetryCallbacks.clear();
+      sessionCallbacks.clear();
+    },
   };
 };
 
@@ -176,6 +184,46 @@ describe('createPreviewChannelRuntime', () => {
     } finally {
       visibility.mockRestore();
     }
+  });
+
+  it('survives a consumer calling stop() on the shared source', async () => {
+    // Regression: generateMockData's stop() clears every callback and clears
+    // its interval handles without nulling them, so its "start only once"
+    // guards block any restart — one stop() kills telemetry permanently.
+    // RunningStateProvider calls stop() on unmount and StrictMode unmounts
+    // once on mount, so the preview lost telemetry before it ever rendered.
+    const fake = createFakeSource();
+    let stopCalls = 0;
+    const destructiveSource: IrSdkSourceBridge = {
+      ...fake.source,
+      stop: () => {
+        stopCalls += 1;
+        fake.wipeAllSubscribers();
+      },
+    };
+
+    const runtime = createPreviewChannelRuntime(
+      shieldSourceFromStop(destructiveSource)
+    );
+    const throttles: (number | undefined)[] = [];
+    const unsubscribe = runtime.bridge.subscribe(
+      'driver-controls.snapshot',
+      (payload: DriverControlsSnapshot) => throttles.push(payload.throttle)
+    );
+
+    // What RunningStateProvider does on unmount.
+    shieldSourceFromStop(destructiveSource).stop();
+
+    fake.emitSession(mockSession as unknown as Session);
+    fake.emitFrame(frameAt(100, 0.33));
+    await flushDeliveries();
+
+    expect(stopCalls).toBe(0);
+    expect(fake.telemetrySubscriberCount()).toBe(1);
+    expect(throttles).toContain(0.33);
+
+    unsubscribe();
+    runtime.dispose();
   });
 
   it('releases its telemetry and session subscriptions on dispose', () => {
