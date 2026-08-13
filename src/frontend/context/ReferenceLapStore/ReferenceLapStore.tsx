@@ -24,6 +24,16 @@ export interface ReferenceRegistryState {
     classId: number,
     usePersistence: boolean
   ): ReferenceLap;
+  /**
+   * Retrieves a car's own best clean lap from this session, with no fallback to
+   * the persisted class-best.
+   *
+   * Deliberately unlike getReferenceLap(): the class-best ghost may have been
+   * set by an AI or an opponent, which is a valid reference for a time delta but
+   * not for a speed delta (different line, different car setup) — and it carries
+   * no speed data anyway. Returns null until a clean lap has been set.
+   */
+  getSessionBestLap(carIdx: number): ReferenceLap | null;
   completeSession(): void;
 }
 
@@ -44,6 +54,7 @@ export const useReferenceLapStore = create<ReferenceRegistryState>(
       }
       return persistedLaps.get(classId) ?? EMPTY_REFERENCE_LAP;
     },
+    getSessionBestLap: (carIdx) => get().bestLaps.get(carIdx) ?? null,
     completeSession: () => set(emptyState()),
   })
 );

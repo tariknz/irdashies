@@ -57,24 +57,81 @@ describe('ReferenceLapProcessor', () => {
     expect(save).toHaveBeenCalledOnce();
   });
 
-  it('promotes CarClassID 0 laps in memory but never persists them', () => {
-    // iRacing reports CarClassID 0 in test sessions. Class-0 laps from
-    // different cars would all collide on one seriesId_trackId_0 disk key, so
-    // persistence is skipped — but the session best still has to be usable.
-    const classlessSession = session();
-    classlessSession.DriverInfo.Drivers[0].CarClassID = 0;
+  it('records a km/h speed trace on the player lap only', () => {
+    const twoCarSession = session();
+    twoCarSession.DriverInfo.DriverCarIdx = 0;
+    twoCarSession.DriverInfo.Drivers.push({
+      CarIdx: 1,
+      CarClassID: 12,
+    } as never);
+    const processor = new ReferenceLapProcessor({
+      load: () => null,
+      save: vi.fn(),
+    });
+    processor.init(twoCarSession);
+
+    // Both cars run the same line; only the player has a Speed channel.
+    runCleanLap(
+      processor,
+      (pct, time) =>
+        ({
+          CarIdxLapDistPct: { value: [pct, pct] },
+          CarIdxOnPitRoad: { value: [false, false] },
+          SessionTime: { value: [time] },
+          SessionNum: { value: [1] },
+          Speed: { value: [50] },
+        }) as unknown as Telemetry
+    );
+
+    const bestLaps = new Map(processor.snapshot().bestLaps);
+    const playerSpeeds = bestLaps.get(0)?.speedsKph;
+    expect(playerSpeeds).toBeDefined();
+    // 50 m/s converted to km/h, on every bucket of a complete clean lap.
+    const offBy = Array.from(playerSpeeds ?? []).filter(
+      (speed) => Math.abs(speed - 180) > 0.01
+    );
+    expect(offBy).toEqual([]);
+    expect(bestLaps.get(1)?.speedsKph).toBeUndefined();
+  });
+
+  it('keeps the speed trace in memory but strips it from the saved lap', () => {
+    const playerSession = session();
+    playerSession.DriverInfo.DriverCarIdx = 0;
     const save = vi.fn();
-    const load = vi.fn(() => null);
-    const processor = new ReferenceLapProcessor({ load, save });
-    processor.init(classlessSession);
+    const processor = new ReferenceLapProcessor({ load: () => null, save });
+    processor.init(playerSession);
+    runCleanLap(
+      processor,
+      (pct, time) =>
+        ({
+          CarIdxLapDistPct: { value: [pct] },
+          CarIdxOnPitRoad: { value: [false] },
+          SessionTime: { value: [time] },
+          SessionNum: { value: [1] },
+          Speed: { value: [50] },
+        }) as unknown as Telemetry
+    );
+
+    const [, , , savedLap] = save.mock.calls[0];
+    expect(savedLap.speedsKph).toBeUndefined();
+    // Stripping must not reach through to the live session best.
+    expect(processor.snapshot().bestLaps[0][1].speedsKph).toBeDefined();
+    // The rest of the lap still has to survive the copy.
+    expect(savedLap.finishTime).toBe(60);
+    expect(savedLap.pointPos).toBeInstanceOf(Float32Array);
+  });
+
+  it('leaves speeds unrecorded when the Speed channel is absent', () => {
+    const playerSession = session();
+    playerSession.DriverInfo.DriverCarIdx = 0;
+    const processor = new ReferenceLapProcessor({
+      load: () => null,
+      save: vi.fn(),
+    });
+    processor.init(playerSession);
     runCleanLap(processor, (pct, time) => frame(pct, time));
 
-    expect(processor.snapshot().bestLaps).toHaveLength(1);
-    expect(processor.snapshot().persistedLaps).toEqual([]);
-    expect(save).not.toHaveBeenCalled();
-    // The class is also the disk read key, so a class-0 session must not go
-    // looking for a persisted lap either.
-    expect(load).not.toHaveBeenCalled();
+    expect(processor.snapshot().bestLaps[0]?.[1].speedsKph).toBeUndefined();
   });
 
   it('records offline-session laps in memory without persisting them', () => {
@@ -92,6 +149,26 @@ describe('ReferenceLapProcessor', () => {
 
     expect(processor.snapshot().bestLaps).toHaveLength(1);
     expect(save).not.toHaveBeenCalled();
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it('promotes CarClassID 0 laps in memory but never persists them', () => {
+    // iRacing reports CarClassID 0 in test sessions. Class-0 laps from
+    // different cars would all collide on one seriesId_trackId_0 disk key, so
+    // persistence is skipped — but the session best still has to be usable.
+    const classlessSession = session();
+    classlessSession.DriverInfo.Drivers[0].CarClassID = 0;
+    const save = vi.fn();
+    const load = vi.fn(() => null);
+    const processor = new ReferenceLapProcessor({ load, save });
+    processor.init(classlessSession);
+    runCleanLap(processor, (pct, time) => frame(pct, time));
+
+    expect(processor.snapshot().bestLaps).toHaveLength(1);
+    expect(processor.snapshot().persistedLaps).toEqual([]);
+    expect(save).not.toHaveBeenCalled();
+    // The class is also the disk read key, so a class-0 session must not go
+    // looking for a persisted lap either.
     expect(load).not.toHaveBeenCalled();
   });
 

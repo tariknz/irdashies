@@ -10,6 +10,8 @@ import type { TelemetryProcessor } from './TelemetryProcessor';
 
 const TARGET_SPACING_METERS = 10;
 const VALID_PACE_RATIO = 0.85;
+/** Conversion from the m/s of the raw `Speed` channel to the km/h we store. */
+const MS_TO_KPH = 3.6;
 
 export interface ReferenceLapPersistence {
   load(seriesId: number, trackId: number, classId: number): ReferenceLap | null;
@@ -114,6 +116,8 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
   private persistedLaps = new Map<number, ReferenceLap>();
   private loadedClassIds = new Set<number>();
   private drivers: (Driver | undefined)[] = [];
+  /** Only needed to record speeds — iRacing has no CarIdxSpeed. */
+  private playerCarIdx = -1;
   private seriesId = -1;
   private trackId = -1;
   private sessionIdentity = '';
@@ -135,6 +139,7 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
       Driver | undefined
     )[];
     this.drivers = drivers;
+    this.playerCarIdx = session.DriverInfo?.DriverCarIdx ?? -1;
     if (trackId <= 0 || trackLength <= 0) return;
     if (sessionIdentity === this.sessionIdentity) {
       if (this.loadPersistedForDrivers(session.DriverInfo?.PaceCarIdx ?? -1)) {
@@ -169,6 +174,8 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
     const distances = frame.CarIdxLapDistPct?.value;
     const pitRoad = frame.CarIdxOnPitRoad?.value;
     const sessionTime = numericValue(frame, 'SessionTime');
+    // Raw m/s, player-only — converted to km/h when written below.
+    const playerSpeedMs = numericValue(frame, 'Speed');
     if (
       !Array.isArray(distances) ||
       distances.length === 0 ||
@@ -225,6 +232,16 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
       if (active.isCleanLap) {
         active.times[key] = sessionTime - active.startTime;
         active.pointPos[key] = trackPct;
+
+        // Speed is player-only (no CarIdxSpeed in iRacing). Written from the
+        // same tick as times/pointPos above so the speed/position pairing
+        // carries no skew. Allocated lazily so 63 opponents don't each carry a
+        // dead buffer, and so a lap already in progress when the player's car
+        // index becomes known still starts recording.
+        if (carIdx === this.playerCarIdx && playerSpeedMs !== null) {
+          active.speedsKph ??= new Float32Array(this.pointsCount);
+          active.speedsKph[key] = playerSpeedMs * MS_TO_KPH;
+        }
       }
       active.lastTrackedPct = trackPct;
     }
@@ -255,8 +272,9 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
     // Deliberately not gated on CarClassID: bestLaps is keyed by CarIdx and
     // nothing on this path needs a class. iRacing reports CarClassID 0 in test
     // sessions, which is a real session rather than missing data — gating
-    // promotion on it silently disabled every bestLaps consumer there. The
-    // class is still required for *persistence*, which is keyed by it.
+    // promotion on it silently disabled every bestLaps consumer there (Delta
+    // Speed, SectorDelta's ghost). The class is still required for
+    // *persistence*, which is keyed by it.
     if (!lap.isCleanLap || lap.pointPos.includes(-1) || lapTime <= 0) return;
     const classId = driver.CarClassID;
     const persisted = classId > 0 ? this.persistedLaps.get(classId) : undefined;
@@ -275,7 +293,21 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
     if (classId > 0 && (!persistedTime || lapTime < persistedTime)) {
       this.persistedLaps.set(classId, lap);
       if (this.persistenceEnabled && this.seriesId > 0) {
-        this.persistence.save(this.seriesId, this.trackId, classId, lap);
+        // speedsKph is dropped on the way to disk. Only the in-session best
+        // feeds the speed delta, and a lap loaded from disk is only ever
+        // consulted as the class ghost, which is deliberately rejected as a
+        // speed reference. Persisting it would grow the pretty-printed JSON by
+        // a third — ~58KB per lap at Nordschleife bucket counts — for an array
+        // nothing reads back. Copied rather than deleted in place: this same
+        // object is the live entry in bestLaps.
+        const persistable: ReferenceLap = { ...lap };
+        delete persistable.speedsKph;
+        this.persistence.save(
+          this.seriesId,
+          this.trackId,
+          classId,
+          persistable
+        );
       }
     }
     this.publish();
