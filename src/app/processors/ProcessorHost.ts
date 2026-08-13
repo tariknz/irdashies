@@ -5,8 +5,7 @@ import type {
   SessionLifecycleEvent,
   Telemetry,
 } from '@irdashies/types';
-import logger from '../logger';
-import type { ChannelBus } from '../bridge/channelBridge';
+import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 
@@ -56,12 +55,19 @@ interface ProcessorHostOptions {
   definitions: readonly AnyProcessorDefinition[];
   aggregateReplay?: boolean;
   frameClock?: (frame: Telemetry) => number | undefined;
+  /**
+   * Where processor failures are reported. Defaults to discarding them so this
+   * module stays free of the main-process logger and can run in a browser;
+   * every Electron composition point passes the real logger.
+   */
   logError?: (message: string, error: unknown) => void;
 }
 
 const defaultFrameClock = (frame: Telemetry): number | undefined => {
   const value = frame.SessionTime?.value?.[0];
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+  return typeof value === 'number' && Number.isFinite(value)
+    ? value
+    : undefined;
 };
 
 const snapshotToken = (snapshot: unknown): unknown => {
@@ -91,9 +97,7 @@ export class ProcessorHost {
     this.metrics = options.metrics;
     this.aggregateReplay = options.aggregateReplay ?? false;
     this.frameClock = options.frameClock ?? defaultFrameClock;
-    this.logError =
-      options.logError ??
-      ((message, error) => logger.error(message, error));
+    this.logError = options.logError ?? (() => undefined);
 
     const definitions = this.sortDefinitions(options.definitions);
     this.states = definitions.map((definition) => ({ definition }));
@@ -274,8 +278,7 @@ export class ProcessorHost {
 
   private suspend(state: RuntimeState): void {
     const pausable = state.processor as
-      | (TelemetryProcessor<unknown> & { pause?: () => void })
-      | undefined;
+      (TelemetryProcessor<unknown> & { pause?: () => void }) | undefined;
     this.runSafely(state, 'suspend', () => pausable?.pause?.());
     state.lastProcessedAt = undefined;
     state.lastPublishedToken = undefined;
@@ -417,7 +420,8 @@ export class ProcessorHost {
         throw new Error(`Processor dependency cycle at ${channel}`);
       }
       const definition = byChannel.get(channel);
-      if (!definition) throw new Error(`Unknown processor dependency: ${channel}`);
+      if (!definition)
+        throw new Error(`Unknown processor dependency: ${channel}`);
       visiting.add(channel);
       for (const dependency of definition.dependencies ?? []) visit(dependency);
       visiting.delete(channel);

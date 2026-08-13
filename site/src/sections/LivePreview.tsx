@@ -280,8 +280,14 @@ export function LivePreview() {
           });
         }}
       >
-        <ActiveWidgetSync activeWidgets={activeWidgets} />
-        <SectorTimingUpdater />
+        {/* Headless: these subscribe to channels but render nothing, so a
+            fault here must not be allowed to unmount the whole page. */}
+        <WidgetErrorBoundary widgetName="Widget sync" fallback={null}>
+          <ActiveWidgetSync activeWidgets={activeWidgets} />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary widgetName="Sector timing" fallback={null}>
+          <SectorTimingUpdater />
+        </WidgetErrorBoundary>
         {/* Preview frame */}
         <div className="mx-auto w-full max-w-450 flex-1 flex flex-col min-h-0">
           <div className="relative rounded-sm border border-slate-700/50 overflow-hidden carbon-fiber flex-1 flex flex-col">

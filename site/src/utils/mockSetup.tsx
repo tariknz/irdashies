@@ -6,9 +6,30 @@ import {
   DashboardProvider,
 } from '@irdashies/context';
 import { generateMockData } from '../../../src/app/bridge/iracingSdk/mock-data/generateMockData';
-import type { DashboardBridge } from '@irdashies/types';
+import type { DashboardBridge, IrSdkSourceBridge } from '@irdashies/types';
 import { defaultDashboard } from '@irdashies/types';
 import type { TypedDashboardWidget } from '@irdashies/types';
+import { createPreviewChannelRuntime } from './previewChannelRuntime';
+
+/**
+ * The mock SDK source and the channel runtime built on it are page-lifetime
+ * singletons rather than component state.
+ *
+ * Widgets read `window.channelBridge` while they mount, so the bridge has to
+ * exist before any child renders — and there is exactly one preview per page,
+ * which never unmounts. Keeping them at module scope means StrictMode's
+ * double-invoked render and simulated remount can't produce a second SDK
+ * ticker or leave widgets pointing at a disposed bridge.
+ */
+let previewSource: IrSdkSourceBridge | undefined;
+
+function getPreviewSource(): IrSdkSourceBridge {
+  if (!previewSource) {
+    previewSource = generateMockData();
+    window.channelBridge = createPreviewChannelRuntime(previewSource).bridge;
+  }
+  return previewSource;
+}
 
 function createMockDashboardBridge(
   widgetOverrides?: TypedDashboardWidget[],
@@ -120,7 +141,7 @@ export function LivePreviewProvider({
   widgets,
   onDashboardSaved,
 }: LivePreviewProviderProps) {
-  const bridge = useMemo(() => generateMockData(), []);
+  const bridge = useMemo(() => getPreviewSource(), []);
   const dashboardBridge = useMemo(
     () => createMockDashboardBridge(widgets, onDashboardSaved),
     // eslint-disable-next-line @eslint-react/exhaustive-deps
