@@ -1,11 +1,12 @@
 import { ipcMain } from 'electron';
-import type { Session, Telemetry } from '@irdashies/types';
+import type { DashboardLayout, Session, Telemetry } from '@irdashies/types';
 import { getCurrentBridge, onBridgeChanged } from './iracingSdk/setup';
 import {
   loadIncidents,
   clearIncidents,
   pruneOldSessions,
 } from '../storage/incidentStorage';
+import { onDashboardUpdated } from '../storage/dashboardEvents';
 import type { IncidentThresholds } from '../../types/raceControl';
 import logger from '../logger';
 
@@ -71,7 +72,10 @@ const isValidReplayIncident = (
 const isValidReplaySeconds = (value: unknown): value is number =>
   isFiniteNumber(value) && value >= 0 && value <= 300;
 
-export const setupRaceControlBridge = (runtime: IncidentRuntimeHandle) => {
+export const setupRaceControlBridge = (
+  runtime: IncidentRuntimeHandle,
+  initialDashboard?: DashboardLayout
+) => {
   let retention: 'all' | 5 | 10 | 20 = 'all';
 
   runtime.onSessionIdChanged(() => {
@@ -79,6 +83,31 @@ export const setupRaceControlBridge = (runtime: IncidentRuntimeHandle) => {
       logger.error('[RaceControl] Failed to prune old sessions:', err)
     );
   });
+
+  /**
+   * The detector and the retention window live in the main process, but their
+   * settings are persisted in the dashboard. Without this the renderer's
+   * `updateThresholds`/`updateRetention` calls are the only way values ever
+   * reach main — so after a restart, or a profile switch, detection silently
+   * runs on built-in defaults while Settings shows the saved numbers.
+   */
+  const applyDashboard = (dashboard: DashboardLayout | undefined) => {
+    const config = dashboard?.widgets.find((w) => w.id === 'gantry')?.config;
+    if (!config) return;
+    if (isValidThresholds(config)) {
+      runtime.updateThresholds(config);
+    } else {
+      logger.warn(
+        '[RaceControl] Saved Gantry thresholds are invalid; keeping defaults'
+      );
+    }
+    if (isValidRetention(config.sessionRetention)) {
+      retention = config.sessionRetention;
+    }
+  };
+
+  applyDashboard(initialDashboard);
+  onDashboardUpdated(applyDashboard);
 
   let unsubscribeSession: (() => void) | undefined;
   let unsubscribeTelemetry: (() => void) | undefined;

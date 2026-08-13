@@ -156,6 +156,25 @@ export const GantrySettings = memo(() => {
       defaultConfig,
   });
 
+  // `useState` only reads its initialiser on the first render. If this mounts
+  // before the dashboard has loaded — or the user switches profile — the local
+  // copy keeps the defaults, so the fields below show defaults and the next
+  // edit writes them back over the persisted config. Re-seed whenever the
+  // saved widget changes, using the same guarded set-during-render sync as
+  // BaseSettingsSection so there is no stale first paint.
+  const [prevSaved, setPrevSaved] = useState(savedSettings);
+  if (JSON.stringify(savedSettings) !== JSON.stringify(prevSaved)) {
+    setPrevSaved(savedSettings);
+    if (savedSettings) {
+      setSettings({
+        enabled: savedSettings.enabled ?? true,
+        config:
+          (savedSettings.config as GantryWidgetSettings['config']) ??
+          defaultConfig,
+      });
+    }
+  }
+
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
     () => (localStorage.getItem('gantryTab') as SettingsTabType) || 'options'
   );
