@@ -186,6 +186,43 @@ describe('createPreviewChannelRuntime', () => {
     }
   });
 
+  it('delivers each snapshot as a fresh object, never the live processor state', async () => {
+    // Regression: processors publish `this.latest` — one object mutated in
+    // place each tick. In the real app Electron IPC structured-clones every
+    // delivery, and the frontend's change detection (Object.is in channel
+    // selections, useSyncExternalStore, useMemo deps on snapshot arrays)
+    // depends on that fresh identity. Delivering the live object instead made
+    // every delivery reference-equal to the first, so widgets mounted at page
+    // load froze on the processor's empty initial snapshot until remounted.
+    const fake = createFakeSource();
+    const runtime = createPreviewChannelRuntime(fake.source);
+    const payloads: DriverControlsSnapshot[] = [];
+
+    const unsubscribe = runtime.bridge.subscribe(
+      'driver-controls.snapshot',
+      (payload: DriverControlsSnapshot) => payloads.push(payload)
+    );
+
+    fake.emitSession(mockSession as unknown as Session);
+    fake.emitFrame(frameAt(100, 0.2));
+    await flushDeliveries();
+    fake.emitFrame(frameAt(101, 0.6));
+    await flushDeliveries();
+
+    expect(payloads.length).toBeGreaterThanOrEqual(2);
+    // Distinct identity per delivery — the property all change detection needs.
+    expect(payloads[0]).not.toBe(payloads[1]);
+    // Earlier snapshots must not be retroactively mutated by later processor
+    // ticks. Without the clone every entry here is the same live object, so
+    // at assert time they would all read the final throttle and no payload
+    // holding the earlier value could exist.
+    expect(payloads.some((p) => p.throttle === 0.2)).toBe(true);
+    expect(payloads.some((p) => p.throttle === 0.6)).toBe(true);
+
+    unsubscribe();
+    runtime.dispose();
+  });
+
   it('survives a consumer calling stop() on the shared source', async () => {
     // Regression: generateMockData's stop() clears every callback and clears
     // its interval handles without nulling them, so its "start only once"

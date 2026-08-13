@@ -85,8 +85,18 @@ export function createPreviewChannelRuntime(
     send: (_ipcChannel, name, payload) => {
       const subscription = subscriptions.get(name as ChannelName);
       if (!subscription) return;
+      // Mirror IPC's structured clone. Processors publish `this.latest` — one
+      // object mutated in place — and the frontend's change detection
+      // (`Object.is` in channel selections, useSyncExternalStore, useMemo
+      // deps on snapshot arrays) relies on every delivery having a fresh
+      // identity, which Electron's IPC provides for free. Without this clone
+      // the first delivery is reference-equal to every later one, so widgets
+      // mounted at page load freeze on the processor's empty initial
+      // snapshot. One clone per delivery, shared by all consumers — exactly
+      // what a renderer receives from a single IPC delivery.
+      const cloned = structuredClone(payload);
       for (const consumer of subscription.consumers) {
-        consumer.callback(payload as never);
+        consumer.callback(cloned as never);
       }
     },
   };
