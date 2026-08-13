@@ -24,6 +24,19 @@ const frame = (
     SessionNum: { value: [sessionNum] },
   }) as unknown as Telemetry;
 
+/** Drives a full clean lap for car 0 through the given frame factory. */
+const runCleanLap = (
+  processor: ReferenceLapProcessor,
+  makeFrame: (lapDistPct: number, sessionTime: number) => Telemetry
+) => {
+  processor.onFrame(makeFrame(0.001, 0));
+  processor.onFrame(makeFrame(0.001, 0.01));
+  for (let point = 1; point < 100; point += 1) {
+    processor.onFrame(makeFrame((point + 0.1) / 100, point * 0.6));
+  }
+  processor.onFrame(makeFrame(0.001, 60));
+};
+
 describe('ReferenceLapProcessor', () => {
   it('promotes and persists a complete clean lap', () => {
     const save = vi.fn();
@@ -42,6 +55,40 @@ describe('ReferenceLapProcessor', () => {
     expect(snapshot.bestLaps[0][1].finishTime).toBe(60);
     expect(snapshot.bestLaps[0][1].tangents.every(Number.isFinite)).toBe(true);
     expect(save).toHaveBeenCalledOnce();
+  });
+
+  it('promotes CarClassID 0 laps in memory but never persists them', () => {
+    // iRacing reports CarClassID 0 in test sessions. Class-0 laps from
+    // different cars would all collide on one seriesId_trackId_0 disk key, so
+    // persistence is skipped — but the session best still has to be usable.
+    const classlessSession = session();
+    classlessSession.DriverInfo.Drivers[0].CarClassID = 0;
+    const save = vi.fn();
+    const processor = new ReferenceLapProcessor({ load: () => null, save });
+    processor.init(classlessSession);
+    runCleanLap(processor, (pct, time) => frame(pct, time));
+
+    expect(processor.snapshot().bestLaps).toHaveLength(1);
+    expect(processor.snapshot().persistedLaps).toEqual([]);
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it('records offline-session laps in memory without persisting them', () => {
+    // Offline sessions — AI races, test sessions, hosted practice — report
+    // SeriesID 0. That is a real session, not missing data, so laps must still
+    // be collected; only the disk key (seriesId_trackId_classId) is meaningless
+    // there, so persistence is what gets skipped.
+    const offlineSession = session();
+    offlineSession.WeekendInfo.SeriesID = 0;
+    const save = vi.fn();
+    const load = vi.fn(() => null);
+    const processor = new ReferenceLapProcessor({ load, save });
+    processor.init(offlineSession);
+    runCleanLap(processor, (pct, time) => frame(pct, time));
+
+    expect(processor.snapshot().bestLaps).toHaveLength(1);
+    expect(save).not.toHaveBeenCalled();
+    expect(load).not.toHaveBeenCalled();
   });
 
   it('rejects a lap that enters pit road', () => {
