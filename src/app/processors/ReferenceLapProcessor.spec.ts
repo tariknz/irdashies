@@ -64,13 +64,17 @@ describe('ReferenceLapProcessor', () => {
     const classlessSession = session();
     classlessSession.DriverInfo.Drivers[0].CarClassID = 0;
     const save = vi.fn();
-    const processor = new ReferenceLapProcessor({ load: () => null, save });
+    const load = vi.fn(() => null);
+    const processor = new ReferenceLapProcessor({ load, save });
     processor.init(classlessSession);
     runCleanLap(processor, (pct, time) => frame(pct, time));
 
     expect(processor.snapshot().bestLaps).toHaveLength(1);
     expect(processor.snapshot().persistedLaps).toEqual([]);
     expect(save).not.toHaveBeenCalled();
+    // The class is also the disk read key, so a class-0 session must not go
+    // looking for a persisted lap either.
+    expect(load).not.toHaveBeenCalled();
   });
 
   it('records offline-session laps in memory without persisting them', () => {
