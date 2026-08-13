@@ -1,5 +1,5 @@
 import { memo, useMemo, useState } from 'react';
-import { useDriverStandings } from '../../../Standings/hooks/useDriverStandings';
+import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import { useLapGapStore } from '@irdashies/context';
 import { LapGapChart } from './LapGapChart';
 import type { ChartDriver } from './LapGapChart';

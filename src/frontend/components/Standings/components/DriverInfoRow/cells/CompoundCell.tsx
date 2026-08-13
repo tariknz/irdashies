@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Compound } from '../../Compound/Compound';
+import { Compound } from '../../../../shared/Compound/Compound';
 
 interface CompoundCellProps {
   tireCompound?: number;

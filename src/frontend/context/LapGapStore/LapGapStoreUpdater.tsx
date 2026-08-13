@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef } from 'react';
 import { useLapGapStore } from './LapGapStore';
-import { useDriverStandings } from '../../components/Standings/hooks/useDriverStandings';
+import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import { useSessionLifecycle } from '../ChannelStore/useSessionLifecycle';
 import {
   standingsSelectors,

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChannelBridge, SessionLifecycleEvent } from '@irdashies/types';
 import { LapGapStoreUpdater } from './LapGapStoreUpdater';
 import { useLapGapStore } from './LapGapStore';
-import { useDriverStandings } from '../../components/Standings/hooks/useDriverStandings';
+import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 
 // Backed by useSyncExternalStore (like the real channel hook) so that
 // emitLap triggers a genuine re-render of the memoized updater component,
@@ -30,7 +30,7 @@ vi.mock('../ChannelStore/useStandingsSnapshot', () => ({
     ),
 }));
 
-vi.mock('../../components/Standings/hooks/useDriverStandings', () => ({
+vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({
   useDriverStandings: vi.fn(),
 }));
 
