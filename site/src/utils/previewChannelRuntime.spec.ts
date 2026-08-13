@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type {
   DriverControlsSnapshot,
   IrSdkSourceBridge,
@@ -142,6 +142,40 @@ describe('createPreviewChannelRuntime', () => {
     expect(throttles.length).toBe(deliveredWhileSubscribed);
 
     runtime.dispose();
+  });
+
+  it('delivers even while the document reports hidden', async () => {
+    // Regression: gating the renderer target on `document.visibilityState`
+    // meant a subscription created while hidden never fired
+    // notifySubscriberCount, so ProcessorHost never activated the processor
+    // and the preview stayed empty forever. Documents can report hidden while
+    // still painting (occluded tab, automation), so delivery must not depend
+    // on it.
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden');
+
+    try {
+      const fake = createFakeSource();
+      const runtime = createPreviewChannelRuntime(fake.source);
+      const throttles: (number | undefined)[] = [];
+
+      const unsubscribe = runtime.bridge.subscribe(
+        'driver-controls.snapshot',
+        (payload: DriverControlsSnapshot) => throttles.push(payload.throttle)
+      );
+
+      fake.emitSession(mockSession as unknown as Session);
+      fake.emitFrame(frameAt(100, 0.42));
+      await flushDeliveries();
+
+      expect(throttles).toContain(0.42);
+
+      unsubscribe();
+      runtime.dispose();
+    } finally {
+      visibility.mockRestore();
+    }
   });
 
   it('releases its telemetry and session subscriptions on dispose', () => {

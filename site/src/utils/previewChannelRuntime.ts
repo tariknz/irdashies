@@ -57,10 +57,14 @@ export function createPreviewChannelRuntime(
   const target: RendererTarget = {
     id: 1,
     isDestroyed: () => disposed,
-    // Mirrors a hidden BrowserWindow: while the visitor is on another tab the
-    // bus stops delivering, so the preview costs nothing in the background.
-    isVisible: () =>
-      typeof document === 'undefined' || document.visibilityState === 'visible',
+    // Always active. Gating this on `document.visibilityState` looks like a
+    // free CPU saving but is a trap: a subscription created while the document
+    // reports hidden never fires `notifySubscriberCount`, so ProcessorHost
+    // never activates the processor and the preview stays permanently empty.
+    // A document can report hidden while still painting (occluded tab,
+    // automation, some embeds). The saving is redundant anyway — browsers
+    // already throttle timers and pause rAF for genuinely backgrounded tabs.
+    isVisible: () => true,
     send: (_ipcChannel, name, payload) => {
       const subscription = subscriptions.get(name as ChannelName);
       if (!subscription) return;
@@ -69,15 +73,6 @@ export function createPreviewChannelRuntime(
       }
     },
   };
-
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === 'visible') {
-      bus.rendererBecameVisible(target.id);
-    } else {
-      bus.rendererBecameHidden(target.id);
-    }
-  };
-  document.addEventListener('visibilitychange', handleVisibilityChange);
 
   // ProcessorHost only consumes the subscription half of the lifecycle. The
   // `_`-prefixed members are the main process's own ingest path and are never
@@ -177,7 +172,6 @@ export function createPreviewChannelRuntime(
     dispose: () => {
       if (disposed) return;
       disposed = true;
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       stopTelemetry?.();
       stopSession?.();
       host.dispose();
