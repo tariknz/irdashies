@@ -21,6 +21,7 @@ import {
   refreshSessionDataForVisibleWindow,
   type RendererDataSubscriptions,
 } from './rendererDataVisibility';
+import { hardenWindow } from './hardenWindow';
 
 // used for Hot Module Replacement
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
@@ -39,6 +40,18 @@ const isAllowedGuestHost = (urlStr: string): boolean => {
   }
 };
 
+/**
+ * Baseline hardening for every window that loads the app preload: deny popups
+ * (external links go to the system browser) and refuse to navigate away from
+ * the bundle.
+ */
+function applyBaselineSecurity(window: BrowserWindow, label: string): void {
+  hardenWindow(window, {
+    devServerUrl: MAIN_WINDOW_VITE_DEV_SERVER_URL,
+    label,
+  });
+}
+
 function getIconPath(): string {
   const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
   const basePath = isDev
@@ -54,6 +67,8 @@ export class OverlayManager {
   private displayFullBounds = new Map<number, Electron.Rectangle>();
   private currentSettingsWindow: BrowserWindow | undefined;
   private gantryWindow: BrowserWindow | undefined;
+  /** Last-applied enabled state, so syncGantryWindow only acts on changes. */
+  private gantryEnabled = false;
   private currentDashboard: DashboardLayout | undefined;
   private isLocked = true;
   private isQuitting = false;
@@ -149,7 +164,7 @@ export class OverlayManager {
     }
 
     // Separate framed window, only created when the Gantry widget is enabled.
-    this.createGantryWindow(dashboardLayout);
+    this.syncGantryWindow(dashboardLayout);
   }
 
   /**
@@ -213,6 +228,8 @@ export class OverlayManager {
     });
 
     browserWindow.setBounds(expectedBounds);
+
+    applyBaselineSecurity(browserWindow, `Display ${display.id}`);
 
     // Harden the <webview> used by the Heart Rate widget: keep the guest on
     // secure defaults and only allow HypeRate hosts to attach.
@@ -745,6 +762,9 @@ export class OverlayManager {
   public closeOrCreateWindows(dashboardLayout?: DashboardLayout): void {
     if (dashboardLayout) {
       this.ensureDisplayWindows(dashboardLayout);
+      // The Gantry is not an OverlayContainer widget, so it has to be opened
+      // and closed here rather than by the renderer toggling visibility.
+      this.syncGantryWindow(dashboardLayout);
       return;
     }
     if (this.displayWindows.size === 0) {
@@ -919,16 +939,29 @@ export class OverlayManager {
    * `#/gantry` route instead of being rendered by the OverlayContainer.
    * No-op unless the Gantry widget is enabled in the dashboard.
    */
-  public createGantryWindow(dashboardLayout?: DashboardLayout): void {
+  /**
+   * Open (or focus) the Gantry window.
+   *
+   * @returns `false` when the Gantry widget is disabled and nothing was
+   * opened, so callers — notably the Settings "Show Window" button — can say
+   * why instead of silently doing nothing.
+   */
+  public createGantryWindow(dashboardLayout?: DashboardLayout): boolean {
     const gantryWidget = dashboardLayout?.widgets.find(
       (w) => w.id === 'gantry'
     );
-    if (!gantryWidget?.enabled) return;
+    if (!gantryWidget?.enabled) {
+      logger.info(
+        '[OverlayManager] Gantry window requested but the widget is disabled'
+      );
+      return false;
+    }
 
     if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
+      if (this.gantryWindow.isMinimized()) this.gantryWindow.restore();
       this.gantryWindow.show();
       this.gantryWindow.focus();
-      return;
+      return true;
     }
 
     const browserWindow = new BrowserWindow({
@@ -946,6 +979,7 @@ export class OverlayManager {
     });
 
     this.gantryWindow = browserWindow;
+    applyBaselineSecurity(browserWindow, 'Gantry');
 
     browserWindow.once('ready-to-show', () => {
       if (browserWindow.isDestroyed()) return;
@@ -964,6 +998,55 @@ export class OverlayManager {
     browserWindow.on('closed', () => {
       this.gantryWindow = undefined;
     });
+
+    // Without this a renderer crash leaves a live-but-blank BrowserWindow that
+    // still receives every publishMessage, and the stale reference makes the
+    // next create call early-return on it.
+    browserWindow.webContents.on('render-process-gone', (_event, details) => {
+      logger.error(
+        `[OverlayManager] Renderer process gone for Gantry: reason=${details.reason}, exitCode=${details.exitCode}`
+      );
+      if (this.gantryWindow === browserWindow) {
+        this.gantryWindow = undefined;
+      }
+      if (!browserWindow.isDestroyed()) browserWindow.destroy();
+      if (this.isQuitting) return;
+
+      setTimeout(() => {
+        if (this.isQuitting) return;
+        logger.info('[OverlayManager] Recreating Gantry renderer');
+        this.createGantryWindow(this.currentDashboard);
+      }, 1000);
+    });
+
+    return true;
+  }
+
+  /**
+   * Bring the Gantry window in line with the dashboard: open it when the widget
+   * is enabled, close it when it isn't. Called on every dashboard update, so
+   * toggling the widget or switching profile takes effect without a restart.
+   */
+  public syncGantryWindow(dashboardLayout?: DashboardLayout): void {
+    const enabled = !!dashboardLayout?.widgets.find((w) => w.id === 'gantry')
+      ?.enabled;
+    const wasEnabled = this.gantryEnabled;
+    this.gantryEnabled = enabled;
+
+    if (enabled) {
+      // Open on the disabled -> enabled edge only. A window the user closed by
+      // hand should stay closed while they edit unrelated settings.
+      if (!wasEnabled) this.createGantryWindow(dashboardLayout);
+      return;
+    }
+
+    if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
+      logger.info(
+        '[OverlayManager] Closing Gantry window — widget disabled in the active dashboard'
+      );
+      this.gantryWindow.destroy();
+    }
+    this.gantryWindow = undefined;
   }
 
   public createSettingsWindow(
@@ -1008,6 +1091,7 @@ export class OverlayManager {
     );
 
     this.currentSettingsWindow = browserWindow;
+    applyBaselineSecurity(browserWindow, 'Settings');
 
     // Reveal the window once its content is ready, unless it should start
     // minimized to the system tray (the "Start minimized" general setting).

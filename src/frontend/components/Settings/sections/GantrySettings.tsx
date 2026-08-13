@@ -178,6 +178,7 @@ export const GantrySettings = memo(() => {
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
     () => (localStorage.getItem('gantryTab') as SettingsTabType) || 'options'
   );
+  const [showDisabledHint, setShowDisabledHint] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('gantryTab', activeTab);
@@ -244,9 +245,17 @@ export const GantrySettings = memo(() => {
               <SettingsSection title="Options">
                 <SettingActionButton
                   title="Gantry Window"
-                  description="The Gantry runs in its own resizable window rather than as an on-screen overlay. Use this to bring it back if you closed it."
+                  description={`The Gantry runs in its own resizable window rather than as an on-screen overlay. Use this to bring it back if you closed it.${
+                    showDisabledHint
+                      ? ' Turn the Gantry on above to open its window.'
+                      : ''
+                  }`}
                   label="Show Window"
-                  onClick={() => window.raceControlBridge?.showGantryWindow()}
+                  onClick={() =>
+                    void window.raceControlBridge
+                      ?.showGantryWindow()
+                      .then((opened) => setShowDisabledHint(!opened))
+                  }
                 />
 
                 <SettingDivider />
