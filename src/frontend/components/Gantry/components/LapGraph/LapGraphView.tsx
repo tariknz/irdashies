@@ -31,7 +31,15 @@ export const LapGraphView = memo(() => {
   }, [classes]);
 
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-  const activeClassId = selectedClassId ?? defaultClassId;
+  // A class the user picked can disappear — a multi-class session dropping to
+  // one class hides the selector entirely — which would otherwise leave the
+  // chart permanently empty. Fall back to the default whenever the selection
+  // is no longer on the grid.
+  const activeClassId =
+    selectedClassId !== null &&
+    classes.some((c) => c.classId === selectedClassId)
+      ? selectedClassId
+      : defaultClassId;
 
   const activeClass = classes.find((c) => c.classId === activeClassId);
   const activeColorHex = activeClass
