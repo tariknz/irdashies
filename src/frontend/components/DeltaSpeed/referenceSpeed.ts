@@ -24,9 +24,14 @@ export function hasCompleteSpeedTrace(lap: ReferenceLap): boolean {
   if (cached !== undefined) return cached;
 
   const speeds = lap.speedsKph;
-  let usable = !!speeds && speeds.length > 0;
+  // Length must match the lap's bucket count, not merely be non-empty: a
+  // shorter trace reads as complete here while interpolation returns null for
+  // every bucket past its end, which is the blanking this guard exists to
+  // prevent. The recorder always allocates pointsCount, so this is an
+  // invariant check rather than a known failure.
+  let usable = !!speeds && speeds.length === lap.pointsCount;
 
-  if (speeds) {
+  if (speeds && usable) {
     for (const speed of speeds) {
       if (speed <= 0) {
         usable = false;

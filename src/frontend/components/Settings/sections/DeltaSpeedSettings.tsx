@@ -33,6 +33,27 @@ export const DeltaSpeedSettings = () => {
       defaultConfig,
   });
 
+  // useState only reads its initialiser on the first render, and the Loading
+  // return below does not re-run it. Mounting before the dashboard has loaded —
+  // or switching profile — would otherwise leave this holding defaults, and
+  // BaseSettingsSection persists the whole settings object, so the next edit to
+  // any one control would write those defaults over the saved config. Re-seed
+  // whenever the saved widget changes, using the same guarded
+  // set-during-render sync as BaseSettingsSection so there is no stale paint.
+  const [prevSaved, setPrevSaved] = useState(savedSettings);
+  if (JSON.stringify(savedSettings) !== JSON.stringify(prevSaved)) {
+    setPrevSaved(savedSettings);
+    if (savedSettings) {
+      setSettings({
+        id: SETTING_ID,
+        enabled: savedSettings.enabled ?? false,
+        config:
+          (savedSettings.config as DeltaSpeedWidgetSettings['config']) ??
+          defaultConfig,
+      });
+    }
+  }
+
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
     () =>
       (localStorage.getItem('deltaSpeedTab') as SettingsTabType) || 'options'

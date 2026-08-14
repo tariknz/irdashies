@@ -1,4 +1,4 @@
-import { memo, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { speedFromKph } from '@irdashies/utils/units';
 import { applyUpdateThreshold, clampMagnitude } from '../displayValue';
 
@@ -76,17 +76,22 @@ export const DeltaSpeedBox = memo(
     // exact range a consistent driver operates in.
     const intensity = Math.min(Math.abs(rawValue) / scale, 1);
 
-    // Written during render rather than in an effect: this updates at the
-    // track-state channel's 25Hz and an effect would cost a second render per
-    // tick. applyUpdateThreshold is idempotent, so a repeated render with the
-    // same input is a no-op.
+    // The held value is the last *committed* reading, so the threshold is
+    // always measured against something the user actually saw. Recorded in an
+    // effect rather than during render: React can discard an interrupted
+    // render, and a render-phase write would leave the ref holding a value that
+    // was never displayed, skewing the next comparison. Writing a ref from an
+    // effect costs no extra render — only setState would — so this keeps the
+    // 25Hz track-state path at one render per tick.
     const heldRef = useRef<number | null>(null);
     const shownValue = applyUpdateThreshold(
       clampMagnitude(rawValue, cap),
       heldRef.current,
       updateThreshold
     );
-    heldRef.current = shownValue;
+    useEffect(() => {
+      heldRef.current = shownValue;
+    }, [shownValue]);
 
     const isFaster = shownValue >= 0;
     const sign = isFaster ? '+' : '-';

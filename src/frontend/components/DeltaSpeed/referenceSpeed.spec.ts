@@ -107,6 +107,20 @@ describe('hasCompleteSpeedTrace', () => {
     expect(hasCompleteSpeedTrace(partial)).toBe(false);
   });
 
+  it('rejects a trace shorter than the lap bucket count', () => {
+    // Every entry is a real speed, so a length-agnostic check would call this
+    // complete — and then interpolation would return null for every bucket past
+    // the end of the trace, blanking the widget across the tail of the lap.
+    const short = buildMockSpeedLap();
+    const speeds = speedsOf(short);
+    (short as { speedsKph?: Float32Array }).speedsKph = speeds.slice(
+      0,
+      speeds.length - 1
+    );
+
+    expect(hasCompleteSpeedTrace(short)).toBe(false);
+  });
+
   it('caches by lap identity', () => {
     const lap = buildMockSpeedLap();
     expect(hasCompleteSpeedTrace(lap)).toBe(true);

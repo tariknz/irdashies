@@ -99,9 +99,16 @@ function LiveDataSeeder() {
     if (playerCarIdx == null) return;
     // Lap geometry (pointsCount, interval) rides on the lap itself; the
     // renderer store only mirrors the maps published by the main process.
+    const previousBestLaps = useReferenceLapStore.getState().bestLaps;
     useReferenceLapStore.setState({
       bestLaps: new Map([[playerCarIdx, buildMockSpeedLap()]]),
     });
+    // The store is a module singleton shared by every story. Without this,
+    // navigating from a live story to NoReferenceLap would leave the seeded lap
+    // in place and render a delta instead of the empty state it exists to show.
+    return () => {
+      useReferenceLapStore.setState({ bestLaps: previousBestLaps });
+    };
   }, [playerCarIdx]);
 
   useEffect(
@@ -155,9 +162,22 @@ export const LiveBarOnly: Story = {
  * nothing to show, rather than disappearing and leaving a gap that reads as a
  * broken or misconfigured widget.
  */
+/** Belt and braces: assert the empty state rather than inheriting it. */
+function NoReferenceLapSeeder() {
+  useEffect(() => {
+    useReferenceLapStore.setState({ bestLaps: new Map() });
+  }, []);
+  return null;
+}
+
 export const NoReferenceLap: Story = {
   decorators: [
     ChannelSnapshotDecorator({ 'track-state.snapshot': mockTrackState() }),
   ],
-  render: (args) => <DeltaSpeed {...args} />,
+  render: (args) => (
+    <>
+      <NoReferenceLapSeeder />
+      <DeltaSpeed {...args} />
+    </>
+  ),
 };
