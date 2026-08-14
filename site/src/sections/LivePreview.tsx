@@ -11,6 +11,7 @@ import {
 import { WIDGET_MAP, type WidgetId } from '../../../src/frontend/WidgetIndex';
 import { WIDGET_NAMES } from '../../../src/frontend/constants/widgetNames';
 import { SectorTimingUpdater } from '../../../src/frontend/components/OverlayContainer/SectorTimingUpdater';
+import { WidgetRuntimeProvider } from '../../../src/frontend/widgetRuntime';
 import { defaultDashboard } from '@irdashies/types';
 
 // Site-local components and utilities
@@ -63,7 +64,9 @@ function MobileWidget({
     <div className="relative w-full h-full">
       <WidgetFrame>
         <WidgetErrorBoundary widgetName={label}>
-          <Component {...config} />
+          <WidgetRuntimeProvider widgetType={widgetId}>
+            <Component {...config} />
+          </WidgetRuntimeProvider>
         </WidgetErrorBoundary>
       </WidgetFrame>
     </div>
@@ -282,10 +285,18 @@ export function LivePreview() {
       >
         {/* Headless: these subscribe to channels but render nothing, so a
             fault here must not be allowed to unmount the whole page. */}
-        <WidgetErrorBoundary widgetName="Widget sync" fallback={null}>
+        <WidgetErrorBoundary
+          widgetName="Widget sync"
+          fallback={null}
+          resetAfterMs={2000}
+        >
           <ActiveWidgetSync activeWidgets={activeWidgets} />
         </WidgetErrorBoundary>
-        <WidgetErrorBoundary widgetName="Sector timing" fallback={null}>
+        <WidgetErrorBoundary
+          widgetName="Sector timing"
+          fallback={null}
+          resetAfterMs={2000}
+        >
           <SectorTimingUpdater />
         </WidgetErrorBoundary>
         {/* Preview frame */}

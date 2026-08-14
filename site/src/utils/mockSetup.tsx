@@ -12,6 +12,7 @@ import type { TypedDashboardWidget } from '@irdashies/types';
 import {
   createPreviewChannelRuntime,
   shieldSourceFromStop,
+  type PreviewChannelRuntime,
 } from './previewChannelRuntime';
 
 /**
@@ -25,13 +26,29 @@ import {
  * ticker or leave widgets pointing at a disposed bridge.
  */
 let previewSource: IrSdkSourceBridge | undefined;
+let previewRuntime: PreviewChannelRuntime | undefined;
+let rawSource: IrSdkSourceBridge | undefined;
 
 function getPreviewSource(): IrSdkSourceBridge {
   if (!previewSource) {
-    previewSource = shieldSourceFromStop(generateMockData());
-    window.channelBridge = createPreviewChannelRuntime(previewSource).bridge;
+    rawSource = generateMockData();
+    previewSource = shieldSourceFromStop(rawSource);
+    previewRuntime = createPreviewChannelRuntime(previewSource);
+    window.channelBridge = previewRuntime.bridge;
   }
   return previewSource;
+}
+
+// Vite Fast Refresh re-evaluates this module on edit, resetting the
+// singletons above. Without an HMR dispose hook the replaced runtime keeps
+// running forever — its stop() is deliberately shielded from consumers and
+// the dispose handle would be gone — stacking an extra 60Hz ticker and
+// ProcessorHost per edit during site development.
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    previewRuntime?.dispose();
+    rawSource?.stop();
+  });
 }
 
 function createMockDashboardBridge(

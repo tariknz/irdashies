@@ -12,6 +12,7 @@ import {
 } from '../../../src/app/bridge/channelBus';
 import { ProcessorHost } from '../../../src/app/processors/ProcessorHost';
 import { createProcessorDefinitions } from '../../../src/app/processors/processorRegistry';
+import { connectSessionLifecycleChannel } from '../../../src/app/bridge/sessionLifecycleChannel';
 import type { SessionLifecycle } from '../../../src/app/sessionLifecycle/sessionLifecycle';
 
 /**
@@ -96,7 +97,15 @@ export function createPreviewChannelRuntime(
       // what a renderer receives from a single IPC delivery.
       const cloned = structuredClone(payload);
       for (const consumer of subscription.consumers) {
-        consumer.callback(cloned as never);
+        // Electron IPC isolates consumer exceptions from the main process;
+        // in-process delivery must do the same or one throwing consumer
+        // breaks unrelated widgets (and, via bus.publish's synchronous call
+        // chain, gets misattributed as a ProcessorHost publication failure).
+        try {
+          consumer.callback(cloned as never);
+        } catch (error) {
+          logger.error(`[preview] channel consumer failed: ${name}`, error);
+        }
       }
     },
   };
@@ -131,6 +140,15 @@ export function createPreviewChannelRuntime(
     }),
   });
 
+  // Publish lifecycle events onto the bus exactly as main.ts does, so a
+  // widget subscribing to 'session.lifecycle' behaves the same here as in
+  // the app. Wired before the enter announcement below so that first event
+  // reaches the channel too.
+  const disconnectLifecycleChannel = connectSessionLifecycleChannel(
+    lifecycle,
+    bus
+  );
+
   // Announce a live (non-replay) session now that the host is listening, so
   // processors activate exactly as they do against a real SDK connection.
   for (const cb of enterCallbacks) cb({ replay: false });
@@ -156,9 +174,14 @@ export function createPreviewChannelRuntime(
     ) {
       return;
     }
+    // Record the subscription only after the bus accepts it. bus.subscribe
+    // validates synchronously (rate > maxRateHz, any rate on an event
+    // channel) and a throw after flipping these flags would make the
+    // early-return above skip every future attempt — one bad rate would
+    // permanently poison the channel for all widgets.
+    bus.subscribe(target, channel, requestedRate);
     subscription.isSubscribed = true;
     subscription.subscribedRate = requestedRate;
-    bus.subscribe(target, channel, requestedRate);
   };
 
   const bridge: ChannelBridge = {
@@ -177,7 +200,18 @@ export function createPreviewChannelRuntime(
         rate: requestedRateHz,
       };
       subscription.consumers.add(consumer);
-      sync(channel, subscription);
+      try {
+        sync(channel, subscription);
+      } catch (error) {
+        // Match the Electron renderer bridge, where a rejected subscribe
+        // never throws into the widget (fire-and-forget invoke): drop this
+        // consumer, log, and leave the channel state untouched so other
+        // widgets and future subscribes are unaffected.
+        subscription.consumers.delete(consumer);
+        if (subscription.consumers.size === 0) subscriptions.delete(channel);
+        logger.error(`[preview] channel subscribe failed: ${channel}`, error);
+        return () => undefined;
+      }
 
       let active = true;
       return () => {
@@ -199,6 +233,7 @@ export function createPreviewChannelRuntime(
     dispose: () => {
       if (disposed) return;
       disposed = true;
+      disconnectLifecycleChannel();
       stopTelemetry?.();
       stopSession?.();
       host.dispose();

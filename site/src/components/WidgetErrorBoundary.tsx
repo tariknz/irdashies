@@ -10,6 +10,13 @@ interface Props {
    * stray box into the layout.
    */
   fallback?: ReactNode;
+  /**
+   * Retry the subtree this long after a throw, mirroring the app's
+   * `ErrorBoundary resetAfterMs` convention in OverlayContainer. Without it
+   * the boundary latches on the first error for the life of the page — fatal
+   * for headless updaters, whose failure is otherwise invisible.
+   */
+  resetAfterMs?: number;
 }
 
 interface State {
@@ -18,6 +25,7 @@ interface State {
 
 export class WidgetErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false };
+  private resetTimer: ReturnType<typeof setTimeout> | undefined;
 
   static getDerivedStateFromError(): State {
     return { hasError: true };
@@ -25,6 +33,16 @@ export class WidgetErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: unknown) {
     logger.error(`[preview] ${this.props.widgetName} failed to render`, error);
+    if (this.props.resetAfterMs !== undefined && !this.resetTimer) {
+      this.resetTimer = setTimeout(() => {
+        this.resetTimer = undefined;
+        this.setState({ hasError: false });
+      }, this.props.resetAfterMs);
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.resetTimer) clearTimeout(this.resetTimer);
   }
 
   render() {

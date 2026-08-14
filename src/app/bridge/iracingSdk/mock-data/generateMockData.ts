@@ -408,6 +408,13 @@ export function generateMockData(sessionData?: {
       if (telemetryInterval) clearInterval(telemetryInterval);
       if (sessionInfoInterval) clearInterval(sessionInfoInterval);
       if (runningStateInterval) clearInterval(runningStateInterval);
+      // Null the handles like the per-subscriber unsubscribe paths do —
+      // the "start the interval only once" guards check truthiness, so a
+      // cleared-but-set handle would permanently block re-subscription
+      // after stop().
+      telemetryInterval = null;
+      sessionInfoInterval = null;
+      runningStateInterval = null;
       telemetryCallbacks.clear();
       sessionCallbacks.clear();
       runningStateCallbacks.clear();
