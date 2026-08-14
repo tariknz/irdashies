@@ -252,15 +252,14 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
 
   private promote(driver: Driver, lap: ReferenceLap): void {
     const lapTime = lap.finishTime - lap.startTime;
-    if (
-      !lap.isCleanLap ||
-      lap.pointPos.includes(-1) ||
-      lapTime <= 0 ||
-      driver.CarClassID <= 0
-    ) {
-      return;
-    }
-    const persisted = this.persistedLaps.get(driver.CarClassID);
+    // Deliberately not gated on CarClassID: bestLaps is keyed by CarIdx and
+    // nothing on this path needs a class. iRacing reports CarClassID 0 in test
+    // sessions, which is a real session rather than missing data — gating
+    // promotion on it silently disabled every bestLaps consumer there. The
+    // class is still required for *persistence*, which is keyed by it.
+    if (!lap.isCleanLap || lap.pointPos.includes(-1) || lapTime <= 0) return;
+    const classId = driver.CarClassID;
+    const persisted = classId > 0 ? this.persistedLaps.get(classId) : undefined;
     const persistedTime = persisted
       ? persisted.finishTime - persisted.startTime
       : null;
@@ -270,15 +269,13 @@ export class ReferenceLapProcessor implements TelemetryProcessor<ReferenceLapsSn
     if (bestTime && lapTime >= bestTime) return;
     precomputeTangents(lap);
     this.bestLaps.set(driver.CarIdx, lap);
-    if (!persistedTime || lapTime < persistedTime) {
-      this.persistedLaps.set(driver.CarClassID, lap);
+    // classId > 0 guards persistence only. The disk key is
+    // seriesId_trackId_classId, so class-0 laps from different cars in offline
+    // test sessions would all collide on one key and overwrite each other.
+    if (classId > 0 && (!persistedTime || lapTime < persistedTime)) {
+      this.persistedLaps.set(classId, lap);
       if (this.persistenceEnabled && this.seriesId > 0) {
-        this.persistence.save(
-          this.seriesId,
-          this.trackId,
-          driver.CarClassID,
-          lap
-        );
+        this.persistence.save(this.seriesId, this.trackId, classId, lap);
       }
     }
     this.publish();
