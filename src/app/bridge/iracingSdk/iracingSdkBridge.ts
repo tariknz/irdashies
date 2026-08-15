@@ -158,6 +158,7 @@ export async function publishIRacingSDKEvents(
           lifecycle,
           metrics: perfMetrics,
           aggregateReplay: isTapeReplay,
+          logError: (message, error) => logger.error(message, error),
           referenceLapPersistence: {
             load: referenceLapStorage.getReferenceLap,
             save: referenceLapStorage.saveReferenceLap,

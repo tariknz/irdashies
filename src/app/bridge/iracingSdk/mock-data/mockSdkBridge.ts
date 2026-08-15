@@ -2,8 +2,9 @@ import { generateMockData } from './generateMockData';
 import { OverlayManager } from '../../../overlayManager';
 import { TelemetryPerfMetrics } from '../../../perfMetrics';
 import type { SessionLifecycle } from '../../../sessionLifecycle';
-import type { ChannelBus } from '../../channelBridge';
+import type { ChannelBus } from '../../channelBus';
 import { createDefaultProcessorHost } from '../../../processors/processorRegistry';
+import logger from '../../../logger';
 import { TELEMETRY_INSPECTOR_RATE_HZ } from '@irdashies/types';
 
 export async function publishIRacingSDKEvents(
@@ -21,6 +22,7 @@ export async function publishIRacingSDKEvents(
         bus: channelBus,
         lifecycle,
         metrics: perfMetrics,
+        logError: (message, error) => logger.error(message, error),
         referenceLapPersistence: {
           load: () => null,
           save: () => undefined,
