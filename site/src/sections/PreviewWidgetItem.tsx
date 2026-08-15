@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { ResizeIcon, GearIcon, XIcon } from '@phosphor-icons/react';
 import { useDashboard, useGeneralSettings } from '@irdashies/context';
+import { WidgetRuntimeProvider } from '../../../src/frontend/widgetRuntime';
 import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import {
   useDragWidget,
@@ -198,7 +199,13 @@ export const PreviewWidgetItem = memo(function PreviewWidgetItem({
         {/* Widget content */}
         <WidgetFrame>
           <WidgetErrorBoundary widgetName={label}>
-            <Component {...config} />
+            {/* Same wrapper the app uses in OverlayContainer: without it,
+                useWidgetChannelRate finds no definition and every
+                channelRates/ratePreset override silently degrades to the
+                registry default (e.g. Input's 60Hz trace drops to 25Hz). */}
+            <WidgetRuntimeProvider widgetType={widgetId}>
+              <Component {...config} />
+            </WidgetRuntimeProvider>
           </WidgetErrorBoundary>
         </WidgetFrame>
       </div>

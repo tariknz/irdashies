@@ -12,7 +12,7 @@ import type {
   ProcessorDefinition,
 } from './ProcessorHost';
 import { ProcessorHost } from './ProcessorHost';
-import type { ChannelBus } from '../bridge/channelBridge';
+import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
 import { RadioProcessor } from './RadioProcessor';
 import { ReferenceLapProcessor } from './ReferenceLapProcessor';
@@ -32,6 +32,7 @@ interface DefaultProcessorHostOptions extends ProcessorRegistryOptions {
   lifecycle?: SessionLifecycle;
   metrics: ProcessorMetrics;
   aggregateReplay?: boolean;
+  logError?: (message: string, error: unknown) => void;
 }
 
 const noReferenceLaps: ReferenceLapsSnapshot = {
@@ -149,5 +150,6 @@ export const createDefaultProcessorHost = (
     lifecycle: options.lifecycle,
     metrics: options.metrics,
     aggregateReplay: options.aggregateReplay,
+    logError: options.logError,
     definitions: createProcessorDefinitions(options),
   });
