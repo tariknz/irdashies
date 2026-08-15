@@ -427,6 +427,11 @@ const createHarness = (kind: SourceKind, rendererId = 1) => {
     metrics: { markStart: () => undefined, markEnd: () => undefined },
     aggregateReplay: kind === 'live-tape',
     referenceLapPersistence: { load: () => null, save: () => undefined },
+    // No processor is expected to fail in these scenarios; surface any
+    // failure as a test failure instead of the host's silent default.
+    logError: (message, error) => {
+      throw new Error(`${message}: ${String(error)}`);
+    },
   });
   const bridge = new InMemoryRendererBridge(bus, rendererId);
   const source = new SyntheticSourceAdapter(kind, clock, lifecycle, host);
@@ -640,6 +645,9 @@ describe('runtime boundary replay', () => {
       lifecycle: harness.lifecycle,
       metrics: { markStart: () => undefined, markEnd: () => undefined },
       referenceLapPersistence: { load: () => null, save: () => undefined },
+      logError: (message, error) => {
+        throw new Error(`${message}: ${String(error)}`);
+      },
     });
     harness.source.replaceHost(restartedHost);
     const postRestartBridge = new InMemoryRendererBridge(harness.bus, 4);

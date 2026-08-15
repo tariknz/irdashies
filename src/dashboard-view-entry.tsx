@@ -25,6 +25,7 @@ async function initializeDashboardView() {
   const bridge = new WebSocketBridge();
 
   await bridge.connect(wsUrl);
+  window.irsdkBridge = bridge;
   window.channelBridge = bridge;
   window.telemetryInspectorBridge = bridge;
   window.fuelCalculatorBridge = {

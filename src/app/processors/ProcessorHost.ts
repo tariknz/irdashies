@@ -5,8 +5,7 @@ import type {
   SessionLifecycleEvent,
   Telemetry,
 } from '@irdashies/types';
-import logger from '../logger';
-import type { ChannelBus } from '../bridge/channelBridge';
+import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 
@@ -56,6 +55,11 @@ interface ProcessorHostOptions {
   definitions: readonly AnyProcessorDefinition[];
   aggregateReplay?: boolean;
   frameClock?: (frame: Telemetry) => number | undefined;
+  /**
+   * Where processor failures are reported. Defaults to discarding them so this
+   * module stays free of the main-process logger and can run in a browser;
+   * every Electron composition point passes the real logger.
+   */
   logError?: (message: string, error: unknown) => void;
 }
 
@@ -93,8 +97,7 @@ export class ProcessorHost {
     this.metrics = options.metrics;
     this.aggregateReplay = options.aggregateReplay ?? false;
     this.frameClock = options.frameClock ?? defaultFrameClock;
-    this.logError =
-      options.logError ?? ((message, error) => logger.error(message, error));
+    this.logError = options.logError ?? (() => undefined);
 
     const definitions = this.sortDefinitions(options.definitions);
     this.states = definitions.map((definition) => ({ definition }));
