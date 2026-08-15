@@ -639,6 +639,45 @@ export interface SectorDeltaConfig {
   alwaysScroll?: boolean;
 }
 
+export interface DeltaSpeedConfig {
+  background: { opacity: number };
+  /**
+   * Display unit. Speeds are held in km/h throughout and converted only for
+   * display. 'auto' follows iRacing's own DisplayUnits setting.
+   */
+  unit: 'km/h' | 'mph' | 'auto';
+  /**
+   * Delta at which the background reaches full colour, in km/h. Held per unit
+   * rather than converted so both caps stay whole numbers — converting a 15
+   * km/h cap would give an awkward 9.3 mph.
+   */
+  scaleKph: number;
+  /** Delta at which the background reaches full colour, in mph. */
+  scaleMph: number;
+  /**
+   * Largest delta shown numerically, in km/h. Past this the readout holds at
+   * the cap instead of climbing: an exact figure only helps while the
+   * correction is still worth making, and a wide delta is already obvious from
+   * the colour. Held per unit for the same reason as the scales above.
+   */
+  capKph: number;
+  /** Largest delta shown numerically, in mph. */
+  capMph: number;
+  /**
+   * The readout holds its current value until the true delta has moved at
+   * least this far, in km/h. Without it the last digit flickers between
+   * neighbouring values while the delta is essentially steady, which draws the
+   * eye for no reason.
+   */
+  updateThresholdKph: number;
+  /** Update threshold applied when displaying mph. */
+  updateThresholdMph: number;
+  /** Show the numeric delta inside the box. */
+  showNumber: boolean;
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 export interface BattleConfig {
   background: { opacity: number };
   showOnlyWhenOnTrack: boolean;
@@ -686,6 +725,7 @@ export interface WidgetConfigMap {
   infobar: InformationBarConfig;
   slowcarahead: SlowCarAheadConfig;
   sectordelta: SectorDeltaConfig;
+  deltaspeed: DeltaSpeedConfig;
   heartrate: HeartRateConfig;
   cornername: CornerNameOverlayConfig;
   battle: BattleConfig;
@@ -787,6 +827,7 @@ export type InformationBarWidgetSettings =
   BaseWidgetSettings<InformationBarConfig>;
 export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;
 export type SectorDeltaWidgetSettings = BaseWidgetSettings<SectorDeltaConfig>;
+export type DeltaSpeedWidgetSettings = BaseWidgetSettings<DeltaSpeedConfig>;
 export type HeartRateWidgetSettings = BaseWidgetSettings<HeartRateConfig>;
 export type CornerNameWidgetSettings =
   BaseWidgetSettings<CornerNameOverlayConfig>;
