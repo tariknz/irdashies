@@ -97,7 +97,11 @@ export interface CarIncidentState {
 }
 
 export interface RaceControlBridge {
-  getIncidents: () => Promise<Incident[]>;
+  getIncidents: () => Promise<{
+    /** SubSessionID used to select the persisted incident file. */
+    sessionId: string;
+    incidents: Incident[];
+  }>;
   replayIncident: (incident: Incident, seconds: number) => Promise<void>;
   /** Points the sim's camera at a car, without moving the replay position. */
   focusDriver: (carNumber: string) => Promise<void>;

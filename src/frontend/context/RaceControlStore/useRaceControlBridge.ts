@@ -18,6 +18,7 @@ export const useRaceControlBridge = () => {
 
     let cancelled = false;
     let loadGeneration = 0;
+    let lastSessionId: string | undefined;
 
     const load = () => {
       const generation = ++loadGeneration;
@@ -27,9 +28,21 @@ export const useRaceControlBridge = () => {
       const epoch = currentHydrationEpoch();
       bridge
         .getIncidents()
-        .then((incidents) => {
+        .then((snapshot) => {
           if (cancelled || generation !== loadGeneration) return;
-          hydrateIncidents(incidents, epoch);
+          // A manual clear while this request was in flight wins over disk.
+          if (currentHydrationEpoch() !== epoch) return;
+          // An empty ID means disconnected. Preserve the completed session so
+          // it remains available for post-race review.
+          if (!snapshot.sessionId) return;
+          if (
+            lastSessionId !== undefined &&
+            snapshot.sessionId !== lastSessionId
+          ) {
+            clearIncidents();
+          }
+          lastSessionId = snapshot.sessionId;
+          hydrateIncidents(snapshot.incidents, currentHydrationEpoch());
         })
         .catch((err) =>
           logger.error('[RaceControl] Failed to load incidents', err)
@@ -40,7 +53,6 @@ export const useRaceControlBridge = () => {
     // opened mid-session. The subscription below only catches later changes.
     load();
 
-    let lastSessionId: string | undefined;
     const unsubscribe = window.channelBridge?.subscribe(
       'raceControl.sessionId',
       (sessionId) => {

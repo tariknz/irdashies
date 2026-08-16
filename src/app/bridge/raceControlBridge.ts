@@ -170,7 +170,12 @@ export const setupRaceControlBridge = (
 
   ipcMain.handle('raceControl:getIncidents', () => {
     const sessionId = runtime.getCurrentSessionId();
-    return sessionId ? loadIncidents(sessionId) : [];
+    return sessionId
+      ? loadIncidents(sessionId).then((incidents) => ({
+          sessionId,
+          incidents,
+        }))
+      : { sessionId: '', incidents: [] };
   });
 
   ipcMain.handle('raceControl:clearIncidents', () => {

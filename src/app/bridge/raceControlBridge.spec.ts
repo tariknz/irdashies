@@ -179,7 +179,10 @@ describe('setupRaceControlBridge', () => {
     vi.mocked(runtime.getCurrentSessionId).mockReturnValue('');
     setupRaceControlBridge(runtime);
 
-    expect(handlers.get('raceControl:getIncidents')?.({})).toEqual([]);
+    expect(handlers.get('raceControl:getIncidents')?.({})).toEqual({
+      sessionId: '',
+      incidents: [],
+    });
     expect(handlers.get('raceControl:clearIncidents')?.({})).toBeUndefined();
     expect(loadIncidents).not.toHaveBeenCalled();
     expect(clearIncidents).not.toHaveBeenCalled();

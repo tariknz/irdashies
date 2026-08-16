@@ -20,6 +20,11 @@ const incident = (id: string, timestamp: number): Incident => ({
   timestamp,
 });
 
+const snapshot = (sessionId: string, incidents: Incident[]) => ({
+  sessionId,
+  incidents,
+});
+
 type ChannelHandler = (payload: never) => void;
 
 /** Records subscribers per channel so tests can drive the bridge. */
@@ -55,10 +60,14 @@ describe('useRaceControlBridge', () => {
   it('merges the mount-time snapshot instead of clobbering live incidents', async () => {
     const { bridge, publish } = createChannelBridge();
     window.channelBridge = bridge;
-    let resolveIncidents: (incidents: Incident[]) => void = () => undefined;
+    let resolveIncidents: (value: ReturnType<typeof snapshot>) => void = () =>
+      undefined;
     window.raceControlBridge = {
       getIncidents: vi.fn(
-        () => new Promise<Incident[]>((resolve) => (resolveIncidents = resolve))
+        () =>
+          new Promise<ReturnType<typeof snapshot>>(
+            (resolve) => (resolveIncidents = resolve)
+          )
       ),
     } as unknown as typeof window.raceControlBridge;
 
@@ -70,7 +79,7 @@ describe('useRaceControlBridge', () => {
       'live',
     ]);
 
-    resolveIncidents([incident('persisted', 100)]);
+    resolveIncidents(snapshot('111', [incident('persisted', 100)]));
 
     await waitFor(() =>
       expect(useRaceControlStore.getState().incidents.map((i) => i.id)).toEqual(
@@ -83,10 +92,10 @@ describe('useRaceControlBridge', () => {
     const { bridge, publish } = createChannelBridge();
     window.channelBridge = bridge;
     const getIncidents = vi
-      .fn<() => Promise<Incident[]>>()
-      .mockResolvedValueOnce([incident('mount-session', 50)])
-      .mockResolvedValueOnce([incident('sessionA', 100)])
-      .mockResolvedValueOnce([incident('sessionB', 200)]);
+      .fn<() => Promise<ReturnType<typeof snapshot>>>()
+      .mockResolvedValueOnce(snapshot('100', [incident('mount-session', 50)]))
+      .mockResolvedValueOnce(snapshot('111', [incident('sessionA', 100)]))
+      .mockResolvedValueOnce(snapshot('222', [incident('sessionB', 200)]));
     window.raceControlBridge = {
       getIncidents,
     } as unknown as typeof window.raceControlBridge;
@@ -114,13 +123,19 @@ describe('useRaceControlBridge', () => {
   it('drops the mount-time snapshot when the first session load starts', async () => {
     const { bridge, publish } = createChannelBridge();
     window.channelBridge = bridge;
-    let resolveInitial: (incidents: Incident[]) => void = () => undefined;
+    let resolveInitial: (value: ReturnType<typeof snapshot>) => void = () =>
+      undefined;
     const getIncidents = vi
-      .fn<() => Promise<Incident[]>>()
+      .fn<() => Promise<ReturnType<typeof snapshot>>>()
       .mockImplementationOnce(
-        () => new Promise<Incident[]>((resolve) => (resolveInitial = resolve))
+        () =>
+          new Promise<ReturnType<typeof snapshot>>(
+            (resolve) => (resolveInitial = resolve)
+          )
       )
-      .mockResolvedValueOnce([incident('current-session', 200)]);
+      .mockResolvedValueOnce(
+        snapshot('111', [incident('current-session', 200)])
+      );
     window.raceControlBridge = {
       getIncidents,
     } as unknown as typeof window.raceControlBridge;
@@ -133,7 +148,7 @@ describe('useRaceControlBridge', () => {
         ['current-session']
       )
     );
-    resolveInitial([incident('pre-session', 100)]);
+    resolveInitial(snapshot('100', [incident('pre-session', 100)]));
 
     await waitFor(() => expect(getIncidents).toHaveBeenCalledTimes(2));
     expect(useRaceControlStore.getState().incidents.map((i) => i.id)).toEqual([
@@ -145,8 +160,8 @@ describe('useRaceControlBridge', () => {
     const { bridge, publish } = createChannelBridge();
     window.channelBridge = bridge;
     const getIncidents = vi
-      .fn<() => Promise<Incident[]>>()
-      .mockResolvedValue([]);
+      .fn<() => Promise<ReturnType<typeof snapshot>>>()
+      .mockResolvedValue(snapshot('111', []));
     window.raceControlBridge = {
       getIncidents,
     } as unknown as typeof window.raceControlBridge;
@@ -157,15 +172,15 @@ describe('useRaceControlBridge', () => {
     publish('raceControl.sessionId', '111');
     publish('raceControl.sessionId', '111');
 
-    await waitFor(() => expect(getIncidents).toHaveBeenCalledTimes(2));
+    expect(getIncidents).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the list on disconnect', async () => {
     const { bridge, publish } = createChannelBridge();
     window.channelBridge = bridge;
     const getIncidents = vi
-      .fn<() => Promise<Incident[]>>()
-      .mockResolvedValue([]);
+      .fn<() => Promise<ReturnType<typeof snapshot>>>()
+      .mockResolvedValue(snapshot('111', []));
     window.raceControlBridge = {
       getIncidents,
     } as unknown as typeof window.raceControlBridge;
@@ -183,13 +198,13 @@ describe('useRaceControlBridge', () => {
     expect(getIncidents).toHaveBeenCalledTimes(2);
   });
 
-  it('reloads persisted incidents when the Gantry becomes visible', async () => {
+  it('replaces stale incidents after a hidden subsession transition', async () => {
     const { bridge } = createChannelBridge();
     window.channelBridge = bridge;
     const getIncidents = vi
-      .fn<() => Promise<Incident[]>>()
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([incident('while-hidden', 200)]);
+      .fn<() => Promise<ReturnType<typeof snapshot>>>()
+      .mockResolvedValueOnce(snapshot('111', [incident('before-hidden', 100)]))
+      .mockResolvedValueOnce(snapshot('222', [incident('while-hidden', 200)]));
     window.raceControlBridge = {
       getIncidents,
     } as unknown as typeof window.raceControlBridge;
@@ -198,6 +213,11 @@ describe('useRaceControlBridge', () => {
       .mockReturnValue('visible');
 
     renderHook(() => useRaceControlBridge());
+    await waitFor(() =>
+      expect(useRaceControlStore.getState().incidents.map((i) => i.id)).toEqual(
+        ['before-hidden']
+      )
+    );
     document.dispatchEvent(new Event('visibilitychange'));
 
     await waitFor(() =>
@@ -212,13 +232,17 @@ describe('useRaceControlBridge', () => {
   it('drops a snapshot that resolves after the session changed', async () => {
     const { bridge, publish } = createChannelBridge();
     window.channelBridge = bridge;
-    let resolveFirst: (incidents: Incident[]) => void = () => undefined;
+    let resolveFirst: (value: ReturnType<typeof snapshot>) => void = () =>
+      undefined;
     const getIncidents = vi
-      .fn<() => Promise<Incident[]>>()
+      .fn<() => Promise<ReturnType<typeof snapshot>>>()
       .mockImplementationOnce(
-        () => new Promise<Incident[]>((resolve) => (resolveFirst = resolve))
+        () =>
+          new Promise<ReturnType<typeof snapshot>>(
+            (resolve) => (resolveFirst = resolve)
+          )
       )
-      .mockResolvedValue([]);
+      .mockResolvedValue(snapshot('222', []));
     window.raceControlBridge = {
       getIncidents,
     } as unknown as typeof window.raceControlBridge;
@@ -228,7 +252,7 @@ describe('useRaceControlBridge', () => {
     publish('raceControl.sessionId', '111');
     publish('raceControl.sessionId', '222');
     // The first session's file finally responds — too late to matter.
-    resolveFirst([incident('sessionA', 100)]);
+    resolveFirst(snapshot('111', [incident('sessionA', 100)]));
 
     await waitFor(() => expect(getIncidents).toHaveBeenCalledTimes(3));
     expect(useRaceControlStore.getState().incidents).toEqual([]);
