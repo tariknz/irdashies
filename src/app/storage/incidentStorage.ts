@@ -1,6 +1,6 @@
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
-import type { Incident } from '../../types/raceControl';
+import { IncidentType, type Incident } from '../../types/raceControl';
 import logger from '../logger';
 
 function getStorageDir(): string {
@@ -11,6 +11,10 @@ function getStorageDir(): string {
 
 function getFilePath(sessionId: string, storageDir: string): string {
   return path.join(storageDir, `incidents-${sessionId}.json`);
+}
+
+function getPathForLog(filePath: string): string {
+  return path.basename(filePath);
 }
 
 function hasSessionId(sessionId: string): boolean {
@@ -52,6 +56,28 @@ const pendingAppends = new Set<Promise<void>>();
 // clobber each other's in-memory push.
 const loadingPromises = new Map<string, Promise<SessionCache>>();
 
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+const isIncident = (value: unknown): value is Incident => {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.id === 'string' &&
+    isFiniteNumber(candidate.carIdx) &&
+    typeof candidate.driverName === 'string' &&
+    typeof candidate.carNumber === 'string' &&
+    typeof candidate.teamName === 'string' &&
+    isFiniteNumber(candidate.sessionNum) &&
+    isFiniteNumber(candidate.sessionTime) &&
+    isFiniteNumber(candidate.lapNum) &&
+    isFiniteNumber(candidate.replayFrameNum) &&
+    Object.values(IncidentType).includes(candidate.type as IncidentType) &&
+    isFiniteNumber(candidate.lapDistPct) &&
+    isFiniteNumber(candidate.timestamp)
+  );
+};
+
 async function readIncidentsFile(filePath: string): Promise<Incident[]> {
   let raw: string;
   try {
@@ -60,18 +86,24 @@ async function readIncidentsFile(filePath: string): Promise<Incident[]> {
     if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
       logger.warn(
         '[IncidentStorage] Failed to read incident file:',
-        filePath,
+        getPathForLog(filePath),
         err
       );
     }
     return [];
   }
   try {
-    return JSON.parse(raw) as Incident[];
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.every(isIncident)) return parsed;
+    logger.warn(
+      '[IncidentStorage] Incident file has an invalid shape:',
+      getPathForLog(filePath)
+    );
+    return [];
   } catch (err) {
     logger.warn(
       '[IncidentStorage] Failed to parse incident file:',
-      filePath,
+      getPathForLog(filePath),
       err
     );
     return [];
@@ -234,7 +266,7 @@ export async function listSessionFiles(
     if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
       logger.warn(
         '[IncidentStorage] Failed to list session files:',
-        storageDir,
+        getPathForLog(storageDir),
         err
       );
     }

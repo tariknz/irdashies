@@ -891,6 +891,52 @@ describe('crash detection - sustained slow', () => {
     expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
   });
 
+  it('measures remote movement across the full position-update interval', () => {
+    const detector = new IncidentDetector(
+      {
+        ...defaultThresholds,
+        slowFrameThreshold: 100,
+        suddenStopFromSpeed: 80,
+      },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((incident) => incidents.push(incident));
+    detector.updateSession(raceSession());
+
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
+      5000
+    );
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100.04 }),
+      5000
+    );
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100.08 }),
+      5000
+    );
+    // 0.0004 of a 5km lap over 0.12s is 60km/h. Measuring it against only
+    // the latest 0.04s telemetry tick would incorrectly report 180km/h.
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5004], sessionTime: 100.12 }),
+      5000
+    );
+
+    // Admit stationary samples, but do not classify a stop from 60km/h as a
+    // sudden-stop crash with an 80km/h threshold.
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5004], sessionTime: 101.12 }),
+      5000
+    );
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5004], sessionTime: 101.16 }),
+      5000
+    );
+
+    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
+  });
+
   it('fires for a racing car that remains completely stationary', () => {
     const detector = new IncidentDetector(
       { ...defaultThresholds, slowFrameThreshold: 3 },

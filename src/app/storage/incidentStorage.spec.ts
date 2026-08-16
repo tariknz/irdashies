@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import type { Incident } from '../../types/raceControl';
 import { IncidentType } from '../../types/raceControl';
+import logger from '../logger';
 
 // Use a real temp directory for tests
 let tmpDir: string;
@@ -46,6 +47,31 @@ describe('incidentStorage', () => {
     const { loadIncidents } = await import('./incidentStorage');
     const result = await loadIncidents('session123', tmpDir);
     expect(result).toEqual([]);
+  });
+
+  it.each(['{}', 'null', '[{}]'])(
+    'loadIncidents returns [] for invalid persisted shape %s',
+    async (contents) => {
+      const { loadIncidents } = await import('./incidentStorage');
+      fs.writeFileSync(path.join(tmpDir, 'incidents-invalid.json'), contents);
+
+      expect(await loadIncidents('invalid', tmpDir)).toEqual([]);
+    }
+  );
+
+  it('redacts the storage directory from invalid-file warnings', async () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    const { loadIncidents } = await import('./incidentStorage');
+    fs.writeFileSync(path.join(tmpDir, 'incidents-private.json'), '{}');
+
+    expect(await loadIncidents('private', tmpDir)).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(
+      '[IncidentStorage] Incident file has an invalid shape:',
+      'incidents-private.json'
+    );
+    expect(JSON.stringify(warn.mock.calls)).not.toContain(tmpDir);
+
+    warn.mockRestore();
   });
 
   it('ignores empty session IDs without creating storage files', async () => {

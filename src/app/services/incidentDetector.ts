@@ -459,15 +459,17 @@ export class IncidentDetector {
       const deltaTime = snap.sessionTime - state.prevSessionTime;
       const lapDistPct = snap.carIdxLapDistPct[carIdx] ?? 0;
       const positionChanged = lapDistPct !== state.prevLapDistPct;
-      if (positionChanged) {
-        state.lastPositionChangeSessionTime = snap.sessionTime;
-      }
+      const positionDeltaTime =
+        snap.sessionTime - state.lastPositionChangeSessionTime;
       const measuredSpeed = this.calculateSpeed(
         state.prevLapDistPct,
         lapDistPct,
-        deltaTime,
+        positionDeltaTime,
         trackLengthM
       );
+      if (positionChanged) {
+        state.lastPositionChangeSessionTime = snap.sessionTime;
+      }
       const stationaryLongEnough =
         !positionChanged &&
         deltaTime > 0 &&
