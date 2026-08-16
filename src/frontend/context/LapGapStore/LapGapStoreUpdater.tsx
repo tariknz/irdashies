@@ -6,6 +6,10 @@ import {
   standingsSelectors,
   useStandingsSelector,
 } from '../ChannelStore/useStandingsSnapshot';
+import {
+  trackStateSelectors,
+  useTrackStateSelector,
+} from '../ChannelStore/useTrackStateSnapshot';
 
 interface LapGapStoreUpdaterProps {
   /**
@@ -21,7 +25,12 @@ interface LapGapStoreUpdaterProps {
 const ActiveLapGapStoreUpdater = memo(() => {
   const carIdxLap = useStandingsSelector(standingsSelectors.carIdxLap);
   const sessionNum = useStandingsSelector(standingsSelectors.sessionNum);
+  const isReplayPlaying = Boolean(
+    useTrackStateSelector(trackStateSelectors.isReplayPlaying)
+  );
   const prevLapsRef = useRef<number[]>([]);
+  const wasReplayPlayingRef = useRef(false);
+  const skipPostReplaySnapshotRef = useRef(false);
   const recordLapGap = useLapGapStore((s) => s.recordLapGap);
   const setSessionNum = useLapGapStore((s) => s.setSessionNum);
   // Pass gap enabled so the hook populates driver.gap, and showAll so every
@@ -56,6 +65,20 @@ const ActiveLapGapStoreUpdater = memo(() => {
     }
   }, [sessionNum, setSessionNum]);
 
+  useEffect(() => {
+    if (isReplayPlaying) {
+      wasReplayPlayingRef.current = true;
+      prevLapsRef.current = [];
+    } else if (wasReplayPlayingRef.current) {
+      // Discard the standings snapshot present when the replay flag drops;
+      // the next live snapshot establishes a new baseline. Replay lap numbers
+      // may be far behind live and must never form a transition.
+      wasReplayPlayingRef.current = false;
+      skipPostReplaySnapshotRef.current = true;
+      prevLapsRef.current = [];
+    }
+  }, [isReplayPlaying]);
+
   useSessionLifecycle((event) => {
     if (event.type === 'sessionNumChange' || event.type === 'disconnect') {
       useLapGapStore.getState().reset();
@@ -68,6 +91,15 @@ const ActiveLapGapStoreUpdater = memo(() => {
 
   useEffect(() => {
     if (!carIdxLap) return;
+    if (isReplayPlaying) {
+      prevLapsRef.current = [];
+      return;
+    }
+    if (skipPostReplaySnapshotRef.current) {
+      skipPostReplaySnapshotRef.current = false;
+      prevLapsRef.current = [];
+      return;
+    }
     carIdxLap.forEach((lap, carIdx) => {
       if (
         prevLapsRef.current[carIdx] !== undefined &&
@@ -85,7 +117,7 @@ const ActiveLapGapStoreUpdater = memo(() => {
       }
     });
     prevLapsRef.current = [...carIdxLap];
-  }, [carIdxLap, recordLapGap]);
+  }, [carIdxLap, isReplayPlaying, recordLapGap]);
 
   return null;
 });

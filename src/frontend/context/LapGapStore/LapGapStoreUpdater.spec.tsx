@@ -10,11 +10,17 @@ import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandin
 // emitLap triggers a genuine re-render of the memoized updater component,
 // rather than relying on parent-driven rerenders that memo would bail out of.
 const lapListeners = new Set<() => void>();
+const replayListeners = new Set<() => void>();
 let currentLap: number[] = [];
 let currentSessionNum = 0;
+let currentReplay = false;
 const emitLap = (next: number[]) => {
   currentLap = next;
   lapListeners.forEach((listener) => listener());
+};
+const emitReplay = (next: boolean) => {
+  currentReplay = next;
+  replayListeners.forEach((listener) => listener());
 };
 
 vi.mock('../ChannelStore/useStandingsSnapshot', () => ({
@@ -38,6 +44,23 @@ vi.mock('../ChannelStore/useStandingsSnapshot', () => ({
     ),
 }));
 
+vi.mock('../ChannelStore/useTrackStateSnapshot', () => ({
+  trackStateSelectors: {
+    isReplayPlaying: (snapshot: { isReplayPlaying: boolean }) =>
+      snapshot.isReplayPlaying,
+  },
+  useTrackStateSelector: (
+    selector: (snapshot: { isReplayPlaying: boolean }) => boolean
+  ) =>
+    useSyncExternalStore(
+      (listener: () => void) => {
+        replayListeners.add(listener);
+        return () => replayListeners.delete(listener);
+      },
+      () => selector({ isReplayPlaying: currentReplay })
+    ),
+}));
+
 vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({
   useDriverStandings: vi.fn(),
 }));
@@ -50,6 +73,7 @@ describe('LapGapStoreUpdater', () => {
     publish = undefined;
     currentLap = [];
     currentSessionNum = 0;
+    currentReplay = false;
 
     const subscribe = vi.fn(
       (_channel: string, callback: (event: SessionLifecycleEvent) => void) => {
@@ -125,5 +149,20 @@ describe('LapGapStoreUpdater', () => {
 
     act(() => emitLap([2]));
     expect(useLapGapStore.getState().lapGaps[0]?.[1]).toBe(1.5);
+  });
+
+  it('does not record replay-to-live lap transitions', () => {
+    act(() => emitLap([5]));
+    render(<LapGapStoreUpdater />);
+
+    act(() => emitReplay(true));
+    act(() => emitLap([2]));
+    act(() => emitReplay(false));
+    act(() => emitLap([6]));
+
+    expect(useLapGapStore.getState().lapGaps).toEqual({});
+
+    act(() => emitLap([7]));
+    expect(useLapGapStore.getState().lapGaps[0]?.[6]).toBe(1.5);
   });
 });

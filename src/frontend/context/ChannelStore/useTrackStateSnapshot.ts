@@ -13,6 +13,7 @@ export const trackStateSelectors = {
   displayUnits: (snapshot: TrackStateSnapshot) => snapshot.displayUnits,
   focusCarIdx: (snapshot: TrackStateSnapshot) => snapshot.focusCarIdx,
   isOnTrack: (snapshot: TrackStateSnapshot) => snapshot.isOnTrack,
+  isReplayPlaying: (snapshot: TrackStateSnapshot) => snapshot.isReplayPlaying,
   lapDistPct: (snapshot: TrackStateSnapshot) => snapshot.lapDistPct,
   sessionFlags: (snapshot: TrackStateSnapshot) => snapshot.sessionFlags,
   sessionNum: (snapshot: TrackStateSnapshot) => snapshot.sessionNum,
