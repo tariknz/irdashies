@@ -2,12 +2,13 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createSyntheticTape,
   SYNTHETIC_SECOND_FRAME_PAYLOAD_OFFSET,
 } from './fixture';
+import { TapeReader } from './tape';
 import { validateReplay, type ReplayProbe } from './validator';
 
 const temporaryDirectories: string[] = [];
@@ -63,12 +64,21 @@ describe('headless telemetry replay validator', () => {
   });
 
   it('rejects probes that request fields outside the tape schema', async () => {
-    await expect(
-      validateReplay({
-        path: await tapePath(),
-        probes: [{ ...probe, variables: ['MissingField'] }],
-      })
-    ).rejects.toThrow('Replay probe requested unknown variable: MissingField');
+    const close = vi.spyOn(TapeReader.prototype, 'close');
+
+    try {
+      await expect(
+        validateReplay({
+          path: await tapePath(),
+          probes: [{ ...probe, variables: ['MissingField'] }],
+        })
+      ).rejects.toThrow(
+        'Replay probe requested unknown variable: MissingField'
+      );
+      expect(close).toHaveBeenCalledOnce();
+    } finally {
+      close.mockRestore();
+    }
   });
 
   it('isolates each probe from fields requested by other probes', async () => {

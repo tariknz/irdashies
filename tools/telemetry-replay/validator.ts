@@ -140,58 +140,58 @@ export async function validateReplay({
     sha256File(path),
     TapeReader.open(path),
   ]);
-  const { header, variables } = reader.schema;
-  const requestedNames = new Set(
-    probes.flatMap((probe) => [...probe.variables])
-  );
-  const requestedVariables = [...requestedNames].map((name) => {
-    const variable = variables.get(name);
-    if (!variable)
-      throw new Error(`Replay probe requested unknown variable: ${name}`);
-    return variable;
-  });
-  const runtimes = probes.map((probe) => ({
-    probe,
-    hash: createHash('sha256'),
-    frameCount: 0,
-    checkpoints: {} as Record<string, unknown>,
-  }));
-
-  let records = 0;
-  let frames = 0;
-  let sessionUpdates = 0;
-  let appliedSessionUpdates = 0;
-  let gaps = 0;
-  let disconnects = 0;
-  let ends = 0;
-  let pendingSession: TapeRecord | undefined;
-  let nextSessionPoll = 0n;
-  const pollTicks =
-    (header.qpcFrequency * BigInt(sessionPollMilliseconds)) / 1000n;
-  if (pollTicks <= 0n) {
-    throw new Error('Session polling interval is shorter than one tape tick');
-  }
-
-  const applyPendingSession = (atTicks: bigint): void => {
-    if (!pendingSession) return;
-    const context = contextFor(
-      { ...pendingSession, elapsedTicks: atTicks },
-      header.qpcFrequency
-    );
-    const yaml = pendingSession.payload.toString('utf8').replace(/\0+$/, '');
-    for (const runtime of runtimes) {
-      runtime.probe.onSessionInfo?.(yaml, context);
-      runtime.checkpoints[`session:${appliedSessionUpdates}`] = {
-        sourceTick: pendingSession.sourceTick,
-        elapsedSeconds: context.elapsedSeconds,
-        revision: pendingSession.value,
-      };
-    }
-    appliedSessionUpdates += 1;
-    pendingSession = undefined;
-  };
-
   try {
+    const { header, variables } = reader.schema;
+    const requestedNames = new Set(
+      probes.flatMap((probe) => [...probe.variables])
+    );
+    const requestedVariables = [...requestedNames].map((name) => {
+      const variable = variables.get(name);
+      if (!variable)
+        throw new Error(`Replay probe requested unknown variable: ${name}`);
+      return variable;
+    });
+    const runtimes = probes.map((probe) => ({
+      probe,
+      hash: createHash('sha256'),
+      frameCount: 0,
+      checkpoints: {} as Record<string, unknown>,
+    }));
+
+    let records = 0;
+    let frames = 0;
+    let sessionUpdates = 0;
+    let appliedSessionUpdates = 0;
+    let gaps = 0;
+    let disconnects = 0;
+    let ends = 0;
+    let pendingSession: TapeRecord | undefined;
+    let nextSessionPoll = 0n;
+    const pollTicks =
+      (header.qpcFrequency * BigInt(sessionPollMilliseconds)) / 1000n;
+    if (pollTicks <= 0n) {
+      throw new Error('Session polling interval is shorter than one tape tick');
+    }
+
+    const applyPendingSession = (atTicks: bigint): void => {
+      if (!pendingSession) return;
+      const context = contextFor(
+        { ...pendingSession, elapsedTicks: atTicks },
+        header.qpcFrequency
+      );
+      const yaml = pendingSession.payload.toString('utf8').replace(/\0+$/, '');
+      for (const runtime of runtimes) {
+        runtime.probe.onSessionInfo?.(yaml, context);
+        runtime.checkpoints[`session:${appliedSessionUpdates}`] = {
+          sourceTick: pendingSession.sourceTick,
+          elapsedSeconds: context.elapsedSeconds,
+          revision: pendingSession.value,
+        };
+      }
+      appliedSessionUpdates += 1;
+      pendingSession = undefined;
+    };
+
     while (true) {
       const record = await reader.readRecord();
       if (!record) break;
@@ -263,53 +263,53 @@ export async function validateReplay({
       }
     }
     applyPendingSession(nextSessionPoll);
+
+    const metadata: ReplayMetadata = {
+      sha256,
+      formatVersion: header.formatVersion,
+      sdkVersion: header.sdkVersion,
+      tickRateHz: header.tickRate,
+      variableCount: header.variableCount,
+      frameBytes: header.frameSize,
+      mappingBytes: Number(header.mappingSize),
+      recordCount: records,
+      frameCount: frames,
+      sessionUpdateCount: sessionUpdates,
+      gapCount: gaps,
+    };
+    if (BigInt(records) !== header.recordCount) {
+      throw new Error(
+        `Record count mismatch: header=${header.recordCount}, actual=${records}`
+      );
+    }
+    if (ends !== 1)
+      throw new Error(`Expected exactly one end record, found ${ends}`);
+    for (const [key, value] of Object.entries(expected ?? {})) {
+      if (metadata[key as keyof ReplayMetadata] !== value) {
+        throw new Error(
+          `Replay metadata mismatch for ${key}: expected=${String(value)}, actual=${String(
+            metadata[key as keyof ReplayMetadata]
+          )}`
+        );
+      }
+    }
+
+    return {
+      metadata,
+      disconnectCount: disconnects,
+      endCount: ends,
+      appliedSessionUpdateCount: appliedSessionUpdates,
+      probes: runtimes.map((runtime) => ({
+        name: runtime.probe.name,
+        schemaVersion: runtime.probe.schemaVersion,
+        frameCount: runtime.frameCount,
+        rollingHash: runtime.hash.digest('hex'),
+        checkpoints: runtime.checkpoints,
+      })),
+    };
   } finally {
     await reader.close();
   }
-
-  const metadata: ReplayMetadata = {
-    sha256,
-    formatVersion: header.formatVersion,
-    sdkVersion: header.sdkVersion,
-    tickRateHz: header.tickRate,
-    variableCount: header.variableCount,
-    frameBytes: header.frameSize,
-    mappingBytes: Number(header.mappingSize),
-    recordCount: records,
-    frameCount: frames,
-    sessionUpdateCount: sessionUpdates,
-    gapCount: gaps,
-  };
-  if (BigInt(records) !== header.recordCount) {
-    throw new Error(
-      `Record count mismatch: header=${header.recordCount}, actual=${records}`
-    );
-  }
-  if (ends !== 1)
-    throw new Error(`Expected exactly one end record, found ${ends}`);
-  for (const [key, value] of Object.entries(expected ?? {})) {
-    if (metadata[key as keyof ReplayMetadata] !== value) {
-      throw new Error(
-        `Replay metadata mismatch for ${key}: expected=${String(value)}, actual=${String(
-          metadata[key as keyof ReplayMetadata]
-        )}`
-      );
-    }
-  }
-
-  return {
-    metadata,
-    disconnectCount: disconnects,
-    endCount: ends,
-    appliedSessionUpdateCount: appliedSessionUpdates,
-    probes: runtimes.map((runtime) => ({
-      name: runtime.probe.name,
-      schemaVersion: runtime.probe.schemaVersion,
-      frameCount: runtime.frameCount,
-      rollingHash: runtime.hash.digest('hex'),
-      checkpoints: runtime.checkpoints,
-    })),
-  };
 }
 
 export const telemetryStateProbe: ReplayProbe<Record<string, TelemetryValue>> =
