@@ -90,7 +90,8 @@ export const setupRaceControlBridge = (
 ) => {
   let retention: 'all' | 5 | 10 | 20 = 'all';
 
-  runtime.onSessionIdChanged(() => {
+  runtime.onSessionIdChanged((sessionId) => {
+    if (!sessionId) return;
     void pruneOldSessions(retention).catch((err) =>
       logger.error('[RaceControl] Failed to prune old sessions:', err)
     );

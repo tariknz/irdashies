@@ -48,6 +48,17 @@ describe('incidentStorage', () => {
     expect(result).toEqual([]);
   });
 
+  it('ignores empty session IDs without creating storage files', async () => {
+    const { loadIncidents, appendIncident, clearIncidents } =
+      await import('./incidentStorage');
+
+    expect(await loadIncidents('', tmpDir)).toEqual([]);
+    await appendIncident('', makeIncident('1'), tmpDir);
+    await clearIncidents('', tmpDir);
+
+    expect(fs.readdirSync(tmpDir)).toEqual([]);
+  });
+
   it('appendIncident persists incident and is readable back', async () => {
     const { appendIncident, loadIncidents, __awaitPendingWrite } =
       await import('./incidentStorage');
@@ -119,6 +130,29 @@ describe('incidentStorage', () => {
     expect(remaining).toHaveLength(5);
     // s1 (oldest) should be gone
     expect(remaining.some((f) => f.includes('incidents-s1.json'))).toBe(false);
+  });
+
+  it('does not recreate a pruned session from a pending write', async () => {
+    const { appendIncident, pruneOldSessions, __awaitPendingWrite } =
+      await import('./incidentStorage');
+    for (let i = 1; i <= 6; i++) {
+      await appendIncident(`s${i}`, makeIncident(String(i)), tmpDir);
+    }
+    await __awaitPendingWrite();
+    for (let i = 1; i <= 6; i++) {
+      const timestamp = new Date(1_000 * i);
+      fs.utimesSync(
+        path.join(tmpDir, `incidents-s${i}.json`),
+        timestamp,
+        timestamp
+      );
+    }
+
+    await appendIncident('s1', makeIncident('pending'), tmpDir);
+    await pruneOldSessions(5, tmpDir);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    expect(fs.existsSync(path.join(tmpDir, 'incidents-s1.json'))).toBe(false);
   });
 
   it('flushes the outgoing session to disk when appending to a new session', async () => {
@@ -193,12 +227,12 @@ describe('incidentStorage', () => {
     );
   });
 
-  it('flushIncidentsOnShutdown writes the current session synchronously', async () => {
+  it('flushIncidentsOnShutdown writes the current session', async () => {
     const { appendIncident, flushIncidentsOnShutdown } =
       await import('./incidentStorage');
     await appendIncident('shutdown-session', makeIncident('1'), tmpDir);
 
-    flushIncidentsOnShutdown();
+    await flushIncidentsOnShutdown();
 
     const onDisk = JSON.parse(
       fs.readFileSync(
@@ -208,5 +242,28 @@ describe('incidentStorage', () => {
     ) as Incident[];
     expect(onDisk).toHaveLength(1);
     expect(onDisk[0].id).toBe('1');
+  });
+
+  it('flushIncidentsOnShutdown cannot be overwritten by an older async snapshot', async () => {
+    const { appendIncident, flushIncidentsOnShutdown, __awaitPendingWrite } =
+      await import('./incidentStorage');
+    await appendIncident('shutdown-race', makeIncident('old'), tmpDir);
+    const olderFlush = __awaitPendingWrite();
+    const newerAppend = appendIncident(
+      'shutdown-race',
+      makeIncident('new'),
+      tmpDir
+    );
+
+    await flushIncidentsOnShutdown();
+    await Promise.all([olderFlush, newerAppend]);
+
+    const onDisk = JSON.parse(
+      fs.readFileSync(
+        path.join(tmpDir, 'incidents-shutdown-race.json'),
+        'utf-8'
+      )
+    ) as Incident[];
+    expect(onDisk.map((incident) => incident.id)).toEqual(['old', 'new']);
   });
 });

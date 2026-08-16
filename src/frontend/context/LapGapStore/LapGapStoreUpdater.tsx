@@ -37,7 +37,9 @@ const ActiveLapGapStoreUpdater = memo(() => {
   );
   // Mirror latest standings in a ref to avoid stale closure in useEffect
   const allDriversRef = useRef(allDrivers);
-  allDriversRef.current = allDrivers;
+  useEffect(() => {
+    allDriversRef.current = allDrivers;
+  }, [allDrivers]);
 
   useSessionLifecycle((event) => {
     if (event.type === 'sessionNumChange' || event.type === 'disconnect') {

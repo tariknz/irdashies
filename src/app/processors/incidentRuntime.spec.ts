@@ -82,7 +82,7 @@ describe('IncidentRuntime', () => {
     expect(metrics.markEnd).toHaveBeenCalledWith('incidentPublication');
   });
 
-  it('publishes live incidents but does not persist before a session id exists', () => {
+  it('clears a stale session id and does not persist when session data omits it', () => {
     const bus = new ChannelBus();
     const publish = vi.spyOn(bus, 'publish');
     const persistence = { save: vi.fn() };
@@ -93,11 +93,15 @@ describe('IncidentRuntime', () => {
       persistence
     );
     const session = raceSession();
+    runtime.onSession(session);
+    expect(runtime.getCurrentSessionId()).toBe('123');
     if (session.WeekendInfo) {
       delete (session.WeekendInfo as { SubSessionID?: number }).SubSessionID;
     }
 
     runtime.onSession(session);
+    expect(runtime.getCurrentSessionId()).toBe('');
+    expect(publish).toHaveBeenCalledWith('raceControl.sessionId', '');
     runtime.onFrame(frame());
     for (let i = 0; i < 3; i++) {
       runtime.onFrame(

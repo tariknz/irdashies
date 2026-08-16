@@ -1,4 +1,3 @@
-import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import type { Incident } from '../../types/raceControl';
@@ -12,6 +11,12 @@ function getStorageDir(): string {
 
 function getFilePath(sessionId: string, storageDir: string): string {
   return path.join(storageDir, `incidents-${sessionId}.json`);
+}
+
+function hasSessionId(sessionId: string): boolean {
+  if (sessionId.trim()) return true;
+  logger.warn('[IncidentStorage] Ignored operation without a session ID');
+  return false;
 }
 
 /**
@@ -34,10 +39,13 @@ interface SessionCache {
   incidents: Incident[];
   writeTimer: NodeJS.Timeout | null;
   writeInFlight: Promise<void> | null;
+  deleting: boolean;
 }
 
 /** Per-session caches keep concurrent session operations isolated. */
 const caches = new Map<string, SessionCache>();
+const removals = new Map<string, Promise<void>>();
+const pendingAppends = new Set<Promise<void>>();
 
 // Dedupes concurrent first-loads of the same file so two appendIncident
 // calls racing before the cache is populated don't both read the file and
@@ -113,6 +121,7 @@ async function flushPending(entry: SessionCache): Promise<void> {
 
 /** Debounces the write so a burst of incidents produces a single flush. */
 function scheduleWrite(entry: SessionCache): void {
+  if (entry.deleting) return;
   if (entry.writeTimer) clearTimeout(entry.writeTimer);
   entry.writeTimer = setTimeout(() => {
     entry.writeTimer = null;
@@ -124,6 +133,8 @@ function scheduleWrite(entry: SessionCache): void {
  * Returns the cache for `filePath`, loading it once on first touch.
  */
 async function ensureCache(filePath: string): Promise<SessionCache> {
+  const removal = removals.get(filePath);
+  if (removal) await removal;
   const cached = caches.get(filePath);
   if (cached) return cached;
   const loading = loadingPromises.get(filePath);
@@ -138,6 +149,7 @@ async function ensureCache(filePath: string): Promise<SessionCache> {
       incidents,
       writeTimer: null,
       writeInFlight: null,
+      deleting: false,
     };
     caches.set(filePath, entry);
     return entry;
@@ -156,16 +168,18 @@ export async function loadIncidents(
   sessionId: string,
   storageDir = getStorageDir()
 ): Promise<Incident[]> {
+  if (!hasSessionId(sessionId)) return [];
   const filePath = getFilePath(sessionId, storageDir);
   const entry = await ensureCache(filePath);
   return [...entry.incidents];
 }
 
-export async function appendIncident(
+async function appendIncidentInternal(
   sessionId: string,
   incident: Incident,
   storageDir = getStorageDir()
 ): Promise<void> {
+  if (!hasSessionId(sessionId)) return;
   const filePath = getFilePath(sessionId, storageDir);
   const entry = await ensureCache(filePath);
   entry.incidents.push(incident);
@@ -178,10 +192,21 @@ export async function appendIncident(
   scheduleWrite(entry);
 }
 
+export function appendIncident(
+  sessionId: string,
+  incident: Incident,
+  storageDir = getStorageDir()
+): Promise<void> {
+  const operation = appendIncidentInternal(sessionId, incident, storageDir);
+  pendingAppends.add(operation);
+  return operation.finally(() => pendingAppends.delete(operation));
+}
+
 export async function clearIncidents(
   sessionId: string,
   storageDir = getStorageDir()
 ): Promise<void> {
+  if (!hasSessionId(sessionId)) return;
   const filePath = getFilePath(sessionId, storageDir);
 
   const entry = caches.get(filePath);
@@ -246,48 +271,59 @@ export async function pruneOldSessions(
   const toDelete = files.slice(0, Math.max(0, files.length - retention));
   await Promise.all(
     toDelete.map(async (f) => {
+      const entry = caches.get(f);
+      if (entry) {
+        entry.deleting = true;
+        if (entry.writeTimer) {
+          clearTimeout(entry.writeTimer);
+          entry.writeTimer = null;
+        }
+      }
+      const removal = (async () => {
+        if (entry?.writeInFlight) await entry.writeInFlight;
+        try {
+          await fsp.unlink(f);
+        } catch (err) {
+          if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+            logger.error(
+              '[IncidentStorage] Failed to delete old session file:',
+              err
+            );
+          }
+        } finally {
+          if (caches.get(f) === entry) caches.delete(f);
+        }
+      })();
+      removals.set(f, removal);
       try {
-        await fsp.unlink(f);
-        caches.delete(f);
-      } catch (err) {
-        logger.error(
-          '[IncidentStorage] Failed to delete old session file:',
-          err
-        );
+        await removal;
+      } finally {
+        if (removals.get(f) === removal) removals.delete(f);
       }
     })
   );
 }
 
 /**
- * Synchronous flush for app shutdown. `before-quit` handlers must complete
- * before Electron tears the process down, so this bypasses the debounce and
- * writes whatever is cached right now with sync fs — the one sanctioned use
- * of sync I/O here, matching referenceLaps.ts's shutdown flush.
+ * Waits for appends and older writes before persisting the final snapshots.
+ * The caller must postpone Electron shutdown until this promise resolves.
  */
-export function flushIncidentsOnShutdown(): void {
+export async function flushIncidentsOnShutdown(): Promise<void> {
+  while (pendingAppends.size > 0) {
+    await Promise.all([...pendingAppends]);
+  }
   for (const entry of caches.values()) {
     if (entry.writeTimer) {
       clearTimeout(entry.writeTimer);
       entry.writeTimer = null;
     }
-    const tempFilePath = getTempFilePath(entry.filePath);
-    try {
-      fs.mkdirSync(path.dirname(entry.filePath), { recursive: true });
-      fs.writeFileSync(tempFilePath, JSON.stringify(entry.incidents));
-      fs.renameSync(tempFilePath, entry.filePath);
-    } catch (err) {
-      try {
-        fs.unlinkSync(tempFilePath);
-      } catch {
-        // The temporary file may not have been created.
-      }
-      logger.error(
-        '[IncidentStorage] Failed to flush incidents on shutdown:',
-        err
-      );
-    }
   }
+  await Promise.all(
+    [...caches.values()].map(async (entry) => {
+      if (entry.writeInFlight) await entry.writeInFlight;
+      await writeToDisk(entry.filePath, [...entry.incidents]);
+    })
+  );
 }
 
 /**
@@ -305,5 +341,7 @@ export function __resetForTests(): void {
   }
   caches.clear();
   loadingPromises.clear();
+  removals.clear();
+  pendingAppends.clear();
   tempFileSequence = 0;
 }

@@ -102,6 +102,16 @@ describe('setupRaceControlBridge', () => {
     expect(pruneOldSessions).toHaveBeenCalledWith(5);
   });
 
+  it('does not prune when the runtime clears its session id', () => {
+    const { runtime } = createRuntime();
+    setupRaceControlBridge(runtime);
+    const listener = vi.mocked(runtime.onSessionIdChanged).mock.calls[0][0];
+
+    listener('');
+
+    expect(pruneOldSessions).not.toHaveBeenCalled();
+  });
+
   it('re-applies settings when the dashboard changes (profile switch)', () => {
     const { runtime, changeSessionId } = createRuntime();
     setupRaceControlBridge(

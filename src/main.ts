@@ -306,8 +306,15 @@ app.on('quit', () => {
   analytics.shutdown();
 });
 
-app.on('before-quit', () => {
+let incidentShutdownStarted = false;
+let incidentShutdownComplete = false;
+
+app.on('before-quit', (event) => {
   overlayManager.markQuitting();
+  if (incidentShutdownComplete) return;
+  event.preventDefault();
+  if (incidentShutdownStarted) return;
+  incidentShutdownStarted = true;
   keybindingManager?.stopGamepad();
   disconnectLifecycleChannel?.();
   disposeRendererDataSubscriptions?.();
@@ -317,5 +324,10 @@ app.on('before-quit', () => {
   // before the process exits.
   flushReferenceLapsOnShutdown();
   // Incident writes are debounced, so anything still pending would be lost.
-  flushIncidentsOnShutdown();
+  void flushIncidentsOnShutdown()
+    .catch((err) => log.error('[RaceControl] Shutdown flush failed:', err))
+    .finally(() => {
+      incidentShutdownComplete = true;
+      app.quit();
+    });
 });

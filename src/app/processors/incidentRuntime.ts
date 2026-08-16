@@ -54,7 +54,7 @@ export class IncidentRuntime {
   onSession(session: Session): void {
     this.processor.init(session);
     const sessionId = session?.WeekendInfo?.SubSessionID?.toString() ?? '';
-    if (sessionId && sessionId !== this.currentSessionId) {
+    if (sessionId !== this.currentSessionId) {
       logger.info(
         `[RaceControl] session changed: ${this.currentSessionId || '(none)'} -> ${sessionId}`
       );
