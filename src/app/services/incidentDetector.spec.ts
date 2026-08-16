@@ -1162,14 +1162,21 @@ describe('dev mode debug snapshots', () => {
     expect(debug?.frameHistory).toBeInstanceOf(Array);
   });
 
-  it('does not attach debug snapshot when isDev=false', () => {
+  it('still attaches the snapshot when isDev=false, minus the frame trace', () => {
+    // The evidence behind a call is needed most in a packaged build, where a
+    // false positive actually shows up. Only the per-frame trace, which costs
+    // an object per car per frame to retain, stays development-only.
     const { detector, incidents } = setupDetector(false);
     detector.processTelemetry(
       makeTelemetry({ carIdxOnPitRoad: [false] }),
       5000
     );
     triggerPitEntry(detector);
-    expect(incidents[0].debug).toBeUndefined();
+    const debug = incidents[0].debug;
+    expect(debug).toBeDefined();
+    expect(debug?.evidence).toContain('Pit entry');
+    expect(debug?.thresholds.suddenStopFromSpeed).toBe(80);
+    expect(debug?.frameHistory).toEqual([]);
   });
 
   it('frameHistory keeps roughly 3 seconds of frames, capped', () => {

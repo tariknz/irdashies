@@ -46,7 +46,6 @@ export const IncidentRow = memo(
   ({ incident, isOdd, isReplayPlaying }: Props) => {
     const canReplay = isReplayPlaying;
     const [copied, setCopied] = useState(false);
-    const isDev = process.env.NODE_ENV === 'development';
     const style = TYPE_STYLES[incident.type];
 
     const handleReplay = (seconds: number) => {
@@ -117,8 +116,8 @@ export const IncidentRow = memo(
               </span>
             </Tooltip>
           ))}
-          {isDev && incident.debug && (
-            <Tooltip content="Copies this incident's detection snapshot — trigger, evidence, thresholds and recent frames — to the clipboard. Development builds only.">
+          {incident.debug && (
+            <Tooltip content="Copies this incident's detection snapshot — what triggered it, the evidence, and the thresholds in force — to the clipboard.">
               <button
                 onClick={handleCopyLog}
                 className="ml-1 flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-600"

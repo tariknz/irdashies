@@ -366,6 +366,10 @@ export class IncidentDetector {
     carIdx: number,
     entry: IncidentDebugSnapshot['frameHistory'][number]
   ) {
+    // The rolling per-car buffer is the expensive half of the debug capture -
+    // an object per car per frame, retained 60 deep. The snapshot itself is
+    // built for every incident so the evidence and thresholds behind a call
+    // are always available; only the frame trace is development-only.
     if (!this.isDev) return;
     const buf = this.frameBuffers.get(carIdx) ?? [];
     buf.push(entry);
@@ -378,8 +382,7 @@ export class IncidentDetector {
     state: CarIncidentState,
     trigger: IncidentDebugSnapshot['trigger'],
     evidence: string
-  ): IncidentDebugSnapshot | undefined {
-    if (!this.isDev) return undefined;
+  ): IncidentDebugSnapshot {
     return {
       trigger,
       evidence,

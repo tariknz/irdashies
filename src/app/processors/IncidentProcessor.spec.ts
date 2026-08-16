@@ -288,6 +288,20 @@ describe('IncidentProcessor', () => {
     });
   });
 
+  describe('sudden stop', () => {
+    it('carries the debug snapshot so the evidence can be copied', () => {
+      const processor = new IncidentProcessor();
+      processor.init(raceSession());
+
+      pitEntryAtTop(processor, 100);
+
+      const [incident] = processor.snapshot();
+      expect(incident.debug).toBeDefined();
+      expect(incident.debug?.evidence).toBeTruthy();
+      expect(incident.debug?.thresholds).toBeDefined();
+    });
+  });
+
   describe('sustained conditions report once', () => {
     it('reports a car parked on pit road only once', () => {
       const processor = new IncidentProcessor();
