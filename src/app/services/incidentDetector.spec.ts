@@ -891,6 +891,45 @@ describe('crash detection - sustained slow', () => {
     expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
   });
 
+  it('fires for a racing car that remains completely stationary', () => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, slowFrameThreshold: 3 },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((incident) => incidents.push(incident));
+    detector.updateSession(raceSession());
+
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
+      5000
+    );
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5004], sessionTime: 100.04 }),
+      5000
+    );
+    // Repeated positions below one second are treated as stale network data.
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5004], sessionTime: 100.8 }),
+      5000
+    );
+    expect(incidents).toEqual([]);
+
+    // Once unchanged for a full second, zero-speed samples are admitted and
+    // the normal sudden-stop/sustained-slow detectors can fire.
+    for (let i = 0; i < 10; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [0.5004],
+          sessionTime: 101.04 + i * 0.04,
+        }),
+        5000
+      );
+    }
+
+    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(true);
+  });
+
   it('does not fire when a car parks after a qualifying run', () => {
     const detector = new IncidentDetector(
       { ...defaultThresholds, slowFrameThreshold: 3 },

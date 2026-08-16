@@ -358,7 +358,7 @@ export function exposeBridge() {
       ipcRenderer.invoke('chromiumFlags:save', flags),
   } as ChromiumFlagsBridge);
 
-  contextBridge.exposeInMainWorld('raceControlBridge', {
+  defineBridge<RaceControlBridge>('raceControlBridge', {
     getIncidents: () => ipcRenderer.invoke('raceControl:getIncidents'),
     replayIncident: (incident: Incident, seconds: number) =>
       ipcRenderer.invoke('raceControl:replayIncident', incident, seconds),
@@ -370,5 +370,5 @@ export function exposeBridge() {
     updateRetention: (retention: SessionRetention) =>
       ipcRenderer.invoke('raceControl:updateRetention', retention),
     showGantryWindow: () => ipcRenderer.invoke('raceControl:showGantryWindow'),
-  } as RaceControlBridge);
+  });
 }

@@ -15,6 +15,7 @@ import logger from '../logger';
 export interface IncidentRuntimeHandle {
   onSession: (session: Session) => void;
   onFrame: (frame: Telemetry) => void;
+  updateEnabled: (enabled: boolean) => void;
   updateThresholds: (thresholds: IncidentThresholds) => void;
   getCurrentSessionId: () => string;
   onSessionIdChanged: (cb: (sessionId: string) => void) => () => void;
@@ -105,7 +106,9 @@ export const setupRaceControlBridge = (
    * runs on built-in defaults while Settings shows the saved numbers.
    */
   const applyDashboard = (dashboard: DashboardLayout | undefined) => {
-    const config = dashboard?.widgets.find((w) => w.id === 'gantry')?.config;
+    const widget = dashboard?.widgets.find((w) => w.id === 'gantry');
+    runtime.updateEnabled(widget?.enabled ?? false);
+    const config = widget?.config;
     if (!config) return;
     if (isValidThresholds(config)) {
       runtime.updateThresholds(config);

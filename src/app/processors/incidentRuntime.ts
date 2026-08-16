@@ -24,6 +24,7 @@ export interface IncidentRuntimeOptions {
 
 export class IncidentRuntime {
   private readonly processor: IncidentProcessor;
+  private enabled = true;
   private currentSessionId = '';
   private readonly sessionIdChangeListeners = new Set<(id: string) => void>();
   private readonly disconnects: (() => void)[];
@@ -35,10 +36,9 @@ export class IncidentRuntime {
     private readonly persistence: IncidentPersistence,
     options: IncidentRuntimeOptions = {}
   ) {
-    // Unlike FuelProjectionRuntime, this processor is created eagerly and runs
-    // on every frame regardless of channel subscriber count — gating on
-    // subscribers would stop incident detection/persistence whenever the
-    // Gantry window is closed, which is a regression, not an optimisation.
+    // Subscriber count does not gate this processor: an enabled Gantry keeps
+    // collecting when its window is closed. The dashboard enabled state is
+    // handled separately so users who never enable Gantry pay no frame cost.
     this.processor = new IncidentProcessor({ isDev: options.isDev ?? false });
     this.disconnects = [
       lifecycle.onEnter((event) =>
@@ -65,6 +65,7 @@ export class IncidentRuntime {
   }
 
   onFrame(frame: Telemetry): void {
+    if (!this.enabled) return;
     this.metrics.markStart('incidentProcessing');
     this.processor.onFrame(frame);
     this.metrics.markEnd('incidentProcessing');
@@ -84,6 +85,12 @@ export class IncidentRuntime {
 
   updateThresholds(thresholds: IncidentThresholds): void {
     this.processor.updateThresholds(thresholds);
+  }
+
+  updateEnabled(enabled: boolean): void {
+    if (enabled === this.enabled) return;
+    this.enabled = enabled;
+    this.processor.onLifecycle({ type: 'enter', replay: false });
   }
 
   getCurrentSessionId(): string {

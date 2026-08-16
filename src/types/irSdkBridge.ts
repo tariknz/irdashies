@@ -1,5 +1,15 @@
 import type { Session, Telemetry } from '@irdashies/types';
-import type { ReplayPositionCommand } from '../app/irsdk/types/enums';
+
+export enum ReplayPositionCommand {
+  /** Beginning of the replay */
+  Begin = 0,
+  /** Current position in the replay */
+  Current,
+  /** End of the replay */
+  End,
+  /** Unused */
+  Last,
+}
 
 export interface IrSdkBridge {
   onSessionData: (

@@ -60,6 +60,7 @@ const createRuntime = () => {
   const runtime: IncidentRuntimeHandle = {
     onSession: vi.fn(),
     onFrame: vi.fn(),
+    updateEnabled: vi.fn(),
     updateThresholds: vi.fn(),
     getCurrentSessionId: vi.fn(() => '1'),
     onSessionIdChanged: vi.fn((cb: (id: string) => void) => {
@@ -88,6 +89,7 @@ describe('setupRaceControlBridge', () => {
     expect(runtime.updateThresholds).toHaveBeenCalledWith(
       expect.objectContaining(savedThresholds)
     );
+    expect(runtime.updateEnabled).toHaveBeenCalledWith(true);
   });
 
   it('applies the saved retention at startup', async () => {
@@ -168,6 +170,7 @@ describe('setupRaceControlBridge', () => {
     } as unknown as DashboardLayout);
 
     expect(runtime.updateThresholds).not.toHaveBeenCalled();
+    expect(runtime.updateEnabled).toHaveBeenCalledWith(false);
   });
 
   it('does not read or clear incident storage without a session id', async () => {

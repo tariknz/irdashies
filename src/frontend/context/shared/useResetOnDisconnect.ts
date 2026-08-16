@@ -6,7 +6,6 @@ import { usePitLapStore } from '../PitLapStore/PitLapStore';
 import { useBattleGapStore } from '../BattleGapStore/BattleGapStore';
 import { useFuelStore } from '../../components/FuelCalculator/FuelStore';
 import { useLapGapStore } from '../LapGapStore/LapGapStore';
-import { useRaceControlStore } from '../RaceControlStore/RaceControlStore';
 import logger from '@irdashies/utils/logger';
 
 /**
@@ -29,7 +28,8 @@ export const useResetOnDisconnect = (running: boolean) => {
       useBattleGapStore.getState().reset();
       useFuelStore.getState().clearAllData();
       useLapGapStore.getState().reset();
-      useRaceControlStore.getState().clearIncidents();
+      // Keep Race Control incidents available for post-session review. Its
+      // bridge clears them when the next non-empty session ID arrives.
     }
     prevRunning.current = running;
   }, [running]);

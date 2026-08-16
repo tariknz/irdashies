@@ -155,7 +155,7 @@ export enum BroadcastMessages {
   /** Trigger video capture. */
   VideoCapture,
   /** Unused. */
-  Last
+  Last,
 }
 
 export enum CameraState {
@@ -266,16 +266,7 @@ export enum ReplaySearchCommand {
   Last,
 }
 
-export enum ReplayPositionCommand {
-  /** Beginning of the replay */
-  Begin = 0,
-  /** Current position in the replay */
-  Current,
-  /** End of the replay */
-  End,
-  /** Unused */
-  Last,
-}
+export { ReplayPositionCommand } from '@irdashies/types';
 
 export enum FFBCommand {
   /** Set the maximum force when mapping steering torque force to direct input units (float in Nm) */

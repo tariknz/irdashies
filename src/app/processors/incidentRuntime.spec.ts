@@ -40,6 +40,25 @@ const frame = (overrides: Record<string, unknown> = {}): Telemetry =>
 const newMetrics = () => ({ markStart: vi.fn(), markEnd: vi.fn() });
 
 describe('IncidentRuntime', () => {
+  it('does not process or persist frames while Gantry is disabled', () => {
+    const bus = new ChannelBus();
+    const metrics = newMetrics();
+    const persistence = { save: vi.fn() };
+    const runtime = new IncidentRuntime(
+      bus,
+      createSessionLifecycle(),
+      metrics,
+      persistence
+    );
+    runtime.onSession(raceSession());
+    runtime.updateEnabled(false);
+
+    runtime.onFrame(frame());
+
+    expect(metrics.markStart).not.toHaveBeenCalled();
+    expect(persistence.save).not.toHaveBeenCalled();
+  });
+
   it('detects, publishes, and persists incidents even with zero channel subscribers', () => {
     const bus = new ChannelBus();
     const publish = vi.spyOn(bus, 'publish');

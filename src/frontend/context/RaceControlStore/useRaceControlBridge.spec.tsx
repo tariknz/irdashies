@@ -182,6 +182,32 @@ describe('useRaceControlBridge', () => {
     expect(getIncidents).toHaveBeenCalledTimes(2);
   });
 
+  it('reloads persisted incidents when the Gantry becomes visible', async () => {
+    const { bridge } = createChannelBridge();
+    window.channelBridge = bridge;
+    const getIncidents = vi
+      .fn<() => Promise<Incident[]>>()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([incident('while-hidden', 200)]);
+    window.raceControlBridge = {
+      getIncidents,
+    } as unknown as typeof window.raceControlBridge;
+    const visibilityState = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('visible');
+
+    renderHook(() => useRaceControlBridge());
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    await waitFor(() =>
+      expect(useRaceControlStore.getState().incidents.map((i) => i.id)).toEqual(
+        ['while-hidden']
+      )
+    );
+    expect(getIncidents).toHaveBeenCalledTimes(2);
+    visibilityState.mockRestore();
+  });
+
   it('drops a snapshot that resolves after the session changed', async () => {
     const { bridge, publish } = createChannelBridge();
     window.channelBridge = bridge;

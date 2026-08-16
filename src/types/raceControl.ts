@@ -68,6 +68,8 @@ export interface CarIncidentState {
   prevOnPitRoad: boolean;
   prevLapDistPct: number;
   prevSessionTime: number;
+  /** Session time when lap distance last changed. */
+  lastPositionChangeSessionTime: number;
   speedHistory: number[];
   currentAvgSpeed: number;
   recentRawSpeeds: number[];

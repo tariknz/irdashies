@@ -32,6 +32,8 @@ const PEAK_SPEED_DECAY = 0.98;
  * the time the snapshot began, so the impact itself was never in the capture.
  */
 const FRAME_HISTORY_LENGTH = 60;
+/** Remote positions may repeat briefly; only a full second implies a stop. */
+const STATIONARY_SAMPLE_DELAY_S = 1;
 
 interface TelemetrySnapshot {
   sessionTime: number;
@@ -248,6 +250,7 @@ export class IncidentDetector {
         prevOnPitRoad: false,
         prevLapDistPct: 0,
         prevSessionTime: 0,
+        lastPositionChangeSessionTime: 0,
         speedHistory: [],
         currentAvgSpeed: 0,
         recentRawSpeeds: [],
@@ -419,6 +422,7 @@ export class IncidentDetector {
         state.prevOnPitRoad = onPitRoad;
         state.prevLapDistPct = snap.carIdxLapDistPct[carIdx] ?? 0;
         state.prevSessionTime = snap.sessionTime;
+        state.lastPositionChangeSessionTime = snap.sessionTime;
         state.prevTrackSurface = surface;
         state.prevSessionFlags = snap.carIdxSessionFlags[carIdx] ?? 0;
         state.hasPrevFrame = true;
@@ -453,12 +457,23 @@ export class IncidentDetector {
       // buffers keeps the last known speed rather than polluting the rolling
       // average with zeroes; the speed-based detectors below sit this tick out.
       const deltaTime = snap.sessionTime - state.prevSessionTime;
-      const speedSample = this.calculateSpeed(
+      const lapDistPct = snap.carIdxLapDistPct[carIdx] ?? 0;
+      const positionChanged = lapDistPct !== state.prevLapDistPct;
+      if (positionChanged) {
+        state.lastPositionChangeSessionTime = snap.sessionTime;
+      }
+      const measuredSpeed = this.calculateSpeed(
         state.prevLapDistPct,
-        snap.carIdxLapDistPct[carIdx] ?? 0,
+        lapDistPct,
         deltaTime,
         trackLengthM
       );
+      const stationaryLongEnough =
+        !positionChanged &&
+        deltaTime > 0 &&
+        snap.sessionTime - state.lastPositionChangeSessionTime >=
+          STATIONARY_SAMPLE_DELAY_S;
+      const speedSample = measuredSpeed ?? (stationaryLongEnough ? 0 : null);
       const hasSpeedSample = speedSample !== null;
       const rawSpeed = speedSample ?? state.currentAvgSpeed;
 

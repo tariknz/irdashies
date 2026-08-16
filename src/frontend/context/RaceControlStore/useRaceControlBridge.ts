@@ -56,10 +56,15 @@ export const useRaceControlBridge = () => {
         load();
       }
     );
+    const reloadWhenVisible = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+    document.addEventListener('visibilitychange', reloadWhenVisible);
 
     return () => {
       cancelled = true;
       unsubscribe?.();
+      document.removeEventListener('visibilitychange', reloadWhenVisible);
     };
   }, [hydrateIncidents, clearIncidents]);
 };
