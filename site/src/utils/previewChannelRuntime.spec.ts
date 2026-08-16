@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   DriverControlsSnapshot,
   IrSdkSourceBridge,
@@ -23,13 +23,12 @@ import mockSession from '../../../src/app/irsdk/node/utils/mock-data/session.jso
  * Processors return a single mutated snapshot object rather than a fresh one
  * per tick, so assertions must capture scalar values at delivery time — a
  * retained reference reflects whatever the processor holds now, not what was
- * delivered. `ChannelBus` also throttles to the channel rate, so frames need
- * real time between them to produce separate deliveries.
+ * delivered. `ChannelBus` also throttles to the channel rate, so simulated
+ * time must advance between frames to produce separate deliveries.
  */
 const DELIVERY_INTERVAL_MS = 60; // driver-controls.snapshot defaults to 25Hz
 
-const flushDeliveries = () =>
-  new Promise((resolve) => setTimeout(resolve, DELIVERY_INTERVAL_MS));
+const flushDeliveries = () => vi.advanceTimersByTimeAsync(DELIVERY_INTERVAL_MS);
 
 const setValue = (frame: Telemetry, key: string, value: number): void => {
   (frame as unknown as Record<string, { value: number[] }>)[key].value[0] =
@@ -78,6 +77,14 @@ const createFakeSource = () => {
 };
 
 describe('createPreviewChannelRuntime', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('runs the real processors in-page and delivers derived snapshots', async () => {
     const fake = createFakeSource();
     const runtime = createPreviewChannelRuntime(fake.source);
