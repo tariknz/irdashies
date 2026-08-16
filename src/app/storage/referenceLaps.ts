@@ -74,10 +74,17 @@ const generateKey = (
 
 /**
  * JSON Reviver: Converts arrays back to Float32Arrays for specific keys
+ *
+ * `speedsKph` is no longer written (see ReferenceLapProcessor.promote), but it
+ * stays listed here so files already carrying it load as a Float32Array rather
+ * than a plain number[] wearing that type.
  */
 const reviver = (key: string, value: unknown): unknown => {
   if (
-    (key === 'pointPos' || key === 'times' || key === 'tangents') &&
+    (key === 'pointPos' ||
+      key === 'times' ||
+      key === 'tangents' ||
+      key === 'speedsKph') &&
     Array.isArray(value)
   ) {
     return new Float32Array(value);

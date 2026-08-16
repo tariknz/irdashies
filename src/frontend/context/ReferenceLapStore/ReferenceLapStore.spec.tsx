@@ -22,6 +22,17 @@ describe('ReferenceLapStore compatibility selectors', () => {
     expect(store.getReferenceLap(5, 99, false)).toBe(EMPTY_REFERENCE_LAP);
   });
 
+  it('returns the session best without falling back to the class ghost', () => {
+    const best = lap(59);
+    useReferenceLapStore.setState({
+      bestLaps: new Map([[4, best]]),
+      persistedLaps: new Map([[12, lap(60)]]),
+    });
+    const store = useReferenceLapStore.getState();
+    expect(store.getSessionBestLap(4)).toBe(best);
+    expect(store.getSessionBestLap(5)).toBeNull();
+  });
+
   it('clears channel-derived state', () => {
     useReferenceLapStore.setState({ bestLaps: new Map([[4, lap(59)]]) });
     useReferenceLapStore.getState().completeSession();

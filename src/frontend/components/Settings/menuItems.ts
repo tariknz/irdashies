@@ -70,6 +70,12 @@ export const widgetItems: MenuItem[] = [
     widgetType: 'cornername',
   },
   {
+    to: '/settings/deltaspeed',
+    path: '/deltaspeed',
+    label: 'Delta Speed',
+    widgetType: 'deltaspeed',
+  },
+  {
     to: '/settings/fastercarsfrombehind',
     path: '/fastercarsfrombehind',
     label: 'Faster Cars Behind',
