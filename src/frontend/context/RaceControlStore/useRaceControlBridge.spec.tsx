@@ -84,7 +84,7 @@ describe('useRaceControlBridge', () => {
     window.channelBridge = bridge;
     const getIncidents = vi
       .fn<() => Promise<Incident[]>>()
-      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([incident('mount-session', 50)])
       .mockResolvedValueOnce([incident('sessionA', 100)])
       .mockResolvedValueOnce([incident('sessionB', 200)]);
     window.raceControlBridge = {
@@ -93,7 +93,8 @@ describe('useRaceControlBridge', () => {
 
     renderHook(() => useRaceControlBridge());
 
-    // First value seen — reload, but there is no earlier session to drop.
+    // The first value can represent a transition from the SubSessionID loaded
+    // on mount, so it must replace rather than merge with that snapshot.
     publish('raceControl.sessionId', '111');
     await waitFor(() =>
       expect(useRaceControlStore.getState().incidents.map((i) => i.id)).toEqual(

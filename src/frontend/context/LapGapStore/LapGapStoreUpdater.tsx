@@ -20,8 +20,10 @@ interface LapGapStoreUpdaterProps {
 // Standings.gap is { value?: number, laps: number }. Use .value for the seconds gap.
 const ActiveLapGapStoreUpdater = memo(() => {
   const carIdxLap = useStandingsSelector(standingsSelectors.carIdxLap);
+  const sessionNum = useStandingsSelector(standingsSelectors.sessionNum);
   const prevLapsRef = useRef<number[]>([]);
   const recordLapGap = useLapGapStore((s) => s.recordLapGap);
+  const setSessionNum = useLapGapStore((s) => s.setSessionNum);
   // Pass gap enabled so the hook populates driver.gap, and showAll so every
   // car is returned instead of the buffer-sliced list around the player
   const standingsByClass = useDriverStandings(
@@ -40,6 +42,19 @@ const ActiveLapGapStoreUpdater = memo(() => {
   useEffect(() => {
     allDriversRef.current = allDrivers;
   }, [allDrivers]);
+
+  // Unlike the lifecycle event channel, standings snapshots resume with the
+  // current SessionNum after a hidden window becomes visible. Keeping that
+  // identity in the store makes a missed Qualifying -> Race transition reset
+  // durable across updater unmounts as well.
+  useEffect(() => {
+    if (sessionNum === undefined || sessionNum === null) return;
+    const previousSessionNum = useLapGapStore.getState().sessionNum;
+    setSessionNum(sessionNum);
+    if (previousSessionNum !== null && previousSessionNum !== sessionNum) {
+      prevLapsRef.current = [];
+    }
+  }, [sessionNum, setSessionNum]);
 
   useSessionLifecycle((event) => {
     if (event.type === 'sessionNumChange' || event.type === 'disconnect') {

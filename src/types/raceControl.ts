@@ -17,6 +17,20 @@ export interface IncidentThresholds {
   cooldownSeconds: number; // seconds, default 5
 }
 
+export const INCIDENT_THRESHOLD_BOUNDS = {
+  slowSpeedThreshold: { min: 1, max: 100 },
+  slowFrameThreshold: { min: 1, max: 60, integer: true },
+  suddenStopFromSpeed: { min: 20, max: 300 },
+  suddenStopToSpeed: { min: 1, max: 50 },
+  suddenStopFrames: { min: 1, max: 10, integer: true },
+  offTrackDebounce: { min: 1, max: 10, integer: true },
+  pitEntryDebounce: { min: 1, max: 10, integer: true },
+  cooldownSeconds: { min: 1, max: 30 },
+} as const satisfies Record<
+  keyof IncidentThresholds,
+  { min: number; max: number; integer?: boolean }
+>;
+
 export interface IncidentDebugSnapshot {
   trigger:
     | 'sustained-slow'

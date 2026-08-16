@@ -11,6 +11,7 @@ import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandin
 // rather than relying on parent-driven rerenders that memo would bail out of.
 const lapListeners = new Set<() => void>();
 let currentLap: number[] = [];
+let currentSessionNum = 0;
 const emitLap = (next: number[]) => {
   currentLap = next;
   lapListeners.forEach((listener) => listener());
@@ -19,14 +20,21 @@ const emitLap = (next: number[]) => {
 vi.mock('../ChannelStore/useStandingsSnapshot', () => ({
   standingsSelectors: {
     carIdxLap: (snapshot: { carIdxLap: number[] }) => snapshot.carIdxLap,
+    sessionNum: (snapshot: { sessionNum: number | null }) =>
+      snapshot.sessionNum,
   },
-  useStandingsSelector: () =>
+  useStandingsSelector: (
+    selector: (snapshot: {
+      carIdxLap: number[];
+      sessionNum: number | null;
+    }) => number[] | number | null
+  ) =>
     useSyncExternalStore(
       (listener: () => void) => {
         lapListeners.add(listener);
         return () => lapListeners.delete(listener);
       },
-      () => currentLap
+      () => selector({ carIdxLap: currentLap, sessionNum: currentSessionNum })
     ),
 }));
 
@@ -41,6 +49,7 @@ describe('LapGapStoreUpdater', () => {
     useLapGapStore.getState().reset();
     publish = undefined;
     currentLap = [];
+    currentSessionNum = 0;
 
     const subscribe = vi.fn(
       (_channel: string, callback: (event: SessionLifecycleEvent) => void) => {
@@ -76,6 +85,17 @@ describe('LapGapStoreUpdater', () => {
     render(<LapGapStoreUpdater />);
 
     act(() => publish?.({ type: 'disconnect' }));
+
+    expect(useLapGapStore.getState().lapGaps).toEqual({});
+  });
+
+  it('clears stale lap gaps when a resumed snapshot has a new session number', () => {
+    const view = render(<LapGapStoreUpdater />);
+    useLapGapStore.getState().recordLapGap(0, 3, 1.5);
+    view.unmount();
+
+    currentSessionNum = 1;
+    render(<LapGapStoreUpdater />);
 
     expect(useLapGapStore.getState().lapGaps).toEqual({});
   });

@@ -5,6 +5,7 @@ import {
   GantryConfig,
   SessionRetention,
   SettingsTabType,
+  INCIDENT_THRESHOLD_BOUNDS,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard, useTrackStateSelector } from '@irdashies/context';
@@ -67,8 +68,7 @@ const thresholdFields: ThresholdField[] = [
     label: 'Slow Speed Threshold',
     description:
       'A car travelling below this speed counts as crawling. Raise it to also pick up cars limping back to the pits; lower it so only near-stationary cars are reported and you get fewer false alarms in slow corners.',
-    min: 1,
-    max: 100,
+    ...INCIDENT_THRESHOLD_BOUNDS.slowSpeedThreshold,
     isSpeed: true,
   },
   {
@@ -76,16 +76,14 @@ const thresholdFields: ThresholdField[] = [
     label: 'Slow Frame Count',
     description:
       'How many telemetry frames in a row (roughly 60 per second) a car must stay below the slow speed before it is logged. Raise it to ignore brief lifts and hairpins; lower it to react sooner.',
-    min: 1,
-    max: 60,
+    ...INCIDENT_THRESHOLD_BOUNDS.slowFrameThreshold,
   },
   {
     key: 'suddenStopFromSpeed',
     label: 'Crash: Speed Before Impact',
     description:
       'How fast a car must have been going for a sudden deceleration to be treated as a crash. Raise it so only big-speed impacts register; lower it to also catch contact in slower corners.',
-    min: 20,
-    max: 300,
+    ...INCIDENT_THRESHOLD_BOUNDS.suddenStopFromSpeed,
     isSpeed: true,
   },
   {
@@ -93,8 +91,7 @@ const thresholdFields: ThresholdField[] = [
     label: 'Crash: Speed After Impact',
     description:
       'The speed the car has to drop to for that deceleration to count as a crash. Raise it to flag heavy lock-ups and glancing hits; lower it so only cars brought to a near stop are reported.',
-    min: 1,
-    max: 50,
+    ...INCIDENT_THRESHOLD_BOUNDS.suddenStopToSpeed,
     isSpeed: true,
   },
   {
@@ -102,32 +99,28 @@ const thresholdFields: ThresholdField[] = [
     label: 'Crash: Frame Window',
     description:
       'How quickly the speed drop has to happen, in telemetry frames (roughly 60 per second). Lower it so only violent impacts qualify; raise it to also catch cars scrubbing speed through a long spin.',
-    min: 1,
-    max: 10,
+    ...INCIDENT_THRESHOLD_BOUNDS.suddenStopFrames,
   },
   {
     key: 'offTrackDebounce',
     label: 'Off-Track Debounce',
     description:
       'How many frames in a row a car must be off the racing surface before an off-track is logged. Raise it to ignore cars clipping a kerb or putting a wheel wide; lower it to catch every excursion.',
-    min: 1,
-    max: 10,
+    ...INCIDENT_THRESHOLD_BOUNDS.offTrackDebounce,
   },
   {
     key: 'pitEntryDebounce',
     label: 'Pit Entry Debounce',
     description:
       'How many frames in a row a car must be on pit road before a pit entry is logged. Raise it to avoid false entries from cars hugging the pit exit line; lower it to log entries sooner.',
-    min: 1,
-    max: 10,
+    ...INCIDENT_THRESHOLD_BOUNDS.pitEntryDebounce,
   },
   {
     key: 'cooldownSeconds',
     label: 'Per-Type Cooldown',
     description:
       'How long to stay quiet before the same car can trigger the same kind of incident again. Raise it so one long spin does not fill the feed; lower it if you want every separate moment listed.',
-    min: 1,
-    max: 30,
+    ...INCIDENT_THRESHOLD_BOUNDS.cooldownSeconds,
   },
 ];
 

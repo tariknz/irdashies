@@ -7,7 +7,10 @@ import {
   pruneOldSessions,
 } from '../storage/incidentStorage';
 import { onDashboardUpdated } from '../storage/dashboardEvents';
-import type { IncidentThresholds } from '../../types/raceControl';
+import {
+  INCIDENT_THRESHOLD_BOUNDS,
+  type IncidentThresholds,
+} from '../../types/raceControl';
 import logger from '../logger';
 
 /** Small interface over IncidentRuntime — keeps this bridge decoupled from
@@ -35,22 +38,21 @@ const thresholdKeys: (keyof IncidentThresholds)[] = [
   'cooldownSeconds',
 ];
 
-const frameCountKeys = new Set<keyof IncidentThresholds>([
-  'slowFrameThreshold',
-  'suddenStopFrames',
-  'offTrackDebounce',
-  'pitEntryDebounce',
-]);
-
 const isValidThresholds = (value: unknown): value is IncidentThresholds => {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Record<string, unknown>;
   return thresholdKeys.every((key) => {
     const threshold = candidate[key];
-    if (!isFiniteNumber(threshold) || threshold < 0) return false;
+    const bounds = INCIDENT_THRESHOLD_BOUNDS[key];
+    if (
+      !isFiniteNumber(threshold) ||
+      threshold < bounds.min ||
+      threshold > bounds.max
+    ) {
+      return false;
+    }
     return (
-      !frameCountKeys.has(key) ||
-      (Number.isInteger(threshold) && threshold >= 1)
+      !('integer' in bounds) || !bounds.integer || Number.isInteger(threshold)
     );
   });
 };

@@ -153,6 +153,7 @@ describe('setupRaceControlBridge', () => {
   it.each([
     ['zero', { ...savedThresholds, offTrackDebounce: 0 }],
     ['fractional', { ...savedThresholds, suddenStopFrames: 2.5 }],
+    ['excessive', { ...savedThresholds, suddenStopFrames: 1_000_000_000 }],
   ])('rejects %s frame-count thresholds', (_label, thresholds) => {
     const { runtime } = createRuntime();
     setupRaceControlBridge(runtime);

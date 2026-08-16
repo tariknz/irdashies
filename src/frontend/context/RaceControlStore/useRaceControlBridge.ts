@@ -47,12 +47,13 @@ export const useRaceControlBridge = () => {
         // '' means disconnected, not a new session. Leave the list alone so a
         // disconnect doesn't wipe the incidents the user is still reviewing.
         if (!sessionId || sessionId === lastSessionId) return;
-        const isFirstValue = lastSessionId === undefined;
         lastSessionId = sessionId;
         // Each session has its own incident file, so the previous session's
-        // list must go. Incidents detected between here and the response are
-        // merged in by `hydrateIncidents` rather than lost.
-        if (!isFirstValue) clearIncidents();
+        // list must go. This also applies to the first event: the mount-time
+        // load may already have hydrated the SubSessionID active when Gantry
+        // opened. Incidents detected between here and the response are merged
+        // in by `hydrateIncidents` rather than lost.
+        clearIncidents();
         load();
       }
     );
