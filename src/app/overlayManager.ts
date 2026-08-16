@@ -6,6 +6,7 @@ import {
 } from 'electron';
 import type { DashboardLayout, ContainerBoundsInfo } from '@irdashies/types';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
 import { getDashboard } from './storage/dashboards';
@@ -46,8 +47,13 @@ const isAllowedGuestHost = (urlStr: string): boolean => {
  * the bundle.
  */
 function applyBaselineSecurity(window: BrowserWindow, label: string): void {
+  const rendererPath = path.join(
+    __dirname,
+    `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`
+  );
   hardenWindow(window, {
     devServerUrl: MAIN_WINDOW_VITE_DEV_SERVER_URL,
+    packagedRendererUrl: pathToFileURL(rendererPath).href,
     label,
   });
 }
@@ -612,10 +618,25 @@ export class OverlayManager {
     // The Gantry consumes telemetry and session data, so it is forwarded
     // everything — before the settings-window guard below.
     if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
-      try {
-        this.gantryWindow.webContents.send(key, value);
-      } catch (e) {
-        logger.error(`Failed to send message ${key} to gantry window`, e);
+      const bulkStream =
+        key === 'telemetryInspector:telemetry'
+          ? 'telemetryInspector'
+          : key === 'sessionData'
+            ? 'sessionData'
+            : undefined;
+      const shouldSend =
+        !bulkStream ||
+        (this.gantryWindow.isVisible() &&
+          this.rendererDataSubscriptions?.has(
+            this.gantryWindow.webContents.id,
+            bulkStream
+          ));
+      if (shouldSend) {
+        try {
+          this.gantryWindow.webContents.send(key, value);
+        } catch (e) {
+          logger.error(`Failed to send message ${key} to gantry window`, e);
+        }
       }
     }
 

@@ -75,7 +75,9 @@ export class IncidentRuntime {
         `[RaceControl] incident emitted type=${incident.type} car=${incident.carIdx} (${incident.driverName} #${incident.carNumber}) lap=${incident.lapNum} lapDistPct=${incident.lapDistPct.toFixed(3)} sessionTime=${incident.sessionTime.toFixed(2)} id=${incident.id}`
       );
       this.bus.publish('raceControl.incidents', incident);
-      this.persistence.save(this.currentSessionId, incident);
+      if (this.currentSessionId) {
+        this.persistence.save(this.currentSessionId, incident);
+      }
     }
     this.metrics.markEnd('incidentPublication');
   }

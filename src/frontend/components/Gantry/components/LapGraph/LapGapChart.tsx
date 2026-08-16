@@ -58,6 +58,25 @@ function shortName(fullName: string): string {
   return parts[parts.length - 1] || fullName;
 }
 
+export const clientXToViewBoxX = (
+  clientX: number,
+  rect: Pick<DOMRect, 'left' | 'width' | 'height'>,
+  viewBoxWidth: number,
+  viewBoxHeight: number
+): number => {
+  const scale = Math.min(
+    rect.width / viewBoxWidth,
+    rect.height / viewBoxHeight
+  );
+  if (!Number.isFinite(scale) || scale <= 0) return 0;
+  const renderedWidth = viewBoxWidth * scale;
+  const letterboxOffsetX = (rect.width - renderedWidth) / 2;
+  return Math.max(
+    0,
+    Math.min(viewBoxWidth, (clientX - rect.left - letterboxOffsetX) / scale)
+  );
+};
+
 export const LapGapChart = memo(({ drivers }: Props) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [hoveredCarIdx, setHoveredCarIdx] = useState<number | null>(null);
@@ -389,8 +408,7 @@ export const LapGapChart = memo(({ drivers }: Props) => {
                 onMouseMove={(e) => {
                   if (!svgRef.current) return;
                   const rect = svgRef.current.getBoundingClientRect();
-                  const mouseXInSvg =
-                    ((e.clientX - rect.left) / rect.width) * W;
+                  const mouseXInSvg = clientXToViewBoxX(e.clientX, rect, W, H);
 
                   let nearestLap = laps[0];
                   let minDist = Infinity;

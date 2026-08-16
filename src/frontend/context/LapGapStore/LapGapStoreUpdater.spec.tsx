@@ -55,6 +55,13 @@ describe('LapGapStoreUpdater', () => {
     ] as unknown as ReturnType<typeof useDriverStandings>);
   });
 
+  it('does not mount standings hooks while disabled', () => {
+    render(<LapGapStoreUpdater enabled={false} />);
+
+    expect(useDriverStandings).not.toHaveBeenCalled();
+    expect(lapListeners.size).toBe(0);
+  });
+
   it('clears lapGaps when session lifecycle emits sessionNumChange', () => {
     useLapGapStore.getState().recordLapGap(0, 3, 1.5);
     render(<LapGapStoreUpdater />);

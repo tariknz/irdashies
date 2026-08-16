@@ -8,7 +8,7 @@ import { TrackLocation, SessionState } from '../irsdk/types/enums';
 
 const raceSession = (): Session =>
   ({
-    WeekendInfo: { TrackLength: '5.000 km' },
+    WeekendInfo: { TrackLength: '5.000 km', SubSessionID: 123 },
     SessionInfo: { Sessions: [{ SessionNum: 0, SessionType: 'Race' }] },
     DriverInfo: {
       Drivers: [
@@ -73,13 +73,46 @@ describe('IncidentRuntime', () => {
       expect.objectContaining({ type: IncidentType.PitEntry })
     );
     expect(persistence.save).toHaveBeenCalledWith(
-      '',
+      '123',
       expect.objectContaining({ type: IncidentType.PitEntry })
     );
     expect(metrics.markStart).toHaveBeenCalledWith('incidentProcessing');
     expect(metrics.markEnd).toHaveBeenCalledWith('incidentProcessing');
     expect(metrics.markStart).toHaveBeenCalledWith('incidentPublication');
     expect(metrics.markEnd).toHaveBeenCalledWith('incidentPublication');
+  });
+
+  it('publishes live incidents but does not persist before a session id exists', () => {
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    const persistence = { save: vi.fn() };
+    const runtime = new IncidentRuntime(
+      bus,
+      createSessionLifecycle(),
+      newMetrics(),
+      persistence
+    );
+    const session = raceSession();
+    if (session.WeekendInfo) {
+      delete (session.WeekendInfo as { SubSessionID?: number }).SubSessionID;
+    }
+
+    runtime.onSession(session);
+    runtime.onFrame(frame());
+    for (let i = 0; i < 3; i++) {
+      runtime.onFrame(
+        frame({
+          CarIdxOnPitRoad: { value: [true] },
+          SessionTime: { value: [100.04 + i * 0.04] },
+        })
+      );
+    }
+
+    expect(publish).toHaveBeenCalledWith(
+      'raceControl.incidents',
+      expect.objectContaining({ type: IncidentType.PitEntry })
+    );
+    expect(persistence.save).not.toHaveBeenCalled();
   });
 
   it('tracks the current session id and notifies listeners when it changes', () => {

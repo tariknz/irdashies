@@ -110,6 +110,36 @@ describe('useRaceControlBridge', () => {
     expect(getIncidents).toHaveBeenCalledTimes(3);
   });
 
+  it('drops the mount-time snapshot when the first session load starts', async () => {
+    const { bridge, publish } = createChannelBridge();
+    window.channelBridge = bridge;
+    let resolveInitial: (incidents: Incident[]) => void = () => undefined;
+    const getIncidents = vi
+      .fn<() => Promise<Incident[]>>()
+      .mockImplementationOnce(
+        () => new Promise<Incident[]>((resolve) => (resolveInitial = resolve))
+      )
+      .mockResolvedValueOnce([incident('current-session', 200)]);
+    window.raceControlBridge = {
+      getIncidents,
+    } as unknown as typeof window.raceControlBridge;
+
+    renderHook(() => useRaceControlBridge());
+    publish('raceControl.sessionId', '111');
+
+    await waitFor(() =>
+      expect(useRaceControlStore.getState().incidents.map((i) => i.id)).toEqual(
+        ['current-session']
+      )
+    );
+    resolveInitial([incident('pre-session', 100)]);
+
+    await waitFor(() => expect(getIncidents).toHaveBeenCalledTimes(2));
+    expect(useRaceControlStore.getState().incidents.map((i) => i.id)).toEqual([
+      'current-session',
+    ]);
+  });
+
   it('ignores a repeated session id', async () => {
     const { bridge, publish } = createChannelBridge();
     window.channelBridge = bridge;

@@ -20,28 +20,29 @@ function getFilePath(sessionId: string, storageDir: string): string {
  * project default (ARCHITECTURE_RULES.md R6.2).
  */
 const WRITE_DEBOUNCE_MS = 250;
+/** Matches the renderer cap and bounds serialization cost in long sessions. */
+const MAX_INCIDENTS_PER_SESSION = 2_000;
+let tempFileSequence = 0;
+
+function getTempFilePath(filePath: string): string {
+  tempFileSequence += 1;
+  return `${filePath}.${process.pid}.${tempFileSequence}.tmp`;
+}
 
 interface SessionCache {
   filePath: string;
   incidents: Incident[];
+  writeTimer: NodeJS.Timeout | null;
+  writeInFlight: Promise<void> | null;
 }
 
-/**
- * In-memory incidents for whichever session file was touched most recently.
- * Loaded lazily from disk once per file, then mutated directly so
- * appendIncident never re-reads the file — this is what turns session-long
- * incident logging from an O(n^2) read+parse-per-incident into O(n) writes.
- */
-let cache: SessionCache | null = null;
-
-let writeTimer: NodeJS.Timeout | null = null;
-let writeInFlight: Promise<void> | null = null;
+/** Per-session caches keep concurrent session operations isolated. */
+const caches = new Map<string, SessionCache>();
 
 // Dedupes concurrent first-loads of the same file so two appendIncident
 // calls racing before the cache is populated don't both read the file and
 // clobber each other's in-memory push.
-let loadingFilePath: string | null = null;
-let loadingPromise: Promise<SessionCache> | null = null;
+const loadingPromises = new Map<string, Promise<SessionCache>>();
 
 async function readIncidentsFile(filePath: string): Promise<Incident[]> {
   let raw: string;
@@ -73,74 +74,80 @@ async function writeToDisk(
   filePath: string,
   incidents: Incident[]
 ): Promise<void> {
+  const tempFilePath = getTempFilePath(filePath);
   try {
     await fsp.mkdir(path.dirname(filePath), { recursive: true });
-    await fsp.writeFile(filePath, JSON.stringify(incidents));
+    await fsp.writeFile(tempFilePath, JSON.stringify(incidents));
+    await fsp.rename(tempFilePath, filePath);
   } catch (err) {
     logger.error('[IncidentStorage] Failed to write incident file:', err);
+    await fsp.unlink(tempFilePath).catch(() => undefined);
   }
 }
 
 /** Writes whatever is currently cached, tracked so callers can wait on it. */
-function runFlush(): Promise<void> {
-  const snapshot = cache;
-  const task = snapshot
-    ? writeToDisk(snapshot.filePath, [...snapshot.incidents])
-    : Promise.resolve();
-  writeInFlight = task.finally(() => {
-    if (writeInFlight === task) writeInFlight = null;
+function runFlush(entry: SessionCache): Promise<void> {
+  const incidents = [...entry.incidents];
+  const task = (entry.writeInFlight ?? Promise.resolve()).then(() =>
+    writeToDisk(entry.filePath, incidents)
+  );
+  const trackedTask = task.finally(() => {
+    if (entry.writeInFlight === trackedTask) entry.writeInFlight = null;
   });
-  return task;
+  entry.writeInFlight = trackedTask;
+  return trackedTask;
 }
 
 /** Cancels any debounce timer and flushes/awaits whatever write is pending. */
-async function flushPending(): Promise<void> {
-  if (writeTimer) {
-    clearTimeout(writeTimer);
-    writeTimer = null;
-    await runFlush();
+async function flushPending(entry: SessionCache): Promise<void> {
+  if (entry.writeTimer) {
+    clearTimeout(entry.writeTimer);
+    entry.writeTimer = null;
+    await runFlush(entry);
     return;
   }
-  if (writeInFlight) {
-    await writeInFlight;
+  if (entry.writeInFlight) {
+    await entry.writeInFlight;
   }
 }
 
 /** Debounces the write so a burst of incidents produces a single flush. */
-function scheduleWrite(): void {
-  if (writeTimer) clearTimeout(writeTimer);
-  writeTimer = setTimeout(() => {
-    writeTimer = null;
-    void runFlush();
+function scheduleWrite(entry: SessionCache): void {
+  if (entry.writeTimer) clearTimeout(entry.writeTimer);
+  entry.writeTimer = setTimeout(() => {
+    entry.writeTimer = null;
+    void runFlush(entry);
   }, WRITE_DEBOUNCE_MS);
 }
 
 /**
- * Ensures `cache` reflects `filePath`, loading from disk only on first touch
- * (or when the active session changes). Switching sessions flushes any
- * pending write for the outgoing session first, so a debounced write can
- * never land after the session has moved on.
+ * Returns the cache for `filePath`, loading it once on first touch.
  */
 async function ensureCache(filePath: string): Promise<SessionCache> {
-  if (cache && cache.filePath === filePath) return cache;
-  if (loadingFilePath === filePath && loadingPromise) return loadingPromise;
+  const cached = caches.get(filePath);
+  if (cached) return cached;
+  const loading = loadingPromises.get(filePath);
+  if (loading) return loading;
 
-  await flushPending();
-
-  loadingFilePath = filePath;
   const promise = (async (): Promise<SessionCache> => {
-    const incidents = await readIncidentsFile(filePath);
-    const entry: SessionCache = { filePath, incidents };
-    cache = entry;
+    const incidents = (await readIncidentsFile(filePath)).slice(
+      -MAX_INCIDENTS_PER_SESSION
+    );
+    const entry: SessionCache = {
+      filePath,
+      incidents,
+      writeTimer: null,
+      writeInFlight: null,
+    };
+    caches.set(filePath, entry);
     return entry;
   })();
-  loadingPromise = promise;
+  loadingPromises.set(filePath, promise);
   try {
     return await promise;
   } finally {
-    if (loadingPromise === promise) {
-      loadingPromise = null;
-      loadingFilePath = null;
+    if (loadingPromises.get(filePath) === promise) {
+      loadingPromises.delete(filePath);
     }
   }
 }
@@ -162,7 +169,13 @@ export async function appendIncident(
   const filePath = getFilePath(sessionId, storageDir);
   const entry = await ensureCache(filePath);
   entry.incidents.push(incident);
-  scheduleWrite();
+  if (entry.incidents.length > MAX_INCIDENTS_PER_SESSION) {
+    entry.incidents.splice(
+      0,
+      entry.incidents.length - MAX_INCIDENTS_PER_SESSION
+    );
+  }
+  scheduleWrite(entry);
 }
 
 export async function clearIncidents(
@@ -171,15 +184,10 @@ export async function clearIncidents(
 ): Promise<void> {
   const filePath = getFilePath(sessionId, storageDir);
 
-  if (writeTimer) {
-    clearTimeout(writeTimer);
-    writeTimer = null;
-  }
-  if (writeInFlight) {
-    await writeInFlight;
-  }
-  if (cache && cache.filePath === filePath) {
-    cache = { filePath, incidents: [] };
+  const entry = caches.get(filePath);
+  if (entry) {
+    await flushPending(entry);
+    entry.incidents = [];
   }
 
   try {
@@ -225,7 +233,7 @@ export async function listSessionFiles(
 
   return stats
     .filter((s): s is { fullPath: string; mtime: number } => s !== null)
-    .sort((a, b) => a.mtime - b.mtime)
+    .sort((a, b) => a.mtime - b.mtime || a.fullPath.localeCompare(b.fullPath))
     .map(({ fullPath }) => fullPath);
 }
 
@@ -240,9 +248,7 @@ export async function pruneOldSessions(
     toDelete.map(async (f) => {
       try {
         await fsp.unlink(f);
-        if (cache && cache.filePath === f) {
-          cache = null;
-        }
+        caches.delete(f);
       } catch (err) {
         logger.error(
           '[IncidentStorage] Failed to delete old session file:',
@@ -260,19 +266,27 @@ export async function pruneOldSessions(
  * of sync I/O here, matching referenceLaps.ts's shutdown flush.
  */
 export function flushIncidentsOnShutdown(): void {
-  if (writeTimer) {
-    clearTimeout(writeTimer);
-    writeTimer = null;
-  }
-  if (!cache) return;
-  try {
-    fs.mkdirSync(path.dirname(cache.filePath), { recursive: true });
-    fs.writeFileSync(cache.filePath, JSON.stringify(cache.incidents));
-  } catch (err) {
-    logger.error(
-      '[IncidentStorage] Failed to flush incidents on shutdown:',
-      err
-    );
+  for (const entry of caches.values()) {
+    if (entry.writeTimer) {
+      clearTimeout(entry.writeTimer);
+      entry.writeTimer = null;
+    }
+    const tempFilePath = getTempFilePath(entry.filePath);
+    try {
+      fs.mkdirSync(path.dirname(entry.filePath), { recursive: true });
+      fs.writeFileSync(tempFilePath, JSON.stringify(entry.incidents));
+      fs.renameSync(tempFilePath, entry.filePath);
+    } catch (err) {
+      try {
+        fs.unlinkSync(tempFilePath);
+      } catch {
+        // The temporary file may not have been created.
+      }
+      logger.error(
+        '[IncidentStorage] Failed to flush incidents on shutdown:',
+        err
+      );
+    }
   }
 }
 
@@ -281,17 +295,15 @@ export function flushIncidentsOnShutdown(): void {
  * assert on-disk state without depending on the real debounce delay.
  */
 export async function __awaitPendingWrite(): Promise<void> {
-  await flushPending();
+  await Promise.all([...caches.values()].map(flushPending));
 }
 
 /** Test-only: resets module state between specs. */
 export function __resetForTests(): void {
-  cache = null;
-  if (writeTimer) {
-    clearTimeout(writeTimer);
-    writeTimer = null;
+  for (const entry of caches.values()) {
+    if (entry.writeTimer) clearTimeout(entry.writeTimer);
   }
-  writeInFlight = null;
-  loadingFilePath = null;
-  loadingPromise = null;
+  caches.clear();
+  loadingPromises.clear();
+  tempFileSequence = 0;
 }

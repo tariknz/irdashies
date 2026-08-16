@@ -52,7 +52,13 @@ export class IncidentDetector {
   private listeners = new Set<IncidentListener>();
   private sessionDrivers = new Map<
     number,
-    { name: string; carNumber: string; teamName: string; isPaceCar: boolean }
+    {
+      name: string;
+      carNumber: string;
+      teamName: string;
+      isPaceCar: boolean;
+      isSpectator: boolean;
+    }
   >();
   private isDev: boolean;
   private frameBuffers = new Map<
@@ -119,6 +125,7 @@ export class IncidentDetector {
           CarNumber: string;
           TeamName: string;
           CarIsPaceCar: number;
+          IsSpectator?: number;
         }[];
       };
     },
@@ -138,9 +145,14 @@ export class IncidentDetector {
       this.lastSessionNum !== null &&
       effectiveSessionNum !== null &&
       this.lastSessionNum !== effectiveSessionNum;
+    const phaseResolved =
+      this.lastSubSessionId !== null &&
+      this.lastSessionNum === null &&
+      effectiveSessionNum !== null;
     const isFirstUpdate =
       this.lastSubSessionId === null && this.lastSessionNum === null;
-    const shouldReset = sessionChanged || phaseChanged || isFirstUpdate;
+    const shouldReset =
+      sessionChanged || phaseChanged || phaseResolved || isFirstUpdate;
 
     // Always refresh driver map (cheap; handles late joiners / roster changes)
     const prevDrivers = this.sessionDrivers.size;
@@ -151,6 +163,7 @@ export class IncidentDetector {
         carNumber: d.CarNumber,
         teamName: d.TeamName,
         isPaceCar: d.CarIsPaceCar === 1,
+        isSpectator: d.IsSpectator === 1,
       });
     });
 
@@ -178,9 +191,6 @@ export class IncidentDetector {
           `[IncidentDetector] updateSession: RESET ${this.lastSubSessionId ?? '(none)'}/${this.lastSessionNum ?? '(none)'} → ${subSessionId ?? '(none)'}/${effectiveSessionNum ?? '(none)'} (${phaseName}); cleared ${prevCarStates} carStates; ${prevDrivers}→${this.sessionDrivers.size} drivers`
         );
       }
-
-      this.lastSubSessionId = subSessionId;
-      this.lastSessionNum = effectiveSessionNum;
     } else if (prevDrivers !== this.sessionDrivers.size) {
       // Re-publish with no session change — carStates/frameBuffers are
       // preserved. iRacing republishes the session YAML roughly once a second,
@@ -189,6 +199,11 @@ export class IncidentDetector {
       logger.debug(
         `[IncidentDetector] updateSession: roster changed ${prevDrivers}→${this.sessionDrivers.size} drivers (subSession=${subSessionId ?? '(none)'} sessionNum=${effectiveSessionNum ?? '(none)'})`
       );
+    }
+
+    if (subSessionId !== null) this.lastSubSessionId = subSessionId;
+    if (effectiveSessionNum !== null) {
+      this.lastSessionNum = effectiveSessionNum;
     }
   }
 
@@ -319,7 +334,7 @@ export class IncidentDetector {
       if (gap > maxPctApart) continue;
 
       const driver = this.sessionDrivers.get(otherIdx);
-      if (!driver || driver.isPaceCar) continue;
+      if (!driver || driver.isPaceCar || driver.isSpectator) continue;
       return { name: driver.name, carNumber: driver.carNumber };
     }
     return null;
@@ -390,7 +405,7 @@ export class IncidentDetector {
 
     for (let carIdx = 0; carIdx < numCars; carIdx++) {
       const driver = this.sessionDrivers.get(carIdx);
-      if (!driver || driver.isPaceCar) continue;
+      if (!driver || driver.isPaceCar || driver.isSpectator) continue;
       if (snap.carIdxTrackSurface[carIdx] === TrackLocation.NotInWorld)
         continue;
 
@@ -414,7 +429,7 @@ export class IncidentDetector {
       if (onPitRoad) {
         state.onPitRoadFrameCount++;
         if (
-          state.onPitRoadFrameCount === this.thresholds.pitEntryDebounce &&
+          state.onPitRoadFrameCount >= this.thresholds.pitEntryDebounce &&
           !this.isCoolingDown(state, IncidentType.PitEntry, nowMs)
         ) {
           state.lastIncidentTime[IncidentType.PitEntry] = nowMs;
@@ -478,7 +493,7 @@ export class IncidentDetector {
       // --- Off-track ---
       if (surface === TrackLocation.OffTrack) {
         state.offTrackFrameCount++;
-        if (state.offTrackFrameCount === this.thresholds.offTrackDebounce) {
+        if (state.offTrackFrameCount >= this.thresholds.offTrackDebounce) {
           const lapDistPct = snap.carIdxLapDistPct[carIdx] ?? 0;
           // Another car in trouble at the same place and moment turns a lone
           // excursion into a contact, which is reported as a Crash so it is

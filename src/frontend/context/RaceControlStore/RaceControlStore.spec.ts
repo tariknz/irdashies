@@ -3,7 +3,7 @@ import { IncidentType } from '@irdashies/types';
 import type { Incident } from '@irdashies/types';
 import { currentHydrationEpoch, useRaceControlStore } from './RaceControlStore';
 
-const MAX_INCIDENTS = 500;
+const MAX_INCIDENTS = 2_000;
 
 const incident = (id: string, timestamp: number): Incident => ({
   id,

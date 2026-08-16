@@ -36,7 +36,8 @@ vi.mock('../logger', () => ({
 }));
 
 const { setupRaceControlBridge } = await import('./raceControlBridge');
-const { pruneOldSessions } = await import('../storage/incidentStorage');
+const { loadIncidents, clearIncidents, pruneOldSessions } =
+  await import('../storage/incidentStorage');
 
 const savedThresholds = {
   slowSpeedThreshold: 21,
@@ -137,6 +138,18 @@ describe('setupRaceControlBridge', () => {
     expect(runtime.updateThresholds).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['zero', { ...savedThresholds, offTrackDebounce: 0 }],
+    ['fractional', { ...savedThresholds, suddenStopFrames: 2.5 }],
+  ])('rejects %s frame-count thresholds', (_label, thresholds) => {
+    const { runtime } = createRuntime();
+    setupRaceControlBridge(runtime);
+
+    handlers.get('raceControl:updateThresholds')?.({}, thresholds);
+
+    expect(runtime.updateThresholds).not.toHaveBeenCalled();
+  });
+
   it('does nothing when the dashboard has no gantry widget', () => {
     const { runtime } = createRuntime();
 
@@ -145,5 +158,16 @@ describe('setupRaceControlBridge', () => {
     } as unknown as DashboardLayout);
 
     expect(runtime.updateThresholds).not.toHaveBeenCalled();
+  });
+
+  it('does not read or clear incident storage without a session id', async () => {
+    const { runtime } = createRuntime();
+    vi.mocked(runtime.getCurrentSessionId).mockReturnValue('');
+    setupRaceControlBridge(runtime);
+
+    expect(handlers.get('raceControl:getIncidents')?.({})).toEqual([]);
+    expect(handlers.get('raceControl:clearIncidents')?.({})).toBeUndefined();
+    expect(loadIncidents).not.toHaveBeenCalled();
+    expect(clearIncidents).not.toHaveBeenCalled();
   });
 });

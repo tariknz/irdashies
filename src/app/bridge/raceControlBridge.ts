@@ -34,12 +34,24 @@ const thresholdKeys: (keyof IncidentThresholds)[] = [
   'cooldownSeconds',
 ];
 
+const frameCountKeys = new Set<keyof IncidentThresholds>([
+  'slowFrameThreshold',
+  'suddenStopFrames',
+  'offTrackDebounce',
+  'pitEntryDebounce',
+]);
+
 const isValidThresholds = (value: unknown): value is IncidentThresholds => {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Record<string, unknown>;
-  return thresholdKeys.every(
-    (key) => isFiniteNumber(candidate[key]) && (candidate[key] as number) >= 0
-  );
+  return thresholdKeys.every((key) => {
+    const threshold = candidate[key];
+    if (!isFiniteNumber(threshold) || threshold < 0) return false;
+    return (
+      !frameCountKeys.has(key) ||
+      (Number.isInteger(threshold) && threshold >= 1)
+    );
+  });
 };
 
 const isValidRetention = (value: unknown): value is 'all' | 5 | 10 | 20 =>
@@ -151,13 +163,15 @@ export const setupRaceControlBridge = (
   });
 
   ipcMain.handle('raceControl:getIncidents', () => {
-    return loadIncidents(runtime.getCurrentSessionId());
+    const sessionId = runtime.getCurrentSessionId();
+    return sessionId ? loadIncidents(sessionId) : [];
   });
 
   ipcMain.handle('raceControl:clearIncidents', () => {
     // Returned so the IPC reply waits for the delete; clearIncidents became
     // async, and without this the renderer could reload before it completed.
-    return clearIncidents(runtime.getCurrentSessionId());
+    const sessionId = runtime.getCurrentSessionId();
+    return sessionId ? clearIncidents(sessionId) : undefined;
   });
 
   ipcMain.handle('raceControl:focusDriver', (_event, carNumber: unknown) => {

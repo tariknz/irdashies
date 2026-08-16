@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { IncidentDetector } from './incidentDetector';
 import type { IncidentThresholds } from '../../types/raceControl';
 import { IncidentType } from '../../types/raceControl';
@@ -166,6 +166,20 @@ describe('session transitions', () => {
       { WeekendInfo: { SubSessionID: 111 }, ...makeDrivers() },
       2 // Race
     );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((detector as any).carStates.size).toBe(0);
+  });
+
+  it('resets when SessionNum first resolves after the initial YAML update', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const session = { WeekendInfo: { SubSessionID: 111 }, ...makeDrivers() };
+    detector.updateSession(session);
+    detector.processTelemetry(makeTelemetry(), 5000);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((detector as any).carStates.size).toBe(1);
+
+    detector.updateSession(session, 2);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((detector as any).carStates.size).toBe(0);
   });
@@ -560,6 +574,33 @@ describe('contact detection', () => {
 });
 
 describe('pit entry detection', () => {
+  it('does not emit incidents for spectators', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((incident) => incidents.push(incident));
+    detector.updateSession({
+      ...raceSession(),
+      DriverInfo: {
+        Drivers: [
+          {
+            ...raceSession().DriverInfo.Drivers[0],
+            IsSpectator: 1,
+          },
+        ],
+      },
+    });
+
+    detector.processTelemetry(makeTelemetry(), 5000);
+    for (let i = 0; i < 4; i++) {
+      detector.processTelemetry(
+        makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 101 + i }),
+        5000
+      );
+    }
+
+    expect(incidents).toEqual([]);
+  });
+
   it('fires PitEntry after pitEntryDebounce consecutive OnPitRoad frames', () => {
     const detector = new IncidentDetector(
       { ...defaultThresholds, pitEntryDebounce: 3 },
@@ -668,6 +709,96 @@ describe('off-track detection', () => {
       );
     }
     expect(incidents.some((i) => i.type === IncidentType.OffTrack)).toBe(true);
+  });
+});
+
+describe('debounce cooldown recovery', () => {
+  it('emits a pit entry after cooldown even when its threshold frame was suppressed', () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(10_000);
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((incident) => incidents.push(incident));
+    detector.updateSession(raceSession());
+    detector.processTelemetry(makeTelemetry(), 5000);
+
+    for (let i = 0; i < 3; i++) {
+      detector.processTelemetry(
+        makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 100.1 + i }),
+        5000
+      );
+    }
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [false], sessionTime: 104 }),
+      5000
+    );
+
+    now.mockReturnValue(12_000);
+    for (let i = 0; i < 3; i++) {
+      detector.processTelemetry(
+        makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 105 + i }),
+        5000
+      );
+    }
+    expect(
+      incidents.filter((i) => i.type === IncidentType.PitEntry)
+    ).toHaveLength(1);
+
+    now.mockReturnValue(16_000);
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 108 }),
+      5000
+    );
+    expect(
+      incidents.filter((i) => i.type === IncidentType.PitEntry)
+    ).toHaveLength(2);
+    now.mockRestore();
+  });
+
+  it('emits an off-track after cooldown even when its threshold frame was suppressed', () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(10_000);
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((incident) => incidents.push(incident));
+    detector.updateSession(raceSession());
+    detector.processTelemetry(makeTelemetry(), 5000);
+
+    for (let i = 0; i < 3; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxTrackSurface: [TrackLocation.OffTrack],
+          sessionTime: 100.1 + i,
+        }),
+        5000
+      );
+    }
+    detector.processTelemetry(makeTelemetry({ sessionTime: 104 }), 5000);
+
+    now.mockReturnValue(12_000);
+    for (let i = 0; i < 3; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxTrackSurface: [TrackLocation.OffTrack],
+          sessionTime: 105 + i,
+        }),
+        5000
+      );
+    }
+    expect(
+      incidents.filter((i) => i.type === IncidentType.OffTrack)
+    ).toHaveLength(1);
+
+    now.mockReturnValue(16_000);
+    detector.processTelemetry(
+      makeTelemetry({
+        carIdxTrackSurface: [TrackLocation.OffTrack],
+        sessionTime: 108,
+      }),
+      5000
+    );
+    expect(
+      incidents.filter((i) => i.type === IncidentType.OffTrack)
+    ).toHaveLength(2);
+    now.mockRestore();
   });
 });
 

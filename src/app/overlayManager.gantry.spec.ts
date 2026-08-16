@@ -13,6 +13,7 @@ if (!process.resourcesPath) {
 const createdWindows: FakeBrowserWindow[] = [];
 
 class FakeWebContents {
+  id = 42;
   send = vi.fn();
   on = vi.fn();
   setWindowOpenHandler = vi.fn();
@@ -169,6 +170,31 @@ describe('OverlayManager Gantry window', () => {
       gantryWindows()[0],
       expect.objectContaining({ label: 'Gantry' })
     );
+  });
+
+  it('forwards bulk data only while visible and subscribed', () => {
+    const manager = new OverlayManager();
+    const subscriptions = {
+      has: vi.fn(() => false),
+      hasAny: vi.fn(() => false),
+    };
+    manager.setRendererDataSubscriptions(subscriptions);
+    manager.createGantryWindow(dashboard(true));
+    const [window] = gantryWindows();
+
+    manager.publishMessage('sessionData', { revision: 1 });
+    expect(window.webContents.send).not.toHaveBeenCalled();
+
+    window.shown = true;
+    manager.publishMessage('sessionData', { revision: 2 });
+    expect(window.webContents.send).not.toHaveBeenCalled();
+
+    subscriptions.has.mockReturnValue(true);
+    manager.publishMessage('sessionData', { revision: 3 });
+    expect(window.webContents.send).toHaveBeenCalledWith('sessionData', {
+      revision: 3,
+    });
+    expect(subscriptions.has).toHaveBeenCalledWith(42, 'sessionData');
   });
 
   it('drops its reference when the renderer crashes so it can be recreated', () => {

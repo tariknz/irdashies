@@ -6,6 +6,8 @@ import {
   RunningStateProvider,
   SessionProvider,
   useRunningState,
+  useResetOnDisconnect,
+  LapGapStoreUpdater,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
@@ -16,7 +18,6 @@ import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 import { RendererDataProviders } from './components/RendererDataProviders/RendererDataProviders';
 import { WidgetRuntimeProvider } from './widgetRuntime';
 import { Gantry } from './components/Gantry/Gantry';
-import { LapGapStoreUpdater } from '@irdashies/context';
 
 /**
  * Check if this window is the settings window based on URL hash
@@ -55,6 +56,7 @@ const SettingsApp = () => {
  */
 const GantryApp = () => {
   const { running } = useRunningState();
+  useResetOnDisconnect(running);
   return (
     // The runtime provider supplies Gantry's declared channel rates; without
     // it every channel hook here would fall back to the unthrottled default.

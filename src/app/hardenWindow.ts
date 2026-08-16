@@ -13,6 +13,8 @@ export interface HardenableWindow {
 export interface HardenWindowOptions {
   /** Vite dev-server origin, when running unpackaged. */
   devServerUrl?: string;
+  /** Exact packaged renderer document allowed to retain the preload. */
+  packagedRendererUrl?: string;
   /** Name used in logs when a navigation is blocked. */
   label?: string;
   /** Injected for tests. */
@@ -26,10 +28,24 @@ export interface HardenWindowOptions {
  */
 export const isInternalAppUrl = (
   url: string,
-  devServerUrl?: string
+  devServerUrl?: string,
+  packagedRendererUrl?: string
 ): boolean => {
-  if (devServerUrl && url.startsWith(devServerUrl)) return true;
-  return url.startsWith('file://');
+  try {
+    const candidate = new URL(url);
+    if (devServerUrl) {
+      return candidate.origin === new URL(devServerUrl).origin;
+    }
+    if (!packagedRendererUrl) return false;
+    const packagedRenderer = new URL(packagedRendererUrl);
+    return (
+      candidate.protocol === packagedRenderer.protocol &&
+      candidate.host === packagedRenderer.host &&
+      candidate.pathname === packagedRenderer.pathname
+    );
+  } catch {
+    return false;
+  }
 };
 
 /**
@@ -43,7 +59,12 @@ export const hardenWindow = (
   window: HardenableWindow,
   options: HardenWindowOptions = {}
 ): void => {
-  const { devServerUrl, label = 'window', openExternal } = options;
+  const {
+    devServerUrl,
+    packagedRendererUrl,
+    label = 'window',
+    openExternal,
+  } = options;
   const openInBrowser =
     openExternal ??
     ((url: string) =>
@@ -66,7 +87,7 @@ export const hardenWindow = (
     event: { preventDefault: () => void },
     url: string
   ) => {
-    if (isInternalAppUrl(url, devServerUrl)) return;
+    if (isInternalAppUrl(url, devServerUrl, packagedRendererUrl)) return;
     logger.warn(`[${label}] Blocked navigation to ${url}`);
     event.preventDefault();
   };

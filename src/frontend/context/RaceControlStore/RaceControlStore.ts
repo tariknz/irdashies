@@ -6,7 +6,7 @@ import type { Incident } from '../../../types/raceControl';
 
 // Endurance sessions can generate thousands of incidents; cap the list so
 // memory doesn't grow unbounded over a long race.
-const MAX_INCIDENTS = 500;
+const MAX_INCIDENTS = 2_000;
 
 interface RaceControlState {
   incidents: Incident[];

@@ -17,8 +17,10 @@ export const useRaceControlBridge = () => {
     if (!bridge) return;
 
     let cancelled = false;
+    let loadGeneration = 0;
 
     const load = () => {
+      const generation = ++loadGeneration;
       // Snapshot the epoch first: if the list is cleared while this request is
       // in flight, the response is stale and gets dropped instead of
       // resurrecting incidents the user just dismissed.
@@ -26,7 +28,7 @@ export const useRaceControlBridge = () => {
       bridge
         .getIncidents()
         .then((incidents) => {
-          if (cancelled) return;
+          if (cancelled || generation !== loadGeneration) return;
           hydrateIncidents(incidents, epoch);
         })
         .catch((err) =>

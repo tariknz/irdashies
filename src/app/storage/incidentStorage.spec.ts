@@ -106,6 +106,14 @@ describe('incidentStorage', () => {
     await appendIncident('s5', makeIncident('5'), tmpDir);
     await appendIncident('s6', makeIncident('6'), tmpDir);
     await __awaitPendingWrite();
+    for (let i = 1; i <= 6; i++) {
+      const timestamp = new Date(1_000 * i);
+      fs.utimesSync(
+        path.join(tmpDir, `incidents-s${i}.json`),
+        timestamp,
+        timestamp
+      );
+    }
     await pruneOldSessions(5, tmpDir);
     const remaining = await listSessionFiles(tmpDir);
     expect(remaining).toHaveLength(5);
@@ -126,6 +134,22 @@ describe('incidentStorage', () => {
     expect(onDiskA.map((i) => i.id)).toEqual(['a1']);
   });
 
+  it('does not lose an append when another session loads concurrently', async () => {
+    const { appendIncident, loadIncidents, __awaitPendingWrite } =
+      await import('./incidentStorage');
+
+    await Promise.all([
+      appendIncident('sessionA', makeIncident('a1'), tmpDir),
+      loadIncidents('sessionB', tmpDir),
+    ]);
+    await __awaitPendingWrite();
+
+    const onDiskA = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'incidents-sessionA.json'), 'utf-8')
+    ) as Incident[];
+    expect(onDiskA.map((incident) => incident.id)).toEqual(['a1']);
+  });
+
   it('does not re-read the file on every append (no read-modify-write per incident)', async () => {
     const { appendIncident, loadIncidents } = await import('./incidentStorage');
     await appendIncident('perf-session', makeIncident('1'), tmpDir);
@@ -143,6 +167,30 @@ describe('incidentStorage', () => {
     const loaded = await loadIncidents('perf-session', tmpDir);
     expect(loaded.map((i) => i.id)).toEqual(['1', '2', '3']);
     expect(loaded.some((i) => i.id === 'planted')).toBe(false);
+  });
+
+  it('keeps only the newest 2,000 incidents in memory and on disk', async () => {
+    const { appendIncident, loadIncidents, __awaitPendingWrite } =
+      await import('./incidentStorage');
+    for (let i = 0; i < 2_005; i++) {
+      await appendIncident('endurance', makeIncident(String(i)), tmpDir);
+    }
+
+    const loaded = await loadIncidents('endurance', tmpDir);
+    expect(loaded).toHaveLength(2_000);
+    expect(loaded[0].id).toBe('5');
+    expect(loaded.at(-1)?.id).toBe('2004');
+
+    await __awaitPendingWrite();
+    const onDisk = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'incidents-endurance.json'), 'utf-8')
+    ) as Incident[];
+    expect(onDisk.map((incident) => incident.id)).toEqual(
+      loaded.map((incident) => incident.id)
+    );
+    expect(fs.readdirSync(tmpDir).some((file) => file.endsWith('.tmp'))).toBe(
+      false
+    );
   });
 
   it('flushIncidentsOnShutdown writes the current session synchronously', async () => {

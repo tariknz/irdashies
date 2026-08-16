@@ -38,7 +38,13 @@ const createWindow = () => {
 
 describe('isInternalAppUrl', () => {
   it('accepts the packaged bundle', () => {
-    expect(isInternalAppUrl('file:///C:/app/renderer/index.html')).toBe(true);
+    expect(
+      isInternalAppUrl(
+        'file:///C:/app/renderer/index.html#/gantry',
+        undefined,
+        'file:///C:/app/renderer/index.html'
+      )
+    ).toBe(true);
   });
 
   it('accepts the dev server when one is configured', () => {
@@ -57,6 +63,25 @@ describe('isInternalAppUrl', () => {
   it('rejects external origins', () => {
     expect(
       isInternalAppUrl('https://example.com', 'http://localhost:5173')
+    ).toBe(false);
+  });
+
+  it('rejects a lookalike development origin', () => {
+    expect(
+      isInternalAppUrl(
+        'http://localhost:5173.evil/#/gantry',
+        'http://localhost:5173'
+      )
+    ).toBe(false);
+  });
+
+  it('rejects unrelated packaged file URLs', () => {
+    expect(
+      isInternalAppUrl(
+        'file:///C:/Windows/System32/calc.exe',
+        undefined,
+        'file:///C:/app/renderer/index.html'
+      )
     ).toBe(false);
   });
 });
@@ -95,11 +120,30 @@ describe('hardenWindow', () => {
 
   it.each(['will-navigate', 'will-redirect'])('allows internal %s', (event) => {
     const { window, navigate } = createWindow();
-    hardenWindow(window, { devServerUrl: 'http://localhost:5173' });
+    hardenWindow(window, {
+      devServerUrl: 'http://localhost:5173',
+      packagedRendererUrl: 'file:///C:/app/index.html',
+    });
 
     expect(
       navigate(event, 'http://localhost:5173/#/gantry')
     ).not.toHaveBeenCalled();
-    expect(navigate(event, 'file:///C:/app/index.html')).not.toHaveBeenCalled();
   });
+
+  it.each(['will-navigate', 'will-redirect'])(
+    'allows the expected packaged document for %s',
+    (event) => {
+      const { window, navigate } = createWindow();
+      hardenWindow(window, {
+        packagedRendererUrl: 'file:///C:/app/index.html',
+      });
+
+      expect(
+        navigate(event, 'file:///C:/app/index.html#/gantry')
+      ).not.toHaveBeenCalled();
+      expect(
+        navigate(event, 'file:///C:/other/index.html')
+      ).toHaveBeenCalledOnce();
+    }
+  );
 });
