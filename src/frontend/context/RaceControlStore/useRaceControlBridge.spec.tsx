@@ -43,7 +43,11 @@ const createChannelBridge = () => {
 
 describe('useRaceControlBridge', () => {
   beforeEach(() => {
-    useRaceControlStore.setState({ incidents: [], hydrationEpoch: 0 });
+    useRaceControlStore.setState({
+      incidents: [],
+      driverFilter: null,
+      hydrationEpoch: 0,
+    });
   });
 
   afterEach(() => {
@@ -101,6 +105,7 @@ describe('useRaceControlBridge', () => {
     } as unknown as typeof window.raceControlBridge;
 
     renderHook(() => useRaceControlBridge());
+    useRaceControlStore.getState().setDriverFilter(7);
 
     // The first value can represent a transition from the SubSessionID loaded
     // on mount, so it must replace rather than merge with that snapshot.
@@ -110,6 +115,7 @@ describe('useRaceControlBridge', () => {
         ['sessionA']
       )
     );
+    expect(useRaceControlStore.getState().driverFilter).toBeNull();
 
     publish('raceControl.sessionId', '222');
     await waitFor(() =>

@@ -93,6 +93,13 @@ export const setupRaceControlBridge = (
 ) => {
   let retention: 'all' | 5 | 10 | 20 = 'all';
 
+  const applyRetention = (value: 'all' | 5 | 10 | 20) => {
+    retention = value;
+    void pruneOldSessions(value).catch((err) =>
+      logger.error('[RaceControl] Failed to prune old sessions:', err)
+    );
+  };
+
   runtime.onSessionIdChanged((sessionId) => {
     if (!sessionId) return;
     void pruneOldSessions(retention).catch((err) =>
@@ -120,7 +127,7 @@ export const setupRaceControlBridge = (
       );
     }
     if (isValidRetention(config.sessionRetention)) {
-      retention = config.sessionRetention;
+      applyRetention(config.sessionRetention);
     }
   };
 
@@ -165,7 +172,7 @@ export const setupRaceControlBridge = (
       logger.warn('[RaceControl] Rejected invalid retention value:', value);
       return;
     }
-    retention = value;
+    applyRetention(value);
   });
 
   ipcMain.handle('raceControl:getIncidents', () => {

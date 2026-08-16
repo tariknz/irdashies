@@ -21,7 +21,11 @@ const incident = (id: string, timestamp: number): Incident => ({
 });
 
 const reset = () =>
-  useRaceControlStore.setState({ incidents: [], hydrationEpoch: 0 });
+  useRaceControlStore.setState({
+    incidents: [],
+    driverFilter: null,
+    hydrationEpoch: 0,
+  });
 
 describe('RaceControlStore', () => {
   beforeEach(reset);
@@ -108,6 +112,21 @@ describe('RaceControlStore', () => {
       expect(currentHydrationEpoch()).toBe(0);
       useRaceControlStore.getState().clearIncidents();
       expect(currentHydrationEpoch()).toBe(1);
+    });
+  });
+
+  describe('resetForSession', () => {
+    it('clears incidents and the session-scoped driver filter', () => {
+      useRaceControlStore.getState().addIncident(incident('old', 100));
+      useRaceControlStore.getState().setDriverFilter(7);
+
+      useRaceControlStore.getState().resetForSession();
+
+      expect(useRaceControlStore.getState()).toMatchObject({
+        incidents: [],
+        driverFilter: null,
+        hydrationEpoch: 1,
+      });
     });
   });
 

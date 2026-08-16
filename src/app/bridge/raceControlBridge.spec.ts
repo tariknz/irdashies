@@ -93,13 +93,21 @@ describe('setupRaceControlBridge', () => {
   });
 
   it('applies the saved retention at startup', async () => {
-    const { runtime, changeSessionId } = createRuntime();
+    const { runtime } = createRuntime();
 
     setupRaceControlBridge(
       runtime,
       dashboardWith({ ...savedThresholds, sessionRetention: 5 })
     );
-    changeSessionId();
+    expect(pruneOldSessions).toHaveBeenCalledWith(5);
+  });
+
+  it('prunes immediately when retention is updated', () => {
+    const { runtime } = createRuntime();
+    setupRaceControlBridge(runtime);
+    vi.mocked(pruneOldSessions).mockClear();
+
+    handlers.get('raceControl:updateRetention')?.({}, 5);
 
     expect(pruneOldSessions).toHaveBeenCalledWith(5);
   });
@@ -115,7 +123,7 @@ describe('setupRaceControlBridge', () => {
   });
 
   it('re-applies settings when the dashboard changes (profile switch)', () => {
-    const { runtime, changeSessionId } = createRuntime();
+    const { runtime } = createRuntime();
     setupRaceControlBridge(
       runtime,
       dashboardWith({ ...savedThresholds, sessionRetention: 5 })
@@ -131,8 +139,6 @@ describe('setupRaceControlBridge', () => {
         })
       )
     );
-    changeSessionId();
-
     expect(runtime.updateThresholds).toHaveBeenCalledWith(
       expect.objectContaining({ cooldownSeconds: 3 })
     );

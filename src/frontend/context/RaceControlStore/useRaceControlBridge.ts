@@ -6,6 +6,7 @@ export const useRaceControlBridge = () => {
   const hydrateIncidents = useRaceControlStore((s) => s.hydrateIncidents);
   const addIncident = useRaceControlStore((s) => s.addIncident);
   const clearIncidents = useRaceControlStore((s) => s.clearIncidents);
+  const resetForSession = useRaceControlStore((s) => s.resetForSession);
 
   useEffect(() => {
     if (!window.channelBridge) return;
@@ -39,7 +40,7 @@ export const useRaceControlBridge = () => {
             lastSessionId !== undefined &&
             snapshot.sessionId !== lastSessionId
           ) {
-            clearIncidents();
+            resetForSession();
           }
           lastSessionId = snapshot.sessionId;
           hydrateIncidents(snapshot.incidents, currentHydrationEpoch());
@@ -65,7 +66,7 @@ export const useRaceControlBridge = () => {
         // load may already have hydrated the SubSessionID active when Gantry
         // opened. Incidents detected between here and the response are merged
         // in by `hydrateIncidents` rather than lost.
-        clearIncidents();
+        resetForSession();
         load();
       }
     );
@@ -79,5 +80,5 @@ export const useRaceControlBridge = () => {
       unsubscribe?.();
       document.removeEventListener('visibilitychange', reloadWhenVisible);
     };
-  }, [hydrateIncidents, clearIncidents]);
+  }, [hydrateIncidents, clearIncidents, resetForSession]);
 };

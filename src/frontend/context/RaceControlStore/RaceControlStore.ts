@@ -21,6 +21,7 @@ interface RaceControlState {
 
   addIncident: (incident: Incident) => void;
   clearIncidents: () => void;
+  resetForSession: () => void;
   toggleTypeFilter: (type: IncidentType) => void;
   setDriverFilter: (carIdx: number | null) => void;
   hydrateIncidents: (incidents: Incident[], epoch?: number) => void;
@@ -46,6 +47,13 @@ export const useRaceControlStore = create<RaceControlState>((set, get) => ({
 
   clearIncidents: () =>
     set((s) => ({ incidents: [], hydrationEpoch: s.hydrationEpoch + 1 })),
+
+  resetForSession: () =>
+    set((s) => ({
+      incidents: [],
+      driverFilter: null,
+      hydrationEpoch: s.hydrationEpoch + 1,
+    })),
 
   toggleTypeFilter: (type) =>
     set((s) => {
