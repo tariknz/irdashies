@@ -92,6 +92,7 @@ export interface CarIncidentState {
   slowFrameCount: number;
   offTrackFrameCount: number;
   onPitRoadFrameCount: number;
+  /** Last incident time by type, in telemetry session seconds. */
   lastIncidentTime: Record<string, number>;
   hasPrevFrame: boolean;
 }

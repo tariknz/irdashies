@@ -8,7 +8,12 @@ export default {
   // Event channels (raceControl.incidents, session.lifecycle) are subscribed
   // directly through window.channelBridge and only publish when something
   // happens, so they are deliberately not declared as required inputs.
-  channels: ['standings.snapshot', 'track-state.snapshot', 'radio.snapshot'],
+  channels: [
+    'lap-times.snapshot',
+    'standings.snapshot',
+    'track-state.snapshot',
+    'radio.snapshot',
+  ],
   // 5 Hz - the supported sortable rate for standings.
   ratePreset: 'gapTiming',
   channelRates: {

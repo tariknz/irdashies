@@ -10,6 +10,7 @@ import {
 } from '../../../shared/DriverName/DriverName';
 import { type Gap, useHighlightColor } from '@irdashies/domain';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
+import { useLapTimesStoreUpdater } from '@irdashies/context';
 import { Tooltip } from '../Tooltip/Tooltip';
 
 interface Props {
@@ -129,6 +130,7 @@ const formatInterval = (
 };
 
 export const GantryStandings = memo(({ followedCarIdx }: Props) => {
+  useLapTimesStoreUpdater(true);
   // Gap and interval are only calculated when the settings say they are
   // enabled, so passing nothing leaves both columns empty. The cast is needed
   // because the settings type marks these fields required.
@@ -136,6 +138,7 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
     {
       gap: { enabled: true },
       interval: { enabled: true },
+      lapTimeDeltas: { enabled: true, numLaps: 3 },
     } as Parameters<typeof useDriverStandings>[0],
     { showAll: true }
   );

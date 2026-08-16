@@ -271,10 +271,12 @@ export class IncidentDetector {
   private isCoolingDown(
     state: CarIncidentState,
     type: IncidentType,
-    nowMs: number
+    sessionTime: number
   ): boolean {
-    const last = state.lastIncidentTime[type] ?? 0;
-    return nowMs - last < this.thresholds.cooldownSeconds * 1000;
+    const last = state.lastIncidentTime[type];
+    return (
+      last !== undefined && sessionTime - last < this.thresholds.cooldownSeconds
+    );
   }
 
   /**
@@ -403,7 +405,7 @@ export class IncidentDetector {
   }
 
   processTelemetry(snap: TelemetrySnapshot, trackLengthM: number) {
-    const nowMs = Date.now();
+    const cooldownTime = snap.sessionTime;
     const numCars = snap.carIdxLapDistPct.length;
 
     for (let carIdx = 0; carIdx < numCars; carIdx++) {
@@ -434,9 +436,9 @@ export class IncidentDetector {
         state.onPitRoadFrameCount++;
         if (
           state.onPitRoadFrameCount >= this.thresholds.pitEntryDebounce &&
-          !this.isCoolingDown(state, IncidentType.PitEntry, nowMs)
+          !this.isCoolingDown(state, IncidentType.PitEntry, cooldownTime)
         ) {
-          state.lastIncidentTime[IncidentType.PitEntry] = nowMs;
+          state.lastIncidentTime[IncidentType.PitEntry] = cooldownTime;
           const debug = this.buildDebugSnapshot(
             carIdx,
             state,
@@ -525,8 +527,8 @@ export class IncidentDetector {
           );
           const type = partner ? IncidentType.Crash : IncidentType.OffTrack;
 
-          if (!this.isCoolingDown(state, type, nowMs)) {
-            state.lastIncidentTime[type] = nowMs;
+          if (!this.isCoolingDown(state, type, cooldownTime)) {
+            state.lastIncidentTime[type] = cooldownTime;
             const debug = this.buildDebugSnapshot(
               carIdx,
               state,
@@ -553,9 +555,9 @@ export class IncidentDetector {
 
       if (
         (newFlags & GlobalFlags.Black || newFlags & GlobalFlags.Disqualify) &&
-        !this.isCoolingDown(state, IncidentType.BlackFlag, nowMs)
+        !this.isCoolingDown(state, IncidentType.BlackFlag, cooldownTime)
       ) {
-        state.lastIncidentTime[IncidentType.BlackFlag] = nowMs;
+        state.lastIncidentTime[IncidentType.BlackFlag] = cooldownTime;
         const debug = this.buildDebugSnapshot(
           carIdx,
           state,
@@ -569,9 +571,9 @@ export class IncidentDetector {
       }
       if (
         newFlags & GlobalFlags.Furled &&
-        !this.isCoolingDown(state, IncidentType.Slowdown, nowMs)
+        !this.isCoolingDown(state, IncidentType.Slowdown, cooldownTime)
       ) {
-        state.lastIncidentTime[IncidentType.Slowdown] = nowMs;
+        state.lastIncidentTime[IncidentType.Slowdown] = cooldownTime;
         const debug = this.buildDebugSnapshot(
           carIdx,
           state,
@@ -611,9 +613,9 @@ export class IncidentDetector {
           state.slowFrameCount++;
           if (
             state.slowFrameCount === this.thresholds.slowFrameThreshold &&
-            !this.isCoolingDown(state, IncidentType.Crash, nowMs)
+            !this.isCoolingDown(state, IncidentType.Crash, cooldownTime)
           ) {
-            state.lastIncidentTime[IncidentType.Crash] = nowMs;
+            state.lastIncidentTime[IncidentType.Crash] = cooldownTime;
             const debug = this.buildDebugSnapshot(
               carIdx,
               state,
@@ -660,9 +662,9 @@ export class IncidentDetector {
         if (
           oldestSpeed > this.thresholds.suddenStopFromSpeed &&
           currentSpeed < this.thresholds.suddenStopToSpeed &&
-          !this.isCoolingDown(state, IncidentType.Crash, nowMs)
+          !this.isCoolingDown(state, IncidentType.Crash, cooldownTime)
         ) {
-          state.lastIncidentTime[IncidentType.Crash] = nowMs;
+          state.lastIncidentTime[IncidentType.Crash] = cooldownTime;
           const debug = this.buildDebugSnapshot(
             carIdx,
             state,

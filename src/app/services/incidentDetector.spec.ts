@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { IncidentDetector } from './incidentDetector';
 import type { IncidentThresholds } from '../../types/raceControl';
 import { IncidentType } from '../../types/raceControl';
@@ -714,7 +714,6 @@ describe('off-track detection', () => {
 
 describe('debounce cooldown recovery', () => {
   it('emits a pit entry after cooldown even when its threshold frame was suppressed', () => {
-    const now = vi.spyOn(Date, 'now').mockReturnValue(10_000);
     const detector = new IncidentDetector(defaultThresholds, false);
     const incidents: Incident[] = [];
     detector.onIncident((incident) => incidents.push(incident));
@@ -732,7 +731,6 @@ describe('debounce cooldown recovery', () => {
       5000
     );
 
-    now.mockReturnValue(12_000);
     for (let i = 0; i < 3; i++) {
       detector.processTelemetry(
         makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 105 + i }),
@@ -743,7 +741,6 @@ describe('debounce cooldown recovery', () => {
       incidents.filter((i) => i.type === IncidentType.PitEntry)
     ).toHaveLength(1);
 
-    now.mockReturnValue(16_000);
     detector.processTelemetry(
       makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 108 }),
       5000
@@ -751,11 +748,9 @@ describe('debounce cooldown recovery', () => {
     expect(
       incidents.filter((i) => i.type === IncidentType.PitEntry)
     ).toHaveLength(2);
-    now.mockRestore();
   });
 
   it('emits an off-track after cooldown even when its threshold frame was suppressed', () => {
-    const now = vi.spyOn(Date, 'now').mockReturnValue(10_000);
     const detector = new IncidentDetector(defaultThresholds, false);
     const incidents: Incident[] = [];
     detector.onIncident((incident) => incidents.push(incident));
@@ -773,7 +768,6 @@ describe('debounce cooldown recovery', () => {
     }
     detector.processTelemetry(makeTelemetry({ sessionTime: 104 }), 5000);
 
-    now.mockReturnValue(12_000);
     for (let i = 0; i < 3; i++) {
       detector.processTelemetry(
         makeTelemetry({
@@ -787,7 +781,6 @@ describe('debounce cooldown recovery', () => {
       incidents.filter((i) => i.type === IncidentType.OffTrack)
     ).toHaveLength(1);
 
-    now.mockReturnValue(16_000);
     detector.processTelemetry(
       makeTelemetry({
         carIdxTrackSurface: [TrackLocation.OffTrack],
@@ -798,7 +791,6 @@ describe('debounce cooldown recovery', () => {
     expect(
       incidents.filter((i) => i.type === IncidentType.OffTrack)
     ).toHaveLength(2);
-    now.mockRestore();
   });
 });
 

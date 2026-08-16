@@ -32,7 +32,11 @@ describe('Gantry widget runtime definition', () => {
   it('declares the typed channels Gantry consumes', () => {
     expect(definition.id).toBe('gantry');
     expect(definition.channels).toEqual(
-      expect.arrayContaining(['standings.snapshot', 'track-state.snapshot'])
+      expect.arrayContaining([
+        'lap-times.snapshot',
+        'standings.snapshot',
+        'track-state.snapshot',
+      ])
     );
   });
 
