@@ -1,7 +1,11 @@
 export * from './useBrakeBias';
 export * from './useCarClassStats';
 export * from './useDriverIncidents';
-export * from './useDriverStandings';
+export {
+  useDriverStandings,
+  calculateLapDeltas,
+  shouldCalculateIRatingChange,
+} from '@irdashies/domain/standings/useDriverStandings';
 export {
   useDriverRelatives,
   useHighlightColor,

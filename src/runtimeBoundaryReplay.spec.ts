@@ -16,6 +16,13 @@ import {
   ChannelSnapshotStore,
 } from './frontend/context/ChannelStore/ChannelSnapshotStore';
 
+/** Event channels publish one occurrence at a time, so they have no snapshot. */
+type EventChannelName =
+  | 'session.lifecycle'
+  | 'raceControl.incidents'
+  | 'raceControl.sessionId';
+type SnapshotChannelName = Exclude<ChannelName, EventChannelName>;
+
 const SNAPSHOT_CHANNELS = [
   'blind-spot.snapshot',
   'car-speeds.snapshot',
@@ -31,14 +38,11 @@ const SNAPSHOT_CHANNELS = [
   'session-bar.snapshot',
   'standings.snapshot',
   'track-state.snapshot',
-] as const satisfies readonly Exclude<ChannelName, 'session.lifecycle'>[];
+] as const satisfies readonly SnapshotChannelName[];
 
 type SnapshotChannel = (typeof SNAPSHOT_CHANNELS)[number];
 type SourceKind = 'live-tape' | 'mock';
-type MissingSnapshotChannel = Exclude<
-  Exclude<ChannelName, 'session.lifecycle'>,
-  SnapshotChannel
->;
+type MissingSnapshotChannel = Exclude<SnapshotChannelName, SnapshotChannel>;
 const ALL_SNAPSHOT_CHANNELS_ARE_COVERED: MissingSnapshotChannel extends never
   ? true
   : never = true;

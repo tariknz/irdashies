@@ -419,6 +419,12 @@ export function generateMockData(sessionData?: {
       sessionCallbacks.clear();
       runningStateCallbacks.clear();
     },
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    changeCameraNumber: () => {},
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    changeReplayPosition: () => {},
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    triggerReplaySessionSearch: () => {},
   };
 }
 

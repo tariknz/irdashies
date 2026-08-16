@@ -132,6 +132,18 @@ class SectionBuffer {
   }
 }
 
+// The instance that is currently reporting. A new one is created per SDK
+// bridge, so services that outlive a bridge (and its demo-mode swaps) resolve
+// this per call rather than holding a reference that stops being published.
+let activePerfMetrics: TelemetryPerfMetrics | null = null;
+
+const setActivePerfMetrics = (instance: TelemetryPerfMetrics | null): void => {
+  activePerfMetrics = instance;
+};
+
+export const getActivePerfMetrics = (): TelemetryPerfMetrics | null =>
+  activePerfMetrics;
+
 export class TelemetryPerfMetrics {
   private sections = new Map<string, SectionBuffer>();
   private tickIntervals = new FixedSampleBuffer();
@@ -180,6 +192,7 @@ export class TelemetryPerfMetrics {
       const report = this.report();
       this.logReport(report);
     }, effectiveInterval);
+    setActivePerfMetrics(this);
   }
 
   stopReporting(): void {
@@ -188,6 +201,7 @@ export class TelemetryPerfMetrics {
       this.reportTimer = null;
     }
     this.eventLoopDelay.disable();
+    if (activePerfMetrics === this) setActivePerfMetrics(null);
   }
 
   markStart(label: string): void {

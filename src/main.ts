@@ -30,6 +30,17 @@ import {
   flushReferenceLapsOnShutdown,
 } from './app/storage/referenceLaps';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
+import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
+import {
+  flushIncidentsOnShutdown,
+  appendIncident,
+} from './app/storage/incidentStorage';
+import {
+  IncidentRuntime,
+  type IncidentPersistence,
+  type PerformanceSections,
+} from './app/processors/incidentRuntime';
+import { getActivePerfMetrics } from './app/perfMetrics';
 import {
   activePerfWidgetTypes,
   createPerfDashboard,
@@ -77,6 +88,20 @@ const channelBus = new ChannelBus({
   deliveryEnabled: !perfRun.enabled || perfRun.channelDelivery === 'on',
 });
 let disconnectLifecycleChannel: (() => void) | undefined;
+let incidentRuntime: IncidentRuntime | undefined;
+// Resolved per call: the runtime outlives any single SDK bridge, so it must
+// not hold a reference to a metrics instance that has stopped reporting.
+const incidentPerfMetrics: PerformanceSections = {
+  markStart: (label) => getActivePerfMetrics()?.markStart(label),
+  markEnd: (label) => getActivePerfMetrics()?.markEnd(label),
+};
+const incidentPersistence: IncidentPersistence = {
+  save: (sessionId, incident) => {
+    appendIncident(sessionId, incident).catch((err) =>
+      log.error('[RaceControl] Failed to persist incident:', err)
+    );
+  },
+};
 let disposeRendererDataSubscriptions: (() => void) | undefined;
 
 app.on('ready', async () => {
@@ -123,6 +148,36 @@ app.on('ready', async () => {
   setupPitLaneBridge();
   setupPersonalBestLapTimesBridge();
   setupChromiumFlagsBridge();
+  incidentRuntime = new IncidentRuntime(
+    channelBus,
+    getSessionLifecycle(),
+    incidentPerfMetrics,
+    incidentPersistence,
+    { isDev: !app.isPackaged }
+  );
+  setupRaceControlBridge(incidentRuntime, dashboard);
+  // Returns false when the Gantry widget is disabled, so Settings can explain
+  // why the button did nothing instead of appearing to be broken.
+  ipcMain.handle('raceControl:showGantryWindow', () =>
+    overlayManager.createGantryWindow(getOrCreateDefaultDashboard())
+  );
+
+  // Local-only feature modules (git-excluded src/local/). Empty glob => no-op.
+  // The negative pattern keeps co-located *.spec.ts test files out of the bundle.
+  const localMainModules = import.meta.glob(
+    ['./local/main/*.ts', '!./local/main/*.spec.ts'],
+    { eager: true }
+  ) as Record<
+    string,
+    {
+      register?: (deps: {
+        overlayManager: OverlayManager;
+      }) => void | Promise<void>;
+    }
+  >;
+  for (const mod of Object.values(localMainModules)) {
+    await mod.register?.({ overlayManager });
+  }
 
   // Start component server for browser components
   await startComponentServer(bridge, dashboardBridge, channelBus);
@@ -251,13 +306,33 @@ app.on('quit', () => {
   analytics.shutdown();
 });
 
-app.on('before-quit', () => {
+type ShutdownFlushState = 'idle' | 'flushing' | 'complete';
+let shutdownFlushState: ShutdownFlushState = 'idle';
+
+app.on('before-quit', (event) => {
   overlayManager.markQuitting();
+  // app.quit() below emits before-quit again. Once the async flush has
+  // completed, let that second event proceed without preventing it.
+  if (shutdownFlushState === 'complete') return;
+
+  // Electron does not await promises returned by before-quit handlers, so
+  // postpone shutdown while incident persistence finishes.
+  event.preventDefault();
+  if (shutdownFlushState === 'flushing') return;
+  shutdownFlushState = 'flushing';
   keybindingManager?.stopGamepad();
   disconnectLifecycleChannel?.();
   disposeRendererDataSubscriptions?.();
+  incidentRuntime?.dispose();
   channelBus.dispose();
   // Synchronous flush so any pending debounced reference-lap write completes
   // before the process exits.
   flushReferenceLapsOnShutdown();
+  // Incident writes are debounced, so anything still pending would be lost.
+  void flushIncidentsOnShutdown()
+    .catch((err) => log.error('[RaceControl] Shutdown flush failed:', err))
+    .finally(() => {
+      shutdownFlushState = 'complete';
+      app.quit();
+    });
 });

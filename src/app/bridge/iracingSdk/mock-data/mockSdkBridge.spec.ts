@@ -22,6 +22,9 @@ vi.mock('./generateMockData', () => ({
       return () => undefined;
     },
     stop,
+    changeCameraNumber: vi.fn(),
+    changeReplayPosition: vi.fn(),
+    triggerReplaySessionSearch: vi.fn(),
   }),
 }));
 

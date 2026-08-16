@@ -7,6 +7,7 @@ import type {
   KeybindingsBridge,
   GamepadHostBridge,
   ChromiumFlagsBridge,
+  RaceControlBridge,
   TelemetryInspectorBridge,
   RendererPerfBridge,
 } from '@irdashies/types';
@@ -25,6 +26,7 @@ declare global {
     /** Present only in the hidden WebHID host renderer (src/hidHost.ts). */
     gamepadHost?: GamepadHostBridge;
     chromiumFlagsBridge: ChromiumFlagsBridge;
+    raceControlBridge: RaceControlBridge;
     rendererPerfBridge?: RendererPerfBridge;
   }
 }

@@ -16,6 +16,10 @@ import type {
   PersonalBestLapBridge,
   ChromiumFlagsBridge,
   ChromiumFlagsType,
+  RaceControlBridge,
+  Incident,
+  IncidentThresholds,
+  SessionRetention,
   TelemetryInspectorBridge,
   RendererPerfBridge,
 } from '@irdashies/types';
@@ -353,4 +357,18 @@ export function exposeBridge() {
     saveFlags: (flags: ChromiumFlagsType) =>
       ipcRenderer.invoke('chromiumFlags:save', flags),
   } as ChromiumFlagsBridge);
+
+  defineBridge<RaceControlBridge>('raceControlBridge', {
+    getIncidents: () => ipcRenderer.invoke('raceControl:getIncidents'),
+    replayIncident: (incident: Incident, seconds: number) =>
+      ipcRenderer.invoke('raceControl:replayIncident', incident, seconds),
+    focusDriver: (carNumber: string) =>
+      ipcRenderer.invoke('raceControl:focusDriver', carNumber),
+    clearIncidents: () => ipcRenderer.invoke('raceControl:clearIncidents'),
+    updateThresholds: (thresholds: IncidentThresholds) =>
+      ipcRenderer.invoke('raceControl:updateThresholds', thresholds),
+    updateRetention: (retention: SessionRetention) =>
+      ipcRenderer.invoke('raceControl:updateRetention', retention),
+    showGantryWindow: () => ipcRenderer.invoke('raceControl:showGantryWindow'),
+  });
 }

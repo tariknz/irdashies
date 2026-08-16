@@ -102,7 +102,14 @@ export const OverlayContainer = memo(() => {
   );
 
   const enabledWidgets = useMemo(
-    () => currentDashboard?.widgets.filter((widget) => widget.enabled) ?? [],
+    () =>
+      currentDashboard?.widgets.filter(
+        (widget) =>
+          widget.enabled &&
+          // Gantry renders in its own separate hash-routed window (see
+          // componentRenderer.tsx), not as an overlay widget — exclude it here.
+          widget.id !== 'gantry'
+      ) ?? [],
     [currentDashboard?.widgets]
   );
 

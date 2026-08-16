@@ -19,13 +19,11 @@ import {
   augmentStandingsWithGap,
   augmentStandingsWithInterval,
   augmentStandingsWithPositionChange,
-} from '@irdashies/domain';
+} from './createStandings';
 import type { StandingsWidgetSettings } from '@irdashies/types';
-import {
-  useDriverLivePositions,
-  useStandingsSettings,
-  useRadioActiveCarIdxs,
-} from '@irdashies/domain';
+import { useDriverLivePositions } from './useDriverLivePositions';
+import { useStandingsSettings } from './useStandingsSettings';
+import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
 import { TrackLocation } from '@irdashies/types';
 import type { SessionResults } from '@irdashies/types';
 
@@ -45,7 +43,8 @@ export const shouldCalculateIRatingChange = (
     estimateInPractice);
 
 export const useDriverStandings = (
-  settings?: StandingsWidgetSettings['config']
+  settings?: StandingsWidgetSettings['config'],
+  options?: { showAll?: boolean }
 ) => {
   const {
     driverStandings: {
@@ -214,6 +213,7 @@ export const useDriverStandings = (
       ? augmentStandingsWithInterval(gapAugmentedGroupedByClass)
       : gapAugmentedGroupedByClass;
 
+    if (options?.showAll) return intervalAugmentedGroupedByClass;
     return sliceRelevantDrivers(intervalAugmentedGroupedByClass, driverClass, {
       buffer,
       numNonClassDrivers,
@@ -254,6 +254,7 @@ export const useDriverStandings = (
     minPlayerClassDrivers,
     numTopDrivers,
     driverLivePositions,
+    options?.showAll,
   ]);
 
   return standingsWithGain;

@@ -6,6 +6,7 @@ import {
 } from 'electron';
 import type { DashboardLayout, ContainerBoundsInfo } from '@irdashies/types';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
 import { getDashboard } from './storage/dashboards';
@@ -21,6 +22,7 @@ import {
   refreshSessionDataForVisibleWindow,
   type RendererDataSubscriptions,
 } from './rendererDataVisibility';
+import { hardenWindow } from './hardenWindow';
 
 // used for Hot Module Replacement
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
@@ -39,6 +41,23 @@ const isAllowedGuestHost = (urlStr: string): boolean => {
   }
 };
 
+/**
+ * Baseline hardening for every window that loads the app preload: deny popups
+ * (external links go to the system browser) and refuse to navigate away from
+ * the bundle.
+ */
+function applyBaselineSecurity(window: BrowserWindow, label: string): void {
+  const rendererPath = path.join(
+    __dirname,
+    `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`
+  );
+  hardenWindow(window, {
+    devServerUrl: MAIN_WINDOW_VITE_DEV_SERVER_URL,
+    packagedRendererUrl: pathToFileURL(rendererPath).href,
+    label,
+  });
+}
+
 function getIconPath(): string {
   const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
   const basePath = isDev
@@ -53,6 +72,9 @@ export class OverlayManager {
   private displayBoundsInfo = new Map<number, ContainerBoundsInfo>();
   private displayFullBounds = new Map<number, Electron.Rectangle>();
   private currentSettingsWindow: BrowserWindow | undefined;
+  private gantryWindow: BrowserWindow | undefined;
+  /** Last-applied enabled state, so syncGantryWindow only acts on changes. */
+  private gantryEnabled = false;
   private currentDashboard: DashboardLayout | undefined;
   private isLocked = true;
   private isQuitting = false;
@@ -146,6 +168,9 @@ export class OverlayManager {
       const startMinimized = generalSettings?.startMinimized ?? false;
       this.createSettingsWindow(undefined, { startHidden: startMinimized });
     }
+
+    // Separate framed window, only created when the Gantry widget is enabled.
+    this.syncGantryWindow(dashboardLayout);
   }
 
   /**
@@ -209,6 +234,8 @@ export class OverlayManager {
     });
 
     browserWindow.setBounds(expectedBounds);
+
+    applyBaselineSecurity(browserWindow, `Display ${display.id}`);
 
     // Harden the <webview> used by the Heart Rate widget: keep the guest on
     // secure defaults and only allow HypeRate hosts to attach.
@@ -588,6 +615,31 @@ export class OverlayManager {
       }
     }
 
+    // The Gantry consumes telemetry and session data, so it is forwarded
+    // everything — before the settings-window guard below.
+    if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
+      const bulkStream =
+        key === 'telemetryInspector:telemetry'
+          ? 'telemetryInspector'
+          : key === 'sessionData'
+            ? 'sessionData'
+            : undefined;
+      const shouldSend =
+        !bulkStream ||
+        (this.gantryWindow.isVisible() &&
+          this.rendererDataSubscriptions?.has(
+            this.gantryWindow.webContents.id,
+            bulkStream
+          ));
+      if (shouldSend) {
+        try {
+          this.gantryWindow.webContents.send(key, value);
+        } catch (e) {
+          logger.error(`Failed to send message ${key} to gantry window`, e);
+        }
+      }
+    }
+
     // Skip high-frequency telemetry messages for the settings window
     if (OverlayManager.OVERLAY_ONLY_MESSAGES.has(key)) {
       return;
@@ -671,6 +723,11 @@ export class OverlayManager {
       this.currentSettingsWindow = undefined;
     }
 
+    if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
+      this.gantryWindow.destroy();
+      this.gantryWindow = undefined;
+    }
+
     app.quit();
   }
 
@@ -726,6 +783,9 @@ export class OverlayManager {
   public closeOrCreateWindows(dashboardLayout?: DashboardLayout): void {
     if (dashboardLayout) {
       this.ensureDisplayWindows(dashboardLayout);
+      // The Gantry is not an OverlayContainer widget, so it has to be opened
+      // and closed here rather than by the renderer toggling visibility.
+      this.syncGantryWindow(dashboardLayout);
       return;
     }
     if (this.displayWindows.size === 0) {
@@ -894,6 +954,122 @@ export class OverlayManager {
     return this.hasSingleInstanceLock;
   }
 
+  /**
+   * The Gantry is a framed, interactive race-control window rather than a
+   * transparent click-through overlay, so it gets its own BrowserWindow on the
+   * `#/gantry` route instead of being rendered by the OverlayContainer.
+   * No-op unless the Gantry widget is enabled in the dashboard.
+   */
+  /**
+   * Open (or focus) the Gantry window.
+   *
+   * @returns `false` when the Gantry widget is disabled and nothing was
+   * opened, so callers — notably the Settings "Show Window" button — can say
+   * why instead of silently doing nothing.
+   */
+  public createGantryWindow(dashboardLayout?: DashboardLayout): boolean {
+    const gantryWidget = dashboardLayout?.widgets.find(
+      (w) => w.id === 'gantry'
+    );
+    if (!gantryWidget?.enabled) {
+      logger.info(
+        '[OverlayManager] Gantry window requested but the widget is disabled'
+      );
+      return false;
+    }
+
+    if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
+      if (this.gantryWindow.isMinimized()) this.gantryWindow.restore();
+      this.gantryWindow.show();
+      this.gantryWindow.focus();
+      return true;
+    }
+
+    const browserWindow = new BrowserWindow({
+      title: 'irDashies - Gantry',
+      frame: true,
+      width: 1400,
+      height: 800,
+      autoHideMenuBar: true,
+      icon: getIconPath(),
+      show: false,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        backgroundThrottling: false,
+      },
+    });
+
+    this.gantryWindow = browserWindow;
+    applyBaselineSecurity(browserWindow, 'Gantry');
+
+    browserWindow.once('ready-to-show', () => {
+      if (browserWindow.isDestroyed()) return;
+      browserWindow.show();
+    });
+
+    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+      browserWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/gantry`);
+    } else {
+      browserWindow.loadFile(
+        path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+        { hash: '/gantry' }
+      );
+    }
+
+    browserWindow.on('closed', () => {
+      this.gantryWindow = undefined;
+    });
+
+    // Without this a renderer crash leaves a live-but-blank BrowserWindow that
+    // still receives every publishMessage, and the stale reference makes the
+    // next create call early-return on it.
+    browserWindow.webContents.on('render-process-gone', (_event, details) => {
+      logger.error(
+        `[OverlayManager] Renderer process gone for Gantry: reason=${details.reason}, exitCode=${details.exitCode}`
+      );
+      if (this.gantryWindow === browserWindow) {
+        this.gantryWindow = undefined;
+      }
+      if (!browserWindow.isDestroyed()) browserWindow.destroy();
+      if (this.isQuitting) return;
+
+      setTimeout(() => {
+        if (this.isQuitting) return;
+        logger.info('[OverlayManager] Recreating Gantry renderer');
+        this.createGantryWindow(this.currentDashboard);
+      }, 1000);
+    });
+
+    return true;
+  }
+
+  /**
+   * Bring the Gantry window in line with the dashboard: open it when the widget
+   * is enabled, close it when it isn't. Called on every dashboard update, so
+   * toggling the widget or switching profile takes effect without a restart.
+   */
+  public syncGantryWindow(dashboardLayout?: DashboardLayout): void {
+    const enabled = !!dashboardLayout?.widgets.find((w) => w.id === 'gantry')
+      ?.enabled;
+    const wasEnabled = this.gantryEnabled;
+    this.gantryEnabled = enabled;
+
+    if (enabled) {
+      // Open on the disabled -> enabled edge only. A window the user closed by
+      // hand should stay closed while they edit unrelated settings.
+      if (!wasEnabled) this.createGantryWindow(dashboardLayout);
+      return;
+    }
+
+    if (this.gantryWindow && !this.gantryWindow.isDestroyed()) {
+      logger.info(
+        '[OverlayManager] Closing Gantry window — widget disabled in the active dashboard'
+      );
+      this.gantryWindow.destroy();
+    }
+    this.gantryWindow = undefined;
+  }
+
   public createSettingsWindow(
     widgetType?: string,
     options?: { startHidden?: boolean }
@@ -936,6 +1112,7 @@ export class OverlayManager {
     );
 
     this.currentSettingsWindow = browserWindow;
+    applyBaselineSecurity(browserWindow, 'Settings');
 
     // Reveal the window once its content is ready, unless it should start
     // minimized to the system tray (the "Start minimized" general setting).

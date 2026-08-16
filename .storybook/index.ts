@@ -5,3 +5,4 @@ export * from './trackStateSnapshot';
 export * from './sessionBarSnapshot';
 export * from './DynamicTelemetrySelector';
 export * from './mockDashboardBridge';
+export * from './raceControlDecorator';

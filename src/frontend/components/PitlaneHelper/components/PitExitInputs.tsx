@@ -17,9 +17,7 @@ const InputBarColumn = ({ value, color, label }: InputBarColumnProps) => (
     <span className="text-xs text-white font-medium tabular-nums leading-none">
       {Math.round(value * 100)}
     </span>
-    <div
-      className="relative w-full min-w-5 bg-slate-700/50 rounded overflow-hidden min-h-10 h-full"
-    >
+    <div className="relative w-full min-w-5 bg-slate-700/50 rounded overflow-hidden min-h-10 h-full">
       <div
         className="absolute bottom-0 w-full transition-[height] duration-50 ease-out"
         style={{ height: `${value * 100}%`, backgroundColor: color }}

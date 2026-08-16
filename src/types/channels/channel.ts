@@ -1,4 +1,5 @@
 import type { FuelLapData } from '../fuelCalculatorBridge';
+import type { Incident } from '../raceControl';
 import type { ReferenceLap } from '../referenceLaps';
 import type { Sector } from '../session';
 
@@ -23,6 +24,12 @@ export interface ChannelPayloads {
   'standings.snapshot': StandingsSnapshot;
   'track-state.snapshot': TrackStateSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
+  'raceControl.incidents': Incident;
+  /**
+   * Fires when the SubSessionID the incident store is keyed on changes; '' when
+   * disconnected. The Gantry reloads its persisted incidents on each change.
+   */
+  'raceControl.sessionId': string;
 }
 
 export interface TrackStateSnapshot {
@@ -367,6 +374,8 @@ export const channelRegistry = {
     maxRateHz: 25,
   },
   'session.lifecycle': { kind: 'event' },
+  'raceControl.incidents': { kind: 'event' },
+  'raceControl.sessionId': { kind: 'event' },
 } as const satisfies ChannelRegistry;
 
 export interface ChannelBridge {

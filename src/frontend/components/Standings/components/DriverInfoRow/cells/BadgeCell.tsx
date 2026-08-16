@@ -2,7 +2,7 @@ import { memo } from 'react';
 import {
   DriverRatingBadge,
   type DriverRatingBadgeProps,
-} from '../../DriverRatingBadge/DriverRatingBadge';
+} from '../../../../shared/DriverRatingBadge/DriverRatingBadge';
 
 interface BadgeCellProps {
   license?: string;

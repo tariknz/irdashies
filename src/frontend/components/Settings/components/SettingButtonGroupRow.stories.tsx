@@ -45,6 +45,25 @@ export const TwoOptions: Story = {
   },
 };
 
+export const WithDescription: Story = {
+  render: () => {
+    const [value, setValue] = useState<'auto' | 'Metric' | 'Imperial'>('auto');
+    return (
+      <SettingButtonGroupRow
+        title="Speed Units"
+        description="Auto follows the units iRacing is set to."
+        value={value}
+        options={[
+          { label: 'Auto', value: 'auto' },
+          { label: 'km/h', value: 'Metric' },
+          { label: 'mph', value: 'Imperial' },
+        ]}
+        onChange={setValue}
+      />
+    );
+  },
+};
+
 export const ManyOptions: Story = {
   render: () => {
     const [value, setValue] = useState<'xs' | 'sm' | 'md' | 'lg' | 'xl'>('md');

@@ -236,11 +236,18 @@ Napi::Value iRacingSdkNode::BroadcastMessage(const Napi::CallbackInfo &info)
     irsdk_broadcastMsg(msgType, arg1, arg2, -1);
     break;
 
+  // irsdk_BroadcastMsg msg, int arg1, int arg2
+  // These two must use the integer overload. The float overload scales its
+  // argument by 65536 before packing, which corrupts a frame number or a
+  // session-time-in-ms and makes the replay seek land at the session start.
+  case irskd_BroadcastReplaySetPlayPosition: // arg2 == frame number
+  case irsdk_BroadcastReplaySearchSessionTime: // arg2 == sessionTime in ms
+    irsdk_broadcastMsg(msgType, arg1, arg2.Int32Value());
+    break;
+
   // irsdk_BroadcastMsg msg, int arg1, float arg2
   case irsdk_BroadcastPitCommand: // arg1 == irsdk_PitCommandMode
   case irsdk_BroadcastFFBCommand: // arg1 == irsdk_FFBCommandMode
-  case irsdk_BroadcastReplaySearchSessionTime:
-  case irskd_BroadcastReplaySetPlayPosition:
     printf("BroadcastMessage(msgType: %d, arg1: %d, arg2: %f)\n", msgType, arg1, (float)arg2.FloatValue());
     irsdk_broadcastMsg(msgType, arg1, (float)arg2.FloatValue());
     break;

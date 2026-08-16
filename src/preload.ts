@@ -9,3 +9,13 @@ startRendererPerfMetrics();
 exposeBridge();
 exposeInMainWorld();
 exposeChannelBridge();
+
+// Local-only feature bridges (git-excluded src/local/). Empty glob => no-op.
+// The negative pattern keeps co-located *.spec.ts test files out of the bundle.
+const localPreloadModules = import.meta.glob(
+  ['./local/preload/*.ts', '!./local/preload/*.spec.ts'],
+  { eager: true }
+) as Record<string, { expose?: () => void }>;
+for (const mod of Object.values(localPreloadModules)) {
+  mod.expose?.();
+}

@@ -23,8 +23,10 @@ const target = (id: number, isVisible: () => boolean = () => true) => ({
   send: vi.fn(),
 });
 
-interface FakeProcessor<K extends ProcessorChannel>
-  extends TelemetryProcessor<ChannelPayloads[K], K> {
+interface FakeProcessor<K extends ProcessorChannel> extends TelemetryProcessor<
+  ChannelPayloads[K],
+  K
+> {
   init: Mock<(session: Session) => void>;
   onFrame: Mock<(frame: Telemetry) => void>;
   onLifecycle: Mock<(event: SessionLifecycleEvent) => void>;
@@ -275,9 +277,7 @@ describe('ProcessorHost', () => {
     const host = new ProcessorHost({
       bus,
       metrics: metrics(),
-      definitions: [
-        definition('reference-laps.snapshot', () => processor),
-      ],
+      definitions: [definition('reference-laps.snapshot', () => processor)],
     });
     host.onSession({} as Session);
     const renderer = target(9);
