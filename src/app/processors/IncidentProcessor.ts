@@ -38,7 +38,9 @@ export class IncidentProcessor implements TelemetryProcessor<Incident[]> {
   private currentSessionNum: number | null = null;
   private lastSession: Session | null = null;
   private emittedThisFrame: Incident[] = [];
-  private wasReplayPlaying = false;
+  /** Furthest session time already detected on, so rewinds can be skipped. */
+  private maxSessionTimeSeen: number | null = null;
+  private rewound = false;
 
   constructor(options: IncidentProcessorOptions = {}) {
     this.detector = new IncidentDetector(
@@ -68,24 +70,37 @@ export class IncidentProcessor implements TelemetryProcessor<Incident[]> {
     this.emittedThisFrame = [];
     if (!this.trackLengthM) return;
 
-    // Reviewing an incident scrubs the sim's replay, and those frames arrive
-    // here looking live. Re-detecting them appends duplicates to the session
-    // file, and because the debounce counters use strict equality a counter can
-    // complete on a different frame than it did live, minting a brand new id
-    // for the same event. Skip detection entirely, and drop the per-car state
-    // on the way back to live so replay speeds cannot seed a live incident.
-    const isReplayPlaying = Boolean(frame.IsReplayPlaying?.value?.[0]);
-    if (isReplayPlaying) {
-      this.wasReplayPlaying = true;
+    // Only detect on session time we have not already covered. Reviewing an
+    // incident rewinds the replay and replays frames we detected live, which
+    // would append duplicates; those frames sit at or behind the high-water
+    // mark and are skipped.
+    //
+    // Deliberately not gated on IsReplayPlaying: spectating a session without
+    // a car of your own reports as replay playing for the whole race, and
+    // gating on it silently disables detection for the Gantry's main use case.
+    const frameSessionTime = frame.SessionTime?.value?.[0] ?? 0;
+    // Session time restarts with each session, so a phase change is not a
+    // rewind. Drop the high-water mark first or the new session would be
+    // suppressed for as long as the previous one ran.
+    if ((frame.SessionNum?.value?.[0] ?? 0) !== this.currentSessionNum) {
+      this.maxSessionTimeSeen = null;
+      this.rewound = false;
+    }
+    if (
+      this.maxSessionTimeSeen !== null &&
+      frameSessionTime <= this.maxSessionTimeSeen
+    ) {
+      this.rewound = true;
       return;
     }
-    if (this.wasReplayPlaying) {
-      this.wasReplayPlaying = false;
-      const cleared = this.detector.resetCarStates();
-      logger.info(
-        `[RaceControl] replay ended; cleared ${cleared} car states before resuming detection`
-      );
+    if (this.rewound) {
+      this.rewound = false;
+      // prev* state is from before the rewind, so a stale delta would produce
+      // a bogus speed. Re-seed from this frame; the seeding path re-arms the
+      // pit/off-track latches so nothing is re-reported.
+      this.detector.reseedCarStates();
     }
+    this.maxSessionTimeSeen = frameSessionTime;
 
     const snap = {
       sessionTime: frame.SessionTime?.value?.[0] ?? 0,
@@ -121,7 +136,8 @@ export class IncidentProcessor implements TelemetryProcessor<Incident[]> {
       this.lastSession = null;
       this.trackLengthM = 0;
       this.currentSessionNum = null;
-      this.wasReplayPlaying = false;
+      this.maxSessionTimeSeen = null;
+      this.rewound = false;
       this.detector.resetCarStates();
       return;
     }
@@ -129,7 +145,8 @@ export class IncidentProcessor implements TelemetryProcessor<Incident[]> {
     // debounce counters. sessionNumChange is deliberately not handled here —
     // onFrame already owns that transition.
     if (event.type === 'enter') {
-      this.wasReplayPlaying = false;
+      this.maxSessionTimeSeen = null;
+      this.rewound = false;
       this.detector.resetCarStates();
     }
   }

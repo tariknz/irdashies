@@ -92,6 +92,14 @@ export interface CarIncidentState {
   slowFrameCount: number;
   offTrackFrameCount: number;
   onPitRoadFrameCount: number;
+  /**
+   * Latches so a sustained condition reports once per occurrence rather than
+   * once per cooldown window. Cleared when the condition ends, and set during
+   * seeding for a condition that is already true, so re-seeding mid-pit-stop
+   * does not report a car that never moved.
+   */
+  pitEntryReported: boolean;
+  offTrackReported: boolean;
   /** Last incident time by type, in telemetry session seconds. */
   lastIncidentTime: Record<string, number>;
   hasPrevFrame: boolean;

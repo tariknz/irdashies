@@ -104,6 +104,21 @@ export class IncidentDetector {
    *
    * Returns how many car states were dropped, for logging.
    */
+  /**
+   * Forces every car to re-seed from the next frame without losing cooldowns
+   * or the driver roster. Used after a replay rewind, where the previous
+   * frame's position and time are no longer adjacent to the next one.
+   */
+  reseedCarStates(): void {
+    for (const state of this.carStates.values()) {
+      state.hasPrevFrame = false;
+      state.slowFrameCount = 0;
+      state.offTrackFrameCount = 0;
+      state.onPitRoadFrameCount = 0;
+      state.recentRawSpeeds.length = 0;
+    }
+  }
+
   resetCarStates(): number {
     const cleared = this.carStates.size;
     this.carStates.clear();
@@ -258,6 +273,8 @@ export class IncidentDetector {
         slowFrameCount: 0,
         offTrackFrameCount: 0,
         onPitRoadFrameCount: 0,
+        pitEntryReported: false,
+        offTrackReported: false,
         lastIncidentTime: {} as Record<string, number>,
         hasPrevFrame: false,
       });
@@ -427,17 +444,27 @@ export class IncidentDetector {
         state.lastPositionChangeSessionTime = snap.sessionTime;
         state.prevTrackSurface = surface;
         state.prevSessionFlags = snap.carIdxSessionFlags[carIdx] ?? 0;
+        // Treat a condition that is already true as already reported. Without
+        // this, seeding mid-pit-stop (a fresh session, or resuming after a
+        // replay) makes a stationary car look like it just entered the pits.
+        state.pitEntryReported = onPitRoad;
+        state.offTrackReported = surface === TrackLocation.OffTrack;
         state.hasPrevFrame = true;
         continue;
       }
 
       // --- Pit entry ---
+      // Reports on the edge, not the level: `>=` stays true for every frame the
+      // car is on pit road, so without the latch a car parked in its box emits
+      // a fresh entry every time the cooldown lapses.
       if (onPitRoad) {
         state.onPitRoadFrameCount++;
         if (
           state.onPitRoadFrameCount >= this.thresholds.pitEntryDebounce &&
+          !state.pitEntryReported &&
           !this.isCoolingDown(state, IncidentType.PitEntry, cooldownTime)
         ) {
+          state.pitEntryReported = true;
           state.lastIncidentTime[IncidentType.PitEntry] = cooldownTime;
           const debug = this.buildDebugSnapshot(
             carIdx,
@@ -452,6 +479,7 @@ export class IncidentDetector {
         }
       } else {
         state.onPitRoadFrameCount = 0;
+        state.pitEntryReported = false;
       }
 
       // --- Speed calculation ---
@@ -527,7 +555,14 @@ export class IncidentDetector {
           );
           const type = partner ? IncidentType.Crash : IncidentType.OffTrack;
 
-          if (!this.isCoolingDown(state, type, cooldownTime)) {
+          // Latched for the same reason as pit entry: a car beached off track
+          // satisfies `>=` on every frame, so without this it re-reports each
+          // time the cooldown lapses.
+          if (
+            !state.offTrackReported &&
+            !this.isCoolingDown(state, type, cooldownTime)
+          ) {
+            state.offTrackReported = true;
             state.lastIncidentTime[type] = cooldownTime;
             const debug = this.buildDebugSnapshot(
               carIdx,
@@ -546,6 +581,7 @@ export class IncidentDetector {
         }
       } else {
         state.offTrackFrameCount = 0;
+        state.offTrackReported = false;
       }
 
       // --- Flag detection ---
