@@ -306,15 +306,20 @@ app.on('quit', () => {
   analytics.shutdown();
 });
 
-let incidentShutdownStarted = false;
-let incidentShutdownComplete = false;
+type ShutdownFlushState = 'idle' | 'flushing' | 'complete';
+let shutdownFlushState: ShutdownFlushState = 'idle';
 
 app.on('before-quit', (event) => {
   overlayManager.markQuitting();
-  if (incidentShutdownComplete) return;
+  // app.quit() below emits before-quit again. Once the async flush has
+  // completed, let that second event proceed without preventing it.
+  if (shutdownFlushState === 'complete') return;
+
+  // Electron does not await promises returned by before-quit handlers, so
+  // postpone shutdown while incident persistence finishes.
   event.preventDefault();
-  if (incidentShutdownStarted) return;
-  incidentShutdownStarted = true;
+  if (shutdownFlushState === 'flushing') return;
+  shutdownFlushState = 'flushing';
   keybindingManager?.stopGamepad();
   disconnectLifecycleChannel?.();
   disposeRendererDataSubscriptions?.();
@@ -327,7 +332,7 @@ app.on('before-quit', (event) => {
   void flushIncidentsOnShutdown()
     .catch((err) => log.error('[RaceControl] Shutdown flush failed:', err))
     .finally(() => {
-      incidentShutdownComplete = true;
+      shutdownFlushState = 'complete';
       app.quit();
     });
 });
