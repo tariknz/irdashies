@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { usePitLapStore, usePitStopDuration } from './PitLapStore';
-import { SessionState } from '@irdashies/types';
+import { SessionState, TrackLocation } from '@irdashies/types';
 
 describe('PitLapStore', () => {
   beforeEach(() => {
@@ -484,6 +484,156 @@ describe('PitLapStore', () => {
 
       const { result } = renderHook(() => usePitStopDuration());
       expect(result.current[0]).toBe(25);
+    });
+  });
+
+  describe('team race driver swaps', () => {
+    const SESSION = 123;
+    const CAR = 1;
+
+    interface Frame {
+      t: number;
+      onPitRoad: boolean;
+      surface: number;
+      lap: number;
+    }
+
+    // Feeds a stop frame by frame for a single car and returns its measured
+    // duration. Car 0 is an inert on-track filler so the arrays are realistic.
+    const playStop = (frames: Frame[]) => {
+      usePitLapStore.setState({ sessionUniqId: SESSION });
+
+      for (const frame of frames) {
+        usePitLapStore
+          .getState()
+          .updatePitLaps(
+            [false, frame.onPitRoad],
+            [0, frame.lap],
+            SESSION,
+            frame.t,
+            [TrackLocation.OnTrack, frame.surface],
+            SessionState.Racing
+          );
+      }
+
+      const { pitEntryTime, pitExitTime } = usePitLapStore.getState();
+      return {
+        entry: pitEntryTime[CAR] ?? null,
+        exit: pitExitTime[CAR] ?? null,
+      };
+    };
+
+    // A 124s stop on lap 10, with the driver change at t=140..142. iRacing drops
+    // the car out of the world while the new driver takes over, which reads as
+    // CarIdxOnPitRoad true -> false -> true.
+    const swapStop = (lapInStall: number): Frame[] => [
+      { t: 100, onPitRoad: false, surface: TrackLocation.OnTrack, lap: 10 },
+      {
+        t: 101,
+        onPitRoad: true,
+        surface: TrackLocation.ApproachingPits,
+        lap: 10,
+      },
+      {
+        t: 105,
+        onPitRoad: true,
+        surface: TrackLocation.InPitStall,
+        lap: lapInStall,
+      },
+      { t: 140, onPitRoad: false, surface: TrackLocation.NotInWorld, lap: -1 },
+      {
+        t: 142,
+        onPitRoad: true,
+        surface: TrackLocation.InPitStall,
+        lap: lapInStall,
+      },
+      {
+        t: 220,
+        onPitRoad: true,
+        surface: TrackLocation.ApproachingPits,
+        lap: lapInStall,
+      },
+      {
+        t: 225,
+        onPitRoad: false,
+        surface: TrackLocation.OnTrack,
+        lap: lapInStall,
+      },
+    ];
+
+    it('times the whole stop across a driver change', () => {
+      const { entry, exit } = playStop(swapStop(10));
+
+      expect(entry).toBe(101);
+      expect(exit).toBe(225);
+      expect((exit ?? 0) - (entry ?? 0)).toBe(124);
+    });
+
+    it('times the whole stop when the lap ticks over during the stop', () => {
+      // Pit lane spans the start/finish line, so the car's lap number changes
+      // between crossing the pit entry line and reaching its stall. This used to
+      // let the driver change re-arm the entry, reporting 83s instead of 124s.
+      const { entry, exit } = playStop(swapStop(11));
+
+      expect(entry).toBe(101);
+      expect(exit).toBe(225);
+      expect((exit ?? 0) - (entry ?? 0)).toBe(124);
+    });
+
+    it('does not close the stop while the car is out of the world', () => {
+      const frames = swapStop(10);
+      const upToSwap = frames.slice(0, 4); // through the NotInWorld frame
+
+      const { entry, exit } = playStop(upToSwap);
+
+      expect(entry).toBe(101);
+      expect(exit).toBeNull();
+    });
+
+    it('reports an ongoing duration that keeps counting through the swap', () => {
+      playStop(swapStop(10).slice(0, 5)); // through the new driver taking over
+      usePitLapStore.setState({ sessionTime: 150 });
+
+      const { result } = renderHook(() => usePitStopDuration());
+
+      // 150 - 101, not 150 - 142.
+      expect(result.current[CAR]).toBe(49);
+    });
+
+    it('still records a normal stop with no driver change', () => {
+      const { entry, exit } = playStop([
+        { t: 100, onPitRoad: false, surface: TrackLocation.OnTrack, lap: 10 },
+        {
+          t: 101,
+          onPitRoad: true,
+          surface: TrackLocation.ApproachingPits,
+          lap: 10,
+        },
+        { t: 105, onPitRoad: true, surface: TrackLocation.InPitStall, lap: 10 },
+        { t: 130, onPitRoad: false, surface: TrackLocation.OnTrack, lap: 10 },
+      ]);
+
+      expect(entry).toBe(101);
+      expect(exit).toBe(130);
+    });
+
+    it('starts a fresh stop on a later lap after the swap stop closed', () => {
+      playStop(swapStop(10));
+
+      usePitLapStore
+        .getState()
+        .updatePitLaps(
+          [false, true],
+          [0, 25],
+          SESSION,
+          800,
+          [TrackLocation.OnTrack, TrackLocation.ApproachingPits],
+          SessionState.Racing
+        );
+
+      const state = usePitLapStore.getState();
+      expect(state.pitEntryTime[CAR]).toBe(800);
+      expect(state.pitExitTime[CAR]).toBeNull();
     });
   });
 });
