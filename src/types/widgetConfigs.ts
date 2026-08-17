@@ -205,6 +205,12 @@ export interface RelativeConfig {
   headerBar: SessionBarConfig;
   footerBar: SessionBarConfig;
   showOnlyWhenOnTrack: boolean;
+  /**
+   * Hides drivers sitting in their pit stall (TrackLocation.InPitStall) so they
+   * stop scrolling through the relative while being serviced or waiting for
+   * repairs. Drivers driving down pit road (entering or exiting) still show.
+   */
+  hideDriversInPitStall?: boolean;
   badge: { enabled: boolean; badgeFormat: RelativeBadgeFormat };
   iratingChange: { enabled: boolean };
   positionChange?: { enabled: boolean };

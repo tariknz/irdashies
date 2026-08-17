@@ -33,7 +33,10 @@ export const Relative = () => {
   const generalSettings = useGeneralSettings();
   const buffer = settings?.buffer ?? 3;
   const { isDriving } = useDrivingState();
-  const standings = useDriverRelatives({ buffer });
+  const standings = useDriverRelatives({
+    buffer,
+    hideDriversInPitStall: settings?.hideDriversInPitStall ?? false,
+  });
   const hasAnyCountryFlag = useMemo(
     () => standings.some((result) => (result.driver?.flairId ?? 0) > 0),
     [standings]

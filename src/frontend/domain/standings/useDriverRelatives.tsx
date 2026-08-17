@@ -4,10 +4,17 @@ import {
   useFocusCarIdx,
   useRelativeGapsSnapshot,
 } from '@irdashies/context';
+import { TrackLocation } from '@irdashies/types';
 import { useDriverStandings } from './useDriverPositions';
 import { Standings } from './createStandings';
 
-export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
+export const useDriverRelatives = ({
+  buffer,
+  hideDriversInPitStall = false,
+}: {
+  buffer: number;
+  hideDriversInPitStall?: boolean;
+}) => {
   const drivers = useDriverStandings();
   const snapshot = useRelativeGapsSnapshot();
   const rendererFocusCarIdx = useFocusCarIdx();
@@ -42,10 +49,24 @@ export const useDriverRelatives = ({ buffer }: { buffer: number }) => {
       // Must not be the pace car
       if (driver.carIdx === paceCarIdx) return false;
 
-      // Must be on track OR be the player (we always track the player)
-      return driver.onTrack || driver.carIdx === focusCarIdx;
+      // The focus car is always kept, even when sitting in its own pit stall.
+      if (driver.carIdx === focusCarIdx) return true;
+
+      // Drivers parked in their pit stall (being serviced, waiting for repairs,
+      // or retired to the box) scroll through the relative lap after lap without
+      // being raceable. Drivers on pit road — entering or exiting — still show,
+      // dimmed, since they rejoin the track shortly.
+      if (
+        hideDriversInPitStall &&
+        driver.carTrackSurface === TrackLocation.InPitStall
+      ) {
+        return false;
+      }
+
+      // Must be on track
+      return driver.onTrack;
     },
-    [focusCarIdx, paceCarIdx]
+    [focusCarIdx, paceCarIdx, hideDriversInPitStall]
   );
 
   const standings = useMemo(() => {
