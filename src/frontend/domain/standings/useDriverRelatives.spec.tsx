@@ -8,7 +8,7 @@ import {
   getStats,
   getTimeAtPosition,
 } from './relativeGapHelpers';
-import { ReferenceLap } from '@irdashies/types';
+import { ReferenceLap, TrackLocation } from '@irdashies/types';
 
 // Mock the context hooks
 vi.mock('@irdashies/context', async (importOriginal) => {
@@ -295,6 +295,118 @@ describe('useDriverRelatives', () => {
     // Should not include the off-track car
     expect(result.current).toHaveLength(2);
     expect(result.current.some((driver) => driver.carIdx === 1)).toBe(false);
+  });
+
+  describe('hideDriversInPitStall', () => {
+    const inStall = (driver: Standings): Standings => ({
+      ...driver,
+      onPitRoad: true,
+      carTrackSurface: TrackLocation.InPitStall,
+    });
+
+    const onPitRoad = (driver: Standings): Standings => ({
+      ...driver,
+      onPitRoad: true,
+      carTrackSurface: TrackLocation.ApproachingPits,
+    });
+
+    it('hides drivers sitting in their pit stall when enabled', () => {
+      vi.mocked(useDriverStandings).mockReturnValue([
+        mockDrivers[0],
+        inStall(mockDrivers[1]),
+        mockDrivers[2],
+      ]);
+
+      const { result } = renderHook(() =>
+        useDriverRelatives({ buffer: 2, hideDriversInPitStall: true })
+      );
+
+      expect(result.current.map((driver) => driver.carIdx)).toEqual([0, 2]);
+    });
+
+    it('keeps drivers in their pit stall when disabled', () => {
+      vi.mocked(useDriverStandings).mockReturnValue([
+        mockDrivers[0],
+        inStall(mockDrivers[1]),
+        mockDrivers[2],
+      ]);
+
+      const { result } = renderHook(() =>
+        useDriverRelatives({ buffer: 2, hideDriversInPitStall: false })
+      );
+
+      expect(result.current.map((driver) => driver.carIdx)).toEqual([1, 0, 2]);
+    });
+
+    it('defaults to keeping drivers in their pit stall', () => {
+      vi.mocked(useDriverStandings).mockReturnValue([
+        mockDrivers[0],
+        inStall(mockDrivers[1]),
+        mockDrivers[2],
+      ]);
+
+      const { result } = renderHook(() => useDriverRelatives({ buffer: 2 }));
+
+      expect(result.current.map((driver) => driver.carIdx)).toEqual([1, 0, 2]);
+    });
+
+    it('keeps drivers driving down pit road entering or exiting', () => {
+      vi.mocked(useDriverStandings).mockReturnValue([
+        mockDrivers[0],
+        onPitRoad(mockDrivers[1]),
+        onPitRoad(mockDrivers[2]),
+      ]);
+
+      const { result } = renderHook(() =>
+        useDriverRelatives({ buffer: 2, hideDriversInPitStall: true })
+      );
+
+      expect(result.current.map((driver) => driver.carIdx)).toEqual([1, 0, 2]);
+    });
+
+    it('keeps the focus car while it sits in its own pit stall', () => {
+      vi.mocked(useDriverStandings).mockReturnValue([
+        inStall(mockDrivers[0]),
+        mockDrivers[1],
+        mockDrivers[2],
+      ]);
+
+      const { result } = renderHook(() =>
+        useDriverRelatives({ buffer: 2, hideDriversInPitStall: true })
+      );
+
+      expect(result.current.map((driver) => driver.carIdx)).toEqual([1, 0, 2]);
+    });
+
+    it('backfills the window with the next car on track', () => {
+      const carAheadFurther: Standings = {
+        ...mockDrivers[1],
+        carIdx: 3,
+        driver: { ...mockDrivers[1].driver, name: 'Driver 4', carNum: '4' },
+      };
+
+      vi.mocked(useRelativeGapsSnapshot).mockReturnValue({
+        focusCarIdx: 0,
+        relativePcts: [0, 0.1, -0.1, 0.2],
+        deltas: [0, 10, -10, 20],
+        sessionNum: 1,
+        version: 1,
+      });
+      vi.mocked(useDriverStandings).mockReturnValue([
+        mockDrivers[0],
+        inStall(mockDrivers[1]),
+        mockDrivers[2],
+        carAheadFurther,
+      ]);
+
+      const { result } = renderHook(() =>
+        useDriverRelatives({ buffer: 1, hideDriversInPitStall: true })
+      );
+
+      // The stalled car directly ahead is replaced by the next car up the road,
+      // so the widget still renders a full window.
+      expect(result.current.map((driver) => driver.carIdx)).toEqual([3, 0, 2]);
+    });
   });
 
   it('should scale delta correctly for multiclass (faster car behind)', () => {
