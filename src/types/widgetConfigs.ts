@@ -697,14 +697,19 @@ export type SessionRetention = 'all' | 5 | 10 | 20;
 export interface GantryConfig {
   /** Display units for speed values. Stored thresholds stay in km/h. */
   speedUnit: 'mph' | 'km/h' | 'auto';
+  /**
+   * Bumped when the meaning of a saved threshold changes. Version 2 moved the
+   * durations from frame counts to seconds; configs below it are reset rather
+   * than converted.
+   */
+  thresholdsVersion: number;
   // Incident detection thresholds
   slowSpeedThreshold: number;
-  slowFrameThreshold: number;
-  suddenStopFromSpeed: number;
-  suddenStopToSpeed: number;
-  suddenStopFrames: number;
-  offTrackDebounce: number;
-  pitEntryDebounce: number;
+  slowDurationSeconds: number;
+  impactDecelKmhPerSec: number;
+  impactMinSpeed: number;
+  offTrackDurationSeconds: number;
+  pitEntryDurationSeconds: number;
   cooldownSeconds: number;
   // Persistence
   sessionRetention: SessionRetention;

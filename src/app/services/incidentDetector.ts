@@ -5,8 +5,13 @@ import type {
   IncidentDebugSnapshot,
 } from '../../types/raceControl';
 import { IncidentType } from '../../types/raceControl';
-import { TrackLocation, GlobalFlags, SessionState } from '../irsdk/types/enums';
+import { TrackLocation, GlobalFlags } from '../irsdk/types/enums';
 import logger from '../logger';
+import {
+  baselineSpeed,
+  measureDeceleration,
+  SPEED_BASELINE_S,
+} from './speedBaseline';
 
 /**
  * How far apart in time two cars' incidents can be and still be treated as one
@@ -23,8 +28,8 @@ const CONTACT_DISTANCE_M = 30;
  * other — they have both just missed the apex, which is a routine off-track.
  */
 const CONTACT_SPEED_LOSS_RATIO = 0.7;
-/** Per-tick decay on the peak speed, giving a window of roughly two seconds. */
-const PEAK_SPEED_DECAY = 0.98;
+/** Half-life of the peak-speed decay, so it reflects the last couple of seconds. */
+const PEAK_SPEED_HALF_LIFE_S = 1.5;
 /**
  * Frames of per-car history kept for incident debug snapshots (dev only).
  * At ~20Hz this is roughly 3 seconds. Ten frames — half a second — consistently
@@ -34,6 +39,20 @@ const PEAK_SPEED_DECAY = 0.98;
 const FRAME_HISTORY_LENGTH = 60;
 /** Remote positions may repeat briefly; only a full second implies a stop. */
 const STATIONARY_SAMPLE_DELAY_S = 1;
+/** Position history kept: two baselines back to back, plus margin. */
+const IMPACT_WINDOW_S = SPEED_BASELINE_S * 2 + 0.5;
+/**
+ * How long the impact condition must hold before it is reported. A real impact
+ * satisfies it for roughly a baseline; a single bad position reading does not
+ * survive the next frame.
+ */
+const IMPACT_CONFIRM_S = 0.1;
+/**
+ * Fastest reading treated as real. A tow, a reset to pits, or any other jump in
+ * lapDistPct derives a speed no car can reach, and the next ordinary tick then
+ * looks like a deceleration of thousands of km/h/s.
+ */
+const MAX_PLAUSIBLE_SPEED_KMH = 450;
 
 interface TelemetrySnapshot {
   sessionTime: number;
@@ -80,9 +99,8 @@ export class IncidentDetector {
   private lastSessionNum: number | null = null;
   /**
    * SessionNum -> session type ('Race', 'Practice', 'Open Qualify', ...).
-   * Keyed by number and resolved against the telemetry snapshot rather than
-   * stored as a single value, because the session-data callback does not
-   * always know the current SessionNum yet on the first publish.
+   * Diagnostics only: detection is deliberately not gated on session type, so
+   * this exists to name the phase in the log and nothing more.
    */
   private sessionTypesByNum = new Map<number, string>();
 
@@ -112,10 +130,12 @@ export class IncidentDetector {
   reseedCarStates(): void {
     for (const state of this.carStates.values()) {
       state.hasPrevFrame = false;
-      state.slowFrameCount = 0;
-      state.offTrackFrameCount = 0;
-      state.onPitRoadFrameCount = 0;
-      state.recentRawSpeeds.length = 0;
+      state.slowSinceSessionTime = null;
+      state.slowReported = false;
+      state.offTrackSinceSessionTime = null;
+      state.onPitRoadSinceSessionTime = null;
+      state.recentPositions.length = 0;
+      state.impactPendingSince = null;
     }
   }
 
@@ -224,34 +244,6 @@ export class IncidentDetector {
     }
   }
 
-  /**
-   * Speed in km/h derived from lap-distance movement, or null when no usable
-   * reading can be taken this tick. Exposed for testing.
-   *
-   * Null is NOT the same as 0 km/h, and the distinction matters: we poll faster
-   * than remote cars' CarIdxLapDistPct arrives over the network, so a car that
-   * is moving perfectly normally still produces ticks where its position is
-   * unchanged. Reporting those as 0 km/h drags the rolling average down and
-   * makes a moving car look stopped — which is how a car trickling into the
-   * pits, or any car during a paused replay, gets reported as a crash.
-   */
-  calculateSpeed(
-    prevLapDistPct: number,
-    currLapDistPct: number,
-    deltaTime: number,
-    trackLengthM: number
-  ): number | null {
-    // Clock did not advance: paused/rewound replay, or a duplicated frame.
-    if (deltaTime <= 0) return null;
-    let distPct = currLapDistPct - prevLapDistPct;
-    if (distPct < -0.5) distPct += 1.0; // wrap-around
-    // No forward movement recorded. Either the position simply has not been
-    // refreshed yet, or the car nudged backwards; neither is a speed reading.
-    if (distPct <= 0) return null;
-    const distanceM = trackLengthM * distPct;
-    return (distanceM / deltaTime) * 3.6;
-  }
-
   onIncident(cb: IncidentListener) {
     this.listeners.add(cb);
     return () => this.listeners.delete(cb);
@@ -266,15 +258,16 @@ export class IncidentDetector {
         prevLapDistPct: 0,
         prevSessionTime: 0,
         lastPositionChangeSessionTime: 0,
-        speedHistory: [],
         currentAvgSpeed: 0,
-        recentRawSpeeds: [],
+        recentPositions: [],
         recentPeakSpeed: 0,
-        slowFrameCount: 0,
-        offTrackFrameCount: 0,
-        onPitRoadFrameCount: 0,
+        impactPendingSince: null,
+        slowSinceSessionTime: null,
+        offTrackSinceSessionTime: null,
+        onPitRoadSinceSessionTime: null,
         pitEntryReported: false,
         offTrackReported: false,
+        slowReported: false,
         lastIncidentTime: {} as Record<string, number>,
         hasPrevFrame: false,
       });
@@ -377,22 +370,36 @@ export class IncidentDetector {
     this.frameBuffers.set(carIdx, buf);
   }
 
+  /**
+   * Steepest deceleration ending at the newest sample, searched across every
+   * span of at least IMPACT_MIN_SPAN_S within the buffer.
+   *
+   * Anchoring on the newest sample keeps this a "what just happened" measure.
+   * Taking the steepest span rather than the whole buffer is what separates an
+   * impact from braking: a 0.2s hit averaged over two seconds of approach looks
+   * gentle, but the span covering the hit alone does not. The minimum span
+   * exists because telemetry arrives unevenly - gaps alternate between roughly
+   * 0.033s and 0.05s - and a single short gap turns ordinary braking into an
+   * apparent 60 km/h/s spike.
+   */
   private buildDebugSnapshot(
     carIdx: number,
     state: CarIncidentState,
+    sessionTime: number,
     trigger: IncidentDebugSnapshot['trigger'],
     evidence: string
   ): IncidentDebugSnapshot {
+    const elapsedSince = (since: number | null) =>
+      since === null ? 0 : sessionTime - since;
     return {
       trigger,
       evidence,
       thresholds: { ...this.thresholds },
       carStateAtDetection: {
-        speedHistory: [...state.speedHistory],
         currentAvgSpeed: state.currentAvgSpeed,
-        recentRawSpeeds: [...state.recentRawSpeeds],
-        slowFrameCount: state.slowFrameCount,
-        offTrackFrameCount: state.offTrackFrameCount,
+        recentPositions: [...state.recentPositions],
+        slowForSeconds: elapsedSince(state.slowSinceSessionTime),
+        offTrackForSeconds: elapsedSince(state.offTrackSinceSessionTime),
         prevTrackSurface: state.prevTrackSurface,
         prevSessionFlags: state.prevSessionFlags,
         prevOnPitRoad: state.prevOnPitRoad,
@@ -461,9 +468,10 @@ export class IncidentDetector {
       // car is on pit road, so without the latch a car parked in its box emits
       // a fresh entry every time the cooldown lapses.
       if (onPitRoad) {
-        state.onPitRoadFrameCount++;
+        state.onPitRoadSinceSessionTime ??= snap.sessionTime;
+        const onPitRoadFor = snap.sessionTime - state.onPitRoadSinceSessionTime;
         if (
-          state.onPitRoadFrameCount >= this.thresholds.pitEntryDebounce &&
+          onPitRoadFor >= this.thresholds.pitEntryDurationSeconds &&
           !state.pitEntryReported &&
           !this.isCoolingDown(state, IncidentType.PitEntry, cooldownTime)
         ) {
@@ -472,8 +480,9 @@ export class IncidentDetector {
           const debug = this.buildDebugSnapshot(
             carIdx,
             state,
+            snap.sessionTime,
             'pit-entry',
-            `Pit entry detected for car ${carIdx} after ${state.onPitRoadFrameCount} frames`
+            `Pit entry detected for car ${carIdx} after ${onPitRoadFor.toFixed(2)}s on pit road`
           );
           this.emit({
             ...this.createIncidentBase(carIdx, snap, IncidentType.PitEntry),
@@ -481,60 +490,93 @@ export class IncidentDetector {
           });
         }
       } else {
-        state.onPitRoadFrameCount = 0;
+        state.onPitRoadSinceSessionTime = null;
         state.pitEntryReported = false;
       }
 
       // --- Speed calculation ---
-      // A null reading means "no data this tick", not "stopped". Skipping the
-      // buffers keeps the last known speed rather than polluting the rolling
-      // average with zeroes; the speed-based detectors below sit this tick out.
+      // Positions are recorded raw and speed is measured across a baseline, so
+      // a position that has not refreshed in step with sessionTime costs a
+      // small fraction of a long distance rather than distorting one reading.
+      // That also removes the need to special-case remote cars whose positions
+      // arrive slower than we poll: over half a second they have always moved.
       const deltaTime = snap.sessionTime - state.prevSessionTime;
       const lapDistPct = snap.carIdxLapDistPct[carIdx] ?? 0;
-      const positionChanged = lapDistPct !== state.prevLapDistPct;
-      const positionDeltaTime =
-        snap.sessionTime - state.lastPositionChangeSessionTime;
-      const measuredSpeed = this.calculateSpeed(
-        state.prevLapDistPct,
-        lapDistPct,
-        positionDeltaTime,
-        trackLengthM
-      );
-      if (positionChanged) {
+      if (lapDistPct !== state.prevLapDistPct) {
         state.lastPositionChangeSessionTime = snap.sessionTime;
       }
-      const stationaryLongEnough =
-        !positionChanged &&
-        deltaTime > 0 &&
-        snap.sessionTime - state.lastPositionChangeSessionTime >=
-          STATIONARY_SAMPLE_DELAY_S;
-      const speedSample = measuredSpeed ?? (stationaryLongEnough ? 0 : null);
+
+      // A tow, a reset to pits or a grid placement moves the car without it
+      // driving there. History either side of that is not one continuous
+      // trajectory, so measuring across the join would invent an enormous
+      // acceleration and then an enormous deceleration. Drop it and start over.
+      const previous = state.recentPositions[state.recentPositions.length - 1];
+      if (previous) {
+        const gap = snap.sessionTime - previous.sessionTime;
+        let jumpPct = lapDistPct - previous.lapDistPct;
+        if (jumpPct < -0.5) jumpPct += 1.0; // wrap-around
+        const impliedSpeed =
+          gap > 0 ? ((trackLengthM * Math.abs(jumpPct)) / gap) * 3.6 : 0;
+        if (impliedSpeed > MAX_PLAUSIBLE_SPEED_KMH) {
+          state.recentPositions.length = 0;
+          state.impactPendingSince = null;
+          // Whatever the car was doing before it was moved is no longer true
+          // of where it is now. Keeping the old peak would make a car set down
+          // on the grid look like one that had just been circulating.
+          state.recentPeakSpeed = 0;
+          state.currentAvgSpeed = 0;
+        }
+      }
+
+      state.recentPositions.push({
+        sessionTime: snap.sessionTime,
+        lapDistPct,
+      });
+      const windowStart = snap.sessionTime - IMPACT_WINDOW_S;
+      while (
+        state.recentPositions.length > 0 &&
+        state.recentPositions[0].sessionTime < windowStart
+      ) {
+        state.recentPositions.shift();
+      }
+
+      const baseline = baselineSpeed(
+        state.recentPositions,
+        state.recentPositions.length - 1,
+        SPEED_BASELINE_S,
+        trackLengthM
+      );
+      // Zero travel is only a real 0 km/h once the position has been unchanged
+      // long enough that it cannot be a stalled feed. A tow or reset derives a
+      // speed no car can reach, and is discarded rather than believed.
+      let speedSample: number | null = null;
+      if (baseline) {
+        if (baseline.speed > 0) {
+          speedSample =
+            baseline.speed <= MAX_PLAUSIBLE_SPEED_KMH ? baseline.speed : null;
+        } else if (
+          snap.sessionTime - state.lastPositionChangeSessionTime >=
+          STATIONARY_SAMPLE_DELAY_S
+        ) {
+          speedSample = 0;
+        }
+      }
       const hasSpeedSample = speedSample !== null;
-      const rawSpeed = speedSample ?? state.currentAvgSpeed;
 
-      if (hasSpeedSample) {
-        state.recentRawSpeeds.push(speedSample);
-        if (state.recentRawSpeeds.length > this.thresholds.suddenStopFrames) {
-          state.recentRawSpeeds.shift();
-        }
-        state.speedHistory.push(speedSample);
-        if (state.speedHistory.length > 5) {
-          state.speedHistory.shift();
-        }
-        state.currentAvgSpeed =
-          state.speedHistory.reduce((a, b) => a + b, 0) /
-          state.speedHistory.length;
-
-        // Decayed peak, so "has this car lost speed" compares against what it
-        // was doing a moment ago rather than its fastest all lap.
+      if (speedSample !== null) {
+        state.currentAvgSpeed = speedSample;
+        // Decays with time rather than with sample count, so a car whose
+        // position feed stalls does not hold its peak indefinitely.
+        const decay =
+          deltaTime > 0 ? Math.pow(0.5, deltaTime / PEAK_SPEED_HALF_LIFE_S) : 1;
         state.recentPeakSpeed = Math.max(
           speedSample,
-          state.recentPeakSpeed * PEAK_SPEED_DECAY
+          state.recentPeakSpeed * decay
         );
 
         this.pushFrameHistory(carIdx, {
           speed: speedSample,
-          lapDistPct: snap.carIdxLapDistPct[carIdx] ?? 0,
+          lapDistPct,
           trackSurface: surface,
           sessionTime: snap.sessionTime,
         });
@@ -542,8 +584,9 @@ export class IncidentDetector {
 
       // --- Off-track ---
       if (surface === TrackLocation.OffTrack) {
-        state.offTrackFrameCount++;
-        if (state.offTrackFrameCount >= this.thresholds.offTrackDebounce) {
+        state.offTrackSinceSessionTime ??= snap.sessionTime;
+        const offTrackFor = snap.sessionTime - state.offTrackSinceSessionTime;
+        if (offTrackFor >= this.thresholds.offTrackDurationSeconds) {
           const lapDistPct = snap.carIdxLapDistPct[carIdx] ?? 0;
           // Another car in trouble at the same place and moment turns a lone
           // excursion into a contact, which is reported as a Crash so it is
@@ -570,10 +613,11 @@ export class IncidentDetector {
             const debug = this.buildDebugSnapshot(
               carIdx,
               state,
+              snap.sessionTime,
               'off-track',
               partner
-                ? `Off-track for ${state.offTrackFrameCount} frames alongside #${partner.carNumber} ${partner.name} — likely contact`
-                : `Off-track for ${state.offTrackFrameCount} frames`
+                ? `Off-track for ${offTrackFor.toFixed(2)}s alongside #${partner.carNumber} ${partner.name} — likely contact`
+                : `Off-track for ${offTrackFor.toFixed(2)}s`
             );
             this.emit({
               ...this.createIncidentBase(carIdx, snap, type),
@@ -583,7 +627,7 @@ export class IncidentDetector {
           this.recordAnomaly(carIdx, snap.sessionTime, lapDistPct, lostSpeed);
         }
       } else {
-        state.offTrackFrameCount = 0;
+        state.offTrackSinceSessionTime = null;
         state.offTrackReported = false;
       }
 
@@ -600,6 +644,7 @@ export class IncidentDetector {
         const debug = this.buildDebugSnapshot(
           carIdx,
           state,
+          snap.sessionTime,
           'black-flag',
           `Black flag for car ${carIdx}`
         );
@@ -616,6 +661,7 @@ export class IncidentDetector {
         const debug = this.buildDebugSnapshot(
           carIdx,
           state,
+          snap.sessionTime,
           'slowdown-flag',
           `Slowdown flag for car ${carIdx}`
         );
@@ -635,31 +681,39 @@ export class IncidentDetector {
       const isOnRacingSurface =
         surface === TrackLocation.OnTrack || surface === TrackLocation.OffTrack;
       const isOnPitRoad = onPitRoad;
-      const isRacing = snap.sessionState === SessionState.Racing;
-      // SessionState.Racing only means the session is in its green phase — it
-      // is just as true during qualifying. Stopping is routine outside a race:
-      // drivers park after a qualifying run or end a practice stint, and every
-      // one of those was being reported as a crash. A genuine impact still gets
-      // caught by sudden-stop, which stays enabled in every session.
-      const isRaceSession =
-        this.sessionTypesByNum.get(snap.sessionNum) === 'Race';
-      if (!(isOnRacingSurface && !isOnPitRoad && isRacing && isRaceSession)) {
-        // Not racing (formation/pace laps) or on pit road — drain the counter so
-        // it doesn't carry over and fire immediately once the session goes green.
-        state.slowFrameCount = 0;
+      // No session-state or session-type gate. Detection has to work the same
+      // in a race, a qualifying run, a warmup, a time trial and a test drive.
+      //
+      // What actually separates a stopped car from a parked one is whether it
+      // was moving in the first place. A car on the grid, or sitting in the
+      // garage area, has never been above the slow threshold, so it is not
+      // reported; a car that was circulating and is now stationary is. That
+      // holds in every session type, which the old Race-only gate did not.
+      const wasMoving =
+        state.recentPeakSpeed > this.thresholds.slowSpeedThreshold;
+      if (!(isOnRacingSurface && !isOnPitRoad && wasMoving)) {
+        state.slowSinceSessionTime = null;
+        state.slowReported = false;
       } else if (hasSpeedSample) {
         if (state.currentAvgSpeed < this.thresholds.slowSpeedThreshold) {
-          state.slowFrameCount++;
+          state.slowSinceSessionTime ??= snap.sessionTime;
+          const slowFor = snap.sessionTime - state.slowSinceSessionTime;
+          // Latched like pit entry and off-track. A car stopped in the gravel
+          // stays below the threshold indefinitely, so on a `>=` comparison it
+          // would report a fresh crash every time the cooldown lapsed.
           if (
-            state.slowFrameCount === this.thresholds.slowFrameThreshold &&
+            slowFor >= this.thresholds.slowDurationSeconds &&
+            !state.slowReported &&
             !this.isCoolingDown(state, IncidentType.Crash, cooldownTime)
           ) {
+            state.slowReported = true;
             state.lastIncidentTime[IncidentType.Crash] = cooldownTime;
             const debug = this.buildDebugSnapshot(
               carIdx,
               state,
+              snap.sessionTime,
               'sustained-slow',
-              `avgSpeed ${state.currentAvgSpeed.toFixed(1)} km/h < threshold ${this.thresholds.slowSpeedThreshold} km/h for ${state.slowFrameCount} frames`
+              `avgSpeed ${state.currentAvgSpeed.toFixed(1)} km/h < threshold ${this.thresholds.slowSpeedThreshold} km/h for ${slowFor.toFixed(2)}s`
             );
             this.emit({
               ...this.createIncidentBase(carIdx, snap, IncidentType.Crash),
@@ -674,41 +728,49 @@ export class IncidentDetector {
             );
           }
         } else {
-          state.slowFrameCount = 0;
+          state.slowSinceSessionTime = null;
+          state.slowReported = false;
         }
       }
-      // No speed reading this tick: hold slowFrameCount as-is. Resetting would
+      // No speed reading this tick: hold the slow-since stamp as-is. Resetting would
       // let a genuinely stopped car escape detection whenever its position
       // failed to refresh, and incrementing would invent evidence we don't have.
 
-      // --- Sudden stop ---
-      // isRacing matters as much here as it does for sustained-slow. On a
-      // session changeover (practice/qualifying -> race) iRacing lifts cars off
-      // the track at whatever speed they were doing and sets them down
-      // stationary on the grid. That teleport writes racing speeds into the
-      // buffer and the car then reads as stopped, which looks exactly like a
-      // crash. Gridding happens in GetInCar/Warmup/ParadeLaps, so gating on
-      // Racing discards the whole sequence.
-      if (
-        isOnRacingSurface &&
-        !isOnPitRoad &&
-        isRacing &&
-        hasSpeedSample &&
-        state.recentRawSpeeds.length >= this.thresholds.suddenStopFrames
-      ) {
-        const oldestSpeed = state.recentRawSpeeds[0];
-        const currentSpeed = rawSpeed;
+      // --- Impact ---
+      // Deliberately not gated on session state or session type. It used to be
+      // gated on Racing, because a session changeover lifts cars off the track
+      // and sets them down stationary on the grid, which read as a crash. That
+      // teleport is now discarded where it happens, when the position history
+      // is cleared, so the gate no longer earns its cost - and it cost a lot:
+      // it silently disabled crash detection in test drives, warmups and any
+      // other session that never goes green, while off-tracks and pit entries
+      // kept working and made detection look healthy.
+      const impact =
+        isOnRacingSurface && !isOnPitRoad
+          ? measureDeceleration(state.recentPositions, trackLengthM)
+          : null;
+      const impactQualifies =
+        impact !== null &&
+        impact.fromSpeed >= this.thresholds.impactMinSpeed &&
+        impact.rate >= this.thresholds.impactDecelKmhPerSec;
+
+      if (impactQualifies) {
+        // Held for a moment before reporting. A car that actually hit something
+        // still satisfies this on the next frame; a single position reading
+        // that arrived out of step with sessionTime does not.
+        state.impactPendingSince ??= snap.sessionTime;
+        const heldFor = snap.sessionTime - state.impactPendingSince;
         if (
-          oldestSpeed > this.thresholds.suddenStopFromSpeed &&
-          currentSpeed < this.thresholds.suddenStopToSpeed &&
+          heldFor >= IMPACT_CONFIRM_S &&
           !this.isCoolingDown(state, IncidentType.Crash, cooldownTime)
         ) {
           state.lastIncidentTime[IncidentType.Crash] = cooldownTime;
           const debug = this.buildDebugSnapshot(
             carIdx,
             state,
-            'sudden-stop',
-            `Speed dropped from ${state.recentRawSpeeds[0]?.toFixed(1)} to ${rawSpeed.toFixed(1)} km/h`
+            snap.sessionTime,
+            'impact',
+            `Decelerated at ${impact.rate.toFixed(0)} km/h/s (${(impact.rate / 12.96).toFixed(1)}g): ${impact.fromSpeed.toFixed(1)} to ${impact.toSpeed.toFixed(1)} km/h in ${impact.spanSeconds.toFixed(2)}s`
           );
           this.emit({
             ...this.createIncidentBase(carIdx, snap, IncidentType.Crash),
@@ -722,6 +784,8 @@ export class IncidentDetector {
             true
           );
         }
+      } else {
+        state.impactPendingSince = null;
       }
 
       // Update state

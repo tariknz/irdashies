@@ -15,12 +15,11 @@ function parseTrackLengthM(str: string): number {
 
 const defaultThresholds: IncidentThresholds = {
   slowSpeedThreshold: 15,
-  slowFrameThreshold: 10,
-  suddenStopFromSpeed: 80,
-  suddenStopToSpeed: 20,
-  suddenStopFrames: 3,
-  offTrackDebounce: 3,
-  pitEntryDebounce: 3,
+  slowDurationSeconds: 1,
+  impactDecelKmhPerSec: 150,
+  impactMinSpeed: 20,
+  offTrackDurationSeconds: 0.3,
+  pitEntryDurationSeconds: 0.6,
   cooldownSeconds: 5,
 };
 
@@ -30,6 +29,8 @@ export interface IncidentProcessorOptions {
 }
 
 export class IncidentProcessor implements TelemetryProcessor<Incident[]> {
+  // Required by TelemetryProcessor but inert here: IncidentRuntime drives this
+  // processor directly, so ProcessorHost never reads either value.
   readonly channel = 'raceControl.incidents';
   readonly tickRateHz = 'event' as const;
 

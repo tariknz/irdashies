@@ -5,14 +5,19 @@ import { IncidentType } from '../../types/raceControl';
 import type { Incident } from '../../types/raceControl';
 import { TrackLocation, GlobalFlags, SessionState } from '../irsdk/types/enums';
 
+// A short duration that a third consecutive frame clears but a second does
+// not, at the 0.04-0.05s steps these fixtures feed. Just under 0.08 so float
+// error in the session-time subtraction cannot land the third frame on the
+// wrong side of the comparison.
+const SHORT_DEBOUNCE_S = 0.07;
+
 const defaultThresholds: IncidentThresholds = {
   slowSpeedThreshold: 15,
-  slowFrameThreshold: 10,
-  suddenStopFromSpeed: 80,
-  suddenStopToSpeed: 20,
-  suddenStopFrames: 3,
-  offTrackDebounce: 3,
-  pitEntryDebounce: 3,
+  slowDurationSeconds: 0.4,
+  impactDecelKmhPerSec: 150,
+  impactMinSpeed: 20,
+  offTrackDurationSeconds: SHORT_DEBOUNCE_S,
+  pitEntryDurationSeconds: SHORT_DEBOUNCE_S,
   cooldownSeconds: 5,
 };
 
@@ -58,41 +63,71 @@ const raceSession = () => ({
   },
 });
 
-describe('IncidentDetector - speed calculation', () => {
-  it('calculates speed from lapDistPct delta and track length', () => {
-    const detector = new IncidentDetector(defaultThresholds, false);
-    // 0.001 pct * 5000m = 5m in 0.04s (25Hz) → 125 m/s → 450 km/h
-    const speed = detector.calculateSpeed(0.5, 0.501, 0.04, 5000);
-    expect(speed).toBeCloseTo(450, 0);
-  });
+/**
+ * Drives a car through a speed profile, advancing lapDistPct so the detector
+ * derives the speeds given. Speeds are km/h, one per frame. A seed frame is
+ * emitted first so there is prev state to measure against.
+ */
+const drive = (
+  detector: IncidentDetector,
+  speeds: number[],
+  opts: {
+    startTime?: number;
+    step?: number;
+    startPct?: number;
+    trackLengthM?: number;
+    surface?: number;
+  } = {}
+) => {
+  const step = opts.step ?? 0.05;
+  const trackLengthM = opts.trackLengthM ?? 5000;
+  const surface = opts.surface ?? TrackLocation.OnTrack;
+  let pct = opts.startPct ?? 0.2;
+  let t = opts.startTime ?? 100;
 
-  it('handles lap wrap-around (lapDistPct 0.99 → 0.01)', () => {
-    const detector = new IncidentDetector(defaultThresholds, false);
-    const speed = detector.calculateSpeed(0.99, 0.01, 0.04, 5000);
-    // distPct = 0.01 - 0.99 = -0.98, wrap-around: -0.98 + 1.0 = 0.02
-    // 0.02 * 5000 = 100m / 0.04s = 2500 m/s * 3.6 = 9000 km/h (fast car at finish)
-    expect(speed).toBeGreaterThan(0);
-  });
+  detector.processTelemetry(
+    makeTelemetry({
+      carIdxLapDistPct: [pct],
+      carIdxTrackSurface: [surface],
+      sessionTime: t,
+    }),
+    trackLengthM
+  );
+  for (const kmh of speeds) {
+    pct += ((kmh / 3.6) * step) / trackLengthM;
+    t += step;
+    detector.processTelemetry(
+      makeTelemetry({
+        carIdxLapDistPct: [pct],
+        carIdxTrackSurface: [surface],
+        sessionTime: t,
+      }),
+      trackLengthM
+    );
+  }
+};
 
-  it('returns null for backwards movement (collision nudge)', () => {
-    const detector = new IncidentDetector(defaultThresholds, false);
-    const speed = detector.calculateSpeed(0.5, 0.499, 0.04, 5000);
-    expect(speed).toBeNull();
-  });
+/** A constant-rate deceleration, in km/h per second, sampled every `step`. */
+const decelProfile = (
+  from: number,
+  to: number,
+  ratePerSecond: number,
+  step = 0.05
+) => {
+  const speeds: number[] = [];
+  for (let v = from; v > to; v -= ratePerSecond * step) speeds.push(v);
+  speeds.push(to);
+  return speeds;
+};
 
-  it('returns null when the position has not refreshed since the last tick', () => {
-    const detector = new IncidentDetector(defaultThresholds, false);
-    // Remote cars' lapDistPct arrives slower than we poll, so an unchanged
-    // position is "no reading yet" — not a stationary car.
-    expect(detector.calculateSpeed(0.5, 0.5, 0.04, 5000)).toBeNull();
-  });
-
-  it('returns null when the session clock has not advanced (paused replay)', () => {
-    const detector = new IncidentDetector(defaultThresholds, false);
-    expect(detector.calculateSpeed(0.5, 0.501, 0, 5000)).toBeNull();
-    expect(detector.calculateSpeed(0.5, 0.501, -1, 5000)).toBeNull();
-  });
-});
+/**
+ * Steady frames at `kmh`, prepended to a profile so the speed baseline is
+ * populated before the interesting part. Speed is measured across half a
+ * second and deceleration across two of those, so a car has no reading at all
+ * for its first half second and no deceleration for its first full second.
+ */
+const warmUp = (kmh: number, seconds = 1.5, step = 0.05) =>
+  new Array(Math.ceil(seconds / step)).fill(kmh) as number[];
 
 describe('session transitions', () => {
   const makeDrivers = () => ({
@@ -112,7 +147,7 @@ describe('session transitions', () => {
   it('clears car states on first updateSession (initial load)', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (detector as any).carStates.set(0, { slowFrameCount: 5 });
+    (detector as any).carStates.set(0, { slowSinceSessionTime: 5 });
     detector.updateSession({
       WeekendInfo: { SubSessionID: 111 },
       ...makeDrivers(),
@@ -204,7 +239,7 @@ describe('session transitions', () => {
 });
 
 describe('first-frame speed guard', () => {
-  it('does not emit sudden-stop crash on the first processed frame', () => {
+  it('does not emit an impact crash on the first processed frame', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
@@ -228,7 +263,7 @@ describe('first-frame speed guard', () => {
 
     // Repro of the live bug: prevLapDistPct=0, currLapDistPct=0.5 on a 5km
     // track = 18,000 km/h "speed" on first frame, then real 0 km/h on next
-    // tick → previously fired false sudden-stop Crash.
+    // tick → previously fired a false impact Crash.
     detector.processTelemetry(
       makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
       5000
@@ -246,38 +281,263 @@ describe('first-frame speed guard', () => {
   });
 });
 
-describe('sudden stop - session changeover', () => {
-  it('still fires for a genuine high-speed stop while racing', () => {
+describe('impact detection', () => {
+  it('fires for a car that hits something at speed', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
     detector.updateSession(raceSession());
 
-    // Four frames at ~225 km/h to fill the suddenStopFrames buffer...
-    let pct = 0.5;
-    for (let i = 0; i < 5; i++) {
-      detector.processTelemetry(
-        makeTelemetry({
-          carIdxLapDistPct: [pct],
-          sessionTime: 100 + i * 0.04,
-        }),
-        5000
-      );
-      pct += 0.0025;
-    }
-    // ...then barely moving: a real impact.
-    for (let i = 0; i < 3; i++) {
-      pct += 0.000005;
-      detector.processTelemetry(
-        makeTelemetry({
-          carIdxLapDistPct: [pct],
-          sessionTime: 100.2 + i * 0.04,
-        }),
-        5000
-      );
-    }
+    // Approach at 200, then stopped inside 0.15s. The trailing frames matter:
+    // the drop takes a moment to work through the baseline, and the reading
+    // must then hold for IMPACT_CONFIRM_S before anything is reported.
+    drive(detector, [...warmUp(200), 120, 40, 10, ...new Array(14).fill(5)]);
 
-    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(true);
+    const crashes = incidents.filter((i) => i.type === IncidentType.Crash);
+    expect(crashes).toHaveLength(1);
+    expect(crashes[0].debug?.trigger).toBe('impact');
+  });
+
+  it('does not fire for threshold braking', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(raceSession());
+
+    // Measured from a real Clio Cup stop: 129 -> 29 km/h at 43 km/h/s (1.2g).
+    // The old from/to/window gate reported this as a crash, because those three
+    // settings only ever express an average rate and 43 sat above it.
+    drive(detector, decelProfile(148, 29, 43));
+
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toEqual([]);
+  });
+
+  it('does not fire for high-downforce braking, which is harder still', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(raceSession());
+
+    // 2.5g from 250 km/h — about as hard as any car can brake.
+    drive(detector, decelProfile(250, 60, 90));
+
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toEqual([]);
+  });
+
+  it('catches an impact after a spin has already scrubbed the speed off', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(raceSession());
+
+    // Spins down to 60, then hits the wall. A from/to/window gate could never
+    // see this: peak speed never exceeded its from-speed once the spin began.
+    drive(detector, [
+      ...warmUp(200),
+      ...decelProfile(200, 100, 100),
+      50,
+      ...new Array(20).fill(2),
+    ]);
+
+    const crashes = incidents.filter((i) => i.type === IncidentType.Crash);
+    expect(crashes).toHaveLength(1);
+    expect(crashes[0].debug?.trigger).toBe('impact');
+  });
+
+  it('ignores a low-speed nudge below the minimum speed', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(raceSession());
+
+    // Sharp stop, but from 18 km/h — under impactMinSpeed of 20.
+    drive(detector, [...warmUp(18), 2, 1, ...new Array(14).fill(1)]);
+
+    expect(incidents.filter((i) => i.debug?.trigger === 'impact')).toEqual([]);
+  });
+
+  it('does not report an impact gentler than the measurement can resolve', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(raceSession());
+
+    // Speed is averaged across half a second, which smears a short impact.
+    // A car stopped from 60 km/h measures about 100 km/h/s, under the 150
+    // threshold, so it is not reported as an impact. This is a deliberate
+    // floor, not an oversight: a car that hits something below roughly
+    // 90 km/h and stays put is reported by sustained-slow instead, and
+    // lowering the threshold to reach it would put it inside the range of
+    // hard braking in a high-downforce car.
+    drive(detector, [...warmUp(60), 30, ...new Array(20).fill(2)]);
+
+    expect(incidents.filter((i) => i.debug?.trigger === 'impact')).toEqual([]);
+  });
+
+  it('does not report a crash from a position that lags the session clock', () => {
+    // The reported false positive. A car holding a steady speed, where one
+    // frame advances sessionTime by 0.0667s but its position by only 0.05s
+    // worth of travel - the CarIdx arrays lagging by one 60Hz sim tick.
+    // Measured frame to frame this read as 239 km/h/s and fired a crash.
+    const run = (kmh: number) => {
+      const detector = new IncidentDetector(defaultThresholds, false);
+      const incidents: Incident[] = [];
+      detector.onIncident((i) => incidents.push(i));
+      detector.updateSession(raceSession());
+
+      const trackLengthM = 2336; // the track it was reported on
+      let t = 100;
+      let pct = 0.1;
+      const advance = (clockSeconds: number, travelSeconds: number) => {
+        t += clockSeconds;
+        pct += ((kmh / 3.6) * travelSeconds) / trackLengthM;
+        detector.processTelemetry(
+          makeTelemetry({ carIdxLapDistPct: [pct], sessionTime: t }),
+          trackLengthM
+        );
+      };
+
+      for (let i = 0; i < 60; i++) advance(0.05, 0.05);
+      advance(0.0667, 0.05); // the lagging frame
+      for (let i = 0; i < 40; i++) advance(0.05, 0.05);
+
+      return incidents.filter((i) => i.type === IncidentType.Crash);
+    };
+
+    expect(run(108)).toEqual([]);
+    expect(run(250)).toEqual([]);
+  });
+
+  it('does not report a crash when the position lag persists then catches up', () => {
+    // The lag here persists for three frames and is then repaid in one step,
+    // so the position feed dips and spikes rather than glitching once.
+    //
+    // Both guards are needed for this to hold: reverting the baseline to a
+    // frame-to-frame measurement AND removing the confirm delay makes it fire.
+    // Either one alone is enough, because a lag is a step change and a
+    // deceleration is a derivative, so the apparent drop only lasts one frame.
+    // The baseline is what keeps the noise floor an order of magnitude below
+    // the threshold; speedBaseline.spec pins that separately by showing the
+    // same glitch exceeds the threshold at a 0.1s baseline and not at 0.5s.
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(raceSession());
+
+    const trackLengthM = 2336;
+    const kmh = 108;
+    let t = 100;
+    let pct = 0.1;
+    const advance = (clockSeconds: number, travelSeconds: number) => {
+      t += clockSeconds;
+      pct += ((kmh / 3.6) * travelSeconds) / trackLengthM;
+      detector.processTelemetry(
+        makeTelemetry({ carIdxLapDistPct: [pct], sessionTime: t }),
+        trackLengthM
+      );
+    };
+
+    for (let i = 0; i < 60; i++) advance(0.05, 0.05);
+    // Three frames where the clock outruns the position by one sim tick each.
+    for (let i = 0; i < 3; i++) advance(0.0667, 0.05);
+    // The position catches up all of the accumulated debt at once.
+    advance(0.05, 0.1);
+    for (let i = 0; i < 40; i++) advance(0.05, 0.05);
+
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toEqual([]);
+  });
+
+  it('reports a wall impact in a solo test drive, which never goes green', () => {
+    // A test drive has no Race session type and never reaches SessionState
+    // Racing. Gating impact on either one disabled crash detection entirely
+    // for it, while off-tracks and pit entries carried on working - which is
+    // what made the gap hard to spot.
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      SessionInfo: {
+        Sessions: [{ SessionNum: 0, SessionType: 'Offline Testing' }],
+      },
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    let t = 100;
+    let pct = 0.2;
+    const at = (kmh: number) => {
+      t += 0.05;
+      pct += ((kmh / 3.6) * 0.05) / 5000;
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [pct],
+          sessionTime: t,
+          sessionState: SessionState.Warmup,
+        }),
+        5000
+      );
+    };
+
+    for (let i = 0; i < 40; i++) at(180);
+    at(90);
+    for (let i = 0; i < 20; i++) at(2);
+
+    const crashes = incidents.filter((i) => i.type === IncidentType.Crash);
+    expect(crashes).toHaveLength(1);
+    expect(crashes[0].debug?.trigger).toBe('impact');
+  });
+
+  it('does not report a crash when a car is towed or reset to the pits', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(raceSession());
+
+    // Being lifted and set down elsewhere is not one continuous trajectory.
+    // Measuring across the join would invent an enormous deceleration.
+    let t = 100;
+    let pct = 0.5;
+    const at = (nextPct: number) => {
+      t += 0.05;
+      pct = nextPct;
+      detector.processTelemetry(
+        makeTelemetry({ carIdxLapDistPct: [pct], sessionTime: t }),
+        5000
+      );
+    };
+
+    for (let i = 0; i < 40; i++) at(pct + ((200 / 3.6) * 0.05) / 5000);
+    at(0.05); // lifted to the pit lane
+    for (let i = 0; i < 40; i++) at(0.05); // sitting in the box
+
+    // A car left motionless on track is a sustained-slow incident in its own
+    // right, which is correct. What must not happen is an impact reported from
+    // measuring across the jump.
+    expect(incidents.filter((i) => i.debug?.trigger === 'impact')).toEqual([]);
+  });
+
+  it('reports nothing until there is enough history to measure speed', () => {
+    // A car that has just appeared - joining mid-race, or re-seeded after a
+    // replay rewind - has no speed reading for its first half second and no
+    // deceleration for its first full second. Nothing may be inferred from
+    // that gap.
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(raceSession());
+
+    drive(detector, new Array(12).fill(200));
+
+    expect(incidents).toEqual([]);
   });
 
   it('does not fire when cars are gridded after a practice/qualifying to race change', () => {
@@ -286,43 +546,49 @@ describe('sudden stop - session changeover', () => {
     detector.onIncident((i) => incidents.push(i));
     detector.updateSession(raceSession());
 
-    // Car circulating at speed near the end of the previous session.
+    // Session time runs forward throughout: the pre-race session state is what
+    // must suppress this, not a clock that appears to go backwards.
+    let t = 100;
     let pct = 0.5;
-    for (let i = 0; i < 5; i++) {
+    const frame = (sessionState: number, kmh: number) => {
+      t += 0.05;
+      pct += ((kmh / 3.6) * 0.05) / 5000;
       detector.processTelemetry(
         makeTelemetry({
           carIdxLapDistPct: [pct],
-          sessionTime: 100 + i * 0.04,
-          sessionState: SessionState.Racing,
+          sessionTime: t,
+          sessionState,
         }),
         5000
       );
-      pct += 0.0025; // ~225 km/h
-    }
+    };
 
-    // Changeover: iRacing lifts the car off track and sets it on the grid,
-    // stationary, while the session sits in a pre-race state.
-    for (let i = 0; i < 10; i++) {
-      detector.processTelemetry(
-        makeTelemetry({
-          carIdxLapDistPct: [0.9235 + i * 0.000002], // grid jitter
-          sessionTime: 9 + i * 0.04,
-          sessionState: SessionState.GetInCar,
-        }),
-        5000
-      );
-    }
+    // Circulating at speed near the end of the previous session.
+    for (let i = 0; i < 40; i++) frame(SessionState.Racing, 225);
 
-    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toHaveLength(
-      0
+    // Changeover: iRacing lifts the car off the track and sets it down on the
+    // grid. That is a jump in lapDistPct, not a drive, and it is followed by
+    // the car sitting stationary - which read as a crash before.
+    t += 0.05;
+    pct = 0.9235;
+    detector.processTelemetry(
+      makeTelemetry({
+        carIdxLapDistPct: [pct],
+        sessionTime: t,
+        sessionState: SessionState.GetInCar,
+      }),
+      5000
     );
+    for (let i = 0; i < 40; i++) frame(SessionState.GetInCar, 0);
+
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toEqual([]);
   });
 });
 
 describe('crash detection - off the racing surface', () => {
   it('fires Crash for a car that comes to rest in the gravel', () => {
     const detector = new IncidentDetector(
-      { ...defaultThresholds, slowFrameThreshold: 3 },
+      { ...defaultThresholds, slowDurationSeconds: SHORT_DEBOUNCE_S },
       false
     );
     const incidents: Incident[] = [];
@@ -330,50 +596,50 @@ describe('crash detection - off the racing surface', () => {
     detector.updateSession(raceSession());
 
     // Runs wide onto the gravel, straddling the edge (surface flickers
-    // OnTrack/OffTrack) while scrubbing off speed.
+    // OnTrack/OffTrack) while scrubbing speed off at a plausible rate, then
+    // stays put. The old fixture dropped 75 km/h in one 0.05s frame - about
+    // 115g - so it fired the impact detector, not the sustained-slow one this
+    // test sits under.
     let pct = 0.806;
     let t = 479;
-    const surfaces = [
+    const feedGravel = (surface: number, kmh: number) => {
+      t += 0.05;
+      pct += ((kmh / 3.6) * 0.05) / 20832;
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [pct],
+          carIdxTrackSurface: [surface],
+          sessionTime: t,
+        }),
+        20832
+      );
+    };
+
+    for (let i = 0; i < 30; i++) feedGravel(TrackLocation.OnTrack, 90);
+    // Straddling the edge as it runs wide, slowing at about 1.4g.
+    const edge = [
       TrackLocation.OnTrack,
       TrackLocation.OffTrack,
       TrackLocation.OnTrack,
       TrackLocation.OffTrack,
       TrackLocation.OffTrack,
     ];
-    for (const s of surfaces) {
-      pct += 0.00005;
-      t += 0.05;
-      detector.processTelemetry(
-        makeTelemetry({
-          carIdxLapDistPct: [pct],
-          carIdxTrackSurface: [s],
-          sessionTime: t,
-        }),
-        20832
-      );
+    let v = 90;
+    for (let i = 0; i < 36; i++) {
+      v = Math.max(0, v - 2.5);
+      feedGravel(edge[Math.min(i, edge.length - 1)], v);
     }
-    // Buried in the gravel against the barrier: off track and barely moving.
-    // Needs enough frames to flush the ~75 km/h entries out of the 5-sample
-    // rolling average before slowFrameCount can start climbing.
-    for (let i = 0; i < 12; i++) {
-      pct += 0.0000005;
-      t += 0.05;
-      detector.processTelemetry(
-        makeTelemetry({
-          carIdxLapDistPct: [pct],
-          carIdxTrackSurface: [TrackLocation.OffTrack],
-          sessionTime: t,
-        }),
-        20832
-      );
-    }
+    // Buried in the gravel against the barrier, not moving.
+    for (let i = 0; i < 40; i++) feedGravel(TrackLocation.OffTrack, 0);
 
-    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(true);
+    const crashes = incidents.filter((i) => i.type === IncidentType.Crash);
+    expect(crashes).toHaveLength(1);
+    expect(crashes[0].debug?.trigger).toBe('sustained-slow');
   });
 
   it('does not fire Crash for a car stationary in its pit stall', () => {
     const detector = new IncidentDetector(
-      { ...defaultThresholds, slowFrameThreshold: 3 },
+      { ...defaultThresholds, slowDurationSeconds: SHORT_DEBOUNCE_S },
       false
     );
     const incidents: Incident[] = [];
@@ -401,6 +667,9 @@ describe('crash detection - off the racing surface', () => {
 
 describe('contact detection', () => {
   const twoCars = {
+    // Without SessionInfo the detector cannot resolve the session type, which
+    // silently disables sustained-slow for every test in this block.
+    SessionInfo: { Sessions: [{ SessionNum: 0, SessionType: 'Race' }] },
     DriverInfo: {
       Drivers: [
         {
@@ -436,7 +705,9 @@ describe('contact detection', () => {
   ) => {
     const surfaces = [TrackLocation.OnTrack, TrackLocation.OnTrack];
     const both = [TrackLocation.OnTrack, TrackLocation.OnTrack];
-    for (let i = 0; i < 2 + defaultThresholds.offTrackDebounce; i++) {
+    // 2 on-track seed frames, then 3 off-track — enough elapsed time at this
+    // step to clear offTrackDurationSeconds.
+    for (let i = 0; i < 5; i++) {
       const s = i < 2 ? surfaces[i] : TrackLocation.OffTrack;
       const lap = [pct, pct];
       const surf = [...both];
@@ -573,6 +844,50 @@ describe('contact detection', () => {
   });
 });
 
+describe('tick-rate independence', () => {
+  // Drives a car onto pit road at a fixed frame rate and returns how much
+  // session time passed between the first on-pit frame and the incident.
+  const pitEntryDelayAtStep = (step: number) => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, pitEntryDurationSeconds: 0.5 },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(raceSession());
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [false], sessionTime: 100 }),
+      5000
+    );
+
+    const entryStart = 100 + step;
+    for (let n = 1; n <= Math.ceil(2 / step); n++) {
+      const t = 100 + n * step;
+      detector.processTelemetry(
+        makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: t }),
+        5000
+      );
+      if (incidents.length > 0) return t - entryStart;
+    }
+    throw new Error(`no pit entry reported at a ${step}s step`);
+  };
+
+  it('reports after the same elapsed time at 60Hz and at 10Hz', () => {
+    // The reason durations are seconds rather than frames: a 3-frame debounce
+    // means 0.05s at 60Hz but 0.3s at 10Hz, so the same setting behaved
+    // differently as the tick rate moved under load.
+    const fast = pitEntryDelayAtStep(1 / 60);
+    const slow = pitEntryDelayAtStep(0.1);
+
+    // Each reports on the first tick at or after the threshold, so the delay
+    // lands within one tick of 0.5s at either rate.
+    expect(fast).toBeGreaterThanOrEqual(0.5 - 1e-9);
+    expect(fast).toBeLessThan(0.5 + 1 / 60);
+    expect(slow).toBeGreaterThanOrEqual(0.5 - 1e-9);
+    expect(slow).toBeLessThan(0.5 + 0.1);
+  });
+});
+
 describe('pit entry detection', () => {
   it('does not emit incidents for spectators', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
@@ -601,9 +916,9 @@ describe('pit entry detection', () => {
     expect(incidents).toEqual([]);
   });
 
-  it('fires PitEntry after pitEntryDebounce consecutive OnPitRoad frames', () => {
+  it('fires PitEntry once the car has been on pit road for pitEntryDurationSeconds', () => {
     const detector = new IncidentDetector(
-      { ...defaultThresholds, pitEntryDebounce: 3 },
+      { ...defaultThresholds, pitEntryDurationSeconds: SHORT_DEBOUNCE_S },
       false
     );
     const incidents: Incident[] = [];
@@ -640,7 +955,7 @@ describe('pit entry detection', () => {
 
   it('does not fire PitEntry for a single-frame OnPitRoad blip', () => {
     const detector = new IncidentDetector(
-      { ...defaultThresholds, pitEntryDebounce: 3 },
+      { ...defaultThresholds, pitEntryDurationSeconds: SHORT_DEBOUNCE_S },
       false
     );
     const incidents: Incident[] = [];
@@ -681,9 +996,9 @@ describe('off-track detection', () => {
     expect(incidents).toHaveLength(0);
   });
 
-  it('fires OffTrack after 3 consecutive off-track frames', () => {
+  it('fires OffTrack once the car has been off the surface for offTrackDurationSeconds', () => {
     const detector = new IncidentDetector(
-      { ...defaultThresholds, offTrackDebounce: 3 },
+      { ...defaultThresholds, offTrackDurationSeconds: SHORT_DEBOUNCE_S },
       false
     );
     const incidents: Incident[] = [];
@@ -720,29 +1035,43 @@ describe('debounce cooldown recovery', () => {
     detector.updateSession(raceSession());
     detector.processTelemetry(makeTelemetry(), 5000);
 
-    for (let i = 0; i < 3; i++) {
-      detector.processTelemetry(
-        makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 100.1 + i }),
-        5000
-      );
-    }
+    // First visit clears the debounce and reports, starting the cooldown.
     detector.processTelemetry(
-      makeTelemetry({ carIdxOnPitRoad: [false], sessionTime: 104 }),
+      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 100.1 }),
       5000
     );
-
-    for (let i = 0; i < 3; i++) {
-      detector.processTelemetry(
-        makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 105 + i }),
-        5000
-      );
-    }
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 100.2 }),
+      5000
+    );
     expect(
       incidents.filter((i) => i.type === IncidentType.PitEntry)
     ).toHaveLength(1);
 
+    // Leaving pit road releases the latch.
     detector.processTelemetry(
-      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 108 }),
+      makeTelemetry({ carIdxOnPitRoad: [false], sessionTime: 101 }),
+      5000
+    );
+
+    // Second visit clears the debounce while still inside the 5s cooldown, so
+    // the frame that crosses the threshold is suppressed.
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 102 }),
+      5000
+    );
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 102.1 }),
+      5000
+    );
+    expect(
+      incidents.filter((i) => i.type === IncidentType.PitEntry)
+    ).toHaveLength(1);
+
+    // The car is still on pit road, so it reports once the cooldown expires
+    // rather than being lost with the suppressed frame.
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 106 }),
       5000
     );
     expect(
@@ -757,22 +1086,12 @@ describe('debounce cooldown recovery', () => {
     detector.updateSession(raceSession());
     detector.processTelemetry(makeTelemetry(), 5000);
 
-    for (let i = 0; i < 3; i++) {
+    // First excursion clears the debounce and reports, starting the cooldown.
+    for (const t of [100.1, 100.2]) {
       detector.processTelemetry(
         makeTelemetry({
           carIdxTrackSurface: [TrackLocation.OffTrack],
-          sessionTime: 100.1 + i,
-        }),
-        5000
-      );
-    }
-    detector.processTelemetry(makeTelemetry({ sessionTime: 104 }), 5000);
-
-    for (let i = 0; i < 3; i++) {
-      detector.processTelemetry(
-        makeTelemetry({
-          carIdxTrackSurface: [TrackLocation.OffTrack],
-          sessionTime: 105 + i,
+          sessionTime: t,
         }),
         5000
       );
@@ -781,10 +1100,29 @@ describe('debounce cooldown recovery', () => {
       incidents.filter((i) => i.type === IncidentType.OffTrack)
     ).toHaveLength(1);
 
+    // Back on the surface, releasing the latch.
+    detector.processTelemetry(makeTelemetry({ sessionTime: 101 }), 5000);
+
+    // Second excursion clears the debounce inside the 5s cooldown, so the
+    // frame that crosses the threshold is suppressed.
+    for (const t of [102, 102.1]) {
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxTrackSurface: [TrackLocation.OffTrack],
+          sessionTime: t,
+        }),
+        5000
+      );
+    }
+    expect(
+      incidents.filter((i) => i.type === IncidentType.OffTrack)
+    ).toHaveLength(1);
+
+    // Still off the surface, so it reports once the cooldown expires.
     detector.processTelemetry(
       makeTelemetry({
         carIdxTrackSurface: [TrackLocation.OffTrack],
-        sessionTime: 108,
+        sessionTime: 106,
       }),
       5000
     );
@@ -795,43 +1133,75 @@ describe('debounce cooldown recovery', () => {
 });
 
 describe('crash detection - sustained slow', () => {
-  it('fires Crash after avgSpeed < threshold for slowFrameThreshold consecutive frames', () => {
+  it('reports a stopped car once, not every time the cooldown lapses', () => {
     const detector = new IncidentDetector(
-      { ...defaultThresholds, slowFrameThreshold: 3 },
+      { ...defaultThresholds, slowDurationSeconds: 0.5 },
       false
     );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
     detector.updateSession(raceSession());
 
-    // Seed frame first (establishes prev state; no detection runs).
-    detector.processTelemetry(
-      makeTelemetry({
-        carIdxTrackSurface: [TrackLocation.OnTrack],
-        carIdxOnPitRoad: [false],
-        carIdxLapDistPct: [0.5],
-        sessionTime: 100,
-      }),
-      5000
-    );
-    // 3 frames barely moving (< 15 km/h threshold)
-    for (let i = 0; i < 3; i++) {
+    // Arrives off track under power, then sits for 30s — six times the 5s
+    // cooldown. It has to arrive moving: a car that was never above the slow
+    // threshold is parked, not stopped, and is deliberately not reported.
+    let t = 100;
+    let pct = 0.5;
+    for (let n = 0; n < 40; n++) {
+      t += 0.05;
+      pct += ((120 / 3.6) * 0.05) / 5000;
       detector.processTelemetry(
         makeTelemetry({
-          carIdxTrackSurface: [TrackLocation.OnTrack],
-          carIdxOnPitRoad: [false],
-          carIdxLapDistPct: [0.5 + (i + 1) * 0.00001], // barely moving
-          sessionTime: 100.04 + i * 0.04,
+          carIdxLapDistPct: [pct],
+          carIdxTrackSurface: [TrackLocation.OffTrack],
+          sessionTime: t,
         }),
         5000
       );
     }
-    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(true);
+    for (let n = 0; n < 600; n++) {
+      t += 0.05;
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [pct],
+          carIdxTrackSurface: [TrackLocation.OffTrack],
+          sessionTime: t,
+        }),
+        5000
+      );
+    }
+
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toHaveLength(
+      1
+    );
+  });
+
+  it('fires Crash after the car stays below the slow threshold for slowDurationSeconds', () => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, slowDurationSeconds: SHORT_DEBOUNCE_S },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(raceSession());
+
+    // Arrives at racing speed then crawls at 5 km/h, well under the 15 km/h
+    // threshold. The first half second yields no reading at all while the
+    // speed baseline fills.
+    drive(detector, [
+      ...warmUp(120),
+      ...decelProfile(120, 5, 40),
+      ...new Array(40).fill(5),
+    ]);
+
+    const crashes = incidents.filter((i) => i.type === IncidentType.Crash);
+    expect(crashes).toHaveLength(1);
+    expect(crashes[0].debug?.trigger).toBe('sustained-slow');
   });
 
   it('does not fire when the session clock is frozen (paused replay)', () => {
     const detector = new IncidentDetector(
-      { ...defaultThresholds, slowFrameThreshold: 3 },
+      { ...defaultThresholds, slowDurationSeconds: SHORT_DEBOUNCE_S },
       false
     );
     const incidents: Incident[] = [];
@@ -853,129 +1223,102 @@ describe('crash detection - sustained slow', () => {
     expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
   });
 
-  it('does not fire for a moving car whose position updates slower than we poll', () => {
-    const detector = new IncidentDetector(
-      { ...defaultThresholds, slowFrameThreshold: 3 },
-      false
-    );
+  it('does not report a car whose position updates slower than we poll', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
     detector.updateSession(raceSession());
 
+    // A remote car doing 60 km/h whose networked position refreshes every
+    // third tick. The two stale ticks in between must not read as 0 km/h - if
+    // they did, the car would be reported as stopped on track.
+    let t = 100;
+    let pct = 0.5;
     detector.processTelemetry(
-      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
+      makeTelemetry({ carIdxLapDistPct: [pct], sessionTime: t }),
       5000
     );
-    // Car is doing a healthy ~180 km/h, but its networked position only
-    // refreshes every third tick — the two stale ticks in between must not be
-    // read as 0 km/h.
-    let pct = 0.5;
-    for (let i = 1; i <= 12; i++) {
-      if (i % 3 === 0) pct += 0.0004;
+    for (let i = 1; i <= 60; i++) {
+      t += 0.05;
+      if (i % 3 === 0) pct += ((60 / 3.6) * 0.15) / 5000;
       detector.processTelemetry(
-        makeTelemetry({
-          carIdxLapDistPct: [pct],
-          sessionTime: 100 + i * 0.04,
-        }),
+        makeTelemetry({ carIdxLapDistPct: [pct], sessionTime: t }),
         5000
       );
     }
-    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
+
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toEqual([]);
   });
 
-  it('measures remote movement across the full position-update interval', () => {
-    const detector = new IncidentDetector(
-      {
-        ...defaultThresholds,
-        slowFrameThreshold: 100,
-        suddenStopFromSpeed: 80,
-      },
-      false
-    );
+  it('does not read a sparse position update as a spike followed by a stop', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
     const incidents: Incident[] = [];
     detector.onIncident((incident) => incidents.push(incident));
     detector.updateSession(raceSession());
 
+    // Same sparse refresh, but at racing speed. Measured frame to frame this
+    // is the worst case: the refresh tick shows three ticks of travel in one,
+    // and the two after it show none, which reads as a huge acceleration
+    // followed by a huge deceleration. Across a baseline it is just 200 km/h.
+    let t = 100;
+    let pct = 0.2;
     detector.processTelemetry(
-      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
+      makeTelemetry({ carIdxLapDistPct: [pct], sessionTime: t }),
       5000
     );
-    detector.processTelemetry(
-      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100.04 }),
-      5000
-    );
-    detector.processTelemetry(
-      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100.08 }),
-      5000
-    );
-    // 0.0004 of a 5km lap over 0.12s is 60km/h. Measuring it against only
-    // the latest 0.04s telemetry tick would incorrectly report 180km/h.
-    detector.processTelemetry(
-      makeTelemetry({ carIdxLapDistPct: [0.5004], sessionTime: 100.12 }),
-      5000
-    );
+    for (let i = 1; i <= 60; i++) {
+      t += 0.05;
+      if (i % 3 === 0) pct += ((200 / 3.6) * 0.15) / 5000;
+      detector.processTelemetry(
+        makeTelemetry({ carIdxLapDistPct: [pct], sessionTime: t }),
+        5000
+      );
+    }
 
-    // Admit stationary samples, but do not classify a stop from 60km/h as a
-    // sudden-stop crash with an 80km/h threshold.
-    detector.processTelemetry(
-      makeTelemetry({ carIdxLapDistPct: [0.5004], sessionTime: 101.12 }),
-      5000
-    );
-    detector.processTelemetry(
-      makeTelemetry({ carIdxLapDistPct: [0.5004], sessionTime: 101.16 }),
-      5000
-    );
-
-    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toEqual([]);
   });
 
   it('fires for a racing car that remains completely stationary', () => {
     const detector = new IncidentDetector(
-      { ...defaultThresholds, slowFrameThreshold: 3 },
+      { ...defaultThresholds, slowDurationSeconds: SHORT_DEBOUNCE_S },
       false
     );
     const incidents: Incident[] = [];
     detector.onIncident((incident) => incidents.push(incident));
     detector.updateSession(raceSession());
 
-    detector.processTelemetry(
-      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
-      5000
-    );
-    detector.processTelemetry(
-      makeTelemetry({ carIdxLapDistPct: [0.5004], sessionTime: 100.04 }),
-      5000
-    );
-    // Repeated positions below one second are treated as stale network data.
-    detector.processTelemetry(
-      makeTelemetry({ carIdxLapDistPct: [0.5004], sessionTime: 100.8 }),
-      5000
-    );
-    expect(incidents).toEqual([]);
-
-    // Once unchanged for a full second, zero-speed samples are admitted and
-    // the normal sudden-stop/sustained-slow detectors can fire.
-    for (let i = 0; i < 10; i++) {
+    // Arrives on track then stops dead and never moves again. A repeated
+    // position is treated as a stale feed rather than a stop until it has
+    // held for a full second, so nothing is reported for the first part.
+    let t = 100;
+    let pct = 0.5;
+    const roll = (kmh: number) => {
+      t += 0.05;
+      pct += ((kmh / 3.6) * 0.05) / 5000;
       detector.processTelemetry(
-        makeTelemetry({
-          carIdxLapDistPct: [0.5004],
-          sessionTime: 101.04 + i * 0.04,
-        }),
+        makeTelemetry({ carIdxLapDistPct: [pct], sessionTime: t }),
         5000
       );
-    }
+    };
+    // Slowing gently enough that the impact detector has nothing to report.
+    for (let i = 0; i < 30; i++) roll(120);
+    for (const kmh of decelProfile(120, 0, 40)) roll(kmh);
+    for (let i = 0; i < 60; i++) roll(0);
 
-    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(true);
+    const crashes = incidents.filter((i) => i.type === IncidentType.Crash);
+    expect(crashes).toHaveLength(1);
+    expect(crashes[0].debug?.trigger).toBe('sustained-slow');
   });
 
-  it('does not fire when a car parks after a qualifying run', () => {
+  it('reports a car that stops on track during a qualifying run', () => {
     const detector = new IncidentDetector(
-      { ...defaultThresholds, slowFrameThreshold: 3 },
+      { ...defaultThresholds, slowDurationSeconds: SHORT_DEBOUNCE_S },
       false
     );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
-    // Same session state (Racing = green phase) but a Qualify session type.
+    // A Qualify session. Detection is not gated on session type, so a car
+    // stopped out on track is reported here exactly as it would be in a race.
     detector.updateSession({
       SessionInfo: {
         Sessions: [{ SessionNum: 0, SessionType: 'Open Qualify' }],
@@ -993,33 +1336,23 @@ describe('crash detection - sustained slow', () => {
       },
     });
 
-    // Slows from ~45 km/h and stops on track, as a driver does at the end of
-    // a qualifying run.
-    let pct = 0.5265;
-    let t = 251;
-    for (const step of [0.00025, 0.0002, 0.00012, 0.00005, 0.00001]) {
-      pct += step;
-      t += 0.05;
-      detector.processTelemetry(
-        makeTelemetry({ carIdxLapDistPct: [pct], sessionTime: t }),
-        5000
-      );
-    }
-    for (let i = 0; i < 12; i++) {
-      pct += 0.0000005;
-      t += 0.05;
-      detector.processTelemetry(
-        makeTelemetry({ carIdxLapDistPct: [pct], sessionTime: t }),
-        5000
-      );
-    }
+    drive(
+      detector,
+      [...warmUp(90), ...decelProfile(90, 0, 30), ...new Array(40).fill(0)],
+      {
+        startTime: 251,
+        startPct: 0.5265,
+      }
+    );
 
-    expect(incidents.some((i) => i.type === IncidentType.Crash)).toBe(false);
+    const crashes = incidents.filter((i) => i.type === IncidentType.Crash);
+    expect(crashes).toHaveLength(1);
+    expect(crashes[0].debug?.trigger).toBe('sustained-slow');
   });
 
   it('does not fire while car is on pit road', () => {
     const detector = new IncidentDetector(
-      { ...defaultThresholds, slowFrameThreshold: 3 },
+      { ...defaultThresholds, slowDurationSeconds: SHORT_DEBOUNCE_S },
       false
     );
     const incidents: Incident[] = [];
@@ -1044,7 +1377,7 @@ describe('crash detection - sustained slow', () => {
 
   it('does not fire sustained-slow during formation/pace lap (pre-Racing state)', () => {
     const detector = new IncidentDetector(
-      { ...defaultThresholds, slowFrameThreshold: 3 },
+      { ...defaultThresholds, slowDurationSeconds: SHORT_DEBOUNCE_S },
       false
     );
     const incidents: Incident[] = [];
@@ -1078,51 +1411,33 @@ describe('crash detection - sustained slow', () => {
     );
   });
 
-  it('fires sustained-slow once session transitions to Racing', () => {
+  it('does not report a car that has never moved, such as one on the grid', () => {
+    // Replaces a green-flag session-state gate. Cars sitting on a pre-race
+    // grid must not each emit a crash, but the reason cannot be the session
+    // state - that switched detection off in test drives and time trials too.
+    // What actually distinguishes them is that they have never been moving.
     const detector = new IncidentDetector(
-      { ...defaultThresholds, slowFrameThreshold: 3 },
+      { ...defaultThresholds, slowDurationSeconds: SHORT_DEBOUNCE_S },
       false
     );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
     detector.updateSession(raceSession());
 
-    // Pre-green: 10 stationary frames — counter is drained each frame
-    detector.processTelemetry(
-      makeTelemetry({
-        sessionState: SessionState.ParadeLaps,
-        sessionTime: 100,
-      }),
-      5000
-    );
-    for (let i = 0; i < 10; i++) {
+    let t = 100;
+    for (let i = 0; i < 120; i++) {
+      t += 0.05;
       detector.processTelemetry(
         makeTelemetry({
+          carIdxLapDistPct: [0.5],
+          sessionTime: t,
           sessionState: SessionState.ParadeLaps,
-          carIdxLapDistPct: [0.5 + (i + 1) * 0.00001],
-          sessionTime: 100.04 + i * 0.04,
         }),
         5000
       );
     }
-    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toHaveLength(
-      0
-    );
 
-    // Green flag — car still stationary on track, now detection is live
-    for (let i = 0; i < 3; i++) {
-      detector.processTelemetry(
-        makeTelemetry({
-          sessionState: SessionState.Racing,
-          carIdxLapDistPct: [0.5 + (11 + i) * 0.00001],
-          sessionTime: 100.44 + i * 0.04,
-        }),
-        5000
-      );
-    }
-    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toHaveLength(
-      1
-    );
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toEqual([]);
   });
 });
 
@@ -1175,7 +1490,7 @@ describe('dev mode debug snapshots', () => {
     const debug = incidents[0].debug;
     expect(debug).toBeDefined();
     expect(debug?.evidence).toContain('Pit entry');
-    expect(debug?.thresholds.suddenStopFromSpeed).toBe(80);
+    expect(debug?.thresholds.impactDecelKmhPerSec).toBe(150);
     expect(debug?.frameHistory).toEqual([]);
   });
 

@@ -36,6 +36,11 @@ const frame = (overrides: Record<string, unknown> = {}): Telemetry =>
     ...overrides,
   }) as unknown as Telemetry;
 
+// Frame step for the pit-entry helpers. These run on the shipped defaults, so
+// three consecutive frames must span more than pitEntryDurationSeconds (0.6s)
+// while two must not.
+const PIT_STEP = 0.4;
+
 const pitEntryAtTop = (processor: IncidentProcessor, startTime: number) => {
   processor.onFrame(
     frame({
@@ -47,7 +52,7 @@ const pitEntryAtTop = (processor: IncidentProcessor, startTime: number) => {
     processor.onFrame(
       frame({
         CarIdxOnPitRoad: { value: [true] },
-        SessionTime: { value: [startTime + i * 0.04] },
+        SessionTime: { value: [startTime + i * PIT_STEP] },
       })
     );
   }
@@ -64,7 +69,7 @@ describe('IncidentProcessor', () => {
     expect(processor.snapshot()).toEqual([]);
   });
 
-  it('emits a PitEntry incident after pitEntryDebounce consecutive frames', () => {
+  it('emits a PitEntry incident once the car has been on pit road for pitEntryDurationSeconds', () => {
     const processor = new IncidentProcessor();
     processor.init(raceSession());
 
@@ -75,7 +80,7 @@ describe('IncidentProcessor', () => {
       processor.onFrame(
         frame({
           CarIdxOnPitRoad: { value: [true] },
-          SessionTime: { value: [100.04 + i * 0.04] },
+          SessionTime: { value: [100 + (i + 1) * PIT_STEP] },
         })
       );
       expect(processor.snapshot()).toEqual([]);
@@ -84,7 +89,7 @@ describe('IncidentProcessor', () => {
     processor.onFrame(
       frame({
         CarIdxOnPitRoad: { value: [true] },
-        SessionTime: { value: [100.12] },
+        SessionTime: { value: [100 + 3 * PIT_STEP] },
       })
     );
 
@@ -101,7 +106,7 @@ describe('IncidentProcessor', () => {
       processor.onFrame(
         frame({
           CarIdxOnPitRoad: { value: [true] },
-          SessionTime: { value: [100.04 + i * 0.04] },
+          SessionTime: { value: [100 + (i + 1) * PIT_STEP] },
         })
       );
     }
@@ -120,7 +125,7 @@ describe('IncidentProcessor', () => {
       processor.onFrame(
         frame({
           CarIdxOnPitRoad: { value: [true] },
-          SessionTime: { value: [100.04 + i * 0.04] },
+          SessionTime: { value: [100 + (i + 1) * PIT_STEP] },
         })
       );
     }
@@ -129,7 +134,7 @@ describe('IncidentProcessor', () => {
     processor.onFrame(
       frame({
         CarIdxOnPitRoad: { value: [true] },
-        SessionTime: { value: [100.16] },
+        SessionTime: { value: [100 + 4 * PIT_STEP] },
       })
     );
     expect(processor.snapshot()).toEqual([]);
@@ -168,8 +173,8 @@ describe('IncidentProcessor', () => {
       })
     );
 
-    // Only 2 consecutive off-track frames since the reset — below the
-    // default debounce of 3, so nothing should have fired yet.
+    // Only 0.04s off track since the reset — below the default
+    // offTrackDurationSeconds, so nothing should have fired yet.
     expect(processor.snapshot()).toEqual([]);
   });
 
@@ -186,7 +191,7 @@ describe('IncidentProcessor', () => {
   });
 
   describe('replay review and spectating', () => {
-    /** Drives a pit entry: one off-pit frame, then pitEntryDebounce (3) on-pit. */
+    /** Drives a pit entry: one off-pit frame, then three on-pit frames. */
     const pitEntryAt = (
       processor: IncidentProcessor,
       startTime: number,
@@ -203,7 +208,7 @@ describe('IncidentProcessor', () => {
         processor.onFrame(
           frame({
             CarIdxOnPitRoad: { value: [true] },
-            SessionTime: { value: [startTime + i * 0.04] },
+            SessionTime: { value: [startTime + i * PIT_STEP] },
             ...extra,
           })
         );
@@ -333,16 +338,30 @@ describe('IncidentProcessor', () => {
       const processor = new IncidentProcessor();
       processor.init(raceSession());
 
+      // The car has to arrive under power. Detection is not gated on session
+      // type or state any more; what separates a beached car from a parked one
+      // is that it was moving beforehand, so a fixture that starts stationary
+      // is correctly reported as nothing at all.
       let emitted = 0;
-      for (let i = 0; i <= 400; i++) {
+      let t = 100;
+      let pct = 0.5;
+      const feed = (kmh: number) => {
+        t += 0.05;
+        pct += ((kmh / 3.6) * 0.05) / 5000;
         processor.onFrame(
           frame({
             CarIdxTrackSurface: { value: [TrackLocation.OffTrack] },
-            SessionTime: { value: [100 + i * 0.05] },
+            CarIdxLapDistPct: { value: [pct] },
+            SessionTime: { value: [t] },
           })
         );
         emitted += processor.snapshot().length;
-      }
+      };
+
+      // Slides off at speed, coasts to a halt, then sits for 20s.
+      for (let i = 0; i < 30; i++) feed(100);
+      for (let v = 100; v > 0; v -= 2) feed(v);
+      for (let i = 0; i < 400; i++) feed(0);
 
       expect(emitted).toBe(1);
     });
