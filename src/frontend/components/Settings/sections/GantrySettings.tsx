@@ -17,6 +17,7 @@ import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingNumberRow } from '../components/SettingNumberRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
+import { DriverNamePreview } from '../components/DriverNamePreview';
 import {
   kphFromSpeed,
   resolveSpeedUnit,
@@ -121,6 +122,15 @@ const thresholdFields: ThresholdField[] = [
     ...INCIDENT_THRESHOLD_BOUNDS.cooldownSeconds,
   },
 ];
+
+const NAME_FORMATS = [
+  'name-middlename-surname',
+  'name-m.-surname',
+  'name-surname',
+  'n.-surname',
+  'surname-n.',
+  'surname',
+] as const;
 
 const retentionOptions = [
   { label: 'All', value: 'all' },
@@ -265,6 +275,31 @@ export const GantrySettings = memo(() => {
                   ]}
                   onChange={(v) => handleConfigChange({ speedUnit: v })}
                 />
+
+                <SettingDivider />
+
+                <div className="py-2">
+                  <div className="text-sm text-slate-300">Driver Name</div>
+                  <div className="text-xs text-slate-400 mt-1">
+                    How names are written in the Gantry standings list. Surname
+                    only keeps the column narrow, which is what the panel is
+                    sized for.
+                  </div>
+                  <div className="flex flex-wrap gap-3 justify-end mt-3">
+                    {NAME_FORMATS.map((format) => (
+                      <DriverNamePreview
+                        key={format}
+                        format={format}
+                        selected={
+                          (config.driverNameFormat ?? 'surname') === format
+                        }
+                        onClick={() =>
+                          handleConfigChange({ driverNameFormat: format })
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
 
                 <SettingSelectRow
                   title="Keep Sessions"

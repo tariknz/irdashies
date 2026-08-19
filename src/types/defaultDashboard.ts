@@ -1454,6 +1454,7 @@ export const defaultDashboard: {
       },
       config: {
         speedUnit: 'auto',
+        driverNameFormat: 'surname',
         thresholdsVersion: 3,
         slowSpeedThreshold: 15,
         slowDurationSeconds: 1,

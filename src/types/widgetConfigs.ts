@@ -697,10 +697,11 @@ export type SessionRetention = 'all' | 5 | 10 | 20;
 export interface GantryConfig {
   /** Display units for speed values. Stored thresholds stay in km/h. */
   speedUnit: 'mph' | 'km/h' | 'auto';
+  /** How driver names are written in the standings list. */
+  driverNameFormat: NameFormat;
   /**
-   * Bumped when the meaning of a saved threshold changes. Version 2 moved the
-   * durations from frame counts to seconds; configs below it are reset rather
-   * than converted.
+   * Bumped when a saved threshold's meaning changes. Configs below the current
+   * version are reset rather than converted; see migrateGantryThresholds.
    */
   thresholdsVersion: number;
   // Incident detection thresholds
