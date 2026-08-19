@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import { useLapTimesStoreUpdater } from '@irdashies/context';
 import { GantryStandings } from './GantryStandings';
+import type { NameFormat } from '@irdashies/types';
 
 vi.mock('@irdashies/domain', () => ({
   useHighlightColor: () => 0xffffff,
@@ -21,9 +22,12 @@ vi.mock('@irdashies/context', () => ({
   useDashboard: () => ({ currentDashboard: dashboardMock.current }),
 }));
 
-// Only the fields GantryDriverRow actually reads. The real standings entry is
-// far wider, so this is cast rather than filled in.
-const driverRow = (name: string) =>
+type StandingsByClass = ReturnType<typeof useDriverStandings>;
+type StandingsRow = StandingsByClass[number][1][number];
+
+// Only the fields GantryDriverRow reads. The real row carries far more, so the
+// rest is filled in as a partial rather than stubbed out.
+const driverRow = (name: string): StandingsRow =>
   ({
     carIdx: 7,
     position: 1,
@@ -31,12 +35,20 @@ const driverRow = (name: string) =>
     isPlayer: false,
     dnf: false,
     driver: { name, carNum: '503', license: 'A 4.99', rating: 4300 },
-    carClass: { color: 0xffffff, name: 'GT3' },
+    carClass: {
+      id: 1,
+      color: 0xffffff,
+      name: 'GT3',
+      relativeSpeed: 0,
+      estLapTime: 90,
+    },
     lapTimeDeltas: [],
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  }) as any;
+  }) as Partial<StandingsRow> as StandingsRow;
 
-const withNameFormat = (driverNameFormat?: string) => {
+const standings = (rows: StandingsRow[]): StandingsByClass =>
+  [['gt3', rows]] as unknown as StandingsByClass;
+
+const withNameFormat = (driverNameFormat: NameFormat | undefined) => {
   dashboardMock.current = driverNameFormat
     ? { widgets: [{ id: 'gantry', config: { driverNameFormat } }] }
     : undefined;
@@ -60,29 +72,33 @@ describe('GantryStandings', () => {
     );
   });
 
+  // Every NameFormat the picker offers.
   it.each([
     ['surname', 'Verstappen'],
-    ['name-surname', 'Max Verstappen'],
+    ['surname-n.', 'Verstappen M.'],
     ['n.-surname', 'M. Verstappen'],
+    ['name-surname', 'Max Verstappen'],
+    ['name-m.-surname', 'Max E. Verstappen'],
     ['name-middlename-surname', 'Max Emilian Verstappen'],
-  ])('writes driver names as %s', (format, expected) => {
-    withNameFormat(format);
-    vi.mocked(useDriverStandings).mockReturnValue([
-      ['gt3', [driverRow('Max Emilian Verstappen')]],
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ] as any);
+  ] as [NameFormat, string][])(
+    'writes driver names as %s',
+    (format, expected) => {
+      withNameFormat(format);
+      vi.mocked(useDriverStandings).mockReturnValue(
+        standings([driverRow('Max Emilian Verstappen')])
+      );
 
-    const { getByText } = render(<GantryStandings followedCarIdx={null} />);
+      const { getByText } = render(<GantryStandings followedCarIdx={null} />);
 
-    expect(getByText(expected)).toBeTruthy();
-  });
+      expect(getByText(expected)).toBeTruthy();
+    }
+  );
 
   it('falls back to surname when the dashboard has not loaded', () => {
     withNameFormat(undefined);
-    vi.mocked(useDriverStandings).mockReturnValue([
-      ['gt3', [driverRow('Max Emilian Verstappen')]],
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ] as any);
+    vi.mocked(useDriverStandings).mockReturnValue(
+      standings([driverRow('Max Emilian Verstappen')])
+    );
 
     const { getByText } = render(<GantryStandings followedCarIdx={null} />);
 

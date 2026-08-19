@@ -61,7 +61,10 @@ interface ThresholdField {
   max: number;
   isSpeed?: boolean;
   isSeconds?: boolean;
-  /** Deceleration, shown in km/h per second. Not converted with the speed unit. */
+  /**
+   * A deceleration. Stored in km/h per second and converted to the selected
+   * display unit per second, the same way speed fields are.
+   */
   isRate?: boolean;
 }
 

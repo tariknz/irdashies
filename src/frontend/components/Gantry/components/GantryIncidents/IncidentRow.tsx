@@ -3,6 +3,7 @@ import { Copy } from '@phosphor-icons/react';
 import type { Incident } from '@irdashies/types';
 import { IncidentType } from '@irdashies/types';
 import { Tooltip } from '../Tooltip/Tooltip';
+import logger from '@irdashies/utils/logger';
 
 const TYPE_STYLES: Record<IncidentType, { label: string; classes: string }> = {
   [IncidentType.PitEntry]: {
@@ -45,7 +46,9 @@ interface Props {
 export const IncidentRow = memo(
   ({ incident, isOdd, isReplayPlaying }: Props) => {
     const canReplay = isReplayPlaying;
-    const [copied, setCopied] = useState(false);
+    const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>(
+      'idle'
+    );
     const style = TYPE_STYLES[incident.type];
 
     const handleReplay = (seconds: number) => {
@@ -54,11 +57,19 @@ export const IncidentRow = memo(
 
     const handleCopyLog = async () => {
       if (!incident.debug) return;
-      await navigator.clipboard.writeText(
-        JSON.stringify(incident.debug, null, 2)
-      );
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      try {
+        // Clipboard access is denied outside a secure context and can be
+        // refused by the user, so a silent failure would leave the button
+        // looking like it had worked.
+        await navigator.clipboard.writeText(
+          JSON.stringify(incident.debug, null, 2)
+        );
+        setCopyState('copied');
+      } catch (err) {
+        logger.warn('[Gantry] Could not copy the incident log', err);
+        setCopyState('failed');
+      }
+      setTimeout(() => setCopyState('idle'), 1500);
     };
 
     return (
@@ -123,7 +134,11 @@ export const IncidentRow = memo(
                 className="ml-1 flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-600"
               >
                 <Copy size={10} />
-                {copied ? 'Copied!' : 'Log'}
+                {copyState === 'copied'
+                  ? 'Copied!'
+                  : copyState === 'failed'
+                    ? 'Failed'
+                    : 'Log'}
               </button>
             </Tooltip>
           )}

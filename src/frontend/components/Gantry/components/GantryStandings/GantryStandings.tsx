@@ -61,7 +61,7 @@ const StandingsHeader = memo(() => (
     />
     <HeaderCell
       label="Driver"
-      tip="Driver surname. Click any row to point the sim camera at that car — this only does anything in a replay or while spectating."
+      tip="Driver name, in the format set on the Gantry options tab. Click any row to point the sim camera at that car — this only does anything in a replay or while spectating."
       className="flex-1 truncate px-1 text-left"
     />
     <HeaderCell

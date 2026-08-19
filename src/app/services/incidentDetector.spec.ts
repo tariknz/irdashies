@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { IncidentDetector } from './incidentDetector';
-import type { IncidentThresholds } from '../../types/raceControl';
+import type {
+  CarIncidentState,
+  IncidentThresholds,
+} from '../../types/raceControl';
 import { IncidentType } from '../../types/raceControl';
 import type { Incident } from '../../types/raceControl';
 import { TrackLocation, GlobalFlags, SessionState } from '../irsdk/types/enums';
@@ -129,6 +132,41 @@ const decelProfile = (
 const warmUp = (kmh: number, seconds = 1.5, step = 0.05) =>
   new Array(Math.ceil(seconds / step)).fill(kmh) as number[];
 
+/**
+ * The detector's private car-state map. Reached through a narrow typed view
+ * rather than `any`, so a change to CarIncidentState breaks these tests instead
+ * of silently passing.
+ */
+interface DetectorInternals {
+  carStates: Map<number, CarIncidentState>;
+}
+const internals = (detector: IncidentDetector): DetectorInternals =>
+  detector as unknown as DetectorInternals;
+
+const seedCarState = (
+  overrides: Partial<CarIncidentState> = {}
+): CarIncidentState => ({
+  prevTrackSurface: TrackLocation.OnTrack,
+  prevSessionFlags: 0,
+  prevOnPitRoad: false,
+  prevLapDistPct: 0,
+  prevSessionTime: 0,
+  lastPositionChangeSessionTime: 0,
+  currentAvgSpeed: 0,
+  recentPositions: [],
+  recentPeakSpeed: 0,
+  impactPendingSince: null,
+  slowSinceSessionTime: null,
+  offTrackSinceSessionTime: null,
+  onPitRoadSinceSessionTime: null,
+  pitEntryReported: false,
+  offTrackReported: false,
+  slowReported: false,
+  lastIncidentTime: {},
+  hasPrevFrame: false,
+  ...overrides,
+});
+
 describe('session transitions', () => {
   const makeDrivers = () => ({
     DriverInfo: {
@@ -146,14 +184,15 @@ describe('session transitions', () => {
 
   it('clears car states on first updateSession (initial load)', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (detector as any).carStates.set(0, { slowSinceSessionTime: 5 });
+    internals(detector).carStates.set(
+      0,
+      seedCarState({ slowSinceSessionTime: 5 })
+    );
     detector.updateSession({
       WeekendInfo: { SubSessionID: 111 },
       ...makeDrivers(),
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((detector as any).carStates.size).toBe(0);
+    expect(internals(detector).carStates.size).toBe(0);
   });
 
   it('PRESERVES car states when same session YAML is re-published (no change)', () => {
@@ -167,8 +206,7 @@ describe('session transitions', () => {
       makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
       5000
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stateBefore = (detector as any).carStates.get(0);
+    const stateBefore = internals(detector).carStates.get(0);
     expect(stateBefore).toBeDefined();
 
     // Session YAML re-published with identical SubSessionID + SessionNum
@@ -177,10 +215,9 @@ describe('session transitions', () => {
       0
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stateAfter = (detector as any).carStates.get(0);
+    const stateAfter = internals(detector).carStates.get(0);
     expect(stateAfter).toBe(stateBefore);
-    expect(stateAfter.hasPrevFrame).toBe(true);
+    expect(stateAfter?.hasPrevFrame).toBe(true);
   });
 
   it('RESETS car states when SessionNum changes (phase transition Practice → Race)', () => {
@@ -193,16 +230,14 @@ describe('session transitions', () => {
       makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
       5000
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((detector as any).carStates.size).toBe(1);
+    expect(internals(detector).carStates.size).toBe(1);
 
     // Phase change within same SubSessionID
     detector.updateSession(
       { WeekendInfo: { SubSessionID: 111 }, ...makeDrivers() },
       2 // Race
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((detector as any).carStates.size).toBe(0);
+    expect(internals(detector).carStates.size).toBe(0);
   });
 
   it('resets when SessionNum first resolves after the initial YAML update', () => {
@@ -210,13 +245,11 @@ describe('session transitions', () => {
     const session = { WeekendInfo: { SubSessionID: 111 }, ...makeDrivers() };
     detector.updateSession(session);
     detector.processTelemetry(makeTelemetry(), 5000);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((detector as any).carStates.size).toBe(1);
+    expect(internals(detector).carStates.size).toBe(1);
 
     detector.updateSession(session, 2);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((detector as any).carStates.size).toBe(0);
+    expect(internals(detector).carStates.size).toBe(0);
   });
 
   it('RESETS car states when SubSessionID changes', () => {
@@ -233,8 +266,7 @@ describe('session transitions', () => {
       { WeekendInfo: { SubSessionID: 222 }, ...makeDrivers() },
       0
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((detector as any).carStates.size).toBe(0);
+    expect(internals(detector).carStates.size).toBe(0);
   });
 });
 

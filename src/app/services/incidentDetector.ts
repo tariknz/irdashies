@@ -116,13 +116,6 @@ export class IncidentDetector {
   }
 
   /**
-   * Drops per-car detection state: speed history, debounce counters and
-   * cooldowns. The driver roster and session-type map are session facts rather
-   * than detection state, so they survive.
-   *
-   * Returns how many car states were dropped, for logging.
-   */
-  /**
    * Forces every car to re-seed from the next frame without losing cooldowns
    * or the driver roster. Used after a replay rewind, where the previous
    * frame's position and time are no longer adjacent to the next one.
@@ -141,6 +134,13 @@ export class IncidentDetector {
     }
   }
 
+  /**
+   * Drops per-car detection state: speed history, debounce counters and
+   * cooldowns. The driver roster and session-type map are session facts rather
+   * than detection state, so they survive.
+   *
+   * Returns how many car states were dropped, for logging.
+   */
   resetCarStates(): number {
     const cleared = this.carStates.size;
     this.carStates.clear();
@@ -373,16 +373,9 @@ export class IncidentDetector {
   }
 
   /**
-   * Steepest deceleration ending at the newest sample, searched across every
-   * span of at least IMPACT_MIN_SPAN_S within the buffer.
-   *
-   * Anchoring on the newest sample keeps this a "what just happened" measure.
-   * Taking the steepest span rather than the whole buffer is what separates an
-   * impact from braking: a 0.2s hit averaged over two seconds of approach looks
-   * gentle, but the span covering the hit alone does not. The minimum span
-   * exists because telemetry arrives unevenly - gaps alternate between roughly
-   * 0.033s and 0.05s - and a single short gap turns ordinary braking into an
-   * apparent 60 km/h/s spike.
+   * The evidence attached to an incident: what triggered it, the thresholds in
+   * force, and the readings behind the call. Built for every incident, not just
+   * in dev, so a report can always be explained after the fact.
    */
   private buildDebugSnapshot(
     carIdx: number,

@@ -41,11 +41,17 @@ const frame = (overrides: Record<string, unknown> = {}): Telemetry =>
 // while two must not.
 const PIT_STEP = 0.4;
 
-const pitEntryAtTop = (processor: IncidentProcessor, startTime: number) => {
+/** Drives a pit entry: one off-pit frame, then three on-pit frames. */
+const pitEntryAt = (
+  processor: IncidentProcessor,
+  startTime: number,
+  extra: Record<string, unknown> = {}
+) => {
   processor.onFrame(
     frame({
       CarIdxOnPitRoad: { value: [false] },
       SessionTime: { value: [startTime] },
+      ...extra,
     })
   );
   for (let i = 1; i <= 3; i++) {
@@ -53,6 +59,7 @@ const pitEntryAtTop = (processor: IncidentProcessor, startTime: number) => {
       frame({
         CarIdxOnPitRoad: { value: [true] },
         SessionTime: { value: [startTime + i * PIT_STEP] },
+        ...extra,
       })
     );
   }
@@ -191,30 +198,6 @@ describe('IncidentProcessor', () => {
   });
 
   describe('replay review and spectating', () => {
-    /** Drives a pit entry: one off-pit frame, then three on-pit frames. */
-    const pitEntryAt = (
-      processor: IncidentProcessor,
-      startTime: number,
-      extra: Record<string, unknown> = {}
-    ) => {
-      processor.onFrame(
-        frame({
-          CarIdxOnPitRoad: { value: [false] },
-          SessionTime: { value: [startTime] },
-          ...extra,
-        })
-      );
-      for (let i = 1; i <= 3; i++) {
-        processor.onFrame(
-          frame({
-            CarIdxOnPitRoad: { value: [true] },
-            SessionTime: { value: [startTime + i * PIT_STEP] },
-            ...extra,
-          })
-        );
-      }
-    };
-
     it('still detects while spectating, when IsReplayPlaying is set', () => {
       // Spectating a session without a car of your own reports as replay
       // playing for the whole race. Detection must not be disabled by it.
@@ -298,7 +281,7 @@ describe('IncidentProcessor', () => {
       const processor = new IncidentProcessor();
       processor.init(raceSession());
 
-      pitEntryAtTop(processor, 100);
+      pitEntryAt(processor, 100);
 
       const [incident] = processor.snapshot();
       expect(incident.debug).toBeDefined();
@@ -390,7 +373,7 @@ describe('IncidentProcessor', () => {
       const processor = new IncidentProcessor();
       processor.init(raceSession());
 
-      pitEntryAtTop(processor, 100);
+      pitEntryAt(processor, 100);
       expect(processor.snapshot()).toHaveLength(1);
 
       // Leave pit road, which re-arms the latch.
@@ -400,7 +383,7 @@ describe('IncidentProcessor', () => {
           SessionTime: { value: [200] },
         })
       );
-      pitEntryAtTop(processor, 300);
+      pitEntryAt(processor, 300);
       expect(processor.snapshot()).toHaveLength(1);
     });
   });
