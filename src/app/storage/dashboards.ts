@@ -48,7 +48,7 @@ const migrateGantryThresholds = (
     return merged;
   }
   logger.info(
-    '[Dashboards] Resetting Gantry thresholds to defaults: saved values predate the move from frames to seconds'
+    '[Dashboards] Resetting Gantry thresholds to defaults: saved values are from an earlier threshold schema'
   );
   const reset: Record<string, unknown> = {
     ...merged,

@@ -131,7 +131,9 @@ export class IncidentDetector {
     for (const state of this.carStates.values()) {
       state.hasPrevFrame = false;
       state.slowSinceSessionTime = null;
-      state.slowReported = false;
+      // slowReported stays latched. It cannot be re-derived from a single
+      // seeded frame, so clearing it lets an already-reported stopped car
+      // fire a second Crash after a rewind. The car re-arms it when it moves.
       state.offTrackSinceSessionTime = null;
       state.onPitRoadSinceSessionTime = null;
       state.recentPositions.length = 0;
@@ -703,29 +705,35 @@ export class IncidentDetector {
           // would report a fresh crash every time the cooldown lapsed.
           if (
             slowFor >= this.thresholds.slowDurationSeconds &&
-            !state.slowReported &&
-            !this.isCoolingDown(state, IncidentType.Crash, cooldownTime)
+            !state.slowReported
           ) {
-            state.slowReported = true;
-            state.lastIncidentTime[IncidentType.Crash] = cooldownTime;
-            const debug = this.buildDebugSnapshot(
-              carIdx,
-              state,
-              snap.sessionTime,
-              'sustained-slow',
-              `avgSpeed ${state.currentAvgSpeed.toFixed(1)} km/h < threshold ${this.thresholds.slowSpeedThreshold} km/h for ${slowFor.toFixed(2)}s`
-            );
-            this.emit({
-              ...this.createIncidentBase(carIdx, snap, IncidentType.Crash),
-              debug,
-            });
-            // A car that crashed has lost speed by definition.
-            this.recordAnomaly(
-              carIdx,
-              snap.sessionTime,
-              snap.carIdxLapDistPct[carIdx] ?? 0,
-              true
-            );
+            if (this.isCoolingDown(state, IncidentType.Crash, cooldownTime)) {
+              // A crash already covers this stop - an impact, or an earlier
+              // sustained-slow, started the cooldown. Latch now so it is not
+              // reported a second time once the cooldown lapses.
+              state.slowReported = true;
+            } else {
+              state.slowReported = true;
+              state.lastIncidentTime[IncidentType.Crash] = cooldownTime;
+              const debug = this.buildDebugSnapshot(
+                carIdx,
+                state,
+                snap.sessionTime,
+                'sustained-slow',
+                `avgSpeed ${state.currentAvgSpeed.toFixed(1)} km/h < threshold ${this.thresholds.slowSpeedThreshold} km/h for ${slowFor.toFixed(2)}s`
+              );
+              this.emit({
+                ...this.createIncidentBase(carIdx, snap, IncidentType.Crash),
+                debug,
+              });
+              // A car that crashed has lost speed by definition.
+              this.recordAnomaly(
+                carIdx,
+                snap.sessionTime,
+                snap.carIdxLapDistPct[carIdx] ?? 0,
+                true
+              );
+            }
           }
         } else {
           state.slowSinceSessionTime = null;

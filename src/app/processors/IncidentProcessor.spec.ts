@@ -293,7 +293,7 @@ describe('IncidentProcessor', () => {
     });
   });
 
-  describe('sudden stop', () => {
+  describe('debug snapshot', () => {
     it('carries the debug snapshot so the evidence can be copied', () => {
       const processor = new IncidentProcessor();
       processor.init(raceSession());

@@ -46,8 +46,8 @@ const makeTelemetry = (
   ...overrides,
 });
 
-// A one-car Race session. SessionType matters: sustained-slow only reports in
-// a race, because stopping is routine in practice and qualifying.
+// A one-car Race session. Detection is no longer gated on session type, so
+// this is just a convenient roster rather than a precondition.
 const raceSession = () => ({
   SessionInfo: { Sessions: [{ SessionNum: 0, SessionType: 'Race' }] },
   DriverInfo: {
@@ -338,6 +338,23 @@ describe('impact detection', () => {
       50,
       ...new Array(20).fill(2),
     ]);
+
+    const crashes = incidents.filter((i) => i.type === IncidentType.Crash);
+    expect(crashes).toHaveLength(1);
+    expect(crashes[0].debug?.trigger).toBe('impact');
+  });
+
+  it('reports a high-speed crash once, not an impact plus a sustained-slow', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(raceSession());
+
+    // Hits the wall at 250, then sits for 8s — past the 5s cooldown. The
+    // impact fires at once, but the peak speed has not decayed below the slow
+    // threshold by the time the cooldown lapses, so sustained-slow would add a
+    // second Crash unless the impact latches it.
+    drive(detector, [...warmUp(250), 120, 40, 10, ...new Array(160).fill(0)]);
 
     const crashes = incidents.filter((i) => i.type === IncidentType.Crash);
     expect(crashes).toHaveLength(1);
@@ -1170,6 +1187,61 @@ describe('crash detection - sustained slow', () => {
         5000
       );
     }
+
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toHaveLength(
+      1
+    );
+  });
+
+  it('does not re-report a stopped car after a replay rewind reseeds it', () => {
+    // Shorter cooldown keeps the timing robust; the latch is independent of it.
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, cooldownSeconds: 1 },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(raceSession());
+
+    let t = 100;
+    let pct = 0.5;
+    const tick = (kmh: number) => {
+      pct += ((kmh / 3.6) * 0.05) / 5000;
+      t += 0.05;
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxLapDistPct: [pct],
+          carIdxTrackSurface: [TrackLocation.OffTrack],
+          sessionTime: t,
+        }),
+        5000
+      );
+    };
+
+    // Arrive under power, then a gentle stop (below the impact rate) so the
+    // report comes from sustained-slow, not impact. Then sit past the cooldown.
+    detector.processTelemetry(
+      makeTelemetry({
+        carIdxLapDistPct: [pct],
+        carIdxTrackSurface: [TrackLocation.OffTrack],
+        sessionTime: t,
+      }),
+      5000
+    );
+    for (const kmh of warmUp(200)) tick(kmh);
+    for (const kmh of decelProfile(200, 0, 60)) tick(kmh);
+    for (let i = 0; i < 40; i++) tick(0);
+
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toHaveLength(
+      1
+    );
+
+    // Operator rewinds to review, then resumes. The processor drops the
+    // replayed frames and reseeds from the next new one. recentPeakSpeed is
+    // preserved, so the car is still "moving" for wasMoving; clearing the
+    // slowReported latch here would report the same crash a second time.
+    detector.reseedCarStates();
+    for (let i = 0; i < 60; i++) tick(0);
 
     expect(incidents.filter((i) => i.type === IncidentType.Crash)).toHaveLength(
       1
