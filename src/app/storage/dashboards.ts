@@ -16,6 +16,50 @@ const DASHBOARDS_KEY = 'dashboards';
 const PROFILES_KEY = 'profiles';
 const CURRENT_PROFILE_KEY = 'currentProfile';
 
+const GANTRY_THRESHOLDS_VERSION = 3;
+const GANTRY_THRESHOLD_KEYS = [
+  'slowSpeedThreshold',
+  'slowDurationSeconds',
+  'impactDecelKmhPerSec',
+  'impactMinSpeed',
+  'offTrackDurationSeconds',
+  'pitEntryDurationSeconds',
+  'cooldownSeconds',
+] as const;
+
+/**
+ * Gantry thresholds have changed meaning twice, and neither change is safe to
+ * convert. Version 2 moved the durations from frame counts to seconds, where a
+ * saved 3-frame debounce reads as a valid 3 seconds and nothing rejects it.
+ * Version 3 replaced the three sudden-stop settings with a deceleration rate,
+ * which has no equivalent in the old values. Configs below the current version
+ * have their thresholds dropped back to the defaults once.
+ */
+const migrateGantryThresholds = (
+  saved: Record<string, unknown> | undefined,
+  defaults: Record<string, unknown>,
+  merged: Record<string, unknown>
+): Record<string, unknown> => {
+  const savedVersion = saved?.thresholdsVersion;
+  if (
+    typeof savedVersion === 'number' &&
+    savedVersion >= GANTRY_THRESHOLDS_VERSION
+  ) {
+    return merged;
+  }
+  logger.info(
+    '[Dashboards] Resetting Gantry thresholds to defaults: saved values are from an earlier threshold schema'
+  );
+  const reset: Record<string, unknown> = {
+    ...merged,
+    thresholdsVersion: GANTRY_THRESHOLDS_VERSION,
+  };
+  for (const key of GANTRY_THRESHOLD_KEYS) {
+    reset[key] = defaults[key];
+  }
+  return reset;
+};
+
 const isDashboardChanged = (
   oldDashboard: DashboardLayout | undefined,
   newDashboard: DashboardLayout
@@ -67,12 +111,21 @@ export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
           (w) => w.id === widget.id
         );
         if (!defaultWidget?.config) return widget;
+        const defaults = defaultWidget.config as Record<string, unknown>;
+        const merged = deepMergeConfig(defaults, widget.config) as Record<
+          string,
+          unknown
+        >;
         return {
           ...widget,
-          config: deepMergeConfig(
-            defaultWidget.config as Record<string, unknown>,
-            widget.config
-          ),
+          config:
+            widget.id === 'gantry'
+              ? migrateGantryThresholds(
+                  widget.config as Record<string, unknown> | undefined,
+                  defaults,
+                  merged
+                )
+              : merged,
         };
       }),
     };

@@ -17,6 +17,7 @@ import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingNumberRow } from '../components/SettingNumberRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
+import { DriverNamePreview } from '../components/DriverNamePreview';
 import {
   kphFromSpeed,
   resolveSpeedUnit,
@@ -44,12 +45,11 @@ const defaultConfig = getWidgetDefaultConfig('gantry');
 
 type ThresholdKey =
   | 'slowSpeedThreshold'
-  | 'slowFrameThreshold'
-  | 'suddenStopFromSpeed'
-  | 'suddenStopToSpeed'
-  | 'suddenStopFrames'
-  | 'offTrackDebounce'
-  | 'pitEntryDebounce'
+  | 'slowDurationSeconds'
+  | 'impactDecelKmhPerSec'
+  | 'impactMinSpeed'
+  | 'offTrackDurationSeconds'
+  | 'pitEntryDurationSeconds'
   | 'cooldownSeconds';
 
 interface ThresholdField {
@@ -60,6 +60,12 @@ interface ThresholdField {
   min: number;
   max: number;
   isSpeed?: boolean;
+  isSeconds?: boolean;
+  /**
+   * A deceleration. Stored in km/h per second and converted to the selected
+   * display unit per second, the same way speed fields are.
+   */
+  isRate?: boolean;
 }
 
 const thresholdFields: ThresholdField[] = [
@@ -72,48 +78,44 @@ const thresholdFields: ThresholdField[] = [
     isSpeed: true,
   },
   {
-    key: 'slowFrameThreshold',
-    label: 'Slow Frame Count',
+    key: 'slowDurationSeconds',
+    label: 'Slow For',
     description:
-      'How many telemetry frames in a row (roughly 60 per second) a car must stay below the slow speed before it is logged. Raise it to ignore brief lifts and hairpins; lower it to react sooner.',
-    ...INCIDENT_THRESHOLD_BOUNDS.slowFrameThreshold,
+      'How long a car must stay below the slow speed before it is logged. Raise it to ignore brief lifts and hairpins; lower it to react sooner.',
+    ...INCIDENT_THRESHOLD_BOUNDS.slowDurationSeconds,
+    isSeconds: true,
   },
   {
-    key: 'suddenStopFromSpeed',
-    label: 'Crash: Speed Before Impact',
+    key: 'impactDecelKmhPerSec',
+    label: 'Crash: Impact Severity',
     description:
-      'How fast a car must have been going for a sudden deceleration to be treated as a crash. Raise it so only big-speed impacts register; lower it to also catch contact in slower corners.',
-    ...INCIDENT_THRESHOLD_BOUNDS.suddenStopFromSpeed,
+      'How much speed a car must shed each second for it to count as a crash. This is what separates a crash from braking: the hardest braking a road car manages is about 1.3g and a high-downforce car about 2.5g, while hitting a wall starts near 7g. The default sits at roughly 4g. Lower it to catch lighter contact; raise it if hard braking is being reported.',
+    ...INCIDENT_THRESHOLD_BOUNDS.impactDecelKmhPerSec,
+    isRate: true,
+  },
+  {
+    key: 'impactMinSpeed',
+    label: 'Crash: Minimum Speed',
+    description:
+      'How fast a car must have been going for an impact to be worth reporting. Keeps pit-lane bumps and low-speed nudges out of the feed.',
+    ...INCIDENT_THRESHOLD_BOUNDS.impactMinSpeed,
     isSpeed: true,
   },
   {
-    key: 'suddenStopToSpeed',
-    label: 'Crash: Speed After Impact',
+    key: 'offTrackDurationSeconds',
+    label: 'Off-Track For',
     description:
-      'The speed the car has to drop to for that deceleration to count as a crash. Raise it to flag heavy lock-ups and glancing hits; lower it so only cars brought to a near stop are reported.',
-    ...INCIDENT_THRESHOLD_BOUNDS.suddenStopToSpeed,
-    isSpeed: true,
+      'How long a car must be off the racing surface before an off-track is logged. Raise it to ignore cars clipping a kerb or putting a wheel wide; lower it to catch every excursion.',
+    ...INCIDENT_THRESHOLD_BOUNDS.offTrackDurationSeconds,
+    isSeconds: true,
   },
   {
-    key: 'suddenStopFrames',
-    label: 'Crash: Frame Window',
+    key: 'pitEntryDurationSeconds',
+    label: 'Pit Entry After',
     description:
-      'How quickly the speed drop has to happen, in telemetry frames (roughly 60 per second). Lower it so only violent impacts qualify; raise it to also catch cars scrubbing speed through a long spin.',
-    ...INCIDENT_THRESHOLD_BOUNDS.suddenStopFrames,
-  },
-  {
-    key: 'offTrackDebounce',
-    label: 'Off-Track Debounce',
-    description:
-      'How many frames in a row a car must be off the racing surface before an off-track is logged. Raise it to ignore cars clipping a kerb or putting a wheel wide; lower it to catch every excursion.',
-    ...INCIDENT_THRESHOLD_BOUNDS.offTrackDebounce,
-  },
-  {
-    key: 'pitEntryDebounce',
-    label: 'Pit Entry Debounce',
-    description:
-      'How many frames in a row a car must be on pit road before a pit entry is logged. Raise it to avoid false entries from cars hugging the pit exit line; lower it to log entries sooner.',
-    ...INCIDENT_THRESHOLD_BOUNDS.pitEntryDebounce,
+      'How long a car must be on pit road before a pit entry is logged. Raise it to avoid false entries from cars hugging the pit exit line; lower it to log entries sooner.',
+    ...INCIDENT_THRESHOLD_BOUNDS.pitEntryDurationSeconds,
+    isSeconds: true,
   },
   {
     key: 'cooldownSeconds',
@@ -123,6 +125,15 @@ const thresholdFields: ThresholdField[] = [
     ...INCIDENT_THRESHOLD_BOUNDS.cooldownSeconds,
   },
 ];
+
+const NAME_FORMATS = [
+  'name-middlename-surname',
+  'name-m.-surname',
+  'name-surname',
+  'n.-surname',
+  'surname-n.',
+  'surname',
+] as const;
 
 const retentionOptions = [
   { label: 'All', value: 'all' },
@@ -199,12 +210,11 @@ export const GantrySettings = memo(() => {
         if (thresholdKeys.some((key) => key in newConfig)) {
           window.raceControlBridge?.updateThresholds({
             slowSpeedThreshold: merged.slowSpeedThreshold,
-            slowFrameThreshold: merged.slowFrameThreshold,
-            suddenStopFromSpeed: merged.suddenStopFromSpeed,
-            suddenStopToSpeed: merged.suddenStopToSpeed,
-            suddenStopFrames: merged.suddenStopFrames,
-            offTrackDebounce: merged.offTrackDebounce,
-            pitEntryDebounce: merged.pitEntryDebounce,
+            slowDurationSeconds: merged.slowDurationSeconds,
+            impactDecelKmhPerSec: merged.impactDecelKmhPerSec,
+            impactMinSpeed: merged.impactMinSpeed,
+            offTrackDurationSeconds: merged.offTrackDurationSeconds,
+            pitEntryDurationSeconds: merged.pitEntryDurationSeconds,
             cooldownSeconds: merged.cooldownSeconds,
           });
         }
@@ -269,6 +279,31 @@ export const GantrySettings = memo(() => {
                   onChange={(v) => handleConfigChange({ speedUnit: v })}
                 />
 
+                <SettingDivider />
+
+                <div className="py-2">
+                  <div className="text-sm text-slate-300">Driver Name</div>
+                  <div className="text-xs text-slate-400 mt-1">
+                    How names are written in the Gantry standings list. Surname
+                    only keeps the column narrow, which is what the panel is
+                    sized for.
+                  </div>
+                  <div className="flex flex-wrap gap-3 justify-end mt-3">
+                    {NAME_FORMATS.map((format) => (
+                      <DriverNamePreview
+                        key={format}
+                        format={format}
+                        selected={
+                          (config.driverNameFormat ?? 'surname') === format
+                        }
+                        onClick={() =>
+                          handleConfigChange({ driverNameFormat: format })
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+
                 <SettingSelectRow
                   title="Keep Sessions"
                   description="How many past sessions the Gantry keeps in its history. Lower it if the incident feed gets long and you only care about the current race; All keeps everything until you clear it."
@@ -286,11 +321,18 @@ export const GantrySettings = memo(() => {
             {activeTab === 'incidents' && (
               <SettingsSection title="Incident Detection">
                 {thresholdFields.map((field) => {
-                  const suffix = field.isSpeed
-                    ? ` (${speedUnit})`
-                    : field.key === 'cooldownSeconds'
-                      ? ' (seconds)'
-                      : ' (frames)';
+                  const isSeconds =
+                    field.isSeconds || field.key === 'cooldownSeconds';
+                  // A deceleration rate scales with the speed unit, so it is
+                  // converted like a speed and labelled per second.
+                  const converts = field.isSpeed || field.isRate;
+                  const suffix = field.isRate
+                    ? ` (${speedUnit} per second)`
+                    : field.isSpeed
+                      ? ` (${speedUnit})`
+                      : isSeconds
+                        ? ' (seconds)'
+                        : '';
 
                   return (
                     <SettingNumberRow
@@ -298,26 +340,24 @@ export const GantrySettings = memo(() => {
                       title={`${field.label}${suffix}`}
                       description={field.description}
                       value={
-                        field.isSpeed
+                        converts
                           ? toDisplay(config[field.key], speedUnit)
                           : config[field.key]
                       }
                       min={
-                        field.isSpeed
+                        converts
                           ? minToDisplay(field.min, speedUnit)
                           : field.min
                       }
                       max={
-                        field.isSpeed
+                        converts
                           ? maxToDisplay(field.max, speedUnit)
                           : field.max
                       }
-                      step={1}
+                      step={isSeconds ? 0.1 : field.isRate ? 10 : 1}
                       onChange={(v) =>
                         handleConfigChange({
-                          [field.key]: field.isSpeed
-                            ? fromDisplay(v, speedUnit)
-                            : v,
+                          [field.key]: converts ? fromDisplay(v, speedUnit) : v,
                         } as Partial<GantryConfig>)
                       }
                     />

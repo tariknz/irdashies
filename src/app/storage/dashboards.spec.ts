@@ -338,6 +338,89 @@ describe('dashboards', () => {
     });
   });
 
+  describe('Gantry threshold migration', () => {
+    const gantryDefaults = defaultDashboard.widgets.find(
+      (w) => w.id === 'gantry'
+    )?.config as Record<string, number | string>;
+
+    const dashboardWithGantryConfig = (config: Record<string, unknown>) => ({
+      ...defaultDashboard,
+      widgets: defaultDashboard.widgets.map((w) =>
+        w.id === 'gantry' ? { ...w, config } : w
+      ),
+    });
+
+    const loadWith = (config: Record<string, unknown>) => {
+      mockReadData.mockImplementation((key: string) => {
+        if (key === 'currentProfile') return 'default';
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
+        if (key === 'dashboards')
+          return { default: dashboardWithGantryConfig(config) };
+        return null;
+      });
+      const dashboard = getOrCreateDefaultDashboard();
+      return dashboard.widgets.find((w) => w.id === 'gantry')?.config as Record<
+        string,
+        number | string
+      >;
+    };
+
+    it('resets thresholds saved before the current version', () => {
+      // A config from the frame-count era. Those values are all valid seconds,
+      // so nothing rejects them — only the version marker gives them away.
+      const config = loadWith({
+        ...gantryDefaults,
+        thresholdsVersion: undefined,
+        slowDurationSeconds: 10,
+        offTrackDurationSeconds: 3,
+        pitEntryDurationSeconds: 3,
+      });
+
+      expect(config.thresholdsVersion).toBe(3);
+      expect(config.slowDurationSeconds).toBe(
+        gantryDefaults.slowDurationSeconds
+      );
+      expect(config.impactDecelKmhPerSec).toBe(
+        gantryDefaults.impactDecelKmhPerSec
+      );
+      expect(config.offTrackDurationSeconds).toBe(
+        gantryDefaults.offTrackDurationSeconds
+      );
+      expect(config.pitEntryDurationSeconds).toBe(
+        gantryDefaults.pitEntryDurationSeconds
+      );
+    });
+
+    it('keeps thresholds saved at the current version', () => {
+      const config = loadWith({
+        ...gantryDefaults,
+        thresholdsVersion: 3,
+        offTrackDurationSeconds: 0.8,
+        slowSpeedThreshold: 25,
+      });
+
+      expect(config.offTrackDurationSeconds).toBe(0.8);
+      expect(config.slowSpeedThreshold).toBe(25);
+    });
+
+    it('leaves non-threshold settings alone when resetting', () => {
+      const config = loadWith({
+        ...gantryDefaults,
+        thresholdsVersion: undefined,
+        offTrackDurationSeconds: 3,
+        speedUnit: 'mph',
+        sessionRetention: 10,
+      });
+
+      expect(config.speedUnit).toBe('mph');
+      expect(config.sessionRetention).toBe(10);
+      expect(config.offTrackDurationSeconds).toBe(
+        gantryDefaults.offTrackDurationSeconds
+      );
+    });
+  });
+
   describe('generalSettings', () => {
     it('should add general settings from the default dashboard if none exist', () => {
       const dashboard: DashboardLayout = { widgets: [] };
