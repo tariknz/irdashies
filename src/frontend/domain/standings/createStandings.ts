@@ -443,13 +443,40 @@ export const groupStandingsByClass = (
     bucket.push(result);
   }
 
+  const sorted: [string, Standings[]][] = [];
+  for (const [classId, drivers] of groupedByClassId) {
+    sorted.push([String(classId), drivers]);
+  }
+
+  sorted.sort(
+    ([, a], [, b]) => b[0].carClass.relativeSpeed - a[0].carClass.relativeSpeed);
+
+  return sorted;
+};
+
+export const groupStandingsBySpeed = (
+  standings: Standings[]
+): [string, Standings[]][] => {
+  const groupedByClassId = new Map<number, Standings[]>();
+  for (const result of standings) {
+    if (!result.carClass) continue;
+    const classId = result.carClass.id;
+    let bucket = groupedByClassId.get(classId);
+    if (!bucket) {
+      bucket = [];
+      groupedByClassId.set(classId, bucket);
+    }
+    bucket.push(result);
+  }
+
   const getTop2Stats = (drivers: Standings[]) => {
     const validDrivers = drivers
       .filter(
         (d) =>
-          d.position !== undefined && //Check for valid position
-          d.fastestTime !== undefined && //Check for valid time to filter qualifying positions with no set time
-          d.fastestTime > 0
+          d.position !== undefined &&  //Check for valid position
+          //Check for valid time to filter qualifying positions with no set time
+          ((d.fastestTime !== undefined && d.fastestTime > 0) ||
+            (d.lastTime !== undefined && d.lastTime > 0))
       )
       .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
       .slice(0, 1); // Changed .slice(0,2) to .slice(0,1) to only compare leader of each class
@@ -484,12 +511,12 @@ export const groupStandingsByClass = (
       if (statsA.bestPosition !== statsB.bestPosition) {
         return statsA.bestPosition - statsB.bestPosition;
       }
+      // Prefer classes with valid timing data
+    } else if (statsA) {
+      return -1;
+    } else if (statsB) {
+      return 1;
     }
-
-    // Prefer classes with valid timing data
-    if (statsA) return -1;
-    if (statsB) return 1;
-
     // Final fallback: relative speed
     return classB[0].carClass.relativeSpeed - classA[0].carClass.relativeSpeed;
   });

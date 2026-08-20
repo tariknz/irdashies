@@ -16,6 +16,7 @@ export const defaultDashboard: {
         height: 774,
       },
       config: {
+        customClassOrdering: false,
         scale: 100,
         useLivePosition: false,
         iratingChange: {

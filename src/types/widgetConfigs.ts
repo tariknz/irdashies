@@ -147,6 +147,7 @@ export type RelativeBadgeFormat =
 // ===========================
 
 export interface StandingsConfig {
+  customClassOrdering: boolean;
   scale?: number;
   iratingChange: { enabled: boolean; estimateInPractice?: boolean };
   positionChange: { enabled: boolean };

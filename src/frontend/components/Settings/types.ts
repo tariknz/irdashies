@@ -148,6 +148,7 @@ export interface StandingsWidgetSettings extends BaseWidgetSettings {
       position: 'before-name' | 'after-name';
       widthPx: number;
     };
+    customClassOrdering: boolean;
   };
 }
 
