@@ -27,10 +27,10 @@ export const PositionCell = memo(
     const textColor = offTrack ? 'text-yellow-900' : 'text-white';
     const pxClass =
       compactMode === 'ultra'
-        ? ''
+        ? 'min-w-[2ch]'
         : compactMode === 'compact'
-          ? 'px-1'
-          : 'px-2';
+          ? 'min-w-[3.5ch] px-1'
+          : 'min-w-[4ch] px-2';
 
     return (
       <td
