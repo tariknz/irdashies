@@ -37,6 +37,10 @@ const frame = (overrides: Record<string, unknown> = {}): Telemetry =>
     ...overrides,
   }) as unknown as Telemetry;
 
+// Frame step for the pit-entry sequences below. These run on the shipped
+// defaults, so three frames must span more than pitEntryDurationSeconds (0.6s).
+const PIT_STEP = 0.4;
+
 const newMetrics = () => ({ markStart: vi.fn(), markEnd: vi.fn() });
 
 describe('IncidentRuntime', () => {
@@ -81,7 +85,7 @@ describe('IncidentRuntime', () => {
       runtime.onFrame(
         frame({
           CarIdxOnPitRoad: { value: [true] },
-          SessionTime: { value: [100.04 + i * 0.04] },
+          SessionTime: { value: [100 + (i + 1) * PIT_STEP] },
         })
       );
     }
@@ -126,7 +130,7 @@ describe('IncidentRuntime', () => {
       runtime.onFrame(
         frame({
           CarIdxOnPitRoad: { value: [true] },
-          SessionTime: { value: [100.04 + i * 0.04] },
+          SessionTime: { value: [100 + (i + 1) * PIT_STEP] },
         })
       );
     }

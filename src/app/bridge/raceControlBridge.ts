@@ -29,12 +29,11 @@ const isFiniteNumber = (value: unknown): value is number =>
 
 const thresholdKeys: (keyof IncidentThresholds)[] = [
   'slowSpeedThreshold',
-  'slowFrameThreshold',
-  'suddenStopFromSpeed',
-  'suddenStopToSpeed',
-  'suddenStopFrames',
-  'offTrackDebounce',
-  'pitEntryDebounce',
+  'slowDurationSeconds',
+  'impactDecelKmhPerSec',
+  'impactMinSpeed',
+  'offTrackDurationSeconds',
+  'pitEntryDurationSeconds',
   'cooldownSeconds',
 ];
 
@@ -44,15 +43,10 @@ const isValidThresholds = (value: unknown): value is IncidentThresholds => {
   return thresholdKeys.every((key) => {
     const threshold = candidate[key];
     const bounds = INCIDENT_THRESHOLD_BOUNDS[key];
-    if (
-      !isFiniteNumber(threshold) ||
-      threshold < bounds.min ||
-      threshold > bounds.max
-    ) {
-      return false;
-    }
     return (
-      !('integer' in bounds) || !bounds.integer || Number.isInteger(threshold)
+      isFiniteNumber(threshold) &&
+      threshold >= bounds.min &&
+      threshold <= bounds.max
     );
   });
 };

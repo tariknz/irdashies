@@ -41,12 +41,11 @@ const { loadIncidents, clearIncidents, pruneOldSessions } =
 
 const savedThresholds = {
   slowSpeedThreshold: 21,
-  slowFrameThreshold: 12,
-  suddenStopFromSpeed: 90,
-  suddenStopToSpeed: 25,
-  suddenStopFrames: 4,
-  offTrackDebounce: 5,
-  pitEntryDebounce: 6,
+  slowDurationSeconds: 1.5,
+  impactDecelKmhPerSec: 200,
+  impactMinSpeed: 25,
+  offTrackDurationSeconds: 0.5,
+  pitEntryDurationSeconds: 0.8,
   cooldownSeconds: 9,
 };
 
@@ -157,16 +156,29 @@ describe('setupRaceControlBridge', () => {
   });
 
   it.each([
-    ['zero', { ...savedThresholds, offTrackDebounce: 0 }],
-    ['fractional', { ...savedThresholds, suddenStopFrames: 2.5 }],
-    ['excessive', { ...savedThresholds, suddenStopFrames: 1_000_000_000 }],
-  ])('rejects %s frame-count thresholds', (_label, thresholds) => {
+    ['zero', { ...savedThresholds, offTrackDurationSeconds: 0 }],
+    ['negative', { ...savedThresholds, slowDurationSeconds: -1 }],
+    ['below the minimum', { ...savedThresholds, impactDecelKmhPerSec: 10 }],
+    ['excessive', { ...savedThresholds, impactDecelKmhPerSec: 1_000_000_000 }],
+  ])('rejects %s durations', (_label, thresholds) => {
     const { runtime } = createRuntime();
     setupRaceControlBridge(runtime);
 
     handlers.get('raceControl:updateThresholds')?.({}, thresholds);
 
     expect(runtime.updateThresholds).not.toHaveBeenCalled();
+  });
+
+  it('accepts fractional durations, which frame counts could not express', () => {
+    const { runtime } = createRuntime();
+    setupRaceControlBridge(runtime);
+
+    const thresholds = { ...savedThresholds, offTrackDurationSeconds: 0.35 };
+    handlers.get('raceControl:updateThresholds')?.({}, thresholds);
+
+    expect(runtime.updateThresholds).toHaveBeenCalledWith(
+      expect.objectContaining({ offTrackDurationSeconds: 0.35 })
+    );
   });
 
   it('does nothing when the dashboard has no gantry widget', () => {

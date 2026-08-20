@@ -12,6 +12,8 @@ import { type Gap, useHighlightColor } from '@irdashies/domain';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import { useLapTimesStoreUpdater } from '@irdashies/context';
 import { Tooltip } from '../Tooltip/Tooltip';
+import { useGantrySettings } from '../../hooks/useGantrySettings';
+import type { NameFormat } from '@irdashies/types';
 
 interface Props {
   followedCarIdx: number | null;
@@ -55,11 +57,11 @@ const StandingsHeader = memo(() => (
     <HeaderCell
       label="#"
       tip="Car number. The coloured bar to its left is the car's class."
-      className="w-8 text-center border-l-2 border-transparent px-1"
+      className="w-12 shrink-0 text-center border-l-2 border-transparent px-1"
     />
     <HeaderCell
       label="Driver"
-      tip="Driver surname. Click any row to point the sim camera at that car — this only does anything in a replay or while spectating."
+      tip="Driver name, in the format set on the Gantry options tab. Click any row to point the sim camera at that car — this only does anything in a replay or while spectating."
       className="flex-1 truncate px-1 text-left"
     />
     <HeaderCell
@@ -131,6 +133,7 @@ const formatInterval = (
 
 export const GantryStandings = memo(({ followedCarIdx }: Props) => {
   useLapTimesStoreUpdater(true);
+  const nameFormat = useGantrySettings()?.driverNameFormat ?? 'surname';
   // Gap and interval are only calculated when the settings say they are
   // enabled, so passing nothing leaves both columns empty. The cast is needed
   // because the settings type marks these fields required.
@@ -207,6 +210,7 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
                   followedRef={followedRef}
                   isMultiClass={isMultiClass}
                   highlightColorHex={highlightColorHex}
+                  nameFormat={nameFormat}
                   onFocusDriver={handleFocusDriver}
                 />
               ))}
@@ -226,6 +230,7 @@ interface GantryDriverRowProps {
   followedRef: React.RefObject<HTMLDivElement | null>;
   isMultiClass: boolean;
   highlightColorHex: string;
+  nameFormat: NameFormat;
   onFocusDriver: (carNumber: string) => void;
 }
 
@@ -237,6 +242,7 @@ const GantryDriverRow = memo(
     followedRef,
     isMultiClass,
     highlightColorHex,
+    nameFormat,
     onFocusDriver,
   }: GantryDriverRowProps) => {
     const isPlayer = driver.isPlayer;
@@ -249,7 +255,7 @@ const GantryDriverRow = memo(
 
     const displayName = formatDriverName(
       extractDriverName(driver.driver.name, false),
-      'surname'
+      nameFormat
     );
 
     const bestTimeStr = formatTime(driver.fastestTime);
@@ -304,7 +310,7 @@ const GantryDriverRow = memo(
         </span>
         {/* # */}
         <span
-          className={`w-8 text-center ${tailwindStyles.driverIcon} border-l-2 px-1 text-white`}
+          className={`w-12 shrink-0 text-center tabular-nums ${tailwindStyles.driverIcon} border-l-2 px-1 text-white`}
         >
           #{driver.driver.carNum}
         </span>
