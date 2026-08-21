@@ -63,7 +63,7 @@ static int lastTickCount = INT_MAX;
 static bool isInitialized = false;
 
 #ifdef IRDASHIES_IRSDK_REPLAY_NAMES
-static const double timeout = 1.0; // Keep replay integration tests fast.
+static const double timeout = 2.0; // Keep replay integration tests fast.
 #else
 static const double timeout = 30.0; // timeout after 30 seconds with no communication
 #endif

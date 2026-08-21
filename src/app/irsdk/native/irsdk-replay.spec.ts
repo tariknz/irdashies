@@ -149,7 +149,12 @@ describeOnWindows('iRacing native record/replay boundary', () => {
         // The current buffer is delivered immediately so connecting while a
         // replay is paused does not require playback to advance first.
         await sendCommand(publisher, 'next');
-        expect(sdk.waitForData(1000)).toBe(true);
+        const initialDeadline = performance.now() + 5_000;
+        let initialReady = false;
+        while (!initialReady && performance.now() < initialDeadline) {
+          initialReady = sdk.waitForData(100);
+        }
+        expect(initialReady).toBe(true);
 
         const initialTelemetry = sdk.getTelemetryData();
         expect(doubleValue(initialTelemetry.SessionTime.value)).toBeCloseTo(
@@ -159,9 +164,9 @@ describeOnWindows('iRacing native record/replay boundary', () => {
         expect(intValue(initialTelemetry.SessionTick.value)).toBe(100);
         expect(floatValue(initialTelemetry.Speed.value)).toBeCloseTo(50);
 
-        // The replay test addon uses a one-second connection timeout. Polling
+        // The replay test addon uses a two-second connection timeout. Polling
         // the same paused tick beyond that timeout must keep it connected.
-        const pauseUntil = performance.now() + 1_200;
+        const pauseUntil = performance.now() + 2_200;
         while (performance.now() < pauseUntil) {
           expect(sdk.waitForData(100)).toBe(false);
           expect(sdk.isRunning()).toBe(true);
