@@ -63,11 +63,18 @@ interface ProcessorHostOptions {
   logError?: (message: string, error: unknown) => void;
 }
 
-// Processor cadence is a presentation/runtime concern and must not scale with
-// simulation time. SessionTime freezes while paused and advances slowly in a
-// slow-motion replay, but camera and other non-driving telemetry can still
-// change and must remain responsive.
-const defaultFrameClock = (): number => performance.now() / 1000;
+const defaultFrameClock = (frame: Telemetry): number | undefined => {
+  const isReplayPlaying = frame.IsReplayPlaying?.value?.[0];
+  if (isReplayPlaying === true) {
+    // Replay presentation must remain responsive while SessionTime is paused
+    // or advancing in slow motion.
+    return performance.now() / 1000;
+  }
+  const sessionTime = frame.SessionTime?.value?.[0];
+  return typeof sessionTime === 'number' && Number.isFinite(sessionTime)
+    ? sessionTime
+    : undefined;
+};
 
 const snapshotToken = (snapshot: unknown): unknown => {
   if (typeof snapshot !== 'object' || snapshot === null) return snapshot;

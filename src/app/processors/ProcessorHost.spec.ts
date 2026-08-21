@@ -121,9 +121,15 @@ describe('ProcessorHost', () => {
       definitions: [definition('track-state.snapshot', () => processor)],
     });
 
-    host.onFrame({ SessionTime: { value: [10] } } as unknown as Telemetry);
+    host.onFrame({
+      SessionTime: { value: [10] },
+      IsReplayPlaying: { value: [true] },
+    } as unknown as Telemetry);
     vi.advanceTimersByTime(40);
-    host.onFrame({ SessionTime: { value: [10.01] } } as unknown as Telemetry);
+    host.onFrame({
+      SessionTime: { value: [10.01] },
+      IsReplayPlaying: { value: [true] },
+    } as unknown as Telemetry);
 
     expect(processor.onFrame).toHaveBeenCalledTimes(2);
     vi.useRealTimers();
