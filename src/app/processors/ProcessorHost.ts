@@ -63,12 +63,11 @@ interface ProcessorHostOptions {
   logError?: (message: string, error: unknown) => void;
 }
 
-const defaultFrameClock = (frame: Telemetry): number | undefined => {
-  const value = frame.SessionTime?.value?.[0];
-  return typeof value === 'number' && Number.isFinite(value)
-    ? value
-    : undefined;
-};
+// Processor cadence is a presentation/runtime concern and must not scale with
+// simulation time. SessionTime freezes while paused and advances slowly in a
+// slow-motion replay, but camera and other non-driving telemetry can still
+// change and must remain responsive.
+const defaultFrameClock = (): number => performance.now() / 1000;
 
 const snapshotToken = (snapshot: unknown): unknown => {
   if (typeof snapshot !== 'object' || snapshot === null) return snapshot;
@@ -333,7 +332,7 @@ export class ProcessorHost {
     const interval = 1 / tickRateHz;
     if (
       previous !== undefined &&
-      frameTime >= previous &&
+      frameTime > previous &&
       frameTime - previous < interval - 1e-6
     ) {
       return false;

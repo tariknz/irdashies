@@ -4,12 +4,17 @@ import type { Session } from '@irdashies/types';
 const mockGetSessionData = vi.hoisted(() => vi.fn());
 const mockWaitForData = vi.hoisted(() => vi.fn());
 const mockStopSDK = vi.hoisted(() => vi.fn());
-const mockSdkState = vi.hoisted(() => ({ sessionVersion: 1 }));
+const mockSdkState = vi.hoisted(() => ({
+  sessionVersion: 1,
+  sessionStatusOK: true,
+}));
 
 vi.mock('../../irsdk', () => ({
   IRacingSDK: class {
     autoEnableTelemetry = false;
-    sessionStatusOK = true;
+    get sessionStatusOK() {
+      return mockSdkState.sessionStatusOK;
+    }
 
     get currDataVersion() {
       return mockSdkState.sessionVersion;
@@ -58,6 +63,7 @@ describe('publishIRacingSDKEvents session polling', () => {
     mockWaitForData.mockReturnValue(true);
     mockStopSDK.mockReset();
     mockSdkState.sessionVersion = 1;
+    mockSdkState.sessionStatusOK = true;
   });
 
   afterEach(() => {
@@ -95,12 +101,51 @@ describe('publishIRacingSDKEvents session polling', () => {
     );
     expect(mockGetSessionData).toHaveBeenCalledTimes(1);
 
+    mockSdkState.sessionStatusOK = false;
     mockWaitForData.mockReturnValueOnce(false);
     await vi.advanceTimersByTimeAsync(40);
     expect(mockGetSessionData).toHaveBeenCalledTimes(1);
 
+    mockSdkState.sessionStatusOK = true;
     await vi.advanceTimersByTimeAsync(1000);
     expect(mockGetSessionData).toHaveBeenCalledTimes(2);
+
+    bridge.stop();
+  });
+
+  it('retains session state through a connected replay pause', async () => {
+    const overlayManager = {
+      ...createOverlayManager(),
+      clearLatestSessionData: vi.fn(),
+    };
+    const lifecycle = {
+      _onEnter: vi.fn(),
+      _onTelemetry: vi.fn(),
+      _onSession: vi.fn(),
+      _onDisconnect: vi.fn(),
+    };
+    const session = { WeekendInfo: {} } as Session;
+    mockGetSessionData.mockReturnValue(session);
+
+    const bridge = await publishIRacingSDKEvents(
+      overlayManager as never,
+      lifecycle as never
+    );
+    expect(lifecycle._onEnter).toHaveBeenCalledOnce();
+
+    mockWaitForData.mockReturnValue(false);
+    await vi.advanceTimersByTimeAsync(1_200);
+
+    expect(lifecycle._onDisconnect).not.toHaveBeenCalled();
+    expect(overlayManager.clearLatestSessionData).not.toHaveBeenCalled();
+
+    const callback = vi.fn();
+    bridge.onSessionData(callback);
+    expect(callback).toHaveBeenCalledWith(session);
+
+    mockWaitForData.mockReturnValue(true);
+    await vi.advanceTimersByTimeAsync(80);
+    expect(mockGetSessionData.mock.calls.length).toBeGreaterThan(1);
 
     bridge.stop();
   });

@@ -147,8 +147,10 @@ bool irsdk_getNewData(char *data)
 			if(pHeader->varBuf[latest].tickCount < pHeader->varBuf[i].tickCount)
 			   latest = i;	
 
-		// if newer than last recieved, than report new data
-		if(lastTickCount < pHeader->varBuf[latest].tickCount)
+		// Seed the current buffer on first connection, even when the sim is
+		// paused and will not produce a newer tick until playback resumes.
+		// Subsequent reads still require a genuinely newer tick.
+		if(lastTickCount == INT_MAX || lastTickCount < pHeader->varBuf[latest].tickCount)
 		{
 			// if asked to retrieve the data
 			if(data)

@@ -88,6 +88,47 @@ describe('ProcessorHost', () => {
     expect(processor.onFrame).toHaveBeenCalledTimes(3);
   });
 
+  it('processes frames when the session clock is frozen', () => {
+    const bus = new ChannelBus();
+    bus.subscribe(target(14), 'track-state.snapshot');
+    const processor = fakeProcessor('track-state.snapshot', 25, (state) => {
+      state.version += 1;
+    });
+    const host = new ProcessorHost({
+      bus,
+      metrics: metrics(),
+      frameClock: () => 10,
+      definitions: [definition('track-state.snapshot', () => processor)],
+    });
+    const frame = {} as Telemetry;
+
+    host.onFrame(frame);
+    host.onFrame(frame);
+
+    expect(processor.onFrame).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses elapsed runtime rather than slow simulation time for cadence', () => {
+    vi.useFakeTimers({ now: 0 });
+    const bus = new ChannelBus();
+    bus.subscribe(target(15), 'track-state.snapshot');
+    const processor = fakeProcessor('track-state.snapshot', 25, (state) => {
+      state.version += 1;
+    });
+    const host = new ProcessorHost({
+      bus,
+      metrics: metrics(),
+      definitions: [definition('track-state.snapshot', () => processor)],
+    });
+
+    host.onFrame({ SessionTime: { value: [10] } } as unknown as Telemetry);
+    vi.advanceTimersByTime(40);
+    host.onFrame({ SessionTime: { value: [10.01] } } as unknown as Telemetry);
+
+    expect(processor.onFrame).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
   it('checks event processors every frame and publishes only on a signal', () => {
     const bus = new ChannelBus();
     const publish = vi.spyOn(bus, 'publish');
