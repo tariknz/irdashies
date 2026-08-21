@@ -283,7 +283,7 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
       (entry) => entry?.CarIdx === carIdx
     );
     const estimate = driver?.CarClassEstLapTime;
-    return typeof estimate === 'number' && estimate > 0 ? estimate : 0;
+    return typeof estimate === 'number' && estimate > 1 ? estimate : 0;
   }
 
   private reset(sessionNum: number | null): void {
