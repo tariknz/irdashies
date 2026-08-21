@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, type Mock } from 'vitest';
+import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import type {
   ChannelPayloads,
   Session,
@@ -15,6 +15,10 @@ import {
 } from './ProcessorHost';
 
 const metrics = () => ({ markStart: vi.fn(), markEnd: vi.fn() });
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 const target = (id: number, isVisible: () => boolean = () => true) => ({
   id,
@@ -132,7 +136,6 @@ describe('ProcessorHost', () => {
     } as unknown as Telemetry);
 
     expect(processor.onFrame).toHaveBeenCalledTimes(2);
-    vi.useRealTimers();
   });
 
   it('checks event processors every frame and publishes only on a signal', () => {
