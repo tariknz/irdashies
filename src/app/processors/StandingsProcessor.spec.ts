@@ -43,17 +43,16 @@ describe('StandingsProcessor', () => {
     });
   });
 
-  it('publishes no faster than five hertz unless focus changes', () => {
+  it('projects every frame supplied by the host, including focus changes', () => {
     const processor = new StandingsProcessor();
     processor.init(session);
     processor.onFrame(frame(10));
-    const first = processor.snapshot();
     processor.onFrame(frame(10.1));
-    expect(processor.snapshot()).toBe(first);
+    expect(processor.snapshot().version).toBe(2);
 
     processor.onFrame(frame(10.1, { CamCarIdx: { value: [0] } }));
     expect(processor.snapshot().focusCarIdx).toBe(0);
-    expect(processor.snapshot().version).toBe(2);
+    expect(processor.snapshot().version).toBe(3);
   });
 
   it('reuses projection buffers between accepted frames', () => {

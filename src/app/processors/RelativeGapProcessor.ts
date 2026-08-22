@@ -10,9 +10,6 @@ import type {
 import type { TelemetryProcessor } from './TelemetryProcessor';
 
 const FALLBACK_LAP_TIME = 90;
-const UPDATE_INTERVAL_SECONDS = 0.2;
-const TIME_EPSILON = 1e-6;
-
 const lapTimeOrFallback = (value: number | undefined): number =>
   typeof value === 'number' && Number.isFinite(value) && value > 0
     ? value
@@ -83,7 +80,6 @@ export class RelativeGapProcessor implements TelemetryProcessor<RelativeGapsSnap
   private readonly relativePcts: (number | null)[] = [];
   private readonly deltas: (number | null)[] = [];
   private driverCarIdx: number | null = null;
-  private lastUpdateTime: number | null = null;
   private enabled = true;
   private latest: RelativeGapsSnapshot = this.emptySnapshot();
 
@@ -113,19 +109,6 @@ export class RelativeGapProcessor implements TelemetryProcessor<RelativeGapsSnap
       cameraCarIdx !== null && cameraCarIdx >= 0
         ? cameraCarIdx
         : this.driverCarIdx;
-    const focusChanged = focusCarIdx !== this.latest.focusCarIdx;
-    const timeWentBackwards =
-      this.lastUpdateTime !== null && sessionTime < this.lastUpdateTime;
-    if (
-      !focusChanged &&
-      !timeWentBackwards &&
-      this.lastUpdateTime !== null &&
-      sessionTime - this.lastUpdateTime < UPDATE_INTERVAL_SECONDS - TIME_EPSILON
-    ) {
-      return;
-    }
-    this.lastUpdateTime = sessionTime;
-
     const sessionNum = numericValue(frame, 'SessionNum');
     if (
       this.latest.sessionNum !== null &&
@@ -284,7 +267,6 @@ export class RelativeGapProcessor implements TelemetryProcessor<RelativeGapsSnap
 
   private reset(sessionNum: number | null): void {
     const version = this.latest.version + 1;
-    this.lastUpdateTime = null;
     this.referenceVersion = -1;
     this.bestLaps.clear();
     this.persistedLaps.clear();
