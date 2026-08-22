@@ -7,9 +7,6 @@ import type {
 import { SessionState, TrackLocation } from '@irdashies/types';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 
-const UPDATE_INTERVAL_SECONDS = 0.2;
-const TIME_EPSILON = 1e-6;
-
 const numberValue = (frame: Telemetry, key: keyof Telemetry): number | null => {
   const value = frame[key]?.value?.[0];
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
@@ -96,18 +93,9 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     const sessionNum = numberValue(frame, 'SessionNum');
     const lifecycleChanged =
       this.latest.sessionNum !== null && sessionNum !== this.latest.sessionNum;
-    const focusChanged = focusCarIdx !== this.latest.focusCarIdx;
     const timeWentBackwards =
       this.lastUpdateTime !== null && sessionTime < this.lastUpdateTime;
     if (lifecycleChanged || timeWentBackwards) this.reset(sessionNum);
-    if (
-      !focusChanged &&
-      !timeWentBackwards &&
-      this.lastUpdateTime !== null &&
-      sessionTime - this.lastUpdateTime < UPDATE_INTERVAL_SECONDS - TIME_EPSILON
-    ) {
-      return;
-    }
     this.lastUpdateTime = sessionTime;
 
     copyBooleanArray(frame, 'CarIdxOnPitRoad', this.latest.carIdxOnPitRoad);

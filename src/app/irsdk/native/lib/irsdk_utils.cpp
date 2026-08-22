@@ -62,7 +62,11 @@ static const irsdk_header *pHeader = NULL;
 static int lastTickCount = INT_MAX;
 static bool isInitialized = false;
 
+#ifdef IRDASHIES_IRSDK_REPLAY_NAMES
+static const double timeout = 2.0; // Keep replay integration tests fast.
+#else
 static const double timeout = 30.0; // timeout after 30 seconds with no communication
+#endif
 static time_t lastValidTime = 0;
 
 // Function Implementations
@@ -142,13 +146,20 @@ bool irsdk_getNewData(char *data)
 			return false;
 		}
 
+		// A paused replay can keep publishing the same tick indefinitely. The
+		// connected header is still a valid heartbeat even when there is no new
+		// telemetry buffer to copy.
+		lastValidTime = time(NULL);
+
 		int latest = 0;
 		for(int i=1; i<pHeader->numBuf; i++)
 			if(pHeader->varBuf[latest].tickCount < pHeader->varBuf[i].tickCount)
 			   latest = i;	
 
-		// if newer than last recieved, than report new data
-		if(lastTickCount < pHeader->varBuf[latest].tickCount)
+		// Seed the current buffer on first connection, even when the sim is
+		// paused and will not produce a newer tick until playback resumes.
+		// Subsequent reads still require a genuinely newer tick.
+		if(lastTickCount == INT_MAX || lastTickCount < pHeader->varBuf[latest].tickCount)
 		{
 			// if asked to retrieve the data
 			if(data)

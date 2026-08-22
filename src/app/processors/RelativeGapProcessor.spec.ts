@@ -53,7 +53,7 @@ const frame = ({
   }) as unknown as Telemetry;
 
 describe('RelativeGapProcessor', () => {
-  it('publishes signed relative distances and estimated-time deltas at 5 Hz', () => {
+  it('projects every frame supplied by the host', () => {
     const processor = new RelativeGapProcessor({ snapshot: emptyReferences });
     processor.init(session());
     processor.onFrame(frame());
@@ -67,9 +67,9 @@ describe('RelativeGapProcessor', () => {
     expect(processor.snapshot().relativePcts[2]).toBeCloseTo(-0.05);
     const version = processor.snapshot().version;
     processor.onFrame(frame({ sessionTime: 1.1, pcts: [0.2, 0.3, 0.1] }));
-    expect(processor.snapshot().version).toBe(version);
-    processor.onFrame(frame({ sessionTime: 1.2, pcts: [0.2, 0.3, 0.1] }));
     expect(processor.snapshot().version).toBe(version + 1);
+    processor.onFrame(frame({ sessionTime: 1.2, pcts: [0.2, 0.3, 0.1] }));
+    expect(processor.snapshot().version).toBe(version + 2);
   });
 
   it('updates immediately when the camera focus changes while time is paused', () => {

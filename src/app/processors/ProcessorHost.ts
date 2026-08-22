@@ -64,9 +64,15 @@ interface ProcessorHostOptions {
 }
 
 const defaultFrameClock = (frame: Telemetry): number | undefined => {
-  const value = frame.SessionTime?.value?.[0];
-  return typeof value === 'number' && Number.isFinite(value)
-    ? value
+  const isReplayPlaying = frame.IsReplayPlaying?.value?.[0];
+  if (isReplayPlaying === true) {
+    // Replay presentation must remain responsive while SessionTime is paused
+    // or advancing in slow motion.
+    return performance.now() / 1000;
+  }
+  const sessionTime = frame.SessionTime?.value?.[0];
+  return typeof sessionTime === 'number' && Number.isFinite(sessionTime)
+    ? sessionTime
     : undefined;
 };
 
@@ -333,7 +339,7 @@ export class ProcessorHost {
     const interval = 1 / tickRateHz;
     if (
       previous !== undefined &&
-      frameTime >= previous &&
+      frameTime > previous &&
       frameTime - previous < interval - 1e-6
     ) {
       return false;

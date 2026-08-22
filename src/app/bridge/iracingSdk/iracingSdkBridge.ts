@@ -230,7 +230,23 @@ export async function publishIRacingSDKEvents(
       let lastSessionPollTime = Number.NEGATIVE_INFINITY;
       let wasRunning = false;
 
-      while (!shouldStop && sdk.waitForData(WAIT_TIMEOUT)) {
+      while (!shouldStop) {
+        const pollStartedAt = performance.now();
+        const hasNewData = sdk.waitForData(WAIT_TIMEOUT);
+        if (!hasNewData) {
+          // A paused replay remains connected but does not advance the SDK's
+          // telemetry buffer. Keep the current session and channel snapshots
+          // until either playback resumes or the SDK actually disconnects.
+          if (sdk.sessionStatusOK) {
+            const remainingDelay = Math.max(
+              0,
+              1000 / 25 - (performance.now() - pollStartedAt)
+            );
+            await new Promise((resolve) => setTimeout(resolve, remainingDelay));
+            continue;
+          }
+          break;
+        }
         if (!wasRunning) {
           logger.info(`[iracingSdkBridge] ${sourceName} is running`);
           wasRunning = true;
