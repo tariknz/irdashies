@@ -149,12 +149,8 @@ describeOnWindows('iRacing native record/replay boundary', () => {
         // The current buffer is delivered immediately so connecting while a
         // replay is paused does not require playback to advance first.
         await sendCommand(publisher, 'next');
-        const initialDeadline = performance.now() + 5_000;
-        let initialReady = false;
-        while (!initialReady && performance.now() < initialDeadline) {
-          initialReady = sdk.waitForData(100);
-        }
-        expect(initialReady).toBe(true);
+        await output.waitFor(/FRAME 1 100/, 15_000);
+        expect(sdk.waitForData(100)).toBe(true);
 
         const initialTelemetry = sdk.getTelemetryData();
         expect(doubleValue(initialTelemetry.SessionTime.value)).toBeCloseTo(
@@ -173,7 +169,8 @@ describeOnWindows('iRacing native record/replay boundary', () => {
         }
 
         await sendCommand(publisher, 'next');
-        expect(sdk.waitForData(1000)).toBe(true);
+        await output.waitFor(/FRAME 2 101/, 15_000);
+        expect(sdk.waitForData(100)).toBe(true);
 
         const telemetry = sdk.getTelemetryData();
         expect(doubleValue(telemetry.SessionTime.value)).toBeCloseTo(
@@ -199,7 +196,8 @@ describeOnWindows('iRacing native record/replay boundary', () => {
         expect(sdk.currDataVersion).toBe(1);
 
         await sendCommand(publisher, 'next');
-        expect(sdk.waitForData(1000)).toBe(true);
+        await output.waitFor(/FRAME 3 102/, 15_000);
+        expect(sdk.waitForData(100)).toBe(true);
         expect(floatValue(sdk.getTelemetryData().Speed.value)).toBeCloseTo(52);
         expect(sdk.getSessionData()).toContain('SessionNum: 0');
         expect(sdk.currDataVersion).toBe(2);
