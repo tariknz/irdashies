@@ -59,7 +59,7 @@ jobs:
             **/node_modules
             **/*.node
             **/build/Release
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/binding.gyp', 'src/app/irsdk/native/**/*.{c,cc,cpp,h,hpp}') }}
+          key: ${{ runner.os }}-node-v2-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/binding.gyp', 'src/app/irsdk/native/**/*.c', 'src/app/irsdk/native/**/*.cc', 'src/app/irsdk/native/**/*.cpp', 'src/app/irsdk/native/**/*.h', 'src/app/irsdk/native/**/*.hpp') }}
           restore-keys: |
             ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-
             ${{ runner.os }}-node-
