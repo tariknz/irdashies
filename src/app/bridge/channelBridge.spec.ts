@@ -62,11 +62,27 @@ describe('ChannelBus', () => {
     expect(() => bus.subscribe(target, 'snapshot', 0)).toThrow(
       'Invalid channel rate'
     );
-    expect(() => bus.subscribe(target, 'snapshot', 61)).toThrow(
-      'Invalid channel rate'
-    );
     expect(() => bus.subscribe(target, 'event', 10)).toThrow(
       'Event channels do not accept'
+    );
+  });
+
+  it('clamps requested snapshot rates to the channel maximum', () => {
+    const { bus, clock } = createBus();
+    const target = createTarget();
+    bus.subscribe(target, 'snapshot', 1_000);
+
+    bus.publish('snapshot', 1);
+    clock.advance(10);
+    bus.publish('snapshot', 2);
+    expect(target.send).toHaveBeenCalledTimes(1);
+
+    clock.advance(7);
+    expect(target.send).toHaveBeenCalledTimes(2);
+    expect(target.send).toHaveBeenLastCalledWith(
+      CHANNEL_DELIVERY,
+      'snapshot',
+      2
     );
   });
 

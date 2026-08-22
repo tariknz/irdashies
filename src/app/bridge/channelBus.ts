@@ -278,10 +278,13 @@ export class ChannelBus {
       return 'event';
     }
     const rate = requested ?? definition.defaultRateHz;
-    if (!Number.isFinite(rate) || rate <= 0 || rate > definition.maxRateHz) {
+    if (!Number.isFinite(rate) || rate <= 0) {
       throw new Error(`Invalid channel rate: ${String(rate)}`);
     }
-    return rate;
+    // Renderer rates are desired ceilings. Enforce the authoritative channel
+    // limit here so an overly broad widget preset cannot make subscription
+    // startup fail or increase main-process delivery work.
+    return Math.min(rate, definition.maxRateHz);
   }
 
   private queueDelivery(
