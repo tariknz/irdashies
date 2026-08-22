@@ -5,7 +5,6 @@ import definition from './widgetRuntimeDefinition';
 
 const GANTRY_DIR = join(__dirname);
 const RELATED_FILES = [
-  join(__dirname, '../../context/LapGapStore'),
   join(__dirname, '../../context/RaceControlStore'),
   join(__dirname, '../Settings/sections/GantrySettings.tsx'),
 ];

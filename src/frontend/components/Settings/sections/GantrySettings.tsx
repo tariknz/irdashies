@@ -3,9 +3,11 @@ import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   GantryWidgetSettings,
   GantryConfig,
+  LapGraphYAxisMode,
   SessionRetention,
   SettingsTabType,
   INCIDENT_THRESHOLD_BOUNDS,
+  LAP_GRAPH_LAP_WINDOW_BOUNDS,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard, useTrackStateSelector } from '@irdashies/context';
@@ -17,6 +19,7 @@ import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingNumberRow } from '../components/SettingNumberRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
+import { SettingToggleRow } from '../components/SettingToggleRow';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import {
   kphFromSpeed,
@@ -145,6 +148,38 @@ const retentionOptions = [
 const toSessionRetention = (value: string): SessionRetention =>
   value === 'all' ? 'all' : (Number(value) as SessionRetention);
 
+interface YAxisModeOption {
+  value: LapGraphYAxisMode;
+  label: string;
+  description: string;
+}
+
+const Y_AXIS_MODES: YAxisModeOption[] = [
+  {
+    value: 'trace',
+    label: 'Race Trace',
+    description:
+      "How far ahead of or behind a reference pace each car is, lap by lap. A flat line means lapping exactly at the reference pace, and higher is better. The reference pace is the class leader's median lap.",
+  },
+  {
+    value: 'position',
+    label: 'Position',
+    description:
+      'Where each car ran in its class at the end of every lap. A line moving up is a place gained.',
+  },
+  {
+    value: 'gap',
+    label: 'Gap to Leader',
+    description:
+      'How many seconds behind the class leader each car was at the end of every lap. The leader sits on zero.',
+  },
+];
+
+const yAxisModeButtons = Y_AXIS_MODES.map(({ value, label }) => ({
+  value,
+  label,
+}));
+
 const thresholdKeys = thresholdFields.map((f) => f.key);
 
 export const GantrySettings = memo(() => {
@@ -196,6 +231,9 @@ export const GantrySettings = memo(() => {
   // The track-state channel only publishes while the sim is connected, so Auto
   // falls back to the shared default until then.
   const autoUnresolved = unitSetting === 'auto' && displayUnits === undefined;
+  // A config saved before the lap graph settings existed has no block until the
+  // migrator runs on the next dashboard load.
+  const lapGraph = config.lapGraph ?? defaultConfig.lapGraph;
 
   return (
     <BaseSettingsSection
@@ -312,6 +350,75 @@ export const GantrySettings = memo(() => {
                   onChange={(v) =>
                     handleConfigChange({
                       sessionRetention: toSessionRetention(v),
+                    })
+                  }
+                />
+              </SettingsSection>
+            )}
+
+            {activeTab === 'options' && (
+              <SettingsSection title="Lap Graph">
+                <SettingButtonGroupRow<LapGraphYAxisMode>
+                  title="Default Y Axis"
+                  description="What the Lap Graph tab measures when the Gantry opens. You can still switch axis on the tab itself."
+                  value={lapGraph.yAxisMode}
+                  options={yAxisModeButtons}
+                  onChange={(v) =>
+                    handleConfigChange({
+                      lapGraph: { ...lapGraph, yAxisMode: v },
+                    })
+                  }
+                />
+
+                <dl className="space-y-2 text-xs">
+                  {Y_AXIS_MODES.map((mode) => {
+                    const isActive = mode.value === lapGraph.yAxisMode;
+                    return (
+                      <div key={mode.value} className="flex gap-3">
+                        <dt
+                          className={`w-28 shrink-0 ${
+                            isActive ? 'text-slate-300' : 'text-slate-500'
+                          }`}
+                        >
+                          {mode.label}
+                        </dt>
+                        <dd
+                          className={
+                            isActive ? 'text-slate-400' : 'text-slate-500'
+                          }
+                        >
+                          {mode.description}
+                        </dd>
+                      </div>
+                    );
+                  })}
+                </dl>
+
+                <SettingDivider />
+
+                <SettingNumberRow
+                  title="Laps Shown"
+                  description={`How many laps fit on the graph at once. It follows the latest lap, so earlier laps scroll off the left; you can still pan back to them. ${LAP_GRAPH_LAP_WINDOW_BOUNDS.min} to ${LAP_GRAPH_LAP_WINDOW_BOUNDS.max} laps.`}
+                  value={lapGraph.lapWindow}
+                  min={LAP_GRAPH_LAP_WINDOW_BOUNDS.min}
+                  max={LAP_GRAPH_LAP_WINDOW_BOUNDS.max}
+                  step={5}
+                  onChange={(v) =>
+                    handleConfigChange({
+                      lapGraph: { ...lapGraph, lapWindow: v },
+                    })
+                  }
+                />
+
+                <SettingDivider />
+
+                <SettingToggleRow
+                  title="Pin Cars Automatically"
+                  description="Start with your car, the class leader and the cars around you already drawn. Turn it off to open an empty graph and pick the cars yourself."
+                  enabled={lapGraph.autoPin}
+                  onToggle={(v) =>
+                    handleConfigChange({
+                      lapGraph: { ...lapGraph, autoPin: v },
                     })
                   }
                 />

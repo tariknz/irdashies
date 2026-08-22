@@ -694,7 +694,27 @@ export interface BattleConfig {
 
 export type SessionRetention = 'all' | 5 | 10 | 20;
 
+/** Which quantity the lap graph's y axis measures. */
+export type LapGraphYAxisMode = 'trace' | 'position' | 'gap';
+
+export interface LapGraphConfig {
+  /** Which y axis the graph opens on. */
+  yAxisMode: LapGraphYAxisMode;
+  /** Laps visible by default; the graph follows the latest lap. */
+  lapWindow: number;
+  /** Auto-pin the player, the class leader, and the cars around the player. */
+  autoPin: boolean;
+}
+
+/** The recorder keeps 300 laps per car, so a wider window has nothing to show. */
+export const LAP_GRAPH_LAP_WINDOW_BOUNDS = { min: 5, max: 300 } as const;
+
 export interface GantryConfig {
+  /**
+   * Schema version for the whole Gantry config. Bumped whenever a migrator is
+   * added; see `src/types/migrators/gantry.ts`.
+   */
+  version: number;
   /** Display units for speed values. Stored thresholds stay in km/h. */
   speedUnit: 'mph' | 'km/h' | 'auto';
   /** How driver names are written in the standings list. */
@@ -714,6 +734,8 @@ export interface GantryConfig {
   cooldownSeconds: number;
   // Persistence
   sessionRetention: SessionRetention;
+  // Lap Graph tab
+  lapGraph: LapGraphConfig;
 }
 
 export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;

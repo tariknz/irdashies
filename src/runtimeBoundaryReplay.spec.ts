@@ -18,10 +18,18 @@ import {
 
 /** Event channels publish one occurrence at a time, so they have no snapshot. */
 type EventChannelName =
-  | 'session.lifecycle'
-  | 'raceControl.incidents'
-  | 'raceControl.sessionId';
-type SnapshotChannelName = Exclude<ChannelName, EventChannelName>;
+  'session.lifecycle' | 'raceControl.incidents' | 'raceControl.sessionId';
+/**
+ * Channels owned by a standalone runtime rather than the ProcessorHost, so
+ * this harness never sees them. `lap-history.snapshot` is recorded by
+ * LapHistoryRuntime, which deliberately runs outside demand gating so an
+ * enabled Gantry keeps recording with its window closed.
+ */
+type RuntimeOwnedChannelName = 'lap-history.snapshot';
+type SnapshotChannelName = Exclude<
+  ChannelName,
+  EventChannelName | RuntimeOwnedChannelName
+>;
 
 const SNAPSHOT_CHANNELS = [
   'blind-spot.snapshot',

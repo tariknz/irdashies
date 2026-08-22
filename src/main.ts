@@ -4,6 +4,7 @@ import {
   iRacingSDKSetup,
   getCurrentBridge,
   getSessionLifecycle,
+  onBridgeChanged,
 } from './app/bridge/iracingSdk/setup';
 import { getOrCreateDefaultDashboard } from './app/storage/dashboards';
 import { setupTaskbar, KeybindingManager } from './app';
@@ -40,6 +41,19 @@ import {
   type IncidentPersistence,
   type PerformanceSections,
 } from './app/processors/incidentRuntime';
+import {
+  LapHistoryRuntime,
+  type LapHistoryPersistence,
+} from './app/processors/lapHistoryRuntime';
+import {
+  flushLapHistoryOnShutdown,
+  loadLapHistory,
+  pruneOldSessions as pruneOldLapHistorySessions,
+  rehydrateLapHistory,
+  saveLapHistory,
+} from './app/storage/lapHistoryStorage';
+import { onDashboardUpdated } from './app/storage/dashboardEvents';
+import type { DashboardLayout } from '@irdashies/types';
 import { getActivePerfMetrics } from './app/perfMetrics';
 import {
   activePerfWidgetTypes,
@@ -89,9 +103,10 @@ const channelBus = new ChannelBus({
 });
 let disconnectLifecycleChannel: (() => void) | undefined;
 let incidentRuntime: IncidentRuntime | undefined;
-// Resolved per call: the runtime outlives any single SDK bridge, so it must
+let lapHistoryRuntime: LapHistoryRuntime | undefined;
+// Resolved per call: a runtime outlives any single SDK bridge, so it must
 // not hold a reference to a metrics instance that has stopped reporting.
-const incidentPerfMetrics: PerformanceSections = {
+const runtimePerfMetrics: PerformanceSections = {
   markStart: (label) => getActivePerfMetrics()?.markStart(label),
   markEnd: (label) => getActivePerfMetrics()?.markEnd(label),
 };
@@ -102,7 +117,70 @@ const incidentPersistence: IncidentPersistence = {
     );
   },
 };
+const lapHistoryPersistence: LapHistoryPersistence = {
+  save: (sessionId, snapshot) => {
+    saveLapHistory(sessionId, snapshot).catch((err) =>
+      log.error('[LapHistory] Failed to persist lap history:', err)
+    );
+  },
+  load: async (sessionId) => {
+    const stored = await loadLapHistory(sessionId);
+    if (!stored) return null;
+    return {
+      sessionNum: stored.history.sessionNum,
+      apply: (target) => rehydrateLapHistory(stored, target),
+    };
+  },
+};
 let disposeRendererDataSubscriptions: (() => void) | undefined;
+
+/**
+ * Hosts lap-history recording outside the ProcessorHost, the way the incident
+ * runtime is hosted: an enabled Gantry keeps recording while its window is
+ * closed. Gated on the Gantry widget, so a user who never enables it pays no
+ * frame cost.
+ */
+function setupLapHistoryRuntime(initialDashboard: DashboardLayout): void {
+  const runtime = new LapHistoryRuntime(
+    channelBus,
+    getSessionLifecycle(),
+    runtimePerfMetrics,
+    lapHistoryPersistence
+  );
+  lapHistoryRuntime = runtime;
+
+  const applyDashboard = (layout: DashboardLayout | undefined) => {
+    const widget = layout?.widgets.find((w) => w.id === 'gantry');
+    runtime.updateEnabled(widget?.enabled ?? false);
+  };
+  applyDashboard(initialDashboard);
+  onDashboardUpdated(applyDashboard);
+
+  let unsubscribeSession: (() => void) | undefined;
+  let unsubscribeTelemetry: (() => void) | undefined;
+  const wireToTelemetryBridge = () => {
+    unsubscribeSession?.();
+    unsubscribeTelemetry?.();
+    const bridge = getCurrentBridge();
+    if (!bridge) return;
+    unsubscribeSession =
+      bridge.onSessionData((session) => runtime.onSession(session)) ??
+      undefined;
+    unsubscribeTelemetry =
+      bridge.onTelemetry((telemetry) => runtime.onFrame(telemetry)) ??
+      undefined;
+  };
+  wireToTelemetryBridge();
+  onBridgeChanged(wireToTelemetryBridge);
+
+  // Retention: the current race plus one previous race.
+  runtime.onSessionIdChanged((sessionId) => {
+    if (!sessionId) return;
+    pruneOldLapHistorySessions(sessionId).catch((err) =>
+      log.error('[LapHistory] Failed to prune old sessions:', err)
+    );
+  });
+}
 
 app.on('ready', async () => {
   // Don't start services if we don't have the single instance lock
@@ -151,11 +229,12 @@ app.on('ready', async () => {
   incidentRuntime = new IncidentRuntime(
     channelBus,
     getSessionLifecycle(),
-    incidentPerfMetrics,
+    runtimePerfMetrics,
     incidentPersistence,
     { isDev: !app.isPackaged }
   );
   setupRaceControlBridge(incidentRuntime, dashboard);
+  setupLapHistoryRuntime(dashboard);
   // Returns false when the Gantry widget is disabled, so Settings can explain
   // why the button did nothing instead of appearing to be broken.
   ipcMain.handle('raceControl:showGantryWindow', () =>
@@ -324,15 +403,22 @@ app.on('before-quit', (event) => {
   disconnectLifecycleChannel?.();
   disposeRendererDataSubscriptions?.();
   incidentRuntime?.dispose();
+  lapHistoryRuntime?.dispose();
   channelBus.dispose();
   // Synchronous flush so any pending debounced reference-lap write completes
   // before the process exits.
   flushReferenceLapsOnShutdown();
-  // Incident writes are debounced, so anything still pending would be lost.
-  void flushIncidentsOnShutdown()
-    .catch((err) => log.error('[RaceControl] Shutdown flush failed:', err))
-    .finally(() => {
-      shutdownFlushState = 'complete';
-      app.quit();
-    });
+  // Incident and lap-history writes are debounced, so anything still pending
+  // would be lost.
+  void Promise.all([
+    flushIncidentsOnShutdown().catch((err) =>
+      log.error('[RaceControl] Shutdown flush failed:', err)
+    ),
+    flushLapHistoryOnShutdown().catch((err) =>
+      log.error('[LapHistory] Shutdown flush failed:', err)
+    ),
+  ]).finally(() => {
+    shutdownFlushState = 'complete';
+    app.quit();
+  });
 });

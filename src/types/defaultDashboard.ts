@@ -1453,6 +1453,7 @@ export const defaultDashboard: {
         height: 1080,
       },
       config: {
+        version: 2,
         speedUnit: 'auto',
         driverNameFormat: 'surname',
         thresholdsVersion: 3,
@@ -1464,6 +1465,11 @@ export const defaultDashboard: {
         pitEntryDurationSeconds: 0.6,
         cooldownSeconds: 5,
         sessionRetention: 'all',
+        lapGraph: {
+          yAxisMode: 'trace',
+          lapWindow: 75,
+          autoPin: true,
+        },
       },
     },
   ],
