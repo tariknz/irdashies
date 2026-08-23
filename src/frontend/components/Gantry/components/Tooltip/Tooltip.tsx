@@ -9,6 +9,7 @@ import React, {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { clampToBounds, placeVertically } from './tooltipPosition';
 
 type Placement = 'top' | 'bottom';
 
@@ -35,11 +36,7 @@ export interface TooltipProps {
   children: React.ReactElement<TriggerProps>;
 }
 
-const VIEWPORT_MARGIN = 8;
 const DEFAULT_DELAY_MS = 350;
-
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(Math.max(value, min), Math.max(min, max));
 
 export const Tooltip = memo(
   ({
@@ -101,27 +98,18 @@ export const Tooltip = memo(
 
       const anchor = trigger.getBoundingClientRect();
       const { width, height } = tip.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
+      const bounds = { width: window.innerWidth, height: window.innerHeight };
 
-      const above = anchor.top - height - VIEWPORT_MARGIN;
-      const below = anchor.bottom + VIEWPORT_MARGIN;
-      let top = placement === 'bottom' ? below : above;
-      if (top < VIEWPORT_MARGIN) top = below;
-      if (top + height > viewportHeight - VIEWPORT_MARGIN) top = above;
-
-      setPosition({
-        left: clamp(
-          anchor.left + anchor.width / 2 - width / 2,
-          VIEWPORT_MARGIN,
-          viewportWidth - width - VIEWPORT_MARGIN
-        ),
-        top: clamp(
-          top,
-          VIEWPORT_MARGIN,
-          viewportHeight - height - VIEWPORT_MARGIN
-        ),
-      });
+      setPosition(
+        clampToBounds(
+          {
+            left: anchor.left + anchor.width / 2 - width / 2,
+            top: placeVertically(anchor, height, placement, bounds.height),
+          },
+          { width, height },
+          bounds
+        )
+      );
     }, [open, placement, content]);
 
     useEffect(() => {

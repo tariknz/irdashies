@@ -3,6 +3,7 @@ export * from './useChannelSnapshot';
 export * from './useFuelProjectionSnapshot';
 export * from './useLapTimesSnapshot';
 export * from './useLapLogSnapshot';
+export * from './useLapHistorySnapshot';
 export * from './useRelativeGapsSnapshot';
 export * from './useRadioSnapshot';
 export * from './useSessionTimingSnapshot';

@@ -7,7 +7,6 @@ import {
   SessionProvider,
   useRunningState,
   useResetOnDisconnect,
-  LapGapStoreUpdater,
 } from '@irdashies/context';
 import { Settings } from './components/Settings/Settings';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
@@ -62,7 +61,6 @@ const GantryApp = () => {
     // it every channel hook here would fall back to the unthrottled default.
     <WidgetRuntimeProvider widgetType="gantry">
       <ThemeManager>
-        <LapGapStoreUpdater enabled={running} />
         <div className="w-full h-full bg-slate-900 text-white">
           <Gantry />
         </div>

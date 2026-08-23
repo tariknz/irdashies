@@ -1,6 +1,7 @@
-import { act, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
-import type { DashboardLayout } from '@irdashies/types';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { DashboardLayout, LapGraphConfig } from '@irdashies/types';
+import { deepMergeConfig, getWidgetDefaultConfig } from '@irdashies/types';
 import { GantrySettings } from './GantrySettings';
 
 // GantrySettings is memo()'d and takes no props, so a plain rerender() would be
@@ -34,33 +35,57 @@ vi.mock('@irdashies/context', async () => {
   };
 });
 
-const dashboardWith = (sessionRetention: 'all' | 5 | 10 | 20) =>
+const gantryConfig = (overrides: Record<string, unknown> = {}) => ({
+  slowSpeedThreshold: 21,
+  slowDurationSeconds: 10,
+  impactDecelKmhPerSec: 150,
+  impactMinSpeed: 20,
+  offTrackDurationSeconds: 3,
+  pitEntryDurationSeconds: 3,
+  cooldownSeconds: 5,
+  sessionRetention: 'all',
+  speedUnit: 'km/h',
+  ...overrides,
+});
+
+const dashboardFor = (config: Record<string, unknown>) =>
   ({
     widgets: [
       {
         id: 'gantry',
         enabled: true,
         layout: { x: 0, y: 0, width: 1920, height: 1080 },
-        config: {
-          slowSpeedThreshold: 21,
-          slowDurationSeconds: 10,
-          impactDecelKmhPerSec: 150,
-          impactMinSpeed: 20,
-          offTrackDurationSeconds: 3,
-          pitEntryDurationSeconds: 3,
-          cooldownSeconds: 5,
-          sessionRetention,
-          speedUnit: 'km/h',
-        },
+        config,
       },
     ],
   }) as unknown as DashboardLayout;
+
+const dashboardWith = (sessionRetention: 'all' | 5 | 10 | 20) =>
+  dashboardFor(gantryConfig({ sessionRetention }));
+
+// The header carries the widget enable switch; the auto-pin toggle is the only
+// other switch on the Options tab.
+const autoPinSwitch = () => screen.getAllByRole('switch').at(-1) as HTMLElement;
+
+const lapWindowInput = () =>
+  screen.getByRole('spinbutton', { name: '' }) as HTMLInputElement;
+
+const savedLapGraph = (): LapGraphConfig => {
+  const dashboard = mocks.onDashboardUpdated.mock.calls.at(-1)?.[0] as
+    DashboardLayout | undefined;
+  const config = dashboard?.widgets.find((w) => w.id === 'gantry')?.config;
+  return (config as { lapGraph: LapGraphConfig }).lapGraph;
+};
 
 // The only saved value rendered on the default "Options" tab.
 const retentionValue = () =>
   (screen.getByRole('combobox', { name: '' }) as HTMLSelectElement).value;
 
 describe('GantrySettings', () => {
+  beforeEach(() => {
+    mocks.onDashboardUpdated.mockClear();
+  });
+
   it('shows the saved config that arrives after the first render', () => {
     mocks.setDashboard(undefined);
     render(<GantrySettings />);
@@ -80,5 +105,112 @@ describe('GantrySettings', () => {
     act(() => mocks.setDashboard(dashboardWith(20)));
 
     expect(retentionValue()).toBe('20');
+  });
+});
+
+describe('GantrySettings lap graph', () => {
+  beforeEach(() => {
+    mocks.onDashboardUpdated.mockClear();
+  });
+
+  it('explains what every y axis option shows', () => {
+    mocks.setDashboard(dashboardWith('all'));
+    render(<GantrySettings />);
+
+    for (const label of ['Race Trace', 'Position', 'Gap to Leader']) {
+      expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
+    }
+
+    expect(screen.getByText(/median lap/)).toBeInTheDocument();
+    expect(screen.getByText(/a place gained/)).toBeInTheDocument();
+    expect(screen.getByText(/leader sits on zero/)).toBeInTheDocument();
+  });
+
+  it('falls back to the defaults when the saved config has no lap graph block', () => {
+    mocks.setDashboard(dashboardWith('all'));
+    render(<GantrySettings />);
+
+    expect(lapWindowInput().value).toBe('75');
+    expect(autoPinSwitch()).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('writes the y axis mode without dropping the other lap graph values', () => {
+    mocks.setDashboard(
+      dashboardFor(
+        gantryConfig({
+          lapGraph: { yAxisMode: 'trace', lapWindow: 40, autoPin: false },
+        })
+      )
+    );
+    render(<GantrySettings />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Gap to Leader' }));
+
+    expect(savedLapGraph()).toEqual({
+      yAxisMode: 'gap',
+      lapWindow: 40,
+      autoPin: false,
+    });
+  });
+
+  it('writes the lap window and the auto-pin toggle', () => {
+    mocks.setDashboard(
+      dashboardFor(
+        gantryConfig({
+          lapGraph: { yAxisMode: 'position', lapWindow: 75, autoPin: true },
+        })
+      )
+    );
+    render(<GantrySettings />);
+
+    fireEvent.change(lapWindowInput(), { target: { value: '120' } });
+    expect(savedLapGraph()).toEqual({
+      yAxisMode: 'position',
+      lapWindow: 120,
+      autoPin: true,
+    });
+
+    fireEvent.click(autoPinSwitch());
+    expect(savedLapGraph().autoPin).toBe(false);
+  });
+
+  it('keeps the lap window inside the supported range', () => {
+    mocks.setDashboard(dashboardWith('all'));
+    render(<GantrySettings />);
+
+    expect(lapWindowInput().min).toBe('5');
+    expect(lapWindowInput().max).toBe('300');
+  });
+});
+
+// The settings pane reads whatever storage hands it. The Gantry has no config
+// migrator, so deepMergeConfig is what fills in a block a saved config predates.
+describe('Gantry config defaults', () => {
+  const defaults = getWidgetDefaultConfig('gantry') as unknown as Record<
+    string,
+    unknown
+  >;
+
+  const load = (saved: Record<string, unknown>) =>
+    deepMergeConfig(defaults, saved) as Record<string, unknown>;
+
+  it('gives a saved config with no lap graph block the defaults', () => {
+    const merged = load(gantryConfig({ sessionRetention: 10 }));
+
+    expect(merged.lapGraph).toEqual({
+      yAxisMode: 'trace',
+      lapWindow: 75,
+      autoPin: true,
+    });
+    expect(merged.sessionRetention).toBe(10);
+    expect(merged.slowSpeedThreshold).toBe(21);
+    expect(merged.speedUnit).toBe('km/h');
+  });
+
+  it('renders that config', () => {
+    mocks.setDashboard(dashboardFor(load(gantryConfig())));
+    render(<GantrySettings />);
+
+    expect(lapWindowInput().value).toBe('75');
   });
 });

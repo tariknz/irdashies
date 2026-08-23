@@ -1464,6 +1464,11 @@ export const defaultDashboard: {
         pitEntryDurationSeconds: 0.6,
         cooldownSeconds: 5,
         sessionRetention: 'all',
+        lapGraph: {
+          yAxisMode: 'trace',
+          lapWindow: 75,
+          autoPin: true,
+        },
       },
     },
   ],
