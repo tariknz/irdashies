@@ -47,6 +47,21 @@ const HeaderCell = memo(
 );
 HeaderCell.displayName = 'HeaderCell';
 
+/**
+ * Widths for the numeric columns, shared by the header and the rows so the two
+ * cannot drift apart. Sized in ch rather than px because the overlay theme
+ * scales the font: a fixed pixel column clips the moment a user picks a larger
+ * size. shrink-0 stops flex squeezing them below their content, which is what
+ * made the lap times overlap.
+ */
+const COL = {
+  gap: 'w-[6ch] shrink-0 px-1',
+  interval: 'w-[6ch] shrink-0 px-1',
+  best: 'w-[9ch] shrink-0 px-1',
+  last: 'w-[9ch] shrink-0 px-1',
+  delta: 'w-[6ch] shrink-0 px-1',
+} as const;
+
 const StandingsHeader = memo(() => (
   <div className="flex items-center px-1 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-900 border-b border-slate-700/50 flex-none">
     <HeaderCell
@@ -82,29 +97,29 @@ const StandingsHeader = memo(() => (
     <HeaderCell
       label="Gap"
       tip="Time behind the class leader. A value such as 1L means whole laps down; the leader's own row reads 'gap'."
-      className="w-12 text-right px-1"
+      className={`${COL.gap} text-right`}
     />
     <HeaderCell
       label="Int"
       tip="Time behind the car directly ahead in class. The leader's own row reads 'int'."
-      className="w-12 text-right px-1"
+      className={`${COL.interval} text-right`}
     />
     <HeaderCell
       label="Best"
       tip="Fastest lap this car has set in the session. Purple marks the fastest lap set by anyone."
-      className="w-14 text-right"
+      className={`${COL.best} text-right`}
     />
     <HeaderCell
       label="Last"
       tip="Most recently completed lap. Purple is a session best, green is that driver's personal best."
-      className="w-14 text-right px-2"
+      className={`${COL.last} text-right`}
     />
     {(['L-3', 'L-2', 'L-1'] as const).map((label, i) => (
       <HeaderCell
         key={label}
         label={label}
         tip={DELTA_TOOLTIPS[i]}
-        className="w-9 text-right px-0.5"
+        className={`${COL.delta} text-right`}
       />
     ))}
   </div>
@@ -345,11 +360,11 @@ const GantryDriverRow = memo(
           )}
         </span>
         {/* Gap */}
-        <span className="w-12 text-right tabular-nums px-1">
+        <span className={`${COL.gap} text-right tabular-nums`}>
           {formatGap(driver.gap, driver.classPosition ?? driver.position)}
         </span>
         {/* Interval */}
-        <span className="w-12 text-right tabular-nums px-1">
+        <span className={`${COL.interval} text-right tabular-nums`}>
           {formatInterval(
             driver.interval,
             driver.classPosition ?? driver.position
@@ -357,13 +372,13 @@ const GantryDriverRow = memo(
         </span>
         {/* Best */}
         <span
-          className={`w-14 text-right tabular-nums gap-px-1 ${driver.hasFastestTime ? 'text-purple-400' : ''}`}
+          className={`${COL.best} text-right tabular-nums ${driver.hasFastestTime ? 'text-purple-400' : ''}`}
         >
           {bestTimeStr}
         </span>
         {/* Last */}
         <span
-          className={`w-14 text-right tabular-nums px-2 ${
+          className={`${COL.last} text-right tabular-nums ${
             driver.lastTimeState === 'session-fastest'
               ? 'text-purple-400'
               : driver.lastTimeState === 'personal-best'
@@ -377,7 +392,7 @@ const GantryDriverRow = memo(
         {deltaSlots.map((delta, i) => (
           <span
             key={i}
-            className={`w-9 text-right tabular-nums px-0.5 ${
+            className={`${COL.delta} text-right tabular-nums ${
               delta !== undefined
                 ? delta > 0
                   ? 'text-green-400'

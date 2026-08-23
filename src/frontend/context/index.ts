@@ -17,7 +17,6 @@ export { useReferenceLapStore } from './ReferenceLapStore/ReferenceLapStore';
 export * from './LapTimesStore/LapTimesStore';
 export * from './LapTimesStore/LapTimesStoreUpdater';
 export * from './SectorTimingStore/SectorTimingStore';
-export * from './LapGapStore';
 export * from './RaceControlStore';
 export * from './PushToPassStore/PushToPassStore';
 export * from './PushToPassStore/PushToPassStoreUpdater';

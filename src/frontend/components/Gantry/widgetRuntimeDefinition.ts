@@ -10,6 +10,7 @@ export default {
   // happens, so they are deliberately not declared as required inputs.
   channels: [
     'lap-times.snapshot',
+    'lap-history.snapshot',
     'standings.snapshot',
     'track-state.snapshot',
     'radio.snapshot',
@@ -22,5 +23,8 @@ export default {
     'track-state.snapshot': 1,
     // Subscribed transitively by useDriverStandings; Gantry never renders it.
     'radio.snapshot': 1,
+    // Publishes on version change, so this only caps the worst case. A 60-car
+    // field completes a lap about 0.6 times a second.
+    'lap-history.snapshot': 2,
   },
 } satisfies WidgetRuntimeDefinition;

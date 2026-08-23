@@ -15,6 +15,7 @@ export interface ChannelPayloads {
   'fuel.projection': FuelProjectionSnapshot;
   'lap-times.snapshot': LapTimesSnapshot;
   'lap-log.snapshot': LapLogSnapshot;
+  'lap-history.snapshot': LapHistorySnapshot;
   'reference-laps.snapshot': ReferenceLapsSnapshot;
   'radio.snapshot': RadioSnapshot;
   'relative-gaps.snapshot': RelativeGapsSnapshot;
@@ -140,6 +141,49 @@ export interface LapLogSnapshot {
   deltaToSessionLastLapOk: boolean;
   deltaToSessionBestLap: number;
   deltaToSessionBestLapOk: boolean;
+  version: number;
+}
+
+/** Bit flags recorded against a single lap crossing. */
+export const LAP_CROSSING_IN_PIT = 1 << 0;
+export const LAP_CROSSING_OFF_TRACK = 1 << 1;
+export const LAP_CROSSING_LAPPED = 1 << 2;
+
+/** Crossings retained per car. Documented cap - see LapHistoryProcessor. */
+export const LAP_HISTORY_CAPACITY = 300;
+
+/**
+ * Raw lap-crossing record for every car, from which the Gantry derives race
+ * traces, true gaps and position-by-lap.
+ *
+ * Storage is flat and preallocated: field `f` for crossing `i` of car `c` is at
+ * `f[c * capacity + (start[c] + i) % capacity]`, for `i` in `0..count[c] - 1`.
+ * Plain arrays rather than typed arrays, because channel payloads are JSON
+ * serialised on the web-server transport and typed arrays do not survive it.
+ * Once `count[c]` reaches `capacity` the buffer becomes a ring and the oldest
+ * crossing is dropped, so a long race shows a rolling window of recent laps.
+ *
+ * Nothing here is defaulted or absolute-valued. A pit lap is recorded with its
+ * real crossing time and the in-pit flag set, rather than a fabricated gap.
+ */
+export interface LapHistorySnapshot {
+  /** Number of car slots the buffers are sized for. */
+  carCount: number;
+  /** Crossings retained per car. */
+  capacity: number;
+  /** Valid crossings held for each car, indexed by CarIdx. */
+  count: readonly number[];
+  /** Ring offset of the oldest valid crossing for each car. */
+  start: readonly number[];
+  /** Lap just completed at the crossing. */
+  lap: readonly number[];
+  /** SessionTime at the crossing, in seconds. Absolute, never accumulated. */
+  sessionTime: readonly number[];
+  /** In-class position at the crossing. 0 when unknown. */
+  classPosition: readonly number[];
+  /** LAP_CROSSING_* bit flags. */
+  flags: readonly number[];
+  sessionNum: number | null;
   version: number;
 }
 
@@ -332,6 +376,13 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 25,
     maxRateHz: 25,
+  },
+  // Publishes on version change, roughly 0.6 times a second in a 60-car field.
+  // The rate cap only bounds the worst case; it is not a sampling rate.
+  'lap-history.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 2,
+    maxRateHz: 5,
   },
   'reference-laps.snapshot': {
     kind: 'snapshot',

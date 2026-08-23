@@ -4,6 +4,7 @@ import { GantryStandings } from './components/GantryStandings/GantryStandings';
 import { GantryIncidents } from './components/GantryIncidents/GantryIncidents';
 import { LapGraphView } from './components/LapGraph/LapGraphView';
 import { useRaceControlBridge, useSessionDrivers } from '@irdashies/context';
+import type { LapGraphMode } from '@irdashies/domain';
 
 type GantryView = 'standings-incidents' | 'lap-graph';
 
@@ -12,6 +13,14 @@ const GantryInner = memo(() => {
     'standings-incidents'
   );
   const [followedCarIdx, setFollowedCarIdx] = useState<number | null>(null);
+
+  // The lap graph unmounts when the other tab is showing, so its choices live
+  // here. null means "follow the saved setting"; the view decides what that is.
+  const [lapGraphClassId, setLapGraphClassId] = useState<string | null>(null);
+  const [lapGraphMode, setLapGraphMode] = useState<LapGraphMode | null>(null);
+  const [lapGraphPins, setLapGraphPins] = useState<readonly number[] | null>(
+    null
+  );
 
   useRaceControlBridge(); // subscribe to incidents on mount
 
@@ -54,7 +63,15 @@ const GantryInner = memo(() => {
       )}
       {activeView === 'lap-graph' && (
         <div className="flex-1 overflow-hidden">
-          <LapGraphView />
+          <LapGraphView
+            followedCarIdx={followedCarIdx}
+            selectedClassId={lapGraphClassId}
+            onClassChange={setLapGraphClassId}
+            chosenMode={lapGraphMode}
+            onModeChange={setLapGraphMode}
+            chosenPins={lapGraphPins}
+            onPinsChange={setLapGraphPins}
+          />
         </div>
       )}
     </div>

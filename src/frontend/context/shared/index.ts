@@ -11,3 +11,4 @@ export * from './useTotalRaceValue';
 export * from './useCarIdxOffTrack';
 export * from './useCarIdxRollingAvgLapTime';
 export * from './useReferenceLapSectorTimes';
+export * from './useElementSize';
