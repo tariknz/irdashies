@@ -3,6 +3,7 @@ import {
   DEFAULT_WINDOW_LAPS,
   MIN_WINDOW_LAPS,
   brushToWindow,
+  brushXToLap,
   centreWindowOn,
   clampWindow,
   defaultWindow,
@@ -260,5 +261,28 @@ describe('centreWindowOn', () => {
       start: 1,
       end: 101,
     });
+  });
+});
+
+describe('brushXToLap', () => {
+  const bounds = { minLap: 0, maxLap: 100 };
+
+  it('maps a pointer position to the lap under it', () => {
+    expect(brushXToLap(100, bounds, 200)).toBeCloseTo(50, 6);
+  });
+
+  it('does not slide the lap away near the right edge', () => {
+    // Reading this back out of a zero-width window used to return a lap up to a
+    // whole minimum span early, so a click near the end jumped short.
+    expect(brushXToLap(200, bounds, 200)).toBeCloseTo(100, 6);
+  });
+
+  it('clamps a pointer dragged outside the strip', () => {
+    expect(brushXToLap(-50, bounds, 200)).toBe(0);
+    expect(brushXToLap(500, bounds, 200)).toBe(100);
+  });
+
+  it('survives a zero-width strip', () => {
+    expect(brushXToLap(10, bounds, 0)).toBe(0);
   });
 });

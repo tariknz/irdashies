@@ -136,3 +136,37 @@ describe('migrateGantryConfig', () => {
     });
   });
 });
+
+describe('migrateGantryConfig repairs a current-version config', () => {
+  const defaults = {
+    version: 2,
+    lapGraph: { yAxisMode: 'trace', lapWindow: 75, autoPin: true },
+  };
+
+  it('replaces an illegal yAxisMode even when no upgrade is due', () => {
+    const saved = {
+      version: 2,
+      lapGraph: { yAxisMode: 'nonsense', lapWindow: 40, autoPin: false },
+    };
+
+    const result = migrateGantryConfig(saved, defaults, { ...saved });
+
+    expect(result.lapGraph).toEqual({
+      yAxisMode: 'trace',
+      lapWindow: 40,
+      autoPin: false,
+    });
+  });
+
+  it('replaces an out-of-range lapWindow even when no upgrade is due', () => {
+    const saved = {
+      version: 2,
+      lapGraph: { yAxisMode: 'gap', lapWindow: 99999, autoPin: true },
+    };
+
+    const result = migrateGantryConfig(saved, defaults, { ...saved });
+
+    expect((result.lapGraph as { lapWindow: number }).lapWindow).toBe(75);
+    expect((result.lapGraph as { yAxisMode: string }).yAxisMode).toBe('gap');
+  });
+});

@@ -76,8 +76,15 @@ export const migrateGantryConfig = (
   defaults: Config,
   merged: Config
 ): Config => {
+  // deepMergeConfig copies saved scalars verbatim, so an illegal yAxisMode or an
+  // out-of-range lapWindow reaches the chart on any load, not only an upgrade.
+  const repaired = (cfg: Config): Config => ({
+    ...cfg,
+    lapGraph: coerceLapGraph(cfg.lapGraph, defaults.lapGraph as LapGraphConfig),
+  });
+
   let version = readVersion(saved);
-  if (version >= GANTRY_CONFIG_VERSION) return merged;
+  if (version >= GANTRY_CONFIG_VERSION) return repaired(merged);
 
   let result = merged;
   while (version < GANTRY_CONFIG_VERSION) {
@@ -87,5 +94,5 @@ export const migrateGantryConfig = (
     version += 1;
   }
 
-  return { ...result, version: GANTRY_CONFIG_VERSION };
+  return { ...repaired(result), version: GANTRY_CONFIG_VERSION };
 };

@@ -142,6 +142,28 @@ describe('lapHistoryStorage', () => {
     expect(await loadLapHistory('short', tmpDir)).toBeNull();
   });
 
+  it.each([
+    ['count above capacity', 'count', 9999],
+    ['negative count', 'count', -1],
+    ['fractional count', 'count', 1.5],
+    ['start at capacity', 'start', 300],
+    ['negative start', 'start', -1],
+    ['fractional start', 'start', 0.5],
+  ])('rejects a file with a bad ring index: %s', async (name, field, bad) => {
+    // A bad pair repeats crossings or reads another car's slots once decoded.
+    const { loadLapHistory, serializeLapHistory } =
+      await import('./lapHistoryStorage');
+    const stored = serializeLapHistory(populated());
+    (stored.history as unknown as Record<string, number[]>)[field][0] = bad;
+    const id = `ring-${field}-${String(bad).replace(/[^a-z0-9]/gi, '')}`;
+    fs.writeFileSync(
+      path.join(tmpDir, `lap-history-${id}.json`),
+      JSON.stringify(stored)
+    );
+
+    expect(await loadLapHistory(id, tmpDir)).toBeNull();
+  });
+
   it('redacts the storage directory from invalid-file warnings', async () => {
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
     const { loadLapHistory } = await import('./lapHistoryStorage');

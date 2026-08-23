@@ -18,7 +18,7 @@ import {
   lapLabelCapacity,
 } from './lapGraphScales';
 import {
-  brushToWindow,
+  brushXToLap,
   centreWindowOn,
   clampWindow,
   defaultWindow,
@@ -563,7 +563,7 @@ export const LapGraphCanvas = memo(
           : centreWindowOn(
               geo.window,
               geo.bounds,
-              brushToWindow(x, x, geo.bounds, rect.width).start
+              brushXToLap(x, geo.bounds, rect.width)
             );
         if (!inside) applyWindow(next);
         brushDragRef.current = {

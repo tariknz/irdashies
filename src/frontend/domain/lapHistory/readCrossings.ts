@@ -16,7 +16,10 @@ export const readCrossings = (
   }
 
   const capacity = snapshot.capacity;
-  const count = snapshot.count[carIdx] ?? 0;
+  // A restored snapshot can carry a count from a build with a larger capacity.
+  // Without the clamp the ring wraps and repeats crossings, which then feed lap
+  // times and gaps.
+  const count = Math.min(snapshot.count[carIdx] ?? 0, capacity);
   if (count <= 0 || capacity <= 0) return [];
 
   const start = snapshot.start[carIdx] ?? 0;

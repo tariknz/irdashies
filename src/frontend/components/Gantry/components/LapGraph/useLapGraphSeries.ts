@@ -183,6 +183,10 @@ export const valueExtentOf = (
 
 /** Turns a gap axis into the same shape the other two modes return. */
 const gapAxisAsLinear = (extent: ValueExtent): LinearAxis => {
+  // A car ahead of the nominal class leader has a negative gap, and the axis
+  // caption promises to show it. Only an all-positive field gets the tighter
+  // gap-specific stepping.
+  if (extent.min < 0) return buildLinearAxis(extent.min, extent.max);
   const gap = buildGapAxis(Math.max(extent.max, 0));
   return { min: 0, max: gap.max, step: gap.step, values: gap.values };
 };

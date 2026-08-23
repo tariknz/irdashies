@@ -86,14 +86,40 @@ const isLapHistorySnapshot = (value: unknown): value is LapHistorySnapshot => {
     return false;
   }
   const slots = candidate.carCount * candidate.capacity;
-  return (
-    isNumberArray(candidate.count, candidate.carCount) &&
-    isNumberArray(candidate.start, candidate.carCount) &&
-    isNumberArray(candidate.lap, slots) &&
-    isNumberArray(candidate.sessionTime, slots) &&
-    isNumberArray(candidate.classPosition, slots) &&
-    isNumberArray(candidate.flags, slots)
+  if (
+    !isNumberArray(candidate.count, candidate.carCount) ||
+    !isNumberArray(candidate.start, candidate.carCount) ||
+    !isNumberArray(candidate.lap, slots) ||
+    !isNumberArray(candidate.sessionTime, slots) ||
+    !isNumberArray(candidate.classPosition, slots) ||
+    !isNumberArray(candidate.flags, slots)
+  ) {
+    return false;
+  }
+
+  // Ring indices decide which slots are read. A bad pair repeats crossings or
+  // reads another car's slots, so reject the file rather than decode it.
+  return isRingIndexed(
+    candidate.count as number[],
+    candidate.start as number[],
+    candidate.capacity
   );
+};
+
+const isRingIndexed = (
+  count: readonly number[],
+  start: readonly number[],
+  capacity: number
+): boolean => {
+  for (let i = 0; i < count.length; i += 1) {
+    if (!Number.isInteger(count[i]) || count[i] < 0 || count[i] > capacity) {
+      return false;
+    }
+    if (!Number.isInteger(start[i]) || start[i] < 0 || start[i] >= capacity) {
+      return false;
+    }
+  }
+  return true;
 };
 
 const isPersistedLapHistory = (

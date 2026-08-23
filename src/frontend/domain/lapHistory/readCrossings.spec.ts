@@ -151,3 +151,27 @@ describe('readCrossings', () => {
     });
   });
 });
+
+describe('readCrossings with a count beyond capacity', () => {
+  it('never returns more crossings than the ring can hold', () => {
+    // A file written by a build with a larger capacity would otherwise wrap the
+    // ring and repeat crossings into the lap times and gaps.
+    const snapshot = {
+      carCount: 1,
+      capacity: 3,
+      count: [10],
+      start: [0],
+      lap: [1, 2, 3],
+      sessionTime: [10, 20, 30],
+      classPosition: [1, 1, 1],
+      flags: [0, 0, 0],
+      sessionNum: 2,
+      version: 1,
+    };
+
+    const crossings = readCrossings(snapshot, 0);
+
+    expect(crossings).toHaveLength(3);
+    expect(crossings.map((c) => c.lap)).toEqual([1, 2, 3]);
+  });
+});

@@ -177,6 +177,23 @@ describe('buildModeAxis', () => {
   });
 });
 
+describe('buildModeAxis gap mode with a car ahead of the leader', () => {
+  it('keeps negative gaps on the axis', () => {
+    // gapToClassLeader signs the value, and the axis caption promises that
+    // below zero reads as ahead of the class leader.
+    const axis = buildModeAxis('gap', { min: -4.2, max: 30 });
+
+    expect(axis.min).toBeLessThanOrEqual(-4.2);
+    expect(axis.max).toBeGreaterThanOrEqual(30);
+  });
+
+  it('still uses the gap stepping when the whole field is behind', () => {
+    const axis = buildModeAxis('gap', { min: 0, max: 30 });
+
+    expect(axis.min).toBe(0);
+  });
+});
+
 describe('valueToY', () => {
   const axis = buildLinearAxis(0, 100);
 

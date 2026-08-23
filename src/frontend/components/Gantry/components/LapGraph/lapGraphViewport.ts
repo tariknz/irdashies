@@ -201,6 +201,24 @@ export const windowToBrush = (
 };
 
 /** Window implied by dragging between two x positions on the overview strip. */
+/**
+ * Lap under a pointer on the brush strip, which always spans the whole race.
+ * Use this to find the lap a click landed on: reading it back out of a
+ * zero-width window is wrong, because clamping widens that window to the
+ * minimum span and slides its start away from the pointer.
+ */
+export const brushXToLap = (
+  x: number,
+  bounds: LapBounds,
+  stripWidth: number
+): number => {
+  const { minLap, maxLap } = orderedBounds(bounds);
+  const total = boundsSpan(bounds);
+  if (total <= 0 || stripWidth <= 0) return minLap;
+  const lap = minLap + (x / stripWidth) * total;
+  return Math.min(Math.max(lap, minLap), maxLap);
+};
+
 export const brushToWindow = (
   xA: number,
   xB: number,
@@ -211,9 +229,8 @@ export const brushToWindow = (
   const total = boundsSpan(bounds);
   if (total <= 0 || stripWidth <= 0)
     return clampWindow({ start: minLap, end: minLap }, bounds);
-  const lapAt = (x: number) => minLap + (x / stripWidth) * total;
-  const a = lapAt(Math.min(xA, xB));
-  const b = lapAt(Math.max(xA, xB));
+  const a = brushXToLap(Math.min(xA, xB), bounds, stripWidth);
+  const b = brushXToLap(Math.max(xA, xB), bounds, stripWidth);
   return clampWindow({ start: a, end: b }, bounds);
 };
 

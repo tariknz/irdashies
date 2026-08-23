@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import {
   classReferenceLap,
@@ -16,7 +16,7 @@ import {
   useLapHistorySnapshot,
 } from '@irdashies/context';
 import { getTailwindStyle } from '@irdashies/utils/colors';
-import type { LapHistorySnapshot, NameFormat } from '@irdashies/types';
+import type { NameFormat } from '@irdashies/types';
 import {
   DriverName as formatDriverName,
   extractDriverName,
@@ -200,24 +200,18 @@ export const LapGraphView = memo(
       [activeClass, isMultiClass]
     );
 
-    // Player, class leader, and the cars either side of the player. Cached behind
-    // the resulting carIdx list so a position reshuffle that does not change the
-    // set never re-renders the canvas.
-    const autoPinCache = useRef<{ signature: string; pins: number[] }>({
-      signature: '',
-      pins: [],
-    });
-
-    const autoPins = useMemo(() => {
-      if (lapGraphSettings?.autoPin === false) return EMPTY_PINS;
-      const pins = autoPinCarIdxs(activeClass?.drivers ?? [], leaderCarIdx);
-      const signature = pins.join(',');
-      if (signature === autoPinCache.current.signature) {
-        return autoPinCache.current.pins;
-      }
-      autoPinCache.current = { signature, pins };
-      return pins;
+    // Player, class leader, and the cars either side of the player. Reduced to a
+    // string first so a position reshuffle that does not change the set never
+    // gives the canvas a new array.
+    const autoPinKey = useMemo(() => {
+      if (lapGraphSettings?.autoPin === false) return '';
+      return autoPinCarIdxs(activeClass?.drivers ?? [], leaderCarIdx).join(',');
     }, [lapGraphSettings?.autoPin, activeClass, leaderCarIdx]);
+
+    const autoPins = useMemo(
+      () => (autoPinKey ? autoPinKey.split(',').map(Number) : EMPTY_PINS),
+      [autoPinKey]
+    );
 
     const pinnedCarIdxs = chosenPins ?? autoPins;
 
@@ -234,36 +228,33 @@ export const LapGraphView = memo(
     );
 
     // Standings rebuild on every 5 Hz snapshot, so the driver list is a fresh
-    // array each time. Cache it behind a signature to keep the series memo from
-    // seeing a change that is not one.
-    const memberCache = useRef<{ signature: string; members: ClassMember[] }>({
-      signature: '',
-      members: [],
-    });
+    // array each time. Reduce it to a signature and hold the identity until the
+    // content actually changes, or the series build runs for nothing.
+    const memberList = useMemo(
+      () => buildMembers(activeClass?.drivers ?? [], nameFormat),
+      [activeClass, nameFormat]
+    );
+    const membersKey = useMemo(
+      () => membersSignature(memberList),
+      [memberList]
+    );
+    const members = useMemo(
+      () => memberList,
+      // Deliberately keyed on the content signature, not the list identity.
+      // eslint-disable-next-line @eslint-react/exhaustive-deps
+      [membersKey]
+    );
 
-    const members = useMemo(() => {
-      const next = buildMembers(activeClass?.drivers ?? [], nameFormat);
-      const signature = membersSignature(next);
-      if (signature === memberCache.current.signature) {
-        return memberCache.current.members;
-      }
-      memberCache.current = { signature, members: next };
-      return next;
-    }, [activeClass, nameFormat]);
-
-    // Hold the snapshot at an identity that only moves when `version` moves, so
-    // a republished but unchanged history never rebuilds 60 series.
-    const historyCache = useRef<{
-      version: number;
-      snapshot: LapHistorySnapshot | undefined;
-    }>({ version: -1, snapshot: undefined });
-
-    if (!snapshot) {
-      historyCache.current = { version: -1, snapshot: undefined };
-    } else if (snapshot.version !== historyCache.current.version) {
-      historyCache.current = { version: snapshot.version, snapshot };
-    }
-    const history = historyCache.current.snapshot;
+    // Hold the snapshot at an identity that only moves when `version` moves. A
+    // resend, or resubscribing after a tab switch, delivers an equal snapshot as
+    // a fresh object, which would otherwise rebuild 60 series for nothing.
+    const historyVersion = snapshot?.version ?? -1;
+    const history = useMemo(
+      () => snapshot,
+      // Deliberately keyed on the version, not the snapshot identity.
+      // eslint-disable-next-line @eslint-react/exhaustive-deps
+      [historyVersion]
+    );
 
     const built = useMemo(() => {
       const empty = { series: [] as LapGraphSeries[], reference: undefined };

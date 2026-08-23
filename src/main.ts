@@ -103,7 +103,7 @@ const channelBus = new ChannelBus({
 });
 let disconnectLifecycleChannel: (() => void) | undefined;
 let incidentRuntime: IncidentRuntime | undefined;
-let lapHistoryRuntime: LapHistoryRuntime | undefined;
+let disposeLapHistoryRuntime: (() => void) | undefined;
 // Resolved per call: a runtime outlives any single SDK bridge, so it must
 // not hold a reference to a metrics instance that has stopped reporting.
 const runtimePerfMetrics: PerformanceSections = {
@@ -147,14 +147,13 @@ function setupLapHistoryRuntime(initialDashboard: DashboardLayout): void {
     runtimePerfMetrics,
     lapHistoryPersistence
   );
-  lapHistoryRuntime = runtime;
 
   const applyDashboard = (layout: DashboardLayout | undefined) => {
     const widget = layout?.widgets.find((w) => w.id === 'gantry');
     runtime.updateEnabled(widget?.enabled ?? false);
   };
   applyDashboard(initialDashboard);
-  onDashboardUpdated(applyDashboard);
+  const unsubscribeDashboard = onDashboardUpdated(applyDashboard);
 
   let unsubscribeSession: (() => void) | undefined;
   let unsubscribeTelemetry: (() => void) | undefined;
@@ -171,15 +170,28 @@ function setupLapHistoryRuntime(initialDashboard: DashboardLayout): void {
       undefined;
   };
   wireToTelemetryBridge();
-  onBridgeChanged(wireToTelemetryBridge);
+  const unsubscribeBridgeChanged = onBridgeChanged(wireToTelemetryBridge);
 
   // Retention: the current race plus one previous race.
-  runtime.onSessionIdChanged((sessionId) => {
+  const unsubscribeSessionId = runtime.onSessionIdChanged((sessionId) => {
     if (!sessionId) return;
     pruneOldLapHistorySessions(sessionId).catch((err) =>
       log.error('[LapHistory] Failed to prune old sessions:', err)
     );
   });
+
+  // Every inbound subscription has to stop before the shutdown flush, or a late
+  // frame can schedule a debounced write that the flush has already passed.
+  disposeLapHistoryRuntime = () => {
+    unsubscribeSession?.();
+    unsubscribeTelemetry?.();
+    unsubscribeSession = undefined;
+    unsubscribeTelemetry = undefined;
+    unsubscribeBridgeChanged?.();
+    unsubscribeDashboard?.();
+    unsubscribeSessionId?.();
+    runtime.dispose();
+  };
 }
 
 app.on('ready', async () => {
@@ -403,7 +415,7 @@ app.on('before-quit', (event) => {
   disconnectLifecycleChannel?.();
   disposeRendererDataSubscriptions?.();
   incidentRuntime?.dispose();
-  lapHistoryRuntime?.dispose();
+  disposeLapHistoryRuntime?.();
   channelBus.dispose();
   // Synchronous flush so any pending debounced reference-lap write completes
   // before the process exits.
