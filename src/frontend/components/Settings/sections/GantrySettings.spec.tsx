@@ -1,12 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardLayout, LapGraphConfig } from '@irdashies/types';
-import {
-  GANTRY_CONFIG_VERSION,
-  deepMergeConfig,
-  getWidgetDefaultConfig,
-  migrateGantryConfig,
-} from '@irdashies/types';
+import { deepMergeConfig, getWidgetDefaultConfig } from '@irdashies/types';
 import { GantrySettings } from './GantrySettings';
 
 // GantrySettings is memo()'d and takes no props, so a plain rerender() would be
@@ -188,36 +183,32 @@ describe('GantrySettings lap graph', () => {
   });
 });
 
-// The settings pane reads whatever storage hands it, so the migration that
-// produces that config is covered here too.
-describe('Gantry config migration', () => {
+// The settings pane reads whatever storage hands it. The Gantry has no config
+// migrator, so deepMergeConfig is what fills in a block a saved config predates.
+describe('Gantry config defaults', () => {
   const defaults = getWidgetDefaultConfig('gantry') as unknown as Record<
     string,
     unknown
   >;
 
   const load = (saved: Record<string, unknown>) =>
-    migrateGantryConfig(saved, defaults, deepMergeConfig(defaults, saved));
+    deepMergeConfig(defaults, saved) as Record<string, unknown>;
 
   it('gives a saved config with no lap graph block the defaults', () => {
-    const saved = gantryConfig({ sessionRetention: 10 });
-    const migrated = load(saved);
+    const merged = load(gantryConfig({ sessionRetention: 10 }));
 
-    expect(migrated.lapGraph).toEqual({
+    expect(merged.lapGraph).toEqual({
       yAxisMode: 'trace',
       lapWindow: 75,
       autoPin: true,
     });
-    expect(migrated.version).toBe(GANTRY_CONFIG_VERSION);
-    expect(migrated.sessionRetention).toBe(10);
-    expect(migrated.slowSpeedThreshold).toBe(21);
-    expect(migrated.speedUnit).toBe('km/h');
+    expect(merged.sessionRetention).toBe(10);
+    expect(merged.slowSpeedThreshold).toBe(21);
+    expect(merged.speedUnit).toBe('km/h');
   });
 
-  it('renders the migrated config', () => {
-    mocks.setDashboard(
-      dashboardFor(load(gantryConfig()) as Record<string, unknown>)
-    );
+  it('renders that config', () => {
+    mocks.setDashboard(dashboardFor(load(gantryConfig())));
     render(<GantrySettings />);
 
     expect(lapWindowInput().value).toBe('75');

@@ -4,11 +4,7 @@ import type {
   DashboardProfile,
 } from '@irdashies/types';
 import { emitDashboardUpdated } from './dashboardEvents';
-import {
-  defaultDashboard,
-  deepMergeConfig,
-  migrateGantryConfig,
-} from '@irdashies/types';
+import { defaultDashboard, deepMergeConfig } from '@irdashies/types';
 import { readData, writeData } from './storage';
 import { writeFile, mkdir, readFile, readdir, unlink } from 'node:fs/promises';
 import { resolve, basename, sep } from 'node:path';
@@ -124,14 +120,10 @@ export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
           ...widget,
           config:
             widget.id === 'gantry'
-              ? migrateGantryConfig(
+              ? migrateGantryThresholds(
                   widget.config as Record<string, unknown> | undefined,
                   defaults,
-                  migrateGantryThresholds(
-                    widget.config as Record<string, unknown> | undefined,
-                    defaults,
-                    merged
-                  )
+                  merged
                 )
               : merged,
         };

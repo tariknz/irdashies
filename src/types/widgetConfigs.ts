@@ -710,11 +710,6 @@ export interface LapGraphConfig {
 export const LAP_GRAPH_LAP_WINDOW_BOUNDS = { min: 5, max: 300 } as const;
 
 export interface GantryConfig {
-  /**
-   * Schema version for the whole Gantry config. Bumped whenever a migrator is
-   * added; see `src/types/migrators/gantry.ts`.
-   */
-  version: number;
   /** Display units for speed values. Stored thresholds stay in km/h. */
   speedUnit: 'mph' | 'km/h' | 'auto';
   /** How driver names are written in the standings list. */
