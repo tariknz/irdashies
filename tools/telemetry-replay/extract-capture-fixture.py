@@ -44,6 +44,23 @@ FRAME_VARS = [
     "CarIdxTireCompound",
 ]
 
+# Named subsets, so a scenario fixture only carries what it exercises. A pit
+# fixture has no business shipping lap times for 60 cars.
+VAR_SETS = {
+    "pit": [
+        "SessionTime", "SessionNum", "SessionState",
+        "CarIdxOnPitRoad", "CarIdxTrackSurface", "CarIdxLap",
+        "CarIdxLapDistPct",
+    ],
+    "standings": [
+        "SessionTime", "SessionNum", "SessionState", "SessionFlags", "CamCarIdx",
+        "CarIdxPosition", "CarIdxClassPosition", "CarIdxClass", "CarIdxLap",
+        "CarIdxLapCompleted", "CarIdxLapDistPct", "CarIdxTrackSurface",
+        "CarIdxOnPitRoad", "CarIdxF2Time", "CarIdxEstTime", "CarIdxBestLapTime",
+        "CarIdxLastLapTime", "CarIdxSessionFlags", "CarIdxTireCompound",
+    ],
+}
+
 SOURCE_RATE_HZ = 30
 
 # Fixtures are committed, so keep them small: full float precision costs more
@@ -78,16 +95,16 @@ def shrink(frame, car_count):
     return out
 
 
-def read_frames(capture, session_num, t_from, t_to, hz):
+def read_frames(capture, session_num, t_from, t_to, hz, variables, shards):
     """Streams matching frames through zstd + jq, downsampled."""
-    keep = ",".join(f'"{v}": .{v}' for v in FRAME_VARS)
+    keep = ",".join(f'"{v}": .{v}' for v in variables)
     jq = (
         f"select(.SessionNum == {session_num}) | "
         f"select(.SessionTime >= {t_from} and .SessionTime <= {t_to}) | "
         "{" + keep + "}"
     )
     cmd = (
-        f"cd {capture} && zstd -dcq telemetry-*.jsonl.zst | jq -c '{jq}' 2>/dev/null"
+        f"cd {capture} && zstd -dcq {shards} | jq -c '{jq}' 2>/dev/null"
     )
     proc = subprocess.Popen(
         ["bash", "-lc", cmd], stdout=subprocess.PIPE, text=True
@@ -192,14 +209,24 @@ def main():
     parser.add_argument("--hz", type=float, default=10)
     parser.add_argument("--name", default="")
     parser.add_argument("--no-anon", action="store_true")
+    parser.add_argument(
+        "--shards", default="telemetry-*.jsonl.zst",
+        help="glob of shards to read; narrow it when the window is known",
+    )
+    parser.add_argument(
+        "--vars", choices=sorted(VAR_SETS), default=None,
+        help="named variable subset; defaults to everything",
+    )
     args = parser.parse_args()
 
     weekend, drivers, sessions = parse_session_yaml(f"{args.capture}/session.yaml")
     if not args.no_anon:
         drivers = anonymise(drivers)
 
+    variables = VAR_SETS[args.vars] if args.vars else FRAME_VARS
     frames = read_frames(
-        args.capture, args.session, args.t_from, args.t_to, args.hz
+        args.capture, args.session, args.t_from, args.t_to, args.hz, variables,
+        args.shards,
     )
     car_count = max((int(d["CarIdx"]) for d in drivers), default=63) + 1
     frames = [shrink(f, car_count) for f in frames]
@@ -216,6 +243,7 @@ def main():
             "hz": args.hz,
             "frames": len(frames),
             "anonymised": not args.no_anon,
+            "vars": args.vars or "all",
         },
         "weekend": weekend,
         "sessions": sessions,
