@@ -135,6 +135,7 @@ def parse_session_yaml(path):
     drivers = []
     current = None
     weekend = {}
+    driver_info = {}
     sessions = []
     section = None
     with open(path, "r", encoding="utf-8", errors="replace") as handle:
@@ -164,6 +165,11 @@ def parse_session_yaml(path):
             if section == "sessions" and stripped.startswith("SessionType:") and sessions:
                 sessions[-1]["SessionType"] = stripped.split(":", 1)[1].strip()
 
+            if section == "drivers" and current is None and ":" in stripped:
+                key, _, value = stripped.partition(":")
+                if key.strip() in ("DriverCarIdx", "PaceCarIdx"):
+                    driver_info[key.strip()] = value.strip()
+
             if section == "drivers":
                 if stripped.startswith("- CarIdx:"):
                     current = {"CarIdx": int(stripped.split(":")[1])}
@@ -178,7 +184,7 @@ def parse_session_yaml(path):
                         "LicString", "CarIsPaceCar", "IsSpectator", "FlairID",
                     ):
                         current[key] = value.strip()
-    return weekend, drivers, sessions
+    return weekend, drivers, sessions, driver_info
 
 
 SURNAMES = [
@@ -219,7 +225,9 @@ def main():
     )
     args = parser.parse_args()
 
-    weekend, drivers, sessions = parse_session_yaml(f"{args.capture}/session.yaml")
+    weekend, drivers, sessions, driver_info = parse_session_yaml(
+        f"{args.capture}/session.yaml"
+    )
     if not args.no_anon:
         drivers = anonymise(drivers)
 
@@ -246,6 +254,7 @@ def main():
             "vars": args.vars or "all",
         },
         "weekend": weekend,
+        "driverInfo": driver_info,
         "sessions": sessions,
         "drivers": drivers,
         "frames": frames,

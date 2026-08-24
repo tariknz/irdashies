@@ -21,6 +21,8 @@ export interface ReplayFixture {
     anonymised: boolean;
   };
   weekend: Record<string, string>;
+  /** DriverCarIdx / PaceCarIdx as the sim reported them. */
+  driverInfo?: Record<string, string>;
   sessions: { SessionNum: number; SessionType?: string }[];
   drivers: Record<string, string | number>[];
   frames: Record<string, number | boolean | number[] | boolean[]>[];
@@ -45,8 +47,15 @@ const numeric = (value: unknown): number => {
 const text = (value: unknown): string => String(value ?? '').replace(/"/g, '');
 
 /** Rebuilds the session object the frontend and processors read. */
-export const toSession = (fixture: ReplayFixture): Session =>
-  ({
+export const toSession = (fixture: ReplayFixture): Session => {
+  // Both indices come from the capture. Guessing them gets the player wrong,
+  // which silently empties every relative window, and leaves the pace car
+  // unfiltered so it turns up as a nameless entry.
+  const paceCar = fixture.drivers.find((d) => numeric(d.CarIsPaceCar) === 1);
+  const driverCarIdx = fixture.driverInfo?.DriverCarIdx;
+  const paceCarIdx = fixture.driverInfo?.PaceCarIdx;
+
+  return {
     WeekendInfo: {
       TrackID: numeric(fixture.weekend.TrackID),
       TrackDisplayName: text(fixture.weekend.TrackDisplayName),
@@ -63,8 +72,16 @@ export const toSession = (fixture: ReplayFixture): Session =>
       })),
     },
     DriverInfo: {
-      DriverCarIdx: numeric(fixture.drivers[0]?.CarIdx),
-      PaceCarIdx: -1,
+      DriverCarIdx:
+        driverCarIdx !== undefined
+          ? numeric(driverCarIdx)
+          : numeric(fixture.drivers[0]?.CarIdx),
+      PaceCarIdx:
+        paceCarIdx !== undefined
+          ? numeric(paceCarIdx)
+          : paceCar
+            ? numeric(paceCar.CarIdx)
+            : -1,
       Drivers: fixture.drivers.map((driver) => ({
         CarIdx: numeric(driver.CarIdx),
         UserName: text(driver.UserName),
@@ -85,7 +102,8 @@ export const toSession = (fixture: ReplayFixture): Session =>
         IsSpectator: numeric(driver.IsSpectator),
       })),
     },
-  }) as unknown as Session;
+  } as unknown as Session;
+};
 
 /**
  * Feeds every frame of a fixture to a processor and returns the snapshot after

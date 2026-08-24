@@ -6,7 +6,7 @@ import {
   toSession,
   type ReplayFixture,
 } from '../../testing/replayFixture';
-import multiclassRace from '../../../test-data/fixtures/multiclass-race-limerock.json';
+import multiclassRace from '../../../test-data/fixtures/multiclass-road-america.json';
 
 const fixture = multiclassRace as unknown as ReplayFixture;
 
@@ -19,7 +19,11 @@ const fixture = multiclassRace as unknown as ReplayFixture;
 describe('StandingsProcessor over a real multiclass capture', () => {
   it('describes the field the fixture was taken from', () => {
     expect(fixture.meta.anonymised).toBe(true);
-    expect(classesIn(fixture).sort()).toEqual(['MX5 Cup 2016', 'Toyota GR86']);
+    expect(classesIn(fixture).sort()).toEqual([
+      'Dallara P217',
+      'GTP',
+      'IMSA23',
+    ]);
     expect(fixture.drivers.length).toBeGreaterThan(40);
 
     // A racing field, not a roster: an entry list can be large while nobody is
@@ -27,7 +31,7 @@ describe('StandingsProcessor over a real multiclass capture', () => {
     const onTrack = (
       fixture.frames.at(-1)?.CarIdxTrackSurface as number[]
     ).filter((surface) => surface > -1);
-    expect(onTrack.length).toBeGreaterThan(30);
+    expect(onTrack.length).toBeGreaterThan(50);
   });
 
   it('publishes a snapshot for every frame', () => {
