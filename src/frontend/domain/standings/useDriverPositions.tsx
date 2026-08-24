@@ -16,7 +16,6 @@ import {
   Standings,
   augmentStandingsWithIRating,
   groupStandingsByClass,
-  groupStandingsBySpeed,
   type LastTimeState,
 } from './createStandings';
 import { GlobalFlags, SessionState } from '@irdashies/types';
@@ -150,12 +149,10 @@ export const useCarState = () => {
 export const useDriverStandings = () => {
   const driverPositions = useDriverPositions();
   const relativeSettings = useRelativeSettings();
-  const standingsSettings = useStandingsSettings();
   const useLivePositionStandings = relativeSettings?.useLivePosition ?? false;
   const driverLivePositions = useDriverLivePositions({
     enabled: useLivePositionStandings,
   });
-  const customClassOrdering = standingsSettings?.customClassOrdering ?? false;
   const drivers = useDrivers();
   const radioActiveCarIdxs = useRadioActiveCarIdxs(
     (relativeSettings?.radio?.persistenceSeconds ?? 3) * 1000
@@ -300,7 +297,7 @@ export const useDriverStandings = () => {
       return filteredStandings;
     }
 
-    return augmentStandingsWithIRating(customClassOrdering ? groupStandingsBySpeed(filteredStandings) : groupStandingsByClass(filteredStandings))
+    return augmentStandingsWithIRating(groupStandingsByClass(filteredStandings))
       .flatMap(([, classStandings]) => classStandings)
       .sort((a, b) => (a?.position ?? 0) - (b?.position ?? 0));
   }, [
@@ -317,7 +314,6 @@ export const useDriverStandings = () => {
     driverLivePositions,
     fastestLapCarIdx,
     isOfficial,
-    customClassOrdering,
   ]);
 
   return driverStandings;
