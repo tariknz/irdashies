@@ -40,7 +40,7 @@ const HeaderCell = memo(
         tabIndex={0}
         className={`${className} cursor-help focus:outline-none focus:ring-1 focus:ring-sky-400`}
       >
-        {label}
+        <span className="text-[10px]">{label}</span>
       </span>
     </Tooltip>
   )
@@ -48,13 +48,22 @@ const HeaderCell = memo(
 HeaderCell.displayName = 'HeaderCell';
 
 /**
- * Widths for the numeric columns, shared by the header and the rows so the two
- * cannot drift apart. Sized in ch rather than px because the overlay theme
- * scales the font: a fixed pixel column clips the moment a user picks a larger
- * size. shrink-0 stops flex squeezing them below their content, which is what
- * made the lap times overlap.
+ * Widths for every column, shared by the header and the rows so the two cannot
+ * drift apart. Sized in ch rather than px because the overlay theme scales the
+ * font: a fixed pixel column clips the moment a user picks a larger size.
+ *
+ * Two rules keep the header over its values. shrink-0 stops a narrow window
+ * squeezing a cell but not its header. And a ch resolves against the element's
+ * own font size, so the header row must carry the same text-xs as the driver
+ * rows — the smaller label type is set on the label span inside each cell.
  */
 const COL = {
+  position: 'w-6 shrink-0 text-center',
+  carNumber: 'w-12 shrink-0 text-center border-l-2 px-1',
+  name: 'flex-1 min-w-[8ch] truncate px-1',
+  compound: 'w-5 shrink-0',
+  rating: 'w-16 shrink-0',
+  pit: 'w-5 shrink-0 text-center',
   gap: 'w-[6ch] shrink-0 px-1',
   interval: 'w-[6ch] shrink-0 px-1',
   best: 'w-[9ch] shrink-0 px-1',
@@ -63,36 +72,36 @@ const COL = {
 } as const;
 
 const StandingsHeader = memo(() => (
-  <div className="flex items-center px-1 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-900 border-b border-slate-700/50 flex-none">
+  <div className="sticky top-0 z-20 flex items-center px-1 py-0.5 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-900 border-b border-slate-700/50">
     <HeaderCell
       label="P"
       tip="Running order within the car class. Rows are grouped by class, leader first."
-      className="w-6 text-center"
+      className={COL.position}
     />
     <HeaderCell
       label="#"
       tip="Car number. The coloured bar to its left is the car's class."
-      className="w-12 shrink-0 text-center border-l-2 border-transparent px-1"
+      className={`${COL.carNumber} border-transparent`}
     />
     <HeaderCell
       label="Driver"
       tip="Driver name, in the format set on the Gantry options tab. Click any row to point the sim camera at that car — this only does anything in a replay or while spectating."
-      className="flex-1 truncate px-1 text-left"
+      className={`${COL.name} text-left`}
     />
     <HeaderCell
       label="T"
       tip="Tyre compound currently fitted, for cars that report one."
-      className="w-5 text-center"
+      className={`${COL.compound} text-center`}
     />
     <HeaderCell
       label="iR"
       tip="Driver's iRating at the start of the event."
-      className="w-16 text-right"
+      className={`${COL.rating} text-right`}
     />
     <HeaderCell
       label="Pit"
       tip="Shows PIT while the car is on pit road, and DNF once it has retired or been disqualified."
-      className="w-5 text-center"
+      className={COL.pit}
     />
     <HeaderCell
       label="Gap"
@@ -183,55 +192,59 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <StandingsHeader />
-      <div className="flex-1 overflow-y-auto min-h-0">
-        {standingsByClass.map(([classId, classDrivers]) => {
-          const firstDriver = classDrivers[0];
-          const carClass = firstDriver?.carClass;
-          const classColorHex =
-            carClass?.color !== undefined
-              ? `#${carClass.color.toString(16).padStart(6, '0')}`
-              : '#94a3b8';
-          return (
-            <div key={classId}>
-              {/* Class header */}
-              <div
-                className="flex items-center gap-2 bg-slate-900 px-2 py-0.5 border-y border-slate-700/30"
-                style={{
-                  borderLeftColor: classColorHex,
-                  borderLeftWidth: 2,
-                }}
-              >
-                <Tooltip
-                  content="Car class group. Position, gap and interval are all worked out within the class, not against the whole field."
-                  placement="bottom"
+      {/* One scroller for the header and the rows. A narrow window scrolls both
+          together instead of shrinking the columns out of line. */}
+      <div className="flex-1 min-h-0 overflow-auto scroll-pt-6">
+        <div className="min-w-min">
+          <StandingsHeader />
+          {standingsByClass.map(([classId, classDrivers]) => {
+            const firstDriver = classDrivers[0];
+            const carClass = firstDriver?.carClass;
+            const classColorHex =
+              carClass?.color !== undefined
+                ? `#${carClass.color.toString(16).padStart(6, '0')}`
+                : '#94a3b8';
+            return (
+              <div key={classId}>
+                {/* Class header */}
+                <div
+                  className="flex items-center gap-2 bg-slate-900 px-2 py-0.5 border-y border-slate-700/30"
+                  style={{
+                    borderLeftColor: classColorHex,
+                    borderLeftWidth: 2,
+                  }}
                 >
-                  <span
-                    tabIndex={0}
-                    className="text-xs font-extrabold uppercase tracking-widest cursor-help focus:outline-none focus:ring-1 focus:ring-sky-400"
-                    style={{ color: classColorHex }}
+                  <Tooltip
+                    content="Car class group. Position, gap and interval are all worked out within the class, not against the whole field."
+                    placement="bottom"
                   >
-                    {carClass?.name}
-                  </span>
-                </Tooltip>
+                    <span
+                      tabIndex={0}
+                      className="text-xs font-extrabold uppercase tracking-widest cursor-help focus:outline-none focus:ring-1 focus:ring-sky-400"
+                      style={{ color: classColorHex }}
+                    >
+                      {carClass?.name}
+                    </span>
+                  </Tooltip>
+                </div>
+                {/* Driver rows */}
+                {classDrivers.map((driver, idx) => (
+                  <GantryDriverRow
+                    key={driver.carIdx}
+                    driver={driver}
+                    idx={idx}
+                    followedCarIdx={followedCarIdx}
+                    followedRef={followedRef}
+                    isMultiClass={isMultiClass}
+                    highlightColorHex={highlightColorHex}
+                    nameFormat={nameFormat}
+                    onFocusDriver={handleFocusDriver}
+                  />
+                ))}
               </div>
-              {/* Driver rows */}
-              {classDrivers.map((driver, idx) => (
-                <GantryDriverRow
-                  key={driver.carIdx}
-                  driver={driver}
-                  idx={idx}
-                  followedCarIdx={followedCarIdx}
-                  followedRef={followedRef}
-                  isMultiClass={isMultiClass}
-                  highlightColorHex={highlightColorHex}
-                  nameFormat={nameFormat}
-                  onFocusDriver={handleFocusDriver}
-                />
-              ))}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -319,26 +332,26 @@ const GantryDriverRow = memo(
       >
         {/* P */}
         <span
-          className={`w-6 text-center font-bold ${tailwindStyles.classHeader} ${isPlayer ? 'text-amber-300' : 'text-white'}`}
+          className={`${COL.position} font-bold ${tailwindStyles.classHeader} ${isPlayer ? 'text-amber-300' : 'text-white'}`}
         >
           {driver.classPosition ?? driver.position}
         </span>
         {/* # */}
         <span
-          className={`w-12 shrink-0 text-center tabular-nums ${tailwindStyles.driverIcon} border-l-2 px-1 text-white`}
+          className={`${COL.carNumber} tabular-nums ${tailwindStyles.driverIcon} text-white`}
         >
           #{driver.driver.carNum}
         </span>
         {/* Driver Name */}
-        <span className="flex-1 truncate px-1">{displayName}</span>
+        <span className={COL.name}>{displayName}</span>
         {/* Tyre */}
-        <span className="w-5 flex items-center justify-center">
+        <span className={`${COL.compound} flex items-center justify-center`}>
           {driver.tireCompound !== undefined && driver.carId !== undefined && (
             <Compound tireCompound={driver.tireCompound} />
           )}
         </span>
         {/* iR */}
-        <span className="w-16 flex items-center justify-end">
+        <span className={`${COL.rating} flex items-center justify-end`}>
           <DriverRatingBadge
             license={driver.driver.license}
             rating={driver.driver.rating}
@@ -346,7 +359,7 @@ const GantryDriverRow = memo(
           />
         </span>
         {/* Pit */}
-        <span className="w-5 text-center text-xs">
+        <span className={`${COL.pit} text-xs`}>
           {pitLabel && (
             <span
               className={

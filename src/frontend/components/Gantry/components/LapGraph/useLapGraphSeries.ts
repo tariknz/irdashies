@@ -59,7 +59,7 @@ export interface LapGraphGeometry {
   byCarIdx: ReadonlyMap<number, LapGraphSeries>;
   /** Points actually stroked, after windowing and decimation. */
   drawnPointCount: number;
-  /** Cars drawn at context strength, for the legend's plain count. */
+  /** Cars drawn at context strength, i.e. the faint background field. */
   contextCount: number;
 }
 
