@@ -16,8 +16,14 @@ const fixture = multiclassRace as unknown as ReplayFixture;
  * thought of; a real capture brings the field's actual class layout, position
  * spread and pit state along with it.
  */
-describe('StandingsProcessor over a real multiclass capture', () => {
-  it('describes the field the fixture was taken from', () => {
+/**
+ * These two guard the fixture, not the processor: they fail if a fixture is
+ * re-cut from a window that no longer contains a real field. They deliberately
+ * survive mutations of the processor, which is why they are kept apart from the
+ * tests below rather than counted alongside them.
+ */
+describe('multiclass fixture integrity', () => {
+  it('was taken from a window with a real field in it', () => {
     expect(fixture.meta.anonymised).toBe(true);
     expect(classesIn(fixture).sort()).toEqual([
       'Dallara P217',
@@ -34,6 +40,17 @@ describe('StandingsProcessor over a real multiclass capture', () => {
     expect(onTrack.length).toBeGreaterThan(40);
   });
 
+  it('runs forward in time without gaps or resets', () => {
+    const times = fixture.frames.map((f) => f.SessionTime as number);
+
+    expect(times.at(-1)).toBeGreaterThan(times[0]);
+    for (let i = 1; i < times.length; i++) {
+      expect(times[i]).toBeGreaterThan(times[i - 1]);
+    }
+  });
+});
+
+describe('StandingsProcessor over a real multiclass capture', () => {
   it('publishes a snapshot for every frame', () => {
     const snapshots = replayThrough(fixture, new StandingsProcessor(), (s) => ({
       ...s,
@@ -98,6 +115,10 @@ describe('StandingsProcessor over a real multiclass capture', () => {
     const last = snapshots.at(-1);
     if (!last) throw new Error('no snapshots');
 
+    // Without this the loop below passes trivially on an empty snapshot.
+    const placed = last.carIdxClassPosition.filter((p) => p > 0);
+    expect(placed.length).toBeGreaterThan(30);
+
     last.carIdxClassPosition.forEach((classPosition, carIdx) => {
       if (classPosition <= 0) return;
       if ((last.carIdxTrackSurface[carIdx] ?? -1) <= -1) return;
@@ -105,14 +126,5 @@ describe('StandingsProcessor over a real multiclass capture', () => {
       if (classId === undefined) return;
       expect(classPosition).toBeLessThanOrEqual(classSizes.get(classId) ?? 0);
     });
-  });
-
-  it('keeps session time moving forward across the window', () => {
-    const times = fixture.frames.map((f) => f.SessionTime as number);
-
-    expect(times.at(-1)).toBeGreaterThan(times[0]);
-    for (let i = 1; i < times.length; i++) {
-      expect(times[i]).toBeGreaterThan(times[i - 1]);
-    }
   });
 });

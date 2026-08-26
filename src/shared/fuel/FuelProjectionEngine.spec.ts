@@ -206,49 +206,66 @@ describe('FuelProjectionEngine lap validity', () => {
 });
 
 describe('FuelProjectionEngine projection', () => {
+  // lapDistPct 0 keeps the in-lap blending path out of it, so these isolate
+  // which historical figure the projection is built from.
   const input = (
     overrides: Partial<Parameters<FuelProjectionEngine['project']>[0]> = {}
   ) => ({
     avgConsumption: 0,
-    currentFuel: 40,
+    currentFuel: 50,
     currentLapUsage: 0,
     lap: 5,
-    lapDistPct: 0.5,
-    lapStartFuel: 42,
+    lapDistPct: 0,
+    lapStartFuel: 50,
     lastLapUsage: 0,
     qualifyConsumption: null,
     ...overrides,
   });
 
-  it('prefers the last lap when it is close to the running average', () => {
-    const engine = createEngine();
+  it('projects the running average when there is nothing closer', () => {
+    expect(createEngine().project(input({ avgConsumption: 2.4 }))).toBeCloseTo(
+      2.4,
+      2
+    );
+  });
 
-    const projected = engine.project(
+  it('prefers the last lap when it is close to the running average', () => {
+    // Within 20% of the average, so the most recent lap is the better guide.
+    const projected = createEngine().project(
       input({ avgConsumption: 3.0, lastLapUsage: 3.1 })
     );
 
-    expect(projected).toBeGreaterThan(0);
+    expect(projected).toBeCloseTo(3.1, 2);
+    expect(projected).not.toBeCloseTo(3.0, 2);
+  });
+
+  it('keeps the average when the last lap is an outlier', () => {
+    // A fuel save lap or a safety car lap is not evidence of race consumption.
+    const projected = createEngine().project(
+      input({ avgConsumption: 3.0, lastLapUsage: 1.0 })
+    );
+
+    expect(projected).toBeCloseTo(3.0, 2);
   });
 
   it('falls back to qualifying consumption before any race laps', () => {
-    // First racing lap with no history: qualifying is the only real evidence
-    // of how much this car uses.
-    const engine = createEngine();
-
-    const projected = engine.project(
-      input({ avgConsumption: 0, lastLapUsage: 0, qualifyConsumption: 2.75 })
+    const projected = createEngine().project(
+      input({ qualifyConsumption: 2.75 })
     );
 
-    expect(projected).toBeGreaterThan(0);
-    expect(projected).toBeLessThan(4);
+    expect(projected).toBeCloseTo(2.75, 2);
   });
 
   it('falls back to a nominal figure when nothing is known at all', () => {
     // Better a rough number than zero, which would read as "no fuel needed".
-    const engine = createEngine();
+    expect(createEngine().project(input())).toBeCloseTo(3.2, 2);
+  });
 
-    const projected = engine.project(input());
+  it('ignores qualifying once a race average exists', () => {
+    const projected = createEngine().project(
+      input({ avgConsumption: 4.0, qualifyConsumption: 2.75 })
+    );
 
-    expect(projected).toBeGreaterThan(0);
+    expect(projected).toBeCloseTo(4.0, 2);
   });
 });

@@ -39,21 +39,6 @@ describe('colors', () => {
     // The class colour lookup only runs in multiclass mode. Single class
     // sessions fall through to the highlight colour instead, which is why a
     // class split that leaves the sim reporting one class renders untinted.
-    it.each([
-      [16767577, 'yellow'],
-      [3395327, 'sky'],
-      [16734344, 'red'],
-      [11430911, 'cyan'],
-      [5504887, 'pink'],
-      [13849600, 'purple'],
-    ])('resolves iracing class colour %s to its own palette entry', (color) => {
-      const style = getTailwindStyle(color, undefined, true);
-
-      expect(style.driverIcon).toBeTruthy();
-      expect(style.classHeader).toBeTruthy();
-      expect(style.canvasFill).toBeTruthy();
-    });
-
     it('gives each iracing class colour a distinct style', () => {
       const styles = [16767577, 3395327, 16734344, 11430911, 5504887, 13849600]
         .map((color) => getTailwindStyle(color, undefined, true))

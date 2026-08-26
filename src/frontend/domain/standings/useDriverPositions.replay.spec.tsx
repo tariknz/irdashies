@@ -101,6 +101,8 @@ describe('relative standings over a real multiclass field', () => {
     });
 
     const pcts = result.current.map((r) => r.relativePct);
+    // An empty window is trivially ordered, so assert there is one first.
+    expect(pcts.length).toBeGreaterThan(1);
     for (let i = 1; i < pcts.length; i++) {
       expect(pcts[i]).toBeLessThanOrEqual(pcts[i - 1]);
     }
@@ -112,6 +114,8 @@ describe('relative standings over a real multiclass field', () => {
       wrapper: harness.wrapper,
     });
 
+    // Both bounds: an empty window would satisfy the upper one on its own.
+    expect(result.current.length).toBeGreaterThan(1);
     expect(result.current.length).toBeLessThanOrEqual(buffer * 2 + 1);
   });
 

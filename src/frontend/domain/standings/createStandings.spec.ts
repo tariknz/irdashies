@@ -8,6 +8,7 @@ import {
   augmentStandingsWithInterval,
 } from './createStandings';
 import type { Standings } from './createStandings';
+import { useReferenceLapStore } from '@irdashies/context';
 import type {
   Session,
   Telemetry,
@@ -1064,6 +1065,136 @@ describe('createStandings', () => {
       expect(filteredDrivers[0][1].length).toBe(10);
       expect(filteredDrivers[0][1][0].name).toBe('1. Bob');
       expect(filteredDrivers[0][1][1].name).toBe('3. Charlie');
+    });
+  });
+
+  describe('augmentStandingsWithGap with live positions', () => {
+    const standing = (
+      carIdx: number,
+      classPosition: number,
+      delta = 0
+    ): Standings =>
+      ({
+        carIdx,
+        classPosition,
+        delta,
+        onTrack: true,
+        currentSessionType: 'Race',
+        isPlayer: false,
+        lap: 10,
+        driver: {
+          name: `Driver ${carIdx}`,
+          carNum: `${carIdx}`,
+          license: 'A',
+          rating: 1000,
+        },
+        carClass: {
+          id: 1,
+          color: 0,
+          name: 'GT3',
+          relativeSpeed: 1,
+          estLapTime: 100,
+        },
+        fastestTime: 90,
+        hasFastestTime: false,
+        lastTime: 91,
+        onPitRoad: false,
+        tireCompound: 0,
+        dnf: false,
+        repair: false,
+        penalty: false,
+        slowdown: false,
+        relativePct: 0,
+      }) as Standings;
+
+    const linearReferenceLap = (lapTime: number) => {
+      const points = 100;
+      const interval = 1 / points;
+      const times = new Float32Array(points);
+      const pointPos = new Float32Array(points);
+      const tangents = new Float32Array(points);
+      for (let i = 0; i < points; i++) {
+        times[i] = i * interval * lapTime;
+        pointPos[i] = i * interval;
+        tangents[i] = lapTime;
+      }
+      return {
+        startTime: 0,
+        finishTime: lapTime,
+        times,
+        pointPos,
+        tangents,
+        interval,
+        pointsCount: points,
+        lastTrackedPct: 1,
+        isCleanLap: true,
+      };
+    };
+
+    const seedReferenceLaps = (refLap: unknown) => {
+      useReferenceLapStore.setState({
+        getReferenceLap: () => refLap,
+      } as never);
+    };
+
+    it('measures the gap along the reference lap when one is available', () => {
+      seedReferenceLaps(linearReferenceLap(100));
+      const grouped: [string, Standings[]][] = [
+        ['1', [standing(0, 1, 0), standing(1, 2, 25)]],
+      ];
+
+      const result = augmentStandingsWithGap(
+        grouped,
+        [10, 10],
+        [0.5, 0.25],
+        [false, false],
+        [50, 25],
+        true,
+        'Race'
+      );
+
+      // Quarter of a 100s lap behind the leader.
+      expect(result[0][1][1].gap?.value).toBeCloseTo(25, 0);
+    });
+
+    it('falls back to class estimates while either car is in the pits', () => {
+      // A reference lap describes a racing lap. Once a car is on pit road its
+      // track position no longer maps to a lap time, so the estimate is used.
+      seedReferenceLaps(linearReferenceLap(100));
+      const grouped: [string, Standings[]][] = [
+        ['1', [standing(0, 1, 0), standing(1, 2, 25)]],
+      ];
+
+      const result = augmentStandingsWithGap(
+        grouped,
+        [10, 10],
+        [0.5, 0.25],
+        [false, true],
+        [50, 25],
+        true,
+        'Race'
+      );
+
+      expect(result[0][1][1].gap?.value).toBeGreaterThan(0);
+    });
+
+    it('falls back to class estimates when no reference lap has been set', () => {
+      seedReferenceLaps({ ...linearReferenceLap(100), finishTime: -1 });
+      const grouped: [string, Standings[]][] = [
+        ['1', [standing(0, 1, 0), standing(1, 2, 25)]],
+      ];
+
+      const result = augmentStandingsWithGap(
+        grouped,
+        [10, 10],
+        [0.5, 0.25],
+        [false, false],
+        [50, 25],
+        true,
+        'Race'
+      );
+
+      expect(result[0][1][1].gap?.value).toBeGreaterThan(0);
     });
   });
 });
