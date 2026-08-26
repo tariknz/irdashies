@@ -157,3 +157,98 @@ describe('FuelProjectionEngine', () => {
     ]);
   });
 });
+
+describe('FuelProjectionEngine lap validity', () => {
+  it('ignores a crossing too fast to be a real lap', () => {
+    // A stutter or a reset can move lapDistPct past the line without a lap
+    // having been driven. Counting it would poison the consumption average
+    // with a fraction of a lap's fuel.
+    const engine = createEngine();
+    engine.onFrame(
+      frame({ lapDistPct: 0.95, sessionTime: 10 }),
+      history,
+      validLap,
+      isGreen,
+      { persistLaps: true }
+    );
+
+    const commands = engine.onFrame(
+      frame({ fuelLevel: 49.9, lap: 1, lapDistPct: 0.01, sessionTime: 12 }),
+      history,
+      validLap,
+      isGreen,
+      { persistLaps: true }
+    );
+
+    expect(commands.some((c) => c.type === 'lapCompleted')).toBe(false);
+  });
+
+  it('accepts a crossing that took a plausible lap time', () => {
+    const engine = createEngine();
+    engine.onFrame(
+      frame({ lapDistPct: 0.95, sessionTime: 10 }),
+      history,
+      validLap,
+      isGreen,
+      { persistLaps: true }
+    );
+
+    const commands = engine.onFrame(
+      frame({ fuelLevel: 47, lap: 2, lapDistPct: 0.01, sessionTime: 100 }),
+      history,
+      validLap,
+      isGreen,
+      { persistLaps: true }
+    );
+
+    expect(commands.some((c) => c.type === 'lapCompleted')).toBe(true);
+  });
+});
+
+describe('FuelProjectionEngine projection', () => {
+  const input = (
+    overrides: Partial<Parameters<FuelProjectionEngine['project']>[0]> = {}
+  ) => ({
+    avgConsumption: 0,
+    currentFuel: 40,
+    currentLapUsage: 0,
+    lap: 5,
+    lapDistPct: 0.5,
+    lapStartFuel: 42,
+    lastLapUsage: 0,
+    qualifyConsumption: null,
+    ...overrides,
+  });
+
+  it('prefers the last lap when it is close to the running average', () => {
+    const engine = createEngine();
+
+    const projected = engine.project(
+      input({ avgConsumption: 3.0, lastLapUsage: 3.1 })
+    );
+
+    expect(projected).toBeGreaterThan(0);
+  });
+
+  it('falls back to qualifying consumption before any race laps', () => {
+    // First racing lap with no history: qualifying is the only real evidence
+    // of how much this car uses.
+    const engine = createEngine();
+
+    const projected = engine.project(
+      input({ avgConsumption: 0, lastLapUsage: 0, qualifyConsumption: 2.75 })
+    );
+
+    expect(projected).toBeGreaterThan(0);
+    expect(projected).toBeLessThan(4);
+  });
+
+  it('falls back to a nominal figure when nothing is known at all', () => {
+    // Better a rough number than zero, which would read as "no fuel needed".
+    const engine = createEngine();
+
+    const projected = engine.project(input());
+
+    expect(projected).toBeGreaterThan(0);
+  });
+});

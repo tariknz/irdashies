@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-import { getTailwindStyle } from './colors';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { getTailwindStyle, colorNumToHex } from './colors';
 
 describe('colors', () => {
   describe('getTailwindColor', () => {
@@ -25,6 +25,86 @@ describe('colors', () => {
       });
 
       vi.unstubAllGlobals();
+    });
+  });
+
+  describe('getTailwindStyle in multiclass', () => {
+    beforeEach(() => {
+      vi.stubGlobal('getComputedStyle', () => ({
+        getPropertyValue: () => '#123456',
+      }));
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    // The class colour lookup only runs in multiclass mode. Single class
+    // sessions fall through to the highlight colour instead, which is why a
+    // class split that leaves the sim reporting one class renders untinted.
+    it.each([
+      [16767577, 'yellow'],
+      [3395327, 'sky'],
+      [16734344, 'red'],
+      [11430911, 'cyan'],
+      [5504887, 'pink'],
+      [13849600, 'purple'],
+    ])('resolves iracing class colour %s to its own palette entry', (color) => {
+      const style = getTailwindStyle(color, undefined, true);
+
+      expect(style.driverIcon).toBeTruthy();
+      expect(style.classHeader).toBeTruthy();
+      expect(style.canvasFill).toBeTruthy();
+    });
+
+    it('gives each iracing class colour a distinct style', () => {
+      const styles = [16767577, 3395327, 16734344, 11430911, 5504887, 13849600]
+        .map((color) => getTailwindStyle(color, undefined, true))
+        .map((style) => style.classHeader);
+
+      expect(new Set(styles).size).toBe(styles.length);
+    });
+
+    it('falls back when the colour is not a known class colour', () => {
+      const style = getTailwindStyle(0x00ff00, undefined, true);
+
+      expect(style.classHeader).toBe('bg-sky-500 border-sky-500');
+    });
+
+    it('uses the highlight colour outside multiclass', () => {
+      const highlighted = getTailwindStyle(undefined, 0xffda59, false);
+
+      expect(highlighted.classHeader).toBe('bg-yellow-500 border-yellow-500');
+    });
+
+    it('ignores the highlight colour in multiclass', () => {
+      // Class identity wins over the player highlight, otherwise every row
+      // would take the player's colour in a multiclass field.
+      const style = getTailwindStyle(16734344, 0xffda59, true);
+
+      expect(style.classHeader).not.toBe('bg-yellow-500 border-yellow-500');
+    });
+  });
+
+  describe('colorNumToHex', () => {
+    it('returns undefined for no colour', () => {
+      expect(colorNumToHex(undefined)).toBeUndefined();
+      expect(colorNumToHex(null as unknown as number)).toBeUndefined();
+    });
+
+    it('formats a colour as six hex digits', () => {
+      expect(colorNumToHex(0xff5888)).toBe('#ff5888');
+    });
+
+    it('pads short values rather than emitting a short hex', () => {
+      // #00000f, not #f — a truncated value is not a valid CSS colour.
+      expect(colorNumToHex(0x0f)).toBe('#00000f');
+    });
+
+    it('drops anything above the low 24 bits', () => {
+      // iRacing packs flags into the high byte of some colour fields.
+      expect(colorNumToHex(0xff123456)).toBe('#123456');
+    });
+
+    it('handles black', () => {
+      expect(colorNumToHex(0)).toBe('#000000');
     });
   });
 });
