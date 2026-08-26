@@ -52,9 +52,17 @@ export const SplitPane = memo(
       clampPercent(readStored(storageKey) ?? defaultPercent, minPercent)
     );
     const draggingRef = useRef(false);
+    // Only the pointer that started the drag may move or end it. A second
+    // finger landing on the divider would otherwise steer it or drop it.
+    const pointerIdRef = useRef<number | null>(null);
     // Tracks the latest ratio outside of React state so pointerup can persist
     // it even if the last pointermove's setState hasn't committed yet.
     const percentRef = useRef(percent);
+
+    const endDrag = useCallback(() => {
+      draggingRef.current = false;
+      pointerIdRef.current = null;
+    }, []);
 
     const remember = useCallback(
       (value: number) => {
@@ -71,6 +79,7 @@ export const SplitPane = memo(
         event.currentTarget.focus();
         event.currentTarget.setPointerCapture(event.pointerId);
         draggingRef.current = true;
+        pointerIdRef.current = event.pointerId;
       },
       []
     );
@@ -78,9 +87,15 @@ export const SplitPane = memo(
     const handlePointerMove = useCallback(
       (event: ReactPointerEvent<HTMLDivElement>) => {
         const element = containerRef.current;
-        if (!draggingRef.current || !element) return;
+        if (
+          !draggingRef.current ||
+          pointerIdRef.current !== event.pointerId ||
+          !element
+        ) {
+          return;
+        }
         if (event.buttons === 0) {
-          draggingRef.current = false;
+          endDrag();
           return;
         }
         const rect = element.getBoundingClientRect();
@@ -92,19 +107,21 @@ export const SplitPane = memo(
         percentRef.current = next;
         setPercent(next);
       },
-      [minPercent]
+      [minPercent, endDrag]
     );
 
     const handlePointerUp = useCallback(
       (event: ReactPointerEvent<HTMLDivElement>) => {
-        if (!draggingRef.current) return;
-        draggingRef.current = false;
+        if (!draggingRef.current || pointerIdRef.current !== event.pointerId) {
+          return;
+        }
+        endDrag();
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
           event.currentTarget.releasePointerCapture(event.pointerId);
         }
         remember(percentRef.current);
       },
-      [remember]
+      [remember, endDrag]
     );
 
     const nudge = useCallback(

@@ -134,6 +134,26 @@ describe('SplitPane', () => {
     expect(divider()).toHaveAttribute('aria-valuenow', '50');
   });
 
+  it('ignores a second pointer during an active drag', () => {
+    renderSplit();
+
+    const handle = divider();
+    fireEvent.pointerDown(handle, { pointerId: 1, button: 0, isPrimary: true });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 700, buttons: 1 });
+
+    // A second finger on the divider must not steer it...
+    fireEvent.pointerMove(handle, { pointerId: 2, clientX: 200, buttons: 1 });
+    expect(divider()).toHaveAttribute('aria-valuenow', '70');
+
+    // ...nor end the first pointer's drag.
+    fireEvent.pointerUp(handle, { pointerId: 2 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 400, buttons: 1 });
+    expect(divider()).toHaveAttribute('aria-valuenow', '40');
+
+    fireEvent.pointerUp(handle, { pointerId: 1 });
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('40');
+  });
+
   it('stops dragging when the pointer capture is lost', () => {
     renderSplit();
 
