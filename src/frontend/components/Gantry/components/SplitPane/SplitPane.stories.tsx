@@ -1,7 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { SplitPane } from './SplitPane';
 
-const Panel = ({ title, tone }: { title: string; tone: string }) => (
+interface PanelProps {
+  title: string;
+  tone: string;
+}
+const Panel = ({ title, tone }: PanelProps) => (
   <div className={`h-full p-3 text-white text-sm ${tone}`}>
     <div className="font-bold uppercase tracking-wider text-xs text-slate-400">
       {title}

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SplitPane } from './SplitPane';
 
@@ -146,5 +146,27 @@ describe('SplitPane', () => {
     fireEvent.pointerMove(handle, { pointerId: 1, clientX: 200, buttons: 0 });
 
     expect(divider()).toHaveAttribute('aria-valuenow', '70');
+  });
+
+  it('persists the latest ratio when the final move and release land in the same batch', () => {
+    renderSplit();
+
+    const handle = divider();
+    fireEvent.pointerDown(handle, { pointerId: 1, button: 0, isPrimary: true });
+
+    // Nesting inside one act() defers the re-render from pointermove until
+    // after pointerup has also run, so pointerup sees stale React state if
+    // it isn't reading the ratio from a ref.
+    act(() => {
+      fireEvent.pointerMove(handle, {
+        pointerId: 1,
+        clientX: 700,
+        buttons: 1,
+      });
+      fireEvent.pointerUp(handle, { pointerId: 1 });
+    });
+
+    expect(divider()).toHaveAttribute('aria-valuenow', '70');
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('70');
   });
 });

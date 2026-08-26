@@ -113,4 +113,19 @@ describe('LapGraphDriverList', () => {
 
     expect(onToggle).not.toHaveBeenCalled();
   });
+
+  it('does not report a player with no completed laps as shown', () => {
+    const { onToggle } = renderList({
+      drivers: drivers.map((entry) =>
+        entry.isPlayer ? { ...entry, hasLine: false } : entry
+      ),
+    });
+
+    const row = screen.getByTitle('Hamilton has no completed laps yet');
+    expect(row).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(row);
+
+    expect(onToggle).not.toHaveBeenCalled();
+  });
 });

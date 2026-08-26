@@ -28,7 +28,10 @@ const roster: DriverListEntry[] = SURNAMES.map((displayName, index) => ({
   hasLine: index < SURNAMES.length - 2,
 }));
 
-const Harness = ({ drivers }: { drivers: DriverListEntry[] }) => {
+interface HarnessProps {
+  drivers: DriverListEntry[];
+}
+const Harness = ({ drivers }: HarnessProps) => {
   const [shown, setShown] = useState<readonly number[]>([0, 1]);
   const [hovered, setHovered] = useState<number | null>(null);
   return (

@@ -52,6 +52,9 @@ export const SplitPane = memo(
       clampPercent(readStored(storageKey) ?? defaultPercent, minPercent)
     );
     const draggingRef = useRef(false);
+    // Tracks the latest ratio outside of React state so pointerup can persist
+    // it even if the last pointermove's setState hasn't committed yet.
+    const percentRef = useRef(percent);
 
     const remember = useCallback(
       (value: number) => {
@@ -82,12 +85,12 @@ export const SplitPane = memo(
         }
         const rect = element.getBoundingClientRect();
         if (rect.width <= 0) return;
-        setPercent(
-          clampPercent(
-            ((event.clientX - rect.left) / rect.width) * 100,
-            minPercent
-          )
+        const next = clampPercent(
+          ((event.clientX - rect.left) / rect.width) * 100,
+          minPercent
         );
+        percentRef.current = next;
+        setPercent(next);
       },
       [minPercent]
     );
@@ -99,15 +102,16 @@ export const SplitPane = memo(
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
           event.currentTarget.releasePointerCapture(event.pointerId);
         }
-        remember(percent);
+        remember(percentRef.current);
       },
-      [percent, remember]
+      [remember]
     );
 
     const nudge = useCallback(
       (delta: number) => {
         setPercent((current) => {
           const next = clampPercent(current + delta, minPercent);
+          percentRef.current = next;
           remember(next);
           return next;
         });
@@ -125,8 +129,10 @@ export const SplitPane = memo(
           nudge(KEY_STEP_PERCENT);
         } else if (event.key === 'Home') {
           event.preventDefault();
-          setPercent(clampPercent(defaultPercent, minPercent));
-          remember(clampPercent(defaultPercent, minPercent));
+          const reset = clampPercent(defaultPercent, minPercent);
+          percentRef.current = reset;
+          setPercent(reset);
+          remember(reset);
         }
       },
       [nudge, defaultPercent, minPercent, remember]
@@ -134,12 +140,13 @@ export const SplitPane = memo(
 
     const handleDoubleClick = useCallback(() => {
       const reset = clampPercent(defaultPercent, minPercent);
+      percentRef.current = reset;
       setPercent(reset);
       remember(reset);
     }, [defaultPercent, minPercent, remember]);
 
     return (
-      <div ref={containerRef} className="flex flex-1 overflow-hidden">
+      <div ref={containerRef} className="relative flex flex-1 overflow-hidden">
         <div
           className="overflow-hidden shrink-0 grow-0"
           style={{ flexBasis: `${percent}%` }}
@@ -162,7 +169,10 @@ export const SplitPane = memo(
           onKeyDown={handleKeyDown}
           onDoubleClick={handleDoubleClick}
           title="Drag to resize. Double-click to reset."
-          className="w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-slate-700/50 hover:bg-sky-500/70 focus:outline-none focus:bg-sky-500/70"
+          // Taken out of flex flow so the panes split exactly percent /
+          // (100 - percent) of the container, not of container-minus-divider.
+          className="absolute top-0 bottom-0 w-1.5 -translate-x-1/2 z-10 cursor-col-resize touch-none select-none bg-slate-700/50 hover:bg-sky-500/70 focus:outline-none focus:bg-sky-500/70"
+          style={{ left: `${percent}%` }}
         />
         <div className="flex-1 min-w-0 overflow-hidden">{right}</div>
       </div>

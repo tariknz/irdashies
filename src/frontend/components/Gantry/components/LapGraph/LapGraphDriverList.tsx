@@ -46,15 +46,13 @@ export const LapGraphDriverList = memo(
         <div className="shrink-0 pb-1 text-slate-500 font-bold uppercase tracking-wider">
           Drivers
         </div>
-        <div
-          className="flex-1 min-h-0 overflow-y-auto"
-          onPointerLeave={() => onHover(null)}
-        >
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {drivers.length === 0 && (
             <div className="text-slate-600">Waiting for the grid.</div>
           )}
           {drivers.map((entry) => {
-            const isShown = entry.isPlayer || shown.has(entry.carIdx);
+            const isShown =
+              entry.hasLine && (entry.isPlayer || shown.has(entry.carIdx));
             const isFocused = entry.carIdx === focusedCarIdx;
             // The player's line is always drawn, so toggling it would change
             // nothing on screen while latching the auto-pin set off.
@@ -76,11 +74,11 @@ export const LapGraphDriverList = memo(
                 onFocus={() => onHover(entry.carIdx)}
                 onBlur={() => onHover(null)}
                 title={
-                  entry.isPlayer
-                    ? 'Your own line is always drawn'
-                    : entry.hasLine
-                      ? `${isShown ? 'Hide' : 'Show'} ${entry.displayName}`
-                      : `${entry.displayName} has no completed laps yet`
+                  !entry.hasLine
+                    ? `${entry.displayName} has no completed laps yet`
+                    : entry.isPlayer
+                      ? 'Your own line is always drawn'
+                      : `${isShown ? 'Hide' : 'Show'} ${entry.displayName}`
                 }
                 className={[
                   'flex items-center gap-1.5 w-full px-1 py-0.5 rounded-sm text-left',
