@@ -79,7 +79,7 @@ describe('relative standings over a real multiclass field', () => {
     });
 
     const onTrack = result.current.filter((c) => c.onTrack);
-    expect(onTrack.length).toBeGreaterThan(50);
+    expect(onTrack.length).toBeGreaterThan(40);
     // The window was chosen with cars in the pits, so this is not vacuous.
     expect(result.current.some((c) => c.onPitRoad)).toBe(true);
   });

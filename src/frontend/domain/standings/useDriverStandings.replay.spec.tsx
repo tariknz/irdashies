@@ -70,11 +70,7 @@ describe('class standings over a real multiclass field', () => {
     }
   });
 
-  it('has no gaps to report without session results', () => {
-    // A known limit of these fixtures rather than a bug: the extractor captures
-    // telemetry frames and the roster, but not SessionInfo.ResultsPositions.
-    // Gap, interval, position change and iRating all derive from those results,
-    // so they stay empty here. Capturing results is what would unlock them.
+  it('gives the class leader no gap and everyone behind a growing one', () => {
     const { result } = renderHook(
       () =>
         useDriverStandings(config({ gap: { enabled: true } }), {
@@ -83,14 +79,79 @@ describe('class standings over a real multiclass field', () => {
       { wrapper: harness.wrapper }
     );
 
-    const withGaps = flatten(result.current).filter(
-      (d) => (d.gap?.value ?? 0) > 0
-    );
-    expect(withGaps).toHaveLength(0);
+    let sawAGap = false;
+    for (const [, drivers] of result.current) {
+      if (drivers.length < 2) continue;
+      // The class leader shows a dash rather than zero.
+      expect(drivers[0].gap?.value).toBeUndefined();
 
-    // The grouping and ordering above do not depend on results, which is why
-    // they are worth asserting on this fixture and gaps are not.
-    expect(result.current.length).toBe(3);
+      // Only cars on the lead lap can be compared this way. Once a car is laps
+      // down its gap is dominated by the laps it has lost, and retirements sit
+      // in the order on their last known position rather than a time.
+      const leadLapGaps = drivers
+        .slice(1)
+        .filter((d) => (d.gap?.laps ?? 0) === 0)
+        .map((d) => d.gap?.value)
+        .filter((g): g is number => typeof g === 'number');
+      if (leadLapGaps.length > 1) {
+        sawAGap = true;
+        // Gap is to the class leader, so it grows down the running order.
+        const sorted = [...leadLapGaps].sort((a, b) => a - b);
+        expect(leadLapGaps).toEqual(sorted);
+      }
+    }
+    // Guards against the whole assertion passing because nothing computed.
+    expect(sawAGap).toBe(true);
+  });
+
+  it('reports interval as the gap to the car ahead', () => {
+    const { result } = renderHook(
+      () =>
+        useDriverStandings(
+          config({
+            gap: { enabled: true },
+            interval: { enabled: true },
+          }),
+          { showAll: true }
+        ),
+      { wrapper: harness.wrapper }
+    );
+
+    const intervals = flatten(result.current)
+      .map((d) => d.interval)
+      .filter((i): i is number => typeof i === 'number');
+
+    expect(intervals.length).toBeGreaterThan(10);
+    // An interval is a gap between neighbours, so it is never larger than the
+    // gap to the class leader for the same car.
+    for (const [, drivers] of result.current) {
+      for (const driver of drivers.slice(1)) {
+        if (driver.interval === undefined || driver.gap?.value === undefined) {
+          continue;
+        }
+        expect(driver.interval).toBeLessThanOrEqual(driver.gap.value + 0.001);
+      }
+    }
+  });
+
+  it('works out position change against the qualifying grid', () => {
+    const { result } = renderHook(
+      () =>
+        useDriverStandings(config({ positionChange: { enabled: true } }), {
+          showAll: true,
+        }),
+      { wrapper: harness.wrapper }
+    );
+
+    const changes = flatten(result.current)
+      .map((d) => d.positionChange)
+      .filter((c): c is number => typeof c === 'number');
+
+    expect(changes.length).toBeGreaterThan(10);
+    // Somebody gained and somebody lost; an all-zero column would mean the
+    // qualifying results never reached the calculation.
+    expect(changes.some((c) => c > 0)).toBe(true);
+    expect(changes.some((c) => c < 0)).toBe(true);
   });
 
   it('slices the field down when showAll is off', () => {

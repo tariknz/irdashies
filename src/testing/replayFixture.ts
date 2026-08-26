@@ -23,7 +23,15 @@ export interface ReplayFixture {
   weekend: Record<string, string>;
   /** DriverCarIdx / PaceCarIdx as the sim reported them. */
   driverInfo?: Record<string, string>;
-  sessions: { SessionNum: number; SessionType?: string }[];
+  sessions: {
+    SessionNum: number;
+    SessionType?: string;
+    /** Gap, interval, position change and iRating all derive from these. */
+    ResultsPositions?: Record<string, number>[];
+    ResultsFastestLap?: Record<string, number>[];
+  }[];
+  /** Grid positions, used for position change in race sessions. */
+  qualifying?: Record<string, number>[];
   drivers: Record<string, string | number>[];
   frames: Record<string, number | boolean | number[] | boolean[]>[];
 }
@@ -68,9 +76,11 @@ export const toSession = (fixture: ReplayFixture): Session => {
       Sessions: fixture.sessions.map((session) => ({
         SessionNum: session.SessionNum,
         SessionType: session.SessionType,
-        ResultsPositions: [],
+        ResultsPositions: session.ResultsPositions ?? [],
+        ResultsFastestLap: session.ResultsFastestLap ?? [],
       })),
     },
+    QualifyResultsInfo: { Results: fixture.qualifying ?? [] },
     DriverInfo: {
       DriverCarIdx:
         driverCarIdx !== undefined

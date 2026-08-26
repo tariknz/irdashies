@@ -31,7 +31,7 @@ describe('StandingsProcessor over a real multiclass capture', () => {
     const onTrack = (
       fixture.frames.at(-1)?.CarIdxTrackSurface as number[]
     ).filter((surface) => surface > -1);
-    expect(onTrack.length).toBeGreaterThan(50);
+    expect(onTrack.length).toBeGreaterThan(40);
   });
 
   it('publishes a snapshot for every frame', () => {

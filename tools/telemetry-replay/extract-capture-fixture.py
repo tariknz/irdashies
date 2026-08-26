@@ -127,80 +127,101 @@ def read_frames(capture, session_num, t_from, t_to, hz, variables, shards):
 
 
 def parse_session_yaml(path):
-    """Minimal YAML reader for the roster fields a fixture needs.
+    """Reads the roster, session list and results the overlay actually uses."""
+    import yaml
 
-    The capture's session.yaml is iRacing's own dump. Rather than pull in a YAML
-    dependency, read the handful of scalar fields under DriverInfo/Drivers.
-    """
-    drivers = []
-    current = None
-    weekend = {}
-    driver_info = {}
-    sessions = []
-    section = None
     with open(path, "r", encoding="utf-8", errors="replace") as handle:
-        for raw in handle:
-            line = raw.rstrip("\n")
-            stripped = line.strip()
-            if line.startswith("WeekendInfo:"):
-                section = "weekend"
-                continue
-            if line.startswith("DriverInfo:"):
-                section = "drivers"
-                continue
-            if line.startswith("SessionInfo:"):
-                section = "sessions"
-                continue
-            if line and not line.startswith(" "):
-                section = None
+        doc = yaml.safe_load(handle)
 
-            if section == "weekend" and ":" in stripped:
-                key, _, value = stripped.partition(":")
-                if key in ("TrackDisplayName", "TrackID", "TrackLength",
-                           "NumCarClasses", "TeamRacing", "EventType"):
-                    weekend[key] = value.strip()
+    weekend_src = doc.get("WeekendInfo") or {}
+    weekend = {
+        key: weekend_src.get(key)
+        for key in (
+            "TrackDisplayName", "TrackID", "TrackLength", "NumCarClasses",
+            "TeamRacing", "EventType",
+        )
+        if weekend_src.get(key) is not None
+    }
 
-            if section == "sessions" and stripped.startswith("- SessionNum:"):
-                sessions.append({"SessionNum": int(stripped.split(":")[1])})
-            if section == "sessions" and stripped.startswith("SessionType:") and sessions:
-                sessions[-1]["SessionType"] = stripped.split(":", 1)[1].strip()
+    driver_src = doc.get("DriverInfo") or {}
+    driver_info = {
+        "DriverCarIdx": driver_src.get("DriverCarIdx"),
+        "PaceCarIdx": driver_src.get("PaceCarIdx"),
+    }
+    driver_keys = (
+        "CarIdx", "UserName", "UserID", "CarNumber", "CarClassID",
+        "CarClassShortName", "CarClassColor", "CarClassRelSpeed",
+        "CarClassEstLapTime", "CarID", "TeamName", "IRating", "LicString",
+        "CarIsPaceCar", "IsSpectator", "FlairID",
+    )
+    drivers = [
+        {k: d.get(k) for k in driver_keys if d.get(k) is not None}
+        for d in (driver_src.get("Drivers") or [])
+    ]
 
-            if section == "drivers" and current is None and ":" in stripped:
-                key, _, value = stripped.partition(":")
-                if key.strip() in ("DriverCarIdx", "PaceCarIdx"):
-                    driver_info[key.strip()] = value.strip()
+    # Gap, interval, position change and iRating all derive from these. Without
+    # them a fixture can only exercise grouping and ordering.
+    result_keys = (
+        "Position", "ClassPosition", "CarIdx", "Lap", "Time", "FastestLap",
+        "FastestTime", "LastTime", "LapsComplete", "LapsLed", "ReasonOutId",
+    )
+    sessions = []
+    for entry in (doc.get("SessionInfo") or {}).get("Sessions") or []:
+        sessions.append({
+            "SessionNum": entry.get("SessionNum"),
+            "SessionType": entry.get("SessionType"),
+            "ResultsPositions": [
+                {k: r.get(k) for k in result_keys if r.get(k) is not None}
+                for r in (entry.get("ResultsPositions") or [])
+            ],
+            "ResultsFastestLap": [
+                {k: r.get(k) for k in ("CarIdx", "FastestLap", "FastestTime")
+                 if r.get(k) is not None}
+                for r in (entry.get("ResultsFastestLap") or [])
+            ],
+        })
 
-            if section == "drivers":
-                if stripped.startswith("- CarIdx:"):
-                    current = {"CarIdx": int(stripped.split(":")[1])}
-                    drivers.append(current)
-                elif current is not None and ":" in stripped:
-                    key, _, value = stripped.partition(":")
-                    key = key.strip()
-                    if key in (
-                        "UserName", "UserID", "CarNumber", "CarClassID",
-                        "CarClassShortName", "CarClassColor", "CarClassRelSpeed",
-                        "CarClassEstLapTime", "CarID", "TeamName", "IRating",
-                        "LicString", "CarIsPaceCar", "IsSpectator", "FlairID",
-                    ):
-                        current[key] = value.strip()
-    return weekend, drivers, sessions, driver_info
+    qualifying = [
+        {k: r.get(k) for k in result_keys if r.get(k) is not None}
+        for r in ((doc.get("QualifyResultsInfo") or {}).get("Results") or [])
+    ]
+
+    return weekend, drivers, sessions, driver_info, qualifying
 
 
-SURNAMES = [
-    "Adler", "Baumann", "Costa", "Duval", "Eriksen", "Faber", "Gallo", "Haas",
-    "Ibarra", "Jensen", "Keller", "Lindqvist", "Moreau", "Novak", "Oliveira",
-    "Petrov", "Quinn", "Rossi", "Sandberg", "Toledo", "Ueda", "Vogel", "Wexler",
-    "Ximenes", "Yamada", "Zunino",
+DRIVER_NAMES = [
+    "Ayrton Senna", "Juan Fangio", "Alain Prost", "Michael Schumacher",
+    "Jim Clark", "Jackie Stewart", "Niki Lauda", "James Hunt",
+    "Gilles Villeneuve", "Stirling Moss", "Alberto Ascari", "Graham Hill",
+    "Mario Andretti", "AJ Foyt", "Al Unser", "Richard Petty",
+    "Dale Earnhardt", "Jeff Gordon", "Jimmie Johnson", "Sebastien Loeb",
+    "Sebastien Ogier", "Tommi Makinen", "Walter Rohrl", "Juha Kankkunen",
+    "Jacky Ickx", "Derek Bell", "Tom Kristensen", "Allan McNish",
+    "Michele Alboreto", "Ronnie Peterson", "Jochen Rindt", "Jack Brabham",
+    "John Surtees", "Mike Hawthorn", "Dan Gurney", "Denny Hulme",
+    "Clay Regazzoni", "Carlos Reutemann", "Jacques Laffite", "Rene Arnoux",
+    "Riccardo Patrese", "Nigel Mansell", "Nelson Piquet", "Gerhard Berger",
+    "Jean Alesi", "Heinz Frentzen", "Rubens Barrichello", "Juan Montoya",
+    "Kimi Raikkonen", "Fernando Alonso", "Jenson Button", "Mark Webber",
+    "Felipe Massa", "Keke Rosberg", "Sebastian Vettel", "Lewis Hamilton",
+    "Daniel Ricciardo", "Max Verstappen", "Charles Leclerc", "Lando Norris",
+    "Janet Guthrie", "Shirley Muldowney", "Danica Patrick", "Simona Silvestro",
+    "Tatiana Calderon", "Jamie Chadwick", "Michele Mouton", "Desire Wilson",
+    "Lella Lombardi", "Sara Christian",
 ]
 
 
 def anonymise(drivers):
-    """Replaces real identities while keeping the field's shape intact."""
+    """Replaces real identities while keeping the field's shape intact.
+
+    Famous drivers rather than invented surnames, so nobody mistakes a fixture
+    for a real entry list, and so a failing test names someone memorable.
+    """
     for index, driver in enumerate(drivers):
-        driver["UserID"] = str(900000 + index)
-        first = chr(ord("A") + index % 26)
-        driver["UserName"] = f"{first}. {SURNAMES[index % len(SURNAMES)]}{index // 26 or ''}"
+        driver["UserID"] = 900000 + index
+        name = DRIVER_NAMES[index % len(DRIVER_NAMES)]
+        suffix = index // len(DRIVER_NAMES)
+        driver["UserName"] = f"{name} {suffix + 1}" if suffix else name
         if driver.get("TeamName"):
             driver["TeamName"] = f"Team {index + 1}"
     return drivers
@@ -225,7 +246,7 @@ def main():
     )
     args = parser.parse_args()
 
-    weekend, drivers, sessions, driver_info = parse_session_yaml(
+    weekend, drivers, sessions, driver_info, qualifying = parse_session_yaml(
         f"{args.capture}/session.yaml"
     )
     if not args.no_anon:
@@ -256,6 +277,7 @@ def main():
         "weekend": weekend,
         "driverInfo": driver_info,
         "sessions": sessions,
+        "qualifying": qualifying,
         "drivers": drivers,
         "frames": frames,
     }
