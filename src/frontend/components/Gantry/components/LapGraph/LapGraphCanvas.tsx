@@ -10,7 +10,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type RefObject,
 } from 'react';
-import { Play, PushPin } from '@phosphor-icons/react';
+import { Play } from '@phosphor-icons/react';
 import { useElementSize } from '@irdashies/context';
 import {
   formatAxisValue,
@@ -615,14 +615,6 @@ export const LapGraphCanvas = memo(
       );
     }, [geometry.window, plotSize.width]);
 
-    const legend = useMemo(
-      () =>
-        geometry.ordered
-          .filter((prepared) => prepared.tier !== 'context')
-          .map((prepared) => prepared.source),
-      [geometry.ordered]
-    );
-
     const hasData = geometry.ordered.length > 0;
 
     return (
@@ -758,30 +750,6 @@ export const LapGraphCanvas = memo(
               }}
             />
           </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 pt-1 shrink-0">
-          {legend.map((entry) => (
-            <button
-              key={entry.carIdx}
-              type="button"
-              onClick={() => onTogglePin(entry.carIdx)}
-              className="flex items-center gap-1 text-slate-300 hover:text-white"
-            >
-              <span
-                className="w-1.5 h-3 rounded-xs"
-                style={{ backgroundColor: entry.color }}
-              />
-              <span className="tabular-nums">#{entry.carNumber}</span>
-              <span className="max-w-32 truncate">{entry.displayName}</span>
-              <PushPin size={11} weight="fill" className="text-slate-500" />
-            </button>
-          ))}
-          {geometry.contextCount > 0 && (
-            <span className="text-slate-500">
-              {geometry.contextCount} other cars
-            </span>
-          )}
         </div>
       </div>
     );

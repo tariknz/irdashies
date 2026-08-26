@@ -195,7 +195,7 @@ describe('LapGraphCanvas', () => {
     await waitFor(() => expect(contextFor('lap-graph-brush').strokes).toBe(60));
   });
 
-  it('keeps axes and legend in the DOM rather than the canvas', async () => {
+  it('keeps the caption and controls in the DOM rather than the canvas', async () => {
     renderChart();
 
     await waitFor(() =>
@@ -203,8 +203,6 @@ describe('LapGraphCanvas', () => {
         screen.getByText('seconds vs reference pace, higher is better')
       ).toBeInTheDocument()
     );
-    // 60 cars, less two pins and the player.
-    expect(screen.getByText('57 other cars')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /follow live/i })
     ).toBeInTheDocument();

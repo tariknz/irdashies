@@ -3,10 +3,14 @@ import { GantryTabBar } from './components/GantryTabBar/GantryTabBar';
 import { GantryStandings } from './components/GantryStandings/GantryStandings';
 import { GantryIncidents } from './components/GantryIncidents/GantryIncidents';
 import { LapGraphView } from './components/LapGraph/LapGraphView';
+import { SplitPane } from './components/SplitPane/SplitPane';
 import { useRaceControlBridge, useSessionDrivers } from '@irdashies/context';
 import type { LapGraphMode } from '@irdashies/domain';
 
 type GantryView = 'standings-incidents' | 'lap-graph';
+
+/** Where the standings/incidents divider sits. A UI preference, not config. */
+const SPLIT_STORAGE_KEY = 'gantryStandingsSplitPercent';
 
 const GantryInner = memo(() => {
   const [activeView, setActiveView] = useState<GantryView>(
@@ -52,14 +56,12 @@ const GantryInner = memo(() => {
         onFollowChange={setFollowedCarIdx}
       />
       {activeView === 'standings-incidents' && (
-        <div className="flex flex-1 overflow-hidden">
-          <div className="w-1/2 border-r border-slate-700/50 overflow-hidden">
-            <GantryStandings followedCarIdx={followedCarIdx} />
-          </div>
-          <div className="w-1/2 overflow-hidden">
-            <GantryIncidents />
-          </div>
-        </div>
+        <SplitPane
+          label="Standings and incidents split"
+          storageKey={SPLIT_STORAGE_KEY}
+          left={<GantryStandings followedCarIdx={followedCarIdx} />}
+          right={<GantryIncidents />}
+        />
       )}
       {activeView === 'lap-graph' && (
         <div className="flex-1 overflow-hidden">
