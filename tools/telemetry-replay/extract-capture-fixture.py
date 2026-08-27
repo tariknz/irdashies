@@ -18,6 +18,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 
 # Everything the processors and stores read. Kept explicit so a fixture stays
 # small and it is obvious what a scenario exercises.
@@ -116,29 +117,47 @@ def read_frames(capture, session_num, t_from, t_to, hz, variables, shards):
     unzstd = subprocess.Popen(
         ["zstd", "-dcq", *paths], stdout=subprocess.PIPE
     )
-    proc = subprocess.Popen(
-        ["jq", "-c", jq],
-        stdin=unzstd.stdout,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        text=True,
-    )
-    unzstd.stdout.close()
-    step = max(1, round(SOURCE_RATE_HZ / hz))
-    frames = []
-    for index, line in enumerate(proc.stdout):
-        if index % step:
-            continue
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            frames.append(json.loads(line))
-        except json.JSONDecodeError:
-            continue
-    proc.stdout.close()
-    proc.wait()
-    unzstd.wait()
+    # jq diagnostics go to a temp file rather than a pipe: we drain stdout to
+    # completion first, and a pipe that filled up in the meantime would deadlock.
+    with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as jq_errors:
+        proc = subprocess.Popen(
+            ["jq", "-c", jq],
+            stdin=unzstd.stdout,
+            stdout=subprocess.PIPE,
+            stderr=jq_errors,
+            text=True,
+        )
+        unzstd.stdout.close()
+        step = max(1, round(SOURCE_RATE_HZ / hz))
+        frames = []
+        for index, line in enumerate(proc.stdout):
+            if index % step:
+                continue
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                frames.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+        proc.stdout.close()
+        proc.wait()
+        unzstd.wait()
+        jq_errors.seek(0)
+        message = jq_errors.read().strip()
+
+    # A truncated shard or a mid-stream jq failure still emits frames before it
+    # dies. Returning those would write a fixture that is quietly short instead
+    # of obviously broken, and a short fixture reads as a real racing scenario.
+    if unzstd.returncode:
+        print(
+            f"zstd failed ({unzstd.returncode}) reading shards in {capture}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if proc.returncode:
+        print(f"jq failed ({proc.returncode}): {message}", file=sys.stderr)
+        sys.exit(1)
     return frames
 
 
