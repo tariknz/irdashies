@@ -122,6 +122,8 @@ export function createPreviewChannelRuntime(
     onDriverJoined: () => () => undefined,
     onDriverLeft: () => () => undefined,
     onSessionNumChange: () => () => undefined,
+    onSessionTypeChange: () => () => undefined,
+    onDrivingStateChange: () => () => undefined,
     onDisconnect: () => () => undefined,
     _onEnter: () => undefined,
     _onTelemetry: () => undefined,

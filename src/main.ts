@@ -6,7 +6,15 @@ import {
   getSessionLifecycle,
   onBridgeChanged,
 } from './app/bridge/iracingSdk/setup';
-import { getOrCreateDefaultDashboard } from './app/storage/dashboards';
+import {
+  getOrCreateDefaultDashboard,
+  getCurrentProfileId,
+  getProfile,
+  setCurrentProfile,
+} from './app/storage/dashboards';
+import { getSessionProfileMap } from './app/storage/appSettings';
+import { createSessionProfileSwitcher } from './app/services/sessionProfileSwitcher';
+import type { SessionProfileSwitcher } from './app/services/sessionProfileSwitcher';
 import { setupTaskbar, KeybindingManager } from './app';
 import {
   publishDashboardUpdates,
@@ -103,6 +111,7 @@ const channelBus = new ChannelBus({
   deliveryEnabled: !perfRun.enabled || perfRun.channelDelivery === 'on',
 });
 let disconnectLifecycleChannel: (() => void) | undefined;
+let sessionProfileSwitcher: SessionProfileSwitcher | undefined;
 let incidentRuntime: IncidentRuntime | undefined;
 let disposeLapHistoryRuntime: (() => void) | undefined;
 // Resolved per call: a runtime outlives any single SDK bridge, so it must
@@ -226,6 +235,15 @@ app.on('ready', async () => {
     getSessionLifecycle(),
     channelBus
   );
+  // Applies the profile mapped to each session type, and to spotting. Inert
+  // until the user maps at least one, so this changes nothing by default.
+  sessionProfileSwitcher = createSessionProfileSwitcher({
+    lifecycle: getSessionLifecycle(),
+    getMap: getSessionProfileMap,
+    getCurrentProfileId,
+    profileExists: (profileId) => getProfile(profileId) !== null,
+    switchProfile: (profileId) => setCurrentProfile(profileId),
+  });
   await iRacingSDKSetup(overlayManager, channelBus);
 
   // Perform one-time cleanup of old reference laps
@@ -405,6 +423,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
   shutdown: async () => {
     keybindingManager?.stopGamepad();
     disconnectLifecycleChannel?.();
+    sessionProfileSwitcher?.dispose();
     disposeRendererDataSubscriptions?.();
     incidentRuntime?.dispose();
     disposeLapHistoryRuntime?.();

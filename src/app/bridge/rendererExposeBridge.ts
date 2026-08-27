@@ -6,6 +6,7 @@ import type {
   DashboardBridge,
   DashboardLayout,
   DashboardProfile,
+  SessionProfileMap,
   SaveDashboardOptions,
   ContainerBoundsInfo,
   FuelCalculatorBridge,
@@ -193,6 +194,12 @@ export function exposeBridge() {
     },
     setCycleProfiles: (enabled: boolean) => {
       return ipcRenderer.invoke('setCycleProfiles', enabled);
+    },
+    getSessionProfileMap: () => {
+      return ipcRenderer.invoke('getSessionProfileMap');
+    },
+    setSessionProfileMap: (map: SessionProfileMap) => {
+      return ipcRenderer.invoke('setSessionProfileMap', map);
     },
     getShowProfileBanner: () => {
       return ipcRenderer.invoke('getShowProfileBanner');

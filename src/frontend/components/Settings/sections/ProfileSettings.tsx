@@ -1,7 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from '@irdashies/context';
-import type { DashboardProfile } from '@irdashies/types';
+import type {
+  DashboardProfile,
+  ProfileTriggerKey,
+  SessionProfileMap,
+} from '@irdashies/types';
+import {
+  SESSION_PROFILE_KEYS,
+  SESSION_PROFILE_LABELS,
+  SPOTTING_TRIGGER_KEY,
+  SPOTTING_TRIGGER_LABEL,
+} from '@irdashies/types';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import {
   CopySimpleIcon,
@@ -9,6 +19,42 @@ import {
   CaretDownIcon,
   TrashIcon,
 } from '@phosphor-icons/react';
+
+const SessionProfileRow = ({
+  triggerKey,
+  label,
+  profiles,
+  value,
+  onChange,
+}: {
+  triggerKey: ProfileTriggerKey;
+  label: string;
+  profiles: DashboardProfile[];
+  value: string;
+  onChange: (triggerKey: ProfileTriggerKey, profileId: string) => void;
+}) => (
+  <div className="flex items-center justify-between gap-4">
+    <label
+      htmlFor={`session-profile-${triggerKey}`}
+      className="text-md font-medium text-slate-300"
+    >
+      {label}
+    </label>
+    <select
+      id={`session-profile-${triggerKey}`}
+      value={value}
+      onChange={(e) => onChange(triggerKey, e.target.value)}
+      className="bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm min-w-52"
+    >
+      <option value="">Don&apos;t switch</option>
+      {profiles.map((profile) => (
+        <option key={profile.id} value={profile.id}>
+          {profile.name}
+        </option>
+      ))}
+    </select>
+  </div>
+);
 
 export const ProfileSettings = () => {
   const {
@@ -25,13 +71,32 @@ export const ProfileSettings = () => {
 
   const [cycleProfiles, setCycleProfiles] = useState(false);
   const [showProfileBanner, setShowProfileBanner] = useState(true);
+  const [sessionProfileMap, setSessionProfileMap] = useState<SessionProfileMap>(
+    {}
+  );
 
   useEffect(() => {
     bridge.getCycleProfiles?.().then((v) => setCycleProfiles(v ?? false));
     bridge
       .getShowProfileBanner?.()
       .then((v) => setShowProfileBanner(v ?? true));
+    bridge.getSessionProfileMap?.().then((v) => setSessionProfileMap(v ?? {}));
   }, [bridge]);
+
+  const handleSessionProfileChange = async (
+    triggerKey: ProfileTriggerKey,
+    profileId: string
+  ) => {
+    // An empty selection drops the key entirely rather than storing a blank,
+    // so "no profile" and "profile deleted" stay the same thing on disk.
+    const next = Object.fromEntries(
+      Object.entries({ ...sessionProfileMap, [triggerKey]: profileId }).filter(
+        ([, id]) => Boolean(id)
+      )
+    ) as SessionProfileMap;
+    await bridge.setSessionProfileMap?.(next);
+    setSessionProfileMap(next);
+  };
 
   const handleToggleCycleProfiles = async (checked: boolean) => {
     await bridge.setCycleProfiles?.(checked);
@@ -472,6 +537,50 @@ export const ProfileSettings = () => {
               />
               <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
+          </div>
+        </div>
+
+        {/* Session mapping */}
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-3">
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Switch Profile By Session
+            </h3>
+            <p className="text-sm text-gray-400 mb-3">
+              Set a profile for each session type and it is applied
+              automatically as the event moves from practice through to the
+              race. A session left on Don&apos;t switch keeps whatever profile
+              you are already on, so to come back to a layout, map that session
+              to it rather than leaving it unset.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            {SESSION_PROFILE_KEYS.map((key) => (
+              <SessionProfileRow
+                key={key}
+                triggerKey={key}
+                label={SESSION_PROFILE_LABELS[key]}
+                profiles={profiles}
+                value={sessionProfileMap[key] ?? ''}
+                onChange={handleSessionProfileChange}
+              />
+            ))}
+          </div>
+
+          <div className="border-t border-slate-700 pt-3 space-y-2">
+            <SessionProfileRow
+              triggerKey={SPOTTING_TRIGGER_KEY}
+              label={SPOTTING_TRIGGER_LABEL}
+              profiles={profiles}
+              value={sessionProfileMap[SPOTTING_TRIGGER_KEY] ?? ''}
+              onChange={handleSessionProfileChange}
+            />
+            <p className="text-sm text-slate-400">
+              Applied while you are in a session but not in the car, whichever
+              session type it is, and handed back as soon as you are driving
+              again.
+            </p>
           </div>
         </div>
 
