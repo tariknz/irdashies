@@ -1170,12 +1170,14 @@ describe('createStandings', () => {
         [10, 10],
         [0.5, 0.25],
         [false, true],
-        [50, 25],
+        // Deliberately not 25: the reference path would also produce 25 from
+        // these track positions, so a shared value cannot tell them apart.
+        [50, 80],
         true,
         'Race'
       );
 
-      expect(result[0][1][1].gap?.value).toBeGreaterThan(0);
+      expect(result[0][1][1].gap?.value).toBeCloseTo(70, 0);
     });
 
     it('falls back to class estimates when no reference lap has been set', () => {
@@ -1189,12 +1191,12 @@ describe('createStandings', () => {
         [10, 10],
         [0.5, 0.25],
         [false, false],
-        [50, 25],
+        [50, 80],
         true,
         'Race'
       );
 
-      expect(result[0][1][1].gap?.value).toBeGreaterThan(0);
+      expect(result[0][1][1].gap?.value).toBeCloseTo(70, 0);
     });
   });
 });

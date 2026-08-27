@@ -82,12 +82,15 @@ export const toSession = (fixture: ReplayFixture): Session => {
     },
     QualifyResultsInfo: { Results: fixture.qualifying ?? [] },
     DriverInfo: {
+      // Nullish, not undefined: the extractor emits null when the capture had
+      // no value, and numeric(null) is 0 — which would silently name car 0 as
+      // the player and empty every relative window.
       DriverCarIdx:
-        driverCarIdx !== undefined
+        driverCarIdx != null
           ? numeric(driverCarIdx)
           : numeric(fixture.drivers[0]?.CarIdx),
       PaceCarIdx:
-        paceCarIdx !== undefined
+        paceCarIdx != null
           ? numeric(paceCarIdx)
           : paceCar
             ? numeric(paceCar.CarIdx)

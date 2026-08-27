@@ -13,7 +13,9 @@ Writes JSON to stdout.
 """
 
 import argparse
+import glob
 import json
+import os
 import subprocess
 import sys
 
@@ -103,12 +105,25 @@ def read_frames(capture, session_num, t_from, t_to, hz, variables, shards):
         f"select(.SessionTime >= {t_from} and .SessionTime <= {t_to}) | "
         "{" + keep + "}"
     )
-    cmd = (
-        f"cd {capture} && zstd -dcq {shards} | jq -c '{jq}' 2>/dev/null"
+    # Resolve the shard glob here rather than in a shell string. A capture path
+    # containing a space would otherwise split into several arguments to cd, and
+    # the extraction would silently yield no frames.
+    paths = sorted(glob.glob(os.path.join(capture, shards)))
+    if not paths:
+        print(f"no shards matched {shards} in {capture}", file=sys.stderr)
+        sys.exit(1)
+
+    unzstd = subprocess.Popen(
+        ["zstd", "-dcq", *paths], stdout=subprocess.PIPE
     )
     proc = subprocess.Popen(
-        ["bash", "-lc", cmd], stdout=subprocess.PIPE, text=True
+        ["jq", "-c", jq],
+        stdin=unzstd.stdout,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
     )
+    unzstd.stdout.close()
     step = max(1, round(SOURCE_RATE_HZ / hz))
     frames = []
     for index, line in enumerate(proc.stdout):
@@ -123,6 +138,7 @@ def read_frames(capture, session_num, t_from, t_to, hz, variables, shards):
             continue
     proc.stdout.close()
     proc.wait()
+    unzstd.wait()
     return frames
 
 

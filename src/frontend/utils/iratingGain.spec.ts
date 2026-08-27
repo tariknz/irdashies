@@ -65,19 +65,29 @@ describe('calculateIRatingGain edge cases', () => {
     expect(calculateIRatingGain([])).toEqual([]);
   });
 
-  it('never drives a rating below zero', () => {
-    // A low rated driver finishing last in a strong field can compute a loss
-    // larger than their rating. iRacing floors at zero rather than going
-    // negative, and so must the prediction.
-    const results = calculateIRatingGain([
-      { driver: 'a', finishRank: 1, startIRating: 9000, started: true },
-      { driver: 'b', finishRank: 2, startIRating: 9000, started: true },
-      { driver: 'c', finishRank: 3, startIRating: 20, started: true },
-    ]);
-
-    for (const result of results) {
-      expect(result.newIRating).toBeGreaterThanOrEqual(0);
+  it('floors a rating at zero rather than going negative', () => {
+    // The favourite by a distance finishing last loses far more than it has.
+    // A low rated driver finishing last cannot trigger this — they were
+    // expected to finish there and actually gain.
+    const field = [
+      { driver: 'favourite', finishRank: 20, startIRating: 100, started: true },
+    ];
+    for (let i = 0; i < 19; i++) {
+      field.push({
+        driver: `rest${i}`,
+        finishRank: i + 1,
+        startIRating: 1,
+        started: true,
+      });
     }
+
+    const target = calculateIRatingGain(field).find(
+      (r) => r.raceResult.driver === 'favourite'
+    );
+
+    // The raw change is a bigger loss than the rating it is applied to.
+    expect(target?.iratingChange).toBeLessThan(-100);
+    expect(target?.newIRating).toBe(0);
   });
 
   it('handles a field where nobody started', () => {
