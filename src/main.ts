@@ -66,6 +66,7 @@ import { ChannelBus, setupChannelBridge } from './app/bridge/channelBridge';
 import { connectSessionLifecycleChannel } from './app/bridge/sessionLifecycleChannel';
 import { setupRendererDataSubscriptions } from './app/bridge/rendererDataSubscriptions';
 import { PerfHeapProfiler } from './app/perfHeapProfiler';
+import { createBeforeQuitHandler } from './app/shutdownCoordinator';
 
 const safeErrorDetails = (error: unknown) => {
   const code =
@@ -397,40 +398,28 @@ app.on('quit', () => {
   analytics.shutdown();
 });
 
-type ShutdownFlushState = 'idle' | 'flushing' | 'complete';
-let shutdownFlushState: ShutdownFlushState = 'idle';
+const SHUTDOWN_FLUSH_TIMEOUT_MS = 5_000;
 
-app.on('before-quit', (event) => {
-  overlayManager.markQuitting();
-  // app.quit() below emits before-quit again. Once the async flush has
-  // completed, let that second event proceed without preventing it.
-  if (shutdownFlushState === 'complete') return;
-
-  // Electron does not await promises returned by before-quit handlers, so
-  // postpone shutdown while incident persistence finishes.
-  event.preventDefault();
-  if (shutdownFlushState === 'flushing') return;
-  shutdownFlushState = 'flushing';
-  keybindingManager?.stopGamepad();
-  disconnectLifecycleChannel?.();
-  disposeRendererDataSubscriptions?.();
-  incidentRuntime?.dispose();
-  disposeLapHistoryRuntime?.();
-  channelBus.dispose();
-  // Synchronous flush so any pending debounced reference-lap write completes
-  // before the process exits.
-  flushReferenceLapsOnShutdown();
-  // Incident and lap-history writes are debounced, so anything still pending
-  // would be lost.
-  void Promise.all([
-    flushIncidentsOnShutdown().catch((err) =>
-      log.error('[RaceControl] Shutdown flush failed:', err)
-    ),
-    flushLapHistoryOnShutdown().catch((err) =>
-      log.error('[LapHistory] Shutdown flush failed:', err)
-    ),
-  ]).finally(() => {
-    shutdownFlushState = 'complete';
-    app.quit();
-  });
+const handleBeforeQuit = createBeforeQuitHandler({
+  prepareToQuit: () => overlayManager.markQuitting(),
+  shutdown: async () => {
+    keybindingManager?.stopGamepad();
+    disconnectLifecycleChannel?.();
+    disposeRendererDataSubscriptions?.();
+    incidentRuntime?.dispose();
+    disposeLapHistoryRuntime?.();
+    channelBus.dispose();
+    // Storage writes are debounced, so drain all pending queues within the
+    // coordinator deadline before the process exits.
+    await Promise.all([
+      flushReferenceLapsOnShutdown(),
+      flushIncidentsOnShutdown(),
+      flushLapHistoryOnShutdown(),
+    ]);
+  },
+  quit: () => app.quit(),
+  reportFailure: (err) => log.error('[Shutdown] Cleanup failed:', err),
+  timeoutMs: SHUTDOWN_FLUSH_TIMEOUT_MS,
 });
+
+app.on('before-quit', handleBeforeQuit);

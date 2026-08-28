@@ -218,18 +218,20 @@ describe('referenceLaps storage', () => {
   });
 
   describe('flushReferenceLapsOnShutdown', () => {
-    it('writes any pending data synchronously', () => {
+    it('writes pending data through the asynchronous queue', async () => {
       saveReferenceLap(1, 2, 3, makeLap(60));
-      flushReferenceLapsOnShutdown();
+      await flushReferenceLapsOnShutdown();
 
-      expect(mockWriteFileSync).toHaveBeenCalledTimes(1);
-      const written = JSON.parse(mockWriteFileSync.mock.calls[0][1] as string);
+      expect(mockWriteFileSync).not.toHaveBeenCalled();
+      expect(mockWriteFile).toHaveBeenCalledTimes(1);
+      const written = JSON.parse(mockWriteFile.mock.calls[0][1] as string);
       expect(written['1_2_3'].finishTime).toBe(60);
     });
 
-    it('is a no-op when no save has happened (cache never loaded)', () => {
-      flushReferenceLapsOnShutdown();
+    it('is a no-op when no save has happened (cache never loaded)', async () => {
+      await flushReferenceLapsOnShutdown();
       expect(mockWriteFileSync).not.toHaveBeenCalled();
+      expect(mockWriteFile).not.toHaveBeenCalled();
     });
   });
 
