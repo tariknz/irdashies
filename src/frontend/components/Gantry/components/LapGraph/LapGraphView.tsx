@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import {
   classReferenceLap,
@@ -23,6 +23,8 @@ import {
 } from '../../../shared/DriverName/DriverName';
 import { LapGraphCanvas } from './LapGraphCanvas';
 import type { LapGraphSeries } from './LapGraphCanvas';
+import { LapGraphDriverList } from './LapGraphDriverList';
+import type { DriverListEntry } from './LapGraphDriverList';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { useGantrySettings } from '../../hooks/useGantrySettings';
 import { autoPinCarIdxs } from './lapGraphAutoPin';
@@ -99,6 +101,14 @@ const buildMembers = (
 const membersSignature = (members: readonly ClassMember[]): string =>
   members
     .map((m) => `${m.carIdx}|${m.carNumber}|${m.displayName}|${m.isPlayer}`)
+    .join(',');
+
+/** Live class positions, as a primitive the side list can memoise on. */
+const positionsSignature = (
+  drivers: ReturnType<typeof useDriverStandings>[number][1]
+): string =>
+  drivers
+    .map((d) => `${d.carIdx}:${d.classPosition ?? d.position ?? ''}`)
     .join(',');
 
 const axisCaptionFor = (
@@ -215,6 +225,11 @@ export const LapGraphView = memo(
 
     const pinnedCarIdxs = chosenPins ?? autoPins;
 
+    // Hovering a name in the side list lifts that line above the field. It
+    // outranks the Follow control for as long as the pointer is on the row.
+    const [hoveredCarIdx, setHoveredCarIdx] = useState<number | null>(null);
+    const focusedCarIdx = hoveredCarIdx ?? followedCarIdx;
+
     const togglePin = useCallback(
       (carIdx: number) => {
         const base = chosenPins ?? autoPins;
@@ -313,6 +328,41 @@ export const LapGraphView = memo(
       () => axisCaptionFor(mode, built.reference),
       [mode, built.reference]
     );
+
+    // Positions move on every standings tick. They are read here rather than
+    // carried on `members`, so a place swap re-sorts the side list without
+    // rebuilding a series for every car in the class.
+    const positionsKey = useMemo(
+      () => positionsSignature(activeClass?.drivers ?? []),
+      [activeClass]
+    );
+
+    /** The whole class in running order, lapped or not, drawn or not. */
+    const roster = useMemo<DriverListEntry[]>(() => {
+      const drawn = new Set(built.series.map((entry) => entry.carIdx));
+      const positions = new Map<number, number | undefined>(
+        (activeClass?.drivers ?? []).map((driver) => [
+          driver.carIdx,
+          driver.classPosition ?? driver.position,
+        ])
+      );
+      return members
+        .map((member) => ({
+          carIdx: member.carIdx,
+          carNumber: member.carNumber,
+          displayName: member.displayName,
+          isPlayer: member.isPlayer,
+          position: positions.get(member.carIdx),
+          hasLine: drawn.has(member.carIdx),
+        }))
+        .sort(
+          (a, b) =>
+            (a.position ?? Number.MAX_SAFE_INTEGER) -
+            (b.position ?? Number.MAX_SAFE_INTEGER)
+        );
+      // Deliberately keyed on the positions signature, not the list identity.
+      // eslint-disable-next-line @eslint-react/exhaustive-deps
+    }, [members, built.series, positionsKey]);
 
     const emptyMessage = useMemo(() => {
       if (sessionType && sessionType !== 'Race') {
@@ -413,22 +463,32 @@ export const LapGraphView = memo(
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 p-3">
-          {built.series.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-slate-600 text-sm text-center px-4">
-              {emptyMessage}
-            </div>
-          ) : (
-            <LapGraphCanvas
-              series={built.series}
-              mode={mode}
-              axisCaption={axisCaption}
-              pinnedCarIdxs={pinnedCarIdxs}
-              focusedCarIdx={followedCarIdx}
-              onTogglePin={togglePin}
-              defaultLapWindow={lapGraphSettings?.lapWindow}
-            />
-          )}
+        <div className="flex-1 min-h-0 flex gap-2 p-3 text-xs">
+          <div className="flex-1 min-w-0">
+            {built.series.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-slate-600 text-sm text-center px-4">
+                {emptyMessage}
+              </div>
+            ) : (
+              <LapGraphCanvas
+                series={built.series}
+                mode={mode}
+                axisCaption={axisCaption}
+                pinnedCarIdxs={pinnedCarIdxs}
+                focusedCarIdx={focusedCarIdx}
+                onTogglePin={togglePin}
+                defaultLapWindow={lapGraphSettings?.lapWindow}
+              />
+            )}
+          </div>
+          <LapGraphDriverList
+            drivers={roster}
+            classColor={classColor}
+            shownCarIdxs={pinnedCarIdxs}
+            focusedCarIdx={focusedCarIdx}
+            onToggle={togglePin}
+            onHover={setHoveredCarIdx}
+          />
         </div>
       </div>
     );

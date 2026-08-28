@@ -27,7 +27,7 @@ let cache: Map<string, ReferenceLap> | null = null;
 /**
  * Pending async write state. When a save is in flight or scheduled, additional
  * saves update the cache (and reset the debounce timer) without scheduling a
- * second write. On app shutdown, a sync flush picks up anything still pending.
+ * second write. On app shutdown, the pending queue is drained before exit.
  */
 let writeTimer: NodeJS.Timeout | null = null;
 let writeInFlight: Promise<void> | null = null;
@@ -133,22 +133,15 @@ const flushAsync = async (): Promise<void> => {
   }
 };
 
-/**
- * Synchronous flush for app shutdown — ensures any pending debounced write
- * makes it to disk before the process exits.
- */
-const flushSync = (): void => {
-  if (!cache) return;
+/** Drain the debounced/in-flight write queue without blocking the event loop. */
+const flushPendingWrites = async (): Promise<void> => {
   if (writeTimer) {
     clearTimeout(writeTimer);
     writeTimer = null;
+    enqueueFlush();
   }
-  try {
-    const obj = Object.fromEntries(cache);
-    const jsonString = JSON.stringify(obj, replacer, 2);
-    fs.writeFileSync(filePath, jsonString);
-  } catch (error) {
-    logger.error('Failed to flush reference lap data on shutdown:', error);
+  while (writeInFlight) {
+    await writeInFlight;
   }
 };
 
@@ -226,13 +219,10 @@ export const saveReferenceLap = (
 };
 
 /**
- * Flush any pending write synchronously. Called on app shutdown to avoid
- * losing the last save if the user closes the app within WRITE_DEBOUNCE_MS
- * of setting a fast lap.
+ * Flush any pending write asynchronously. The before-quit coordinator awaits
+ * this promise, so the last save is retained without blocking its deadline.
  */
-export const flushReferenceLapsOnShutdown = (): void => {
-  flushSync();
-};
+export const flushReferenceLapsOnShutdown = flushPendingWrites;
 
 /**
  * Testing helper: await any in-flight write. Not exported in production
@@ -240,14 +230,7 @@ export const flushReferenceLapsOnShutdown = (): void => {
  * debounced write completing.
  */
 export const __awaitPendingWrite = async (): Promise<void> => {
-  if (writeTimer) {
-    clearTimeout(writeTimer);
-    writeTimer = null;
-    enqueueFlush();
-  }
-  while (writeInFlight) {
-    await writeInFlight;
-  }
+  await flushPendingWrites();
 };
 
 /**
