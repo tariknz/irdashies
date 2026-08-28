@@ -692,6 +692,19 @@ export const StandingsSettings = () => {
               {/* OPTIONS TAB */}
               {activeTab === 'options' && (
                 <>
+                  <SettingsSection title="MultiClass Standings">
+                    <SettingToggleRow
+                      title="Use Position-based Class Ordering"
+                      description="If enabled, Classes are ordered based on the class's leader's overall position. (Does Not Override Class Colors)"
+                      enabled={settings.config.customClassOrdering ?? false}
+                      onToggle={(newValue) =>
+                        handleConfigChange({ customClassOrdering: newValue })
+                      }
+                    />
+                  </SettingsSection>
+
+                  <SettingDivider />
+
                   <SettingsSection title="Driver Standings">
                     <SettingSelectRow
                       title="Drivers to show around player"

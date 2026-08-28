@@ -150,65 +150,6 @@ export const createDriverStandings = (
   const results =
     resultsPositions.length > 0 ? resultsPositions : qualifyingResults;
 
-  // When no results exist yet (e.g. race warmup before any laps), build
-  // standings from the full driver list so all drivers are visible immediately.
-  if (results.length === 0 && session.drivers) {
-    return session.drivers
-      .filter((driver) => !driver.CarIsPaceCar && !driver.IsSpectator)
-      .sort((a, b) => {
-        const numA = parseInt(a.CarNumber, 10);
-        const numB = parseInt(b.CarNumber, 10);
-        if (isNaN(numA) && isNaN(numB))
-          return a.CarNumber.localeCompare(b.CarNumber);
-        if (isNaN(numA)) return 1;
-        if (isNaN(numB)) return -1;
-        return numA - numB;
-      })
-      .map((driver, index) => ({
-        carIdx: driver.CarIdx,
-        position: index + 1,
-        classPosition: index + 1, // temporary until real positions are available
-        isPlayer: driver.CarIdx === session.playerIdx,
-        driver: {
-          name: driver.UserName,
-          carNum: driver.CarNumber,
-          license: driver.LicString,
-          rating: driver.IRating,
-          flairId: driver.FlairID,
-          teamName: driver.TeamName,
-        },
-        fastestTime: -1,
-        hasFastestTime: false,
-        lastTime: -1,
-        lastTimeState: undefined as LastTimeState,
-        onPitRoad: telemetry?.carIdxOnPitRoadValue?.[driver.CarIdx] ?? false,
-        onTrack:
-          (telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ?? -1) > -1,
-        tireCompound: telemetry?.carIdxTireCompoundValue?.[driver.CarIdx] ?? 0,
-        carClass: {
-          id: driver.CarClassID,
-          color: driver.CarClassColor,
-          name: driver.CarClassShortName,
-          relativeSpeed: driver.CarClassRelSpeed,
-          estLapTime: driver.CarClassEstLapTime,
-        },
-        radioActive: telemetry.radioTransmitCarIdx?.includes(driver.CarIdx),
-        carId: driver.CarID,
-        lapTimeDeltas: undefined,
-        lastPitLap: lastPitLap[driver.CarIdx] ?? undefined,
-        lastLap: lastLap[driver.CarIdx] ?? undefined,
-        prevCarTrackSurface: prevCarTrackSurface[driver.CarIdx] ?? undefined,
-        carTrackSurface:
-          telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ?? undefined,
-        currentSessionType: currentSession.sessionType,
-        dnf: false,
-        repair: false,
-        penalty: false,
-        slowdown: false,
-        relativePct: 0,
-      }));
-  }
-
   // O(1) carIdx -> Driver lookup; previously we did session.drivers.find() per
   // result row, which is O(N) per call and O(N²) overall in driver count.
   const driversByCarIdx = new Map<number, Driver>();
@@ -443,16 +384,40 @@ export const groupStandingsByClass = (
     bucket.push(result);
   }
 
+  const sorted: [string, Standings[]][] = [];
+  for (const [classId, drivers] of groupedByClassId) {
+    sorted.push([String(classId), drivers]);
+  }
+
+  sorted.sort(
+    ([, a], [, b]) => b[0].carClass.relativeSpeed - a[0].carClass.relativeSpeed);
+
+  return sorted;
+};
+
+export const groupStandingsBySpeed = (
+  standings: Standings[]
+): [string, Standings[]][] => {
+  const groupedByClassId = new Map<number, Standings[]>();
+  for (const result of standings) {
+    if (!result.carClass) continue;
+    const classId = result.carClass.id;
+    let bucket = groupedByClassId.get(classId);
+    if (!bucket) {
+      bucket = [];
+      groupedByClassId.set(classId, bucket);
+    }
+    bucket.push(result);
+  }
+
   const getTop2Stats = (drivers: Standings[]) => {
     const validDrivers = drivers
       .filter(
         (d) =>
-          d.position !== undefined && //Check for valid position
+          d.position !== undefined &&  //Check for valid position
           //Check for valid time to filter qualifying positions with no set time
-          (d.fastestTime !== undefined && 
-            d.fastestTime > 0 ||
-            d.lastTime !== undefined &&
-            d.lastTime > 0)  //Filter last time to catch where the leader has a invalid best lap
+          ((d.fastestTime !== undefined && d.fastestTime > 0) ||
+            (d.lastTime !== undefined && d.lastTime > 0))
       )
       .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
       .slice(0, 1); // Changed .slice(0,2) to .slice(0,1) to only compare leader of each class
@@ -487,12 +452,12 @@ export const groupStandingsByClass = (
       if (statsA.bestPosition !== statsB.bestPosition) {
         return statsA.bestPosition - statsB.bestPosition;
       }
+      // Prefer classes with valid timing data
+    } else if (statsA) {
+      return -1;
+    } else if (statsB) {
+      return 1;
     }
-
-    // Prefer classes with valid timing data
-    if (statsA) return -1;
-    if (statsB) return 1;
-
     // Final fallback: relative speed
     return classB[0].carClass.relativeSpeed - classA[0].carClass.relativeSpeed;
   });
