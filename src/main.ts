@@ -409,12 +409,10 @@ const handleBeforeQuit = createBeforeQuitHandler({
     incidentRuntime?.dispose();
     disposeLapHistoryRuntime?.();
     channelBus.dispose();
-    // Synchronous flush so any pending debounced reference-lap write completes
-    // before the process exits.
-    flushReferenceLapsOnShutdown();
-    // Incident and lap-history writes are debounced, so anything still pending
-    // would be lost.
+    // Storage writes are debounced, so drain all pending queues within the
+    // coordinator deadline before the process exits.
     await Promise.all([
+      flushReferenceLapsOnShutdown(),
       flushIncidentsOnShutdown(),
       flushLapHistoryOnShutdown(),
     ]);
