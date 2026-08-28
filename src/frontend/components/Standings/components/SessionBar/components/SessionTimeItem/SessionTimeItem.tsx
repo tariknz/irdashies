@@ -50,11 +50,20 @@ export const SessionTimeItem = memo(
             remainingTime = adjustedRaceTime - elapsedTime;
             totalTime = totalRaceTime;
           } else {
-            remainingTime = timeRemaining;
+            remainingTime = timeTotal - elapsedTime;
             totalTime = timeTotal;
           }
           break;
         case SessionState.CoolDown:
+          elapsedTime = time - greenFlagTimestamp;
+          if (isFixedLapRace) {
+            remainingTime = adjustedRaceTime - elapsedTime;
+            totalTime = totalRaceTime;
+          } else {
+            remainingTime = 0;
+            totalTime = timeTotal;
+          }
+          break;
         default:
           elapsedTime = 0;
           remainingTime = 0;
