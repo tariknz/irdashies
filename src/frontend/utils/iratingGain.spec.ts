@@ -19,8 +19,18 @@ describe('calculateIRatingGain', () => {
       { driver: { idx: 7 }, finishRank: 8, startIRating: 459, started: true },
       { driver: { idx: 8 }, finishRank: 9, startIRating: 770, started: true },
       { driver: { idx: 9 }, finishRank: 10, startIRating: 926, started: true },
-      { driver: { idx: 10 }, finishRank: 11, startIRating: 815, started: false },
-      { driver: { idx: 11 }, finishRank: 12, startIRating: 1518, started: false }
+      {
+        driver: { idx: 10 },
+        finishRank: 11,
+        startIRating: 815,
+        started: false,
+      },
+      {
+        driver: { idx: 11 },
+        finishRank: 12,
+        startIRating: 1518,
+        started: false,
+      },
     ];
 
     const results = calculateIRatingGain(sampleData);
@@ -38,7 +48,7 @@ describe('calculateIRatingGain', () => {
       { idx: 8, iratingChange: -22.43830479379796 },
       { idx: 9, iratingChange: -54.257888044345336 },
       { idx: 10, iratingChange: -78.76773919166914 },
-      { idx: 11, iratingChange: -118.49313628114338 }
+      { idx: 11, iratingChange: -118.49313628114338 },
     ];
 
     // Compare results with expected values
@@ -48,4 +58,60 @@ describe('calculateIRatingGain', () => {
       expect(result.raceResult.driver.idx).toBe(expected.idx);
     });
   });
-}); 
+});
+
+describe('calculateIRatingGain edge cases', () => {
+  it('returns nothing for an empty field', () => {
+    expect(calculateIRatingGain([])).toEqual([]);
+  });
+
+  it('floors a rating at zero rather than going negative', () => {
+    // The favourite by a distance finishing last loses far more than it has.
+    // A low rated driver finishing last cannot trigger this — they were
+    // expected to finish there and actually gain.
+    const field = [
+      { driver: 'favourite', finishRank: 20, startIRating: 100, started: true },
+    ];
+    for (let i = 0; i < 19; i++) {
+      field.push({
+        driver: `rest${i}`,
+        finishRank: i + 1,
+        startIRating: 1,
+        started: true,
+      });
+    }
+
+    const target = calculateIRatingGain(field).find(
+      (r) => r.raceResult.driver === 'favourite'
+    );
+
+    // The raw change is a bigger loss than the rating it is applied to.
+    expect(target?.iratingChange).toBeLessThan(-100);
+    expect(target?.newIRating).toBe(0);
+  });
+
+  it('handles a field where nobody started', () => {
+    const results = calculateIRatingGain([
+      { driver: 'a', finishRank: 1, startIRating: 2000, started: false },
+      { driver: 'b', finishRank: 2, startIRating: 2000, started: false },
+    ]);
+
+    expect(results).toHaveLength(2);
+    for (const result of results) {
+      expect(Number.isFinite(result.iratingChange)).toBe(true);
+    }
+  });
+
+  it('handles a mixed field of starters and non-starters', () => {
+    const results = calculateIRatingGain([
+      { driver: 'a', finishRank: 1, startIRating: 3000, started: true },
+      { driver: 'b', finishRank: 2, startIRating: 2000, started: true },
+      { driver: 'c', finishRank: 3, startIRating: 1000, started: false },
+    ]);
+
+    expect(results).toHaveLength(3);
+    // A non-starter cannot gain from a race they did not take part in.
+    const nonStarter = results.find((r) => r.raceResult.driver === 'c');
+    expect(nonStarter?.iratingChange).toBeLessThanOrEqual(0);
+  });
+});
