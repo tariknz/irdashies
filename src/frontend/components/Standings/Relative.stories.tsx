@@ -4,10 +4,8 @@ import {
   TelemetryDecorator,
   DynamicTelemetrySelector,
   TelemetryDecoratorWithConfig,
-  ChannelSnapshotDecorator,
-  standingsStorySnapshot,
-  sessionBarStorySnapshot,
-  trackStateStorySnapshot,
+  CaptureChannelDecorator,
+  CaptureChannels,
 } from '@irdashies/storybook';
 import {
   DashboardProvider,
@@ -20,11 +18,7 @@ import {
 } from '@irdashies/context';
 import { mockDashboardBridge } from '@irdashies/storybook';
 import { generateMockDataFromPath } from '../../../app/bridge/iracingSdk/mock-data/generateMockData';
-import type {
-  DashboardBridge,
-  RelativeGapsSnapshot,
-  RelativeWidgetSettings,
-} from '@irdashies/types';
+import type { DashboardBridge, RelativeWidgetSettings } from '@irdashies/types';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { useState, useMemo } from 'react';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
@@ -36,16 +30,6 @@ import {
   useHighlightColor,
 } from './hooks';
 import type { ResolvedDriverTag } from './hooks/useDriverTagMap';
-
-const relativeGapsStorySnapshot = {
-  focusCarIdx: 30,
-  relativePcts: Array.from({ length: 64 }, (_, carIdx) =>
-    Math.max(-0.49, Math.min(0.49, (carIdx - 30) * 0.012))
-  ),
-  deltas: Array.from({ length: 64 }, (_, carIdx) => (carIdx - 30) * 1.2),
-  sessionNum: 0,
-  version: 1,
-} satisfies RelativeGapsSnapshot;
 
 // Create a custom decorator that combines TelemetryDecoratorWithConfig with generalSettings override
 function TelemetryDecoratorWithConfigAndGeneralSettings(
@@ -345,20 +329,9 @@ const RelativeWithoutHeaderFooter = () => {
 export default {
   component: Relative,
   title: 'widgets/Relative',
-  decorators: [
-    ChannelSnapshotDecorator({
-      'lap-times.snapshot': {
-        lapTimes: [],
-        lapTimeHistory: [],
-        sessionNum: null,
-        version: 0,
-      },
-      'relative-gaps.snapshot': relativeGapsStorySnapshot,
-      'standings.snapshot': standingsStorySnapshot,
-      'track-state.snapshot': trackStateStorySnapshot,
-      'session-bar.snapshot': sessionBarStorySnapshot,
-    }),
-  ],
+  // Channels come from the same capture the story loads. The default mock
+  // here; stories that pin a capture override this with their own.
+  decorators: [CaptureChannelDecorator()],
   parameters: {
     controls: {
       exclude: ['telemetryPath'],
@@ -389,8 +362,10 @@ export const Primary: Story = {
 export const DynamicTelemetry: Story = {
   decorators: [
     (Story, context) => {
+      // 1747384273173 was the previous default and no longer exists in
+      // test-data, which left this story with no session at all.
       const [selectedPath, setSelectedPath] = useState(
-        '/test-data/1747384273173'
+        '/test-data/1747384033336'
       );
 
       return (
@@ -399,12 +374,14 @@ export const DynamicTelemetry: Story = {
             onPathChange={setSelectedPath}
             initialPath={selectedPath}
           />
-          {TelemetryDecoratorWithConfig(selectedPath, {
-            relative: {
-              headerBar: { enabled: true },
-              footerBar: { enabled: true },
-            },
-          })(Story, context)}
+          <CaptureChannels path={selectedPath}>
+            {TelemetryDecoratorWithConfig(selectedPath, {
+              relative: {
+                headerBar: { enabled: true },
+                footerBar: { enabled: true },
+              },
+            })(Story, context)}
+          </CaptureChannels>
         </>
       );
     },
@@ -413,6 +390,7 @@ export const DynamicTelemetry: Story = {
 
 export const MultiClassPCCWithClio: Story = {
   decorators: [
+    CaptureChannelDecorator('/test-data/1731637331038'),
     TelemetryDecoratorWithConfig('/test-data/1731637331038', {
       relative: {
         headerBar: { enabled: true },
@@ -424,6 +402,7 @@ export const MultiClassPCCWithClio: Story = {
 
 export const SupercarsRace: Story = {
   decorators: [
+    CaptureChannelDecorator('/test-data/1732274253573'),
     TelemetryDecoratorWithConfig('/test-data/1732274253573', {
       relative: {
         headerBar: { enabled: true },
@@ -435,6 +414,7 @@ export const SupercarsRace: Story = {
 
 export const AdvancedMX5: Story = {
   decorators: [
+    CaptureChannelDecorator('/test-data/1732260478001'),
     TelemetryDecoratorWithConfig('/test-data/1732260478001', {
       relative: {
         headerBar: { enabled: true },
@@ -446,6 +426,7 @@ export const AdvancedMX5: Story = {
 
 export const GT3Practice: Story = {
   decorators: [
+    CaptureChannelDecorator('/test-data/1732355190142'),
     TelemetryDecoratorWithConfig('/test-data/1732355190142', {
       relative: {
         headerBar: { enabled: true },
@@ -457,6 +438,7 @@ export const GT3Practice: Story = {
 
 export const PCCPacing: Story = {
   decorators: [
+    CaptureChannelDecorator('/test-data/1735296198162'),
     TelemetryDecoratorWithConfig('/test-data/1735296198162', {
       relative: {
         headerBar: { enabled: true },
@@ -468,6 +450,7 @@ export const PCCPacing: Story = {
 
 export const MultiClass: Story = {
   decorators: [
+    CaptureChannelDecorator('/test-data/1747384033336'),
     TelemetryDecoratorWithConfig('/test-data/1747384033336', {
       relative: {
         headerBar: { enabled: true },
@@ -479,6 +462,7 @@ export const MultiClass: Story = {
 
 export const WithFlairs: Story = {
   decorators: [
+    CaptureChannelDecorator('/test-data/1752616787255'),
     TelemetryDecoratorWithConfig('/test-data/1752616787255', {
       relative: {
         headerBar: { enabled: true },
@@ -539,6 +523,7 @@ export const WithLapDeltasEnabled: Story = {
 
 export const SuzukaGT3EnduranceRace: Story = {
   decorators: [
+    CaptureChannelDecorator('/test-data/1763227688917'),
     TelemetryDecoratorWithConfig('/test-data/1763227688917', {
       relative: {
         headerBar: { enabled: true },
@@ -550,6 +535,7 @@ export const SuzukaGT3EnduranceRace: Story = {
 
 export const TeamSession: Story = {
   decorators: [
+    CaptureChannelDecorator('/test-data/1763227688917'),
     TelemetryDecoratorWithConfig('/test-data/1763227688917', {
       relative: {
         headerBar: { enabled: true },
