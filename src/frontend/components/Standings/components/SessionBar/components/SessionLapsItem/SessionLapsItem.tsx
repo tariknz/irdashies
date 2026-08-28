@@ -17,10 +17,10 @@ export const SessionLapsItem = memo(
     } = useSessionLapsTiming();
 
     const lapDisplay = Math.max(currentLap, 0);
-    const lapsTotal = session === 'Race' ? totalRaceLaps : totalLaps;
+    const lapsTotal = totalRaceLaps > 0 ? totalRaceLaps : totalLaps;
     const lapsMode = settings?.sessionLaps?.mode ?? 'Elapsed';
     // Round up the total if the current lap has exceeded it
-    const overrun = lapDisplay > lapsTotal && session === 'Race';
+    const overrun = lapDisplay > lapsTotal; //&& session === 'Race';
     const effectiveTotal = overrun ? lapDisplay : lapsTotal;
     const lapValue =
       lapsMode === 'Remaining'
@@ -32,7 +32,7 @@ export const SessionLapsItem = memo(
 
     let content: React.ReactNode;
     if (state >= SessionState.Checkered) {
-      content = <>L{Math.ceil(effectiveTotal).toFixed(0)}</>;
+      content = <>L{lapValue} / {Math.ceil(effectiveTotal).toFixed(0)}</>;
     } else if (lapsTotal > 0) {
       content = isFixedLapRace ? (
         <>

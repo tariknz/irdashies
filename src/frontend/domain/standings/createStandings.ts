@@ -448,8 +448,11 @@ export const groupStandingsByClass = (
       .filter(
         (d) =>
           d.position !== undefined && //Check for valid position
-          d.fastestTime !== undefined && //Check for valid time to filter qualifying positions with no set time
-          d.fastestTime > 0
+          //Check for valid time to filter qualifying positions with no set time
+          (d.fastestTime !== undefined && 
+            d.fastestTime > 0 ||
+            d.lastTime !== undefined &&
+            d.lastTime > 0)  //Filter last time to catch where the leader has a invalid best lap
       )
       .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
       .slice(0, 1); // Changed .slice(0,2) to .slice(0,1) to only compare leader of each class
