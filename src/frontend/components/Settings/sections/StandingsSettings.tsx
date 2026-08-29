@@ -692,10 +692,10 @@ export const StandingsSettings = () => {
               {/* OPTIONS TAB */}
               {activeTab === 'options' && (
                 <>
-                  <SettingsSection title="MultiClass Standings">
+                  <SettingsSection title="Multiclass Standings">
                     <SettingToggleRow
-                      title="Use Position-based Class Ordering"
-                      description="If enabled, Classes are ordered based on the class's leader's overall position. (Does Not Override Class Colors)"
+                      title="Position-based class ordering"
+                      description="If enabled, classes are ordered based on the class's leader's overall position (does not override class colors)."
                       enabled={settings.config.customClassOrdering ?? false}
                       onToggle={(newValue) =>
                         handleConfigChange({ customClassOrdering: newValue })
