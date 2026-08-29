@@ -8,8 +8,54 @@ import type {
 import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
 import type { TelemetryProcessor } from './TelemetryProcessor';
+import logger from '../logger';
 
 export type ProcessorChannel = Exclude<ChannelName, 'session.lifecycle'>;
+
+/** Startup instrumentation is opt-in, so it costs nothing by default. */
+const STARTUP_DEBUG = process.env.IRDASHIES_LOG_LEVEL === 'debug';
+
+interface SnapshotShape {
+  /** Log-safe summary. Never stringifies a 60-car telemetry frame. */
+  description: string;
+  /** True once any array field carries an entry. */
+  populated: boolean;
+  /** False for channels that hold no arrays, so they are never waited on. */
+  hasArrays: boolean;
+}
+
+/**
+ * Enough of a snapshot's shape to tell a populated payload from an empty one
+ * in the log. A channel's first publish is often empty because the processor
+ * has only just been activated by a subscriber, so the first *populated*
+ * publish is the timestamp that says when data actually reached a widget.
+ */
+const inspectSnapshot = (snapshot: unknown): SnapshotShape => {
+  if (snapshot === null || snapshot === undefined) {
+    return { description: 'empty', populated: false, hasArrays: false };
+  }
+  if (Array.isArray(snapshot)) {
+    return {
+      description: `array(${snapshot.length})`,
+      populated: snapshot.length > 0,
+      hasArrays: true,
+    };
+  }
+  if (typeof snapshot !== 'object') {
+    return { description: typeof snapshot, populated: true, hasArrays: false };
+  }
+  const entries = Object.entries(snapshot as Record<string, unknown>);
+  const arrays = entries.filter(([, value]) => Array.isArray(value));
+  const longestArray = arrays.reduce(
+    (longest, [, value]) => Math.max(longest, (value as unknown[]).length),
+    0
+  );
+  return {
+    description: `keys=${entries.length} longestArray=${longestArray}`,
+    populated: longestArray > 0,
+    hasArrays: arrays.length > 0,
+  };
+};
 
 export interface ProcessorMetrics {
   markStart(label: string): void;
@@ -87,6 +133,10 @@ export class ProcessorHost {
   private readonly directDemand = new Set<ProcessorChannel>();
   private activeDemand = new Set<ProcessorChannel>();
   private readonly reportedFailures = new Set<string>();
+  /** Channels whose first publish has already been logged. Debug aid only. */
+  private readonly firstPublishLogged = new Set<ProcessorChannel>();
+  /** Channels whose first populated publish has been logged. Debug aid only. */
+  private readonly firstPopulatedPublishLogged = new Set<ProcessorChannel>();
   private readonly disconnects: (() => void)[] = [];
   private latestSession?: Session;
   private sourceReplay?: boolean;
@@ -273,6 +323,10 @@ export class ProcessorHost {
     state.processor = undefined;
     state.lastProcessedAt = undefined;
     state.lastPublishedToken = undefined;
+    // Log the first publishes again after a reconnect, so a mid-run rejoin is
+    // as traceable as the first startup.
+    this.firstPublishLogged.delete(state.definition.channel);
+    this.firstPopulatedPublishLogged.delete(state.definition.channel);
     this.bus.clearSnapshot(state.definition.channel);
   }
 
@@ -320,7 +374,47 @@ export class ProcessorHost {
       () => this.bus.publish(state.definition.channel, snapshot),
       'Publication'
     );
-    if (succeeded) state.lastPublishedToken = token;
+    if (succeeded) {
+      state.lastPublishedToken = token;
+      if (STARTUP_DEBUG) {
+        this.logFirstPublishes(state.definition.channel, snapshot);
+      }
+    }
+  }
+
+  /**
+   * Debug aid for diagnosing a slow or empty startup. Logs the first publish on
+   * a channel, and separately the first publish that actually carries data.
+   * Channels holding no array fields only ever log the first line.
+   */
+  private logFirstPublishes(
+    channel: ProcessorChannel,
+    snapshot: ChannelPayloads[ProcessorChannel]
+  ): void {
+    const needsFirst = !this.firstPublishLogged.has(channel);
+    const needsPopulated = !this.firstPopulatedPublishLogged.has(channel);
+    if (!needsFirst && !needsPopulated) return;
+
+    const shape = inspectSnapshot(snapshot);
+    if (needsFirst) {
+      this.firstPublishLogged.add(channel);
+      logger.debug(
+        `[ProcessorHost] first publish on ${channel}: ${shape.description}`
+      );
+    }
+    if (!needsPopulated) return;
+    // A channel with no array fields has nothing to fill, so mark it done and
+    // stop inspecting its every publish.
+    if (!shape.hasArrays) {
+      this.firstPopulatedPublishLogged.add(channel);
+      return;
+    }
+    if (shape.populated) {
+      this.firstPopulatedPublishLogged.add(channel);
+      logger.debug(
+        `[ProcessorHost] first populated publish on ${channel}: ${shape.description}`
+      );
+    }
   }
 
   private isDue(
