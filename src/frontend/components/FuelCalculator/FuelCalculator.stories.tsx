@@ -135,6 +135,8 @@ const previewProjection = {
   sessionNum: 0,
   sessionLaps: previewFuelData.totalLaps,
   calculatedTotalRaceLaps: previewFuelData.totalLaps,
+  estimatedLapsRemaining: 0,
+  hasValidRaceEstimate: false,
   isFixedLapRace: true,
   sessionType: 'Race',
   isOnTrack: true,

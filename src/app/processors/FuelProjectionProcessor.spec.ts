@@ -121,6 +121,8 @@ describe('FuelProjectionProcessor', () => {
 
     expect(processor.snapshot()).toMatchObject({
       calculatedTotalRaceLaps: 19.1,
+      estimatedLapsRemaining: 18.9,
+      hasValidRaceEstimate: true,
       isFixedLapRace: false,
     });
 
@@ -165,10 +167,44 @@ describe('FuelProjectionProcessor', () => {
       CarIdxBestLapTime: { value: [100, 100] },
     } as unknown as Telemetry);
 
-    expect(processor.snapshot().calculatedTotalRaceLaps).toBeCloseTo(17.1);
+    expect(processor.snapshot()).toMatchObject({
+      calculatedTotalRaceLaps: 16.1,
+      estimatedLapsRemaining: 9.2,
+      hasValidRaceEstimate: true,
+    });
   });
 
-  it('resets completed laps when the session number changes', () => {
+  it('rejects transient timed-race lap times', () => {
+    const processor = new FuelProjectionProcessor();
+    processor.init({
+      DriverInfo: {
+        DriverCarIdx: 0,
+        Drivers: [{ CarIdx: 0, CarClassEstLapTime: 1 }],
+      },
+      SessionInfo: {
+        Sessions: [
+          { SessionNum: 0, SessionType: 'Race', SessionLaps: 'unlimited' },
+        ],
+      },
+    } as unknown as Session);
+
+    processor.onFrame({
+      SessionNum: { value: [0] },
+      SessionTimeRemain: { value: [1500] },
+      CarIdxLap: { value: [1] },
+      CarIdxLapDistPct: { value: [0] },
+      CarIdxPosition: { value: [1] },
+      CarIdxBestLapTime: { value: [1] },
+    } as unknown as Telemetry);
+
+    expect(processor.snapshot()).toMatchObject({
+      calculatedTotalRaceLaps: 0,
+      estimatedLapsRemaining: 0,
+      hasValidRaceEstimate: false,
+    });
+  });
+
+  it('preserves completed laps while resetting crossing state on session change', () => {
     const processor = new FuelProjectionProcessor();
     processor.onFrame(
       frame({
@@ -192,8 +228,23 @@ describe('FuelProjectionProcessor', () => {
 
     processor.onLifecycle({ type: 'sessionNumChange' });
 
-    expect(processor.snapshot().completedLaps).toEqual([]);
+    expect(processor.snapshot().completedLaps).toHaveLength(1);
     expect(processor.snapshot().engine.lastLap).toBe(0);
+
+    processor.onFrame(
+      frame({
+        FuelLevel: 30,
+        Lap: 1,
+        LapDistPct: 0.01,
+        SessionFlags: 4,
+        SessionNum: 1,
+        SessionTime: 100,
+      })
+    );
+
+    expect(processor.snapshot().completedLaps).toHaveLength(1);
+    expect(processor.snapshot().projectedLapUsage).toBeGreaterThan(2);
+    expect(processor.snapshot().projectedLapUsage).toBeLessThan(2.2);
   });
 
   it('does not aggregate replay frames and resumes from clean state live', () => {

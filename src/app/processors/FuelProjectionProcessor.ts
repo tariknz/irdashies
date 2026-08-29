@@ -186,6 +186,8 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
       sessionNum,
       sessionLaps: sessionInfo?.SessionLaps ?? 0,
       calculatedTotalRaceLaps: raceProjection.totalRaceLaps,
+      estimatedLapsRemaining: raceProjection.lapsRemaining,
+      hasValidRaceEstimate: raceProjection.hasValidEstimate,
       isFixedLapRace: raceProjection.isFixedLapRace,
       sessionType: sessionInfo?.SessionType,
       isOnTrack: booleanValue(frame, 'IsOnTrack'),
@@ -211,7 +213,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
       return;
     }
     if (event.type === 'sessionNumChange') {
-      this.reset();
+      this.reset({ preserveCompletedLaps: true });
       return;
     }
     this.reset();
@@ -242,10 +244,14 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
     }
   }
 
-  private reset(): void {
+  private reset(
+    { preserveCompletedLaps }: { preserveCompletedLaps: boolean } = {
+      preserveCompletedLaps: false,
+    }
+  ): void {
     this.engine.reset();
     this.lastCommands = [];
-    this.laps.length = 0;
+    if (!preserveCompletedLaps) this.laps.length = 0;
     this.latest = this.emptySnapshot();
   }
 
@@ -267,6 +273,8 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
       sessionNum: 0,
       sessionLaps: 0,
       calculatedTotalRaceLaps: 0,
+      estimatedLapsRemaining: 0,
+      hasValidRaceEstimate: false,
       isFixedLapRace: false,
       isOnTrack: false,
       completedLaps: this.laps,
@@ -278,10 +286,21 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
     frame: Telemetry,
     sessionType?: string,
     sessionLaps?: string
-  ): { totalRaceLaps: number; isFixedLapRace: boolean } {
+  ): {
+    totalRaceLaps: number;
+    lapsRemaining: number;
+    hasValidEstimate: boolean;
+    isFixedLapRace: boolean;
+  } {
     const timeRemaining = value(frame, 'SessionTimeRemain');
     const isFixedLapRace = !(timeRemaining > 0 && timeRemaining !== 604800);
-    if (sessionType !== 'Race') return { totalRaceLaps: 0, isFixedLapRace };
+    const emptyProjection = {
+      totalRaceLaps: 0,
+      lapsRemaining: 0,
+      hasValidEstimate: false,
+      isFixedLapRace,
+    };
+    if (sessionType !== 'Race') return emptyProjection;
 
     const driverCarIdx = this.session?.DriverInfo?.DriverCarIdx ?? 0;
     const cameraCarIdx = value(frame, 'CamCarIdx', -1);
@@ -309,7 +328,12 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
     const configuredLaps = Number.parseInt(sessionLaps ?? '0', 10) || 0;
 
     if (value(frame, 'SessionState') >= 5) {
-      return { totalRaceLaps: playerLap, isFixedLapRace };
+      return {
+        totalRaceLaps: playerLap,
+        lapsRemaining: 0,
+        hasValidEstimate: true,
+        isFixedLapRace,
+      };
     }
     if (isFixedLapRace) {
       let totalRaceLaps = configuredLaps;
@@ -321,11 +345,9 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
           leaderLap + leaderDistance - (playerLap + playerDistance);
         if (distanceBehind > 0) totalRaceLaps -= Math.floor(distanceBehind);
       }
-      return { totalRaceLaps, isFixedLapRace };
+      return { ...emptyProjection, totalRaceLaps };
     }
-    if (averageLapTime <= 0) {
-      return { totalRaceLaps: 0, isFixedLapRace };
-    }
+    if (averageLapTime < 10) return emptyProjection;
 
     const leaderLap = carLaps[leaderCarIdx] ?? playerLap;
     const leaderDistance = lapDistances[leaderCarIdx] ?? 0;
@@ -335,12 +357,18 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
       playerLap === 0
         ? value(frame, 'SessionTimeTotal') / averageLapTime
         : timeRemaining / averageLapTime + (leaderLap - 1) + leaderDistance;
-    const distanceBehind =
-      leaderLap + leaderDistance - (playerLap + playerDistance);
-    totalRaceLaps -= Math.max(0, Math.floor(distanceBehind));
+    const lapsBehind =
+      leaderLap > playerLap + 1 ? Math.floor(leaderLap - playerLap) : 0;
+    totalRaceLaps -= lapsBehind;
     if (configuredLaps > 0 && totalRaceLaps > configuredLaps) {
       totalRaceLaps = configuredLaps;
     }
-    return { totalRaceLaps, isFixedLapRace };
+    const playerProgress = Math.max(0, playerLap - 1) + playerDistance;
+    return {
+      totalRaceLaps,
+      lapsRemaining: Math.max(0, Math.ceil(totalRaceLaps) - playerProgress),
+      hasValidEstimate: true,
+      isFixedLapRace,
+    };
   }
 }
