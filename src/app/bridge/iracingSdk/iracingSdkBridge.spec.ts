@@ -77,6 +77,28 @@ describe('publishIRacingSDKEvents session polling', () => {
     publishMessageToOverlay: vi.fn(),
   });
 
+  it('publishes the running state as soon as telemetry arrives', async () => {
+    // sessionStatusOK still reads false when the bridge seeds it, which is what
+    // left overlays believing the sim was down until the 5s poll caught up.
+    mockSdkState.sessionStatusOK = false;
+    const overlayManager = createOverlayManager();
+
+    const bridge = await publishIRacingSDKEvents(overlayManager as never);
+
+    // Well inside the 5s poll interval.
+    await vi.advanceTimersByTimeAsync(100);
+
+    const runningStateCalls = overlayManager.publishMessage.mock.calls.filter(
+      ([channel]) => channel === 'runningState'
+    );
+    expect(runningStateCalls).toEqual([
+      ['runningState', false],
+      ['runningState', true],
+    ]);
+
+    bridge.stop();
+  });
+
   it('polls immediately and every 500 ms using monotonic time', async () => {
     const overlayManager = createOverlayManager();
 
