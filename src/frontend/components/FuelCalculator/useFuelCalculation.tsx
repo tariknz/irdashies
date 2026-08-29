@@ -610,11 +610,7 @@ export function useFuelCalculation(
         totalLaps = Math.ceil(calculatedTotalRaceLaps);
         lapsRemaining = estimatedLapsRemaining;
 
-        // Add safety buffer for refuel calculations
-        const TIME_PADDING_REFUEL = 45.0;
-        const avgLapTimeForBuffer = avgLapTime > 0 ? avgLapTime : 90; // Default 90s if unknown
-        const bufferLaps = TIME_PADDING_REFUEL / avgLapTimeForBuffer;
-        lapsRemainingRefuel = lapsRemaining + bufferLaps;
+        lapsRemainingRefuel = lapsRemaining;
 
         if (DEBUG_LOGGING) {
           logger.info(
@@ -638,10 +634,8 @@ export function useFuelCalculation(
           const timeToFinishLap = projectionLapTime * pctRemainingInLap;
           const timeAtLine = sessionTimeRemain - timeToFinishLap;
           const TIME_PADDING_SECONDS = 0.5;
-          const TIME_PADDING_REFUEL = 45.0;
 
           let futureLaps = 0;
-          let futureLapsRefuel = 0;
 
           if (timeAtLine < -TIME_PADDING_SECONDS) {
             lapsRemaining = 1;
@@ -655,15 +649,7 @@ export function useFuelCalculation(
           }
           totalLaps = lap + futureLaps;
 
-          if (timeAtLine < -TIME_PADDING_REFUEL) {
-            lapsRemainingRefuel = 1;
-          } else {
-            futureLapsRefuel = Math.ceil(
-              (timeAtLine + TIME_PADDING_REFUEL) / projectionLapTime
-            );
-            futureLapsRefuel = Math.max(0, futureLapsRefuel);
-            lapsRemainingRefuel = 1 + futureLapsRefuel;
-          }
+          lapsRemainingRefuel = lapsRemaining;
         } else {
           const estimatedLapsFromFuel =
             trendAdjustedConsumption > 0
