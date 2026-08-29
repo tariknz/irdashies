@@ -232,9 +232,7 @@ export class SessionTimingProcessor implements TelemetryProcessor<SessionTimingS
     let totalRaceLaps = 0;
     let totalRaceTime = 0;
     let adjustedRaceTime = 0;
-    if (sessionType !== 'Race') {
-      return { totalRaceLaps, totalRaceTime, adjustedRaceTime };
-    }
+
     const lapDistPct = numberValue(frame, 'LapDistPct') ?? 0;
     const focusBestLap = finiteAt(
       numberArray(frame, 'CarIdxBestLapTime'),
