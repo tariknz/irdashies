@@ -8,6 +8,7 @@ import type { SessionBarItemProps } from '../../sessionBarItemTypes';
 export const SessionLapsItem = memo(
   ({ settings, standalone }: SessionBarItemProps) => {
     const {
+      session,
       currentLap,
       totalLaps,
       state,
