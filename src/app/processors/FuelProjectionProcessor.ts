@@ -316,14 +316,22 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
         break;
       }
     }
-    const projectionCarIdx = leaderCarIdx >= 0 ? leaderCarIdx : playerCarIdx;
-    const classEstimate = this.session?.DriverInfo?.Drivers?.find(
-      (driver) => driver.CarIdx === projectionCarIdx
+    const paceCarIdx = leaderCarIdx >= 0 ? leaderCarIdx : playerCarIdx;
+    const drivers = this.session?.DriverInfo?.Drivers;
+    const leaderClassEstimate = drivers?.find(
+      (driver) => driver.CarIdx === paceCarIdx
+    )?.CarClassEstLapTime;
+    const playerClassEstimate = drivers?.find(
+      (driver) => driver.CarIdx === playerCarIdx
     )?.CarClassEstLapTime;
     const bestLapTimes = values(frame, 'CarIdxBestLapTime');
-    const averageLapTime =
-      classEstimate && classEstimate > 0
-        ? classEstimate
+    const leaderLapTime =
+      leaderClassEstimate && leaderClassEstimate > 0
+        ? leaderClassEstimate
+        : (bestLapTimes[paceCarIdx] ?? 0);
+    const playerLapTime =
+      playerClassEstimate && playerClassEstimate > 0
+        ? playerClassEstimate
         : (bestLapTimes[playerCarIdx] ?? 0);
     const configuredLaps = Number.parseInt(sessionLaps ?? '0', 10) || 0;
 
@@ -347,26 +355,28 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
       }
       return { ...emptyProjection, totalRaceLaps };
     }
-    if (averageLapTime < 10) return emptyProjection;
+    if (leaderLapTime < 10 || playerLapTime < 10) return emptyProjection;
 
     const leaderLap = carLaps[leaderCarIdx] ?? playerLap;
     const leaderDistance = lapDistances[leaderCarIdx] ?? 0;
     const playerDistance =
       lapDistances[playerCarIdx] ?? value(frame, 'LapDistPct');
-    let totalRaceLaps =
-      playerLap === 0
-        ? value(frame, 'SessionTimeTotal') / averageLapTime
-        : timeRemaining / averageLapTime + (leaderLap - 1) + leaderDistance;
-    const lapsBehind =
-      leaderLap > playerLap + 1 ? Math.floor(leaderLap - playerLap) : 0;
-    totalRaceLaps -= lapsBehind;
-    if (configuredLaps > 0 && totalRaceLaps > configuredLaps) {
-      totalRaceLaps = configuredLaps;
-    }
+    const leaderProgress = Math.max(0, leaderLap - 1) + leaderDistance;
     const playerProgress = Math.max(0, playerLap - 1) + playerDistance;
+    const leaderProgressAtTimeLimit =
+      leaderProgress + timeRemaining / leaderLapTime;
+    const leaderFinishProgress = Math.ceil(leaderProgressAtTimeLimit);
+    const timeUntilLeaderFinishes =
+      (leaderFinishProgress - leaderProgress) * leaderLapTime;
+    let playerFinishProgress = Math.ceil(
+      playerProgress + timeUntilLeaderFinishes / playerLapTime
+    );
+    if (configuredLaps > 0) {
+      playerFinishProgress = Math.min(playerFinishProgress, configuredLaps);
+    }
     return {
-      totalRaceLaps,
-      lapsRemaining: Math.max(0, Math.ceil(totalRaceLaps) - playerProgress),
+      totalRaceLaps: playerFinishProgress,
+      lapsRemaining: Math.max(0, playerFinishProgress - playerProgress),
       hasValidEstimate: true,
       isFixedLapRace,
     };

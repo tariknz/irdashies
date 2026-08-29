@@ -120,7 +120,7 @@ describe('FuelProjectionProcessor', () => {
     processor.onFrame(timedRaceFrame);
 
     expect(processor.snapshot()).toMatchObject({
-      calculatedTotalRaceLaps: 19.1,
+      calculatedTotalRaceLaps: 20,
       estimatedLapsRemaining: 18.9,
       hasValidRaceEstimate: true,
       isFixedLapRace: false,
@@ -130,13 +130,13 @@ describe('FuelProjectionProcessor', () => {
       ...timedRaceFrame,
       CarIdxLastLapTime: { value: [100] },
     } as unknown as Telemetry);
-    expect(processor.snapshot().calculatedTotalRaceLaps).toBeCloseTo(19.1);
+    expect(processor.snapshot().calculatedTotalRaceLaps).toBe(20);
 
     processor.onFrame({
       ...timedRaceFrame,
       CarIdxLastLapTime: { value: [110] },
     } as unknown as Telemetry);
-    expect(processor.snapshot().calculatedTotalRaceLaps).toBeCloseTo(19.1);
+    expect(processor.snapshot().calculatedTotalRaceLaps).toBe(20);
   });
 
   it('uses fractional distance when correcting a timed race for lapping', () => {
@@ -168,8 +168,43 @@ describe('FuelProjectionProcessor', () => {
     } as unknown as Telemetry);
 
     expect(processor.snapshot()).toMatchObject({
-      calculatedTotalRaceLaps: 16.1,
-      estimatedLapsRemaining: 9.2,
+      calculatedTotalRaceLaps: 18,
+      estimatedLapsRemaining: 10.2,
+      hasValidRaceEstimate: true,
+    });
+  });
+
+  it('uses player-class pace for remaining distance in multiclass races', () => {
+    const processor = new FuelProjectionProcessor();
+    processor.init({
+      DriverInfo: {
+        DriverCarIdx: 1,
+        Drivers: [
+          { CarIdx: 0, CarClassEstLapTime: 60 },
+          { CarIdx: 1, CarClassEstLapTime: 90 },
+        ],
+      },
+      SessionInfo: {
+        Sessions: [
+          { SessionNum: 0, SessionType: 'Race', SessionLaps: 'unlimited' },
+        ],
+      },
+    } as unknown as Session);
+
+    processor.onFrame({
+      SessionNum: { value: [0] },
+      SessionState: { value: [4] },
+      SessionTimeRemain: { value: [900] },
+      CamCarIdx: { value: [1] },
+      CarIdxLap: { value: [10, 8] },
+      CarIdxLapDistPct: { value: [0.1, 0.8] },
+      CarIdxPosition: { value: [1, 10] },
+      CarIdxBestLapTime: { value: [60, 90] },
+    } as unknown as Telemetry);
+
+    expect(processor.snapshot()).toMatchObject({
+      calculatedTotalRaceLaps: 19,
+      estimatedLapsRemaining: 11.2,
       hasValidRaceEstimate: true,
     });
   });
