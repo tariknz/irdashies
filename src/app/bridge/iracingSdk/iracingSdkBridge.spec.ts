@@ -77,9 +77,11 @@ describe('publishIRacingSDKEvents session polling', () => {
     publishMessageToOverlay: vi.fn(),
   });
 
-  it('publishes the running state as soon as telemetry arrives', async () => {
+  it('publishes the running state as soon as the SDK produces data', async () => {
     // sessionStatusOK still reads false when the bridge seeds it, which is what
-    // left overlays believing the sim was down until the 5s poll caught up.
+    // left overlays believing the sim was down until the 5s poll caught up. A
+    // successful waitForData is the proof the sim is up, matching the existing
+    // wasRunning / lifecycle enter trigger; getTelemetry may still be null.
     mockSdkState.sessionStatusOK = false;
     const overlayManager = createOverlayManager();
 

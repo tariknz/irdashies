@@ -27,7 +27,12 @@ export const useLapTimesStoreUpdater = (enabled: boolean) => {
       );
     }
     if (!marks.populated) {
-      const withTimes = snapshot.lapTimes.filter((time) => time > 0).length;
+      // Counted in place: this runs on every snapshot until a car sets a lap,
+      // which can be minutes of a pre-race grid.
+      let withTimes = 0;
+      for (const time of snapshot.lapTimes) {
+        if (time > 0) withTimes++;
+      }
       if (withTimes > 0) {
         marks.populated = true;
         logger.debug(

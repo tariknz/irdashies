@@ -12,6 +12,9 @@ import logger from '../logger';
 
 export type ProcessorChannel = Exclude<ChannelName, 'session.lifecycle'>;
 
+/** Startup instrumentation is opt-in, so it costs nothing by default. */
+const STARTUP_DEBUG = process.env.IRDASHIES_LOG_LEVEL === 'debug';
+
 interface SnapshotShape {
   /** Log-safe summary. Never stringifies a 60-car telemetry frame. */
   description: string;
@@ -379,7 +382,9 @@ export class ProcessorHost {
     );
     if (succeeded) {
       state.lastPublishedToken = token;
-      this.logFirstPublishes(state.definition.channel, snapshot);
+      if (STARTUP_DEBUG) {
+        this.logFirstPublishes(state.definition.channel, snapshot);
+      }
     }
   }
 
@@ -403,7 +408,14 @@ export class ProcessorHost {
         `[ProcessorHost] first publish on ${channel}: ${shape.description}`
       );
     }
-    if (needsPopulated && shape.hasArrays && shape.populated) {
+    if (!needsPopulated) return;
+    // A channel with no array fields has nothing to fill, so mark it done and
+    // stop inspecting its every publish.
+    if (!shape.hasArrays) {
+      this.firstPopulatedPublishLogged.add(channel);
+      return;
+    }
+    if (shape.populated) {
       this.firstPopulatedPublishLogged.add(channel);
       logger.debug(
         `[ProcessorHost] first populated publish on ${channel}: ${shape.description}`
