@@ -19,7 +19,7 @@ export const SessionLapsItem = memo(
     const lapsTotal = totalRaceLaps > 0 ? totalRaceLaps : totalLaps;
     const lapsMode = settings?.sessionLaps?.mode ?? 'Elapsed';
     // Round up the total if the current lap has exceeded it
-    const overrun = lapDisplay > lapsTotal; //&& session === 'Race';
+    const overrun = lapDisplay > lapsTotal && session === 'Race';
     const effectiveTotal = overrun ? lapDisplay : lapsTotal;
     const lapValue =
       lapsMode === 'Remaining'
