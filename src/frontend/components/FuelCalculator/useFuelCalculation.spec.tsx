@@ -28,6 +28,8 @@ const projection: FuelProjectionSnapshot = {
   sessionNum: 0,
   sessionLaps: 16,
   calculatedTotalRaceLaps: 16,
+  estimatedLapsRemaining: 0,
+  hasValidRaceEstimate: false,
   isFixedLapRace: true,
   sessionType: 'Race',
   isOnTrack: true,
@@ -99,6 +101,73 @@ describe('useFuelCalculation channel parity', () => {
     expect(result.current?.lastLapUsage).toBeCloseTo(3.6420249938964844);
     expect(result.current?.avgLaps).toBeCloseTo(3.6037120819091797);
     expect(result.current?.currentLap).toBe(3);
+  });
+
+  it('uses the validated timed-race remaining distance without reconstructing it', async () => {
+    window.channelBridge = {
+      subscribe: <K extends ChannelName>(
+        _channel: K,
+        callback: (payload: ChannelPayloads[K]) => void
+      ) => {
+        callback({
+          ...projection,
+          currentLap: 8,
+          lapDistPct: 0.8,
+          sessionLaps: 'unlimited',
+          sessionLapsRemain: 32767,
+          calculatedTotalRaceLaps: 20.1,
+          estimatedLapsRemaining: 9.2,
+          hasValidRaceEstimate: true,
+          isFixedLapRace: false,
+        } as ChannelPayloads[K]);
+        return () => undefined;
+      },
+    };
+
+    const { result } = renderHook(() =>
+      useFuelCalculation(defaultFuelCalculatorSettings.safetyMargin, {
+        ...defaultFuelCalculatorSettings,
+        enableStorage: false,
+        enableLogging: false,
+      })
+    );
+
+    await waitFor(() => expect(result.current).not.toBeNull());
+    expect(result.current?.lapsRemaining).toBe(9.2);
+    expect(result.current?.lapsRemaining).not.toBeCloseTo(12.2);
+  });
+
+  it('accepts a validated zero-lap timed-race estimate', async () => {
+    window.channelBridge = {
+      subscribe: <K extends ChannelName>(
+        _channel: K,
+        callback: (payload: ChannelPayloads[K]) => void
+      ) => {
+        callback({
+          ...projection,
+          currentLap: 8,
+          lapDistPct: 0.8,
+          sessionLaps: 'unlimited',
+          sessionLapsRemain: 32767,
+          calculatedTotalRaceLaps: 8,
+          estimatedLapsRemaining: 0,
+          hasValidRaceEstimate: true,
+          isFixedLapRace: false,
+        } as ChannelPayloads[K]);
+        return () => undefined;
+      },
+    };
+
+    const { result } = renderHook(() =>
+      useFuelCalculation(defaultFuelCalculatorSettings.safetyMargin, {
+        ...defaultFuelCalculatorSettings,
+        enableStorage: false,
+        enableLogging: false,
+      })
+    );
+
+    await waitFor(() => expect(result.current).not.toBeNull());
+    expect(result.current?.lapsRemaining).toBe(0);
   });
 
   it('does not load or save live history for recorded replay', async () => {

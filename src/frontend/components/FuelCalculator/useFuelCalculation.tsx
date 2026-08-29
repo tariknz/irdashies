@@ -57,6 +57,8 @@ export function useFuelCalculation(
   const isOnTrack = projection?.isOnTrack;
   const isFixedLapRace = projection?.isFixedLapRace ?? false;
   const calculatedTotalRaceLaps = projection?.calculatedTotalRaceLaps ?? 0;
+  const estimatedLapsRemaining = projection?.estimatedLapsRemaining ?? 0;
+  const hasValidRaceEstimate = projection?.hasValidRaceEstimate ?? false;
   const isRace = projection?.sessionType === 'Race';
   const fuelTankCapacityFromSession = projection?.fuelTankCapacity;
   const trackId = projection?.trackId;
@@ -603,10 +605,10 @@ export function useFuelCalculation(
       }
     } else if (sessionLapsRemain === TIMED_RACE_LAPS_REMAINING) {
       // Use centralized useTotalRaceLaps hook for timed race calculations
-      if (calculatedTotalRaceLaps > 0) {
+      if (hasValidRaceEstimate && calculatedTotalRaceLaps > 0) {
         // Use the hook's result directly
         totalLaps = Math.ceil(calculatedTotalRaceLaps);
-        lapsRemaining = Math.max(0, totalLaps - (lap - 1) - (lapDistPct || 0));
+        lapsRemaining = estimatedLapsRemaining;
 
         // Add safety buffer for refuel calculations
         const TIME_PADDING_REFUEL = 45.0;
@@ -1019,6 +1021,8 @@ export function useFuelCalculation(
     fuelTankCapacityFromSession,
     lapDistPct,
     calculatedTotalRaceLaps,
+    estimatedLapsRemaining,
+    hasValidRaceEstimate,
     lapHistorySize,
     projection,
   ]);
