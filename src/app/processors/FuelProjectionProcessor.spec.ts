@@ -219,6 +219,38 @@ describe('FuelProjectionProcessor', () => {
     });
   });
 
+  it('uses player distance when no overall leader position is available', () => {
+    const processor = new FuelProjectionProcessor();
+    processor.init({
+      DriverInfo: {
+        DriverCarIdx: 1,
+        Drivers: [{ CarIdx: 1, CarClassID: 1, CarClassEstLapTime: 100 }],
+      },
+      SessionInfo: {
+        Sessions: [
+          { SessionNum: 0, SessionType: 'Race', SessionLaps: 'unlimited' },
+        ],
+      },
+    } as unknown as Session);
+
+    processor.onFrame({
+      SessionNum: { value: [0] },
+      SessionState: { value: [4] },
+      SessionTimeRemain: { value: [810] },
+      CamCarIdx: { value: [1] },
+      CarIdxLap: { value: [0, 8] },
+      CarIdxLapDistPct: { value: [0, 0.8] },
+      CarIdxPosition: { value: [0, 2] },
+      CarIdxBestLapTime: { value: [0, 100] },
+    } as unknown as Telemetry);
+
+    expect(processor.snapshot()).toMatchObject({
+      calculatedTotalRaceLaps: 16,
+      estimatedLapsRemaining: 8.2,
+      hasValidRaceEstimate: true,
+    });
+  });
+
   it('rejects transient timed-race lap times', () => {
     const processor = new FuelProjectionProcessor();
     processor.init({

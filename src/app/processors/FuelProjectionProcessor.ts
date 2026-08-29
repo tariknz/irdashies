@@ -367,7 +367,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
     if (leaderLapTime < 10 || playerLapTime < 10) return emptyProjection;
 
     const leaderLap = carLaps[leaderCarIdx] ?? playerLap;
-    const leaderDistance = lapDistances[leaderCarIdx] ?? 0;
+    const leaderDistance = lapDistances[paceCarIdx] ?? 0;
     const playerDistance =
       lapDistances[playerCarIdx] ?? value(frame, 'LapDistPct');
     const leaderProgress = Math.max(0, leaderLap - 1) + leaderDistance;
