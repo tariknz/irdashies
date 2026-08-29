@@ -135,6 +135,8 @@ const previewProjection = {
   sessionNum: 0,
   sessionLaps: previewFuelData.totalLaps,
   calculatedTotalRaceLaps: previewFuelData.totalLaps,
+  estimatedLapsRemaining: 0,
+  hasValidRaceEstimate: false,
   isFixedLapRace: true,
   sessionType: 'Race',
   isOnTrack: true,
@@ -157,6 +159,7 @@ export default {
   title: 'widgets/FuelCalculator',
   args: baselineArgs,
   decorators: [
+    TelemetryDecorator(),
     ChannelSnapshotDecorator({ 'fuel.projection': previewProjection }),
     (Story, context) => (
       <OverlayFrame
@@ -183,7 +186,6 @@ export const Primary: Story = {
         <Story />
       </MockFuelDataProvider>
     ),
-    TelemetryDecorator(),
   ],
   args: { ...baselineArgs, previewData: previewFuelData },
 };

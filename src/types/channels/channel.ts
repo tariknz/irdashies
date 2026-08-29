@@ -322,6 +322,8 @@ export interface FuelProjectionSnapshot {
   sessionNum: number;
   sessionLaps: number | string;
   calculatedTotalRaceLaps: number;
+  estimatedLapsRemaining: number;
+  hasValidRaceEstimate: boolean;
   isFixedLapRace: boolean;
   sessionType?: string;
   isOnTrack: boolean;
