@@ -92,7 +92,7 @@ describe('FuelProjectionProcessor', () => {
     processor.init({
       DriverInfo: {
         DriverCarIdx: 0,
-        Drivers: [{ CarIdx: 0, CarClassEstLapTime: 90 }],
+        Drivers: [{ CarIdx: 0, CarClassID: 1, CarClassEstLapTime: 90 }],
       },
       SessionInfo: {
         Sessions: [
@@ -114,6 +114,7 @@ describe('FuelProjectionProcessor', () => {
       CarIdxLap: { value: [2] },
       CarIdxLapDistPct: { value: [0.1] },
       CarIdxPosition: { value: [1] },
+      CarIdxClassPosition: { value: [1] },
       CarIdxLastLapTime: { value: [1] },
       CarIdxBestLapTime: { value: [1] },
     } as unknown as Telemetry;
@@ -130,13 +131,19 @@ describe('FuelProjectionProcessor', () => {
       ...timedRaceFrame,
       CarIdxLastLapTime: { value: [100] },
     } as unknown as Telemetry);
-    expect(processor.snapshot().calculatedTotalRaceLaps).toBe(20);
+    expect(processor.snapshot()).toMatchObject({
+      calculatedTotalRaceLaps: 18,
+      estimatedLapsRemaining: 16.9,
+    });
 
     processor.onFrame({
       ...timedRaceFrame,
       CarIdxLastLapTime: { value: [110] },
     } as unknown as Telemetry);
-    expect(processor.snapshot().calculatedTotalRaceLaps).toBe(20);
+    expect(processor.snapshot()).toMatchObject({
+      calculatedTotalRaceLaps: 18,
+      estimatedLapsRemaining: 16.9,
+    });
   });
 
   it('uses fractional distance when correcting a timed race for lapping', () => {
@@ -145,8 +152,8 @@ describe('FuelProjectionProcessor', () => {
       DriverInfo: {
         DriverCarIdx: 1,
         Drivers: [
-          { CarIdx: 0, CarClassEstLapTime: 100 },
-          { CarIdx: 1, CarClassEstLapTime: 100 },
+          { CarIdx: 0, CarClassID: 1, CarClassEstLapTime: 100 },
+          { CarIdx: 1, CarClassID: 1, CarClassEstLapTime: 100 },
         ],
       },
       SessionInfo: {
@@ -164,6 +171,7 @@ describe('FuelProjectionProcessor', () => {
       CarIdxLap: { value: [10, 8] },
       CarIdxLapDistPct: { value: [0.1, 0.8] },
       CarIdxPosition: { value: [1, 10] },
+      CarIdxClassPosition: { value: [1, 2] },
       CarIdxBestLapTime: { value: [100, 100] },
     } as unknown as Telemetry);
 
@@ -180,8 +188,8 @@ describe('FuelProjectionProcessor', () => {
       DriverInfo: {
         DriverCarIdx: 1,
         Drivers: [
-          { CarIdx: 0, CarClassEstLapTime: 60 },
-          { CarIdx: 1, CarClassEstLapTime: 90 },
+          { CarIdx: 0, CarClassID: 1, CarClassEstLapTime: 55 },
+          { CarIdx: 1, CarClassID: 2, CarClassEstLapTime: 80 },
         ],
       },
       SessionInfo: {
@@ -199,7 +207,9 @@ describe('FuelProjectionProcessor', () => {
       CarIdxLap: { value: [10, 8] },
       CarIdxLapDistPct: { value: [0.1, 0.8] },
       CarIdxPosition: { value: [1, 10] },
-      CarIdxBestLapTime: { value: [60, 90] },
+      CarIdxClassPosition: { value: [1, 1] },
+      CarIdxLastLapTime: { value: [60, 90] },
+      CarIdxBestLapTime: { value: [55, 80] },
     } as unknown as Telemetry);
 
     expect(processor.snapshot()).toMatchObject({

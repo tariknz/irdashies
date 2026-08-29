@@ -135,6 +135,10 @@ describe('useFuelCalculation channel parity', () => {
     await waitFor(() => expect(result.current).not.toBeNull());
     expect(result.current?.lapsRemaining).toBe(9.2);
     expect(result.current?.lapsRemaining).not.toBeCloseTo(12.2);
+    expect(result.current?.fuelToFinish).toBeCloseTo(
+      9.2 * (result.current?.avgLaps ?? 0) +
+        (defaultFuelCalculatorSettings.safetyMargin + 0.25) * 1.3
+    );
   });
 
   it('accepts a validated zero-lap timed-race estimate', async () => {

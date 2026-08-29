@@ -12,6 +12,8 @@ import {
 import type { TelemetryProcessor } from './TelemetryProcessor';
 
 const MAX_LAP_HISTORY = 50;
+const CLASS_PACE_HISTORY = 5;
+const CLASS_PACE_OUTLIER_SECONDS = 2;
 
 export interface FuelProjectionPersistence {
   lapCompleted(lap: FuelLapData): void;
@@ -87,6 +89,8 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
   private readonly persistence: FuelProjectionPersistence;
   private readonly persistLaps: boolean;
   private lastCommands: readonly FuelEngineCommand[] = [];
+  private readonly classLapTimes = new Map<number, number[]>();
+  private lastLapTimesByCarIdx: number[] = [];
   private aggregationEnabled = true;
   private session?: Session;
   private sourceReplay: boolean;
@@ -126,6 +130,7 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
     const driverInfo = this.session?.DriverInfo;
     const maxFuel = driverInfo?.DriverCarFuelMaxLtr;
     const maxFuelPct = driverInfo?.DriverCarMaxFuelPct;
+    this.updateClassLapTimes(frame);
     const raceProjection = this.calculateRaceProjection(
       frame,
       sessionInfo?.SessionType,
@@ -251,6 +256,8 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
   ): void {
     this.engine.reset();
     this.lastCommands = [];
+    this.classLapTimes.clear();
+    this.lastLapTimesByCarIdx = [];
     if (!preserveCompletedLaps) this.laps.length = 0;
     this.latest = this.emptySnapshot();
   }
@@ -326,13 +333,15 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
     )?.CarClassEstLapTime;
     const bestLapTimes = values(frame, 'CarIdxBestLapTime');
     const leaderLapTime =
-      leaderClassEstimate && leaderClassEstimate > 0
+      this.classPace(paceCarIdx) ??
+      (leaderClassEstimate && leaderClassEstimate > 0
         ? leaderClassEstimate
-        : (bestLapTimes[paceCarIdx] ?? 0);
+        : (bestLapTimes[paceCarIdx] ?? 0));
     const playerLapTime =
-      playerClassEstimate && playerClassEstimate > 0
+      this.classPace(playerCarIdx) ??
+      (playerClassEstimate && playerClassEstimate > 0
         ? playerClassEstimate
-        : (bestLapTimes[playerCarIdx] ?? 0);
+        : (bestLapTimes[playerCarIdx] ?? 0));
     const configuredLaps = Number.parseInt(sessionLaps ?? '0', 10) || 0;
 
     if (value(frame, 'SessionState') >= 5) {
@@ -380,5 +389,48 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
       hasValidEstimate: true,
       isFixedLapRace,
     };
+  }
+
+  private updateClassLapTimes(frame: Telemetry): void {
+    const lapTimes = values(frame, 'CarIdxLastLapTime');
+    if (lapTimes.length === 0 || !isGreenFlag(value(frame, 'SessionFlags'))) {
+      return;
+    }
+    const classPositions = values(frame, 'CarIdxClassPosition');
+    const drivers = this.session?.DriverInfo?.Drivers;
+    lapTimes.forEach((lapTime, carIdx) => {
+      const previous = this.lastLapTimesByCarIdx[carIdx];
+      this.lastLapTimesByCarIdx[carIdx] = lapTime;
+      if (
+        lapTime < 10 ||
+        lapTime === previous ||
+        classPositions[carIdx] !== 1
+      ) {
+        return;
+      }
+      const classId = drivers?.find(
+        (driver) => driver.CarIdx === carIdx
+      )?.CarClassID;
+      if (classId === undefined) return;
+      const history = [
+        ...(this.classLapTimes.get(classId) ?? []),
+        lapTime,
+      ].slice(-CLASS_PACE_HISTORY);
+      this.classLapTimes.set(classId, history);
+    });
+  }
+
+  private classPace(carIdx: number): number | undefined {
+    const classId = this.session?.DriverInfo?.Drivers?.find(
+      (driver) => driver.CarIdx === carIdx
+    )?.CarClassID;
+    if (classId === undefined) return undefined;
+    const history = this.classLapTimes.get(classId) ?? [];
+    if (history.length === 0) return undefined;
+    const fastest = Math.min(...history);
+    const valid = history.filter(
+      (lapTime) => lapTime <= fastest + CLASS_PACE_OUTLIER_SECONDS
+    );
+    return valid.reduce((sum, lapTime) => sum + lapTime, 0) / valid.length;
   }
 }
