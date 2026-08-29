@@ -207,8 +207,10 @@ export async function publishIRacingSDKEvents(
   overlayManager.publishMessage('runningState', initialRunningState);
   runningStateCallbacks.forEach((callback) => callback(initialRunningState));
 
-  const runningStateInterval = setInterval(() => {
-    const isSimRunning = sdk.sessionStatusOK;
+  // Publishes a change once, whoever notices it first. The telemetry loop
+  // calls this the moment it has data, so overlays are not left believing the
+  // sim is down until the poll below next runs.
+  const publishRunningState = (isSimRunning: boolean) => {
     if (isSimRunning === lastRunningState) {
       return;
     }
@@ -219,6 +221,10 @@ export async function publishIRacingSDKEvents(
     );
     overlayManager.publishMessage('runningState', isSimRunning);
     runningStateCallbacks.forEach((callback) => callback(isSimRunning));
+  };
+
+  const runningStateInterval = setInterval(() => {
+    publishRunningState(sdk.sessionStatusOK);
   }, 5000);
 
   // Start the telemetry loop in the background
@@ -250,6 +256,11 @@ export async function publishIRacingSDKEvents(
         if (!wasRunning) {
           logger.info(`[iracingSdkBridge] ${sourceName} is running`);
           wasRunning = true;
+          // sessionStatusOK can still read false when the bridge seeds it, so
+          // the arrival of real data is the earliest reliable proof the sim is
+          // up. Without this the overlays wait out the 5s poll before showing
+          // anything.
+          publishRunningState(true);
           lifecycle?._onEnter({ replay: isTapeReplay });
         }
         perfMetrics.markStart('processTelemetry');
