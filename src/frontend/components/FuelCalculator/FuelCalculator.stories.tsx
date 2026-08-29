@@ -159,6 +159,7 @@ export default {
   title: 'widgets/FuelCalculator',
   args: baselineArgs,
   decorators: [
+    TelemetryDecorator(),
     ChannelSnapshotDecorator({ 'fuel.projection': previewProjection }),
     (Story, context) => (
       <OverlayFrame
@@ -185,7 +186,6 @@ export const Primary: Story = {
         <Story />
       </MockFuelDataProvider>
     ),
-    TelemetryDecorator(),
   ],
   args: { ...baselineArgs, previewData: previewFuelData },
 };

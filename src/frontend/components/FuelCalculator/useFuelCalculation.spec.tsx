@@ -137,6 +137,39 @@ describe('useFuelCalculation channel parity', () => {
     expect(result.current?.lapsRemaining).not.toBeCloseTo(12.2);
   });
 
+  it('accepts a validated zero-lap timed-race estimate', async () => {
+    window.channelBridge = {
+      subscribe: <K extends ChannelName>(
+        _channel: K,
+        callback: (payload: ChannelPayloads[K]) => void
+      ) => {
+        callback({
+          ...projection,
+          currentLap: 8,
+          lapDistPct: 0.8,
+          sessionLaps: 'unlimited',
+          sessionLapsRemain: 32767,
+          calculatedTotalRaceLaps: 8,
+          estimatedLapsRemaining: 0,
+          hasValidRaceEstimate: true,
+          isFixedLapRace: false,
+        } as ChannelPayloads[K]);
+        return () => undefined;
+      },
+    };
+
+    const { result } = renderHook(() =>
+      useFuelCalculation(defaultFuelCalculatorSettings.safetyMargin, {
+        ...defaultFuelCalculatorSettings,
+        enableStorage: false,
+        enableLogging: false,
+      })
+    );
+
+    await waitFor(() => expect(result.current).not.toBeNull());
+    expect(result.current?.lapsRemaining).toBe(0);
+  });
+
   it('does not load or save live history for recorded replay', async () => {
     const getHistoricalLaps = vi.fn(async () => []);
     const saveLap = vi.fn(async () => undefined);

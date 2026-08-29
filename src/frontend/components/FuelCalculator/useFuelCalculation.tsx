@@ -605,11 +605,7 @@ export function useFuelCalculation(
       }
     } else if (sessionLapsRemain === TIMED_RACE_LAPS_REMAINING) {
       // Use centralized useTotalRaceLaps hook for timed race calculations
-      if (
-        hasValidRaceEstimate &&
-        calculatedTotalRaceLaps > 0 &&
-        estimatedLapsRemaining > 0
-      ) {
+      if (hasValidRaceEstimate && calculatedTotalRaceLaps > 0) {
         // Use the hook's result directly
         totalLaps = Math.ceil(calculatedTotalRaceLaps);
         lapsRemaining = estimatedLapsRemaining;
