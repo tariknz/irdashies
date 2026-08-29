@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import logger from '@irdashies/utils/logger';
 import { useLapTimesSnapshot } from '../ChannelStore';
 import { useLapTimesStore } from './LapTimesStore';
 
@@ -10,8 +11,29 @@ import { useLapTimesStore } from './LapTimesStore';
 export const useLapTimesStoreUpdater = (enabled: boolean) => {
   const snapshot = useLapTimesSnapshot(enabled);
   const applySnapshot = useLapTimesStore((state) => state.applySnapshot);
+  // Widgets that wait on lap times look empty until the first car has a time.
+  // Log both moments once so a slow startup can be attributed.
+  const logged = useRef({ arrived: false, populated: false });
 
   useEffect(() => {
-    if (snapshot && enabled) applySnapshot(snapshot);
+    if (!snapshot || !enabled) return;
+    applySnapshot(snapshot);
+
+    const marks = logged.current;
+    if (!marks.arrived) {
+      marks.arrived = true;
+      logger.debug(
+        `[LapTimesStore] first snapshot: sessionNum=${snapshot.sessionNum} version=${snapshot.version} cars=${snapshot.lapTimes.length}`
+      );
+    }
+    if (!marks.populated) {
+      const withTimes = snapshot.lapTimes.filter((time) => time > 0).length;
+      if (withTimes > 0) {
+        marks.populated = true;
+        logger.debug(
+          `[LapTimesStore] first populated snapshot: ${withTimes} cars with a lap time (version=${snapshot.version})`
+        );
+      }
+    }
   }, [applySnapshot, enabled, snapshot]);
 };
