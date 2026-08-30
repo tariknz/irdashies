@@ -5,7 +5,7 @@ import { DriverRatingBadge } from './DriverRatingBadge';
 describe('DriverRatingBadge', () => {
   it('renders with default props', () => {
     const { container } = render(<DriverRatingBadge />);
-    expect(container.textContent).toBe('R 0.00.0k');
+    expect(container.textContent).toBe('AI');
   });
 
   it('renders with license A and rating 5000', () => {
@@ -54,7 +54,7 @@ describe('DriverRatingBadge', () => {
     const { container } = render(
       <DriverRatingBadge license={undefined} rating={undefined} />
     );
-    expect(container.textContent).toBe('R 0.00.0k');
+    expect(container.textContent).toBe('AI');
   });
 
   it('rounds rating to 1 decimal place', () => {

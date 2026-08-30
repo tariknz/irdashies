@@ -110,15 +110,9 @@ interface ProcessorHostOptions {
 }
 
 const defaultFrameClock = (frame: Telemetry): number | undefined => {
-  const isReplayPlaying = frame.IsReplayPlaying?.value?.[0];
-  if (isReplayPlaying === true) {
-    // Replay presentation must remain responsive while SessionTime is paused
-    // or advancing in slow motion.
-    return performance.now() / 1000;
-  }
-  const sessionTime = frame.SessionTime?.value?.[0];
-  return typeof sessionTime === 'number' && Number.isFinite(sessionTime)
-    ? sessionTime
+  const sessionTick = frame.SessionTick?.value?.[0];
+  return typeof sessionTick === 'number' && Number.isFinite(sessionTick)
+    ? sessionTick
     : undefined;
 };
 
