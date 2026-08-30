@@ -156,24 +156,11 @@ jobs:
           node-version: '24'
           cache: 'npm'
 
-      - name: Cache node_modules and native builds
-        uses: actions/cache@v5
-        id: cache-deps
-        with:
-          path: |
-            node_modules
-            .vite
-            **/node_modules
-            **/*.node
-            **/build/Release
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/binding.gyp', '**/node_modules/**/*.node') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}-
-            ${{ runner.os }}-node-
-
       - name: Install dependencies
-        if: steps.cache-deps.outputs.cache-hit != 'true'
         run: npm ci
+
+      - name: Build native iRacing addon
+        run: npm run irsdk:build
 
       # --- Signed release ----------------------------------------------------
       # Pushes release only when the version changes. Manual runs release only
@@ -191,6 +178,39 @@ jobs:
         run: npx electron-forge package
         env:
           POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
+
+      - name: Verify packaged native iRacing addon
+        shell: pwsh
+        run: |
+          $asarPath = 'out/irdashies-win32-x64/resources/app.asar'
+          $builtAddon = 'build/Release/irsdk_node.node'
+          $extractDirectory = Join-Path $env:RUNNER_TEMP 'irdashies-asar-verification'
+
+          if (-not (Test-Path -LiteralPath $asarPath -PathType Leaf)) {
+            throw "Packaged ASAR not found: $asarPath"
+          }
+          if (-not (Test-Path -LiteralPath $builtAddon -PathType Leaf)) {
+            throw "Built native addon not found: $builtAddon"
+          }
+
+          npx asar extract $asarPath $extractDirectory
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Failed to extract the packaged ASAR.'
+          }
+
+          $packagedAddon = Join-Path `
+            $extractDirectory `
+            '.vite/build/Release/irsdk_node.node'
+          if (-not (Test-Path -LiteralPath $packagedAddon -PathType Leaf)) {
+            throw "Packaged native addon not found: $packagedAddon"
+          }
+
+          $builtHash = (Get-FileHash -LiteralPath $builtAddon -Algorithm SHA256).Hash
+          $packagedHash = `
+            (Get-FileHash -LiteralPath $packagedAddon -Algorithm SHA256).Hash
+          if ($builtHash -ne $packagedHash) {
+            throw "Packaged native addon does not match the freshly built addon. Built: $builtHash; packaged: $packagedHash"
+          }
 
       - name: Archive packaged Windows application
         shell: pwsh
