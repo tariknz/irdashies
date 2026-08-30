@@ -22,7 +22,7 @@ are still required before attributing the memory change to Phase 3.
 
 The legacy telemetry stream intentionally remains for widgets not yet migrated.
 Those migrations are tracked as Phase 4 in
-[`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md).
+[archived implementation plan](./archive/architecture-2026/IMPLEMENTATION_PLAN.md).
 
 ## 1. Outcomes
 

@@ -878,7 +878,7 @@ export class OverlayManager {
     }
 
     // customSwitches is already allowlist-filtered in getChromiumFlags()
-    // (see docs/ARCHITECTURE_REVIEW.md finding S1). Anything unsafe was
+    // (see the archived 2026 architecture review, finding S1). Anything unsafe was
     // dropped at the storage normalisation step; parsing here is a clean,
     // structural pass over the safe subset.
     for (const { name, value } of parseCustomSwitches(

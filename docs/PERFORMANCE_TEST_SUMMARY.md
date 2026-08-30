@@ -20,7 +20,7 @@
 >
 > **Date:** May 2026
 > **Author:** Kev (with AI-assisted analysis)
-> **Companion file:** [`ARCHITECTURE_REVIEW.md`](./ARCHITECTURE_REVIEW.md)
+> **Companion file:** [archived architecture review](./archive/architecture-2026/ARCHITECTURE_REVIEW.md)
 > **Purpose:** Empirical evidence to inform updates to the architecture review and prioritisation of remediation work.
 >
 > **Repeatable harness:** See

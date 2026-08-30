@@ -277,4 +277,4 @@ measured layer:
   application-wide architecture.
 
 Follow-up work, evidence gates, and measurable exit criteria are tracked in
-[`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md#performance-measurement-and-optimization-plan-2026-07-26).
+[archived implementation plan](./archive/architecture-2026/IMPLEMENTATION_PLAN.md#performance-measurement-and-optimization-plan-2026-07-26).

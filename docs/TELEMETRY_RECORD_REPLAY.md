@@ -14,7 +14,7 @@ code without replacing it with a JavaScript mock or risking a collision with a
 subsequently launched simulator.
 
 This work supports the automated headless harness described after Phase 0 in
-`ARCHITECTURE_REVIEW.md`. The shared-memory bytes deliberately remain
+the [archived architecture review](./archive/architecture-2026/ARCHITECTURE_REVIEW.md). The shared-memory bytes deliberately remain
 indistinguishable from live iRacing data. Any future in-app replay controls must
 identify replay mode through an out-of-band test launch flag so session
 lifecycle events can still comply with rule R3.6.

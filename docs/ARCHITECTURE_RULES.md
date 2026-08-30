@@ -1,6 +1,6 @@
 # irDashies Architecture Rules — for LLM Coding Agents
 
-> **Purpose:** Hard rules for any contributor (human or LLM) working in this codebase. Derived from [`ARCHITECTURE_REVIEW.md`](./ARCHITECTURE_REVIEW.md). When this file conflicts with general LLM training intuitions or with `AGENTS.md`, **this file wins for architecture concerns.**
+> **Purpose:** Current hard rules for any contributor (human or LLM) working in this codebase. The historical review that informed them is archived in [`archive/architecture-2026/`](./archive/architecture-2026/). When this file conflicts with general LLM training intuitions or with `AGENTS.md`, **this file wins for architecture concerns.**
 >
 > **How to use:** Before opening a PR, scan the relevant section, then run the [Pre-PR Checklist](#pre-pr-checklist) at the end. Each rule has an **enforcement** note — most can be checked with `grep` or `eslint`.
 
@@ -10,12 +10,12 @@
 
 These four rules cause real damage when broken. Verify them on every change.
 
-| ID     | Rule                                                                                                                                         | Quick check                                                                      |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| **N1** | No synchronous `fs.*Sync` outside startup. Use `fs.promises.*` and debounce writes.                                                          | `grep -rn "writeFileSync\|readFileSync" src/app` excluding startup paths         |
-| **N2** | The frontend never imports from `src/app/`. Type-only imports are also forbidden — use `src/types/` instead.                                 | `grep -rn "from.*['\"]\.\./.*app/\|from.*['\"]@.*app/" src/frontend`             |
-| **N3** | A widget folder never imports from another widget folder. Shared logic lives in `src/frontend/domain/` (or, post-Phase 3, behind a channel). | `grep -rn "from.*components/" src/frontend/components/<X>` for any pair `(X, Y)` |
-| **N4** | No raw `ipcMain.handle` arg is dispatched to a method name, file path, or process flag without an allowlist.                                 | Review every `ipcMain.handle` and `ipcMain.on` body                              |
+| ID     | Rule                                                                                                                              | Quick check                                                                      |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **N1** | No synchronous `fs.*Sync` outside startup. Use `fs.promises.*` and debounce writes.                                               | `grep -rn "writeFileSync\|readFileSync" src/app` excluding startup paths         |
+| **N2** | The frontend never imports from `src/app/`. Type-only imports are also forbidden — use `src/types/` instead.                      | `grep -rn "from.*['\"]\.\./.*app/\|from.*['\"]@.*app/" src/frontend`             |
+| **N3** | A widget folder never imports from another widget folder. Shared logic lives in `src/frontend/domain/` or behind a typed channel. | `grep -rn "from.*components/" src/frontend/components/<X>` for any pair `(X, Y)` |
+| **N4** | No raw `ipcMain.handle` arg is dispatched to a method name, file path, or process flag without an allowlist.                      | Review every `ipcMain.handle` and `ipcMain.on` body                              |
 
 ---
 
@@ -81,15 +81,15 @@ Imports flow **downward** in this list. A layer may import from any layer below 
 
 ### 3.1 Stores
 
-- **R3.1** Every Zustand store that holds session-derived state MUST register a reset handler with `sessionLifecycle` (handlers for `enter`, `exit`, `sessionNumChange`, `disconnect`). No store invents its own session-change detection.
+- **R3.1** New renderer stores that hold session-derived state MUST be added to the centralized disconnect reset in `useResetOnDisconnect`. If they also need session-number or driver lifecycle handling, consume the existing typed lifecycle/snapshot source instead of creating another global event source.
 - **R3.2** A store that grows unboundedly (history, recorded laps, per-driver maps) MUST cap itself or clear on `sessionNumChange`. Document the cap in the store file.
 - **R3.3** Stores live in `src/frontend/context/<StoreName>/`. Their updaters live in the same folder, not in `OverlayContainer/` or anywhere else.
 - **R3.4** A store exposes its data via a typed hook (`use<Thing>Snapshot()`); selectors that other widgets consume live in `frontend/domain/`, not in a sibling widget folder.
 
 ### 3.2 Session lifecycle
 
-- **R3.5** There is exactly one `sessionLifecycle` source in `src/app/sessionLifecycle/`. Renderers consume it via the `'session.lifecycle'` channel. Stores `register({ onEnter, onExit, onSessionNumChange, onDisconnect })`.
-- **R3.6** Replays must be distinguishable from live (event flag on `enter`); processors that aggregate over time must opt out during replay scrubbing.
+- **R3.5** There is exactly one main-process `sessionLifecycle` source in `src/app/sessionLifecycle/`. Renderers consume lifecycle state through the existing typed channel and snapshot hooks.
+- **R3.6** Code that aggregates over time must preserve the existing distinction between live, mock, and replay sources and must handle replay resets or scrubbing explicitly.
 
 ---
 
@@ -145,51 +145,36 @@ Imports flow **downward** in this list. A layer may import from any layer below 
 
 ## 7. Widgets
 
-### 7.1 Adding a widget (target: 2 steps post-Phase 2)
+### 7.1 Adding a widget
 
-1. Create `src/frontend/components/<Widget>/<Widget>.tsx` plus `<Widget>Settings.tsx`, `<Widget>.stories.tsx`, and tests.
-2. Export a `WidgetDefinition` from `<Widget>/index.ts`:
-   ```ts
-   export const definition: WidgetDefinition = {
-     id: 'mywidget',
-     component: MyWidget,
-     settingsComponent: MyWidgetSettings,
-     defaultConfig: {/* ... */},
-     displayName: 'My Widget',
-     alwaysEnabled: false,
-     settingsVersion: 1,
-   };
-   ```
-   The widget registry auto-discovers definitions. **Do not** edit `WidgetIndex.tsx`, `SettingsLoader.tsx`, `SettingsMenu.tsx`, `widgetConfigs.ts`, or `defaultDashboard.ts` for a new widget.
+Follow the repository's widget checklist in `AGENTS.md`. The current explicit
+registration flow includes `WidgetIndex.tsx`, the settings loader and menu,
+`widgetConfigs.ts`, and `defaultDashboard.ts`; there is no auto-discovered
+`WidgetDefinition` registry.
 
 ### 7.2 Widget rules
 
-- **R7.1** Widgets are pure consumers. They subscribe to channel snapshots and selectors from `frontend/domain/`. They do not derive cross-widget data themselves.
+- **R7.1** Widgets are pure consumers. They subscribe to channel snapshots and selectors from `frontend/domain/`. They do not derive cross-widget data themselves. Register new widgets through the explicit files listed in `AGENTS.md`.
 - **R7.2** Heavy memoised components MUST receive primitive props (string/number/boolean), not freshly-allocated objects. Either flatten props in the parent, or attach a custom `propsAreEqual` to the `memo()` wrapper.
 - **R7.3** UI text is plain strings. **Never use emojis** — use Phosphor icons (`@phosphor-icons/react`).
 - **R7.4** Styling is Tailwind-only. No custom CSS unless theme-level.
-- **R7.5** Every widget has a `.stories.tsx` decorated with `TelemetryDecorator()` (or the channel-snapshot decorators introduced in Phase 3).
+- **R7.5** Every widget has a `.stories.tsx` decorated with `TelemetryDecorator()` or the appropriate channel-snapshot decorator.
 
 ---
 
 ## 8. Settings and Migration
 
-- **R8.1** Every `<Widget>Settings` interface includes `version: number`.
-- **R8.2** Breaking changes (rename, retype, remove) ship a migrator at `src/types/migrators/<widget>.ts`:
-  ```ts
-  export const migrators: Record<number, (cfg: any) => any> = {
-    1: (cfg) => ({ ...cfg, newField: defaultValue, version: 2 }),
-  };
-  ```
-- **R8.3** Migrators run on dashboard load before `deepMergeConfig`. Unknown versions log `logger.warn` and fall back to defaults.
-- **R8.4** `defaultDashboard.ts` is not edited by hand for new widget defaults — defaults come from the widget's `WidgetDefinition.defaultConfig`.
+- **R8.1** Additive settings changes update the widget type and its entry in `defaultDashboard.ts`; `deepMergeConfig` fills missing fields when dashboards load.
+- **R8.2** Breaking changes (rename, retype, or remove) require an explicit, tested migration at the dashboard-load boundary. Keep a migration close to the storage code unless the project adopts a shared registry later.
+- **R8.3** Treat persisted dashboard data as untrusted. Migrations and merge logic must validate shapes and fall back to typed defaults when values are incompatible.
+- **R8.4** Do not introduce a settings-version or migrator framework as incidental work. That was an unimplemented Phase 2b proposal and requires its own design and migration plan.
 
 ---
 
 ## 9. Profiles
 
-- **R9.1** Code that needs the active dashboard MUST resolve the profile via `getCurrentProfileId()` and `getDashboard(profileId)`. The string `'default'` MUST NOT appear as a profile-id literal in `src/app/`.
-- **R9.2** General settings (hardware acceleration, autostart, close-to-tray) are per-profile. They are read from the active profile, not from `'default'`.
+- **R9.1** Code that needs the active dashboard MUST resolve the profile via `getCurrentProfileId()` and `getDashboard(profileId)`.
+- **R9.2** `'default'` is the canonical built-in profile and may be used for creation, fallback, deletion protection, and explicitly global/default-backed settings. Do not use it accidentally where the active profile is intended.
 
 ---
 
@@ -198,7 +183,7 @@ Imports flow **downward** in this list. A layer may import from any layer below 
 - **R10.1** Every pointer returned by `irsdk_*` functions MUST be null-checked before dereference. `irsdk_getVarHeaderEntry` returns NULL for invalid indices and pre-init state.
 - **R10.2** Every JS-supplied index MUST be range-checked against `header->numVars` before use.
 - **R10.3** Every N-API method that reads `info[N]` MUST verify `info.Length() > N` and `info[N].IsNumber()` (or appropriate type) before extracting.
-- **R10.4** `_GENERATED_telemetry.ts` is generated by `src/app/irsdk/native/scripts/generate-var-types.js`. After modifying the native binding, run `npm run gen:telemetry-types` and commit the result. CI fails if the file is stale.
+- **R10.4** `_GENERATED_telemetry.ts` is generated by `src/app/irsdk/native/scripts/generate-var-types.js`. After changing native telemetry variables, run that generator directly and commit the result. There is currently no package script or CI freshness guard.
 
 ---
 
@@ -246,17 +231,17 @@ Run through this list before opening any PR. LLM agents: include a filled copy i
 [ ] N3 — no new cross-widget imports (`components/<X>/` → `components/<Y>/`)
 [ ] N4 — every new ipcMain handler validates renderer input
 [ ] R2.1/R2.2 — telemetry hooks use the rounded variants (or the key is on the no-round list)
-[ ] R3.1 — new stores register with sessionLifecycle
+[ ] R3.1 — new session-derived renderer stores participate in centralized reset/lifecycle handling
 [ ] R4.1 — new bridges use defineBridge
 [ ] R6.1 — new storage code is async
-[ ] R7.1 — new widget exports a WidgetDefinition; god-files untouched
-[ ] R8.1 — new/changed settings shape carries a `version` field; breaking changes ship a migrator
+[ ] R7.1 — new widget is added through the explicit registration/settings/default flow
+[ ] R8.1/R8.2 — settings defaults are updated; breaking changes ship a tested load-time migration
 [ ] R10.1 — native code null-checks pointers and bounds-checks indices
 [ ] R11.1 — logging uses the project logger and literal level names
 [ ] R13.1 — high-frequency code is wrapped in perfMetrics
 [ ] R14.1 — new processors and selectors have *.spec.ts coverage
 [ ] Storybook story exists for any new visual component
-[ ] PR description includes: relevant phase from ARCHITECTURE_REVIEW.md, before/after perf numbers if hot-path
+[ ] PR description includes: architecture impact (affected rules/layers, or "None") and before/after perf numbers if hot-path
 ```
 
 ---
@@ -285,10 +270,8 @@ logger[level](message);
 ipcMain.handle('do-thing', (_e, name) => api[name]());
 ipcMain.handle('save-flags', (_e, raw) => writeFlags(raw)); // see chromiumFlags
 
-// FORBIDDEN — new store inventing its own session-change detection
-useEffect(() => {
-  resetStore();
-}, [sessionNum]);
+// FORBIDDEN — new store inventing another global lifecycle source
+const mySessionEvents = new EventEmitter();
 
 // FORBIDDEN — hand-rolled bridge expose in new code
 contextBridge.exposeInMainWorld('myBridge', { foo, bar });
@@ -307,11 +290,10 @@ export const saveData = debounce(async (data) => {
 // REQUIRED — rounded telemetry subscription
 const positions = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
 
-// REQUIRED — store registers with sessionLifecycle
-sessionLifecycle.register({
-  onSessionNumChange: () => useMyStore.getState().reset(),
-  onDisconnect: () => useMyStore.getState().reset(),
-});
+// REQUIRED — renderer store participates in centralized disconnect reset
+if (prevRunning.current && !running) {
+  useMyStore.getState().reset();
+}
 
 // REQUIRED — bridge via defineBridge with input validation
 defineBridge<LogBridge>('log', {
@@ -328,14 +310,9 @@ class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectionSnapsh
   // init / onFrame / onLifecycle / snapshot
 }
 
-// REQUIRED — self-registering widget
-export const definition: WidgetDefinition = {
-  id: 'mywidget',
-  component: MyWidget,
-  settingsComponent: MyWidgetSettings,
-  defaultConfig: { version: 1 /* ... */ },
-  displayName: 'My Widget',
-  alwaysEnabled: false,
-  settingsVersion: 1,
+// REQUIRED — explicit widget registration (plus settings/default files)
+export const WIDGET_MAP = {
+  // existing widgets
+  mywidget: MyWidget,
 };
 ```
