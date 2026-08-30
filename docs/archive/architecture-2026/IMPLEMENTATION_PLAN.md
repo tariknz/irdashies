@@ -1,15 +1,17 @@
 # irDashies Architecture Implementation Plan — Running Log
 
-> **Purpose:** Single source of truth for _what has been done_, _what is being done now_, and _what remains_, as we work through the phased plan from [`ARCHITECTURE_REVIEW.md`](./ARCHITECTURE_REVIEW.md) under the rules in [`ARCHITECTURE_RULES.md`](./ARCHITECTURE_RULES.md).
+> **Archived:** The architecture programme is closed as of 2026-08-30. This document preserves decisions and implementation history; unchecked items are not an active backlog. Current requirements live in [`../../ARCHITECTURE_RULES.md`](../../ARCHITECTURE_RULES.md).
 >
-> **Audience:** Maintainers and LLM coding agents. Each contributor should append to the **Activity log** at the bottom whenever they touch this work, so the next contributor can pick up cold.
+> **Closure decision:** Phase 2b's residual cleanup was not carried forward as a programme. Any still-relevant item requires fresh justification and should be tracked as standalone work. Phase 5 was declined because Phase 4 profiling found no CPU-hot processor or event-loop evidence that justified moving the native SDK loop to a worker thread. Phase 6 remains similarly unjustified.
+>
+> **Original purpose:** Single source of truth for what had been done, what was underway, and what remained during the phased implementation.
 >
 > **Companion files:**
 >
 > - [`ARCHITECTURE_REVIEW.md`](./ARCHITECTURE_REVIEW.md) — findings + target architecture + phased plan
-> - [`ARCHITECTURE_RULES.md`](./ARCHITECTURE_RULES.md) — enforceable rules
-> - [`PERFORMANCE_TEST_SUMMARY.md`](./PERFORMANCE_TEST_SUMMARY.md) — empirical evidence underpinning Phase 0
-> - [`TELEMETRY_PERFORMANCE_REPORT.html`](./TELEMETRY_PERFORMANCE_REPORT.html) — July 2026 deterministic replay and layer-by-layer A/B
+> - [`ARCHITECTURE_RULES.md`](../../ARCHITECTURE_RULES.md) — current enforceable rules
+> - [`PERFORMANCE_TEST_SUMMARY.md`](../../PERFORMANCE_TEST_SUMMARY.md) — empirical evidence underpinning Phase 0
+> - [`TELEMETRY_PERFORMANCE_REPORT.html`](../../TELEMETRY_PERFORMANCE_REPORT.html) — July 2026 deterministic replay and layer-by-layer A/B
 
 ---
 
@@ -26,13 +28,13 @@
 | **Phase 2a Tier 2a — Disconnect leave cleanup**       | LANDED                         | `feat/phase-2a-tier2-disconnect-cleanup` | `sessionLifecycle._onDisconnect` emits synthetic per-driver leaves; `useDriverLivePositions` clears driver-keyed refs on `running` true→false. **GR86 Miami 2026-05-18 validated**: 196 `Driver left (disconnect)` lines symmetric with 196 joins, 4 `Released N per-driver slots` summaries match 4 disconnect events.                                                   |
 | **Phase 2a Tier 2b — Reference-lap dedup**            | LANDED                         | `feat/phase-2a-tier2-reflap-dedup`       | Main-process in-memory cache + debounced async write. Collapses 3× per-renderer save bursts into one async write. **Note**: PCC, SFL, combined PR, and Miami tests all still show 3× clusters in renderer-side log lines — filesystem-level write count verification still needed to confirm debounce is engaging at the FS layer.                                        |
 | **Phase 2a integration PR**                           | READY TO MERGE                 | `feat/phase-2a-integration`              | Cherry-picks of Tier 1 + H1 + Tier 2a + Tier 2b + post-test docs + 2026-05-17 follow-ups (disconnect log line, empty-Drivers guard, bridge stale-state nulling) + 2026-05-19 R1+R2 (reference-lap fetch dedup, post-debounce write log). Combined PR test 2026-05-17 owner-confirmed good; spectated PCC 2026-05-18 confirms architectural state. **809/809 tests pass.** |
-| **Phase 2a mid-session leave detection** (2026-05-18) | DECLINED & REVERTED            | —                                        | Identity-key approach was implemented and tested 2026-05-18, then declined the same day after cost/benefit review (see [`PERFORMANCE_TEST_LOG.md`](./PERFORMANCE_TEST_LOG.md) §4 "Declined for fix"). Working-tree changes reverted 2026-05-19 before any commit landed on the integration branch. Preserved here for institutional memory; no further action.            |
+| **Phase 2a mid-session leave detection** (2026-05-18) | DECLINED & REVERTED            | —                                        | Identity-key approach was implemented and tested 2026-05-18, then declined the same day after cost/benefit review (see [`PERFORMANCE_TEST_LOG.md`](../../PERFORMANCE_TEST_LOG.md) §4 "Declined for fix"). Working-tree changes reverted 2026-05-19 before any commit landed on the integration branch. Preserved here for institutional memory; no further action.        |
 | **Phase 2a remaining items**                          | R1+R2 LANDED, R3 PENDING       | `feat/phase-2a-integration` for R1+R2    | R1 (reference-lap fetch dedup) + R2 (post-debounce write log) landed 2026-05-19. R3 (Empty Dashboard substrate baseline test) is a test run, not code work — pending.                                                                                                                                                                                                     |
-| **Phase 2b — Architectural cleanup (remaining)**      | NOT STARTED                    | —                                        | A1, A4, A5, A6, A7 completion, A9. Lower urgency now Standings memory issue is resolved                                                                                                                                                                                                                                                                                   |
+| **Phase 2b — Architectural cleanup (remaining)**      | CLOSED WITH PROGRAMME          | —                                        | Residual maintainability ideas were not carried forward as an active phase. Reassess and track individually if future evidence justifies them.                                                                                                                                                                                                                            |
 | **Phase 3 — Channel-based bridge**                    | LANDED; MEMORY GATE OPEN       | PRs #646, #649–#652, #656, #658          | Typed rate-aware channels, per-window subscriptions, deterministic replay validation, Fuel processor/renderer migration, conditional legacy telemetry, and performance instrumentation are on `main`. The Fuel-only A/B removed legacy deliveries and reduced app-wide renderer wake-ups by 42.4%; both baseline and candidate still failed the memory-slope gate.        |
 | **Phase 4 — Main-process processors**                 | LANDED; VALIDATED; MEMORY OPEN | PRs #659–#681                            | Phase 4.1 packaged validation preserves CPU/cadence/latency/frame pacing, but reproduces main private-memory growth at +5.60 MB/min (previously +5.82). V8 retained-allocation sampling does not implicate processor snapshots; logging and external/native/V8-capacity accounting are next. Phase 5/6 remain unjustified.                                                |
-| **Phase 5 — Worker-thread SDK loop**                  | NOT STARTED                    | —                                        |                                                                                                                                                                                                                                                                                                                                                                           |
-| **Phase 6 — Native optimisations**                    | DEFERRED                       | —                                        | Only if Phase 4 profiling demands                                                                                                                                                                                                                                                                                                                                         |
+| **Phase 5 — Worker-thread SDK loop**                  | DECLINED                       | —                                        | Phase 4 profiling found no CPU-hot processor or event-loop evidence to justify the complexity.                                                                                                                                                                                                                                                                            |
+| **Phase 6 — Native optimisations**                    | DECLINED                       | —                                        | Phase 4 profiling did not justify native optimization work.                                                                                                                                                                                                                                                                                                               |
 
 ---
 
@@ -56,13 +58,13 @@ Tick boxes are filled as the corresponding PR merges. **An item is only checked 
 
 _Independent fixes that should not be carried forward into the new architecture._
 
-- [x] **S1** Allowlist `chromiumFlags` switches ([chromiumFlags.ts:36-37](../src/app/storage/chromiumFlags.ts#L36-L37)) — landed 2026-05-13
+- [x] **S1** Allowlist `chromiumFlags` switches ([chromiumFlags.ts:36-37](../../../src/app/storage/chromiumFlags.ts#L36-L37)) — landed 2026-05-13
 - [x] **S2** Null-guard the native addon (`GetTelemetryVarByIndex`, `GetTelemetryData`, `BroadcastMessage`) — landed 2026-05-13
-- [ ] **S3** Validate `logBridge` level argument ([logBridge.ts:6-8](../src/app/bridge/logBridge.ts#L6-L8))
+- [ ] **S3** Validate `logBridge` level argument ([logBridge.ts:6-8](../../../src/app/bridge/logBridge.ts#L6-L8))
 - [ ] **S4** `setWindowOpenHandler({action:'deny'})`, `will-navigate` deny, CSP via `onHeadersReceived`
 - [ ] **L1** Convert sync `fs.writeFileSync` to `fs.promises.writeFile` + 250 ms debounce (storage.ts, referenceLaps.ts, pitLaneData.ts, fuelDatabase.ts). Keep one-time `migrateReferenceLaps()` sync — it runs at startup only and that is permitted by R6.1.
-- [ ] **L2** Memoize YAML parse on `currDataVersion` ([irsdk-node.ts:229](../src/app/irsdk/node/irsdk-node.ts#L229)) — confirmed by tests as a startup _memory_ concern in addition to a CPU one. _(Note: a separate contributor's PR that memoised YAML parsing landed and validated the L2 fix empirically — multi-class startup memory dropped from 2,908 MB to 1,390 MB. Bookkeeping still pending here.)_
-- [ ] **L3** Add `process.on('uncaughtException')` and `process.on('unhandledRejection')` handlers in [main.ts](../src/main.ts)
+- [ ] **L2** Memoize YAML parse on `currDataVersion` ([irsdk-node.ts:229](../../../src/app/irsdk/node/irsdk-node.ts#L229)) — confirmed by tests as a startup _memory_ concern in addition to a CPU one. _(Note: a separate contributor's PR that memoised YAML parsing landed and validated the L2 fix empirically — multi-class startup memory dropped from 2,908 MB to 1,390 MB. Bookkeeping still pending here.)_
+- [ ] **L3** Add `process.on('uncaughtException')` and `process.on('unhandledRejection')` handlers in [main.ts](../../../src/main.ts)
 - [ ] **P6** Pause broadcasts to non-visible windows (`webContents.isVisible()`)
 
 **Exit criteria:** all HIGH/MEDIUM security findings closed; no sync I/O on the main thread outside startup; global error handlers registered.
@@ -129,7 +131,7 @@ _Independent fixes that should not be carried forward into the new architecture.
 
 **Tier 2a mid-session leave detection (2026-05-18, DECLINED 2026-05-18, REVERTED 2026-05-19):**
 
-Identity-key implementation was written and tested 2026-05-18, then declined the same day after cost/benefit review. Working tree reverted to HEAD on 2026-05-19 before any commit landed on the integration branch. Full rationale in [`PERFORMANCE_TEST_LOG.md`](./PERFORMANCE_TEST_LOG.md) §4 "Declined for fix"; summarised here:
+Identity-key implementation was written and tested 2026-05-18, then declined the same day after cost/benefit review. Working tree reverted to HEAD on 2026-05-19 before any commit landed on the integration branch. Full rationale in [`PERFORMANCE_TEST_LOG.md`](../../PERFORMANCE_TEST_LOG.md) §4 "Declined for fix"; summarised here:
 
 - The dominant real-world case (driver leaves, iRacing keeps the slot populated as a "ghost" with the original identity) is **not detectable from SessionInfo alone** — confirmed by GR86 Miami (196 joins, 0 mid-session leaves over 10 min despite confirmed departures) and the spectated PCC race (zero mid-session leaves over 20 min).
 - The partial fix the working-tree code did deliver — slot-reuse detection via identity change — carries non-trivial false-positive risk because real iRacing SessionInfo updates have transient driver-entry omissions during qualifying-to-race transitions and driver swaps.
@@ -180,13 +182,13 @@ Working-tree (uncommitted, **to be reverted**):
 
 Each renderer independently called `bridge.getReferenceLap` on connect and SessionNum transitions, producing 3× IPC invokes per class per event. The 2026-05-18 spectated PCC race captured the misleading log signal: **24 `[Main] Fetching reference lap` lines in 30 seconds at session-load** (4 classes × 3 renderers × 2 transitions) where 4 would suffice.
 
-Implementation: `ipcMain.handle('reference:get', ...)` in [`src/app/bridge/referenceLapsBridge.ts`](../src/app/bridge/referenceLapsBridge.ts) now keeps a small `Map<key, timestamp>` of recent invokes with a 5s TTL. The first invoke per key logs the `[Main] Fetching reference lap ...` INFO line; subsequent invokes within the TTL log `[Main] Reference lap fetch dedup'd ...` at DEBUG level. The underlying storage-layer cache already prevents duplicate disk reads (Tier 2b); R1 just cleans up the misleading log signal that the test author was counting. 6 new spec tests in [`src/app/bridge/referenceLapsBridge.spec.ts`](../src/app/bridge/referenceLapsBridge.spec.ts).
+Implementation: `ipcMain.handle('reference:get', ...)` in [`src/app/bridge/referenceLapsBridge.ts`](../../../src/app/bridge/referenceLapsBridge.ts) now keeps a small `Map<key, timestamp>` of recent invokes with a 5s TTL. The first invoke per key logs the `[Main] Fetching reference lap ...` INFO line; subsequent invokes within the TTL log `[Main] Reference lap fetch dedup'd ...` at DEBUG level. The underlying storage-layer cache already prevents duplicate disk reads (Tier 2b); R1 just cleans up the misleading log signal that the test author was counting. 6 new spec tests in [`src/app/bridge/referenceLapsBridge.spec.ts`](../../../src/app/bridge/referenceLapsBridge.spec.ts).
 
 #### R2 — Tier 2b debounce filesystem verification — LANDED 2026-05-19
 
 Save log clusters of 3 had persisted across all Phase 2a tests. The renderer-side log line fires before the main-process debounce, so log evidence was misleading. R2 adds an explicit log line on the actual post-debounce `fs.promises.writeFile` call.
 
-Implementation: `flushAsync` in [`src/app/storage/referenceLaps.ts`](../src/app/storage/referenceLaps.ts) now logs `[Main] Reference laps written to disk (N entries)` after each successful write. The ratio of pre-log (`[Main] Saving reference lap`) to post-log lines is the dedup factor visible in test analysis. 3 new spec tests covering once-per-write log, entry count in message, no-log-on-write-failure.
+Implementation: `flushAsync` in [`src/app/storage/referenceLaps.ts`](../../../src/app/storage/referenceLaps.ts) now logs `[Main] Reference laps written to disk (N entries)` after each successful write. The ratio of pre-log (`[Main] Saving reference lap`) to post-log lines is the dedup factor visible in test analysis. 3 new spec tests covering once-per-write log, entry count in message, no-log-on-write-failure.
 
 #### R3 — Empty Dashboard substrate baseline test
 
@@ -203,6 +205,8 @@ Long-standing test backlog item (originally Q6, now restated as a concrete deliv
 ### Phase 2b — Architectural cleanup (remaining)
 
 _The highest-impact slices of A2/A3/L5/A7 landed in Phase 1 + Phase 2a Tier 1 + Phase 2a Tier 2. Phase 2b is the residual architectural work that does not directly affect performance._
+
+**Closure:** This residual phase was closed with the architecture programme. The unchecked items below document ideas considered at the time; they are not current assignments or an implied roadmap.
 
 - [ ] **A1** Extract `frontend/domain/` from `Standings/`; lint forbids cross-widget imports. _Blocked on Q1 (folder name decision)_
 - [ ] **A2/A3 (full migration)** Migrate _every_ remaining store to register reset handlers with `sessionLifecycle`; delete `useResetOnDisconnect` once unused; add `onEnter`/`onExit` events; distinguish live vs replay
@@ -227,7 +231,7 @@ Replaces the single firehose `'telemetry'` IPC broadcast with per-channel publis
 
 The detailed PR sequence, design decisions, merge gates, and curated replay
 validation strategy are documented in
-[`PHASE_3_CHANNEL_BRIDGE_PLAN.md`](./PHASE_3_CHANNEL_BRIDGE_PLAN.md).
+[`PHASE_3_CHANNEL_BRIDGE_PLAN.md`](../../PHASE_3_CHANNEL_BRIDGE_PLAN.md).
 
 **Core plumbing:**
 
@@ -288,7 +292,9 @@ Today every renderer wakes 25 times/sec regardless of what's mounted. A weather 
 
 ### Phase 5 — Worker-thread SDK loop
 
-- [ ] SDK loop in `worker_threads`; native SDK instantiated _inside_ the worker
+**Decision: DECLINED.** Phase 4 profiling found no CPU-hot processor or event-loop evidence that justified the added threading and native-binding complexity.
+
+- [ ] Historical proposal: SDK loop in `worker_threads`; native SDK instantiated _inside_ the worker
 
 ### Phase 6 — Native optimisations (only if needed)
 
@@ -303,7 +309,7 @@ These do not belong to a single phase; tracked separately so they do not get los
 ### Performance measurement and optimization plan (2026-07-26)
 
 This plan follows the decision rule in
-[`PERFORMANCE_BENCHMARKS.md`](./PERFORMANCE_BENCHMARKS.md): optimize the layer
+[`PERFORMANCE_BENCHMARKS.md`](../../PERFORMANCE_BENCHMARKS.md): optimize the layer
 identified by measurement and do not begin the worker-thread or native phases
 without evidence that they address the measured bottleneck.
 
@@ -453,7 +459,7 @@ These block specific phases. They are duplicated from `ARCHITECTURE_REVIEW.md` �
 14. **Session-load vs post-load startup gap** _(HIGH → SUBSTANTIALLY ADDRESSED, 2026-05-17)_ — opening irDashies during iRacing session-load originally cost ~+1 GB baseline vs opening post-load. Combined PR test 2026-05-17 shows peak memory −40% vs Tier 1-alone baseline (1,777 MB vs 2,914 MB) and session-load delta −72%. The dominant fix turned out to be Tier 2a's session-boundary cleanup rather than Tier 2b's reference-lap dedup. **Remaining cost** is concentrated in the reference-lap fetch storm at session-load (now scoped as R1); see §2 "Phase 2a remaining items".
 15. **Main process slope** _(MEDIUM → SUBSTANTIALLY ADDRESSED, 2026-05-17)_ — previously +4–6 MB/min, the largest single contributor. Combined PR test 2026-05-17 shows +0.5 MB/min (at target). The Phase 2a session-boundary cleanup picked this up as a side effect. **Watch item**: still elevated in some scenarios (PCC race standalone Tier 1 showed +2.3); needs further investigation if it re-emerges.
 16. **Per-widget rate-throttling mechanism** _(HIGH, new 2026-05-15 — blocks Phase 3 rate-throttling sub-task)_ — Per-widget property (`WidgetDefinition.updateRateHz`), named-group preset (`driverFocused` / `gapTiming` / `informational` / `static`), or both? Plus where the default bucket assignment lives (widget code, dashboard config, or both). User preference (2026-05-15): "I'd like it configurable for developers... through a grouping mechanism or as a property in the configuration of the widget." Leaning toward both — group preset as the default with per-widget override
-17. ~~Mid-session per-driver leave detection~~ — **RESOLVED BY DECLINE 2026-05-18.** Cost/benefit review concluded the architectural completeness isn't worth the implementation risk: the dominant case (ghost slots) is undetectable from SessionInfo alone, the partial fix (slot-reuse detection) carries false-positive risk, and per-driver allocation is already small post-H4. See [`PERFORMANCE_TEST_LOG.md`](./PERFORMANCE_TEST_LOG.md) §4 "Declined for fix" for the full rationale.
+17. ~~Mid-session per-driver leave detection~~ — **RESOLVED BY DECLINE 2026-05-18.** Cost/benefit review concluded the architectural completeness isn't worth the implementation risk: the dominant case (ghost slots) is undetectable from SessionInfo alone, the partial fix (slot-reuse detection) carries false-positive risk, and per-driver allocation is already small post-H4. See [`PERFORMANCE_TEST_LOG.md`](../../PERFORMANCE_TEST_LOG.md) §4 "Declined for fix" for the full rationale.
 18. **Reference-lap save debounce filesystem verification** _(SCOPED 2026-05-19 — now tracked as Phase 2a remaining item R2)_ — every Phase 2a test (PCC, SFL, combined PR, GR86 Miami, spectated PCC) shows save log lines in 3× clusters despite the Tier 2b debounce. The renderer-side log line fires _before_ the main-process debounce, so log evidence is misleading. Promoted from open question to concrete deliverable.
 19. **Reference-lap fetch dedup** _(NEW 2026-05-19 — tracked as Phase 2a remaining item R1)_ — spectated PCC race captured the cost clearly: 24 fetches in 30 seconds at session-load (4 classes × 3 renderers × 2 transitions) where 4 would suffice. Highest-priority remaining performance item; pattern established by Tier 2b's save work. Promoted from observation to concrete deliverable.
 

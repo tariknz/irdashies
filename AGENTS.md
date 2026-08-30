@@ -11,9 +11,9 @@
 
 ## Architecture Rules (read first)
 
-Before making any non-trivial change, read [`docs/ARCHITECTURE_RULES.md`](docs/ARCHITECTURE_RULES.md). It contains the hard rules for layering, telemetry subscriptions, stores, IPC/bridges, processors, storage, widgets, settings migration, native code, logging, security, performance, and testing — plus a Pre-PR checklist.
+Before making any non-trivial change, read [`docs/ARCHITECTURE_RULES.md`](docs/ARCHITECTURE_RULES.md). It contains the current hard rules for layering, telemetry subscriptions, stores, IPC/bridges, processors, storage, widgets, settings migration, native code, logging, security, performance, and testing — plus a Pre-PR checklist.
 
-The accompanying [`docs/ARCHITECTURE_REVIEW.md`](docs/ARCHITECTURE_REVIEW.md) explains the _why_: findings from the architecture audit, the target topology, and the phased implementation plan. Reference the relevant phase in your PR description.
+The 2026 architecture review and phased implementation plan are preserved under [`docs/archive/architecture-2026/`](docs/archive/architecture-2026/) as historical context. They are closed records, not active task lists, and do not need to be read or referenced for unrelated work.
 
 **When `ARCHITECTURE_RULES.md` conflicts with anything in this file, the rules file wins for architecture concerns.**
 
