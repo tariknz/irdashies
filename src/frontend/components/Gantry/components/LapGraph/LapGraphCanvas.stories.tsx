@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { LapGraphCanvas } from './LapGraphCanvas';
 import type { LapGraphMode, LapGraphSeries, LapPoint } from './LapGraphCanvas';
 
@@ -82,28 +82,43 @@ const CAPTIONS: Record<LapGraphMode, string> = {
   gap: 'seconds behind the class leader',
 };
 
-interface HarnessProps {
-  series: readonly LapGraphSeries[];
+interface CanvasArgs {
+  cars: number;
+  laps: number;
+  withRepair: boolean;
   mode: LapGraphMode;
-  focusedCarIdx?: number | null;
-  initialPins?: readonly number[];
+  focusedCarIdx: number | null;
+  pinnedCarIdxs: number[];
+  defaultLapWindow?: number;
+  axisCaption?: string;
 }
 
+/** Pinning is a callback on the real component, so the story holds the state. */
 const Harness = ({
-  series,
+  cars,
+  laps,
+  withRepair,
   mode,
-  focusedCarIdx = null,
-  initialPins = [],
-}: HarnessProps) => {
-  const [pinned, setPinned] = useState<readonly number[]>(initialPins);
+  focusedCarIdx,
+  pinnedCarIdxs,
+  defaultLapWindow,
+  axisCaption,
+}: CanvasArgs) => {
+  const series = useMemo(
+    () => buildField({ cars, laps, mode, withRepair }),
+    [cars, laps, mode, withRepair]
+  );
+  const [pinned, setPinned] = useState<readonly number[]>(pinnedCarIdxs);
+
   return (
     <div className="w-full h-screen bg-slate-900 p-3">
       <LapGraphCanvas
         series={series}
         mode={mode}
-        axisCaption={CAPTIONS[mode]}
+        axisCaption={axisCaption ?? CAPTIONS[mode]}
         pinnedCarIdxs={pinned}
         focusedCarIdx={focusedCarIdx}
+        defaultLapWindow={defaultLapWindow}
         onTogglePin={(carIdx) =>
           setPinned((current) =>
             current.includes(carIdx)
@@ -116,73 +131,90 @@ const Harness = ({
   );
 };
 
-const meta: Meta<typeof LapGraphCanvas> = {
+const meta: Meta = {
   component: LapGraphCanvas,
+  title: 'widgets/Gantry/components/LapGraphCanvas',
   parameters: { layout: 'fullscreen' },
+  args: {
+    cars: 60,
+    laps: 500,
+    withRepair: true,
+    mode: 'trace',
+    focusedCarIdx: null,
+    pinnedCarIdxs: [0, 1, 17],
+    defaultLapWindow: undefined,
+    axisCaption: undefined,
+  },
+  argTypes: {
+    mode: {
+      control: 'inline-radio',
+      options: ['trace', 'position', 'gap'],
+      description: 'Which quantity the y axis measures.',
+      table: { category: 'Props' },
+    },
+    focusedCarIdx: {
+      control: 'number',
+      description: 'The one line drawn brightest, on top of the field.',
+      table: { category: 'Props' },
+    },
+    pinnedCarIdxs: {
+      control: 'object',
+      description: 'Cars drawn at full strength. Clicking a line toggles one.',
+      table: { category: 'Props' },
+    },
+    defaultLapWindow: {
+      control: { type: 'range', min: 5, max: 500, step: 5 },
+      description: 'Laps visible before the user zooms.',
+      table: { category: 'Props' },
+    },
+    axisCaption: {
+      control: 'text',
+      description: 'Caption under the y axis. Defaults to one per mode.',
+      table: { category: 'Props' },
+    },
+    cars: {
+      control: { type: 'range', min: 0, max: 60, step: 1 },
+      description: 'Cars in the generated field.',
+      table: { category: 'Generated field' },
+    },
+    laps: {
+      control: { type: 'range', min: 1, max: 500, step: 1 },
+      description: 'Laps each car completes.',
+      table: { category: 'Generated field' },
+    },
+    withRepair: {
+      control: 'boolean',
+      description: 'Give one car a ten-minute repair at half distance.',
+      table: { category: 'Generated field' },
+    },
+  },
+  // Remounted on an arg change so the pin state re-seeds from the control.
+  render: (args) => (
+    <Harness key={JSON.stringify(args)} {...(args as CanvasArgs)} />
+  ),
 };
 export default meta;
-type Story = StoryObj<typeof LapGraphCanvas>;
-
-const enduranceTrace = buildField({
-  cars: 60,
-  laps: 500,
-  mode: 'trace',
-  withRepair: true,
-});
+type Story = StoryObj<CanvasArgs>;
 
 /** The scale case: 60 cars, 500 laps, one ten-minute repair at half distance. */
-export const Trace: Story = {
-  render: () => (
-    <Harness series={enduranceTrace} mode="trace" initialPins={[0, 1, 17]} />
-  ),
-};
+export const Trace: Story = {};
 
 export const Position: Story = {
-  render: () => (
-    <Harness
-      series={buildField({
-        cars: 60,
-        laps: 500,
-        mode: 'position',
-        withRepair: true,
-      })}
-      mode="position"
-      initialPins={[0, 1, 17]}
-    />
-  ),
+  args: { mode: 'position' },
 };
 
 export const Gap: Story = {
-  render: () => (
-    <Harness
-      series={buildField({
-        cars: 60,
-        laps: 500,
-        mode: 'gap',
-        withRepair: true,
-      })}
-      mode="gap"
-      initialPins={[0, 1, 17]}
-    />
-  ),
+  args: { mode: 'gap' },
 };
 
 export const Sprint: Story = {
-  render: () => (
-    <Harness
-      series={buildField({ cars: 12, laps: 24, mode: 'trace' })}
-      mode="trace"
-      initialPins={[0]}
-    />
-  ),
+  args: { cars: 12, laps: 24, withRepair: false, pinnedCarIdxs: [0] },
 };
 
 export const FollowedDriver: Story = {
-  render: () => (
-    <Harness series={enduranceTrace} mode="trace" focusedCarIdx={42} />
-  ),
+  args: { focusedCarIdx: 42, pinnedCarIdxs: [] },
 };
 
 export const Empty: Story = {
-  render: () => <Harness series={[]} mode="trace" />,
+  args: { cars: 0, pinnedCarIdxs: [] },
 };

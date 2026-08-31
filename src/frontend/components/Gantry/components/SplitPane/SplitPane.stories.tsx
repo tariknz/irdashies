@@ -16,7 +16,28 @@ const Panel = ({ title, tone }: PanelProps) => (
 
 const meta: Meta<typeof SplitPane> = {
   component: SplitPane,
+  title: 'widgets/Gantry/components/SplitPane',
   parameters: { layout: 'fullscreen' },
+  argTypes: {
+    defaultPercent: {
+      control: { type: 'range', min: 0, max: 100, step: 1 },
+      description: 'Percentage of the width the left pane starts at.',
+    },
+    minPercent: {
+      control: { type: 'range', min: 0, max: 50, step: 1 },
+      description: 'Narrowest either pane is allowed to get, as a percentage.',
+    },
+    label: {
+      control: 'text',
+      description: 'Accessible name for the divider.',
+    },
+    storageKey: {
+      control: 'text',
+      description: 'localStorage key the ratio is remembered under.',
+    },
+    left: { control: false },
+    right: { control: false },
+  },
   decorators: [
     (Story) => (
       <div className="w-full h-screen flex bg-slate-900">
