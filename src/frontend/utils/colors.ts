@@ -13,7 +13,9 @@ const IRACING_CLASS_COLOR_MAP: Record<number, string> = {
   16734344: 'red', // Class 3
   11430911: 'cyan', // Class 4
   5504887: 'pink', // Class 5
-  13849600: 'purple', // Class 6 - slowest
+  13849600: 'purple', // Class 6 
+  13421772: 'amber', // Class 7
+  39321: 'lime', // Class 8  - slowest
 };
 
 // Color names to hex values for classColorMap lookup
@@ -24,6 +26,8 @@ const COLOR_NAME_TO_HEX: Record<string, string> = {
   cyan: '#06b6d4',
   pink: '#ff5888',
   purple: '#ae6bff',
+  lime: '#84cc16',
+  amber: '#f59e0b',
 };
 
 export const getTailwindStyle = (
@@ -37,6 +41,8 @@ export const getTailwindStyle = (
     const colorName = IRACING_CLASS_COLOR_MAP[color];
     if (colorName) {
       hex = COLOR_NAME_TO_HEX[colorName];
+    } else {
+      hex = `#78716c`; // Default to stone if no mapped color
     }
   } else if (highlightColor !== undefined) {
     hex = `#${highlightColor.toString(16).padStart(6, '0')}`;

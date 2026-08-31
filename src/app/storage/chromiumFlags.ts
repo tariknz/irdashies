@@ -18,7 +18,7 @@ const ANGLE_BACKENDS: ReadonlySet<
  * use. Switches that affect network behaviour, debugger exposure, JS engine
  * tuning, Chrome extensions, profile directories, or the same-origin policy
  * are deliberately excluded — they are the renderer-compromise attack surface
- * called out as finding S1 in docs/ARCHITECTURE_REVIEW.md.
+ * called out as finding S1 in the archived 2026 architecture review.
  *
  * Add entries to this list only after confirming the switch cannot be abused
  * to weaken the security posture of the app on next launch.

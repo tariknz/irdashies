@@ -50,7 +50,7 @@ describe('colors', () => {
     it('falls back when the colour is not a known class colour', () => {
       const style = getTailwindStyle(0x00ff00, undefined, true);
 
-      expect(style.classHeader).toBe('bg-sky-500 border-sky-500');
+      expect(style.classHeader).toBe('bg-stone-500 border-stone-500');
     });
 
     it('uses the highlight colour outside multiclass', () => {

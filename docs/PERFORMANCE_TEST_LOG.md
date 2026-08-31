@@ -1,7 +1,7 @@
 # irDashies Performance — Test Log
 
 > **Purpose:** Running record of empirical performance testing across remediation phases. Updated as new tests are completed.
-> **Companion documents:** [`ARCHITECTURE_REVIEW.md`](./ARCHITECTURE_REVIEW.md), [`PERFORMANCE_TEST_SUMMARY.md`](./PERFORMANCE_TEST_SUMMARY.md)
+> **Companion documents:** [archived architecture review](./archive/architecture-2026/ARCHITECTURE_REVIEW.md), [`PERFORMANCE_TEST_SUMMARY.md`](./PERFORMANCE_TEST_SUMMARY.md)
 > **Audience:** Project contributors and Claude Code instances reasoning about performance changes.
 
 ---

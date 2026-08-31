@@ -334,12 +334,12 @@ export class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectio
     const bestLapTimes = values(frame, 'CarIdxBestLapTime');
     const leaderLapTime =
       this.classPace(paceCarIdx) ??
-      (leaderClassEstimate && leaderClassEstimate > 0
+      (leaderClassEstimate && leaderClassEstimate > 1
         ? leaderClassEstimate
         : (bestLapTimes[paceCarIdx] ?? 0));
     const playerLapTime =
       this.classPace(playerCarIdx) ??
-      (playerClassEstimate && playerClassEstimate > 0
+      (playerClassEstimate && playerClassEstimate > 1
         ? playerClassEstimate
         : (bestLapTimes[playerCarIdx] ?? 0));
     const configuredLaps = Number.parseInt(sessionLaps ?? '0', 10) || 0;
