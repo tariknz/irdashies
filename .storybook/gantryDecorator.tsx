@@ -1,5 +1,5 @@
 import type { Decorator } from '@storybook/react-vite';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   DashboardProvider,
   RunningStateProvider,
@@ -68,6 +68,41 @@ type ChannelOverrides =
   | ((args: Record<string, unknown>) => Partial<GantryChannels>);
 
 /**
+ * Bridges belonging to mounted decorators, oldest first.
+ *
+ * A docs page renders several stories at once, so each instance cannot simply
+ * restore whatever it found on mount: the earliest one to unmount would put
+ * back a bridge that a still-mounted story had replaced.
+ */
+const mountedBridges: ChannelBridge[] = [];
+
+/** Whatever held the global before the first story mounted. */
+let outerBridge: ChannelBridge | undefined;
+
+const acquireBridge = (bridge: ChannelBridge) => {
+  if (mountedBridges.length === 0) outerBridge = window.channelBridge;
+  mountedBridges.push(bridge);
+  window.channelBridge = bridge;
+};
+
+const releaseBridge = (bridge: ChannelBridge) => {
+  const index = mountedBridges.lastIndexOf(bridge);
+  if (index !== -1) mountedBridges.splice(index, 1);
+
+  const top = mountedBridges[mountedBridges.length - 1];
+  if (top) {
+    window.channelBridge = top;
+    return;
+  }
+  if (outerBridge === undefined) {
+    Reflect.deleteProperty(window, 'channelBridge');
+  } else {
+    window.channelBridge = outerBridge;
+  }
+  outerBridge = undefined;
+};
+
+/**
  * Supplies `window.channelBridge` for a Gantry story.
  *
  * Put this LAST in a `decorators` array. Storybook nests the last entry
@@ -114,18 +149,13 @@ export const GantryChannelDecorator = (
       // Deliberately keyed on the args content, not the context identity.
     }, [argsKey]);
 
-    const previousBridge = useRef(window.channelBridge);
+    // Assigned during render, not in an effect: the widget reads the bridge on
+    // its first render, which happens before any effect runs.
     window.channelBridge = bridge;
-    useEffect(
-      () => () => {
-        if (previousBridge.current === undefined) {
-          Reflect.deleteProperty(window, 'channelBridge');
-        } else {
-          window.channelBridge = previousBridge.current;
-        }
-      },
-      []
-    );
+    useEffect(() => {
+      acquireBridge(bridge);
+      return () => releaseBridge(bridge);
+    }, [bridge]);
 
     return <Story />;
   };

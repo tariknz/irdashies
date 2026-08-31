@@ -1,5 +1,5 @@
 import type { Decorator } from '@storybook/react-vite';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRaceControlStore } from '../src/frontend/context/RaceControlStore/RaceControlStore';
 import { IncidentType } from '../src/types/raceControl';
 import type { Incident } from '../src/types/raceControl';
@@ -121,17 +121,13 @@ export const mockIncidents: Incident[] = [
 const RaceControlLoader = ({ incidents }: { incidents: Incident[] }) => {
   const hydrateIncidents = useRaceControlStore((s) => s.hydrateIncidents);
   const clearIncidents = useRaceControlStore((s) => s.clearIncidents);
-  // A control that swaps the feed hands us a fresh array every render, so key
-  // the effect on the contents. Keying on identity would clear and rehydrate
-  // in a loop.
-  const key = incidents.map((incident) => incident.id).join(',');
   useEffect(() => {
     // The store is module scoped, so it survives a story switch. Clear first or
-    // hydration merges the previous story feed into this one.
+    // hydration merges the previous story feed into this one, and hydration
+    // deduplicates by id so an edited incident would keep the stale object.
     clearIncidents();
     hydrateIncidents(incidents);
-    // Deliberately keyed on the id list, not the array identity.
-  }, [clearIncidents, hydrateIncidents, key]);
+  }, [clearIncidents, hydrateIncidents, incidents]);
   return null;
 };
 
@@ -146,10 +142,18 @@ export const RaceControlDecorator: (
     Story: Parameters<Decorator>[0],
     context: Parameters<Decorator>[1]
   ) => {
-    const resolved =
-      typeof incidents === 'function'
-        ? incidents(context.args as Record<string, unknown>)
-        : incidents;
+    // A feed built from args returns a fresh array every render, which would
+    // clear and rehydrate in a loop. Hold one array per set of args instead:
+    // the identity is then stable, and any edit to a feed still lands because
+    // changing a control changes the key.
+    const argsKey = JSON.stringify(context.args ?? {});
+    const resolved = useMemo(
+      () =>
+        typeof incidents === 'function'
+          ? incidents(context.args as Record<string, unknown>)
+          : incidents,
+      [argsKey]
+    );
     return (
       <>
         <RaceControlLoader incidents={resolved} />
