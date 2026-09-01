@@ -39,6 +39,7 @@ import type { OverlayManager } from './overlayManager';
 
 const fakeOverlayManager = {
   getOverlays: () => [],
+  setDisplayOverlaysHidden: () => undefined,
   toggleLockOverlays: () => undefined,
 } as unknown as OverlayManager;
 
@@ -83,6 +84,46 @@ describe('KeybindingManager', () => {
     mockRegister.mockReset();
     mockUnregister.mockReset();
     mockGetKeybindings.mockReset();
+  });
+
+  describe('toggle-hide-ui', () => {
+    it('natively hides display overlays, then restores them inactive', () => {
+      mockGetKeybindings.mockReturnValue({} as KeybindingsMap);
+      const displayWindow = {
+        hide: vi.fn(),
+        showInactive: vi.fn(),
+        show: vi.fn(),
+        focus: vi.fn(),
+      };
+      const auxiliaryWindow = {
+        hide: vi.fn(),
+        showInactive: vi.fn(),
+      };
+      const overlayManager = {
+        getOverlays: () => [{ window: displayWindow }],
+        setDisplayOverlaysHidden: vi.fn((hidden: boolean) => {
+          for (const { window } of overlayManager.getOverlays()) {
+            if (hidden) window.hide();
+            else window.showInactive();
+          }
+        }),
+        toggleLockOverlays: vi.fn(),
+        // Represents settings/Gantry/host windows, which getOverlays excludes.
+        auxiliaryWindow,
+      } as unknown as OverlayManager;
+      const manager = new KeybindingManager(overlayManager);
+
+      manager.triggerAction('toggle-hide-ui');
+      expect(displayWindow.hide).toHaveBeenCalledOnce();
+      expect(displayWindow.showInactive).not.toHaveBeenCalled();
+
+      manager.triggerAction('toggle-hide-ui');
+      expect(displayWindow.showInactive).toHaveBeenCalledOnce();
+      expect(displayWindow.show).not.toHaveBeenCalled();
+      expect(displayWindow.focus).not.toHaveBeenCalled();
+      expect(auxiliaryWindow.hide).not.toHaveBeenCalled();
+      expect(auxiliaryWindow.showInactive).not.toHaveBeenCalled();
+    });
   });
 
   describe('registerAll', () => {

@@ -35,9 +35,7 @@ export class KeybindingManager {
   private setupActionHandlers(): void {
     this.actionHandlers.set('toggle-hide-ui', () => {
       this.hideState = !this.hideState;
-      this.overlayManager.getOverlays().forEach(({ window }) => {
-        window.webContents.send('global-toggle-hide', this.hideState);
-      });
+      this.overlayManager.setDisplayOverlaysHidden(this.hideState);
     });
 
     this.actionHandlers.set('toggle-edit-mode', () => {

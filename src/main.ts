@@ -196,6 +196,10 @@ function setupLapHistoryRuntime(initialDashboard: DashboardLayout): void {
 }
 
 app.on('ready', async () => {
+  log.info(
+    `[GSyncDiagnostic] hardwareAccelerationEnabled=${app.isHardwareAccelerationEnabled()}`
+  );
+
   // Don't start services if we don't have the single instance lock
   // (this instance should be quitting)
   if (!overlayManager.hasLock()) {

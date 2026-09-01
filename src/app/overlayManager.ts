@@ -80,10 +80,15 @@ export class OverlayManager {
   private isQuitting = false;
   private skipTaskbar = true;
   private overlayAlwaysOnTop = true;
+  private displayOverlaysHidden = false;
   private hasSingleInstanceLock = false;
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
   private rendererDataSubscriptions?: RendererDataSubscriptions;
   private latestSessionData: unknown;
+
+  public constructor(
+    private readonly platform: NodeJS.Platform = process.platform
+  ) {}
 
   /** Padding around the widget bounding box when shrink-wrapping */
   private static readonly SHRINK_WRAP_PADDING = 20;
@@ -108,6 +113,40 @@ export class OverlayManager {
   }
 
   /**
+   * Natively hide or restore only the click-through display overlays.
+   * Auxiliary windows are intentionally not part of displayWindows.
+   */
+  public setDisplayOverlaysHidden(hidden: boolean): void {
+    this.displayOverlaysHidden = hidden;
+    logger.info(
+      `[GSyncDiagnostic] Alt+H natively ${hidden ? 'hid' : 'restored'} ${this.displayWindows.size} display overlay window(s)`
+    );
+
+    for (const [displayId, win] of this.displayWindows.entries()) {
+      if (win.isDestroyed()) continue;
+
+      // Preserve the existing renderer-level state so widgets still follow the
+      // same global and per-widget visibility rules when the window is restored.
+      win.webContents.send('global-toggle-hide', hidden);
+
+      if (hidden) {
+        win.hide();
+      } else {
+        win.showInactive();
+        refreshSessionDataForVisibleWindow(
+          win,
+          this.rendererDataSubscriptions,
+          this.latestSessionData
+        );
+      }
+
+      logger.info(
+        `[GSyncDiagnostic] display=${displayId} windowId=${win.id} focusable=${win.isFocusable()} visible=${win.isVisible()} focused=${win.isFocused()} bounds=${JSON.stringify(win.getBounds())} alwaysOnTop=${win.isAlwaysOnTop()}`
+      );
+    }
+  }
+
+  /**
    * Create one overlay window per display
    */
   public createOverlays(
@@ -118,6 +157,12 @@ export class OverlayManager {
     const { generalSettings } = dashboardLayout;
     this.skipTaskbar = generalSettings?.skipTaskbar ?? true;
     this.overlayAlwaysOnTop = generalSettings?.overlayAlwaysOnTop ?? true;
+
+    if (this.platform === 'win32') {
+      logger.info(
+        '[GSyncDiagnostic] Windows non-activating overlay mode active'
+      );
+    }
 
     const allDisplays = screen.getAllDisplays();
     const primaryDisplay = screen.getPrimaryDisplay();
@@ -208,13 +253,15 @@ export class OverlayManager {
       transparent: true,
       frame: false,
       skipTaskbar: this.skipTaskbar,
-      focusable: true, // for OpenKneeboard/VR
+      // Windows overlays stay non-activating while locked. Edit mode
+      // temporarily restores focusability for layout interaction.
+      focusable: this.platform === 'win32' ? false : true,
       resizable: false,
       movable: false,
       roundedCorners: false,
       hasShadow: false,
       show: false,
-      alwaysOnTop: true,
+      alwaysOnTop: this.overlayAlwaysOnTop,
       backgroundColor: '#00000000',
       icon: getIconPath(),
       webPreferences: {
@@ -274,8 +321,15 @@ export class OverlayManager {
     });
 
     if (this.overlayAlwaysOnTop) {
-      browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+      // Use the standard topmost band. The screen-saver band is unnecessarily
+      // aggressive for a click-through overlay and can prevent NVIDIA G-Sync
+      // from treating the iRacing window as the active presentation target.
+      browserWindow.setAlwaysOnTop(true, 'normal');
     }
+
+    logger.info(
+      `[GSyncDiagnostic] created display=${display.id} windowId=${browserWindow.id} focusable=${browserWindow.isFocusable()} visible=${browserWindow.isVisible()} focused=${browserWindow.isFocused()} alwaysOnTop=${browserWindow.isAlwaysOnTop()} bounds=${JSON.stringify(browserWindow.getBounds())}`
+    );
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       browserWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -342,6 +396,9 @@ export class OverlayManager {
 
       const boundsInfo = this.displayBoundsInfo.get(display.id);
       browserWindow.webContents.send('containerBoundsInfo', boundsInfo);
+      if (this.displayOverlaysHidden) {
+        browserWindow.webContents.send('global-toggle-hide', true);
+      }
       this.onWindowReadyCallbacks.forEach((cb) => cb(`display-${display.id}`));
 
       // Apply shrink-wrap after initial setup when not in edit mode
@@ -355,7 +412,11 @@ export class OverlayManager {
 
       browserWindow.setPosition(expectedBounds.x, expectedBounds.y);
       browserWindow.setSize(expectedBounds.width, expectedBounds.height);
-      browserWindow.show();
+      if (this.displayOverlaysHidden) {
+        browserWindow.hide();
+      } else {
+        browserWindow.showInactive();
+      }
 
       const actualBounds = browserWindow.getBounds();
       const offset = {
@@ -543,12 +604,18 @@ export class OverlayManager {
   public toggleLockOverlays(): boolean {
     this.isLocked = !this.isLocked;
 
+    const windows = [...this.displayWindows.values()].filter(
+      (win) => !win.isDestroyed()
+    );
+
     if (!this.isLocked) {
+      if (this.platform === 'win32') {
+        for (const win of windows) win.setFocusable(true);
+      }
       this.updateOverlayBounds();
     }
 
-    for (const win of this.displayWindows.values()) {
-      if (win.isDestroyed()) continue;
+    for (const win of windows) {
       win.setIgnoreMouseEvents(this.isLocked);
       win.webContents.send('editModeToggled', !this.isLocked);
       if (!this.isLocked) {
@@ -558,6 +625,9 @@ export class OverlayManager {
 
     if (this.isLocked) {
       this.updateOverlayBounds();
+      if (this.platform === 'win32') {
+        for (const win of windows) win.setFocusable(false);
+      }
     }
 
     // Raise settings window to layer 2 during edit mode so it appears above

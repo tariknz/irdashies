@@ -11,6 +11,12 @@ if (!process.resourcesPath) {
 }
 
 const createdWindows: FakeBrowserWindow[] = [];
+const mockGetAllDisplays = vi.hoisted(() =>
+  vi.fn<() => Electron.Display[]>(() => [])
+);
+const mockGetPrimaryDisplay = vi.hoisted(() =>
+  vi.fn(() => ({ id: 1, bounds: { x: 0, y: 0, width: 1920, height: 1080 } }))
+);
 
 class FakeWebContents {
   id = 42;
@@ -22,16 +28,23 @@ class FakeWebContents {
 class FakeBrowserWindow {
   static getAllWindows = vi.fn(() => []);
   webContents = new FakeWebContents();
+  id = createdWindows.length + 1;
   destroyed = false;
   shown = false;
   focused = false;
+  focusable = true;
   show = vi.fn(() => {
+    this.shown = true;
+  });
+  showInactive = vi.fn(() => {
     this.shown = true;
   });
   focus = vi.fn(() => {
     this.focused = true;
   });
-  hide = vi.fn();
+  hide = vi.fn(() => {
+    this.shown = false;
+  });
   close = vi.fn();
   destroy = vi.fn(() => {
     this.destroyed = true;
@@ -43,6 +56,15 @@ class FakeBrowserWindow {
   loadURL = vi.fn();
   loadFile = vi.fn();
   setBounds = vi.fn();
+  setPosition = vi.fn();
+  setSize = vi.fn();
+  getBounds = vi.fn(() => ({ x: 0, y: 0, width: 1920, height: 1080 }));
+  isFocused = vi.fn(() => this.focused);
+  isAlwaysOnTop = vi.fn(() => true);
+  isFocusable = vi.fn(() => this.focusable);
+  setFocusable = vi.fn((focusable: boolean) => {
+    this.focusable = focusable;
+  });
   setAlwaysOnTop = vi.fn();
   setIgnoreMouseEvents = vi.fn();
   setVisibleOnAllWorkspaces = vi.fn();
@@ -50,6 +72,7 @@ class FakeBrowserWindow {
   on = vi.fn();
 
   constructor(public options: Record<string, unknown>) {
+    this.focusable = options.focusable !== false;
     createdWindows.push(this);
   }
 }
@@ -63,8 +86,8 @@ vi.mock('electron', () => ({
   BrowserWindow: FakeBrowserWindow,
   Notification: vi.fn(),
   screen: {
-    getAllDisplays: vi.fn(() => []),
-    getPrimaryDisplay: vi.fn(() => ({ id: 1, bounds: {} })),
+    getAllDisplays: mockGetAllDisplays,
+    getPrimaryDisplay: mockGetPrimaryDisplay,
   },
 }));
 
@@ -98,6 +121,142 @@ describe('OverlayManager Gantry window', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createdWindows.length = 0;
+  });
+
+  it('shows a display overlay inactive when it first becomes ready', () => {
+    mockGetAllDisplays.mockReturnValue([
+      {
+        id: 1,
+        bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      } as Electron.Display,
+    ]);
+    const manager = new OverlayManager();
+    manager.createOverlays(dashboard(false), { createSettingsWindow: false });
+    const displayWindow = createdWindows.find((window) =>
+      String(window.options.title).startsWith('irDashies - 1')
+    );
+    const readyHandler = displayWindow?.once.mock.calls.find(
+      ([event]) => event === 'ready-to-show'
+    )?.[1] as () => void;
+
+    readyHandler();
+
+    expect(displayWindow?.showInactive).toHaveBeenCalledOnce();
+    expect(displayWindow?.show).not.toHaveBeenCalled();
+    expect(displayWindow?.focus).not.toHaveBeenCalled();
+    expect(displayWindow?.options.focusable).toBe(false);
+  });
+
+  it('preserves focusable display overlays on non-Windows platforms', () => {
+    mockGetAllDisplays.mockReturnValue([
+      {
+        id: 1,
+        bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      } as Electron.Display,
+    ]);
+    const manager = new OverlayManager('linux');
+    manager.createOverlays(dashboard(false), { createSettingsWindow: false });
+    const displayWindow = createdWindows.find((window) =>
+      String(window.options.title).startsWith('irDashies - 1')
+    );
+
+    expect(displayWindow?.options.focusable).toBe(true);
+    manager.toggleLockOverlays();
+    expect(displayWindow?.setFocusable).not.toHaveBeenCalled();
+    expect(displayWindow?.focus).toHaveBeenCalledOnce();
+  });
+
+  it('makes Windows overlays focusable before edit focus and non-focusable when locked', () => {
+    mockGetAllDisplays.mockReturnValue([
+      {
+        id: 1,
+        bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      } as Electron.Display,
+    ]);
+    const manager = new OverlayManager('win32');
+    manager.createOverlays(dashboard(false), { createSettingsWindow: false });
+    const displayWindow = createdWindows.find((window) =>
+      String(window.options.title).startsWith('irDashies - 1')
+    );
+
+    manager.toggleLockOverlays();
+    expect(displayWindow?.setFocusable).toHaveBeenCalledWith(true);
+    expect(
+      displayWindow?.setFocusable.mock.invocationCallOrder[0]
+    ).toBeLessThan(displayWindow?.focus.mock.invocationCallOrder[0] ?? 0);
+
+    displayWindow?.setFocusable.mockClear();
+    displayWindow?.focus.mockClear();
+    manager.toggleLockOverlays();
+    expect(displayWindow?.setFocusable).toHaveBeenCalledWith(false);
+    expect(displayWindow?.focus).not.toHaveBeenCalled();
+  });
+
+  it('keeps display windows created during Alt+H hide natively hidden', () => {
+    mockGetAllDisplays.mockReturnValue([
+      {
+        id: 1,
+        bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      } as Electron.Display,
+    ]);
+    const manager = new OverlayManager('win32');
+    manager.setDisplayOverlaysHidden(true);
+    manager.createOverlays(dashboard(false), { createSettingsWindow: false });
+    const displayWindow = createdWindows.find((window) =>
+      String(window.options.title).startsWith('irDashies - 1')
+    );
+    const readyHandler = displayWindow?.once.mock.calls.find(
+      ([event]) => event === 'ready-to-show'
+    )?.[1] as () => void;
+
+    readyHandler();
+
+    expect(displayWindow?.hide).toHaveBeenCalledOnce();
+    expect(displayWindow?.showInactive).not.toHaveBeenCalled();
+    expect(displayWindow?.show).not.toHaveBeenCalled();
+    expect(displayWindow?.focus).not.toHaveBeenCalled();
+  });
+
+  it('natively toggles only display overlays and refreshes session data', () => {
+    mockGetAllDisplays.mockReturnValue([
+      {
+        id: 1,
+        bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      } as Electron.Display,
+    ]);
+    const manager = new OverlayManager();
+    manager.createOverlays(dashboard(false), { createSettingsWindow: false });
+    manager.createGantryWindow(dashboard(true));
+    const displayWindow = createdWindows.find((window) =>
+      String(window.options.title).startsWith('irDashies - 1')
+    );
+    const gantryWindow = gantryWindows()[0];
+    const readyHandler = displayWindow?.once.mock.calls.find(
+      ([event]) => event === 'ready-to-show'
+    )?.[1] as () => void;
+    readyHandler();
+    manager.setRendererDataSubscriptions({
+      has: () => true,
+      hasAny: () => true,
+    });
+    manager.publishMessage('sessionData', { revision: 1 });
+    displayWindow?.webContents.send.mockClear();
+    displayWindow?.hide.mockClear();
+    displayWindow?.showInactive.mockClear();
+
+    manager.setDisplayOverlaysHidden(true);
+    expect(displayWindow?.hide).toHaveBeenCalledOnce();
+    expect(gantryWindow.hide).not.toHaveBeenCalled();
+
+    manager.setDisplayOverlaysHidden(false);
+    expect(displayWindow?.showInactive).toHaveBeenCalledOnce();
+    expect(displayWindow?.show).not.toHaveBeenCalled();
+    expect(displayWindow?.focus).not.toHaveBeenCalled();
+    expect(displayWindow?.webContents.send).toHaveBeenCalledWith(
+      'sessionData',
+      { revision: 1 }
+    );
+    expect(gantryWindow.showInactive).not.toHaveBeenCalled();
   });
 
   it('opens the window when the widget is switched on', () => {
