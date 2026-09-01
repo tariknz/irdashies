@@ -8,3 +8,5 @@ export * from './sessionBarSnapshot';
 export * from './DynamicTelemetrySelector';
 export * from './mockDashboardBridge';
 export * from './raceControlDecorator';
+export * from './lapHistorySnapshot';
+export * from './gantryDecorator';

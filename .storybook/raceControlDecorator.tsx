@@ -1,10 +1,10 @@
 import type { Decorator } from '@storybook/react-vite';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRaceControlStore } from '../src/frontend/context/RaceControlStore/RaceControlStore';
 import { IncidentType } from '../src/types/raceControl';
 import type { Incident } from '../src/types/raceControl';
 
-const mockIncidents: Incident[] = [
+export const mockIncidents: Incident[] = [
   {
     id: '0-1823.5',
     carIdx: 0,
@@ -88,23 +88,79 @@ const mockIncidents: Incident[] = [
     lapDistPct: 0.312,
     timestamp: Date.now() - 133000,
   },
+  {
+    id: '3-1702.4',
+    carIdx: 3,
+    driverName: 'N. Mueller',
+    carNumber: '31',
+    teamName: 'WRT',
+    sessionNum: 0,
+    sessionTime: 1702.4,
+    lapNum: 11,
+    replayFrameNum: 102144,
+    type: IncidentType.Slowdown,
+    lapDistPct: 0.655,
+    timestamp: Date.now() - 181000,
+  },
+  {
+    id: '5-1688.9',
+    carIdx: 5,
+    driverName: 'A. Rossi',
+    carNumber: '9',
+    teamName: 'Meyer Shank Racing',
+    sessionNum: 0,
+    sessionTime: 1688.9,
+    lapNum: 11,
+    replayFrameNum: 101334,
+    type: IncidentType.BlackFlag,
+    lapDistPct: 0.204,
+    timestamp: Date.now() - 195000,
+  },
 ];
 
-const RaceControlLoader = () => {
+const RaceControlLoader = ({ incidents }: { incidents: Incident[] }) => {
   const hydrateIncidents = useRaceControlStore((s) => s.hydrateIncidents);
+  const clearIncidents = useRaceControlStore((s) => s.clearIncidents);
   useEffect(() => {
-    hydrateIncidents(mockIncidents);
-  }, [hydrateIncidents]);
+    // The store is module scoped, so it survives a story switch. Clear first or
+    // hydration merges the previous story feed into this one, and hydration
+    // deduplicates by id so an edited incident would keep the stale object.
+    clearIncidents();
+    hydrateIncidents(incidents);
+  }, [clearIncidents, hydrateIncidents, incidents]);
   return null;
 };
 
-const RaceControlDecoratorComponent = (Story: Parameters<Decorator>[0]) => (
-  <>
-    <RaceControlLoader />
-    <Story />
-  </>
-);
-RaceControlDecoratorComponent.displayName = 'RaceControlDecoratorComponent';
-
-export const RaceControlDecorator: () => Decorator = () =>
-  RaceControlDecoratorComponent;
+/**
+ * Seeds the incident feed. Pass a list, or a function of the story's args so a
+ * control can swap the feed. The default is the mixed set of five types.
+ */
+export const RaceControlDecorator: (
+  incidents?: Incident[] | ((args: Record<string, unknown>) => Incident[])
+) => Decorator = (incidents = mockIncidents) => {
+  const Component = (
+    Story: Parameters<Decorator>[0],
+    context: Parameters<Decorator>[1]
+  ) => {
+    // A feed built from args returns a fresh array every render, which would
+    // clear and rehydrate in a loop. Hold one array per set of args instead:
+    // the identity is then stable, and any edit to a feed still lands because
+    // changing a control changes the key.
+    const argsKey = JSON.stringify(context.args ?? {});
+    const resolved = useMemo(
+      () =>
+        typeof incidents === 'function'
+          ? incidents(context.args as Record<string, unknown>)
+          : incidents,
+      [argsKey]
+    );
+    return (
+      <>
+        <RaceControlLoader incidents={resolved} />
+        <Story />
+      </>
+    );
+  };
+  Component.displayName = 'RaceControlDecorator';
+  return Component;
+};
