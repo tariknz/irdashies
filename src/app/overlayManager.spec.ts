@@ -146,6 +146,23 @@ describe('OverlayManager display windows', () => {
     createdWindows.length = 0;
   });
 
+  it.each([true, false])(
+    'creates overlays with alwaysOnTop=%s when configured',
+    (overlayAlwaysOnTop) => {
+      const manager = new OverlayManager();
+      const dashboard = {
+        widgets: [],
+        generalSettings: { overlayAlwaysOnTop },
+      } as DashboardLayout;
+
+      manager.createOverlays(dashboard, { createSettingsWindow: false });
+
+      expect(createdWindows).toHaveLength(1);
+      expect(createdWindows[0].options.alwaysOnTop).toBe(overlayAlwaysOnTop);
+      expect(createdWindows[0].setAlwaysOnTop).not.toHaveBeenCalled();
+    }
+  );
+
   it('shows a ready display overlay without activating it', () => {
     const manager = new OverlayManager();
     manager.createOverlays({ widgets: [] } as DashboardLayout, {
