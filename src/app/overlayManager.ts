@@ -351,7 +351,7 @@ export class OverlayManager {
 
       browserWindow.setPosition(expectedBounds.x, expectedBounds.y);
       browserWindow.setSize(expectedBounds.width, expectedBounds.height);
-      browserWindow.show();
+      browserWindow.showInactive();
 
       const actualBounds = browserWindow.getBounds();
       const offset = {

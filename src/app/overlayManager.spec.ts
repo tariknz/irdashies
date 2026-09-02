@@ -162,4 +162,21 @@ describe('OverlayManager display windows', () => {
       expect(createdWindows[0].setAlwaysOnTop).not.toHaveBeenCalled();
     }
   );
+
+  it('shows a ready display overlay without activating it', () => {
+    const manager = new OverlayManager();
+    manager.createOverlays({ widgets: [] } as DashboardLayout, {
+      createSettingsWindow: false,
+    });
+    const displayWindow = createdWindows[0];
+    const readyHandler = displayWindow.once.mock.calls.find(
+      ([event]) => event === 'ready-to-show'
+    )?.[1] as () => void;
+
+    readyHandler();
+
+    expect(displayWindow.showInactive).toHaveBeenCalledOnce();
+    expect(displayWindow.show).not.toHaveBeenCalled();
+    expect(displayWindow.focus).not.toHaveBeenCalled();
+  });
 });
