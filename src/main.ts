@@ -12,7 +12,10 @@ import {
   getProfile,
   setCurrentProfile,
 } from './app/storage/dashboards';
-import { getSessionProfileMap } from './app/storage/appSettings';
+import {
+  getSessionProfileMap,
+  initialiseSessionProfileMap,
+} from './app/storage/appSettings';
 import { createSessionProfileSwitcher } from './app/services/sessionProfileSwitcher';
 import type { SessionProfileSwitcher } from './app/services/sessionProfileSwitcher';
 import { setupTaskbar, KeybindingManager } from './app';
@@ -235,15 +238,6 @@ app.on('ready', async () => {
     getSessionLifecycle(),
     channelBus
   );
-  // Applies the profile mapped to each session type, and to spotting. Inert
-  // until the user maps at least one, so this changes nothing by default.
-  sessionProfileSwitcher = createSessionProfileSwitcher({
-    lifecycle: getSessionLifecycle(),
-    getMap: getSessionProfileMap,
-    getCurrentProfileId,
-    profileExists: (profileId) => getProfile(profileId) !== null,
-    switchProfile: (profileId) => setCurrentProfile(profileId),
-  });
   await iRacingSDKSetup(overlayManager, channelBus);
 
   // Perform one-time cleanup of old reference laps
@@ -398,6 +392,25 @@ app.on('ready', async () => {
       ? (updatedDashboard) => createPerfDashboard(updatedDashboard, perfRun)
       : undefined
   );
+  // Deliberately after publishDashboardUpdates: switching a profile emits
+  // 'dashboardUpdated', and that listener is what actually applies it to the
+  // windows. Wired any earlier — telemetry starts flowing back at
+  // iRacingSDKSetup — a switch triggered by the session the player is already
+  // in would emit into an EventEmitter with no listener, silently leaving the
+  // stored profile and the visible overlays disagreeing.
+  //
+  // On a first run this points every session type at the profile already in
+  // use, so the settings page shows what the mapping is for. It is a no-op
+  // behaviourally: every type resolves to the active profile until one is
+  // changed.
+  initialiseSessionProfileMap(getCurrentProfileId());
+  sessionProfileSwitcher = createSessionProfileSwitcher({
+    lifecycle: getSessionLifecycle(),
+    getMap: getSessionProfileMap,
+    getCurrentProfileId,
+    profileExists: (profileId) => getProfile(profileId) !== null,
+    switchProfile: (profileId) => setCurrentProfile(profileId),
+  });
   setupKeybindingsBridge(keybindingManager);
 
   await analytics.init(overlayManager.getVersion(), dashboard);
