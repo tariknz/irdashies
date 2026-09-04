@@ -640,6 +640,22 @@ export interface SectorDeltaConfig {
   alwaysScroll?: boolean;
 }
 
+/**
+ * In-car systems readout.
+ *
+ * `rows` is an explicit ordered list of telemetry keys rather than a set of
+ * booleans, so the rows keep a fixed screen position and a car that lacks one
+ * shows a blank in place rather than shifting everything up.
+ */
+export interface CarSystemsConfig {
+  rows: string[];
+  /** Blank rows for adjustments the current car does not have. */
+  showUnsupportedRows: boolean;
+  background: { opacity: number };
+  sessionVisibility: SessionVisibilitySettings;
+  showOnlyWhenOnTrack: boolean;
+}
+
 export interface DeltaSpeedConfig {
   background: { opacity: number };
   /**
@@ -770,6 +786,7 @@ export interface WidgetConfigMap {
   slowcarahead: SlowCarAheadConfig;
   sectordelta: SectorDeltaConfig;
   deltaspeed: DeltaSpeedConfig;
+  carsystems: CarSystemsConfig;
   heartrate: HeartRateConfig;
   cornername: CornerNameOverlayConfig;
   battle: BattleConfig;
@@ -874,6 +891,7 @@ export type InformationBarWidgetSettings =
 export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;
 export type SectorDeltaWidgetSettings = BaseWidgetSettings<SectorDeltaConfig>;
 export type DeltaSpeedWidgetSettings = BaseWidgetSettings<DeltaSpeedConfig>;
+export type CarSystemsWidgetSettings = BaseWidgetSettings<CarSystemsConfig>;
 export type HeartRateWidgetSettings = BaseWidgetSettings<HeartRateConfig>;
 export type CornerNameWidgetSettings =
   BaseWidgetSettings<CornerNameOverlayConfig>;

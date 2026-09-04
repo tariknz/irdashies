@@ -1367,6 +1367,35 @@ export const defaultDashboard: {
       },
     },
     {
+      id: 'carsystems',
+      enabled: false,
+      layout: {
+        x: 6,
+        y: 620,
+        width: 200,
+        height: 160,
+      },
+      config: {
+        rows: [
+          'dcBrakeBias',
+          'dcABS',
+          'dcTractionControl',
+          'dcTractionControl2',
+          'dcThrottleShape',
+        ],
+        showUnsupportedRows: true,
+        background: { opacity: 80 },
+        showOnlyWhenOnTrack: false,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
+    },
+    {
       id: 'deltaspeed',
       enabled: false,
       layout: {
