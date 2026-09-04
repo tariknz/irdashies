@@ -11,6 +11,7 @@ export type SessionLifecycleEvent =
 export interface ChannelPayloads {
   'blind-spot.snapshot': BlindSpotSnapshot;
   'car-speeds.snapshot': CarSpeedsSnapshot;
+  'car-systems.snapshot': CarSystemsSnapshot;
   'driver-controls.snapshot': DriverControlsSnapshot;
   'fuel.projection': FuelProjectionSnapshot;
   'lap-times.snapshot': LapTimesSnapshot;
@@ -64,6 +65,46 @@ export interface BlindSpotSnapshot {
   carLeftRight: number;
   carIdxLapDistPct: readonly number[];
   isOnTrack: boolean;
+  version: number;
+}
+
+/**
+ * One driver-adjustable system, as the car actually reports it.
+ *
+ * `value` is the raw number from the SDK. Scales differ per car and are not
+ * normalised: most run 0..n where 0 is off, but some are signed — the BMW M
+ * Hybrid V8 reports ABS between -5 and -3 in recorded sessions — so a value of
+ * 0 only means "off" on a scale that has no negative side. `isOff` carries
+ * that judgement so consumers do not each re-derive it.
+ */
+export interface CarSystemAdjustment {
+  /** Telemetry variable name, e.g. 'dcABS'. Stable identity for the row. */
+  key: string;
+  /** Display label, e.g. 'ABS'. */
+  label: string;
+  value: number;
+  /** True only when the car's scale is unsigned and the value is 0. */
+  isOff: boolean;
+  /** Decimal places this value is meaningful to. Brake bias needs one. */
+  precision: number;
+  /** Appended on display, e.g. '%' for brake bias. */
+  unit?: string;
+}
+
+/**
+ * Driver-adjustable systems for the player's car: brake bias, ABS, traction
+ * control and similar.
+ *
+ * The set is discovered rather than fixed, because it varies by car — from
+ * brake bias alone on a Formula Vee to a dozen entries on a GTP car — and the
+ * generated telemetry types carry only the variables one recorded session
+ * happened to expose.
+ */
+export interface CarSystemsSnapshot {
+  adjustments: readonly CarSystemAdjustment[];
+  /** False before any in-car frame has been seen, when the set is unknown. */
+  discovered: boolean;
+  sessionNum: number | null;
   version: number;
 }
 
@@ -378,6 +419,13 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 25,
     maxRateHz: 25,
+  },
+  // Adjustments change when the driver turns a dial, not per frame, so this
+  // publishes on change and is capped low deliberately.
+  'car-systems.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 2,
+    maxRateHz: 10,
   },
   // Publishes on version change, roughly 0.6 times a second in a 60-car field.
   // The rate cap only bounds the worst case; it is not a sampling rate.

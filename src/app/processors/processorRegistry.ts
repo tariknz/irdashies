@@ -19,6 +19,7 @@ import { ReferenceLapProcessor } from './ReferenceLapProcessor';
 import { RelativeGapProcessor } from './RelativeGapProcessor';
 import { SectorTimingProcessor } from './SectorTimingProcessor';
 import { SessionBarProcessor } from './SessionBarProcessor';
+import { CarSystemsProcessor } from './CarSystemsProcessor';
 import { SessionTimingProcessor } from './SessionTimingProcessor';
 import { StandingsProcessor } from './StandingsProcessor';
 import { TrackStateProcessor } from './TrackStateProcessor';
@@ -126,6 +127,11 @@ export const createProcessorDefinitions = ({
     channel: 'session-bar.snapshot',
     metricsPrefix: 'sessionBar',
     create: () => new SessionBarProcessor(),
+  }),
+  defineProcessor({
+    channel: 'car-systems.snapshot',
+    metricsPrefix: 'carSystems',
+    create: () => new CarSystemsProcessor(),
   }),
   defineProcessor({
     channel: 'driver-controls.snapshot',

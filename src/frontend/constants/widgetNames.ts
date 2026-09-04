@@ -27,6 +27,7 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   slowcarahead: 'Slow Car Ahead',
   sectordelta: 'Sector Delta',
   deltaspeed: 'Delta Speed',
+  carsystems: 'Car Systems',
   heartrate: 'Heart Rate',
   cornername: 'Corner Names',
   battle: 'Battle',
