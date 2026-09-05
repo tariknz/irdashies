@@ -4,8 +4,6 @@ import {
   useSessionFastestLaps,
   useSessionIsOfficial,
   useSessionPositions,
-  useSessionQualifyingResults,
-  useSessionQualifyPositions,
   useSessionType,
   useStandingsSnapshot,
   useLapTimeHistory,
@@ -25,8 +23,8 @@ import type { StandingsWidgetSettings } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useStandingsSettings } from './useStandingsSettings';
 import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
+import { useQualifyingResults } from './useQualifyingGrid';
 import { TrackLocation } from '@irdashies/types';
-import type { SessionResults } from '@irdashies/types';
 
 const EMPTY_NUMBERS: number[] = [];
 const EMPTY_BOOLEANS: boolean[] = [];
@@ -66,34 +64,10 @@ export const useDriverStandings = (
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
   const standingsSnapshot = useStandingsSnapshot();
   const driverCarIdx = standingsSnapshot?.focusCarIdx ?? undefined;
-  const qualifyingResultsRaw = useSessionQualifyingResults();
   const sessionNum = standingsSnapshot?.sessionNum ?? undefined;
   const sessionType = useSessionType(sessionNum);
   const positions = useSessionPositions(sessionNum);
-  const sessionQualifyPositions = useSessionQualifyPositions(sessionNum);
-
-  // In heat race format QualifyResultsInfo.Results is null; fall back to the
-  // race session's QualifyPositions which holds the actual starting grid order.
-  const qualifyingResults: SessionResults[] | undefined =
-    qualifyingResultsRaw?.length
-      ? qualifyingResultsRaw
-      : sessionQualifyPositions?.map((q) => ({
-          Position: q.Position + 1,
-          ClassPosition: q.ClassPosition,
-          CarIdx: q.CarIdx,
-          Lap: q.FastestLap,
-          Time: q.FastestTime,
-          FastestLap: q.FastestLap,
-          FastestTime: q.FastestTime,
-          LastTime: -1,
-          LapsLed: 0,
-          LapsComplete: 0,
-          JokerLapsComplete: 0,
-          LapsDriven: 0,
-          Incidents: 0,
-          ReasonOutId: 0,
-          ReasonOutStr: 'Running',
-        }));
+  const qualifyingResults = useQualifyingResults();
   const standingsSettings = useStandingsSettings();
   const useLivePositionStandings = standingsSettings?.useLivePosition ?? false;
   const customClassOrdering = standingsSettings?.customClassOrdering ?? false;

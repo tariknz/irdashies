@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   traceAnchor,
   gapToClassLeader,
-  positionByLap,
+  positionsByLap,
   raceTrace,
   traceOrigin,
 } from './lapSeries';
@@ -176,34 +176,120 @@ describe('gapToClassLeader', () => {
   });
 });
 
-describe('positionByLap', () => {
-  it('maps laps to in-class positions', () => {
-    const points = positionByLap([
-      crossing(1, 100, { classPosition: 4 }),
-      crossing(2, 190, { classPosition: 3 }),
-      crossing(3, 280, { classPosition: 3 }),
-      crossing(4, 370, { classPosition: 1 }),
-    ]);
+describe('positionsByLap', () => {
+  const field = (
+    cars: Record<number, [lap: number, sessionTime: number][]>
+  ): Map<number, LapCrossing[]> =>
+    new Map(
+      Object.entries(cars).map(([carIdx, laps]) => [
+        Number(carIdx),
+        laps.map(([lap, sessionTime]) => crossing(lap, sessionTime)),
+      ])
+    );
 
-    expect(points).toEqual([
-      { lap: 1, value: 4 },
-      { lap: 2, value: 3 },
-      { lap: 3, value: 3 },
-      { lap: 4, value: 1 },
+  it('ranks each lap by who crossed the line first', () => {
+    const points = positionsByLap(
+      field({
+        7: [
+          [1, 100],
+          [2, 200],
+        ],
+        8: [
+          [1, 90],
+          [2, 210],
+        ],
+      })
+    );
+
+    // Car 8 led lap 1 and lost the place on lap 2.
+    expect(points.get(8)).toEqual([
+      { lap: 1, value: 1 },
+      { lap: 2, value: 2 },
+    ]);
+    expect(points.get(7)).toEqual([
+      { lap: 1, value: 2 },
+      { lap: 2, value: 1 },
     ]);
   });
 
-  it('skips crossings with an unknown position', () => {
-    const points = positionByLap([
-      crossing(1, 100, { classPosition: 0 }),
-      crossing(2, 190, { classPosition: 2 }),
+  it('ignores classPosition entirely', () => {
+    // The regression this exists for: iRacing left classPosition at 0 for 81%
+    // of crossings in a real race, which silently truncated the chart.
+    const crossings = new Map<number, LapCrossing[]>([
+      [1, [crossing(5, 500, { classPosition: 0 })]],
+      [2, [crossing(5, 400, { classPosition: 0 })]],
     ]);
 
-    expect(points).toEqual([{ lap: 2, value: 2 }]);
+    expect(positionsByLap(crossings).get(2)).toEqual([{ lap: 5, value: 1 }]);
+    expect(positionsByLap(crossings).get(1)).toEqual([{ lap: 5, value: 2 }]);
   });
 
-  it('returns nothing without crossings', () => {
-    expect(positionByLap([])).toEqual([]);
+  it('places a lapped car behind cars that finished the lap earlier', () => {
+    const points = positionsByLap(
+      field({
+        1: [[3, 300]],
+        2: [[3, 900]],
+      })
+    );
+
+    expect(points.get(2)).toEqual([{ lap: 3, value: 2 }]);
+  });
+
+  it('gives a car no point for a lap it never completed', () => {
+    const points = positionsByLap(
+      field({
+        1: [
+          [1, 100],
+          [2, 200],
+        ],
+        2: [[1, 110]],
+      })
+    );
+
+    expect(points.get(2)).toEqual([{ lap: 1, value: 2 }]);
+    expect(points.get(1)).toHaveLength(2);
+  });
+
+  it('keeps the first crossing when a lap is recorded twice', () => {
+    // A tow or reset re-baselines the car and can record the lap again.
+    const points = positionsByLap(
+      new Map<number, LapCrossing[]>([
+        [1, [crossing(2, 250), crossing(2, 800)]],
+        [2, [crossing(2, 400)]],
+      ])
+    );
+
+    expect(points.get(1)).toEqual([{ lap: 2, value: 1 }]);
+  });
+
+  it('skips crossings with no usable session time', () => {
+    const points = positionsByLap(
+      new Map<number, LapCrossing[]>([
+        [1, [crossing(1, 0)]],
+        [2, [crossing(1, 120)]],
+      ])
+    );
+
+    expect(points.has(1)).toBe(false);
+    expect(points.get(2)).toEqual([{ lap: 1, value: 1 }]);
+  });
+
+  it('returns points in lap order', () => {
+    const points = positionsByLap(
+      field({
+        1: [
+          [3, 300],
+          [1, 100],
+          [2, 200],
+        ],
+      })
+    );
+
+    expect(points.get(1)?.map((p) => p.lap)).toEqual([1, 2, 3]);
+  });
+
+  it('handles an empty field', () => {
+    expect(positionsByLap(new Map()).size).toBe(0);
   });
 });
 
