@@ -273,6 +273,19 @@ export class OverlayManager {
       visibleOnFullScreen: true,
     });
 
+    // The overlays and the settings window use a deliberate two-level scheme:
+    // overlays at 'screen-saver' 1, and the settings window raised to
+    // 'screen-saver' 2 during edit mode so it sits above them (see
+    // toggleLockOverlays). The constructor's `alwaysOnTop` flag alone puts the
+    // window in a lower band than either, so the settings window — and a
+    // fullscreen sim — end up above the overlays instead of below.
+    //
+    // Guarded on the setting so it still honours the user's choice, which is
+    // what the constructor flag above was changed to do.
+    if (this.overlayAlwaysOnTop) {
+      browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+    }
+
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       browserWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     } else {
