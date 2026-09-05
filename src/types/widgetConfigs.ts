@@ -730,9 +730,18 @@ export interface GantryConfig {
   cooldownSeconds: number;
   // Persistence
   sessionRetention: SessionRetention;
+  /**
+   * iRacing camera group the incident replay buttons switch to, by name.
+   * Names differ per track and content, so this is matched against the
+   * session's own CameraInfo groups and ignored when it is not present.
+   */
+  incidentCameraGroup: string;
   // Lap Graph tab
   lapGraph: LapGraphConfig;
 }
+
+/** Chase camera far enough back to show what happened around the car. */
+export const DEFAULT_INCIDENT_CAMERA_GROUP = 'Far Chase';
 
 export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;
 

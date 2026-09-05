@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardLayout } from '@irdashies/types';
 import type { IncidentRuntimeHandle } from './raceControlBridge';
+import type { Session } from '@irdashies/types';
 
 const handlers = new Map<string, (...args: unknown[]) => unknown>();
 const dashboardListeners = new Set<(dashboard: DashboardLayout) => void>();
@@ -35,7 +36,8 @@ vi.mock('../logger', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-const { setupRaceControlBridge } = await import('./raceControlBridge');
+const { setupRaceControlBridge, resolveCameraGroupNum } =
+  await import('./raceControlBridge');
 const { loadIncidents, clearIncidents, pruneOldSessions } =
   await import('../storage/incidentStorage');
 
@@ -69,6 +71,48 @@ const createRuntime = () => {
   };
   return { runtime, changeSessionId: () => sessionIdChanged('2') };
 };
+
+describe('resolveCameraGroupNum', () => {
+  const sessionWithGroups = (
+    groups: { GroupNum: number; GroupName: string }[]
+  ) => ({ CameraInfo: { Groups: groups } }) as unknown as Session;
+
+  const session = sessionWithGroups([
+    { GroupNum: 12, GroupName: 'Chase' },
+    { GroupNum: 13, GroupName: 'Far Chase' },
+    { GroupNum: 18, GroupName: 'TV1' },
+  ]);
+
+  it('resolves a group name to its session-specific number', () => {
+    expect(resolveCameraGroupNum(session, 'Far Chase')).toBe(13);
+    expect(resolveCameraGroupNum(session, 'TV1')).toBe(18);
+  });
+
+  it('matches case and surrounding whitespace loosely', () => {
+    expect(resolveCameraGroupNum(session, '  far chase ')).toBe(13);
+  });
+
+  it('returns 0 when the group is absent, so the camera is left alone', () => {
+    // 0 is iRacing's "leave the camera group unchanged", not group index 0.
+    expect(resolveCameraGroupNum(session, 'Helicopter')).toBe(0);
+  });
+
+  it('returns 0 when there is no session or no camera info yet', () => {
+    expect(resolveCameraGroupNum(undefined, 'Far Chase')).toBe(0);
+    expect(resolveCameraGroupNum({} as Session, 'Far Chase')).toBe(0);
+  });
+
+  it('returns 0 for an empty or missing group name', () => {
+    expect(resolveCameraGroupNum(session, '')).toBe(0);
+    expect(resolveCameraGroupNum(session, '   ')).toBe(0);
+    expect(resolveCameraGroupNum(session, undefined)).toBe(0);
+  });
+
+  it('rejects a non-positive group number rather than passing it through', () => {
+    const broken = sessionWithGroups([{ GroupNum: 0, GroupName: 'Far Chase' }]);
+    expect(resolveCameraGroupNum(broken, 'Far Chase')).toBe(0);
+  });
+});
 
 describe('setupRaceControlBridge', () => {
   beforeEach(() => {

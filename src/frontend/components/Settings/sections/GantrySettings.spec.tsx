@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => {
   const listeners = new Set<() => void>();
   return {
     listeners,
+    cameraGroups: undefined as
+      { GroupNum: number; GroupName: string }[] | undefined,
     onDashboardUpdated: vi.fn(),
     getDashboard: () => dashboard,
     setDashboard: (next: DashboardLayout | undefined) => {
@@ -32,6 +34,7 @@ vi.mock('@irdashies/context', async () => {
       onDashboardUpdated: mocks.onDashboardUpdated,
     }),
     useTrackStateSelector: () => 1,
+    useSessionCameraGroups: () => mocks.cameraGroups,
   };
 });
 
@@ -77,9 +80,76 @@ const savedLapGraph = (): LapGraphConfig => {
   return (config as { lapGraph: LapGraphConfig }).lapGraph;
 };
 
-// The only saved value rendered on the default "Options" tab.
-const retentionValue = () =>
-  (screen.getByRole('combobox', { name: '' }) as HTMLSelectElement).value;
+const selectValue = (name: string) =>
+  (screen.getByRole('combobox', { name }) as HTMLSelectElement).value;
+
+const retentionValue = () => selectValue('Keep Sessions');
+
+const cameraSelect = () =>
+  screen.getByRole('combobox', {
+    name: 'Incident Camera',
+  }) as HTMLSelectElement;
+
+const savedGantryConfig = () => {
+  const dashboard = mocks.onDashboardUpdated.mock.calls.at(-1)?.[0] as
+    DashboardLayout | undefined;
+  return dashboard?.widgets.find((w) => w.id === 'gantry')?.config as Record<
+    string,
+    unknown
+  >;
+};
+
+describe('GantrySettings incident camera', () => {
+  beforeEach(() => {
+    mocks.onDashboardUpdated.mockClear();
+    mocks.cameraGroups = undefined;
+  });
+
+  it('falls back to Far Chase before a session has loaded', () => {
+    mocks.setDashboard(dashboardWith('all'));
+    render(<GantrySettings />);
+
+    expect(cameraSelect().value).toBe('Far Chase');
+  });
+
+  it("offers the session's own camera groups once they arrive", () => {
+    mocks.cameraGroups = [
+      { GroupNum: 12, GroupName: 'Chase' },
+      { GroupNum: 13, GroupName: 'Far Chase' },
+      { GroupNum: 18, GroupName: 'TV1' },
+    ];
+    mocks.setDashboard(dashboardWith('all'));
+    render(<GantrySettings />);
+
+    const labels = [...cameraSelect().options].map((o) => o.value);
+    expect(labels).toEqual(['Chase', 'Far Chase', 'TV1']);
+  });
+
+  it('keeps a saved group that this track does not offer', () => {
+    mocks.cameraGroups = [{ GroupNum: 12, GroupName: 'Chase' }];
+    mocks.setDashboard(
+      dashboardFor(gantryConfig({ incidentCameraGroup: 'Blimp' }))
+    );
+    render(<GantrySettings />);
+
+    // Dropping it would silently rewrite the user's choice on one track.
+    expect([...cameraSelect().options].map((o) => o.value)).toContain('Blimp');
+    expect(cameraSelect().value).toBe('Blimp');
+  });
+
+  it('writes the chosen group', () => {
+    mocks.cameraGroups = [
+      { GroupNum: 13, GroupName: 'Far Chase' },
+      { GroupNum: 18, GroupName: 'TV1' },
+    ];
+    mocks.setDashboard(dashboardWith('all'));
+    render(<GantrySettings />);
+
+    fireEvent.change(cameraSelect(), { target: { value: 'TV1' } });
+
+    expect(savedGantryConfig().incidentCameraGroup).toBe('TV1');
+  });
+});
 
 describe('GantrySettings', () => {
   beforeEach(() => {

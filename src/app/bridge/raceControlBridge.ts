@@ -11,6 +11,7 @@ import {
   INCIDENT_THRESHOLD_BOUNDS,
   type IncidentThresholds,
 } from '../../types/raceControl';
+import { DEFAULT_INCIDENT_CAMERA_GROUP } from '../../types/widgetConfigs';
 import logger from '../logger';
 
 /** Small interface over IncidentRuntime — keeps this bridge decoupled from
@@ -81,11 +82,37 @@ const isValidReplayIncident = (
 const isValidReplaySeconds = (value: unknown): value is number =>
   isFiniteNumber(value) && value >= 0 && value <= 300;
 
+/**
+ * iRacing camera groups are numbered from 1, and `CameraSwitchNum` treats
+ * group 0 as "leave the camera group alone" — which is why passing 0 switched
+ * the car but kept whatever camera was already selected. Resolve the
+ * configured group by name against the session's own list, and fall back to 0
+ * (unchanged) when the track or car does not offer it.
+ */
+export const resolveCameraGroupNum = (
+  session: Session | undefined,
+  groupName: string | undefined
+): number => {
+  if (!groupName) return 0;
+  const wanted = groupName.trim().toLowerCase();
+  if (!wanted) return 0;
+  const groups = session?.CameraInfo?.Groups;
+  if (!Array.isArray(groups)) return 0;
+  const match = groups.find(
+    (group) => group?.GroupName?.trim().toLowerCase() === wanted
+  );
+  return isFiniteNumber(match?.GroupNum) && match.GroupNum > 0
+    ? match.GroupNum
+    : 0;
+};
+
 export const setupRaceControlBridge = (
   runtime: IncidentRuntimeHandle,
   initialDashboard?: DashboardLayout
 ) => {
   let retention: 'all' | 5 | 10 | 20 = 'all';
+  let cameraGroupName: string = DEFAULT_INCIDENT_CAMERA_GROUP;
+  let latestSession: Session | undefined;
 
   const applyRetention = (value: 'all' | 5 | 10 | 20) => {
     retention = value;
@@ -123,6 +150,11 @@ export const setupRaceControlBridge = (
     if (isValidRetention(config.sessionRetention)) {
       applyRetention(config.sessionRetention);
     }
+    cameraGroupName =
+      typeof config.incidentCameraGroup === 'string' &&
+      config.incidentCameraGroup.trim()
+        ? config.incidentCameraGroup
+        : DEFAULT_INCIDENT_CAMERA_GROUP;
   };
 
   applyDashboard(initialDashboard);
@@ -140,8 +172,11 @@ export const setupRaceControlBridge = (
     if (!bridge) return;
 
     unsubscribeSession =
-      bridge.onSessionData((session) => runtime.onSession(session)) ??
-      undefined;
+      bridge.onSessionData((session) => {
+        // Kept so the incident buttons can resolve a camera group by name.
+        latestSession = session;
+        runtime.onSession(session);
+      }) ?? undefined;
     unsubscribeTelemetry =
       bridge.onTelemetry((telemetry) => runtime.onFrame(telemetry)) ??
       undefined;
@@ -196,8 +231,11 @@ export const setupRaceControlBridge = (
     }
     const bridge = getCurrentBridge();
     if (!bridge) return;
-    logger.info(`[RaceControl] focusDriver #${carNumber}`);
-    bridge.changeCameraNumber(carNumber, 0, 0);
+    const groupNum = resolveCameraGroupNum(latestSession, cameraGroupName);
+    logger.info(
+      `[RaceControl] focusDriver #${carNumber} cameraGroup=${cameraGroupName} num=${groupNum}`
+    );
+    bridge.changeCameraNumber(carNumber, groupNum, 0);
   });
 
   ipcMain.handle(
@@ -222,10 +260,11 @@ export const setupRaceControlBridge = (
         0,
         Math.round((incident.sessionTime - seconds) * 1000)
       );
+      const groupNum = resolveCameraGroupNum(latestSession, cameraGroupName);
       logger.info(
-        `[RaceControl] replayIncident car=${incident.carIdx ?? 'unknown'} (${incident.driverName ?? 'unknown'} #${incident.carNumber}) type=${incident.type ?? 'unknown'} sessionTime=${incident.sessionTime.toFixed(2)} sessionNum=${incident.sessionNum} offset=-${seconds}s targetTimeMs=${targetTimeMs}`
+        `[RaceControl] replayIncident car=${incident.carIdx ?? 'unknown'} (${incident.driverName ?? 'unknown'} #${incident.carNumber}) type=${incident.type ?? 'unknown'} sessionTime=${incident.sessionTime.toFixed(2)} sessionNum=${incident.sessionNum} offset=-${seconds}s targetTimeMs=${targetTimeMs} cameraGroup=${cameraGroupName} num=${groupNum}`
       );
-      bridge.changeCameraNumber(incident.carNumber, 0, 0);
+      bridge.changeCameraNumber(incident.carNumber, groupNum, 0);
       bridge.triggerReplaySessionSearch(incident.sessionNum, targetTimeMs);
     }
   );
