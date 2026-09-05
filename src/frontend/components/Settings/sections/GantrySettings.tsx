@@ -8,10 +8,15 @@ import {
   SettingsTabType,
   INCIDENT_THRESHOLD_BOUNDS,
   LAP_GRAPH_LAP_WINDOW_BOUNDS,
+  DEFAULT_INCIDENT_CAMERA_GROUP,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
-import { useDashboard, useTrackStateSelector } from '@irdashies/context';
-import type { TrackStateSnapshot } from '@irdashies/types';
+import {
+  useDashboard,
+  useSessionCameraGroups,
+  useTrackStateSelector,
+} from '@irdashies/context';
+import type { CameraGroup, TrackStateSnapshot } from '@irdashies/types';
 import { TabButton } from '../components/TabButton';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingActionButton } from '../components/SettingActionButton';
@@ -148,6 +153,26 @@ const retentionOptions = [
 const toSessionRetention = (value: string): SessionRetention =>
   value === 'all' ? 'all' : (Number(value) as SessionRetention);
 
+/**
+ * Camera groups come from the live session, so the list is empty until a
+ * session loads. The saved value is always offered so the current choice is
+ * never silently dropped from the dropdown.
+ */
+const cameraGroupOptions = (
+  groups: CameraGroup[] | undefined,
+  selected: string
+) => {
+  const names = (groups ?? [])
+    .map((group) => group?.GroupName?.trim())
+    .filter((name): name is string => !!name);
+  const unique = [
+    ...new Set([DEFAULT_INCIDENT_CAMERA_GROUP, selected, ...names]),
+  ]
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
+  return unique.map((name) => ({ label: name, value: name }));
+};
+
 interface YAxisModeOption {
   value: LapGraphYAxisMode;
   label: string;
@@ -218,6 +243,7 @@ export const GantrySettings = memo(() => {
     () => (localStorage.getItem('gantryTab') as SettingsTabType) || 'options'
   );
   const [showDisabledHint, setShowDisabledHint] = useState(false);
+  const cameraGroups = useSessionCameraGroups();
 
   useEffect(() => {
     localStorage.setItem('gantryTab', activeTab);
@@ -234,6 +260,8 @@ export const GantrySettings = memo(() => {
   // A config saved before the lap graph settings existed has no block until the
   // migrator runs on the next dashboard load.
   const lapGraph = config.lapGraph ?? defaultConfig.lapGraph;
+  const cameraGroup =
+    config.incidentCameraGroup ?? DEFAULT_INCIDENT_CAMERA_GROUP;
 
   return (
     <BaseSettingsSection
@@ -341,6 +369,16 @@ export const GantrySettings = memo(() => {
                     ))}
                   </div>
                 </div>
+
+                <SettingSelectRow
+                  title="Incident Camera"
+                  description="Which iRacing camera the incident replay buttons switch to. The list comes from the current session, so it fills in once you are on track. Falls back to the camera already selected when a track does not offer this group."
+                  value={cameraGroup}
+                  options={cameraGroupOptions(cameraGroups, cameraGroup)}
+                  onChange={(v) =>
+                    handleConfigChange({ incidentCameraGroup: v })
+                  }
+                />
 
                 <SettingSelectRow
                   title="Keep Sessions"

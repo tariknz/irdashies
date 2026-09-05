@@ -1,4 +1,5 @@
 import type {
+  CameraGroup,
   Session,
   SessionQualifyPosition,
   SessionResults,
@@ -135,6 +136,18 @@ export const useSessionQualifyPositions = (sessionNum: number | undefined) =>
       state.session?.SessionInfo?.Sessions?.find(
         (s) => s.SessionNum === sessionNum
       )?.QualifyPositions,
+    arrayShallowCompare
+  );
+
+/**
+ * Camera groups this track and car offer, e.g. "Far Chase", "TV1". Group
+ * numbers are session-specific, so anything that stores a camera choice must
+ * store the name and resolve the number against this list.
+ */
+export const useSessionCameraGroups = () =>
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state): CameraGroup[] | undefined => state.session?.CameraInfo?.Groups,
     arrayShallowCompare
   );
 
