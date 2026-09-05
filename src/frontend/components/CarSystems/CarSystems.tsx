@@ -12,7 +12,7 @@ import {
 } from '@irdashies/types';
 import { useCarSystemsSettings } from './hooks/useCarSystemsSettings';
 
-/** Placeholder for a row the current car does not have. */
+/** Shown for a column the current car does not have. */
 const BLANK = '--';
 
 const formatValue = (adjustment: CarSystemAdjustment): string => {
@@ -20,44 +20,48 @@ const formatValue = (adjustment: CarSystemAdjustment): string => {
   return adjustment.unit ? `${value}${adjustment.unit}` : value;
 };
 
-interface SystemRowProps {
-  label: string;
+interface SystemColumnProps {
+  short: string;
+  chip: string;
   adjustment?: CarSystemAdjustment;
   isCompact: boolean;
-  rowIndex: number;
 }
 
-export const SystemRow = memo(
-  ({ label, adjustment, isCompact, rowIndex }: SystemRowProps) => {
+export const SystemColumn = memo(
+  ({ short, chip, adjustment, isCompact }: SystemColumnProps) => {
     const unsupported = adjustment === undefined;
-    // Off and unsupported are different states that happen to look alike: one
-    // is a system the driver switched off, the other a system the car does not
-    // have. Both are subdued, and the value distinguishes them.
+    // Off and unsupported look alike on purpose - both are "nothing to read
+    // here" - and the value below tells them apart: a number the driver set to
+    // zero, or a blank for a system the car does not have.
     const subdued = unsupported || adjustment.isOff;
 
     return (
-      <tr
-        className={rowIndex % 2 === 0 ? 'bg-slate-800/70' : 'bg-slate-900/70'}
-      >
-        <td
-          className={`${isCompact ? '' : 'py-0.5'} px-2 whitespace-nowrap ${
-            subdued ? 'text-white/40' : 'text-white/80'
+      <div className="flex flex-1 min-w-0 flex-col items-center gap-0.5">
+        {/* px-1 rather than the Pitlane Helper's px-2: its chips are standalone
+            status pills, these are packed side by side, and the wider padding
+            truncated a three-letter label once the column count got high. */}
+        <div
+          className={`w-full text-center text-xs font-bold py-1 px-1 rounded truncate ${
+            subdued ? 'bg-slate-600/60 text-white/60' : `${chip} text-white`
           }`}
         >
-          {label}
-        </td>
-        <td
-          className={`${isCompact ? '' : 'py-0.5'} px-2 text-right tabular-nums whitespace-nowrap ${
+          {short}
+        </div>
+        {/* The value carries the glance, so it outweighs its own label - the
+            same balance the Pitlane Helper strikes between its big readouts
+            and their small captions. */}
+        <div
+          className={`${isCompact ? 'text-base' : 'text-[1.35em] py-0.5'} text-center font-semibold tabular-nums whitespace-nowrap leading-none ${
             subdued ? 'text-white/40' : 'text-white'
           }`}
         >
           {unsupported ? BLANK : formatValue(adjustment)}
-        </td>
-      </tr>
+        </div>
+      </div>
     );
   }
 );
-SystemRow.displayName = 'SystemRow';
+SystemColumn.displayName = 'SystemColumn';
 
 export const CarSystems = () => {
   const settings = useCarSystemsSettings();
@@ -70,9 +74,9 @@ export const CarSystems = () => {
     generalSettings?.compactMode === 'compact' ||
     generalSettings?.compactMode === 'ultra';
 
-  // Keyed by display row, so the Clio's dcPeakBrakeBias fills the brake bias
-  // row rather than going unmatched.
-  const byRow = useMemo(() => {
+  // Keyed by display column, so the Clio's dcPeakBrakeBias fills the brake bias
+  // column rather than going unmatched.
+  const byColumn = useMemo(() => {
     const map = new Map<string, CarSystemAdjustment>();
     for (const adjustment of snapshot?.adjustments ?? []) {
       map.set(carSystemRowKey(adjustment.key), adjustment);
@@ -80,44 +84,50 @@ export const CarSystems = () => {
     return map;
   }, [snapshot?.adjustments]);
 
-  const rows = useMemo(() => {
+  const columns = useMemo(() => {
     const configured = settings?.rows ?? [];
     return configured
       .map((key) => {
         const definition = CAR_SYSTEM_ADJUSTMENTS.find((d) => d.key === key);
         if (!definition) return undefined;
-        return { key, label: definition.label, adjustment: byRow.get(key) };
+        return {
+          key,
+          short: definition.short,
+          chip: definition.chip,
+          adjustment: byColumn.get(key),
+        };
       })
-      .filter((row): row is NonNullable<typeof row> => row !== undefined)
       .filter(
-        (row) => settings?.showUnsupportedRows || row.adjustment !== undefined
+        (column): column is NonNullable<typeof column> => column !== undefined
+      )
+      .filter(
+        (column) =>
+          settings?.showUnsupportedRows || column.adjustment !== undefined
       );
-  }, [settings?.rows, settings?.showUnsupportedRows, byRow]);
+  }, [settings?.rows, settings?.showUnsupportedRows, byColumn]);
 
   if (!isSessionVisible) return <></>;
   if (settings?.showOnlyWhenOnTrack && !isDriving) return <></>;
-  if (rows.length === 0) return <></>;
+  if (columns.length === 0) return <></>;
 
   return (
     <div
-      className={`w-full bg-slate-800/(--bg-opacity) rounded-sm ${isCompact ? '' : 'p-2'} overflow-hidden`}
+      className={`w-full bg-slate-800/(--bg-opacity) rounded text-white font-medium ${isCompact ? 'p-1' : 'p-2'}`}
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 80}%`,
       }}
     >
-      <table className="w-full table-auto text-sm border-separate border-spacing-y-0.5">
-        <tbody>
-          {rows.map((row, index) => (
-            <SystemRow
-              key={row.key}
-              label={row.label}
-              adjustment={row.adjustment}
-              isCompact={isCompact}
-              rowIndex={index}
-            />
-          ))}
-        </tbody>
-      </table>
+      <div className={`flex w-full ${isCompact ? 'gap-1' : 'gap-2'}`}>
+        {columns.map((column) => (
+          <SystemColumn
+            key={column.key}
+            short={column.short}
+            chip={column.chip}
+            adjustment={column.adjustment}
+            isCompact={isCompact}
+          />
+        ))}
+      </div>
     </div>
   );
 };
