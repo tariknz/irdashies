@@ -136,16 +136,71 @@ describe('ChannelBus', () => {
   it('suppresses hidden renderers and removes destroyed renderers', () => {
     const { bus } = createBus();
     const target = createTarget();
-    bus.subscribe(target, 'event');
+    bus.subscribe(target, 'snapshot');
 
     target.visible = false;
-    bus.publish('event', { type: 'hidden' });
+    bus.publish('snapshot', { value: 1 });
     expect(target.send).not.toHaveBeenCalled();
 
     target.visible = true;
     target.destroyed = true;
-    bus.publish('event', { type: 'destroyed' });
-    expect(bus.subscriberCount('event')).toBe(0);
+    bus.publish('snapshot', { value: 2 });
+    expect(bus.subscriberCount('snapshot')).toBe(0);
+  });
+
+  it('still delivers events to a hidden renderer', () => {
+    const { bus } = createBus();
+    const target = createTarget();
+    bus.subscribe(target, 'event');
+
+    // A hidden window cannot be re-seeded from a snapshot, so an event
+    // dropped here is lost for good. This is the minimised-Gantry case: the
+    // window stayed subscribed but missed every incident of a race.
+    target.visible = false;
+    bus.publish('event', { type: 'first' });
+    bus.publish('event', { type: 'second' });
+
+    expect(target.send).toHaveBeenCalledTimes(2);
+    expect(target.send).toHaveBeenNthCalledWith(1, CHANNEL_DELIVERY, 'event', {
+      type: 'first',
+    });
+    expect(target.send).toHaveBeenNthCalledWith(2, CHANNEL_DELIVERY, 'event', {
+      type: 'second',
+    });
+    // Hidden or not, an event subscription is still real demand.
+    expect(bus.subscriberCount('event')).toBe(1);
+  });
+
+  it('keeps delivering events across a hide and show cycle', () => {
+    const { bus } = createBus();
+    const target = createTarget();
+    bus.subscribe(target, 'event');
+
+    target.visible = false;
+    bus.rendererBecameHidden(target.id);
+    bus.publish('event', { type: 'whileHidden' });
+
+    target.visible = true;
+    bus.rendererBecameVisible(target.id);
+    bus.publish('event', { type: 'whileVisible' });
+
+    expect(target.send).toHaveBeenCalledTimes(2);
+    expect(target.send).toHaveBeenNthCalledWith(1, CHANNEL_DELIVERY, 'event', {
+      type: 'whileHidden',
+    });
+  });
+
+  it('subscribes an already-hidden renderer to events as active', () => {
+    const { bus } = createBus();
+    const target = createTarget();
+
+    // The Gantry window is created with `show: false`, so its first subscribe
+    // can land before the window is ever shown.
+    target.visible = false;
+    bus.subscribe(target, 'event');
+    bus.publish('event', { type: 'beforeFirstShow' });
+
+    expect(target.send).toHaveBeenCalledOnce();
   });
 
   it('cancels pending delivery on unsubscribe and renderer removal', () => {

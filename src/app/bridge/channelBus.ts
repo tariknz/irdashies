@@ -58,6 +58,21 @@ const systemSchedule = (callback: () => void, delayMs: number): TimerHandle => {
   return { cancel: () => clearTimeout(timeout) };
 };
 
+/**
+ * Whether a channel stops delivering while its window is hidden.
+ *
+ * Only snapshot channels do. A hidden window has nothing to draw, and it is
+ * re-seeded from `latestSnapshots` when it comes back, so nothing is lost.
+ *
+ * Event channels are never gated. Each publish is a discrete fact — an
+ * incident, a session change — that no later snapshot can reconstruct, so
+ * suppressing one while the window is hidden loses it permanently. A minimised
+ * Gantry used to miss every incident of a race that way. All event channels are
+ * low volume, so delivering to a hidden window costs nothing worth saving.
+ */
+const isVisibilityGated = (definition: ChannelDefinition): boolean =>
+  definition.kind === 'snapshot';
+
 export class ChannelBus {
   private readonly registry: Readonly<Record<string, ChannelDefinition>>;
   private readonly now: () => number;
@@ -99,7 +114,7 @@ export class ChannelBus {
       existing.rateHz = rateHz;
       existing.timer?.cancel();
       existing.timer = undefined;
-      const active = target.isVisible();
+      const active = isVisibilityGated(definition) ? target.isVisible() : true;
       this.setSubscriptionActive(channel, existing, active);
       if (existing.pending !== undefined && active) {
         this.queueDelivery(channel, existing, existing.pending);
@@ -112,7 +127,7 @@ export class ChannelBus {
       subscribers = new Map();
       this.subscriptions.set(channel, subscribers);
     }
-    const active = target.isVisible();
+    const active = isVisibilityGated(definition) ? target.isVisible() : true;
     const subscription: Subscription = { target, rateHz, active };
     const hadCachedSnapshotBeforeSubscribe =
       definition.kind === 'snapshot' && this.latestSnapshots.has(channel);
@@ -168,11 +183,13 @@ export class ChannelBus {
         this.remove(channel, rendererId);
         continue;
       }
-      if (!subscription.target.isVisible()) {
-        this.setSubscriptionActive(channel, subscription, false);
-        continue;
+      if (isVisibilityGated(definition)) {
+        if (!subscription.target.isVisible()) {
+          this.setSubscriptionActive(channel, subscription, false);
+          continue;
+        }
+        if (!subscription.active) continue;
       }
-      if (!subscription.active) continue;
       this.onPublish?.(rendererId, channel);
       this.increment(this.publicationCounts, rendererId, channel);
       this.queueDelivery(channel, subscription, payload);
@@ -183,6 +200,9 @@ export class ChannelBus {
     for (const [channel, subscribers] of this.subscriptions) {
       const subscription = subscribers.get(rendererId);
       if (!subscription) continue;
+      // Event subscriptions stay active while the window is away, so a
+      // minimised window keeps receiving them instead of losing them.
+      if (!isVisibilityGated(this.definition(channel))) continue;
       this.setSubscriptionActive(channel, subscription, false);
     }
   }
