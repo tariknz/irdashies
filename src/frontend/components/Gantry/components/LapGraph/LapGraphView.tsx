@@ -4,7 +4,7 @@ import { useQualifyingGrid } from '@irdashies/domain/standings/useQualifyingGrid
 import {
   classReferenceLap,
   gapToClassLeader,
-  positionByLap,
+  positionsByLap,
   raceTrace,
   readCrossings,
   traceAnchor,
@@ -298,17 +298,28 @@ export const LapGraphView = memo(
         ? traceAnchor(leaderCrossings, reference.seconds)
         : undefined;
 
-      const series: LapGraphSeries[] = [];
+      // Read every car once: position mode ranks the whole class against
+      // itself, so it needs the field before it can place any single car.
+      const crossingsByCar = new Map<number, LapCrossing[]>();
       for (const member of members) {
-        const crossings: LapCrossing[] =
+        const crossings =
           member.carIdx === leaderCarIdx
             ? leaderCrossings
             : readCrossings(history, member.carIdx);
-        if (crossings.length === 0) continue;
+        if (crossings.length > 0) crossingsByCar.set(member.carIdx, crossings);
+      }
+
+      const positionPoints =
+        mode === 'position' ? positionsByLap(crossingsByCar) : undefined;
+
+      const series: LapGraphSeries[] = [];
+      for (const member of members) {
+        const crossings = crossingsByCar.get(member.carIdx);
+        if (!crossings) continue;
 
         let points: LapPoint[];
         if (mode === 'position') {
-          points = positionByLap(crossings);
+          points = positionPoints?.get(member.carIdx) ?? [];
         } else if (mode === 'gap') {
           points = gapToClassLeader(crossings, leaderCrossings);
         } else if (reference && anchor) {
