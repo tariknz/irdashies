@@ -12,6 +12,7 @@ import {
   SPOTTING_TRIGGER_KEY,
   SPOTTING_TRIGGER_LABEL,
 } from '@irdashies/types';
+import logger from '@irdashies/utils/logger';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import {
   CopySimpleIcon,
@@ -25,12 +26,14 @@ const SessionProfileRow = ({
   label,
   profiles,
   value,
+  disabled,
   onChange,
 }: {
   triggerKey: ProfileTriggerKey;
   label: string;
   profiles: DashboardProfile[];
   value: string;
+  disabled: boolean;
   onChange: (triggerKey: ProfileTriggerKey, profileId: string) => void;
 }) => (
   <div className="flex items-center justify-between gap-4">
@@ -43,8 +46,9 @@ const SessionProfileRow = ({
     <select
       id={`session-profile-${triggerKey}`}
       value={value}
+      disabled={disabled}
       onChange={(e) => onChange(triggerKey, e.target.value)}
-      className="bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm min-w-52"
+      className="bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm min-w-52 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <option value="">Don&apos;t switch</option>
       {profiles.map((profile) => (
@@ -74,28 +78,52 @@ export const ProfileSettings = () => {
   const [sessionProfileMap, setSessionProfileMap] = useState<SessionProfileMap>(
     {}
   );
+  // The rows stay disabled until the stored map has arrived. Editing one before
+  // then would build a new map from an empty one and wipe what is on disk.
+  const [sessionProfileMapLoaded, setSessionProfileMapLoaded] = useState(false);
+
+  // Every write sends the whole map, so it must be derived from the newest one
+  // rather than from a render's closure. Two edits in quick succession would
+  // otherwise both build on the same state and the second would drop the
+  // first's selection.
+  const sessionProfileMapRef = useRef<SessionProfileMap>({});
+  // Writes are chained so they reach storage in the order they were made. Two
+  // in flight at once can otherwise be persisted out of order, leaving the
+  // stored map disagreeing with what the page shows.
+  const sessionProfileWrites = useRef<Promise<unknown>>(Promise.resolve());
 
   useEffect(() => {
     bridge.getCycleProfiles?.().then((v) => setCycleProfiles(v ?? false));
     bridge
       .getShowProfileBanner?.()
       .then((v) => setShowProfileBanner(v ?? true));
-    bridge.getSessionProfileMap?.().then((v) => setSessionProfileMap(v ?? {}));
+    bridge.getSessionProfileMap?.().then((v) => {
+      sessionProfileMapRef.current = v ?? {};
+      setSessionProfileMap(v ?? {});
+      setSessionProfileMapLoaded(true);
+    });
   }, [bridge]);
 
-  const handleSessionProfileChange = async (
+  const handleSessionProfileChange = (
     triggerKey: ProfileTriggerKey,
     profileId: string
   ) => {
     // An empty selection drops the key entirely rather than storing a blank,
     // so "no profile" and "profile deleted" stay the same thing on disk.
     const next = Object.fromEntries(
-      Object.entries({ ...sessionProfileMap, [triggerKey]: profileId }).filter(
-        ([, id]) => Boolean(id)
-      )
+      Object.entries({
+        ...sessionProfileMapRef.current,
+        [triggerKey]: profileId,
+      }).filter(([, id]) => Boolean(id))
     ) as SessionProfileMap;
-    await bridge.setSessionProfileMap?.(next);
+
+    sessionProfileMapRef.current = next;
     setSessionProfileMap(next);
+    sessionProfileWrites.current = sessionProfileWrites.current
+      .then(() => bridge.setSessionProfileMap?.(next))
+      .catch((err) => {
+        logger.error('Failed to save the session profile map', err);
+      });
   };
 
   const handleToggleCycleProfiles = async (checked: boolean) => {
@@ -563,6 +591,7 @@ export const ProfileSettings = () => {
                 label={SESSION_PROFILE_LABELS[key]}
                 profiles={profiles}
                 value={sessionProfileMap[key] ?? ''}
+                disabled={!sessionProfileMapLoaded}
                 onChange={handleSessionProfileChange}
               />
             ))}
@@ -574,6 +603,7 @@ export const ProfileSettings = () => {
               label={SPOTTING_TRIGGER_LABEL}
               profiles={profiles}
               value={sessionProfileMap[SPOTTING_TRIGGER_KEY] ?? ''}
+              disabled={!sessionProfileMapLoaded}
               onChange={handleSessionProfileChange}
             />
             <p className="text-sm text-slate-400">

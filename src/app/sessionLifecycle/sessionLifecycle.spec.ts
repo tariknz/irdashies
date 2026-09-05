@@ -423,12 +423,13 @@ describe('sessionLifecycle', () => {
 
         lifecycle._onTelemetry(makeDrivingTelemetry(0, flags));
 
-        if (expected) {
-          expect(drivingSpy).toHaveBeenCalledWith(true);
-        } else {
-          // False is the starting assumption, so only a true->false edge fires.
-          expect(drivingSpy).not.toHaveBeenCalledWith(true);
-        }
+        // Asserted the same way for both outcomes. The driving state starts
+        // unknown rather than false, so the first frame is an edge either way
+        // and must fire exactly once with the state it found — a "did not fire
+        // with true" assertion would also pass if nothing fired at all, and the
+        // spotting dwell timer depends on that first false arriving.
+        expect(drivingSpy).toHaveBeenCalledTimes(1);
+        expect(drivingSpy).toHaveBeenCalledWith(expected);
       }
     );
 
