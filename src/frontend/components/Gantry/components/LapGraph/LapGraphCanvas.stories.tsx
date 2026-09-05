@@ -2,8 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useMemo, useState } from 'react';
 import { LapGraphCanvas } from './LapGraphCanvas';
 import type { LapGraphMode, LapGraphSeries, LapPoint } from './LapGraphCanvas';
-
-const CLASS_COLORS = ['#22c55e', '#38bdf8', '#f472b6', '#fbbf24'];
+import { identityForGridSlot } from './lapGraphPalette';
 
 /** Deterministic noise, so a story looks the same on every reload. */
 const seededRandom = (seed: number) => {
@@ -66,13 +65,14 @@ const buildPoints = (
   return points;
 };
 
+/** Grid slot = carIdx + 1, so a 60-car field shows solid, dashed and dotted. */
 const buildField = (options: FieldOptions): LapGraphSeries[] =>
   Array.from({ length: options.cars }, (_, carIdx) => ({
     carIdx,
     carNumber: String(carIdx + 1),
     displayName: `Driver ${String(carIdx + 1).padStart(2, '0')}`,
     isPlayer: carIdx === 3,
-    color: CLASS_COLORS[carIdx % CLASS_COLORS.length],
+    ...identityForGridSlot(carIdx + 1),
     points: buildPoints(carIdx, options),
   }));
 
