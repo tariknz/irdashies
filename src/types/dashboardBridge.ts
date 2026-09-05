@@ -3,6 +3,7 @@ import type {
   DashboardProfile,
   DriverTagSettings,
 } from './dashboardLayout';
+import type { SessionProfileMap } from './sessionProfiles';
 
 export interface SaveDashboardOptions {
   forceReload?: boolean;
@@ -62,6 +63,8 @@ export interface DashboardBridge {
   setCycleProfiles?: (enabled: boolean) => Promise<void>;
   getShowProfileBanner?: () => Promise<boolean>;
   setShowProfileBanner?: (enabled: boolean) => Promise<void>;
+  getSessionProfileMap?: () => Promise<SessionProfileMap>;
+  setSessionProfileMap?: (map: SessionProfileMap) => Promise<void>;
   listProfiles: () => Promise<DashboardProfile[]>;
   createProfile: (name: string) => Promise<DashboardProfile>;
   cloneProfile: (profileId: string) => Promise<DashboardProfile>;

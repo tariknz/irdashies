@@ -42,9 +42,38 @@ import {
   setCycleProfiles as setCycleProfilesStorage,
   getShowProfileBanner as getShowProfileBannerStorage,
   setShowProfileBanner as setShowProfileBannerStorage,
+  getSessionProfileMap as getSessionProfileMapStorage,
+  setSessionProfileMap as setSessionProfileMapStorage,
 } from '../../storage/appSettings';
+import {
+  SESSION_PROFILE_KEYS,
+  SPOTTING_TRIGGER_KEY,
+  type ProfileTriggerKey,
+  type SessionProfileMap,
+} from '@irdashies/types';
 import { Analytics } from '../../analytics';
 import logger from '../../logger';
+
+const PROFILE_TRIGGER_KEYS: ProfileTriggerKey[] = [
+  ...SESSION_PROFILE_KEYS,
+  SPOTTING_TRIGGER_KEY,
+];
+
+/**
+ * The mapping arrives over IPC, so it is rebuilt from an allowlist of keys
+ * rather than trusted. Unknown keys and non-string profile ids are dropped;
+ * an empty string is kept as-is because that is how the UI says "no profile".
+ */
+const sanitiseSessionProfileMap = (input: unknown): SessionProfileMap => {
+  const map: SessionProfileMap = {};
+  if (!input || typeof input !== 'object') return map;
+  const source = input as Record<string, unknown>;
+  for (const key of PROFILE_TRIGGER_KEYS) {
+    const value = source[key];
+    if (typeof value === 'string') map[key] = value;
+  }
+  return map;
+};
 
 /**
  * Injects global driver tag settings into a dashboard layout before broadcasting.
@@ -385,6 +414,12 @@ export async function publishDashboardUpdates(
 
   ipcMain.handle('setCycleProfiles', (_, enabled: boolean) =>
     setCycleProfilesStorage(enabled)
+  );
+
+  ipcMain.handle('getSessionProfileMap', () => getSessionProfileMapStorage());
+
+  ipcMain.handle('setSessionProfileMap', (_, map: unknown) =>
+    setSessionProfileMapStorage(sanitiseSessionProfileMap(map))
   );
 
   ipcMain.handle('getShowProfileBanner', () => getShowProfileBannerStorage());

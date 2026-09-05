@@ -1,7 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from '@irdashies/context';
-import type { DashboardProfile } from '@irdashies/types';
+import type {
+  DashboardProfile,
+  ProfileTriggerKey,
+  SessionProfileMap,
+} from '@irdashies/types';
+import {
+  SESSION_PROFILE_KEYS,
+  SESSION_PROFILE_LABELS,
+  SPOTTING_TRIGGER_KEY,
+  SPOTTING_TRIGGER_LABEL,
+} from '@irdashies/types';
+import logger from '@irdashies/utils/logger';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import {
   CopySimpleIcon,
@@ -9,6 +20,47 @@ import {
   CaretDownIcon,
   TrashIcon,
 } from '@phosphor-icons/react';
+
+interface SessionProfileRowProps {
+  triggerKey: ProfileTriggerKey;
+  label: string;
+  profiles: DashboardProfile[];
+  value: string;
+  disabled: boolean;
+  onChange: (triggerKey: ProfileTriggerKey, profileId: string) => void;
+}
+
+const SessionProfileRow = ({
+  triggerKey,
+  label,
+  profiles,
+  value,
+  disabled,
+  onChange,
+}: SessionProfileRowProps) => (
+  <div className="flex items-center justify-between gap-4">
+    <label
+      htmlFor={`session-profile-${triggerKey}`}
+      className="text-md font-medium text-slate-300"
+    >
+      {label}
+    </label>
+    <select
+      id={`session-profile-${triggerKey}`}
+      value={value}
+      disabled={disabled}
+      onChange={(e) => onChange(triggerKey, e.target.value)}
+      className="bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm min-w-52 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <option value="">Don&apos;t switch</option>
+      {profiles.map((profile) => (
+        <option key={profile.id} value={profile.id}>
+          {profile.name}
+        </option>
+      ))}
+    </select>
+  </div>
+);
 
 export const ProfileSettings = () => {
   const {
@@ -25,13 +77,56 @@ export const ProfileSettings = () => {
 
   const [cycleProfiles, setCycleProfiles] = useState(false);
   const [showProfileBanner, setShowProfileBanner] = useState(true);
+  const [sessionProfileMap, setSessionProfileMap] = useState<SessionProfileMap>(
+    {}
+  );
+  // The rows stay disabled until the stored map has arrived. Editing one before
+  // then would build a new map from an empty one and wipe what is on disk.
+  const [sessionProfileMapLoaded, setSessionProfileMapLoaded] = useState(false);
+
+  // Every write sends the whole map, so it must be derived from the newest one
+  // rather than from a render's closure. Two edits in quick succession would
+  // otherwise both build on the same state and the second would drop the
+  // first's selection.
+  const sessionProfileMapRef = useRef<SessionProfileMap>({});
+  // Writes are chained so they reach storage in the order they were made. Two
+  // in flight at once can otherwise be persisted out of order, leaving the
+  // stored map disagreeing with what the page shows.
+  const sessionProfileWrites = useRef<Promise<unknown>>(Promise.resolve());
 
   useEffect(() => {
     bridge.getCycleProfiles?.().then((v) => setCycleProfiles(v ?? false));
     bridge
       .getShowProfileBanner?.()
       .then((v) => setShowProfileBanner(v ?? true));
+    bridge.getSessionProfileMap?.().then((v) => {
+      sessionProfileMapRef.current = v ?? {};
+      setSessionProfileMap(v ?? {});
+      setSessionProfileMapLoaded(true);
+    });
   }, [bridge]);
+
+  const handleSessionProfileChange = (
+    triggerKey: ProfileTriggerKey,
+    profileId: string
+  ) => {
+    // An empty selection drops the key entirely rather than storing a blank,
+    // so "no profile" and "profile deleted" stay the same thing on disk.
+    const next = Object.fromEntries(
+      Object.entries({
+        ...sessionProfileMapRef.current,
+        [triggerKey]: profileId,
+      }).filter(([, id]) => Boolean(id))
+    ) as SessionProfileMap;
+
+    sessionProfileMapRef.current = next;
+    setSessionProfileMap(next);
+    sessionProfileWrites.current = sessionProfileWrites.current
+      .then(() => bridge.setSessionProfileMap?.(next))
+      .catch((err) => {
+        logger.error('Failed to save the session profile map', err);
+      });
+  };
 
   const handleToggleCycleProfiles = async (checked: boolean) => {
     await bridge.setCycleProfiles?.(checked);
@@ -472,6 +567,52 @@ export const ProfileSettings = () => {
               />
               <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
+          </div>
+        </div>
+
+        {/* Session mapping */}
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-3">
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Switch Profile By Session
+            </h3>
+            <p className="text-sm text-gray-400 mb-3">
+              Set a profile for each session type and it is applied
+              automatically as the event moves from practice through to the
+              race. A session left on Don&apos;t switch keeps whatever profile
+              you are already on, so to come back to a layout, map that session
+              to it rather than leaving it unset.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            {SESSION_PROFILE_KEYS.map((key) => (
+              <SessionProfileRow
+                key={key}
+                triggerKey={key}
+                label={SESSION_PROFILE_LABELS[key]}
+                profiles={profiles}
+                value={sessionProfileMap[key] ?? ''}
+                disabled={!sessionProfileMapLoaded}
+                onChange={handleSessionProfileChange}
+              />
+            ))}
+          </div>
+
+          <div className="border-t border-slate-700 pt-3 space-y-2">
+            <SessionProfileRow
+              triggerKey={SPOTTING_TRIGGER_KEY}
+              label={SPOTTING_TRIGGER_LABEL}
+              profiles={profiles}
+              value={sessionProfileMap[SPOTTING_TRIGGER_KEY] ?? ''}
+              disabled={!sessionProfileMapLoaded}
+              onChange={handleSessionProfileChange}
+            />
+            <p className="text-sm text-slate-400">
+              Applied while you are in a session but not in the car, whichever
+              session type it is, and handed back as soon as you are driving
+              again.
+            </p>
           </div>
         </div>
 
