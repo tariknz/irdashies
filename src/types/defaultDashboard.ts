@@ -1372,8 +1372,11 @@ export const defaultDashboard: {
       layout: {
         x: 6,
         y: 620,
-        width: 200,
-        height: 160,
+        // Wide and short: the systems read left to right as columns, so the
+        // default slot is shaped for a strip rather than the tall table this
+        // widget used to be.
+        width: 380,
+        height: 70,
       },
       config: {
         rows: [

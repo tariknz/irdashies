@@ -35,8 +35,12 @@ export const SystemColumn = memo(
     // zero, or a blank for a system the car does not have.
     const subdued = unsupported || adjustment.isOff;
 
+    // flex-auto rather than flex-1: equal-width columns size to the widest
+    // possible content, so a percentage like 53.5% got the same room as a
+    // single digit and crowded its neighbours. Sizing from content lets the
+    // brake bias column take the width it actually needs.
     return (
-      <div className="flex flex-1 min-w-0 flex-col items-center gap-0.5">
+      <div className="flex flex-auto min-w-0 flex-col items-center gap-0.5">
         {/* px-1 rather than the Pitlane Helper's px-2: its chips are standalone
             status pills, these are packed side by side, and the wider padding
             truncated a three-letter label once the column count got high. */}
@@ -51,7 +55,7 @@ export const SystemColumn = memo(
             same balance the Pitlane Helper strikes between its big readouts
             and their small captions. */}
         <div
-          className={`${isCompact ? 'text-base' : 'text-[1.35em] py-0.5'} text-center font-semibold tabular-nums whitespace-nowrap leading-none ${
+          className={`${isCompact ? 'text-base' : 'text-[1.35em] py-0.5'} px-2 text-center font-semibold tabular-nums whitespace-nowrap leading-none ${
             subdued ? 'text-white/40' : 'text-white'
           }`}
         >
