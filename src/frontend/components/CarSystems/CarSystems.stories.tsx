@@ -52,8 +52,9 @@ const story = (
     ChannelSnapshotDecorator({ 'car-systems.snapshot': systems }),
     // The widget is full-width by design and takes its size from its overlay
     // window, so the story supplies one rather than letting it span the page.
+    // Wide enough for a strip of columns rather than the old stacked table.
     (Story: React.ComponentType) => (
-      <div style={{ width: 220 }}>
+      <div style={{ width: 420 }}>
         <Story />
       </div>
     ),

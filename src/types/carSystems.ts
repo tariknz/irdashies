@@ -14,34 +14,139 @@
  * an on/off state would misreport every car that has it.
  */
 export interface CarSystemDefinition {
-  /** Telemetry variable name, e.g. 'dcABS'. Stable identity for the row. */
+  /** Telemetry variable name, e.g. 'dcABS'. Stable identity for the column. */
   key: string;
-  /** Display label. */
+  /** Full label, used in settings. */
   label: string;
+  /** Abbreviation for the column header, where space is tight. */
+  short: string;
   /** Decimal places the value is meaningful to. */
   precision: number;
   /** Appended on display. */
   unit?: string;
+  /**
+   * Tailwind background class for the column header chip, in the Pitlane
+   * Helper's idiom: a solid colour behind small bold caps.
+   *
+   * Colours carry meaning where the app already has one. Amber is fuel because
+   * FuelCalculator is amber throughout. Yellow is deliberately unused: it means
+   * caution and off-track elsewhere (Flag, Battle), and a fuel column that
+   * looked like a warning would be actively misleading. Red is braking, which
+   * is why brake bias takes it.
+   */
+  chip: string;
 }
 
 export const CAR_SYSTEM_ADJUSTMENTS: readonly CarSystemDefinition[] = [
-  { key: 'dcBrakeBias', label: 'Brake Bias', precision: 1, unit: '%' },
+  {
+    key: 'dcBrakeBias',
+    label: 'Brake Bias',
+    short: 'BB',
+    precision: 1,
+    unit: '%',
+    chip: 'bg-red-600',
+  },
   // The Renault Clio reports its bias here instead. The two never coexist, so
-  // they share a row and whichever the car publishes fills it.
-  { key: 'dcPeakBrakeBias', label: 'Brake Bias', precision: 1, unit: '%' },
-  { key: 'dcABS', label: 'ABS', precision: 0 },
-  { key: 'dcTractionControl', label: 'TC', precision: 0 },
-  { key: 'dcTractionControl2', label: 'TC2', precision: 0 },
-  { key: 'dcThrottleShape', label: 'Throttle Shape', precision: 0 },
-  { key: 'dcEnginePower', label: 'Engine Power', precision: 0 },
-  { key: 'dcFuelMixture', label: 'Fuel Mixture', precision: 0 },
-  { key: 'dcAntiRollFront', label: 'ARB Front', precision: 0 },
-  { key: 'dcAntiRollRear', label: 'ARB Rear', precision: 0 },
-  { key: 'dcDiffEntry', label: 'Diff Entry', precision: 0 },
-  { key: 'dcDiffMiddle', label: 'Diff Mid', precision: 0 },
-  { key: 'dcDiffExit', label: 'Diff Exit', precision: 0 },
-  { key: 'dcWeightJackerLeft', label: 'Jacker L', precision: 0 },
-  { key: 'dcWeightJackerRight', label: 'Jacker R', precision: 0 },
+  // they share a column and whichever the car publishes fills it.
+  {
+    key: 'dcPeakBrakeBias',
+    label: 'Brake Bias',
+    short: 'BB',
+    precision: 1,
+    unit: '%',
+    chip: 'bg-red-600',
+  },
+  {
+    key: 'dcABS',
+    label: 'ABS',
+    short: 'ABS',
+    precision: 0,
+    chip: 'bg-green-600',
+  },
+  {
+    key: 'dcTractionControl',
+    label: 'Traction Control',
+    short: 'TC',
+    precision: 0,
+    chip: 'bg-blue-700',
+  },
+  {
+    key: 'dcTractionControl2',
+    label: 'Traction Control 2',
+    short: 'TC2',
+    precision: 0,
+    chip: 'bg-sky-600',
+  },
+  {
+    key: 'dcThrottleShape',
+    label: 'Throttle Shape',
+    short: 'THR',
+    precision: 0,
+    chip: 'bg-purple-600',
+  },
+  {
+    key: 'dcEnginePower',
+    label: 'Engine Power',
+    short: 'PWR',
+    precision: 0,
+    chip: 'bg-violet-700',
+  },
+  {
+    key: 'dcFuelMixture',
+    label: 'Fuel Mixture',
+    short: 'FUEL',
+    precision: 0,
+    chip: 'bg-amber-600',
+  },
+  {
+    key: 'dcAntiRollFront',
+    label: 'ARB Front',
+    short: 'ARBF',
+    precision: 0,
+    chip: 'bg-teal-600',
+  },
+  {
+    key: 'dcAntiRollRear',
+    label: 'ARB Rear',
+    short: 'ARBR',
+    precision: 0,
+    chip: 'bg-teal-700',
+  },
+  {
+    key: 'dcDiffEntry',
+    label: 'Diff Entry',
+    short: 'DIFE',
+    precision: 0,
+    chip: 'bg-indigo-600',
+  },
+  {
+    key: 'dcDiffMiddle',
+    label: 'Diff Mid',
+    short: 'DIFM',
+    precision: 0,
+    chip: 'bg-indigo-700',
+  },
+  {
+    key: 'dcDiffExit',
+    label: 'Diff Exit',
+    short: 'DIFX',
+    precision: 0,
+    chip: 'bg-indigo-800',
+  },
+  {
+    key: 'dcWeightJackerLeft',
+    label: 'Jacker L',
+    short: 'JKL',
+    precision: 0,
+    chip: 'bg-stone-600',
+  },
+  {
+    key: 'dcWeightJackerRight',
+    label: 'Jacker R',
+    short: 'JKR',
+    precision: 0,
+    chip: 'bg-stone-700',
+  },
 ];
 
 /**
