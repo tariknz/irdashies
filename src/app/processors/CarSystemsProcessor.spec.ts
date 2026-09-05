@@ -58,10 +58,12 @@ describe('CarSystemsProcessor', () => {
         })
       );
 
+      // The snapshot carries the full label; the widget renders the short form
+      // from the shared catalogue, so this is the settings-facing name.
       expect(processor.snapshot().adjustments.map((a) => a.label)).toEqual([
         'Brake Bias',
         'ABS',
-        'TC',
+        'Traction Control',
         'Throttle Shape',
       ]);
     });
