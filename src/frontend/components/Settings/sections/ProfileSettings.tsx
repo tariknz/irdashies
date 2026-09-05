@@ -21,6 +21,15 @@ import {
   TrashIcon,
 } from '@phosphor-icons/react';
 
+interface SessionProfileRowProps {
+  triggerKey: ProfileTriggerKey;
+  label: string;
+  profiles: DashboardProfile[];
+  value: string;
+  disabled: boolean;
+  onChange: (triggerKey: ProfileTriggerKey, profileId: string) => void;
+}
+
 const SessionProfileRow = ({
   triggerKey,
   label,
@@ -28,14 +37,7 @@ const SessionProfileRow = ({
   value,
   disabled,
   onChange,
-}: {
-  triggerKey: ProfileTriggerKey;
-  label: string;
-  profiles: DashboardProfile[];
-  value: string;
-  disabled: boolean;
-  onChange: (triggerKey: ProfileTriggerKey, profileId: string) => void;
-}) => (
+}: SessionProfileRowProps) => (
   <div className="flex items-center justify-between gap-4">
     <label
       htmlFor={`session-profile-${triggerKey}`}
