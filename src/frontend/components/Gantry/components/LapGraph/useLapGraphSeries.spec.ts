@@ -33,6 +33,7 @@ const makeSeries = (
   displayName: `Driver ${carIdx}`,
   isPlayer: false,
   color: '#22c55e',
+  dash: [],
   points,
   ...overrides,
 });
@@ -238,18 +239,27 @@ describe('emphasis tiers', () => {
   });
 
   it('gives each tier a distinct weight', () => {
-    expect(strokeStyleFor('context', '#22c55e')).toEqual({
+    expect(strokeStyleFor('context', '#22c55e', [7, 4])).toEqual({
       color: '#22c55e',
       width: 1,
       alpha: CONTEXT_ALPHA,
+      dash: [7, 4],
     });
-    expect(strokeStyleFor('pinned', '#22c55e').width).toBe(2);
-    expect(strokeStyleFor('focus', '#22c55e').width).toBe(3);
+    expect(strokeStyleFor('pinned', '#22c55e', [7, 4]).width).toBe(2);
+    expect(strokeStyleFor('focus', '#22c55e', [7, 4]).width).toBe(3);
   });
 
   it('brightens only the focus tier', () => {
-    expect(strokeStyleFor('focus', '#22c55e').color).not.toBe('#22c55e');
-    expect(strokeStyleFor('pinned', '#22c55e').color).toBe('#22c55e');
+    expect(strokeStyleFor('focus', '#22c55e', []).color).not.toBe('#22c55e');
+    expect(strokeStyleFor('pinned', '#22c55e', []).color).toBe('#22c55e');
+  });
+
+  it('keeps the identity dash pattern at every tier, including focus', () => {
+    const dash = [7, 4];
+
+    expect(strokeStyleFor('context', '#22c55e', dash).dash).toBe(dash);
+    expect(strokeStyleFor('pinned', '#22c55e', dash).dash).toBe(dash);
+    expect(strokeStyleFor('focus', '#22c55e', dash).dash).toBe(dash);
   });
 });
 
