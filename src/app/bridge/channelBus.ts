@@ -35,7 +35,15 @@ interface ChannelBusOptions {
   onDeliver?: (rendererId: number, channel: string) => void;
 }
 
-type SubscriberCountListener = (channel: string, count: number) => void;
+/**
+ * `activeCount` is visible demand. `registeredCount` also includes hidden
+ * windows that are still subscribed.
+ */
+type SubscriberCountListener = (
+  channel: string,
+  activeCount: number,
+  registeredCount: number
+) => void;
 
 interface Subscription {
   target: RendererTarget;
@@ -57,6 +65,21 @@ const systemSchedule = (callback: () => void, delayMs: number): TimerHandle => {
   const timeout = setTimeout(callback, delayMs);
   return { cancel: () => clearTimeout(timeout) };
 };
+
+/**
+ * Whether a channel stops delivering while its window is hidden.
+ *
+ * Only snapshot channels do. A hidden window has nothing to draw, and it is
+ * re-seeded from `latestSnapshots` when it comes back, so nothing is lost.
+ *
+ * Event channels are never gated. Each publish is a discrete fact — an
+ * incident, a session change — that no later snapshot can reconstruct, so
+ * suppressing one while the window is hidden loses it permanently. A minimised
+ * Gantry used to miss every incident of a race that way. All event channels are
+ * low volume, so delivering to a hidden window costs nothing worth saving.
+ */
+const isVisibilityGated = (definition: ChannelDefinition): boolean =>
+  definition.kind === 'snapshot';
 
 export class ChannelBus {
   private readonly registry: Readonly<Record<string, ChannelDefinition>>;
@@ -99,7 +122,7 @@ export class ChannelBus {
       existing.rateHz = rateHz;
       existing.timer?.cancel();
       existing.timer = undefined;
-      const active = target.isVisible();
+      const active = isVisibilityGated(definition) ? target.isVisible() : true;
       this.setSubscriptionActive(channel, existing, active);
       if (existing.pending !== undefined && active) {
         this.queueDelivery(channel, existing, existing.pending);
@@ -112,20 +135,21 @@ export class ChannelBus {
       subscribers = new Map();
       this.subscriptions.set(channel, subscribers);
     }
-    const active = target.isVisible();
+    const active = isVisibilityGated(definition) ? target.isVisible() : true;
     const subscription: Subscription = { target, rateHz, active };
     const hadCachedSnapshotBeforeSubscribe =
       definition.kind === 'snapshot' && this.latestSnapshots.has(channel);
     const cachedSnapshotBeforeSubscribe = this.latestSnapshots.get(channel);
     subscribers.set(target.id, subscription);
-    if (active) {
-      this.notifySubscriberCount(channel);
-    } else if (
+    if (
+      !active &&
       definition.kind === 'snapshot' &&
       this.subscriberCount(channel) === 0
     ) {
       this.latestSnapshots.delete(channel);
     }
+    // A hidden subscription still changes the registered count.
+    this.notifySubscriberCount(channel);
 
     if (
       this.deliveryEnabled &&
@@ -168,11 +192,13 @@ export class ChannelBus {
         this.remove(channel, rendererId);
         continue;
       }
-      if (!subscription.target.isVisible()) {
-        this.setSubscriptionActive(channel, subscription, false);
-        continue;
+      if (isVisibilityGated(definition)) {
+        if (!subscription.target.isVisible()) {
+          this.setSubscriptionActive(channel, subscription, false);
+          continue;
+        }
+        if (!subscription.active) continue;
       }
-      if (!subscription.active) continue;
       this.onPublish?.(rendererId, channel);
       this.increment(this.publicationCounts, rendererId, channel);
       this.queueDelivery(channel, subscription, payload);
@@ -183,6 +209,9 @@ export class ChannelBus {
     for (const [channel, subscribers] of this.subscriptions) {
       const subscription = subscribers.get(rendererId);
       if (!subscription) continue;
+      // Event subscriptions stay active while the window is away, so a
+      // minimised window keeps receiving them instead of losing them.
+      if (!isVisibilityGated(this.definition(channel))) continue;
       this.setSubscriptionActive(channel, subscription, false);
     }
   }
@@ -364,12 +393,11 @@ export class ChannelBus {
     subscription?.timer?.cancel();
     const removed = subscribers?.delete(rendererId) ?? false;
     if (subscribers?.size === 0) this.subscriptions.delete(channel);
-    if (removed && subscription?.active) {
-      if (this.subscriberCount(channel) === 0) {
-        this.clearCachedSnapshot(channel);
-      }
-      this.notifySubscriberCount(channel);
+    if (!removed) return;
+    if (subscription?.active && this.subscriberCount(channel) === 0) {
+      this.clearCachedSnapshot(channel);
     }
+    this.notifySubscriberCount(channel);
   }
 
   private setSubscriptionActive(
@@ -398,9 +426,10 @@ export class ChannelBus {
   }
 
   private notifySubscriberCount(channel: string): void {
-    const count = this.subscriberCount(channel);
+    const activeCount = this.subscriberCount(channel);
+    const registeredCount = this.registeredSubscriberCount(channel);
     this.subscriberCountListeners.forEach((listener) =>
-      listener(channel, count)
+      listener(channel, activeCount, registeredCount)
     );
   }
 }

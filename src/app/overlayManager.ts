@@ -273,6 +273,19 @@ export class OverlayManager {
       visibleOnFullScreen: true,
     });
 
+    // The overlays and the settings window use a deliberate two-level scheme:
+    // overlays at 'screen-saver' 1, and the settings window raised to
+    // 'screen-saver' 2 during edit mode so it sits above them (see
+    // toggleLockOverlays). The constructor's `alwaysOnTop` flag alone puts the
+    // window in a lower band than either, so the settings window — and a
+    // fullscreen sim — end up above the overlays instead of below.
+    //
+    // Guarded on the setting so it still honours the user's choice, which is
+    // what the constructor flag above was changed to do.
+    if (this.overlayAlwaysOnTop) {
+      browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+    }
+
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       browserWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     } else {
@@ -664,6 +677,17 @@ export class OverlayManager {
     this.latestSessionData = undefined;
   }
 
+  /** Sends the cached session to a visible, subscribed sender window. */
+  public seedSessionData(sender: Electron.WebContents): boolean {
+    const win = BrowserWindow.fromWebContents(sender);
+    if (!win) return false;
+    return refreshSessionDataForVisibleWindow(
+      win,
+      this.rendererDataSubscriptions,
+      this.latestSessionData
+    );
+  }
+
   public hasTelemetryInspectorSubscribers(): boolean {
     return (
       this.rendererDataSubscriptions?.hasAny('telemetryInspector') ?? false
@@ -1014,6 +1038,22 @@ export class OverlayManager {
 
     browserWindow.on('closed', () => {
       this.gantryWindow = undefined;
+    });
+
+    // Electron emits restore, not show, when a minimised window comes back.
+    const resendSessionData = () => {
+      refreshSessionDataForVisibleWindow(
+        browserWindow,
+        this.rendererDataSubscriptions,
+        this.latestSessionData
+      );
+    };
+    browserWindow.on('show', resendSessionData);
+    browserWindow.on('restore', resendSessionData);
+
+    browserWindow.webContents.on('did-finish-load', () => {
+      if (browserWindow.isDestroyed()) return;
+      this.onWindowReadyCallbacks.forEach((cb) => cb('gantry'));
     });
 
     // Without this a renderer crash leaves a live-but-blank BrowserWindow that

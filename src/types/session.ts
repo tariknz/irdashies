@@ -6,6 +6,7 @@ import type {
   Driver as SdkDriver,
   CarSetupInfo,
 } from '../app/irsdk/types';
+import type { CameraInfo, CameraGroup } from '../app/irsdk/types/camera-info';
 import type { Sector } from '../app/irsdk/types/split-info';
 
 export type Session = SessionData;
@@ -15,3 +16,4 @@ export type { SessionQualifyPosition };
 export type Driver = SdkDriver;
 export type { CarSetupInfo };
 export type { Sector };
+export type { CameraInfo, CameraGroup };

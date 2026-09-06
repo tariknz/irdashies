@@ -159,9 +159,45 @@ describe('OverlayManager display windows', () => {
 
       expect(createdWindows).toHaveLength(1);
       expect(createdWindows[0].options.alwaysOnTop).toBe(overlayAlwaysOnTop);
-      expect(createdWindows[0].setAlwaysOnTop).not.toHaveBeenCalled();
     }
   );
+
+  it('puts an always-on-top overlay in the same band as the settings window', () => {
+    // The constructor flag alone is not enough. toggleLockOverlays raises the
+    // settings window to 'screen-saver' 2 during edit mode so it sits above the
+    // overlays, which only works if the overlays are at 'screen-saver' 1. With
+    // the level left off, the settings window and a fullscreen sim both end up
+    // above the overlays instead, and the widgets vanish.
+    const manager = new OverlayManager();
+
+    manager.createOverlays(
+      {
+        widgets: [],
+        generalSettings: { overlayAlwaysOnTop: true },
+      } as DashboardLayout,
+      { createSettingsWindow: false }
+    );
+
+    expect(createdWindows[0].setAlwaysOnTop).toHaveBeenCalledWith(
+      true,
+      'screen-saver',
+      1
+    );
+  });
+
+  it('leaves the level alone when the user has turned always-on-top off', () => {
+    const manager = new OverlayManager();
+
+    manager.createOverlays(
+      {
+        widgets: [],
+        generalSettings: { overlayAlwaysOnTop: false },
+      } as DashboardLayout,
+      { createSettingsWindow: false }
+    );
+
+    expect(createdWindows[0].setAlwaysOnTop).not.toHaveBeenCalled();
+  });
 
   it('shows a ready display overlay without activating it', () => {
     const manager = new OverlayManager();
