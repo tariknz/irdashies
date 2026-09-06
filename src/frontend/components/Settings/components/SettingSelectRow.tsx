@@ -23,6 +23,9 @@ export function SettingSelectRow<T extends string>({
       </div>
 
       <select
+        // The visible <h4> is not tied to the control, so without this a
+        // screen reader announces an unnamed combobox.
+        aria-label={title}
         className="bg-slate-700 text-white rounded-md px-2 py-1"
         value={value}
         onChange={(e) => onChange(e.target.value as T)}

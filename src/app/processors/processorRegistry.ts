@@ -68,6 +68,8 @@ export const createProcessorDefinitions = ({
   }),
   defineProcessor({
     channel: 'lap-times.snapshot',
+    // Gantry's last-lap columns need the history built while it was minimised.
+    processWhileHidden: true,
     metricsPrefix: 'lapTimes',
     create: () => new LapTimesProcessor(),
   }),

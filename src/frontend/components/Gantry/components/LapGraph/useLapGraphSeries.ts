@@ -24,8 +24,10 @@ export interface LapGraphSeries {
   /** Already formatted for display. Do not reformat. */
   displayName: string;
   isPlayer: boolean;
-  /** CSS colour string, already resolved from the car class. */
+  /** CSS colour string, resolved from the driver's qualifying grid identity. */
   color: string;
+  /** Unscaled identity dash pattern, at lineWidth 1. See `lapGraphPalette`. */
+  dash: readonly number[];
   points: readonly LapPoint[];
 }
 
@@ -36,6 +38,8 @@ export interface StrokeStyle {
   color: string;
   width: number;
   alpha: number;
+  /** Unscaled identity dash pattern. Scale with `scaleDash` before drawing. */
+  dash: readonly number[];
 }
 
 export interface PreparedSeries {
@@ -237,16 +241,22 @@ export const brightenColor = (color: string, amount = 0.4): string => {
 
 export const CONTEXT_ALPHA = 0.15;
 
-/** The three emphasis tiers from the plan, as concrete stroke settings. */
+/**
+ * The three emphasis tiers from the plan, as concrete stroke settings. The
+ * dash pattern is the driver's fixed identity and is never flattened by
+ * tier — a focused line keeps its shape, only brighter and wider, so it
+ * never comes to look like a different driver's regular line.
+ */
 export const strokeStyleFor = (
   tier: EmphasisTier,
-  color: string
+  color: string,
+  dash: readonly number[]
 ): StrokeStyle => {
   if (tier === 'focus') {
-    return { color: brightenColor(color), width: 3, alpha: 1 };
+    return { color: brightenColor(color), width: 3, alpha: 1, dash };
   }
-  if (tier === 'pinned') return { color, width: 2, alpha: 1 };
-  return { color, width: 1, alpha: CONTEXT_ALPHA };
+  if (tier === 'pinned') return { color, width: 2, alpha: 1, dash };
+  return { color, width: 1, alpha: CONTEXT_ALPHA, dash };
 };
 
 /**
@@ -315,7 +325,7 @@ export const prepareLapGraph = ({
     prepared.push({
       source: entry,
       tier,
-      stroke: strokeStyleFor(tier, entry.color),
+      stroke: strokeStyleFor(tier, entry.color, entry.dash),
       points,
     });
   }

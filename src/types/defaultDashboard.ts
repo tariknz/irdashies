@@ -1,5 +1,6 @@
 import type { GeneralSettingsType } from './dashboardLayout';
 import type { TypedDashboardWidget, WidgetConfigMap } from './widgetConfigs';
+import { DEFAULT_INCIDENT_CAMERA_GROUP } from './widgetConfigs';
 
 export const defaultDashboard: {
   widgets: TypedDashboardWidget[];
@@ -1465,6 +1466,7 @@ export const defaultDashboard: {
         pitEntryDurationSeconds: 0.6,
         cooldownSeconds: 5,
         sessionRetention: 'all',
+        incidentCameraGroup: DEFAULT_INCIDENT_CAMERA_GROUP,
         lapGraph: {
           yAxisMode: 'trace',
           lapWindow: 75,

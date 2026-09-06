@@ -9,8 +9,14 @@ export const isRendererDataStream = (
 ): value is RendererDataStream =>
   value === 'sessionData' || value === 'telemetryInspector';
 
-export const setupRendererDataSubscriptions = () =>
+export const setupRendererDataSubscriptions = (options?: {
+  onSubscribe?: (
+    sender: Electron.WebContents,
+    stream: RendererDataStream
+  ) => void;
+}) =>
   defineRendererSubscriptionBridge<RendererDataStream>({
     name: RENDERER_DATA_SUBSCRIPTION_BRIDGE,
     isValidKey: isRendererDataStream,
+    onSubscribe: options?.onSubscribe,
   });

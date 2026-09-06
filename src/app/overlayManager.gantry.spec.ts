@@ -21,6 +21,10 @@ class FakeWebContents {
 
 class FakeBrowserWindow {
   static getAllWindows = vi.fn(() => []);
+  static fromWebContents = vi.fn(
+    (webContents: FakeWebContents) =>
+      createdWindows.find((w) => w.webContents === webContents) ?? null
+  );
   webContents = new FakeWebContents();
   destroyed = false;
   shown = false;
@@ -195,6 +199,91 @@ describe('OverlayManager Gantry window', () => {
       revision: 3,
     });
     expect(subscriptions.has).toHaveBeenCalledWith(42, 'sessionData');
+  });
+
+  it.each(['show', 'restore'])(
+    'resends the latest session on %s to a subscribed window',
+    (eventName) => {
+      const manager = new OverlayManager();
+      const subscriptions = {
+        has: vi.fn(() => false),
+        hasAny: vi.fn(() => false),
+      };
+      manager.setRendererDataSubscriptions(subscriptions);
+      manager.createGantryWindow(dashboard(true));
+      const [window] = gantryWindows();
+      const handler = window.on.mock.calls.find(
+        ([event]) => event === eventName
+      )?.[1] as () => void;
+      window.shown = true;
+
+      // No cached session yet.
+      handler();
+      expect(window.webContents.send).not.toHaveBeenCalled();
+
+      // Cached, but this window is not subscribed.
+      manager.publishMessage('sessionData', { revision: 1 });
+      handler();
+      expect(window.webContents.send).not.toHaveBeenCalled();
+
+      subscriptions.has.mockReturnValue(true);
+      handler();
+      expect(window.webContents.send).toHaveBeenCalledWith('sessionData', {
+        revision: 1,
+      });
+    }
+  );
+
+  it('fires onOverlayReady callbacks as gantry when the page loads', () => {
+    const manager = new OverlayManager();
+    const onReady = vi.fn();
+    manager.onOverlayReady(onReady);
+    manager.createGantryWindow(dashboard(true));
+    const [window] = gantryWindows();
+    const loaded = window.webContents.on.mock.calls.find(
+      ([event]) => event === 'did-finish-load'
+    )?.[1] as () => void;
+
+    loaded();
+    expect(onReady).toHaveBeenCalledWith('gantry');
+
+    onReady.mockClear();
+    window.destroyed = true;
+    loaded();
+    expect(onReady).not.toHaveBeenCalled();
+  });
+
+  it('seeds the cached session only to a visible subscribed window', () => {
+    const manager = new OverlayManager();
+    const subscriptions = {
+      has: vi.fn(() => true),
+      hasAny: vi.fn(() => false),
+    };
+    manager.setRendererDataSubscriptions(subscriptions);
+    manager.publishMessage('sessionData', { revision: 1 });
+    manager.createGantryWindow(dashboard(true));
+    const [window] = gantryWindows();
+    const sender = window.webContents as unknown as Electron.WebContents;
+
+    // Hidden: nothing is sent.
+    expect(manager.seedSessionData(sender)).toBe(false);
+    expect(window.webContents.send).not.toHaveBeenCalled();
+
+    window.shown = true;
+    expect(manager.seedSessionData(sender)).toBe(true);
+    expect(window.webContents.send).toHaveBeenCalledWith('sessionData', {
+      revision: 1,
+    });
+
+    // Not subscribed: nothing is sent.
+    window.webContents.send.mockClear();
+    subscriptions.has.mockReturnValue(false);
+    expect(manager.seedSessionData(sender)).toBe(false);
+    expect(window.webContents.send).not.toHaveBeenCalled();
+
+    // No owning window.
+    const orphan = new FakeWebContents() as unknown as Electron.WebContents;
+    expect(manager.seedSessionData(orphan)).toBe(false);
   });
 
   it('drops its reference when the renderer crashes so it can be recreated', () => {
