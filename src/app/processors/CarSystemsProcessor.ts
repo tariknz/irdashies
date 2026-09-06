@@ -60,22 +60,35 @@ export class CarSystemsProcessor implements TelemetryProcessor<CarSystemsSnapsho
   };
 
   // The adjustment set is discovered from telemetry, not from session info.
+  /**
+   * Deliberately does nothing. ProcessorHost calls this on every session
+   * update, not once at startup, and iRacing republishes session data every
+   * second or two - so resetting here wiped the discovered set and the values
+   * constantly, and the table blinked empty until the next frame refilled it.
+   * Clearing state belongs in onLifecycle, which fires on the events that
+   * actually invalidate it.
+   */
   init(session: Session): void {
     void session;
-    this.reset(null);
   }
 
   onFrame(frame: Telemetry): void {
     if (!this.enabled) return;
 
-    const sessionNum = number(frame, 'SessionNum') ?? null;
-    if (
-      this.latest.sessionNum !== null &&
-      sessionNum !== this.latest.sessionNum
-    ) {
-      this.reset(sessionNum);
-    } else if (this.latest.sessionNum === null) {
-      this.latest.sessionNum = sessionNum;
+    // A frame that omits SessionNum says nothing about which session this is,
+    // so it must not be read as a change. Treating the absent value as null and
+    // comparing it against the stored one reset the whole table on any frame
+    // that happened to arrive without it.
+    const sessionNum = number(frame, 'SessionNum');
+    if (sessionNum !== undefined) {
+      if (
+        this.latest.sessionNum !== null &&
+        sessionNum !== this.latest.sessionNum
+      ) {
+        this.reset(sessionNum);
+      } else if (this.latest.sessionNum === null) {
+        this.latest.sessionNum = sessionNum;
+      }
     }
 
     // Being in the car is what makes the full set visible. The pit box counts;

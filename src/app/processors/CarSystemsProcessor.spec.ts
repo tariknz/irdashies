@@ -211,6 +211,55 @@ describe('CarSystemsProcessor', () => {
     });
   });
 
+  describe('staying on screen', () => {
+    /**
+     * ProcessorHost calls init() on every session update, and iRacing
+     * republishes session data every second or two. Resetting there wiped the
+     * discovered set and the values, so the table blinked empty until the next
+     * frame refilled it - reported from a PEC qualifying session where it
+     * flickered every second or two.
+     */
+    it('survives the repeated init that a session update triggers', () => {
+      processor.onFrame(frame({ dcBrakeBias: 54, dcABS: 2 }));
+      const before = processor.snapshot().adjustments;
+
+      processor.init({} as Session);
+      processor.init({} as Session);
+
+      expect(processor.snapshot().adjustments).toEqual(before);
+      expect(processor.snapshot().discovered).toBe(true);
+    });
+
+    it('does not republish when a session update arrives', () => {
+      processor.onFrame(frame({ dcBrakeBias: 54, dcABS: 2 }));
+      const version = processor.snapshot().version;
+
+      processor.init({} as Session);
+
+      // A version bump makes every subscriber re-render for no change.
+      expect(processor.snapshot().version).toBe(version);
+    });
+
+    it('keeps its values on a frame that omits SessionNum', () => {
+      processor.onFrame(frame({ dcBrakeBias: 54, dcABS: 2 }));
+
+      // No SessionNum, and out of the car so nothing re-discovers within the
+      // same frame. That is when a spurious reset is actually visible: the
+      // table empties and stays empty. An in-car frame hides the damage by
+      // repopulating immediately, which is why this one is deliberately not.
+      const noSessionNum = {
+        IsOnTrack: { value: [false] },
+      } as unknown as Telemetry;
+      processor.onFrame(noSessionNum);
+
+      expect(processor.snapshot().adjustments.map((a) => a.key)).toEqual([
+        'dcBrakeBias',
+        'dcABS',
+      ]);
+      expect(processor.snapshot().discovered).toBe(true);
+    });
+  });
+
   describe('lifecycle', () => {
     it('records nothing during a replay', () => {
       const replaying = new CarSystemsProcessor();
