@@ -217,7 +217,11 @@ app.on('ready', async () => {
   }
 
   setupChannelBridge(channelBus);
-  const rendererDataSubscriptions = setupRendererDataSubscriptions();
+  const rendererDataSubscriptions = setupRendererDataSubscriptions({
+    onSubscribe: (sender, stream) => {
+      if (stream === 'sessionData') overlayManager.seedSessionData(sender);
+    },
+  });
   disposeRendererDataSubscriptions = rendererDataSubscriptions.dispose;
   overlayManager.setRendererDataSubscriptions(
     rendererDataSubscriptions.registry

@@ -677,6 +677,17 @@ export class OverlayManager {
     this.latestSessionData = undefined;
   }
 
+  /** Sends the cached session to a visible, subscribed sender window. */
+  public seedSessionData(sender: Electron.WebContents): boolean {
+    const win = BrowserWindow.fromWebContents(sender);
+    if (!win) return false;
+    return refreshSessionDataForVisibleWindow(
+      win,
+      this.rendererDataSubscriptions,
+      this.latestSessionData
+    );
+  }
+
   public hasTelemetryInspectorSubscribers(): boolean {
     return (
       this.rendererDataSubscriptions?.hasAny('telemetryInspector') ?? false
@@ -1027,6 +1038,22 @@ export class OverlayManager {
 
     browserWindow.on('closed', () => {
       this.gantryWindow = undefined;
+    });
+
+    // Electron emits restore, not show, when a minimised window comes back.
+    const resendSessionData = () => {
+      refreshSessionDataForVisibleWindow(
+        browserWindow,
+        this.rendererDataSubscriptions,
+        this.latestSessionData
+      );
+    };
+    browserWindow.on('show', resendSessionData);
+    browserWindow.on('restore', resendSessionData);
+
+    browserWindow.webContents.on('did-finish-load', () => {
+      if (browserWindow.isDestroyed()) return;
+      this.onWindowReadyCallbacks.forEach((cb) => cb('gantry'));
     });
 
     // Without this a renderer crash leaves a live-but-blank BrowserWindow that
