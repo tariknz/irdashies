@@ -256,6 +256,10 @@ export async function publishDashboardUpdates(
     clearTimeout(hideTimer);
     clearTimeout(settleTimer);
     lastProfileId = profileId;
+    // Autostart lives in the dashboard, so it differs between profiles. Re-apply
+    // it here or the Windows Run entry keeps reflecting the profile the app
+    // started on, while the settings screen shows the one now in use.
+    overlayManager.setupAutoStart();
     const name = getProfile(profileId)?.name ?? '';
     // Banner is cosmetic; the hide/reveal still runs to mask the resize.
     const showBanner = getShowProfileBannerStorage();

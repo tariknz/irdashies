@@ -85,7 +85,22 @@ const safeErrorDetails = (error: unknown) => {
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
 
-updateElectronApp();
+// Only the official build auto-updates.
+//
+// Side-by-side betas are built with a different app identity (name and
+// productName become irdashies-beta) so they install alongside the real app.
+// The update feed only ever publishes the official app, so a beta that checks
+// it is offered a release built for a *different* application, downloads it in
+// the background, and Squirrel applies it on the next launch — after which the
+// beta no longer starts. The version number is not the problem and bumping it
+// would not help; the identity mismatch is.
+if (app.getName() === 'irdashies') {
+  updateElectronApp();
+} else {
+  log.info(
+    `[update] Auto-update disabled for non-official build "${app.getName()}"`
+  );
+}
 
 const overlayManager = new OverlayManager();
 const analytics = new Analytics();
