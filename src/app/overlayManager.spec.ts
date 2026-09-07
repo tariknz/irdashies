@@ -55,6 +55,7 @@ vi.mock('electron', () => ({
   app: {
     getVersion: () => '0.0.0',
     disableHardwareAcceleration: vi.fn(),
+    setLoginItemSettings: vi.fn(),
     commandLine: { appendSwitch: vi.fn() },
   },
   BrowserWindow: FakeBrowserWindow,
@@ -74,7 +75,10 @@ vi.mock('electron', () => ({
 }));
 
 vi.mock('./storage/storage', () => ({ readData: vi.fn(), writeData: vi.fn() }));
-vi.mock('./storage/dashboards', () => ({ getDashboard: vi.fn() }));
+vi.mock('./storage/dashboards', () => ({
+  getDashboard: vi.fn(),
+  getCurrentProfileId: vi.fn(() => 'default'),
+}));
 vi.mock('./storage/chromiumFlags', () => ({
   getChromiumFlags: vi.fn(() => ({})),
   parseCustomSwitches: vi.fn(() => []),
@@ -92,6 +96,9 @@ vi.mock('./logger', () => ({
 }));
 
 const { OverlayManager } = await import('./overlayManager');
+const { app } = await import('electron');
+const { getDashboard, getCurrentProfileId } =
+  await import('./storage/dashboards');
 
 describe('overlay renderer data visibility recovery', () => {
   it('replays the latest session snapshot when a subscribed window is shown', () => {
@@ -214,5 +221,99 @@ describe('OverlayManager display windows', () => {
     expect(displayWindow.showInactive).toHaveBeenCalledOnce();
     expect(displayWindow.show).not.toHaveBeenCalled();
     expect(displayWindow.focus).not.toHaveBeenCalled();
+  });
+});
+
+describe('settings that are read outside a dashboard update', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    createdWindows.length = 0;
+  });
+
+  /**
+   * The reported bug: autostart is off in the profile the user is on, on in
+   * 'default'. Reading 'default' at startup re-created the Windows Run entry
+   * every launch, while the settings screen kept showing it as off.
+   */
+  const profiles: Record<string, DashboardLayout> = {
+    default: {
+      widgets: [],
+      generalSettings: {
+        enableAutoStart: true,
+        disableHardwareAcceleration: true,
+      },
+    } as DashboardLayout,
+    GT3: {
+      widgets: [],
+      generalSettings: {
+        enableAutoStart: false,
+        disableHardwareAcceleration: false,
+      },
+    } as DashboardLayout,
+  };
+
+  const onProfile = (profileId: string) => {
+    vi.mocked(getCurrentProfileId).mockReturnValue(profileId);
+    vi.mocked(getDashboard).mockImplementation((id: string) => profiles[id]);
+  };
+
+  it('does not enable autostart from another profile', () => {
+    onProfile('GT3');
+
+    new OverlayManager().setupAutoStart();
+
+    expect(app.setLoginItemSettings).toHaveBeenCalledWith({
+      openAtLogin: false,
+    });
+  });
+
+  it('enables autostart when the active profile asks for it', () => {
+    onProfile('default');
+
+    new OverlayManager().setupAutoStart();
+
+    expect(app.setLoginItemSettings).toHaveBeenCalledWith({
+      openAtLogin: true,
+    });
+  });
+
+  it('leaves autostart off when the profile does not mention it', () => {
+    // An absent setting must not opt the user into starting with Windows.
+    vi.mocked(getCurrentProfileId).mockReturnValue('bare');
+    vi.mocked(getDashboard).mockReturnValue({
+      widgets: [],
+      generalSettings: {},
+    } as DashboardLayout);
+
+    new OverlayManager().setupAutoStart();
+
+    expect(app.setLoginItemSettings).toHaveBeenCalledWith({
+      openAtLogin: false,
+    });
+  });
+
+  it('reads the active profile, not the one named default', () => {
+    onProfile('GT3');
+
+    new OverlayManager().setupAutoStart();
+
+    expect(getDashboard).toHaveBeenCalledWith('GT3');
+    expect(getDashboard).not.toHaveBeenCalledWith('default');
+  });
+
+  it('takes hardware acceleration from the active profile too', () => {
+    onProfile('GT3');
+
+    new OverlayManager().setupHardwareAcceleration();
+
+    expect(app.disableHardwareAcceleration).not.toHaveBeenCalled();
+  });
+
+  it('disables hardware acceleration when the active profile asks for it', () => {
+    onProfile('default');
+
+    new OverlayManager().setupHardwareAcceleration();
+
+    expect(app.disableHardwareAcceleration).toHaveBeenCalled();
   });
 });

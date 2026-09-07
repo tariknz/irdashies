@@ -9,7 +9,16 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
-import { getDashboard } from './storage/dashboards';
+import { getDashboard, getCurrentProfileId } from './storage/dashboards';
+
+/**
+ * Settings read outside a dashboard update must come from the profile the user
+ * is actually on. Reading 'default' meant a setting toggled in any other
+ * profile was shown as changed in the UI while the app kept acting on the
+ * default profile's value - and for autostart that meant re-creating the
+ * Windows Run entry on every launch after the user had turned it off.
+ */
+const activeDashboard = () => getDashboard(getCurrentProfileId());
 import { getChromiumFlags, parseCustomSwitches } from './storage/chromiumFlags';
 import {
   markCorrectedBounds,
@@ -859,7 +868,7 @@ export class OverlayManager {
    * Must be called before the app is ready.
    */
   public setupHardwareAcceleration(): void {
-    const dashboard = getDashboard('default');
+    const dashboard = activeDashboard();
     if (dashboard?.generalSettings?.disableHardwareAcceleration) {
       app.disableHardwareAcceleration();
     }
@@ -915,14 +924,14 @@ export class OverlayManager {
   }
 
   public setupAutoStart(): void {
-    const dashboard = getDashboard('default');
+    const dashboard = activeDashboard();
     app.setLoginItemSettings({
       openAtLogin: dashboard?.generalSettings?.enableAutoStart ?? false,
     });
   }
 
   private shouldCloseToTray(): boolean {
-    const dashboard = getDashboard('default');
+    const dashboard = activeDashboard();
     return dashboard?.generalSettings?.closeToTray ?? true;
   }
 
