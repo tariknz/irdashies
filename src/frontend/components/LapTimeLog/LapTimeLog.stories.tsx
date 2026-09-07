@@ -15,11 +15,14 @@ const meta: Meta<typeof LapTimeLogDisplay> = {
   parameters: {
     layout: 'centered',
   },
-  decorators: [TelemetryDecorator(), (Story) => (
-    <div style={{ width: '250px' }}>
-      <Story />
-    </div>
-  )],
+  decorators: [
+    TelemetryDecorator(),
+    (Story) => (
+      <div style={{ width: '250px' }}>
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export default meta;
@@ -102,11 +105,11 @@ export const NewPersonalBest: Story = {
   args: {
     ...baseArgs,
     current: 4.5, // within 5 seconds
-    lastlap: 91.2, 
+    lastlap: 91.2,
     bestlap: 91.2,
     alltimelap: 91.2, // new personal best
     settings: mockConfig({
-      showAllTimeLap: true,     
+      showAllTimeLap: true,
     }),
   },
 };
@@ -116,7 +119,7 @@ export const NewSessionBest: Story = {
   args: {
     ...baseArgs,
     current: 3.2, // within 5 seconds
-    lastlap: 90.9, 
+    lastlap: 90.9,
     bestlap: 90.9, // new session best
     overall: 90.2,
     settings: mockConfig(),
@@ -211,6 +214,56 @@ export const HistoryChart: Story = {
     ],
     settings: mockConfig({
       history: { enabled: true, count: 10, style: 'chart' },
+    }),
+  },
+};
+
+/**
+ * A practice stint with two stops, shaped like the one a user reported: the pit
+ * laps are ~12s slower, which stretches the y-axis and pulls the average away
+ * from the laps being compared.
+ */
+const pitStintHistory = [
+  { lap: 12, time: 31.2, delta: 0.0 },
+  { lap: 11, time: 31.3, delta: 0.1 },
+  { lap: 10, time: 43.2, delta: 12.0, pitted: true },
+  { lap: 9, time: 38.9, delta: 7.7, pitted: true },
+  { lap: 8, time: 31.4, delta: 0.2 },
+  { lap: 7, time: 31.2, delta: 0.0 },
+  { lap: 6, time: 31.5, delta: 0.3 },
+  { lap: 5, time: 43.6, delta: 12.4, pitted: true },
+  { lap: 4, time: 31.6, delta: 0.4 },
+  { lap: 3, time: 31.3, delta: 0.1 },
+];
+
+export const PittedLapsShown: Story = {
+  name: 'Pit Laps Shown (default)',
+  args: {
+    ...baseArgs,
+    history: pitStintHistory,
+    settings: mockConfig({
+      history: {
+        enabled: true,
+        count: 10,
+        style: 'chart',
+        hidePittedLaps: false,
+      },
+    }),
+  },
+};
+
+export const PittedLapsHidden: Story = {
+  name: 'Pit Laps Hidden',
+  args: {
+    ...baseArgs,
+    history: pitStintHistory,
+    settings: mockConfig({
+      history: {
+        enabled: true,
+        count: 10,
+        style: 'chart',
+        hidePittedLaps: true,
+      },
     }),
   },
 };

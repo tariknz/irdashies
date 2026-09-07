@@ -580,6 +580,12 @@ export interface LapTimeLogConfig {
     enabled: boolean;
     count: number;
     style?: 'list' | 'chart';
+    /**
+     * Leave laps that involved a pit stop out of the history. They are far
+     * slower than a green lap, so they stretch the chart scale and drag the
+     * average, which flattens the laps you are actually comparing.
+     */
+    hidePittedLaps?: boolean;
   };
   scale: number;
   alignment: 'top' | 'bottom';
