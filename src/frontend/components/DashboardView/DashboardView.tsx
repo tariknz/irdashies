@@ -16,6 +16,7 @@ import { useDragWidget, useResizeWidget } from '../WidgetContainer';
 import { ResizeHandles } from '../WidgetContainer/ResizeHandle';
 import logger from '@irdashies/utils/logger';
 import { WidgetRuntimeProvider } from '../../widgetRuntime';
+import { SessionTimingUpdater } from '../OverlayContainer/SessionTimingUpdater';
 
 interface WidgetPosition {
   x: number;
@@ -357,6 +358,7 @@ export const DashboardView = () => {
       className="w-full h-screen overflow-hidden relative"
       style={{ background: 'transparent' }}
     >
+      <SessionTimingUpdater />
       {enabledWidgets.map((widget) => {
         const position =
           widgetPositions[widget.id] ?? initialPositions[widget.id];
