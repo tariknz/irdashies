@@ -6,7 +6,7 @@ vi.mock('fs', () => {
   const mock = { readFileSync: vi.fn(), writeFileSync: vi.fn() };
   return { ...mock, default: mock };
 });
-vi.mock('../src/frontend/utils/seriesMapping', () => {
+vi.mock('@irdashies/utils/seriesMapping', () => {
   const mock = { seriesMapping: { '10': 'Retired series', '20': 'Old name' } };
   return { ...mock, default: mock };
 });

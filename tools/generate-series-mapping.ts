@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'fs';
-import { seriesMapping } from '../src/frontend/utils/seriesMapping';
+import { seriesMapping } from '@irdashies/utils/seriesMapping';
 
 interface Series {
   series_id: number;
