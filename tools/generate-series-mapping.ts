@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from 'fs';
+import { seriesMapping } from '../src/frontend/utils/seriesMapping';
 
 interface Series {
   series_id: number;
@@ -14,7 +15,7 @@ export const generateSeriesMapping = () => {
       acc[String(s.series_id)] = s.series_name;
       return acc;
     },
-    {} as Record<string, string>
+    { ...seriesMapping }
   );
 
   const sortedEntries = Object.entries(mapping).sort((a, b) => {
@@ -25,11 +26,19 @@ export const generateSeriesMapping = () => {
 // Do not edit manually - run generate-assets via tools/index.ts to regenerate
 
 export const seriesMapping: Record<string, string> = {
-${sortedEntries.map(([id, name]) => `  "${id}": "${name.replace(/"/g, '\\"')}"`).join(',\n')}
-}
+${sortedEntries
+  .map(([id, name]) => {
+    const escapedName = name
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/\r/g, '\\r')
+      .replace(/\n/g, '\\n');
+    return `  '${id}': '${escapedName}',`;
+  })
+  .join('\n')}
+};
 `;
 
   writeFileSync('./src/frontend/utils/seriesMapping.ts', content, 'utf8');
   console.log(`Generated series mapping with ${sortedEntries.length} entries`);
 };
-
