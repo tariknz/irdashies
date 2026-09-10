@@ -30,7 +30,16 @@ export const isPitSurface = (surface: number): boolean =>
 
 export const isOffTrackSurface = (surface: number): boolean =>
   surface === TrackLocation.OffTrack;
-const MAX_HISTORY_ENTRIES = 20;
+/**
+ * The retained history has to outrun the display, not match it. "Number Of Laps
+ * To Show" goes up to 20, and with pitted laps hidden the display filters this
+ * list before taking that many — so a cap of 20 made the setting unsatisfiable
+ * the moment a stop happened: the clean laps that could have filled the gap had
+ * already been dropped here. 60 covers the maximum display count even on short
+ * fuel runs where two laps in three are in-laps or out-laps, and the entries are
+ * five numbers each.
+ */
+const MAX_HISTORY_ENTRIES = 60;
 const FREEZE_TIME = 5;
 
 export const useLapTimeLog = () => {
