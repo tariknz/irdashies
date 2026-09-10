@@ -88,6 +88,48 @@ describe('CarSystemsProcessor', () => {
       ]);
     });
 
+    /**
+     * Values taken from a recorded Dallara IR18 session at Monza: the car
+     * publishes no ABS or traction control at all, and its two hybrid dials sat
+     * at DeployLevel 1.0 / RegenLevel 0.7 — matching the Hybrid block in the
+     * session info for that stint.
+     */
+    it('reports the hybrid dials an IR18 exposes, and no assists it lacks', () => {
+      processor.onFrame(
+        frame({
+          dcBrakeBias: 46.814,
+          dcMGUKDeployFixed: 1,
+          dcMGUKRegenGain: 0.7,
+        })
+      );
+
+      expect(processor.snapshot().adjustments.map((a) => a.label)).toEqual([
+        'Brake Bias',
+        'Deploy Level',
+        'Regen Level',
+      ]);
+      expect(byKey(processor, 'dcMGUKRegenGain')?.value).toBe(0.7);
+      expect(byKey(processor, 'dcMGUKRegenGain')?.isOff).toBe(false);
+    });
+
+    /**
+     * Non-hybrid cars do not publish these keys at all — checked against
+     * recorded Mustang GT3, Ligier JSP320 and Oulton sessions — so discovery
+     * leaves the rows out rather than showing every GT3 driver a dead column.
+     */
+    it('gives a non-hybrid car no hybrid rows', () => {
+      processor.onFrame(frame({ dcBrakeBias: 54.5, dcABS: 2 }));
+
+      expect(byKey(processor, 'dcMGUKDeployFixed')).toBeUndefined();
+      expect(byKey(processor, 'dcMGUKRegenGain')).toBeUndefined();
+    });
+
+    it('marks a regen dial wound fully off as off', () => {
+      processor.onFrame(frame({ dcMGUKRegenGain: 0 }));
+
+      expect(byKey(processor, 'dcMGUKRegenGain')?.isOff).toBe(true);
+    });
+
     it('takes the Clio brake bias variable when that is the one published', () => {
       processor.onFrame(frame({ dcPeakBrakeBias: 61 }));
 
