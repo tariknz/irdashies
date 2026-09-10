@@ -74,4 +74,16 @@ describe('RendererDataProviders', () => {
     ).not.toBeInTheDocument();
     expect(screen.getByTestId('session-provider')).toBeInTheDocument();
   });
+
+  // Car Systems reads only its own snapshot channel, so nothing about its data
+  // needs suggests session data. Its session-visibility settings need it all
+  // the same, and a window holding just this widget is the normal standalone
+  // overlay case where no other widget can mount the provider for it.
+  it('keeps session data for a Car Systems only renderer', () => {
+    dashboard.widgets = [{ id: 'carsystems', enabled: true, layout }];
+
+    render(<RendererDataProviders />);
+
+    expect(screen.getByTestId('session-provider')).toBeInTheDocument();
+  });
 });
