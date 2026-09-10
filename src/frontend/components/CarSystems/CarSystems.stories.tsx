@@ -91,6 +91,31 @@ export const BrakeBiasOnly: Story = {
   ...story(snapshot([brakeBias(48)])),
 };
 
+/**
+ * A Dallara IR18, with the values from a recorded Monza stint. It publishes no
+ * ABS or traction control at all, so those columns sit blank, and its two
+ * hybrid dials take their own rows. The energy those dials govern is not here:
+ * it swings the full 0..100% within a lap and belongs in a gauge.
+ */
+export const Ir18Hybrid: Story = {
+  ...story(
+    snapshot([
+      brakeBias(46.8),
+      adjustment('dcMGUKDeployFixed', 'Deploy Level', 1, { precision: 1 }),
+      adjustment('dcMGUKRegenGain', 'Regen Level', 0.7, { precision: 1 }),
+    ]),
+    {
+      rows: [
+        'dcBrakeBias',
+        'dcABS',
+        'dcTractionControl',
+        'dcMGUKDeployFixed',
+        'dcMGUKRegenGain',
+      ],
+    }
+  ),
+};
+
 /** The same car with the blank rows turned off. */
 export const SupportedRowsOnly: Story = {
   ...story(snapshot([brakeBias(48)]), { showUnsupportedRows: false }),

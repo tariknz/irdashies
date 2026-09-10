@@ -133,6 +133,31 @@ export const CAR_SYSTEM_ADJUSTMENTS: readonly CarSystemDefinition[] = [
     precision: 0,
     chip: 'bg-indigo-800',
   },
+  // Hybrid deployment, on the cars that have it. Only the two dials appear
+  // here: the driver sets a deploy level and a regen level and reads them back,
+  // which is exactly what this widget is for. The energy those dials govern —
+  // EnergyERSBatteryPct and friends — is a live readout that swings the full
+  // 0..100% inside a single lap, and belongs in a gauge rather than in a table
+  // of dial positions.
+  //
+  // Levels are fractional 0..1, matching the Hybrid: DeployLevel / RegenLevel
+  // pair in session info, so they are shown to one decimal as the setup screen
+  // does. Recorded sessions have not yet caught a driver moving either dial, so
+  // the step size is unconfirmed; one decimal reads correctly either way.
+  {
+    key: 'dcMGUKDeployFixed',
+    label: 'Deploy Level',
+    short: 'DEP',
+    precision: 1,
+    chip: 'bg-orange-600',
+  },
+  {
+    key: 'dcMGUKRegenGain',
+    label: 'Regen Level',
+    short: 'REGEN',
+    precision: 1,
+    chip: 'bg-emerald-600',
+  },
   {
     key: 'dcWeightJackerLeft',
     label: 'Jacker L',
