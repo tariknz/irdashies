@@ -12,10 +12,7 @@ import {
   getProfile,
   setCurrentProfile,
 } from './app/storage/dashboards';
-import {
-  getSessionProfileMap,
-  initialiseSessionProfileMap,
-} from './app/storage/appSettings';
+import { getSessionProfileMap } from './app/storage/appSettings';
 import { createSessionProfileSwitcher } from './app/services/sessionProfileSwitcher';
 import type { SessionProfileSwitcher } from './app/services/sessionProfileSwitcher';
 import { setupTaskbar, KeybindingManager } from './app';
@@ -418,11 +415,10 @@ app.on('ready', async () => {
   // in would emit into an EventEmitter with no listener, silently leaving the
   // stored profile and the visible overlays disagreeing.
   //
-  // On a first run this points every session type at the profile already in
-  // use, so the settings page shows what the mapping is for. It is a no-op
-  // behaviourally: every type resolves to the active profile until one is
-  // changed.
-  initialiseSessionProfileMap(getCurrentProfileId());
+  // Arriving this late is also why the switcher seeds itself from the
+  // lifecycle's current state on construction: by now the SDK has been
+  // publishing for a while, and the events it fires are transitions that are
+  // not replayed to a new subscriber.
   sessionProfileSwitcher = createSessionProfileSwitcher({
     lifecycle: getSessionLifecycle(),
     getMap: getSessionProfileMap,

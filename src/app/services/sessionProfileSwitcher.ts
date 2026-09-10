@@ -38,9 +38,13 @@ export interface SessionProfileSwitcher {
  * - Spotting outranks the session type while it lasts. It is a state rather
  *   than a session type, so it can occur inside any of them.
  *
- * A manual profile change is never fought: the switcher only acts on a
- * transition, so whatever the user picks stands until the session type or the
- * driving state actually changes.
+ * A manual profile change is never fought: past the initial seed the switcher
+ * only acts on a transition, so whatever the user picks stands until the
+ * session type or the driving state actually changes.
+ *
+ * The seed is the exception, and it is what makes starting the app mid-session
+ * behave like being there for the transition. It happens once, at construction,
+ * before the user has had any chance to choose a profile for this run.
  */
 export const createSessionProfileSwitcher = (
   deps: SessionProfileSwitcherDeps
@@ -88,7 +92,8 @@ export const createSessionProfileSwitcher = (
     }
   };
 
-  const unsubscribeType = deps.lifecycle.onSessionTypeChange((sessionType) => {
+  /** Returns whether the new state is worth acting on. */
+  const takeSessionType = (sessionType: string): boolean => {
     const key = sessionProfileKeyFor(sessionType);
     if (!key) {
       // An unrecognised session type gets no opinion rather than a guess, so
@@ -97,26 +102,46 @@ export const createSessionProfileSwitcher = (
         `[sessionProfile] No mapping vocabulary for session type "${sessionType}"`
       );
       sessionKey = undefined;
-      return;
+      return false;
     }
     sessionKey = key;
-    apply(`session type ${sessionType}`);
+    return true;
+  };
+
+  /** Returns whether the new state is worth acting on. */
+  const takeDrivingState = (
+    isDriving: boolean,
+    immediate: boolean
+  ): boolean => {
+    clearDwell();
+    if (isDriving) {
+      if (!spotting) return false;
+      spotting = false;
+      return true;
+    }
+    if (immediate) {
+      // Seeding, not a transition. The dwell rides out the brief hops out of
+      // the car during a session; someone already out when this attached has
+      // been out for longer than the app has been running, and making them
+      // wait would only delay the layout they configured for exactly this.
+      spotting = true;
+      return true;
+    }
+    dwellTimer = setTimeout(() => {
+      dwellTimer = undefined;
+      spotting = true;
+      apply('out of the car');
+    }, dwellMs);
+    return false;
+  };
+
+  const unsubscribeType = deps.lifecycle.onSessionTypeChange((sessionType) => {
+    if (takeSessionType(sessionType)) apply(`session type ${sessionType}`);
   });
 
   const unsubscribeDriving = deps.lifecycle.onDrivingStateChange(
     (isDriving) => {
-      clearDwell();
-      if (isDriving) {
-        if (!spotting) return;
-        spotting = false;
-        apply('back in the car');
-        return;
-      }
-      dwellTimer = setTimeout(() => {
-        dwellTimer = undefined;
-        spotting = true;
-        apply('out of the car');
-      }, dwellMs);
+      if (takeDrivingState(isDriving, false)) apply('back in the car');
     }
   );
 
@@ -125,6 +150,23 @@ export const createSessionProfileSwitcher = (
     sessionKey = undefined;
     spotting = false;
   });
+
+  // Seeded after subscribing, because the lifecycle reports transitions and
+  // never replays them. The SDK starts publishing at iRacingSDKSetup and
+  // startup awaits other work before constructing this, so launching irDashies
+  // while already sat in a session means the session type resolved before there
+  // was anything here to hear it. Without this the mapped profile stays
+  // unapplied until some later transition — and in an event whose sessions all
+  // report the same type, there may never be one.
+  const initial = deps.lifecycle.getCurrentState();
+  let seeded = false;
+  if (initial.sessionType !== undefined) {
+    seeded = takeSessionType(initial.sessionType) || seeded;
+  }
+  if (initial.isDriving !== undefined) {
+    seeded = takeDrivingState(initial.isDriving, true) || seeded;
+  }
+  if (seeded) apply('current session state');
 
   return {
     dispose: () => {

@@ -125,6 +125,7 @@ export function createPreviewChannelRuntime(
     onSessionTypeChange: () => () => undefined,
     onDrivingStateChange: () => () => undefined,
     onDisconnect: () => () => undefined,
+    getCurrentState: () => ({ sessionType: undefined, isDriving: undefined }),
     _onEnter: () => undefined,
     _onTelemetry: () => undefined,
     _onSession: () => undefined,

@@ -10,6 +10,14 @@ export interface SessionEnterEvent {
 }
 type EnterCallback = (event: SessionEnterEvent) => void;
 
+/** A snapshot of what the lifecycle has resolved so far. */
+export interface SessionLifecycleState {
+  /** Undefined until the current session's type resolves. */
+  sessionType: string | undefined;
+  /** Undefined until the first telemetry frame settles it. */
+  isDriving: boolean | undefined;
+}
+
 export interface SessionLifecycle {
   /** Called when a live or recorded telemetry source begins publishing. */
   onEnter: (cb: EnterCallback) => () => void;
@@ -36,6 +44,18 @@ export interface SessionLifecycle {
   /** Called when iRacing disconnects (SDK stops publishing). */
   onDisconnect: (cb: Callback) => () => void;
 
+  /**
+   * The state the change callbacks above have already reported, for a consumer
+   * that attaches after the SDK has started publishing.
+   *
+   * Those callbacks only carry transitions and never replay, so a subscriber
+   * wired up during startup — after iRacingSDKSetup has begun its loop — misses
+   * everything that resolved before it arrived. Anything that has to act on the
+   * current state rather than merely on changes to it needs to read this once
+   * after subscribing.
+   */
+  getCurrentState: () => SessionLifecycleState;
+
   // Internal — called by iracingSdkBridge on each SDK tick.
   _onEnter: (event: SessionEnterEvent) => void;
   _onTelemetry: (telemetry: Telemetry) => void;
@@ -58,6 +78,7 @@ export function createSessionLifecycle(): SessionLifecycle {
   const sessionTypesByNum = new Map<number, string>();
   let lastSessionType: string | undefined;
   let lastIsDriving: boolean | undefined;
+  let lastSubSessionId: string | undefined;
 
   function fire<T>(callbacks: Set<(arg: T) => void>, arg: T): void {
     callbacks.forEach((cb) => {
@@ -141,6 +162,10 @@ export function createSessionLifecycle(): SessionLifecycle {
       return () => disconnectCallbacks.delete(cb);
     },
 
+    getCurrentState() {
+      return { sessionType: lastSessionType, isDriving: lastIsDriving };
+    },
+
     _onEnter(event) {
       fire(enterCallbacks, event);
     },
@@ -161,6 +186,36 @@ export function createSessionLifecycle(): SessionLifecycle {
     },
 
     _onSession(session) {
+      // Moving between subsessions — open practice into the race event, say —
+      // does not disconnect the SDK, so none of the per-event state below is
+      // otherwise cleared. Two things go wrong when it survives: session
+      // numbers restart at 0 and would collide with the old event's entries,
+      // and a new event whose first session shares the old one's type (a race
+      // event opening with a warmup, which iRacing reports as 'Practice')
+      // would be deduplicated away and never fire.
+      //
+      // The session number is dropped rather than kept because it belongs to
+      // the old event: resolving against it would look the stale number up in
+      // the new event's table and briefly announce whichever session happens
+      // to sit at that index. Resolution waits for the next telemetry tick to
+      // supply the real one, which is the same tick that would have carried a
+      // number change anyway.
+      const subSessionId =
+        session?.WeekendInfo?.SubSessionID != null
+          ? String(session.WeekendInfo.SubSessionID)
+          : undefined;
+      if (subSessionId !== undefined && subSessionId !== lastSubSessionId) {
+        if (lastSubSessionId !== undefined) {
+          logger.info(
+            `[sessionLifecycle] SubSession changed: ${lastSubSessionId} -> ${subSessionId}`
+          );
+          sessionTypesByNum.clear();
+          lastSessionType = undefined;
+          lastSessionNum = -1;
+        }
+        lastSubSessionId = subSessionId;
+      }
+
       // Built before the driver check below: a session published with no
       // drivers still carries a valid session list, and the type of the
       // session the player is in does not depend on who else is in it.
@@ -226,6 +281,7 @@ export function createSessionLifecycle(): SessionLifecycle {
       sessionTypesByNum.clear();
       lastSessionType = undefined;
       lastIsDriving = undefined;
+      lastSubSessionId = undefined;
       fireAll(disconnectCallbacks);
     },
   };

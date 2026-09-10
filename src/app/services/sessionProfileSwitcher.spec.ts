@@ -23,8 +23,17 @@ import type { SessionLifecycle } from '../sessionLifecycle';
 /**
  * A stand-in lifecycle that lets a test drive the two events the switcher
  * listens to, without needing telemetry frames.
+ *
+ * `initialState` is what the real lifecycle has already resolved by the time a
+ * subscriber attaches. It defaults to nothing known, which is the app starting
+ * before iRacing does.
  */
-const makeLifecycle = () => {
+const makeLifecycle = (
+  initialState: {
+    sessionType?: string;
+    isDriving?: boolean;
+  } = {}
+) => {
   const typeCallbacks = new Set<(sessionType: string) => void>();
   const drivingCallbacks = new Set<(isDriving: boolean) => void>();
   const disconnectCallbacks = new Set<() => void>();
@@ -42,6 +51,10 @@ const makeLifecycle = () => {
       disconnectCallbacks.add(cb);
       return () => disconnectCallbacks.delete(cb);
     },
+    getCurrentState: () => ({
+      sessionType: initialState.sessionType,
+      isDriving: initialState.isDriving,
+    }),
   } as unknown as SessionLifecycle;
 
   return {
@@ -61,9 +74,14 @@ const setup = (
   {
     currentProfileId = 'default',
     existingProfiles = ['default', 'quali', 'race', 'spotter'],
-  }: { currentProfileId?: string; existingProfiles?: string[] } = {}
+    initialState = {},
+  }: {
+    currentProfileId?: string;
+    existingProfiles?: string[];
+    initialState?: { sessionType?: string; isDriving?: boolean };
+  } = {}
 ) => {
-  const harness = makeLifecycle();
+  const harness = makeLifecycle(initialState);
   const switchProfile = vi.fn();
   let current = currentProfileId;
   switchProfile.mockImplementation((profileId: string) => {
@@ -341,6 +359,84 @@ describe('sessionProfileSwitcher', () => {
 
       expect(() => harness.emitSessionType('Race')).not.toThrow();
       expect(mockLoggerError).toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * The lifecycle's callbacks carry transitions and are never replayed, and the
+   * SDK is already publishing by the time main.ts gets here. Everything below
+   * describes starting irDashies while iRacing is mid-session — the ordinary
+   * case of alt-tabbing out to launch the overlay.
+   */
+  describe('starting up mid-session', () => {
+    it('applies the mapped profile for the session already under way', () => {
+      const { switchProfile } = setup(
+        { race: 'race' },
+        { initialState: { sessionType: 'Race', isDriving: true } }
+      );
+
+      expect(switchProfile).toHaveBeenCalledWith('race');
+    });
+
+    it('applies the spotting profile when started out of the car', () => {
+      const { switchProfile } = setup(
+        { race: 'race', spotting: 'spotter' },
+        { initialState: { sessionType: 'Race', isDriving: false } }
+      );
+
+      // Without waiting out the dwell: it exists to ride out brief hops out of
+      // the car, and someone already out when the app launched has been out for
+      // longer than the app has existed.
+      expect(switchProfile).toHaveBeenCalledWith('spotter');
+      expect(switchProfile).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves the profile alone when nothing has resolved yet', () => {
+      const { switchProfile } = setup({ race: 'race', spotting: 'spotter' });
+
+      expect(switchProfile).not.toHaveBeenCalled();
+    });
+
+    it('leaves the profile alone when the running session is unmapped', () => {
+      const { switchProfile } = setup(
+        { race: 'race' },
+        { initialState: { sessionType: 'Practice', isDriving: true } }
+      );
+
+      expect(switchProfile).not.toHaveBeenCalled();
+    });
+
+    it('does not fight a profile that already matches the mapping', () => {
+      const { switchProfile } = setup(
+        { race: 'race' },
+        {
+          currentProfileId: 'race',
+          initialState: { sessionType: 'Race', isDriving: true },
+        }
+      );
+
+      expect(switchProfile).not.toHaveBeenCalled();
+    });
+
+    /**
+     * The reported symptom behind all of this: a session whose type never
+     * changes after the app attaches. Practice through to a warmup that iRacing
+     * also reports as Practice fires nothing, so an unseeded switcher held no
+     * session key at all and could only ever apply the spotting profile.
+     */
+    it('recovers from spotting into a session that never fires a change', () => {
+      const { emitDriving, switchProfile } = setup(
+        { practice: 'default', spotting: 'spotter' },
+        {
+          currentProfileId: 'spotter',
+          initialState: { sessionType: 'Practice', isDriving: false },
+        }
+      );
+      switchProfile.mockClear();
+
+      emitDriving(true);
+
+      expect(switchProfile).toHaveBeenCalledWith('default');
     });
   });
 });

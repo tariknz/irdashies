@@ -106,19 +106,7 @@ export const ProfileSettings = () => {
     });
   }, [bridge]);
 
-  const handleSessionProfileChange = (
-    triggerKey: ProfileTriggerKey,
-    profileId: string
-  ) => {
-    // An empty selection drops the key entirely rather than storing a blank,
-    // so "no profile" and "profile deleted" stay the same thing on disk.
-    const next = Object.fromEntries(
-      Object.entries({
-        ...sessionProfileMapRef.current,
-        [triggerKey]: profileId,
-      }).filter(([, id]) => Boolean(id))
-    ) as SessionProfileMap;
-
+  const persistSessionProfileMap = (next: SessionProfileMap) => {
     sessionProfileMapRef.current = next;
     setSessionProfileMap(next);
     sessionProfileWrites.current = sessionProfileWrites.current
@@ -126,6 +114,44 @@ export const ProfileSettings = () => {
       .catch((err) => {
         logger.error('Failed to save the session profile map', err);
       });
+  };
+
+  const handleSessionProfileChange = (
+    triggerKey: ProfileTriggerKey,
+    profileId: string
+  ) => {
+    // An empty selection drops the key entirely rather than storing a blank,
+    // so "no profile" and "profile deleted" stay the same thing on disk.
+    persistSessionProfileMap(
+      Object.fromEntries(
+        Object.entries({
+          ...sessionProfileMapRef.current,
+          [triggerKey]: profileId,
+        }).filter(([, id]) => Boolean(id))
+      ) as SessionProfileMap
+    );
+  };
+
+  /**
+   * Fills in every session type with the profile in use right now.
+   *
+   * This is what the feature used to do behind the user's back on first run, to
+   * keep the page from looking inert. It is the same convenience offered as a
+   * choice: nothing is mapped until someone presses this, so an install that
+   * never opens the section never switches profiles.
+   *
+   * Spotting is left out on purpose. It is a state rather than a session type,
+   * and filling it in would change the overlay the first time the player steps
+   * out of the car.
+   */
+  const handleUseCurrentProfileForAll = () => {
+    if (!currentProfile) return;
+    persistSessionProfileMap({
+      ...sessionProfileMapRef.current,
+      ...Object.fromEntries(
+        SESSION_PROFILE_KEYS.map((key) => [key, currentProfile.id])
+      ),
+    } as SessionProfileMap);
   };
 
   const handleToggleCycleProfiles = async (checked: boolean) => {
@@ -597,6 +623,17 @@ export const ProfileSettings = () => {
                 onChange={handleSessionProfileChange}
               />
             ))}
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleUseCurrentProfileForAll}
+              disabled={!sessionProfileMapLoaded || !currentProfile}
+              className="text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Use {currentProfile?.name ?? 'current profile'} for all sessions
+            </button>
           </div>
 
           <div className="border-t border-slate-700 pt-3 space-y-2">

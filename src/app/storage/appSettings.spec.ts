@@ -1,10 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  getSessionProfileMap,
-  setSessionProfileMap,
-  initialiseSessionProfileMap,
-} from './appSettings';
-import { SESSION_PROFILE_KEYS } from '@irdashies/types';
+import { getSessionProfileMap, setSessionProfileMap } from './appSettings';
 
 const mockReadData = vi.hoisted(() => vi.fn());
 const mockWriteData = vi.hoisted(() => vi.fn());
@@ -22,54 +17,26 @@ describe('session profile map', () => {
     mockWriteData.mockReset();
   });
 
-  describe('initialiseSessionProfileMap', () => {
-    it('points every session type at the profile in use on a first run', () => {
+  /**
+   * Reading must never write. An earlier version seeded every session type with
+   * the profile in use on first run, which is only a no-op while that profile
+   * stays active: pick another by hand without ever opening the feature and the
+   * next session transition drags you back. Nothing here may map a trigger the
+   * user has not mapped themselves.
+   */
+  describe('an install that has never configured the feature', () => {
+    it('maps nothing, so no session transition switches a profile', () => {
       mockReadData.mockReturnValue(undefined);
 
-      const seeded = initialiseSessionProfileMap('race-layout');
-
-      for (const key of SESSION_PROFILE_KEYS) {
-        expect(seeded[key]).toBe('race-layout');
-      }
-      expect(mockWriteData).toHaveBeenCalledWith(KEY, seeded);
+      expect(getSessionProfileMap()).toEqual({});
     });
 
-    it('leaves spotting unset, so stepping out of the car changes nothing', () => {
+    it('does not write anything on being read', () => {
       mockReadData.mockReturnValue(undefined);
 
-      const seeded = initialiseSessionProfileMap('race-layout');
+      getSessionProfileMap();
 
-      expect(seeded.spotting).toBeUndefined();
-    });
-
-    it('does not re-seed once a mapping has been stored', () => {
-      mockReadData.mockReturnValue({ race: 'chosen-by-user' });
-
-      const result = initialiseSessionProfileMap('some-other-profile');
-
-      expect(result).toEqual({ race: 'chosen-by-user' });
       expect(mockWriteData).not.toHaveBeenCalled();
-    });
-
-    it('respects a map the user has deliberately emptied', () => {
-      // An empty object is a decision — every row set back to "Don't switch" —
-      // and must not be mistaken for "never configured".
-      mockReadData.mockReturnValue({});
-
-      const result = initialiseSessionProfileMap('race-layout');
-
-      expect(result).toEqual({});
-      expect(mockWriteData).not.toHaveBeenCalled();
-    });
-
-    it('seeds a no-op: every session resolves to the active profile', () => {
-      mockReadData.mockReturnValue(undefined);
-
-      const seeded = initialiseSessionProfileMap('current');
-
-      // Nothing can switch while every value is the profile already in use,
-      // which is what makes seeding safe to do without asking.
-      expect(new Set(Object.values(seeded))).toEqual(new Set(['current']));
     });
   });
 
