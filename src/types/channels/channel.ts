@@ -24,6 +24,7 @@ export interface ChannelPayloads {
   'session-bar.snapshot': SessionBarSnapshot;
   'standings.snapshot': StandingsSnapshot;
   'track-state.snapshot': TrackStateSnapshot;
+  'lap-trace.sample': LapTraceSampleSnapshot;
   'session.lifecycle': SessionLifecycleEvent;
   'raceControl.incidents': Incident;
   /**
@@ -57,6 +58,59 @@ export interface TrackStateSnapshot {
   engineWarnings: number;
   lapDistPct: number;
   sessionNum: number | null;
+  /**
+   * Official time of the last completed lap (LapLastLapTime), full precision.
+   * Optional so existing snapshot literals compile unchanged. Note this updates
+   * a few ticks *after* the start/finish line is crossed, not on the crossing.
+   */
+  lastLapTime?: number;
+  /** Completed lap count (LapCompleted) — pairs with lastLapTime. */
+  lapCompleted?: number;
+  version: number;
+}
+
+/**
+ * One telemetry frame's worth of what the LapTrace recorder needs, every field
+ * read from the SAME frame so pedals, speed, position and time are exactly
+ * co-sampled — the same semantics as one row of an .ibt file. Published at
+ * 60 Hz (input-style, R5.3) so the live trace has the density of the sim.
+ *
+ * `version` bumps only when a field other than `sessionTime` changes: a parked
+ * car with the clock running publishes nothing, and a moving car publishes
+ * every frame because `lapDistPct` moves.
+ */
+export interface LapTraceSampleSnapshot {
+  /** SessionTime; -1 until the first frame. */
+  sessionTime: number;
+  /** LapDistPct; -1 until the first frame and after a lifecycle reset. */
+  lapDistPct: number;
+  /**
+   * 0..1, direct pedal position (ThrottleRaw/BrakeRaw) — iRacing's own input
+   * processing (auto-clutch, anti-stall) is deliberately bypassed: a lap trace
+   * exists to show what the driver actually did with the pedals.
+   */
+  throttle: number;
+  /** 0..1, direct pedal position — see `throttle`. */
+  brake: number;
+  /** metres per second */
+  speed: number;
+  /** raw iRacing gear */
+  gear: number;
+  brakeAbsActive: boolean;
+  onPitRoad: boolean;
+  isOnTrack: boolean;
+  sessionNum: number | null;
+  /** LapLastLapTime — lags the start/finish crossing by a few ticks. */
+  lastLapTime: number;
+  /** LapCompleted — pairs with lastLapTime. */
+  lapCompleted: number;
+  /**
+   * PlayerCarMyIncidentCount — cumulative for the session, never per-lap.
+   * Compared against the count at the start of a lap to detect whether that
+   * lap picked up a new incident (off track, contact, etc.), so an invalid
+   * lap never gets promoted to "my best lap".
+   */
+  incidentCount: number;
   version: number;
 }
 
@@ -425,6 +479,11 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 25,
     maxRateHz: 25,
+  },
+  'lap-trace.sample': {
+    kind: 'snapshot',
+    defaultRateHz: 60,
+    maxRateHz: 60,
   },
   'session.lifecycle': { kind: 'event' },
   'raceControl.incidents': { kind: 'event' },

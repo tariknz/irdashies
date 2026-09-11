@@ -3,6 +3,7 @@ import {
   useDashboard,
   useRunningState,
   useResetOnDisconnect,
+  useWidgetsForThisDisplay,
 } from '@irdashies/context';
 import type { WidgetLayout } from '@irdashies/types';
 import { WidgetContainer } from '../WidgetContainer';
@@ -16,13 +17,8 @@ import { SessionTimingUpdater } from './SessionTimingUpdater';
 import { WidgetRuntimeProvider } from '../../widgetRuntime';
 
 export const OverlayContainer = memo(() => {
-  const {
-    currentDashboard,
-    editMode,
-    onDashboardUpdated,
-    bridge,
-    containerBoundsInfo,
-  } = useDashboard();
+  const { currentDashboard, editMode, onDashboardUpdated, bridge } =
+    useDashboard();
   const { running } = useRunningState();
   useResetOnDisconnect(running);
 
@@ -101,47 +97,7 @@ export const OverlayContainer = memo(() => {
     []
   );
 
-  const enabledWidgets = useMemo(
-    () =>
-      currentDashboard?.widgets.filter(
-        (widget) =>
-          widget.enabled &&
-          // Gantry renders in its own separate hash-routed window (see
-          // componentRenderer.tsx), not as an overlay widget — exclude it here.
-          widget.id !== 'gantry'
-      ) ?? [],
-    [currentDashboard?.widgets]
-  );
-
-  // When running per-display windows, each window only renders its own widgets.
-  // A widget belongs to a display if its center point falls within that display's bounds.
-  // Unmatched widgets (e.g. default positions that fall in no display) render on the primary.
-  const widgetsForThisDisplay = useMemo(() => {
-    if (!containerBoundsInfo?.displayId) {
-      return enabledWidgets;
-    }
-
-    return enabledWidgets.filter((widget) => {
-      const displayBounds =
-        containerBoundsInfo.displayBounds ?? containerBoundsInfo.expected;
-      const centerX = widget.layout.x + widget.layout.width / 2;
-      const centerY = widget.layout.y + widget.layout.height / 2;
-      const inBounds = (b: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-      }) =>
-        centerX >= b.x &&
-        centerX < b.x + b.width &&
-        centerY >= b.y &&
-        centerY < b.y + b.height;
-      const inThisDisplay = inBounds(displayBounds);
-      const inAnyDisplay =
-        containerBoundsInfo.allDisplayBounds?.some(inBounds) ?? inThisDisplay;
-      return inThisDisplay || (containerBoundsInfo.isPrimary && !inAnyDisplay);
-    });
-  }, [containerBoundsInfo, enabledWidgets]);
+  const widgetsForThisDisplay = useWidgetsForThisDisplay();
 
   const siblingLayoutsByWidgetId = useMemo(() => {
     return new Map(

@@ -259,6 +259,25 @@ export class ChannelBus {
     return this.subscriptions.get(channel)?.size ?? 0;
   }
 
+  /**
+   * Highest delivery rate any visible subscriber currently wants, across all
+   * snapshot channels — undefined when nothing visible is subscribed. The SDK
+   * poll loop reads this to decide whether a 60 Hz consumer (LapTrace's sample
+   * channel, the Input widget) is on screen and worth polling the sim for.
+   */
+  maxActiveRateHz(): number | undefined {
+    let max: number | undefined;
+    for (const subscribers of this.subscriptions.values()) {
+      for (const subscription of subscribers.values()) {
+        if (!subscription.active || subscription.rateHz === 'event') continue;
+        if (max === undefined || subscription.rateHz > max) {
+          max = subscription.rateHz;
+        }
+      }
+    }
+    return max;
+  }
+
   clearSnapshot(channel: string): void {
     const definition = this.definition(channel);
     if (definition.kind !== 'snapshot') {

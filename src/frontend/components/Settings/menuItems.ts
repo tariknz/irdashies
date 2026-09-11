@@ -131,6 +131,12 @@ export const widgetItems: MenuItem[] = [
     widgetType: 'laptimelog',
   },
   {
+    to: '/settings/laptrace',
+    path: '/laptrace',
+    label: 'Lap Trace',
+    widgetType: 'laptrace',
+  },
+  {
     to: '/settings/pitlanehelper',
     path: '/pitlanehelper',
     label: 'Pitlane Helper',

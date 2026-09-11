@@ -12,6 +12,7 @@ vi.mock('@irdashies/context', () => ({
   usePushToPassStoreUpdater: vi.fn(),
   useResetOnDisconnect: vi.fn(),
   usePitLapStoreUpdater: vi.fn(),
+  useWidgetsForThisDisplay: vi.fn(() => []),
   TopSpeedStoreUpdater: vi.fn(),
   SessionTimingStoreUpdater: vi.fn(),
   TrackTemperatureStoreUpdater: vi.fn(),
@@ -29,23 +30,29 @@ import {
   useDashboard,
   useRunningState,
   useSectorTimingSnapshot,
+  useWidgetsForThisDisplay,
 } from '@irdashies/context';
+
+const mockDashboard = (widgets: unknown[]) => {
+  vi.mocked(useDashboard).mockReturnValue({
+    currentDashboard: { widgets },
+    editMode: false,
+    onDashboardUpdated: vi.fn(),
+    bridge: {
+      toggleLockOverlays: vi.fn(),
+    },
+    containerBoundsInfo: null,
+  } as unknown as ReturnType<typeof useDashboard>);
+  vi.mocked(useWidgetsForThisDisplay).mockReturnValue(
+    widgets as ReturnType<typeof useWidgetsForThisDisplay>
+  );
+};
 
 describe('OverlayContainer', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(useRunningState).mockReturnValue({ running: true });
-    vi.mocked(useDashboard).mockReturnValue({
-      currentDashboard: {
-        widgets: [],
-      },
-      editMode: false,
-      onDashboardUpdated: vi.fn(),
-      bridge: {
-        toggleLockOverlays: vi.fn(),
-      },
-      containerBoundsInfo: null,
-    } as unknown as ReturnType<typeof useDashboard>);
+    mockDashboard([]);
   });
 
   it('does not subscribe to sector timing without a sector consumer', () => {
@@ -55,21 +62,13 @@ describe('OverlayContainer', () => {
   });
 
   it('subscribes when Sector Delta is enabled', () => {
-    vi.mocked(useDashboard).mockReturnValue({
-      currentDashboard: {
-        widgets: [
-          {
-            id: 'sectordelta',
-            enabled: true,
-            layout: { x: 0, y: 0, width: 100, height: 100 },
-          },
-        ],
+    mockDashboard([
+      {
+        id: 'sectordelta',
+        enabled: true,
+        layout: { x: 0, y: 0, width: 100, height: 100 },
       },
-      editMode: false,
-      onDashboardUpdated: vi.fn(),
-      bridge: { toggleLockOverlays: vi.fn() },
-      containerBoundsInfo: null,
-    } as unknown as ReturnType<typeof useDashboard>);
+    ]);
 
     render(<OverlayContainer />);
 

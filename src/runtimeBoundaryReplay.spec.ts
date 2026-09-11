@@ -46,6 +46,7 @@ const SNAPSHOT_CHANNELS = [
   'session-bar.snapshot',
   'standings.snapshot',
   'track-state.snapshot',
+  'lap-trace.sample',
 ] as const satisfies readonly SnapshotChannelName[];
 
 type SnapshotChannel = (typeof SNAPSHOT_CHANNELS)[number];
@@ -552,10 +553,17 @@ const summarize = (snapshots: SnapshotRecord) => ({
     sessionNum: snapshots['track-state.snapshot'].sessionNum,
     version: snapshots['track-state.snapshot'].version,
   },
+  'lap-trace.sample': {
+    lapDistPct: snapshots['lap-trace.sample'].lapDistPct,
+    throttle: snapshots['lap-trace.sample'].throttle,
+    brake: snapshots['lap-trace.sample'].brake,
+    sessionNum: snapshots['lap-trace.sample'].sessionNum,
+    version: snapshots['lap-trace.sample'].version,
+  },
 });
 
 describe('runtime boundary replay', () => {
-  it('matches a fixed golden across all 13 live-tape and mock snapshots', () => {
+  it('matches a fixed golden across all 14 live-tape and mock snapshots', () => {
     const run = (kind: SourceKind, rendererId: number) => {
       const harness = createHarness(kind, rendererId);
       const stores = attachStores(harness.bridge);
@@ -771,6 +779,15 @@ const FIXED_GOLDEN = {
     focusCarIdx: 0,
     lapDistPct: 0.18,
     speed: 50,
+    sessionNum: 1,
+    version: 5,
+  },
+  'lap-trace.sample': {
+    lapDistPct: 0.18,
+    // The raw pedals: the frame's BrakeRaw is 0.11 against a processed Brake
+    // of 0.1, and ThrottleRaw matches its processed channel.
+    throttle: 0.7,
+    brake: 0.11,
     sessionNum: 1,
     version: 5,
   },

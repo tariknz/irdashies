@@ -1,5 +1,6 @@
 import type { DashboardWidget } from './dashboardLayout';
 import type { CornerNameOverlayConfig } from './cornerName';
+import type { LapTraceColors, LapTraceSound, LapTraceSource } from './lapTrace';
 
 // ===========================
 // Shared primitive types
@@ -693,6 +694,149 @@ export interface BattleConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
+export interface LapTraceConfig {
+  /**
+   * Settings schema version. Bump and add a migrator under src/types/migrators/
+   * when making a breaking change to this shape.
+   */
+  version: number;
+  /**
+   * Which saved lap to plot. 'manual' (.ibt import) and 'garage61' are not
+   * implemented yet and are shown disabled in settings.
+   */
+  referenceSource: LapTraceSource;
+  /**
+   * Metres of track visible behind/ahead of the car. Equal values centre the
+   * car; an uneven split shifts it toward whichever side is smaller.
+   */
+  metersBehind: number;
+  metersAhead: number;
+  showThrottle: boolean;
+  showBrake: boolean;
+  showSpeed: boolean;
+  showGearLabels: boolean;
+  /**
+   * Dotted vertical line through the plot at the reference's (and, while
+   * driving, your own) interpolated brake application/release points. These
+   * carry sub-metre precision the bucket grid cannot.
+   */
+  showBrakePointMarkers: boolean;
+  /**
+   * Dotted vertical line through the plot at the reference's interpolated
+   * throttle application point.
+   */
+  showThrottlePointMarkers: boolean;
+  /** Bright solid overlay of the lap currently being driven. */
+  showGhost: boolean;
+  /**
+   * Colour the driver's brake trace where ABS engaged, the same way the Input
+   * widget marks it on the brake bar.
+   */
+  showAbs: boolean;
+  /**
+   * 'overlay' colours the brake line itself where ABS engaged. 'bar' also
+   * fills the area under the brake curve down to the axis for that stretch —
+   * the same style the Input Trace widget's ABS indicator uses — so it reads
+   * as a bar rather than a highlighted line, and mixes colour with a filled
+   * reference trace (throttle or brake) it overlaps.
+   */
+  absStyle?: 'overlay' | 'bar';
+  /** Also mark ABS activity as a strip beneath the traces. */
+  showAbsBar: boolean;
+  /** Opacity of the saved reference lap traces and filled bars. */
+  ghostOpacity: number;
+  /** Opacity of the live driver input trace. */
+  driverOpacity: number;
+  /** Fill the reference throttle/brake traces as bars down to the axis instead of plotting a line. */
+  referenceFilled: boolean;
+  strokeWidth: number;
+  /** Color of the vertical line marking the car's current position. */
+  carLineColor: string;
+  /** User-editable plot colours (reference/ghost traces, fills, ABS, markers, grid). */
+  colors: LapTraceColors;
+  /**
+   * Compact row under the plot summarising the corner just completed against
+   * the reference lap. Appears on corner exit and clears on the next corner's
+   * entry. Needs the bundled track data for the circuit; silently absent
+   * without it.
+   */
+  showLastCorner: boolean;
+  /** Corner time delta in the last-corner row. Negative (green) is faster. */
+  showLastCornerTime: boolean;
+  /**
+   * Metres earlier/later the driver braked into the corner than the
+   * reference. Positive (green) means later.
+   */
+  showLastCornerBrakeDelta: boolean;
+  /**
+   * Delta between the lowest speed each lap carried through the corner.
+   * Positive (green) means the driver carried more.
+   */
+  showLastCornerApexSpeed: boolean;
+  /** Column order for the last-corner history panel. */
+  lastCornerDisplayOrder?: LastCornerDisplayColumn[];
+  /** Unit for the apex-speed delta. 'auto' follows iRacing's DisplayUnits. */
+  lastCornerSpeedUnit: 'mph' | 'km/h' | 'auto';
+  /**
+   * How a corner is named. 'name' uses the track data's own name and wraps it
+   * over two lines when it is long ('Variante Tamburello A'); 'number' uses the
+   * turn number instead ('T1A'), which keeps the rows compact. Where the track
+   * data does not number its corners they are counted off in order.
+   */
+  lastCornerLabelStyle: 'name' | 'number';
+  /** Text size of the last-corner row in px; its icons and height scale with it. */
+  lastCornerFontSize: number;
+  /** How much bigger the corner just finished is drawn than the older ones behind it. */
+  lastCornerLatestScale: number;
+  /**
+   * How many recent corners the panel keeps on screen. More than one matters
+   * through esses and chicanes, where the next corner starts before there is
+   * time to read the last one's result.
+   */
+  lastCornerCount: number;
+  /** Which edge of the graph the last-corner panel sits on. */
+  lastCornerPosition: 'top' | 'bottom' | 'left' | 'right';
+  /**
+   * Beeps 3, 2 and 1 seconds before the reference lap's brake point, and a
+   * distinct tone at the point itself. Needs a reference lap carrying recorded
+   * brake points; a Garage 61 import may not have them.
+   */
+  brakeCueAudio: boolean;
+  /**
+   * Which system playback device the countdown tones use, as a
+   * `MediaDeviceInfo.deviceId` from `enumerateDevices()`. The sentinel
+   * 'default' follows whatever Windows is currently using, which is what the
+   * cues did before this setting existed. A stored id that is no longer
+   * present (headset unplugged) falls back to the default device.
+   */
+  brakeCueOutputDeviceId: string;
+  /** Volume of the brake countdown tones, 0..1. */
+  brakeCueVolume: number;
+  /** Seconds to trigger every brake audio cue before its visual timing, 0..0.6. */
+  brakeCueLeadSec: number;
+  /** Per-cue synthesis of the countdown tones (frequency/type/duration/peak). */
+  sound: LapTraceSound;
+  /** A four-bar countdown strip on the edge of the widget. */
+  brakeCueBars: boolean;
+  /**
+   * Which edge of the widget the countdown strip sits on. 'left'/'right' are
+   * a vertical column of 4 discrete bars running the full height of the
+   * plot; 'top'/'bottom' are a single continuous bar running the full width.
+   */
+  brakeCueBarSide: 'left' | 'right' | 'top' | 'bottom';
+  /**
+   * Which end of the strip the final bar sits at — the one that turns red at
+   * the brake point. 'top' drains downwards, 'bottom' drains upwards.
+   */
+  brakeCueLastBar: 'top' | 'bottom';
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export type LastCornerDisplayColumn =
+  'corner' | 'cornerTimeDelta' | 'brakePointDelta' | 'apexSpeedDelta';
+
 export type SessionRetention = 'all' | 5 | 10 | 20;
 
 /** Which quantity the lap graph's y axis measures. */
@@ -782,6 +926,7 @@ export interface WidgetConfigMap {
   heartrate: HeartRateConfig;
   cornername: CornerNameOverlayConfig;
   battle: BattleConfig;
+  laptrace: LapTraceConfig;
   gantry: GantryConfig;
 }
 
@@ -820,7 +965,11 @@ export type SettingsTabType =
   | 'telemetry'
   | 'dashboard'
   | 'chromium'
-  | 'incidents';
+  | 'incidents'
+  | 'trace'
+  | 'corner'
+  | 'braking'
+  | 'help';
 
 /** Available widgets for the Fuel Calculator */
 export type FuelWidgetType =
@@ -887,3 +1036,4 @@ export type HeartRateWidgetSettings = BaseWidgetSettings<HeartRateConfig>;
 export type CornerNameWidgetSettings =
   BaseWidgetSettings<CornerNameOverlayConfig>;
 export type BattleWidgetSettings = BaseWidgetSettings<BattleConfig>;
+export type LapTraceWidgetSettings = BaseWidgetSettings<LapTraceConfig>;

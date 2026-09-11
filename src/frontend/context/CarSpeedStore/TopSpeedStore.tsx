@@ -20,7 +20,11 @@ export const useTopSpeedStore = create<TopSpeedState>((set, get) => ({
   update: (speed, lap, sessionNum) => {
     const state = get();
 
-    if (sessionNum !== null && state.sessionNum !== null && sessionNum !== state.sessionNum) {
+    if (
+      sessionNum !== null &&
+      state.sessionNum !== null &&
+      sessionNum !== state.sessionNum
+    ) {
       set({
         currentLapMax: speed,
         lastLapTopSpeed: null,
@@ -39,7 +43,8 @@ export const useTopSpeedStore = create<TopSpeedState>((set, get) => ({
     if (lap > state.lastSeenLap) {
       const completedLapMax = state.currentLapMax;
       const newSessionBest =
-        state.sessionBestTopSpeed === null || completedLapMax > state.sessionBestTopSpeed
+        state.sessionBestTopSpeed === null ||
+        completedLapMax > state.sessionBestTopSpeed
           ? completedLapMax
           : state.sessionBestTopSpeed;
       set({

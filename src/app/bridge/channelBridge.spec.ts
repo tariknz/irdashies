@@ -86,6 +86,34 @@ describe('ChannelBus', () => {
     );
   });
 
+  it('reports the highest rate any visible subscriber wants', () => {
+    const { bus } = createBus();
+    expect(bus.maxActiveRateHz()).toBeUndefined();
+
+    const slow = createTarget(1);
+    const fast = createTarget(2);
+    const events = createTarget(3);
+    bus.subscribe(slow, 'snapshot', 25);
+    bus.subscribe(events, 'event');
+    expect(bus.maxActiveRateHz()).toBe(25);
+
+    bus.subscribe(fast, 'snapshot', 60);
+    expect(bus.maxActiveRateHz()).toBe(60);
+
+    // A hidden window no longer counts — the SDK loop can drop back down.
+    fast.visible = false;
+    bus.rendererBecameHidden(2);
+    expect(bus.maxActiveRateHz()).toBe(25);
+
+    fast.visible = true;
+    bus.rendererBecameVisible(2);
+    expect(bus.maxActiveRateHz()).toBe(60);
+
+    bus.unsubscribe(2, 'snapshot');
+    bus.unsubscribe(1, 'snapshot');
+    expect(bus.maxActiveRateHz()).toBeUndefined();
+  });
+
   it('coalesces snapshot updates and trails with the latest value', () => {
     const { bus, clock } = createBus();
     const target = createTarget();
