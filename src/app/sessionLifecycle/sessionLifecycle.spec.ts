@@ -38,6 +38,29 @@ const makeEmptySession = (): Session =>
 const makeSessionWithMissingDrivers = (): Session =>
   ({ DriverInfo: {} }) as unknown as Session;
 
+const makeSessionList = (
+  sessions: { SessionNum: number; SessionType: string }[],
+  subSessionId?: number
+): Session =>
+  ({
+    SessionInfo: { Sessions: sessions },
+    DriverInfo: { Drivers: [{ CarIdx: 0, CarIsPaceCar: 0, IsSpectator: 0 }] },
+    ...(subSessionId === undefined
+      ? {}
+      : { WeekendInfo: { SubSessionID: subSessionId } }),
+  }) as unknown as Session;
+
+const makeDrivingTelemetry = (
+  sessionNum: number,
+  flags: Record<string, boolean>
+): Telemetry =>
+  ({
+    SessionNum: { value: [sessionNum] },
+    ...Object.fromEntries(
+      Object.entries(flags).map(([key, value]) => [key, { value: [value] }])
+    ),
+  }) as unknown as Telemetry;
+
 describe('sessionLifecycle', () => {
   let lifecycle: ReturnType<typeof createSessionLifecycle>;
 
@@ -299,6 +322,251 @@ describe('sessionLifecycle', () => {
       lifecycle._onSession(makeSession([0]));
 
       expect(goodSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('session type', () => {
+    it('fires for the first session, because entering an event is the transition', () => {
+      const typeSpy = vi.fn();
+      lifecycle.onSessionTypeChange(typeSpy);
+
+      lifecycle._onSession(
+        makeSessionList([{ SessionNum: 0, SessionType: 'Practice' }])
+      );
+      lifecycle._onTelemetry(makeTelemetry(0));
+
+      expect(typeSpy).toHaveBeenCalledWith('Practice');
+    });
+
+    it('resolves when the session list arrives after the telemetry tick', () => {
+      const typeSpy = vi.fn();
+      lifecycle.onSessionTypeChange(typeSpy);
+
+      lifecycle._onTelemetry(makeTelemetry(2));
+      expect(typeSpy).not.toHaveBeenCalled();
+
+      lifecycle._onSession(
+        makeSessionList([{ SessionNum: 2, SessionType: 'Race' }])
+      );
+
+      expect(typeSpy).toHaveBeenCalledWith('Race');
+    });
+
+    it('does not fire when the session number changes but the type does not', () => {
+      const typeSpy = vi.fn();
+      lifecycle.onSessionTypeChange(typeSpy);
+      lifecycle._onSession(
+        makeSessionList([
+          { SessionNum: 0, SessionType: 'Practice' },
+          { SessionNum: 1, SessionType: 'Practice' },
+        ])
+      );
+
+      lifecycle._onTelemetry(makeTelemetry(0));
+      lifecycle._onTelemetry(makeTelemetry(1));
+
+      expect(typeSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('fires as the event moves from practice to qualifying to race', () => {
+      const typeSpy = vi.fn();
+      lifecycle.onSessionTypeChange(typeSpy);
+      lifecycle._onSession(
+        makeSessionList([
+          { SessionNum: 0, SessionType: 'Practice' },
+          { SessionNum: 1, SessionType: 'Open Qualify' },
+          { SessionNum: 2, SessionType: 'Race' },
+        ])
+      );
+
+      lifecycle._onTelemetry(makeTelemetry(0));
+      lifecycle._onTelemetry(makeTelemetry(1));
+      lifecycle._onTelemetry(makeTelemetry(2));
+
+      expect(typeSpy.mock.calls).toEqual([
+        ['Practice'],
+        ['Open Qualify'],
+        ['Race'],
+      ]);
+    });
+
+    it('starts clean after a disconnect', () => {
+      const typeSpy = vi.fn();
+      lifecycle.onSessionTypeChange(typeSpy);
+      lifecycle._onSession(
+        makeSessionList([{ SessionNum: 0, SessionType: 'Race' }])
+      );
+      lifecycle._onTelemetry(makeTelemetry(0));
+      typeSpy.mockClear();
+
+      lifecycle._onDisconnect();
+      lifecycle._onSession(
+        makeSessionList([{ SessionNum: 0, SessionType: 'Race' }])
+      );
+      lifecycle._onTelemetry(makeTelemetry(0));
+
+      expect(typeSpy).toHaveBeenCalledWith('Race');
+    });
+  });
+
+  describe('driving state', () => {
+    const drivingCases: [string, Record<string, boolean>, boolean][] = [
+      ['on track', { IsOnTrack: true }, true],
+      ['stationary in the pit box', { PlayerCarInPitStall: true }, true],
+      ['rolling down pit lane', { OnPitRoad: true }, true],
+      ['in the garage', { IsOnTrack: true, IsInGarage: true }, false],
+      ['watching a replay', { IsOnTrack: true, IsReplayPlaying: true }, false],
+      ['spotting for a team-mate', { IsOnTrack: false }, false],
+    ];
+
+    it.each(drivingCases)(
+      'reports %s as driving=%o -> %s',
+      (_label, flags, expected) => {
+        const drivingSpy = vi.fn();
+        lifecycle.onDrivingStateChange(drivingSpy);
+
+        lifecycle._onTelemetry(makeDrivingTelemetry(0, flags));
+
+        // Asserted the same way for both outcomes. The driving state starts
+        // unknown rather than false, so the first frame is an edge either way
+        // and must fire exactly once with the state it found — a "did not fire
+        // with true" assertion would also pass if nothing fired at all, and the
+        // spotting dwell timer depends on that first false arriving.
+        expect(drivingSpy).toHaveBeenCalledTimes(1);
+        expect(drivingSpy).toHaveBeenCalledWith(expected);
+      }
+    );
+
+    it('fires only on the edge, not on every tick', () => {
+      const drivingSpy = vi.fn();
+      lifecycle.onDrivingStateChange(drivingSpy);
+
+      lifecycle._onTelemetry(makeDrivingTelemetry(0, { IsOnTrack: true }));
+      lifecycle._onTelemetry(makeDrivingTelemetry(0, { IsOnTrack: true }));
+      lifecycle._onTelemetry(makeDrivingTelemetry(0, { IsOnTrack: true }));
+
+      expect(drivingSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('fires both ways when the player hands the car over and takes it back', () => {
+      const drivingSpy = vi.fn();
+      lifecycle.onDrivingStateChange(drivingSpy);
+
+      lifecycle._onTelemetry(makeDrivingTelemetry(0, { IsOnTrack: true }));
+      lifecycle._onTelemetry(makeDrivingTelemetry(0, { IsOnTrack: false }));
+      lifecycle._onTelemetry(makeDrivingTelemetry(0, { IsOnTrack: true }));
+
+      expect(drivingSpy.mock.calls).toEqual([[true], [false], [true]]);
+    });
+  });
+
+  /**
+   * Joining a different event — open practice into the race subsession — swaps
+   * the whole session list without disconnecting the SDK, so nothing else
+   * clears the state keyed to the old one. Reported from a rig: a race event
+   * opening with a warmup, which iRacing reports as SessionType 'Practice',
+   * never announced itself after a practice session of the same type, leaving
+   * the mapped profile unapplied.
+   */
+  describe('moving between subsessions', () => {
+    it('announces a new event whose first session repeats the old type', () => {
+      const lifecycle = createSessionLifecycle();
+      const typeSpy = vi.fn();
+      lifecycle.onSessionTypeChange(typeSpy);
+
+      lifecycle._onSession(
+        makeSessionList([{ SessionNum: 0, SessionType: 'Practice' }], 1001)
+      );
+      lifecycle._onTelemetry(makeTelemetry(0));
+      expect(typeSpy).toHaveBeenCalledTimes(1);
+
+      // The race event: a warmup at session 0, reported as Practice again.
+      lifecycle._onSession(
+        makeSessionList(
+          [
+            { SessionNum: 0, SessionType: 'Practice' },
+            { SessionNum: 1, SessionType: 'Race' },
+          ],
+          2002
+        )
+      );
+      lifecycle._onTelemetry(makeTelemetry(0));
+
+      expect(typeSpy).toHaveBeenCalledTimes(2);
+      expect(typeSpy).toHaveBeenLastCalledWith('Practice');
+    });
+
+    it('does not announce a session the new event does not have yet', () => {
+      const lifecycle = createSessionLifecycle();
+      const typeSpy = vi.fn();
+      lifecycle.onSessionTypeChange(typeSpy);
+
+      lifecycle._onSession(
+        makeSessionList(
+          [
+            { SessionNum: 0, SessionType: 'Practice' },
+            { SessionNum: 1, SessionType: 'Race' },
+          ],
+          1001
+        )
+      );
+      lifecycle._onTelemetry(makeTelemetry(1));
+      typeSpy.mockClear();
+
+      // A new event whose session 1 is qualifying rather than the race. The
+      // stale session number must not be resolved against the new list.
+      lifecycle._onSession(
+        makeSessionList(
+          [
+            { SessionNum: 0, SessionType: 'Practice' },
+            { SessionNum: 1, SessionType: 'Open Qualify' },
+          ],
+          2002
+        )
+      );
+
+      expect(typeSpy).not.toHaveBeenCalled();
+
+      lifecycle._onTelemetry(makeTelemetry(0));
+      expect(typeSpy).toHaveBeenCalledExactlyOnceWith('Practice');
+    });
+
+    it('stays quiet while the event is the same', () => {
+      const lifecycle = createSessionLifecycle();
+      const typeSpy = vi.fn();
+      lifecycle.onSessionTypeChange(typeSpy);
+
+      const list = [
+        { SessionNum: 0, SessionType: 'Practice' },
+        { SessionNum: 1, SessionType: 'Race' },
+      ];
+      lifecycle._onSession(makeSessionList(list, 1001));
+      lifecycle._onTelemetry(makeTelemetry(0));
+      lifecycle._onSession(makeSessionList(list, 1001));
+      lifecycle._onSession(makeSessionList(list, 1001));
+
+      expect(typeSpy).toHaveBeenCalledExactlyOnceWith('Practice');
+    });
+
+    it('reports the state a late subscriber missed', () => {
+      const lifecycle = createSessionLifecycle();
+
+      lifecycle._onSession(
+        makeSessionList([{ SessionNum: 0, SessionType: 'Race' }], 1001)
+      );
+      lifecycle._onTelemetry(makeDrivingTelemetry(0, { IsOnTrack: true }));
+
+      expect(lifecycle.getCurrentState()).toEqual({
+        sessionType: 'Race',
+        isDriving: true,
+      });
+    });
+
+    it('knows nothing before the SDK has published', () => {
+      expect(createSessionLifecycle().getCurrentState()).toEqual({
+        sessionType: undefined,
+        isDriving: undefined,
+      });
     });
   });
 });
