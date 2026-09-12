@@ -278,6 +278,8 @@ export interface TelemetryVarList {
   dcStarter: TelemetryVariable<boolean[]>;
   dcPitSpeedLimiterToggle: TelemetryVariable<boolean[]>;
   dcHeadlightFlash: TelemetryVariable<boolean[]>;
+  dcTractionControlToggle: TelemetryVariable<boolean[]>;
+  dcLowFuelAccept: TelemetryVariable<boolean[]>;
   dpRFTireChange: TelemetryVariable<number[]>;
   dpLFTireChange: TelemetryVariable<number[]>;
   dpRRTireChange: TelemetryVariable<number[]>;
@@ -287,6 +289,7 @@ export interface TelemetryVarList {
   dpFuelAddKg: TelemetryVariable<number[]>;
   dpFastRepair: TelemetryVariable<number[]>;
   dcDashPage: TelemetryVariable<number[]>;
+  dcDashPage2: TelemetryVariable<number[]>;
   dcBrakeBias: TelemetryVariable<number[]>;
   dcThrottleShape: TelemetryVariable<number[]>;
   dpLFTireColdPress: TelemetryVariable<number[]>;

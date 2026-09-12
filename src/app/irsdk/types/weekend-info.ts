@@ -90,6 +90,8 @@ export interface WeekendInfo {
   NumCarClasses: number;
   NumCarTypes: number;
   HeatRacing: number;
+  /** Alternate car ruleset tag (e.g. IMSA); absent in pre-2026 Season 4 data. */
+  AltAssetTag?: string;
   BuildType: string;
   BuildTarget: string;
   BuildVersion: string;

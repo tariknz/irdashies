@@ -44,7 +44,14 @@ const varTypes = [
 ];
 
 // Get all the types
-const types = sdk.__getTelemetryTypes();
+const types = {
+  // Car-specific fields observed in fuel-test2.irdt (2026.09.10.02).
+  // Keep them available when generating from a car that omits them.
+  dcTractionControlToggle: 1,
+  dcLowFuelAccept: 1,
+  dcDashPage2: 4,
+  ...sdk.__getTelemetryTypes(),
+};
 const out = `
 // ! THIS FILE IS AUTO-GENERATED, EDITS WILL BE OVERRIDDEN !
 // ! Make changes to the generate-var-types in @irsk-node/native !
