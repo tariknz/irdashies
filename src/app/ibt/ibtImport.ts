@@ -12,6 +12,7 @@ import {
   parseHeader,
   parseVarHeaders,
   readVarValue,
+  varTypeBytes,
 } from './ibtBinary';
 import { parseIbtSessionInfo } from './ibtSessionInfo';
 import { IbtBestLapScanner, type IbtSample } from './ibtBestLap';
@@ -35,6 +36,10 @@ const REQUIRED_VARS = [
   'Brake',
   'Throttle',
   'Gear',
+  // The importer promises the fastest *clean* lap, which cannot be decided
+  // without the incident counter — so a file without it is rejected outright
+  // rather than silently offering a lap that collected a penalty.
+  'PlayerCarMyIncidentCount',
 ] as const;
 
 /**
@@ -51,6 +56,110 @@ const OPTIONAL_VARS = [
 
 /** Target chunk size for the streaming read — rounded down to whole records. */
 const TARGET_CHUNK_BYTES = 1024 * 1024;
+
+/*
+ * Header-derived sizes are attacker-controlled bytes: every one of them feeds a
+ * Buffer.alloc() before a single sample is read, so each is bounded here and
+ * checked against the file's real size before anything is allocated. iRacing
+ * records a few hundred channels in a record of a few kilobytes, so these caps
+ * sit orders of magnitude above any genuine file.
+ */
+/** Upper bound on header.numVars (real files record a few hundred). */
+const MAX_NUM_VARS = 8192;
+/** Upper bound on one sample record's length in bytes. */
+const MAX_BUF_LEN = 1024 * 1024;
+/** Upper bound on the session-info YAML string. */
+const MAX_SESSION_INFO_LEN = 32 * 1024 * 1024;
+
+const isSafeOffset = (value: number, size: number): boolean =>
+  Number.isSafeInteger(value) && value >= 0 && value <= size;
+
+/**
+ * Reject a header whose offsets/counts do not describe regions that fit inside
+ * the file, before any of them is used as an allocation size.
+ */
+const validateHeaderBounds = (
+  header: {
+    numVars: number;
+    bufLen: number;
+    varHeaderOffset: number;
+    sessionInfoOffset: number;
+    sessionInfoLen: number;
+    bufOffset: number;
+  },
+  size: number
+): void => {
+  const bad = (message: string): never => {
+    throw new IbtImportError('bad-signature', message);
+  };
+
+  if (
+    !Number.isSafeInteger(header.numVars) ||
+    header.numVars <= 0 ||
+    header.numVars > MAX_NUM_VARS
+  ) {
+    bad('Not a valid .ibt file');
+  }
+  if (
+    !Number.isSafeInteger(header.bufLen) ||
+    header.bufLen <= 0 ||
+    header.bufLen > MAX_BUF_LEN
+  ) {
+    bad('Not a valid .ibt file');
+  }
+  if (
+    !Number.isSafeInteger(header.sessionInfoLen) ||
+    header.sessionInfoLen < 0 ||
+    header.sessionInfoLen > MAX_SESSION_INFO_LEN
+  ) {
+    bad('Not a valid .ibt file');
+  }
+  if (
+    !isSafeOffset(header.varHeaderOffset, size) ||
+    header.varHeaderOffset <= 0 ||
+    !isSafeOffset(header.sessionInfoOffset, size) ||
+    header.sessionInfoOffset <= 0 ||
+    !isSafeOffset(header.bufOffset, size) ||
+    header.bufOffset <= 0
+  ) {
+    bad('Not a valid .ibt file');
+  }
+
+  // Each region must end inside the file, not merely start inside it.
+  if (header.varHeaderOffset + header.numVars * IBT_VAR_HEADER_SIZE > size) {
+    throw new IbtImportError(
+      'truncated',
+      'The .ibt file ended before an expected region'
+    );
+  }
+  if (header.sessionInfoOffset + header.sessionInfoLen > size) {
+    throw new IbtImportError(
+      'truncated',
+      'The .ibt file ended before an expected region'
+    );
+  }
+};
+
+/**
+ * A var header names a byte range inside a sample record; a malformed one would
+ * otherwise read past the record buffer at decode time.
+ */
+const validateVarBounds = (v: IbtVarHeader, bufLen: number): void => {
+  const width = varTypeBytes(v.type);
+  if (
+    width <= 0 ||
+    !Number.isSafeInteger(v.offset) ||
+    v.offset < 0 ||
+    !Number.isSafeInteger(v.count) ||
+    v.count < 1 ||
+    v.offset + width > bufLen
+  ) {
+    throw new IbtImportError(
+      'bad-signature',
+      `Channel ${v.name} does not fit inside a sample record`
+    );
+  }
+};
 
 const readRegion = async (
   handle: fsp.FileHandle,
@@ -105,15 +214,7 @@ export const parseIbtFile = async (
         `Unsupported .ibt version (${header.ver})`
       );
     }
-    if (
-      header.numVars <= 0 ||
-      header.bufLen <= 0 ||
-      header.varHeaderOffset <= 0 ||
-      header.sessionInfoOffset <= 0 ||
-      header.bufOffset <= 0
-    ) {
-      throw new IbtImportError('bad-signature', 'Not a valid .ibt file');
-    }
+    validateHeaderBounds(header, size);
 
     const sub = parseDiskSubHeader(prefix);
 
@@ -150,6 +251,10 @@ export const parseIbtFile = async (
     const optional: Record<string, IbtVarHeader | undefined> = {};
     for (const name of OPTIONAL_VARS) optional[name] = byName.get(name);
 
+    for (const v of [...Object.values(required), ...Object.values(optional)]) {
+      if (v) validateVarBounds(v, header.bufLen);
+    }
+
     const best = await streamSamples(handle, header, sub, size, (record) => ({
       lap: readVarValue(record, required.Lap),
       pct: readVarValue(record, required.LapDistPct),
@@ -169,6 +274,7 @@ export const parseIbtFile = async (
       onPitRoad: optional.OnPitRoad
         ? readVarValue(record, optional.OnPitRoad)
         : 0,
+      incidentCount: readVarValue(record, required.PlayerCarMyIncidentCount),
     }));
 
     if (!best) {

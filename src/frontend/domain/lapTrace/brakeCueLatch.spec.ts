@@ -371,6 +371,20 @@ describe('stepBrakeCueLatch', () => {
     expect(r.fired.length).toBe(afterPass);
   });
 
+  it('re-arms a point the car stopped on, so later laps still cue it', () => {
+    const r = rig([1000]);
+    // Pass the point, stop just beyond it, then complete the lap and come
+    // round again. Nothing else is released in between, so the guard against
+    // re-acquiring the point underfoot must not still be holding next time.
+    for (let d = 700; d < 1000; d += 5) r.tick(d);
+    for (let i = 0; i < 20; i++)
+      r.tick(1002, 0, { sessionTime: r.sessionTime + 0.5 });
+    for (let d = 1005; d < TRACK_LENGTH_M; d += 5) r.tick(d);
+    for (let d = 0; d <= 1010; d += 5) r.tick(d);
+
+    expect(r.fired.filter((cue) => cue === 'brake').length).toBe(2);
+  });
+
   it('does not count down on an out lap, but never cancels mid-approach', () => {
     // Well under 60% of the reference pace at acquisition.
     const slow = rig([1000]);

@@ -4,7 +4,6 @@ import {
   type LapTraceSource,
 } from '@irdashies/types';
 import { app } from 'electron';
-import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import logger from '../logger';
@@ -18,7 +17,7 @@ const WRITE_DEBOUNCE_MS = 250;
 /**
  * Cap on stored laps (R6.3). A lap is stored at telemetry rate — roughly
  * 300 KB of JSON for a 100 s lap, ~1.5 MB for a Nordschleife lap — so 40 keys
- * is ~12 MB worst case, parsed synchronously once at startup. When the cap is
+ * is ~12 MB worst case, read and parsed once on first access. When the cap is
  * hit the oldest `recordedAt` is pruned.
  */
 const MAX_LAP_TRACE_KEYS = 40;
@@ -53,6 +52,12 @@ const SAMPLE_PRECISION: Record<string, number> = {
  * without re-recording.
  */
 let cache: Map<string, LapTraceRecord> | null = null;
+
+/**
+ * The in-flight first read, shared by every caller that arrives while it is
+ * running so the file is read once and parsed once.
+ */
+let loading: Promise<Map<string, LapTraceRecord>> | null = null;
 
 let writeTimer: NodeJS.Timeout | null = null;
 let writeInFlight: Promise<void> | null = null;
@@ -89,17 +94,13 @@ const reviver = (key: string, value: unknown): unknown => {
 };
 
 /**
- * Lazy-load the file into the in-memory cache on first access. Synchronous
- * by design — this runs once at startup, which is permitted by R6.1.
- *
- * Records from another schema version are dropped here rather than migrated:
- * the format has only ever shipped on a feature branch, and every reader
- * downstream assumes the current shape.
+ * Read and parse the file. Records from another schema version are dropped
+ * here rather than migrated: the format has only ever shipped on a feature
+ * branch, and every reader downstream assumes the current shape.
  */
-const loadCache = (): Map<string, LapTraceRecord> => {
-  if (cache) return cache;
+const readCacheFromDisk = async (): Promise<Map<string, LapTraceRecord>> => {
   try {
-    const data = fs.readFileSync(filePath, 'utf8');
+    const data = await fsp.readFile(filePath, 'utf8');
     const parsed = JSON.parse(data, reviver) as Record<string, LapTraceRecord>;
     const entries = Object.entries(parsed);
     const current = entries.filter(
@@ -110,11 +111,29 @@ const loadCache = (): Map<string, LapTraceRecord> => {
         `[Main] Discarded ${entries.length - current.length} lap trace(s) from an older schema`
       );
     }
-    cache = new Map(current);
+    return new Map(current);
   } catch {
-    cache = new Map();
+    return new Map();
   }
-  return cache;
+};
+
+/**
+ * Lazy-load the file into the in-memory cache on first access.
+ *
+ * Asynchronous because first access is not necessarily startup: the lap-trace
+ * IPC handlers reach this the moment the driver enables the widget or opens
+ * Settings, which can be mid-session. A synchronous read of up to ~12 MB
+ * there would block the main process — and with it telemetry polling — for as
+ * long as the parse takes. Every caller in a burst shares one read.
+ */
+const loadCache = async (): Promise<Map<string, LapTraceRecord>> => {
+  if (cache) return cache;
+  loading ??= readCacheFromDisk().then((loaded) => {
+    cache ??= loaded;
+    loading = null;
+    return cache;
+  });
+  return loading;
 };
 
 const flushAsync = async (): Promise<void> => {
@@ -129,17 +148,23 @@ const flushAsync = async (): Promise<void> => {
   }
 };
 
-const flushSync = (): void => {
-  if (!cache) return;
+/**
+ * Drain the debounced and in-flight writes without blocking the event loop.
+ *
+ * The queue is what makes this safe: a write that bypassed it could run
+ * alongside one already in progress, and whichever finished last would decide
+ * the file's contents — so the final cache could lose to an older write.
+ * Cancelling the debounce and queueing behind the current write means the
+ * last write to run is the one that serialises the latest cache.
+ */
+const flushPendingWrites = async (): Promise<void> => {
   if (writeTimer) {
     clearTimeout(writeTimer);
     writeTimer = null;
+    enqueueFlush();
   }
-  try {
-    const obj = Object.fromEntries(cache);
-    fs.writeFileSync(filePath, JSON.stringify(obj, replacer));
-  } catch (error) {
-    logger.error('[Main] Failed to flush lap trace data on shutdown:', error);
+  while (writeInFlight) {
+    await writeInFlight;
   }
 };
 
@@ -190,64 +215,62 @@ const pruneToCap = (map: Map<string, LapTraceRecord>): void => {
  * Read a stored lap trace. Returns null rather than throwing when nothing is
  * stored or the file is unreadable (R6.4).
  */
-export const getLapTrace = (
+export const getLapTrace = async (
   trackId: number,
   carPath: string,
   kind: LapTraceSource
-): LapTraceRecord | null => {
+): Promise<LapTraceRecord | null> => {
   const key = generateKey(trackId, carPath, kind);
-  return loadCache().get(key) ?? null;
+  const map = await loadCache();
+  return map.get(key) ?? null;
 };
 
 /**
- * Store a lap trace. The cache updates synchronously so a subsequent read sees
- * it immediately; the disk write is debounced.
+ * Store a lap trace. The cache is updated as soon as it is loaded, so a read
+ * issued after this resolves sees the record; the disk write is debounced.
  */
-export const saveLapTrace = (
+export const saveLapTrace = async (
   trackId: number,
   carPath: string,
   kind: LapTraceSource,
   record: LapTraceRecord
-): void => {
+): Promise<void> => {
   const key = generateKey(trackId, carPath, kind);
-  const map = loadCache();
+  const map = await loadCache();
   map.set(key, record);
   pruneToCap(map);
   scheduleWrite();
 };
 
 /** Remove a stored lap trace, if present. */
-export const clearLapTrace = (
+export const clearLapTrace = async (
   trackId: number,
   carPath: string,
   kind: LapTraceSource
-): void => {
+): Promise<void> => {
   const key = generateKey(trackId, carPath, kind);
-  if (loadCache().delete(key)) {
+  const map = await loadCache();
+  if (map.delete(key)) {
     scheduleWrite();
   }
 };
 
-/** Flush any pending write synchronously — called on app shutdown. */
-export const flushLapTracesOnShutdown = (): void => {
-  flushSync();
-};
+/**
+ * Flush any pending write asynchronously — called on app shutdown. The
+ * before-quit coordinator awaits this within its deadline, so the last save
+ * survives without a synchronous write racing the queue.
+ */
+export const flushLapTracesOnShutdown = flushPendingWrites;
 
 /** Testing helper: await any in-flight write. */
 export const __awaitPendingLapTraceWrite = async (): Promise<void> => {
-  if (writeTimer) {
-    clearTimeout(writeTimer);
-    writeTimer = null;
-    enqueueFlush();
-  }
-  while (writeInFlight) {
-    await writeInFlight;
-  }
+  await flushPendingWrites();
 };
 
 /** Testing helper: reset module-level state so each spec starts clean. */
 export const __resetLapTracesForTests = (): void => {
   cache = null;
+  loading = null;
   if (writeTimer) {
     clearTimeout(writeTimer);
     writeTimer = null;

@@ -17,19 +17,12 @@ vi.mock('electron', () => ({
   app: { getPath: vi.fn(() => '/mock/user/data') },
 }));
 
-const mockReadFileSync = vi.hoisted(() => vi.fn());
-const mockWriteFileSync = vi.hoisted(() => vi.fn());
-
-vi.mock('node:fs', () => ({
-  default: { readFileSync: mockReadFileSync, writeFileSync: mockWriteFileSync },
-  readFileSync: mockReadFileSync,
-  writeFileSync: mockWriteFileSync,
-}));
-
+const mockReadFile = vi.hoisted(() => vi.fn());
 const mockWriteFile = vi.hoisted(() => vi.fn());
 
 vi.mock('node:fs/promises', () => ({
-  default: { writeFile: mockWriteFile },
+  default: { readFile: mockReadFile, writeFile: mockWriteFile },
+  readFile: mockReadFile,
   writeFile: mockWriteFile,
 }));
 
@@ -70,83 +63,116 @@ const makeRecord = (
 describe('lapTraces storage', () => {
   beforeEach(() => {
     __resetLapTracesForTests();
-    mockReadFileSync.mockReset();
-    mockWriteFileSync.mockReset();
+    mockReadFile.mockReset();
     mockWriteFile.mockReset();
     mockWriteFile.mockResolvedValue(undefined);
     mockLoggerInfo.mockReset();
     mockLoggerWarn.mockReset();
     mockLoggerError.mockReset();
-    mockReadFileSync.mockImplementation(() => {
-      throw new Error('ENOENT');
-    });
+    mockReadFile.mockRejectedValue(new Error('ENOENT'));
   });
 
-  it('returns null when nothing is stored', () => {
-    expect(getLapTrace(1, 'car1', 'best')).toBeNull();
+  it('returns null when nothing is stored', async () => {
+    expect(await getLapTrace(1, 'car1', 'best')).toBeNull();
   });
 
-  it('returns null when the file is unreadable rather than throwing', () => {
-    mockReadFileSync.mockImplementation(() => {
-      throw new Error('EACCES');
-    });
-    expect(() => getLapTrace(1, 'car1', 'best')).not.toThrow();
-    expect(getLapTrace(1, 'car1', 'best')).toBeNull();
+  it('returns null when the file is unreadable rather than throwing', async () => {
+    mockReadFile.mockRejectedValue(new Error('EACCES'));
+    await expect(getLapTrace(1, 'car1', 'best')).resolves.toBeNull();
   });
 
-  it('reads the file only once across many lookups', () => {
-    getLapTrace(1, 'car1', 'best');
-    getLapTrace(2, 'car2', 'best');
-    getLapTrace(3, 'car3', 'manual');
-    expect(mockReadFileSync).toHaveBeenCalledTimes(1);
+  it('reads the file only once across many lookups', async () => {
+    await getLapTrace(1, 'car1', 'best');
+    await getLapTrace(2, 'car2', 'best');
+    await getLapTrace(3, 'car3', 'manual');
+    expect(mockReadFile).toHaveBeenCalledTimes(1);
   });
 
-  it('makes a saved lap visible immediately', () => {
+  it('reads the file once for a burst of concurrent lookups', async () => {
+    // Every caller that arrives while the first read is in flight shares it,
+    // so enabling the widget and opening Settings together cannot read and
+    // parse the file twice.
+    await Promise.all([
+      getLapTrace(1, 'car1', 'best'),
+      getLapTrace(2, 'car2', 'best'),
+      getLapTrace(3, 'car3', 'manual'),
+    ]);
+    expect(mockReadFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('makes a saved lap visible immediately', async () => {
     const record = makeRecord();
-    saveLapTrace(1, 'car1', 'best', record);
-    expect(getLapTrace(1, 'car1', 'best')).toBe(record);
+    await saveLapTrace(1, 'car1', 'best', record);
+    expect(await getLapTrace(1, 'car1', 'best')).toBe(record);
   });
 
-  it('keys laps by source so the three can coexist', () => {
-    saveLapTrace(1, 'car1', 'best', makeRecord({ lapTimeSec: 90 }));
-    saveLapTrace(1, 'car1', 'manual', makeRecord({ lapTimeSec: 88 }));
+  it('keys laps by source so the three can coexist', async () => {
+    await saveLapTrace(1, 'car1', 'best', makeRecord({ lapTimeSec: 90 }));
+    await saveLapTrace(1, 'car1', 'manual', makeRecord({ lapTimeSec: 88 }));
 
-    expect(getLapTrace(1, 'car1', 'best')?.lapTimeSec).toBe(90);
-    expect(getLapTrace(1, 'car1', 'manual')?.lapTimeSec).toBe(88);
-    expect(getLapTrace(1, 'car1', 'garage61')).toBeNull();
+    expect((await getLapTrace(1, 'car1', 'best'))?.lapTimeSec).toBe(90);
+    expect((await getLapTrace(1, 'car1', 'manual'))?.lapTimeSec).toBe(88);
+    expect(await getLapTrace(1, 'car1', 'garage61')).toBeNull();
   });
 
-  it('keys laps by car so two cars on one track do not collide', () => {
-    saveLapTrace(1, 'car1', 'best', makeRecord({ lapTimeSec: 90 }));
-    saveLapTrace(1, 'car2', 'best', makeRecord({ lapTimeSec: 100 }));
+  it('keys laps by car so two cars on one track do not collide', async () => {
+    await saveLapTrace(1, 'car1', 'best', makeRecord({ lapTimeSec: 90 }));
+    await saveLapTrace(1, 'car2', 'best', makeRecord({ lapTimeSec: 100 }));
 
-    expect(getLapTrace(1, 'car1', 'best')?.lapTimeSec).toBe(90);
-    expect(getLapTrace(1, 'car2', 'best')?.lapTimeSec).toBe(100);
+    expect((await getLapTrace(1, 'car1', 'best'))?.lapTimeSec).toBe(90);
+    expect((await getLapTrace(1, 'car2', 'best'))?.lapTimeSec).toBe(100);
   });
 
-  it('removes a lap on clear', () => {
-    saveLapTrace(1, 'car1', 'best', makeRecord());
-    clearLapTrace(1, 'car1', 'best');
-    expect(getLapTrace(1, 'car1', 'best')).toBeNull();
+  it('removes a lap on clear', async () => {
+    await saveLapTrace(1, 'car1', 'best', makeRecord());
+    await clearLapTrace(1, 'car1', 'best');
+    expect(await getLapTrace(1, 'car1', 'best')).toBeNull();
   });
 
   it('collapses a burst of saves into one write', async () => {
-    saveLapTrace(1, 'car1', 'best', makeRecord());
-    saveLapTrace(2, 'car1', 'best', makeRecord());
-    saveLapTrace(3, 'car1', 'best', makeRecord());
+    await saveLapTrace(1, 'car1', 'best', makeRecord());
+    await saveLapTrace(2, 'car1', 'best', makeRecord());
+    await saveLapTrace(3, 'car1', 'best', makeRecord());
 
     await __awaitPendingLapTraceWrite();
     expect(mockWriteFile).toHaveBeenCalledTimes(1);
   });
 
-  it('flushes synchronously on shutdown', () => {
-    saveLapTrace(1, 'car1', 'best', makeRecord());
-    flushLapTracesOnShutdown();
-    expect(mockWriteFileSync).toHaveBeenCalledTimes(1);
+  it('flushes the pending write on shutdown', async () => {
+    await saveLapTrace(1, 'car1', 'best', makeRecord());
+    await flushLapTracesOnShutdown();
+    expect(mockWriteFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('writes the latest cache last when shutdown meets a write in flight', async () => {
+    // A slow write, already running when the app quits.
+    let releaseFirst: (() => void) | undefined;
+    mockWriteFile.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseFirst = () => resolve();
+        })
+    );
+    await saveLapTrace(1, 'car1', 'best', makeRecord({ lapTimeSec: 90 }));
+    // Let the debounce fire so that write is in flight.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(mockWriteFile).toHaveBeenCalledTimes(1);
+
+    // One more lap lands, then the app quits.
+    await saveLapTrace(2, 'car1', 'best', makeRecord({ lapTimeSec: 88 }));
+    const shutdown = flushLapTracesOnShutdown();
+    releaseFirst?.();
+    await shutdown;
+
+    expect(mockWriteFile).toHaveBeenCalledTimes(2);
+    // The last write to run is the one carrying both laps.
+    const last = mockWriteFile.mock.calls[1][1] as string;
+    expect(last).toContain('1:car1:best');
+    expect(last).toContain('2:car1:best');
   });
 
   it('quantises samples so Float32 noise does not bloat the file', async () => {
-    saveLapTrace(1, 'car1', 'best', makeRecord());
+    await saveLapTrace(1, 'car1', 'best', makeRecord());
     await __awaitPendingLapTraceWrite();
 
     const written = mockWriteFile.mock.calls[0][1] as string;
@@ -155,15 +181,15 @@ describe('lapTraces storage', () => {
     expect(written).toContain('0.34');
   });
 
-  it('round-trips every sample array through disk as Float32Array', () => {
-    saveLapTrace(1, 'car1', 'best', makeRecord());
-    flushLapTracesOnShutdown();
-    const written = mockWriteFileSync.mock.calls[0][1] as string;
+  it('round-trips every sample array through disk as Float32Array', async () => {
+    await saveLapTrace(1, 'car1', 'best', makeRecord());
+    await flushLapTracesOnShutdown();
+    const written = mockWriteFile.mock.calls[0][1] as string;
 
     __resetLapTracesForTests();
-    mockReadFileSync.mockReturnValue(written);
+    mockReadFile.mockResolvedValue(written);
 
-    const loaded = getLapTrace(1, 'car1', 'best');
+    const loaded = await getLapTrace(1, 'car1', 'best');
     const samples = loaded?.samples;
     expect(samples?.length).toBe(4);
     for (const field of [
@@ -183,48 +209,53 @@ describe('lapTraces storage', () => {
     expect(loaded?.lapTimeSec).toBe(90.123);
   });
 
-  it('keeps distance to the centimetre and time to 0.1 ms', () => {
+  it('keeps distance to the centimetre and time to 0.1 ms', async () => {
     // Corner deltas are differences of two timeSec values shown to 10 ms, and
     // brake points are interpolated from distanceM — both must survive disk.
-    saveLapTrace(1, 'car1', 'best', makeRecord());
-    flushLapTracesOnShutdown();
-    const written = mockWriteFileSync.mock.calls[0][1] as string;
+    await saveLapTrace(1, 'car1', 'best', makeRecord());
+    await flushLapTracesOnShutdown();
+    const written = mockWriteFile.mock.calls[0][1] as string;
 
     __resetLapTracesForTests();
-    mockReadFileSync.mockReturnValue(written);
+    mockReadFile.mockResolvedValue(written);
 
-    const samples = getLapTrace(1, 'car1', 'best')?.samples;
+    const samples = (await getLapTrace(1, 'car1', 'best'))?.samples;
     expect(samples?.distanceM[1]).toBeCloseTo(5.25, 2);
     expect(samples?.timeSec[1]).toBeCloseTo(0.1234, 4);
     expect(samples?.timeSec[3]).toBeCloseTo(0.3702, 4);
   });
 
-  it('discards records from another schema version on load', () => {
+  it('discards records from another schema version on load', async () => {
     const v2 = makeRecord();
     const v1 = { ...makeRecord({ trackId: 2 }), schemaVersion: 1 };
-    mockReadFileSync.mockReturnValue(
+    mockReadFile.mockResolvedValue(
       JSON.stringify({ '1:car1:best': v2, '2:car1:best': v1 })
     );
 
-    expect(getLapTrace(1, 'car1', 'best')?.trackId).toBe(1);
-    expect(getLapTrace(2, 'car1', 'best')).toBeNull();
+    expect((await getLapTrace(1, 'car1', 'best'))?.trackId).toBe(1);
+    expect(await getLapTrace(2, 'car1', 'best')).toBeNull();
     expect(mockLoggerInfo).toHaveBeenCalledWith(
       expect.stringContaining('Discarded 1')
     );
   });
 
-  it('prunes the oldest lap once the cap is reached', () => {
+  it('prunes the oldest lap once the cap is reached', async () => {
     for (let i = 0; i < 40; i++) {
-      saveLapTrace(i, 'car1', 'best', makeRecord({ recordedAt: 5000 + i }));
+      await saveLapTrace(
+        i,
+        'car1',
+        'best',
+        makeRecord({ recordedAt: 5000 + i })
+      );
     }
     // The oldest entry so far.
-    expect(getLapTrace(0, 'car1', 'best')).not.toBeNull();
+    expect(await getLapTrace(0, 'car1', 'best')).not.toBeNull();
 
-    saveLapTrace(999, 'car1', 'best', makeRecord({ recordedAt: 99999 }));
+    await saveLapTrace(999, 'car1', 'best', makeRecord({ recordedAt: 99999 }));
 
-    expect(getLapTrace(0, 'car1', 'best')).toBeNull();
-    expect(getLapTrace(999, 'car1', 'best')).not.toBeNull();
-    expect(getLapTrace(20, 'car1', 'best')).not.toBeNull();
+    expect(await getLapTrace(0, 'car1', 'best')).toBeNull();
+    expect(await getLapTrace(999, 'car1', 'best')).not.toBeNull();
+    expect(await getLapTrace(20, 'car1', 'best')).not.toBeNull();
     expect(mockLoggerWarn).toHaveBeenCalled();
   });
 });

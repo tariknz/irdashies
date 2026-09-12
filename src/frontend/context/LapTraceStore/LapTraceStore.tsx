@@ -138,6 +138,17 @@ export interface ActiveLap {
    */
   incidentCountAtStart: number;
   /**
+   * LapLastLapTime and LapCompleted as they stood on the previous frame.
+   * Frame memory, not lap state: they are deliberately left alone by
+   * `resetActiveLap`, because a crossing needs to know what the official time
+   * was showing *before* that frame. iRacing can publish the finished lap's
+   * time in the very frame the line is crossed, and taking the crossing
+   * frame's value as the baseline would make the lap wait for a change that
+   * only the next lap's time can supply.
+   */
+  prevLastLapTime: number;
+  prevLapCompleted: number;
+  /**
    * Running speed range for this lap. Tracked incrementally so the plot has a
    * stable vertical scale before any reference lap exists, without rescanning
    * every sample each frame.
@@ -169,6 +180,13 @@ interface PendingBest {
    * trusting isCleanLap alone.
    */
   incidentCountAtBoundary: number;
+  /**
+   * LapCompleted as seen at the crossing, which is this lap's identity. The
+   * counter can lag the line by a tick, so the lap that just finished is
+   * either this number or one more; anything beyond that means a further lap
+   * has completed and LapLastLapTime no longer describes the pending one.
+   */
+  lapCompletedAtBoundary: number;
 }
 
 export interface LapTraceState {
@@ -309,6 +327,8 @@ function createActiveLap(): ActiveLap {
     lastTrackedTime: -1,
     isCleanLap: false,
     incidentCountAtStart: 0,
+    prevLastLapTime: -1,
+    prevLapCompleted: -1,
     speedMinMs: Number.POSITIVE_INFINITY,
     speedMaxMs: Number.NEGATIVE_INFINITY,
     lastNotifiedM: Number.NEGATIVE_INFINITY,
@@ -426,6 +446,19 @@ function adaptStoredRecord(
   return record;
 }
 
+/*
+ * Both `initialize` and `setReferenceFromSource` read from disk across an
+ * await, and either can be called again (a track change, a flick through the
+ * reference dropdown) while the previous read is still in flight. Reads can
+ * resolve out of order, so each tags itself with the generation current when it
+ * started and drops its result if a newer call has since superseded it —
+ * otherwise the older session's best time, or the previously selected source,
+ * lands on top of the newer one. The counters are deliberately outside the
+ * store: they gate writes and nothing renders from them.
+ */
+let sessionGeneration = 0;
+let referenceGeneration = 0;
+
 export const useLapTraceStore = create<LapTraceState>((set, get) => ({
   trackId: null,
   trackConfigName: '',
@@ -448,6 +481,13 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
     trackLengthM
   ) => {
     if (!(trackLengthM > 0) || !carPath || trackId <= 0) return;
+
+    // This call now owns the session; anything still in flight is stale. The
+    // reference generation moves too — the cleared referenceLap below belongs
+    // to this session, and a pending source read for the old one must not
+    // repaint it.
+    const generation = ++sessionGeneration;
+    referenceGeneration++;
 
     set({
       trackId,
@@ -473,6 +513,7 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
     }
     try {
       const stored = await bridge.getLapTrace(trackId, carPath, 'best');
+      if (generation !== sessionGeneration) return;
       const adapted = stored ? adaptStoredRecord(stored, get()) : null;
       set({
         bestLapLoaded: true,
@@ -483,6 +524,7 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
     } catch (e) {
       // Left unloaded on purpose: a best that could not be read is not a best
       // that can be beaten.
+      if (generation !== sessionGeneration) return;
       logger.warn('[LapTrace] Failed to load stored best lap', e);
     }
   },
@@ -559,7 +601,13 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
       // is left pending and dropped at the next crossing rather than
       // mis-timed.
       const pending = state.pendingBest;
-      if (
+      // LapCompleted can lag the line by a tick, so the lap waiting here is
+      // either the number seen at the crossing or the one after it. Beyond
+      // that, a further lap has finished and LapLastLapTime has moved on to
+      // describe that one instead — this lap can no longer be timed.
+      if (pending && lapCompleted > pending.lapCompletedAtBoundary + 1) {
+        set({ pendingBest: null });
+      } else if (
         pending &&
         lastLapTime > 0 &&
         lastLapTime !== pending.lastLapTimeAtBoundary
@@ -607,13 +655,26 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
         // The placeholder time is patched in on finalise. Any still-unresolved
         // pending lap is dropped here — after this crossing LapLastLapTime
         // moves to a different lap, so the old one can no longer be trusted.
-        if (lap.isCleanLap) {
+        // The cleanliness check that compares the live incident count against
+        // the lap's baseline runs below this block, so an incident registered
+        // on the crossing frame itself is not in `isCleanLap` yet — and the
+        // reset a few lines down moves the baseline on to this frame's count,
+        // putting it out of reach. Compare it here, against the baseline of
+        // the lap that is finishing.
+        const finishedClean =
+          lap.isCleanLap && incidentCount <= lap.incidentCountAtStart;
+        if (finishedClean) {
           const record = snapshotActiveLap(lap, state, -1);
           set({
             pendingBest: {
               record,
-              lastLapTimeAtBoundary: lastLapTime,
+              // The previous frame's value, not this one's: iRacing can
+              // publish the finished lap's official time in the same frame
+              // the line is crossed, and a baseline taken from that frame
+              // would hide the very change being waited for.
+              lastLapTimeAtBoundary: lap.prevLastLapTime,
               incidentCountAtBoundary: incidentCount,
+              lapCompletedAtBoundary: lapCompleted,
             },
           });
         } else if (state.pendingBest) {
@@ -681,10 +742,14 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
 
     lap.lastTrackedPct = pct;
     lap.lastTrackedTime = sessionTime;
+    lap.prevLastLapTime = lastLapTime;
+    lap.prevLapCompleted = lapCompleted;
   },
 
   setReferenceFromSource: async (bridge, kind) => {
     if (!bridge) return;
+
+    const generation = ++referenceGeneration;
 
     // Both import sources are single global slots, not scoped to the live
     // session's track/car, so they are reachable even before a session has
@@ -714,6 +779,7 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
         lookupCarPath,
         kind
       );
+      if (generation !== referenceGeneration) return;
       if (stored) {
         const adapted = adaptStoredRecord(stored, get());
         if (adapted) {
@@ -735,6 +801,7 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
         referenceSource: kind,
       });
     } catch (e) {
+      if (generation !== referenceGeneration) return;
       logger.warn(`[LapTrace] Failed to load ${kind} reference lap`, e);
       set({
         referenceLap: null,
@@ -769,6 +836,7 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
     }
 
     if (get().referenceSource === kind) {
+      referenceGeneration++;
       set({
         referenceLap: null,
         referenceError:
@@ -825,6 +893,7 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
       state.referenceError === GARAGE61_NOT_IMPORTED_MESSAGE
     ) {
       const adapted = adaptStoredRecord(record, state) ?? record;
+      referenceGeneration++;
       set({
         referenceLap: hydrateLapTrace(adapted),
         referenceError: null,
@@ -889,6 +958,7 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
       state.referenceError === IBT_NOT_IMPORTED_MESSAGE
     ) {
       const adapted = adaptStoredRecord(record, state) ?? record;
+      referenceGeneration++;
       set({
         referenceLap: hydrateLapTrace(adapted),
         referenceError: null,
@@ -912,6 +982,7 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
 
   clearBestLap: async (bridge) => {
     const { trackId, carPath, referenceSource } = get();
+    if (referenceSource === 'best') referenceGeneration++;
     if (bridge && trackId != null && trackId > 0 && carPath) {
       try {
         await bridge.clearLapTrace(trackId, carPath, 'best');
@@ -934,6 +1005,8 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
   },
 
   reset: () => {
+    sessionGeneration++;
+    referenceGeneration++;
     set({
       trackId: null,
       trackConfigName: '',

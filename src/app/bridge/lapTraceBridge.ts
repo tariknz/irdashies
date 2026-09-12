@@ -145,7 +145,7 @@ export const setupLapTraceBridge = (overlayManager?: OverlayManager) => {
   // Settings has no live session of its own, so it asks main (which does) for
   // the current track/car and whether a best is stored — enough to label and
   // enable the reset control. Null when nothing is being driven.
-  ipcMain.handle('lapTrace:getCurrentBestLapInfo', () => {
+  ipcMain.handle('lapTrace:getCurrentBestLapInfo', async () => {
     const session = overlayManager?.getLatestSessionData() as
       Session | undefined;
     const weekend = session?.WeekendInfo;
@@ -160,7 +160,7 @@ export const setupLapTraceBridge = (overlayManager?: OverlayManager) => {
 
     let hasBest = false;
     try {
-      hasBest = getLapTrace(trackId, carPath, 'best') !== null;
+      hasBest = (await getLapTrace(trackId, carPath, 'best')) !== null;
     } catch (e) {
       logger.warn('[Main] Failed to read stored best for info', e);
     }
@@ -197,7 +197,7 @@ export const setupLapTraceBridge = (overlayManager?: OverlayManager) => {
 
   ipcMain.handle(
     'lapTrace:get',
-    (_, trackId: unknown, carPath: unknown, kind: unknown) => {
+    async (_, trackId: unknown, carPath: unknown, kind: unknown) => {
       if (
         !isTrackId(trackId) ||
         typeof carPath !== 'string' ||
@@ -206,7 +206,7 @@ export const setupLapTraceBridge = (overlayManager?: OverlayManager) => {
         throw new TypeError('Invalid payload for lapTrace:get');
       }
       try {
-        return getLapTrace(trackId, carPath, kind);
+        return await getLapTrace(trackId, carPath, kind);
       } catch (e) {
         // R6.4 — a read failure returns a safe default rather than throwing
         // across the bridge.
@@ -218,7 +218,13 @@ export const setupLapTraceBridge = (overlayManager?: OverlayManager) => {
 
   ipcMain.handle(
     'lapTrace:save',
-    (_, trackId: unknown, carPath: unknown, kind: unknown, record: unknown) => {
+    async (
+      _,
+      trackId: unknown,
+      carPath: unknown,
+      kind: unknown,
+      record: unknown
+    ) => {
       if (
         !isTrackId(trackId) ||
         typeof carPath !== 'string' ||
@@ -228,7 +234,7 @@ export const setupLapTraceBridge = (overlayManager?: OverlayManager) => {
         throw new TypeError('Invalid payload for lapTrace:save');
       }
       try {
-        saveLapTrace(trackId, carPath, kind, record);
+        await saveLapTrace(trackId, carPath, kind, record);
       } catch (e) {
         logger.error('[Main] Failed to save lap trace:', e);
         throw e;
@@ -238,7 +244,7 @@ export const setupLapTraceBridge = (overlayManager?: OverlayManager) => {
 
   ipcMain.handle(
     'lapTrace:clear',
-    (_, trackId: unknown, carPath: unknown, kind: unknown) => {
+    async (_, trackId: unknown, carPath: unknown, kind: unknown) => {
       if (
         !isTrackId(trackId) ||
         typeof carPath !== 'string' ||
@@ -246,7 +252,7 @@ export const setupLapTraceBridge = (overlayManager?: OverlayManager) => {
       ) {
         throw new TypeError('Invalid payload for lapTrace:clear');
       }
-      clearLapTrace(trackId, carPath, kind);
+      await clearLapTrace(trackId, carPath, kind);
     }
   );
 

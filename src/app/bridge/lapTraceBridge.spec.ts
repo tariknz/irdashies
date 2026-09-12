@@ -246,43 +246,45 @@ describe('lapTraceBridge', () => {
   });
 
   describe('lapTrace:get', () => {
-    it('forwards a valid request to storage', () => {
-      mockGetLapTrace.mockReturnValue(null);
-      call('lapTrace:get', 1, 'car1', 'best');
+    it('forwards a valid request to storage', async () => {
+      mockGetLapTrace.mockResolvedValue(null);
+      await call('lapTrace:get', 1, 'car1', 'best');
       expect(mockGetLapTrace).toHaveBeenCalledWith(1, 'car1', 'best');
     });
 
-    it('rejects a non-numeric track id', () => {
-      expect(() => call('lapTrace:get', '1', 'car1', 'best')).toThrow(
+    it('rejects a non-numeric track id', async () => {
+      await expect(call('lapTrace:get', '1', 'car1', 'best')).rejects.toThrow(
         TypeError
       );
     });
 
-    it('rejects a non-string car path', () => {
-      expect(() => call('lapTrace:get', 1, 42, 'best')).toThrow(TypeError);
+    it('rejects a non-string car path', async () => {
+      await expect(call('lapTrace:get', 1, 42, 'best')).rejects.toThrow(
+        TypeError
+      );
     });
 
-    it('rejects a source outside the allowlist', () => {
-      expect(() => call('lapTrace:get', 1, 'car1', 'other')).toThrow(TypeError);
+    it('rejects a source outside the allowlist', async () => {
+      await expect(call('lapTrace:get', 1, 'car1', 'other')).rejects.toThrow(
+        TypeError
+      );
     });
 
-    it('returns null instead of throwing when storage fails', () => {
-      mockGetLapTrace.mockImplementation(() => {
-        throw new Error('disk on fire');
-      });
-      expect(call('lapTrace:get', 1, 'car1', 'best')).toBeNull();
+    it('returns null instead of throwing when storage fails', async () => {
+      mockGetLapTrace.mockRejectedValue(new Error('disk on fire'));
+      expect(await call('lapTrace:get', 1, 'car1', 'best')).toBeNull();
       expect(mockLoggerWarn).toHaveBeenCalled();
     });
   });
 
   describe('lapTrace:save', () => {
-    it('forwards a valid record to storage', () => {
+    it('forwards a valid record to storage', async () => {
       const record = validRecord();
-      call('lapTrace:save', 1, 'car1', 'best', record);
+      await call('lapTrace:save', 1, 'car1', 'best', record);
       expect(mockSaveLapTrace).toHaveBeenCalledWith(1, 'car1', 'best', record);
     });
 
-    it('accepts plain arrays, as they arrive after IPC serialisation', () => {
+    it('accepts plain arrays, as they arrive after IPC serialisation', async () => {
       const base = validRecord();
       const record = {
         ...base,
@@ -297,74 +299,74 @@ describe('lapTraceBridge', () => {
           absActive: [0, 0, 0, 0],
         },
       };
-      expect(() =>
+      await expect(
         call('lapTrace:save', 1, 'car1', 'best', record)
-      ).not.toThrow();
+      ).resolves.not.toThrow();
     });
 
-    it('rejects a record whose sample arrays do not match samples.length', () => {
+    it('rejects a record whose sample arrays do not match samples.length', async () => {
       const record = validRecord();
       record.samples.throttle = new Float32Array(3);
-      expect(() => call('lapTrace:save', 1, 'car1', 'best', record)).toThrow(
-        TypeError
-      );
+      await expect(
+        call('lapTrace:save', 1, 'car1', 'best', record)
+      ).rejects.toThrow(TypeError);
     });
 
-    it('rejects a record missing a sample field', () => {
+    it('rejects a record missing a sample field', async () => {
       const record = validRecord() as Record<string, unknown>;
       (record.samples as Record<string, unknown>).gear = undefined;
-      expect(() => call('lapTrace:save', 1, 'car1', 'best', record)).toThrow(
-        TypeError
-      );
+      await expect(
+        call('lapTrace:save', 1, 'car1', 'best', record)
+      ).rejects.toThrow(TypeError);
     });
 
-    it('rejects a non-finite distance — the axis every search walks', () => {
+    it('rejects a non-finite distance — the axis every search walks', async () => {
       const record = validRecord();
       record.samples.distanceM = Float32Array.from([0, Number.NaN, 10, 15]);
-      expect(() => call('lapTrace:save', 1, 'car1', 'best', record)).toThrow(
-        TypeError
-      );
+      await expect(
+        call('lapTrace:save', 1, 'car1', 'best', record)
+      ).rejects.toThrow(TypeError);
     });
 
-    it('rejects a record from another schema version', () => {
-      expect(() =>
+    it('rejects a record from another schema version', async () => {
+      await expect(
         call('lapTrace:save', 1, 'car1', 'best', {
           ...validRecord(),
           schemaVersion: 1,
         })
-      ).toThrow(TypeError);
+      ).rejects.toThrow(TypeError);
     });
 
-    it('rejects a non-object payload', () => {
-      expect(() => call('lapTrace:save', 1, 'car1', 'best', null)).toThrow(
-        TypeError
-      );
+    it('rejects a non-object payload', async () => {
+      await expect(
+        call('lapTrace:save', 1, 'car1', 'best', null)
+      ).rejects.toThrow(TypeError);
     });
 
-    it('rejects a lap with fewer than two samples', () => {
-      expect(() =>
+    it('rejects a lap with fewer than two samples', async () => {
+      await expect(
         call('lapTrace:save', 1, 'car1', 'best', validRecord(1))
-      ).toThrow(TypeError);
+      ).rejects.toThrow(TypeError);
     });
 
-    it('rejects a non-positive track length', () => {
-      expect(() =>
+    it('rejects a non-positive track length', async () => {
+      await expect(
         call('lapTrace:save', 1, 'car1', 'best', {
           ...validRecord(),
           trackLengthM: 0,
         })
-      ).toThrow(TypeError);
+      ).rejects.toThrow(TypeError);
     });
   });
 
   describe('lapTrace:clear', () => {
-    it('forwards a valid request', () => {
-      call('lapTrace:clear', 1, 'car1', 'manual');
+    it('forwards a valid request', async () => {
+      await call('lapTrace:clear', 1, 'car1', 'manual');
       expect(mockClearLapTrace).toHaveBeenCalledWith(1, 'car1', 'manual');
     });
 
-    it('validates its arguments', () => {
-      expect(() => call('lapTrace:clear', 1, 'car1', 'nope')).toThrow(
+    it('validates its arguments', async () => {
+      await expect(call('lapTrace:clear', 1, 'car1', 'nope')).rejects.toThrow(
         TypeError
       );
     });

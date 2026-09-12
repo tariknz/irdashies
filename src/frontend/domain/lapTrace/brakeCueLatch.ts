@@ -269,6 +269,21 @@ export function stepBrakeCueLatch(
     return out;
   }
 
+  // Re-arm a released point as soon as the car is no longer sitting on it.
+  // The block below exists only to stop a car parked on a cue point from
+  // looping its tone, and a car creeping over a point can stop with nothing
+  // ahead to release and overwrite the memory — so without this the block
+  // outlives the situation it is for and silences that point for good, which
+  // on a track whose next point is out of reach means the whole lap. Distance
+  // rather than speed, because a stationary car never clears it otherwise.
+  if (
+    Number.isFinite(state.lastReleasedM) &&
+    Math.abs(signedLapDelta(carDistanceM, state.lastReleasedM, trackLengthM)) >
+      MIN_EVENT_SPACING_M
+  ) {
+    state.lastReleasedM = NaN;
+  }
+
   const secondsTo = (distanceM: number) =>
     speedMs >= MIN_CUE_SPEED_MS
       ? distanceM / speedMs

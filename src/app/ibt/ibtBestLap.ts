@@ -33,6 +33,8 @@ export interface IbtSample {
   absActive: number;
   /** 0 | 1 — used to reject out/in laps. */
   onPitRoad: number;
+  /** PlayerCarMyIncidentCount — monotonic; any change within a lap dirties it. */
+  incidentCount: number;
 }
 
 export interface IbtBestLap {
@@ -79,6 +81,14 @@ interface Candidate {
   maxPct: number;
   peakSpeed: number;
   pitSamples: number;
+  /** Incident count at the lap's first sample — the baseline for "clean". */
+  startIncidents: number;
+  /**
+   * Whether this candidate began at a start/finish crossing rather than at
+   * the first sample of the file. Only a crossing gives its elapsed time a
+   * meaning: a recording that starts part-way round a lap times a fragment.
+   */
+  startedAtCrossing: boolean;
   invalid: boolean;
 }
 
@@ -87,7 +97,10 @@ export class IbtBestLapScanner {
   private best: IbtBestLap | null = null;
   private prevPct = -1;
 
-  private newCandidate(lapNumber: number): Candidate {
+  private newCandidate(
+    lapNumber: number,
+    startedAtCrossing: boolean
+  ): Candidate {
     return {
       lapNumber,
       pct: [],
@@ -103,6 +116,8 @@ export class IbtBestLapScanner {
       maxPct: Number.NEGATIVE_INFINITY,
       peakSpeed: Number.NEGATIVE_INFINITY,
       pitSamples: 0,
+      startIncidents: Number.NaN,
+      startedAtCrossing,
       invalid: false,
     };
   }
@@ -118,10 +133,12 @@ export class IbtBestLapScanner {
       this.current !== null && sample.lap !== this.current.lapNumber;
 
     if (this.current === null) {
-      this.current = this.newCandidate(sample.lap);
+      // The file's first candidate: wherever the recording happens to have
+      // started, which is rarely the line.
+      this.current = this.newCandidate(sample.lap, false);
     } else if (started && (lapChanged || pctWrap)) {
-      this.finalize(this.current);
-      this.current = this.newCandidate(sample.lap);
+      this.finalize(this.current, true);
+      this.current = this.newCandidate(sample.lap, true);
     }
 
     const c = this.current;
@@ -135,6 +152,18 @@ export class IbtBestLapScanner {
       !Number.isFinite(sample.brake) ||
       !Number.isFinite(sample.throttle)
     ) {
+      c.invalid = true;
+    }
+
+    // "Clean" is the importer's user-facing promise, so a lap that collected an
+    // incident is not a candidate at all. The count is monotonic within a
+    // session; any movement between this lap's first and last sample means the
+    // driver picked something up on this lap.
+    if (!Number.isFinite(sample.incidentCount)) {
+      c.invalid = true;
+    } else if (Number.isNaN(c.startIncidents)) {
+      c.startIncidents = sample.incidentCount;
+    } else if (sample.incidentCount !== c.startIncidents) {
       c.invalid = true;
     }
 
@@ -165,14 +194,21 @@ export class IbtBestLapScanner {
   /** Finalize the trailing candidate. Call once after the last sample. */
   finish(): IbtBestLap | null {
     if (this.current && this.current.pct.length > 0) {
-      this.finalize(this.current);
+      // The recording stopped here; no crossing closed this lap.
+      this.finalize(this.current, false);
       this.current = null;
     }
     return this.best;
   }
 
-  private finalize(c: Candidate): void {
+  private finalize(c: Candidate, endedAtCrossing: boolean): void {
     if (c.invalid) return;
+
+    // A lap is only timeable between two start/finish crossings. Coverage
+    // alone is not enough: a recording that stops at 91% (or starts after
+    // 10%) passes the pct checks below while its elapsed time omits part of
+    // the track, which makes it faster than any lap actually driven.
+    if (!c.startedAtCrossing || !endedAtCrossing) return;
 
     const n = c.pct.length;
     if (n < MIN_LAP_SAMPLES) return;

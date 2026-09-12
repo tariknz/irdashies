@@ -4,6 +4,7 @@ import {
   useRunningState,
   useResetOnDisconnect,
   useWidgetsForThisDisplay,
+  rendersInOwnWindow,
 } from '@irdashies/context';
 import type { WidgetLayout } from '@irdashies/types';
 import { WidgetContainer } from '../WidgetContainer';
@@ -97,7 +98,14 @@ export const OverlayContainer = memo(() => {
     []
   );
 
-  const widgetsForThisDisplay = useWidgetsForThisDisplay();
+  const enabledForThisDisplay = useWidgetsForThisDisplay();
+
+  // Gantry has a window of its own (see the #/gantry route in App.tsx), so
+  // rendering it here too would put a second copy inside the overlay.
+  const widgetsForThisDisplay = useMemo(
+    () => enabledForThisDisplay.filter((widget) => !rendersInOwnWindow(widget)),
+    [enabledForThisDisplay]
+  );
 
   const siblingLayoutsByWidgetId = useMemo(() => {
     return new Map(

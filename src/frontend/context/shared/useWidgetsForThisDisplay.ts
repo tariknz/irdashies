@@ -18,6 +18,17 @@ const isWidgetOnDisplay = (
 };
 
 /**
+ * Widget types that are rendered by a window of their own rather than by the
+ * overlay (see the hash routes in App.tsx). They still live in the dashboard
+ * and still subscribe to data, so only the overlay's renderer excludes them.
+ */
+const OWN_WINDOW_WIDGET_TYPES = new Set(['gantry']);
+
+/** Does this widget render in its own window instead of the overlay? */
+export const rendersInOwnWindow = (widget: DashboardWidget): boolean =>
+  OWN_WINDOW_WIDGET_TYPES.has(widget.type || widget.id);
+
+/**
  * The enabled widgets this overlay window is responsible for.
  *
  * With one window per display, a widget belongs to the window whose display

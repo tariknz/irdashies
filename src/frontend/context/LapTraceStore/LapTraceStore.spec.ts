@@ -868,6 +868,61 @@ describe('LapTraceStore best-lap promotion', () => {
     );
   });
 
+  /** Frames of one clean lap, ending just before the crossing frame. */
+  const driveToTheLine = (lapTimeSec: number, incidents = 0) => {
+    feed({ pct: 0, time: clock, incidents });
+    const step = lapTimeSec / (STEPS + 1);
+    for (let i = 0; i < STEPS; i++) {
+      feed({ pct: 0.01 + i * 0.05, time: clock + step * (i + 1), incidents });
+    }
+    clock += lapTimeSec;
+  };
+
+  it('times a lap whose official time arrives on the crossing frame', async () => {
+    const bridge = makeBridge(null);
+    await initWith(bridge);
+
+    driveToTheLine(88);
+    // iRacing can publish the finished lap's time in the very frame the line
+    // is crossed. Taking that as the baseline would leave the lap waiting for
+    // a change only the next lap's time could bring.
+    feed({ pct: 0.01, time: clock, lastLapTime: 88, lapCompleted: 1 });
+    feed({ pct: 0.02, time: clock + 0.1, lastLapTime: 88, lapCompleted: 1 });
+
+    expect(useLapTraceStore.getState().bestLapTimeSec).toBe(88);
+  });
+
+  it('does not promote a lap that picked up an incident on the crossing frame', async () => {
+    const bridge = makeBridge(null);
+    await initWith(bridge);
+
+    driveToTheLine(90);
+    // The incident lands on the crossing frame itself, before the per-frame
+    // cleanliness check for the finishing lap has seen it.
+    feed({ pct: 0.01, time: clock, incidents: 1, lapCompleted: 1 });
+    feed({ pct: 0.02, time: clock + 0.1, lastLapTime: 90, incidents: 1 });
+
+    expect(useLapTraceStore.getState().bestLapTimeSec).toBe(
+      Number.POSITIVE_INFINITY
+    );
+  });
+
+  it('drops a pending lap once a further lap has completed', async () => {
+    const bridge = makeBridge(null);
+    await initWith(bridge);
+
+    driveToTheLine(90);
+    feed({ pct: 0.01, time: clock, lapCompleted: 1 });
+    // Telemetry resumes several laps later (the overlay was hidden, the app
+    // was paused): this time belongs to a lap that is not the pending one.
+    feed({ pct: 0.02, time: clock + 30, lastLapTime: 85, lapCompleted: 4 });
+
+    expect(useLapTraceStore.getState().bestLapTimeSec).toBe(
+      Number.POSITIVE_INFINITY
+    );
+    expect(useLapTraceStore.getState().pendingBest).toBeNull();
+  });
+
   it('promotes again after the driver clears the best', async () => {
     const bridge = makeBridge(null);
     bridge.getLapTrace.mockRejectedValue(new Error('disk gone'));
@@ -1142,6 +1197,111 @@ describe('LapTraceStore.setReferenceFromSource', () => {
       .setReferenceFromSource(bridge, 'garage61');
 
     const state = useLapTraceStore.getState();
+    expect(state.referenceLap).toBeNull();
+    expect(state.referenceError).toBe(GARAGE61_NOT_IMPORTED_MESSAGE);
+  });
+});
+
+describe('LapTraceStore stale async results', () => {
+  /** A bridge whose getLapTrace resolves only when the test says so. */
+  const makeDeferredBridge = () => {
+    const pending: ((value: unknown) => void)[] = [];
+    const bridge = makeBridge();
+    bridge.getLapTrace = vi.fn(
+      () => new Promise((resolve) => pending.push(resolve))
+    );
+    return { bridge, pending };
+  };
+
+  const storedBest = (lapTimeSec: number, overrides = {}) => ({
+    schemaVersion: 2,
+    source: { kind: 'best', label: 'Personal Best', importedAt: 0 },
+    trackId: 1,
+    trackConfigName: 'Grand Prix',
+    carPath: 'testcar',
+    trackLengthM: TRACK_LENGTH_M,
+    lapTimeSec,
+    samples: {
+      length: STEPS,
+      distanceM: Float32Array.from({ length: STEPS }, (_, i) => i * 5),
+      timeSec: Float32Array.from({ length: STEPS }, (_, i) => i * 4.4),
+      throttle: new Float32Array(STEPS).fill(1),
+      brake: new Float32Array(STEPS),
+      speed: new Float32Array(STEPS).fill(40),
+      gear: new Float32Array(STEPS).fill(3),
+      absActive: new Float32Array(STEPS),
+    },
+    recordedAt: 0,
+    ...overrides,
+  });
+
+  beforeEach(() => {
+    useLapTraceStore.getState().reset();
+  });
+
+  it('drops an initialize result that lands after a newer session started', async () => {
+    const { bridge, pending } = makeDeferredBridge();
+    const first = useLapTraceStore
+      .getState()
+      .initialize(bridge, 1, 'Grand Prix', 'testcar', TRACK_LENGTH_M);
+    const second = useLapTraceStore
+      .getState()
+      .initialize(bridge, 2, 'Oval', 'othercar', TRACK_LENGTH_M);
+
+    // The second session's read answers first; the first session's answers last.
+    pending[1](null);
+    pending[0](storedBest(70));
+    await Promise.all([first, second]);
+
+    const state = useLapTraceStore.getState();
+    expect(state.trackId).toBe(2);
+    // The old session's stored best must not seed the new session's threshold.
+    expect(state.bestLapTimeSec).toBe(Number.POSITIVE_INFINITY);
+  });
+
+  it('marks the session loaded only for the session that is current', async () => {
+    const { bridge, pending } = makeDeferredBridge();
+    const first = useLapTraceStore
+      .getState()
+      .initialize(bridge, 1, 'Grand Prix', 'testcar', TRACK_LENGTH_M);
+    const second = useLapTraceStore
+      .getState()
+      .initialize(bridge, 2, 'Oval', 'othercar', TRACK_LENGTH_M);
+
+    pending[0](storedBest(70));
+    await first;
+    // The newer session is still waiting on its own read, so promotion stays
+    // blocked rather than being unblocked by the older one.
+    expect(useLapTraceStore.getState().bestLapLoaded).toBe(false);
+
+    pending[1](null);
+    await second;
+    expect(useLapTraceStore.getState().bestLapLoaded).toBe(true);
+  });
+
+  it('drops a reference read that lands after the source changed', async () => {
+    const { bridge, pending } = makeDeferredBridge();
+    const init = useLapTraceStore
+      .getState()
+      .initialize(bridge, 1, 'Grand Prix', 'testcar', TRACK_LENGTH_M);
+    pending[0](null);
+    await init;
+    pending.length = 0;
+
+    const best = useLapTraceStore
+      .getState()
+      .setReferenceFromSource(bridge, 'best');
+    const garage61 = useLapTraceStore
+      .getState()
+      .setReferenceFromSource(bridge, 'garage61');
+
+    // The newer garage61 read resolves first, the older 'best' read last.
+    pending[1](null);
+    pending[0](storedBest(88));
+    await Promise.all([best, garage61]);
+
+    const state = useLapTraceStore.getState();
+    expect(state.referenceSource).toBe('garage61');
     expect(state.referenceLap).toBeNull();
     expect(state.referenceError).toBe(GARAGE61_NOT_IMPORTED_MESSAGE);
   });

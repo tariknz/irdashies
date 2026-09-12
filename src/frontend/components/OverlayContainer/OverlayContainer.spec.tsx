@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { OverlayContainer } from './OverlayContainer';
 
 vi.mock('../../WidgetIndex', () => ({
@@ -13,6 +13,8 @@ vi.mock('@irdashies/context', () => ({
   useResetOnDisconnect: vi.fn(),
   usePitLapStoreUpdater: vi.fn(),
   useWidgetsForThisDisplay: vi.fn(() => []),
+  rendersInOwnWindow: (widget: { id: string; type?: string }) =>
+    (widget.type || widget.id) === 'gantry',
   TopSpeedStoreUpdater: vi.fn(),
   SessionTimingStoreUpdater: vi.fn(),
   TrackTemperatureStoreUpdater: vi.fn(),
@@ -32,6 +34,7 @@ import {
   useSectorTimingSnapshot,
   useWidgetsForThisDisplay,
 } from '@irdashies/context';
+import { getWidget } from '../../WidgetIndex';
 
 const mockDashboard = (widgets: unknown[]) => {
   vi.mocked(useDashboard).mockReturnValue({
@@ -59,6 +62,23 @@ describe('OverlayContainer', () => {
     render(<OverlayContainer />);
 
     expect(useSectorTimingSnapshot).toHaveBeenCalledWith(false);
+  });
+
+  it('does not render Gantry, which has a window of its own', () => {
+    vi.mocked(getWidget).mockImplementation(
+      () => (() => <div data-testid="widget-body" />) as never
+    );
+    mockDashboard([
+      {
+        id: 'gantry',
+        enabled: true,
+        layout: { x: 0, y: 0, width: 100, height: 100 },
+      },
+    ]);
+
+    render(<OverlayContainer />);
+
+    expect(screen.queryByTestId('widget-body')).toBeNull();
   });
 
   it('subscribes when Sector Delta is enabled', () => {
