@@ -13,5 +13,6 @@ export * from './useStandingsSnapshot';
 export * from './useCarSpeedsSnapshot';
 export * from './useBlindSpotSnapshot';
 export * from './useDriverControlsSnapshot';
+export * from './useLapTraceSampleSnapshot';
 export * from './useTrackStateSnapshot';
 export * from './useSessionLifecycle';

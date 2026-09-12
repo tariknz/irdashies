@@ -87,7 +87,8 @@ export const DriverClassHeader = ({
             {(() => {
               const stats = classHeaderStyle?.manufacturerStats;
               if (!stats?.enabled) return null;
-              if (!manufacturerCounts || manufacturerCounts.length <= 1) return null;
+              if (!manufacturerCounts || manufacturerCounts.length <= 1)
+                return null;
 
               // undefined → default cap 5; null → All; number → specific cap
               const rawCap = stats.cap;
@@ -115,7 +116,10 @@ export const DriverClassHeader = ({
               return (
                 <>
                   {visible.map(({ carId, count }) => (
-                    <span key={carId} className="flex items-center gap-0.5 ml-2">
+                    <span
+                      key={carId}
+                      className="flex items-center gap-0.5 ml-2"
+                    >
                       <CarManufacturer carId={carId} />
                       <span>{count}</span>
                     </span>

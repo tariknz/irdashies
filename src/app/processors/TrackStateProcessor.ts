@@ -93,6 +93,8 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
     engineWarnings: 0,
     lapDistPct: 0,
     sessionNum: null,
+    lastLapTime: 0,
+    lapCompleted: 0,
     version: 0,
   };
 
@@ -172,6 +174,10 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
       this.set('lapDistPct', numberValue(frame, 'LapDistPct')) || changed;
     changed =
       this.set('sessionNum', numberValue(frame, 'SessionNum')) || changed;
+    changed =
+      this.set('lastLapTime', numberValue(frame, 'LapLastLapTime')) || changed;
+    changed =
+      this.set('lapCompleted', numberValue(frame, 'LapCompleted')) || changed;
     if (changed) this.latest.version += 1;
   }
 
@@ -200,6 +206,8 @@ export class TrackStateProcessor implements TelemetryProcessor<TrackStateSnapsho
     this.latest.engineWarnings = 0;
     this.latest.lapDistPct = 0;
     this.latest.sessionNum = null;
+    this.latest.lastLapTime = 0;
+    this.latest.lapCompleted = 0;
     this.latest.version += 1;
   }
 

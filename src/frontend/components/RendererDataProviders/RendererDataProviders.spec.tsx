@@ -5,7 +5,10 @@ import type { DashboardLayout } from '@irdashies/types';
 let dashboard: DashboardLayout;
 
 vi.mock('@irdashies/context', () => ({
-  useDashboard: () => ({ currentDashboard: dashboard }),
+  // No display bounds in these tests, so the real hook would return every
+  // enabled widget; the mock stands in for exactly that.
+  useWidgetsForThisDisplay: () =>
+    dashboard.widgets.filter((widget) => widget.enabled),
   SessionProvider: () => <div data-testid="session-provider" />,
   TelemetryInspectorProvider: () => (
     <div data-testid="telemetry-inspector-provider" />

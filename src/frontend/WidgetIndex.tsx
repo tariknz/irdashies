@@ -22,6 +22,7 @@ import { SectorDelta } from './components/SectorDelta/SectorDelta';
 import { DeltaSpeed } from './components/DeltaSpeed/DeltaSpeed';
 import { HeartRate } from './components/HeartRate/HeartRate';
 import { CornerNameOverlay } from './components/CornerNameOverlay';
+import { LapTrace } from './components/LapTrace';
 import { Battle } from './components/Battle/Battle';
 import { Gantry } from './components/Gantry/Gantry';
 import type { WidgetConfigMap } from '@irdashies/types';
@@ -52,6 +53,7 @@ export {
   DeltaSpeed,
   HeartRate,
   CornerNameOverlay,
+  LapTrace,
   Battle,
   Gantry,
 };
@@ -81,6 +83,7 @@ export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
   deltaspeed: DeltaSpeed,
   heartrate: HeartRate,
   cornername: CornerNameOverlay,
+  laptrace: LapTrace,
   battle: Battle,
   gantry: Gantry,
 };

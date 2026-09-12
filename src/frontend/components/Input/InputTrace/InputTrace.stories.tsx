@@ -31,14 +31,25 @@ const Traces = ({ brakeAbsActive }: { brakeAbsActive: boolean }) => {
   }, []);
   return (
     <InputTrace
-      input={{ brake, throttle, clutch, brakeAbsActive: brakeAbsActive ?? false }}
-      settings={{ includeBrake: true, includeThrottle: true, includeClutch: true }}
+      input={{
+        brake,
+        throttle,
+        clutch,
+        brakeAbsActive: brakeAbsActive ?? false,
+      }}
+      settings={{
+        includeBrake: true,
+        includeThrottle: true,
+        includeClutch: true,
+      }}
     />
   );
 };
 
 export const Primary: StoryObj<typeof Traces> = {
-  render: (args: { brakeAbsActive: boolean }) => <Traces brakeAbsActive={args.brakeAbsActive} />,
+  render: (args: { brakeAbsActive: boolean }) => (
+    <Traces brakeAbsActive={args.brakeAbsActive} />
+  ),
   args: {
     brakeAbsActive: false,
   } as { brakeAbsActive: boolean },
@@ -46,7 +57,11 @@ export const Primary: StoryObj<typeof Traces> = {
 
 export const OutsideRange: StoryObj<typeof InputTrace> = {
   render: (args) => {
-    const [input, setInput] = useState({ brake: 2, throttle: -1, brakeAbsActive: false });
+    const [input, setInput] = useState({
+      brake: 2,
+      throttle: -1,
+      brakeAbsActive: false,
+    });
     useEffect(() => {
       const interval = setInterval(() => {
         setInput(() => ({
@@ -75,7 +90,11 @@ export const OutsideRange: StoryObj<typeof InputTrace> = {
   },
 };
 
-const ConfigurableStrokeWidthComponent = ({ strokeWidth }: { strokeWidth: number }) => {
+const ConfigurableStrokeWidthComponent = ({
+  strokeWidth,
+}: {
+  strokeWidth: number;
+}) => {
   const [throttle, setThrottle] = useState(0);
   const [brake, setBrake] = useState(0);
   const [brakeAbsActive, setBrakeAbsActive] = useState(false);
@@ -90,7 +109,7 @@ const ConfigurableStrokeWidthComponent = ({ strokeWidth }: { strokeWidth: number
         Math.max(0, Math.min(1, value + Math.random() * 0.1 - 0.05))
       );
 
-      setBrakeAbsActive((value) => Math.random() > 0.7 ? !value : value);
+      setBrakeAbsActive((value) => (Math.random() > 0.7 ? !value : value));
     }, 1000 / 60);
 
     return () => clearInterval(interval);
@@ -117,7 +136,10 @@ const AbsBarStyleComponent = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setBrake((prev) => {
-        const next = Math.max(0, Math.min(1, prev + Math.random() * 0.15 - 0.05));
+        const next = Math.max(
+          0,
+          Math.min(1, prev + Math.random() * 0.15 - 0.05)
+        );
         // ABS fires when brake is above 0.5
         setBrakeAbsActive(next > 0.5 && Math.random() > 0.4);
         return next;
@@ -149,8 +171,12 @@ export const AbsBarStyle: StoryObj<typeof AbsBarStyleComponent> = {
   name: 'ABS Bar Style',
 };
 
-export const ConfigurableStrokeWidth: StoryObj<typeof ConfigurableStrokeWidthComponent> = {
-  render: (args) => <ConfigurableStrokeWidthComponent strokeWidth={args.strokeWidth} />,
+export const ConfigurableStrokeWidth: StoryObj<
+  typeof ConfigurableStrokeWidthComponent
+> = {
+  render: (args) => (
+    <ConfigurableStrokeWidthComponent strokeWidth={args.strokeWidth} />
+  ),
   args: {
     strokeWidth: 3,
   },

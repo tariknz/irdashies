@@ -32,6 +32,8 @@ test-data/unused
 # Generated files
 src/**/tracks/*.svg
 asset-data
+# Emitted by tools/; reformatting them only churns the next regeneration.
+src/**/_GENERATED_*.ts
 
 # Documentation
 docs/features/

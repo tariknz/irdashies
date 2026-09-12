@@ -24,6 +24,7 @@
     "test:replay:curated:update": "npm run test:replay:curated -- --update",
     "package": "electron-forge package",
     "make": "electron-forge make",
+    "make:zip": "electron-forge make --targets=@electron-forge/maker-zip",
     "publish:ci": "electron-forge publish",
     "publish": "npx env-cmd electron-forge publish",
     "lint": "tsc --project ./tsconfig.json --noEmit && eslint . --max-warnings 0",
@@ -37,6 +38,7 @@
     "ensure-tracks": "npx tsx ./tools/ensure-tracks.ts",
     "fetch-lovely-data": "npx tsx ./tools/fetch-lovely-data.ts",
     "fetch-lovely-track-data": "npx tsx ./tools/fetch-lovely-track-data.ts",
+    "generate-garage61-ids": "npx tsx ./tools/generate-garage61-ids.ts",
     "prepare": "husky"
   },
   "devDependencies": {

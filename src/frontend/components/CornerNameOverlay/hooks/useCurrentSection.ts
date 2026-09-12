@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
-import { useTrackStateSelector } from '@irdashies/context';
+import { useLovelyTrackData, useTrackStateSelector } from '@irdashies/context';
 import type { LovelyTrackSection, TrackStateSnapshot } from '@irdashies/types';
-import { useLovelyTrackData } from './useLovelyTrackData';
 
 interface CurrentSectionResult {
   section: LovelyTrackSection | null;

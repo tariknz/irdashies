@@ -6,6 +6,7 @@ import { DriverControlsProcessor } from './DriverControlsProcessor';
 import { FuelProjectionProcessor } from './FuelProjectionProcessor';
 import { LapLogProcessor } from './LapLogProcessor';
 import { LapTimesProcessor } from './LapTimesProcessor';
+import { LapTraceSampleProcessor } from './LapTraceSampleProcessor';
 import type {
   AnyProcessorDefinition,
   ProcessorMetrics,
@@ -136,6 +137,11 @@ export const createProcessorDefinitions = ({
     channel: 'track-state.snapshot',
     metricsPrefix: 'trackState',
     create: () => new TrackStateProcessor(),
+  }),
+  defineProcessor({
+    channel: 'lap-trace.sample',
+    metricsPrefix: 'lapTraceSample',
+    create: () => new LapTraceSampleProcessor(),
   }),
   defineProcessor({
     channel: 'lap-log.snapshot',

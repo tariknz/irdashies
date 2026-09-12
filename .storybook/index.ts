@@ -1,6 +1,7 @@
 export * from './telemetryDecorator';
 export * from './channelSnapshotDecorator';
 export * from './captureChannelDecorator';
+export * from './liveChannelBridgeDecorator';
 export * from './captureSnapshots';
 export * from './standingsSnapshot';
 export * from './trackStateSnapshot';
