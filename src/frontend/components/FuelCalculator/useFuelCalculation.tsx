@@ -603,6 +603,12 @@ export function useFuelCalculation(
           `[FuelCalculator] ${isCheckeredFlag(sessionFlags) ? 'Checkered' : 'White'} flag - final lap, remaining: ${lapsRemaining.toFixed(2)}`
         );
       }
+    } else if (isRace && hasValidRaceEstimate && calculatedTotalRaceLaps > 0) {
+      // Use the active session's race distance for both lap-limited and timed
+      // heats. Raw remaining-lap telemetry can disagree with the heat limit.
+      totalLaps = Math.ceil(calculatedTotalRaceLaps);
+      lapsRemaining = estimatedLapsRemaining;
+      lapsRemainingRefuel = lapsRemaining;
     } else if (sessionLapsRemain === TIMED_RACE_LAPS_REMAINING) {
       // Use centralized useTotalRaceLaps hook for timed race calculations
       if (hasValidRaceEstimate && calculatedTotalRaceLaps > 0) {
