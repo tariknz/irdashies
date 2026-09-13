@@ -3,6 +3,37 @@ import type { Session, Telemetry } from '@irdashies/types';
 import { SessionBarProcessor } from './SessionBarProcessor';
 
 describe('SessionBarProcessor', () => {
+  it('refreshes incidents after a clock rewind and keeps the 5 Hz cadence', () => {
+    const processor = new SessionBarProcessor();
+    processor.init({} as Session);
+    const frame = (time: number, incidents: number): Telemetry =>
+      ({
+        SessionTime: { value: [time] },
+        SessionNum: { value: [2] },
+        PlayerCarTeamIncidentCount: { value: [incidents] },
+      }) as unknown as Telemetry;
+
+    processor.onFrame(frame(600, 4));
+    expect(processor.snapshot().incidents).toBe(4);
+    const version = processor.snapshotVersion();
+    processor.onFrame(frame(600.1, 5));
+    expect(processor.snapshotVersion()).toBe(version);
+
+    processor.onFrame(frame(0, 0));
+    expect(processor.snapshot()).toMatchObject({ sessionNum: 2, incidents: 0 });
+    const restartVersion = processor.snapshotVersion();
+    expect(restartVersion).toBeGreaterThan(version);
+
+    processor.onFrame(frame(0.1, 1));
+    expect(processor.snapshot().incidents).toBe(0);
+    expect(processor.snapshotVersion()).toBe(restartVersion);
+    processor.onFrame(frame(0.2, 1));
+    expect(processor.snapshot().incidents).toBe(1);
+    expect(processor.snapshotVersion()).toBeGreaterThan(restartVersion);
+    processor.onFrame(frame(30, 2));
+    expect(processor.snapshot().incidents).toBe(2);
+  });
+
   it('returns snapshots detached from reusable processor buffers', () => {
     const processor = new SessionBarProcessor();
     processor.init({
