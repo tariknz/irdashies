@@ -13,7 +13,7 @@ vi.mock('@irdashies/context', () => ({
   useResetOnDisconnect: vi.fn(),
   usePitLapStoreUpdater: vi.fn(),
   TopSpeedStoreUpdater: vi.fn(),
-  SessionTimingStoreUpdater: vi.fn(),
+  SessionTimingUpdater: vi.fn(() => null),
   TrackTemperatureStoreUpdater: vi.fn(),
   SessionBestLapStoreUpdater: vi.fn(),
   useSectorTimingSnapshot: vi.fn(),

@@ -28,6 +28,7 @@ export * from './CarSpeedStore/TopSpeedStore';
 export * from './CarSpeedStore/TopSpeedStoreUpdater';
 export * from './SessionTimingStore/SessionTimingStore';
 export * from './SessionTimingStore/SessionTimingStoreUpdater';
+export * from './SessionTimingStore/SessionTimingUpdater';
 export * from './TrackTemperatureStore/TrackTemperatureStore';
 export * from './TrackTemperatureStore/TrackTemperatureStoreUpdater';
 export * from './SessionBestLapStore/SessionBestLapStore';

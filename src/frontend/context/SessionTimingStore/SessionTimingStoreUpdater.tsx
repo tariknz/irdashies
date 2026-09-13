@@ -27,9 +27,8 @@ export const useSessionTimingStoreUpdater = (enabled: boolean) => {
 };
 
 /**
- * Mount once (see OverlayContainer's SessionTimingUpdater) so
- * useSessionLapCount/useTotalRaceValue's leader-car loop + effect run once
- * instead of once per widget that needs them.
+ * Mount once per renderer through SessionTimingUpdater to share one channel
+ * subscription across all widgets that need session timing.
  */
 export const SessionTimingStoreUpdater = ({
   enabled,
