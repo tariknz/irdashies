@@ -35,8 +35,8 @@ export const SessionTimeItem = memo(
           // Freeze the race timers until green
           elapsedTime = 0;
           if (isFixedLapRace) {
-            remainingTime = totalRaceTime;
-            totalTime = totalRaceTime;
+            remainingTime = adjustedRaceTime;
+            totalTime = adjustedRaceTime;
           } else {
             remainingTime = timeRemaining;
             totalTime = timeTotal;
@@ -47,7 +47,7 @@ export const SessionTimeItem = memo(
           // Session timer does not restart at green
           elapsedTime = time - greenFlagTimestamp;
           if (isFixedLapRace) {
-            remainingTime = adjustedRaceTime - elapsedTime;
+            remainingTime = totalRaceTime - elapsedTime;
             totalTime = totalRaceTime;
           } else {
             remainingTime = timeTotal - elapsedTime;
@@ -58,7 +58,7 @@ export const SessionTimeItem = memo(
           elapsedTime = time - greenFlagTimestamp;
           if (isFixedLapRace) {
             remainingTime = adjustedRaceTime - elapsedTime;
-            totalTime = totalRaceTime;
+            totalTime = adjustedRaceTime;
           } else {
             remainingTime = 0;
             totalTime = timeTotal;
@@ -71,7 +71,7 @@ export const SessionTimeItem = memo(
           break;
       }
     } else {
-      elapsedTime = time;
+      elapsedTime = session === 'Offline Testing' ? time % 1200 : time;
       remainingTime = timeRemaining;
       totalTime = timeTotal;
     }
