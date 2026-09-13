@@ -223,3 +223,82 @@ describe('LapTimeLogDisplay', () => {
     expect(screen.queryByText('LAP 9')).not.toBeInTheDocument();
   });
 });
+
+describe('hiding pitted laps', () => {
+  /**
+   * A practice stint with two stops. The pit laps are far slower, which is what
+   * stretches the chart scale and pulls the average away from the green laps a
+   * driver is actually comparing.
+   */
+  const stint = [
+    { lap: 1, time: 31.6 },
+    { lap: 2, time: 31.2 },
+    { lap: 3, time: 43.2, pitted: true },
+    { lap: 4, time: 38.9, pitted: true },
+    { lap: 5, time: 31.3 },
+    { lap: 6, time: 31.2 },
+  ];
+
+  const renderHistory = (hidePittedLaps: boolean) =>
+    render(
+      <LapTimeLogDisplay
+        settings={mockSettings({
+          showCurrentLap: false,
+          showPredictedLap: false,
+          showLastLap: false,
+          showBestLap: false,
+          history: { enabled: true, count: 10, style: 'list', hidePittedLaps },
+        })}
+        history={stint}
+      />
+    );
+
+  it('shows every lap by default, so nothing changes for an existing setup', () => {
+    renderHistory(false);
+
+    expect(screen.getByText('LAP 3')).toBeInTheDocument();
+    expect(screen.getByText('LAP 4')).toBeInTheDocument();
+    expect(screen.getByText('LAP 6')).toBeInTheDocument();
+  });
+
+  it('leaves out the pit laps when the toggle is on', () => {
+    renderHistory(true);
+
+    expect(screen.queryByText('LAP 3')).not.toBeInTheDocument();
+    expect(screen.queryByText('LAP 4')).not.toBeInTheDocument();
+  });
+
+  it('keeps the green laps either side of a stop', () => {
+    renderHistory(true);
+
+    for (const lap of ['LAP 1', 'LAP 2', 'LAP 5', 'LAP 6']) {
+      expect(screen.getByText(lap)).toBeInTheDocument();
+    }
+  });
+
+  it('still fills the configured number of laps when some are hidden', () => {
+    // Filtering has to happen before the count is applied, or asking for four
+    // laps after two stops silently shows two.
+    render(
+      <LapTimeLogDisplay
+        settings={mockSettings({
+          showCurrentLap: false,
+          showPredictedLap: false,
+          showLastLap: false,
+          showBestLap: false,
+          history: {
+            enabled: true,
+            count: 4,
+            style: 'list',
+            hidePittedLaps: true,
+          },
+        })}
+        history={stint}
+      />
+    );
+
+    for (const lap of ['LAP 1', 'LAP 2', 'LAP 5', 'LAP 6']) {
+      expect(screen.getByText(lap)).toBeInTheDocument();
+    }
+  });
+});
