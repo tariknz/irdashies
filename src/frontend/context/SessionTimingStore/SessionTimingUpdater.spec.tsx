@@ -1,10 +1,14 @@
 import { render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useDashboard, SessionTimingStoreUpdater } from '@irdashies/context';
+import { useDashboard } from '../DashboardContext/DashboardContext';
+import { SessionTimingStoreUpdater } from './SessionTimingStoreUpdater';
 import { SessionTimingUpdater } from './SessionTimingUpdater';
 
-vi.mock('@irdashies/context', () => ({
+vi.mock('../DashboardContext/DashboardContext', () => ({
   useDashboard: vi.fn(),
+}));
+
+vi.mock('./SessionTimingStoreUpdater', () => ({
   SessionTimingStoreUpdater: vi.fn(() => null),
 }));
 
