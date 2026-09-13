@@ -91,15 +91,20 @@ const lapRows = (opts: {
  * a fixture of bare laps has nothing the scanner can time.
  */
 const fileRows = (
-  laps: Record<string, number>[][],
-  incidents = 0
+  laps: Record<string, number>[][]
 ): Record<string, number>[] => {
+  // The incident count is cumulative across a file, so each bracket carries
+  // the count of the lap it touches: a bracket that stepped the count would
+  // charge an incident to the lap it opens or closes.
+  const first = laps[0]?.[0]?.PlayerCarMyIncidentCount ?? 0;
+  const lastLap = laps.at(-1) ?? [];
+  const last = lastLap.at(-1)?.PlayerCarMyIncidentCount ?? 0;
   const out = lapRows({
     lap: 0,
     startTime: -60,
     lapTimeSec: 60,
     n: 150,
-    incidents,
+    incidents: first,
   }).map((row) => ({
     ...row,
     // Leaves the pits: the recording joins this lap half way round.
@@ -112,7 +117,7 @@ const fileRows = (
     startTime: 100_000,
     lapTimeSec: 40,
     n: 150,
-    incidents,
+    incidents: last,
   }).map((row) => ({
     ...row,
     LapDistPct: (row.LapDistPct as number) * 0.4,

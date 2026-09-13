@@ -67,6 +67,14 @@ export const IBT_NOT_IMPORTED_MESSAGE =
   'Import an .ibt lap in Settings to use this';
 
 /**
+ * Shown in a renderer with no lap-trace bridge behind it — the OBS/browser
+ * source. It can record and show a lap driven in that view, but the stored and
+ * imported laps live on disk behind IPC that only the desktop app has.
+ */
+export const IMPORTED_LAP_NEEDS_APP_MESSAGE =
+  'Imported laps are only shown in the desktop overlay';
+
+/**
  * Electron wraps whatever an IPC handler throws as "Error invoking remote
  * method '<channel>': <original>". The channel is an internal name that means
  * nothing to a driver and buries the sentence that does, so it is stripped
@@ -594,6 +602,14 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
         `[LapTrace] Position jump to ${(pct * 100).toFixed(1)}% — restarting the lap in progress`
       );
     } else {
+      // Whether this frame is itself a start/finish crossing. Computed before
+      // the finalisation below rather than inside the block that acts on it,
+      // because an unresolved pending lap has to be let go *before* this
+      // frame's LapLastLapTime is considered: from this crossing on, that
+      // value describes the lap which has just finished, not the one waiting.
+      const isCrossing =
+        lap.lastTrackedPct > LAP_END_PCT && pct < LAP_START_PCT;
+
       // Finalise a lap captured at the previous crossing once its official
       // LapLastLapTime has arrived. That value lags the line by a few ticks,
       // so the fresh time is the first one that differs from what was showing
@@ -601,11 +617,15 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
       // is left pending and dropped at the next crossing rather than
       // mis-timed.
       const pending = state.pendingBest;
-      // LapCompleted can lag the line by a tick, so the lap waiting here is
-      // either the number seen at the crossing or the one after it. Beyond
-      // that, a further lap has finished and LapLastLapTime has moved on to
-      // describe that one instead — this lap can no longer be timed.
-      if (pending && lapCompleted > pending.lapCompletedAtBoundary + 1) {
+      // A pending lap survives only until the next lap finishes. Its own time
+      // never arrived — if LapLastLapTime had not moved by now it is not going
+      // to — and the next value to appear belongs to the lap crossing now.
+      // Losing a lap costs the driver one recording; timing it from another
+      // lap would store the wrong trace under a time it never set.
+      if (
+        pending &&
+        (isCrossing || lapCompleted > pending.lapCompletedAtBoundary + 1)
+      ) {
         set({ pendingBest: null });
       } else if (
         pending &&
@@ -649,12 +669,12 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
         }
       }
 
-      if (lap.lastTrackedPct > LAP_END_PCT && pct < LAP_START_PCT) {
+      if (isCrossing) {
         // A clean lap just crossed the line: capture it now (its samples are
         // copied out immediately) and wait for its official LapLastLapTime.
         // The placeholder time is patched in on finalise. Any still-unresolved
-        // pending lap is dropped here — after this crossing LapLastLapTime
-        // moves to a different lap, so the old one can no longer be trusted.
+        // pending lap was already dropped above, before this frame's time was
+        // looked at.
         // The cleanliness check that compares the live incident count against
         // the lap's baseline runs below this block, so an incident registered
         // on the crossing frame itself is not in `isCleanLap` yet — and the
@@ -677,8 +697,6 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
               lapCompletedAtBoundary: lapCompleted,
             },
           });
-        } else if (state.pendingBest) {
-          set({ pendingBest: null });
         }
 
         // The crossing frame is the new lap's first sample, and the lap just
@@ -747,7 +765,21 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
   },
 
   setReferenceFromSource: async (bridge, kind) => {
-    if (!bridge) return;
+    if (!bridge) {
+      // The browser source has no way to read a stored lap. For 'best' that is
+      // survivable — a lap driven in this view is promoted in memory and drawn
+      // — but an import can never arrive, and leaving the widget on its
+      // "recording" message would suggest one is on the way.
+      if (kind !== 'best') {
+        referenceGeneration++;
+        set({
+          referenceLap: null,
+          referenceError: IMPORTED_LAP_NEEDS_APP_MESSAGE,
+          referenceSource: kind,
+        });
+      }
+      return;
+    }
 
     const generation = ++referenceGeneration;
 

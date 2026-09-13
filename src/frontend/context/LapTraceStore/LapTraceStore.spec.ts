@@ -868,12 +868,27 @@ describe('LapTraceStore best-lap promotion', () => {
     );
   });
 
-  /** Frames of one clean lap, ending just before the crossing frame. */
-  const driveToTheLine = (lapTimeSec: number, incidents = 0) => {
-    feed({ pct: 0, time: clock, incidents });
+  /**
+   * Frames of one clean lap, ending just before the crossing frame. The
+   * throttle value tags the lap, so a promoted record can be traced back to
+   * the lap that drove it.
+   */
+  const driveToTheLine = (
+    lapTimeSec: number,
+    incidents = 0,
+    throttle = 1,
+    lastLapTime = 0
+  ) => {
+    feed({ pct: 0, time: clock, incidents, throttle, lastLapTime });
     const step = lapTimeSec / (STEPS + 1);
     for (let i = 0; i < STEPS; i++) {
-      feed({ pct: 0.01 + i * 0.05, time: clock + step * (i + 1), incidents });
+      feed({
+        pct: 0.01 + i * 0.05,
+        time: clock + step * (i + 1),
+        incidents,
+        throttle,
+        lastLapTime,
+      });
     }
     clock += lapTimeSec;
   };
@@ -905,6 +920,33 @@ describe('LapTraceStore best-lap promotion', () => {
     expect(useLapTraceStore.getState().bestLapTimeSec).toBe(
       Number.POSITIVE_INFINITY
     );
+  });
+
+  it('never gives a pending lap the next lap time to arrive', async () => {
+    const bridge = makeBridge(null);
+    await initWith(bridge);
+
+    // Lap 1 finishes, and LapLastLapTime does not move: its official time is
+    // never published (it reads 90 before and after the line).
+    driveToTheLine(90, 0, 0.25, 90);
+    feed({ pct: 0.01, time: clock, lastLapTime: 90, lapCompleted: 1 });
+    feed({ pct: 0.02, time: clock + 0.1, lastLapTime: 90, lapCompleted: 1 });
+    expect(useLapTraceStore.getState().pendingBest).not.toBeNull();
+    // Past the two frames above, so lap 2's clock keeps moving forwards.
+    clock += 0.2;
+
+    // Lap 2 finishes, and its time arrives on the crossing frame. Lap 1 is
+    // still waiting, and 85 s is not lap 1's time.
+    driveToTheLine(85, 0, 0.75, 90);
+    feed({ pct: 0.01, time: clock, lastLapTime: 85, lapCompleted: 2 });
+    feed({ pct: 0.02, time: clock + 0.1, lastLapTime: 85, lapCompleted: 2 });
+
+    const state = useLapTraceStore.getState();
+    expect(state.bestLapTimeSec).toBe(85);
+    // The recorded trace must be lap 2's, the lap that actually set 85 s.
+    expect(state.referenceLap?.samples.throttle[5]).toBeCloseTo(0.75, 5);
+    // Lap 1 is gone, not waiting for a time that can no longer identify it.
+    expect(state.pendingBest).toBeNull();
   });
 
   it('drops a pending lap once a further lap has completed', async () => {

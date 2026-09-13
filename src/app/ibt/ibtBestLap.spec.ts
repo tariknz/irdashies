@@ -64,8 +64,13 @@ const feed = (scanner: IbtBestLapScanner, samples: IbtSample[]) => {
  * fragments at either end of a recording are not laps, however quick their
  * elapsed time looks.
  */
-const runFile = (laps: IbtSample[][], incidents = 0) => {
+const runFile = (laps: IbtSample[][]) => {
   const scanner = new IbtBestLapScanner();
+  const first = laps[0]?.[0]?.incidentCount ?? 0;
+  // The incident count is cumulative across the file, so each bracket carries
+  // the count of the lap it touches. A bracket that stepped the count would
+  // charge an incident to the lap it opens or closes.
+  const last = laps.at(-1)?.at(-1)?.incidentCount ?? 0;
   feed(
     scanner,
     makeLap({
@@ -74,7 +79,7 @@ const runFile = (laps: IbtSample[][], incidents = 0) => {
       lapTimeSec: 60,
       minPct: 0.5,
       onPit: true,
-      incidents,
+      incidents: first,
     })
   );
   for (const lap of laps) feed(scanner, lap);
@@ -86,7 +91,7 @@ const runFile = (laps: IbtSample[][], incidents = 0) => {
       lapTimeSec: 40,
       maxPct: 0.4,
       onPit: true,
-      incidents,
+      incidents: last,
     })
   );
   return scanner.finish();
@@ -105,11 +110,40 @@ describe('IbtBestLapScanner', () => {
   });
 
   it('keeps a lap whose incident count is non-zero but steady', () => {
-    const best = runFile(
-      [makeLap({ lap: 4, startTime: 0, lapTimeSec: 90, incidents: 6 })],
-      6
-    );
+    const best = runFile([
+      makeLap({ lap: 4, startTime: 0, lapTimeSec: 90, incidents: 6 }),
+    ]);
     expect(best?.lapNumber).toBe(4);
+  });
+
+  it('rejects a lap whose incident arrives in the sample opening the next', () => {
+    const scanner = new IbtBestLapScanner();
+    feed(
+      scanner,
+      makeLap({ lap: 0, startTime: -60, lapTimeSec: 60, minPct: 0.5 })
+    );
+    // Quickest lap in the file, clean through its own last sample.
+    feed(scanner, makeLap({ lap: 1, startTime: 0, lapTimeSec: 45 }));
+    // The incident it collected at the line is first reported here, in the
+    // sample that opens the next lap.
+    feed(
+      scanner,
+      makeLap({ lap: 2, startTime: 45, lapTimeSec: 60, incidents: 1 })
+    );
+    feed(
+      scanner,
+      makeLap({
+        lap: 3,
+        startTime: 105,
+        lapTimeSec: 40,
+        maxPct: 0.4,
+        incidents: 1,
+      })
+    );
+    const best = scanner.finish();
+
+    expect(best?.lapNumber).toBe(2);
+    expect(best?.lapTimeSec).toBeCloseTo(60, 1);
   });
 
   it('rejects a lap the recording started or stopped in the middle of', () => {

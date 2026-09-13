@@ -89,6 +89,9 @@ const publishSample = (overrides: Partial<LapTraceSampleSnapshot> = {}) => {
   } satisfies LapTraceSampleSnapshot);
 };
 
+/** Flush the promises a bootstrap runs through. */
+const settle = () => act(async () => undefined);
+
 describe('useLapTraceRecorder', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -169,6 +172,69 @@ describe('useLapTraceRecorder', () => {
       'mycar',
       5000
     );
+  });
+
+  it('re-initializes after a disconnect reset with no session change', () => {
+    setSession();
+    const initialize = vi.spyOn(useLapTraceStore.getState(), 'initialize');
+    renderHook(() => useLapTraceRecorder('best'));
+    expect(initialize).toHaveBeenCalledTimes(1);
+
+    // useResetOnDisconnect empties the store when the sim goes away, while
+    // this hook stays mounted and keeps its cached session identity.
+    act(() => {
+      useLapTraceStore.getState().reset();
+    });
+    // Reconnecting to the same session republishes identical data, so the
+    // identity matches and only the emptied store can trigger the bootstrap.
+    act(() => {
+      setSession();
+    });
+
+    expect(initialize).toHaveBeenCalledTimes(2);
+    expect(useLapTraceStore.getState().activeLap).not.toBeNull();
+  });
+
+  it('re-initializes when frames resume after a reset', async () => {
+    setSession();
+    const initialize = vi.spyOn(useLapTraceStore.getState(), 'initialize');
+    renderHook(() => useLapTraceRecorder('best'));
+    // Let the bootstrap that mounting kicked off settle, as it has long since
+    // done by the time telemetry frames are arriving.
+    await settle();
+
+    act(() => {
+      useLapTraceStore.getState().reset();
+    });
+    // Frames can come back before any session republish — a reconnect to the
+    // very same session publishes no change at all.
+    act(() => {
+      publishSample();
+    });
+
+    expect(initialize).toHaveBeenCalledTimes(2);
+    expect(useLapTraceStore.getState().activeLap).not.toBeNull();
+
+    // ...and the next frame is recorded rather than dropped.
+    act(() => {
+      publishSample({ sessionTime: 11, lapDistPct: 0.51 });
+    });
+    expect(useLapTraceStore.getState().activeLap?.samples.length).toBe(1);
+  });
+
+  it('does not re-initialize once per frame while recording', async () => {
+    setSession();
+    const initialize = vi.spyOn(useLapTraceStore.getState(), 'initialize');
+    renderHook(() => useLapTraceRecorder('best'));
+    await settle();
+
+    act(() => {
+      publishSample();
+      publishSample({ sessionTime: 11, lapDistPct: 0.51 });
+      publishSample({ sessionTime: 12, lapDistPct: 0.52 });
+    });
+
+    expect(initialize).toHaveBeenCalledTimes(1);
   });
 
   it('resolves the player car by CarIdx, not array position', () => {

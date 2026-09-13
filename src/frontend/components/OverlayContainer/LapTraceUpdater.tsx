@@ -16,11 +16,19 @@ import {
  *
  * Still scoped to the display that hosts the widget: the recorder persists
  * laps, so one per window would have every window writing the same lap.
+ *
+ * `browser` is the OBS/browser-source renderer, which has no display bounds to
+ * scope by and no lap-trace bridge behind it. The recorder runs there all the
+ * same: it is what allocates the active lap and feeds it, so without it that
+ * view draws no trace at all, however many laps are driven. Nothing is read
+ * from or written to disk in that mode — a reference appears once a clean lap
+ * has been driven in the browser view itself, and the imported sources stay
+ * out of reach (see setReferenceFromSource).
  */
 const RECORDER_OFF: LapTraceSource | null = null;
 
-export const LapTraceUpdater = () => {
-  const widgets = useWidgetsForThisDisplay();
+export const LapTraceUpdater = ({ browser = false }: { browser?: boolean }) => {
+  const widgets = useWidgetsForThisDisplay(browser);
 
   const referenceSource = useMemo<LapTraceSource | null>(() => {
     const widget = widgets.find((w) => w.id === 'laptrace');

@@ -137,6 +137,18 @@ export class IbtBestLapScanner {
       // started, which is rarely the line.
       this.current = this.newCandidate(sample.lap, false);
     } else if (started && (lapChanged || pctWrap)) {
+      // An incident collected in the last instants of a lap can first be
+      // reported in the sample that opens the next one. It belongs to the lap
+      // finishing here, so it is charged against that lap's baseline now —
+      // once the new candidate exists this count is only its own starting
+      // point, and the lap that earned it would finalize as clean.
+      if (
+        !Number.isFinite(sample.incidentCount) ||
+        (!Number.isNaN(this.current.startIncidents) &&
+          sample.incidentCount !== this.current.startIncidents)
+      ) {
+        this.current.invalid = true;
+      }
       this.finalize(this.current, true);
       this.current = this.newCandidate(sample.lap, true);
     }

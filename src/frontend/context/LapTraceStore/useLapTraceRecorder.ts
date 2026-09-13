@@ -44,14 +44,44 @@ export const useLapTraceRecorder = (referenceSource: LapTraceSource) => {
     // so capturing it here is safe and keeps the cleanup honest.
     const s = sessionRef.current;
 
+    // Guards the recovery path below only: a session change always bootstraps,
+    // but the "store looks reset" check runs at telemetry rate and must not
+    // queue a bootstrap per frame while one is already under way.
+    let bootstrapping = false;
+
     const bootstrap = async (
       trackId: number,
       trackConfigName: string,
       carPath: string,
       trackLengthM: number
     ) => {
-      await initialize(bridge, trackId, trackConfigName, carPath, trackLengthM);
-      await setReferenceFromSource(bridge, sourceRef.current);
+      bootstrapping = true;
+      try {
+        await initialize(
+          bridge,
+          trackId,
+          trackConfigName,
+          carPath,
+          trackLengthM
+        );
+        await setReferenceFromSource(bridge, sourceRef.current);
+      } finally {
+        bootstrapping = false;
+      }
+    };
+
+    /**
+     * Has the store been emptied under us?
+     *
+     * useResetOnDisconnect clears the lap-trace store when the sim goes away,
+     * but this hook's cached identity survives — so reconnecting to the same
+     * track, car and subsession matches the identity below and would skip the
+     * bootstrap, leaving the store with no active lap and the recorder
+     * silently idle until the widget remounts.
+     */
+    const storeIsIdle = () => {
+      const { trackId, activeLap } = useLapTraceStore.getState();
+      return trackId === null || activeLap === null;
     };
 
     const onSession = (state: { session: Session | null }) => {
@@ -82,7 +112,8 @@ export const useLapTraceRecorder = (referenceSource: LapTraceSource) => {
         trackConfigName === s.trackConfigName &&
         carPath === s.carPath &&
         trackLengthM === s.trackLengthM &&
-        subSessionId === s.subSessionId
+        subSessionId === s.subSessionId &&
+        !storeIsIdle()
       ) {
         return;
       }
@@ -146,6 +177,16 @@ export const useLapTraceRecorder = (referenceSource: LapTraceSource) => {
       const sample = sampleSelection.getSnapshot();
       if (!sample) return;
       if (s.trackId <= 0) return;
+
+      // Frames can resume before the session data is republished (a reconnect
+      // to the very same session publishes no change at all), so the reset is
+      // also recovered from here — otherwise every frame would be dropped by
+      // collectPlayerFrame for want of an active lap.
+      if (!bootstrapping && storeIsIdle()) {
+        logger.info('[LapTrace] Store was reset, re-initializing recorder...');
+        void bootstrap(s.trackId, s.trackConfigName, s.carPath, s.trackLengthM);
+        return;
+      }
 
       const sessionNum = sample.sessionNum ?? -1;
       if (sessionNum !== s.sessionNum) {

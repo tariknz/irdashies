@@ -46,6 +46,18 @@ describe('LapTraceUpdater', () => {
     expect(useLapTraceRecorder).not.toHaveBeenCalled();
   });
 
+  it('runs the recorder in the browser view, unscoped by display', () => {
+    // The OBS/browser source has no display bounds of its own, and nothing
+    // else there mounts the recorder — without it the widget draws no trace
+    // however many laps are driven.
+    mockWidgets([{ id: 'laptrace', enabled: true, layout, config: {} }]);
+
+    render(<LapTraceUpdater browser />);
+
+    expect(useWidgetsForThisDisplay).toHaveBeenCalledWith(true);
+    expect(useLapTraceRecorder).toHaveBeenCalledWith('best');
+  });
+
   it('runs the recorder for the configured reference source', () => {
     mockWidgets([
       {
