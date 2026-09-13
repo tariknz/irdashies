@@ -257,6 +257,7 @@ export const Relative = () => {
           license={result.driver?.license}
           rating={result.driver?.rating}
           iratingChangeValue={result.iratingChange}
+          positionChange={result.positionChange}
           delta={(settings?.delta?.enabled ?? true) ? result.delta : undefined}
           lapTimeDeltas={
             lapTimeDeltasEnabled
