@@ -715,6 +715,7 @@ export const defaultDashboard: {
           ],
         },
         showOnlyWhenOnTrack: false,
+        hideDriversInPitStall: false,
         sessionVisibility: {
           race: true,
           loneQualify: true,
