@@ -63,7 +63,10 @@ export class SessionBarProcessor implements TelemetryProcessor<SessionBarSnapsho
     }
     this.lap = currentLap;
     this.lapTop = Math.max(this.lapTop, speed);
-    if (time < this.lastTime || time - this.lastTime < 0.2 - 1e-6) return;
+    // A restart can rewind the clock without changing SessionNum. Let the
+    // current telemetry through immediately, then resume the normal cadence.
+    if (time < this.lastTime) this.lastTime = -Infinity;
+    if (time - this.lastTime < 0.2 - 1e-6) return;
     this.lastTime = time;
     const info = this.session?.SessionInfo?.Sessions?.find(
       (s) => s.SessionNum === sessionNum

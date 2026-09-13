@@ -7,7 +7,7 @@ import {
   memo,
   CSSProperties,
 } from 'react';
-import { useDashboard } from '@irdashies/context';
+import { useDashboard, SessionTimingUpdater } from '@irdashies/context';
 import { getWidget } from '../../WidgetIndex';
 import { getWidgetName } from '../../constants/widgetNames';
 import { ResizeIcon, XIcon } from '@phosphor-icons/react';
@@ -16,7 +16,6 @@ import { useDragWidget, useResizeWidget } from '../WidgetContainer';
 import { ResizeHandles } from '../WidgetContainer/ResizeHandle';
 import logger from '@irdashies/utils/logger';
 import { WidgetRuntimeProvider } from '../../widgetRuntime';
-import { SessionTimingUpdater } from '../OverlayContainer/SessionTimingUpdater';
 
 interface WidgetPosition {
   x: number;

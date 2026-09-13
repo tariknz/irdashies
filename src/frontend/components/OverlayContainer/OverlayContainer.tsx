@@ -5,6 +5,7 @@ import {
   useResetOnDisconnect,
   useWidgetsForThisDisplay,
   rendersInOwnWindow,
+  SessionTimingUpdater,
 } from '@irdashies/context';
 import type { WidgetLayout } from '@irdashies/types';
 import { WidgetContainer } from '../WidgetContainer';
@@ -14,7 +15,6 @@ import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { SectorTimingUpdater } from './SectorTimingUpdater';
 import { PushToPassUpdater } from './PushToPassUpdater';
 import { PitLapUpdater } from './PitLapUpdater';
-import { SessionTimingUpdater } from './SessionTimingUpdater';
 import { WidgetRuntimeProvider } from '../../widgetRuntime';
 
 export const OverlayContainer = memo(() => {
