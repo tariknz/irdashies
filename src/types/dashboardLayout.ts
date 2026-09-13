@@ -97,12 +97,7 @@ export interface GeneralSettingsType {
   fontType?: FontType;
   fontSize?: FontSize;
   fontWeight?:
-    | 'light'
-    | 'normal'
-    | 'medium'
-    | 'semibold'
-    | 'bold'
-    | 'extrabold';
+    'light' | 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold';
   colorPalette?:
     | 'default'
     | 'black'
@@ -135,6 +130,11 @@ export interface GeneralSettingsType {
   compactMode?: 'off' | 'compact' | 'ultra';
   overlayAlwaysOnTop?: boolean;
   enableNetworkAccess?: boolean;
+  /**
+   * Controls the built-in component/OBS web server (see app/webserver).
+   * Defaults to true when unset so existing installs keep working.
+   */
+  enableWebServer?: boolean;
   editMode?: {
     pixelDistances?: boolean;
     snapToGrid?: boolean;
