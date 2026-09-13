@@ -1560,6 +1560,7 @@ export const defaultDashboard: {
     compactMode: 'off' as const,
     overlayAlwaysOnTop: true,
     enableNetworkAccess: false,
+    enableWebServer: true,
     editMode: {
       pixelDistances: false,
       snapToGrid: false,
