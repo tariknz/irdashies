@@ -99,6 +99,7 @@ const getLastTimeState = (
   if (
     lastTime !== undefined &&
     fastestTime !== undefined &&
+    lastTime > 0 &&
     lastTime === fastestTime
   ) {
     return hasFastestTime ? 'session-fastest' : 'personal-best';
@@ -118,6 +119,8 @@ export const createDriverStandings = (
     qualifyingResults?: SessionResults[];
   },
   telemetry: {
+    carIdxLastLapTime?: (number | undefined)[];
+    carIdxBestLapTime?: (number | undefined)[];
     carIdxF2TimeValue?: number[];
     carIdxOnPitRoadValue?: boolean[];
     carIdxTrackSurfaceValue?: TrackLocation[];
@@ -200,9 +203,22 @@ export const createDriverStandings = (
       const driver = driversByCarIdx.get(result.CarIdx);
 
       if (!driver) return null;
+
       const classLeaderFastestTime = classFastestTimeMap.get(driver.CarClassID);
       const classFastestCarIdx = classFastestCarIdxMap.get(driver.CarClassID);
       const isClassFastest = result.CarIdx === classFastestCarIdx;
+
+      // Ensure we always produce numeric fastest/last times (fallback to -1)
+      const bestLapTime = (telemetry?.carIdxBestLapTime?.[result.CarIdx] ?? 0);
+      const computedBestTime = bestLapTime > 1
+          ? bestLapTime
+          : result.FastestTime ?? -1;
+
+      const lastLapTime = (telemetry?.carIdxLastLapTime?.[result.CarIdx] ?? 0);
+      const computedLastTime = lastLapTime > 1
+          ? lastLapTime
+          : result.LastTime ?? -1;
+
       return {
         carIdx: result.CarIdx,
         position: result.Position,
@@ -225,11 +241,11 @@ export const createDriverStandings = (
           flairId: driver.FlairID,
           teamName: driver.TeamName,
         },
-        fastestTime: result.FastestTime,
+        fastestTime: computedBestTime,
         hasFastestTime: isClassFastest,
-        lastTime: result.LastTime,
+        lastTime: computedLastTime,
         lastTimeState: getLastTimeState(
-          result.LastTime,
+          computedLastTime,
           result.FastestTime,
           isClassFastest
         ),
@@ -251,12 +267,12 @@ export const createDriverStandings = (
           result.CarIdx === session.playerIdx
             ? undefined // Don't show deltas for player (comparing to themselves)
             : lapDeltasVsPlayer &&
-                lapDeltasVsPlayer[result.CarIdx] &&
-                lapDeltasVsPlayer[result.CarIdx].length > 0
-              ? lapDeltasVsPlayer[result.CarIdx].slice(
-                  -(numLapsToShow ?? lapDeltasVsPlayer[result.CarIdx].length)
+              lapDeltasVsPlayer[result.CarIdx] &&
+              lapDeltasVsPlayer[result.CarIdx].length > 0
+            ? lapDeltasVsPlayer[result.CarIdx].slice(
+                -(numLapsToShow ?? lapDeltasVsPlayer[result.CarIdx].length)
                 ) // Use most recent laps
-              : undefined,
+            : undefined,
         lastPitLap: lastPitLap[result.CarIdx] ?? undefined,
         lastLap: lastLap[result.CarIdx] ?? undefined,
         prevCarTrackSurface: prevCarTrackSurface[result.CarIdx] ?? undefined,
@@ -282,7 +298,7 @@ export const createDriverStandings = (
         relativePct: 0,
       };
     })
-    .filter((s) => !!s);
+    .filter((s) => s !== null) as Standings[];
 
   // In practice/warmup sessions, drivers only appear in resultsPositions once
   // they complete a lap. Drivers yet to set a time won't be in results at all.
@@ -605,8 +621,8 @@ export const augmentStandingsWithGap = (
         }
 
         const classLeaderTrackPctForLaps = carIdxLapDistPct[classLeader.carIdx];
-        const driverLapNumber = carIdxLap[driverStanding.carIdx];
-        const classLeaderLapNumber = carIdxLap[classLeader.carIdx];
+        const driverLapNumber = !carIdxLap[driverStanding.carIdx] ? 1 : carIdxLap[driverStanding.carIdx];
+        const classLeaderLapNumber = !carIdxLap[classLeader.carIdx] ? 1 : carIdxLap[classLeader.carIdx];
 
         const gap = {
           value: gapValue ? Math.abs(gapValue) : undefined,
