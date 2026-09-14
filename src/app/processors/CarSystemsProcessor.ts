@@ -38,6 +38,12 @@ const boolean = (frame: Telemetry, key: keyof Telemetry): boolean =>
  * the BMW M Hybrid V8 reports ABS between -5 and -3. A negative value anywhere
  * in a session proves the scale has a negative side, on which 0 is an ordinary
  * setting rather than off. That is tracked per variable.
+ *
+ * Observation alone is not enough for a scale centred on zero, though: the
+ * neutral setting would read as off until the driver first crossed into
+ * negative, and a session spent entirely in the middle of the range would never
+ * correct itself. Those carry `signed: true` in the catalogue and are trusted
+ * from the first frame.
  */
 export class CarSystemsProcessor implements TelemetryProcessor<CarSystemsSnapshot> {
   readonly channel = 'car-systems.snapshot';
@@ -128,11 +134,15 @@ export class CarSystemsProcessor implements TelemetryProcessor<CarSystemsSnapsho
         continue;
       }
       if (value < 0) this.signedKeys.add(definition.key);
+      // A declared signed scale is trusted from the first frame; observing a
+      // negative is the fallback for the ones not known in advance.
+      const isSigned =
+        definition.signed === true || this.signedKeys.has(definition.key);
       next.push({
         key: definition.key,
         label: definition.label,
         value,
-        isOff: value === 0 && !this.signedKeys.has(definition.key),
+        isOff: value === 0 && !isSigned,
         precision: definition.precision,
         unit: definition.unit,
       });

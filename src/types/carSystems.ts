@@ -25,6 +25,18 @@ export interface CarSystemDefinition {
   /** Appended on display. */
   unit?: string;
   /**
+   * Set where the scale is known to run negative, so 0 is an ordinary setting
+   * rather than "off".
+   *
+   * The processor also works this out at runtime by watching for a negative
+   * value, which is enough for a variable that spends most of its time away
+   * from zero. It is not enough for one centred on zero: the neutral setting
+   * would be reported as off until the driver happened to cross into negative,
+   * and a session that never leaves the middle of the range would never
+   * correct itself.
+   */
+  signed?: boolean;
+  /**
    * Tailwind background class for the column header chip, in the Pitlane
    * Helper's idiom: a solid colour behind small bold caps.
    *
@@ -158,18 +170,23 @@ export const CAR_SYSTEM_ADJUSTMENTS: readonly CarSystemDefinition[] = [
     precision: 1,
     chip: 'bg-emerald-600',
   },
-  {
-    key: 'dcWeightJackerLeft',
-    label: 'Jacker L',
-    short: 'JKL',
-    precision: 0,
-    chip: 'bg-stone-600',
-  },
+  // There is no left weight jacker. The device raises and lowers the right rear
+  // ride height, so iRacing publishes dcWeightJackerRight alone — confirmed by
+  // L061N on #723 and borne out by the recorded sessions, where the key appears
+  // on the IR18 and dcWeightJackerLeft appears on nothing. A row for it could
+  // only ever sit blank, so it is not offered.
   {
     key: 'dcWeightJackerRight',
-    label: 'Jacker R',
-    short: 'JKR',
+    label: 'Weight Jacker',
+    short: 'JACK',
     precision: 0,
+    // Runs roughly -20..20, and 0 is the middle of that range rather than the
+    // bottom of it. Declared rather than inferred: the processor otherwise
+    // learns a scale is signed only once it sees a negative, so a jacker sat at
+    // its neutral setting would read as switched off until the driver first
+    // wound it the other way — and on a road course, where the setup locks it
+    // to 0 for the whole session, it never would.
+    signed: true,
     chip: 'bg-stone-700',
   },
 ];

@@ -130,6 +130,76 @@ describe('CarSystemsProcessor', () => {
       expect(byKey(processor, 'dcMGUKRegenGain')?.isOff).toBe(true);
     });
 
+    /**
+     * Raised by L061N on #723: both of these appear on the IR18 and neither was
+     * covered. dcFuelMixture is confirmed present in the recorded Monza stint;
+     * the jacker is there too, sat at 0 all session because a road course setup
+     * locks it.
+     */
+    it('reports the fuel mixture and weight jacker an IR18 exposes', () => {
+      processor.onFrame(
+        frame({ dcBrakeBias: 46.814, dcFuelMixture: 1, dcWeightJackerRight: 0 })
+      );
+
+      expect(processor.snapshot().adjustments.map((a) => a.label)).toEqual([
+        'Brake Bias',
+        'Fuel Mixture',
+        'Weight Jacker',
+      ]);
+    });
+
+    /**
+     * There is no left weight jacker on any car — the device works the right
+     * rear only — so it is not in the catalogue and a frame carrying one is not
+     * something iRacing produces. Pinned so it cannot creep back in.
+     */
+    it('offers no left weight jacker row', () => {
+      processor.onFrame(
+        frame({ dcWeightJackerLeft: 5, dcWeightJackerRight: 3 })
+      );
+
+      expect(processor.snapshot().adjustments.map((a) => a.key)).toEqual([
+        'dcWeightJackerRight',
+      ]);
+    });
+  });
+
+  /**
+   * A scale centred on zero cannot be judged by watching for a negative: the
+   * neutral setting is the one the driver sits on, and a road course locks the
+   * jacker to 0 for a whole session. Declaring it signed is what stops the
+   * middle of the range being reported as "off".
+   */
+  describe('a scale declared signed', () => {
+    it('treats a weight jacker at its neutral setting as a real value', () => {
+      processor.onFrame(frame({ dcWeightJackerRight: 0 }));
+
+      expect(byKey(processor, 'dcWeightJackerRight')?.isOff).toBe(false);
+    });
+
+    it('does not wait to observe a negative first', () => {
+      processor.onFrame(frame({ dcWeightJackerRight: 4 }));
+      processor.onFrame(frame({ dcWeightJackerRight: 0 }));
+
+      expect(byKey(processor, 'dcWeightJackerRight')?.isOff).toBe(false);
+    });
+
+    it('still reports the value either side of zero', () => {
+      processor.onFrame(frame({ dcWeightJackerRight: -12 }));
+      expect(byKey(processor, 'dcWeightJackerRight')?.value).toBe(-12);
+
+      processor.onFrame(frame({ dcWeightJackerRight: 15 }));
+      expect(byKey(processor, 'dcWeightJackerRight')?.value).toBe(15);
+    });
+
+    it('leaves an undeclared scale to be judged by observation', () => {
+      processor.onFrame(frame({ dcFuelMixture: 0 }));
+
+      expect(byKey(processor, 'dcFuelMixture')?.isOff).toBe(true);
+    });
+  });
+
+  describe('discovery, continued', () => {
     it('takes the Clio brake bias variable when that is the one published', () => {
       processor.onFrame(frame({ dcPeakBrakeBias: 61 }));
 
