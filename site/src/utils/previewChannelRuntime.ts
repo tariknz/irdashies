@@ -77,8 +77,8 @@ export function createPreviewChannelRuntime(
     isDestroyed: () => disposed,
     // Always active. Gating this on `document.visibilityState` looks like a
     // free CPU saving but is a trap: a subscription created while the document
-    // reports hidden never fires `notifySubscriberCount`, so ProcessorHost
-    // never activates the processor and the preview stays permanently empty.
+    // reports hidden counts as no visible demand, so ProcessorHost never
+    // activates the processor and the preview stays permanently empty.
     // A document can report hidden while still painting (occluded tab,
     // automation, some embeds). The saving is redundant anyway — browsers
     // already throttle timers and pause rAF for genuinely backgrounded tabs.

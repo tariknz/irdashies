@@ -62,6 +62,7 @@ export const createSubscriptionBridgeClient = <K extends string>(
 export const defineRendererSubscriptionBridge = <K extends string>(options: {
   name: string;
   isValidKey: (value: unknown) => value is K;
+  onSubscribe?: (sender: Electron.WebContents, key: K) => void;
 }) => {
   const channels = subscriptionChannels(options.name);
   const registry = new RendererSubscriptionRegistry<K>();
@@ -84,6 +85,7 @@ export const defineRendererSubscriptionBridge = <K extends string>(options: {
       event.sender.once('did-start-loading', cleanup);
     }
     registry.subscribe(rendererId, key);
+    options.onSubscribe?.(event.sender, key);
   });
 
   ipcMain.handle(channels.unsubscribe, (event, key: unknown) => {

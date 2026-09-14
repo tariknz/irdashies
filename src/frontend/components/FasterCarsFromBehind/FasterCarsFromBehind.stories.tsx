@@ -71,6 +71,7 @@ export const Display: Story = {
     distance: -1.0,
     percent: 50,
     classColor: 0xffda59,
+    isMultiClass: true,
   },
   decorators: [TelemetryDecorator('/test-data/1747384033336')],
 };
@@ -84,6 +85,7 @@ export const MultipleDrivers: Story = {
         rating={1420}
         distance={-1.0}
         percent={80}
+        isMultiClass
         classColor={0xffda59} // Yellow/GT3
       />
       <FasterCarsFromBehindDisplay
@@ -92,6 +94,7 @@ export const MultipleDrivers: Story = {
         rating={1250}
         distance={-2.5}
         percent={60}
+        isMultiClass
         classColor={0x33ceff} // Blue/GT4
       />
       <FasterCarsFromBehindDisplay
@@ -100,9 +103,19 @@ export const MultipleDrivers: Story = {
         rating={980}
         distance={-4.2}
         percent={40}
+        isMultiClass
         classColor={0xff5888} // Pink/LMP
       />
     </div>
   ),
   decorators: [TelemetryDecorator('/test-data/1747384033336')],
+};
+
+export const SingleClass: Story = {
+  ...Display,
+  args: {
+    ...Display.args,
+    classColor: 0xffffff,
+    isMultiClass: false,
+  },
 };

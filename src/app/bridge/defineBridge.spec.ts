@@ -32,11 +32,16 @@ describe('defineRendererSubscriptionBridge', () => {
     removeHandler.mockClear();
   });
 
-  const setup = () =>
-    defineRendererSubscriptionBridge<'telemetry' | 'sessionData'>({
+  type Key = 'telemetry' | 'sessionData';
+
+  const setup = (
+    onSubscribe?: (sender: Electron.WebContents, key: Key) => void
+  ) =>
+    defineRendererSubscriptionBridge<Key>({
       name: 'legacy-test',
-      isValidKey: (value): value is 'telemetry' | 'sessionData' =>
+      isValidKey: (value): value is Key =>
         value === 'telemetry' || value === 'sessionData',
+      onSubscribe,
     });
 
   it('validates keys and tracks subscriptions by sender identity', () => {
@@ -51,6 +56,24 @@ describe('defineRendererSubscriptionBridge', () => {
 
     expect(bridge.registry.has(7, 'telemetry')).toBe(true);
     expect(bridge.registry.hasAny('telemetry')).toBe(true);
+  });
+
+  it('calls onSubscribe with the sender and key once registered', () => {
+    const onSubscribe = vi.fn((sender: Electron.WebContents, key: Key) =>
+      bridge.registry.has(sender.id, key)
+    );
+    const bridge = setup(onSubscribe);
+    const sender = new FakeSender(13);
+    const subscribe = handlers.get('legacy-test:subscribe');
+
+    expect(() => subscribe?.({ sender }, 'invalid')).toThrow();
+    expect(onSubscribe).not.toHaveBeenCalled();
+
+    subscribe?.({ sender }, 'sessionData');
+
+    expect(onSubscribe).toHaveBeenCalledWith(sender, 'sessionData');
+    // True means the registry already held the subscription when called.
+    expect(onSubscribe).toHaveReturnedWith(true);
   });
 
   it.each(['did-start-loading', 'destroyed'])(

@@ -1,9 +1,10 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
+import { useQualifyingGrid } from '@irdashies/domain/standings/useQualifyingGrid';
 import {
   classReferenceLap,
   gapToClassLeader,
-  positionByLap,
+  positionsByLap,
   raceTrace,
   readCrossings,
   traceAnchor,
@@ -23,11 +24,19 @@ import {
 } from '../../../shared/DriverName/DriverName';
 import { LapGraphCanvas } from './LapGraphCanvas';
 import type { LapGraphSeries } from './LapGraphCanvas';
-import { LapGraphDriverList } from './LapGraphDriverList';
-import type { DriverListEntry } from './LapGraphDriverList';
+import { LapGraphDriverList } from './components/LapGraphDriverList/LapGraphDriverList';
+import type { DriverListEntry } from './components/LapGraphDriverList/LapGraphDriverList';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { useGantrySettings } from '../../hooks/useGantrySettings';
 import { autoPinCarIdxs } from './lapGraphAutoPin';
+import { identityForGridSlot } from './lapGraphPalette';
+
+/**
+ * Fallback grid slot for a carIdx `useQualifyingGrid` somehow has no entry
+ * for. Unreachable in practice: the map is built from this exact class's
+ * carIdx list, which always covers every member below.
+ */
+const FALLBACK_GRID_SLOT = 1;
 
 interface Props {
   /** Driver picked in the tab bar's Follow control, if any. */
@@ -200,15 +209,10 @@ export const LapGraphView = memo(
       return best;
     }, [activeClass]);
 
-    const classColor = useMemo(
-      () =>
-        getTailwindStyle(
-          activeClass?.color ?? 0x94a3b8,
-          undefined,
-          isMultiClass
-        ).canvasFill,
-      [activeClass, isMultiClass]
-    );
+    // Numeric class colour for LapGraphDriverList's car-number chip. The
+    // list resolves it through getTailwindStyle itself, the same shared
+    // helper the canvas class-selector buttons below use.
+    const classColorValue = activeClass?.color ?? 0x94a3b8;
 
     // Player, class leader, and the cars either side of the player. Reduced to a
     // string first so a position reshuffle that does not change the set never
@@ -260,6 +264,14 @@ export const LapGraphView = memo(
       [membersKey]
     );
 
+    // carIdx never changes for a driver mid-race, so this only moves when the
+    // class roster itself changes, not on every standings tick.
+    const classCarIdxs = useMemo(
+      () => members.map((member) => member.carIdx),
+      [members]
+    );
+    const qualifyingGrid = useQualifyingGrid(classCarIdxs);
+
     // Hold the snapshot at an identity that only moves when `version` moves. A
     // resend, or resubscribing after a tab switch, delivers an equal snapshot as
     // a fresh object, which would otherwise rebuild 60 series for nothing.
@@ -286,17 +298,28 @@ export const LapGraphView = memo(
         ? traceAnchor(leaderCrossings, reference.seconds)
         : undefined;
 
-      const series: LapGraphSeries[] = [];
+      // Read every car once: position mode ranks the whole class against
+      // itself, so it needs the field before it can place any single car.
+      const crossingsByCar = new Map<number, LapCrossing[]>();
       for (const member of members) {
-        const crossings: LapCrossing[] =
+        const crossings =
           member.carIdx === leaderCarIdx
             ? leaderCrossings
             : readCrossings(history, member.carIdx);
-        if (crossings.length === 0) continue;
+        if (crossings.length > 0) crossingsByCar.set(member.carIdx, crossings);
+      }
+
+      const positionPoints =
+        mode === 'position' ? positionsByLap(crossingsByCar) : undefined;
+
+      const series: LapGraphSeries[] = [];
+      for (const member of members) {
+        const crossings = crossingsByCar.get(member.carIdx);
+        if (!crossings) continue;
 
         let points: LapPoint[];
         if (mode === 'position') {
-          points = positionByLap(crossings);
+          points = positionPoints?.get(member.carIdx) ?? [];
         } else if (mode === 'gap') {
           points = gapToClassLeader(crossings, leaderCrossings);
         } else if (reference && anchor) {
@@ -311,18 +334,22 @@ export const LapGraphView = memo(
         }
         if (points.length === 0) continue;
 
+        const identity = identityForGridSlot(
+          qualifyingGrid.get(member.carIdx) ?? FALLBACK_GRID_SLOT
+        );
         series.push({
           carIdx: member.carIdx,
           carNumber: member.carNumber,
           displayName: member.displayName,
           isPlayer: member.isPlayer,
-          color: classColor,
+          color: identity.color,
+          dash: identity.dash,
           points,
         });
       }
 
       return { series, reference };
-    }, [history, mode, members, leaderCarIdx, classColor]);
+    }, [history, mode, members, leaderCarIdx, qualifyingGrid]);
 
     const axisCaption = useMemo(
       () => axisCaptionFor(mode, built.reference),
@@ -354,6 +381,7 @@ export const LapGraphView = memo(
           isPlayer: member.isPlayer,
           position: positions.get(member.carIdx),
           hasLine: drawn.has(member.carIdx),
+          gridSlot: qualifyingGrid.get(member.carIdx) ?? FALLBACK_GRID_SLOT,
         }))
         .sort(
           (a, b) =>
@@ -362,7 +390,7 @@ export const LapGraphView = memo(
         );
       // Deliberately keyed on the positions signature, not the list identity.
       // eslint-disable-next-line @eslint-react/exhaustive-deps
-    }, [members, built.series, positionsKey]);
+    }, [members, built.series, positionsKey, qualifyingGrid]);
 
     const emptyMessage = useMemo(() => {
       if (sessionType && sessionType !== 'Race') {
@@ -483,7 +511,8 @@ export const LapGraphView = memo(
           </div>
           <LapGraphDriverList
             drivers={roster}
-            classColor={classColor}
+            classColorValue={classColorValue}
+            isMultiClass={isMultiClass}
             shownCarIdxs={pinnedCarIdxs}
             focusedCarIdx={focusedCarIdx}
             onToggle={togglePin}

@@ -5,7 +5,7 @@ import type {
   SessionLifecycleEvent,
   Telemetry,
 } from '@irdashies/types';
-import { ChannelBus } from '../bridge/channelBridge';
+import { CHANNEL_DELIVERY, ChannelBus } from '../bridge/channelBridge';
 import { createSessionLifecycle } from '../sessionLifecycle';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 import {
@@ -416,5 +416,120 @@ describe('ProcessorHost', () => {
 
     expect(processor.onFrame).toHaveBeenCalledOnce();
     expect(logError).toHaveBeenCalledOnce();
+  });
+
+  it('keeps a processWhileHidden processor fed while its only subscriber is hidden', () => {
+    const bus = new ChannelBus();
+    let visible = true;
+    const renderer = target(16, () => visible);
+    bus.subscribe(renderer, 'lap-times.snapshot');
+    bus.subscribe(renderer, 'track-state.snapshot');
+    const lapTimes = fakeProcessor('lap-times.snapshot', 'event');
+    const trackState = fakeProcessor('track-state.snapshot', 25);
+    const createLapTimes = vi.fn(() => lapTimes);
+    const host = new ProcessorHost({
+      bus,
+      metrics: metrics(),
+      definitions: [
+        {
+          ...definition('lap-times.snapshot', createLapTimes),
+          processWhileHidden: true,
+        },
+        definition('track-state.snapshot', () => trackState),
+      ],
+    });
+    host.onFrame({} as Telemetry);
+
+    visible = false;
+    bus.rendererBecameHidden(renderer.id);
+    host.onFrame({} as Telemetry);
+
+    expect(lapTimes.onFrame).toHaveBeenCalledTimes(2);
+    expect(createLapTimes).toHaveBeenCalledOnce();
+    expect(host.snapshot('lap-times.snapshot')).toBeDefined();
+    // The unflagged processor still follows visible demand.
+    expect(trackState.onFrame).toHaveBeenCalledOnce();
+    expect(host.snapshot('track-state.snapshot')).toBeUndefined();
+  });
+
+  it('seeds a shown window from a processWhileHidden processor without a new frame', () => {
+    vi.useFakeTimers();
+    const bus = new ChannelBus();
+    let visible = true;
+    const renderer = target(17, () => visible);
+    bus.subscribe(renderer, 'lap-times.snapshot');
+    const processor = fakeProcessor('lap-times.snapshot', 'event', (state) => {
+      state.version += 1;
+    });
+    const host = new ProcessorHost({
+      bus,
+      metrics: metrics(),
+      definitions: [
+        {
+          ...definition('lap-times.snapshot', () => processor),
+          processWhileHidden: true,
+        },
+      ],
+    });
+    host.onFrame({} as Telemetry);
+
+    visible = false;
+    bus.rendererBecameHidden(renderer.id);
+    host.onFrame({} as Telemetry);
+    host.onFrame({} as Telemetry);
+    host.onFrame({} as Telemetry);
+    vi.runAllTimers();
+    const deliveriesBeforeShow = renderer.send.mock.calls.length;
+
+    visible = true;
+    bus.rendererBecameVisible(renderer.id);
+
+    expect(processor.onFrame).toHaveBeenCalledTimes(4);
+    expect(renderer.send).toHaveBeenCalledTimes(deliveriesBeforeShow + 1);
+    expect(renderer.send).toHaveBeenLastCalledWith(
+      CHANNEL_DELIVERY,
+      'lap-times.snapshot',
+      { version: 4 }
+    );
+    vi.runAllTimers();
+    expect(renderer.send).toHaveBeenCalledTimes(deliveriesBeforeShow + 1);
+  });
+
+  it('deactivates a processWhileHidden processor when its last registered subscriber leaves', () => {
+    const bus = new ChannelBus();
+    const first = target(18, () => false);
+    const second = target(19, () => false);
+    const processors: FakeProcessor<'lap-times.snapshot'>[] = [];
+    const host = new ProcessorHost({
+      bus,
+      metrics: metrics(),
+      definitions: [
+        {
+          ...definition('lap-times.snapshot', () => {
+            const processor = fakeProcessor('lap-times.snapshot', 'event');
+            processors.push(processor);
+            return processor;
+          }),
+          processWhileHidden: true,
+        },
+      ],
+    });
+    expect(processors).toHaveLength(0);
+
+    // Both windows are hidden from the start, like a Gantry created with
+    // `show: false`. Registered demand alone activates the processor.
+    bus.subscribe(first, 'lap-times.snapshot');
+    bus.subscribe(second, 'lap-times.snapshot');
+    host.onFrame({} as Telemetry);
+    expect(processors).toHaveLength(1);
+    expect(processors[0].onFrame).toHaveBeenCalledOnce();
+
+    bus.removeRenderer(first.id);
+    expect(host.snapshot('lap-times.snapshot')).toBeDefined();
+
+    bus.unsubscribe(second.id, 'lap-times.snapshot');
+    expect(host.snapshot('lap-times.snapshot')).toBeUndefined();
+    expect(first.send).not.toHaveBeenCalled();
+    expect(second.send).not.toHaveBeenCalled();
   });
 });

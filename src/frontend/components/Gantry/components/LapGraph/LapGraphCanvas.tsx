@@ -45,6 +45,7 @@ import {
   type PreparedSeries,
 } from './useLapGraphSeries';
 import { anchorInsideBounds } from '../Tooltip/tooltipPosition';
+import { scaleDash } from './lapGraphPalette';
 
 export type {
   LapGraphMode,
@@ -106,14 +107,34 @@ const prepareCanvas = (
   if (!ctx) return null;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, width, height);
+  // The context is reused between draws, and neither setTransform nor
+  // clearRect resets these. Without the reset a dash or cap set by the last
+  // draw leaks into the next one.
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.setLineDash([]);
   return { ctx, width, height };
 };
 
+interface StrokeOverride {
+  color: string;
+  width: number;
+  alpha: number;
+  /** Unscaled identity dash pattern. `[]` forces solid, e.g. the brush strip. */
+  dash: readonly number[];
+}
+
+/**
+ * Canvas dash state persists on the context between `stroke()` calls, so
+ * every stroke — base series, hover overlay restroke, brush override — sets
+ * its own dash immediately before drawing. None may rely on what the
+ * previous stroke left behind.
+ */
 const strokeSeries = (
   target: CanvasTarget,
   prepared: PreparedSeries,
   geometry: LapGraphGeometry,
-  override?: { color: string; width: number; alpha: number }
+  override?: StrokeOverride
 ) => {
   const points = prepared.points;
   if (points.length === 0) return;
@@ -122,6 +143,7 @@ const strokeSeries = (
   ctx.globalAlpha = style.alpha;
   ctx.strokeStyle = style.color;
   ctx.lineWidth = style.width;
+  ctx.setLineDash(scaleDash(style.dash, style.width));
   ctx.beginPath();
   for (let i = 0; i < points.length; i++) {
     const x = lapToX(points[i].lap, geometry.window, width);
@@ -141,11 +163,8 @@ const strokeSeries = (
 const drawAllSeries = (
   target: CanvasTarget,
   geometry: LapGraphGeometry,
-  override?: { color: string; width: number; alpha: number }
+  override?: StrokeOverride
 ) => {
-  const { ctx } = target;
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
   for (const prepared of geometry.ordered) {
     strokeSeries(target, prepared, geometry, override);
   }
@@ -338,6 +357,9 @@ export const LapGraphCanvas = memo(
         color: accentRef.current,
         width: 1,
         alpha: BRUSH_ALPHA,
+        // Always solid: at 1px in a ~40px overview, a dash pattern across
+        // dozens of overlapping laps is noise, not identity.
+        dash: [],
       });
     }, [brushGeometry, brushSize.width, brushSize.height]);
 
@@ -401,6 +423,7 @@ export const LapGraphCanvas = memo(
       ctx.globalAlpha = 0.5;
       ctx.strokeStyle = accentRef.current;
       ctx.lineWidth = 1;
+      ctx.setLineDash([]);
       ctx.beginPath();
       ctx.moveTo(crosshairX, 0);
       ctx.lineTo(crosshairX, size.height);
@@ -416,6 +439,8 @@ export const LapGraphCanvas = memo(
         color: brightenColor(hovered.source.color),
         width: 3,
         alpha: 1,
+        // Focus keeps the driver's own pattern — only colour and width change.
+        dash: hovered.source.dash,
       });
 
       const markerY = valueToY(

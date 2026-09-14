@@ -97,16 +97,61 @@ export const gapToClassLeader = (
   return points;
 };
 
-/** In-class position at each recorded lap. */
-export const positionByLap = (
-  crossings: readonly LapCrossing[]
-): LapPoint[] => {
-  const points: LapPoint[] = [];
+/**
+ * Position at the end of each lap for a whole field, derived from the order
+ * cars crossed the line rather than from `classPosition`.
+ *
+ * `CarIdxClassPosition` cannot be trusted: iRacing leaves it at 0 for most
+ * crossings — 81% of them in a measured 20-lap race, and every crossing after
+ * lap 6 — which truncated the chart at the last lap it happened to populate.
+ * `lap` and `sessionTime` are always recorded, so rank on those instead.
+ *
+ * Ranking by crossing time is exact, lapped cars included: if another car
+ * completed the same lap earlier it is ahead, whether it is on this lap or
+ * several ahead. Cars that never completed a lap simply have no point for it.
+ *
+ * Pass one class's crossings to get class position; pass the field to get
+ * overall position.
+ */
+export const positionsByLap = (
+  crossingsByCar: ReadonlyMap<number, readonly LapCrossing[]>
+): Map<number, LapPoint[]> => {
+  // lap -> [carIdx, earliest sessionTime on that lap]
+  const byLap = new Map<number, { carIdx: number; sessionTime: number }[]>();
 
-  for (const crossing of crossings) {
-    // The processor records 0 when the position was unknown at the crossing.
-    if (crossing.classPosition <= 0) continue;
-    points.push({ lap: crossing.lap, value: crossing.classPosition });
+  for (const [carIdx, crossings] of crossingsByCar) {
+    const earliest = new Map<number, number>();
+    for (const crossing of crossings) {
+      if (!(crossing.sessionTime > 0)) continue;
+      const seen = earliest.get(crossing.lap);
+      // A lap can be recorded twice (a tow or reset re-baselines the car).
+      // The first crossing is the one that decides track order.
+      if (seen === undefined || crossing.sessionTime < seen) {
+        earliest.set(crossing.lap, crossing.sessionTime);
+      }
+    }
+    for (const [lap, sessionTime] of earliest) {
+      const entries = byLap.get(lap);
+      if (entries) entries.push({ carIdx, sessionTime });
+      else byLap.set(lap, [{ carIdx, sessionTime }]);
+    }
+  }
+
+  const points = new Map<number, LapPoint[]>();
+  for (const [lap, entries] of byLap) {
+    entries.sort((a, b) => a.sessionTime - b.sessionTime);
+    entries.forEach((entry, index) => {
+      const existing = points.get(entry.carIdx);
+      const point = { lap, value: index + 1 };
+      if (existing) existing.push(point);
+      else points.set(entry.carIdx, [point]);
+    });
+  }
+
+  // The map is filled lap-group by lap-group, so each car's points arrive out
+  // of order. Everything downstream assumes lap-ordered points.
+  for (const carPoints of points.values()) {
+    carPoints.sort((a, b) => a.lap - b.lap);
   }
 
   return points;

@@ -27,9 +27,18 @@ import { setupKeybindingsBridge } from './app/bridge/keybindingsBridge';
 import { setupLogBridge } from './app/bridge/logBridge';
 import { setupPersonalBestLapTimesBridge } from './app/bridge/personalBestLapTimesBridge';
 import {
+  getGarage61SearchInfoFromSession,
+  setupLapTraceBridge,
+} from './app/bridge/lapTraceBridge';
+import {
   validateReferenceLapFile,
   flushReferenceLapsOnShutdown,
 } from './app/storage/referenceLaps';
+import { flushLapTracesOnShutdown } from './app/storage/lapTraces';
+import {
+  flushGarage61SearchSessionOnShutdown,
+  saveGarage61SearchSession,
+} from './app/storage/garage61SearchSession';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
 import {
@@ -53,7 +62,7 @@ import {
   saveLapHistory,
 } from './app/storage/lapHistoryStorage';
 import { onDashboardUpdated } from './app/storage/dashboardEvents';
-import type { DashboardLayout } from '@irdashies/types';
+import type { DashboardLayout, Session } from '@irdashies/types';
 import { getActivePerfMetrics } from './app/perfMetrics';
 import {
   activePerfWidgetTypes,
@@ -85,7 +94,22 @@ const safeErrorDetails = (error: unknown) => {
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
 
-updateElectronApp();
+// Only the official build auto-updates.
+//
+// Side-by-side betas are built with a different app identity (name and
+// productName become irdashies-beta) so they install alongside the real app.
+// The update feed only ever publishes the official app, so a beta that checks
+// it is offered a release built for a *different* application, downloads it in
+// the background, and Squirrel applies it on the next launch — after which the
+// beta no longer starts. The version number is not the problem and bumping it
+// would not help; the identity mismatch is.
+if (app.getName() === 'irdashies') {
+  updateElectronApp();
+} else {
+  log.info(
+    `[update] Auto-update disabled for non-official build "${app.getName()}"`
+  );
+}
 
 const overlayManager = new OverlayManager();
 const analytics = new Analytics();
@@ -105,6 +129,7 @@ const channelBus = new ChannelBus({
 let disconnectLifecycleChannel: (() => void) | undefined;
 let incidentRuntime: IncidentRuntime | undefined;
 let disposeLapHistoryRuntime: (() => void) | undefined;
+let disposeGarage61SearchSession: (() => void) | undefined;
 // Resolved per call: a runtime outlives any single SDK bridge, so it must
 // not hold a reference to a metrics instance that has stopped reporting.
 const runtimePerfMetrics: PerformanceSections = {
@@ -195,6 +220,56 @@ function setupLapHistoryRuntime(initialDashboard: DashboardLayout): void {
   };
 }
 
+/**
+ * Remembers the track and car being driven so the Settings window can offer a
+ * Garage 61 lap-search link for them.
+ *
+ * Gated on the LapTrace widget, the only thing that uses the link, so a user
+ * who never enables it pays nothing: no session subscription at all rather
+ * than one that wakes on every session publish to discard the result. Follows
+ * the lap-history runtime above — the enabled state is re-read whenever the
+ * dashboard changes, so toggling the widget takes effect without a restart.
+ */
+function setupGarage61SearchSession(initialDashboard: DashboardLayout): void {
+  let enabled = false;
+  let unsubscribeSession: (() => void) | undefined;
+
+  const wireToTelemetryBridge = () => {
+    unsubscribeSession?.();
+    unsubscribeSession = undefined;
+    if (!enabled) return;
+    const bridge = getCurrentBridge();
+    if (!bridge) return;
+    unsubscribeSession = bridge.onSessionData((session: Session) => {
+      // Same derivation the bridge serves to Settings, shared rather than
+      // repeated, so the persisted identity can never drift from the live one.
+      const info = getGarage61SearchInfoFromSession(session);
+      if (info) saveGarage61SearchSession(info);
+    });
+  };
+
+  const applyDashboard = (layout: DashboardLayout | undefined) => {
+    const next =
+      layout?.widgets.find((w) => w.id === 'laptrace')?.enabled ?? false;
+    if (next === enabled) return;
+    enabled = next;
+    // Subscribing re-delivers the latest session immediately, so enabling the
+    // widget mid-session captures the identity without waiting for the next
+    // session publish.
+    wireToTelemetryBridge();
+  };
+
+  applyDashboard(initialDashboard);
+  const unsubscribeBridgeChanged = onBridgeChanged(wireToTelemetryBridge);
+  const unsubscribeDashboard = onDashboardUpdated(applyDashboard);
+
+  disposeGarage61SearchSession = () => {
+    unsubscribeSession?.();
+    unsubscribeBridgeChanged();
+    unsubscribeDashboard();
+  };
+}
+
 app.on('ready', async () => {
   // Don't start services if we don't have the single instance lock
   // (this instance should be quitting)
@@ -217,7 +292,11 @@ app.on('ready', async () => {
   }
 
   setupChannelBridge(channelBus);
-  const rendererDataSubscriptions = setupRendererDataSubscriptions();
+  const rendererDataSubscriptions = setupRendererDataSubscriptions({
+    onSubscribe: (sender, stream) => {
+      if (stream === 'sessionData') overlayManager.seedSessionData(sender);
+    },
+  });
   disposeRendererDataSubscriptions = rendererDataSubscriptions.dispose;
   overlayManager.setRendererDataSubscriptions(
     rendererDataSubscriptions.registry
@@ -238,6 +317,8 @@ app.on('ready', async () => {
   setupFuelCalculatorBridge();
   setupPitLaneBridge();
   setupPersonalBestLapTimesBridge();
+  setupLapTraceBridge(overlayManager);
+  setupGarage61SearchSession(dashboard);
   setupChromiumFlagsBridge();
   incidentRuntime = new IncidentRuntime(
     channelBus,
@@ -408,13 +489,16 @@ const handleBeforeQuit = createBeforeQuitHandler({
     disposeRendererDataSubscriptions?.();
     incidentRuntime?.dispose();
     disposeLapHistoryRuntime?.();
+    disposeGarage61SearchSession?.();
     channelBus.dispose();
     // Storage writes are debounced, so drain all pending queues within the
     // coordinator deadline before the process exits.
     await Promise.all([
+      flushLapTracesOnShutdown(),
       flushReferenceLapsOnShutdown(),
       flushIncidentsOnShutdown(),
       flushLapHistoryOnShutdown(),
+      flushGarage61SearchSessionOnShutdown(),
     ]);
   },
   quit: () => app.quit(),

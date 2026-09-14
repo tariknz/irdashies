@@ -3,8 +3,20 @@ import { Tooltip } from './Tooltip';
 
 const meta: Meta<typeof Tooltip> = {
   component: Tooltip,
-  title: 'components/Tooltip',
+  title: 'widgets/Gantry/components/Tooltip',
   parameters: { layout: 'centered' },
+  argTypes: {
+    content: {
+      control: 'text',
+      description: 'Tooltip text shown on hover or focus.',
+    },
+    placement: {
+      control: 'inline-radio',
+      options: ['top', 'bottom'],
+      description: 'Preferred side. Flips when there is no room.',
+    },
+    children: { control: false },
+  },
 };
 
 export default meta;

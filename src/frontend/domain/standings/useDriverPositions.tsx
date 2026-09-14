@@ -3,7 +3,6 @@ import {
   useStandingsSnapshot,
   useSessionTimingSnapshot,
   useSessionDrivers,
-  useSessionQualifyingResults,
   useSessionIsOfficial,
   useCurrentSessionType,
   useCarLap,
@@ -15,6 +14,7 @@ import {
 import {
   Standings,
   augmentStandingsWithIRating,
+  augmentStandingsWithPositionChange,
   groupStandingsByClass,
   type LastTimeState,
 } from './createStandings';
@@ -22,6 +22,7 @@ import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
 import { useRelativeSettings } from './useRelativeSettings';
 import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
+import { useQualifyingResults } from './useQualifyingGrid';
 
 const EMPTY_NUMBERS: number[] = [];
 const EMPTY_BOOLEANS: boolean[] = [];
@@ -160,7 +161,7 @@ export const useDriverStandings = () => {
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
   const playerCarIdx = useFocusCarIdx();
   const sessionType = useCurrentSessionType();
-  const qualifyingPositions = useSessionQualifyingResults();
+  const qualifyingResults = useQualifyingResults();
   const timing = useSessionTimingSnapshot();
   const sessionState = timing?.state ?? 0;
   const sessionNum = timing?.sessionNum;
@@ -181,8 +182,8 @@ export const useDriverStandings = () => {
       sessionPositions?.map((position) => [position.CarIdx, position]) ?? []
     );
     const qualifyingPositionsByCarIdx =
-      qualifyingPositions && Array.isArray(qualifyingPositions)
-        ? new Map(qualifyingPositions.map((q) => [q.CarIdx, q]))
+      qualifyingResults && Array.isArray(qualifyingResults)
+        ? new Map(qualifyingResults.map((q) => [q.CarIdx, q]))
         : new Map();
 
     const playerLap =
@@ -292,11 +293,22 @@ export const useDriverStandings = () => {
       .filter((s) => !!s)
       .sort((a, b) => a.position - b.position);
 
-    if (sessionType !== 'Race' || !isOfficial) {
+    if (sessionType !== 'Race') {
       return filteredStandings;
     }
 
-    return augmentStandingsWithIRating(groupStandingsByClass(filteredStandings))
+    const positionChangeAugmentedGroupedByClass =
+      augmentStandingsWithPositionChange(
+        groupStandingsByClass(filteredStandings),
+        qualifyingResults
+      );
+
+    // Position change applies to any race; iRating change only to official ones.
+    const iratingAugmentedGroupedByClass = isOfficial
+      ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
+      : positionChangeAugmentedGroupedByClass;
+
+    return iratingAugmentedGroupedByClass
       .flatMap(([, classStandings]) => classStandings)
       .sort((a, b) => (a?.position ?? 0) - (b?.position ?? 0));
   }, [
@@ -304,7 +316,7 @@ export const useDriverStandings = () => {
     sessionState,
     driverPositions,
     carStates,
-    qualifyingPositions,
+    qualifyingResults,
     playerCarIdx,
     drivers,
     sessionType,

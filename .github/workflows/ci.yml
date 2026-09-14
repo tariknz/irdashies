@@ -184,7 +184,8 @@ jobs:
         run: |
           $asarPath = 'out/irdashies-win32-x64/resources/app.asar'
           $builtAddon = 'build/Release/irsdk_node.node'
-          $extractDirectory = Join-Path $env:RUNNER_TEMP 'irdashies-asar-verification'
+          $packagedAddon = `
+            'out/irdashies-win32-x64/resources/app.asar.unpacked/.vite/build/Release/irsdk_node.node'
 
           if (-not (Test-Path -LiteralPath $asarPath -PathType Leaf)) {
             throw "Packaged ASAR not found: $asarPath"
@@ -192,17 +193,8 @@ jobs:
           if (-not (Test-Path -LiteralPath $builtAddon -PathType Leaf)) {
             throw "Built native addon not found: $builtAddon"
           }
-
-          npx asar extract $asarPath $extractDirectory
-          if ($LASTEXITCODE -ne 0) {
-            throw 'Failed to extract the packaged ASAR.'
-          }
-
-          $packagedAddon = Join-Path `
-            $extractDirectory `
-            '.vite/build/Release/irsdk_node.node'
           if (-not (Test-Path -LiteralPath $packagedAddon -PathType Leaf)) {
-            throw "Packaged native addon not found: $packagedAddon"
+            throw "Unpacked native addon not found: $packagedAddon"
           }
 
           $builtHash = (Get-FileHash -LiteralPath $builtAddon -Algorithm SHA256).Hash

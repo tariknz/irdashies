@@ -1,8 +1,19 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DashboardLayout, LapGraphConfig } from '@irdashies/types';
+import type {
+  CameraGroup,
+  DashboardLayout,
+  LapGraphConfig,
+} from '@irdashies/types';
 import { deepMergeConfig, getWidgetDefaultConfig } from '@irdashies/types';
 import { GantrySettings } from './GantrySettings';
+
+/** Camera groups as the session publishes them; Cameras is unused by these tests. */
+const cameraGroup = (GroupNum: number, GroupName: string): CameraGroup => ({
+  GroupNum,
+  GroupName,
+  Cameras: [],
+});
 
 // GantrySettings is memo()'d and takes no props, so a plain rerender() would be
 // skipped. Back the mocked context with a real external store instead, which is
@@ -12,6 +23,9 @@ const mocks = vi.hoisted(() => {
   const listeners = new Set<() => void>();
   return {
     listeners,
+    // The shared type, so a change to the session contract fails here at
+    // compile time rather than drifting silently.
+    cameraGroups: undefined as CameraGroup[] | undefined,
     onDashboardUpdated: vi.fn(),
     getDashboard: () => dashboard,
     setDashboard: (next: DashboardLayout | undefined) => {
@@ -32,6 +46,7 @@ vi.mock('@irdashies/context', async () => {
       onDashboardUpdated: mocks.onDashboardUpdated,
     }),
     useTrackStateSelector: () => 1,
+    useSessionCameraGroups: () => mocks.cameraGroups,
   };
 });
 
@@ -77,9 +92,73 @@ const savedLapGraph = (): LapGraphConfig => {
   return (config as { lapGraph: LapGraphConfig }).lapGraph;
 };
 
-// The only saved value rendered on the default "Options" tab.
-const retentionValue = () =>
-  (screen.getByRole('combobox', { name: '' }) as HTMLSelectElement).value;
+const selectValue = (name: string) =>
+  (screen.getByRole('combobox', { name }) as HTMLSelectElement).value;
+
+const retentionValue = () => selectValue('Keep Sessions');
+
+const cameraSelect = () =>
+  screen.getByRole('combobox', {
+    name: 'Incident Camera',
+  }) as HTMLSelectElement;
+
+const savedGantryConfig = () => {
+  const dashboard = mocks.onDashboardUpdated.mock.calls.at(-1)?.[0] as
+    DashboardLayout | undefined;
+  return dashboard?.widgets.find((w) => w.id === 'gantry')?.config as Record<
+    string,
+    unknown
+  >;
+};
+
+describe('GantrySettings incident camera', () => {
+  beforeEach(() => {
+    mocks.onDashboardUpdated.mockClear();
+    mocks.cameraGroups = undefined;
+  });
+
+  it('falls back to Far Chase before a session has loaded', () => {
+    mocks.setDashboard(dashboardWith('all'));
+    render(<GantrySettings />);
+
+    expect(cameraSelect().value).toBe('Far Chase');
+  });
+
+  it("offers the session's own camera groups once they arrive", () => {
+    mocks.cameraGroups = [
+      cameraGroup(12, 'Chase'),
+      cameraGroup(13, 'Far Chase'),
+      cameraGroup(18, 'TV1'),
+    ];
+    mocks.setDashboard(dashboardWith('all'));
+    render(<GantrySettings />);
+
+    const labels = [...cameraSelect().options].map((o) => o.value);
+    expect(labels).toEqual(['Chase', 'Far Chase', 'TV1']);
+  });
+
+  it('keeps a saved group that this track does not offer', () => {
+    mocks.cameraGroups = [cameraGroup(12, 'Chase')];
+    mocks.setDashboard(
+      dashboardFor(gantryConfig({ incidentCameraGroup: 'Blimp' }))
+    );
+    render(<GantrySettings />);
+
+    // Dropping it would silently rewrite the user's choice on one track.
+    expect([...cameraSelect().options].map((o) => o.value)).toContain('Blimp');
+    expect(cameraSelect().value).toBe('Blimp');
+  });
+
+  it('writes the chosen group', () => {
+    mocks.cameraGroups = [cameraGroup(13, 'Far Chase'), cameraGroup(18, 'TV1')];
+    mocks.setDashboard(dashboardWith('all'));
+    render(<GantrySettings />);
+
+    fireEvent.change(cameraSelect(), { target: { value: 'TV1' } });
+
+    expect(savedGantryConfig().incidentCameraGroup).toBe('TV1');
+  });
+});
 
 describe('GantrySettings', () => {
   beforeEach(() => {

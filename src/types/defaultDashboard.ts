@@ -1,5 +1,11 @@
 import type { GeneralSettingsType } from './dashboardLayout';
 import type { TypedDashboardWidget, WidgetConfigMap } from './widgetConfigs';
+import {
+  DEFAULT_AUDIO_OUTPUT_DEVICE_ID,
+  DEFAULT_LAP_TRACE_COLORS,
+  DEFAULT_LAP_TRACE_SOUND,
+} from './lapTrace';
+import { DEFAULT_INCIDENT_CAMERA_GROUP } from './widgetConfigs';
 
 export const defaultDashboard: {
   widgets: TypedDashboardWidget[];
@@ -709,6 +715,7 @@ export const defaultDashboard: {
           ],
         },
         showOnlyWhenOnTrack: false,
+        hideDriversInPitStall: false,
         sessionVisibility: {
           race: true,
           loneQualify: true,
@@ -1445,6 +1452,71 @@ export const defaultDashboard: {
       },
     },
     {
+      id: 'laptrace',
+      enabled: false,
+      layout: {
+        x: 622,
+        y: 740,
+        width: 396,
+        height: 120,
+      },
+      config: {
+        version: 1,
+        referenceSource: 'best',
+        metersBehind: 200,
+        metersAhead: 200,
+        showThrottle: true,
+        showBrake: true,
+        showSpeed: true,
+        showGearLabels: true,
+        showBrakePointMarkers: true,
+        showThrottlePointMarkers: true,
+        showGhost: true,
+        showAbs: true,
+        absStyle: 'bar',
+        showAbsBar: false,
+        ghostOpacity: 1,
+        driverOpacity: 1,
+        referenceFilled: false,
+        strokeWidth: 3,
+        carLineColor: '#ffffff',
+        colors: DEFAULT_LAP_TRACE_COLORS,
+        showLastCorner: false,
+        showLastCornerTime: true,
+        showLastCornerBrakeDelta: true,
+        showLastCornerApexSpeed: true,
+        lastCornerDisplayOrder: [
+          'corner',
+          'cornerTimeDelta',
+          'brakePointDelta',
+          'apexSpeedDelta',
+        ],
+        lastCornerSpeedUnit: 'auto',
+        lastCornerLabelStyle: 'name',
+        lastCornerFontSize: 10,
+        lastCornerLatestScale: 1.4,
+        lastCornerCount: 3,
+        lastCornerPosition: 'bottom',
+        brakeCueAudio: false,
+        brakeCueOutputDeviceId: DEFAULT_AUDIO_OUTPUT_DEVICE_ID,
+        brakeCueVolume: 0.6,
+        brakeCueLeadSec: 0,
+        sound: DEFAULT_LAP_TRACE_SOUND,
+        brakeCueBars: false,
+        brakeCueBarSide: 'right',
+        brakeCueLastBar: 'top',
+        background: { opacity: 0.7 },
+        showOnlyWhenOnTrack: true,
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
+    },
+    {
       id: 'gantry',
       enabled: false,
       layout: {
@@ -1465,6 +1537,7 @@ export const defaultDashboard: {
         pitEntryDurationSeconds: 0.6,
         cooldownSeconds: 5,
         sessionRetention: 'all',
+        incidentCameraGroup: DEFAULT_INCIDENT_CAMERA_GROUP,
         lapGraph: {
           yAxisMode: 'trace',
           lapWindow: 75,
@@ -1488,6 +1561,7 @@ export const defaultDashboard: {
     compactMode: 'off' as const,
     overlayAlwaysOnTop: true,
     enableNetworkAccess: false,
+    enableWebServer: true,
     editMode: {
       pixelDistances: false,
       snapToGrid: false,

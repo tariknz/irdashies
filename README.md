@@ -532,6 +532,38 @@ Displays the current track section (corner or named straight) along with corner 
 - Configurable font size and background opacity
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
 
+### The Gantry
+
+A race control window with live standings, an automatic incident feed, and a per-lap graph. Unlike the other widgets it opens in its own resizable window instead of sitting on top of the sim, so it suits a second monitor, a spotter, or a race director. Enable it in Settings, then use **Show Window** to bring it back if you close it.
+
+**Features:**
+
+- Standings and incidents shown side by side with a draggable divider, plus a separate Lap Graph tab
+- Standings list
+  - Grouped by car class: position, car number, driver name, tyre compound, iRating, pit/DNF status
+  - Gap to the class leader, interval to the car ahead, best lap and last lap
+  - Lap deltas for the last three laps, each compared against your own lap of the same age (green means they were slower than you, red means faster)
+  - Configurable driver name format
+  - Click a row to point the sim camera at that car (works in a replay or while spectating)
+- Incident feed
+  - Detects crashes, off-tracks, slowdowns, pit entries, and black flags as they happen
+  - Filter chips per incident type, plus a dropdown to narrow the feed to a single driver
+  - Replay jump buttons (-5s, -10s, -30s) move the sim's replay to just before the incident and point the camera at the car
+  - Incidents are saved to disk: keep every session, or only the last 5, 10, or 20
+  - Tunable detection thresholds: slow speed and duration, crash impact severity and minimum speed, off-track duration, pit entry duration, and a per-type cooldown
+  - Threshold speeds shown in mph, km/h, or auto (always stored in km/h, so switching units never changes detection)
+- Lap Graph
+  - Three y axes: Race Trace (time gained or lost against the class leader's reference pace), Position (class position at the end of each lap), and Gap (seconds behind the class leader)
+  - Class selector for multi-class sessions
+  - Pin drivers from the side list, or let auto-pin follow the player, the class leader, and the cars around the player
+  - Hover the chart for a crosshair readout of the nearby lines; hover a name to lift that driver's line above the field
+  - Pan and zoom the lap window by dragging or scrolling, with an overview strip below the chart, and it follows the latest lap
+  - Configurable default axis, laps shown, and auto-pin
+
+![The Gantry](./docs/assets/gantry-standings-incidents.png)
+
+![Gantry Lap Graph](./docs/assets/gantry-chart.png)
+
 ### Other Features
 
 **Features:**

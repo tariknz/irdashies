@@ -74,6 +74,14 @@ export interface ProcessorDefinition<K extends ProcessorChannel> {
   readonly channel: K;
   readonly dependencies?: readonly ProcessorChannel[];
   readonly retainWhenInactive?: boolean;
+  /**
+   * Keep processing frames while every subscribed window is hidden. Demand then
+   * follows registered subscriptions instead of visible ones, so state built up
+   * over a race (such as lap-time history) survives a minimised window. The bus
+   * still gates delivery; the current snapshot is pushed when a window becomes
+   * visible again. Off by default so a hidden window costs nothing.
+   */
+  readonly processWhileHidden?: boolean;
   readonly metricsPrefix: string;
   create(
     context: ProcessorFactoryContext
@@ -122,6 +130,13 @@ const snapshotToken = (snapshot: unknown): unknown => {
   return typeof version === 'number' ? version : snapshot;
 };
 
+const hasDirectDemand = (
+  definition: AnyProcessorDefinition,
+  activeCount: number,
+  registeredCount: number
+): boolean =>
+  definition.processWhileHidden ? registeredCount > 0 : activeCount > 0;
+
 export class ProcessorHost {
   private readonly bus: ChannelBus;
   private readonly metrics: ProcessorMetrics;
@@ -132,6 +147,8 @@ export class ProcessorHost {
   private readonly statesByChannel = new Map<ProcessorChannel, RuntimeState>();
   private readonly directDemand = new Set<ProcessorChannel>();
   private activeDemand = new Set<ProcessorChannel>();
+  /** Last visible subscriber count per channel, to spot a window being shown. */
+  private readonly activeCounts = new Map<ProcessorChannel, number>();
   private readonly reportedFailures = new Set<string>();
   /** Channels whose first publish has already been logged. Debug aid only. */
   private readonly firstPublishLogged = new Set<ProcessorChannel>();
@@ -152,25 +169,37 @@ export class ProcessorHost {
     const definitions = this.sortDefinitions(options.definitions);
     this.states = definitions.map((definition) => ({ definition }));
     for (const state of this.states) {
-      this.statesByChannel.set(state.definition.channel, state);
-      if (this.bus.subscriberCount(state.definition.channel) > 0) {
-        this.directDemand.add(state.definition.channel);
+      const channel = state.definition.channel;
+      this.statesByChannel.set(channel, state);
+      const activeCount = this.bus.subscriberCount(channel);
+      this.activeCounts.set(channel, activeCount);
+      const registeredCount = this.bus.registeredSubscriberCount(channel);
+      if (hasDirectDemand(state.definition, activeCount, registeredCount)) {
+        this.directDemand.add(channel);
       }
     }
 
     this.disconnects.push(
-      this.bus.onSubscriberCountChanged((channel, count) => {
-        if (!this.statesByChannel.has(channel as ProcessorChannel)) return;
-        const processorChannel = channel as ProcessorChannel;
-        const hadDirectDemand = this.directDemand.has(processorChannel);
-        if (count > 0) this.directDemand.add(processorChannel);
-        else this.directDemand.delete(processorChannel);
-        this.reconcileDemand();
-        if (!hadDirectDemand && count > 0) {
+      this.bus.onSubscriberCountChanged(
+        (channel, activeCount, registeredCount) => {
+          const processorChannel = channel as ProcessorChannel;
           const state = this.statesByChannel.get(processorChannel);
-          if (state?.processor) this.publishIfChanged(state, true);
+          if (!state) return;
+          const wasVisible = (this.activeCounts.get(processorChannel) ?? 0) > 0;
+          this.activeCounts.set(processorChannel, activeCount);
+          if (hasDirectDemand(state.definition, activeCount, registeredCount)) {
+            this.directDemand.add(processorChannel);
+          } else {
+            this.directDemand.delete(processorChannel);
+          }
+          this.reconcileDemand();
+          // Seed the first visible window. For a processWhileHidden processor
+          // this is the only way a re-shown window sees what it missed.
+          if (!wasVisible && activeCount > 0 && state.processor) {
+            this.publishIfChanged(state, true);
+          }
         }
-      })
+      )
     );
 
     if (options.lifecycle) {
@@ -257,6 +286,7 @@ export class ProcessorHost {
     this.disconnects.length = 0;
     this.directDemand.clear();
     this.activeDemand.clear();
+    this.activeCounts.clear();
     this.latestSession = undefined;
     this.sourceReplay = undefined;
   }

@@ -6,5 +6,6 @@ export * from './useDriverRelatives';
 export * from './useHighlightColor';
 export * from './useInformationBarSettings';
 export * from './useRadioActiveCarIdxs';
+export * from './useQualifyingGrid';
 export * from './useRelativeSettings';
 export * from './useStandingsSettings';

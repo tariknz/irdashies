@@ -9,7 +9,16 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { Notification } from 'electron';
 import { readData, writeData } from './storage/storage';
-import { getDashboard } from './storage/dashboards';
+import { getDashboard, getCurrentProfileId } from './storage/dashboards';
+
+/**
+ * Settings read outside a dashboard update must come from the profile the user
+ * is actually on. Reading 'default' meant a setting toggled in any other
+ * profile was shown as changed in the UI while the app kept acting on the
+ * default profile's value - and for autostart that meant re-creating the
+ * Windows Run entry on every launch after the user had turned it off.
+ */
+const activeDashboard = () => getDashboard(getCurrentProfileId());
 import { getChromiumFlags, parseCustomSwitches } from './storage/chromiumFlags';
 import {
   markCorrectedBounds,
@@ -214,13 +223,21 @@ export class OverlayManager {
       roundedCorners: false,
       hasShadow: false,
       show: false,
-      alwaysOnTop: true,
+      alwaysOnTop: this.overlayAlwaysOnTop,
       backgroundColor: '#00000000',
       icon: getIconPath(),
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
         backgroundThrottling: false,
         additionalArguments: createRendererPerfArguments(),
+        // Overlay windows are click-through whenever overlays are locked (see
+        // setIgnoreMouseEvents below), so this renderer can never receive a user
+        // gesture and Chromium would keep any AudioContext suspended forever —
+        // silencing the Lap Trace brake-point cues. Global-by-design for the
+        // same reason as webviewTag: webPreferences are fixed at window creation
+        // and any widget can land on any display. No third-party page is ever
+        // loaded here, so nothing else can autoplay.
+        autoplayPolicy: 'no-user-gesture-required',
         // Enables the <webview> used by the Heart Rate widget to embed
         // HypeRate's overlay and inject transparent-background CSS (the same
         // technique OBS uses). Global-by-design: webPreferences are fixed at
@@ -273,6 +290,15 @@ export class OverlayManager {
       visibleOnFullScreen: true,
     });
 
+    // The overlays and the settings window use a deliberate two-level scheme:
+    // overlays at 'screen-saver' 1, and the settings window raised to
+    // 'screen-saver' 2 during edit mode so it sits above them (see
+    // toggleLockOverlays). The constructor's `alwaysOnTop` flag alone puts the
+    // window in a lower band than either, so the settings window — and a
+    // fullscreen sim — end up above the overlays instead of below.
+    //
+    // Guarded on the setting so it still honours the user's choice, which is
+    // what the constructor flag above was changed to do.
     if (this.overlayAlwaysOnTop) {
       browserWindow.setAlwaysOnTop(true, 'screen-saver', 1);
     }
@@ -355,7 +381,7 @@ export class OverlayManager {
 
       browserWindow.setPosition(expectedBounds.x, expectedBounds.y);
       browserWindow.setSize(expectedBounds.width, expectedBounds.height);
-      browserWindow.show();
+      browserWindow.showInactive();
 
       const actualBounds = browserWindow.getBounds();
       const offset = {
@@ -668,6 +694,22 @@ export class OverlayManager {
     this.latestSessionData = undefined;
   }
 
+  /** The most recent session broadcast, or undefined when disconnected. */
+  public getLatestSessionData(): unknown {
+    return this.latestSessionData;
+  }
+
+  /** Sends the cached session to a visible, subscribed sender window. */
+  public seedSessionData(sender: Electron.WebContents): boolean {
+    const win = BrowserWindow.fromWebContents(sender);
+    if (!win) return false;
+    return refreshSessionDataForVisibleWindow(
+      win,
+      this.rendererDataSubscriptions,
+      this.latestSessionData
+    );
+  }
+
   public hasTelemetryInspectorSubscribers(): boolean {
     return (
       this.rendererDataSubscriptions?.hasAny('telemetryInspector') ?? false
@@ -839,7 +881,7 @@ export class OverlayManager {
    * Must be called before the app is ready.
    */
   public setupHardwareAcceleration(): void {
-    const dashboard = getDashboard('default');
+    const dashboard = activeDashboard();
     if (dashboard?.generalSettings?.disableHardwareAcceleration) {
       app.disableHardwareAcceleration();
     }
@@ -895,14 +937,14 @@ export class OverlayManager {
   }
 
   public setupAutoStart(): void {
-    const dashboard = getDashboard('default');
+    const dashboard = activeDashboard();
     app.setLoginItemSettings({
       openAtLogin: dashboard?.generalSettings?.enableAutoStart ?? false,
     });
   }
 
   private shouldCloseToTray(): boolean {
-    const dashboard = getDashboard('default');
+    const dashboard = activeDashboard();
     return dashboard?.generalSettings?.closeToTray ?? true;
   }
 
@@ -1018,6 +1060,22 @@ export class OverlayManager {
 
     browserWindow.on('closed', () => {
       this.gantryWindow = undefined;
+    });
+
+    // Electron emits restore, not show, when a minimised window comes back.
+    const resendSessionData = () => {
+      refreshSessionDataForVisibleWindow(
+        browserWindow,
+        this.rendererDataSubscriptions,
+        this.latestSessionData
+      );
+    };
+    browserWindow.on('show', resendSessionData);
+    browserWindow.on('restore', resendSessionData);
+
+    browserWindow.webContents.on('did-finish-load', () => {
+      if (browserWindow.isDestroyed()) return;
+      this.onWindowReadyCallbacks.forEach((cb) => cb('gantry'));
     });
 
     // Without this a renderer crash leaves a live-but-blank BrowserWindow that

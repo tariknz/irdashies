@@ -1,6 +1,7 @@
 export * from './telemetryDecorator';
 export * from './channelSnapshotDecorator';
 export * from './captureChannelDecorator';
+export * from './liveChannelBridgeDecorator';
 export * from './captureSnapshots';
 export * from './standingsSnapshot';
 export * from './trackStateSnapshot';
@@ -8,3 +9,5 @@ export * from './sessionBarSnapshot';
 export * from './DynamicTelemetrySelector';
 export * from './mockDashboardBridge';
 export * from './raceControlDecorator';
+export * from './lapHistorySnapshot';
+export * from './gantryDecorator';

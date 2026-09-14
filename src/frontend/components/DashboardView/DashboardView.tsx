@@ -7,7 +7,7 @@ import {
   memo,
   CSSProperties,
 } from 'react';
-import { useDashboard } from '@irdashies/context';
+import { useDashboard, SessionTimingUpdater } from '@irdashies/context';
 import { getWidget } from '../../WidgetIndex';
 import { getWidgetName } from '../../constants/widgetNames';
 import { ResizeIcon, XIcon } from '@phosphor-icons/react';
@@ -357,6 +357,7 @@ export const DashboardView = () => {
       className="w-full h-screen overflow-hidden relative"
       style={{ background: 'transparent' }}
     >
+      <SessionTimingUpdater />
       {enabledWidgets.map((widget) => {
         const position =
           widgetPositions[widget.id] ?? initialPositions[widget.id];

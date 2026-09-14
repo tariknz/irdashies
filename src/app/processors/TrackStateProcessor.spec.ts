@@ -24,6 +24,8 @@ describe('TrackStateProcessor', () => {
         EngineWarnings: [16],
         SessionFlags: [32],
         SessionNum: [1],
+        LapLastLapTime: [96.797],
+        LapCompleted: [12],
       })
     );
 
@@ -40,6 +42,8 @@ describe('TrackStateProcessor', () => {
       engineWarnings: 16,
       sessionFlags: 32,
       sessionNum: 1,
+      lastLapTime: 96.797,
+      lapCompleted: 12,
       version: 1,
     });
   });

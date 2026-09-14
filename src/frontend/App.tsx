@@ -11,6 +11,7 @@ import {
 import { Settings } from './components/Settings/Settings';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
 import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
+import { LapTraceUpdater } from './components/OverlayContainer/LapTraceUpdater';
 import { ProfileSwitchOverlay } from './components/ProfileSwitchOverlay/ProfileSwitchOverlay';
 import { OverlayContainer } from './components/OverlayContainer';
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
@@ -74,13 +75,18 @@ const GantryApp = () => {
  */
 const OverlayApp = () => {
   return (
-    <HideUIWrapper>
-      <ProfileSwitchOverlay>
-        <ThemeManager>
-          <OverlayContainer />
-        </ThemeManager>
-      </ProfileSwitchOverlay>
-    </HideUIWrapper>
+    <>
+      {/* Outside the hide wrapper: Alt+H unmounts everything inside it, and
+          unmounting the recorder abandons the lap being driven. */}
+      <LapTraceUpdater />
+      <HideUIWrapper>
+        <ProfileSwitchOverlay>
+          <ThemeManager>
+            <OverlayContainer />
+          </ThemeManager>
+        </ProfileSwitchOverlay>
+      </HideUIWrapper>
+    </>
   );
 };
 
