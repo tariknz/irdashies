@@ -71,7 +71,7 @@ export const SessionTimeItem = memo(
           break;
       }
     } else {
-      elapsedTime = session === 'Offline Testing' ? time % 1200 : time;
+      elapsedTime = time;
       remainingTime = timeRemaining;
       totalTime = timeTotal;
     }
