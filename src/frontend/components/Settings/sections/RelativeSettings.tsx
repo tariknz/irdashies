@@ -60,6 +60,11 @@ const sortableSettings: SortableSetting[] = [
   { id: 'driverTag', label: 'Driver Tag', configKey: 'driverTag' },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
+  {
+    id: 'positionChange',
+    label: 'Position Change',
+    configKey: 'positionChange',
+  },
   { id: 'delta', label: 'Relative', configKey: 'delta' },
   { id: 'fastestTime', label: 'Best Time', configKey: 'fastestTime' },
   { id: 'lastTime', label: 'Last Time', configKey: 'lastTime' },

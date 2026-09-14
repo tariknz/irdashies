@@ -1,12 +1,44 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
+import { useSessionStore } from '@irdashies/context';
+import {
+  getWidgetDefaultConfig,
+  type SessionQualifyPosition,
+  type StandingsWidgetSettings,
+} from '@irdashies/types';
 import { mountFixture } from '../../../testing/renderWithFixture';
 import type { ReplayFixture } from '../../../testing/replayFixture';
 import roadAmerica from '../../../../test-data/fixtures/multiclass-road-america.json';
 import { useDriverStandings, useCarState } from './useDriverPositions';
 import { useDriverRelatives } from './useDriverRelatives';
+import { useDriverStandings as useClassStandings } from './useDriverStandings';
+import type { Standings } from './createStandings';
 
 const fixture = roadAmerica as unknown as ReplayFixture;
+
+const standingsConfig: StandingsWidgetSettings['config'] = {
+  ...(getWidgetDefaultConfig('standings') as StandingsWidgetSettings['config']),
+  positionChange: { enabled: true },
+};
+
+const byCarIdx = (
+  standings: Standings[],
+  value: (s: Standings) => number | undefined
+) =>
+  new Map<number, number>(
+    standings.flatMap((s) => {
+      const v = value(s);
+      return v === undefined ? [] : [[s.carIdx, v] as const];
+    })
+  );
+
+const positionChange = (s: Standings) => s.positionChange;
+
+// Position change plus current class position gives back the qualifying slot.
+const impliedGridSlot = (s: Standings) =>
+  s.positionChange === undefined || s.classPosition === undefined
+    ? undefined
+    : s.positionChange + s.classPosition;
 
 const paceCarIdx = (f: ReplayFixture) =>
   Number(f.drivers.find((d) => Number(d.CarIsPaceCar) === 1)?.CarIdx ?? -1);
@@ -117,6 +149,86 @@ describe('relative standings over a real multiclass field', () => {
     // Both bounds: an empty window would satisfy the upper one on its own.
     expect(result.current.length).toBeGreaterThan(1);
     expect(result.current.length).toBeLessThanOrEqual(buffer * 2 + 1);
+  });
+
+  it('reads the same qualifying grid as the Standings widget', () => {
+    const { result: relative } = renderHook(() => useDriverStandings(), {
+      wrapper: harness.wrapper,
+    });
+    const { result: standings } = renderHook(
+      () => useClassStandings(standingsConfig, { showAll: true }),
+      { wrapper: harness.wrapper }
+    );
+
+    const changes = [...byCarIdx(relative.current, positionChange).values()];
+    // Two empty maps would compare equal, so require real gains and losses.
+    expect(changes.some((c) => c > 0)).toBe(true);
+    expect(changes.some((c) => c < 0)).toBe(true);
+    // The widgets can disagree on a car's current class position, so compare
+    // the grid slot each one implies rather than the change itself.
+    expect(byCarIdx(relative.current, impliedGridSlot)).toEqual(
+      byCarIdx(
+        standings.current.flatMap(([, drivers]) => drivers),
+        impliedGridSlot
+      )
+    );
+  });
+
+  it('uses the race grid when qualifying results are missing', () => {
+    const { result: fromResults, unmount } = renderHook(
+      () => useDriverStandings(),
+      { wrapper: harness.wrapper }
+    );
+    const expected = byCarIdx(fromResults.current, positionChange);
+    unmount();
+
+    // Heat race formats leave QualifyResultsInfo.Results null and carry the
+    // starting grid on the race session's QualifyPositions instead.
+    const { session } = useSessionStore.getState();
+    if (!session) throw new Error('fixture mounted no session');
+    useSessionStore.setState({
+      session: {
+        ...session,
+        QualifyResultsInfo: { ...session.QualifyResultsInfo, Results: null },
+        SessionInfo: {
+          ...session.SessionInfo,
+          Sessions: session.SessionInfo?.Sessions?.map((s) =>
+            s.SessionType === 'Race'
+              ? {
+                  ...s,
+                  QualifyPositions: fixture.qualifying as
+                    SessionQualifyPosition[] | undefined,
+                }
+              : s
+          ),
+        },
+      },
+    });
+
+    const { result: fromGrid } = renderHook(() => useDriverStandings(), {
+      wrapper: harness.wrapper,
+    });
+
+    expect(expected.size).toBeGreaterThan(0);
+    expect(byCarIdx(fromGrid.current, positionChange)).toEqual(expected);
+  });
+
+  it('carries position change into the relative window', () => {
+    const { result: field } = renderHook(() => useDriverStandings(), {
+      wrapper: harness.wrapper,
+    });
+    const { result: relativeWindow } = renderHook(
+      () => useDriverRelatives({ buffer: 3 }),
+      { wrapper: harness.wrapper }
+    );
+
+    const expected = byCarIdx(field.current, positionChange);
+    const graded = relativeWindow.current.filter((r) => expected.has(r.carIdx));
+    // A window with no graded cars would pass the loop below trivially.
+    expect(graded.length).toBeGreaterThan(0);
+    for (const row of graded) {
+      expect(row.positionChange).toBe(expected.get(row.carIdx));
+    }
   });
 
   it('mixes classes in the relative window, as a real multiclass field does', () => {
