@@ -29,6 +29,7 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   deltaspeed: 'Delta Speed',
   heartrate: 'Heart Rate',
   cornername: 'Corner Names',
+  laptrace: 'Lap Trace',
   battle: 'Battle',
   gantry: 'The Gantry',
 };

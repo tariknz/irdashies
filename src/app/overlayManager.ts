@@ -230,6 +230,14 @@ export class OverlayManager {
         preload: path.join(__dirname, 'preload.js'),
         backgroundThrottling: false,
         additionalArguments: createRendererPerfArguments(),
+        // Overlay windows are click-through whenever overlays are locked (see
+        // setIgnoreMouseEvents below), so this renderer can never receive a user
+        // gesture and Chromium would keep any AudioContext suspended forever —
+        // silencing the Lap Trace brake-point cues. Global-by-design for the
+        // same reason as webviewTag: webPreferences are fixed at window creation
+        // and any widget can land on any display. No third-party page is ever
+        // loaded here, so nothing else can autoplay.
+        autoplayPolicy: 'no-user-gesture-required',
         // Enables the <webview> used by the Heart Rate widget to embed
         // HypeRate's overlay and inject transparent-background CSS (the same
         // technique OBS uses). Global-by-design: webPreferences are fixed at
@@ -684,6 +692,11 @@ export class OverlayManager {
 
   public clearLatestSessionData(): void {
     this.latestSessionData = undefined;
+  }
+
+  /** The most recent session broadcast, or undefined when disconnected. */
+  public getLatestSessionData(): unknown {
+    return this.latestSessionData;
   }
 
   /** Sends the cached session to a visible, subscribed sender window. */

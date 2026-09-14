@@ -8,6 +8,7 @@ interface DraggableSettingItemProps {
   enabled: boolean;
   onToggle: (enabled: boolean) => void;
   sortableProps: SortableItemProps;
+  showToggle?: boolean;
   children?: ReactNode;
 }
 
@@ -16,6 +17,7 @@ export function DraggableSettingItem({
   enabled,
   onToggle,
   sortableProps: { dragHandleProps, itemProps },
+  showToggle = true,
   children,
 }: DraggableSettingItemProps) {
   return (
@@ -30,7 +32,7 @@ export function DraggableSettingItem({
           </div>
           <span className="text-sm text-slate-300">{label}</span>
         </div>
-        <ToggleSwitch enabled={enabled} onToggle={onToggle} />
+        {showToggle && <ToggleSwitch enabled={enabled} onToggle={onToggle} />}
       </div>
       {children}
     </div>

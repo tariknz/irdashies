@@ -24,6 +24,8 @@ export * from './BattleGapStore/BattleGapStore';
 export * from './BattleGapStore/BattleGapStoreUpdater';
 export * from './shared';
 export * from './PersonalBestStore/PersonalBestStore';
+export * from './LapTraceStore/LapTraceStore';
+export * from './LapTraceStore/useLapTraceRecorder';
 export * from './CarSpeedStore/TopSpeedStore';
 export * from './CarSpeedStore/TopSpeedStoreUpdater';
 export * from './SessionTimingStore/SessionTimingStore';

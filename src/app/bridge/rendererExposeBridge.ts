@@ -16,6 +16,9 @@ import type {
   PersonalBestLapBridge,
   ChromiumFlagsBridge,
   ChromiumFlagsType,
+  LapTraceBridge,
+  LapTraceRecord,
+  LapTraceSource,
   RaceControlBridge,
   Incident,
   IncidentThresholds,
@@ -351,6 +354,45 @@ export function exposeBridge() {
       time: number
     ) => ipcRenderer.invoke('personalBest:set', trackId, carName, time),
   } as PersonalBestLapBridge);
+
+  contextBridge.exposeInMainWorld('lapTraceBridge', {
+    getLapTrace: (trackId: number, carPath: string, kind: LapTraceSource) =>
+      ipcRenderer.invoke('lapTrace:get', trackId, carPath, kind),
+    saveLapTrace: (
+      trackId: number,
+      carPath: string,
+      kind: LapTraceSource,
+      record: LapTraceRecord
+    ) => ipcRenderer.invoke('lapTrace:save', trackId, carPath, kind, record),
+    clearLapTrace: (trackId: number, carPath: string, kind: LapTraceSource) =>
+      ipcRenderer.invoke('lapTrace:clear', trackId, carPath, kind),
+    pickAndParseIbtLap: () => ipcRenderer.invoke('lapTrace:pickAndParseIbt'),
+    fetchLapTraceFromGarage61: (
+      trackId: number,
+      carPath: string,
+      lapId: string
+    ) =>
+      ipcRenderer.invoke('lapTrace:fetchFromGarage61', trackId, carPath, lapId),
+    pickGarage61Csv: () => ipcRenderer.invoke('lapTrace:pickGarage61Csv'),
+    notifyReferenceUpdated: () =>
+      ipcRenderer.send('lapTrace:notifyReferenceUpdated'),
+    onReferenceUpdated: (callback: () => void) => {
+      const handler = () => callback();
+      ipcRenderer.on('lapTrace:referenceUpdated', handler);
+      return () =>
+        ipcRenderer.removeListener('lapTrace:referenceUpdated', handler);
+    },
+    requestClearBestLap: () => ipcRenderer.send('lapTrace:requestClearBestLap'),
+    onClearBestLap: (callback: () => void) => {
+      const handler = () => callback();
+      ipcRenderer.on('lapTrace:clearBestLap', handler);
+      return () => ipcRenderer.removeListener('lapTrace:clearBestLap', handler);
+    },
+    getCurrentBestLapInfo: () =>
+      ipcRenderer.invoke('lapTrace:getCurrentBestLapInfo'),
+    getGarage61SearchInfo: () =>
+      ipcRenderer.invoke('lapTrace:getGarage61SearchInfo'),
+  } as LapTraceBridge);
 
   contextBridge.exposeInMainWorld('chromiumFlagsBridge', {
     getFlags: () => ipcRenderer.invoke('chromiumFlags:get'),

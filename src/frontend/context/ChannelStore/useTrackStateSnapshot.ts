@@ -17,6 +17,7 @@ export const trackStateSelectors = {
   lapDistPct: (snapshot: TrackStateSnapshot) => snapshot.lapDistPct,
   sessionFlags: (snapshot: TrackStateSnapshot) => snapshot.sessionFlags,
   sessionNum: (snapshot: TrackStateSnapshot) => snapshot.sessionNum,
+  sessionTime: (snapshot: TrackStateSnapshot) => snapshot.sessionTime,
   speed: (snapshot: TrackStateSnapshot) => snapshot.speed,
 } as const;
 

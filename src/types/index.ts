@@ -12,6 +12,7 @@ export * from './raceControl';
 export * from './widgetConfigs';
 export * from './defaultDashboard';
 export * from './cornerName';
+export * from './lapTrace';
 export * from './logBridge';
 export * from './keybindings';
 export * from './personalBestLapBridge';
