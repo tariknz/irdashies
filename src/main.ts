@@ -6,7 +6,15 @@ import {
   getSessionLifecycle,
   onBridgeChanged,
 } from './app/bridge/iracingSdk/setup';
-import { getOrCreateDefaultDashboard } from './app/storage/dashboards';
+import {
+  getOrCreateDefaultDashboard,
+  getCurrentProfileId,
+  getProfile,
+  setCurrentProfile,
+} from './app/storage/dashboards';
+import { getSessionProfileMap } from './app/storage/appSettings';
+import { createSessionProfileSwitcher } from './app/services/sessionProfileSwitcher';
+import type { SessionProfileSwitcher } from './app/services/sessionProfileSwitcher';
 import { setupTaskbar, KeybindingManager } from './app';
 import {
   publishDashboardUpdates,
@@ -127,6 +135,7 @@ const channelBus = new ChannelBus({
   deliveryEnabled: !perfRun.enabled || perfRun.channelDelivery === 'on',
 });
 let disconnectLifecycleChannel: (() => void) | undefined;
+let sessionProfileSwitcher: SessionProfileSwitcher | undefined;
 let incidentRuntime: IncidentRuntime | undefined;
 let disposeLapHistoryRuntime: (() => void) | undefined;
 let disposeGarage61SearchSession: (() => void) | undefined;
@@ -461,6 +470,24 @@ app.on('ready', async () => {
       ? (updatedDashboard) => createPerfDashboard(updatedDashboard, perfRun)
       : undefined
   );
+  // Deliberately after publishDashboardUpdates: switching a profile emits
+  // 'dashboardUpdated', and that listener is what actually applies it to the
+  // windows. Wired any earlier — telemetry starts flowing back at
+  // iRacingSDKSetup — a switch triggered by the session the player is already
+  // in would emit into an EventEmitter with no listener, silently leaving the
+  // stored profile and the visible overlays disagreeing.
+  //
+  // Arriving this late is also why the switcher seeds itself from the
+  // lifecycle's current state on construction: by now the SDK has been
+  // publishing for a while, and the events it fires are transitions that are
+  // not replayed to a new subscriber.
+  sessionProfileSwitcher = createSessionProfileSwitcher({
+    lifecycle: getSessionLifecycle(),
+    getMap: getSessionProfileMap,
+    getCurrentProfileId,
+    profileExists: (profileId) => getProfile(profileId) !== null,
+    switchProfile: (profileId) => setCurrentProfile(profileId),
+  });
   setupKeybindingsBridge(keybindingManager);
 
   await analytics.init(overlayManager.getVersion(), dashboard);
@@ -486,6 +513,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
   shutdown: async () => {
     keybindingManager?.stopGamepad();
     disconnectLifecycleChannel?.();
+    sessionProfileSwitcher?.dispose();
     disposeRendererDataSubscriptions?.();
     incidentRuntime?.dispose();
     disposeLapHistoryRuntime?.();

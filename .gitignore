@@ -130,3 +130,7 @@ ka-local/register-task.ps1
 ka-local/update-and-launch.ps1
 ka-local/iracing-api.ts
 docs/GANTRY_LAP_GRAPH_PLAN.md
+
+# Python bytecode from the telemetry tooling
+__pycache__/
+*.pyc
