@@ -8,6 +8,7 @@ import { ThemeManager } from './frontend/components/ThemeManager/ThemeManager';
 import { DashboardProvider, RunningStateProvider } from '@irdashies/context';
 import type { DashboardBridge, FuelCalculatorBridge } from '@irdashies/types';
 import { RendererDataProviders } from './frontend/components/RendererDataProviders/RendererDataProviders';
+import { LapTraceUpdater } from './frontend/components/OverlayContainer/LapTraceUpdater';
 
 // Get profileId from URL params
 const urlParams = new URLSearchParams(window.location.search);
@@ -54,6 +55,11 @@ async function initializeDashboardView() {
       >
         <RunningStateProvider bridge={bridge}>
           <RendererDataProviders browser />
+          {/* The lap trace widget draws nothing without its recorder: the
+              recorder is what allocates the active lap and feeds it from
+              telemetry. DashboardView renders the widget but mounts no
+              updaters of its own. */}
+          <LapTraceUpdater browser />
           <ThemeManager>
             <DashboardView />
           </ThemeManager>

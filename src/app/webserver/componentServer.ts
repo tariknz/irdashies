@@ -193,6 +193,16 @@ export async function startComponentServer(
     await import('../storage/dashboards');
   const profileId = getCurrentProfileId();
   const dashboard = getDashboard(profileId);
+  // Default to true so existing installs (which have no such key stored) keep
+  // serving browser sources exactly as before.
+  const webServerEnabled = dashboard?.generalSettings?.enableWebServer ?? true;
+  if (!webServerEnabled) {
+    logger.info(
+      'Component server disabled via generalSettings.enableWebServer - not listening on any port.'
+    );
+    return;
+  }
+
   const networkAccess =
     dashboard?.generalSettings?.enableNetworkAccess ?? false;
   const bindHost = networkAccess ? '0.0.0.0' : 'localhost';

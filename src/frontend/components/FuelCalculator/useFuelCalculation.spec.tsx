@@ -103,43 +103,86 @@ describe('useFuelCalculation channel parity', () => {
     expect(result.current?.currentLap).toBe(3);
   });
 
-  it('uses the validated timed-race remaining distance without reconstructing it', async () => {
-    window.channelBridge = {
-      subscribe: <K extends ChannelName>(
-        _channel: K,
-        callback: (payload: ChannelPayloads[K]) => void
-      ) => {
-        callback({
-          ...projection,
-          currentLap: 8,
-          lapDistPct: 0.8,
-          sessionLaps: 'unlimited',
-          sessionLapsRemain: 32767,
-          calculatedTotalRaceLaps: 20.1,
-          estimatedLapsRemaining: 9.2,
-          hasValidRaceEstimate: true,
-          isFixedLapRace: false,
-        } as ChannelPayloads[K]);
-        return () => undefined;
-      },
-    };
+  it.each([32767, 30])(
+    'uses the validated timed-race distance with raw remaining laps %s',
+    async (rawLaps) => {
+      window.channelBridge = {
+        subscribe: <K extends ChannelName>(
+          _channel: K,
+          callback: (payload: ChannelPayloads[K]) => void
+        ) => {
+          callback({
+            ...projection,
+            currentLap: 8,
+            lapDistPct: 0.8,
+            sessionLaps: 'unlimited',
+            sessionNum: 2,
+            sessionLapsRemain: rawLaps,
+            calculatedTotalRaceLaps: 20.1,
+            estimatedLapsRemaining: 9.2,
+            hasValidRaceEstimate: true,
+            isFixedLapRace: false,
+          } as ChannelPayloads[K]);
+          return () => undefined;
+        },
+      };
 
-    const { result } = renderHook(() =>
-      useFuelCalculation(defaultFuelCalculatorSettings.safetyMargin, {
-        ...defaultFuelCalculatorSettings,
-        enableStorage: false,
-        enableLogging: false,
-      })
-    );
+      const { result } = renderHook(() =>
+        useFuelCalculation(defaultFuelCalculatorSettings.safetyMargin, {
+          ...defaultFuelCalculatorSettings,
+          enableStorage: false,
+          enableLogging: false,
+        })
+      );
 
-    await waitFor(() => expect(result.current).not.toBeNull());
-    expect(result.current?.lapsRemaining).toBe(9.2);
-    expect(result.current?.lapsRemaining).not.toBeCloseTo(12.2);
-    expect(result.current?.fuelToFinish).toBeCloseTo(
-      9.2 * (result.current?.avgLaps ?? 0) +
-        (defaultFuelCalculatorSettings.safetyMargin + 0.25) * 1.3
-    );
-  });
+      await waitFor(() => expect(result.current).not.toBeNull());
+      expect(result.current?.lapsRemaining).toBe(9.2);
+      expect(result.current?.lapsRemaining).not.toBeCloseTo(12.2);
+      expect(result.current?.fuelToFinish).toBeCloseTo(
+        9.2 * (result.current?.avgLaps ?? 0) +
+          (defaultFuelCalculatorSettings.safetyMargin + 0.25) * 1.3
+      );
+    }
+  );
+
+  it.each([32767, 30])(
+    'uses the active heat distance instead of raw remaining laps (%s)',
+    async (rawLaps) => {
+      window.channelBridge = {
+        subscribe: <K extends ChannelName>(
+          _channel: K,
+          callback: (payload: ChannelPayloads[K]) => void
+        ) => {
+          callback({
+            ...projection,
+            sessionNum: 2,
+            currentLap: 3,
+            lapDistPct: 0.25,
+            sessionLaps: 8,
+            sessionLapsRemain: rawLaps,
+            sessionTimeRemain: 604800,
+            calculatedTotalRaceLaps: 8,
+            estimatedLapsRemaining: 5.75,
+            hasValidRaceEstimate: true,
+            isFixedLapRace: true,
+          } as ChannelPayloads[K]);
+          return () => undefined;
+        },
+      };
+      const { result } = renderHook(() =>
+        useFuelCalculation(0.3, {
+          ...defaultFuelCalculatorSettings,
+          enableStorage: false,
+          enableLogging: false,
+        })
+      );
+      await waitFor(() => expect(result.current?.totalLaps).toBe(8));
+      expect(result.current?.lapsRemaining).toBe(5.75);
+      expect(result.current?.fuelToFinish).toBeCloseTo(
+        5.75 * (result.current?.avgLaps ?? 0) + (0.3 + 0.25) * 1.3
+      );
+    }
+  );
 
   it('accepts a validated zero-lap timed-race estimate', async () => {
     window.channelBridge = {

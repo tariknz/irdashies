@@ -60,6 +60,11 @@ const sortableSettings: SortableSetting[] = [
   { id: 'driverTag', label: 'Driver Tag', configKey: 'driverTag' },
   { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
   { id: 'iratingChange', label: 'iRating Change', configKey: 'iratingChange' },
+  {
+    id: 'positionChange',
+    label: 'Position Change',
+    configKey: 'positionChange',
+  },
   { id: 'delta', label: 'Relative', configKey: 'delta' },
   { id: 'fastestTime', label: 'Best Time', configKey: 'fastestTime' },
   { id: 'lastTime', label: 'Last Time', configKey: 'lastTime' },
@@ -282,8 +287,7 @@ const DisplaySettingsList = ({
                         [setting.configKey]: {
                           ...cv,
                           pitLapDisplayMode: e.target.value as
-                            | 'lastPitLap'
-                            | 'lapsSinceLastPit',
+                            'lastPitLap' | 'lapsSinceLastPit',
                         },
                       });
                     }}
@@ -1004,6 +1008,15 @@ export const RelativeSettings = () => {
                     enabled={settings.config.showOnlyWhenOnTrack ?? false}
                     onToggle={(newValue) =>
                       handleConfigChange({ showOnlyWhenOnTrack: newValue })
+                    }
+                  />
+
+                  <SettingToggleRow
+                    title="Hide drivers in their pit stall"
+                    description="If enabled, drivers parked in their pit stall are removed from the relative instead of scrolling past lap after lap. Drivers driving down pit road, entering or exiting, are still shown."
+                    enabled={settings.config.hideDriversInPitStall ?? false}
+                    onToggle={(newValue) =>
+                      handleConfigChange({ hideDriversInPitStall: newValue })
                     }
                   />
                 </SettingsSection>

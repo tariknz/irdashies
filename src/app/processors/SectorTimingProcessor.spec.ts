@@ -123,6 +123,23 @@ describe('SectorTimingProcessor', () => {
     expect(processor.snapshot().inclusive.currentLapSectorTimes[0]).toBe(50);
   });
 
+  it('does not invalidate sector entry on sub-MIN_PROGRESS backward jitter', () => {
+    const processor = new SectorTimingProcessor();
+    processor.init(session);
+    processor.onFrame(frame(0.9, 90));
+    processor.onFrame(frame(0.1, 110));
+    processor.onFrame(frame(0.6, 160));
+    expect(processor.snapshot().sectorEntryValid).toBe(true);
+
+    // A sub-MIN_PROGRESS step backward — the kind of position-signal noise
+    // heavy/early braking produces at near-zero ground speed. Unlike the
+    // large forward jump above, this must not be mistaken for a teleport.
+    processor.onFrame(frame(0.6 - 1e-6, 161));
+
+    expect(processor.snapshot().sectorEntryValid).toBe(true);
+    expect(processor.snapshot().inclusive.currentLapSectorTimes[0]).toBe(50);
+  });
+
   it('keeps timing state when identical sector data is republished', () => {
     const processor = new SectorTimingProcessor();
     processor.init(session);
