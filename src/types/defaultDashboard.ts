@@ -1133,6 +1133,7 @@ export const defaultDashboard: {
           enabled: true,
           count: 10,
           style: 'list',
+          hidePittedLaps: false,
         },
         background: {
           opacity: 80,
