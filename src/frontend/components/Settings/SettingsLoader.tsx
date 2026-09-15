@@ -31,6 +31,7 @@ import { DeltaSpeedSettings } from './sections/DeltaSpeedSettings';
 import { CarSystemsSettings } from './sections/CarSystemsSettings';
 import { HeartRateSettings } from './sections/HeartRateSettings';
 import { CornerNameSettings } from './sections/CornerNameSettings';
+import { LapTraceSettings } from './sections/LapTraceSettings';
 import { BattleSettings } from './sections/BattleSettings';
 import { GantrySettings } from './sections/GantrySettings';
 
@@ -105,6 +106,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <HeartRateSettings />;
     case 'cornername':
       return <CornerNameSettings />;
+    case 'laptrace':
+      return <LapTraceSettings />;
     case 'battle':
       return <BattleSettings />;
     case 'gantry':

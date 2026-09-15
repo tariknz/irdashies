@@ -222,6 +222,23 @@ export const LapTimeLogSettings = () => {
                           })
                         }
                       />
+
+                      <SettingToggleRow
+                        title="Hide Pitted Laps"
+                        description="Leave out laps where you pitted. They are much slower than a green lap, so they stretch the chart and pull the average away from your real pace."
+                        enabled={
+                          settings.config.history?.hidePittedLaps ?? false
+                        }
+                        onToggle={(v) =>
+                          handleConfigChange({
+                            ...settings.config,
+                            history: {
+                              ...settings.config.history,
+                              hidePittedLaps: v,
+                            },
+                          })
+                        }
+                      />
                     </SettingsSection>
                   )}
                 </SettingsSection>

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { deepMergeConfig, getWidgetDefaultConfig } from './defaultDashboard';
+import { DEFAULT_LAP_TRACE_COLORS, DEFAULT_LAP_TRACE_SOUND } from './lapTrace';
 
 describe('deepMergeConfig', () => {
   describe('invalid savedCfg', () => {
@@ -225,6 +226,28 @@ describe('getWidgetDefaultConfig', () => {
     const config = getWidgetDefaultConfig('wind');
     expect(config.background.opacity).toBe(80);
     expect(config.units).toBe('auto');
+  });
+
+  it('returns the laptrace config with colours and sound defaults', () => {
+    // Compared against the shared constants rather than literal values: the
+    // point is that the defaults reach the config, not what the palette or the
+    // tones happen to be this week.
+    const config = getWidgetDefaultConfig('laptrace');
+    expect(config.colors).toEqual(DEFAULT_LAP_TRACE_COLORS);
+    expect(config.sound).toEqual(DEFAULT_LAP_TRACE_SOUND);
+  });
+
+  it('backfills laptrace colours and sound onto a config saved before they existed', () => {
+    // A dashboard saved before this feature has no colours/sound; deepMerge
+    // fills them from the defaults so the plot and cues still resolve.
+    const oldSaved = { referenceSource: 'best', strokeWidth: 4 };
+    const merged = deepMergeConfig(
+      getWidgetDefaultConfig('laptrace') as unknown as Record<string, unknown>,
+      oldSaved
+    );
+    expect(merged.strokeWidth).toBe(4); // saved value preserved
+    expect(merged.colors).toEqual(DEFAULT_LAP_TRACE_COLORS);
+    expect(merged.sound).toEqual(DEFAULT_LAP_TRACE_SOUND);
   });
 
   it('throws for unknown widget id', () => {

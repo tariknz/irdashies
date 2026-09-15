@@ -320,9 +320,22 @@ export async function publishIRacingSDKEvents(
         perfMetrics.markEnd('processTelemetry');
         perfMetrics.tick(telemetry);
 
-        // Throttling to ~25Hz to save system resources as requested.
-        // We sleep AFTER publishing to ensure each frame is sent with minimal latency.
-        await new Promise((resolve) => setTimeout(resolve, 1000 / 25));
+        // Demand-driven poll rate: 25 Hz to save system resources, raised to
+        // the sim's native 60 Hz only while a visible window is subscribed to
+        // a 60 Hz channel (LapTrace's sample channel, the Input widget).
+        // Processors still tick at their own declared rates, so only the
+        // 60 Hz ones do more work. We sleep AFTER publishing so each frame is
+        // sent with minimal latency, and subtract the tick's own duration so
+        // the rate holds rather than drifting below target.
+        const targetHz = Math.min(
+          60,
+          Math.max(25, channelBus?.maxActiveRateHz() ?? 25)
+        );
+        const remainingDelay = Math.max(
+          0,
+          1000 / targetHz - (performance.now() - pollStartedAt)
+        );
+        await new Promise((resolve) => setTimeout(resolve, remainingDelay));
       }
 
       if (wasRunning) {

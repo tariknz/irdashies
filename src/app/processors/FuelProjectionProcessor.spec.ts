@@ -61,6 +61,43 @@ describe('FuelProjectionProcessor', () => {
     expect(lapCompleted).toHaveBeenCalledOnce();
   });
 
+  it('uses each heat lap limit after qualifying and race transitions', () => {
+    const processor = new FuelProjectionProcessor();
+    processor.init({
+      SessionInfo: {
+        Sessions: [
+          { SessionNum: 0, SessionType: 'Lone Qualify', SessionLaps: 2 },
+          { SessionNum: 1, SessionType: 'Race', SessionLaps: 8 },
+          { SessionNum: 2, SessionType: 'Race', SessionLaps: 20 },
+        ],
+      },
+    } as unknown as Session);
+
+    for (const [sessionNum, totalLaps] of [
+      [0, 0],
+      [1, 8],
+      [2, 20],
+    ]) {
+      if (sessionNum > 0) processor.onLifecycle({ type: 'sessionNumChange' });
+      processor.onFrame(
+        frame({
+          SessionNum: sessionNum,
+          SessionState: 4,
+          SessionTimeRemain: 604800,
+          SessionLapsRemain: 32767,
+          Lap: 3,
+          LapDistPct: 0.25,
+        })
+      );
+      expect(processor.snapshot()).toMatchObject({
+        sessionNum,
+        calculatedTotalRaceLaps: totalLaps,
+        estimatedLapsRemaining: totalLaps > 0 ? totalLaps - 2.25 : 0,
+        hasValidRaceEstimate: totalLaps > 0,
+      });
+    }
+  });
+
   it('resets volatile state on disconnect', () => {
     const processor = new FuelProjectionProcessor();
     processor.onFrame(

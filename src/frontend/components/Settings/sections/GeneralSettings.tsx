@@ -100,6 +100,7 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
       currentDashboard?.generalSettings?.overlayAlwaysOnTop ?? true,
     enableNetworkAccess:
       currentDashboard?.generalSettings?.enableNetworkAccess ?? false,
+    enableWebServer: currentDashboard?.generalSettings?.enableWebServer ?? true,
     editMode: {
       pixelDistances:
         currentDashboard?.generalSettings?.editMode?.pixelDistances ?? false,
@@ -277,6 +278,12 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
 
   const handleNetworkAccessChange = (enabled: boolean) => {
     const newSettings = { ...settings, enableNetworkAccess: enabled };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
+  const handleWebServerChange = (enabled: boolean) => {
+    const newSettings = { ...settings, enableWebServer: enabled };
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
@@ -606,6 +613,33 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                     onChange={(e) =>
                       handleOverlayAlwaysOnTopChange(e.target.checked)
                     }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+            </div>
+
+            {/* Web Server Setting */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-medium text-slate-200">
+                    Enable Web Server
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    Runs the built-in web server that exposes your overlays as
+                    browser sources for OBS. When disabled, the app listens on
+                    no ports at all &mdash; freeing port 3000 &mdash; and the
+                    OBS browser source URLs stop working. Leave enabled if you
+                    stream or record. (requires restart)
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.enableWebServer ?? true}
+                    onChange={(e) => handleWebServerChange(e.target.checked)}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
