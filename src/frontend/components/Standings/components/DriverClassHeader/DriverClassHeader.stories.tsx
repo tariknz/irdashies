@@ -77,7 +77,11 @@ export const ManyManufacturers: Story = {
     isMultiClass: true,
     classHeaderStyle: {
       compactSof: true,
-      manufacturerStats: { enabled: true, cap: 5, showPlayerManufacturer: false },
+      manufacturerStats: {
+        enabled: true,
+        cap: 5,
+        showPlayerManufacturer: false,
+      },
     },
     manufacturerCounts: [
       { carId: 56, count: 5 },
@@ -99,7 +103,11 @@ export const PlayerManufacturerOverride: Story = {
     isMultiClass: true,
     classHeaderStyle: {
       compactSof: true,
-      manufacturerStats: { enabled: true, cap: 5, showPlayerManufacturer: true },
+      manufacturerStats: {
+        enabled: true,
+        cap: 5,
+        showPlayerManufacturer: true,
+      },
     },
     manufacturerCounts: [
       { carId: 56, count: 5 },
@@ -123,7 +131,11 @@ export const TwelveManufacturersCapAll: Story = {
     isMultiClass: true,
     classHeaderStyle: {
       compactSof: true,
-      manufacturerStats: { enabled: true, cap: null, showPlayerManufacturer: false },
+      manufacturerStats: {
+        enabled: true,
+        cap: null,
+        showPlayerManufacturer: false,
+      },
     },
     manufacturerCounts: [
       { carId: 56, count: 6 },

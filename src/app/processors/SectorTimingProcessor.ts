@@ -152,8 +152,15 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
     }
 
     const tickDuration = sessionTime - this.lastSessionTime;
+    // -MIN_PROGRESS, not 0: heavy/early braking spends many ticks near zero
+    // ground speed, where position-signal noise can read a hair negative.
+    // Without this tolerance that noise reads as a teleport and nulls out
+    // the current sector's time — matched below by MIN_PROGRESS treating
+    // the same-sized *forward* creep as a no-op rather than movement. The
+    // genuine lap-wrap case is already handled and returned above, so this
+    // negative delta is never a real wrap.
     const teleported =
-      delta < 0 ||
+      delta < -MIN_PROGRESS ||
       delta > MAX_FORWARD_JUMP ||
       (delta > 0 &&
         tickDuration > 0 &&

@@ -12,6 +12,7 @@ import {
 
 export const ProfileSettings = () => {
   const {
+    currentDashboard,
     currentProfile,
     profiles,
     bridge,
@@ -22,6 +23,9 @@ export const ProfileSettings = () => {
     switchProfile,
     refreshProfiles,
   } = useDashboard();
+
+  const webServerEnabled =
+    currentDashboard?.generalSettings?.enableWebServer ?? true;
 
   const [cycleProfiles, setCycleProfiles] = useState(false);
   const [showProfileBanner, setShowProfileBanner] = useState(true);
@@ -475,8 +479,21 @@ export const ProfileSettings = () => {
           </div>
         </div>
 
-        {/* OBS Browser Source URL */}
-        {currentProfile && (
+        {/* OBS Browser Source URL - only meaningful while the web server runs */}
+        {currentProfile && !webServerEnabled && (
+          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-white mb-2">
+              OBS Browser Source
+            </h3>
+            <p className="text-sm text-gray-400">
+              The built-in web server is turned off, so browser source URLs are
+              unavailable. Re-enable it under Settings &rarr; General &rarr;
+              Enable Web Server (requires restart).
+            </p>
+          </div>
+        )}
+
+        {currentProfile && webServerEnabled && (
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-3">
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">

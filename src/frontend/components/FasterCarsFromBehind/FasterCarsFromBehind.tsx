@@ -1,4 +1,8 @@
-import { useSessionVisibility, useDashboard } from '@irdashies/context';
+import {
+  useSessionVisibility,
+  useDashboard,
+  useWeekendInfoNumCarClasses,
+} from '@irdashies/context';
 import { useCarBehind } from './hooks/useCarBehind';
 import { useFasterCarsSettings } from './hooks/useFasterCarsSettings';
 import { getTailwindStyle } from '@irdashies/utils/colors';
@@ -13,10 +17,13 @@ export interface FasterCarsFromBehindProps {
   distance?: number;
   percent?: number;
   classColor?: number;
+  isMultiClass?: boolean;
 }
 
 export const FasterCarsFromBehind = () => {
   const { isDemoMode } = useDashboard();
+  const numCarClasses = useWeekendInfoNumCarClasses();
+  const isMultiClass = isDemoMode || (numCarClasses ?? 0) > 1;
   const settings = useFasterCarsSettings();
   const carsBehind = useCarBehind({
     distanceThreshold: settings?.distanceThreshold,
@@ -44,7 +51,11 @@ export const FasterCarsFromBehind = () => {
   return (
     <div className={`flex flex-col gap-2 h-full ${containerAlignment}`}>
       {orderedCars.map((car) => (
-        <FasterCarsFromBehindDisplay key={car.carIdx} {...car} />
+        <FasterCarsFromBehindDisplay
+          key={car.carIdx}
+          {...car}
+          isMultiClass={isMultiClass}
+        />
       ))}
     </div>
   );
@@ -57,6 +68,7 @@ export const FasterCarsFromBehindDisplay = ({
   distance,
   percent,
   classColor,
+  isMultiClass = false,
 }: FasterCarsFromBehindProps) => {
   const settings = useFasterCarsSettings();
 
@@ -67,7 +79,11 @@ export const FasterCarsFromBehindDisplay = ({
   const animate = distance && distance > -1.5 ? 'animate-pulse' : '';
   const red = percent || 0;
   const green = 100 - (percent || 0);
-  const background = getTailwindStyle(classColor, undefined, true).classHeader;
+  const background = getTailwindStyle(
+    classColor,
+    undefined,
+    isMultiClass
+  ).classHeader;
 
   name = settings?.removeNumbersFromName ? name.replace(/\d/g, '') : name;
 

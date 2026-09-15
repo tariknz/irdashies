@@ -2,7 +2,7 @@ interface SettingSelectRowProps<T extends string> {
   title: string;
   description?: string;
   value: T;
-  options: { label: string; value: T }[];
+  options: { label: string; value: T; disabled?: boolean }[];
   onChange: (value: T) => void;
 }
 
@@ -28,10 +28,14 @@ export function SettingSelectRow<T extends string>({
         aria-label={title}
         className="bg-slate-700 text-white rounded-md px-2 py-1"
         value={value}
-        onChange={(e) => onChange(e.target.value as T)}
+        onChange={(e) => {
+          const next = e.target.value as T;
+          if (options.find((opt) => opt.value === next)?.disabled) return;
+          onChange(next);
+        }}
       >
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
+          <option key={opt.value} value={opt.value} disabled={opt.disabled}>
             {opt.label}
           </option>
         ))}

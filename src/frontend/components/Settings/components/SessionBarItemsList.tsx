@@ -210,9 +210,7 @@ export const SessionBarItemsList = ({
                   onChange={(e) =>
                     updateItemConfig(item.id, {
                       labelStyle: e.target.value as
-                        | 'none'
-                        | 'short'
-                        | 'minimal',
+                        'none' | 'short' | 'minimal',
                     })
                   }
                   className="bg-slate-700 text-white rounded-md px-2 py-1"

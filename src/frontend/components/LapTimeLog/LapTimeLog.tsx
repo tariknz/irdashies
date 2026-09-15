@@ -101,10 +101,15 @@ export const LapTimeLogDisplay = ({
   // sort laps
   const sortedHistory = useMemo(() => {
     if (!history) return [];
-    return [...history]
+    // Filtered before the slice, so hiding pit laps still shows the configured
+    // number of laps rather than silently shortening the list.
+    const laps = settings.history.hidePittedLaps
+      ? history.filter((entry) => !entry.pitted)
+      : history;
+    return [...laps]
       .sort((a, b) => b.lap - a.lap)
       .slice(0, settings.history.count);
-  }, [history, settings.history.count]);
+  }, [history, settings.history.count, settings.history.hidePittedLaps]);
 
   // predicted lap time
   const predicted =
@@ -227,11 +232,7 @@ export const LapTimeLogDisplay = ({
                         : 'text-zinc-400'
                   }`}
                 >
-                  {formatDelta(
-                    hasPredictedDelta
-                      ? delta
-                      : 0
-                  )}
+                  {formatDelta(hasPredictedDelta ? delta : 0)}
                 </div>
               )}
             </div>

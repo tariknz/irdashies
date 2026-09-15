@@ -509,6 +509,18 @@ export const WithTyresEnabled: Story = {
   ],
 };
 
+export const WithPositionChangeEnabled: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(undefined, {
+      relative: {
+        headerBar: { enabled: true },
+        footerBar: { enabled: true },
+        positionChange: { enabled: true },
+      },
+    }),
+  ],
+};
+
 export const WithLapDeltasEnabled: Story = {
   decorators: [
     TelemetryDecoratorWithConfig(undefined, {

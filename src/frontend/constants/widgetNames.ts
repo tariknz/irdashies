@@ -30,6 +30,7 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   carsystems: 'Car Systems',
   heartrate: 'Heart Rate',
   cornername: 'Corner Names',
+  laptrace: 'Lap Trace',
   battle: 'Battle',
   gantry: 'The Gantry',
 };

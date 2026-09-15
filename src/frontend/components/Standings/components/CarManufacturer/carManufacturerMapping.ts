@@ -266,8 +266,12 @@ export const CAR_ID_TO_CAR_MANUFACTURER: Record<
   208: { name: 'Porsche 911 Cup (992.2)', manufacturer: 'porsche' },
   210: { name: 'Audi RS3 LMS Gen2 TCR', manufacturer: 'audi' },
   211: { name: 'NASCAR Truck RAM 1500 TRX', manufacturer: 'dodgeram' },
+  212: { name: 'Aston Martin Valkyrie AMR-LMH', manufacturer: 'astonmartin' },
   213: { name: 'EURO NASCAR V8GP', manufacturer: 'unknown' },
-  214: { name: 'Formula Vee - Cutlass', manufacturer: 'vw' },
+  214: { name: 'Formula Vee - Sabre', manufacturer: 'vw' },
   215: { name: 'Formula Vee - Conqueror', manufacturer: 'vw' },
   216: { name: 'BMW M2 Racing (G87)', manufacturer: 'bmw' },
+  217: { name: 'Caterham Academy', manufacturer: 'caterham' },
+  218: { name: 'Caterham 420R', manufacturer: 'caterham' },
+  219: { name: 'Gen 4 Grand National', manufacturer: 'chevrolet' },
 };
