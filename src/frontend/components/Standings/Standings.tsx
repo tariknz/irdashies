@@ -28,6 +28,93 @@ import {
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 import { computeStintLap } from './components/DriverInfoRow/cells/lapCountUtils';
 
+const COLUMN_LABELS: Record<string, string> = {
+  position: 'POS',
+  carNumber: '',
+  driverTag: 'TAG',
+  countryFlags: '',
+  driverName: '',
+  teamName: '',
+  pitStatus: 'PIT',
+  carManufacturer: '',
+  badge: '',
+  iratingChange: '',
+  positionChange: 'CHANGE',
+  delta: 'DELTA',
+  gap: 'GAP',
+  interval: 'INT',
+  fastestTime: 'BEST',
+  lastTime: 'LAST',
+  compound: 'TIRE',
+  lapTimeDeltas: 'DELTA',
+  avgLapTime: 'AVG',
+  lapCount: 'LAPS',
+  pushToPass: 'P2P',
+};
+
+const COLUMN_ORDER = Object.keys(COLUMN_LABELS);
+
+interface ColumnHeadersProps {
+  config: NonNullable<ReturnType<typeof useStandingsSettings>>;
+  hasAnyDriverTag: boolean;
+  hasAnyCountryFlag: boolean;
+  isTeamRacing: boolean;
+  hideCarManufacturer: boolean;
+}
+
+const ColumnHeaders = ({
+  config,
+  hasAnyDriverTag,
+  hasAnyCountryFlag,
+  isTeamRacing,
+  hideCarManufacturer,
+}: ColumnHeadersProps) => {
+  const isEnabled = (value: unknown): boolean =>
+    typeof value === 'object' &&
+    value !== null &&
+    'enabled' in value &&
+    value.enabled === true;
+  const enabledColumns = new Set(
+    COLUMN_ORDER.filter((id) => {
+      const column = config?.[id as keyof typeof config];
+      if (id === 'driverTag') return isEnabled(column) && hasAnyDriverTag;
+      if (id === 'countryFlags') {
+        return isEnabled(column) && hasAnyCountryFlag;
+      }
+      if (id === 'teamName') return isEnabled(column) && isTeamRacing;
+      if (id === 'carManufacturer') {
+        return isEnabled(column) && !hideCarManufacturer;
+      }
+      if (id === 'delta') return isEnabled(column) && !('gap' in config);
+      return isEnabled(column);
+    })
+  );
+  const orderedColumns = [
+    ...(config.displayOrder ?? []),
+    ...COLUMN_ORDER,
+  ].filter(
+    (id, index, order) => enabledColumns.has(id) && order.indexOf(id) === index
+  );
+
+  return (
+    <tr className="text-xs font-bold uppercase tracking-wide text-slate-400">
+      {orderedColumns.map((id) => (
+        <td
+          key={id}
+          colSpan={
+            id === 'lapTimeDeltas'
+              ? Math.max(1, config.lapTimeDeltas?.numLaps ?? 1)
+              : undefined
+          }
+          className="px-1 py-0 whitespace-nowrap text-center"
+        >
+          {COLUMN_LABELS[id]}
+        </td>
+      ))}
+    </tr>
+  );
+};
+
 export const Standings = () => {
   const settings = useStandingsSettings();
   const generalSettings = useGeneralSettings();
@@ -160,6 +247,15 @@ export const Standings = () => {
                     manufacturerCounts={manufacturerStats?.counts}
                     playerManufacturerEntry={manufacturerStats?.playerEntry}
                   />
+                  {settings?.stylingOptions?.columnHeaders && (
+                    <ColumnHeaders
+                      config={settings}
+                      hasAnyDriverTag={hasAnyTag}
+                      hasAnyCountryFlag={hasAnyCountryFlag}
+                      isTeamRacing={isTeamRacing === 1}
+                      hideCarManufacturer={hideCarManufacturer}
+                    />
+                  )}
                   {classStandings.map((result, driverIndex) => {
                     const prev = classStandings[driverIndex - 1];
                     const showDivider =
@@ -295,6 +391,9 @@ export const Standings = () => {
                           lapCountUnknown={stintLap.unknown}
                           pitExitAfterSF={pitExitAfterSF}
                           hideCarManufacturer={hideCarManufacturer}
+                          hideLeaderGapIntervalLabels={
+                            settings?.stylingOptions?.columnHeaders ?? false
+                          }
                           compactMode={generalSettings?.compactMode}
                           p2pDisplayState={p2pDisplayStates[result.carIdx]}
                         />
