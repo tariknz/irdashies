@@ -1219,6 +1219,26 @@ export const StandingsSettings = () => {
 
                   <SettingDivider />
 
+                  <SettingsSection title="Columns">
+                    <SettingToggleRow
+                      title="Show Column Names"
+                      description="Show each enabled column name above its values"
+                      enabled={
+                        settings.config.stylingOptions?.columnHeaders ?? false
+                      }
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          stylingOptions: {
+                            ...settings.config.stylingOptions,
+                            columnHeaders: newValue,
+                          },
+                        })
+                      }
+                    />
+                  </SettingsSection>
+
+                  <SettingDivider />
+
                   <SettingsSection title="Driver Position">
                     <SettingToggleRow
                       title="Position Background"
