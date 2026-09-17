@@ -35,9 +35,10 @@ const boolean = (frame: Telemetry, key: keyof Telemetry): boolean =>
  * or watches a replay.
  *
  * **Scales differ and some are signed.** Most run 0..n with 0 meaning off, but
- * the BMW M Hybrid V8 reports ABS between -5 and -3. A negative value anywhere
- * in a session proves the scale has a negative side, on which 0 is an ordinary
- * setting rather than off. That is tracked per variable.
+ * dcABS reads negative on every GTP-class car in the recorded sessions - -5 and
+ * -3 on the Cadillac V-Series.R, -2 on the BMW M Hybrid V8. A negative value
+ * anywhere in a session proves the scale has a negative side, on which 0 is an
+ * ordinary setting rather than off. That is tracked per variable.
  *
  * Observation alone is not enough for a scale centred on zero, though: the
  * neutral setting would read as off until the driver first crossed into

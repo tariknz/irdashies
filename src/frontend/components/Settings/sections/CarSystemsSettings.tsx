@@ -4,6 +4,7 @@ import {
   CAR_SYSTEM_ADJUSTMENTS,
   CarSystemsWidgetSettings,
   SettingsTabType,
+  carSystemIsRenamedSomewhere,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
@@ -148,6 +149,15 @@ export const CarSystemsSettings = () => {
                     <SettingToggleRow
                       key={adjustment.key}
                       title={adjustment.label}
+                      // Settings configures every car at once, so rows keep
+                      // their catalogue name here. Saying so matters for the
+                      // ones a car renames, otherwise the driver enables "ABS"
+                      // and a column headed MIGR appears.
+                      description={
+                        carSystemIsRenamedSomewhere(adjustment.key)
+                          ? 'Named differently on some cars, which control the widget follows.'
+                          : undefined
+                      }
                       enabled={rows.includes(adjustment.key)}
                       onToggle={(v) =>
                         toggleRow(adjustment.key, v, handleConfigChange)

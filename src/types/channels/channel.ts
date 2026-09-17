@@ -134,7 +134,12 @@ export interface BlindSpotSnapshot {
 export interface CarSystemAdjustment {
   /** Telemetry variable name, e.g. 'dcABS'. Stable identity for the row. */
   key: string;
-  /** Display label, e.g. 'ABS'. */
+  /**
+   * The catalogue name, e.g. 'ABS'. Not necessarily what is on screen: a car
+   * that wires this channel to a different control renames it at render, via
+   * `resolveCarSystemDefinition`. Resolving it here instead would mean giving
+   * the processor a car identity it does not otherwise need.
+   */
   label: string;
   value: number;
   /** True only when the car's scale is unsigned and the value is 0. */

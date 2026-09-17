@@ -209,3 +209,79 @@ export const DEFAULT_CAR_SYSTEM_ROWS: readonly string[] = [
 /** The row a telemetry key is displayed in; brake bias has two sources. */
 export const carSystemRowKey = (key: string): string =>
   key === 'dcPeakBrakeBias' ? 'dcBrakeBias' : key;
+
+/**
+ * A car-specific name for an adjustment, replacing the catalogue's generic one.
+ *
+ * iRacing does not publish a channel per physical control. It publishes a fixed
+ * set of `dc*` variables and each car wires its own dials to whichever ones fit,
+ * so the same channel can carry a different control from one car to the next —
+ * the same reason `dcPeakBrakeBias` already has to share the brake bias column.
+ *
+ * Only the display strings are overridden. The telemetry key stays the identity
+ * of the row: it is what `CarSystemsConfig.rows` persists and what
+ * `DEFAULT_CAR_SYSTEM_ROWS` lists, so a driver who enabled a row keeps it when
+ * they switch cars, and it is simply named differently.
+ */
+export interface CarSystemLabelOverride {
+  label: string;
+  short: string;
+}
+
+/**
+ * Car paths are matched case-insensitively and ignoring punctuation, matching
+ * how `carData.ts` resolves the bundled tachometer data. `CarPath` is stable
+ * for a given car but its exact spelling is not worth depending on.
+ */
+export const normalizeCarPath = (carPath: string): string =>
+  carPath.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/**
+ * Per-car renames, keyed by normalized `DriverInfo.Drivers[].CarPath`, then by
+ * telemetry key.
+ *
+ * Deliberately sparse. A car absent from this table gets the catalogue label,
+ * which is the right answer for the overwhelming majority — so a new iRacing
+ * car is named sensibly on release rather than blank, and only genuine
+ * deviations need an entry.
+ *
+ * Entries are only added from observed telemetry, never from assumption: a
+ * wrong rename here is worse than a generic name, because the driver has no way
+ * to tell it is wrong. Where a claim is secondhand it says so, and says what
+ * would confirm it.
+ */
+export const CAR_SYSTEM_LABEL_OVERRIDES: Readonly<
+  Record<string, Readonly<Record<string, CarSystemLabelOverride>>>
+> = {
+  // PROVISIONAL - not yet confirmed against a recorded session.
+  //
+  // Reported by L061N on #723, from a telemetry viewer and an LMP2 session
+  // file: on this car the dial published as dcABS is brake migration, not ABS.
+  // That is plausible on its face - the Oreca-era LMP2 has no ABS to adjust,
+  // while brake migration is a control it does have - but it rests on someone
+  // else's screenshot rather than on a capture, so it is flagged rather than
+  // quietly trusted. Confirm by sweeping the migration dial in the P217 and
+  // checking that dcABS is what moves.
+  dallarap217: {
+    dcABS: { label: 'Brake Migration', short: 'MIGR' },
+  },
+};
+
+/** The catalogue entry for a key, renamed if the current car renames it. */
+export const resolveCarSystemDefinition = (
+  definition: CarSystemDefinition,
+  carPath: string | undefined
+): CarSystemDefinition => {
+  if (!carPath) return definition;
+  const override =
+    CAR_SYSTEM_LABEL_OVERRIDES[normalizeCarPath(carPath)]?.[definition.key];
+  return override ? { ...definition, ...override } : definition;
+};
+
+/**
+ * Cars that rename a given adjustment, for settings to mention. Settings is a
+ * global screen rather than a per-car one, so it keeps the catalogue name and
+ * uses this only to warn that the name varies.
+ */
+export const carSystemIsRenamedSomewhere = (key: string): boolean =>
+  Object.values(CAR_SYSTEM_LABEL_OVERRIDES).some((car) => key in car);

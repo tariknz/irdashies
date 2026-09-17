@@ -8,9 +8,11 @@ import {
 import {
   CAR_SYSTEM_ADJUSTMENTS,
   carSystemRowKey,
+  resolveCarSystemDefinition,
   type CarSystemAdjustment,
 } from '@irdashies/types';
 import { useCarSystemsSettings } from './hooks/useCarSystemsSettings';
+import { usePlayerCarPath } from './hooks/usePlayerCarPath';
 
 /** Shown for a column the current car does not have. */
 const BLANK = '--';
@@ -71,6 +73,7 @@ export const CarSystems = () => {
   const settings = useCarSystemsSettings();
   const generalSettings = useGeneralSettings();
   const snapshot = useCarSystemsSnapshot();
+  const carPath = usePlayerCarPath();
   const { isDriving } = useDrivingState();
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
@@ -92,8 +95,12 @@ export const CarSystems = () => {
     const configured = settings?.rows ?? [];
     return configured
       .map((key) => {
-        const definition = CAR_SYSTEM_ADJUSTMENTS.find((d) => d.key === key);
-        if (!definition) return undefined;
+        const catalogue = CAR_SYSTEM_ADJUSTMENTS.find((d) => d.key === key);
+        if (!catalogue) return undefined;
+        // Renamed per car where the car wires that channel to a different
+        // control. The key is unchanged, so the saved row selection and the
+        // snapshot both still match on it.
+        const definition = resolveCarSystemDefinition(catalogue, carPath);
         return {
           key,
           short: definition.short,
@@ -108,7 +115,7 @@ export const CarSystems = () => {
         (column) =>
           settings?.showUnsupportedRows || column.adjustment !== undefined
       );
-  }, [settings?.rows, settings?.showUnsupportedRows, byColumn]);
+  }, [settings?.rows, settings?.showUnsupportedRows, byColumn, carPath]);
 
   if (!isSessionVisible) return <></>;
   if (settings?.showOnlyWhenOnTrack && !isDriving) return <></>;
