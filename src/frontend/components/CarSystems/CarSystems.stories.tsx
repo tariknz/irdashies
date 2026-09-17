@@ -175,3 +175,40 @@ export const AllRows: Story = {
     }
   ),
 };
+
+/**
+ * The Mercedes W13's real strip, values taken from a capture matched against a
+ * photograph of the car's own screen. It is the widest case the brake family
+ * has: a coarse bias, a fine trim either side of zero, a target and a migration
+ * dial, all four of which used to be two.
+ *
+ * The headers read their catalogue names here - Storybook has no W13 capture to
+ * take a CarPath from, so the per-car renames (PBB to MIGR) are covered by the
+ * component spec instead.
+ */
+export const BrakeFamily: Story = {
+  ...story(
+    snapshot([
+      brakeBias(52.0),
+      adjustment('dcBrakeBiasFine', 'Brake Bias Fine', 0, { precision: 1 }),
+      adjustment('dcBrakeMisc', 'Brake Bias Target', 0),
+      adjustment('dcPeakBrakeBias', 'Peak Brake Bias', 3),
+      adjustment('dcDiffEntry', 'Diff Entry', 3),
+      adjustment('dcDiffMiddle', 'Diff Mid', 2),
+      adjustment('dcDiffExit', 'Diff High Speed', 3),
+      adjustment('dcEngineBraking', 'Engine Braking', 3),
+    ]),
+    {
+      rows: [
+        'dcBrakeBias',
+        'dcBrakeBiasFine',
+        'dcBrakeMisc',
+        'dcPeakBrakeBias',
+        'dcDiffEntry',
+        'dcDiffMiddle',
+        'dcDiffExit',
+        'dcEngineBraking',
+      ],
+    }
+  ),
+};

@@ -58,6 +58,32 @@ export const CAR_SYSTEM_ADJUSTMENTS: readonly CarSystemDefinition[] = [
     unit: '%',
     chip: 'bg-red-600',
   },
+  // The W13's fine bias trim, beside the coarse dcBrakeBias: -1..1 in 21 steps,
+  // so 0.1 a click and one decimal.
+  {
+    key: 'dcBrakeBiasFine',
+    label: 'Brake Bias Fine',
+    short: 'BBF',
+    precision: 1,
+    // Centred on zero, so declared rather than observed - see the weight
+    // jacker. A car sat on a neutral trim would otherwise read as switched off.
+    signed: true,
+    chip: 'bg-red-700',
+  },
+  // The brake bias target, on the cars whose migration works towards one. Both
+  // GTP photographs name it that; it runs -5..5 in 11 steps beside the
+  // migration dial, and the two were swept independently without ever moving
+  // on the same frame.
+  {
+    key: 'dcBrakeMisc',
+    label: 'Brake Bias Target',
+    short: 'BBT',
+    precision: 0,
+    // Centred on zero, and the W13 publishes it sitting at 0 for a whole
+    // session, which is exactly the case observation cannot rescue.
+    signed: true,
+    chip: 'bg-red-800',
+  },
   // Not a brake bias, despite the name, and not a substitute for dcBrakeBias.
   // Captures of the two cars that publish it disagree on what it is and agree
   // it is not a bias split: on the Renault Clio it is the rear brake valve,
@@ -109,6 +135,23 @@ export const CAR_SYSTEM_ADJUSTMENTS: readonly CarSystemDefinition[] = [
     short: 'PWR',
     precision: 0,
     chip: 'bg-violet-700',
+  },
+  // The W13's engine braking dial, 1..12.
+  {
+    key: 'dcEngineBraking',
+    label: 'Engine Braking',
+    short: 'EB',
+    precision: 0,
+    chip: 'bg-violet-800',
+  },
+  // The P217's power steering assist, 1..5. Named from the channel rather than
+  // from the car's own screen, which was not photographed.
+  {
+    key: 'dcPowerSteering',
+    label: 'Power Steering',
+    short: 'PS',
+    precision: 0,
+    chip: 'bg-zinc-700',
   },
   {
     key: 'dcFuelMixture',
@@ -178,6 +221,21 @@ export const CAR_SYSTEM_ADJUSTMENTS: readonly CarSystemDefinition[] = [
     short: 'REGEN',
     precision: 1,
     chip: 'bg-emerald-600',
+  },
+  // A mode, not a level: the W13 runs it 0..3 and its screen names the setting
+  // in words ("Build"), which telemetry does not carry. The number is shown as
+  // published rather than guessed at, so it reads as a position on the dial.
+  //
+  // Which position 0 is remains unknown, and the widget treats an unsigned 0 as
+  // off - right if 0 is the car's off mode, wrong if it is an ordinary one.
+  // Resolving it needs a capture that sweeps this dial with its screen
+  // photographed at each step; the one sweep so far did not.
+  {
+    key: 'dcMGUKDeployMode',
+    label: 'Deploy Mode',
+    short: 'MODE',
+    precision: 0,
+    chip: 'bg-orange-700',
   },
   // There is no left weight jacker. The device raises and lowers the right rear
   // ride height, so iRacing publishes dcWeightJackerRight alone — confirmed by

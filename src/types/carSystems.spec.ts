@@ -96,6 +96,37 @@ describe('resolveCarSystemDefinition', () => {
   });
 });
 
+describe('CAR_SYSTEM_ADJUSTMENTS', () => {
+  it('has no duplicate keys', () => {
+    const keys = CAR_SYSTEM_ADJUSTMENTS.map((d) => d.key);
+
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('declares the scales that are centred on zero', () => {
+    // These three sit at a neutral 0 for whole sessions - the jacker on any
+    // road course, the bias target on the W13 - so the processor's "saw a
+    // negative once" rule never fires and 0 would report as switched off.
+    const signed = CAR_SYSTEM_ADJUSTMENTS.filter((d) => d.signed).map(
+      (d) => d.key
+    );
+
+    expect(signed.sort()).toEqual([
+      'dcBrakeBiasFine',
+      'dcBrakeMisc',
+      'dcWeightJackerRight',
+    ]);
+  });
+
+  it('gives every row its own chip colour', () => {
+    // Two columns in the same colour read as the same system at a glance,
+    // which is the one thing the chips exist to prevent.
+    const chips = CAR_SYSTEM_ADJUSTMENTS.map((d) => d.chip);
+
+    expect(new Set(chips).size).toBe(chips.length);
+  });
+});
+
 describe('CAR_SYSTEM_LABEL_OVERRIDES', () => {
   it('only overrides keys the catalogue knows about', () => {
     // A typo'd key would silently never match, so it is caught here rather
