@@ -31,7 +31,7 @@ export const SessionLapsItem = memo(
         : lapDisplay;
 
     let content: React.ReactNode;
-    if (state >= SessionState.Checkered) {
+    if (state >= SessionState.Checkered && effectiveTotal > 0) {
       content = <>L{lapValue} / {Math.ceil(effectiveTotal).toFixed(0)}</>;
     } else if (lapsTotal > 0) {
       content = isFixedLapRace ? (
