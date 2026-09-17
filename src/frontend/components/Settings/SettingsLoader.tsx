@@ -15,6 +15,7 @@ import { RejoinIndicatorSettings } from './sections/RejoinIndicatorSettings';
 import { PitlaneHelperSettings } from './sections/PitlaneHelperSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
+import { RadarSettings } from './sections/RadarSettings';
 import { GarageCoverSettings } from './sections/GarageCoverSettings';
 import { ProfileSettings } from './sections/ProfileSettings';
 import { FlagSettings } from './sections/FlagSettings';
@@ -33,6 +34,7 @@ import { CornerNameSettings } from './sections/CornerNameSettings';
 import { LapTraceSettings } from './sections/LapTraceSettings';
 import { BattleSettings } from './sections/BattleSettings';
 import { GantrySettings } from './sections/GantrySettings';
+import { DrivingMetricSettings } from './sections/DrivingMetricSettings';
 
 interface SettingsLoaderProps {
   previewMode?: boolean;
@@ -83,6 +85,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <FasterCarsFromBehindSettings />;
     case 'blindspotmonitor':
       return <BlindSpotMonitorSettings />;
+    case 'radar':
+      return <RadarSettings />;
     case 'garagecover':
       return <GarageCoverSettings />;
     case 'flag':
@@ -109,6 +113,26 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <BattleSettings />;
     case 'gantry':
       return <GantrySettings />;
+    case 'tracknotes':
+      return <DrivingMetricSettings id="tracknotes" />;
+    case 'accelerationtimer':
+      return <DrivingMetricSettings id="accelerationtimer" />;
+    case 'stinthistory':
+      return <DrivingMetricSettings id="stinthistory" />;
+    case 'frictioncircle':
+      return <DrivingMetricSettings id="frictioncircle" />;
+    case 'tyrepanel':
+      return <DrivingMetricSettings id="tyrepanel" />;
+    case 'brakepressure':
+      return <DrivingMetricSettings id="brakepressure" />;
+    case 'suspensionposition':
+      return <DrivingMetricSettings id="suspensionposition" />;
+    case 'trackclock':
+      return <DrivingMetricSettings id="trackclock" />;
+    case 'steeringmeter':
+      return <DrivingMetricSettings id="steeringmeter" />;
+    case 'cruiseodometer':
+      return <DrivingMetricSettings id="cruiseodometer" />;
     default:
       return widget ? (
         <div className="text-red-400">No settings available for {type}</div>

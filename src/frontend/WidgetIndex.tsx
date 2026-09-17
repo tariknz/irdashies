@@ -8,6 +8,7 @@ import { Wind } from './components/Wind';
 import { FasterCarsFromBehind } from './components/FasterCarsFromBehind/FasterCarsFromBehind';
 import { FuelCalculator } from './components/FuelCalculator';
 import { BlindSpotMonitor } from './components/BlindSpotMonitor/BlindSpotMonitor';
+import { Radar } from './components/Radar/Radar';
 import { GarageCover } from './components/GarageCover/GarageCover';
 import { RejoinIndicator } from './components/RejoinIndicator/RejoinIndicator';
 import { TelemetryInspector } from './components/TelemetryInspector/TelemetryInspector';
@@ -25,6 +26,18 @@ import { CornerNameOverlay } from './components/CornerNameOverlay';
 import { LapTrace } from './components/LapTrace';
 import { Battle } from './components/Battle/Battle';
 import { Gantry } from './components/Gantry/Gantry';
+import {
+  AccelerationTimer,
+  BrakePressure,
+  CruiseOdometer,
+  FrictionCircle,
+  SteeringMeter,
+  StintHistory,
+  SuspensionPosition,
+  TrackClock,
+  TrackNotes,
+  TyrePanel,
+} from './components/DrivingMetrics/DrivingMetrics';
 import type { WidgetConfigMap } from '@irdashies/types';
 import type { ElementType } from 'react';
 
@@ -39,6 +52,7 @@ export {
   FasterCarsFromBehind,
   FuelCalculator,
   BlindSpotMonitor,
+  Radar,
   GarageCover,
   RejoinIndicator,
   TelemetryInspector,
@@ -56,6 +70,16 @@ export {
   LapTrace,
   Battle,
   Gantry,
+  TrackNotes,
+  AccelerationTimer,
+  StintHistory,
+  FrictionCircle,
+  TyrePanel,
+  BrakePressure,
+  SuspensionPosition,
+  TrackClock,
+  SteeringMeter,
+  CruiseOdometer,
 };
 
 export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
@@ -69,6 +93,7 @@ export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
   fastercarsfrombehind: FasterCarsFromBehind,
   fuel: FuelCalculator,
   blindspotmonitor: BlindSpotMonitor,
+  radar: Radar,
   garagecover: GarageCover,
   rejoin: RejoinIndicator,
   telemetryinspector: TelemetryInspector,
@@ -86,6 +111,16 @@ export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
   laptrace: LapTrace,
   battle: Battle,
   gantry: Gantry,
+  tracknotes: TrackNotes,
+  accelerationtimer: AccelerationTimer,
+  stinthistory: StintHistory,
+  frictioncircle: FrictionCircle,
+  tyrepanel: TyrePanel,
+  brakepressure: BrakePressure,
+  suspensionposition: SuspensionPosition,
+  trackclock: TrackClock,
+  steeringmeter: SteeringMeter,
+  cruiseodometer: CruiseOdometer,
 };
 
 export type WidgetId = keyof WidgetConfigMap;

@@ -20,6 +20,7 @@ export default defineConfig({
         'build/Release/irsdk_node.node',
         'build/Release/irsdk_node_replay.node',
         'build/Release/irsdk_tape_node.node',
+        'build/Release/lmu_node.node',
       ],
       '.vite/build/Release/'
     ),
@@ -56,11 +57,15 @@ function irsdkNativeModule(nodeFiles: string[], outDir: string) {
     transform(code: string, id: string) {
       const file = nodeFileMap.get(path.basename(id));
       if (file) {
+        const exportName =
+          path.basename(file) === 'lmu_node.node'
+            ? 'LmuSdkNode'
+            : 'iRacingSdkNode';
         return {
           code: `
             import { createRequire } from 'module';
             const customRequire = createRequire(__filename);
-            export const iRacingSdkNode = customRequire('./Release/${path.basename(file)}').iRacingSdkNode;
+            export const ${exportName} = customRequire('./Release/${path.basename(file)}').${exportName};
           `,
           moduleType: 'js',
         };

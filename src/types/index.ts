@@ -22,3 +22,4 @@ export * from './gamepadToken';
 export * from './channels';
 export * from './telemetryInspectorBridge';
 export * from './sessionProfiles';
+export * from './trackNotes';

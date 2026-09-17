@@ -7,6 +7,7 @@ import {
   type SessionLifecycle,
 } from '../../sessionLifecycle';
 import type { ChannelBus } from '../channelBridge';
+import { getSimulatorOverride } from './simSelection';
 
 let isDemoMode = false;
 let currentBridge: IrSdkSourceBridge | undefined;
@@ -72,12 +73,23 @@ async function setupBridge(
     }
 
     const isTapeReplay = Boolean(process.env.IRDASHIES_TELEMETRY_REPLAY);
+    const simulatorOverride = getSimulatorOverride(
+      process.argv,
+      process.env.IRDASHIES_SIM
+    );
     const module =
       isDemoMode || (process.platform !== 'win32' && !isTapeReplay)
         ? await import('./mock-data/mockSdkBridge')
-        : await import('./iracingSdkBridge');
+        : isTapeReplay || simulatorOverride === 'iracing'
+          ? await import('./iracingSdkBridge')
+          : simulatorOverride === 'lmu'
+            ? await import('./lmuSdkBridge')
+            : await import('./autoDetectSdkBridge');
 
-    const { publishIRacingSDKEvents } = module;
+    const publishIRacingSDKEvents =
+      'publishAutoDetectedSdkEvents' in module
+        ? module.publishAutoDetectedSdkEvents
+        : module.publishIRacingSDKEvents;
     const lifecycle = isDemoMode ? undefined : getSessionLifecycle();
     currentBridge = await publishIRacingSDKEvents(
       overlayManager,

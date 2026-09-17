@@ -20,7 +20,7 @@ export const CarManufacturerCell = memo(
         className={`w-auto whitespace-nowrap ${pxClass}`}
       >
         <div className="flex items-center justify-center text-center">
-          {carId && <CarManufacturer carId={carId} />}
+          {!!carId && <CarManufacturer carId={carId} />}
         </div>
       </td>
     );

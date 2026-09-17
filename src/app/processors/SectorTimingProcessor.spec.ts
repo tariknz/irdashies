@@ -25,6 +25,40 @@ const frame = (
   }) as unknown as Telemetry;
 
 describe('SectorTimingProcessor', () => {
+  it('uses direct LMU sector timing values', () => {
+    const processor = new SectorTimingProcessor();
+    processor.init({
+      SplitTimeInfo: {
+        Sectors: [
+          { SectorNum: 0, SectorStartPct: 0 },
+          { SectorNum: 1, SectorStartPct: 1 / 3 },
+          { SectorNum: 2, SectorStartPct: 2 / 3 },
+        ],
+      },
+    } as Session);
+    processor.onFrame({
+      SessionNum: { value: [1] },
+      LmuSectorIdx: { value: [2] },
+      LmuCurrentSectorTimes: { value: [32.4, 41, null] },
+      LmuLastSectorTimes: { value: [32.5, 41.2, 60.8] },
+      LmuBestSectorTimes: { value: [32.1, 40.8, 59.9] },
+    } as unknown as Telemetry);
+
+    const snapshot = processor.snapshot();
+    expect(snapshot.currentSectorIdx).toBe(2);
+    expect(snapshot.inclusive.currentLapSectorTimes).toEqual([
+      32.4,
+      41,
+      null,
+    ]);
+    expect(snapshot.inclusive.previousLapSectorTimes).toEqual([
+      32.5,
+      41.2,
+      60.8,
+    ]);
+    expect(snapshot.clean.sessionBestSectorTimes).toEqual([32.1, 40.8, 59.9]);
+  });
+
   it('interpolates crossings and records clean and inclusive timing views', () => {
     const processor = new SectorTimingProcessor();
     processor.init(session);

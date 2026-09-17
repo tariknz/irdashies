@@ -21,6 +21,20 @@ const numericValue = (
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 };
 
+const lmuSectorTimes = (
+  frame: Telemetry,
+  key: 'LmuCurrentSectorTimes' | 'LmuLastSectorTimes' | 'LmuBestSectorTimes'
+): (number | null)[] | null => {
+  const values = frame[key]?.value;
+  return values
+    ? Array.from(values, (value) =>
+        typeof value === 'number' && Number.isFinite(value) && value > 0
+          ? value
+          : null
+      )
+    : null;
+};
+
 export const getSectorIdx = (
   lapDistPct: number,
   sectors: readonly Sector[]
@@ -95,6 +109,13 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
 
   onFrame(frame: Telemetry): void {
     if (!this.enabled || this.latest.sectors.length === 0) return;
+    const directCurrent = lmuSectorTimes(frame, 'LmuCurrentSectorTimes');
+    const directPrevious = lmuSectorTimes(frame, 'LmuLastSectorTimes');
+    const directBest = lmuSectorTimes(frame, 'LmuBestSectorTimes');
+    if (directCurrent && directPrevious && directBest) {
+      this.onLmuFrame(frame, directCurrent, directPrevious, directBest);
+      return;
+    }
     const lapDistPct = numericValue(frame, 'LapDistPct');
     const sessionTime = numericValue(frame, 'SessionTime');
     const sessionNum = numericValue(frame, 'SessionNum');
@@ -223,6 +244,59 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
 
   snapshot(): SectorTimingSnapshot {
     return this.latest;
+  }
+
+  private onLmuFrame(
+    frame: Telemetry,
+    current: (number | null)[],
+    previous: (number | null)[],
+    best: (number | null)[]
+  ): void {
+    const count = this.latest.sectors.length;
+    const fit = (values: (number | null)[]) =>
+      Array.from({ length: count }, (_, index) => values[index] ?? null);
+    const currentSectorIdx = Math.min(
+      count - 1,
+      Math.max(0, numericValue(frame, 'LmuSectorIdx') ?? 0)
+    );
+    const sessionNum = numericValue(frame, 'SessionNum');
+    const nextCurrent = fit(current);
+    const nextPrevious = fit(previous);
+    const nextBest = fit(best);
+    const unchanged =
+      currentSectorIdx === this.latest.currentSectorIdx &&
+      sessionNum === this.latest.sessionNum &&
+      nextCurrent.every(
+        (value, index) =>
+          value === this.latest.inclusive.currentLapSectorTimes[index]
+      ) &&
+      nextPrevious.every(
+        (value, index) =>
+          value === this.latest.inclusive.previousLapSectorTimes[index]
+      ) &&
+      nextBest.every(
+        (value, index) =>
+          value === this.latest.inclusive.sessionBestSectorTimes[index]
+      );
+    if (unchanged) return;
+    const result: SectorTimingResultSnapshot = {
+      currentLapSectorTimes: nextCurrent,
+      previousLapSectorTimes: nextPrevious,
+      currentLapSectorUnclean: Array<boolean>(count).fill(false),
+      previousLapSectorUnclean: Array<boolean>(count).fill(false),
+      sessionBestSectorTimes: nextBest,
+      previousSessionBestSectorTimes:
+        this.latest.inclusive.sessionBestSectorTimes,
+    };
+    this.latest = {
+      ...this.latest,
+      currentSectorIdx,
+      sectorEntryValid: true,
+      inclusive: result,
+      clean: cloneResult(result),
+      sessionNum,
+      version: this.latest.version + 1,
+    };
   }
 
   private completeSector(

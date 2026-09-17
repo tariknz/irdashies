@@ -117,6 +117,12 @@ export interface LapTraceSampleSnapshot {
 export interface BlindSpotSnapshot {
   carLeftRight: number;
   carIdxLapDistPct: readonly number[];
+  carIdxOnPitRoad?: readonly boolean[];
+  carIdxClass?: readonly number[];
+  relativeAvailable?: readonly boolean[];
+  relativeLateral?: readonly number[];
+  relativeLongitudinal?: readonly number[];
+  relativeHeading?: readonly number[];
   isOnTrack: boolean;
   version: number;
 }
@@ -140,6 +146,14 @@ export interface DriverControlsSnapshot {
   engineWarnings?: number;
   shiftRpm?: number;
   blinkRpm?: number;
+  steeringWheelAngleMax?: number;
+  lateralAccel?: number;
+  longitudinalAccel?: number;
+  tyreTemperature?: readonly number[];
+  tyrePressure?: readonly number[];
+  tyreWear?: readonly number[];
+  brakeLinePressure?: readonly number[];
+  suspensionDeflection?: readonly number[];
   version: number;
 }
 
