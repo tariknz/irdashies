@@ -218,10 +218,18 @@ export const carSystemRowKey = (key: string): string =>
  * so the same channel can carry a different control from one car to the next —
  * the same reason `dcPeakBrakeBias` already has to share the brake bias column.
  *
- * Only the display strings are overridden. The telemetry key stays the identity
- * of the row: it is what `CarSystemsConfig.rows` persists and what
+ * Only the two names are overridden. The telemetry key stays the identity of
+ * the row: it is what `CarSystemsConfig.rows` persists and what
  * `DEFAULT_CAR_SYSTEM_ROWS` lists, so a driver who enabled a row keeps it when
  * they switch cars, and it is simply named differently.
+ *
+ * The chip colour deliberately stays put too, even where the renamed control
+ * belongs to a different system - a car that calls dcABS brake migration keeps
+ * the green chip rather than taking braking's red. The widget's promise is that
+ * a column holds its position and its look from car to car, which is what lets
+ * a driver find it without reading it; a colour that moved on a car change
+ * would cost more than the taxonomy gains. Precision and unit stay for the
+ * plainer reason that they describe the channel, which has not changed.
  */
 export interface CarSystemLabelOverride {
   label: string;

@@ -56,7 +56,10 @@ describe('resolveCarSystemDefinition', () => {
     expect(DEFAULT_CAR_SYSTEM_ROWS).toContain(resolved.key);
   });
 
-  it('leaves the scale and formatting alone', () => {
+  it('leaves the scale, formatting and chip colour alone', () => {
+    // The chip is deliberately not overridable: a column that changed colour
+    // on a car change would break the positional constancy the widget trades
+    // on, even where the renamed control belongs to a different system.
     const resolved = resolveCarSystemDefinition(abs, 'dallarap217');
 
     expect(resolved.precision).toBe(abs.precision);
