@@ -245,10 +245,11 @@ export const normalizeCarPath = (carPath: string): string =>
  * car is named sensibly on release rather than blank, and only genuine
  * deviations need an entry.
  *
- * Entries are only added from observed telemetry, never from assumption: a
- * wrong rename here is worse than a generic name, because the driver has no way
- * to tell it is wrong. Where a claim is secondhand it says so, and says what
- * would confirm it.
+ * A wrong rename here is worse than a generic name, because the driver has no
+ * way to tell it is wrong. So an entry needs either a capture showing the
+ * channel move when that dial moved, or a named source plus a note saying it is
+ * provisional and what would confirm it. Nothing goes in on inference from a
+ * car's spec sheet alone.
  */
 export const CAR_SYSTEM_LABEL_OVERRIDES: Readonly<
   Record<string, Readonly<Record<string, CarSystemLabelOverride>>>
