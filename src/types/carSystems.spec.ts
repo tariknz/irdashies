@@ -52,17 +52,16 @@ describe('resolveCarSystemDefinition', () => {
     }
   });
 
-  it('renames the same channel differently on different cars', () => {
-    const peak = definitionFor('dcPeakBrakeBias');
+  it('renames the valve channel only on the car that repurposes it', () => {
+    // The Clio and the TCR both use it as a rear brake valve, so that is the
+    // catalogue name and neither needs an entry. The W13 is the exception.
+    const valve = definitionFor('dcPeakBrakeBias');
 
-    expect(resolveCarSystemDefinition(peak, 'renaultcliocup').label).toBe(
+    expect(resolveCarSystemDefinition(valve, 'renaultcliocup').label).toBe(
       'Rear Brake Valve'
     );
-    expect(resolveCarSystemDefinition(peak, 'mercedesw13').label).toBe(
+    expect(resolveCarSystemDefinition(valve, 'mercedesw13').label).toBe(
       'Brake Migration'
-    );
-    expect(resolveCarSystemDefinition(peak, 'bmwm4gt3').label).toBe(
-      'Peak Brake Bias'
     );
   });
 

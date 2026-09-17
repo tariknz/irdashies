@@ -134,7 +134,7 @@ describe('CarSystems per-car labels', () => {
         },
         {
           key: 'dcPeakBrakeBias',
-          label: 'Peak Brake Bias',
+          label: 'Rear Brake Valve',
           value: 3,
           isOff: false,
           precision: 0,

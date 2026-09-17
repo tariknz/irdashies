@@ -192,7 +192,7 @@ export const BrakeFamily: Story = {
       brakeBias(52.0),
       adjustment('dcBrakeBiasFine', 'Brake Bias Fine', 0, { precision: 1 }),
       adjustment('dcBrakeMisc', 'Brake Bias Target', 0),
-      adjustment('dcPeakBrakeBias', 'Peak Brake Bias', 3),
+      adjustment('dcPeakBrakeBias', 'Rear Brake Valve', 3),
       adjustment('dcDiffEntry', 'Diff Entry', 3),
       adjustment('dcDiffMiddle', 'Diff Mid', 2),
       adjustment('dcDiffExit', 'Diff High Speed', 3),

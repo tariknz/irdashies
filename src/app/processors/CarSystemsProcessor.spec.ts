@@ -213,7 +213,7 @@ describe('CarSystemsProcessor', () => {
         ['dcPeakBrakeBias', 3],
       ]);
       expect(byKey(processor, 'dcPeakBrakeBias')?.label).toBe(
-        'Peak Brake Bias'
+        'Rear Brake Valve'
       );
     });
 

@@ -84,20 +84,22 @@ export const CAR_SYSTEM_ADJUSTMENTS: readonly CarSystemDefinition[] = [
     signed: true,
     chip: 'bg-red-800',
   },
-  // Not a brake bias, despite the name, and not a substitute for dcBrakeBias.
-  // Captures of the two cars that publish it disagree on what it is and agree
-  // it is not a bias split: on the Renault Clio it is the rear brake valve,
-  // running 10..40 while dcBrakeBias sits untouched at 59.2%; on the Mercedes
-  // W13 it is brake migration, running 1..10 alongside a live dcBrakeBias.
-  // Both were matched frame-for-frame against a photograph of the car's own
-  // in-car adjustment screen.
+  // A rear brake valve, not a brake bias, despite the name - and never a
+  // substitute for dcBrakeBias. The Renault Clio runs it 10..40 while
+  // dcBrakeBias sits untouched at 59.2%, matched frame-for-frame against a
+  // photograph of the car's own screen, which offers a rear brake valve and no
+  // bias adjustment at all. The TCR settles the coexistence question outright:
+  // its screen lists "Brake pressure bias" and "Rear brake valve" as two
+  // separate rows (reported by L061N on #723, with a screenshot).
   //
-  // So it carries iRacing's own name for the channel and is renamed per car,
-  // rather than borrowing a meaning from whichever car was looked at first.
+  // The W13 is the exception and is renamed there; it uses this channel for
+  // brake migration. The Caterham Academy was checked and does not publish the
+  // channel at all - four captures carry nothing but dcDashPage - so any car
+  // said to have a valve is worth confirming rather than assuming.
   {
     key: 'dcPeakBrakeBias',
-    label: 'Peak Brake Bias',
-    short: 'PBB',
+    label: 'Rear Brake Valve',
+    short: 'RBV',
     precision: 0,
     chip: 'bg-rose-700',
   },
@@ -359,11 +361,11 @@ export const CAR_SYSTEM_LABEL_OVERRIDES: Readonly<
   bmwlmdh: {
     dcABS: { label: 'Brake Migration', short: 'MIGR' },
   },
+  // The one car seen using the valve channel for something else. The Clio and
+  // the TCR both carry it as a rear brake valve, which is why that is the
+  // catalogue name and this is the override rather than the other way round.
   mercedesw13: {
     dcPeakBrakeBias: { label: 'Brake Migration', short: 'MIGR' },
-  },
-  renaultcliocup: {
-    dcPeakBrakeBias: { label: 'Rear Brake Valve', short: 'RBV' },
   },
   // The IR18 has no fuel mixture dial. The channel carries its engine map.
   dallarair18: {
