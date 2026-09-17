@@ -1,11 +1,36 @@
 import type { LmuRawSession } from '../native/lmu';
 
 export const lmuSessionSignature = (session: LmuRawSession): string =>
-  `${session.trackName}:${session.session}:${session.numVehicles}:${
-    session.playerHasVehicle ? session.playerVehicleIdx : -1
-  }|${session.drivers
-    .map(
-      (driver) =>
-        `${driver.id}:${driver.name}:${driver.vehicleName}:${driver.className}`
-    )
-    .join('|')}`;
+  JSON.stringify({
+    trackName: session.trackName,
+    session: session.session,
+    numVehicles: session.numVehicles,
+    playerVehicleIdx: session.playerHasVehicle ? session.playerVehicleIdx : -1,
+    lapDist: session.lapDist,
+    gameVersion: session.gameVersion,
+    cloudCoverage: session.cloudCoverage,
+    wind: session.wind,
+    raining: session.raining,
+    maxPlayers: session.maxPlayers,
+    maxLaps: session.maxLaps,
+    isFixedSetup: session.isFixedSetup,
+    engineMaxRPM: session.engineMaxRPM,
+    fuelCapacity: session.fuelCapacity,
+    maxGears: session.maxGears,
+    frontTireCompoundName: session.frontTireCompoundName,
+    drivers: session.drivers.map((driver) => ({
+      id: driver.id,
+      isPlayer: driver.isPlayer,
+      name: driver.name,
+      vehicleName: driver.vehicleName,
+      vehicleModel: driver.vehicleModel,
+      className: driver.className,
+      vehFilename: driver.vehFilename,
+      classId: driver.classId,
+      qualification: driver.qualification,
+      bestLapTime: driver.bestLapTime,
+      lastLapTime: driver.lastLapTime,
+      totalLaps: driver.totalLaps,
+      estimatedLapTime: driver.estimatedLapTime,
+    })),
+  });

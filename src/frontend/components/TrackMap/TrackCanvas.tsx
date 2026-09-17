@@ -142,7 +142,10 @@ export const TrackCanvas = ({
   const trackDrawing =
     trackDrawingOverride ?? (tracks as unknown as TrackDrawing[])[trackId];
   const shouldShow =
-    trackDrawingOverride !== undefined || shouldShowTrack(trackId, trackDrawing);
+    trackDrawingOverride !== undefined
+      ? !!trackDrawingOverride.active?.inside &&
+        !!trackDrawingOverride.startFinish?.line
+      : shouldShowTrack(trackId, trackDrawing);
 
   const driversOffTrack = useCarIdxOffTrack();
   const carIdxIsOnPitRoad =

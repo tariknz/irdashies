@@ -38,4 +38,16 @@ describe('deriveRadarCars', () => {
 
     expect(deriveRadarCars(iracingSnapshot, 0, 30)).toEqual([]);
   });
+
+  it('excludes diagonal positions outside the radial range', () => {
+    const diagonalSnapshot = {
+      ...snapshot,
+      carIdxOnPitRoad: [false, false],
+      relativeAvailable: [false, true],
+      relativeLateral: [0, 25],
+      relativeLongitudinal: [0, 25],
+    };
+
+    expect(deriveRadarCars(diagonalSnapshot, 0, 30)).toEqual([]);
+  });
 });

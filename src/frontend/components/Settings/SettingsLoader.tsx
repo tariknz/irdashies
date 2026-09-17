@@ -57,6 +57,7 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
   // 2. Find specific widget instance (may be undefined if widgetId is a type name)
   const widget = currentDashboard?.widgets.find((w) => w.id === widgetId);
   const type = widget ? widget.type || widget.id : widgetId;
+  const resolvedWidgetId = widget?.id ?? type;
 
   switch (type) {
     case 'standings':
@@ -86,7 +87,7 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
     case 'blindspotmonitor':
       return <BlindSpotMonitorSettings />;
     case 'radar':
-      return <RadarSettings />;
+      return <RadarSettings widgetId={resolvedWidgetId} />;
     case 'garagecover':
       return <GarageCoverSettings />;
     case 'flag':
@@ -114,25 +115,57 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
     case 'gantry':
       return <GantrySettings />;
     case 'tracknotes':
-      return <DrivingMetricSettings id="tracknotes" />;
+      return (
+        <DrivingMetricSettings id="tracknotes" widgetId={resolvedWidgetId} />
+      );
     case 'accelerationtimer':
-      return <DrivingMetricSettings id="accelerationtimer" />;
+      return (
+        <DrivingMetricSettings
+          id="accelerationtimer"
+          widgetId={resolvedWidgetId}
+        />
+      );
     case 'stinthistory':
-      return <DrivingMetricSettings id="stinthistory" />;
+      return (
+        <DrivingMetricSettings id="stinthistory" widgetId={resolvedWidgetId} />
+      );
     case 'frictioncircle':
-      return <DrivingMetricSettings id="frictioncircle" />;
+      return (
+        <DrivingMetricSettings
+          id="frictioncircle"
+          widgetId={resolvedWidgetId}
+        />
+      );
     case 'tyrepanel':
-      return <DrivingMetricSettings id="tyrepanel" />;
+      return (
+        <DrivingMetricSettings id="tyrepanel" widgetId={resolvedWidgetId} />
+      );
     case 'brakepressure':
-      return <DrivingMetricSettings id="brakepressure" />;
+      return (
+        <DrivingMetricSettings id="brakepressure" widgetId={resolvedWidgetId} />
+      );
     case 'suspensionposition':
-      return <DrivingMetricSettings id="suspensionposition" />;
+      return (
+        <DrivingMetricSettings
+          id="suspensionposition"
+          widgetId={resolvedWidgetId}
+        />
+      );
     case 'trackclock':
-      return <DrivingMetricSettings id="trackclock" />;
+      return (
+        <DrivingMetricSettings id="trackclock" widgetId={resolvedWidgetId} />
+      );
     case 'steeringmeter':
-      return <DrivingMetricSettings id="steeringmeter" />;
+      return (
+        <DrivingMetricSettings id="steeringmeter" widgetId={resolvedWidgetId} />
+      );
     case 'cruiseodometer':
-      return <DrivingMetricSettings id="cruiseodometer" />;
+      return (
+        <DrivingMetricSettings
+          id="cruiseodometer"
+          widgetId={resolvedWidgetId}
+        />
+      );
     default:
       return widget ? (
         <div className="text-red-400">No settings available for {type}</div>

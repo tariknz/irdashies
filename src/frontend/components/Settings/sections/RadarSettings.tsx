@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import {
   getWidgetDefaultConfig,
@@ -14,15 +14,25 @@ import { SettingsSection } from '../components/SettingSection';
 const SETTING_ID = 'radar';
 const defaultConfig = getWidgetDefaultConfig(SETTING_ID);
 
-export const RadarSettings = () => {
+export const RadarSettings = ({
+  widgetId = SETTING_ID,
+}: {
+  widgetId?: string;
+}) => {
   const { currentDashboard } = useDashboard();
   const savedSettings = currentDashboard?.widgets.find(
-    (widget) => widget.id === SETTING_ID
+    (widget) => widget.id === widgetId
   ) as RadarWidgetSettings | undefined;
   const [settings, setSettings] = useState<RadarWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
     config: savedSettings?.config ?? defaultConfig,
   });
+  useEffect(() => {
+    setSettings({
+      enabled: savedSettings?.enabled ?? false,
+      config: savedSettings?.config ?? defaultConfig,
+    });
+  }, [savedSettings, widgetId]);
 
   if (!currentDashboard) return <>Loading...</>;
 
@@ -32,7 +42,7 @@ export const RadarSettings = () => {
       description="Shows true nearby-car position and heading from Le Mans Ultimate shared memory. It remains hidden in iRacing."
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId={SETTING_ID}
+      widgetId={widgetId}
     >
       {(handleConfigChange) => (
         <div className="space-y-4">

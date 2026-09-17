@@ -4,10 +4,7 @@ import {
   SessionState,
   type Telemetry,
 } from '@irdashies/types';
-import {
-  classifyLmuBlindSpot,
-  deriveLmuRelativePositions,
-} from './proximity';
+import { classifyLmuBlindSpot, deriveLmuRelativePositions } from './proximity';
 
 type Raw = import('../native/lmu').LmuRawTelemetry;
 
@@ -315,7 +312,7 @@ export function mapLmuTelemetry(raw: Raw): Telemetry {
   t.dcPitSpeedLimiterToggle = bool(raw.speedLimiterActive);
   t.PitstopActive = bool(false);
   t.OnPitRoad = bool(playerIdx >= 0 ? raw.vehInPits[playerIdx] === 1 : false);
-  t.IsOnTrack = bool(raw.inRealtime);
+  t.IsOnTrack = bool(playerIdx >= 0 && raw.inRealtime);
   t.IsInGarage = bool(playerIdx >= 0 && raw.vehInGarageStall[playerIdx]);
   t.IsGarageVisible = bool(playerIdx >= 0 && raw.vehInGarageStall[playerIdx]);
 

@@ -3,6 +3,7 @@ import type { RadarWidgetSettings } from '@irdashies/types';
 
 export const useRadarSettings = () => {
   const { currentDashboard } = useDashboard();
-  return currentDashboard?.widgets.find((widget) => widget.id === 'radar')
-    ?.config as RadarWidgetSettings['config'] | undefined;
+  return currentDashboard?.widgets.find(
+    (widget) => (widget.type || widget.id) === 'radar'
+  )?.config as RadarWidgetSettings['config'] | undefined;
 };

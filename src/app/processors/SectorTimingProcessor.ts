@@ -260,6 +260,13 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
       Math.max(0, numericValue(frame, 'LmuSectorIdx') ?? 0)
     );
     const sessionNum = numericValue(frame, 'SessionNum');
+    if (
+      sessionNum !== null &&
+      this.latest.sessionNum !== null &&
+      sessionNum !== this.latest.sessionNum
+    ) {
+      this.resetState(this.latest.sectors, sessionNum);
+    }
     const nextCurrent = fit(current);
     const nextPrevious = fit(previous);
     const nextBest = fit(best);

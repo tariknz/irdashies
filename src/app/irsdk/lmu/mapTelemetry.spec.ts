@@ -193,6 +193,7 @@ describe('mapLmuTelemetry', () => {
     expect(t.PlayerCarIdx.value[0]).toBe(-1);
     expect(t.Speed.value[0]).toBe(0);
     expect(t.OnPitRoad.value[0]).toBe(false);
+    expect(t.IsOnTrack.value[0]).toBe(false);
   });
 
   it('maps per-car arrays by slot', () => {

@@ -83,6 +83,14 @@ Napi::Value LmuSdkNode::Start(const Napi::CallbackInfo &info)
     return Napi::Boolean::New(env, false);
   }
 
+  MEMORY_BASIC_INFORMATION region{};
+  if (VirtualQuery(_view, &region, sizeof(region)) == 0 ||
+      region.RegionSize < sizeof(LMUObjectOut))
+  {
+    Unmap();
+    return Napi::Boolean::New(env, false);
+  }
+
   _mapped = reinterpret_cast<const LMUObjectOut *>(_view);
   CaptureSnapshot();
   _classIds.clear();

@@ -128,6 +128,7 @@ describe('LMU track map', () => {
       1000
     );
 
+    fs.writeFileSync(path.join(directory, 'maps.json'), '[]');
     storage.save('Autódromo José Carlos Pace', map);
 
     expect(storage.load('Autódromo José Carlos Pace')).toEqual(map);

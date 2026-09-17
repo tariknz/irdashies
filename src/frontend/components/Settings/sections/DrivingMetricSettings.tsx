@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import {
   getWidgetDefaultConfig,
@@ -39,18 +39,28 @@ type DrivingMetricId =
 
 export function DrivingMetricSettings<K extends DrivingMetricId>({
   id,
+  widgetId = id,
 }: {
   id: K;
+  widgetId?: string;
 }) {
   const { currentDashboard } = useDashboard();
   const saved = currentDashboard?.widgets.find(
-    (widget) => (widget.type || widget.id) === id
+    (widget) => widget.id === widgetId
   );
   const defaults = getWidgetDefaultConfig(id);
-  const [settings, setSettings] = useState<BaseWidgetSettings<WidgetConfigMap[K]>>({
+  const [settings, setSettings] = useState<
+    BaseWidgetSettings<WidgetConfigMap[K]>
+  >({
     enabled: saved?.enabled ?? false,
     config: (saved?.config as unknown as WidgetConfigMap[K]) ?? defaults,
   });
+  useEffect(() => {
+    setSettings({
+      enabled: saved?.enabled ?? false,
+      config: (saved?.config as unknown as WidgetConfigMap[K]) ?? defaults,
+    });
+  }, [defaults, saved, widgetId]);
 
   return (
     <BaseSettingsSection
@@ -58,46 +68,54 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
       description="Configure this driving telemetry widget."
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId={String(id)}
+      widgetId={widgetId}
     >
       {(handleConfigChange) => (
         <div className="space-y-4">
           {id === 'accelerationtimer' && (
             <SettingsSection title="Speed ranges">
-              {(settings.config as WidgetConfigMap['accelerationtimer']).ranges.map(
-                (range, index) => (
-                  <div className="grid grid-cols-2 gap-2" key={index}>
-                    <SettingNumberRow
-                      title={`Range ${index + 1} start`}
-                      value={range.fromKph}
-                      min={0}
-                      max={400}
-                      step={1}
-                      onChange={(fromKph) => {
-                        const ranges = [
-                          ...(settings.config as WidgetConfigMap['accelerationtimer']).ranges,
-                        ];
-                        ranges[index] = { ...ranges[index], fromKph };
-                        handleConfigChange({ ranges } as unknown as Partial<WidgetConfigMap[K]>);
-                      }}
-                    />
-                    <SettingNumberRow
-                      title={`Range ${index + 1} end`}
-                      value={range.toKph}
-                      min={1}
-                      max={500}
-                      step={1}
-                      onChange={(toKph) => {
-                        const ranges = [
-                          ...(settings.config as WidgetConfigMap['accelerationtimer']).ranges,
-                        ];
-                        ranges[index] = { ...ranges[index], toKph };
-                        handleConfigChange({ ranges } as unknown as Partial<WidgetConfigMap[K]>);
-                      }}
-                    />
-                  </div>
-                )
-              )}
+              {(
+                settings.config as WidgetConfigMap['accelerationtimer']
+              ).ranges.map((range, index) => (
+                <div className="grid grid-cols-2 gap-2" key={index}>
+                  <SettingNumberRow
+                    title={`Range ${index + 1} start`}
+                    value={range.fromKph}
+                    min={0}
+                    max={400}
+                    step={1}
+                    onChange={(fromKph) => {
+                      const ranges = [
+                        ...(
+                          settings.config as WidgetConfigMap['accelerationtimer']
+                        ).ranges,
+                      ];
+                      ranges[index] = { ...ranges[index], fromKph };
+                      handleConfigChange({ ranges } as unknown as Partial<
+                        WidgetConfigMap[K]
+                      >);
+                    }}
+                  />
+                  <SettingNumberRow
+                    title={`Range ${index + 1} end`}
+                    value={range.toKph}
+                    min={1}
+                    max={500}
+                    step={1}
+                    onChange={(toKph) => {
+                      const ranges = [
+                        ...(
+                          settings.config as WidgetConfigMap['accelerationtimer']
+                        ).ranges,
+                      ];
+                      ranges[index] = { ...ranges[index], toKph };
+                      handleConfigChange({ ranges } as unknown as Partial<
+                        WidgetConfigMap[K]
+                      >);
+                    }}
+                  />
+                </div>
+              ))}
             </SettingsSection>
           )}
           {id === 'tracknotes' && (
@@ -105,7 +123,10 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
               <SettingNumberRow
                 title="Trigger tolerance"
                 description="Distance around each note as a percentage of the lap."
-                value={(settings.config as WidgetConfigMap['tracknotes']).triggerDistancePct * 100}
+                value={
+                  (settings.config as WidgetConfigMap['tracknotes'])
+                    .triggerDistancePct * 100
+                }
                 min={0.05}
                 max={5}
                 step={0.05}
@@ -119,33 +140,45 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
                 className="min-h-36 w-full rounded bg-slate-800 p-2 font-mono text-sm"
                 aria-label="Track notes"
                 value={(settings.config as WidgetConfigMap['tracknotes']).notes
-                  .map((note) => `${note.trackId}|${(note.lapDistPct * 100).toFixed(2)}|${note.scope}|${note.text}`)
+                  .map(
+                    (note) =>
+                      `${note.trackId}|${(note.lapDistPct * 100).toFixed(2)}|${note.scope}|${note.text}`
+                  )
                   .join('\n')}
                 onChange={(event) => {
-                  const notes: WidgetConfigMap['tracknotes']['notes'] = event.target.value
-                    .split('\n')
-                    .map<WidgetConfigMap['tracknotes']['notes'][number]>((line, index) => {
-                      const [trackId = '', pct = '', scope = 'always', ...text] =
-                        line.split('|');
-                      return {
-                        id: `${trackId}-${index}`,
-                        trackId,
-                        lapDistPct: Number(pct) / 100,
-                        scope:
-                          scope === 'pit' || scope === 'session'
-                            ? (scope as 'pit' | 'session')
-                            : 'always',
-                        text: text.join('|'),
-                      };
-                    })
-                    .filter(
-                      (note) =>
-                        Number.isFinite(note.lapDistPct) &&
-                        note.lapDistPct >= 0 &&
-                        note.lapDistPct <= 1 &&
-                        note.text.length > 0
-                    );
-                  handleConfigChange({ notes } as unknown as Partial<WidgetConfigMap[K]>);
+                  const notes: WidgetConfigMap['tracknotes']['notes'] =
+                    event.target.value
+                      .split('\n')
+                      .map<WidgetConfigMap['tracknotes']['notes'][number]>(
+                        (line, index) => {
+                          const [
+                            trackId = '',
+                            pct = '',
+                            scope = 'always',
+                            ...text
+                          ] = line.split('|');
+                          return {
+                            id: `${trackId}-${index}`,
+                            trackId,
+                            lapDistPct: Number(pct) / 100,
+                            scope:
+                              scope === 'pit' || scope === 'session'
+                                ? (scope as 'pit' | 'session')
+                                : 'always',
+                            text: text.join('|'),
+                          };
+                        }
+                      )
+                      .filter(
+                        (note) =>
+                          Number.isFinite(note.lapDistPct) &&
+                          note.lapDistPct >= 0 &&
+                          note.lapDistPct <= 1 &&
+                          note.text.length > 0
+                      );
+                  handleConfigChange({ notes } as unknown as Partial<
+                    WidgetConfigMap[K]
+                  >);
                   void window.trackNotesBridge?.saveNotes(notes);
                 }}
               />
@@ -158,12 +191,16 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
             <SettingsSection title="History">
               <SettingNumberRow
                 title="Stints shown"
-                value={(settings.config as WidgetConfigMap['stinthistory']).maxStints}
+                value={
+                  (settings.config as WidgetConfigMap['stinthistory']).maxStints
+                }
                 min={1}
                 max={10}
                 step={1}
                 onChange={(maxStints) =>
-                  handleConfigChange({ maxStints } as unknown as Partial<WidgetConfigMap[K]>)
+                  handleConfigChange({ maxStints } as unknown as Partial<
+                    WidgetConfigMap[K]
+                  >)
                 }
               />
             </SettingsSection>
@@ -172,7 +209,10 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
             <SettingsSection title="Units">
               <SettingToggleRow
                 title="Use Fahrenheit"
-                enabled={(settings.config as WidgetConfigMap['tyrepanel']).temperatureUnit === 'F'}
+                enabled={
+                  (settings.config as WidgetConfigMap['tyrepanel'])
+                    .temperatureUnit === 'F'
+                }
                 onToggle={(enabled) =>
                   handleConfigChange({
                     temperatureUnit: enabled ? 'F' : 'C',
@@ -181,7 +221,10 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
               />
               <SettingToggleRow
                 title="Use PSI"
-                enabled={(settings.config as WidgetConfigMap['tyrepanel']).pressureUnit === 'psi'}
+                enabled={
+                  (settings.config as WidgetConfigMap['tyrepanel'])
+                    .pressureUnit === 'psi'
+                }
                 onToggle={(enabled) =>
                   handleConfigChange({
                     pressureUnit: enabled ? 'psi' : 'kPa',
@@ -194,7 +237,10 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
             <SettingsSection title="Units">
               <SettingToggleRow
                 title="Use miles"
-                enabled={(settings.config as WidgetConfigMap['cruiseodometer']).distanceUnit === 'mi'}
+                enabled={
+                  (settings.config as WidgetConfigMap['cruiseodometer'])
+                    .distanceUnit === 'mi'
+                }
                 onToggle={(enabled) =>
                   handleConfigChange({
                     distanceUnit: enabled ? 'mi' : 'km',
@@ -212,7 +258,9 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
               max={100}
               step={5}
               onChange={(opacity) =>
-                handleConfigChange({ background: { opacity } } as unknown as Partial<WidgetConfigMap[K]>)
+                handleConfigChange({
+                  background: { opacity },
+                } as unknown as Partial<WidgetConfigMap[K]>)
               }
             />
           </SettingsSection>
@@ -229,7 +277,9 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
               title="Show only when on track"
               enabled={settings.config.showOnlyWhenOnTrack}
               onToggle={(showOnlyWhenOnTrack) =>
-                handleConfigChange({ showOnlyWhenOnTrack } as unknown as Partial<WidgetConfigMap[K]>)
+                handleConfigChange({
+                  showOnlyWhenOnTrack,
+                } as unknown as Partial<WidgetConfigMap[K]>)
               }
             />
           </SettingsSection>

@@ -41,8 +41,7 @@ export function deriveRadarCars(
       pitRoad[carIdx] ||
       !Number.isFinite(x) ||
       !Number.isFinite(y) ||
-      Math.abs(x) >= range ||
-      Math.abs(y) >= range
+      Math.hypot(x, y) >= range
     ) {
       continue;
     }
@@ -51,8 +50,7 @@ export function deriveRadarCars(
       lateral: x,
       longitudinal: y,
       heading: Number.isFinite(heading[carIdx]) ? heading[carIdx] : 0,
-      sameClass:
-        playerClass !== undefined && classes[carIdx] === playerClass,
+      sameClass: playerClass !== undefined && classes[carIdx] === playerClass,
       opacity: Math.max(0.3, 1 - (Math.hypot(x, y) / range) * 0.7),
     });
   }

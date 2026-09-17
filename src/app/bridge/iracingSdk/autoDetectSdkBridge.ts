@@ -18,6 +18,7 @@ export async function publishAutoDetectedSdkEvents(
   const telemetryCallbacks = new Set<(value: Telemetry) => void>();
   const sessionCallbacks = new Set<(value: Session) => void>();
   const runningStateCallbacks = new Set<(value: boolean) => void>();
+  let lastRunningState: boolean | undefined;
   const activeUnsubscribers: (() => void)[] = [];
 
   overlayManager.publishMessage('runningState', false);
@@ -31,14 +32,14 @@ export async function publishAutoDetectedSdkEvents(
       bridge.onSessionData((value) =>
         sessionCallbacks.forEach((callback) => callback(value))
       ),
-      bridge.onRunningState((value) =>
-        runningStateCallbacks.forEach((callback) => callback(value))
-      ),
+      bridge.onRunningState((value) => {
+        lastRunningState = value;
+        runningStateCallbacks.forEach((callback) => callback(value));
+      }),
     ];
     subscriptions.forEach((unsubscribe) => {
       if (unsubscribe) activeUnsubscribers.push(unsubscribe);
     });
-    runningStateCallbacks.forEach((callback) => callback(true));
   };
 
   void (async () => {
@@ -113,6 +114,7 @@ export async function publishAutoDetectedSdkEvents(
     },
     onRunningState: (callback) => {
       runningStateCallbacks.add(callback);
+      if (lastRunningState !== undefined) callback(lastRunningState);
       return () => runningStateCallbacks.delete(callback);
     },
     stop: () => {

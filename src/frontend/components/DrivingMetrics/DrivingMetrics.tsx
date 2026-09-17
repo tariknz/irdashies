@@ -36,8 +36,9 @@ const emptyVisibility = {
 
 function useSettings<K extends keyof WidgetConfigMap>(id: K) {
   const { currentDashboard } = useDashboard();
-  return currentDashboard?.widgets.find((widget) => (widget.type || widget.id) === id)
-    ?.config as WidgetConfigMap[K] | undefined;
+  return currentDashboard?.widgets.find(
+    (widget) => (widget.type || widget.id) === id
+  )?.config as WidgetConfigMap[K] | undefined;
 }
 
 function MetricFrame({
@@ -53,7 +54,8 @@ function MetricFrame({
   const visible = useSessionVisibility(
     config?.sessionVisibility ?? emptyVisibility
   );
-  if (!visible || (config?.showOnlyWhenOnTrack && !track?.isOnTrack)) return null;
+  if (!visible || (config?.showOnlyWhenOnTrack && !track?.isOnTrack))
+    return null;
   return (
     <div
       className="h-full w-full overflow-hidden rounded border border-slate-600/60 p-2 text-slate-100"
@@ -81,7 +83,8 @@ export function TrackNotes() {
   const config = useSettings('tracknotes') as TrackNotesConfig | undefined;
   const track = useTrackStateSnapshot();
   const session = useSessionStore((state) => state.session);
-  const previousPct = useRef(track?.lapDistPct ?? 0);
+  const previousPct = useRef<number | null>(null);
+  const previousTrackId = useRef<string | null>(null);
   const [active, setActive] = useState<{ text: string; until: number } | null>(
     null
   );
@@ -97,18 +100,27 @@ export function TrackNotes() {
   );
   useEffect(() => {
     if (!config || !track) return;
-    const triggered = (persistedNotes.length ? persistedNotes : config.notes).find(
+    const previous = previousPct.current;
+    if (previous === null || previousTrackId.current !== trackId) {
+      previousPct.current = track.lapDistPct;
+      previousTrackId.current = trackId;
+      return;
+    }
+    const triggered = (
+      persistedNotes.length ? persistedNotes : config.notes
+    ).find(
       (note) =>
         (!note.trackId || note.trackId === trackId) &&
         noteIsTriggered(
           note,
           track.lapDistPct,
-          previousPct.current,
+          previous,
           config.triggerDistancePct,
           track.onPitRoad
         )
     );
     previousPct.current = track.lapDistPct;
+    previousTrackId.current = trackId;
     setActive((current) => {
       if (triggered) {
         return current?.text === triggered.text &&
@@ -130,8 +142,7 @@ export function TrackNotes() {
 
 export function AccelerationTimer() {
   const config = useSettings('accelerationtimer') as
-    | AccelerationTimerConfig
-    | undefined;
+    AccelerationTimerConfig | undefined;
   const controls = useDriverControlsSnapshot();
   const track = useTrackStateSnapshot();
   const ranges = useMemo(() => config?.ranges ?? [], [config?.ranges]);
@@ -154,8 +165,13 @@ export function AccelerationTimer() {
     <MetricFrame config={config} title="Acceleration">
       <div className="space-y-1">
         {ranges.map((range, index) => (
-          <div className="flex justify-between" key={`${range.fromKph}-${range.toKph}`}>
-            <span className="text-slate-400">{range.fromKph}–{range.toKph} km/h</span>
+          <div
+            className="flex justify-between"
+            key={`${range.fromKph}-${range.toKph}`}
+          >
+            <span className="text-slate-400">
+              {range.fromKph}–{range.toKph} km/h
+            </span>
             <span className="font-mono font-semibold">
               {timers[index]?.elapsed == null
                 ? timers[index]?.startedAt == null
@@ -176,16 +192,24 @@ export function StintHistory() {
   const config = useSettings('stinthistory') as StintHistoryConfig | undefined;
   const fuel = useFuelProjectionSnapshot();
   const stints = useMemo(
-    () => groupStints(fuel?.completedLaps ?? []).slice(-(config?.maxStints ?? 3)),
+    () =>
+      groupStints(fuel?.completedLaps ?? []).slice(-(config?.maxStints ?? 3)),
     [config?.maxStints, fuel?.completedLaps]
   );
   return (
     <MetricFrame config={config} title="Stint history">
       <div className="space-y-1 text-xs">
-        {stints.length === 0 && <div className="text-slate-500">No completed stint</div>}
+        {stints.length === 0 && (
+          <div className="text-slate-500">No completed stint</div>
+        )}
         {stints.map((stint) => (
-          <div className="grid grid-cols-5 gap-2" key={`${stint.firstLap}-${stint.lastLap}`}>
-            <span>L{stint.firstLap}–{stint.lastLap}</span>
+          <div
+            className="grid grid-cols-5 gap-2"
+            key={`${stint.firstLap}-${stint.lastLap}`}
+          >
+            <span>
+              L{stint.firstLap}–{stint.lastLap}
+            </span>
             <span>{formatTime(stint.duration)}</span>
             <span>{stint.fuelUsed.toFixed(1)} L</span>
             <span>{formatTime(stint.averageLap)}</span>
@@ -211,7 +235,10 @@ export function FrictionCircle() {
   const x = Math.max(-2, Math.min(2, g.lateral ?? 0));
   const y = Math.max(-2, Math.min(2, g.longitudinal ?? 0));
   return (
-    <MetricFrame config={config} title={`G force · brake ${peakBrake.toFixed(2)} g`}>
+    <MetricFrame
+      config={config}
+      title={`G force · brake ${peakBrake.toFixed(2)} g`}
+    >
       <div className="relative mx-auto aspect-square h-[calc(100%-18px)] max-w-full rounded-full border border-slate-500">
         <div className="absolute left-1/2 top-0 h-full border-l border-slate-600" />
         <div className="absolute left-0 top-1/2 w-full border-t border-slate-600" />
@@ -268,9 +295,17 @@ export function TyrePanel() {
         {corners.map((corner, index) => (
           <div key={corner}>
             <div className="text-slate-500">{corner}</div>
-            <div>{valueText(temp?.[index], 0)}°{config?.temperatureUnit ?? 'C'}</div>
-            <div>{valueText(pressure?.[index])} {config?.pressureUnit ?? 'kPa'}</div>
-            <div>{Number.isFinite(controls?.tyreWear?.[index]) ? `${((controls?.tyreWear?.[index] as number) * 100).toFixed(0)}%` : '—'}</div>
+            <div>
+              {valueText(temp?.[index], 0)}°{config?.temperatureUnit ?? 'C'}
+            </div>
+            <div>
+              {valueText(pressure?.[index])} {config?.pressureUnit ?? 'kPa'}
+            </div>
+            <div>
+              {Number.isFinite(controls?.tyreWear?.[index])
+                ? `${((controls?.tyreWear?.[index] as number) * 100).toFixed(0)}%`
+                : '—'}
+            </div>
           </div>
         ))}
       </div>
@@ -281,13 +316,25 @@ export function TyrePanel() {
 export function BrakePressure() {
   const config = useSettings('brakepressure');
   const controls = useDriverControlsSnapshot();
-  return <MetricFrame config={config} title="Brake pressure"><FourCorners values={controls?.brakeLinePressure} suffix="" /></MetricFrame>;
+  return (
+    <MetricFrame config={config} title="Brake pressure">
+      <FourCorners values={controls?.brakeLinePressure} suffix="" />
+    </MetricFrame>
+  );
 }
 
 export function SuspensionPosition() {
   const config = useSettings('suspensionposition');
   const controls = useDriverControlsSnapshot();
-  return <MetricFrame config={config} title="Suspension"><FourCorners values={controls?.suspensionDeflection} transform={(value) => value * 1000} suffix=" mm" /></MetricFrame>;
+  return (
+    <MetricFrame config={config} title="Suspension">
+      <FourCorners
+        values={controls?.suspensionDeflection}
+        transform={(value) => value * 1000}
+        suffix=" mm"
+      />
+    </MetricFrame>
+  );
 }
 
 export function TrackClock() {
@@ -299,7 +346,11 @@ export function TrackClock() {
     seconds === null
       ? '—'
       : `${String(Math.floor(seconds / 3600) % 24).padStart(2, '0')}:${String(Math.floor(seconds / 60) % 60).padStart(2, '0')}:${String(Math.floor(seconds) % 60).padStart(2, '0')}`;
-  return <MetricFrame config={config} title="Track clock"><div className="text-center font-mono text-2xl font-bold">{clock}</div></MetricFrame>;
+  return (
+    <MetricFrame config={config} title="Track clock">
+      <div className="text-center font-mono text-2xl font-bold">{clock}</div>
+    </MetricFrame>
+  );
 }
 
 export function SteeringMeter() {
@@ -315,11 +366,18 @@ export function SteeringMeter() {
     <MetricFrame config={config} title="Steering">
       <div className="relative mt-4 h-3 rounded bg-slate-700">
         <div className="absolute left-1/2 h-full border-l border-white" />
-        {ratio !== null && <div className="absolute top-[-4px] h-5 w-1 bg-cyan-400" style={{ left: `${50 + ratio * 50}%` }} />}
+        {ratio !== null && (
+          <div
+            className="absolute top-[-4px] h-5 w-1 bg-cyan-400"
+            style={{ left: `${50 + ratio * 50}%` }}
+          />
+        )}
       </div>
       <div className="mt-2 text-center font-mono">
         {angle === undefined ? '—' : `${((angle * 180) / Math.PI).toFixed(0)}°`}
-        <span className="ml-2 text-slate-500">/{max === undefined ? '—' : `${((max * 180) / Math.PI).toFixed(0)}°`}</span>
+        <span className="ml-2 text-slate-500">
+          /{max === undefined ? '—' : `${((max * 180) / Math.PI).toFixed(0)}°`}
+        </span>
       </div>
     </MetricFrame>
   );
@@ -331,7 +389,8 @@ function parseTrackLength(value: string | undefined) {
 }
 
 export function CruiseOdometer() {
-  const config = useSettings('cruiseodometer') as CruiseOdometerConfig | undefined;
+  const config = useSettings('cruiseodometer') as
+    CruiseOdometerConfig | undefined;
   const track = useTrackStateSnapshot();
   const session = useSessionStore((state) => state.session);
   const [odometer, setOdometer] = useState(0);
@@ -354,8 +413,18 @@ export function CruiseOdometer() {
   return (
     <MetricFrame config={config} title="Cruise / odometer">
       <div className="grid grid-cols-2 text-center">
-        <div><div className="text-xs text-slate-500">Track</div><div className="font-mono text-lg">{position === null ? '—' : (position / divisor).toFixed(2)} {unit}</div></div>
-        <div><div className="text-xs text-slate-500">Trip</div><div className="font-mono text-lg">{(odometer / divisor).toFixed(2)} {unit}</div></div>
+        <div>
+          <div className="text-xs text-slate-500">Track</div>
+          <div className="font-mono text-lg">
+            {position === null ? '—' : (position / divisor).toFixed(2)} {unit}
+          </div>
+        </div>
+        <div>
+          <div className="text-xs text-slate-500">Trip</div>
+          <div className="font-mono text-lg">
+            {(odometer / divisor).toFixed(2)} {unit}
+          </div>
+        </div>
       </div>
     </MetricFrame>
   );

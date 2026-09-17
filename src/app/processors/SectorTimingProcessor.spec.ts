@@ -57,6 +57,18 @@ describe('SectorTimingProcessor', () => {
       60.8,
     ]);
     expect(snapshot.clean.sessionBestSectorTimes).toEqual([32.1, 40.8, 59.9]);
+
+    processor.onFrame({
+      SessionNum: { value: [2] },
+      LmuSectorIdx: { value: [0] },
+      LmuCurrentSectorTimes: { value: [null, null, null] },
+      LmuLastSectorTimes: { value: [null, null, null] },
+      LmuBestSectorTimes: { value: [33, 42, 61] },
+    } as unknown as Telemetry);
+
+    expect(
+      processor.snapshot().inclusive.previousSessionBestSectorTimes
+    ).toEqual([null, null, null]);
   });
 
   it('interpolates crossings and records clean and inclusive timing views', () => {

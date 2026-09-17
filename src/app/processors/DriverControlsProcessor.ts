@@ -188,7 +188,15 @@ export class DriverControlsProcessor implements TelemetryProcessor<DriverControl
     key: K,
     value: DriverControlsSnapshot[K]
   ): boolean {
-    if (this.latest[key] === value) return false;
+    const current = this.latest[key];
+    if (
+      current === value ||
+      (Array.isArray(current) &&
+        Array.isArray(value) &&
+        current.length === value.length &&
+        current.every((item, index) => Object.is(item, value[index])))
+    )
+      return false;
     this.latest[key] = value;
     return true;
   }

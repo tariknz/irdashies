@@ -116,11 +116,23 @@ export async function publishIRacingSDKEvents(
   (async () => {
     let lastInspectorTelemetryPublishTime = Number.NEGATIVE_INFINITY;
     let lastSessionPollTime = Number.NEGATIVE_INFINITY;
-    let lastRejectedFrameLogTime = Number.NEGATIVE_INFINITY;
     let wasRunning = false;
 
     while (!shouldStop) {
-      if (!sdk.isRunning()) {
+      const pollStartedAt = performance.now();
+      const shouldPollSession =
+        pollStartedAt - lastSessionPollTime >= SESSION_POLL_INTERVAL;
+      perfMetrics.markStart('processTelemetry');
+      perfMetrics.markStart(
+        shouldPollSession ? 'sdkSessionRead' : 'sdkTelemetryRead'
+      );
+      const rawSession = shouldPollSession ? sdk.readSession() : null;
+      const raw = rawSession ?? sdk.read();
+      perfMetrics.markEnd(
+        shouldPollSession ? 'sdkSessionRead' : 'sdkTelemetryRead'
+      );
+      if (!raw.running) {
+        perfMetrics.markEnd('processTelemetry');
         if (wasRunning) {
           logger.info('[lmuSdkBridge] LMU no longer publishing telemetry');
           publishRunningState(false);
@@ -131,27 +143,8 @@ export async function publishIRacingSDKEvents(
           lastSessionSignature = null;
         }
         await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL));
+        if (shouldStop) break;
         sdk.start();
-        continue;
-      }
-
-      const pollStartedAt = performance.now();
-      perfMetrics.markStart('processTelemetry');
-      perfMetrics.markStart('sdkTelemetryRead');
-      const raw = sdk.read();
-      perfMetrics.markEnd('sdkTelemetryRead');
-      if (!raw.running) {
-        perfMetrics.markEnd('processTelemetry');
-        const now = performance.now();
-        if (now - lastRejectedFrameLogTime >= RETRY_INTERVAL) {
-          lastRejectedFrameLogTime = now;
-          logger.warn(
-            '[lmuSdkBridge] Rejected an inconsistent shared-memory frame'
-          );
-        }
-        await new Promise((resolve) =>
-          setTimeout(resolve, TELEMETRY_POLL_INTERVAL)
-        );
         continue;
       }
 
@@ -211,21 +204,16 @@ export async function publishIRacingSDKEvents(
 
       const tickTime = performance.now();
       let session: Session | null = null;
-      if (tickTime - lastSessionPollTime >= SESSION_POLL_INTERVAL) {
+      if (rawSession) {
         lastSessionPollTime = tickTime;
-        perfMetrics.markStart('sdkSessionRead');
-        const rawSession = sdk.readSession();
-        perfMetrics.markEnd('sdkSessionRead');
-        if (rawSession.running) {
-          const signature = lmuSessionSignature(rawSession);
-          if (signature !== lastSessionSignature) {
-            lastSessionSignature = signature;
-            session = mapLmuSession(rawSession, trackMap);
-            const playerIdx = rawSession.playerVehicleIdx;
-            logger.info(
-              `[lmuSdkBridge] Session snapshot track=${rawSession.trackName} session=${rawSession.session} phase=${rawSession.gamePhase} flags=${Array.from(rawSession.sectorFlags).join(',')} sector=${rawSession.vehSector[playerIdx] ?? -1} sectors=${rawSession.vehLastSector1[playerIdx] ?? -1},${rawSession.vehLastSector2[playerIdx] ?? -1},${rawSession.vehLastLapTime[playerIdx] ?? -1}`
-            );
-          }
+        const signature = lmuSessionSignature(rawSession);
+        if (signature !== lastSessionSignature) {
+          lastSessionSignature = signature;
+          session = mapLmuSession(rawSession, trackMap);
+          const playerIdx = rawSession.playerVehicleIdx;
+          logger.info(
+            `[lmuSdkBridge] Session snapshot track=${rawSession.trackName} session=${rawSession.session} phase=${rawSession.gamePhase} flags=${Array.from(rawSession.sectorFlags).join(',')} sector=${rawSession.vehSector[playerIdx] ?? -1} sectors=${rawSession.vehLastSector1[playerIdx] ?? -1},${rawSession.vehLastSector2[playerIdx] ?? -1},${rawSession.vehLastLapTime[playerIdx] ?? -1}`
+          );
         }
       }
 
@@ -300,6 +288,7 @@ export async function publishIRacingSDKEvents(
     },
     onRunningState: (callback: (value: boolean) => void) => {
       runningStateCallbacks.add(callback);
+      if (lastRunningState !== undefined) callback(lastRunningState);
       return () => {
         runningStateCallbacks.delete(callback);
       };

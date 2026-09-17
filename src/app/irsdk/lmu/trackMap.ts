@@ -281,10 +281,13 @@ export class LmuTrackMapStorage {
   save(trackName: string, map: LmuTrackMap): void {
     let data: Record<string, LmuTrackMap>;
     try {
-      data = JSON.parse(fs.readFileSync(this.filePath, 'utf8')) as Record<
-        string,
-        LmuTrackMap
-      >;
+      const parsed: unknown = JSON.parse(
+        fs.readFileSync(this.filePath, 'utf8')
+      );
+      data =
+        parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
+          ? (parsed as Record<string, LmuTrackMap>)
+          : {};
     } catch {
       data = {};
     }

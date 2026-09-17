@@ -661,7 +661,7 @@ npm start
 
 Without an override, irDashies waits for the first game it detects and uses that
 game until irDashies restarts. If both games are running when detection occurs,
-iRacing is selected.
+LMU is selected.
 
 > You will need to have Node.js installed on your machine to run the application. You can download it from [here](https://nodejs.org/).
 

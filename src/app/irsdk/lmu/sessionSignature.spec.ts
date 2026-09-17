@@ -25,4 +25,19 @@ describe('lmuSessionSignature', () => {
       lmuSessionSignature(session(54, true))
     );
   });
+
+  it.each([
+    ['qualification', 72],
+    ['bestLapTime', 73],
+    ['lastLapTime', 74],
+    ['totalLaps', 5],
+    ['classId', 2],
+    ['vehicleModel', 'Updated Car'],
+  ])('changes when driver %s changes', (field, value) => {
+    const before = session(20, true);
+    const after = session(20, true);
+    Object.assign(after.drivers[0], { [field]: value });
+
+    expect(lmuSessionSignature(before)).not.toBe(lmuSessionSignature(after));
+  });
 });

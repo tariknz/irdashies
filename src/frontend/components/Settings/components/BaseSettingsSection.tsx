@@ -36,17 +36,23 @@ export const BaseSettingsSection = <T,>({
     (w) => w.id === widgetId
   );
   const [prevWidgetData, setPrevWidgetData] = useState(updatedWidget);
+  const [prevWidgetId, setPrevWidgetId] = useState(widgetId);
 
-  if (JSON.stringify(updatedWidget) !== JSON.stringify(prevWidgetData)) {
+  if (
+    widgetId !== prevWidgetId ||
+    JSON.stringify(updatedWidget) !== JSON.stringify(prevWidgetData)
+  ) {
+    setPrevWidgetId(widgetId);
     setPrevWidgetData(updatedWidget);
-    if (updatedWidget) {
-      // This setState during render is safe and efficient in React when guarded by a condition
-      // like this. It avoids the extra render pass that an effect would cause.
-      setLocalSettings({
-        enabled: updatedWidget.enabled,
-        config: updatedWidget.config as unknown as T,
-      });
-    }
+    // This setState during render is safe and efficient in React when guarded by a condition
+    // like this. It avoids the extra render pass that an effect would cause.
+    setLocalSettings({
+      enabled: updatedWidget?.enabled ?? settings?.enabled ?? false,
+      config:
+        (updatedWidget?.config as unknown as T) ??
+        settings?.config ??
+        ({} as T),
+    });
   }
 
   const handleSettingsChange = (newSettings: BaseWidgetSettings<T>) => {
