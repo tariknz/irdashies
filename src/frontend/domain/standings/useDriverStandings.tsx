@@ -75,6 +75,8 @@ export const useDriverStandings = (
     enabled: useLivePositionStandings,
   });
   const fastestLaps = useSessionFastestLaps(sessionNum);
+  const carIdxLastLapTime = standingsSnapshot?.carIdxLastLapTime ?? EMPTY_NUMBERS;
+  const carIdxBestLapTime = standingsSnapshot?.carIdxBestLapTime ?? EMPTY_NUMBERS;
   const carIdxF2Time = standingsSnapshot?.carIdxF2Time ?? EMPTY_NUMBERS;
   const carIdxEstTime = standingsSnapshot?.carIdxEstTime ?? EMPTY_NUMBERS;
   const carIdxOnPitRoad = standingsSnapshot?.carIdxOnPitRoad ?? EMPTY_BOOLEANS;
@@ -115,6 +117,8 @@ export const useDriverStandings = (
         qualifyingResults: qualifyingResults,
       },
       {
+        carIdxLastLapTime: carIdxLastLapTime,
+        carIdxBestLapTime: carIdxBestLapTime,
         carIdxF2TimeValue: carIdxF2Time,
         carIdxOnPitRoadValue: carIdxOnPitRoad,
         carIdxTrackSurfaceValue: carIdxTrackSurface,
@@ -202,6 +206,8 @@ export const useDriverStandings = (
     driverCarIdx,
     sessionDrivers,
     qualifyingResults,
+    carIdxLastLapTime,
+    carIdxBestLapTime,
     carIdxF2Time,
     carIdxOnPitRoad,
     carIdxTrackSurface,
