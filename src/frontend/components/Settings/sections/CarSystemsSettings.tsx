@@ -142,6 +142,12 @@ export const CarSystemsSettings = () => {
                       handleConfigChange({ showUnsupportedRows: v })
                     }
                   />
+                  <SettingToggleRow
+                    title="Keep rows switched off"
+                    description="Shows a system the driver has turned off, greyed and reading zero. Turn off to leave only the systems actually in use."
+                    enabled={settings.config.showOffRows ?? true}
+                    onToggle={(v) => handleConfigChange({ showOffRows: v })}
+                  />
                 </SettingsSection>
 
                 <SettingsSection title="Rows">

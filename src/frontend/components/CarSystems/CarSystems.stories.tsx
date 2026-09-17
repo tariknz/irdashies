@@ -212,3 +212,23 @@ export const BrakeFamily: Story = {
     }
   ),
 };
+
+/**
+ * A Toyota GR86 with both filters off. The car publishes brake bias, ABS and a
+ * single traction control and nothing else, and here its traction control is
+ * switched off - so the five configured rows collapse to the two that are
+ * actually telling the driver something.
+ *
+ * The two filters answer different questions. TC2 and THR are gone because the
+ * GR86 has no such adjustments; TC is gone because the driver turned it off.
+ */
+export const LiveReadingsOnly: Story = {
+  ...story(
+    snapshot([
+      brakeBias(50.0),
+      adjustment('dcABS', 'ABS', 2),
+      adjustment('dcTractionControl', 'Traction Control', 0, { isOff: true }),
+    ]),
+    { showUnsupportedRows: false, showOffRows: false }
+  ),
+};

@@ -664,6 +664,13 @@ export interface CarSystemsConfig {
   rows: string[];
   /** Blank rows for adjustments the current car does not have. */
   showUnsupportedRows: boolean;
+  /**
+   * Rows for systems the driver has switched off, which read 0 on an unsigned
+   * scale. Separate from `showUnsupportedRows`: a car that lacks a system and a
+   * driver who turned one off are different facts, and a driver who wants only
+   * live readings wants both gone.
+   */
+  showOffRows: boolean;
   background: { opacity: number };
   sessionVisibility: SessionVisibilitySettings;
   showOnlyWhenOnTrack: boolean;

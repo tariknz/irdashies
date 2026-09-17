@@ -95,29 +95,45 @@ export const CarSystems = () => {
 
   const columns = useMemo(() => {
     const configured = settings?.rows ?? [];
-    return configured
-      .map((key) => {
-        const catalogue = CAR_SYSTEM_ADJUSTMENTS.find((d) => d.key === key);
-        if (!catalogue) return undefined;
-        // Renamed per car where the car wires that channel to a different
-        // control. The key is unchanged, so the saved row selection and the
-        // snapshot both still match on it.
-        const definition = resolveCarSystemDefinition(catalogue, carPath);
-        return {
-          key,
-          short: definition.short,
-          chip: definition.chip,
-          adjustment: byColumn.get(key),
-        };
-      })
-      .filter(
-        (column): column is NonNullable<typeof column> => column !== undefined
-      )
-      .filter(
-        (column) =>
-          settings?.showUnsupportedRows || column.adjustment !== undefined
-      );
-  }, [settings?.rows, settings?.showUnsupportedRows, byColumn, carPath]);
+    return (
+      configured
+        .map((key) => {
+          const catalogue = CAR_SYSTEM_ADJUSTMENTS.find((d) => d.key === key);
+          if (!catalogue) return undefined;
+          // Renamed per car where the car wires that channel to a different
+          // control. The key is unchanged, so the saved row selection and the
+          // snapshot both still match on it.
+          const definition = resolveCarSystemDefinition(catalogue, carPath);
+          return {
+            key,
+            short: definition.short,
+            chip: definition.chip,
+            adjustment: byColumn.get(key),
+          };
+        })
+        .filter(
+          (column): column is NonNullable<typeof column> => column !== undefined
+        )
+        .filter(
+          (column) =>
+            settings?.showUnsupportedRows || column.adjustment !== undefined
+        )
+        // A system the driver switched off is hidden separately from one the car
+        // never had: the GR86 shows a blank TC2 because it has no second traction
+        // control at all, while a GT3 car shows a greyed 0 because the driver
+        // turned its traction control off. Someone who wants a strip of live
+        // readings only wants both gone, but they are different facts.
+        .filter(
+          (column) => settings?.showOffRows || column.adjustment?.isOff !== true
+        )
+    );
+  }, [
+    settings?.rows,
+    settings?.showUnsupportedRows,
+    settings?.showOffRows,
+    byColumn,
+    carPath,
+  ]);
 
   if (!isSessionVisible) return <></>;
   if (settings?.showOnlyWhenOnTrack && !isDriving) return <></>;

@@ -7,6 +7,7 @@ import {
 const FALLBACK: CarSystemsConfig = {
   rows: [...DEFAULT_CAR_SYSTEM_ROWS],
   showUnsupportedRows: true,
+  showOffRows: true,
   background: { opacity: 80 },
   sessionVisibility: {
     race: true,

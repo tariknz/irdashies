@@ -144,11 +144,12 @@ export const CAR_SYSTEM_ADJUSTMENTS: readonly CarSystemDefinition[] = [
     precision: 0,
     chip: 'bg-violet-800',
   },
-  // The P217's power steering assist, 1..5. Named from the channel rather than
-  // from the car's own screen, which was not photographed.
+  // The P217's power steering assist, 1..5. The only car seen publishing it,
+  // and its own adjustment screen calls it an assist, so the catalogue takes
+  // that name rather than needing an override for a single case.
   {
     key: 'dcPowerSteering',
-    label: 'Power Steering',
+    label: 'Power Steering Assist',
     short: 'PS',
     precision: 0,
     chip: 'bg-zinc-700',

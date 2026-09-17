@@ -1395,6 +1395,7 @@ export const defaultDashboard: {
           'dcThrottleShape',
         ],
         showUnsupportedRows: true,
+        showOffRows: true,
         background: { opacity: 80 },
         showOnlyWhenOnTrack: false,
         sessionVisibility: {

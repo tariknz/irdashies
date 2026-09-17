@@ -17,13 +17,19 @@ vi.mock('@irdashies/context', async (importOriginal) => {
   };
 });
 
+const DEFAULT_SETTINGS = {
+  rows: ['dcBrakeBias', 'dcABS'],
+  showUnsupportedRows: true,
+  showOffRows: true,
+  background: { opacity: 80 },
+  showOnlyWhenOnTrack: false,
+};
+
+// Prefixed so Vitest allows the hoisted vi.mock factory to close over it.
+const mockSettings = { ...DEFAULT_SETTINGS };
+
 vi.mock('./hooks/useCarSystemsSettings', () => ({
-  useCarSystemsSettings: () => ({
-    rows: ['dcBrakeBias', 'dcABS'],
-    showUnsupportedRows: true,
-    background: { opacity: 80 },
-    showOnlyWhenOnTrack: false,
-  }),
+  useCarSystemsSettings: () => mockSettings,
 }));
 
 const snapshot: CarSystemsSnapshot = {
@@ -71,6 +77,7 @@ const inCar = (carPath: string | undefined) => {
 describe('CarSystems per-car labels', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.assign(mockSettings, DEFAULT_SETTINGS);
     vi.mocked(Context.useCarSystemsSnapshot).mockReturnValue(snapshot);
     vi.mocked(Context.useDrivingState).mockReturnValue({
       isDriving: true,
@@ -142,6 +149,59 @@ describe('CarSystems per-car labels', () => {
     // so it read a bare "3" - its own precision and no unit - rather than 52.0%.
     expect(screen.getByText('52.0%')).toBeInTheDocument();
     expect(screen.queryByText('3')).not.toBeInTheDocument();
+  });
+
+  it('hides a system the driver switched off when asked to', () => {
+    vi.mocked(Context.useCarSystemsSnapshot).mockReturnValue({
+      ...snapshot,
+      adjustments: [
+        {
+          key: 'dcBrakeBias',
+          label: 'Brake Bias',
+          value: 54.5,
+          isOff: false,
+          precision: 1,
+          unit: '%',
+        },
+        {
+          key: 'dcABS',
+          label: 'ABS',
+          value: 0,
+          isOff: true,
+          precision: 0,
+        },
+      ],
+    });
+    mockSettings.showOffRows = false;
+    inCar('bmwm4gt3');
+
+    render(<CarSystems />);
+
+    expect(screen.getByText('BB')).toBeInTheDocument();
+    expect(screen.queryByText('ABS')).not.toBeInTheDocument();
+  });
+
+  it('keeps a switched-off system by default', () => {
+    // Off and unsupported are different facts, so turning off one filter must
+    // not quietly take the other's rows with it.
+    vi.mocked(Context.useCarSystemsSnapshot).mockReturnValue({
+      ...snapshot,
+      adjustments: [
+        {
+          key: 'dcABS',
+          label: 'ABS',
+          value: 0,
+          isOff: true,
+          precision: 0,
+        },
+      ],
+    });
+    mockSettings.showUnsupportedRows = false;
+    inCar('bmwm4gt3');
+
+    render(<CarSystems />);
+
+    expect(screen.getByText('ABS')).toBeInTheDocument();
   });
 
   it('falls back to the catalogue name when session data has no player entry', () => {
