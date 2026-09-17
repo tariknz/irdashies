@@ -181,21 +181,35 @@ describe('single-widget routes', () => {
     expect(res.headers['location']).toBe('/widget/carsystems?profile=race');
   });
 
-  it('lists enabled widgets from the live dashboard, not a hardcoded table', async () => {
+  it('lists widgets from the live dashboard, not a hardcoded table', async () => {
     const res = await request('/components');
     const payload = JSON.parse(res.body);
 
-    expect(payload.components).toEqual(['carsystems', 'standings']);
+    expect(payload.components).toEqual(['carsystems', 'standings', 'weather']);
+    expect(payload.enabled).toEqual(['carsystems', 'standings']);
     expect(payload.examples).toContain(
       'http://localhost:3000/widget/carsystems'
     );
   });
 
-  it('offers a widget link per enabled widget on the landing page', async () => {
+  it('lists widgets that are disabled on the desktop, since their URL works', async () => {
+    const res = await request('/components');
+
+    expect(JSON.parse(res.body).components).toContain('weather');
+  });
+
+  it('offers a widget link for every widget on the landing page', async () => {
     const res = await request('/');
 
     expect(res.body).toContain('href="/widget/carsystems"');
     expect(res.body).toContain('href="/widget/standings"');
-    expect(res.body).not.toContain('href="/widget/weather"');
+    expect(res.body).toContain('href="/widget/weather"');
+  });
+
+  it('marks the ones that are switched off for the desktop overlays', async () => {
+    const res = await request('/');
+    const weatherRow = res.body.slice(res.body.indexOf('/widget/weather'));
+
+    expect(weatherRow).toContain('off on desktop');
   });
 });

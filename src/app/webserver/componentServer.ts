@@ -132,19 +132,27 @@ function sendHTML(res: http.ServerResponse, html: string) {
 }
 
 /**
- * Widget ids the active dashboard has enabled.
+ * Every widget the active dashboard knows about, and whether it is enabled for
+ * the desktop overlays.
+ *
+ * Disabled widgets are listed too, because /widget/<id> deliberately renders
+ * them: a widget kept off the screen can still be worth its own VR overlay
+ * tab, and leaving it off this page would hide a URL that works.
  *
  * Derived from the live dashboard rather than a hardcoded list. The list this
  * replaced had drifted badly (it named ten widgets when the app shipped
  * twenty-seven), and the main process cannot enumerate WIDGET_MAP itself
  * without importing renderer code across the layer boundary (R1.1).
  */
-function listDashboardWidgetIds(): string[] {
-  const ids = new Set<string>();
+function listDashboardWidgets(): { id: string; enabled: boolean }[] {
+  const seen = new Map<string, boolean>();
   for (const widget of currentDashboard?.widgets ?? []) {
-    if (widget.enabled) ids.add(widget.id);
+    if (!seen.has(widget.id)) seen.set(widget.id, !!widget.enabled);
   }
-  return [...ids];
+  // Enabled first: those are the ones someone is most likely looking for.
+  return [...seen]
+    .map(([id, enabled]) => ({ id, enabled }))
+    .sort((a, b) => Number(b.enabled) - Number(a.enabled));
 }
 
 /**
@@ -412,10 +420,12 @@ export async function startComponentServer(
 
     if (pathname === '/components' && req.method === 'GET') {
       const baseUrl = `http://${SERVER_IP}:${actualPort}`;
-      const componentNames = listDashboardWidgetIds();
+      const widgets = listDashboardWidgets();
+      const componentNames = widgets.map((w) => w.id);
 
       sendJSON(res, 200, {
         components: componentNames,
+        enabled: widgets.filter((w) => w.enabled).map((w) => w.id),
         baseUrl,
         websocketUrl: `ws://${SERVER_IP}:${actualPort}`,
         dashboardUrl: `${baseUrl}/dashboard`,
@@ -438,18 +448,19 @@ export async function startComponentServer(
       // One row per enabled widget. This is the page people copy URLs out of
       // when setting up a VR overlay host, so each row shows the URL itself
       // rather than only linking it.
-      const widgetIds = listDashboardWidgetIds();
-      const widgetLinks = widgetIds
-        .map((id) => {
+      const widgets = listDashboardWidgets();
+      const widgetLinks = widgets
+        .map(({ id, enabled }) => {
           const href = `/widget/${encodeURIComponent(id)}`;
           const full = `http://${SERVER_IP}:${actualPort}${href}`;
-          return `<a href="${href}"><span>${escapeHtml(id)}</span><code>${escapeHtml(full)}</code></a>`;
+          const badge = enabled ? '' : '<em>off on desktop</em>';
+          return `<a href="${href}"><span>${escapeHtml(id)}${badge}</span><code>${escapeHtml(full)}</code></a>`;
         })
         .join('');
 
-      const widgetSection = widgetIds.length
+      const widgetSection = widgets.length
         ? `<h2>Single widgets</h2><div class="widgets">${widgetLinks}</div>`
-        : `<h2>Single widgets</h2><p class="empty">No overlays are enabled in this profile.</p>`;
+        : `<h2>Single widgets</h2><p class="empty">This profile has no widgets.</p>`;
 
       const html = `
       <!DOCTYPE html>
@@ -469,6 +480,7 @@ export async function startComponentServer(
           a:hover { background: #334155; border-color: #38bdf8; }
           code { color: #64748b; font-size: 0.8rem; white-space: nowrap; }
           .empty { color: #64748b; font-size: 0.9rem; }
+          em { font-style: normal; color: #64748b; font-size: 0.75rem; margin-left: 0.6rem; }
         </style>
       </head>
       <body>
