@@ -90,3 +90,46 @@ describe('RendererDataProviders', () => {
     expect(screen.getByTestId('session-provider')).toBeInTheDocument();
   });
 });
+
+describe('RendererDataProviders scoped to one browser-source widget', () => {
+  beforeEach(() => {
+    dashboard = { widgets: [] };
+  });
+
+  it('mounts what the named widget needs when nothing is enabled', () => {
+    // The natural VR setup: every desktop overlay switched off, each widget
+    // placed as its own browser source.
+    dashboard.widgets = [{ id: 'map', enabled: false, layout }];
+
+    render(<RendererDataProviders browser widgetId="map" />);
+
+    expect(screen.getByTestId('session-provider')).toBeInTheDocument();
+  });
+
+  it('mounts what it needs even when the profile has no such widget', () => {
+    render(<RendererDataProviders browser widgetId="map" />);
+
+    expect(screen.getByTestId('session-provider')).toBeInTheDocument();
+  });
+
+  it('ignores what the other enabled widgets need', () => {
+    dashboard.widgets = [
+      { id: 'telemetryinspector', enabled: true, layout },
+      { id: 'fuel', enabled: true, layout },
+    ];
+
+    render(<RendererDataProviders browser widgetId="fuel" />);
+
+    expect(
+      screen.queryByTestId('telemetry-inspector-provider')
+    ).not.toBeInTheDocument();
+  });
+
+  it('still derives needs from the dashboard when no widget is named', () => {
+    dashboard.widgets = [{ id: 'map', enabled: false, layout }];
+
+    const { container } = render(<RendererDataProviders browser />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+});

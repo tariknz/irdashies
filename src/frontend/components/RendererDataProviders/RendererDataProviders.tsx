@@ -15,19 +15,33 @@ import {
 
 export const RendererDataProviders = ({
   browser = false,
+  widgetId,
 }: {
   browser?: boolean;
+  /**
+   * Scope the providers to a single widget, for a one-widget browser source.
+   *
+   * Without this, needs come from the *enabled* widgets. /widget/<id> renders
+   * whether or not the widget is enabled, so the natural VR setup — desktop
+   * overlays all switched off, each widget placed as its own source — leaves
+   * that list empty and mounts no providers at all. Car Systems, Track Map,
+   * Relative and Blind Spot Monitor all declare sessionData, so they would
+   * render permanently empty with nothing to say why.
+   */
+  widgetId?: string;
 }) => {
   const widgets = useWidgetsForThisDisplay(browser);
-  const runtimeNeeds = useMemo(
-    () => ({
-      telemetryInspector: rendererNeedsTelemetryInspector(widgets),
-      referenceLaps: rendererNeedsChannel(widgets, 'reference-laps.snapshot'),
-      sessionData: rendererNeedsSessionData(widgets),
-      pitLaneData: rendererNeedsPitLaneData(widgets),
-    }),
-    [widgets]
-  );
+  const runtimeNeeds = useMemo(() => {
+    // Resolved straight from the registry rather than the dashboard, so it
+    // holds even when the widget is disabled or missing from the profile.
+    const scoped = widgetId ? [{ id: widgetId, type: widgetId }] : widgets;
+    return {
+      telemetryInspector: rendererNeedsTelemetryInspector(scoped),
+      referenceLaps: rendererNeedsChannel(scoped, 'reference-laps.snapshot'),
+      sessionData: rendererNeedsSessionData(scoped),
+      pitLaneData: rendererNeedsPitLaneData(scoped),
+    };
+  }, [widgets, widgetId]);
 
   if (
     !runtimeNeeds.telemetryInspector &&

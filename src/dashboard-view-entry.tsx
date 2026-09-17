@@ -57,7 +57,7 @@ async function initializeDashboardView() {
         profileId={profileId}
       >
         <RunningStateProvider bridge={bridge}>
-          <RendererDataProviders browser />
+          <RendererDataProviders browser widgetId={soloWidgetId} />
           {/* The lap trace widget draws nothing without its recorder: the
               recorder is what allocates the active lap and feeds it from
               telemetry. DashboardView renders the widget but mounts no
