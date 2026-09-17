@@ -104,6 +104,7 @@ export function TrackNotes() {
     if (previous === null || previousTrackId.current !== trackId) {
       previousPct.current = track.lapDistPct;
       previousTrackId.current = trackId;
+      setActive(null);
       return;
     }
     const triggered = (
