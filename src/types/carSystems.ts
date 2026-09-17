@@ -58,15 +58,22 @@ export const CAR_SYSTEM_ADJUSTMENTS: readonly CarSystemDefinition[] = [
     unit: '%',
     chip: 'bg-red-600',
   },
-  // The Renault Clio reports its bias here instead. The two never coexist, so
-  // they share a column and whichever the car publishes fills it.
+  // Not a brake bias, despite the name, and not a substitute for dcBrakeBias.
+  // Captures of the two cars that publish it disagree on what it is and agree
+  // it is not a bias split: on the Renault Clio it is the rear brake valve,
+  // running 10..40 while dcBrakeBias sits untouched at 59.2%; on the Mercedes
+  // W13 it is brake migration, running 1..10 alongside a live dcBrakeBias.
+  // Both were matched frame-for-frame against a photograph of the car's own
+  // in-car adjustment screen.
+  //
+  // So it carries iRacing's own name for the channel and is renamed per car,
+  // rather than borrowing a meaning from whichever car was looked at first.
   {
     key: 'dcPeakBrakeBias',
-    label: 'Brake Bias',
-    short: 'BB',
-    precision: 1,
-    unit: '%',
-    chip: 'bg-red-600',
+    label: 'Peak Brake Bias',
+    short: 'PBB',
+    precision: 0,
+    chip: 'bg-rose-700',
   },
   {
     key: 'dcABS',
@@ -138,10 +145,12 @@ export const CAR_SYSTEM_ADJUSTMENTS: readonly CarSystemDefinition[] = [
     precision: 0,
     chip: 'bg-indigo-700',
   },
+  // The high-speed differential, not an exit setting. The W13 lists its three
+  // as Entry / MID / HISPD, and dcDiffExit is the one that tracks HISPD.
   {
     key: 'dcDiffExit',
-    label: 'Diff Exit',
-    short: 'DIFX',
+    label: 'Diff High Speed',
+    short: 'DIFH',
     precision: 0,
     chip: 'bg-indigo-800',
   },
@@ -154,8 +163,8 @@ export const CAR_SYSTEM_ADJUSTMENTS: readonly CarSystemDefinition[] = [
   //
   // Levels are fractional 0..1, matching the Hybrid: DeployLevel / RegenLevel
   // pair in session info, so they are shown to one decimal as the setup screen
-  // does. Recorded sessions have not yet caught a driver moving either dial, so
-  // the step size is unconfirmed; one decimal reads correctly either way.
+  // does. Sweeping both in the IR18 confirms the step: deploy moves 0.1..1 in
+  // ten steps, regen 0.5..1 in six, so one decimal is exactly right.
   {
     key: 'dcMGUKDeployFixed',
     label: 'Deploy Level',
@@ -180,12 +189,14 @@ export const CAR_SYSTEM_ADJUSTMENTS: readonly CarSystemDefinition[] = [
     label: 'Weight Jacker',
     short: 'JACK',
     precision: 0,
-    // Runs roughly -20..20, and 0 is the middle of that range rather than the
-    // bottom of it. Declared rather than inferred: the processor otherwise
-    // learns a scale is signed only once it sees a negative, so a jacker sat at
-    // its neutral setting would read as switched off until the driver first
-    // wound it the other way — and on a road course, where the setup locks it
-    // to 0 for the whole session, it never would.
+    // Runs -20..20 in 41 steps, confirmed by sweeping it in the IR18 at
+    // Daytona, and 0 is the middle of that range rather than the bottom of it.
+    // Declared rather than inferred because the processor otherwise learns a
+    // scale is signed only once it sees a negative: a jacker sat at its neutral
+    // setting would read as switched off until the driver first wound it the
+    // other way — and on a road course, where the setup locks it to 0 for the
+    // whole session, it never would. The Monza capture shows exactly that, 0
+    // for every frame.
     signed: true,
     chip: 'bg-stone-700',
   },
@@ -195,8 +206,6 @@ export const CAR_SYSTEM_ADJUSTMENTS: readonly CarSystemDefinition[] = [
  * Rows shown by default: the adjustments most cars with any assists expose.
  * Everything else is available in settings but off, so a GT3 driver is not
  * given a column of empty differential rows.
- *
- * `dcPeakBrakeBias` is not listed because it shares the brake bias row.
  */
 export const DEFAULT_CAR_SYSTEM_ROWS: readonly string[] = [
   'dcBrakeBias',
@@ -206,17 +215,15 @@ export const DEFAULT_CAR_SYSTEM_ROWS: readonly string[] = [
   'dcThrottleShape',
 ];
 
-/** The row a telemetry key is displayed in; brake bias has two sources. */
-export const carSystemRowKey = (key: string): string =>
-  key === 'dcPeakBrakeBias' ? 'dcBrakeBias' : key;
-
 /**
  * A car-specific name for an adjustment, replacing the catalogue's generic one.
  *
  * iRacing does not publish a channel per physical control. It publishes a fixed
  * set of `dc*` variables and each car wires its own dials to whichever ones fit,
- * so the same channel can carry a different control from one car to the next —
- * the same reason `dcPeakBrakeBias` already has to share the brake bias column.
+ * so the same channel can carry a different control from one car to the next.
+ * `dcABS` is ABS on a GT3 car and brake migration on a GTP one;
+ * `dcPeakBrakeBias` is a rear brake valve on one car and brake migration on
+ * another.
  *
  * Only the two names are overridden. The telemetry key stays the identity of
  * the row: it is what `CarSystemsConfig.rows` persists and what
@@ -262,17 +269,46 @@ export const normalizeCarPath = (carPath: string): string =>
 export const CAR_SYSTEM_LABEL_OVERRIDES: Readonly<
   Record<string, Readonly<Record<string, CarSystemLabelOverride>>>
 > = {
-  // PROVISIONAL - not yet confirmed against a recorded session.
-  //
-  // Reported by L061N on #723, from a telemetry viewer and an LMP2 session
-  // file: on this car the dial published as dcABS is brake migration, not ABS.
-  // That is plausible on its face - the Oreca-era LMP2 has no ABS to adjust,
-  // while brake migration is a control it does have - but it rests on someone
-  // else's screenshot rather than on a capture, so it is flagged rather than
-  // quietly trusted. Confirm by sweeping the migration dial in the P217 and
-  // checking that dcABS is what moves.
-  dallarap217: {
+  // Every entry below was established the same way: the driver swept one dial
+  // at a time with a pause between, and photographed the car's in-car
+  // adjustment screen at the end. Matching each channel's final in-car value
+  // against that photograph named all of them at once - seven of seven on each
+  // of the Cadillac, the Porsche and the W13, which is not a coincidence any
+  // other assignment survives.
+
+  // GTP cars have no ABS to adjust. dcABS is the brake bias migration dial,
+  // and the separate dcBrakeMisc alongside it is the brake bias target. The two
+  // were swept independently and never moved on the same frame.
+  cadillacvseriesrgtp: {
     dcABS: { label: 'Brake Migration', short: 'MIGR' },
+    dcTractionControl: { label: 'TC Slip', short: 'TCS' },
+    dcTractionControl2: { label: 'TC Gain', short: 'TCG' },
+  },
+  porsche963gtp: {
+    dcABS: { label: 'Brake Migration', short: 'MIGR' },
+    dcTractionControl: { label: 'TC Slip', short: 'TCS' },
+    dcTractionControl2: { label: 'TC Gain', short: 'TCG' },
+  },
+  // PROVISIONAL - the capture matches the class, the photograph is missing.
+  //
+  // This car's recorded session has the GTP signature exactly: dcABS running
+  // negative (-5..-2) with a dcBrakeMisc alongside it, which no GT3 car
+  // publishes at all. On that evidence it is the same dial as on the Cadillac
+  // and the Porsche. It is flagged because the in-car screen was never
+  // photographed for it, so unlike its two classmates the naming is reasoned
+  // rather than read. Confirm by photographing the black box.
+  bmwlmdh: {
+    dcABS: { label: 'Brake Migration', short: 'MIGR' },
+  },
+  mercedesw13: {
+    dcPeakBrakeBias: { label: 'Brake Migration', short: 'MIGR' },
+  },
+  renaultcliocup: {
+    dcPeakBrakeBias: { label: 'Rear Brake Valve', short: 'RBV' },
+  },
+  // The IR18 has no fuel mixture dial. The channel carries its engine map.
+  dallarair18: {
+    dcFuelMixture: { label: 'Engine Map', short: 'MAP' },
   },
 };
 

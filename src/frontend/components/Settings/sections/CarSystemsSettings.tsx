@@ -20,12 +20,12 @@ const SETTING_ID = 'carsystems';
 const defaultConfig = getWidgetDefaultConfig('carsystems');
 
 /**
- * Rows offered in settings. `dcPeakBrakeBias` is excluded because it shares the
- * brake bias row — offering both would let a user enable the same row twice.
+ * Rows offered in settings: every adjustment in the catalogue. `dcPeakBrakeBias`
+ * used to be withheld here because it shared the brake bias row, which it no
+ * longer does — it is a rear brake valve on one car and brake migration on
+ * another, and never a bias split.
  */
-const SELECTABLE_ROWS = CAR_SYSTEM_ADJUSTMENTS.filter(
-  (adjustment) => adjustment.key !== 'dcPeakBrakeBias'
-);
+const SELECTABLE_ROWS = CAR_SYSTEM_ADJUSTMENTS;
 
 export const CarSystemsSettings = () => {
   const { currentDashboard } = useDashboard();

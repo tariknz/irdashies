@@ -7,7 +7,6 @@ import {
 } from '@irdashies/context';
 import {
   CAR_SYSTEM_ADJUSTMENTS,
-  carSystemRowKey,
   resolveCarSystemDefinition,
   type CarSystemAdjustment,
 } from '@irdashies/types';
@@ -81,12 +80,15 @@ export const CarSystems = () => {
     generalSettings?.compactMode === 'compact' ||
     generalSettings?.compactMode === 'ultra';
 
-  // Keyed by display column, so the Clio's dcPeakBrakeBias fills the brake bias
-  // column rather than going unmatched.
+  // One column per telemetry key. No key folds into another: dcPeakBrakeBias
+  // used to be folded into brake bias on the theory that the two never
+  // coexisted, and the W13 publishes both - a live 52% bias and a migration
+  // dial reading 3 - so the fold overwrote the real bias with the migration
+  // setting and showed it as a percentage.
   const byColumn = useMemo(() => {
     const map = new Map<string, CarSystemAdjustment>();
     for (const adjustment of snapshot?.adjustments ?? []) {
-      map.set(carSystemRowKey(adjustment.key), adjustment);
+      map.set(adjustment.key, adjustment);
     }
     return map;
   }, [snapshot?.adjustments]);

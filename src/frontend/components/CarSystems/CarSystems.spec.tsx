@@ -93,7 +93,7 @@ describe('CarSystems per-car labels', () => {
   });
 
   it('uses the car-specific name where the car renames the channel', () => {
-    inCar('dallarap217');
+    inCar('cadillacvseriesrgtp');
 
     render(<CarSystems />);
 
@@ -102,13 +102,46 @@ describe('CarSystems per-car labels', () => {
   });
 
   it('still shows the value under the renamed header', () => {
-    inCar('dallarap217');
+    inCar('cadillacvseriesrgtp');
 
     render(<CarSystems />);
 
     // The rename is cosmetic - the row is still matched on dcABS, so a car
     // that renames it must not end up with a blanked-out column.
     expect(screen.getByText('3')).toBeInTheDocument();
+  });
+
+  it('does not let dcPeakBrakeBias overwrite the brake bias column', () => {
+    // The W13 publishes both: a live 52% bias and a migration dial reading 3.
+    // Folding them into one column showed the migration setting as the bias.
+    vi.mocked(Context.useCarSystemsSnapshot).mockReturnValue({
+      ...snapshot,
+      adjustments: [
+        {
+          key: 'dcBrakeBias',
+          label: 'Brake Bias',
+          value: 52,
+          isOff: false,
+          precision: 1,
+          unit: '%',
+        },
+        {
+          key: 'dcPeakBrakeBias',
+          label: 'Peak Brake Bias',
+          value: 3,
+          isOff: false,
+          precision: 0,
+        },
+      ],
+    });
+    inCar('mercedesw13');
+
+    render(<CarSystems />);
+
+    // Under the old fold the bias column rendered the migration adjustment,
+    // so it read a bare "3" - its own precision and no unit - rather than 52.0%.
+    expect(screen.getByText('52.0%')).toBeInTheDocument();
+    expect(screen.queryByText('3')).not.toBeInTheDocument();
   });
 
   it('falls back to the catalogue name when session data has no player entry', () => {

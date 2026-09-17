@@ -200,13 +200,21 @@ describe('CarSystemsProcessor', () => {
   });
 
   describe('discovery, continued', () => {
-    it('takes the Clio brake bias variable when that is the one published', () => {
-      processor.onFrame(frame({ dcPeakBrakeBias: 61 }));
+    it('publishes dcPeakBrakeBias as its own row, not as brake bias', () => {
+      // It is not a bias split on either car that publishes it - a rear brake
+      // valve on the Clio, brake migration on the W13 - and the W13 publishes
+      // it alongside a live dcBrakeBias, so folding the two together showed
+      // the migration setting where the bias should be.
+      processor.onFrame(frame({ dcBrakeBias: 52, dcPeakBrakeBias: 3 }));
 
       const rows = processor.snapshot().adjustments;
-      expect(rows).toHaveLength(1);
-      expect(rows[0].label).toBe('Brake Bias');
-      expect(rows[0].value).toBe(61);
+      expect(rows.map((row) => [row.key, row.value])).toEqual([
+        ['dcBrakeBias', 52],
+        ['dcPeakBrakeBias', 3],
+      ]);
+      expect(byKey(processor, 'dcPeakBrakeBias')?.label).toBe(
+        'Peak Brake Bias'
+      );
     });
 
     it('does not discover anything from an out-of-car frame', () => {

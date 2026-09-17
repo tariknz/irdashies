@@ -16,9 +16,11 @@ const definitionFor = (key: string) => {
 
 describe('normalizeCarPath', () => {
   it('ignores case and punctuation', () => {
-    expect(normalizeCarPath('DallaraP217')).toBe('dallarap217');
-    expect(normalizeCarPath('dallara p217')).toBe('dallarap217');
-    expect(normalizeCarPath('dallara-p217')).toBe('dallarap217');
+    expect(normalizeCarPath('CadillacVSeriesRGTP')).toBe('cadillacvseriesrgtp');
+    expect(normalizeCarPath('cadillac vseriesr gtp')).toBe(
+      'cadillacvseriesrgtp'
+    );
+    expect(normalizeCarPath('mx5 mx52016')).toBe('mx5mx52016');
   });
 });
 
@@ -35,22 +37,47 @@ describe('resolveCarSystemDefinition', () => {
   });
 
   it('renames a channel the car wires to a different control', () => {
-    const resolved = resolveCarSystemDefinition(abs, 'dallarap217');
+    // GTP cars have no ABS to adjust; dcABS is the brake migration dial.
+    const resolved = resolveCarSystemDefinition(abs, 'cadillacvseriesrgtp');
 
     expect(resolved.label).toBe('Brake Migration');
     expect(resolved.short).toBe('MIGR');
   });
 
+  it('keeps ABS named ABS on a car that really has it', () => {
+    // The GT3 captures publish dcABS positive with no dcBrakeMisc alongside,
+    // which is the shape of a real ABS dial rather than a migration one.
+    for (const carPath of ['bmwm4gt3', 'ferrari296gt3', 'porsche992rgt3']) {
+      expect(resolveCarSystemDefinition(abs, carPath).label).toBe('ABS');
+    }
+  });
+
+  it('renames the same channel differently on different cars', () => {
+    const peak = definitionFor('dcPeakBrakeBias');
+
+    expect(resolveCarSystemDefinition(peak, 'renaultcliocup').label).toBe(
+      'Rear Brake Valve'
+    );
+    expect(resolveCarSystemDefinition(peak, 'mercedesw13').label).toBe(
+      'Brake Migration'
+    );
+    expect(resolveCarSystemDefinition(peak, 'bmwm4gt3').label).toBe(
+      'Peak Brake Bias'
+    );
+  });
+
   it('renames only the adjustments the car overrides', () => {
     const bias = definitionFor('dcBrakeBias');
 
-    expect(resolveCarSystemDefinition(bias, 'dallarap217')).toEqual(bias);
+    expect(resolveCarSystemDefinition(bias, 'cadillacvseriesrgtp')).toEqual(
+      bias
+    );
   });
 
   it('keeps the telemetry key, so a saved row selection still matches', () => {
     // The whole point of overriding display strings alone: `rows` persists
     // keys, so switching into an overriding car must not orphan the row.
-    const resolved = resolveCarSystemDefinition(abs, 'dallarap217');
+    const resolved = resolveCarSystemDefinition(abs, 'cadillacvseriesrgtp');
 
     expect(resolved.key).toBe('dcABS');
     expect(DEFAULT_CAR_SYSTEM_ROWS).toContain(resolved.key);
@@ -60,7 +87,7 @@ describe('resolveCarSystemDefinition', () => {
     // The chip is deliberately not overridable: a column that changed colour
     // on a car change would break the positional constancy the widget trades
     // on, even where the renamed control belongs to a different system.
-    const resolved = resolveCarSystemDefinition(abs, 'dallarap217');
+    const resolved = resolveCarSystemDefinition(abs, 'cadillacvseriesrgtp');
 
     expect(resolved.precision).toBe(abs.precision);
     expect(resolved.unit).toBe(abs.unit);
