@@ -337,6 +337,8 @@ export interface InputConfig {
   };
   background: { opacity: number };
   displayOrder: string[];
+  /** When set, decides which elements show and where. Supersedes the enabled flags and displayOrder. */
+  layoutTree?: LayoutNode;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }

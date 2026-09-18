@@ -1,10 +1,15 @@
 import { InputContainer } from './InputContainer/InputContainer';
-import { useInputSettings } from './hooks/useInputSettings';
+import { isInputConfig, useInputSettings } from './hooks/useInputSettings';
 import { useInputs } from './hooks/useInputs';
 import { useDrivingState, useSessionVisibility } from '@irdashies/context';
+import type { InputWidgetSettings } from '@irdashies/types';
 
-export const Input = () => {
-  const settings = useInputSettings();
+type InputWidgetProps = Partial<InputWidgetSettings['config']>;
+
+export const Input = (props: InputWidgetProps) => {
+  // Each instance gets its own config as props. Storybook passes none.
+  const dashboardSettings = useInputSettings();
+  const settings = isInputConfig(props) ? props : dashboardSettings;
   const inputs = useInputs(settings?.useRawValues ?? false);
   const { isDriving } = useDrivingState();
 

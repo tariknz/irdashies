@@ -72,7 +72,7 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
     case 'flatmap':
       return <FlatTrackMapSettings />;
     case 'input':
-      return <InputSettings />;
+      return <InputSettings widgetId={widget?.id} />;
     case 'tachometer':
       return <TachometerSettings />;
     case 'pitlanehelper':

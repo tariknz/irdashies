@@ -1,6 +1,18 @@
 import { useDashboard } from '@irdashies/context';
 import { InputWidgetSettings } from '@irdashies/types';
 
+type InputConfig = InputWidgetSettings['config'];
+
+export const isInputConfig = (value: unknown): value is InputConfig =>
+  !!value &&
+  typeof value === 'object' &&
+  'trace' in value &&
+  'bar' in value &&
+  'gear' in value &&
+  typeof value.trace === 'object' &&
+  typeof value.bar === 'object' &&
+  typeof value.gear === 'object';
+
 export const useInputSettings = () => {
   const { currentDashboard } = useDashboard();
 
@@ -8,19 +20,5 @@ export const useInputSettings = () => {
     (widget) => widget.id === 'input'
   )?.config;
 
-  // Add type guard to ensure inputSettings matches expected shape
-  if (
-    inputSettings &&
-    typeof inputSettings === 'object' &&
-    'trace' in inputSettings &&
-    'bar' in inputSettings &&
-    'gear' in inputSettings &&
-    typeof inputSettings.trace === 'object' &&
-    typeof inputSettings.bar === 'object' &&
-    typeof inputSettings.gear === 'object'
-  ) {
-    return inputSettings as unknown as InputWidgetSettings['config'];
-  }
-
-  return undefined;
+  return isInputConfig(inputSettings) ? inputSettings : undefined;
 };
