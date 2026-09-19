@@ -7,6 +7,7 @@ import tracks from './tracks/tracks.json';
 import { TrackDrawing } from './TrackCanvas';
 import {
   useSessionVisibility,
+  useSessionStore,
   useTrackStateSnapshot,
 } from '@irdashies/context';
 import { useDriverLivePositions } from '@irdashies/domain';
@@ -22,6 +23,7 @@ export const FlatTrackMap = () => {
   const driverLivePositions = useDriverLivePositions({
     enabled: (settings?.displayMode ?? 'carNumber') === 'livePosition',
   });
+  const lmuTrackMap = useSessionStore((state) => state.session?.LmuTrackMap);
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
@@ -30,11 +32,11 @@ export const FlatTrackMap = () => {
     return <></>;
   }
 
-  const trackDrawing = trackId
-    ? (tracks as unknown as TrackDrawing[])[trackId]
-    : null;
+  const trackDrawing =
+    lmuTrackMap ??
+    (trackId ? (tracks as unknown as TrackDrawing[])[trackId] : null);
 
-  if (!trackId || !trackDrawing) {
+  if (!trackDrawing) {
     return debug ? (
       <div className="w-full h-full flex items-center justify-center text-white">
         <p>No track data available</p>

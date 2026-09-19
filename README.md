@@ -646,6 +646,23 @@ This will start the application.
 
 Look for the application in your app tray.
 
+### Le Mans Ultimate
+
+1. In LMU, enable **Settings → Gameplay → Enable Plugins**, then restart LMU.
+2. Start irDashies normally. It detects LMU or iRacing when either game starts.
+
+To force a simulator, use `irdashies.exe --sim=lmu` or
+`irdashies.exe --sim=iracing`. For development, set `IRDASHIES_SIM` instead:
+
+```powershell
+$env:IRDASHIES_SIM = 'lmu'
+npm start
+```
+
+Without an override, irDashies waits for the first game it detects and uses that
+game until irDashies restarts. If both games are running when detection occurs,
+LMU is selected.
+
 > You will need to have Node.js installed on your machine to run the application. You can download it from [here](https://nodejs.org/).
 
 > On macOS you will see mocked data from a sample session. To connect to iRacing, you will need to run the application on Windows.

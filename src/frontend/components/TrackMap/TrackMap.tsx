@@ -27,6 +27,7 @@ export const TrackMap = () => {
   const sectorColors = ghostColors ?? sessionSectorColors;
   const sectors =
     useSessionStore((s) => s.session?.SplitTimeInfo?.Sectors) ?? [];
+  const lmuTrackMap = useSessionStore((s) => s.session?.LmuTrackMap);
   const currentSectorIdx = useSectorTimingStore((s) => s.currentSectorIdx);
   const playerIconEnabled = settings?.playerIcon?.enabled ?? false;
   const playerIconDataUrl = usePlayerIconImage(
@@ -43,12 +44,13 @@ export const TrackMap = () => {
     return <></>;
   }
 
-  if (!trackId) return <></>;
+  if (!trackId && !lmuTrackMap) return <></>;
 
   return (
     <div className="w-full h-full">
       <TrackCanvas
-        trackId={trackId}
+        trackId={trackId ?? 0}
+        trackDrawing={lmuTrackMap}
         drivers={driversTrackData}
         driverIdentities={identities}
         turnLabels={{

@@ -11,8 +11,7 @@ const scalar = (frame: Telemetry, key: string): unknown =>
   (frame as unknown as Record<string, { value?: unknown[] } | undefined>)[key]
     ?.value?.[0];
 
-const copyPositions = (target: number[], frame: Telemetry): boolean => {
-  const source = frame.CarIdxLapDistPct?.value ?? [];
+const copyArray = <T>(target: T[], source: readonly T[]): boolean => {
   let changed = target.length !== source.length;
   target.length = source.length;
   for (let index = 0; index < source.length; index += 1) {
@@ -29,6 +28,12 @@ export class BlindSpotProcessor implements TelemetryProcessor<BlindSpotSnapshot>
   private readonly latest: BlindSpotSnapshot = {
     carLeftRight: 0,
     carIdxLapDistPct: [],
+    carIdxOnPitRoad: [],
+    carIdxClass: [],
+    relativeAvailable: [],
+    relativeLateral: [],
+    relativeLongitudinal: [],
+    relativeHeading: [],
     isOnTrack: false,
     version: 0,
   };
@@ -48,11 +53,42 @@ export class BlindSpotProcessor implements TelemetryProcessor<BlindSpotSnapshot>
 
     const positions = this.latest.carIdxLapDistPct as number[];
     if (carLeftRight > CarLeftRight.Clear) {
-      changed = copyPositions(positions, frame) || changed;
+      changed =
+        copyArray(positions, frame.CarIdxLapDistPct?.value ?? []) || changed;
     } else if (positions.length > 0) {
       positions.length = 0;
       changed = true;
     }
+    changed =
+      copyArray(
+        this.latest.carIdxOnPitRoad as boolean[],
+        frame.CarIdxOnPitRoad?.value ?? []
+      ) || changed;
+    changed =
+      copyArray(
+        this.latest.carIdxClass as number[],
+        frame.CarIdxClass?.value ?? []
+      ) || changed;
+    changed =
+      copyArray(
+        this.latest.relativeAvailable as boolean[],
+        frame.LmuCarIdxRelativeAvailable?.value ?? []
+      ) || changed;
+    changed =
+      copyArray(
+        this.latest.relativeLateral as number[],
+        frame.LmuCarIdxRelativeLateral?.value ?? []
+      ) || changed;
+    changed =
+      copyArray(
+        this.latest.relativeLongitudinal as number[],
+        frame.LmuCarIdxRelativeLongitudinal?.value ?? []
+      ) || changed;
+    changed =
+      copyArray(
+        this.latest.relativeHeading as number[],
+        frame.LmuCarIdxRelativeHeading?.value ?? []
+      ) || changed;
 
     if (changed) this.latest.version += 1;
   }
@@ -60,6 +96,12 @@ export class BlindSpotProcessor implements TelemetryProcessor<BlindSpotSnapshot>
   onLifecycle(event: SessionLifecycleEvent): void {
     if (event.type === 'enter') return;
     (this.latest.carIdxLapDistPct as number[]).length = 0;
+    (this.latest.carIdxOnPitRoad as boolean[]).length = 0;
+    (this.latest.carIdxClass as number[]).length = 0;
+    (this.latest.relativeAvailable as boolean[]).length = 0;
+    (this.latest.relativeLateral as number[]).length = 0;
+    (this.latest.relativeLongitudinal as number[]).length = 0;
+    (this.latest.relativeHeading as number[]).length = 0;
     this.latest.carLeftRight = 0;
     this.latest.isOnTrack = false;
     this.latest.version += 1;

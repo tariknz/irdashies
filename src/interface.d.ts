@@ -10,6 +10,7 @@ import type {
   RaceControlBridge,
   TelemetryInspectorBridge,
   RendererPerfBridge,
+  TrackNotesBridge,
 } from '@irdashies/types';
 import type { ChannelBridge } from '@irdashies/types';
 
@@ -28,5 +29,6 @@ declare global {
     chromiumFlagsBridge: ChromiumFlagsBridge;
     raceControlBridge: RaceControlBridge;
     rendererPerfBridge?: RendererPerfBridge;
+    trackNotesBridge?: TrackNotesBridge;
   }
 }

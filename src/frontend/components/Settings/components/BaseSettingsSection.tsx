@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { ToggleSwitch } from './ToggleSwitch';
 import { BaseWidgetSettings } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
@@ -31,23 +31,9 @@ export const BaseSettingsSection = <T,>({
     settings ?? { enabled: false, config: {} as T }
   );
 
-  // Clean synchronization pattern: track what we last synced to detect external changes
-  const updatedWidget = currentDashboard?.widgets.find(
-    (w) => w.id === widgetId
-  );
-  const [prevWidgetData, setPrevWidgetData] = useState(updatedWidget);
-
-  if (JSON.stringify(updatedWidget) !== JSON.stringify(prevWidgetData)) {
-    setPrevWidgetData(updatedWidget);
-    if (updatedWidget) {
-      // This setState during render is safe and efficient in React when guarded by a condition
-      // like this. It avoids the extra render pass that an effect would cause.
-      setLocalSettings({
-        enabled: updatedWidget.enabled,
-        config: updatedWidget.config as unknown as T,
-      });
-    }
-  }
+  useEffect(() => {
+    if (settings) setLocalSettings(settings);
+  }, [settings]);
 
   const handleSettingsChange = (newSettings: BaseWidgetSettings<T>) => {
     setLocalSettings(newSettings);
