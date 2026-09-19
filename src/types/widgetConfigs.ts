@@ -337,6 +337,14 @@ export interface InputConfig {
   };
   background: { opacity: number };
   displayOrder: string[];
+  /** When set, decides which elements show and where. Supersedes the enabled flags and displayOrder. */
+  layoutTree?: LayoutNode;
+  /** Flash the whole layout at the redline or at the Tachometer custom shift points. */
+  shiftFlash?: {
+    enabled: boolean;
+    source: 'redline' | 'shiftPoints';
+    color: string;
+  };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }

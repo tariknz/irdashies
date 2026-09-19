@@ -1,10 +1,11 @@
-import { useCallback, useMemo } from 'react';
-import { InputWidgetSettings } from '@irdashies/types';
+import { memo, useCallback, useMemo, type ReactNode } from 'react';
+import type { InputWidgetSettings, LayoutNode } from '@irdashies/types';
 import { InputAbsIndicator } from '../InputAbsIndicator/InputAbsIndicator';
 import { InputBar } from '../InputBar/InputBar';
 import { InputGear } from '../InputGear/InputGear';
 import { InputSteer } from '../InputSteer/InputSteer';
 import { InputTrace } from '../InputTrace/InputTrace';
+import { getInputLayoutTree } from '../layout';
 
 export interface InputProps {
   brake?: number;
@@ -16,69 +17,73 @@ export interface InputProps {
   steer?: number;
   brakeAbsActive?: boolean;
   settings: InputWidgetSettings['config'];
+  /** Background colour while the shift flash is on. */
+  flashColor?: string;
 }
 
-type InputSection = 'trace' | 'bar' | 'gear' | 'abs' | 'steer';
+interface LayoutNodeViewProps {
+  node: LayoutNode;
+  renderElement: (id: string) => ReactNode;
+}
 
-export const InputContainer = ({
-  brake,
-  throttle,
-  clutch,
-  gear,
-  speed,
-  steer,
-  unit,
-  brakeAbsActive,
-  settings,
-}: InputProps) => {
-  const displayOrder = settings.displayOrder as InputSection[] | undefined;
+// Declared at module level so its identity is stable. A component declared
+// inside render would remount every element (and wipe the trace) each frame.
+const LayoutNodeView = ({ node, renderElement }: LayoutNodeViewProps) => {
+  const style = { flex: `${node.weight || 1} 1 0%` };
+  const direction = node.direction === 'row' ? 'flex-row' : 'flex-col';
 
-  // Only recompute section order when settings change (not every telemetry frame)
-  const orderedSections = useMemo(() => {
-    // The ring steer style already shows gear + speed in its centre, so hide
-    // the standalone Gear module to avoid a duplicate.
-    const steerIsRing =
-      settings.steer.enabled && settings.steer.config?.style === 'ring';
-
-    const allSections: { id: InputSection; enabled: boolean }[] = [
-      { id: 'trace', enabled: settings.trace.enabled },
-      { id: 'bar', enabled: settings.bar.enabled },
-      { id: 'gear', enabled: settings.gear.enabled && !steerIsRing },
-      { id: 'abs', enabled: settings.abs.enabled },
-      { id: 'steer', enabled: settings.steer.enabled },
-    ];
-
-    const enabledSections = allSections.filter((s) => s.enabled);
-
-    if (!displayOrder) {
-      return enabledSections.map((s) => s.id);
-    }
-
-    const ordered = displayOrder.filter((id) =>
-      enabledSections.some((s) => s.id === id)
+  if (node.type === 'box') {
+    return (
+      <div className={`flex ${direction} gap-1 min-w-0 min-h-0`} style={style}>
+        {[...new Set(node.widgets)].map((id) => (
+          <div key={id} className="flex flex-1 min-w-0 min-h-0">
+            {renderElement(id)}
+          </div>
+        ))}
+      </div>
     );
-    const remaining = enabledSections
-      .filter((s) => !displayOrder.includes(s.id))
-      .map((s) => s.id);
+  }
 
-    return [...ordered, ...remaining];
-  }, [settings, displayOrder]);
+  return (
+    <div className={`flex ${direction} gap-1 min-w-0 min-h-0`} style={style}>
+      {node.children.map((child) => (
+        <LayoutNodeView
+          key={child.id}
+          node={child}
+          renderElement={renderElement}
+        />
+      ))}
+    </div>
+  );
+};
 
-  const renderSection = useCallback(
-    (id: InputSection) => {
-      switch (id) {
-        case 'trace':
-          return (
-            <div key="trace" className="flex flex-4">
+export const InputContainer = memo(
+  ({
+    brake,
+    throttle,
+    clutch,
+    gear,
+    speed,
+    steer,
+    unit,
+    brakeAbsActive,
+    settings,
+    flashColor,
+  }: InputProps) => {
+    const tree = useMemo(() => getInputLayoutTree(settings), [settings]);
+
+    const renderElement = useCallback(
+      (id: string) => {
+        switch (id) {
+          case 'trace':
+            return (
               <InputTrace
                 input={{ brake, throttle, clutch, brakeAbsActive, steer }}
                 settings={settings.trace}
               />
-            </div>
-          );
-        case 'bar':
-          return (
-            <div key="bar" className="flex flex-1 min-w-0">
+            );
+          case 'bar':
+            return (
               <InputBar
                 brake={brake}
                 brakeAbsActive={brakeAbsActive}
@@ -86,39 +91,27 @@ export const InputContainer = ({
                 clutch={clutch}
                 settings={settings.bar}
               />
-            </div>
-          );
-        case 'gear':
-          return (
-            <div key="gear" className="flex flex-1 min-w-0">
+            );
+          case 'gear':
+            return (
               <InputGear
                 gear={gear}
                 speedMs={speed}
                 unit={unit}
                 settings={settings.gear}
               />
-            </div>
-          );
-        case 'abs':
-          return (
-            <div
-              key="abs"
-              className="flex flex-1 min-w-0 items-center justify-center p-2"
-            >
-              <InputAbsIndicator
-                absActive={brakeAbsActive ?? false}
-                className="w-full h-full aspect-[512/357.25]"
-              />
-            </div>
-          );
-        case 'steer':
-          return (
-            <div
-              key="steer"
-              className={`flex min-w-0 ${
-                settings.steer.config?.style === 'ring' ? 'flex-2' : 'flex-1'
-              }`}
-            >
+            );
+          case 'abs':
+            return (
+              <div className="flex flex-1 min-w-0 items-center justify-center p-2">
+                <InputAbsIndicator
+                  absActive={brakeAbsActive ?? false}
+                  className="w-full h-full aspect-[512/357.25]"
+                />
+              </div>
+            );
+          case 'steer':
+            return (
               <InputSteer
                 angleRad={steer}
                 wheelStyle={settings.steer.config?.style}
@@ -128,31 +121,35 @@ export const InputContainer = ({
                 unit={unit}
                 gearSettings={settings.gear}
               />
-            </div>
-          );
-      }
-    },
-    [
-      brake,
-      throttle,
-      clutch,
-      gear,
-      speed,
-      steer,
-      unit,
-      brakeAbsActive,
-      settings,
-    ]
-  );
+            );
+          default:
+            return null;
+        }
+      },
+      [
+        brake,
+        throttle,
+        clutch,
+        gear,
+        speed,
+        steer,
+        unit,
+        brakeAbsActive,
+        settings,
+      ]
+    );
 
-  return (
-    <div
-      className="w-full h-full inline-flex gap-1 p-2 rounded-md flex-row bg-slate-800/(--bg-opacity)"
-      style={{
-        ['--bg-opacity' as string]: `${settings.background?.opacity ?? 80}%`,
-      }}
-    >
-      {orderedSections.map(renderSection)}
-    </div>
-  );
-};
+    return (
+      <div
+        className="w-full h-full flex p-2 rounded-md bg-slate-800/(--bg-opacity)"
+        style={{
+          ['--bg-opacity' as string]: `${settings.background?.opacity ?? 80}%`,
+          backgroundColor: flashColor,
+        }}
+      >
+        <LayoutNodeView node={tree} renderElement={renderElement} />
+      </div>
+    );
+  }
+);
+InputContainer.displayName = 'InputContainer';
