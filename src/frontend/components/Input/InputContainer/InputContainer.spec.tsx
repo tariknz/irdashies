@@ -34,4 +34,15 @@ describe('InputContainer', () => {
 
     expect(getByText('4').closest('.font-mono')).toBe(before);
   });
+
+  it('uses the flash colour as the background while flashing', () => {
+    const { container, rerender } = render(
+      <InputContainer gear={3} settings={gearOnly} flashColor="#9333ea" />
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.style.backgroundColor).toBe('rgb(147, 51, 234)');
+
+    rerender(<InputContainer gear={3} settings={gearOnly} />);
+    expect(root.style.backgroundColor).toBe('');
+  });
 });

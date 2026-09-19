@@ -17,6 +17,8 @@ export interface InputProps {
   steer?: number;
   brakeAbsActive?: boolean;
   settings: InputWidgetSettings['config'];
+  /** Background colour while the shift flash is on. */
+  flashColor?: string;
 }
 
 interface LayoutNodeViewProps {
@@ -66,6 +68,7 @@ export const InputContainer = memo(
     unit,
     brakeAbsActive,
     settings,
+    flashColor,
   }: InputProps) => {
     const tree = useMemo(() => getInputLayoutTree(settings), [settings]);
 
@@ -141,6 +144,7 @@ export const InputContainer = memo(
         className="w-full h-full flex p-2 rounded-md bg-slate-800/(--bg-opacity)"
         style={{
           ['--bg-opacity' as string]: `${settings.background?.opacity ?? 80}%`,
+          backgroundColor: flashColor,
         }}
       >
         <LayoutNodeView node={tree} renderElement={renderElement} />

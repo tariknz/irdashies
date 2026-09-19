@@ -30,6 +30,14 @@ const TABS: SettingsTabType[] = ['layout', 'options', 'visibility'];
 
 const defaultConfig = getWidgetDefaultConfig('input');
 
+const DEFAULT_SHIFT_FLASH: NonNullable<
+  InputWidgetSettings['config']['shiftFlash']
+> = {
+  enabled: false,
+  source: 'redline',
+  color: '#9333ea',
+};
+
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
 // Configs saved before the layout editor have no tree. Seed one from the
@@ -137,6 +145,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
         };
 
         const config = settings.config;
+        const shiftFlash = { ...DEFAULT_SHIFT_FLASH, ...config.shiftFlash };
 
         return (
           <div className="space-y-4">
@@ -254,6 +263,58 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                         handleConfigChange({ background: { opacity: v } })
                       }
                     />
+                  </SettingsSection>
+
+                  {/* Shift Flash Settings */}
+                  <SettingsSection title="Shift Flash">
+                    <SettingToggleRow
+                      title="Flash Layout at Shift Point"
+                      description="Flash the whole layout background when it is time to shift"
+                      enabled={shiftFlash.enabled}
+                      onToggle={(enabled) =>
+                        handleConfigChange({
+                          shiftFlash: { ...shiftFlash, enabled },
+                        })
+                      }
+                    />
+
+                    {shiftFlash.enabled && (
+                      <SettingsSection>
+                        <SettingButtonGroupRow<'redline' | 'shiftPoints'>
+                          title="Flash At"
+                          description="Shift Points uses the custom shift points set for this car in the Tachometer settings. Gears without one use the redline."
+                          value={shiftFlash.source}
+                          options={[
+                            { label: 'Redline', value: 'redline' },
+                            { label: 'Shift Points', value: 'shiftPoints' },
+                          ]}
+                          onChange={(source) =>
+                            handleConfigChange({
+                              shiftFlash: { ...shiftFlash, source },
+                            })
+                          }
+                        />
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-md text-slate-300">
+                            Flash Color
+                          </span>
+                          <input
+                            type="color"
+                            value={shiftFlash.color}
+                            onChange={(e) =>
+                              handleConfigChange({
+                                shiftFlash: {
+                                  ...shiftFlash,
+                                  color: e.target.value,
+                                },
+                              })
+                            }
+                            className="h-8 w-12 rounded bg-slate-700 cursor-pointer"
+                          />
+                        </div>
+                      </SettingsSection>
+                    )}
                   </SettingsSection>
 
                   {/* Trace Settings */}
