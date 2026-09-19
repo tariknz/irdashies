@@ -1622,3 +1622,32 @@ export const RecordedIL15P2P: Story = {
     layout: 'padded',
   },
 };
+
+export const ColumnHeaders: Story = {
+  argTypes: {
+    columnHeaders: {
+      control: { type: 'boolean' },
+      name: 'Show column headers',
+    },
+  },
+  args: {
+    columnHeaders: true,
+  },
+  decorators: [
+    (Story, context) => {
+      const { columnHeaders } = context.args as { columnHeaders: boolean };
+      return TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+        standings: {
+          gap: { enabled: true },
+          interval: { enabled: true },
+          lastTime: { enabled: true },
+          fastestTime: { enabled: true },
+          lapTimeDeltas: { enabled: true, numLaps: 3 },
+          stylingOptions: {
+            columnHeaders,
+          },
+        },
+      })(Story, context);
+    },
+  ],
+};
