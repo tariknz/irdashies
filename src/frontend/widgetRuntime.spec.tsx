@@ -8,6 +8,7 @@ import {
   useWidgetChannelRate,
   WidgetRuntimeProvider,
 } from './widgetRuntime';
+import type { WidgetRuntimeDefinition } from './widgetRuntime';
 
 const widget = (id: string, type?: string): DashboardWidget => ({
   id,
@@ -163,5 +164,48 @@ describe('widget runtime metadata', () => {
     );
 
     expect(result.current).toBe(5);
+  });
+
+  /**
+   * useSessionVisibility resolves the session type through SessionStore, which
+   * RendererDataProviders only mounts when some widget in the window declares
+   * sessionData. The hook returns true when the type is undefined, so a widget
+   * that reads it without asking for session data fails open: its visibility
+   * toggles silently do nothing in a window holding only that widget, and the
+   * bug hides whenever another widget in the same dashboard happens to request
+   * session data. Asserted for every widget rather than one, because nothing
+   * about writing a new widget makes the dependency visible.
+   */
+  it('gives every session-visibility consumer the session data it needs', () => {
+    const sources = import.meta.glob('./components/**/*.{ts,tsx}', {
+      eager: true,
+      query: '?raw',
+      import: 'default',
+    }) as Record<string, string>;
+    const definitionsByDir = new Map<string, WidgetRuntimeDefinition>();
+    for (const [path, module] of Object.entries(
+      import.meta.glob<{ default: WidgetRuntimeDefinition }>(
+        './components/*/widgetRuntimeDefinition.ts',
+        { eager: true }
+      )
+    )) {
+      definitionsByDir.set(path.split('/')[2], module.default);
+    }
+
+    const offenders: string[] = [];
+    for (const [path, source] of Object.entries(sources)) {
+      if (path.includes('.spec.') || path.includes('.stories.')) continue;
+      if (!/\buseSessionVisibility\s*\(/.test(source)) continue;
+      const dir = path.split('/')[2];
+      const definition = definitionsByDir.get(dir);
+      if (!definition) continue;
+      if (definition.sessionData !== true) offenders.push(dir);
+    }
+
+    // Guards the guard: a glob that stopped matching would pass vacuously.
+    expect(
+      Object.keys(sources).some((path) => path.includes('/BlindSpotMonitor/'))
+    ).toBe(true);
+    expect(offenders).toEqual([]);
   });
 });
