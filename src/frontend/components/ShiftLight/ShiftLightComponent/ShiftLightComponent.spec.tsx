@@ -34,14 +34,14 @@ describe('ShiftLight', () => {
   };
 
   it('renders without crashing', () => {
-    const { container } = render(<Tachometer rpm={3000} maxRpm={8500} />);
+    const { container } = render(<ShiftLight rpm={3000} maxRpm={8500} />);
     expect(container).toBeInTheDocument();
   });
 
 
   it('renders RPM text display', () => {
     const { container } = render(
-      <Tachometer
+      <ShiftLight
         rpm={3000}
         maxRpm={8500}
         showRpmText={true}
@@ -58,7 +58,7 @@ describe('ShiftLight', () => {
 
   it('shows RPM text when enabled', () => {
     render(
-      <Tachometer
+      <ShiftLight
         rpm={5000}
         maxRpm={8000}
         showRpmText={true}
@@ -72,7 +72,7 @@ describe('ShiftLight', () => {
 
   it('shows visual indicator when custom shift point is reached', () => {
     render(
-      <Tachometer
+      <ShiftLight
         rpm={7100} // Above 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
@@ -89,7 +89,7 @@ describe('ShiftLight', () => {
 
   it('does not show visual indicator when below custom shift point', () => {
     render(
-      <Tachometer
+      <ShiftLight
         rpm={6500} // Below 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
@@ -108,7 +108,7 @@ describe('ShiftLight', () => {
     const disabledSettings = { ...mockShiftSettings, enabled: false };
 
     render(
-      <Tachometer
+      <ShiftLight
         rpm={7100} // Above 7000 RPM shift point
         maxRpm={8000}
         showRpmText={true}
