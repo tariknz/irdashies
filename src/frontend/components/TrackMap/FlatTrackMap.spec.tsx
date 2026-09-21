@@ -16,6 +16,7 @@ vi.mock('@irdashies/context', () => {
     useTrackStateSnapshot: vi.fn(() => ({
       isOnTrack: useTelemetryValue('IsOnTrack'),
     })),
+    useSessionStore: vi.fn(() => undefined),
   };
 });
 vi.mock('./FlatTrackMapCanvas', () => ({

@@ -259,6 +259,7 @@ export const Relative = () => {
           currentSessionType={result.currentSessionType}
           license={result.driver?.license}
           rating={result.driver?.rating}
+          isAi={result.driver?.isAi}
           iratingChangeValue={result.iratingChange}
           positionChange={result.positionChange}
           delta={(settings?.delta?.enabled ?? true) ? result.delta : undefined}

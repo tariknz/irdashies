@@ -1,6 +1,8 @@
 export interface DriverRatingBadgeProps {
   license?: string;
   rating?: number;
+  /** Known AI state from sims that report it; falls back to the rating heuristic when unset. */
+  isAi?: boolean;
   isMinimal?: boolean;
   format?:
     | 'license-color-fullrating-combo'
@@ -20,6 +22,7 @@ export interface DriverRatingBadgeProps {
 export const DriverRatingBadge = ({
   license = 'R 0.0',
   rating = 0,
+  isAi,
   isMinimal = false,
   format = 'license-color-rating-bw',
 }: DriverRatingBadgeProps) => {
@@ -62,7 +65,9 @@ export const DriverRatingBadge = ({
     license ||
     'R 0.0';
 
-  if (!license || !rating) {
+  const hasRating = !!license && !!rating;
+
+  if (isAi ?? !hasRating) {
     return (
       <div className="flex gap-1 items-center justify-center mx-2">
         <div
@@ -72,6 +77,8 @@ export const DriverRatingBadge = ({
         </div>
       </div>
     );
+  } else if (!hasRating) {
+    return null;
   } else {
     switch (format) {
       case 'license-color-fullrating-combo':

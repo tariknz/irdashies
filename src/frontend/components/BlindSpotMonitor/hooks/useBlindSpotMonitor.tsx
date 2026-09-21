@@ -20,12 +20,15 @@ interface BlindSpotMonitorState {
 }
 
 const EMPTY_POSITIONS: readonly number[] = [];
+const EMPTY_AVAILABILITY: readonly boolean[] = [];
 const TELEPORT_THRESHOLD = 0.5;
 const selectBlindSpotTelemetry = (snapshot: BlindSpotSnapshot) =>
   [
     snapshot.carLeftRight as CarLeftRight,
     snapshot.carIdxLapDistPct,
     snapshot.isOnTrack,
+    snapshot.relativeAvailable ?? EMPTY_AVAILABILITY,
+    snapshot.relativeLongitudinal ?? EMPTY_POSITIONS,
   ] as const;
 
 const blindSpotTelemetryEqual = (
@@ -34,15 +37,26 @@ const blindSpotTelemetryEqual = (
 ) =>
   previous[0] === next[0] &&
   shallow(previous[1], next[1]) &&
-  previous[2] === next[2];
+  previous[2] === next[2] &&
+  shallow(previous[3], next[3]) &&
+  shallow(previous[4], next[4]);
 
 export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
-  const [carLeftRight, lapDistPcts, isOnTrack] = useBlindSpotSelector(
-    selectBlindSpotTelemetry,
-    {
-      equality: blindSpotTelemetryEqual,
-    }
-  ) ?? [CarLeftRight.Off, EMPTY_POSITIONS, false];
+  const [
+    carLeftRight,
+    lapDistPcts,
+    isOnTrack,
+    relativeAvailable,
+    relativeLongitudinal,
+  ] = useBlindSpotSelector(selectBlindSpotTelemetry, {
+    equality: blindSpotTelemetryEqual,
+  }) ?? [
+    CarLeftRight.Off,
+    EMPTY_POSITIONS,
+    false,
+    EMPTY_AVAILABILITY,
+    EMPTY_POSITIONS,
+  ];
   const driverCarIdx = useDriverCarIdx() ?? 0;
   const trackLength = useTrackLength();
   const settings = useBlindSpotMonitorSettings();
@@ -84,6 +98,25 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     const maxDistBPct = (settings.distBehind ?? 4) / trackLength;
 
     const calculatePercent = (idx: number | null): number => {
+      if (
+        idx !== null &&
+        relativeAvailable[idx] &&
+        Number.isFinite(relativeLongitudinal[idx])
+      ) {
+        const distance = relativeLongitudinal[idx];
+        return (
+          Math.round(
+            Math.max(
+              -1,
+              Math.min(
+                1,
+                distance /
+                  (distance > 0 ? settings.distAhead : settings.distBehind)
+              )
+            ) * 1000
+          ) / 1000
+        );
+      }
       if (
         idx === null ||
         lapDistPcts[idx] === undefined ||
@@ -167,6 +200,8 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     trackLength,
     settings,
     isOnTrack,
+    relativeAvailable,
+    relativeLongitudinal,
     leftCarIdx,
     rightCarIdx,
   ]);
