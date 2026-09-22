@@ -6,6 +6,26 @@ import { DriverInfo } from './driver-info';
 import { SplitTimeInfo } from './split-info';
 import { CarSetupInfo } from './setup-info';
 
+export interface LmuTrackMap {
+  orientation?: 'lmu-ccw-v1';
+  active: {
+    inside: string;
+    outside: string;
+    trackPathPoints: { x: number; y: number }[];
+    totalLength: number;
+  };
+  startFinish: {
+    line: string;
+    point: { x: number; y: number; length: number };
+    direction: 'anticlockwise';
+  };
+  turns?: {
+    x?: number;
+    y?: number;
+    content?: string;
+  }[];
+}
+
 /**
  * Information about the current session, stored as yaml.
  * Does not update as much as telemetry.
@@ -20,4 +40,5 @@ export interface SessionData {
   SplitTimeInfo: SplitTimeInfo;
   CarSetup: CarSetupInfo;
   QualifyResultsInfo?: { Results: SessionResultsPosition[] | null };
+  LmuTrackMap?: LmuTrackMap;
 }
