@@ -380,6 +380,28 @@ describe('PitlaneHelper', () => {
   });
 
   describe('Speed Display', () => {
+    it('shows current speed and omits an unavailable limit', () => {
+      vi.mocked(usePitlaneHelperSettings).mockReturnValue({
+        ...defaultConfig,
+        speedUnit: 'km/h',
+      });
+      vi.mocked(usePitSpeed).mockReturnValue({
+        ...defaultSpeedResult,
+        limitKph: 0,
+        limitMph: 0,
+        deltaKph: 0,
+        deltaMph: 0,
+      });
+
+      const { getAllByText, queryByText, container } = render(
+        <PitlaneHelper />
+      );
+
+      expect(getAllByText('67.0')).toHaveLength(2);
+      expect(queryByText('0')).not.toBeInTheDocument();
+      expect(container.innerHTML).not.toContain('NaN');
+    });
+
     it('displays speed delta in km/h when speedUnit is km/h', () => {
       vi.mocked(usePitlaneHelperSettings).mockReturnValue({
         ...defaultConfig,

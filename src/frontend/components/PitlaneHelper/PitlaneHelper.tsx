@@ -214,6 +214,8 @@ export const PitlaneHelperBody = ({
   showEarlyPitboxWarning,
   traffic,
 }: PitlaneHelperBodyProps) => {
+  const hasSpeedLimit = speed.limitKph > 0;
+
   return (
     <div className="flex flex-col h-full">
       <div
@@ -253,10 +255,16 @@ export const PitlaneHelperBody = ({
                     ].join(' ')}
                   >
                     <div className="text-[1.4em]">
-                      {speed.deltaKph > 0 ? '+' : ''}
+                      {hasSpeedLimit && speed.deltaKph > 0 ? '+' : ''}
                       {displayKph
-                        ? speed.deltaKph.toFixed(1)
-                        : speed.deltaMph.toFixed(1)}
+                        ? (hasSpeedLimit
+                            ? speed.deltaKph
+                            : speed.speedKph
+                          ).toFixed(1)
+                        : (hasSpeedLimit
+                            ? speed.deltaMph
+                            : speed.speedMph
+                          ).toFixed(1)}
                     </div>
                   </div>
                   <div className="text-xs text-slate-400">
@@ -264,7 +272,7 @@ export const PitlaneHelperBody = ({
                   </div>
                 </>
               )}
-              {config.speedLimitStyle === 'text' && (
+              {hasSpeedLimit && config.speedLimitStyle === 'text' && (
                 <div className="text-lg text-slate-300 flex items-center justify-center">
                   lim{' '}
                   {displayKph
@@ -272,7 +280,7 @@ export const PitlaneHelperBody = ({
                     : speed.limitMph.toFixed(0)}
                 </div>
               )}
-              {config.speedLimitStyle === 'european' && (
+              {hasSpeedLimit && config.speedLimitStyle === 'european' && (
                 <div className="text-3xl font-bold text-slate-800 m-2 w-[2.5em] h-[2.5em] bg-white border-3 border-red-500 rounded-full flex items-center justify-center">
                   <div className="-translate-y-[0.05em] text-[1.4em]">
                     {displayKph
@@ -281,7 +289,7 @@ export const PitlaneHelperBody = ({
                   </div>
                 </div>
               )}
-              {config.speedLimitStyle === 'american' && (
+              {hasSpeedLimit && config.speedLimitStyle === 'american' && (
                 <div className="font-bold text-3xl text-slate-800 m-2 w-[2.5em] h-[2.5em] bg-white border-3 border-black rounded-lg flex flex-col items-center justify-center">
                   <div className="text-[0.6em] font-semibold tracking-tight leading-none">
                     LIMIT

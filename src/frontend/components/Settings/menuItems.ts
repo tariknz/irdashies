@@ -52,6 +52,12 @@ export const generalItems: MenuItem[] = [
 
 export const widgetItems: MenuItem[] = [
   {
+    to: '/settings/accelerationtimer',
+    path: '/accelerationtimer',
+    label: 'Acceleration Timer',
+    widgetType: 'accelerationtimer',
+  },
+  {
     to: '/settings/battle',
     path: '/battle',
     label: 'Battle',
@@ -62,6 +68,12 @@ export const widgetItems: MenuItem[] = [
     path: '/blindspotmonitor',
     label: 'Blind Spot Monitor',
     widgetType: 'blindspotmonitor',
+  },
+  {
+    to: '/settings/brakepressure',
+    path: '/brakepressure',
+    label: 'Brake Pressure',
+    widgetType: 'brakepressure',
   },
   {
     to: '/settings/cornername',
@@ -86,6 +98,12 @@ export const widgetItems: MenuItem[] = [
     path: '/fastercarsfrombehind',
     label: 'Faster Cars Behind',
     widgetType: 'fastercarsfrombehind',
+  },
+  {
+    to: '/settings/frictioncircle',
+    path: '/frictioncircle',
+    label: 'Friction Circle',
+    widgetType: 'frictioncircle',
   },
   { to: '/settings/flag', path: '/flag', label: 'Flag', widgetType: 'flag' },
   {
@@ -149,6 +167,12 @@ export const widgetItems: MenuItem[] = [
     widgetType: 'pitlanehelper',
   },
   {
+    to: '/settings/radar',
+    path: '/radar',
+    label: 'Radar (LMU)',
+    widgetType: 'radar',
+  },
+  {
     to: '/settings/rejoin',
     path: '/rejoin',
     label: 'Rejoin Indicator',
@@ -173,6 +197,12 @@ export const widgetItems: MenuItem[] = [
     widgetType: 'slowcarahead',
   },
   {
+    to: '/settings/stinthistory',
+    path: '/stinthistory',
+    label: 'Stint History',
+    widgetType: 'stinthistory',
+  },
+  {
     to: '/settings/standings',
     path: '/standings',
     label: 'Standings',
@@ -184,12 +214,48 @@ export const widgetItems: MenuItem[] = [
     label: 'Tachometer',
     widgetType: 'tachometer',
   },
+  {
+    to: '/settings/trackclock',
+    path: '/trackclock',
+    label: 'Track Clock',
+    widgetType: 'trackclock',
+  },
+  {
+    to: '/settings/tracknotes',
+    path: '/tracknotes',
+    label: 'Track Notes',
+    widgetType: 'tracknotes',
+  },
   { to: '/settings/map', path: '/map', label: 'Track Map', widgetType: 'map' },
   {
     to: '/settings/twitchchat',
     path: '/twitchchat',
     label: 'Twitch Chat',
     widgetType: 'twitchchat',
+  },
+  {
+    to: '/settings/tyrepanel',
+    path: '/tyrepanel',
+    label: 'Tyre Panel',
+    widgetType: 'tyrepanel',
+  },
+  {
+    to: '/settings/suspensionposition',
+    path: '/suspensionposition',
+    label: 'Suspension Position',
+    widgetType: 'suspensionposition',
+  },
+  {
+    to: '/settings/steeringmeter',
+    path: '/steeringmeter',
+    label: 'Steering Meter',
+    widgetType: 'steeringmeter',
+  },
+  {
+    to: '/settings/cruiseodometer',
+    path: '/cruiseodometer',
+    label: 'Cruise / Odometer',
+    widgetType: 'cruiseodometer',
   },
   {
     to: '/settings/weather',

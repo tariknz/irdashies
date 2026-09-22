@@ -402,9 +402,20 @@ export async function startComponentServer(
         'fastercarsfrombehind',
         'fuel',
         'blindspotmonitor',
+        'radar',
         'garagecover',
         'rejoin',
         'laptimelog',
+        'tracknotes',
+        'accelerationtimer',
+        'stinthistory',
+        'frictioncircle',
+        'tyrepanel',
+        'brakepressure',
+        'suspensionposition',
+        'trackclock',
+        'steeringmeter',
+        'cruiseodometer',
       ];
 
       sendJSON(res, 200, {
