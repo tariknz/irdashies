@@ -262,6 +262,7 @@ export const GantrySettings = memo(() => {
   const lapGraph = config.lapGraph ?? defaultConfig.lapGraph;
   const cameraGroup =
     config.incidentCameraGroup ?? DEFAULT_INCIDENT_CAMERA_GROUP;
+  const windowPrefs = config.window ?? defaultConfig.window;
 
   return (
     <BaseSettingsSection
@@ -324,6 +325,17 @@ export const GantrySettings = memo(() => {
                     void window.raceControlBridge
                       ?.showGantryWindow()
                       .then((opened) => setShowDisabledHint(!opened))
+                  }
+                />
+
+                <SettingToggleRow
+                  title="Keep on top of other windows"
+                  description="The Gantry stays visible above iRacing and other apps. iRacing must run in borderless or windowed mode. Exclusive fullscreen hides every window, including this one."
+                  enabled={windowPrefs.alwaysOnTop === true}
+                  onToggle={(v) =>
+                    handleConfigChange({
+                      window: { ...windowPrefs, alwaysOnTop: v },
+                    })
                   }
                 />
 
