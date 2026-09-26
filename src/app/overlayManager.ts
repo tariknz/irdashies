@@ -7,6 +7,7 @@ import {
 import type {
   ActiveSimulator,
   DashboardLayout,
+  DashboardWidget,
   ContainerBoundsInfo,
 } from '@irdashies/types';
 import { isWidgetDisabledForSim } from '@irdashies/types';
@@ -116,6 +117,11 @@ export class OverlayManager {
     );
   }
 
+  /** Gantry-only widgets live in the Gantry window, so no overlay needs them. */
+  private isOnOverlay(widget: DashboardWidget): boolean {
+    return widget.placement !== 'gantry' && this.isWidgetVisible(widget);
+  }
+
   /**
    * Records the running simulator and rebuilds the overlays, because the set of
    * supported widgets just changed: ones the previous sim blocked come back if
@@ -192,7 +198,7 @@ export class OverlayManager {
     // Determine which displays have widgets assigned (by center-point)
     const displaysWithWidgets = new Set<number>();
     for (const widget of dashboardLayout.widgets) {
-      if (!this.isWidgetVisible(widget)) continue;
+      if (!this.isOnOverlay(widget)) continue;
       const centerX = widget.layout.x + widget.layout.width / 2;
       const centerY = widget.layout.y + widget.layout.height / 2;
       for (const display of allDisplays) {
@@ -513,9 +519,7 @@ export class OverlayManager {
     const primaryDisplay = screen.getPrimaryDisplay();
     const isPrimary = displayId === primaryDisplay.id;
 
-    const enabledWidgets = dashboard.widgets.filter((w) =>
-      this.isWidgetVisible(w)
-    );
+    const enabledWidgets = dashboard.widgets.filter((w) => this.isOnOverlay(w));
     const widgetsForDisplay = enabledWidgets.filter((widget) => {
       const centerX = widget.layout.x + widget.layout.width / 2;
       const centerY = widget.layout.y + widget.layout.height / 2;
@@ -838,7 +842,7 @@ export class OverlayManager {
 
     const displaysWithWidgets = new Set<number>();
     for (const widget of dashboardLayout.widgets) {
-      if (!this.isWidgetVisible(widget)) continue;
+      if (!this.isOnOverlay(widget)) continue;
       const centerX = widget.layout.x + widget.layout.width / 2;
       const centerY = widget.layout.y + widget.layout.height / 2;
       for (const display of allDisplays) {

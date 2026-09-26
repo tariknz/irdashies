@@ -27,6 +27,12 @@ export interface DashboardWidget {
   layout: WidgetLayout;
   /** Configuration for the widget. */
   config?: Record<string, unknown>;
+  /**
+   * Where the widget renders. 'gantry' means it is only shown docked in the
+   * Gantry window, never on the overlay or the browser source. Undefined
+   * means 'overlay'.
+   */
+  placement?: 'overlay' | 'gantry';
 }
 
 export interface TagGroup {

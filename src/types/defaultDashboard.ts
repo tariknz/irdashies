@@ -1583,6 +1583,11 @@ export const defaultDashboard: {
           lapWindow: 75,
           autoPin: true,
         },
+        dock: {
+          enabled: false,
+          arrangement: 'row',
+          panels: [],
+        },
       },
     },
   ],

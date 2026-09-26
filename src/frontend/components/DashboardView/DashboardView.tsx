@@ -12,6 +12,7 @@ import {
   useDashboard,
   useSimWidgetSupport,
   SessionTimingUpdater,
+  isGantryOnly,
 } from '@irdashies/context';
 import { getWidget } from '../../WidgetIndex';
 import { getWidgetName } from '../../constants/widgetNames';
@@ -218,7 +219,7 @@ export const DashboardView = () => {
     }
     const seen = new Set<string>();
     const filtered = currentDashboard.widgets.filter((w) => {
-      if (!w.enabled || seen.has(w.id)) return false;
+      if (!w.enabled || isGantryOnly(w) || seen.has(w.id)) return false;
       if (isWidgetDisabledForSim(simWidgetSupport, w.type ?? w.id, simulator))
         return false;
       seen.add(w.id);

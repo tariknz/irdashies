@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { DashboardWidget } from '@irdashies/types';
 import {
   PitLaneProvider,
   ReferenceStoreProvider,
@@ -15,18 +16,25 @@ import {
 
 export const RendererDataProviders = ({
   browser = false,
+  widgets: widgetsOverride,
+  sessionAlreadyMounted = false,
 }: {
   browser?: boolean;
+  /** Mount for these widgets instead of the ones on this display. */
+  widgets?: readonly DashboardWidget[];
+  /** The window already mounts a SessionProvider of its own. */
+  sessionAlreadyMounted?: boolean;
 }) => {
-  const widgets = useWidgetsForThisDisplay(browser);
+  const displayWidgets = useWidgetsForThisDisplay(browser);
+  const widgets = widgetsOverride ?? displayWidgets;
   const runtimeNeeds = useMemo(
     () => ({
       telemetryInspector: rendererNeedsTelemetryInspector(widgets),
       referenceLaps: rendererNeedsChannel(widgets, 'reference-laps.snapshot'),
-      sessionData: rendererNeedsSessionData(widgets),
+      sessionData: !sessionAlreadyMounted && rendererNeedsSessionData(widgets),
       pitLaneData: rendererNeedsPitLaneData(widgets),
     }),
-    [widgets]
+    [widgets, sessionAlreadyMounted]
   );
 
   if (

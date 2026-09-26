@@ -38,9 +38,14 @@ const INTRINSIC_MARGIN_VALUE = 0.25;
 /** Lap distance segments for consistent projection */
 const LAP_DIST_SEGMENTS = [0.1, 0.25, 0.5, 0.75, 1.0];
 
+/**
+ * `embedded` turns off every disk write (lap history, qualify max, logs) so a
+ * second copy, such as the one docked in the Gantry, never saves a lap twice.
+ */
 export function useFuelCalculation(
   safetyMargin = 0.3,
-  settings?: FuelCalculatorSettings
+  settings?: FuelCalculatorSettings,
+  embedded = false
 ): FuelCalculation | null {
   const projection = useFuelProjectionSnapshot();
   const fuelLevel = projection?.fuelLevel;
@@ -110,7 +115,7 @@ export function useFuelCalculation(
   useEffect(() => {
     const enteredCar = isOnTrack && !prevIsOnTrackRef.current;
 
-    if (enteredCar && settings?.enableLogging) {
+    if (enteredCar && settings?.enableLogging && !embedded) {
       logger.info(
         `[FuelCalculator] Log Rotation Triggered: EnteredCar=${enteredCar}`
       );
@@ -118,7 +123,7 @@ export function useFuelCalculation(
     }
 
     prevIsOnTrackRef.current = isOnTrack;
-  }, [isOnTrack, settings?.enableLogging]);
+  }, [isOnTrack, settings?.enableLogging, embedded]);
 
   useEffect(() => {
     const currentCarName = projection?.carName;
@@ -213,6 +218,7 @@ export function useFuelCalculation(
   useEffect(() => {
     const persistence = window.fuelCalculatorBridge;
     if (
+      embedded ||
       !persistence ||
       !(settings?.enableStorage ?? true) ||
       projection?.isReplay ||
@@ -246,6 +252,7 @@ export function useFuelCalculation(
     settings?.enableStorage,
     storedCarName,
     storedTrackId,
+    embedded,
   ]);
 
   // Track Max Qualifying Consumption
@@ -289,7 +296,8 @@ export function useFuelCalculation(
             storedTrackId !== undefined &&
             storedCarName !== undefined &&
             (settings?.enableStorage ?? true) &&
-            !projection?.isReplay
+            !projection?.isReplay &&
+            !embedded
           ) {
             window.fuelCalculatorBridge.saveQualifyMax(
               storedTrackId,
@@ -310,6 +318,7 @@ export function useFuelCalculation(
     settings?.enableStorage,
     projection?.sessionType,
     projection?.isReplay,
+    embedded,
   ]);
 
   // Monitor for Race Finish
@@ -1082,7 +1091,7 @@ export function useFuelCalculation(
     ]
   );
 
-  useFuelLogger(isRace && isOnTrack ? debugData : null, settings);
+  useFuelLogger(isRace && isOnTrack && !embedded ? debugData : null, settings);
 
   return calculation;
 }
