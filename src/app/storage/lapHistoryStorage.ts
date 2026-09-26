@@ -4,15 +4,30 @@ import type { LapHistorySnapshot } from '@irdashies/types';
 import logger from '../logger';
 
 /**
- * Persisted form of a LapHistorySnapshot. The snapshot is already plain
- * JSON-safe data, so it is written as-is behind a schema marker.
+ * Persisted lap history for one event (one SubSessionID), with one entry per
+ * session: practice, qualifying, race and so on. Each entry is a
+ * LapHistorySnapshot written as-is, keyed by its SessionNum.
+ *
+ * Cap (R6.3): LAP_HISTORY_CAPACITY crossings per car per session, and at most
+ * MAX_SESSIONS_PER_FILE sessions per file. An event has
+ * SessionInfo.Sessions.length sessions, far below the cap. Past the cap the
+ * lowest session numbers are dropped on save.
  */
 export interface PersistedLapHistory {
+  schema: 2;
+  sessions: Record<string, LapHistorySnapshot>;
+}
+
+/** Schema 1 held a single session. Read-only: migrated on load. */
+interface LegacyPersistedLapHistory {
   schema: 1;
   history: LapHistorySnapshot;
 }
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
+const LEGACY_SCHEMA_VERSION = 1;
+
+export const MAX_SESSIONS_PER_FILE = 16;
 
 function getStorageDir(): string {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -53,8 +68,17 @@ function getTempFilePath(filePath: string): string {
 
 interface SessionCache {
   filePath: string;
-  /** Live snapshot. Serialised at write time, never copied per crossing. */
-  snapshot: LapHistorySnapshot | null;
+  /**
+   * Live snapshot and the session it was saved for. Serialised at write time,
+   * never copied per crossing. Skipped once its buffers move to another
+   * session; the runtime seals a session before that happens.
+   */
+  live: LapHistorySnapshot | null;
+  liveSessionNum: number | null;
+  /** Finished sessions, as copies that no longer change. Keyed by SessionNum. */
+  sealed: Map<number, LapHistorySnapshot>;
+  /** Merges the sessions already on disk. Writes wait for it. */
+  loaded: Promise<void>;
   writeTimer: NodeJS.Timeout | null;
   writeInFlight: Promise<void> | null;
   deleting: boolean;
@@ -122,21 +146,96 @@ const isRingIndexed = (
   return true;
 };
 
-const isPersistedLapHistory = (
-  value: unknown
-): value is PersistedLapHistory => {
-  if (!value || typeof value !== 'object') return false;
-  const candidate = value as Record<string, unknown>;
-  return (
-    candidate.schema === SCHEMA_VERSION &&
-    isLapHistorySnapshot(candidate.history)
-  );
-};
+const isSessionKey = (key: string): boolean =>
+  /^(0|[1-9][0-9]{0,3})$/.test(key);
 
+/**
+ * Validates a parsed file and migrates schema 1 to schema 2. Invalid sessions
+ * are dropped with a warning (R8.3). Returns null when nothing usable is left.
+ */
+export function migrateLapHistoryFile(
+  value: unknown,
+  fileName: string
+): PersistedLapHistory | null {
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as Record<string, unknown>;
+
+  if (candidate.schema === LEGACY_SCHEMA_VERSION) {
+    const { history } = candidate as Partial<LegacyPersistedLapHistory>;
+    if (
+      !isLapHistorySnapshot(history) ||
+      history.sessionNum === null ||
+      !isSessionKey(String(history.sessionNum))
+    ) {
+      logger.warn(
+        '[LapHistoryStorage] Dropped a schema 1 file with an invalid shape:',
+        fileName
+      );
+      return null;
+    }
+    return {
+      schema: SCHEMA_VERSION,
+      sessions: { [String(history.sessionNum)]: history },
+    };
+  }
+
+  if (
+    candidate.schema !== SCHEMA_VERSION ||
+    !candidate.sessions ||
+    typeof candidate.sessions !== 'object' ||
+    Array.isArray(candidate.sessions)
+  ) {
+    return null;
+  }
+
+  const sessions: Record<string, LapHistorySnapshot> = {};
+  for (const [key, history] of Object.entries(candidate.sessions)) {
+    if (
+      isSessionKey(key) &&
+      isLapHistorySnapshot(history) &&
+      history.sessionNum === Number(key)
+    ) {
+      sessions[key] = history;
+    } else {
+      logger.warn(
+        `[LapHistoryStorage] Dropped session ${key} with an invalid shape:`,
+        fileName
+      );
+    }
+  }
+  return Object.keys(sessions).length > 0
+    ? { schema: SCHEMA_VERSION, sessions }
+    : null;
+}
+
+const hasCrossings = (snapshot: LapHistorySnapshot): boolean =>
+  snapshot.count.some((count) => count > 0);
+
+/** A copy that no longer shares buffers with the live processor. */
+const copySnapshot = (snapshot: LapHistorySnapshot): LapHistorySnapshot => ({
+  ...snapshot,
+  count: [...snapshot.count],
+  start: [...snapshot.start],
+  lap: [...snapshot.lap],
+  sessionTime: [...snapshot.sessionTime],
+  classPosition: [...snapshot.classPosition],
+  flags: [...snapshot.flags],
+});
+
+/** Builds the file body. Keeps the newest sessions when over the cap. */
 export function serializeLapHistory(
-  snapshot: LapHistorySnapshot
+  sessions: ReadonlyMap<number, LapHistorySnapshot>
 ): PersistedLapHistory {
-  return { schema: SCHEMA_VERSION, history: snapshot };
+  const kept = [...sessions.keys()]
+    .sort((a, b) => b - a)
+    .slice(0, MAX_SESSIONS_PER_FILE)
+    .sort((a, b) => a - b);
+  const out: Record<string, LapHistorySnapshot> = {};
+  for (const sessionNum of kept) {
+    const history = sessions.get(sessionNum);
+    if (history) out[String(sessionNum)] = history;
+  }
+  return { schema: SCHEMA_VERSION, sessions: out };
 }
 
 /** The snapshot exposes its buffers read-only; writers hold the real arrays. */
@@ -148,15 +247,17 @@ function copyInto(target: readonly number[], source: readonly number[]): void {
 }
 
 /**
- * Copies stored crossings into a live snapshot's preallocated buffers, so a
- * running processor can be rehydrated in place. Returns false when the stored
- * layout does not fit the target.
+ * Copies the stored crossings for the target's session into its preallocated
+ * buffers, so a running processor can be rehydrated in place. Returns false
+ * when that session is not stored or its layout does not fit the target.
  */
 export function rehydrateLapHistory(
   stored: PersistedLapHistory,
   target: LapHistorySnapshot
 ): boolean {
-  const { history } = stored;
+  if (target.sessionNum === null) return false;
+  const history = stored.sessions[String(target.sessionNum)];
+  if (!history) return false;
   if (
     history.capacity !== target.capacity ||
     history.carCount !== target.carCount
@@ -194,7 +295,8 @@ async function readLapHistoryFile(
   }
   try {
     const parsed: unknown = JSON.parse(raw);
-    if (isPersistedLapHistory(parsed)) return parsed;
+    const migrated = migrateLapHistoryFile(parsed, getPathForLog(filePath));
+    if (migrated) return migrated;
     logger.warn(
       '[LapHistoryStorage] Lap history file has an invalid shape:',
       getPathForLog(filePath)
@@ -224,13 +326,25 @@ async function writeToDisk(filePath: string, payload: string): Promise<void> {
 
 /** Serialises the cached snapshot and writes it, tracked so callers can wait. */
 function runFlush(entry: SessionCache): Promise<void> {
-  const snapshot = entry.snapshot;
-  if (!snapshot) return entry.writeInFlight ?? Promise.resolve();
-  // Stringify now: the snapshot keeps mutating while the write is in flight.
-  const payload = JSON.stringify(serializeLapHistory(snapshot));
-  const task = (entry.writeInFlight ?? Promise.resolve()).then(() =>
-    writeToDisk(entry.filePath, payload)
-  );
+  const task = (entry.writeInFlight ?? Promise.resolve())
+    .then(() => entry.loaded)
+    .then(() => {
+      if (entry.deleting) return;
+      const sessions = new Map(entry.sealed);
+      const live = entry.live;
+      if (
+        live &&
+        entry.liveSessionNum !== null &&
+        live.sessionNum === entry.liveSessionNum &&
+        hasCrossings(live)
+      ) {
+        sessions.set(entry.liveSessionNum, live);
+      }
+      if (sessions.size === 0) return;
+      // Stringify now: the live snapshot keeps mutating during the write.
+      const payload = JSON.stringify(serializeLapHistory(sessions));
+      return writeToDisk(entry.filePath, payload);
+    });
   const trackedTask = task.finally(() => {
     if (entry.writeInFlight === trackedTask) entry.writeInFlight = null;
   });
@@ -267,44 +381,113 @@ async function ensureCache(filePath: string): Promise<SessionCache> {
   if (cached) return cached;
   const entry: SessionCache = {
     filePath,
-    snapshot: null,
+    live: null,
+    liveSessionNum: null,
+    sealed: new Map(),
+    loaded: Promise.resolve(),
     writeTimer: null,
     writeInFlight: null,
     deleting: false,
   };
+  // Sessions already in memory are newer than the file.
+  entry.loaded = readLapHistoryFile(filePath).then((stored) => {
+    for (const [key, history] of Object.entries(stored?.sessions ?? {})) {
+      const sessionNum = Number(key);
+      if (!entry.sealed.has(sessionNum)) entry.sealed.set(sessionNum, history);
+    }
+  });
   caches.set(filePath, entry);
   return entry;
 }
 
+/** Every stored session of an event. Pending writes land first. */
 export async function loadLapHistory(
   sessionId: string,
   storageDir = getStorageDir()
 ): Promise<PersistedLapHistory | null> {
   if (!hasSessionId(sessionId)) return null;
-  return readLapHistoryFile(getFilePath(sessionId, storageDir));
+  const filePath = getFilePath(sessionId, storageDir);
+  const entry = caches.get(filePath);
+  if (entry) await flushPending(entry);
+  return readLapHistoryFile(filePath);
+}
+
+/** One stored session of an event, or null when it was not recorded. */
+export async function loadArchivedLapHistory(
+  sessionId: string,
+  sessionNum: number,
+  storageDir = getStorageDir()
+): Promise<LapHistorySnapshot | null> {
+  const stored = await loadLapHistory(sessionId, storageDir);
+  return stored?.sessions[String(sessionNum)] ?? null;
+}
+
+/** Session numbers stored for an event, lowest first. */
+export async function listArchivedLapHistorySessions(
+  sessionId: string,
+  storageDir = getStorageDir()
+): Promise<number[]> {
+  const stored = await loadLapHistory(sessionId, storageDir);
+  return Object.keys(stored?.sessions ?? {})
+    .map(Number)
+    .sort((a, b) => a - b);
 }
 
 async function saveLapHistoryInternal(
   sessionId: string,
   snapshot: LapHistorySnapshot,
-  storageDir: string
+  storageDir: string,
+  seal: boolean
 ): Promise<void> {
   if (!hasSessionId(sessionId)) return;
+  const sessionNum = snapshot.sessionNum;
+  if (sessionNum === null) return;
   const filePath = getFilePath(sessionId, storageDir);
   const entry = await ensureCache(filePath);
-  entry.snapshot = snapshot;
+  if (seal) {
+    entry.sealed.set(sessionNum, copySnapshot(snapshot));
+    if (entry.liveSessionNum === sessionNum) {
+      entry.live = null;
+      entry.liveSessionNum = null;
+    }
+  } else {
+    entry.live = snapshot;
+    entry.liveSessionNum = sessionNum;
+  }
   scheduleWrite(entry);
 }
 
-/** Debounced. The snapshot is serialised when the write fires, not here. */
+const trackSave = (operation: Promise<void>): Promise<void> => {
+  pendingSaves.add(operation);
+  return operation.finally(() => pendingSaves.delete(operation));
+};
+
+/**
+ * Debounced save of the session being recorded, under its SessionNum. The
+ * snapshot is serialised when the write fires, not here.
+ */
 export function saveLapHistory(
   sessionId: string,
   snapshot: LapHistorySnapshot,
   storageDir = getStorageDir()
 ): Promise<void> {
-  const operation = saveLapHistoryInternal(sessionId, snapshot, storageDir);
-  pendingSaves.add(operation);
-  return operation.finally(() => pendingSaves.delete(operation));
+  return trackSave(
+    saveLapHistoryInternal(sessionId, snapshot, storageDir, false)
+  );
+}
+
+/**
+ * Copies a session's crossings now, before the processor reuses its buffers
+ * for the next session or a disconnect. Written with the next debounced save.
+ */
+export function sealLapHistorySession(
+  sessionId: string,
+  snapshot: LapHistorySnapshot,
+  storageDir = getStorageDir()
+): Promise<void> {
+  return trackSave(
+    saveLapHistoryInternal(sessionId, snapshot, storageDir, true)
+  );
 }
 
 export async function clearLapHistory(
@@ -317,7 +500,9 @@ export async function clearLapHistory(
   const entry = caches.get(filePath);
   if (entry) {
     await flushPending(entry);
-    entry.snapshot = null;
+    entry.live = null;
+    entry.liveSessionNum = null;
+    entry.sealed.clear();
   }
 
   try {

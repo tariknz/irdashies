@@ -90,6 +90,14 @@ function readBack(snapshot: LapHistorySnapshot, carIdx: number): Crossing[] {
   return out;
 }
 
+/** A schema 2 file body holding one session. */
+function fileOf(snapshot: LapHistorySnapshot) {
+  return {
+    schema: 2 as const,
+    sessions: { [String(snapshot.sessionNum)]: snapshot },
+  };
+}
+
 function populated(): LapHistorySnapshot {
   const snapshot = makeSnapshot();
   append(snapshot, 0, {
@@ -119,7 +127,16 @@ describe('lapHistoryStorage', () => {
     expect(await loadLapHistory('session123', tmpDir)).toBeNull();
   });
 
-  it.each(['{}', 'null', '[]', '{"schema":2,"history":{}}', 'not json'])(
+  it.each([
+    '{}',
+    'null',
+    '[]',
+    '{"schema":2,"history":{}}',
+    '{"schema":2,"sessions":[]}',
+    '{"schema":2,"sessions":{}}',
+    '{"schema":3,"sessions":{}}',
+    'not json',
+  ])(
     'loadLapHistory returns null for invalid persisted shape %s',
     async (contents) => {
       const { loadLapHistory } = await import('./lapHistoryStorage');
@@ -130,10 +147,9 @@ describe('lapHistoryStorage', () => {
   );
 
   it('rejects a file whose buffers do not match its declared size', async () => {
-    const { loadLapHistory, serializeLapHistory } =
-      await import('./lapHistoryStorage');
-    const stored = serializeLapHistory(populated());
-    (stored.history as unknown as { lap: number[] }).lap = [1, 2, 3];
+    const { loadLapHistory } = await import('./lapHistoryStorage');
+    const stored = fileOf(populated());
+    (stored.sessions['0'] as unknown as { lap: number[] }).lap = [1, 2, 3];
     fs.writeFileSync(
       path.join(tmpDir, 'lap-history-short.json'),
       JSON.stringify(stored)
@@ -151,10 +167,10 @@ describe('lapHistoryStorage', () => {
     ['fractional start', 'start', 0.5],
   ])('rejects a file with a bad ring index: %s', async (name, field, bad) => {
     // A bad pair repeats crossings or reads another car's slots once decoded.
-    const { loadLapHistory, serializeLapHistory } =
-      await import('./lapHistoryStorage');
-    const stored = serializeLapHistory(populated());
-    (stored.history as unknown as Record<string, number[]>)[field][0] = bad;
+    const { loadLapHistory } = await import('./lapHistoryStorage');
+    const stored = fileOf(populated());
+    (stored.sessions['0'] as unknown as Record<string, number[]>)[field][0] =
+      bad;
     const id = `ring-${field}-${String(bad).replace(/[^a-z0-9]/gi, '')}`;
     fs.writeFileSync(
       path.join(tmpDir, `lap-history-${id}.json`),
@@ -199,8 +215,8 @@ describe('lapHistoryStorage', () => {
     await __awaitPendingWrite();
     const stored = await loadLapHistory('s1', tmpDir);
 
-    expect(stored?.schema).toBe(1);
-    expect(stored?.history).toEqual(source);
+    expect(stored?.schema).toBe(2);
+    expect(stored?.sessions['0']).toEqual(source);
   });
 
   it('rehydrates lap, sessionTime, classPosition and flags into a live snapshot', async () => {
@@ -272,11 +288,11 @@ describe('lapHistoryStorage', () => {
     );
     const parsed = JSON.parse(raw) as {
       schema: number;
-      history: { lap: unknown; count: unknown };
+      sessions: Record<string, { lap: unknown; count: unknown }>;
     };
-    expect(parsed.schema).toBe(1);
-    expect(Array.isArray(parsed.history.lap)).toBe(true);
-    expect(Array.isArray(parsed.history.count)).toBe(true);
+    expect(parsed.schema).toBe(2);
+    expect(Array.isArray(parsed.sessions['0'].lap)).toBe(true);
+    expect(Array.isArray(parsed.sessions['0'].count)).toBe(true);
   });
 
   it('serialises the snapshot as it stands when the write fires', async () => {
@@ -292,16 +308,15 @@ describe('lapHistoryStorage', () => {
 
     const stored = await loadLapHistory('s1', tmpDir);
     if (!stored) throw new Error('expected stored lap history');
-    expect(stored.history.count[0]).toBe(2);
-    expect(readBack(stored.history, 0).map((c) => c.lap)).toEqual([1, 2]);
+    expect(stored.sessions['0'].count[0]).toBe(2);
+    expect(readBack(stored.sessions['0'], 0).map((c) => c.lap)).toEqual([1, 2]);
   });
 
   it('rejects rehydrating history recorded at a different capacity', async () => {
-    const { serializeLapHistory, rehydrateLapHistory } =
-      await import('./lapHistoryStorage');
+    const { rehydrateLapHistory } = await import('./lapHistoryStorage');
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
 
-    const stored = serializeLapHistory(makeSnapshot(CAR_COUNT, CAPACITY));
+    const stored = fileOf(makeSnapshot(CAR_COUNT, CAPACITY));
     const target = makeSnapshot(CAR_COUNT, CAPACITY * 2);
 
     expect(rehydrateLapHistory(stored, target)).toBe(false);
@@ -310,10 +325,9 @@ describe('lapHistoryStorage', () => {
   });
 
   it('clears any previous contents of the target before rehydrating', async () => {
-    const { serializeLapHistory, rehydrateLapHistory } =
-      await import('./lapHistoryStorage');
+    const { rehydrateLapHistory } = await import('./lapHistoryStorage');
     const target = populated();
-    const stored = serializeLapHistory(makeSnapshot());
+    const stored = fileOf(makeSnapshot());
 
     rehydrateLapHistory(stored, target);
 
@@ -325,12 +339,11 @@ describe('lapHistoryStorage', () => {
   });
 
   it('rehydrates in place so the live buffers keep their identity', async () => {
-    const { serializeLapHistory, rehydrateLapHistory } =
-      await import('./lapHistoryStorage');
+    const { rehydrateLapHistory } = await import('./lapHistoryStorage');
     const target = makeSnapshot();
     const buffers = { lap: target.lap, count: target.count };
 
-    rehydrateLapHistory(serializeLapHistory(populated()), target);
+    rehydrateLapHistory(fileOf(populated()), target);
 
     expect(target.lap).toBe(buffers.lap);
     expect(target.count).toBe(buffers.count);
@@ -426,5 +439,197 @@ describe('lapHistoryStorage', () => {
     await flushLapHistoryOnShutdown();
 
     expect(fs.existsSync(path.join(tmpDir, 'lap-history-s1.json'))).toBe(true);
+  });
+  describe('one file per event, one entry per session', () => {
+    const writeRaw = (id: string, body: unknown) =>
+      fs.writeFileSync(
+        path.join(tmpDir, `lap-history-${id}.json`),
+        JSON.stringify(body)
+      );
+
+    /** Moves the live buffers on to a new session, as the processor does. */
+    const startSession = (snapshot: LapHistorySnapshot, sessionNum: number) => {
+      (snapshot.count as number[]).fill(0);
+      (snapshot.start as number[]).fill(0);
+      snapshot.sessionNum = sessionNum;
+    };
+
+    it('migrates a schema 1 file to its session entry', async () => {
+      const { loadLapHistory } = await import('./lapHistoryStorage');
+      const legacy = { ...populated(), sessionNum: 2 };
+      writeRaw('legacy', { schema: 1, history: legacy });
+
+      const stored = await loadLapHistory('legacy', tmpDir);
+
+      expect(stored?.schema).toBe(2);
+      expect(Object.keys(stored?.sessions ?? {})).toEqual(['2']);
+      expect(stored?.sessions['2']).toEqual(legacy);
+    });
+
+    it('drops a schema 1 file that cannot be keyed or is malformed', async () => {
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      const { loadLapHistory } = await import('./lapHistoryStorage');
+      writeRaw('nonum', {
+        schema: 1,
+        history: { ...populated(), sessionNum: null },
+      });
+      writeRaw('bad', { schema: 1, history: { carCount: 'x' } });
+
+      expect(await loadLapHistory('nonum', tmpDir)).toBeNull();
+      expect(await loadLapHistory('bad', tmpDir)).toBeNull();
+      expect(warn).toHaveBeenCalledWith(
+        '[LapHistoryStorage] Dropped a schema 1 file with an invalid shape:',
+        'lap-history-nonum.json'
+      );
+      warn.mockRestore();
+    });
+
+    it('keeps the valid sessions of a file and drops the rest', async () => {
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      const { loadLapHistory } = await import('./lapHistoryStorage');
+      writeRaw('mixed', {
+        schema: 2,
+        sessions: {
+          '0': populated(),
+          '1': { ...populated(), lap: [1] },
+          // Key and sessionNum disagree.
+          '2': { ...populated(), sessionNum: 5 },
+          x: populated(),
+        },
+      });
+
+      const stored = await loadLapHistory('mixed', tmpDir);
+
+      expect(Object.keys(stored?.sessions ?? {})).toEqual(['0']);
+      expect(warn).toHaveBeenCalledTimes(3);
+      warn.mockRestore();
+    });
+
+    it('keeps qualifying when the race starts', async () => {
+      const {
+        saveLapHistory,
+        sealLapHistorySession,
+        loadLapHistory,
+        __awaitPendingWrite,
+      } = await import('./lapHistoryStorage');
+      const live = { ...populated(), sessionNum: 1 };
+      await saveLapHistory('event', live, tmpDir);
+
+      await sealLapHistorySession('event', live, tmpDir);
+      startSession(live, 2);
+      append(live, 3, { lap: 1, sessionTime: 50, classPosition: 1, flags: 0 });
+      await saveLapHistory('event', live, tmpDir);
+      await __awaitPendingWrite();
+
+      const stored = await loadLapHistory('event', tmpDir);
+      expect(Object.keys(stored?.sessions ?? {})).toEqual(['1', '2']);
+      expect(stored?.sessions['1'].count[0]).toBe(2);
+      expect(stored?.sessions['2'].count[0]).toBe(0);
+      expect(stored?.sessions['2'].count[3]).toBe(1);
+    });
+
+    it('does not write a live snapshot whose buffers moved to another session', async () => {
+      const { saveLapHistory, loadLapHistory, __awaitPendingWrite } =
+        await import('./lapHistoryStorage');
+      const live = { ...populated(), sessionNum: 1 };
+      await saveLapHistory('moved', live, tmpDir);
+
+      startSession(live, 2);
+      await __awaitPendingWrite();
+
+      expect(await loadLapHistory('moved', tmpDir)).toBeNull();
+    });
+
+    it('merges sessions already on disk after a restart', async () => {
+      const {
+        saveLapHistory,
+        loadLapHistory,
+        __awaitPendingWrite,
+        __resetForTests,
+      } = await import('./lapHistoryStorage');
+      await saveLapHistory(
+        'restart',
+        { ...populated(), sessionNum: 0 },
+        tmpDir
+      );
+      await __awaitPendingWrite();
+      __resetForTests();
+
+      await saveLapHistory(
+        'restart',
+        { ...populated(), sessionNum: 1 },
+        tmpDir
+      );
+      await __awaitPendingWrite();
+
+      const stored = await loadLapHistory('restart', tmpDir);
+      expect(Object.keys(stored?.sessions ?? {})).toEqual(['0', '1']);
+    });
+
+    it('keeps the newest sessions when over the cap', async () => {
+      const {
+        sealLapHistorySession,
+        loadLapHistory,
+        __awaitPendingWrite,
+        MAX_SESSIONS_PER_FILE,
+      } = await import('./lapHistoryStorage');
+      const total = MAX_SESSIONS_PER_FILE + 4;
+      for (let sessionNum = 0; sessionNum < total; sessionNum += 1) {
+        await sealLapHistorySession(
+          'capped',
+          { ...populated(), sessionNum },
+          tmpDir
+        );
+      }
+      await __awaitPendingWrite();
+
+      const kept = Object.keys(
+        (await loadLapHistory('capped', tmpDir))?.sessions ?? {}
+      ).map(Number);
+      expect(kept).toHaveLength(MAX_SESSIONS_PER_FILE);
+      expect(Math.min(...kept)).toBe(4);
+      expect(Math.max(...kept)).toBe(total - 1);
+    });
+
+    it('reads one archived session and lists the stored ones', async () => {
+      const {
+        sealLapHistorySession,
+        loadArchivedLapHistory,
+        listArchivedLapHistorySessions,
+      } = await import('./lapHistoryStorage');
+      await sealLapHistorySession(
+        'arch',
+        { ...populated(), sessionNum: 3 },
+        tmpDir
+      );
+      await sealLapHistorySession(
+        'arch',
+        { ...populated(), sessionNum: 1 },
+        tmpDir
+      );
+
+      // A pending write is flushed before the read.
+      expect(await listArchivedLapHistorySessions('arch', tmpDir)).toEqual([
+        1, 3,
+      ]);
+      expect(
+        (await loadArchivedLapHistory('arch', 3, tmpDir))?.sessionNum
+      ).toBe(3);
+      expect(await loadArchivedLapHistory('arch', 2, tmpDir)).toBeNull();
+      expect(await loadArchivedLapHistory('missing', 0, tmpDir)).toBeNull();
+    });
+
+    it('rehydrates only the session the target is on', async () => {
+      const { rehydrateLapHistory } = await import('./lapHistoryStorage');
+      const stored = fileOf({ ...populated(), sessionNum: 1 });
+
+      const onRace = { ...makeSnapshot(), sessionNum: 2 };
+      expect(rehydrateLapHistory(stored, onRace)).toBe(false);
+      expect(onRace.count[0]).toBe(0);
+
+      const onQualifying = { ...makeSnapshot(), sessionNum: 1 };
+      expect(rehydrateLapHistory(stored, onQualifying)).toBe(true);
+      expect(onQualifying.count[0]).toBe(2);
+    });
   });
 });

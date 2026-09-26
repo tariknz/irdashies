@@ -13,8 +13,12 @@ import {
   type LapPoint,
 } from '@irdashies/domain';
 import {
+  trackStateSelectors,
+  useArchivedLapHistory,
   useCurrentSessionType,
   useLapHistorySnapshot,
+  useReplayContextSnapshot,
+  useTrackStateSelector,
 } from '@irdashies/context';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import type { NameFormat } from '@irdashies/types';
@@ -146,7 +150,20 @@ export const LapGraphView = memo(
     onPinsChange,
   }: Props) => {
     const standingsByClass = useDriverStandings(undefined, { showAll: true });
-    const snapshot = useLapHistorySnapshot();
+    const liveSnapshot = useLapHistorySnapshot();
+    const replayContext = useReplayContextSnapshot();
+    const cursorSessionNum = useTrackStateSelector(
+      trackStateSelectors.sessionNum
+    );
+    const isReplayFile = replayContext.mode === 'replayFile';
+    const isArchivedReplay =
+      isReplayFile && replayContext.provenance === 'archived';
+    // Recording is paused in a replay file, so an archived replay shows the
+    // session under the replay cursor from the archive instead.
+    const archivedSnapshot = useArchivedLapHistory(
+      isArchivedReplay ? (cursorSessionNum ?? null) : null,
+      replayContext.subSessionId
+    );
     const sessionType = useCurrentSessionType();
     const settings = useGantrySettings();
     const nameFormat = settings?.driverNameFormat ?? 'surname';
@@ -275,12 +292,15 @@ export const LapGraphView = memo(
     // Hold the snapshot at an identity that only moves when `version` moves. A
     // resend, or resubscribing after a tab switch, delivers an equal snapshot as
     // a fresh object, which would otherwise rebuild 60 series for nothing.
-    const historyVersion = snapshot?.version ?? -1;
+    // Archived history is fetched once per session, so its identity is stable.
+    const historyKey = isReplayFile
+      ? archivedSnapshot
+      : (liveSnapshot?.version ?? -1);
     const history = useMemo(
-      () => snapshot,
+      () => (isReplayFile ? (archivedSnapshot ?? undefined) : liveSnapshot),
       // Deliberately keyed on the version, not the snapshot identity.
       // eslint-disable-next-line @eslint-react/exhaustive-deps
-      [historyVersion]
+      [isReplayFile, historyKey]
     );
 
     const built = useMemo(() => {
@@ -396,12 +416,27 @@ export const LapGraphView = memo(
       if (sessionType && sessionType !== 'Race') {
         return 'The lap graph is available during a race.';
       }
+      if (isReplayFile && !isArchivedReplay) {
+        return 'No lap history was recorded on this PC for this replay.';
+      }
+      if (isArchivedReplay && !archivedSnapshot) {
+        return 'No laps were recorded on this PC for this session.';
+      }
       if (!activeClass || leaderCarIdx === null) return 'Waiting for the grid.';
       if (mode === 'trace' && !built.reference) {
         return 'Waiting for the class leader to set a reference pace.';
       }
       return 'Waiting for the first completed lap.';
-    }, [sessionType, activeClass, leaderCarIdx, mode, built.reference]);
+    }, [
+      sessionType,
+      isReplayFile,
+      isArchivedReplay,
+      archivedSnapshot,
+      activeClass,
+      leaderCarIdx,
+      mode,
+      built.reference,
+    ]);
 
     return (
       <div className="flex flex-col h-full overflow-hidden">
