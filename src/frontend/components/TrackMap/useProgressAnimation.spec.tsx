@@ -179,6 +179,57 @@ describe('useProgressAnimation', () => {
     delete window.rendererPerfBridge;
   });
 
+  it('skips frames that come sooner than maxFps allows', () => {
+    let drawCount = 0;
+
+    const Harness = ({ progress }: { progress: number }) => {
+      const stableDrivers = useRef([{ progress }]);
+      if (stableDrivers.current[0].progress !== progress) {
+        stableDrivers.current = [{ progress }];
+      }
+      useProgressAnimation(stableDrivers.current, () => drawCount++, 30);
+      return null;
+    };
+
+    const view = render(<Harness progress={0.1} />);
+    const drawsAfterMount = drawCount;
+    view.rerender(<Harness progress={0.3} />);
+    // Every update still paints in its own commit, so the canvas never shows
+    // a frame that another layout effect just cleared.
+    expect(drawCount).toBe(drawsAfterMount + 1);
+
+    act(() => callbacks.shift()?.(10));
+    act(() => callbacks.shift()?.(20));
+    act(() => callbacks.shift()?.(30));
+    expect(drawCount).toBe(drawsAfterMount + 1);
+    expect(callbacks).toHaveLength(1);
+
+    act(() => callbacks.shift()?.(34));
+    expect(drawCount).toBe(drawsAfterMount + 2);
+  });
+
+  it('paints every frame when no cap is set', () => {
+    let drawCount = 0;
+
+    const Harness = ({ progress }: { progress: number }) => {
+      const stableDrivers = useRef([{ progress }]);
+      if (stableDrivers.current[0].progress !== progress) {
+        stableDrivers.current = [{ progress }];
+      }
+      useProgressAnimation(stableDrivers.current, () => drawCount++);
+      return null;
+    };
+
+    const view = render(<Harness progress={0.1} />);
+    view.rerender(<Harness progress={0.3} />);
+    const drawsBeforeFrames = drawCount;
+
+    act(() => callbacks.shift()?.(10));
+    act(() => callbacks.shift()?.(20));
+
+    expect(drawCount).toBe(drawsBeforeFrames + 2);
+  });
+
   it('cancels an active frame on unmount', () => {
     const Harness = ({ progress }: { progress: number }) => {
       const stableDrivers = useRef([{ progress }]);

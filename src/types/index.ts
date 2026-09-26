@@ -10,6 +10,7 @@ export * from './widgetId';
 export * from './referenceLaps';
 export * from './raceControl';
 export * from './widgetConfigs';
+export * from './gantryDock';
 export * from './defaultDashboard';
 export * from './cornerName';
 export * from './lapTrace';
