@@ -1541,6 +1541,7 @@ export const defaultDashboard: {
         brakeCueOutputDeviceId: DEFAULT_AUDIO_OUTPUT_DEVICE_ID,
         brakeCueVolume: 0.6,
         brakeCueLeadSec: 0,
+        brakeCueMinPeak: 0.12,
         sound: DEFAULT_LAP_TRACE_SOUND,
         brakeCueBars: false,
         brakeCueBarSide: 'right',

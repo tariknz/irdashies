@@ -15,7 +15,10 @@ import {
 } from '@irdashies/context';
 import { formatTime } from '@irdashies/utils/time';
 import { resolveSpeedUnit, speedFromMs } from '@irdashies/utils/units';
-import { selectBrakeCuePoints } from '../../domain/lapTrace/brakeCuePoints';
+import {
+  BRAKE_CUE_MIN_PEAK_DEFAULT,
+  selectBrakeCuePoints,
+} from '../../domain/lapTrace/brakeCuePoints';
 import { LapTracePlot } from './LapTracePlot';
 import { BrakeCue } from './components/BrakeCue';
 import {
@@ -60,9 +63,14 @@ export const LapTrace = (props: LapTraceProps) => {
   const lastCornerLabelStyle = config.lastCornerLabelStyle ?? 'name';
   const lastCornerEnabled =
     !!config.showLastCorner && !!referenceLap && isSessionVisible;
+  // Read once and handed to both consumers of the cue-point list. The countdown
+  // and the brake-distance delta must filter the reference lap identically, or
+  // one of them goes silent at a corner the other reports on.
+  const brakeCueMinPeak = config.brakeCueMinPeak ?? BRAKE_CUE_MIN_PEAK_DEFAULT;
   const lastCorners = useLastCornerComparison(
     lastCornerEnabled,
-    lastCornerLabelStyle
+    lastCornerLabelStyle,
+    brakeCueMinPeak
   );
   // Every corner name this circuit can produce, so the panel's name column is
   // one fixed width for the session rather than resizing as history builds.
@@ -88,8 +96,10 @@ export const LapTrace = (props: LapTraceProps) => {
   // promotion, so its identity is a safe memo key.
   const brakeCuePointsM = useMemo(
     () =>
-      referenceLap ? selectBrakeCuePoints(referenceLap) : EMPTY_CUE_POINTS,
-    [referenceLap]
+      referenceLap
+        ? selectBrakeCuePoints(referenceLap, { minPeak: brakeCueMinPeak })
+        : EMPTY_CUE_POINTS,
+    [referenceLap, brakeCueMinPeak]
   );
   const brakeCueActive =
     !!referenceLap && (!!config.brakeCueBars || !!config.brakeCueAudio);

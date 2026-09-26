@@ -75,13 +75,16 @@ const seedReference = (speedMs = REFERENCE_SPEED_MS) => {
 /** Length of the braking zone carved into the reference for each brake point. */
 const BRAKE_ZONE_M = 50;
 
+/** Pedal pressure in a carved zone — comfortably over the significance bar. */
+const BRAKE_ZONE_PRESSURE = 0.6;
+
 /**
  * A reference lap with controlled brake points. Each one gets a real braking
- * zone — a release 50 m later and speed scrubbed off in between — because
- * attribution only considers points that actually shed speed, exactly as the
- * audible countdown does. A brake-on event with no speed drop behind it is a
- * stabilising dab or pedal noise, and is deliberately not a corner's brake
- * point.
+ * zone — a release 50 m later, the pedal genuinely pressed and speed scrubbed
+ * off in between — because attribution only considers points that pass the same
+ * significance filter as the audible countdown. A brake-on event with no
+ * pressure or no speed drop behind it is a stabilising brush or pedal noise, and
+ * is deliberately not a corner's brake point.
  */
 const seedReferenceWithBrakeEvents = (referenceBrakeOnM: number[]) => {
   const record = flatReference(REFERENCE_SPEED_MS);
@@ -91,6 +94,7 @@ const seedReferenceWithBrakeEvents = (referenceBrakeOnM: number[]) => {
       const d = samples.distanceM[i];
       if (d > brakeM && d <= brakeM + BRAKE_ZONE_M) {
         samples.speed[i] = REFERENCE_SPEED_MS - 8;
+        samples.brake[i] = BRAKE_ZONE_PRESSURE;
       }
     }
   }
@@ -123,6 +127,7 @@ const seedReferenceWithBrakeZone = (brakeOnM: number, brakeOffM: number) => {
     const d = samples.distanceM[i];
     if (d > brakeOnM && d <= brakeOffM) {
       samples.speed[i] = REFERENCE_SPEED_MS - 8;
+      samples.brake[i] = BRAKE_ZONE_PRESSURE;
     }
   }
   useLapTraceStore.setState({
