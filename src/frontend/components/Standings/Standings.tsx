@@ -314,7 +314,9 @@ export const Standings = () => {
                           }
                           name={result.driver?.name || ''}
                           teamName={
-                            settings?.teamName?.enabled && isTeamRacing
+                            isTeamRacing &&
+                            (settings?.teamName?.enabled ||
+                              settings?.driverName?.subtext === 'teamName')
                               ? result.driver?.teamName || ''
                               : undefined
                           }

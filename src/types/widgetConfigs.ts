@@ -182,8 +182,8 @@ export interface StandingsConfig {
   showOnlyWhenOnTrack: boolean;
   useLivePosition?: boolean;
   position: { enabled: boolean };
-  driverName: DriverNameConfig;
-  teamName: { enabled: boolean };
+  driverName: DriverNameConfig & { subtext?: 'none' | 'teamName' };
+  teamName: { enabled: boolean; subtext?: 'none' | 'driverName' };
   pitStatus: PitStatusConfig;
   pushToPass: { enabled: boolean };
   driverTag: { enabled: boolean; widthPx?: number };
