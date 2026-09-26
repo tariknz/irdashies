@@ -1,10 +1,8 @@
 import { useEffect } from 'react';
-import {
-  useDashboard,
-  useSectorTimingSnapshot,
-  useSectorTimingStore,
-} from '@irdashies/context';
 import type { SectorDeltaConfig } from '@irdashies/types';
+import { useDashboard } from '../DashboardContext/DashboardContext';
+import { useSectorTimingSnapshot } from '../ChannelStore/useSectorTimingSnapshot';
+import { useSectorTimingStore } from './SectorTimingStore';
 
 export const SectorTimingUpdater = ({
   enabled = true,
