@@ -8,6 +8,7 @@ import type {
   ActiveSimulator,
   DashboardLayout,
   ContainerBoundsInfo,
+  GantryConfig,
 } from '@irdashies/types';
 import { isWidgetDisabledForSim } from '@irdashies/types';
 import { getSimWidgetSupport } from './storage/simWidgetSupport';
@@ -90,6 +91,8 @@ export class OverlayManager {
   private gantryWindow: BrowserWindow | undefined;
   /** Last-applied enabled state, so syncGantryWindow only acts on changes. */
   private gantryEnabled = false;
+  /** Last-applied always-on-top state of the current Gantry window. */
+  private gantryPinned: boolean | undefined;
   private currentDashboard: DashboardLayout | undefined;
   /**
    * The running simulator, or null while none is detected. Widgets the sim
@@ -1098,11 +1101,21 @@ export class OverlayManager {
     });
 
     this.gantryWindow = browserWindow;
+    this.gantryPinned = undefined;
     applyBaselineSecurity(browserWindow, 'Gantry');
+    this.applyGantryWindowPrefs(dashboardLayout);
 
     browserWindow.once('ready-to-show', () => {
       if (browserWindow.isDestroyed()) return;
       browserWindow.show();
+    });
+
+    // Focusing a window on Windows lifts it to the top of its band, above
+    // the overlays, so lift them back over a pinned Gantry.
+    browserWindow.on('focus', () => {
+      if (this.gantryWindow === browserWindow && this.gantryPinned) {
+        this.raiseAboveGantry();
+      }
     });
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -1176,6 +1189,7 @@ export class OverlayManager {
       // Open on the disabled -> enabled edge only. A window the user closed by
       // hand should stay closed while they edit unrelated settings.
       if (!wasEnabled) this.createGantryWindow(dashboardLayout);
+      this.applyGantryWindowPrefs(dashboardLayout);
       return;
     }
 
@@ -1186,6 +1200,48 @@ export class OverlayManager {
       this.gantryWindow.destroy();
     }
     this.gantryWindow = undefined;
+  }
+
+  /**
+   * Apply the Gantry's saved window preferences. Only acts when the value
+   * changes, because re-pinning lifts the window above the overlays again.
+   */
+  private applyGantryWindowPrefs(dashboardLayout?: DashboardLayout): void {
+    const win = this.gantryWindow;
+    if (!win || win.isDestroyed()) return;
+
+    const config = dashboardLayout?.widgets.find((w) => w.id === 'gantry')
+      ?.config as Partial<GantryConfig> | undefined;
+    const pinned = config?.window?.alwaysOnTop === true;
+    if (pinned === this.gantryPinned) return;
+    this.gantryPinned = pinned;
+
+    if (pinned) {
+      // Level 0 keeps it below the overlays (1) and edit-mode Settings (2).
+      win.setAlwaysOnTop(true, 'screen-saver', 0);
+      win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      this.raiseAboveGantry();
+    } else {
+      win.setAlwaysOnTop(false);
+      win.setVisibleOnAllWorkspaces(false);
+    }
+  }
+
+  /**
+   * Relative levels are only honoured on macOS. On Windows every
+   * always-on-top window shares one band, so re-raise the overlays (and
+   * Settings in edit mode) to keep them above a pinned Gantry.
+   */
+  private raiseAboveGantry(): void {
+    if (this.overlayAlwaysOnTop) {
+      for (const win of this.displayWindows.values()) {
+        if (!win.isDestroyed()) win.moveTop();
+      }
+    }
+    const settings = this.currentSettingsWindow;
+    if (!this.isLocked && settings && !settings.isDestroyed()) {
+      settings.moveTop();
+    }
   }
 
   public createSettingsWindow(

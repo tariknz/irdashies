@@ -926,6 +926,12 @@ export interface GantryConfig {
   incidentCameraGroup: string;
   // Lap Graph tab
   lapGraph: LapGraphConfig;
+  window: GantryWindowConfig;
+}
+
+export interface GantryWindowConfig {
+  /** Keep the Gantry window above iRacing and other apps. */
+  alwaysOnTop: boolean;
 }
 
 /** Chase camera far enough back to show what happened around the car. */
