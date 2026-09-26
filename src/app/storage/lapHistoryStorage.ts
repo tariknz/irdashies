@@ -442,10 +442,12 @@ async function saveLapHistoryInternal(
   if (!hasSessionId(sessionId)) return;
   const sessionNum = snapshot.sessionNum;
   if (sessionNum === null) return;
+  // Copy before any await: the caller resets these buffers straight after.
+  const sealed = seal ? copySnapshot(snapshot) : null;
   const filePath = getFilePath(sessionId, storageDir);
   const entry = await ensureCache(filePath);
-  if (seal) {
-    entry.sealed.set(sessionNum, copySnapshot(snapshot));
+  if (sealed) {
+    entry.sealed.set(sessionNum, sealed);
     if (entry.liveSessionNum === sessionNum) {
       entry.live = null;
       entry.liveSessionNum = null;

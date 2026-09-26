@@ -528,6 +528,31 @@ describe('lapHistoryStorage', () => {
       expect(stored?.sessions['2'].count[3]).toBe(1);
     });
 
+    it('keeps a sealed session when the buffers reset straight after the seal', async () => {
+      const {
+        sealLapHistorySession,
+        loadLapHistory,
+        __awaitPendingWrite,
+        __resetForTests,
+      } = await import('./lapHistoryStorage');
+      const live: LapHistorySnapshot = { ...populated(), sessionNum: 1 };
+
+      // The runtime seals, then resets the processor without waiting.
+      const sealing = sealLapHistorySession('reset', live, tmpDir);
+      (live.count as number[]).fill(0);
+      (live.start as number[]).fill(0);
+      live.sessionNum = null;
+      await sealing;
+      await __awaitPendingWrite();
+      __resetForTests();
+
+      const stored = await loadLapHistory('reset', tmpDir);
+      expect(Object.keys(stored?.sessions ?? {})).toEqual(['1']);
+      const qualifying = stored?.sessions['1'];
+      expect(qualifying?.sessionNum).toBe(1);
+      expect(qualifying && readBack(qualifying, 0)).toHaveLength(2);
+    });
+
     it('does not write a live snapshot whose buffers moved to another session', async () => {
       const { saveLapHistory, loadLapHistory, __awaitPendingWrite } =
         await import('./lapHistoryStorage');
