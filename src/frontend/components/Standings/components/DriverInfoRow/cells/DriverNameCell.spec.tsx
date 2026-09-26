@@ -47,6 +47,27 @@ describe('DriverNameCell', () => {
     expect(container.textContent).toContain('Driver A');
   });
 
+  it('shows the team name below the driver when configured', () => {
+    const { container } = renderInTable(
+      <DriverNameCell fullName="Alice Smith" teamName="Apex Racing" />
+    );
+
+    const cell = container.querySelector('[data-column="driverName"]');
+    expect(cell?.children[0].textContent).toContain('Alice Smith');
+    expect(cell?.children[0].textContent).toContain('Apex Racing');
+    expect(cell?.querySelector('.text-slate-400')?.textContent).toBe(
+      'Apex Racing'
+    );
+  });
+
+  it('keeps a single line when the team name is missing', () => {
+    const { container } = renderInTable(
+      <DriverNameCell fullName="Alice Smith" teamName=" " />
+    );
+
+    expect(container.querySelector('.text-slate-400')).toBeNull();
+  });
+
   it('creates WAAPI animations when shouldAnimate is true', () => {
     renderInTable(
       <DriverNameCell

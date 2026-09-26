@@ -573,6 +573,77 @@ export const TeamSession: Story = {
   ],
 };
 
+export const TeamSessionDriverWithTeamSubtext: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      standings: {
+        driverName: { subtext: 'teamName' },
+      },
+    }),
+  ],
+};
+
+export const TeamSessionDriverWithTeamSubtextCompact: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(
+      '/test-data/1763227688917',
+      { standings: { driverName: { subtext: 'teamName' } } },
+      { compactMode: 'compact' }
+    ),
+  ],
+};
+
+export const TeamSessionDriverWithTeamSubtextUltra: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(
+      '/test-data/1763227688917',
+      { standings: { driverName: { subtext: 'teamName' } } },
+      { compactMode: 'ultra' }
+    ),
+  ],
+};
+
+export const TeamSessionTeamWithDriverSubtext: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      standings: {
+        driverName: { enabled: false },
+        teamName: { enabled: true, subtext: 'driverName' },
+      },
+    }),
+  ],
+};
+
+export const TeamSessionTeamWithDriverSubtextCompact: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(
+      '/test-data/1763227688917',
+      {
+        standings: {
+          driverName: { enabled: false },
+          teamName: { enabled: true, subtext: 'driverName' },
+        },
+      },
+      { compactMode: 'compact' }
+    ),
+  ],
+};
+
+export const TeamSessionTeamWithDriverSubtextUltra: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(
+      '/test-data/1763227688917',
+      {
+        standings: {
+          driverName: { enabled: false },
+          teamName: { enabled: true, subtext: 'driverName' },
+        },
+      },
+      { compactMode: 'ultra' }
+    ),
+  ],
+};
+
 // Component that renders standings without header bar but with footer
 const StandingsWithoutHeader = () => {
   const settings = useStandingsSettings();

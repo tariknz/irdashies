@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Session } from '@irdashies/types';
 import { generateMockData } from './generateMockData';
 
 describe('generateMockData', () => {
@@ -27,6 +28,28 @@ describe('generateMockData', () => {
     bridge.onTelemetry(after);
     vi.advanceTimersByTime(100);
     expect(after).toHaveBeenCalled();
+
+    bridge.stop();
+  });
+
+  it('emits a team racing session with distinct team names for the running mock app', () => {
+    const bridge = generateMockData();
+    const onSession = vi.fn();
+
+    bridge.onSessionData(onSession);
+
+    const session = onSession.mock.calls[0][0] as Session;
+    const drivers = session.DriverInfo.Drivers.filter(
+      (driver) => !driver.CarIsPaceCar
+    );
+    expect(session.WeekendInfo.TeamRacing).toBe(1);
+    expect(drivers.every((driver) => driver.TeamID > 0)).toBe(true);
+    expect(drivers.every((driver) => driver.TeamName !== driver.UserName)).toBe(
+      true
+    );
+    expect(
+      new Set(drivers.map((driver) => driver.TeamName)).size
+    ).toBeGreaterThan(1);
 
     bridge.stop();
   });
