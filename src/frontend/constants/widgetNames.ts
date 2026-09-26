@@ -20,6 +20,7 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   telemetryinspector: 'Telemetry Inspector',
   pitlanehelper: 'Pitlane Helper',
   tachometer: 'Tachometer',
+  shiftlight: 'ShiftLight',
   flag: 'Flag',
   twitchchat: 'Twitch Chat',
   laptimelog: 'Lap Timer',

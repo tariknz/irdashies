@@ -391,6 +391,29 @@ export interface TachometerConfig {
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }
+export interface ShiftLightConfig {
+  showRpmText: boolean;
+  shiftPointStyle?: 'glow' | 'pulse' | 'border';
+  shiftPointSettings: {
+    enabled: boolean;
+    indicatorType: 'glow' | 'pulse' | 'border';
+    indicatorColor: string;
+    carConfigs: Record<
+      string,
+      {
+        enabled: boolean;
+        carId: string;
+        carName: string;
+        gearCount: number;
+        redlineRpm: number;
+        gearShiftPoints: Record<string, { shiftRpm: number }>;
+      }
+    >;
+  };
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
 
 export type LayoutDirection = 'row' | 'col';
 
@@ -953,6 +976,7 @@ export interface WidgetConfigMap {
   flatmap: FlatTrackMapConfig;
   input: InputConfig;
   tachometer: TachometerConfig;
+  shiftlight: ShiftlightConfig;
   fuel: FuelConfig;
   blindspotmonitor: BlindSpotMonitorConfig;
   garagecover: GarageCoverConfig;
@@ -1055,6 +1079,7 @@ export type FlatTrackMapWidgetSettings = BaseWidgetSettings<FlatTrackMapConfig>;
 export type SteerWidgetSettings = BaseWidgetSettings<SteerConfig>;
 export type InputWidgetSettings = BaseWidgetSettings<InputConfig>;
 export type TachometerWidgetSettings = BaseWidgetSettings<TachometerConfig>;
+export type ShiftLightWidgetSettings = BaseWidgetSettings<ShiftLightConfig>;
 export type FuelWidgetSettings = BaseWidgetSettings<FuelConfig>;
 export type BlindSpotMonitorWidgetSettings =
   BaseWidgetSettings<BlindSpotMonitorConfig>;
