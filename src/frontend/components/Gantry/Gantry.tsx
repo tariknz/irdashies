@@ -4,7 +4,12 @@ import { GantryStandings } from './components/GantryStandings/GantryStandings';
 import { GantryIncidents } from './components/GantryIncidents/GantryIncidents';
 import { LapGraphView } from './components/LapGraph/LapGraphView';
 import { SplitPane } from './components/SplitPane/SplitPane';
-import { useRaceControlBridge, useSessionDrivers } from '@irdashies/context';
+import { GantryReplayNotice } from './components/GantryReplayBanner/GantryReplayBanner';
+import {
+  useRaceControlBridge,
+  useReplayContextUpdater,
+  useSessionDrivers,
+} from '@irdashies/context';
 import type { LapGraphMode } from '@irdashies/domain';
 
 type GantryView = 'standings-incidents' | 'lap-graph';
@@ -26,6 +31,7 @@ const GantryInner = memo(() => {
     null
   );
 
+  useReplayContextUpdater();
   useRaceControlBridge(); // subscribe to incidents on mount
 
   // Roster for the follow-driver dropdown — sourced from the session (not
@@ -55,6 +61,7 @@ const GantryInner = memo(() => {
         followedCarIdx={followedCarIdx}
         onFollowChange={setFollowedCarIdx}
       />
+      <GantryReplayNotice />
       {activeView === 'standings-incidents' && (
         <SplitPane
           label="Standings and incidents split"

@@ -8,6 +8,7 @@ import type {
   GamepadHostBridge,
   ChromiumFlagsBridge,
   RaceControlBridge,
+  LapHistoryBridge,
   TelemetryInspectorBridge,
   RendererPerfBridge,
 } from '@irdashies/types';
@@ -27,6 +28,8 @@ declare global {
     gamepadHost?: GamepadHostBridge;
     chromiumFlagsBridge: ChromiumFlagsBridge;
     raceControlBridge: RaceControlBridge;
+    /** Absent outside the Electron preload, e.g. the browser server. */
+    lapHistoryBridge?: LapHistoryBridge;
     rendererPerfBridge?: RendererPerfBridge;
   }
 }

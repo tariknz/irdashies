@@ -23,9 +23,10 @@ type EventChannelName =
  * Channels owned by a standalone runtime rather than the ProcessorHost, so
  * this harness never sees them. `lap-history.snapshot` is recorded by
  * LapHistoryRuntime, which deliberately runs outside demand gating so an
- * enabled Gantry keeps recording with its window closed.
+ * enabled Gantry keeps recording with its window closed. `replay.context` is
+ * owned by ReplayContextRuntime, which the other runtimes read to pause.
  */
-type RuntimeOwnedChannelName = 'lap-history.snapshot';
+type RuntimeOwnedChannelName = 'lap-history.snapshot' | 'replay.context';
 type SnapshotChannelName = Exclude<
   ChannelName,
   EventChannelName | RuntimeOwnedChannelName

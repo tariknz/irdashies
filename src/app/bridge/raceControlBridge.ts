@@ -25,6 +25,13 @@ export interface IncidentRuntimeHandle {
   onSessionIdChanged: (cb: (sessionId: string) => void) => () => void;
 }
 
+/** Whether the archive for the current SubSessionID may be shown. */
+export interface ArchiveAccess {
+  canReadArchive: () => boolean;
+}
+
+const ALWAYS_READABLE: ArchiveAccess = { canReadArchive: () => true };
+
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 
@@ -108,7 +115,8 @@ export const resolveCameraGroupNum = (
 
 export const setupRaceControlBridge = (
   runtime: IncidentRuntimeHandle,
-  initialDashboard?: DashboardLayout
+  initialDashboard?: DashboardLayout,
+  archive: ArchiveAccess = ALWAYS_READABLE
 ) => {
   let retention: 'all' | 5 | 10 | 20 = 'all';
   let cameraGroupName: string = DEFAULT_INCIDENT_CAMERA_GROUP;
@@ -213,19 +221,22 @@ export const setupRaceControlBridge = (
 
   ipcMain.handle('raceControl:getIncidents', () => {
     const sessionId = runtime.getCurrentSessionId();
-    return sessionId
-      ? loadIncidents(sessionId).then((incidents) => ({
-          sessionId,
-          incidents,
-        }))
-      : { sessionId: '', incidents: [] };
+    if (!sessionId) return { sessionId: '', incidents: [] };
+    // A replay irDashies did not record (or a SubSessionID 0 test replay)
+    // must not show another event's log.
+    if (!archive.canReadArchive()) return { sessionId, incidents: [] };
+    return loadIncidents(sessionId).then((incidents) => ({
+      sessionId,
+      incidents,
+    }));
   });
 
   ipcMain.handle('raceControl:clearIncidents', () => {
     // Returned so the IPC reply waits for the delete; clearIncidents became
     // async, and without this the renderer could reload before it completed.
     const sessionId = runtime.getCurrentSessionId();
-    return sessionId ? clearIncidents(sessionId) : undefined;
+    if (!sessionId || !archive.canReadArchive()) return undefined;
+    return clearIncidents(sessionId);
   });
 
   ipcMain.handle('raceControl:focusDriver', (_event, carNumber: unknown) => {
