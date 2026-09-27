@@ -1,6 +1,6 @@
 import { act, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useRadarMotion } from './useRadarMotion';
+import { useRadarMotion, type RadarDrawPositions } from './useRadarMotion';
 import type { RadarBlip } from '../radarBlips';
 
 const TRACK_LENGTH_M = 500;
@@ -52,10 +52,9 @@ describe('useRadarMotion', () => {
 
   const recordDraw =
     (observed: Observed) =>
-    (alongM: Float64Array, lateralM: Float64Array, count: number) => {
+    ({ alongM, lateralM }: RadarDrawPositions) => {
       observed.along.push(alongM[0]);
       observed.lateral?.push(lateralM[0]);
-      void count;
     };
   it('glides a car between its snapshot positions in metre units', () => {
     const observed: Observed = { along: [], lateral: [] };
@@ -153,16 +152,7 @@ describe('useRadarMotion', () => {
     // geometry change and request a frame on its own account.
     const blips = [blip(1, 1)];
     const Harness = ({ pulseActive }: { pulseActive: boolean }) => {
-      useRadarMotion(
-        blips,
-        TRACK_LENGTH_M,
-        (a, l, c) => {
-          void a;
-          void l;
-          void c;
-        },
-        pulseActive
-      );
+      useRadarMotion(blips, TRACK_LENGTH_M, () => undefined, pulseActive);
       return null;
     };
 
@@ -185,17 +175,7 @@ describe('useRadarMotion', () => {
   it('stops requesting frames once the blips have settled', () => {
     let draws = 0;
     const Harness = ({ blips }: { blips: readonly RadarBlip[] }) => {
-      useRadarMotion(
-        blips,
-        TRACK_LENGTH_M,
-        (a, l, c) => {
-          void a;
-          void l;
-          void c;
-          draws++;
-        },
-        false
-      );
+      useRadarMotion(blips, TRACK_LENGTH_M, () => draws++, false);
       return null;
     };
 

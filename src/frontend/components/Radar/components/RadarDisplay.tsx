@@ -1,7 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { blipLabel, type RadarBlip } from '../radarBlips';
 import { abreastWindowM } from '../overlapSides';
-import { useRadarMotion, type RadarMotionDraw } from '../hooks/useRadarMotion';
+import {
+  useRadarMotion,
+  type RadarDrawPositions,
+  type RadarMotionDraw,
+} from '../hooks/useRadarMotion';
 
 export interface RadarDisplayProps {
   blips: readonly RadarBlip[];
@@ -415,10 +419,10 @@ const drawRadar = (
   canvas: HTMLCanvasElement,
   props: RadarDisplayProps,
   size: Size,
-  alongM: Float64Array,
-  lateralM: Float64Array,
+  positions: RadarDrawPositions,
   trackPath: Path2D | null
 ): boolean => {
+  const { alongM, lateralM } = positions;
   const ctx = canvas.getContext('2d');
   if (!ctx || size.width <= 0 || size.height <= 0) return false;
 
@@ -714,8 +718,11 @@ export const RadarDisplay = (props: Omit<RadarDisplayProps, 'nowSeconds'>) => {
         canvas,
         propsRef.current,
         sizeRef.current,
-        alongRef.current,
-        lateralRef.current,
+        {
+          alongM: alongRef.current,
+          lateralM: lateralRef.current,
+          count: blips.length,
+        },
         trackPathRef.current
       )
     ) {
@@ -727,7 +734,7 @@ export const RadarDisplay = (props: Omit<RadarDisplayProps, 'nowSeconds'>) => {
       };
     }
   };
-  drawRef.current = (alongM, lateralM, count) => {
+  drawRef.current = ({ alongM, lateralM, count }) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     if (alongRef.current.length < count) {
@@ -746,9 +753,7 @@ export const RadarDisplay = (props: Omit<RadarDisplayProps, 'nowSeconds'>) => {
   useRadarMotion(
     props.blips,
     props.trackLengthM,
-    (a, l, c) => {
-      drawRef.current(a, l, c);
-    },
+    (positions) => drawRef.current(positions),
     pulseActive
   );
 

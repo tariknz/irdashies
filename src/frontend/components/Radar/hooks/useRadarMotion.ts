@@ -4,14 +4,27 @@ import { ProgressInterpolator } from '@irdashies/domain/progressInterpolator';
 import type { RadarBlip } from '../radarBlips';
 
 /**
- * Draws blips from metre-space position buffers, both indexed like `blips`
- * (so alongM[i] belongs to blips[i]).
+ * Where the blips are at paint time, in metres: one entry per blip, in the same
+ * order as the blips themselves.
+ *
+ * The two axes are handed over as one value rather than two positional
+ * arguments so that `blips[i]` and `positions[i]` are the same car by
+ * construction. As two parallel arrays they were the same car only by the two
+ * happening to line up, and nothing said so to the code that read them.
+ *
+ * The buffers are reused between frames and only grow, so only the first `count`
+ * entries are meaningful.
  */
-export type RadarMotionDraw = (
-  alongM: Float64Array,
-  lateralM: Float64Array,
-  count: number
-) => void;
+export interface RadarDrawPositions {
+  /** Metres along the road; positive is ahead of the player. */
+  readonly alongM: Float64Array;
+  /** Metres to the driver's right, negative to the left. */
+  readonly lateralM: Float64Array;
+  /** How many blips the entries above describe. */
+  readonly count: number;
+}
+
+export type RadarMotionDraw = (positions: RadarDrawPositions) => void;
 
 interface MotionTarget {
   progress: number;
@@ -116,16 +129,18 @@ export const useRadarMotion = (
         alongMRef.current = new Float64Array(count);
         lateralMRef.current = new Float64Array(count);
       }
-      const alongM = alongMRef.current;
-      const lateralM = lateralMRef.current;
       const scale = trackLengthRef.current;
       const alongValues = along.getValues();
       const lateralValues = lateral.getValues();
       for (let i = 0; i < count; i++) {
-        alongM[i] = unwrapFraction(alongValues[i]) * scale;
-        lateralM[i] = unwrapFraction(lateralValues[i]) * scale;
+        alongMRef.current[i] = unwrapFraction(alongValues[i]) * scale;
+        lateralMRef.current[i] = unwrapFraction(lateralValues[i]) * scale;
       }
-      drawRef.current(alongM, lateralM, count);
+      drawRef.current({
+        alongM: alongMRef.current,
+        lateralM: lateralMRef.current,
+        count,
+      });
     };
 
     // Every snapshot has to be painted here even when the loop below is already
