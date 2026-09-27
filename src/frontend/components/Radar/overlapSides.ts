@@ -129,9 +129,26 @@ export const assignOverlapSides = (input: {
   for (const blip of contenders) {
     const held = previousSides[blip.carIdx];
     if (held === -1) {
-      if (freeLeft > 0) freeLeft -= 1;
+      if (freeLeft > 0) {
+        freeLeft -= 1;
+      } else if (freeRight > 0 && !overlap.left) {
+        // The sim still reports an overlap, and it reports the right and not the
+        // left, so this car is the one on the right: it crossed without ever
+        // leaving the retain window. Gated on the held side being absent from
+        // the verdict, because that is the only reading which is unambiguous.
+        // A verdict naming both sides says nothing about which of the two cars
+        // moved, so the retained side stands and a car cannot hop across the
+        // player each time a flickering verdict swaps one for the other.
+        sides[blip.carIdx] = 1;
+        freeRight -= 1;
+      }
     } else if (held === 1) {
-      if (freeRight > 0) freeRight -= 1;
+      if (freeRight > 0) {
+        freeRight -= 1;
+      } else if (freeLeft > 0 && !overlap.right) {
+        sides[blip.carIdx] = -1;
+        freeLeft -= 1;
+      }
     } else if (freeLeft > 0) {
       sides[blip.carIdx] = -1;
       freeLeft -= 1;

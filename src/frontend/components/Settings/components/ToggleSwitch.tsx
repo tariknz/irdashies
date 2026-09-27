@@ -1,13 +1,17 @@
 interface ToggleSwitchProps {
   enabled: boolean;
   onToggle: (enabled: boolean) => void;
+  /** Text rendered next to the switch, for the layouts that show no other title. */
   label?: string;
+  /** Accessible name for the switch alone, when the label is rendered elsewhere. */
+  ariaLabel?: string;
 }
 
 export const ToggleSwitch = ({
   enabled,
   onToggle,
   label,
+  ariaLabel,
 }: ToggleSwitchProps) => {
   return (
     <div className="flex items-center gap-3">
@@ -15,7 +19,7 @@ export const ToggleSwitch = ({
       <button
         type="button"
         role="switch"
-        aria-label={label}
+        aria-label={ariaLabel ?? label}
         aria-checked={enabled}
         onClick={() => onToggle(!enabled)}
         className={`relative inline-flex cursor-pointer h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${

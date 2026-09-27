@@ -323,6 +323,52 @@ would be read while the next frame overwrote it. The fixed per-call cost that
 is left, about 1.8 KiB with an empty radar, is the result object and the
 projection work itself.
 
+## Radar track geometry noise
+
+`npm run perf:radar-lateral-noise` measures the other side of the Radar
+geometry path: not how long the arithmetic takes, but how much the sampled
+track geometry it consumes wobbles a blip between frames.
+
+`tracks.json` stores the centerline as points the SDK sampled on its own
+schedule, not at even distance along the road. The spacing between neighbouring
+points therefore varies with how the sim happened to sample, and any lateral
+noise in that sampling is carried straight into blip position and heading. The
+drawings are quantised to a whole-unit grid, and one unit is 2.5 to 3.2 m on the
+bundled tracks, so the raw path can place a blip most of a car width from where
+the road is.
+
+The tool replays a recorded field at the 25 Hz rate `RadarProcessor`
+publishes, takes the blip the raw points place and the blip the shipped path
+places, and compares both against a high-resolution resample of the same lap.
+Straight sections are reported separately, because that is where wobble reads as
+jitter; in a corner a real lateral displacement and sampling noise are the same
+thing in the frame.
+
+### Result of the 2026-09-27 filtering
+
+Three tracks at 252 km/h, a 20 m gap between snapshots, against a high-
+resolution resample of the same lap:
+
+| Track        | Path                      | Straight p95 | Straight max | Rotation p95 | Rotation max |
+| ------------ | ------------------------- | -----------: | -----------: | -----------: | -----------: |
+| Interlagos   | Raw drawing points        |      0.374 m |      0.593 m |    1.022 deg |    1.271 deg |
+|              | `filteredTrackPathPoints` |      0.110 m |      0.363 m |    0.341 deg |    0.468 deg |
+| Watkins Glen | Raw drawing points        |      0.562 m |      0.947 m |    0.953 deg |    1.201 deg |
+|              | `filteredTrackPathPoints` |      0.166 m |      0.508 m |    0.205 deg |    0.331 deg |
+| Brands Hatch | Raw drawing points        |      0.391 m |      0.591 m |    0.980 deg |    1.446 deg |
+|              | `filteredTrackPathPoints` |      0.145 m |      0.263 m |    0.313 deg |    0.528 deg |
+
+The straight-section figures are the ones the fix targets. The whole-lap
+maximum is dominated by corner apexes, where a filtered path deliberately lags
+the true apex, and is reported for completeness rather than as a target.
+
+The kernel radius is derived from the drawing's own point spacing, and on 457 of
+the 477 bundled drawings that works out to a single point. Widening the target
+reach from one unit to four makes no measurable difference to any figure here:
+the radius floor dominates, and the residual wobble is already well under one
+grid unit. The reach is therefore left at the value the noise calls for rather
+than tuned to a number the drawings cannot reach.
+
 ## Architectural decision rule
 
 Do not begin the worker-thread SDK loop, channel bus, binary IPC, or native

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   progressToTrackPoint,
   tangentAngleAt,
+  filteredTrackPathPoints,
   type TrackPathPoint,
 } from './trackGeometry';
 
@@ -225,5 +226,174 @@ describe('tangentAngleAt', () => {
     expect(
       tangentAngleAt(0.5, degenerate, TOTAL, SF, 'anticlockwise')
     ).toBeNull();
+  });
+});
+
+describe('filteredTrackPathPoints', () => {
+  /**
+   * A road running dead straight along y = 0, sampled the way the bundled
+   * drawings are: whole units only, stepping one unit sideways every other point.
+   * So the road is flat and each point is a unit off it, the alternation the
+   * drawings actually carry. `NOISY_TOTAL` puts the kernel's reach at three
+   * units, wider than the one-unit amplitude.
+   */
+  const gridNoisyStraight = () => {
+    const points: TrackPathPoint[] = [];
+    for (let x = 0, index = 0; x <= 1000; x += 2, index += 1) {
+      points.push({ x, y: index % 2 ? 1 : -1 });
+    }
+    return points;
+  };
+  // 501 points of 2 units each, so a three-unit kernel spans 1.5 points.
+  const NOISY_TOTAL = 1000;
+
+  it('takes the grid zigzag out of a straight', () => {
+    const noisy = gridNoisyStraight();
+    // The fixture only means anything if it really does straddle the road.
+    expect(noisy[0].y).not.toBe(noisy[1].y);
+
+    const filtered = filteredTrackPathPoints(noisy, NOISY_TOTAL);
+    // Mean is the right measure. A flat path sitting wholly to one side of its
+    // own road is a bias, not noise, and a low-pass filter is not entitled to
+    // remove it — so this straddles y = 0 rather than alternating 0 and 1.
+    const mean =
+      filtered.reduce((sum, point) => sum + point.y, 0) / filtered.length;
+    const amplitude =
+      Math.max(...filtered.map((point) => Math.abs(point.y - mean))) / 2;
+
+    expect(Math.abs(mean)).toBeLessThan(0.05);
+    expect(amplitude).toBeLessThan(0.5);
+  });
+
+  it('leaves a path that needs no smoothing where it was', () => {
+    // A perfectly straight, perfectly even polyline is its own smoothed form, so
+    // filtering must not move it — a filter that drifted here would walk every
+    // blip away from the road it is measuring against. Only the corners move,
+    // and that is the filter working: a hard right angle cannot survive any
+    // smoothing. What matters is that the straight runs stay exact.
+    const clean = rectangle();
+    const filtered = filteredTrackPathPoints(clean, TOTAL);
+    const shift = (index: number) =>
+      Math.hypot(
+        filtered[index].x - clean[index].x,
+        filtered[index].y - clean[index].y
+      );
+
+    // `rectangle` turns at 0, 20, 30 and 50, and index 59 is where its last
+    // edge meets the first. With a one-point kernel the rounding reaches two
+    // points either side of a turn, so 59 is a turn for the filter's purposes.
+    const corners = [0, 20, 30, 50, 59];
+    for (let index = 0; index < clean.length - 1; index += 1) {
+      if (corners.some((corner) => Math.abs(index - corner) < 3)) continue;
+      expect(shift(index)).toBeLessThan(1e-6);
+    }
+    // The turns themselves have to be rounded, or the assertion above would
+    // also pass for a filter that did nothing at all.
+    for (const corner of corners) {
+      expect(shift(corner)).toBeGreaterThan(1);
+    }
+  });
+
+  it('does not cache a path smoothed for a different length', () => {
+    // The kernel radius is sized from totalLength, so the same array asked for
+    // with a different length is a different filter. Caching on the array alone
+    // would hand back the first length's path and leave the second mis-sized,
+    // and a single cached entry would just evict the first caller's result.
+    const noisy = gridNoisyStraight();
+
+    const coarse = filteredTrackPathPoints(noisy, NOISY_TOTAL);
+    const fine = filteredTrackPathPoints(noisy, NOISY_TOTAL / 20);
+    const coarseAgain = filteredTrackPathPoints(noisy, NOISY_TOTAL);
+
+    expect(fine).not.toBe(coarse);
+    expect(coarseAgain).toBe(coarse);
+  });
+
+  it('smooths a closed path without a kink at the seam', () => {
+    // The wrap is what keeps a closed loop from having a pinned point where the
+    // path meets itself. Measured on `rectangle`, whose only curvature is at its
+    // corners: with the wrap, the seam point moves exactly as far as an interior
+    // point, and the first and last points stay coincident. A clamp instead
+    // averages the seam point only against the ends of the array, which leaves
+    // it well short of the interior and pulls the loop's ends apart.
+    const clean = rectangle();
+    const filtered = filteredTrackPathPoints(clean, TOTAL);
+    const shift = (index: number) =>
+      Math.hypot(
+        filtered[index].x - clean[index].x,
+        filtered[index].y - clean[index].y
+      );
+    const interior = shift(Math.floor(filtered.length / 2));
+
+    // Equality, not a floor: the seam is a corner like any other, so it has to
+    // be rounded like any other. A clamped seam measures about 0.92 of the
+    // interior here, which a "greater than half" bound would not catch.
+    expect(shift(0)).toBeCloseTo(interior, 6);
+    expect(shift(filtered.length - 1)).toBeCloseTo(interior, 6);
+
+    // The loop still closes on itself after filtering. A clamp that did not
+    // keep the first and last points co-located would open it, and the drawing
+    // would gain a visible gap once per lap.
+    expect(filtered[0].x).toBeCloseTo(filtered[filtered.length - 1].x, 6);
+    expect(filtered[0].y).toBeCloseTo(filtered[filtered.length - 1].y, 6);
+  });
+});
+
+describe('filteredTrackPathPoints with a drawing it cannot size', () => {
+  // Each of these has no kernel to size: too few points to have a direction, or
+  // a length that is not a positive finite number. The radar's own guard keeps
+  // them out of the widget, but this is a public function and it should hand the
+  // path back rather than divide by the length or read past the end of it.
+  const unusable: [string, TrackPathPoint[], number][] = [
+    ['empty path', [], 1000],
+    ['one point', [{ x: 0, y: 0 }], 1000],
+    [
+      'two points',
+      [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+      ],
+      20,
+    ],
+    [
+      'zero length',
+      [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+        { x: 20, y: 0 },
+      ],
+      0,
+    ],
+    [
+      'negative length',
+      [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+        { x: 20, y: 0 },
+      ],
+      -5,
+    ],
+    [
+      'NaN length',
+      [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+        { x: 20, y: 0 },
+      ],
+      NaN,
+    ],
+    [
+      'infinite length',
+      [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+        { x: 20, y: 0 },
+      ],
+      Infinity,
+    ],
+  ];
+
+  it.each(unusable)('returns %s untouched', (_name, points, totalLength) => {
+    expect(filteredTrackPathPoints(points, totalLength)).toBe(points);
   });
 });

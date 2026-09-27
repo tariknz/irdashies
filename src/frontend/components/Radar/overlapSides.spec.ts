@@ -76,6 +76,55 @@ describe('assignOverlapSides', () => {
     expect(sideOf(sides, 1)).toBe(-1);
   });
 
+  it('follows the sim when it reports the opposite side to the one held', () => {
+    // A car that has crossed to the other side can do it without ever leaving
+    // the retain window, so the held side goes stale mid-pass and the blip and
+    // its warning end up on the wrong side.
+    const crossedToRight = assign(blips(1), { left: 0, right: 1 }, { 1: -1 });
+    expect(sideOf(crossedToRight, 1)).toBe(1);
+
+    const crossedToLeft = assign(blips(-1), { left: 1, right: 0 }, { 1: 1 });
+    expect(sideOf(crossedToLeft, 1)).toBe(-1);
+  });
+
+  it('leaves a held side alone when the opposite slot is already taken', () => {
+    // Two cars across, each already on a side: the verdict counts them back
+    // where they are, and there is no free slot that would move either.
+    const sides = assign(
+      blips(-0.5, 0.5),
+      { left: 1, right: 1 },
+      { 1: -1, 2: 1 }
+    );
+    expect(sidesGiven(sides).sort()).toEqual([-1, 1]);
+  });
+
+  it('does not move a car when the verdict still names the side it holds', () => {
+    // A verdict reporting one car on each side says nothing about which of the
+    // two moved, so each keeps the side it holds. Letting the free slot on the
+    // other side pull a car across meant a blip hopped the player at the
+    // snapshot rate, which is the flicker the retain window exists to absorb.
+    const oneEach = assign(
+      blips(0.4, -0.4),
+      { left: 1, right: 1 },
+      {
+        1: -1,
+        2: 1,
+      }
+    );
+    expect(sideOf(oneEach, 1)).toBe(-1);
+    expect(sideOf(oneEach, 2)).toBe(1);
+
+    // The same reading with a spare slot on the held side of the first car.
+    const twoLeft = assign(
+      blips(0.4, -0.4),
+      { left: 2, right: 0 },
+      {
+        1: -1,
+      }
+    );
+    expect(sidesGiven(twoLeft).sort()).toEqual([-1, -1]);
+  });
+
   it('does not let a car beyond the alongside window consume a fresh slot', () => {
     const sides = assign(blips(12, 0.4), { left: 1, right: 0 }, { 1: -1 });
 

@@ -14,7 +14,15 @@ import {
   type RadarOverlap,
 } from './overlapSides';
 
-const EDGE_STEP = 20;
+/**
+ * Spacing between the fixture's path points, in canvas units. The bundled
+ * drawings run 2.5 to 3.2 m between points, and the projection reads the road
+ * through a filter sized from that spacing — a coarser fixture would be rounded
+ * far more heavily than any real track, and the expected offsets below would
+ * have to be loosened to match the rounding rather than the geometry. The
+ * rectangle is 400x200 with a total length of 1200, so one unit is one metre.
+ */
+const EDGE_STEP = 2.5;
 const RECT_WIDTH = 400;
 const RECT_HEIGHT = 200;
 const TRACK_LENGTH_M = 1200;
@@ -141,6 +149,8 @@ describe('computeRadarBlips', () => {
   it('bends blips off the axis by road curvature, and turns them with it', () => {
     // Player 100 m before the corner heading +x; the rival is 40 m into the
     // 90-degree right-hand turn that follows, so it reads right and rotated.
+    // These stay exact: at `EDGE_STEP` the filter's rounding is a fraction of a
+    // unit, well inside the precision asserted here.
     const result = computeRadarBlips({
       ...baseInput,
       radarRange: 200,

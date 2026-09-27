@@ -1,4 +1,5 @@
 import {
+  filteredTrackPathPoints,
   progressToTrackPoint,
   tangentAngleAt,
   type TrackDrawing,
@@ -306,6 +307,17 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
     return nothingToDraw(NO_GEOMETRY, nextTargets);
   }
 
+  // Every position and heading below is read from the filtered road, not the
+  // drawing's raw points. The raw polyline is quantised to a one-unit grid, and
+  // a lateral offset taken between two points on it carries that grid's
+  // zigzag: measured against a steady gap on a straight, the raw points put up
+  // to half a metre of wander on a blip, which is most of a car width at the
+  // widget's default scale, and it repeats at the 25 Hz snapshot rate. The road
+  // this draws on is the drawing's own SVG, which is not filtered, so the
+  // filtered blip can sit a fraction of a metre off it — well inside the
+  // stroked width, and a fair trade for a car that holds its line.
+  const pathPoints = filteredTrackPathPoints(trackPathPoints, totalLength);
+
   const playerPct = playerCarIdx === null ? undefined : positions[playerCarIdx];
   if (playerCarIdx === null || !onRoad(playerPct)) {
     return nothingToDraw(NOT_ON_ROAD, nextTargets);
@@ -313,7 +325,7 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
 
   const playerTangent = tangentAngleAt(
     playerPct,
-    trackPathPoints,
+    pathPoints,
     totalLength,
     intersectionLength,
     direction
@@ -332,7 +344,7 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
 
   progressToTrackPoint(
     playerPct,
-    trackPathPoints,
+    pathPoints,
     totalLength,
     intersectionLength,
     direction,
@@ -352,7 +364,7 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
     const progress = wrap01(playerPct + alongM / trackLengthM);
     progressToTrackPoint(
       progress,
-      trackPathPoints,
+      pathPoints,
       totalLength,
       intersectionLength,
       direction,
@@ -395,7 +407,7 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
 
     progressToTrackPoint(
       pct,
-      trackPathPoints,
+      pathPoints,
       totalLength,
       intersectionLength,
       direction,
@@ -408,7 +420,7 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
 
     const carTangent = tangentAngleAt(
       pct,
-      trackPathPoints,
+      pathPoints,
       totalLength,
       intersectionLength,
       direction
