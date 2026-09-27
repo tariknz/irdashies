@@ -53,7 +53,6 @@ interface Fixture {
   frames: { CarIdxLapDistPct: number[] }[];
 }
 
-/** The tick rate `RadarProcessor` publishes at. */
 const TICK_RATE_HZ = 25;
 const TICK_MS = 1000 / TICK_RATE_HZ;
 /** Driving to run before measuring, so the JIT has compiled the path. */

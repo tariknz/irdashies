@@ -38,7 +38,6 @@ describe('assignOverlapSides', () => {
     return sides;
   };
 
-  /** The side a car was given, or undefined when it was given none. */
   const sideOf = (sides: Int8Array, carIdx: number) =>
     sides[carIdx] === 0 ? undefined : sides[carIdx];
   const sidesGiven = (sides: Int8Array) =>

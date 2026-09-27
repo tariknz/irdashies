@@ -32,7 +32,6 @@ export interface RadarState {
   hasGeometry: boolean;
   blips: readonly RadarBlip[];
   overlap: RadarOverlap;
-  /** True while the player is stationary and the grid layout is ambiguous. */
   isGrid: boolean;
   isOnTrack: boolean;
   /**
@@ -41,17 +40,11 @@ export interface RadarState {
    * in the pits cannot bring the radar on screen.
    */
   nearestGapM: number | null;
-  /** Track length in metres; forwarded for motion interpolation. */
   trackLengthM: number;
-  /** Reusable `(alongM, lateralM)` storage for the following-car road. */
   followingMapPath: Float64Array;
-  /** Number of valid road pairs in `followingMapPath`. */
   followingMapPointCount: number;
-  /** Road shown, in metres, from half this window behind to half ahead. */
   followingMapWindowM: number;
-  /** The original SVG track path, used for its smooth developer geometry. */
   followingMapSvgPath: string | null;
-  /** Player frame in the track drawing's coordinate space. */
   followingMapCameraPlayerX: number;
   followingMapCameraPlayerY: number;
   followingMapCameraForwardX: number;
@@ -63,11 +56,9 @@ export interface RadarState {
 
 export interface UseRadarOptions {
   radarRange: number;
-  /** Car size in metres; the SDK reports none, so the config supplies it. */
   vehicleWidth: number;
   vehicleLength: number;
   hideInPit: boolean;
-  /** Metres of fade at the outer edge of the range; 0 for none. */
   fadeBandM: number;
   rivalColorMode: 'class' | 'badge' | 'custom';
   colorRival: string;

@@ -21,7 +21,6 @@ const SETTING_ID = 'radar';
 
 const defaultConfig = getWidgetDefaultConfig('radar');
 
-/** A compact labelled colour swatch, two of which sit per row in the grid. */
 const ColorField = ({
   label,
   value,

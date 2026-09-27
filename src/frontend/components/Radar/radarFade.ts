@@ -17,14 +17,6 @@ export const MAX_RADAR_RANGE_M = 500;
 
 export const RADAR_SHOW_RANGE_MARGIN_M = 0.5;
 
-/**
- * One step of a linear opacity ramp.
- *
- * @param current Opacity now, 0..1.
- * @param target Where it is heading.
- * @param dtSeconds Time since the last step.
- * @param fadeSeconds How long a full 0-to-1 ramp takes. 0 means no ramp.
- */
 export const advanceFade = (
   current: number,
   target: FadeTarget,

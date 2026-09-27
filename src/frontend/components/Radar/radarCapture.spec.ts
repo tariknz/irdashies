@@ -36,7 +36,6 @@ const trackDrawings = tracks as unknown as Record<
   TrackDrawing | undefined
 >;
 
-/** Track length in metres as the session reports it. */
 const trackLengthOf = (session: { WeekendInfo: { TrackLength: string } }) => {
   const match = /([\d.]+)\s*(km|mi)?/.exec(session.WeekendInfo.TrackLength);
   if (!match) throw new Error('capture has no parsable track length');
@@ -99,7 +98,6 @@ const place = (capture: Capture) => {
   };
 };
 
-/** The nearest blip ahead of the player, or behind them when `sign` is -1. */
 const nearest = (blips: readonly RadarBlip[], sign: 1 | -1) =>
   blips
     .filter((blip) => Math.sign(blip.alongM) === sign)

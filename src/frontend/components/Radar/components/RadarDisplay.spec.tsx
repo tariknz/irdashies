@@ -56,7 +56,6 @@ const BLIPS: RadarBlip[] = [
   }),
 ];
 
-/** Three painted rivals plus the player marker. */
 const VEHICLES = 4;
 
 const COLORS = {

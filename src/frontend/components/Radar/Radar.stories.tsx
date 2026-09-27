@@ -10,9 +10,7 @@ import { Radar } from './Radar';
  * real widget — session, channel snapshots and all — rather than props
  * assembled by hand.
  */
-/** Interlagos: three cars around the player, one 2 m ahead and two 8 m back. */
 const INTERLAGOS = '/test-data/1752616787256';
-/** Virginia: four cars around the player, three of them on pit road. */
 const VIRGINIA = '/test-data/1735296198162';
 /**
  * Interlagos with the sim reporting a car to the player's left. The car sits
@@ -67,7 +65,6 @@ export const CarsInPitHidden: Story = {
   name: 'Cars in pit hidden',
 };
 
-/** A car the sim puts on the player's left, drawn beside rather than on top. */
 export const CarAbreast: Story = {
   ...story(ALONGSIDE, { radarRange: 15 }),
   name: 'Car abreast',

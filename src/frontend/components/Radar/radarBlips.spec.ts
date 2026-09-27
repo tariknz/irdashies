@@ -19,10 +19,6 @@ const RECT_WIDTH = 400;
 const RECT_HEIGHT = 200;
 const TRACK_LENGTH_M = 1200;
 
-/**
- * A closed 400x200 rectangle walked every 20 units, so path arc length equals
- * metres with TRACK_LENGTH_M = perimeter. Point at index i sits at arc 20i.
- */
 const rectanglePath = () => {
   const points: { x: number; y: number }[] = [];
   for (let x = 0; x <= RECT_WIDTH; x += EDGE_STEP) points.push({ x, y: 0 });
@@ -50,7 +46,6 @@ const trackDrawing = (
   },
 });
 
-/** Lap fraction for a distance along the rectangle, in metres. */
 const pctOfArc = (arcMetres: number) => arcMetres / TRACK_LENGTH_M;
 
 const positionsOf = (
@@ -82,7 +77,6 @@ const baseInput: Omit<RadarBlipInput, 'carIdxLapDistPct' | 'carIdxOnPitRoad'> =
     followingMapBuffer: new Float64Array(2048),
   };
 
-/** The two state buffers the widget alternates between, as fresh pairs. */
 const targetBuffers = (): [RadarTargetState, RadarTargetState] => [
   emptyTargetState(8),
   emptyTargetState(8),

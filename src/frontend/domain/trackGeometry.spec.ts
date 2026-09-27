@@ -23,7 +23,6 @@ const rectangle = () => {
 
 const TOTAL = 1200;
 const SF = 0;
-/** Lap fraction for an arc length, given the uniform spacing above. */
 const pctOfArc = (arc: number) => arc / TOTAL;
 
 describe('progressToTrackPoint', () => {
@@ -47,7 +46,6 @@ describe('progressToTrackPoint', () => {
     );
 
     expect(result).toBeUndefined();
-    // Arc 300 is 300 units along the top edge.
     expect(output).toEqual({ x: 300, y: 0 });
   });
 

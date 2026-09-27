@@ -7,11 +7,6 @@ import { useRadarSettings } from './hooks/useRadarSettings';
 import { RADAR_SHOW_RANGE_MARGIN_M } from './radarFade';
 import type { RadarBlip } from './radarBlips';
 
-/**
- * A car metres ahead, one alongside on the left, a car level with us, and
- * a car fading in: between them the lettered label, fade band and rim
- * signals the display can produce.
- */
 const DEMO_BLIPS: RadarBlip[] = [
   {
     carIdx: 1,
@@ -62,7 +57,6 @@ const DEMO_BLIPS: RadarBlip[] = [
     fade: 1,
   },
 ];
-/** Metres; the demo blips are laid out against a 5.8 km lap. */
 const DEMO_TRACK_LENGTH_M = 5800;
 const DEMO_CLASS_COLORS = ['#ffda59', '#33ceff', '#ef4444', '#06b6d4'];
 const DEMO_BADGE_COLORS = ['#b91c1c', '#15803d', '#1d4ed8', '#a16207'];
