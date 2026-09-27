@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import * as geometry from '@irdashies/domain/trackGeometry';
 import type { TrackDrawing } from '@irdashies/domain/trackGeometry';
 import {
   blipLabel,
@@ -99,6 +100,12 @@ const heldSides = (sides: Record<number, OverlapSide>): RadarTargetState => {
 };
 
 describe('computeRadarBlips', () => {
+  // The filter test spies on the geometry module, and nothing restores mocks
+  // between tests here, so the spy would answer to every later test in the file.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('measures a car ahead on the same straight as along-track metres', () => {
     const result = computeRadarBlips({
       ...baseInput,
@@ -113,6 +120,75 @@ describe('computeRadarBlips', () => {
     expect(result.blips[0].lateralM).toBeCloseTo(0, 6);
     expect(result.blips[0].gapM).toBeCloseTo(12, 6);
     expect(result.blips[0].relYaw).toBeCloseTo(0, 6);
+  });
+
+  it('keeps a car standing exactly on the range edge', () => {
+    // The gate is `> radarRange`, so a car at exactly the range is still on the
+    // disc. Nothing else in these fixtures sits on the edge, so a `<` for `>`
+    // here would drop a car that is still on the widget.
+    //
+    // The offsets are chosen so the gate sees an exact 18.75: 1/64 of a lap is a
+    // binary fraction, so the delta and its product by 1200 both land on the
+    // bound without rounding either side of it. 18.75 m at 0.5 + 2**-6 gives a
+    // comfortable margin from the rounding on 15, which does not.
+    const onEdge = 1 / 64;
+    const result = computeRadarBlips({
+      ...baseInput,
+      radarRange: 18.75,
+      ...positionsOf([pctOfArc(600), 0.5 + onEdge, 0.5 + onEdge * 1.01]),
+    });
+
+    expect(result.blips).toHaveLength(1);
+    expect(result.blips[0].carIdx).toBe(1);
+    expect(result.blips[0].alongM).toBeCloseTo(18.75, 6);
+  });
+
+  it('reads the road through the filter, not the drawing raw points', () => {
+    // A dead-straight road sampled the way the bundled drawings are: whole
+    // units only, stepping a unit sideways every other point. Both cars are on
+    // points of the same phase, so their offset cancels on the raw polyline —
+    // the car ahead reads a lateral offset of exactly zero. The filter is what
+    // makes the two points of the alternation agree, and it is the only thing
+    // between this call and the drawing's raw zigzag, which put up to half a
+    // metre of wander on a blip holding a steady gap.
+    //
+    // The function is mocked rather than fed a raw path because this one cannot
+    // be given a raw path: it always filters what it is handed, so the only way
+    // to see whether the filter ran is to watch it being asked.
+    const noisy = () => {
+      const points: { x: number; y: number }[] = [];
+      for (let x = 0, index = 0; x <= 1000; x += 2, index += 1) {
+        points.push({ x, y: index % 2 ? 1 : -1 });
+      }
+      return points;
+    };
+    const canvasTotal = 1000;
+    const path = noisy();
+    const drawing: TrackDrawing = {
+      active: {
+        inside: '',
+        outside: '',
+        trackPathPoints: path,
+        totalLength: canvasTotal,
+      },
+      startFinish: { point: { length: 0 }, direction: 'anticlockwise' },
+    };
+    const filter = vi.spyOn(geometry, 'filteredTrackPathPoints');
+
+    computeRadarBlips({
+      ...baseInput,
+      trackDrawing: drawing,
+      trackLengthM: canvasTotal,
+      radarRange: 40,
+      carIdxLapDistPct: [0.4, 0.42],
+      carIdxOnPitRoad: [false, false],
+    });
+
+    expect(filter).toHaveBeenCalledWith(path, canvasTotal);
+    // The drawing's own points are what went in. A caller that filtered
+    // something else, or filtered against a length that was not this drawing's,
+    // would answer to a road that is not the one on screen.
+    expect(filter.mock.calls[0]?.[0]).toBe(path);
   });
 
   it('bounds an invalid persisted radar range before sampling', () => {

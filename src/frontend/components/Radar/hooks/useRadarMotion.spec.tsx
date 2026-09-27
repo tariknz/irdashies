@@ -147,6 +147,36 @@ describe('useRadarMotion', () => {
     expect(drawn).toBeCloseTo(-4, 6);
   });
 
+  it('unwraps a car behind the player at any gap inside the band', () => {
+    // The interpolator stores lap fractions in [0, 1), so every car behind the
+    // player comes back just under 1 and the shortest delta has to be recovered
+    // or it paints a lap ahead. The 0.5 the unwrap turns on is the only thing
+    // separating "a car just behind" from "most of a lap ahead" — but a blip is
+    // filtered to the radar's range, and no gap inside that range reaches the
+    // upper half of the unit, so a loose boundary would go unnoticed at any
+    // track length the widget can be configured for. Asserted at the band
+    // itself so the constant is pinned rather than merely untouched.
+    const LENGTH_M = 100;
+    const observed: Observed = { along: [], lateral: [] };
+    const Harness = ({ blips }: { blips: readonly RadarBlip[] }) => {
+      useRadarMotion(blips, LENGTH_M, recordDraw(observed), false);
+      return null;
+    };
+
+    // 45 m behind on a 100 m lap: 0.55 of the lap, inside (0.4, 0.5].
+    const view = render(<Harness blips={[blip(1, 0)]} />);
+    observed.along = [];
+    view.rerender(<Harness blips={[blip(1, -45)]} />);
+    while (callbacks.length) {
+      act(() => callbacks.shift()?.(clock + 8));
+      clock += 8;
+    }
+
+    const drawn = observed.along[observed.along.length - 1];
+    expect(drawn).toBeLessThan(0);
+    expect(drawn).toBeCloseTo(-45, 6);
+  });
+
   it('keeps ticking after geometry settles while the pulse is active', () => {
     // A stable blip list: a fresh array on every render would look like a
     // geometry change and request a frame on its own account.
