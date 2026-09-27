@@ -128,8 +128,8 @@ export const useRadarMotion = (
       drawRef.current(alongM, lateralM, count);
     };
 
-    // A snapshot that changed nothing geometric (a label, a fade) still has
-    // to repaint.
+    // A snapshot that changed nothing geometric (a label, a rim signal) still
+    // has to repaint.
     perfMetrics.measure('radarAnimationFrame', paint);
 
     let frameTime = 0;

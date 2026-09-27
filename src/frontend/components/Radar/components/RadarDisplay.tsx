@@ -63,11 +63,6 @@ interface Size {
   height: number;
 }
 
-/**
- * Every car respects its own fade-in, so a blip never appears at full
- * strength on the edge of the range.
- */
-const alphaFor = (blip: RadarBlip): number => blip.fade;
 const SMOOTHING_WEIGHTS = [1, 4, 6, 4, 1] as const;
 
 const rivalColor = (blip: RadarBlip, props: RadarDisplayProps): string =>
@@ -161,7 +156,7 @@ const drawBlipVehicles = (
         lengthPx,
         blip.relYaw,
         rivalColor(blip, props),
-        alphaFor(blip),
+        1,
         blipLabel(blip, props.showCarNumbers)
       );
     }
@@ -516,10 +511,11 @@ const drawRadar = (
       props.sideIndicatorStyle === 'follow-sector'
         ? Math.atan2(lateralM[index], alongM[index])
         : 0;
+    // The follow-sector arch tracks the car's bearing and reads as part of the
+    // car, so it is drawn solid; the double arc is a signal in its own right
+    // and pulses.
     const indicatorAlpha =
-      props.sideIndicatorStyle === 'follow-sector'
-        ? alphaFor(blip)
-        : pulse * alphaFor(blip);
+      props.sideIndicatorStyle === 'follow-sector' ? 1 : pulse;
     if (!props.sideIndicatorEnabled) continue;
     if (props.sideIndicatorStyle === 'follow-sector') {
       drawRimArch(

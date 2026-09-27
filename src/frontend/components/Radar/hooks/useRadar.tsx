@@ -59,7 +59,6 @@ export interface UseRadarOptions {
   vehicleWidth: number;
   vehicleLength: number;
   hideInPit: boolean;
-  fadeBandM: number;
   rivalColorMode: 'class' | 'badge' | 'custom';
   colorRival: string;
 }
@@ -133,8 +132,7 @@ const trackDrawings = tracks as unknown as Record<
  * Car numbers come from the session, since the position channel carries none.
  */
 export const useRadar = (options: UseRadarOptions): RadarState => {
-  const { radarRange, hideInPit, vehicleWidth, vehicleLength, fadeBandM } =
-    options;
+  const { radarRange, hideInPit, vehicleWidth, vehicleLength } = options;
   const [focusCarIdx, positions, onPitRoad, isOnTrack, carSpeed] =
     useRadarSelector(selectRadarInput, { equality: radarInputEqual }) ??
     EMPTY_INPUT;
@@ -269,7 +267,6 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
       overlap,
       vehicleWidth,
       vehicleLength,
-      fadeBandM,
       carNumbers,
       carColors,
       paceCarIdx,
@@ -298,7 +295,6 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
     overlap,
     vehicleWidth,
     vehicleLength,
-    fadeBandM,
     carNumbers,
     carColors,
     paceCarIdx,

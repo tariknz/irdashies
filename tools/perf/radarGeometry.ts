@@ -253,7 +253,6 @@ const runDensity = (
       overlap: overlapForFrame(frames),
       vehicleWidth: VEHICLE_WIDTH_M,
       vehicleLength: VEHICLE_LENGTH_M,
-      fadeBandM: 3,
       carNumbers: EMPTY_CAR_NUMBERS,
       paceCarIdx: null,
       previousTargets: buffers[0],

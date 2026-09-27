@@ -511,10 +511,6 @@ export interface RadarConfig {
    * traffic crosses the show range.
    */
   fadeSeconds: number;
-  /** Fade each car in over the outer band of the range instead of popping it in. */
-  fadeInCars: boolean;
-  /** Width of that band, in metres. */
-  fadeBandM: number;
   /** Draw the following track map as a layer inside the radar disc. */
   showTrackMap: boolean;
   /** Draw the car number on each blip. */

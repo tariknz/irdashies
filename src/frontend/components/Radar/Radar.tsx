@@ -18,7 +18,6 @@ const DEMO_BLIPS: RadarBlip[] = [
     rimSignal: null,
     carNumber: '24',
     isPaceCar: false,
-    fade: 1,
   },
   {
     carIdx: 2,
@@ -30,7 +29,6 @@ const DEMO_BLIPS: RadarBlip[] = [
     rimSignal: 'left',
     carNumber: '7',
     isPaceCar: false,
-    fade: 1,
   },
   {
     carIdx: 3,
@@ -42,7 +40,6 @@ const DEMO_BLIPS: RadarBlip[] = [
     rimSignal: 'left',
     carNumber: '51',
     isPaceCar: false,
-    fade: 1,
   },
   {
     carIdx: 5,
@@ -54,7 +51,6 @@ const DEMO_BLIPS: RadarBlip[] = [
     rimSignal: 'both',
     carNumber: '31',
     isPaceCar: false,
-    fade: 1,
   },
 ];
 const DEMO_TRACK_LENGTH_M = 5800;
@@ -102,7 +98,6 @@ export const Radar = () => {
     hideInPit: settings.hideInPit,
     vehicleWidth: settings.vehicleWidth,
     vehicleLength: settings.vehicleLength,
-    fadeBandM: settings.fadeInCars ? settings.fadeBandM : 0,
     rivalColorMode: settings.rivalColorMode,
     colorRival: settings.colorRival,
   });

@@ -23,7 +23,6 @@ const blip = (
   rimSignal: null,
   carNumber,
   isPaceCar: false,
-  fade: 1,
   ...extra,
 });
 

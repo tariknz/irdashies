@@ -71,28 +71,16 @@ export const CarAbreast: Story = {
 };
 
 /**
- * Range pulled in to 9 m and a 4 m band, so the capture's 8 m cars land near
- * the edge of the view and come through clearly faded. At the default 15 m
- * range those same cars sit well inside the band and are solid, which is why
- * the fade is invisible there.
+ * Range pulled in to 9 m, so the capture's 8 m cars land right at the edge of
+ * the view. They are drawn at full strength there, which is the behaviour this
+ * story pins down now that edge cars no longer fade.
  */
-export const FadingInCars: Story = {
+export const AtTheRangeEdge: Story = {
   ...story(INTERLAGOS, {
     radarRange: 9,
-    fadeInCars: true,
-    fadeBandM: 4,
     fadeSeconds: 0,
   }),
-  name: 'Fading in at the range edge',
-};
-
-export const WithoutFadingIn: Story = {
-  ...story(INTERLAGOS, {
-    radarRange: 9,
-    fadeInCars: false,
-    fadeSeconds: 0,
-  }),
-  name: 'Without fading in',
+  name: 'Cars at the range edge',
 };
 
 export const ShownOnlyWhenNear: Story = {

@@ -138,21 +138,14 @@ describe('RadarSettings', () => {
     expect(screen.getByText('Radar Range')).toBeInTheDocument();
   });
 
-  it('scales both range-dependent slider limits with the radar range', () => {
+  it('scales the range-dependent slider limit with the radar range', () => {
     mocks.setDashboard(
-      dashboardWith(
-        radarConfig({
-          radarRange: 30,
-          showWhenNearby: true,
-          fadeInCars: true,
-        })
-      )
+      dashboardWith(radarConfig({ radarRange: 30, showWhenNearby: true }))
     );
     render(<RadarSettings />);
     act(() => screen.getByRole('button', { name: 'Display' }).click());
 
     expect(sliderFor('Near Range').max).toBe('29.5');
-    expect(sliderFor('Fade Width').max).toBe('15');
   });
 
   it('shows the saved track map setting state', () => {

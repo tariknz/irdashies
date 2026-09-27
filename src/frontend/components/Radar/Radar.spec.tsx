@@ -575,38 +575,6 @@ describe('Radar widget over a recorded multiclass session', () => {
     await waitForDisplay();
   });
 
-  it('fades a car out towards the range edge, unless the band is off', async () => {
-    // Range 3 with a 3 m band puts the 2.6 m car inside the fade, so it must
-    // come through part-faded rather than at full strength.
-    const faded = mountFixture(fixture, {
-      dashboard: radarDashboard({
-        radarRange: 3,
-        fadeInCars: true,
-        fadeBandM: 3,
-        fadeSeconds: 0,
-      }),
-    });
-    render(<Radar />, { wrapper: faded.wrapper });
-    await waitForDisplay();
-    const fadedBlip = latest().blips[0].fade;
-    expect(fadedBlip).toBeGreaterThan(0);
-    expect(fadedBlip).toBeLessThan(1);
-
-    rendered.length = 0;
-    const solid = mountFixture(fixture, {
-      dashboard: radarDashboard({
-        radarRange: 3,
-        fadeInCars: false,
-        fadeBandM: 3,
-        fadeSeconds: 0,
-      }),
-    });
-    render(<Radar />, { wrapper: solid.wrapper });
-    await waitForDisplay();
-
-    expect(latest().blips[0].fade).toBe(1);
-  });
-
   it('does not re-render the display when a snapshot repeats the same input', async () => {
     const harness = mountFixture(fixture, {
       dashboard: radarDashboard({ radarRange: 25 }),

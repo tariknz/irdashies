@@ -79,7 +79,6 @@ const place = (capture: Capture) => {
     ),
     vehicleWidth: 1.9,
     vehicleLength: 4.5,
-    fadeBandM: 3,
     carNumbers: new Map(),
     paceCarIdx: null,
     previousTargets: emptyTargetState(snapshot.carIdxLapDistPct.length),

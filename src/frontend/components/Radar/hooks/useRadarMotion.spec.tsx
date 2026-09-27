@@ -15,7 +15,6 @@ const blip = (carIdx: number, alongM: number, lateralM = 0): RadarBlip => ({
   rimSignal: null,
   carNumber: null,
   isPaceCar: false,
-  fade: 1,
 });
 
 describe('useRadarMotion', () => {

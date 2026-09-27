@@ -1088,8 +1088,6 @@ export const defaultDashboard: {
         showWhenNearby: false,
         showRange: 5,
         fadeSeconds: 0.4,
-        fadeInCars: true,
-        fadeBandM: 3,
         showTrackMap: true,
         showCarNumbers: true,
         rivalColorMode: 'custom',

@@ -11,7 +11,7 @@ import {
   type OverlapSide,
   type RadarOverlap,
 } from './overlapSides';
-import { carFadeAt, MAX_RADAR_RANGE_M } from './radarFade';
+import { MAX_RADAR_RANGE_M } from './radarFade';
 
 export interface RadarBlip {
   carIdx: number;
@@ -38,11 +38,6 @@ export interface RadarBlip {
   carNumber: string | null;
   /** Set when this is the session's pace car, which carries a fixed label. */
   isPaceCar: boolean;
-  /**
-   * Opacity 0..1 for this car, so it fades in over the outer band of the range
-   * rather than appearing on a ring. 1 when the band is switched off.
-   */
-  fade: number;
 }
 
 /**
@@ -113,8 +108,6 @@ export interface RadarBlipInput {
   overlap: RadarOverlap;
   vehicleWidth: number;
   vehicleLength: number;
-  /** Metres of fade at the outer edge of the range; 0 for none. */
-  fadeBandM: number;
   /** Car number by CarIdx, for blip labels. */
   carNumbers: ReadonlyMap<number, string>;
   /** Resolved class or badge colour by CarIdx, when available. */
@@ -274,7 +267,6 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
     carNumbers,
     carColors,
     paceCarIdx,
-    fadeBandM,
     previousTargets,
     nextTargets,
     followingMapBuffer,
@@ -444,10 +436,6 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
       carNumber: carNumbers.get(carIdx) ?? null,
       color: carColors?.get(carIdx) ?? null,
       isPaceCar: carIdx === paceCarIdx,
-      // Faded by how far the car is from the player in the plane the radar
-      // draws in, so one closing head-on fades in on approach while one
-      // alongside (already near in that plane) never dims.
-      fade: carFadeAt(Math.hypot(alongM, lateralM), safeRadarRange, fadeBandM),
     });
   }
 

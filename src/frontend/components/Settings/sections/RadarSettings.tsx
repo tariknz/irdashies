@@ -323,24 +323,6 @@ export const RadarSettings = () => {
                   step={0.1}
                   onChange={(v) => handleConfigChange({ fadeSeconds: v })}
                 />
-                <SettingToggleRow
-                  title="Fade cars in at the range edge"
-                  description="Cars ramp up from dim at the range edge so they remain visible before becoming solid inside the fade band."
-                  enabled={settings.config.fadeInCars}
-                  onToggle={(v) => handleConfigChange({ fadeInCars: v })}
-                />
-                {settings.config.fadeInCars && (
-                  <SettingSliderRow
-                    title="Fade Width"
-                    description="How much of the outer range the fade covers, in metres, capped at half the radar range so most of the view stays solid."
-                    value={settings.config.fadeBandM}
-                    units="m"
-                    min={1}
-                    max={settings.config.radarRange / 2}
-                    step={0.5}
-                    onChange={(v) => handleConfigChange({ fadeBandM: v })}
-                  />
-                )}
                 <SettingDivider />
                 <SettingToggleRow
                   title="Car numbers on blips"

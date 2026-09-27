@@ -74,7 +74,6 @@ const baseInput: Omit<RadarBlipInput, 'carIdxLapDistPct' | 'carIdxOnPitRoad'> =
     overlap: NO_OVERLAP,
     vehicleWidth: 2,
     vehicleLength: 4.5,
-    fadeBandM: 3,
     carNumbers: new Map([
       [1, '24'],
       [2, '7'],
@@ -539,49 +538,6 @@ describe('computeRadarBlips', () => {
 
     expect(blip.side).toBe(-1);
     expect(blip.rimSignal).toBeNull();
-  });
-
-  it('fades a car in over the outer band of the range', () => {
-    const fadeAt = (gap: number) =>
-      computeRadarBlips({
-        ...baseInput,
-        carNumbers: new Map([[1, '24']]),
-        ...positionsOf([pctOfArc(300), pctOfArc(300 + gap)]),
-      }).blips[0].fade;
-
-    // Range 15 with a 3 m band: solid from 12 m in, and still visible at the
-    // range itself — the band dims a car, it never hides one.
-    expect(fadeAt(2)).toBe(1);
-    // The band edge is a floating-point boundary, so it is asserted closely.
-    expect(fadeAt(12)).toBeCloseTo(1, 6);
-    expect(fadeAt(13.5)).toBeGreaterThan(0.5);
-    expect(fadeAt(13.5)).toBeLessThan(0.7);
-    expect(fadeAt(14.9)).toBeGreaterThan(0.1);
-    expect(fadeAt(14.9)).toBeLessThan(0.3);
-  });
-
-  it('does not dim a car that is already alongside', () => {
-    // Its along-track gap is tiny but its distance in the plane the radar draws
-    // is the sideways offset, which is well inside the band.
-    const result = computeRadarBlips({
-      ...baseInput,
-      overlap: { left: 1, right: 0 },
-      carNumbers: new Map([[1, '24']]),
-      ...positionsOf([pctOfArc(300), pctOfArc(300)]),
-    });
-
-    expect(result.blips[0].fade).toBe(1);
-  });
-
-  it('draws every car at full strength when the band is switched off', () => {
-    const result = computeRadarBlips({
-      ...baseInput,
-      fadeBandM: 0,
-      carNumbers: new Map([[1, '24']]),
-      ...positionsOf([pctOfArc(300), pctOfArc(314.9)]),
-    });
-
-    expect(result.blips[0].fade).toBe(1);
   });
 
   it('hands the per-car state back so the next frame can hold it', () => {

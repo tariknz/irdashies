@@ -73,13 +73,6 @@ export const normaliseRadarConfig = (config: RadarConfig): RadarConfig => {
       0,
       10
     ),
-    fadeInCars: booleanValue(raw.fadeInCars, defaultConfig.fadeInCars),
-    fadeBandM: boundedNumber(
-      raw.fadeBandM,
-      defaultConfig.fadeBandM,
-      0,
-      radarRange / 2
-    ),
     showTrackMap: booleanValue(raw.showTrackMap, defaultConfig.showTrackMap),
     showCarNumbers: booleanValue(
       raw.showCarNumbers,

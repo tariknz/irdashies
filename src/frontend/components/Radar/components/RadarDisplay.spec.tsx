@@ -19,7 +19,6 @@ const blip = (over: Partial<RadarBlip> & { carIdx: number }): RadarBlip => ({
   rimSignal: null,
   carNumber: '24',
   isPaceCar: false,
-  fade: 1,
   ...over,
 });
 
