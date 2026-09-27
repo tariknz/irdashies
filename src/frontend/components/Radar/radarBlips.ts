@@ -18,8 +18,23 @@ export interface RadarBlip {
   carIdx: number;
   /** Metres along the road; positive is ahead of the player. */
   alongM: number;
-  /** Metres to the driver's right, negative to the left. */
+  /**
+   * Metres to the driver's right of the centreline, negative to the left, as
+   * projected from the car's position on the track. Zero for a car running
+   * abreast, because the SDK publishes no lateral offset for one: it snaps onto
+   * the player's own point of the centreline.
+   */
   lateralM: number;
+  /**
+   * Where the body is actually drawn: the projection, moved aside when the sim
+   * reports the car alongside and the projection would put it on the player.
+   *
+   * This is what the widget interpolates and paints. `lateralM` stays the real
+   * measurement, because the sideways motion between snapshots is the car's own
+   * and not the sim's verdict — feeding the placed offset back as the next
+   * snapshot's target would walk the car further out on every frame.
+   */
+  drawLateralM: number;
   /**
    * Road heading at this car relative to the player's, radians in (-PI, PI].
    * Both are measured against the same centreline, so the track's running
@@ -430,6 +445,7 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
       carIdx,
       alongM,
       lateralM,
+      drawLateralM: lateralM,
       relYaw,
       gapM: Math.abs(alongM),
       side: null,
@@ -459,7 +475,9 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
 
   // The offset is full while the verdict covers the car, so a genuine overlap
   // reads at its real width; it fades out only in the retained tail, where the
-  // verdict has gone but the car keeps its side for a few frames longer.
+  // verdict has gone but the car keeps its side for a few frames longer. It
+  // lands on drawLateralM only: lateralM is what the road actually reports, and
+  // the widget interpolates from it.
   const abeam = alongsideWindowM(vehicleLength);
   const retain = retainSideWindowM(vehicleLength);
   const fadeSpan = Math.max(1e-6, retain - abeam);
@@ -474,7 +492,8 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
         blip.gapM <= abeam
           ? 1
           : Math.max(0, 1 - (blip.gapM - abeam) / fadeSpan);
-      blip.lateralM = side * vehicleWidth * ABREAST_LATERAL_FACTOR * closeness;
+      blip.drawLateralM =
+        side * vehicleWidth * ABREAST_LATERAL_FACTOR * closeness;
     }
     if (blip.gapM <= closeM) {
       blip.rimSignal = side === null ? 'both' : side === -1 ? 'left' : 'right';

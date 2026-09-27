@@ -9,6 +9,7 @@ const blip = (carIdx: number, alongM: number, lateralM = 0): RadarBlip => ({
   carIdx,
   alongM,
   lateralM,
+  drawLateralM: lateralM,
   relYaw: 0,
   gapM: Math.abs(alongM),
   side: null,
@@ -203,5 +204,24 @@ describe('useRadarMotion', () => {
     // The second retarget has no movement: one paint, no frames.
     expect(callbacks).toHaveLength(0);
     expect(draws).toBe(2);
+  });
+
+  it('interpolates the drawn lateral offset, not the measured one', () => {
+    // A car the sim reports alongside has a measured offset of zero and a
+    // placed one a car width to the side. Following the measured value would
+    // paint it on the player; following the placed one is what the disc does.
+    const observed: Observed = { along: [], lateral: [] };
+    const Harness = ({ blips }: { blips: readonly RadarBlip[] }) => {
+      useRadarMotion(blips, TRACK_LENGTH_M, recordDraw(observed), false);
+      return null;
+    };
+
+    render(
+      <Harness
+        blips={[{ ...blip(1, 0, 0), drawLateralM: -2.2 } as RadarBlip]}
+      />
+    );
+
+    expect(observed.lateral.at(-1)).toBeCloseTo(-2.2, 6);
   });
 });

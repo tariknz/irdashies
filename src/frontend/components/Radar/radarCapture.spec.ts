@@ -196,8 +196,11 @@ describe('radar placement over recorded telemetry', () => {
     expect(placed.blips).toHaveLength(1);
     const [alongside] = placed.blips;
     expect(alongside.side).toBe(-1);
-    expect(alongside.lateralM).toBeLessThan(0);
+    expect(alongside.drawLateralM).toBeLessThan(0);
     // One car width plus a margin, so the two bodies do not overlap.
-    expect(Math.abs(alongside.lateralM)).toBeGreaterThan(1.9);
+    expect(Math.abs(alongside.drawLateralM)).toBeGreaterThan(1.9);
+    // The road reports no lateral offset for an abreast car, and it must stay
+    // that way: the side offset is a drawing decision, not a measurement.
+    expect(alongside.lateralM).toBeCloseTo(0, 6);
   });
 });

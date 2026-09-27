@@ -10,17 +10,21 @@ import { RadarDisplay } from './RadarDisplay';
 import type { RadarDisplayProps } from './RadarDisplay';
 import type { RadarBlip } from '../radarBlips';
 
-const blip = (over: Partial<RadarBlip> & { carIdx: number }): RadarBlip => ({
-  alongM: 11,
-  lateralM: 0.2,
-  relYaw: 0,
-  gapM: 11,
-  side: null,
-  rimSignal: null,
-  carNumber: '24',
-  isPaceCar: false,
-  ...over,
-});
+const blip = (over: Partial<RadarBlip> & { carIdx: number }): RadarBlip => {
+  const lateralM = over.lateralM ?? 0.2;
+  return {
+    alongM: 11,
+    lateralM,
+    relYaw: 0,
+    gapM: 11,
+    side: null,
+    rimSignal: null,
+    carNumber: '24',
+    isPaceCar: false,
+    ...over,
+    drawLateralM: over.drawLateralM ?? lateralM,
+  };
+};
 
 const props = {
   blips: [blip({ carIdx: 1 })],

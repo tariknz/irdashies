@@ -429,7 +429,10 @@ describe('computeRadarBlips', () => {
     expect(result.blips).toHaveLength(1);
     expect(result.blips[0].gapM).toBeCloseTo(0, 6);
     // Level with the player, so the side offset is at full reach.
-    expect(result.blips[0].lateralM).toBeCloseTo(-2 * 1.1, 6);
+    expect(result.blips[0].drawLateralM).toBeCloseTo(-2 * 1.1, 6);
+    // The road itself reports no offset for an abreast car, and that stays
+    // readable: the placed value must not become the measured one.
+    expect(result.blips[0].lateralM).toBeCloseTo(0, 6);
     expect(result.blips[0].side).toBe(-1);
   });
 
@@ -450,14 +453,15 @@ describe('computeRadarBlips', () => {
 
     // 4.5 m car: full reach anywhere inside the 9 m window.
     const full = 2 * 1.1;
-    expect(run(0.1).blips[0].lateralM).toBeCloseTo(-full, 6);
-    expect(run(4).blips[0].lateralM).toBeCloseTo(-full, 6);
+    expect(run(0.1).blips[0].drawLateralM).toBeCloseTo(-full, 6);
+    expect(run(4).blips[0].drawLateralM).toBeCloseTo(-full, 6);
 
     // A car 11 m back that was never alongside gets no side at all.
-    expect(run(11).blips[0].lateralM).toBeCloseTo(0, 6);
+    expect(run(11).blips[0].drawLateralM).toBeCloseTo(0, 6);
 
     // But one that *was* alongside keeps a fading side on the way out.
-    const tail = run(11, heldSides({ 1: -1 }), NO_OVERLAP).blips[0].lateralM;
+    const tail = run(11, heldSides({ 1: -1 }), NO_OVERLAP).blips[0]
+      .drawLateralM;
     expect(tail).toBeLessThan(0);
     expect(Math.abs(tail)).toBeLessThan(full);
   });
@@ -471,6 +475,7 @@ describe('computeRadarBlips', () => {
     });
 
     expect(result.blips[0].lateralM).toBeCloseTo(0, 6);
+    expect(result.blips[0].drawLateralM).toBeCloseTo(0, 6);
     expect(result.blips[0].side).toBeNull();
   });
 
@@ -565,7 +570,7 @@ describe('computeRadarBlips', () => {
       ...positionsOf([pctOfArc(300), pctOfArc(300.3)]),
     });
 
-    expect(second.blips[0].lateralM).toBeLessThan(0);
+    expect(second.blips[0].drawLateralM).toBeLessThan(0);
     expect(second.targets.side[1]).toBe(-1);
   });
 

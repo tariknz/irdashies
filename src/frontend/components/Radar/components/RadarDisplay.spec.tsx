@@ -10,17 +10,23 @@ import {
   type RadarDisplayProps,
 } from './RadarDisplay';
 
-const blip = (over: Partial<RadarBlip> & { carIdx: number }): RadarBlip => ({
-  alongM: 11,
-  lateralM: 0.2,
-  relYaw: 0,
-  gapM: 11,
-  side: null,
-  rimSignal: null,
-  carNumber: '24',
-  isPaceCar: false,
-  ...over,
-});
+const blip = (over: Partial<RadarBlip> & { carIdx: number }): RadarBlip => {
+  const lateralM = over.lateralM ?? 0.2;
+  return {
+    alongM: 11,
+    lateralM,
+    relYaw: 0,
+    gapM: 11,
+    side: null,
+    rimSignal: null,
+    carNumber: '24',
+    isPaceCar: false,
+    ...over,
+    // Default to the measured offset, so a fixture only states the placed one
+    // when that is what it is about.
+    drawLateralM: over.drawLateralM ?? lateralM,
+  };
+};
 
 /**
  * Three painted rivals plus the player: a plain car well ahead, a car closing

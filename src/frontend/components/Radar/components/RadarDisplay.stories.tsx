@@ -17,6 +17,7 @@ const blip = (
   carIdx,
   alongM,
   lateralM,
+  drawLateralM: lateralM,
   relYaw: 0,
   gapM: Math.abs(alongM),
   side: null,

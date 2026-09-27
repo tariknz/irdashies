@@ -105,7 +105,7 @@ export const useRadarMotion = (
         lateralTargetsRef.current,
         blips,
         trackLengthM,
-        (blip) => blip.lateralM
+        (blip) => blip.drawLateralM
       ),
       now
     );
