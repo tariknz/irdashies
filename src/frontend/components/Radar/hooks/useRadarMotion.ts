@@ -128,8 +128,11 @@ export const useRadarMotion = (
       drawRef.current(alongM, lateralM, count);
     };
 
-    // A snapshot that changed nothing geometric (a label, a rim signal) still
-    // has to repaint.
+    // Every snapshot has to be painted here even when the loop below is already
+    // running, because the loop only keeps going while something is still
+    // moving: a snapshot that settles the field would otherwise be dropped and
+    // the canvas would keep the last interpolated position. The RAF loop owns
+    // everything after this.
     perfMetrics.measure('radarAnimationFrame', paint);
 
     let frameTime = 0;
