@@ -185,7 +185,7 @@ export const useDriverStandings = () => {
       qualifyingResults && Array.isArray(qualifyingResults)
         ? new Map(qualifyingResults.map((q) => [q.CarIdx, q]))
         : new Map();
-
+    
     const playerLap =
       playerCarIdx !== undefined
         ? (driverPositionsByCarIdx.get(playerCarIdx)?.lapNum ?? 0)
@@ -223,12 +223,12 @@ export const useDriverStandings = () => {
         if (livePosition !== undefined) classPosition = livePosition;
       }
 
-      if (!classPosition || !isFinite(classPosition) || classPosition <= 0) {
+ if (!classPosition || !isFinite(classPosition) || classPosition <= 0) {
         // Class position can become 0 or negative in some edge cases
-        // Before race start it seems to be fine to default to qualifying position
+        // Only fall back to qualifying before race start
         // During the race class position should be available
         // After the race we can fallback to session position
-        if (sessionState !== SessionState.CoolDown) {
+        if (sessionState === SessionState.GetInCar || sessionState === SessionState.ParadeLaps) {
           const qualifyingPosition = qualifyingPositionsByCarIdx.get(
             driver.carIdx
           );
