@@ -7,11 +7,17 @@ import {
   memo,
   CSSProperties,
 } from 'react';
-import { useDashboard, SessionTimingUpdater } from '@irdashies/context';
+import {
+  useActiveSimulator,
+  useDashboard,
+  useSimWidgetSupport,
+  SessionTimingUpdater,
+} from '@irdashies/context';
 import { getWidget } from '../../WidgetIndex';
 import { getWidgetName } from '../../constants/widgetNames';
 import { ResizeIcon, XIcon } from '@phosphor-icons/react';
 import type { DashboardWidget } from '@irdashies/types';
+import { isWidgetDisabledForSim } from '@irdashies/types';
 import { useDragWidget, useResizeWidget } from '../WidgetContainer';
 import { ResizeHandles } from '../WidgetContainer/ResizeHandle';
 import logger from '@irdashies/utils/logger';
@@ -183,6 +189,8 @@ DashboardWidgetItem.displayName = 'DashboardWidgetItem';
 
 export const DashboardView = () => {
   const { currentDashboard, bridge, currentProfile } = useDashboard();
+  const simulator = useActiveSimulator();
+  const simWidgetSupport = useSimWidgetSupport();
   const [widgetPositions, setWidgetPositions] = useState<
     Record<string, WidgetPosition>
   >({});
@@ -201,7 +209,9 @@ export const DashboardView = () => {
     setShowBorderForWidget(null);
   }, []);
 
-  // Filter enabled widgets and deduplicate by ID
+  // Filter enabled widgets and deduplicate by ID. A widget the running sim
+  // cannot support is dropped here too, so it behaves exactly as if it were
+  // switched off -- without touching the user's saved enabled setting.
   const enabledWidgets = useMemo(() => {
     if (!currentDashboard?.widgets) {
       return [];
@@ -209,11 +219,13 @@ export const DashboardView = () => {
     const seen = new Set<string>();
     const filtered = currentDashboard.widgets.filter((w) => {
       if (!w.enabled || seen.has(w.id)) return false;
+      if (isWidgetDisabledForSim(simWidgetSupport, w.type ?? w.id, simulator))
+        return false;
       seen.add(w.id);
       return true;
     });
     return filtered;
-  }, [currentDashboard]);
+  }, [currentDashboard, simulator, simWidgetSupport]);
 
   // Initialize widget positions from dashboard config or use defaults
   const initialPositions = useMemo(() => {

@@ -61,6 +61,7 @@ class FakeBrowserWindow {
 vi.mock('electron', () => ({
   app: {
     getVersion: () => '0.0.0',
+    getPath: () => '/tmp/irdashies-test',
     disableHardwareAcceleration: vi.fn(),
     commandLine: { appendSwitch: vi.fn() },
   },
@@ -85,6 +86,13 @@ vi.mock('./perfRendererArguments', () => ({
   createRendererPerfArguments: vi.fn(() => []),
 }));
 vi.mock('./hardenWindow', () => ({ hardenWindow: vi.fn() }));
+const simWidgetSupport = vi.hoisted(() => ({
+  message: 'This widget is not compatible with the running sim',
+  disabledWidgets: { iracing: [] as string[], lmu: [] as string[] },
+}));
+vi.mock('./storage/simWidgetSupport', () => ({
+  getSimWidgetSupport: () => simWidgetSupport,
+}));
 vi.mock('./logger', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
@@ -102,6 +110,39 @@ describe('OverlayManager Gantry window', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createdWindows.length = 0;
+    simWidgetSupport.disabledWidgets.iracing = [];
+    simWidgetSupport.disabledWidgets.lmu = [];
+  });
+
+  it('stays shut when the running simulator cannot support the widget', () => {
+    // The Gantry has its own window rather than an ordinary overlay, so it
+    // needs the same visibility rule applied explicitly -- the enabled flag
+    // alone would keep it open under a sim that cannot feed it.
+    simWidgetSupport.disabledWidgets.iracing = ['gantry'];
+    const manager = new OverlayManager();
+    manager.setActiveSimulator('iracing');
+
+    expect(manager.createGantryWindow(dashboard(true))).toBe(false);
+    expect(gantryWindows()).toHaveLength(0);
+  });
+
+  it('closes an open window when the simulator stops supporting the widget', () => {
+    const manager = new OverlayManager();
+    manager.syncGantryWindow(dashboard(true));
+    const [window] = gantryWindows();
+
+    simWidgetSupport.disabledWidgets.iracing = ['gantry'];
+    manager.setActiveSimulator('iracing');
+    manager.syncGantryWindow(dashboard(true));
+
+    expect(window.destroy).toHaveBeenCalledOnce();
+  });
+
+  it('is unaffected while no simulator is known', () => {
+    simWidgetSupport.disabledWidgets.iracing = ['gantry'];
+    const manager = new OverlayManager();
+
+    expect(manager.createGantryWindow(dashboard(true))).toBe(true);
   });
 
   it('opens the window when the widget is switched on', () => {

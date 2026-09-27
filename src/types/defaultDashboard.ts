@@ -401,6 +401,11 @@ export const defaultDashboard: {
         },
         showOnlyWhenOnTrack: true,
         displayOrder: ['trace', 'bar', 'gear', 'steer'],
+        shiftFlash: {
+          enabled: false,
+          source: 'redline',
+          color: '#9333ea',
+        },
         sessionVisibility: {
           race: true,
           loneQualify: true,

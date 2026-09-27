@@ -7,7 +7,13 @@ import {
   type DashboardLayout,
 } from '@irdashies/types';
 import type { IrSdkSourceBridge, DashboardBridge } from '@irdashies/types';
-import { getIsDemoMode } from '../bridge/iracingSdk/setup';
+import {
+  getActiveSimulator,
+  getIsDemoMode,
+  onActiveSimulatorChanged,
+} from '../bridge/iracingSdk/setup';
+import { getAvailableSimulators } from '../bridge/iracingSdk/sims/registry';
+import { loadSimWidgetSupport } from '../storage/simWidgetSupport';
 import logger from '../logger';
 import type { ChannelBus } from '../bridge/channelBridge';
 
@@ -37,6 +43,11 @@ export function createBridgeProxy(
   let currentSession: Session | null = null;
   let isRunning = false;
   let isDemoMode = getIsDemoMode();
+  // Browser views are not BrowserWindows, so OverlayManager's 'simulatorChanged'
+  // publish never reaches them. Without this they never learn which sim is
+  // running and show every enabled widget, including ones simWidgetSupport.json
+  // disables for that sim.
+  let activeSimulator = getActiveSimulator() ?? null;
 
   if (dashboardBridge?.getCurrentDashboard) {
     currentDashboard = dashboardBridge.getCurrentDashboard();
@@ -111,6 +122,11 @@ export function createBridgeProxy(
     subscribeToBridge(newBridge);
   };
 
+  onActiveSimulatorChanged((simulator) => {
+    activeSimulator = simulator;
+    broadcast('simulatorChanged', simulator);
+  });
+
   if (dashboardBridge) {
     dashboardBridge.dashboardUpdated(
       (dashboard: DashboardLayout, profileId?: string) => {
@@ -155,6 +171,7 @@ export function createBridgeProxy(
           isRunning,
           dashboard: currentDashboard,
           isDemoMode,
+          simulator: activeSimulator,
         },
       })
     );
@@ -210,6 +227,39 @@ export function createBridgeProxy(
               throw new Error('Invalid channel unsubscribe');
             }
             channelBus?.unsubscribe(channelTarget.id, channel);
+            break;
+          }
+          case 'getActiveSimulator': {
+            const { requestId } = parsed;
+            ws.send(
+              JSON.stringify({
+                type: 'getActiveSimulator',
+                requestId,
+                data: activeSimulator,
+              })
+            );
+            break;
+          }
+          case 'getAvailableSimulators': {
+            const { requestId } = parsed;
+            ws.send(
+              JSON.stringify({
+                type: 'getAvailableSimulators',
+                requestId,
+                data: getAvailableSimulators(),
+              })
+            );
+            break;
+          }
+          case 'getSimWidgetSupport': {
+            const { requestId } = parsed;
+            ws.send(
+              JSON.stringify({
+                type: 'getSimWidgetSupport',
+                requestId,
+                data: await loadSimWidgetSupport(),
+              })
+            );
             break;
           }
           case 'getDashboard':

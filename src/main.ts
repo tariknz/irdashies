@@ -70,6 +70,7 @@ import {
   saveLapHistory,
 } from './app/storage/lapHistoryStorage';
 import { onDashboardUpdated } from './app/storage/dashboardEvents';
+import { loadSimWidgetSupport } from './app/storage/simWidgetSupport';
 import type { DashboardLayout, Session } from '@irdashies/types';
 import { getActivePerfMetrics } from './app/perfMetrics';
 import {
@@ -299,6 +300,11 @@ app.on('ready', async () => {
       activePerfWidgetTypes(runDashboard)
     );
   }
+
+  // Read off the window-build path before anything can ask for it: the
+  // widget-visibility check that consults this list is synchronous and runs
+  // for every overlay window.
+  await loadSimWidgetSupport();
 
   setupChannelBridge(channelBus);
   const rendererDataSubscriptions = setupRendererDataSubscriptions({
