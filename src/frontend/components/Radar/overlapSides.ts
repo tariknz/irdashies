@@ -67,6 +67,33 @@ export const retainSideWindowM = (vehicleLength: number): number =>
   Math.max(1, vehicleLength * RETAIN_WINDOW_LENGTHS);
 
 /**
+ * The four windows a car length drives, in one place.
+ *
+ * `vehicleLength` is a single slider but it decides four separate questions, and
+ * each has its own reason for the value it uses. They are named for what they
+ * answer rather than kept as bare multiples, so changing one is a visible edit
+ * and does not quietly retune the others.
+ *
+ * The two overlap windows say how far a car keeps a side, and are longer than
+ * the rim window on purpose: a car that has already been placed to the side
+ * still needs its arc once the sim's verdict stops covering it.
+ */
+const RIM_WINDOW_LENGTHS = 1;
+const SUPPRESS_BODY_LENGTHS = 0.5;
+
+/** How close a car must be for the sim's side verdict to give it a rim arc. */
+export const rimSignalWindowM = (vehicleLength: number): number =>
+  Math.max(1, vehicleLength * RIM_WINDOW_LENGTHS);
+
+/**
+ * How close a level car must be for its body to be suppressed. It is painted on
+ * the centreline, where it would land on the player, so the rim answers for it
+ * instead.
+ */
+export const abreastWindowM = (vehicleLength: number): number =>
+  Math.max(1, vehicleLength * SUPPRESS_BODY_LENGTHS);
+
+/**
  * Scratch for the contenders sort, and the comparator itself. Both are reused
  * across calls: this runs once per changed snapshot, so the filtered array and
  * the comparator closure it needs were two allocations per frame. The array is

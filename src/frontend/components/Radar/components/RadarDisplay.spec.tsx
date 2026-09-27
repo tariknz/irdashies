@@ -419,10 +419,25 @@ describe('RadarDisplay', () => {
   });
 
   it('draws an unknown-side level car when side indicators have zero opacity', () => {
+    // The body is the fallback for a rim that cannot be seen, so the
+    // side-indicator settings decide which of the two signals answers for a
+    // level car, not just whether an arc is stroked.
     const level = [
       blip({ carIdx: 1, alongM: 0.3, gapM: 0.3, rimSignal: 'both' }),
     ];
     render(<RadarDisplay {...props} sideIndicatorOpacity={0} blips={level} />);
+    deliverSize(300, 300);
+
+    expect(record.vehiclesPerPaint.at(-1)).toBe(2);
+  });
+
+  it('draws an unknown-side level car when side indicators are switched off', () => {
+    const level = [
+      blip({ carIdx: 1, alongM: 0.3, gapM: 0.3, rimSignal: 'both' }),
+    ];
+    render(
+      <RadarDisplay {...props} sideIndicatorEnabled={false} blips={level} />
+    );
     deliverSize(300, 300);
 
     expect(record.vehiclesPerPaint.at(-1)).toBe(2);

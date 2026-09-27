@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { blipLabel, type RadarBlip } from '../radarBlips';
+import { abreastWindowM } from '../overlapSides';
 import { useRadarMotion, type RadarMotionDraw } from '../hooks/useRadarMotion';
 
 export interface RadarDisplayProps {
@@ -138,15 +139,21 @@ const drawBlipVehicles = (
   // disc answers that with the two rim arcs and draws no vehicle; the map has no
   // rim, so there the overlap itself is the signal and the car is drawn on top
   // of the player.
-  const abreastM = Math.max(1, props.vehicleLength * 0.5);
-  const hideLevelCar =
+  //
+  // The body is the fallback for when the rim cannot answer, so an invisible
+  // rim has to hand the job back to it. That is why the side-indicator settings
+  // reach this far: they choose which of the two signals is in use, not merely
+  // whether an arc is stroked.
+  const rimAnswersForTheBody =
     !props.showFollowingMap &&
     props.sideIndicatorEnabled &&
     props.sideIndicatorOpacity > 0;
   for (let i = 0; i < props.blips.length; i++) {
     const blip = props.blips[i];
     const levelAndUnknown =
-      hideLevelCar && blip.rimSignal === 'both' && blip.gapM <= abreastM;
+      rimAnswersForTheBody &&
+      blip.rimSignal === 'both' &&
+      blip.gapM <= abreastWindowM(props.vehicleLength);
     if (!levelAndUnknown) {
       drawVehicle(
         ctx,
@@ -403,6 +410,7 @@ const backgroundGradientFor = (
   return gradient;
 };
 
+/** False when there was nothing to draw yet, so callers can tell it apart. */
 const drawRadar = (
   canvas: HTMLCanvasElement,
   props: RadarDisplayProps,
@@ -410,9 +418,9 @@ const drawRadar = (
   alongM: Float64Array,
   lateralM: Float64Array,
   trackPath: Path2D | null
-) => {
+): boolean => {
   const ctx = canvas.getContext('2d');
-  if (!ctx || size.width <= 0 || size.height <= 0) return;
+  if (!ctx || size.width <= 0 || size.height <= 0) return false;
 
   const dpr = window.devicePixelRatio || 1;
   const backingWidth = Math.max(1, Math.round(size.width * dpr));
@@ -556,7 +564,79 @@ const drawRadar = (
     }
   }
   ctx.restore();
+  return true;
 };
+
+/**
+ * Every prop that changes how the same blips are drawn, joined. The blips
+ * themselves are compared by reference, so this covers only the settings around
+ * them. Adding a drawing-affecting prop without adding it here shows up as a
+ * canvas that keeps the old appearance until the next snapshot.
+ *
+ * The type is the prop list minus the blips and the clock, so a new prop is a
+ * compile error here rather than a setting that silently stops repainting.
+ */
+const DRAWING_PROPS = [
+  'radarRange',
+  'vehicleWidth',
+  'vehicleLength',
+  'showCarNumbers',
+  'colorRival',
+  'colorPlayer',
+  'viewMode',
+  'rearCameraTilt',
+  'bgOpacity',
+  'sideIndicatorStyle',
+  'sideIndicatorColor',
+  'sideIndicatorOpacity',
+  'sideIndicatorEnabled',
+  'showFollowingMap',
+  'followingMapBorderColor',
+  'followingMapBorderOpacity',
+  'followingMapFillColor',
+  'followingMapFillOpacity',
+  'followingMapSvgPath',
+  'followingMapWindowM',
+  'followingMapPointCount',
+  'followingMapUnitsPerMetre',
+  'followingMapCameraPlayerX',
+  'followingMapCameraPlayerY',
+  'followingMapCameraForwardX',
+  'followingMapCameraForwardY',
+  'followingMapCameraRightX',
+  'followingMapCameraRightY',
+  'followingMapPath',
+] as const satisfies readonly (keyof RadarDisplayProps)[];
+
+/**
+ * Props the repaint key deliberately leaves out, each with its reason. This is a
+ * type-level list, so it is read through `keyof` rather than at runtime.
+ */
+type NotDrawingProp = 'blips' | 'nowSeconds' | 'trackLengthM';
+
+/**
+ * A prop that is neither listed as drawing nor excluded is a compile error: the
+ * const is typed as `never` in that case, and a value of type `never` does not
+ * assign. Deleting the assertion makes the check stop working, so it stays.
+ *
+ * blips is excluded because a new array is the snapshot itself, compared by
+ * reference. nowSeconds is read at paint time and is never a repaint reason.
+ * trackLengthM is excluded because only the motion loop uses it, to turn metres
+ * into lap fractions: by the time anything is drawn the buffers are metres
+ * again, so a new track length arrives as new blip positions and repaints with
+ * them.
+ */
+type UnaccountedProp = Exclude<
+  keyof RadarDisplayProps,
+  (typeof DRAWING_PROPS)[number] | NotDrawingProp
+>;
+const everyPropIsAccountedFor: UnaccountedProp extends never
+  ? Record<never, never>
+  : { [K in UnaccountedProp]: K } = {};
+void everyPropIsAccountedFor;
+
+const settingsKey = (props: Omit<RadarDisplayProps, 'nowSeconds'>): string =>
+  DRAWING_PROPS.map((prop) => `${prop}=${String(props[prop])}`).join('|');
 
 export const RadarDisplay = (props: Omit<RadarDisplayProps, 'nowSeconds'>) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -609,6 +689,44 @@ export const RadarDisplay = (props: Omit<RadarDisplayProps, 'nowSeconds'>) => {
   trackPathRef.current = trackPath;
 
   const drawRef = useRef<RadarMotionDraw>(() => undefined);
+  // Repaints the motion loop will not make on its own. It repaints on every new
+  // blip array, so these are the changes it cannot see: a resize, and any
+  // settings change that alters how the same blips are drawn.
+  //
+  // A snapshot is deliberately excluded. useRadarMotion's layout effect runs
+  // first — it is declared first — and has already painted this exact blip
+  // array, so repainting here would draw the same buffers twice per snapshot.
+  const paintedRef = useRef<{
+    blips: readonly RadarBlip[];
+    width: number;
+    height: number;
+    settings: string;
+  } | null>(null);
+  const drawLatest = (blips: readonly RadarBlip[]) => {
+    const canvas = canvasRef.current;
+    if (!canvas || alongRef.current.length < blips.length) return;
+    propsRef.current.nowSeconds = performance.now() / 1000;
+    // Only a paint that reached the canvas counts, or the first commit — which
+    // has no size yet — would mark the snapshot as done and leave it unpainted
+    // until the next one.
+    if (
+      drawRadar(
+        canvas,
+        propsRef.current,
+        sizeRef.current,
+        alongRef.current,
+        lateralRef.current,
+        trackPathRef.current
+      )
+    ) {
+      paintedRef.current = {
+        blips,
+        width: sizeRef.current.width,
+        height: sizeRef.current.height,
+        settings: settingsKey(propsRef.current),
+      };
+    }
+  };
   drawRef.current = (alongM, lateralM, count) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -618,15 +736,7 @@ export const RadarDisplay = (props: Omit<RadarDisplayProps, 'nowSeconds'>) => {
     }
     alongRef.current.set(alongM.subarray(0, count));
     lateralRef.current.set(lateralM.subarray(0, count));
-    propsRef.current.nowSeconds = performance.now() / 1000;
-    drawRadar(
-      canvas,
-      propsRef.current,
-      sizeRef.current,
-      alongRef.current,
-      lateralRef.current,
-      trackPathRef.current
-    );
+    drawLatest(propsRef.current.blips);
   };
 
   const pulseActive =
@@ -642,22 +752,19 @@ export const RadarDisplay = (props: Omit<RadarDisplayProps, 'nowSeconds'>) => {
     pulseActive
   );
 
-  // Resize repaints: the motion loop only repaints on new snapshots, so a
-  // size change must redraw the last committed frame from the cached buffers.
   useLayoutEffect(() => {
-    const canvas = canvasRef.current;
+    const painted = paintedRef.current;
     // Before the first commit there is no frame in the buffers to redraw.
-    if (!canvas || alongRef.current.length < propsRef.current.blips.length)
+    if (
+      painted !== null &&
+      painted.blips === props.blips &&
+      painted.width === size.width &&
+      painted.height === size.height &&
+      painted.settings === settingsKey(props)
+    ) {
       return;
-    propsRef.current.nowSeconds = performance.now() / 1000;
-    drawRadar(
-      canvas,
-      propsRef.current,
-      sizeRef.current,
-      alongRef.current,
-      lateralRef.current,
-      trackPathRef.current
-    );
+    }
+    drawLatest(props.blips);
   });
 
   return <canvas ref={canvasRef} className="h-full w-full" />;

@@ -8,6 +8,7 @@ import {
   alongsideWindowM,
   assignOverlapSides,
   retainSideWindowM,
+  rimSignalWindowM,
   type OverlapSide,
   type RadarOverlap,
 } from './overlapSides';
@@ -463,7 +464,7 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
   const retain = retainSideWindowM(vehicleLength);
   const fadeSpan = Math.max(1e-6, retain - abeam);
 
-  const closeM = Math.max(1, vehicleLength);
+  const closeM = rimSignalWindowM(vehicleLength);
   for (const blip of blips) {
     const sideValue = nextTargets.side[blip.carIdx];
     const side = sideValue === 0 ? null : (sideValue as OverlapSide);
