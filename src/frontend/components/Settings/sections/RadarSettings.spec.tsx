@@ -1,4 +1,3 @@
-import { useSyncExternalStore } from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { DashboardLayout, RadarConfig } from '@irdashies/types';
@@ -25,15 +24,23 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock('@irdashies/context', () => ({
-  useDashboard: () => ({
-    currentDashboard: useSyncExternalStore((onChange) => {
-      mocks.listeners.add(onChange);
-      return () => mocks.listeners.delete(onChange);
-    }, mocks.getDashboard),
-    onDashboardUpdated: mocks.updateDashboard,
-  }),
-}));
+vi.mock('@irdashies/context', async () => {
+  const { useSyncExternalStore: subscribe } = await import('react');
+  const { DEFAULT_SIM_WIDGET_SUPPORT } = await import('@irdashies/types');
+  return {
+    useDashboard: () => ({
+      currentDashboard: subscribe((onChange) => {
+        mocks.listeners.add(onChange);
+        return () => mocks.listeners.delete(onChange);
+      }, mocks.getDashboard),
+      onDashboardUpdated: mocks.updateDashboard,
+    }),
+    // No simulator detected, so BaseSettingsSection greys nothing and the
+    // radar's own settings are the only thing these tests exercise.
+    useActiveSimulator: () => null,
+    useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
+  };
+});
 
 const radarConfig = (overrides: Partial<RadarConfig> = {}): RadarConfig => ({
   ...getWidgetDefaultConfig('radar'),

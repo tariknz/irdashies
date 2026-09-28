@@ -37,6 +37,9 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('@irdashies/context', async () => {
   const { useSyncExternalStore } = await import('react');
+  // Imported inside the factory: vi.mock is hoisted above the file's own
+  // imports, so a top-level binding would not exist yet.
+  const { DEFAULT_SIM_WIDGET_SUPPORT } = await import('@irdashies/types');
   return {
     useDashboard: () => ({
       currentDashboard: useSyncExternalStore((onChange) => {
@@ -47,6 +50,10 @@ vi.mock('@irdashies/context', async () => {
     }),
     useTrackStateSelector: () => 1,
     useSessionCameraGroups: () => mocks.cameraGroups,
+    // No simulator detected, so BaseSettingsSection greys nothing and the
+    // toggle behaves exactly as it did before per-sim support existed.
+    useActiveSimulator: () => null,
+    useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
   };
 });
 
