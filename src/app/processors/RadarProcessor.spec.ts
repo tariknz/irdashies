@@ -13,12 +13,16 @@ const frame = (
     onPitRoad = [false, false],
     isOnTrack = true,
     sessionNum = 1,
+    carIdxPosition = [] as number[],
+    sessionState = 0,
   }: {
     camCarIdx?: number;
     speed?: number;
     onPitRoad?: boolean[];
     isOnTrack?: boolean;
     sessionNum?: number;
+    carIdxPosition?: number[];
+    sessionState?: number;
   } = {}
 ) =>
   ({
@@ -26,6 +30,8 @@ const frame = (
     Speed: { value: [speed] },
     CarIdxLapDistPct: { value: positions },
     CarIdxOnPitRoad: { value: onPitRoad },
+    CarIdxPosition: { value: carIdxPosition },
+    SessionState: { value: [sessionState] },
     IsOnTrack: { value: [isOnTrack] },
     SessionNum: { value: [sessionNum] },
   }) as unknown as Telemetry;
@@ -40,6 +46,7 @@ describe('RadarProcessor', () => {
       focusCarIdx: recordedFrame.CamCarIdx.value[0],
       carIdxLapDistPct: recordedFrame.CarIdxLapDistPct.value,
       carIdxOnPitRoad: recordedFrame.CarIdxOnPitRoad.value,
+      carIdxPosition: recordedFrame.CarIdxPosition.value,
       isOnTrack: true,
       version: 1,
     });
@@ -76,6 +83,8 @@ describe('RadarProcessor', () => {
       focusCarIdx: 1,
       carIdxLapDistPct: [0.123456789, 0.123987654],
       carIdxOnPitRoad: [false, false],
+      carIdxPosition: [],
+      sessionState: 0,
       carSpeed: 0,
       isOnTrack: true,
       version: 1,
@@ -149,6 +158,8 @@ describe('RadarProcessor', () => {
       focusCarIdx: null,
       carIdxLapDistPct: [],
       carIdxOnPitRoad: [],
+      carIdxPosition: [],
+      sessionState: 0,
       carSpeed: 0,
       isOnTrack: false,
       version: 2,
@@ -178,5 +189,49 @@ describe('RadarProcessor', () => {
     processor.onFrame(frame([0.5, 0.6], { speed: 0.4 }));
 
     expect(processor.snapshot().carSpeed).toBe(0.4);
+  });
+
+  it('publishes the grid slot and the session state', () => {
+    // The radar reads the two together to decide whether the cars are still
+    // parked and which column each one stands in. Neither is on the channel
+    // without the processor copying it.
+    const processor = new RadarProcessor();
+    processor.onFrame(
+      frame([0.5, 0.5], { carIdxPosition: [1, 2], sessionState: 3 })
+    );
+
+    expect(processor.snapshot()).toMatchObject({
+      carIdxPosition: [1, 2],
+      sessionState: 3,
+    });
+  });
+
+  it('reports no grid data before the first frame carries it', () => {
+    // A frame without the variable leaves the array empty rather than a row of
+    // zeros, so the widget cannot read a field of zero slots as a grid.
+    const processor = new RadarProcessor();
+    processor.onFrame({
+      CamCarIdx: { value: [0] },
+    } as unknown as Telemetry);
+
+    expect(processor.snapshot()).toMatchObject({
+      carIdxPosition: [],
+      sessionState: 0,
+    });
+  });
+
+  it('clears the grid data at a lifecycle boundary', () => {
+    // Car indices are re-used between sessions, so slots left behind would
+    // belong to other cars entirely.
+    const processor = new RadarProcessor();
+    processor.onFrame(
+      frame([0.5, 0.5], { carIdxPosition: [1, 2], sessionState: 3 })
+    );
+    processor.onLifecycle({ type: 'sessionNumChange' });
+
+    expect(processor.snapshot()).toMatchObject({
+      carIdxPosition: [],
+      sessionState: 0,
+    });
   });
 });

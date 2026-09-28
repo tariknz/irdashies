@@ -20,6 +20,11 @@ import {
 } from '../overlapSides';
 import { MAX_RADAR_RANGE_M } from '../radarFade';
 import {
+  isGridBeforeStart,
+  parseGridLayout,
+  type GridLayout,
+} from '../gridLayout';
+import {
   computeRadarBlips,
   emptyTargetState,
   MAP_SAMPLE_M,
@@ -67,11 +72,13 @@ type RadarInput = readonly [
   number | null,
   readonly number[],
   readonly boolean[],
+  readonly number[],
   boolean,
+  number,
   number,
 ];
 
-const EMPTY_INPUT: RadarInput = [null, [], [], false, 0];
+const EMPTY_INPUT: RadarInput = [null, [], [], [], false, 0, 0];
 const EMPTY_NUMBERS: ReadonlyMap<number, string> = new Map();
 const EMPTY_COLORS: ReadonlyMap<number, string> = new Map();
 
@@ -110,16 +117,20 @@ const selectRadarInput = (snapshot: RadarSnapshot): RadarInput => [
   snapshot.focusCarIdx,
   snapshot.carIdxLapDistPct,
   snapshot.carIdxOnPitRoad,
+  snapshot.carIdxPosition,
   snapshot.isOnTrack,
+  snapshot.sessionState,
   snapshot.carSpeed,
 ];
 
 const radarInputEqual = (previous: RadarInput, next: RadarInput): boolean =>
   previous[0] === next[0] &&
-  previous[3] === next[3] &&
   previous[4] === next[4] &&
+  previous[5] === next[5] &&
+  previous[6] === next[6] &&
   shallow(previous[1], next[1]) &&
-  shallow(previous[2], next[2]);
+  shallow(previous[2], next[2]) &&
+  shallow(previous[3], next[3]);
 
 const trackDrawings = tracks as unknown as Record<
   number,
@@ -133,7 +144,15 @@ const trackDrawings = tracks as unknown as Record<
  */
 export const useRadar = (options: UseRadarOptions): RadarState => {
   const { radarRange, hideInPit, vehicleWidth, vehicleLength } = options;
-  const [focusCarIdx, positions, onPitRoad, isOnTrack, carSpeed] =
+  const [
+    focusCarIdx,
+    positions,
+    onPitRoad,
+    carIdxPosition,
+    isOnTrack,
+    sessionState,
+    carSpeed,
+  ] =
     useRadarSelector(selectRadarInput, { equality: radarInputEqual }) ??
     EMPTY_INPUT;
   const carLeftRight = useBlindSpotSelector(
@@ -147,6 +166,11 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
   const drivers = useSessionDrivers();
   const session = useSessionStore((state) => state.session);
   const trackId = session?.WeekendInfo?.TrackID;
+  const startingGrid = session?.WeekendInfo?.WeekendOptions?.StartingGrid;
+  const gridLayout = useMemo<GridLayout | null>(
+    () => parseGridLayout(startingGrid),
+    [startingGrid]
+  );
   const isMultiClass = (session?.WeekendInfo?.NumCarClasses ?? 0) > 1;
   const sessionKey = useMemo(() => {
     const sessionNumbers =
@@ -270,6 +294,12 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
       carNumbers,
       carColors,
       paceCarIdx,
+      // The grid reconstruction is a statement of fact only while the cars are
+      // parked. From Racing the slot is a memory of qualifying rather than
+      // where the car stands, so the measured projection stands on its own
+      // again. The overlap suppression below covers the same window.
+      gridLayout: isGridBeforeStart(sessionState) ? gridLayout : null,
+      carIdxPosition,
       previousTargets,
       nextTargets,
       followingMapBuffer,
@@ -299,6 +329,9 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
     carColors,
     paceCarIdx,
     isGrid,
+    gridLayout,
+    carIdxPosition,
+    sessionState,
     emptyTargets,
     targetBuffers,
     mapBuffers,

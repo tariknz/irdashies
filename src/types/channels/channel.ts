@@ -136,6 +136,17 @@ export interface RadarSnapshot {
   carIdxLapDistPct: readonly number[];
   /** Pit road state by CarIdx — used to filter blips (hideInPit). */
   carIdxOnPitRoad: readonly boolean[];
+  /**
+   * Session position by CarIdx (1-based, 0 when the sim has not ranked the
+   * car). Before the start this is the grid slot, which is what pairs the cars
+   * into rows. The array is empty until a frame carries the variable.
+   */
+  carIdxPosition: readonly number[];
+  /**
+   * `SessionState` enum value. The grid reconstruction only applies before
+   * Racing; 0 (Invalid) until a frame carries the variable.
+   */
+  sessionState: number;
   /** Player speed in m/s; used to detect the standing grid state. */
   carSpeed: number;
   isOnTrack: boolean;

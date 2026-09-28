@@ -80,6 +80,8 @@ const baseInput: Omit<RadarBlipInput, 'carIdxLapDistPct' | 'carIdxOnPitRoad'> =
       [2, '7'],
     ]),
     paceCarIdx: null,
+    gridLayout: null,
+    carIdxPosition: [],
     previousTargets: emptyTargetState(8),
     nextTargets: emptyTargetState(8),
     followingMapBuffer: new Float64Array(2048),
@@ -553,6 +555,92 @@ describe('computeRadarBlips', () => {
     expect(result.blips[0].lateralM).toBeCloseTo(0, 6);
     expect(result.blips[0].drawLateralM).toBeCloseTo(0, 6);
     expect(result.blips[0].side).toBeNull();
+  });
+
+  describe('the standing grid', () => {
+    const GRID = { columns: 2, poleLateralM: -2.5 };
+
+    /**
+     * Four cars standing on the grid, two to a row. The lap fractions differ
+     * by a few hundredths of a metre, which is as close as the sim reports
+     * two cars parked abreast, and the slots pair them into rows.
+     */
+    const parked = (arcM: number, carIdxPosition: number[]) =>
+      computeRadarBlips({
+        ...baseInput,
+        gridLayout: GRID,
+        carIdxPosition,
+        ...positionsOf([
+          pctOfArc(arcM),
+          pctOfArc(arcM + 0.05),
+          pctOfArc(arcM + 0.03),
+          pctOfArc(arcM - 0.02),
+        ]),
+      });
+
+    it('draws two cars sharing a row to opposite sides, not one line', () => {
+      // This is the reported bug: on the grid every car projected onto the
+      // centreline at almost the same point, so the field drew as a single
+      // file even though the cars stand two abreast.
+      const result = parked(300, [0, 1, 2, 3]);
+
+      const drawn = result.blips.map((blip) => blip.drawLateralM);
+      // The player holds slot 0 and is not drawn, so three blips remain.
+      expect(drawn).toHaveLength(3);
+      // Slot 1 is the pole column, slot 2 the other one, so the two cars the
+      // player shares a row with end up on opposite sides of the road.
+      expect(drawn).toContain(GRID.poleLateralM);
+      expect(drawn).toContain(-GRID.poleLateralM);
+      // Two distinct sides, which is what "abreast" looks like.
+      expect(new Set(drawn).size).toBe(2);
+    });
+
+    it('leaves the measured lateral as the road reports it', () => {
+      // drawLateralM is the placed value the widget paints, but lateralM is
+      // the measurement the motion interpolator reads. Overwriting it would
+      // feed the placed offset back as the next frame's target and walk the
+      // car further out on every frame.
+      const result = parked(300, [0, 1, 2, 3]);
+
+      for (const blip of result.blips) {
+        expect(blip.lateralM).toBeCloseTo(0, 6);
+      }
+    });
+
+    it('keeps every car on the projection when the grid is unknown', () => {
+      // No layout means no statement about the grid, so the radar must draw
+      // what it measures rather than invent a column.
+      const result = computeRadarBlips({
+        ...baseInput,
+        gridLayout: null,
+        carIdxPosition: [0, 1, 2, 3],
+        ...positionsOf([
+          pctOfArc(300),
+          pctOfArc(300.05),
+          pctOfArc(300.03),
+          pctOfArc(299.98),
+        ]),
+      });
+
+      for (const blip of result.blips) {
+        expect(blip.drawLateralM).toBeCloseTo(blip.lateralM, 6);
+      }
+    });
+
+    it('keeps an unranked car on the projection', () => {
+      // A car the sim has not placed has no slot, so its column is unknown.
+      const result = computeRadarBlips({
+        ...baseInput,
+        gridLayout: GRID,
+        carIdxPosition: [0, 0],
+        ...positionsOf([pctOfArc(300), pctOfArc(302)]),
+      });
+
+      expect(result.blips[0].drawLateralM).toBeCloseTo(
+        result.blips[0].lateralM,
+        6
+      );
+    });
   });
 
   const rimFor = (

@@ -59,16 +59,20 @@ const place = (capture: Capture) => {
   const snapshot: RadarSnapshot = {
     carIdxLapDistPct: (telemetry.CarIdxLapDistPct?.value ?? []) as number[],
     carIdxOnPitRoad: (telemetry.CarIdxOnPitRoad?.value ?? []) as boolean[],
+    carIdxPosition: [],
     focusCarIdx:
       (telemetry.CamCarIdx?.value?.[0] as number | undefined) ?? null,
     carSpeed: 0,
     isOnTrack: true,
+    sessionState: 0,
     version: 0,
   };
 
   const result = computeRadarBlips({
     carIdxLapDistPct: snapshot.carIdxLapDistPct,
     carIdxOnPitRoad: snapshot.carIdxOnPitRoad,
+    gridLayout: null,
+    carIdxPosition: [],
     playerCarIdx: snapshot.focusCarIdx,
     trackDrawing: trackDrawings[session.WeekendInfo.TrackID],
     trackLengthM: trackLengthOf(session),
