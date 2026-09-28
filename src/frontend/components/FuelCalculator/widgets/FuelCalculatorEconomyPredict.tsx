@@ -43,10 +43,7 @@ export const FuelCalculatorEconomyPredict: React.FC<
       : '14px';
 
   // Determine which data to show
-  // Reverted to always 'live' mode as per user request
   const scenariosToShow = displayData?.targetScenarios || [];
-
-  // console.log('[EconomyPredict] Render', { mode, currentLap: fuelData?.currentLap, bufferLen: bufferedScenarios.length, showLen: scenariosToShow.length });
 
   if (!fuelData || !scenariosToShow || scenariosToShow.length === 0) {
     return (

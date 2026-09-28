@@ -79,24 +79,6 @@ export function calculateClassEstimatedGap(
   if (delta < 0) {
     delta += referenceLapTime;
   }
-  // if (isTargetAhead) {
-  //   // Scenario: We want the gap TO the car Ahead (Expected: Positive)
-  //   // Formula: (Ahead) - (Behind)
-  //
-  //   // Wrap Check: If delta is huge negative (e.g. -100s), Ahead actually lapped Behind
-  //   if (delta < -referenceLapTime / 2) {
-  //     delta += referenceLapTime;
-  //   }
-  // } else {
-  //   // Scenario: We want the gap TO the car Behind (Expected: Negative)
-  //   // Formula: (Behind) - (Ahead)
-  //   delta = carBehind.estTime - aheadTimeScaled;
-  //
-  //   // Wrap Check: If delta is huge positive (e.g. +100s), Behind actually lapped Ahead
-  //   if (delta > referenceLapTime / 2) {
-  //     delta -= referenceLapTime;
-  //   }
-  // }
 
   return delta;
 }
