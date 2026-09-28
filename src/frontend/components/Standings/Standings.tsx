@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment, useMemo, useRef } from 'react';
 import { DriverClassHeader } from './components/DriverClassHeader/DriverClassHeader';
 import { DriverInfoRow } from './components/DriverInfoRow/DriverInfoRow';
 import { SessionBar } from './components/SessionBar/SessionBar';
@@ -11,6 +11,7 @@ import {
   useHighlightColor,
   useDriverTagMap,
   useManufacturerCounts,
+  useSessionLapCount,
 } from './hooks';
 import {
   useGeneralSettings,
@@ -24,9 +25,18 @@ import {
   usePitStopDuration,
   usePitLaneStore,
   useFirstObservedLap,
+  useLapHistorySnapshot,
+  useTrackStateSelector,
+  trackStateSelectors,
+  useCarIdxClassEstLapTime,
 } from '@irdashies/context';
+import { SessionState } from '@irdashies/types';
+import { readCrossings, recentGreenLapPace } from '@irdashies/domain';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 import { computeStintLap } from './components/DriverInfoRow/cells/lapCountUtils';
+
+/** Default window for the class lap projection when no setting is saved. */
+const DEFAULT_ESTIMATED_LAPS_WINDOW = 5;
 
 const COLUMN_LABELS: Record<string, string> = {
   position: '',
@@ -53,6 +63,15 @@ const COLUMN_LABELS: Record<string, string> = {
 };
 
 const COLUMN_ORDER = Object.keys(COLUMN_LABELS);
+
+export interface ClassLapEstimate {
+  /** Furthest lap the class has on the board. */
+  currentLap: number;
+  /** Laps at the checkered — scheduled in a fixed-lap race, projected in a timed one. */
+  total: number;
+  /** True when the total is the race distance rather than a pace projection. */
+  exact: boolean;
+}
 
 export interface OrderedColumn {
   id: string;
@@ -121,6 +140,9 @@ export const Standings = () => {
   const { isDriving } = useDrivingState();
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
+  const estimatedLapsEnabled =
+    !!settings?.classHeaderStyle?.estimatedLaps?.enabled;
+
   useLapTimesStoreUpdater(
     !!(settings?.lapTimeDeltas?.enabled || settings?.avgLapTime?.enabled)
   );
@@ -147,6 +169,151 @@ export const Standings = () => {
   const avgLapTimes = useCarIdxRollingAvgLapTime(
     settings?.avgLapTime?.numLaps ?? 5
   );
+
+  const { isFixedLapRace, totalLaps, timeRemaining, timeTotal, state } =
+    useSessionLapCount();
+  const estimatedLapsWindow =
+    settings?.classHeaderStyle?.estimatedLaps?.numLaps ??
+    DEFAULT_ESTIMATED_LAPS_WINDOW;
+  const lapHistory = useLapHistorySnapshot(estimatedLapsEnabled);
+  const carIdxLapDistPct = useTrackStateSelector(
+    trackStateSelectors.carIdxLapDistPct,
+    { enabled: estimatedLapsEnabled }
+  );
+  // Before the green flag (pace/parade lap), nobody has set a lap in this
+  // session yet, so there's neither local green-lap history nor a live best
+  // lap to fall back on. CarClassEstLapTime is iRacing's own baseline pace
+  // for the car/track/class and is available from the moment the session
+  // loads, so it keeps an estimate on screen through the pace lap instead of
+  // showing nothing until the first lap is set.
+  const classEstLapTimes = useCarIdxClassEstLapTime();
+  const estimatedLapsCache = useRef<
+    Record<string, { leaderLap: number; total: number }>
+  >({});
+  const checkeredLapsCache = useRef<Record<string, number>>({});
+  const lastSessionNum = useRef<number | null>(null);
+  const estimatedLapsByClass = useMemo(() => {
+    if (!estimatedLapsEnabled) return {};
+    const sessionNum = lapHistory?.sessionNum ?? null;
+    if (sessionNum !== lastSessionNum.current) {
+      lastSessionNum.current = sessionNum;
+      estimatedLapsCache.current = {};
+      checkeredLapsCache.current = {};
+    }
+    if (state < SessionState.Checkered) {
+      checkeredLapsCache.current = {};
+    }
+    const canProject = isFixedLapRace ? totalLaps > 0 : timeRemaining > 0;
+    if (!canProject && state < SessionState.Checkered) return {};
+
+    const cache = estimatedLapsCache.current;
+    const checkeredCache = checkeredLapsCache.current;
+
+    return Object.fromEntries(
+      standings
+        .map(
+          ([classId, classStandings]):
+            [string, ClassLapEstimate] | undefined => {
+            // iRacing reports -1 for cars with no lap on the board, and the
+            // class leader on results position can be one of them (garage, no
+            // time set). Take the furthest lap in the class instead, so the
+            // count reflects where the class actually is.
+            const currentLap = classStandings.reduce(
+              (furthest, standing) => Math.max(furthest, standing.lastLap ?? 0),
+              0
+            );
+
+            // Once the checkered flag is out the race distance is whatever
+            // the leader had on the board at that moment — same as the
+            // global header. Latched, because CarIdxLap can reset to 0 for
+            // cars that have since left the track, and checked ahead of
+            // isFixedLapRace/canProject since a race can finish either way.
+            if (state >= SessionState.Checkered) {
+              if (!checkeredCache[classId] && currentLap > 0) {
+                checkeredCache[classId] = currentLap;
+              }
+              const finalLap = checkeredCache[classId] ?? currentLap;
+              return [
+                classId,
+                { currentLap: finalLap, total: finalLap, exact: true },
+              ];
+            }
+
+            if (isFixedLapRace) {
+              return [classId, { currentLap, total: totalLaps, exact: true }];
+            }
+
+            if (!canProject) return undefined;
+
+            const leader = classStandings[0];
+            const leaderLap = leader?.lastLap ?? 0;
+            const cached = cache[classId];
+            if (cached && cached.leaderLap === leaderLap) {
+              return [
+                classId,
+                { currentLap, total: cached.total, exact: false },
+              ];
+            }
+
+            // Our own green-lap history only has crossings observed since this
+            // overlay started watching — a spectator who just tuned in mid-race
+            // has none yet. iRacing's own best-lap telemetry is populated for
+            // the whole session regardless of when we joined, so it's the
+            // fallback until enough local history builds up to take over.
+            const observedPace =
+              leader && lapHistory
+                ? recentGreenLapPace(
+                    readCrossings(lapHistory, leader.carIdx),
+                    estimatedLapsWindow
+                  )
+                : undefined;
+            const leaderPace =
+              observedPace ??
+              (leader && leader.fastestTime > 0
+                ? leader.fastestTime
+                : undefined) ??
+              (leader ? classEstLapTimes?.[leader.carIdx] : undefined);
+
+            // No fresh pace to recompute with — hold the last projection
+            // rather than dropping the estimate for a frame.
+            if (!leaderPace || leaderPace <= 0) {
+              return cached
+                ? [classId, { currentLap, total: cached.total, exact: false }]
+                : undefined;
+            }
+
+            const leaderLapDistPct = leader
+              ? (carIdxLapDistPct?.[leader.carIdx] ?? 0)
+              : 0;
+            let total =
+              leaderLap <= 0
+                ? timeTotal / leaderPace
+                : timeRemaining / leaderPace +
+                  (leaderLap - 1) +
+                  leaderLapDistPct;
+            if (totalLaps > 0) total = Math.min(total, totalLaps);
+
+            cache[classId] = { leaderLap, total };
+            return [classId, { currentLap, total, exact: false }];
+          }
+        )
+        .filter(
+          (entry): entry is [string, ClassLapEstimate] => entry !== undefined
+        )
+    );
+  }, [
+    estimatedLapsEnabled,
+    isFixedLapRace,
+    totalLaps,
+    timeRemaining,
+    timeTotal,
+    state,
+    standings,
+    lapHistory,
+    estimatedLapsWindow,
+    carIdxLapDistPct,
+    classEstLapTimes,
+  ]);
 
   const pitStopDurations = usePitStopDuration();
   const firstObservedLaps = useFirstObservedLap();
@@ -253,6 +420,7 @@ export const Standings = () => {
                     }
                     totalDrivers={classStats?.[classId]?.total}
                     sof={classStats?.[classId]?.sof}
+                    estimatedLaps={estimatedLapsByClass[classId]}
                     highlightColor={highlightColor}
                     isMultiClass={isMultiClass}
                     colSpan={100}

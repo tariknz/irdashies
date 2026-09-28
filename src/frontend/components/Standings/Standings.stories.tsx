@@ -9,6 +9,10 @@ import {
   sessionBarStorySnapshot,
   trackStateStorySnapshot,
   mockDashboardBridge,
+  timedRaceTimingSnapshot,
+  fixedLapRaceTimingSnapshot,
+  buildLapHistory,
+  fixturePlans,
 } from '@irdashies/storybook';
 import {
   DashboardProvider,
@@ -25,6 +29,7 @@ import {
 } from '@irdashies/context';
 import type {
   DashboardBridge,
+  SessionTimingSnapshot,
   StandingsConfig,
   StandingsWidgetSettings,
 } from '@irdashies/types';
@@ -1477,6 +1482,69 @@ export const AvgLapTime: Story = {
       },
     }),
   ],
+};
+
+// Each class's leader runs its own class's estimated lap pace over 15 laps, so
+// every class projects a different total — the point of the per-class
+// estimate. The BMW leader (carIdx 5) pits on lap 10: its in-lap and out-lap
+// are excluded from the pace, which is what the "green laps only" setting is
+// there to prove out.
+const EST_LAPS_HISTORY = buildLapHistory(
+  fixturePlans({ laps: 15, pitCarIdx: 5, pitLap: 10 })
+);
+
+const estimatedLapsStory = (
+  timing: SessionTimingSnapshot
+): Omit<Story, 'name'> => ({
+  argTypes: {
+    estimatedLaps: {
+      control: { type: 'boolean' },
+      name: 'Show estimated laps',
+    },
+    lapsToAverage: {
+      control: { type: 'number', min: 3, max: 10 },
+      name: 'Laps to average',
+    },
+  },
+  args: {
+    estimatedLaps: true,
+    lapsToAverage: 5,
+  },
+  render: () => <Standings />,
+  decorators: [
+    ChannelSnapshotDecorator({
+      'lap-history.snapshot': EST_LAPS_HISTORY,
+      'standings.snapshot': standingsStorySnapshot,
+      'track-state.snapshot': trackStateStorySnapshot,
+      'session-bar.snapshot': sessionBarStorySnapshot,
+      'session-timing.snapshot': timing,
+    }),
+    (Story, context) => {
+      const { estimatedLaps, lapsToAverage } = context.args as {
+        estimatedLaps: boolean;
+        lapsToAverage: number;
+      };
+      return TelemetryDecoratorWithConfig(undefined, {
+        standings: {
+          classHeaderStyle: {
+            estimatedLaps: { enabled: estimatedLaps, numLaps: lapsToAverage },
+          },
+        },
+      })(Story, context);
+    },
+  ],
+});
+
+/** Timed race: each class projects its own total from the leader's pace. */
+export const EstimatedLaps: Story = {
+  name: 'Estimated Laps (timed race)',
+  ...estimatedLapsStory(timedRaceTimingSnapshot),
+};
+
+/** Fixed-lap race: every class shows the scheduled distance, not a projection. */
+export const EstimatedLapsFixedRace: Story = {
+  name: 'Estimated Laps (fixed-lap race)',
+  ...estimatedLapsStory(fixedLapRaceTimingSnapshot),
 };
 
 // ─── Push to Pass story ───────────────────────────────────────────────────────

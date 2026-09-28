@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { classReferenceLap, lapTimes, medianGreenLapTime } from './lapPace';
+import {
+  classReferenceLap,
+  lapTimes,
+  medianGreenLapTime,
+  recentGreenLapPace,
+} from './lapPace';
 import type { LapCrossing } from './types';
 
 const crossing = (
@@ -110,6 +115,61 @@ describe('medianGreenLapTime', () => {
     ]);
 
     expect(seconds).toBe(92);
+  });
+});
+
+describe('recentGreenLapPace', () => {
+  it('excludes the pit in-lap and out-lap either side of a stop', () => {
+    // Five green laps of 90s, then a 200s in-lap, a 200s out-lap, then two
+    // more green laps of 90s. A contaminated average would land well above
+    // 90; the pit-bracketing laps must not enter the calculation at all.
+    const crossings = [
+      crossing(1, 0),
+      crossing(2, 90),
+      crossing(3, 180),
+      crossing(4, 270),
+      crossing(5, 360),
+      crossing(6, 450),
+      crossing(7, 650, { inPit: true }),
+      crossing(8, 850),
+      crossing(9, 940),
+      crossing(10, 1030),
+    ];
+
+    expect(recentGreenLapPace(crossings, 5)).toBe(90);
+  });
+
+  it('windows to the most recent N green laps, not the whole history', () => {
+    // Slow opening stint of 100s laps, then the driver settles into 90s laps.
+    // A window of 3 should see only the settled pace; a wider window drags
+    // the slow laps back in.
+    const crossings = [
+      crossing(1, 0),
+      crossing(2, 100),
+      crossing(3, 200),
+      crossing(4, 300),
+      crossing(5, 390),
+      crossing(6, 480),
+      crossing(7, 570),
+    ];
+
+    expect(recentGreenLapPace(crossings, 3)).toBe(90);
+    expect(recentGreenLapPace(crossings, 100)).toBeCloseTo(95, 5);
+  });
+
+  it('returns undefined with no green laps yet', () => {
+    expect(recentGreenLapPace([], 5)).toBeUndefined();
+    expect(
+      recentGreenLapPace(
+        [crossing(1, 0, { inPit: true }), crossing(2, 200, { inPit: true })],
+        5
+      )
+    ).toBeUndefined();
+  });
+
+  it('treats a window smaller than 1 as 1', () => {
+    const crossings = [crossing(1, 0), crossing(2, 90), crossing(3, 200)];
+    expect(recentGreenLapPace(crossings, 0)).toBe(110);
   });
 });
 

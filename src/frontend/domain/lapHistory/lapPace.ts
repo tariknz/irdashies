@@ -30,7 +30,7 @@ export const lapTimes = (crossings: readonly LapCrossing[]): LapPoint[] => {
  * `skipOpening` drops the first racing lap, which carries the standing or
  * rolling start and is never representative of green pace.
  */
-const greenLapTimes = (
+export const greenLapTimes = (
   crossings: readonly LapCrossing[],
   skipOpening = false
 ): number[] => {
@@ -66,6 +66,22 @@ export const medianGreenLapTime = (
   const times = greenLapTimes(crossings);
   if (times.length < MIN_GREEN_LAPS) return undefined;
   return median(times);
+};
+
+/**
+ * Median pace from the most recent `numLaps` green laps (neither the crossing
+ * that ends nor the one that starts a lap is flagged, so pit in/out laps never
+ * enter the average). Windows to the tail of the green-lap list so the pace
+ * tracks a driver's current pace rather than their whole-race average.
+ * Undefined until at least one green lap has been set.
+ */
+export const recentGreenLapPace = (
+  crossings: readonly LapCrossing[],
+  numLaps: number
+): number | undefined => {
+  const green = greenLapTimes(crossings);
+  if (green.length === 0) return undefined;
+  return median(green.slice(-Math.max(1, numLaps)));
 };
 
 /**

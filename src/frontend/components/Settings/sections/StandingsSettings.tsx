@@ -1215,6 +1215,53 @@ export const StandingsSettings = () => {
                         />
                       </>
                     )}
+                    <SettingToggleRow
+                      title="Show Estimated Laps"
+                      description="Show each class's projected total lap count in timed sessions, based on the class leader's current pace"
+                      enabled={
+                        settings.config.classHeaderStyle?.estimatedLaps
+                          ?.enabled ?? false
+                      }
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          classHeaderStyle: {
+                            ...settings.config.classHeaderStyle,
+                            estimatedLaps: {
+                              ...settings.config.classHeaderStyle
+                                ?.estimatedLaps,
+                              enabled: newValue,
+                            },
+                          },
+                        })
+                      }
+                    />
+                    {(settings.config.classHeaderStyle?.estimatedLaps
+                      ?.enabled ??
+                      false) && (
+                      <SettingSelectRow
+                        title="Laps to average"
+                        description="Green laps only — pit in/out laps are always excluded"
+                        value={(
+                          settings.config.classHeaderStyle?.estimatedLaps
+                            ?.numLaps ?? 5
+                        ).toString()}
+                        options={Array.from({ length: 8 }, (_, i) => ({
+                          label: (i + 3).toString(),
+                          value: (i + 3).toString(),
+                        }))}
+                        onChange={(v) =>
+                          handleConfigChange({
+                            classHeaderStyle: {
+                              ...settings.config.classHeaderStyle,
+                              estimatedLaps: {
+                                enabled: true,
+                                numLaps: parseInt(v),
+                              },
+                            },
+                          })
+                        }
+                      />
+                    )}
                   </SettingsSection>
 
                   <SettingDivider />
