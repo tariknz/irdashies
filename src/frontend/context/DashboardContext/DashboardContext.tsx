@@ -156,6 +156,13 @@ export const DashboardProvider: React.FC<{
     const unsubDemoMode = bridge.onDemoModeChanged?.((demoMode) =>
       setIsDemoMode(demoMode)
     );
+    // A window rebuilt by a simulator change is told the mode on the way up, but
+    // it can still be constructed after the last change, so ask for the
+    // current value rather than starting from the false default.
+    bridge
+      .getIsDemoMode?.()
+      .then(setIsDemoMode)
+      .catch(() => undefined);
     const unsubContainerBounds = bridge.onContainerBoundsInfo?.((info) => {
       setContainerBoundsInfo(info);
     });

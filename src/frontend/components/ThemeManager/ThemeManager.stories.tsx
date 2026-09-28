@@ -76,6 +76,7 @@ const createMockBridge = (
       return;
     };
   },
+  getIsDemoMode: () => Promise.resolve(false),
   getCurrentDashboard: () => {
     return null;
   },

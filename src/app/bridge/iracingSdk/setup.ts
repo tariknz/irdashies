@@ -128,6 +128,15 @@ export async function iRacingSDKSetup(
 
   ipcMain.handle('getActiveSimulator', () => activeSimulator ?? null);
   ipcMain.handle('getAvailableSimulators', () => getAvailableSimulators());
+  ipcMain.handle('getIsDemoMode', () => isDemoMode);
+
+  // Entering demo mode hands the feed to the mock bridge, so the running
+  // simulator is cleared and every overlay window is destroyed and rebuilt. The
+  // flag published above reached only the old windows, so the new ones have to
+  // be told as they come up.
+  overlayManager.onOverlayReady((id) => {
+    overlayManager.publishMessageToOverlay(id, 'demoModeChanged', isDemoMode);
+  });
 
   // The preference lives in the dashboard, so it is per-profile: switching to a
   // profile pinned to another simulator has to move the telemetry source with

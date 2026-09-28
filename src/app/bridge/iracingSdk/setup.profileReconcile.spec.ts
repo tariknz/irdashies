@@ -57,6 +57,8 @@ vi.mock('./sims/registry', () => ({
 const overlayManager = {
   setActiveSimulator: vi.fn(),
   publishMessage: vi.fn(),
+  onOverlayReady: vi.fn(() => () => undefined),
+  publishMessageToOverlay: vi.fn(),
 } as unknown as OverlayManager;
 
 const realPlatform = process.platform;

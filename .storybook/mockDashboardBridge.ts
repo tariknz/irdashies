@@ -46,6 +46,7 @@ export const mockDashboardBridge: DashboardBridge = {
       return;
     };
   },
+  getIsDemoMode: () => Promise.resolve(mockDashboardBridgeState.isDemoMode),
   getCurrentDashboard: () => {
     return null;
   },

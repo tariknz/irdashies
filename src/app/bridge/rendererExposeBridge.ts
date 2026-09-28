@@ -176,6 +176,9 @@ export function exposeBridge() {
       ipcRenderer.on('demoModeChanged', handler);
       return () => ipcRenderer.removeListener('demoModeChanged', handler);
     },
+    getIsDemoMode: () => {
+      return ipcRenderer.invoke('getIsDemoMode');
+    },
     notifySimulatorPreferenceChanged: () => {
       ipcRenderer.send('simulatorPreferenceChanged');
     },
