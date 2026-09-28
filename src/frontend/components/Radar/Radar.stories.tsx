@@ -3,6 +3,11 @@ import {
   CaptureChannelDecorator,
   TelemetryDecoratorWithConfig,
 } from '@irdashies/storybook';
+import { DashboardProvider } from '@irdashies/context';
+import {
+  mockDashboardBridge,
+  mockDashboardBridgeState,
+} from '../../../../.storybook/mockDashboardBridge';
 import { Radar } from './Radar';
 
 /**
@@ -90,4 +95,27 @@ export const ShownOnlyWhenNear: Story = {
     fadeSeconds: 0,
   }),
   name: 'Shown only when a car is near',
+};
+
+/**
+ * Demo mode has no telemetry at all: the disc is fed the widget's own demo
+ * cars. Driven by the bridge state rather than a capture, so the story fails
+ * in the same way the app does if demo mode stops painting anything.
+ */
+export const DemoMode: Story = {
+  decorators: [
+    (Story) => {
+      mockDashboardBridgeState.isDemoMode = true;
+      try {
+        return frame(
+          <DashboardProvider bridge={mockDashboardBridge}>
+            <Story />
+          </DashboardProvider>
+        );
+      } finally {
+        mockDashboardBridgeState.isDemoMode = false;
+      }
+    },
+  ],
+  name: 'Demo mode',
 };

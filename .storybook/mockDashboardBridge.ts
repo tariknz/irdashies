@@ -1,6 +1,16 @@
 import type { DashboardBridge } from '@irdashies/types';
 import { defaultDashboard } from '@irdashies/types';
 
+/**
+ * Demo mode is a bridge-level state, so a story that needs it sets the flag
+ * here before mounting. A capture story and a demo story cannot both apply,
+ * which is the point: demo mode has no telemetry, so driving it from a
+ * recording would say nothing about demo mode.
+ */
+export const mockDashboardBridgeState = {
+  isDemoMode: false,
+};
+
 export const mockDashboardBridge: DashboardBridge = {
   reloadDashboard: () => {
     // noop
@@ -31,7 +41,7 @@ export const mockDashboardBridge: DashboardBridge = {
     return;
   },
   onDemoModeChanged: (callback) => {
-    callback(false);
+    callback(mockDashboardBridgeState.isDemoMode);
     return () => {
       return;
     };
