@@ -165,4 +165,18 @@ describe('RadarProcessor', () => {
       version: 1,
     });
   });
+
+  it('exposes a player speed that alone cannot classify the grid', () => {
+    // Speed is a float, so 0.4 is exactly representable. The grid test in
+    // useRadar is `carSpeed < 0.5`, and a 60 Hz rounding step in any encoder
+    // on the way to the renderer could put a genuinely stationary car above it
+    // — which clears every overlap side and rim signal, so no alongside car is
+    // placed and nothing is drawn in the disc's dead centre. Asserting the
+    // processor hands the reading over untouched keeps that decision, and the
+    // one place that can fix it, in view.
+    const processor = new RadarProcessor();
+    processor.onFrame(frame([0.5, 0.6], { speed: 0.4 }));
+
+    expect(processor.snapshot().carSpeed).toBe(0.4);
+  });
 });
