@@ -195,16 +195,7 @@ export const FuelCalculatorPitScenarios: React.FC<
         </div>
 
         {displayData.targetScenarios.map((scenario) => {
-          // Calculate values for this scenario
-          // const fuelPerLap = scenario.fuelPerLap;
-          // const lapsToCover = fuelData.lapsRemaining; // Rough estimate, technically depends on when we pit
-
           const pitLap = fuelData.currentLap + scenario.laps;
-
-          // Fuel to Add calculation:
-          // Color coding
-          // let colorClass = 'text-cyan-400';
-          // if (scenario.isCurrentTarget) colorClass = 'text-green-400 font-medium';
 
           // Calculate hypothetical ADD
           // If we drive `scenario.laps` laps, we arrive at pit.
