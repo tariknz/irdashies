@@ -8,6 +8,9 @@ import {
   type RadarBlip,
 } from './radarBlips';
 import { overlapFromCarLeftRight } from './overlapSides';
+import { parseGridLayout } from './gridLayout';
+import nordschleife from '../../../../test-data/1783998516193/telemetry.json';
+import nordschleifeSession from '../../../../test-data/1783998516193/session.json';
 import interlagosLeft from '../../../../test-data/1747384033336/telemetry.json';
 import interlagosLeftSession from '../../../../test-data/1747384033336/session.json';
 import interlagos from '../../../../test-data/1752616787256/telemetry.json';
@@ -54,12 +57,13 @@ interface Capture {
   };
 }
 
-const place = (capture: Capture) => {
+const baseFor = (capture: Capture) => {
   const { telemetry, session } = capture;
   const snapshot: RadarSnapshot = {
     carIdxLapDistPct: (telemetry.CarIdxLapDistPct?.value ?? []) as number[],
     carIdxOnPitRoad: (telemetry.CarIdxOnPitRoad?.value ?? []) as boolean[],
-    carIdxPosition: [],
+    carIdxPaceRow: (telemetry.CarIdxPaceRow?.value ?? []) as number[],
+    carIdxPaceLine: (telemetry.CarIdxPaceLine?.value ?? []) as number[],
     focusCarIdx:
       (telemetry.CamCarIdx?.value?.[0] as number | undefined) ?? null,
     carSpeed: 0,
@@ -68,11 +72,12 @@ const place = (capture: Capture) => {
     version: 0,
   };
 
-  const result = computeRadarBlips({
+  return {
     carIdxLapDistPct: snapshot.carIdxLapDistPct,
     carIdxOnPitRoad: snapshot.carIdxOnPitRoad,
+    carIdxPaceRow: snapshot.carIdxPaceRow,
+    carIdxPaceLine: snapshot.carIdxPaceLine,
     gridLayout: null,
-    carIdxPosition: [],
     playerCarIdx: snapshot.focusCarIdx,
     trackDrawing: trackDrawings[session.WeekendInfo.TrackID],
     trackLengthM: trackLengthOf(session),
@@ -83,12 +88,17 @@ const place = (capture: Capture) => {
     ),
     vehicleWidth: 1.9,
     vehicleLength: 4.5,
-    carNumbers: new Map(),
+    carNumbers: new Map<number, string>(),
     paceCarIdx: null,
     previousTargets: emptyTargetState(snapshot.carIdxLapDistPct.length),
     nextTargets: emptyTargetState(snapshot.carIdxLapDistPct.length),
     followingMapBuffer: new Float64Array(128),
-  });
+  };
+};
+
+const place = (capture: Capture) => {
+  const { telemetry, session } = capture;
+  const result = computeRadarBlips(baseFor(capture));
 
   const scalar = (key: string) => telemetry[key]?.value?.[0] as number;
   return {
@@ -206,5 +216,111 @@ describe('radar placement over recorded telemetry', () => {
     // The road reports no lateral offset for an abreast car, and it must stay
     // that way: the side offset is a drawing decision, not a measurement.
     expect(alongside.lateralM).toBeCloseTo(0, 6);
+  });
+
+  it('draws the recorded two-abreast grid as two columns, not one file', () => {
+    // Nürburgring, recorded on the grid: twenty cars parked on a
+    // "2x2 inline pole on left" grid. This is the recording the reported bug
+    // came from, and it is the only place the whole reconstruction can be
+    // checked against something that was not written by the same reasoning.
+    //
+    // `CarIdxPosition` reads 0 for every car in this frame, so the first
+    // attempt at a grid slot had nothing to work from. The lap distance does:
+    // the cars of a row report the same value, eight metres apart from the next
+    // row. That is all the columns are built from here.
+    const capture: Capture = {
+      name: 'Nurburgring, parked on the grid',
+      telemetry: nordschleife as never,
+      session: nordschleifeSession as never,
+    };
+    const layout = parseGridLayout('2x2 inline pole on left');
+    expect(layout).not.toBeNull();
+
+    // The grid is wider than the 15 m the other cases draw, so the whole field
+    // is in range and the reconstruction is judged on all of it.
+    const base = { ...baseFor(capture), radarRange: 120 };
+    const onGrid = computeRadarBlips({ ...base, gridLayout: layout });
+    const onCentreline = computeRadarBlips({ ...base, gridLayout: null });
+
+    // `CarIdxPaceRow` and `CarIdxPaceLine` are the sim's own row and lane
+    // numbering, and the sim is the oracle here: the placement is judged against
+    // the grid iRacing thinks is there, not against its own reasoning.
+    const gridFrame = nordschleife as unknown as Record<
+      string,
+      { value: number[] }
+    >;
+    const paceRow = gridFrame.CarIdxPaceRow.value;
+    const paceLine = gridFrame.CarIdxPaceLine.value;
+    const playerCarIdx = gridFrame.CamCarIdx.value[0];
+    const playerRow = paceRow[playerCarIdx];
+
+    // Every car the sim put on the grid gets a column, except the player's own
+    // row, which is drawn from the CarLeftRight verdict instead. The pace flags
+    // are only set for a car actually on the grid, so row -1 is not one of
+    // these — car 64 in this frame is parked in the pit lane.
+    //
+    // The filter is on the blips rather than the pace flags themselves, because
+    // the radar draws a car it can locate. Half this grid reports
+    // `CarIdxLapDistPct` of -1 — a real grid slot, a car the SDK cannot yet
+    // place on the road — and a blip is never made for one of those. The
+    // placement is only as complete as the telemetry the radar is given.
+    const shouldPlace = (carIdx: number) =>
+      paceRow[carIdx] >= 0 && paceRow[carIdx] !== playerRow;
+    const placed = onGrid.blips.filter(
+      (blip) => shouldPlace(blip.carIdx) && blip.drawLateralM !== 0
+    );
+    const ranked = onGrid.blips.filter((blip) => shouldPlace(blip.carIdx));
+    expect(placed).toHaveLength(ranked.length);
+    // The field reaches both columns, rather than drawing as the single file the
+    // bug reported.
+    const sides = new Set(placed.map((blip) => Math.sign(blip.drawLateralM)));
+    expect(sides).toEqual(new Set([-1, 1]));
+    // Every placed car sits at the one offset the layout names, rather than at
+    // a spread of guesses.
+    for (const blip of placed) {
+      expect(Math.abs(blip.drawLateralM)).toBeCloseTo(2.5, 6);
+    }
+
+    // The decisive check: the drawn column has to agree with the sim about
+    // which lane each car is in. `CarIdxPaceLine` 0 and 1 are the two columns,
+    // and a grid placed well enough to be worth drawing has to match.
+    const wrong = placed.filter(
+      (blip) =>
+        Math.sign(blip.drawLateralM) !== (paceLine[blip.carIdx] === 0 ? -1 : 1)
+    );
+    expect(wrong.map((blip) => blip.carIdx)).toEqual([]);
+
+    // Each row is split across the two columns, so no row is stacked on one side.
+    // The rows this checks are the ones the radar can draw, so the expected size
+    // is counted from the sim rather than written down: a row holding a car the
+    // SDK cannot place has only one car to draw, and one line on its own is the
+    // whole of that row rather than a stack.
+    const linesByRow = new Map<number, number[]>();
+    for (const blip of placed) {
+      const row = paceRow[blip.carIdx];
+      linesByRow.set(row, [
+        ...(linesByRow.get(row) ?? []),
+        Math.sign(blip.drawLateralM),
+      ]);
+    }
+    const drawableInRow = (row: number) =>
+      onGrid.blips.filter(
+        (blip) => shouldPlace(blip.carIdx) && paceRow[blip.carIdx] === row
+      ).length;
+    for (const [row, lines] of linesByRow) {
+      expect(lines.length, `row ${row}`).toBe(drawableInRow(row));
+      if (lines.length === 2) expect(new Set(lines)).toEqual(new Set([-1, 1]));
+    }
+
+    // The measurement is untouched. Drawing the grid must not disturb what the
+    // road reported, because the motion interpolator reads `lateralM` and a
+    // placed offset fed back as the next frame's target walks a car off the
+    // road between the grid and the start.
+    const measured = new Map(
+      onCentreline.blips.map((blip) => [blip.carIdx, blip.lateralM])
+    );
+    for (const blip of onGrid.blips) {
+      expect(blip.lateralM).toBe(measured.get(blip.carIdx));
+    }
   });
 });

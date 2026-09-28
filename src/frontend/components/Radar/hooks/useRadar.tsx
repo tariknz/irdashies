@@ -73,12 +73,13 @@ type RadarInput = readonly [
   readonly number[],
   readonly boolean[],
   readonly number[],
+  readonly number[],
   boolean,
   number,
   number,
 ];
 
-const EMPTY_INPUT: RadarInput = [null, [], [], [], false, 0, 0];
+const EMPTY_INPUT: RadarInput = [null, [], [], [], [], false, 0, 0];
 const EMPTY_NUMBERS: ReadonlyMap<number, string> = new Map();
 const EMPTY_COLORS: ReadonlyMap<number, string> = new Map();
 
@@ -117,7 +118,8 @@ const selectRadarInput = (snapshot: RadarSnapshot): RadarInput => [
   snapshot.focusCarIdx,
   snapshot.carIdxLapDistPct,
   snapshot.carIdxOnPitRoad,
-  snapshot.carIdxPosition,
+  snapshot.carIdxPaceRow,
+  snapshot.carIdxPaceLine,
   snapshot.isOnTrack,
   snapshot.sessionState,
   snapshot.carSpeed,
@@ -125,12 +127,13 @@ const selectRadarInput = (snapshot: RadarSnapshot): RadarInput => [
 
 const radarInputEqual = (previous: RadarInput, next: RadarInput): boolean =>
   previous[0] === next[0] &&
-  previous[4] === next[4] &&
   previous[5] === next[5] &&
   previous[6] === next[6] &&
+  previous[7] === next[7] &&
   shallow(previous[1], next[1]) &&
   shallow(previous[2], next[2]) &&
-  shallow(previous[3], next[3]);
+  shallow(previous[3], next[3]) &&
+  shallow(previous[4], next[4]);
 
 const trackDrawings = tracks as unknown as Record<
   number,
@@ -148,7 +151,8 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
     focusCarIdx,
     positions,
     onPitRoad,
-    carIdxPosition,
+    paceRow,
+    paceLine,
     isOnTrack,
     sessionState,
     carSpeed,
@@ -294,12 +298,12 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
       carNumbers,
       carColors,
       paceCarIdx,
-      // The grid reconstruction is a statement of fact only while the cars are
-      // parked. From Racing the slot is a memory of qualifying rather than
-      // where the car stands, so the measured projection stands on its own
-      // again. The overlap suppression below covers the same window.
+      // The grid placement is a statement of fact only while the cars are
+      // parked. The sim's own row and line numbering stops at the lights
+      // anyway, so this is the belt to those braces.
       gridLayout: isGridBeforeStart(sessionState) ? gridLayout : null,
-      carIdxPosition,
+      carIdxPaceRow: paceRow,
+      carIdxPaceLine: paceLine,
       previousTargets,
       nextTargets,
       followingMapBuffer,
@@ -316,6 +320,8 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
   }, [
     positions,
     onPitRoad,
+    paceRow,
+    paceLine,
     playerCarIdx,
     targetKey,
     trackDrawing,
@@ -330,7 +336,6 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
     paceCarIdx,
     isGrid,
     gridLayout,
-    carIdxPosition,
     sessionState,
     emptyTargets,
     targetBuffers,

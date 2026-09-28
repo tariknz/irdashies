@@ -81,7 +81,6 @@ const baseInput: Omit<RadarBlipInput, 'carIdxLapDistPct' | 'carIdxOnPitRoad'> =
     ]),
     paceCarIdx: null,
     gridLayout: null,
-    carIdxPosition: [],
     previousTargets: emptyTargetState(8),
     nextTargets: emptyTargetState(8),
     followingMapBuffer: new Float64Array(2048),
@@ -558,41 +557,78 @@ describe('computeRadarBlips', () => {
   });
 
   describe('the standing grid', () => {
-    const GRID = { columns: 2, poleLateralM: -2.5 };
+    const GRID = { columns: 2, columnLateralM: 2.5 };
 
     /**
-     * Four cars standing on the grid, two to a row. The lap fractions differ
-     * by a few hundredths of a metre, which is as close as the sim reports
-     * two cars parked abreast, and the slots pair them into rows.
+     * Six cars parked on the grid, two to a row, eight metres between rows. The
+     * player is in the first row and is not drawn, which leaves two full rows
+     * beyond. `CarIdxPaceRow` counts from the front of the field, so the player
+     * is in row 0 and the two rows beyond are rows 1 and 2.
      */
-    const parked = (arcM: number, carIdxPosition: number[]) =>
+    const parked = (arcM: number) =>
       computeRadarBlips({
         ...baseInput,
         gridLayout: GRID,
-        carIdxPosition,
+        // The base 15 m range reaches barely one row of a real grid, so the
+        // range is opened to take in the whole field.
+        radarRange: 40,
         ...positionsOf([
           pctOfArc(arcM),
           pctOfArc(arcM + 0.05),
-          pctOfArc(arcM + 0.03),
-          pctOfArc(arcM - 0.02),
+          pctOfArc(arcM + 8),
+          pctOfArc(arcM + 8.05),
+          pctOfArc(arcM + 16),
+          pctOfArc(arcM + 16.05),
         ]),
+        carIdxPaceRow: [0, 0, 1, 1, 2, 2],
+        carIdxPaceLine: [0, 1, 0, 1, 0, 1],
       });
 
     it('draws two cars sharing a row to opposite sides, not one line', () => {
       // This is the reported bug: on the grid every car projected onto the
       // centreline at almost the same point, so the field drew as a single
       // file even though the cars stand two abreast.
-      const result = parked(300, [0, 1, 2, 3]);
+      const result = parked(300);
 
       const drawn = result.blips.map((blip) => blip.drawLateralM);
-      // The player holds slot 0 and is not drawn, so three blips remain.
-      expect(drawn).toHaveLength(3);
-      // Slot 1 is the pole column, slot 2 the other one, so the two cars the
-      // player shares a row with end up on opposite sides of the road.
-      expect(drawn).toContain(GRID.poleLateralM);
-      expect(drawn).toContain(-GRID.poleLateralM);
-      // Two distinct sides, which is what "abreast" looks like.
-      expect(new Set(drawn).size).toBe(2);
+      // The player is the first car and is not drawn, so five blips remain.
+      expect(drawn).toHaveLength(5);
+      // The two rows beyond the player's own row each reach both columns.
+      expect(drawn).toContain(GRID.columnLateralM);
+      expect(drawn).toContain(-GRID.columnLateralM);
+      // The car sharing the player's row is the one the sim's own side verdict
+      // places, so it is the only car left on the projection rather than being
+      // guessed at — and its offset is the verdict's, not the grid's.
+      expect(drawn.filter((offset) => offset === 0)).toHaveLength(1);
+    });
+
+    it('survives the overlap offset that used to overwrite it', () => {
+      // The grid is applied after the overlap verdict for a reason: the
+      // overlap's offset also lands on drawLateralM, and placing the grid
+      // first left every parked car back on the centreline. This is the
+      // regression that put the field back in a single file.
+      const result = computeRadarBlips({
+        ...baseInput,
+        gridLayout: GRID,
+        overlap: { left: 1, right: 0 },
+        ...positionsOf([
+          pctOfArc(300),
+          pctOfArc(300.05),
+          pctOfArc(308),
+          pctOfArc(308.05),
+        ]),
+        carIdxPaceRow: [0, 0, 1, 1],
+        carIdxPaceLine: [0, 1, 0, 1],
+      });
+
+      const byCar = new Map(
+        result.blips.map((b) => [b.carIdx, b.drawLateralM])
+      );
+      // The overlap covers only the player, so these two are a grid row. Line
+      // 0 is the left column, so car 2 is drawn to the left and car 3 to the
+      // right, whatever the overlap verdict did to them on the way in.
+      expect(byCar.get(2)).toBe(-GRID.columnLateralM);
+      expect(byCar.get(3)).toBe(GRID.columnLateralM);
     });
 
     it('leaves the measured lateral as the road reports it', () => {
@@ -600,7 +636,7 @@ describe('computeRadarBlips', () => {
       // the measurement the motion interpolator reads. Overwriting it would
       // feed the placed offset back as the next frame's target and walk the
       // car further out on every frame.
-      const result = parked(300, [0, 1, 2, 3]);
+      const result = parked(300);
 
       for (const blip of result.blips) {
         expect(blip.lateralM).toBeCloseTo(0, 6);
@@ -613,7 +649,6 @@ describe('computeRadarBlips', () => {
       const result = computeRadarBlips({
         ...baseInput,
         gridLayout: null,
-        carIdxPosition: [0, 1, 2, 3],
         ...positionsOf([
           pctOfArc(300),
           pctOfArc(300.05),
@@ -627,12 +662,12 @@ describe('computeRadarBlips', () => {
       }
     });
 
-    it('keeps an unranked car on the projection', () => {
-      // A car the sim has not placed has no slot, so its column is unknown.
+    it('keeps a row it cannot account for on the projection', () => {
+      // One car eight metres out with no partner is not a row, so there is
+      // nothing to say about which column it was in.
       const result = computeRadarBlips({
         ...baseInput,
         gridLayout: GRID,
-        carIdxPosition: [0, 0],
         ...positionsOf([pctOfArc(300), pctOfArc(302)]),
       });
 

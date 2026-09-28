@@ -59,7 +59,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     focusCarIdx: null,
     carIdxLapDistPct: [],
     carIdxOnPitRoad: [],
-    carIdxPosition: [],
+    carIdxPaceRow: [],
+    carIdxPaceLine: [],
     sessionState: 0,
     carSpeed: 0,
     isOnTrack: false,
@@ -111,13 +112,15 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         this.latest.carIdxOnPitRoad as boolean[],
         valuesOf(frame, 'CarIdxOnPitRoad')
       ) || changed;
-    // Before the start this ranking is the grid slot, so the radar can pair
-    // the cars into rows from it. It settles for the whole session, so it is
-    // copied like the positions rather than tracked per change.
     changed =
       copyNumbers(
-        this.latest.carIdxPosition as number[],
-        valuesOf(frame, 'CarIdxPosition')
+        this.latest.carIdxPaceRow as number[],
+        valuesOf(frame, 'CarIdxPaceRow')
+      ) || changed;
+    changed =
+      copyNumbers(
+        this.latest.carIdxPaceLine as number[],
+        valuesOf(frame, 'CarIdxPaceLine')
       ) || changed;
 
     const sessionStateValue = scalar(frame, 'SessionState');
@@ -138,7 +141,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     if (event.type === 'enter') return;
     (this.latest.carIdxLapDistPct as number[]).length = 0;
     (this.latest.carIdxOnPitRoad as boolean[]).length = 0;
-    (this.latest.carIdxPosition as number[]).length = 0;
+    (this.latest.carIdxPaceRow as number[]).length = 0;
+    (this.latest.carIdxPaceLine as number[]).length = 0;
     this.latest.focusCarIdx = null;
     this.latest.sessionState = 0;
     this.latest.carSpeed = 0;

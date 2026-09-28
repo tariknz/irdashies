@@ -246,7 +246,6 @@ const runDensity = (
       carIdxLapDistPct: field.positions,
       carIdxOnPitRoad: field.onPitRoad,
       gridLayout: null,
-      carIdxPosition: [],
       playerCarIdx: field.playerCarIdx,
       trackDrawing: drawing,
       trackLengthM: field.trackLengthM,

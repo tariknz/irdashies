@@ -4,7 +4,7 @@ import {
   tangentAngleAt,
   type TrackDrawing,
 } from '@irdashies/domain/trackGeometry';
-import { gridSlotLateralM, type GridLayout } from './gridLayout';
+import { assignGridColumns, type GridLayout } from './gridLayout';
 import {
   alongsideWindowM,
   assignOverlapSides,
@@ -135,17 +135,20 @@ export interface RadarBlipInput {
    */
   paceCarIdx: number | null;
   /**
-   * The starting grid as the session describes it, or null when it cannot be
-   * reconstructed (no `StartingGrid` label, or a layout the radar does not
-   * draw). Null leaves every car on the centreline projection, which is what
-   * the radar did before this input existed.
+   * The starting grid as the session describes it, or null when the field is
+   * not standing on it (no `StartingGrid` label, a layout the radar does not
+   * draw, or the session already racing). Null leaves every car on the
+   * centreline projection, which is what the radar did before this input
+   * existed.
    */
   gridLayout: GridLayout | null;
   /**
-   * Session position by CarIdx, 0 where the sim has not ranked the car. Before
-   * the start this is the grid slot, which is what puts a car in its column.
+   * The sim's own grid, by CarIdx: `CarIdxPaceRow` and `CarIdxPaceLine`. Read
+   * only where `gridLayout` is set, and every entry is -1 once the session is
+   * racing, so an absent array simply places nothing.
    */
-  carIdxPosition: readonly number[];
+  carIdxPaceRow?: readonly number[];
+  carIdxPaceLine?: readonly number[];
   /**
    * State carried over from the previous frame; the caller owns it and
    * alternates it with `nextTargets`.
@@ -297,7 +300,6 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
     carColors,
     paceCarIdx,
     gridLayout,
-    carIdxPosition,
     previousTargets,
     nextTargets,
     followingMapBuffer,
@@ -404,22 +406,6 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
 
   const blips: RadarBlip[] = [];
 
-  // The standing grid. Two cars in one row report nearly the same lap fraction,
-  // so the projection puts them on top of each other and the grid comes out as
-  // a single file of blips. The slot says which column a car belongs in, which
-  // is enough to put each car in its own column.
-  //
-  // Only `drawLateralM` is replaced, never `lateralM`: the measured lateral
-  // stays what the road reports so the motion interpolator is handed the same
-  // signal it was before, and feeding a placed offset back as the next frame's
-  // target is what walks a car off the road.
-  const gridOffsetFor = (carIdx: number): number | null => {
-    if (gridLayout === null) return null;
-    const slot = carIdxPosition[carIdx];
-    if (!Number.isFinite(slot) || slot < 1) return null;
-    return gridSlotLateralM(slot, gridLayout);
-  };
-
   for (let carIdx = 0; carIdx < positions.length; carIdx += 1) {
     if (carIdx === playerCarIdx) continue;
     const pct = positions[carIdx];
@@ -472,16 +458,11 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
             Math.cos(carTangent - playerTangent)
           );
 
-    // On the grid a car is drawn in its own column rather than where the
-    // centreline projection lands it. The row spacing is not applied here:
-    // the measured lap fraction already carries the real distance to the
-    // player's row, and moving it again would double-count.
-    const gridOffset = gridOffsetFor(carIdx);
     blips.push({
       carIdx,
       alongM,
       lateralM,
-      drawLateralM: gridOffset === null ? lateralM : gridOffset,
+      drawLateralM: lateralM,
       relYaw,
       gapM: Math.abs(alongM),
       side: null,
@@ -539,6 +520,39 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
     // range is unaffected by the latch until it has been drawn once.
     nextTargets.alongSign[blip.carIdx] =
       Math.sign(blip.alongM) || previousTargets.alongSign[blip.carIdx];
+  }
+
+  // The standing grid, applied last so it is the offset that survives.
+  //
+  // Both of the offsets above write to `drawLateralM`, and the overlap's fades
+  // back out to the centreline as a car leaves the window the verdict covers.
+  // Placing the grid before them meant the grid offset was overwritten on the
+  // very cars it was drawn for, which is what left the field in a single file.
+  //
+  // `lateralM` is deliberately left as the road reports it. The widget
+  // interpolates from it, and a placed offset fed back as the next frame's
+  // target is what walks a car off the road between the grid and the start.
+  if (gridLayout !== null) {
+    const paceRow = input.carIdxPaceRow;
+    const paceLine = input.carIdxPaceLine;
+    const columns =
+      paceRow && paceLine
+        ? assignGridColumns(
+            blips.map((blip) => ({
+              carIdx: blip.carIdx,
+              line: paceLine[blip.carIdx] ?? -1,
+              row: paceRow[blip.carIdx] ?? -1,
+            })),
+            gridLayout,
+            playerCarIdx !== null ? (paceRow[playerCarIdx] ?? -1) : -1
+          )
+        : null;
+    if (columns !== null) {
+      for (const blip of blips) {
+        const column = columns.get(blip.carIdx);
+        if (column !== undefined) blip.drawLateralM = column;
+      }
+    }
   }
 
   return {
