@@ -11,6 +11,8 @@ import { overlapFromCarLeftRight } from './overlapSides';
 import { parseGridLayout } from './gridLayout';
 import nordschleife from '../../../../test-data/1783998516193/telemetry.json';
 import nordschleifeSession from '../../../../test-data/1783998516193/session.json';
+import roadAtlanta from '../../../../test-data/road-atlanta-grid/telemetry.json';
+import roadAtlantaSession from '../../../../test-data/road-atlanta-grid/session.json';
 import interlagosLeft from '../../../../test-data/1747384033336/telemetry.json';
 import interlagosLeftSession from '../../../../test-data/1747384033336/session.json';
 import interlagos from '../../../../test-data/1752616787256/telemetry.json';
@@ -322,5 +324,63 @@ describe('radar placement over recorded telemetry', () => {
     for (const blip of onGrid.blips) {
       expect(blip.lateralM).toBe(measured.get(blip.carIdx));
     }
+  });
+
+  it('draws a grid the session label denies, from the sim numbering', () => {
+    // Road Atlanta, recorded on the grid: twenty cars in ten rows, lines 0 and
+    // 1, the two cars of a row reporting the same lap distance to two decimals.
+    // The session's own `StartingGrid` says `"single file"`, so the label
+    // describes the session's configuration and not the field standing on the
+    // track. Reading the column count from the label alone left the whole field
+    // on the centreline, in a single file, which is the reported bug.
+    const capture: Capture = {
+      name: 'Road Atlanta, parked on a grid the label calls single file',
+      telemetry: roadAtlanta as never,
+      session: roadAtlantaSession as never,
+    };
+    const label = roadAtlantaSession.WeekendInfo.WeekendOptions?.StartingGrid;
+    expect(label).toBe('single file');
+
+    const frame = roadAtlanta as unknown as Record<string, { value: number[] }>;
+    const paceRow = frame.CarIdxPaceRow.value;
+    const paceLine = frame.CarIdxPaceLine.value;
+    const playerCarIdx = frame.CamCarIdx.value[0];
+    const playerRow = paceRow[playerCarIdx];
+
+    // The candidates are the cars the radar can both place and name, which is
+    // what the hook reads before deciding the field is two-abreast.
+    const candidates = frame.CarIdxLapDistPct.value.flatMap((pct, carIdx) =>
+      pct >= 0 && paceRow[carIdx] >= 0 && paceLine[carIdx] >= 0
+        ? [{ carIdx, line: paceLine[carIdx], row: paceRow[carIdx] }]
+        : []
+    );
+    expect(candidates.length).toBe(20);
+
+    // The label alone says there is no grid at all.
+    expect(parseGridLayout(label)).toBeNull();
+    // The sim's own numbering says there is, and that is what the radar uses.
+    const layout = parseGridLayout(label, candidates);
+    expect(layout?.columns).toBe(2);
+
+    const base = { ...baseFor(capture), radarRange: 120 };
+    const onGrid = computeRadarBlips({ ...base, gridLayout: layout });
+
+    // The sim is the oracle: the drawn column has to agree with the line it
+    // numbered, or the field is drawn in the wrong order.
+    const shouldPlace = (carIdx: number) =>
+      paceRow[carIdx] >= 0 && paceRow[carIdx] !== playerRow;
+    const placed = onGrid.blips.filter(
+      (blip) => shouldPlace(blip.carIdx) && blip.drawLateralM !== 0
+    );
+    const ranked = onGrid.blips.filter((blip) => shouldPlace(blip.carIdx));
+    expect(placed).toHaveLength(ranked.length);
+    expect(new Set(placed.map((blip) => Math.sign(blip.drawLateralM)))).toEqual(
+      new Set([-1, 1])
+    );
+    const wrong = placed.filter(
+      (blip) =>
+        Math.sign(blip.drawLateralM) !== (paceLine[blip.carIdx] === 0 ? -1 : 1)
+    );
+    expect(wrong.map((blip) => blip.carIdx)).toEqual([]);
   });
 });

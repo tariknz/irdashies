@@ -37,29 +37,6 @@ export const UNKNOWN_GRID: GridLayout | null = null;
 
 const COLUMN_PATTERN = /(\d+)\s*x\s*(\d+)/;
 
-/**
- * Reads the column count out of the SDK's grid label.
- *
- * `WeekendInfo.WeekendOptions.StartingGrid` is free text such as
- * `"2x2 inline pole on left"` or `"single file"`. Only the column count is
- * taken, as a cross-check on the sim's own line numbering: a grid the sim
- * numbers beyond the columns the session advertises is one this will not draw,
- * because the placement is a statement about the two-abreast grid alone.
- */
-export const parseGridLayout = (
-  startingGrid: string | undefined
-): GridLayout | null => {
-  if (!startingGrid) return UNKNOWN_GRID;
-  const match = COLUMN_PATTERN.exec(startingGrid);
-  if (!match) return UNKNOWN_GRID;
-  const columns = Number.parseInt(match[1], 10);
-  if (!Number.isFinite(columns) || columns !== 2) return UNKNOWN_GRID;
-  // Only the two-abreast grid is placed. A wider grid would put a third column
-  // in the middle of the player's view, which is a different drawing problem,
-  // and a single-file grid has no columns to pair at all.
-  return { columns, columnLateralM: COLUMN_LATERAL_M };
-};
-
 /** A car the grid may place, as the sim numbered it. */
 export interface GridColumnCandidate {
   readonly carIdx: number;
@@ -68,6 +45,87 @@ export interface GridColumnCandidate {
   /** `CarIdxPaceRow`, needed only to recognise the player's own row. */
   readonly row: number;
 }
+
+/**
+ * Reads the column count off the sim's own line numbering.
+ *
+ * The session's `StartingGrid` label cannot be trusted for this. A recorded
+ * Road Atlanta grid reports `"single file"` while the sim numbers twenty cars
+ * across ten rows in lines 0 and 1, with the two cars of a row reporting the
+ * same lap distance to two decimals. The label is what the session is
+ * configured for, and it is not what the field is standing in.
+ *
+ * `CarIdxPaceLine` is that: the column the sim has actually put each car in. It
+ * is also the only source that says how many columns there are, since the count
+ * is implied by the highest line in use rather than stated anywhere.
+ *
+ * Both fields are needed to read it. Row -1 with line -1 is what the sim
+ * reports for a car that is in the session but not on a grid, and a car that
+ * has not been placed on the road yet reports row 0 — so a single car with
+ * `row 0, line -1` while the others sit in a column is a partially filled
+ * grid, not a one-row grid. Only a row that the sim numbered *and* a line it
+ * assigned together make a column.
+ *
+ * @returns The layout, or null when the sim has numbered no two-abreast field.
+ */
+export const columnsFromPaceLines = (
+  cars: readonly GridColumnCandidate[]
+): GridLayout | null => {
+  let widest = -1;
+  const lines = new Set<number>();
+  for (const car of cars) {
+    if (car.row < 0 || car.line < 0) continue;
+    if (car.line > widest) widest = car.line;
+    lines.add(car.line);
+  }
+  // A single-file grid numbers every car line 0, and a field that is not on a
+  // grid numbers nothing at all. Neither has columns to pair.
+  if (lines.size < 2) return UNKNOWN_GRID;
+  // Only the two-abreast grid is placed: a third column would sit in the
+  // middle of the player's view, which is a different drawing problem, and the
+  // line numbering alone cannot say which side of the road it is on.
+  if (widest !== 1) return UNKNOWN_GRID;
+  return { columns: 2, columnLateralM: COLUMN_LATERAL_M };
+};
+
+/**
+ * Whether the sim has numbered a grid at all, whatever its shape.
+ *
+ * Separate from the layout because the two questions have different answers. A
+ * single-file grid and a field that is not on a grid both yield no layout, but
+ * only the second may fall back to the label: a grid the sim has numbered and
+ * this will not place is one where the label is describing something other than
+ * the field in front of the player, which is the very thing the label cannot be
+ * trusted about.
+ */
+const hasNumberedGrid = (cars: readonly GridColumnCandidate[]): boolean =>
+  cars.some((car) => car.row >= 0);
+
+/**
+ * Reads the column count out of the SDK's grid label.
+ *
+ * `WeekendInfo.WeekendOptions.StartingGrid` is free text such as
+ * `"2x2 inline pole on left"` or `"single file"`. Only the column count is
+ * taken, and only as a fallback: the sim's own line numbering is read first,
+ * because the label is free text about the session's configuration and a
+ * recorded Road Atlanta grid contradicts it outright.
+ */
+export const parseGridLayout = (
+  startingGrid: string | undefined,
+  cars: readonly GridColumnCandidate[] = []
+): GridLayout | null => {
+  const fromPace = columnsFromPaceLines(cars);
+  if (fromPace !== null) return fromPace;
+  // The sim numbered a field and it is not the two-abreast one, so the label
+  // cannot be used to describe what is standing on the track.
+  if (hasNumberedGrid(cars)) return UNKNOWN_GRID;
+  if (!startingGrid) return UNKNOWN_GRID;
+  const match = COLUMN_PATTERN.exec(startingGrid);
+  if (!match) return UNKNOWN_GRID;
+  const columns = Number.parseInt(match[1], 10);
+  if (!Number.isFinite(columns) || columns !== 2) return UNKNOWN_GRID;
+  return { columns, columnLateralM: COLUMN_LATERAL_M };
+};
 
 /**
  * Puts every car of a standing grid into the column the sim says it is in.

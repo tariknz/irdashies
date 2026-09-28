@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SessionState } from '@irdashies/types';
 import {
   assignGridColumns,
+  columnsFromPaceLines,
   isGridBeforeStart,
   parseGridLayout,
   type GridColumnCandidate,
@@ -10,6 +11,70 @@ import {
 
 /** The grid label iRacing actually ships, and the one shape we draw. */
 const TWO_ABREAST = '2x2 inline pole on left';
+
+/** A car as the sim numbered it: `row` counts from the front of the field. */
+const at = (
+  carIdx: number,
+  row: number,
+  line: number
+): GridColumnCandidate => ({ carIdx, row, line });
+
+describe('columnsFromPaceLines', () => {
+  it('reads two columns off the sim numbering whatever the label says', () => {
+    // A recorded Road Atlanta grid: the session reports "single file" while the
+    // sim numbers twenty cars across ten rows in two lines. The label is what
+    // the session is configured for; the line is where the cars are standing.
+    const field = [0, 1, 2, 3, 4].flatMap((row) => [
+      at(row * 2, row, 0),
+      at(row * 2 + 1, row, 1),
+    ]);
+    expect(parseGridLayout('single file', field)?.columns).toBe(2);
+  });
+
+  it('agrees with the label on a grid the label describes', () => {
+    // Nürburgring: "2x2 inline pole on left" and two lines. Both sources give
+    // the same answer, so the label stays as the fallback.
+    const field = [at(1, 0, 0), at(2, 0, 1), at(3, 1, 0), at(4, 1, 1)];
+    expect(parseGridLayout(TWO_ABREAST, field)).toEqual(
+      parseGridLayout(TWO_ABREAST)
+    );
+  });
+
+  it('reports no grid when the sim numbered one line', () => {
+    // A single-file grid numbers every car line 0, and there is nothing to pair.
+    const field = [at(1, 0, 0), at(2, 1, 0), at(3, 2, 0)];
+    expect(columnsFromPaceLines(field)).toBeNull();
+  });
+
+  it('reports no grid when a line was assigned but no row', () => {
+    // A recorded Okayama session writes row 0 with line -1 for cars that are in
+    // the session but not parked yet. Taking the row as a grid would put a
+    // one-row field on the start line.
+    expect(columnsFromPaceLines([at(1, 0, -1), at(2, 0, -1)])).toBeNull();
+  });
+
+  it('reports no grid when the sim numbered nothing at all', () => {
+    expect(columnsFromPaceLines([])).toBeNull();
+    expect(columnsFromPaceLines([at(1, -1, -1), at(2, -1, -1)])).toBeNull();
+  });
+
+  it('refuses a third column rather than inventing where it stands', () => {
+    // A wider grid is a different drawing problem, and the line numbering says
+    // nothing about which side of the road the extra column is on.
+    const field = [at(1, 0, 0), at(2, 0, 1), at(3, 0, 2)];
+    expect(columnsFromPaceLines(field)).toBeNull();
+    // The label fallback still describes a two-column grid, so the field stays
+    // off rather than being placed on a guess.
+    expect(parseGridLayout(TWO_ABREAST, field)).toBeNull();
+  });
+
+  it('falls back to the label when the sim has numbered no field', () => {
+    // Racing onward every row and line reads -1, and the label is all that is
+    // left. The hook gates on the session state, so this only matters for a
+    // frame where the sim is behind the state it reports.
+    expect(parseGridLayout(TWO_ABREAST, [])?.columns).toBe(2);
+  });
+});
 
 describe('parseGridLayout', () => {
   it('reads the two-abreast grid and its column spacing', () => {
@@ -43,12 +108,6 @@ describe('assignGridColumns', () => {
   // A layout the parser is known to accept, so the maths can be read without a
   // null check on every line.
   const layout = parseGridLayout(TWO_ABREAST) as GridLayout;
-  /** A car as the sim numbered it: `row` counts from the front of the field. */
-  const at = (
-    carIdx: number,
-    row: number,
-    line: number
-  ): GridColumnCandidate => ({ carIdx, row, line });
 
   it('puts each car in the column the sim names', () => {
     const columns = assignGridColumns([at(1, 3, 0), at(2, 3, 1)], layout);

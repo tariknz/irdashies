@@ -22,6 +22,7 @@ import { MAX_RADAR_RANGE_M } from '../radarFade';
 import {
   isGridBeforeStart,
   parseGridLayout,
+  type GridColumnCandidate,
   type GridLayout,
 } from '../gridLayout';
 import {
@@ -82,6 +83,45 @@ type RadarInput = readonly [
 const EMPTY_INPUT: RadarInput = [null, [], [], [], [], false, 0, 0];
 const EMPTY_NUMBERS: ReadonlyMap<number, string> = new Map();
 const EMPTY_COLORS: ReadonlyMap<number, string> = new Map();
+
+const EMPTY_GRID_CANDIDATES: readonly GridColumnCandidate[] = [];
+
+/**
+ * The cars the sim has numbered onto a grid, from its own pace telemetry.
+ *
+ * A car is only a candidate once the SDK can place it on the road. Before the
+ * start the sim writes `CarIdxPaceRow` and `CarIdxPaceLine` for cars that are
+ * in the session but not yet parked — a recorded Okayama session reports row 0
+ * with line -1 for a handful of cars while they are still driving in, and
+ * those are not a grid. The radar draws a car it can locate, so a candidate the
+ * radar will never draw a blip for is one whose row and line must not decide
+ * whether the field is treated as two-abreast.
+ *
+ * Allocated per snapshot rather than reused: the candidate list is read only
+ * while the grid layout is computed, which is once per changed snapshot, and
+ * handing a shared buffer to two components at once would outlive its contents.
+ */
+const gridCandidatesFromPace = (
+  paceRow: readonly number[],
+  paceLine: readonly number[],
+  positions: readonly number[]
+): readonly GridColumnCandidate[] => {
+  if (paceRow.length === 0 || paceLine.length === 0) {
+    return EMPTY_GRID_CANDIDATES;
+  }
+  const count = Math.min(paceRow.length, paceLine.length, positions.length);
+  const candidates: GridColumnCandidate[] = [];
+  for (let carIdx = 0; carIdx < count; carIdx += 1) {
+    const row = paceRow[carIdx];
+    const line = paceLine[carIdx];
+    if (row < 0 || line < 0) continue;
+    // -1 is the SDK's "not on the road yet", which is a car the radar cannot
+    // place, so its row and line are not a column the radar can act on.
+    if (!(positions[carIdx] >= 0)) continue;
+    candidates.push({ carIdx, line, row });
+  }
+  return candidates;
+};
 
 const colorHex = (value: unknown): string | null => {
   if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
@@ -171,9 +211,13 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
   const session = useSessionStore((state) => state.session);
   const trackId = session?.WeekendInfo?.TrackID;
   const startingGrid = session?.WeekendInfo?.WeekendOptions?.StartingGrid;
+  const gridCandidates = useMemo(
+    () => gridCandidatesFromPace(paceRow, paceLine, positions),
+    [paceRow, paceLine, positions]
+  );
   const gridLayout = useMemo<GridLayout | null>(
-    () => parseGridLayout(startingGrid),
-    [startingGrid]
+    () => parseGridLayout(startingGrid, gridCandidates),
+    [startingGrid, gridCandidates]
   );
   const isMultiClass = (session?.WeekendInfo?.NumCarClasses ?? 0) > 1;
   const sessionKey = useMemo(() => {
