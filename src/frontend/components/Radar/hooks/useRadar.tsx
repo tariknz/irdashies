@@ -1,3 +1,4 @@
+import { SessionState } from '@irdashies/types';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { shallow } from 'zustand/shallow';
 import type { RadarSnapshot } from '@irdashies/types';
@@ -195,10 +196,19 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
     (snapshot) => snapshot.carLeftRight
   );
   const driverCarIdx = useDriverCarIdx();
-  // Speed describes the player's car. Do not classify a watched car as
-  // stationary from the player's speed when the camera follows someone else.
+  // Speed is the player's reading, so it is not evidence of a grid when the
+  // camera follows someone else. Nor is a stopped player on track a grid: the
+  // player's own pace row and line must still identify a slot.
+  const playerHasGridSlot =
+    focusCarIdx !== null &&
+    (paceRow[focusCarIdx] ?? -1) >= 0 &&
+    (paceLine[focusCarIdx] ?? -1) >= 0;
   const isGrid =
-    focusCarIdx !== null && focusCarIdx === driverCarIdx && carSpeed < 0.5;
+    focusCarIdx !== null &&
+    focusCarIdx === driverCarIdx &&
+    carSpeed < 0.5 &&
+    playerHasGridSlot &&
+    (isGridBeforeStart(sessionState) || sessionState === SessionState.Racing);
   const drivers = useSessionDrivers();
   const session = useSessionStore((state) => state.session);
   const trackId = session?.WeekendInfo?.TrackID;

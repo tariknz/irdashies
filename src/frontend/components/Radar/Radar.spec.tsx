@@ -159,7 +159,8 @@ const fixtureWithRivalAt = (gapsM: readonly number[]): ReplayFixture => {
 
 const fixtureWithRadarOverlap = (
   cameraCarIdx: number,
-  speed: number
+  speed: number,
+  options: { sessionState?: SessionState; activeGridSlot?: boolean } = {}
 ): ReplayFixture => {
   const playerCarIdx = Number(fixture.driverInfo?.DriverCarIdx);
   const rivalCarIdx = fixture.drivers
@@ -177,11 +178,31 @@ const fixtureWithRadarOverlap = (
     throw new Error('camera car has no position');
   }
 
+  const gridTelemetry = {
+    CarIdxPaceRow: positions.map((_, carIdx) =>
+      options.activeGridSlot &&
+      (carIdx === cameraCarIdx || carIdx === overlapCarIdx)
+        ? 0
+        : -1
+    ),
+    CarIdxPaceLine: positions.map((_, carIdx) =>
+      options.activeGridSlot && carIdx === cameraCarIdx
+        ? 0
+        : options.activeGridSlot && carIdx === overlapCarIdx
+          ? 1
+          : -1
+    ),
+  };
+
   return {
     ...fixture,
     frames: [
       {
         ...finalFrame(),
+        ...gridTelemetry,
+        ...(options.sessionState === undefined
+          ? {}
+          : { SessionState: options.sessionState }),
         CamCarIdx: cameraCarIdx,
         Speed: speed,
         CarLeftRight: CarLeftRight.CarLeft,
@@ -332,21 +353,45 @@ describe('Radar widget over a recorded multiclass session', () => {
     }
   });
 
-  it('clears overlap markers when the stationary player is on the grid', async () => {
+  it('clears overlap markers for a stationary player in an active grid slot', async () => {
     const playerCarIdx = Number(fixture.driverInfo?.DriverCarIdx);
     const rivalCarIdx = fixture.drivers
       .map((driver) => Number(driver.CarIdx))
       .find((carIdx) => carIdx !== playerCarIdx);
     if (rivalCarIdx === undefined) throw new Error('fixture has no rival');
-    const harness = mountFixture(fixtureWithRadarOverlap(playerCarIdx, 0), {
-      dashboard: radarDashboard({ fadeSeconds: 0 }),
-    });
+    const harness = mountFixture(
+      fixtureWithRadarOverlap(playerCarIdx, 0, {
+        sessionState: SessionState.Racing,
+        activeGridSlot: true,
+      }),
+      { dashboard: radarDashboard({ fadeSeconds: 0 }) }
+    );
     render(<Radar />, { wrapper: harness.wrapper });
     await waitForDisplay();
 
     expect(
       latest().blips.find((blip) => blip.carIdx === rivalCarIdx)
     ).toMatchObject({ side: null, rimSignal: null });
+  });
+
+  it('keeps overlap markers when a stopped player has no grid slot', async () => {
+    const playerCarIdx = Number(fixture.driverInfo?.DriverCarIdx);
+    const rivalCarIdx = fixture.drivers
+      .map((driver) => Number(driver.CarIdx))
+      .find((carIdx) => carIdx !== playerCarIdx);
+    if (rivalCarIdx === undefined) throw new Error('fixture has no rival');
+    const harness = mountFixture(
+      fixtureWithRadarOverlap(playerCarIdx, 0, {
+        sessionState: SessionState.Racing,
+      }),
+      { dashboard: radarDashboard({ fadeSeconds: 0 }) }
+    );
+    render(<Radar />, { wrapper: harness.wrapper });
+    await waitForDisplay();
+
+    expect(
+      latest().blips.find((blip) => blip.carIdx === rivalCarIdx)
+    ).toMatchObject({ side: -1, rimSignal: 'left' });
   });
 
   it('places the player and grid partner in their sim-reported columns', async () => {
