@@ -17,12 +17,11 @@ export interface GridLayout {
    */
   columnLateralM: number;
 }
-
 /**
- * Half a lane's width to either side of the centreline for a car standing on
- * the grid. The sim reports which column a car is in but not how far out it
- * sits, so this is the one part of the placement that is still an assumption —
- * and the only one, since the side, the row and the pairing are all read.
+ * Spacing between adjacent grid columns, in metres. The sim reports which
+ * column a car is in but not how far out it sits, so this is the one part of
+ * the placement that is still an assumption — and the only one, since the side,
+ * the row and the pairing are all read.
  */
 const COLUMN_LATERAL_M = 2.5;
 
@@ -125,13 +124,21 @@ export const parseGridLayout = (
   return { columns, columnLateralM: COLUMN_LATERAL_M };
 };
 
-/** Lateral offset for a pace line, or null when the grid does not name it. */
+/**
+ * Where a pace line stands across the road, in metres to the driver's right.
+ *
+ * `columnLateralM` is the pitch between columns, not an offset from the
+ * centreline: a two-abreast field stands its columns half a pitch either side
+ * of the middle, so two cars abreast are one pitch apart. Reading the pitch as
+ * the offset drew the whole field at twice its real width and left the player
+ * two lanes from the car parked beside him.
+ */
 export const gridColumnLateralM = (
   line: number,
   layout: GridLayout
 ): number | null => {
   if (layout.columns < 2 || line < 0 || line >= layout.columns) return null;
-  return line % 2 === 0 ? -layout.columnLateralM : layout.columnLateralM;
+  return (line - (layout.columns - 1) / 2) * layout.columnLateralM;
 };
 
 /**

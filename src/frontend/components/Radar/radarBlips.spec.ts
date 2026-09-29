@@ -14,6 +14,7 @@ import {
   type OverlapSide,
   type RadarOverlap,
 } from './overlapSides';
+import { gridColumnLateralM } from './gridLayout';
 
 /**
  * Spacing between the fixture's path points, in canvas units. The bundled
@@ -575,6 +576,8 @@ describe('computeRadarBlips', () => {
 
   describe('the standing grid', () => {
     const GRID = { columns: 2, columnLateralM: 2.5 };
+    /** Half the lane pitch either side of the middle of a two-abreast road. */
+    const HALF_LANE = GRID.columnLateralM / 2;
 
     /**
      * Six cars parked on the grid, two to a row, eight metres between rows. The
@@ -611,12 +614,28 @@ describe('computeRadarBlips', () => {
       // The player is the first car and is not drawn, so five blips remain.
       expect(drawn).toHaveLength(5);
       // The two rows beyond the player's own row each reach both columns.
-      expect(drawn).toContain(GRID.columnLateralM);
-      expect(drawn).toContain(-GRID.columnLateralM);
+      expect(drawn).toContain(HALF_LANE);
+      expect(drawn).toContain(-HALF_LANE);
       // Pace-line numbering places the partner in the column opposite the
       // player; a missing overlap verdict must not leave either car centred.
-      expect(drawn[0]).toBe(GRID.columnLateralM);
+      expect(drawn[0]).toBe(HALF_LANE);
       expect(drawn.filter((offset) => offset === 0)).toHaveLength(0);
+    });
+
+    it('stands a grid partner one lane away, not two', () => {
+      // The lane constant is the gap between columns, so two cars in a row are
+      // one lane apart. Reading it as each column's offset from the centreline
+      // put the player two lanes from the car parked beside him.
+      const result = parked(300);
+      const partner = result.blips.find((blip) => blip.carIdx === 1);
+      if (!partner) throw new Error('expected the player row partner');
+
+      const playerColumnM = gridColumnLateralM(0, GRID);
+      if (playerColumnM === null) throw new Error('grid has no left column');
+      expect(Math.abs(partner.drawLateralM - playerColumnM)).toBeCloseTo(
+        GRID.columnLateralM,
+        6
+      );
     });
 
     it('levels cars within each sim-reported grid row', () => {
@@ -657,8 +676,8 @@ describe('computeRadarBlips', () => {
       // The overlap covers only the player, so these two are a grid row. Line
       // 0 is the left column, so car 2 is drawn to the left and car 3 to the
       // right, whatever the overlap verdict did to them on the way in.
-      expect(byCar.get(2)).toBe(-GRID.columnLateralM);
-      expect(byCar.get(3)).toBe(GRID.columnLateralM);
+      expect(byCar.get(2)).toBe(-HALF_LANE);
+      expect(byCar.get(3)).toBe(HALF_LANE);
     });
 
     it('projects local grid offsets into both radar axes on a bend', () => {
@@ -668,7 +687,7 @@ describe('computeRadarBlips', () => {
         throw new Error('expected a grid car beyond the fixture corner');
       }
 
-      const localColumnM = GRID.columnLateralM;
+      const localColumnM = HALF_LANE;
       expect(Math.abs(bent.relYaw)).toBeGreaterThan(0.1);
       expect(bent.gridLaneOffsetM).toBeCloseTo(
         localColumnM * Math.cos(bent.relYaw),

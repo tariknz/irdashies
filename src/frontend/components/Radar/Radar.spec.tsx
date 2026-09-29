@@ -197,6 +197,13 @@ const fixtureWithRadarOverlap = (
   };
 };
 
+/**
+ * The lane pitch the grid is drawn at, and half of it either side of the middle
+ * of a two-abreast road. Two cars in one row stand a pitch apart.
+ */
+const LANE_PITCH_M = 2.5;
+const HALF_LANE_M = LANE_PITCH_M / 2;
+
 const fixtureWithPlayerOnTwoWideGrid = (
   playerCarIdx: number,
   partnerCarIdx: number,
@@ -358,14 +365,14 @@ describe('Radar widget over a recorded multiclass session', () => {
     render(<Radar />, { wrapper: harness.wrapper });
     await waitForDisplay();
 
-    expect(latest().playerLateralM).toBe(-2.5);
+    expect(latest().playerLateralM).toBe(-HALF_LANE_M);
     const partner = latest().blips.find(
       (blip) => blip.carIdx === partnerCarIdx
     );
     if (!partner || partner.gridLaneOffsetM === undefined) {
       throw new Error('grid partner was not assigned a lane');
     }
-    expect(partner.gridLaneOffsetM).toBeCloseTo(2.5, 5);
+    expect(partner.gridLaneOffsetM).toBeCloseTo(HALF_LANE_M, 5);
     expect(partner.alongM).toBeCloseTo(0, 3);
     expect(partner.gapM).toBeCloseTo(0, 3);
     expect(partner.side).toBeNull();
@@ -374,6 +381,14 @@ describe('Radar widget over a recorded multiclass session', () => {
       partner.lateralM + partner.gridLaneOffsetM,
       6
     );
+    // The distance a driver actually sees: the car parked beside the player is
+    // one lane away, not two. The road's own bend across the lane moves it by
+    // millimetres, so the check is a lane either side of a tenth.
+    const gapToPlayerM = Math.abs(
+      partner.drawLateralM - latest().playerLateralM
+    );
+    expect(gapToPlayerM).toBeGreaterThan(LANE_PITCH_M * 0.9);
+    expect(gapToPlayerM).toBeLessThan(LANE_PITCH_M * 1.1);
   });
 
   it('uses pace lines to keep the grid when one lane lacks a road position', async () => {
@@ -397,7 +412,7 @@ describe('Radar widget over a recorded multiclass session', () => {
     render(<Radar />, { wrapper: harness.wrapper });
     await waitForDisplay();
 
-    expect(latest().playerLateralM).toBe(-2.5);
+    expect(latest().playerLateralM).toBe(-HALF_LANE_M);
     expect(latest().blips.some((blip) => blip.carIdx === partnerCarIdx)).toBe(
       false
     );
@@ -423,7 +438,7 @@ describe('Radar widget over a recorded multiclass session', () => {
     render(<Radar />, { wrapper: harness.wrapper });
     await waitForDisplay();
 
-    expect(latest().playerLateralM).toBe(-2.5);
+    expect(latest().playerLateralM).toBe(-HALF_LANE_M);
     const partner = latest().blips.find(
       (blip) => blip.carIdx === partnerCarIdx
     );

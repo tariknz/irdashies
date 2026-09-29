@@ -63,6 +63,10 @@ interface Capture {
   };
 }
 
+/** The road car every capture here is measured against. */
+const CAR_WIDTH_M = 1.9;
+const CAR_LENGTH_M = 4.5;
+
 const baseFor = (capture: Capture) => {
   const { telemetry, session } = capture;
   const snapshot: RadarSnapshot = {
@@ -92,8 +96,8 @@ const baseFor = (capture: Capture) => {
     overlap: overlapFromCarLeftRight(
       (telemetry.CarLeftRight?.value?.[0] as number) ?? 0
     ),
-    vehicleWidth: 1.9,
-    vehicleLength: 4.5,
+    vehicleWidth: CAR_WIDTH_M,
+    vehicleLength: CAR_LENGTH_M,
     carNumbers: new Map<number, string>(),
     paceCarIdx: null,
     previousTargets: emptyTargetState(snapshot.carIdxLapDistPct.length),
@@ -188,7 +192,10 @@ const expectGridProjection = (
       left.drawLateralM - right.drawLateralM,
       left.alongM - right.alongM
     );
-    expect(distance).toBeGreaterThan(3.8);
+    // Two cars sharing a row have to read as two bodies rather than one blob.
+    // They stand a lane apart, and a lane is wider than the car, so the
+    // rectangles the canvas draws do not overlap.
+    expect(distance).toBeGreaterThan(CAR_WIDTH_M);
   }
 };
 
@@ -414,5 +421,26 @@ describe('radar placement over recorded telemetry', () => {
       layout,
       playerRow
     );
+
+    // The car the player starts beside. `columnLateralM` is the gap between
+    // columns, so the recorded grid partner stands one lane away; reading it as
+    // each column's offset from the centreline put him two lanes away, and no
+    // assertion above could see that because both sides moved together.
+    const playerColumnM = gridColumnLateralM(
+      paceLine[playerCarIdx] ?? -1,
+      layout
+    );
+    if (playerColumnM === null) throw new Error('player has no grid column');
+    const partner = onGrid.blips.find(
+      (blip) =>
+        blip.carIdx !== playerCarIdx && paceRow[blip.carIdx] === playerRow
+    );
+    if (!partner)
+      throw new Error('recorded grid has no partner beside the player');
+    // The road's own bend between the two cars is the only thing allowed to
+    // move this off the pitch, and it is millimetres.
+    const gapToPlayerM = Math.abs(partner.drawLateralM - playerColumnM);
+    expect(gapToPlayerM).toBeGreaterThan(layout.columnLateralM * 0.9);
+    expect(gapToPlayerM).toBeLessThan(layout.columnLateralM * 1.1);
   });
 });

@@ -110,17 +110,24 @@ describe('assignGridColumns', () => {
   // null check on every line.
   const layout = parseGridLayout(TWO_ABREAST) as GridLayout;
 
-  it('maps pace lines to their signed road-side offsets', () => {
-    expect(gridColumnLateralM(0, layout)).toBe(-layout.columnLateralM);
-    expect(gridColumnLateralM(1, layout)).toBe(layout.columnLateralM);
+  it('stands the columns a lane pitch apart, either side of the middle', () => {
+    // The reported bug: reading the pitch as an offset from the centreline drew
+    // the field at twice its real width, and the player two lanes from the car
+    // parked beside him. What a driver sees is the gap between the two cars.
+    const left = gridColumnLateralM(0, layout) as number;
+    const right = gridColumnLateralM(1, layout) as number;
+    expect(left).toBeLessThan(0);
+    expect(right).toBeGreaterThan(0);
+    expect(right - left).toBeCloseTo(layout.columnLateralM, 6);
+    expect(left).toBeCloseTo(-right, 6);
     expect(gridColumnLateralM(-1, layout)).toBeNull();
     expect(gridColumnLateralM(2, layout)).toBeNull();
   });
 
-  it('puts each car in the column the sim names', () => {
+  it('puts each car in the column the sim names, on the side it names', () => {
     const columns = assignGridColumns([at(1, 3, 0), at(2, 3, 1)], layout);
-    expect(columns?.get(1)).toBe(-layout.columnLateralM);
-    expect(columns?.get(2)).toBe(layout.columnLateralM);
+    expect(columns?.get(1)).toBeLessThan(0);
+    expect(columns?.get(2)).toBeGreaterThan(0);
   });
 
   it('places every row of the field, front row included', () => {
@@ -134,9 +141,13 @@ describe('assignGridColumns', () => {
     const columns = assignGridColumns(cars, layout);
     expect(columns?.size).toBe(8);
     for (const row of [0, 1, 2, 3]) {
-      expect(columns?.get(row * 2)).toBe(-layout.columnLateralM);
-      expect(columns?.get(row * 2 + 1)).toBe(layout.columnLateralM);
+      expect(columns?.get(row * 2)).toBe(columns?.get(0));
+      expect(columns?.get(row * 2 + 1)).toBe(columns?.get(1));
     }
+    // Every row stands the same pair of columns, one pitch apart.
+    expect(
+      (columns?.get(1) as number) - (columns?.get(0) as number)
+    ).toBeCloseTo(layout.columnLateralM, 6);
   });
 
   it('places the player row from the same sim grid numbering', () => {
@@ -144,9 +155,9 @@ describe('assignGridColumns', () => {
       [at(8, 4, 0), at(9, 4, 1), at(10, 5, 0)],
       layout
     );
-    expect(columns?.get(8)).toBe(-layout.columnLateralM);
-    expect(columns?.get(9)).toBe(layout.columnLateralM);
-    expect(columns?.get(10)).toBe(-layout.columnLateralM);
+    expect(columns?.get(8)).toBeLessThan(0);
+    expect(columns?.get(9)).toBeGreaterThan(0);
+    expect(columns?.get(10)).toBe(columns?.get(8));
   });
 
   it('places a row that is short of a car', () => {
@@ -154,7 +165,7 @@ describe('assignGridColumns', () => {
     // the one that is there is drawn where it is rather than dropped. This is
     // the case a distance reconstruction could not answer at all.
     const columns = assignGridColumns([at(1, 2, 1)], layout);
-    expect(columns?.get(1)).toBe(layout.columnLateralM);
+    expect(columns?.get(1)).toBe(gridColumnLateralM(1, layout));
   });
 
   it('ignores a car the sim has no grid slot for', () => {
@@ -170,7 +181,7 @@ describe('assignGridColumns', () => {
     // A wider grid than the session advertised is a placement this will not
     // make, rather than a third column invented halfway down the field.
     const columns = assignGridColumns([at(1, 2, 0), at(2, 2, 2)], layout);
-    expect(columns?.get(1)).toBe(-layout.columnLateralM);
+    expect(columns?.get(1)).toBe(gridColumnLateralM(0, layout));
     expect(columns?.has(2)).toBe(false);
   });
 
