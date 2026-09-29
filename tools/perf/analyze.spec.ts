@@ -154,7 +154,9 @@ describe('performance analysis', () => {
         intervalMs: 5000,
         frameTimeMs: stats(16),
         telemetryCallbackMs: stats(0.2, { count: 100, p99: 0.7 }),
-        trackMapAnimationFrameMs: stats(0.4, { count: 250, p99: 1.1 }),
+        measures: {
+          trackMapAnimationFrame: stats(0.4, { count: 250, p99: 1.1 }),
+        },
         framesOver25Ms: 0,
         framesOver50Ms: 0,
       },

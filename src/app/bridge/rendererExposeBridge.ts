@@ -28,6 +28,7 @@ import type {
   TelemetryInspectorBridge,
   RendererPerfBridge,
 } from '@irdashies/types';
+import { isRendererPerfMeasureName } from '@irdashies/types';
 import {
   isRendererPerfMetricsEnabled,
   recordTelemetryCallback,
@@ -44,8 +45,7 @@ export function exposeBridge() {
     defineBridge<RendererPerfBridge>('rendererPerfBridge', {
       recordMeasure: (name, durationMs) => {
         if (!isRendererPerfMetricsEnabled()) return;
-        if (name !== 'trackMapAnimationFrame' && name !== 'radarAnimationFrame')
-          return;
+        if (!isRendererPerfMeasureName(name)) return;
         if (!Number.isFinite(durationMs) || durationMs < 0) return;
         recordRendererMeasure(name, durationMs);
       },

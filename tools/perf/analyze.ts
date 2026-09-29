@@ -528,11 +528,11 @@ export function summarizeCapture(
       .filter((sample) => sample.telemetryCallbackMs !== undefined)
       .reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
   const trackMapAnimationFrames = renderer
-    .map((sample) => sample.trackMapAnimationFrameMs)
+    .map((sample) => sample.measures?.trackMapAnimationFrame)
     .filter((stats): stats is NumericSampleStats => stats !== undefined);
   const trackMapAnimationSeconds =
     renderer
-      .filter((sample) => sample.trackMapAnimationFrameMs !== undefined)
+      .filter((sample) => sample.measures?.trackMapAnimationFrame !== undefined)
       .reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
   const rendererSeconds =
     renderer.reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
