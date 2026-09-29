@@ -16,6 +16,12 @@ left/right positions.
 The live radar is hidden in Lone Qualify and Open Qualify; dashboard demo mode
 remains available.
 
+## Beta and build commit label
+
+The Radar settings description starts at **Beta 0.1**. Bump this manually as
+the widget stabilizes. The commit number is the count of commits reachable from
+the build's `HEAD`; the short Git hash is included to identify the exact build.
+
 Everything the widget owns lives in this folder. Nothing here imports from
 another widget folder, and the only things outside it that name the widget are
 the registration entries listed below.

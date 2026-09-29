@@ -19,6 +19,24 @@ import { normaliseRadarConfig } from '../../Radar/hooks/useRadarSettings';
 
 const SETTING_ID = 'radar';
 
+const RADAR_BETA_VERSION = '0.1';
+
+const getRadarDescription = (): string => {
+  const commitNumber =
+    typeof __GIT_COMMIT_NUMBER__ === 'undefined'
+      ? 'unknown'
+      : __GIT_COMMIT_NUMBER__;
+  const commitHash =
+    typeof __GIT_COMMIT_HASH__ === 'undefined'
+      ? 'unknown'
+      : __GIT_COMMIT_HASH__;
+
+  return [
+    'Proximity radar showing the cars around you, placed by their real distance along the track.',
+    `Beta ${RADAR_BETA_VERSION} · Commit #${commitNumber} (${commitHash}).`,
+  ].join(' ');
+};
+
 const defaultConfig = getWidgetDefaultConfig('radar');
 
 const ColorField = ({
@@ -97,7 +115,7 @@ export const RadarSettings = () => {
   return (
     <BaseSettingsSection
       title="Radar"
-      description="Proximity radar showing the cars around you, placed by their real distance along the track."
+      description={getRadarDescription()}
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}

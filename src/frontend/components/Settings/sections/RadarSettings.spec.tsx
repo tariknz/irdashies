@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardLayout, RadarConfig } from '@irdashies/types';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { RadarSettings } from './RadarSettings';
@@ -77,7 +77,21 @@ const openOptionsTab = () => {
   act(() => screen.getByRole('button', { name: 'Options' }).click());
 };
 
+afterEach(() => vi.unstubAllGlobals());
+
 describe('RadarSettings', () => {
+  it('shows the beta version and current build commit', () => {
+    vi.stubGlobal('__GIT_COMMIT_NUMBER__', '1033');
+    vi.stubGlobal('__GIT_COMMIT_HASH__', '2e431fa9');
+    mocks.setDashboard(dashboardWith(radarConfig()));
+
+    render(<RadarSettings />);
+
+    expect(
+      screen.getByText(/Beta 0\.1 · Commit #1033 \(2e431fa9\)\./)
+    ).toBeInTheDocument();
+  });
+
   it('shows the saved config that arrives after the first render', () => {
     mocks.setDashboard(undefined);
     render(<RadarSettings />);

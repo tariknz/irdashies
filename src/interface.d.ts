@@ -14,6 +14,8 @@ import type {
 import type { ChannelBridge } from '@irdashies/types';
 
 declare global {
+  const __GIT_COMMIT_NUMBER__: string;
+  const __GIT_COMMIT_HASH__: string;
   interface Window {
     channelBridge: ChannelBridge;
     irsdkBridge: IrSdkBridge;
