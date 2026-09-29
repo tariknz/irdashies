@@ -185,6 +185,34 @@ describe('performance analysis', () => {
     );
   });
 
+  it('reads a capture taken before the sample carried a measures map', () => {
+    // Capture logs on disk predate the per-measure map and name each measure in
+    // a field of its own. Reading only the new shape leaves them reporting
+    // 0 Hz, which is indistinguishable from a track map that stopped
+    // animating.
+    const input = capture([mainSample(5, 100, 100, 100, 5000)]);
+    input.renderer = [
+      {
+        schemaVersion: 1,
+        timestamp: new Date(5_000).toISOString(),
+        runId: 'run',
+        scenario: 'full',
+        pid: 1,
+        route: '/',
+        visibilityState: 'visible',
+        intervalMs: 5000,
+        frameTimeMs: stats(16),
+        trackMapAnimationFrameMs: stats(0.4, { count: 250, p99: 1.1 }),
+        framesOver25Ms: 0,
+        framesOver50Ms: 0,
+      },
+    ];
+    const summary = summarizeCapture(input, 0);
+
+    expect(summary.renderer.trackMapAnimationFrameRateHz).toBe(50);
+    expect(summary.renderer.trackMapAnimationFrameP99MeanMs).toBe(1.1);
+  });
+
   it('flags a material iRacing FPS regression with conclusive evidence', () => {
     const baseline = summarizeCapture(capture(conclusiveSamples(100)), 0);
     const candidate = summarizeCapture(capture(conclusiveSamples(90)), 0);

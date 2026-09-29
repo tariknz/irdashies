@@ -23,6 +23,14 @@ export interface RendererPerfSample {
   channelCallbackMs?: NumericSampleStats;
   /** Per-measure timings, keyed by {@link RendererPerfMeasureName}. */
   measures?: RendererPerfMeasureStats;
+  /**
+   * Pre-`measures` samples named each measure in a field of its own. Capture
+   * logs already on disk still have these and no `measures`, so the analyser
+   * has to read both; drop this once those logs are older than anything worth
+   * comparing against.
+   */
+  trackMapAnimationFrameMs?: NumericSampleStats;
+  radarAnimationFrameMs?: NumericSampleStats;
   telemetryWakeups?: number;
   channelWakeups?: number;
   framesOver25Ms: number;

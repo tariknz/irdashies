@@ -67,7 +67,7 @@ the entries below. Line numbers are from the branch that introduced this file.
 | `src/app/processors/processorRegistry.ts`             | import (19), `defineProcessor` block (120-123)                                             |
 | `src/app/webserver/componentServer.ts`                | `'radar'` in the `/components` list (405)                                                  |
 | `site/src/components/PreviewSettingsMenu.tsx`         | site preview menu entry (32)                                                               |
-| `src/types/performance.ts`                            | `'radarAnimationFrame'` in `RENDERER_PERF_MEASURES` (39)                                   |
+| `src/types/performance.ts`                            | `'radarAnimationFrame'` in `RENDERER_PERF_MEASURES` (47)                                   |
 | `package.json`                                        | `perf:radar-geometry` (38), `perf:radar-lateral-noise` (39)                                |
 
 **Test infrastructure that names the widget**

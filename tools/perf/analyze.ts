@@ -527,12 +527,24 @@ export function summarizeCapture(
     renderer
       .filter((sample) => sample.telemetryCallbackMs !== undefined)
       .reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
+  // A capture log written before the sample carried one field per measure has
+  // no `measures` at all. Reading only the new shape drops every track-map
+  // figure from such a log, and the report then prints 0 Hz without anything
+  // looking wrong, which reads as the track map having stopped animating.
   const trackMapAnimationFrames = renderer
-    .map((sample) => sample.measures?.trackMapAnimationFrame)
+    .map(
+      (sample) =>
+        sample.measures?.trackMapAnimationFrame ??
+        sample.trackMapAnimationFrameMs
+    )
     .filter((stats): stats is NumericSampleStats => stats !== undefined);
   const trackMapAnimationSeconds =
     renderer
-      .filter((sample) => sample.measures?.trackMapAnimationFrame !== undefined)
+      .filter(
+        (sample) =>
+          (sample.measures?.trackMapAnimationFrame ??
+            sample.trackMapAnimationFrameMs) !== undefined
+      )
       .reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
   const rendererSeconds =
     renderer.reduce((sum, sample) => sum + sample.intervalMs, 0) / 1000;
