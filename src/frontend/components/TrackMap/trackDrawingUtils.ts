@@ -1,5 +1,6 @@
 import { getColor } from '@irdashies/utils/colors';
-import { TrackDrawing, TrackDriver, TurnLabels } from './TrackCanvas';
+import { TrackDriver, TurnLabels } from './TrackCanvas';
+import type { TrackDrawing } from '@irdashies/domain/trackGeometry';
 import type { Sector } from '@irdashies/types';
 import type { SectorColor } from '@irdashies/context';
 

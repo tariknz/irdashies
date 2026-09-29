@@ -13,6 +13,7 @@ import { app, BrowserWindow } from 'electron';
 import type { NumericSampleStats, Telemetry } from '@irdashies/types';
 import type { ChannelBusMetricsSnapshot } from './bridge/channelBridge';
 import { FixedSampleBuffer } from '../shared/performanceSamples';
+import { PROCESSOR_METRIC_CHANNELS } from './processors/processorRegistry';
 import logger from './logger';
 
 export interface SectionStats {
@@ -71,24 +72,6 @@ export interface PerfReport {
 interface ChannelMetricsSource {
   metricsSnapshot(): ChannelBusMetricsSnapshot;
 }
-
-const PROCESSOR_CHANNELS: Readonly<Record<string, string>> = {
-  blindSpotProcessing: 'blind-spot.snapshot',
-  carSpeedsProcessing: 'car-speeds.snapshot',
-  driverControlsProcessing: 'driver-controls.snapshot',
-  fuelProjectionProcessing: 'fuel.projection',
-  lapLogProcessing: 'lap-log.snapshot',
-  lapTimesProcessing: 'lap-times.snapshot',
-  lapTraceSampleProcessing: 'lap-trace.sample',
-  radioProcessing: 'radio.snapshot',
-  referenceLapProcessing: 'reference-laps.snapshot',
-  relativeGapProcessing: 'relative-gaps.snapshot',
-  sectorTimingProcessing: 'sector-timing.snapshot',
-  sessionBarProcessing: 'session-bar.snapshot',
-  sessionTimingProcessing: 'session-timing.snapshot',
-  standingsProcessing: 'standings.snapshot',
-  trackStateProcessing: 'track-state.snapshot',
-};
 
 const DEFAULT_REPORT_INTERVAL_MS = 10_000;
 export const PERF_MAIN_LOG_PREFIX = '[PerfMetrics:JSON] ';
@@ -357,7 +340,7 @@ export class TelemetryPerfMetrics {
     this.previousChannelDeliveries = current.channelDeliveries;
     return {
       processorExecutions: Object.fromEntries(
-        Object.entries(PROCESSOR_CHANNELS).map(([section, channel]) => [
+        Object.entries(PROCESSOR_METRIC_CHANNELS).map(([section, channel]) => [
           channel,
           sections[section]?.count ?? 0,
         ])

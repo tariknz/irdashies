@@ -1,0 +1,43 @@
+{
+ "WeekendInfo": {
+  "TrackName": "roadatlanta full",
+  "TrackID": 127,
+  "TrackLength": "4.0569 km",
+  "TrackDisplayName": "Atlanta Motorsports Park",
+  "TrackDisplayShortName": "Road Atlanta",
+  "TrackConfigName": "Full Course",
+  "TrackCity": "Braselton",
+  "TrackState": "Georgia",
+  "TrackCountry": "United States",
+  "TrackType": "road course",
+  "TrackDirection": "neutral",
+  "Official": 0,
+  "NumCarClasses": 1,
+  "WeekendOptions": {
+   "StartingGrid": "single file"
+  }
+ },
+ "SessionInfo": {
+  "CurrentSessionNum": 1,
+  "Sessions": [
+   {
+    "SessionNum": 0,
+    "SessionName": "PRACTICE",
+    "SessionType": "Warmup",
+    "SessionLaps": "unlimited",
+    "SessionTime": "420.0000 sec"
+   },
+   {
+    "SessionNum": 1,
+    "SessionName": "RACE",
+    "SessionType": "Race",
+    "SessionLaps": 10,
+    "SessionTime": "unlimited"
+   }
+  ]
+ },
+ "DriverInfo": {
+  "DriverCarIdx": 0,
+  "PaceCarIdx": 64
+ }
+}

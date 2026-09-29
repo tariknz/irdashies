@@ -8,7 +8,7 @@ import {
   preCalculatePoints,
   extractStartFinishData,
 } from './svg-utils';
-import { TrackDrawing } from '../src/frontend/components/TrackMap/TrackCanvas';
+import type { TrackDrawing } from '../src/frontend/domain/trackGeometry';
 
 interface TrackInfo {
   track_id: number;
@@ -176,7 +176,7 @@ export const generateTrackJson = () => {
   }
 
   fs.writeFileSync(
-    `./src/frontend/components/TrackMap/tracks/tracks.json`,
+    `./src/frontend/assets/data/tracks.json`,
     JSON.stringify(json, undefined, 2),
     'utf8'
   );

@@ -2,6 +2,8 @@ interface ToggleSwitchProps {
   enabled: boolean;
   onToggle: (enabled: boolean) => void;
   label?: string;
+  /** Accessible name for the switch alone, when the label is rendered elsewhere. */
+  ariaLabel?: string;
   /**
    * Greys the switch and ignores clicks. The `enabled` value shown is still the
    * user's own setting -- this only stops them changing it.
@@ -15,6 +17,7 @@ export const ToggleSwitch = ({
   enabled,
   onToggle,
   label,
+  ariaLabel,
   disabled = false,
   disabledReason,
 }: ToggleSwitchProps) => {
@@ -24,6 +27,7 @@ export const ToggleSwitch = ({
       <button
         type="button"
         role="switch"
+        aria-label={ariaLabel ?? label}
         aria-checked={enabled}
         aria-disabled={disabled}
         disabled={disabled}

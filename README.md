@@ -345,6 +345,27 @@ Displays a compact three-row view of the cars immediately ahead of and behind yo
 - Last-lap highlights for personal-best and session-fastest laps
 - Adjustable background opacity and on-track/session visibility controls
 
+### Radar
+
+Shows the cars around you on a circular disc, like a spotter's proximity radar: your car sits at the centre pointing up, and nearby cars are drawn where they are on the road. Cars are placed by their real distance along the track — the sim reports no per-car world position for iRacing, so the disc is built from lap distance and the track centreline. The map road's border and surface, and their transparency, are configurable; the map has no background of its own.
+
+**Features:**
+
+- Real-metre proximity: cars appear at their true distance ahead or behind, and curve off the vertical axis where the road bends between you and them
+- Optional track map replaces the disc with a map that follows the car: the player stays centred and pointing up while the road scrolls underneath, and cars sit at their real offsets
+- The map is drawn from the same track centreline as the disc because the sim publishes no world position
+- Two blip colours: your car and everyone else's, so how close a car is read off its position on the disc rather than a colour scale
+- Cars the sim reports alongside are pinned to that side rather than onto the point of the centreline you share with them
+- A pulsing red arc marks a car reported alongside within one car length
+- The signal colour is not chosen by distance; it reports state
+- Stationary-grid overlap indicators are suppressed only while the camera follows the player's car; player speed does not classify watched cars as stopped.
+- An unknown-side level car stays visible when side-indicator opacity is 0.
+- Optional car numbers on each blip, so you know who is alongside
+- Configurable range (10-25 m) and car dimensions, since the sim reports no per-car size
+- Optional hiding of cars on pit road, which otherwise sit on the racing line's centreline
+- Show the disc only while a car is near, or keep it on screen at all times, with an optional fade as it appears and disappears
+- Adjustable background opacity and on-track/session visibility controls
+
 ### Slow Car Ahead Warning
 
 Displays a warning indicator when a slower car is detected ahead on the track. The distance in meters to the car is displayed, as well as bars that grow as the car gets closer. The color of the bars change based on the track position and speed of the slow car:

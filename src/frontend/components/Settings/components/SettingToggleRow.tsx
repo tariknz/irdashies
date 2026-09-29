@@ -22,7 +22,10 @@ export function SettingToggleRow({
         )}
       </div>
 
-      <ToggleSwitch enabled={enabled} onToggle={onToggle} />
+      {/* The title above is already the visible label, so the switch only needs
+          the accessible name: passing it as a label renders a second copy and
+          squeezes the toggle. */}
+      <ToggleSwitch enabled={enabled} onToggle={onToggle} ariaLabel={title} />
     </div>
   );
 }

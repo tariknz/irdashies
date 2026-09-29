@@ -14,6 +14,7 @@ const mockBridge: DashboardBridge = {
   resetDashboard: vi.fn().mockResolvedValue({}),
   stop: vi.fn(),
   onDemoModeChanged: vi.fn(),
+  getIsDemoMode: vi.fn().mockResolvedValue(false),
   toggleDemoMode: vi.fn(),
   getCurrentDashboard: vi.fn().mockResolvedValue({}),
   saveGarageCoverImage: vi.fn(),

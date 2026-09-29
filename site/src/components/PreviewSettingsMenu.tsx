@@ -29,6 +29,7 @@ const widgetItems: MenuItem[] = [
     id: 'pitlanehelper',
     label: 'Pitlane Helper',
   },
+  { to: '/settings/radar', id: 'radar', label: 'Radar' },
   { to: '/settings/rejoin', id: 'rejoin', label: 'Rejoin Indicator' },
   { to: '/settings/relative', id: 'relative', label: 'Relative' },
   { to: '/settings/slowcarahead', id: 'slowcarahead', label: 'Slow Car Ahead' },

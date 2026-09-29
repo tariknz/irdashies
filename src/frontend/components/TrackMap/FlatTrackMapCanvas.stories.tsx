@@ -1,8 +1,9 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
-import { TrackDriver, TrackDrawing } from './TrackCanvas';
+import { TrackDriver } from './TrackCanvas';
+import type { TrackDrawing } from '@irdashies/domain/trackGeometry';
 import { useEffect, useState } from 'react';
-import tracks from './tracks/tracks.json';
+import tracks from '../../assets/data/tracks.json';
 
 export default {
   component: FlatTrackMapCanvas,

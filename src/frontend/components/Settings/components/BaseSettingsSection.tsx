@@ -67,6 +67,9 @@ export const BaseSettingsSection = <T,>({
         enabled: updatedWidget.enabled,
         config: updatedWidget.config as unknown as T,
       });
+    } else if (settings) {
+      // A profile without this widget starts from the parent-owned defaults.
+      setLocalSettings(settings);
     }
   }
 

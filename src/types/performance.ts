@@ -21,14 +21,42 @@ export interface RendererPerfSample {
   frameTimeMs: NumericSampleStats;
   telemetryCallbackMs?: NumericSampleStats;
   channelCallbackMs?: NumericSampleStats;
+  /** Per-measure timings, keyed by {@link RendererPerfMeasureName}. */
+  measures?: RendererPerfMeasureStats;
+  /**
+   * Pre-`measures` samples named each measure in a field of its own. Capture
+   * logs already on disk still have these and no `measures`, so the analyser
+   * has to read both; drop this once those logs are older than anything worth
+   * comparing against.
+   */
   trackMapAnimationFrameMs?: NumericSampleStats;
+  radarAnimationFrameMs?: NumericSampleStats;
   telemetryWakeups?: number;
   channelWakeups?: number;
   framesOver25Ms: number;
   framesOver50Ms: number;
 }
 
-export type RendererPerfMeasureName = 'trackMapAnimationFrame';
+/**
+ * Renderer-side measurements a widget can time. Declared as data so the
+ * recorder allocates a buffer per name and the bridge validates against the
+ * same list, rather than each site naming the measures it happens to know.
+ */
+export const RENDERER_PERF_MEASURES = [
+  'trackMapAnimationFrame',
+  'radarAnimationFrame',
+] as const;
+
+export type RendererPerfMeasureName = (typeof RENDERER_PERF_MEASURES)[number];
+
+export type RendererPerfMeasureStats = Partial<
+  Record<RendererPerfMeasureName, NumericSampleStats>
+>;
+
+export const isRendererPerfMeasureName = (
+  name: string
+): name is RendererPerfMeasureName =>
+  (RENDERER_PERF_MEASURES as readonly string[]).includes(name);
 
 export interface RendererPerfBridge {
   recordMeasure: (name: RendererPerfMeasureName, durationMs: number) => void;

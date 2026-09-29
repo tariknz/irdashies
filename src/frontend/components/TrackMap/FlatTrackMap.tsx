@@ -3,8 +3,8 @@ import { useFlatTrackMapSettings } from './hooks/useFlatTrackMapSettings';
 import { useHighlightColor } from './hooks/useHighlightColor';
 import { useTrackId } from './hooks/useTrackId';
 import { FlatTrackMapCanvas } from './FlatTrackMapCanvas';
-import tracks from './tracks/tracks.json';
-import { TrackDrawing } from './TrackCanvas';
+import tracks from '../../assets/data/tracks.json';
+import type { TrackDrawing } from '@irdashies/domain/trackGeometry';
 import {
   useSessionVisibility,
   useTrackStateSnapshot,

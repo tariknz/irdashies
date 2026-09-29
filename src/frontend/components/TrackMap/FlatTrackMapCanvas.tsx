@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { TrackDriver, TrackDrawing } from './TrackCanvas';
+import { TrackDriver } from './TrackCanvas';
+import type { TrackDrawing } from '@irdashies/domain/trackGeometry';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
 import { useCarIdxOffTrack } from '@irdashies/context';
-import { progressToFlatX, useProgressAnimation } from './useProgressAnimation';
+import {
+  progressToFlatX,
+  useTrackProgressAnimation,
+} from './useTrackProgressAnimation';
 import { getCachedTextVisualOffset } from './trackDrawingUtils';
 
 export interface FlatTrackMapCanvasProps {
@@ -135,7 +139,7 @@ export const FlatTrackMapCanvas = ({
     };
   }, []);
 
-  useProgressAnimation(drivers, (progressValues, count) => {
+  useTrackProgressAnimation(drivers, (progressValues, count) => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx || canvasSize.width === 0) return;

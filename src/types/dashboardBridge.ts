@@ -54,6 +54,8 @@ export interface DashboardBridge {
   onDemoModeChanged: (
     callback: (value: boolean) => void
   ) => (() => void) | undefined;
+  /** Whether demo mode is on, so a window that missed the last change catches up. */
+  getIsDemoMode?: () => Promise<boolean>;
   /** Rebuilds the telemetry bridge after generalSettings.simulator changes. */
   notifySimulatorPreferenceChanged?: () => void;
   /** The running simulator, or null while auto-detection is still probing. */

@@ -99,6 +99,7 @@ function createMockDashboardBridge(
         /* noop */
       };
     },
+    getIsDemoMode: () => Promise.resolve(true),
     getCurrentDashboard: () => null,
     saveGarageCoverImage: () => Promise.resolve(''),
     getGarageCoverImageAsDataUrl: () => Promise.resolve(null),

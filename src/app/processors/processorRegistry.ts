@@ -16,6 +16,7 @@ import { ProcessorHost } from './ProcessorHost';
 import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
 import { RadioProcessor } from './RadioProcessor';
+import { RadarProcessor } from './RadarProcessor';
 import { ReferenceLapProcessor } from './ReferenceLapProcessor';
 import { RelativeGapProcessor } from './RelativeGapProcessor';
 import { SectorTimingProcessor } from './SectorTimingProcessor';
@@ -116,6 +117,11 @@ export const createProcessorDefinitions = ({
     create: () => new RadioProcessor(),
   }),
   defineProcessor({
+    channel: 'radar.snapshot',
+    metricsPrefix: 'radar',
+    create: () => new RadarProcessor(),
+  }),
+  defineProcessor({
     channel: 'session-timing.snapshot',
     dependencies: ['lap-times.snapshot'],
     metricsPrefix: 'sessionTiming',
@@ -155,6 +161,28 @@ export const createProcessorDefinitions = ({
     create: () => new LapLogProcessor(),
   }),
 ];
+
+const noReferenceLapPersistence: ReferenceLapPersistence = {
+  load: () => null,
+  save: () => undefined,
+};
+
+/**
+ * Metric section name to channel, for the main-process perf report.
+ *
+ * `ProcessorHost` labels every processor's counters with its `metricsPrefix`,
+ * so the report reads the same pairs from here rather than keeping a second
+ * hand-written list that can fall behind the registry.
+ */
+export const PROCESSOR_METRIC_CHANNELS: Readonly<Record<string, string>> =
+  Object.fromEntries(
+    createProcessorDefinitions({
+      referenceLapPersistence: noReferenceLapPersistence,
+    }).map(({ channel, metricsPrefix }) => [
+      `${metricsPrefix}Processing`,
+      channel,
+    ])
+  );
 
 export const createDefaultProcessorHost = (
   options: DefaultProcessorHostOptions

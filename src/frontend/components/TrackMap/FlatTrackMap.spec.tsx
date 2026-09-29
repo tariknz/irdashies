@@ -21,7 +21,7 @@ vi.mock('@irdashies/context', () => {
 vi.mock('./FlatTrackMapCanvas', () => ({
   FlatTrackMapCanvas: () => <div>Flat Track Canvas</div>,
 }));
-vi.mock('./tracks/tracks.json', () => ({
+vi.mock('../../assets/data/tracks.json', () => ({
   default: [null, { id: 1, name: 'Test Track' }],
 }));
 

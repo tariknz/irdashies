@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { getTailwindStyle, colorNumToHex } from './colors';
+import { getTailwindStyle, colorNumToHex, getClassColorHex } from './colors';
 
 describe('colors', () => {
   describe('getTailwindColor', () => {
@@ -65,6 +65,16 @@ describe('colors', () => {
       const style = getTailwindStyle(16734344, 0xffda59, true);
 
       expect(style.classHeader).not.toBe('bg-yellow-500 border-yellow-500');
+    });
+  });
+  describe('getClassColorHex', () => {
+    it('uses the shared class palette only for multiclass sessions', () => {
+      expect(getClassColorHex(16767577, true, '#123456')).toBe('#ffda59');
+      expect(getClassColorHex(16767577, false, '#123456')).toBe('#123456');
+    });
+
+    it('uses the shared fallback for unknown class colours', () => {
+      expect(getClassColorHex(0x00ff00, true, '#123456')).toBe('#78716c');
     });
   });
 

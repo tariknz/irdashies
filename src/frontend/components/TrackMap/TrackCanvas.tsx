@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
-import tracks from './tracks/tracks.json';
+import tracks from '../../assets/data/tracks.json';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
-import { shouldShowTrack } from './tracks/brokenTracks';
+import { shouldShowTrack } from '../../assets/data/brokenTracks';
 import { TrackDebug } from './TrackDebug';
 import { useStartFinishLine } from './hooks/useStartFinishLine';
 import {
@@ -16,10 +16,11 @@ import {
   compareDriverDrawOrder,
   type PositionedTrackDriver,
 } from './trackDrawingUtils';
+import { useTrackProgressAnimation } from './useTrackProgressAnimation';
 import {
   progressToTrackPoint,
-  useProgressAnimation,
-} from './useProgressAnimation';
+  type TrackDrawing,
+} from '@irdashies/domain/trackGeometry';
 
 const EMPTY_PIT_STATE: readonly boolean[] = [];
 import type { SectorColor } from '@irdashies/context';
@@ -67,26 +68,6 @@ export interface TrackDriver {
   progress: number;
   isPlayer: boolean;
   classPosition?: number;
-}
-
-export interface TrackDrawing {
-  active: {
-    inside: string;
-    outside: string;
-    trackPathPoints?: { x: number; y: number }[];
-    totalLength?: number;
-  };
-  startFinish: {
-    line?: string;
-    arrow?: string;
-    point?: { x?: number; y?: number; length?: number } | null;
-    direction?: 'clockwise' | 'anticlockwise' | null;
-  };
-  turns?: {
-    x?: number;
-    y?: number;
-    content?: string;
-  }[];
 }
 
 export interface TurnLabels {
@@ -401,7 +382,7 @@ export const TrackCanvas = ({
   ]);
 
   // Dynamic layer — interpolates and paints imperatively between 25 Hz snapshots.
-  useProgressAnimation(drivers, (progressValues, count) => {
+  useTrackProgressAnimation(drivers, (progressValues, count) => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx || !cacheCanvasRef.current) return;

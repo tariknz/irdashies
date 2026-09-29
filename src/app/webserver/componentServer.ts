@@ -402,6 +402,7 @@ export async function startComponentServer(
         'fastercarsfrombehind',
         'fuel',
         'blindspotmonitor',
+        'radar',
         'garagecover',
         'rejoin',
         'laptimelog',

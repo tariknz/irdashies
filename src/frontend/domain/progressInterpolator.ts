@@ -1,44 +1,17 @@
-import { useLayoutEffect, useRef } from 'react';
-import { perfMetrics } from '@irdashies/utils/perfMetrics';
+/**
+ * Frame-rate-independent interpolation primitives shared by the track map and
+ * the radar.
+ */
 
-export const TRACK_POSITION_INTERVAL_MS = 1000 / 25;
+export const PROGRESS_INTERVAL_MS = 1000 / 25;
 const MIN_POSITION_INTERVAL_MS = 1000 / 60;
 const MAX_POSITION_INTERVAL_MS = 100;
 
-type ProgressSource = readonly {
+export type ProgressSource = readonly {
   progress: number;
   driver?: { CarIdx: number };
 }[];
-type DrawProgress = (progress: Float64Array, count: number) => void;
-
-export const progressToFlatX = (
-  progress: number,
-  startX: number,
-  usableWidth: number
-) => startX + progress * usableWidth;
-
-export const progressToTrackPoint = (
-  progress: number,
-  trackPathPoints: readonly { x: number; y: number }[],
-  totalLength: number,
-  intersectionLength: number,
-  direction: 'clockwise' | 'anticlockwise' | null | undefined,
-  output: { x: number; y: number }
-) => {
-  const adjustedLength = (totalLength * progress) % totalLength;
-  const length =
-    direction === 'anticlockwise'
-      ? (intersectionLength + adjustedLength) % totalLength
-      : (intersectionLength - adjustedLength + totalLength) % totalLength;
-  const floatIndex = (length / totalLength) * (trackPathPoints.length - 1);
-  const index1 = Math.floor(floatIndex);
-  const index2 = Math.min(index1 + 1, trackPathPoints.length - 1);
-  const amount = floatIndex - index1;
-  const point1 = trackPathPoints[index1];
-  const point2 = trackPathPoints[index2];
-  output.x = point1.x + (point2.x - point1.x) * amount;
-  output.y = point1.y + (point2.y - point1.y) * amount;
-};
+export type DrawProgress = (progress: Float64Array, count: number) => void;
 
 const wrapProgress = (progress: number) => {
   const wrapped = progress % 1;
@@ -61,7 +34,7 @@ export class ProgressInterpolator {
   private lastTargetsAt = -1;
   private initialized = false;
 
-  constructor(private durationMs = TRACK_POSITION_INTERVAL_MS) {}
+  constructor(private durationMs = PROGRESS_INTERVAL_MS) {}
 
   setTargets(source: ProgressSource, now: number): boolean {
     if (this.initialized) this.advance(now);
@@ -156,64 +129,8 @@ export class ProgressInterpolator {
   }
 }
 
-export const useProgressAnimation = (
-  drivers: ProgressSource,
-  draw: DrawProgress
-) => {
-  const interpolatorRef = useRef<ProgressInterpolator | null>(null);
-  const drawRef = useRef(draw);
-  const frameRef = useRef(0);
-  const previousDriversRef = useRef<ProgressSource | null>(null);
-
-  if (!interpolatorRef.current) {
-    interpolatorRef.current = new ProgressInterpolator();
-  }
-
-  // Commit the latest draw callback before target updates or RAF work. Skip
-  // the repaint when the target effect below will paint this same commit.
-  useLayoutEffect(() => {
-    drawRef.current = draw;
-    if (previousDriversRef.current !== drivers) return;
-    const interpolator = interpolatorRef.current;
-    if (!interpolator) return;
-    const drawCommittedAppearance = () =>
-      draw(interpolator.getValues(), interpolator.getCount());
-    perfMetrics.measure('trackMapAnimationFrame', drawCommittedAppearance);
-  });
-
-  useLayoutEffect(() => {
-    const interpolator = interpolatorRef.current;
-    if (!interpolator) return;
-    previousDriversRef.current = drivers;
-
-    let frameTime = 0;
-    const measuredFrame = () => {
-      const active = interpolator.advance(frameTime);
-      drawRef.current(interpolator.getValues(), interpolator.getCount());
-      return active;
-    };
-    const frame = (now: number) => {
-      frameTime = now;
-      const active = perfMetrics.measure(
-        'trackMapAnimationFrame',
-        measuredFrame
-      );
-      frameRef.current = active ? requestAnimationFrame(frame) : 0;
-    };
-
-    const active = interpolator.setTargets(drivers, performance.now());
-    const drawSnapshot = () =>
-      drawRef.current(interpolator.getValues(), interpolator.getCount());
-    perfMetrics.measure('trackMapAnimationFrame', drawSnapshot);
-    if (active && frameRef.current === 0) {
-      frameRef.current = requestAnimationFrame(frame);
-    }
-
-    return () => {
-      if (frameRef.current !== 0) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = 0;
-      }
-    };
-  }, [drivers]);
-};
+export const progressToFlatX = (
+  progress: number,
+  startX: number,
+  usableWidth: number
+) => startX + progress * usableWidth;

@@ -13,7 +13,7 @@ const IRACING_CLASS_COLOR_MAP: Record<number, string> = {
   16734344: 'red', // Class 3
   11430911: 'cyan', // Class 4
   5504887: 'pink', // Class 5
-  13849600: 'purple', // Class 6 
+  13849600: 'purple', // Class 6
   13421772: 'amber', // Class 7
   39321: 'lime', // Class 8  - slowest
 };
@@ -200,6 +200,16 @@ export const getTailwindStyle = (
       borderColor: 'border-sky-500',
     }
   );
+};
+
+export const getClassColorHex = (
+  color: number | undefined,
+  isMultiClass: boolean,
+  fallback: string
+): string => {
+  if (!isMultiClass || color === undefined) return fallback;
+  const colorName = IRACING_CLASS_COLOR_MAP[color];
+  return colorName ? (COLOR_NAME_TO_HEX[colorName] ?? '#78716c') : '#78716c';
 };
 
 export const colorNumToHex = (color?: number): string | undefined => {

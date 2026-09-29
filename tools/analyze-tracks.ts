@@ -1,6 +1,6 @@
 import fs from 'fs';
-import { TrackDrawing } from '../src/frontend/components/TrackMap/TrackCanvas';
-import { BROKEN_TRACKS } from '../src/frontend/components/TrackMap/tracks/brokenTracks';
+import type { TrackDrawing } from '../src/frontend/domain/trackGeometry';
+import { BROKEN_TRACKS } from '../src/frontend/assets/data/brokenTracks';
 
 interface TrackInfo {
   track_id: number;
@@ -29,10 +29,7 @@ interface BrokenTracksByIssue {
 export const analyzeTracks = (): void => {
   // Read the tracks.json file
   const tracksData: Record<number, TrackDrawing | undefined> = JSON.parse(
-    fs.readFileSync(
-      './src/frontend/components/TrackMap/tracks/tracks.json',
-      'utf8'
-    )
+    fs.readFileSync('./src/frontend/assets/data/tracks.json', 'utf8')
   );
 
   // Known broken track IDs from brokenTracks.ts (manually extracted)

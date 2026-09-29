@@ -228,6 +228,12 @@ describe('getWidgetDefaultConfig', () => {
     expect(config.units).toBe('auto');
   });
 
+  it('defaults Radar off in both qualifying session types', () => {
+    const config = getWidgetDefaultConfig('radar');
+    expect(config.sessionVisibility.loneQualify).toBe(false);
+    expect(config.sessionVisibility.openQualify).toBe(false);
+  });
+
   it('returns the laptrace config with colours and sound defaults', () => {
     // Compared against the shared constants rather than literal values: the
     // point is that the defaults reach the config, not what the palette or the

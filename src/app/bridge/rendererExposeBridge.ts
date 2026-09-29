@@ -28,6 +28,7 @@ import type {
   TelemetryInspectorBridge,
   RendererPerfBridge,
 } from '@irdashies/types';
+import { isRendererPerfMeasureName } from '@irdashies/types';
 import {
   isRendererPerfMetricsEnabled,
   recordTelemetryCallback,
@@ -44,7 +45,7 @@ export function exposeBridge() {
     defineBridge<RendererPerfBridge>('rendererPerfBridge', {
       recordMeasure: (name, durationMs) => {
         if (!isRendererPerfMetricsEnabled()) return;
-        if (name !== 'trackMapAnimationFrame') return;
+        if (!isRendererPerfMeasureName(name)) return;
         if (!Number.isFinite(durationMs) || durationMs < 0) return;
         recordRendererMeasure(name, durationMs);
       },
@@ -174,6 +175,9 @@ export function exposeBridge() {
       };
       ipcRenderer.on('demoModeChanged', handler);
       return () => ipcRenderer.removeListener('demoModeChanged', handler);
+    },
+    getIsDemoMode: () => {
+      return ipcRenderer.invoke('getIsDemoMode');
     },
     notifySimulatorPreferenceChanged: () => {
       ipcRenderer.send('simulatorPreferenceChanged');

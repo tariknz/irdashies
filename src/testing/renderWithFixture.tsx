@@ -13,6 +13,8 @@ import {
   type ReferenceLapSource,
 } from '../app/processors/RelativeGapProcessor';
 import { TrackStateProcessor } from '../app/processors/TrackStateProcessor';
+import { RadarProcessor } from '../app/processors/RadarProcessor';
+import { BlindSpotProcessor } from '../app/processors/BlindSpotProcessor';
 import { DashboardProvider } from '../frontend/context/DashboardContext/DashboardContext';
 import { useSessionStore } from '../frontend/context/SessionStore/SessionStore';
 import { toSession, toTelemetry, type ReplayFixture } from './replayFixture';
@@ -44,6 +46,12 @@ const dashboardBridgeStub = (dashboard: DashboardLayout): DashboardBridge => {
     resetDashboard: async () => dashboard,
     getAppVersion: async () => '0.0.0-test',
     listProfiles: async () => [],
+    getIsDemoMode: async () => false,
+    // Answered explicitly rather than left to the fallback below: the fallback
+    // hands back a function, and the dashboard context treats a non-null answer
+    // as a profile to load, so a function there deep-clones to `undefined` and
+    // throws on the next tick. A harness has no active profile, so: null.
+    getCurrentProfile: async () => null,
   };
 
   return new Proxy(implemented, {
@@ -66,7 +74,7 @@ export interface FixtureHarness {
  */
 export const mountFixture = (
   fixture: ReplayFixture,
-  options: { dashboard?: DashboardLayout } = {}
+  options: { dashboard?: DashboardLayout; warmFrames?: number } = {}
 ): FixtureHarness => {
   const session = toSession(fixture);
   const standings = new StandingsProcessor();
@@ -84,9 +92,13 @@ export const mountFixture = (
   // Track state carries the session number, which is what resolves the session
   // type. Without it every "is this a race?" branch reads as undefined.
   const trackState = new TrackStateProcessor();
+  const radar = new RadarProcessor();
+  const blindSpot = new BlindSpotProcessor();
   standings.init(session);
   relativeGaps.init?.(session);
   trackState.init(session);
+  radar.init(session);
+  blindSpot.init(session);
 
   const published: Partial<ChannelPayloads> = {};
   const listeners = new Map<string, ((payload: unknown) => void)[]>();
@@ -106,14 +118,21 @@ export const mountFixture = (
     standings.onFrame(telemetry);
     relativeGaps.onFrame(telemetry);
     trackState.onFrame(telemetry);
+    radar.onFrame(telemetry);
+    blindSpot.onFrame(telemetry);
     publish('standings.snapshot', standings.snapshot());
     publish('relative-gaps.snapshot', relativeGaps.snapshot());
     publish('track-state.snapshot', trackState.snapshot());
+    publish('radar.snapshot', radar.snapshot());
+    publish('blind-spot.snapshot', blindSpot.snapshot());
   };
 
   // Wind through every frame so the hooks see a settled session rather than a
   // cold first tick — several values only appear once a lap has been observed.
-  fixture.frames.forEach((_, index) => seekTo(index));
+  // A test that has to observe a transition while mounted can stop early and
+  // drive the rest itself with `seekTo`.
+  const warmFrames = options.warmFrames ?? fixture.frames.length;
+  for (let index = 0; index < warmFrames; index += 1) seekTo(index);
 
   const bridge: ChannelBridge = {
     subscribe: <K extends ChannelName>(
