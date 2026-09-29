@@ -254,6 +254,16 @@ const ensureFanOutCapacity = (count: number): void => {
 };
 
 /**
+ * Whether the sim or the grid has already said where this blip is.
+ *
+ * A blip the sim placed keeps its placement. The fan-out is a guess about cars
+ * the telemetry says nothing about, and letting it override a reported side
+ * paints a car somewhere the sim has already answered for.
+ */
+const isPlacedBySim = (blip: RadarBlip): boolean =>
+  blip.side !== null || blip.gridLaneOffsetM !== undefined;
+
+/**
  * The SDK has no rival-to-rival lateral position. When two unplaced rivals
  * project into the same small patch of road, give them stable visual lanes
  * instead of painting one body through the other. CarIdx order is only a
@@ -278,10 +288,10 @@ const fanOutCoincidentRivals = (
   const lateralWindow = Math.max(0.5, vehicleWidth * 1.25);
   for (let left = 0; left < count; left += 1) {
     const a = blips[left];
-    if (a.gridLaneOffsetM !== undefined) continue;
+    if (isPlacedBySim(a)) continue;
     for (let right = left + 1; right < count; right += 1) {
       const b = blips[right];
-      if (b.side !== null || b.gridLaneOffsetM !== undefined) continue;
+      if (isPlacedBySim(b)) continue;
       // Membership is measured against the group's own first car, not against
       // each other. Chaining pairwise let a queue of cars two metres apart grow
       // one group spanning the whole pack, and every member was then fanned
@@ -311,7 +321,7 @@ const fanOutCoincidentRivals = (
 
   for (let index = 0; index < count; index += 1) {
     const blip = blips[index];
-    if (blip.gridLaneOffsetM !== undefined) continue;
+    if (isPlacedBySim(blip)) continue;
     let root = index;
     while (fanOutParents[root] !== root) root = fanOutParents[root];
     fanOutCounts[root] += 1;
@@ -321,7 +331,7 @@ const fanOutCoincidentRivals = (
   const laneSpacing = Math.max(1, vehicleWidth) * ABREAST_LATERAL_FACTOR;
   for (let index = 0; index < count; index += 1) {
     const blip = blips[index];
-    if (blip.gridLaneOffsetM !== undefined) continue;
+    if (isPlacedBySim(blip)) continue;
     let root = index;
     while (fanOutParents[root] !== root) root = fanOutParents[root];
     const groupCount = fanOutCounts[root];
@@ -331,7 +341,7 @@ const fanOutCoincidentRivals = (
     let rank = 0;
     for (let earlier = 0; earlier < index; earlier += 1) {
       const candidate = blips[earlier];
-      if (candidate.gridLaneOffsetM !== undefined) {
+      if (isPlacedBySim(candidate)) {
         continue;
       }
       let candidateRoot = earlier;

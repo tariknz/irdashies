@@ -574,6 +574,28 @@ describe('computeRadarBlips', () => {
     expect(second.alongM).toBeCloseTo(10.5, 6);
   });
 
+  it('never overrides a side the sim has reported', () => {
+    // The fan-out is a guess about cars the telemetry says nothing about. The
+    // sim reporting a car on the player's left is an answer, not a gap, and the
+    // two cars here sit close enough to be grouped: the one with a verdict has
+    // to stay where the verdict put it.
+    const result = computeRadarBlips({
+      ...baseInput,
+      overlap: { left: 1, right: 0 },
+      ...positionsOf([pctOfArc(280), pctOfArc(288.5), pctOfArc(288.8)]),
+    });
+
+    const placed = result.blips.find((blip) => blip.side !== null);
+    if (!placed) throw new Error('expected the sim to place a car');
+    expect(placed.visualFanOut).toBeUndefined();
+    // Still on the side the verdict named, and out at a lane's width rather
+    // than somewhere a group's centre happened to fall.
+    expect(placed.drawLateralM).toBeLessThan(0);
+    expect(Math.abs(placed.drawLateralM)).toBeGreaterThanOrEqual(
+      baseInput.vehicleWidth
+    );
+  });
+
   it('does not let a queue of cars fan the whole pack across the road', () => {
     // Six cars nose to tail on a straight, two metres apart: the ordinary shape
     // of a pack bunched behind a slower car. Grouping them by each pair's own
