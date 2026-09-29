@@ -4,7 +4,11 @@ import {
   tangentAngleAt,
   type TrackDrawing,
 } from '@irdashies/domain/trackGeometry';
-import { assignGridColumns, type GridLayout } from './gridLayout';
+import {
+  assignGridColumns,
+  gridColumnLateralM,
+  type GridLayout,
+} from './gridLayout';
 import {
   alongsideWindowM,
   assignOverlapSides,
@@ -27,15 +31,16 @@ export interface RadarBlip {
    */
   lateralM: number;
   /**
-   * Where the body is actually drawn: the projection, moved aside when the sim
-   * reports the car alongside and the projection would put it on the player.
-   *
-   * This is what the widget interpolates and paints. `lateralM` stays the real
-   * measurement, because the sideways motion between snapshots is the car's own
-   * and not the sim's verdict — feeding the placed offset back as the next
-   * snapshot's target would walk the car further out on every frame.
+   * Where the body is drawn. It starts from the centreline projection and may
+   * carry a side, grid-lane or collision-avoidance display offset. `lateralM`
+   * remains the unmodified measurement so a drawing decision never feeds back
+   * into the next frame's road projection.
    */
   drawLateralM: number;
+  /** Local grid-lane offset projected onto the radar's lateral axis. */
+  gridLaneOffsetM?: number;
+  /** True when an ambiguous same-progress rival group is fanned out visually. */
+  visualFanOut?: boolean;
   /**
    * Road heading at this car relative to the player's, radians in (-PI, PI].
    * Both are measured against the same centreline, so the track's running
@@ -208,6 +213,11 @@ const NOT_ON_ROAD: RadarBlipResult = {
 const playerPoint = { x: 0, y: 0 };
 const carPoint = { x: 0, y: 0 };
 
+// Reused because grid telemetry is processed synchronously and rows are stable
+// integer indices. These buffers grow with the field, not on every snapshot.
+let gridRowAlongSums = new Float64Array(0);
+let gridRowCounts = new Uint16Array(0);
+
 /**
  * A frame that draws nothing, as a result built in the caller's output buffer.
  *
@@ -231,12 +241,110 @@ const wrap01 = (value: number): number => ((value % 1) + 1) % 1;
  */
 const ABREAST_LATERAL_FACTOR = 1.1;
 
+/** Reused scratch for the small, bounded set of blips inside the radar range. */
+let fanOutParents = new Int32Array(0);
+let fanOutCounts = new Uint16Array(0);
+let fanOutLateralSums = new Float64Array(0);
+
+const ensureFanOutCapacity = (count: number): void => {
+  if (fanOutParents.length >= count) return;
+  fanOutParents = new Int32Array(count);
+  fanOutCounts = new Uint16Array(count);
+  fanOutLateralSums = new Float64Array(count);
+};
+
+/**
+ * The SDK has no rival-to-rival lateral position. When two unplaced rivals
+ * project into the same small patch of road, give them stable visual lanes
+ * instead of painting one body through the other. CarIdx order is only a
+ * deterministic tie-break; it is not a claim about their real sides.
+ * Sim-reported overlap sides and pace-grid columns remain authoritative.
+ */
+const fanOutCoincidentRivals = (
+  blips: RadarBlip[],
+  vehicleWidth: number,
+  vehicleLength: number
+): void => {
+  const count = blips.length;
+  if (count < 2) return;
+  ensureFanOutCapacity(count);
+  fanOutCounts.fill(0, 0, count);
+  fanOutLateralSums.fill(0, 0, count);
+  for (let index = 0; index < count; index += 1) {
+    fanOutParents[index] = index;
+  }
+
+  const longitudinalWindow = Math.max(0.5, vehicleLength * 0.5);
+  const lateralWindow = Math.max(0.5, vehicleWidth * 1.25);
+  for (let left = 0; left < count; left += 1) {
+    const a = blips[left];
+    if (a.side !== null || a.gridLaneOffsetM !== undefined) continue;
+    for (let right = left + 1; right < count; right += 1) {
+      const b = blips[right];
+      if (b.side !== null || b.gridLaneOffsetM !== undefined) continue;
+      if (
+        Math.abs(a.alongM - b.alongM) > longitudinalWindow ||
+        Math.abs(a.lateralM - b.lateralM) > lateralWindow
+      ) {
+        continue;
+      }
+
+      let leftRoot = left;
+      while (fanOutParents[leftRoot] !== leftRoot) {
+        leftRoot = fanOutParents[leftRoot];
+      }
+      let rightRoot = right;
+      while (fanOutParents[rightRoot] !== rightRoot) {
+        rightRoot = fanOutParents[rightRoot];
+      }
+      if (leftRoot !== rightRoot) fanOutParents[rightRoot] = leftRoot;
+    }
+  }
+
+  for (let index = 0; index < count; index += 1) {
+    const blip = blips[index];
+    if (blip.side !== null || blip.gridLaneOffsetM !== undefined) continue;
+    let root = index;
+    while (fanOutParents[root] !== root) root = fanOutParents[root];
+    fanOutCounts[root] += 1;
+    fanOutLateralSums[root] += blip.drawLateralM;
+  }
+
+  const laneSpacing = Math.max(1, vehicleWidth) * ABREAST_LATERAL_FACTOR;
+  for (let index = 0; index < count; index += 1) {
+    const blip = blips[index];
+    if (blip.side !== null || blip.gridLaneOffsetM !== undefined) continue;
+    let root = index;
+    while (fanOutParents[root] !== root) root = fanOutParents[root];
+    const groupCount = fanOutCounts[root];
+    if (groupCount < 2) continue;
+
+    // Blips are emitted in CarIdx order, making the visual tie-break stable.
+    let rank = 0;
+    for (let earlier = 0; earlier < index; earlier += 1) {
+      const candidate = blips[earlier];
+      if (candidate.side !== null || candidate.gridLaneOffsetM !== undefined) {
+        continue;
+      }
+      let candidateRoot = earlier;
+      while (fanOutParents[candidateRoot] !== candidateRoot) {
+        candidateRoot = fanOutParents[candidateRoot];
+      }
+      if (candidateRoot === root) rank += 1;
+    }
+    const groupCentre = fanOutLateralSums[root] / groupCount;
+    blip.drawLateralM =
+      groupCentre + (rank - (groupCount - 1) / 2) * laneSpacing;
+    blip.visualFanOut = true;
+  }
+};
+
 /**
  * A sub-car-length latch. Measured on a replayed race, cars within a couple of
  * metres of the player oscillate ±0.5 m frame to frame, which flips the
  * ahead/behind sign; a real pass still sweeps through the latch.
  */
-export const LONGITUDINAL_LATCH_M = 1;
+const LONGITUDINAL_LATCH_M = 1;
 
 /**
  * Holds a car on the side it was last drawn on while its measured offset sits
@@ -244,7 +352,7 @@ export const LONGITUDINAL_LATCH_M = 1;
  * frame to frame. Beyond the latch the measured along-track offset is passed
  * through untouched, so a genuine pass still crosses the axis.
  */
-export const latchAlongSide = (
+const latchAlongSide = (
   alongM: number,
   previousSign: number,
   latchM: number
@@ -258,7 +366,7 @@ const onRoad = (pct: number | undefined): pct is number =>
   typeof pct === 'number' && Number.isFinite(pct) && pct >= 0;
 
 /** The fixed blip tag for the pace car; its number (0) is meaningless. */
-export const PACE_CAR_LABEL = 'PACE';
+const PACE_CAR_LABEL = 'PACE';
 
 /**
  * Blip text, or null when labels are off. The pace car is labelled with the
@@ -522,16 +630,9 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
       Math.sign(blip.alongM) || previousTargets.alongSign[blip.carIdx];
   }
 
-  // The standing grid, applied last so it is the offset that survives.
-  //
-  // Both of the offsets above write to `drawLateralM`, and the overlap's fades
-  // back out to the centreline as a car leaves the window the verdict covers.
-  // Placing the grid before them meant the grid offset was overwritten on the
-  // very cars it was drawn for, which is what left the field in a single file.
-  //
-  // `lateralM` is deliberately left as the road reports it. The widget
-  // interpolates from it, and a placed offset fed back as the next frame's
-  // target is what walks a car off the road between the grid and the start.
+  // Pace rows share a centreline position, with row distances averaged to
+  // smooth parked-car noise. A lane offset belongs to the car's local road
+  // frame, so project it into the player's radar frame on both axes.
   if (gridLayout !== null) {
     const paceRow = input.carIdxPaceRow;
     const paceLine = input.carIdxPaceLine;
@@ -543,18 +644,62 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
               line: paceLine[blip.carIdx] ?? -1,
               row: paceRow[blip.carIdx] ?? -1,
             })),
-            gridLayout,
-            playerCarIdx !== null ? (paceRow[playerCarIdx] ?? -1) : -1
+            gridLayout
           )
         : null;
-    if (columns !== null) {
+
+    if (paceRow && paceLine && columns !== null) {
+      const rowCount = paceRow.length;
+      if (gridRowAlongSums.length < rowCount) {
+        gridRowAlongSums = new Float64Array(rowCount);
+        gridRowCounts = new Uint16Array(rowCount);
+      }
+      gridRowAlongSums.fill(0, 0, rowCount);
+      gridRowCounts.fill(0, 0, rowCount);
+
+      for (const blip of blips) {
+        const row = paceRow[blip.carIdx] ?? -1;
+        if (!Number.isInteger(row) || row < 0 || row >= rowCount) continue;
+        if (
+          gridColumnLateralM(paceLine[blip.carIdx] ?? -1, gridLayout) === null
+        ) {
+          continue;
+        }
+        gridRowAlongSums[row] += blip.alongM;
+        gridRowCounts[row] += 1;
+      }
+
+      const playerRow =
+        playerCarIdx === null ? -1 : (paceRow[playerCarIdx] ?? -1);
+      const playerLine =
+        playerCarIdx === null ? -1 : (paceLine[playerCarIdx] ?? -1);
+      const playerHasGridSlot =
+        Number.isInteger(playerRow) &&
+        playerRow >= 0 &&
+        playerRow < rowCount &&
+        gridColumnLateralM(playerLine, gridLayout) !== null;
+
       for (const blip of blips) {
         const column = columns.get(blip.carIdx);
-        if (column !== undefined) blip.drawLateralM = column;
+        if (column === undefined) continue;
+        const laneAlongM = -column * Math.sin(blip.relYaw);
+        const laneLateralM = column * Math.cos(blip.relYaw);
+        blip.drawLateralM = blip.lateralM + laneLateralM;
+        blip.gridLaneOffsetM = laneLateralM;
+
+        const row = paceRow[blip.carIdx] ?? -1;
+        if (row === playerRow && playerHasGridSlot) {
+          blip.alongM = 0;
+        } else if (gridRowCounts[row] > 0) {
+          blip.alongM = gridRowAlongSums[row] / gridRowCounts[row];
+        }
+        blip.alongM += laneAlongM;
+        blip.gapM = Math.abs(blip.alongM);
       }
     }
   }
 
+  fanOutCoincidentRivals(blips, vehicleWidth, vehicleLength);
   return {
     hasGeometry: true,
     playerOnRoad: true,

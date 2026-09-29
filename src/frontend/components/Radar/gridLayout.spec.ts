@@ -3,6 +3,7 @@ import { SessionState } from '@irdashies/types';
 import {
   assignGridColumns,
   columnsFromPaceLines,
+  gridColumnLateralM,
   isGridBeforeStart,
   parseGridLayout,
   type GridColumnCandidate,
@@ -109,6 +110,13 @@ describe('assignGridColumns', () => {
   // null check on every line.
   const layout = parseGridLayout(TWO_ABREAST) as GridLayout;
 
+  it('maps pace lines to their signed road-side offsets', () => {
+    expect(gridColumnLateralM(0, layout)).toBe(-layout.columnLateralM);
+    expect(gridColumnLateralM(1, layout)).toBe(layout.columnLateralM);
+    expect(gridColumnLateralM(-1, layout)).toBeNull();
+    expect(gridColumnLateralM(2, layout)).toBeNull();
+  });
+
   it('puts each car in the column the sim names', () => {
     const columns = assignGridColumns([at(1, 3, 0), at(2, 3, 1)], layout);
     expect(columns?.get(1)).toBe(-layout.columnLateralM);
@@ -131,18 +139,14 @@ describe('assignGridColumns', () => {
     }
   });
 
-  it('leaves the row beside the player to the sim', () => {
-    // The player's own row is drawn from the CarLeftRight verdict, which knows
-    // the side for the player's own car. Here the player is car 9 in row 4.
+  it('places the player row from the same sim grid numbering', () => {
     const columns = assignGridColumns(
-      [at(8, 4, 0), at(9, 4, 1), at(10, 5, 0), at(11, 5, 1)],
-      layout,
-      4
+      [at(8, 4, 0), at(9, 4, 1), at(10, 5, 0)],
+      layout
     );
-    expect(columns?.has(8)).toBe(false);
-    expect(columns?.has(9)).toBe(false);
+    expect(columns?.get(8)).toBe(-layout.columnLateralM);
+    expect(columns?.get(9)).toBe(layout.columnLateralM);
     expect(columns?.get(10)).toBe(-layout.columnLateralM);
-    expect(columns?.get(11)).toBe(layout.columnLateralM);
   });
 
   it('places a row that is short of a car', () => {

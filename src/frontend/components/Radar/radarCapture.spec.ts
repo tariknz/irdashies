@@ -8,7 +8,11 @@ import {
   type RadarBlip,
 } from './radarBlips';
 import { overlapFromCarLeftRight } from './overlapSides';
-import { parseGridLayout } from './gridLayout';
+import {
+  gridColumnLateralM,
+  parseGridLayout,
+  type GridLayout,
+} from './gridLayout';
 import nordschleife from '../../../../test-data/1783998516193/telemetry.json';
 import nordschleifeSession from '../../../../test-data/1783998516193/session.json';
 import roadAtlanta from '../../../../test-data/road-atlanta-grid/telemetry.json';
@@ -117,6 +121,76 @@ const nearest = (blips: readonly RadarBlip[], sign: 1 | -1) =>
   blips
     .filter((blip) => Math.sign(blip.alongM) === sign)
     .sort((a, b) => a.gapM - b.gapM)[0];
+
+const expectGridProjection = (
+  placed: readonly RadarBlip[],
+  centrelineBlips: readonly RadarBlip[],
+  paceRow: readonly number[],
+  paceLine: readonly number[],
+  layout: GridLayout,
+  playerRow: number
+) => {
+  const rowAlong = new Map<number, { sum: number; count: number }>();
+  for (const blip of centrelineBlips) {
+    const row = paceRow[blip.carIdx] ?? -1;
+    if (
+      row < 0 ||
+      gridColumnLateralM(paceLine[blip.carIdx] ?? -1, layout) === null
+    ) {
+      continue;
+    }
+    const totals = rowAlong.get(row) ?? { sum: 0, count: 0 };
+    totals.sum += blip.alongM;
+    totals.count += 1;
+    rowAlong.set(row, totals);
+  }
+
+  const blipsByRow = new Map<number, RadarBlip[]>();
+  for (const blip of placed) {
+    const row = paceRow[blip.carIdx] ?? -1;
+    const column = gridColumnLateralM(paceLine[blip.carIdx] ?? -1, layout);
+    if (column === null) throw new Error('grid car has no sim-reported lane');
+
+    const laneLateralM = column * Math.cos(blip.relYaw);
+    const laneAlongM = -column * Math.sin(blip.relYaw);
+    if (blip.gridLaneOffsetM === undefined) {
+      throw new Error('grid car has no projected lane offset');
+    }
+    expect(blip.gridLaneOffsetM).toBeCloseTo(laneLateralM, 6);
+    expect(blip.drawLateralM).toBeCloseTo(blip.lateralM + laneLateralM, 6);
+
+    const rowTotals = rowAlong.get(row);
+    const rowCentreM =
+      row === playerRow
+        ? 0
+        : rowTotals && rowTotals.count > 0
+          ? rowTotals.sum / rowTotals.count
+          : Number.NaN;
+    if (!Number.isFinite(rowCentreM)) {
+      throw new Error(`grid row ${row} has no measurable centre`);
+    }
+    expect(blip.alongM).toBeCloseTo(rowCentreM + laneAlongM, 6);
+
+    const rowBlips = blipsByRow.get(row) ?? [];
+    rowBlips.push(blip);
+    blipsByRow.set(row, rowBlips);
+  }
+
+  for (const rowBlips of blipsByRow.values()) {
+    if (
+      rowBlips.length !== 2 ||
+      paceLine[rowBlips[0].carIdx] === paceLine[rowBlips[1].carIdx]
+    ) {
+      continue;
+    }
+    const [left, right] = rowBlips;
+    const distance = Math.hypot(
+      left.drawLateralM - right.drawLateralM,
+      left.alongM - right.alongM
+    );
+    expect(distance).toBeGreaterThan(3.8);
+  }
+};
 
 const CAPTURES: Capture[] = [
   {
@@ -237,6 +311,7 @@ describe('radar placement over recorded telemetry', () => {
     };
     const layout = parseGridLayout('2x2 inline pole on left');
     expect(layout).not.toBeNull();
+    if (layout === null) throw new Error('expected a two-column grid');
 
     // The grid is wider than the 15 m the other cases draw, so the whole field
     // is in range and the reconstruction is judged on all of it.
@@ -256,63 +331,22 @@ describe('radar placement over recorded telemetry', () => {
     const playerCarIdx = gridFrame.CamCarIdx.value[0];
     const playerRow = paceRow[playerCarIdx];
 
-    // Every car the sim put on the grid gets a column, except the player's own
-    // row, which is drawn from the CarLeftRight verdict instead. The pace flags
-    // are only set for a car actually on the grid, so row -1 is not one of
-    // these — car 64 in this frame is parked in the pit lane.
-    //
-    // The filter is on the blips rather than the pace flags themselves, because
-    // the radar draws a car it can locate. Half this grid reports
-    // `CarIdxLapDistPct` of -1 — a real grid slot, a car the SDK cannot yet
-    // place on the road — and a blip is never made for one of those. The
-    // placement is only as complete as the telemetry the radar is given.
-    const shouldPlace = (carIdx: number) =>
-      paceRow[carIdx] >= 0 && paceRow[carIdx] !== playerRow;
+    // The player is drawn separately; the other car in its row remains a
+    // blip. Rows without a valid sim lane are not invented by the radar.
     const placed = onGrid.blips.filter(
-      (blip) => shouldPlace(blip.carIdx) && blip.drawLateralM !== 0
-    );
-    const ranked = onGrid.blips.filter((blip) => shouldPlace(blip.carIdx));
-    expect(placed).toHaveLength(ranked.length);
-    // The field reaches both columns, rather than drawing as the single file the
-    // bug reported.
-    const sides = new Set(placed.map((blip) => Math.sign(blip.drawLateralM)));
-    expect(sides).toEqual(new Set([-1, 1]));
-    // Every placed car sits at the one offset the layout names, rather than at
-    // a spread of guesses.
-    for (const blip of placed) {
-      expect(Math.abs(blip.drawLateralM)).toBeCloseTo(2.5, 6);
-    }
-
-    // The decisive check: the drawn column has to agree with the sim about
-    // which lane each car is in. `CarIdxPaceLine` 0 and 1 are the two columns,
-    // and a grid placed well enough to be worth drawing has to match.
-    const wrong = placed.filter(
       (blip) =>
-        Math.sign(blip.drawLateralM) !== (paceLine[blip.carIdx] === 0 ? -1 : 1)
+        paceRow[blip.carIdx] >= 0 &&
+        gridColumnLateralM(paceLine[blip.carIdx] ?? -1, layout) !== null
     );
-    expect(wrong.map((blip) => blip.carIdx)).toEqual([]);
-
-    // Each row is split across the two columns, so no row is stacked on one side.
-    // The rows this checks are the ones the radar can draw, so the expected size
-    // is counted from the sim rather than written down: a row holding a car the
-    // SDK cannot place has only one car to draw, and one line on its own is the
-    // whole of that row rather than a stack.
-    const linesByRow = new Map<number, number[]>();
-    for (const blip of placed) {
-      const row = paceRow[blip.carIdx];
-      linesByRow.set(row, [
-        ...(linesByRow.get(row) ?? []),
-        Math.sign(blip.drawLateralM),
-      ]);
-    }
-    const drawableInRow = (row: number) =>
-      onGrid.blips.filter(
-        (blip) => shouldPlace(blip.carIdx) && paceRow[blip.carIdx] === row
-      ).length;
-    for (const [row, lines] of linesByRow) {
-      expect(lines.length, `row ${row}`).toBe(drawableInRow(row));
-      if (lines.length === 2) expect(new Set(lines)).toEqual(new Set([-1, 1]));
-    }
+    expect(onGrid.blips).toHaveLength(onCentreline.blips.length);
+    expectGridProjection(
+      placed,
+      onCentreline.blips,
+      paceRow,
+      paceLine,
+      layout,
+      playerRow
+    );
 
     // The measurement is untouched. Drawing the grid must not disturb what the
     // road reported, because the motion interpolator reads `lateralM` and a
@@ -345,7 +379,7 @@ describe('radar placement over recorded telemetry', () => {
     const paceRow = frame.CarIdxPaceRow.value;
     const paceLine = frame.CarIdxPaceLine.value;
     const playerCarIdx = frame.CamCarIdx.value[0];
-    const playerRow = paceRow[playerCarIdx];
+    const playerRow = paceRow[playerCarIdx] ?? -1;
 
     // The candidates are the cars the radar can both place and name, which is
     // what the hook reads before deciding the field is two-abreast.
@@ -361,26 +395,24 @@ describe('radar placement over recorded telemetry', () => {
     // The sim's own numbering says there is, and that is what the radar uses.
     const layout = parseGridLayout(label, candidates);
     expect(layout?.columns).toBe(2);
+    if (layout === null) throw new Error('expected a two-column grid');
 
     const base = { ...baseFor(capture), radarRange: 120 };
     const onGrid = computeRadarBlips({ ...base, gridLayout: layout });
-
-    // The sim is the oracle: the drawn column has to agree with the line it
-    // numbered, or the field is drawn in the wrong order.
-    const shouldPlace = (carIdx: number) =>
-      paceRow[carIdx] >= 0 && paceRow[carIdx] !== playerRow;
+    const onCentreline = computeRadarBlips({ ...base, gridLayout: null });
     const placed = onGrid.blips.filter(
-      (blip) => shouldPlace(blip.carIdx) && blip.drawLateralM !== 0
-    );
-    const ranked = onGrid.blips.filter((blip) => shouldPlace(blip.carIdx));
-    expect(placed).toHaveLength(ranked.length);
-    expect(new Set(placed.map((blip) => Math.sign(blip.drawLateralM)))).toEqual(
-      new Set([-1, 1])
-    );
-    const wrong = placed.filter(
       (blip) =>
-        Math.sign(blip.drawLateralM) !== (paceLine[blip.carIdx] === 0 ? -1 : 1)
+        paceRow[blip.carIdx] >= 0 &&
+        gridColumnLateralM(paceLine[blip.carIdx] ?? -1, layout) !== null
     );
-    expect(wrong.map((blip) => blip.carIdx)).toEqual([]);
+    expect(onGrid.blips).toHaveLength(onCentreline.blips.length);
+    expectGridProjection(
+      placed,
+      onCentreline.blips,
+      paceRow,
+      paceLine,
+      layout,
+      playerRow
+    );
   });
 });

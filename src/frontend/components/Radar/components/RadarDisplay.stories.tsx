@@ -51,6 +51,7 @@ const meta = {
     showCarNumbers: true,
     colorRival: '#cbd5e1',
     colorPlayer: '#2fd16a',
+    playerLateralM: 0,
     viewMode: 'top',
     rearCameraTilt: 45,
     bgOpacity: 30,
@@ -135,6 +136,17 @@ export const PaceCar: Story = {
   args: { blips: [AHEAD, PACE] },
 };
 
+export const InferredSideBySideRivals: Story = {
+  name: 'Inferred side-by-side rivals',
+  args: {
+    // The longitudinal readings coincide; the side assignment is visual only.
+    blips: [
+      blip(1, 8, -1.045, '24', { visualFanOut: true }),
+      blip(2, 8.2, 1.045, '7', { visualFanOut: true }),
+    ],
+  },
+};
+
 export const FollowingMap: Story = {
   name: 'Following track map',
   args: {
@@ -143,13 +155,13 @@ export const FollowingMap: Story = {
     followingMapBorderOpacity: 90,
     followingMapFillColor: '#78350f',
     followingMapFillOpacity: 70,
-    // Cars on the road rather than beside it. The player's frame puts the
-    // player at lateral 0 on the centreline, so the road passes through
-    // (0, 0) and the cars sit on the curve that leaves it.
+    // The player and partner occupy opposite columns; two cars behind show both
+    // grid lines as well.
+    playerLateralM: -2.5,
     blips: [
-      blip(1, 12, 1.1, '24'),
-      blip(2, -5, -0.4, '7'),
-      blip(3, 0.3, 0, '51'),
+      blip(1, 0, 0, '24', { gridLaneOffsetM: 2.5 }),
+      blip(2, -5, 0, '7', { gridLaneOffsetM: -2.5 }),
+      blip(3, -5, 0, '51', { gridLaneOffsetM: 2.5 }),
     ],
   },
 };

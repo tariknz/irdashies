@@ -34,6 +34,7 @@ const props = {
   showCarNumbers: true,
   colorRival: '#cbd5e1',
   colorPlayer: '#2fd16a',
+  playerLateralM: 0,
   viewMode: 'top',
   rearCameraTilt: 30,
   bgOpacity: 30,

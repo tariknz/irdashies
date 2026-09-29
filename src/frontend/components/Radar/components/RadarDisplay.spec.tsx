@@ -92,6 +92,8 @@ interface PaintRecord {
    * Vehicle outlines are rgba, so a palette entry here is an edge marker.
    */
   strokesPerPaint: string[][];
+  /** The style and effective canvas width for each road/car stroke. */
+  strokeCallsPerPaint: { style: string; width: number }[][];
   /** One entry per paint: every `fillText` drawn, as text and x position. */
   textsPerPaint: [string, number][][];
   /** One entry per paint: every `lineTo` on the road, as x and y. */
@@ -149,7 +151,15 @@ const createFakeContext = (record: PaintRecord) => {
         record.quadraticsPerPaint.push([]);
         record.beziersPerPaint.push([]);
         record.strokeAlphasPerPaint.push([]);
+        record.strokeCallsPerPaint.push([]);
         record.vehicleSizesPerPaint.push([]);
+      }
+      if (name === 'stroke') {
+        const last = paint();
+        record.strokeCallsPerPaint[last].push({
+          style: String(methods.strokeStyle),
+          width: Number(methods.lineWidth),
+        });
       }
       if (name === 'fillText') {
         const last = paint();
@@ -226,6 +236,7 @@ const props: RadarDisplayProps = {
   showCarNumbers: true,
   colorRival: COLORS.rival,
   colorPlayer: COLORS.player,
+  playerLateralM: 0,
   viewMode: 'top',
   rearCameraTilt: 45,
   sideIndicatorStyle: 'double-arc',
@@ -271,6 +282,7 @@ describe('RadarDisplay', () => {
       beziersPerPaint: [],
       strokeAlphasPerPaint: [],
       vehicleSizesPerPaint: [],
+      strokeCallsPerPaint: [],
       radialGradients: [],
     };
     observers.length = 0;
@@ -331,6 +343,74 @@ describe('RadarDisplay', () => {
     expect(ahead[0] - centreX).toBeCloseTo(0.2 * metresToPixels, 6);
     expect(behind[0] - centreX).toBeCloseTo(2.4 * metresToPixels, 6);
     expect(alongside[0] - centreX).toBeCloseTo(-2.1 * metresToPixels, 6);
+  });
+
+  it('draws the player in its pace-line lane and repaints when it changes', () => {
+    const view = render(<RadarDisplay {...props} playerLateralM={-2.5} />);
+    deliverSize(300, 300);
+
+    const scale = 148 / props.radarRange;
+    expect(record.originsPerPaint.at(-1)?.at(-1)?.[0]).toBeCloseTo(
+      150 - 2.5 * scale,
+      6
+    );
+
+    view.rerender(<RadarDisplay {...props} playerLateralM={2.5} />);
+    expect(record.originsPerPaint.at(-1)?.at(-1)?.[0]).toBeCloseTo(
+      150 + 2.5 * scale,
+      6
+    );
+  });
+
+  it('keeps pace-line lanes when the following map is off', () => {
+    render(
+      <RadarDisplay
+        {...props}
+        radarRange={120}
+        playerLateralM={-2.5}
+        blips={[
+          blip({
+            carIdx: 1,
+            alongM: 0,
+            gapM: 0,
+            lateralM: 0,
+            gridLaneOffsetM: 2.5,
+          }),
+        ]}
+      />
+    );
+    deliverSize(300, 300);
+
+    const [rival, player] = record.originsPerPaint.at(-1) ?? [];
+    expect(rival[0] - player[0]).toBeCloseTo((5 * 148) / 120, 6);
+  });
+
+  it('separates grid cars when the map enlarges them at long range', () => {
+    render(
+      <RadarDisplay
+        {...props}
+        radarRange={120}
+        showFollowingMap
+        playerLateralM={-2.5}
+        blips={[
+          blip({
+            carIdx: 1,
+            alongM: 0,
+            gapM: 0,
+            lateralM: 0,
+            gridLaneOffsetM: 2.5,
+          }),
+        ]}
+      />
+    );
+    deliverSize(300, 300);
+
+    const vehicles = record.originsPerPaint.at(-1) ?? [];
+    expect(vehicles).toHaveLength(2);
+    expect(vehicles[0][0] - vehicles[1][0]).toBeCloseTo(14, 6);
+    expect(record.vehicleSizesPerPaint.at(-1)?.map(([width]) => width)).toEqual(
+      [12, 12]
+    );
   });
 
   it('reuses the disc gradient across repaints, but not once the disc changes', () => {
@@ -394,10 +474,26 @@ describe('RadarDisplay', () => {
       (alpha) => alpha === 0.8 || alpha === 0.45
     );
     expect(configuredAlphas).toEqual(expect.arrayContaining([0.8, 0.45]));
+    const roadStrokes = record.strokeCallsPerPaint[paint].filter(({ style }) =>
+      [props.followingMapBorderColor, props.followingMapFillColor].includes(
+        style
+      )
+    );
+    expect(roadStrokes.map(({ style }) => style)).toEqual([
+      props.followingMapBorderColor,
+      props.followingMapFillColor,
+    ]);
+    const radarScale = 148 / props.radarRange;
+    const vehicleWidthPx = Math.max(
+      props.vehicleWidth * radarScale,
+      MAP_VEHICLE_MIN_WIDTH_PX
+    );
+    const twoCarEnvelopeWidthPx = 5 * radarScale + vehicleWidthPx;
+    expect(roadStrokes[1].width).toBeGreaterThanOrEqual(twoCarEnvelopeWidthPx);
+    expect(roadStrokes[0].width).toBeCloseTo(roadStrokes[1].width + 4, 6);
     expect(record.vehiclesPerPaint[paint]).toBe(2);
 
     const [car] = record.originsPerPaint[paint];
-    const radarScale = 148 / props.radarRange;
     expect(car[0]).toBeCloseTo(centre + 0.2 * radarScale, 6);
     expect(car[1]).toBeCloseTo(centre - 4 * radarScale, 6);
 
@@ -405,6 +501,24 @@ describe('RadarDisplay', () => {
     // signal is drawn.
     expect(record.arcsPerPaint[paint]).toHaveLength(8);
     expect(record.fillsPerPaint[paint]).toContain('rgba(0, 0, 0, 0.3)');
+  });
+
+  it('shows an inferred side-by-side rival away from the player body', () => {
+    const inferred = [
+      blip({
+        carIdx: 1,
+        alongM: 0.3,
+        lateralM: 2.5,
+        gapM: 0.3,
+        rimSignal: 'both',
+        visualFanOut: true,
+      }),
+    ];
+
+    render(<RadarDisplay {...props} blips={inferred} />);
+    deliverSize(300, 300);
+
+    expect(record.vehiclesPerPaint.at(-1)).toBe(2);
   });
 
   it('draws a level unknown-side car in map view, where the overlap is the signal', () => {

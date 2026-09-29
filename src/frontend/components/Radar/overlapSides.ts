@@ -36,9 +36,9 @@ export const overlapFromCarLeftRight = (state: number): RadarOverlap => {
 /** Which way of the player a car is drawn: -1 is their left, +1 their right. */
 export type OverlapSide = -1 | 1;
 
+/** Whatever the caller knows that carries a car index and a fore/aft offset. */
 export interface OverlapCandidate {
   carIdx: number;
-  /** Metres along the track; positive is ahead of the player. */
   alongM: number;
 }
 
@@ -137,14 +137,14 @@ export const assignOverlapSides = (input: {
   const alongside = alongsideWindowM(vehicleLength);
   const retain = retainSideWindowM(vehicleLength);
 
-  // Держим сторону, пока машина в retain-окне — независимо от текущего счёта.
+  // A held side stands while the car stays in the retain window.
   for (const blip of blips) {
     if (Math.abs(blip.alongM) > retain) continue;
     const held = previousSides[blip.carIdx];
     if (held !== 0) sides[blip.carIdx] = held;
   }
 
-  // Слоты раздаются по близости всем машинам в "живом" окне — старым и новым.
+  // Fill the reported slots nearest-first, for old and new cars alike.
   contenders.length = 0;
   for (const blip of blips) {
     if (Math.abs(blip.alongM) <= alongside) contenders.push(blip);

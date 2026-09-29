@@ -4,7 +4,7 @@
  */
 
 /** Where a fade is heading: 1 fully on screen, 0 fully off. */
-export type FadeTarget = 0 | 1;
+type FadeTarget = 0 | 1;
 
 /** Leave room inside the range so the near-range gate always has a visible car. */
 export const MAX_RADAR_RANGE_M = 500;

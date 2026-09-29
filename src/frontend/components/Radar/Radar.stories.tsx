@@ -16,6 +16,7 @@ import { Radar } from './Radar';
  * assembled by hand.
  */
 const INTERLAGOS = '/test-data/1752616787256';
+const TWO_ABREAST_GRID = '/test-data/road-atlanta-grid';
 const VIRGINIA = '/test-data/1735296198162';
 /**
  * Interlagos with the sim reporting a car to the player's left. The car sits
@@ -52,6 +53,17 @@ const story = (
 });
 
 export const Primary: Story = story(INTERLAGOS);
+
+/** The session label says single file; pace telemetry reports two columns. */
+export const StartingGrid: Story = {
+  ...story(TWO_ABREAST_GRID, {
+    radarRange: 40,
+    showOnlyWhenOnTrack: false,
+    fadeSeconds: 0,
+    showTrackMap: false,
+  }),
+  name: 'Two-abreast starting grid',
+};
 
 export const WideRange: Story = {
   ...story(INTERLAGOS, { radarRange: 25 }),

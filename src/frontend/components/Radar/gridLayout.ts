@@ -3,11 +3,9 @@ import { SessionState } from '@irdashies/types';
 /**
  * The starting grid, as far as the radar can reconstruct it.
  *
- * The SDK publishes neither a lateral position nor a grid slot before the
- * start, so this began as a reconstruction from the gaps along the road. The
- * sim turned out to publish the grid itself, and everything here now reads
- * that: `CarIdxPaceRow` and `CarIdxPaceLine` name the row and the column of
- * every car on the grid, and they are what the field is drawn from.
+ * iRacing publishes no per-car world lateral position. It does publish
+ * `CarIdxPaceRow` and `CarIdxPaceLine` for the starting grid; those identify
+ * each car's row and column and are the source used here.
  */
 export interface GridLayout {
   /** Cars abreast, 1 for a single-file grid. */
@@ -33,7 +31,7 @@ const COLUMN_LATERAL_M = 2.5;
  * as unknown rather than guessed at, which leaves every car on the centreline
  * projection — what the radar did before this existed.
  */
-export const UNKNOWN_GRID: GridLayout | null = null;
+const UNKNOWN_GRID: GridLayout | null = null;
 
 const COLUMN_PATTERN = /(\d+)\s*x\s*(\d+)/;
 
@@ -42,7 +40,7 @@ export interface GridColumnCandidate {
   readonly carIdx: number;
   /** `CarIdxPaceLine`: 0 for the left column of the row, 1 for the right. */
   readonly line: number;
-  /** `CarIdxPaceRow`, needed only to recognise the player's own row. */
+  /** `CarIdxPaceRow`; negative means the sim has not assigned the car yet. */
   readonly row: number;
 }
 
@@ -127,6 +125,15 @@ export const parseGridLayout = (
   return { columns, columnLateralM: COLUMN_LATERAL_M };
 };
 
+/** Lateral offset for a pace line, or null when the grid does not name it. */
+export const gridColumnLateralM = (
+  line: number,
+  layout: GridLayout
+): number | null => {
+  if (layout.columns < 2 || line < 0 || line >= layout.columns) return null;
+  return line % 2 === 0 ? -layout.columnLateralM : layout.columnLateralM;
+};
+
 /**
  * Puts every car of a standing grid into the column the sim says it is in.
  *
@@ -136,11 +143,9 @@ export const parseGridLayout = (
  * reporting their partner to the right, and the partner was line 1. The sign
  * matches the overlap verdict's, where negative is the player's left.
  *
- * The player's own row is skipped. The sim's `CarLeftRight` verdict already
- * places the car alongside the player, and that verdict is a reading about the
- * player's own car rather than one for every car on the grid. The rows further
- * out have no such reading, but they do not need one: this is the same
- * numbering the player's row is drawn from, so it stands on its own.
+ * The player's own row is included too: the sim's pace line names both cars
+ * even when `CarLeftRight` does not report an overlap for the parked pair.
+ * The player is drawn separately, using the same line-to-side mapping.
  *
  * The row's distance along the road is not touched. The measured gap already
  * carries the real fore/aft distance to the player's row, and moving it again
@@ -150,19 +155,16 @@ export const parseGridLayout = (
  */
 export const assignGridColumns = (
   cars: readonly GridColumnCandidate[],
-  layout: GridLayout,
-  playerRow = -1
+  layout: GridLayout
 ): Map<number, number> | null => {
   if (layout.columns < 2) return UNKNOWN_GRID;
 
   const columns = new Map<number, number>();
   for (const car of cars) {
-    if (car.row < 0 || car.row === playerRow) continue;
-    if (car.line < 0 || car.line >= layout.columns) continue;
-    columns.set(
-      car.carIdx,
-      car.line % 2 === 0 ? -layout.columnLateralM : layout.columnLateralM
-    );
+    if (car.row < 0) continue;
+    const lateralM = gridColumnLateralM(car.line, layout);
+    if (lateralM === null) continue;
+    columns.set(car.carIdx, lateralM);
   }
 
   return columns.size > 0 ? columns : null;

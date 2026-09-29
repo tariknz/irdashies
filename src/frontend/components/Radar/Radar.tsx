@@ -57,9 +57,11 @@ const DEMO_BLIPS: RadarBlip[] = [
     isPaceCar: false,
   },
 ];
+const DEMO_BLIP_COLORS: Record<'class' | 'badge', readonly string[]> = {
+  class: ['#ffda59', '#33ceff', '#ef4444', '#06b6d4'],
+  badge: ['#b91c1c', '#15803d', '#1d4ed8', '#a16207'],
+};
 const DEMO_TRACK_LENGTH_M = 5800;
-const DEMO_CLASS_COLORS = ['#ffda59', '#33ceff', '#ef4444', '#06b6d4'];
-const DEMO_BADGE_COLORS = ['#b91c1c', '#15803d', '#1d4ed8', '#a16207'];
 
 const useDemoBlips = (
   mode: 'class' | 'badge' | 'custom',
@@ -75,24 +77,19 @@ const useDemoBlips = (
     return () => window.clearInterval(timer);
   }, [enabled]);
 
-  return useMemo(
-    () =>
-      DEMO_BLIPS.map((blip, index) => {
-        const alongM = blip.alongM + Math.sin(phase + index * 1.7) * 1.2;
-        return {
-          ...blip,
-          alongM,
-          gapM: Math.abs(alongM),
-          color:
-            mode === 'class'
-              ? DEMO_CLASS_COLORS[index % DEMO_CLASS_COLORS.length]
-              : mode === 'badge'
-                ? DEMO_BADGE_COLORS[index % DEMO_BADGE_COLORS.length]
-                : null,
-        };
-      }),
-    [mode, phase]
-  );
+  return useMemo(() => {
+    const palette =
+      mode === 'custom' ? null : DEMO_BLIP_COLORS[mode as 'class' | 'badge'];
+    return DEMO_BLIPS.map((blip, index) => {
+      const alongM = blip.alongM + Math.sin(phase + index * 1.7) * 1.2;
+      return {
+        ...blip,
+        alongM,
+        gapM: Math.abs(alongM),
+        color: palette ? palette[index % palette.length] : null,
+      };
+    });
+  }, [mode, phase]);
 };
 
 export const Radar = () => {
@@ -159,6 +156,7 @@ export const Radar = () => {
     <div className="h-full w-full" style={{ opacity: fade }}>
       <RadarDisplay
         blips={isDemoMode ? demoBlips : state.blips}
+        playerLateralM={isDemoMode ? 0 : state.playerLateralM}
         radarRange={settings.radarRange}
         vehicleWidth={settings.vehicleWidth}
         vehicleLength={settings.vehicleLength}

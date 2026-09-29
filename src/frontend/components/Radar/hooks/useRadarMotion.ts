@@ -31,12 +31,12 @@ interface MotionTarget {
   driver: { CarIdx: number };
 }
 
-const buildTargets = (
+const updateTargets = (
   targets: MotionTarget[],
   blips: readonly RadarBlip[],
   trackLengthM: number,
   pick: (blip: RadarBlip) => number
-): MotionTarget[] => {
+): void => {
   targets.length = blips.length;
   for (let index = 0; index < blips.length; index += 1) {
     const blip = blips[index];
@@ -47,9 +47,7 @@ const buildTargets = (
     target.progress = pick(blip) / trackLengthM;
     target.driver.CarIdx = blip.carIdx;
   }
-  return targets;
 };
-
 /**
  * The interpolator stores lap fractions, so it wraps to [0, 1) and a blip four
  * metres behind the player is stored as 0.9992. Scaling that back would paint
@@ -104,24 +102,20 @@ export const useRadarMotion = (
     if (!along || !lateral) return;
 
     const now = performance.now();
-    const travel = along.setTargets(
-      buildTargets(
-        alongTargetsRef.current,
-        blips,
-        trackLengthM,
-        (blip) => blip.alongM
-      ),
-      now
+    updateTargets(
+      alongTargetsRef.current,
+      blips,
+      trackLengthM,
+      (blip) => blip.alongM
     );
-    const drift = lateral.setTargets(
-      buildTargets(
-        lateralTargetsRef.current,
-        blips,
-        trackLengthM,
-        (blip) => blip.drawLateralM
-      ),
-      now
+    const travel = along.setTargets(alongTargetsRef.current, now);
+    updateTargets(
+      lateralTargetsRef.current,
+      blips,
+      trackLengthM,
+      (blip) => blip.drawLateralM
     );
+    const drift = lateral.setTargets(lateralTargetsRef.current, now);
 
     const paint = () => {
       const count = along.getCount();

@@ -556,6 +556,23 @@ describe('computeRadarBlips', () => {
     expect(result.blips[0].side).toBeNull();
   });
 
+  it('fans out overlapping rivals when live telemetry has no lateral lanes', () => {
+    const result = computeRadarBlips({
+      ...baseInput,
+      ...positionsOf([pctOfArc(280), pctOfArc(290), pctOfArc(290.5)]),
+    });
+
+    const [first, second] = result.blips;
+    expect(first.visualFanOut).toBe(true);
+    expect(second.visualFanOut).toBe(true);
+    expect(first.drawLateralM).toBeLessThan(second.drawLateralM);
+    expect(second.drawLateralM - first.drawLateralM).toBeGreaterThanOrEqual(
+      baseInput.vehicleWidth
+    );
+    expect(first.alongM).toBeCloseTo(10, 6);
+    expect(second.alongM).toBeCloseTo(10.5, 6);
+  });
+
   describe('the standing grid', () => {
     const GRID = { columns: 2, columnLateralM: 2.5 };
 
@@ -574,11 +591,11 @@ describe('computeRadarBlips', () => {
         radarRange: 40,
         ...positionsOf([
           pctOfArc(arcM),
-          pctOfArc(arcM + 0.05),
+          pctOfArc(arcM + 3),
           pctOfArc(arcM + 8),
-          pctOfArc(arcM + 8.05),
+          pctOfArc(arcM + 11),
           pctOfArc(arcM + 16),
-          pctOfArc(arcM + 16.05),
+          pctOfArc(arcM + 19),
         ]),
         carIdxPaceRow: [0, 0, 1, 1, 2, 2],
         carIdxPaceLine: [0, 1, 0, 1, 0, 1],
@@ -596,10 +613,23 @@ describe('computeRadarBlips', () => {
       // The two rows beyond the player's own row each reach both columns.
       expect(drawn).toContain(GRID.columnLateralM);
       expect(drawn).toContain(-GRID.columnLateralM);
-      // The car sharing the player's row is the one the sim's own side verdict
-      // places, so it is the only car left on the projection rather than being
-      // guessed at — and its offset is the verdict's, not the grid's.
-      expect(drawn.filter((offset) => offset === 0)).toHaveLength(1);
+      // Pace-line numbering places the partner in the column opposite the
+      // player; a missing overlap verdict must not leave either car centred.
+      expect(drawn[0]).toBe(GRID.columnLateralM);
+      expect(drawn.filter((offset) => offset === 0)).toHaveLength(0);
+    });
+
+    it('levels cars within each sim-reported grid row', () => {
+      const result = parked(300);
+      const alongByCar = new Map(
+        result.blips.map((blip) => [blip.carIdx, blip.alongM])
+      );
+
+      expect(alongByCar.get(1)).toBe(0);
+      expect(alongByCar.get(2)).toBeCloseTo(9.5, 6);
+      expect(alongByCar.get(3)).toBeCloseTo(9.5, 6);
+      expect(alongByCar.get(4)).toBeCloseTo(17.5, 6);
+      expect(alongByCar.get(5)).toBeCloseTo(17.5, 6);
     });
 
     it('survives the overlap offset that used to overwrite it', () => {
@@ -631,11 +661,32 @@ describe('computeRadarBlips', () => {
       expect(byCar.get(3)).toBe(GRID.columnLateralM);
     });
 
-    it('leaves the measured lateral as the road reports it', () => {
-      // drawLateralM is the placed value the widget paints, but lateralM is
-      // the measurement the motion interpolator reads. Overwriting it would
-      // feed the placed offset back as the next frame's target and walk the
-      // car further out on every frame.
+    it('projects local grid offsets into both radar axes on a bend', () => {
+      const result = parked(390);
+      const bent = result.blips.find((blip) => blip.carIdx === 3);
+      if (!bent || bent.gridLaneOffsetM === undefined) {
+        throw new Error('expected a grid car beyond the fixture corner');
+      }
+
+      const localColumnM = GRID.columnLateralM;
+      expect(Math.abs(bent.relYaw)).toBeGreaterThan(0.1);
+      expect(bent.gridLaneOffsetM).toBeCloseTo(
+        localColumnM * Math.cos(bent.relYaw),
+        6
+      );
+      expect(bent.drawLateralM).toBeCloseTo(
+        bent.lateralM + localColumnM * Math.cos(bent.relYaw),
+        6
+      );
+      expect(bent.alongM).toBeCloseTo(
+        9.5 - localColumnM * Math.sin(bent.relYaw),
+        6
+      );
+    });
+
+    it('leaves the measured lateral untouched by grid placement', () => {
+      // The lane offset is display geometry; `lateralM` remains the road
+      // projection used by interpolation and the following-map calculations.
       const result = parked(300);
 
       for (const blip of result.blips) {
@@ -643,17 +694,17 @@ describe('computeRadarBlips', () => {
       }
     });
 
-    it('keeps every car on the projection when the grid is unknown', () => {
-      // No layout means no statement about the grid, so the radar must draw
-      // what it measures rather than invent a column.
+    it('keeps separated cars on the projection when the grid is unknown', () => {
+      // No grid metadata means no statement about the actual columns. Cars
+      // that do not project into the same patch retain their measured offset.
       const result = computeRadarBlips({
         ...baseInput,
         gridLayout: null,
         ...positionsOf([
           pctOfArc(300),
-          pctOfArc(300.05),
-          pctOfArc(300.03),
-          pctOfArc(299.98),
+          pctOfArc(310),
+          pctOfArc(320),
+          pctOfArc(330),
         ]),
       });
 

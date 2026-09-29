@@ -12,7 +12,6 @@ export * from './useSectorTimingSnapshot';
 export * from './useStandingsSnapshot';
 export * from './useCarSpeedsSnapshot';
 export * from './useBlindSpotSnapshot';
-export * from './useRadarSnapshot';
 export * from './useDriverControlsSnapshot';
 export * from './useCarSystemsSnapshot';
 export * from './useLapTraceSampleSnapshot';

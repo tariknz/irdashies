@@ -17,6 +17,8 @@ export interface RadarDisplayProps {
   /** Every rival blip is filled with this; the player is `colorPlayer`. */
   colorRival: string;
   colorPlayer: string;
+  /** Player offset from the centreline, in metres to the driver's right. */
+  playerLateralM: number;
   viewMode: 'top' | 'rear';
   rearCameraTilt: number;
   bgOpacity: number;
@@ -78,6 +80,10 @@ const rivalColor = (blip: RadarBlip, props: RadarDisplayProps): string =>
  * vehicles keep a body the driver can see and label even at long range.
  */
 export const MAP_VEHICLE_MIN_WIDTH_PX = 12;
+/** Leaves a small margin around two 1.9 m cars standing 5 m apart. */
+const FOLLOWING_ROAD_WIDTH_CAR_WIDTHS = 3.8;
+/** Minimum pixel gap between two map vehicles enlarged by the width floor. */
+const MAP_GRID_CAR_GAP_PX = 2;
 
 /** The minimum body width that can still carry a car number or PACE tag. */
 export const VEHICLE_LABEL_MIN_WIDTH_PX = 8;
@@ -134,6 +140,7 @@ const drawBlipVehicles = (
   scale: number,
   widthPx: number,
   lengthPx: number,
+  minimumGridLaneOffsetM: number,
   alongM: Float64Array,
   lateralM: Float64Array
 ) => {
@@ -154,14 +161,25 @@ const drawBlipVehicles = (
     props.sideIndicatorOpacity > 0;
   for (let i = 0; i < props.blips.length; i++) {
     const blip = props.blips[i];
+    const visiblyClearOfPlayer =
+      blip.visualFanOut &&
+      Math.abs(lateralM[i] - props.playerLateralM) >= props.vehicleWidth;
     const levelAndUnknown =
       rimAnswersForTheBody &&
       blip.rimSignal === 'both' &&
-      blip.gapM <= abreastWindowM(props.vehicleLength);
+      blip.gapM <= abreastWindowM(props.vehicleLength) &&
+      !visiblyClearOfPlayer;
     if (!levelAndUnknown) {
+      const gridLaneOffsetM = blip.gridLaneOffsetM;
+      const drawLateralM =
+        gridLaneOffsetM === undefined
+          ? lateralM[i]
+          : blip.lateralM +
+            Math.sign(gridLaneOffsetM) *
+              Math.max(Math.abs(gridLaneOffsetM), minimumGridLaneOffsetM);
       drawVehicle(
         ctx,
-        centreX + lateralM[i] * scale,
+        centreX + drawLateralM * scale,
         centreY - alongM[i] * scale,
         widthPx,
         lengthPx,
@@ -179,12 +197,19 @@ const drawPlayer = (
   props: RadarDisplayProps,
   centreX: number,
   centreY: number,
+  scale: number,
   widthPx: number,
-  lengthPx: number
+  lengthPx: number,
+  minimumGridLaneOffsetM: number
 ) => {
+  const playerLateralM =
+    props.playerLateralM === 0
+      ? 0
+      : Math.sign(props.playerLateralM) *
+        Math.max(Math.abs(props.playerLateralM), minimumGridLaneOffsetM);
   drawVehicle(
     ctx,
-    centreX,
+    centreX + playerLateralM * scale,
     centreY,
     widthPx,
     lengthPx,
@@ -214,7 +239,7 @@ const drawFollowingRoad = (
     const rightY = props.followingMapCameraRightY ?? 1;
     const playerAlong = playerX * forwardX + playerY * forwardY;
     const playerRight = playerX * rightX + playerY * rightY;
-    const roadPx = Math.max(8, widthPx * 1.9);
+    const roadPx = Math.max(8, widthPx * FOLLOWING_ROAD_WIDTH_CAR_WIDTHS);
 
     ctx.save();
     ctx.transform(
@@ -298,7 +323,7 @@ const drawFollowingRoad = (
   // The road has to be wider than the cars driving on it, or a blip reads as
   // an obstacle standing beside a line rather than traffic using the road.
   // The border goes down first so the surface has a configurable edge.
-  const roadPx = Math.max(8, widthPx * 1.9);
+  const roadPx = Math.max(8, widthPx * FOLLOWING_ROAD_WIDTH_CAR_WIDTHS);
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   ctx.lineWidth = roadPx + 4;
@@ -446,6 +471,10 @@ const drawRadar = (
   const widthPx = props.showFollowingMap
     ? Math.max(trueWidthPx, MAP_VEHICLE_MIN_WIDTH_PX)
     : trueWidthPx;
+  const minimumGridLaneOffsetM =
+    props.showFollowingMap && widthPx > trueWidthPx
+      ? (widthPx + MAP_GRID_CAR_GAP_PX) / (2 * scale)
+      : 0;
   const lengthPx = Math.max(6, props.vehicleLength * scale);
 
   ctx.save();
@@ -503,6 +532,7 @@ const drawRadar = (
     scale,
     widthPx,
     lengthPx,
+    minimumGridLaneOffsetM,
     alongM,
     lateralM
   );
@@ -514,7 +544,16 @@ const drawRadar = (
     ctx.transform(1, 0, 0, Math.cos(angle), 0, 0);
     ctx.translate(-centreX, -centreY);
   }
-  drawPlayer(ctx, props, centreX, centreY, widthPx, lengthPx);
+  drawPlayer(
+    ctx,
+    props,
+    centreX,
+    centreY,
+    scale,
+    widthPx,
+    lengthPx,
+    minimumGridLaneOffsetM
+  );
 
   const pulse = pulseAlpha(props.nowSeconds);
   for (let index = 0; index < props.blips.length; index += 1) {
@@ -587,6 +626,7 @@ const DRAWING_PROPS = [
   'showCarNumbers',
   'colorRival',
   'colorPlayer',
+  'playerLateralM',
   'viewMode',
   'rearCameraTilt',
   'bgOpacity',

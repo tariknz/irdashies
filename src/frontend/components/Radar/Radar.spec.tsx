@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import {
   CarLeftRight,
+  SessionState,
   defaultDashboard,
   type ChannelBridge,
   type ChannelName,
@@ -196,6 +197,46 @@ const fixtureWithRadarOverlap = (
   };
 };
 
+const fixtureWithPlayerOnTwoWideGrid = (
+  playerCarIdx: number,
+  partnerCarIdx: number,
+  sessionState = SessionState.GetInCar,
+  partnerOnRoad = true
+): ReplayFixture => {
+  const base = finalFrame();
+  const positions = base.CarIdxLapDistPct as number[];
+  const playerPct = positions[playerCarIdx];
+  if (typeof playerPct !== 'number' || playerPct < 0) {
+    throw new Error('fixture player has no position');
+  }
+
+  return {
+    ...fixture,
+    frames: [
+      {
+        ...base,
+        CamCarIdx: playerCarIdx,
+        CarLeftRight: CarLeftRight.Clear,
+        SessionState: sessionState,
+        Speed: 0,
+        CarIdxLapDistPct: positions.map((pct, carIdx) =>
+          carIdx === partnerCarIdx
+            ? partnerOnRoad
+              ? playerPct + 0.5 / TRACK_LENGTH_M
+              : -1
+            : pct
+        ),
+        CarIdxPaceRow: positions.map((_, carIdx) =>
+          carIdx === playerCarIdx || carIdx === partnerCarIdx ? 0 : -1
+        ),
+        CarIdxPaceLine: positions.map((_, carIdx) =>
+          carIdx === playerCarIdx ? 0 : carIdx === partnerCarIdx ? 1 : -1
+        ),
+      },
+    ],
+  };
+};
+
 /**
  * Two frames of the same session: a rival 0.5 m behind the player in a full
  * field, then the same rival 0.5 m ahead in a field one car shorter. The
@@ -299,6 +340,101 @@ describe('Radar widget over a recorded multiclass session', () => {
     expect(
       latest().blips.find((blip) => blip.carIdx === rivalCarIdx)
     ).toMatchObject({ side: null, rimSignal: null });
+  });
+
+  it('places the player and grid partner in their sim-reported columns', async () => {
+    const playerCarIdx = Number(fixture.driverInfo?.DriverCarIdx);
+    const partnerCarIdx = fixture.drivers
+      .map((driver) => Number(driver.CarIdx))
+      .find((carIdx) => carIdx !== playerCarIdx);
+    if (!Number.isInteger(playerCarIdx) || partnerCarIdx === undefined) {
+      throw new Error('fixture has no player and grid partner');
+    }
+
+    const harness = mountFixture(
+      fixtureWithPlayerOnTwoWideGrid(playerCarIdx, partnerCarIdx),
+      { dashboard: radarDashboard({ fadeSeconds: 0 }) }
+    );
+    render(<Radar />, { wrapper: harness.wrapper });
+    await waitForDisplay();
+
+    expect(latest().playerLateralM).toBe(-2.5);
+    const partner = latest().blips.find(
+      (blip) => blip.carIdx === partnerCarIdx
+    );
+    if (!partner || partner.gridLaneOffsetM === undefined) {
+      throw new Error('grid partner was not assigned a lane');
+    }
+    expect(partner.gridLaneOffsetM).toBeCloseTo(2.5, 5);
+    expect(partner.alongM).toBeCloseTo(0, 3);
+    expect(partner.gapM).toBeCloseTo(0, 3);
+    expect(partner.side).toBeNull();
+    expect(partner.rimSignal).toBeNull();
+    expect(partner.drawLateralM).toBeCloseTo(
+      partner.lateralM + partner.gridLaneOffsetM,
+      6
+    );
+  });
+
+  it('uses pace lines to keep the grid when one lane lacks a road position', async () => {
+    const playerCarIdx = Number(fixture.driverInfo?.DriverCarIdx);
+    const partnerCarIdx = fixture.drivers
+      .map((driver) => Number(driver.CarIdx))
+      .find((carIdx) => carIdx !== playerCarIdx);
+    if (!Number.isInteger(playerCarIdx) || partnerCarIdx === undefined) {
+      throw new Error('fixture has no player and grid partner');
+    }
+
+    const harness = mountFixture(
+      fixtureWithPlayerOnTwoWideGrid(
+        playerCarIdx,
+        partnerCarIdx,
+        SessionState.GetInCar,
+        false
+      ),
+      { dashboard: radarDashboard({ fadeSeconds: 0 }) }
+    );
+    render(<Radar />, { wrapper: harness.wrapper });
+    await waitForDisplay();
+
+    expect(latest().playerLateralM).toBe(-2.5);
+    expect(latest().blips.some((blip) => blip.carIdx === partnerCarIdx)).toBe(
+      false
+    );
+  });
+
+  it('uses active pace rows when the stationary player reports racing state', async () => {
+    const playerCarIdx = Number(fixture.driverInfo?.DriverCarIdx);
+    const partnerCarIdx = fixture.drivers
+      .map((driver) => Number(driver.CarIdx))
+      .find((carIdx) => carIdx !== playerCarIdx);
+    if (!Number.isInteger(playerCarIdx) || partnerCarIdx === undefined) {
+      throw new Error('fixture has no player and grid partner');
+    }
+
+    const harness = mountFixture(
+      fixtureWithPlayerOnTwoWideGrid(
+        playerCarIdx,
+        partnerCarIdx,
+        SessionState.Racing
+      ),
+      { dashboard: radarDashboard({ fadeSeconds: 0 }) }
+    );
+    render(<Radar />, { wrapper: harness.wrapper });
+    await waitForDisplay();
+
+    expect(latest().playerLateralM).toBe(-2.5);
+    const partner = latest().blips.find(
+      (blip) => blip.carIdx === partnerCarIdx
+    );
+    if (!partner || partner.gridLaneOffsetM === undefined) {
+      throw new Error('grid partner was not assigned a lane');
+    }
+    expect(partner.alongM).toBeCloseTo(0, 3);
+    expect(partner.drawLateralM).toBeCloseTo(
+      partner.lateralM + partner.gridLaneOffsetM,
+      6
+    );
   });
 
   it('keeps overlap markers when the player is moving', async () => {

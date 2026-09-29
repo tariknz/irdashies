@@ -3,8 +3,8 @@ import { shallow } from 'zustand/shallow';
 import type { RadarSnapshot } from '@irdashies/types';
 import {
   useBlindSpotSelector,
+  useChannelSelector,
   useDriverCarIdx,
-  useRadarSelector,
   useSessionDrivers,
   useSessionStore,
   useTrackLength,
@@ -21,6 +21,7 @@ import {
 import { MAX_RADAR_RANGE_M } from '../radarFade';
 import {
   isGridBeforeStart,
+  gridColumnLateralM,
   parseGridLayout,
   type GridColumnCandidate,
   type GridLayout,
@@ -38,6 +39,8 @@ export interface RadarState {
   hasGeometry: boolean;
   blips: readonly RadarBlip[];
   overlap: RadarOverlap;
+  /** Pace-line offset for the focus car, in metres; zero outside a grid. */
+  playerLateralM: number;
   isGrid: boolean;
   isOnTrack: boolean;
   /**
@@ -87,37 +90,25 @@ const EMPTY_COLORS: ReadonlyMap<number, string> = new Map();
 const EMPTY_GRID_CANDIDATES: readonly GridColumnCandidate[] = [];
 
 /**
- * The cars the sim has numbered onto a grid, from its own pace telemetry.
+ * Every valid pace row/line pair describes the grid shape, even when the SDK
+ * has not produced a road position for that car yet. Line -1 is the sim's
+ * unassigned value, so cars still driving into the grid do not count.
  *
- * A car is only a candidate once the SDK can place it on the road. Before the
- * start the sim writes `CarIdxPaceRow` and `CarIdxPaceLine` for cars that are
- * in the session but not yet parked — a recorded Okayama session reports row 0
- * with line -1 for a handful of cars while they are still driving in, and
- * those are not a grid. The radar draws a car it can locate, so a candidate the
- * radar will never draw a blip for is one whose row and line must not decide
- * whether the field is treated as two-abreast.
- *
- * Allocated per snapshot rather than reused: the candidate list is read only
- * while the grid layout is computed, which is once per changed snapshot, and
- * handing a shared buffer to two components at once would outlive its contents.
+ * The candidate list is consumed only while parsing the grid layout.
  */
 const gridCandidatesFromPace = (
   paceRow: readonly number[],
-  paceLine: readonly number[],
-  positions: readonly number[]
+  paceLine: readonly number[]
 ): readonly GridColumnCandidate[] => {
   if (paceRow.length === 0 || paceLine.length === 0) {
     return EMPTY_GRID_CANDIDATES;
   }
-  const count = Math.min(paceRow.length, paceLine.length, positions.length);
+  const count = Math.min(paceRow.length, paceLine.length);
   const candidates: GridColumnCandidate[] = [];
   for (let carIdx = 0; carIdx < count; carIdx += 1) {
     const row = paceRow[carIdx];
     const line = paceLine[carIdx];
     if (row < 0 || line < 0) continue;
-    // -1 is the SDK's "not on the road yet", which is a car the radar cannot
-    // place, so its row and line are not a column the radar can act on.
-    if (!(positions[carIdx] >= 0)) continue;
     candidates.push({ carIdx, line, row });
   }
   return candidates;
@@ -197,8 +188,9 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
     sessionState,
     carSpeed,
   ] =
-    useRadarSelector(selectRadarInput, { equality: radarInputEqual }) ??
-    EMPTY_INPUT;
+    useChannelSelector('radar.snapshot', selectRadarInput, {
+      equality: radarInputEqual,
+    }) ?? EMPTY_INPUT;
   const carLeftRight = useBlindSpotSelector(
     (snapshot) => snapshot.carLeftRight
   );
@@ -212,8 +204,8 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
   const trackId = session?.WeekendInfo?.TrackID;
   const startingGrid = session?.WeekendInfo?.WeekendOptions?.StartingGrid;
   const gridCandidates = useMemo(
-    () => gridCandidatesFromPace(paceRow, paceLine, positions),
-    [paceRow, paceLine, positions]
+    () => gridCandidatesFromPace(paceRow, paceLine),
+    [paceRow, paceLine]
   );
   const gridLayout = useMemo<GridLayout | null>(
     () => parseGridLayout(startingGrid, gridCandidates),
@@ -288,6 +280,22 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
     [carLeftRight]
   );
 
+  // Session state is the normal grid gate. If the sim reports Racing before
+  // clearing pace slots, the stopped driver's active row data still identifies
+  // the grid.
+  const gridLayoutForFrame =
+    isGridBeforeStart(sessionState) || (isGrid && gridCandidates.length > 0)
+      ? gridLayout
+      : null;
+  const playerLateralM =
+    gridLayoutForFrame !== null &&
+    playerCarIdx !== null &&
+    (paceRow[playerCarIdx] ?? -1) >= 0 &&
+    (positions[playerCarIdx] ?? -1) >= 0
+      ? (gridColumnLateralM(paceLine[playerCarIdx] ?? -1, gridLayoutForFrame) ??
+        0)
+      : 0;
+
   const safeRadarRange = Number.isFinite(radarRange)
     ? Math.max(0, Math.min(radarRange, MAX_RADAR_RANGE_M))
     : 0;
@@ -314,19 +322,22 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
   const committedMapPathRef = useRef<Float64Array | null>(null);
 
   const computed = useMemo(() => {
+    // The two target buffers ping-pong: the frame that commits becomes the
+    // next frame's previous, and the map path alternates the same way, so no
+    // buffer handed to the projection is ever the one it also reads from.
     const committedTargets = committedTargetsRef.current;
-    const committedTargetBuffer = committedTargets?.targets;
     const previousTargets =
       committedTargets?.key === targetKey
         ? committedTargets.targets
         : emptyTargets;
     const nextTargets =
-      targetBuffers[0] === committedTargetBuffer
+      targetBuffers[0] === committedTargets?.targets
         ? targetBuffers[1]
         : targetBuffers[0];
-    const committedMapPath = committedMapPathRef.current;
     const followingMapBuffer =
-      committedMapPath === mapBuffers[0] ? mapBuffers[1] : mapBuffers[0];
+      committedMapPathRef.current === mapBuffers[0]
+        ? mapBuffers[1]
+        : mapBuffers[0];
 
     const result = computeRadarBlips({
       carIdxLapDistPct: positions,
@@ -345,7 +356,7 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
       // The grid placement is a statement of fact only while the cars are
       // parked. The sim's own row and line numbering stops at the lights
       // anyway, so this is the belt to those braces.
-      gridLayout: isGridBeforeStart(sessionState) ? gridLayout : null,
+      gridLayout: gridLayoutForFrame,
       carIdxPaceRow: paceRow,
       carIdxPaceLine: paceLine,
       previousTargets,
@@ -379,8 +390,7 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
     carColors,
     paceCarIdx,
     isGrid,
-    gridLayout,
-    sessionState,
+    gridLayoutForFrame,
     emptyTargets,
     targetBuffers,
     mapBuffers,
@@ -404,6 +414,7 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
     blips: computed.blips,
     overlap,
     isOnTrack,
+    playerLateralM,
     isGrid,
     nearestGapM,
     trackLengthM,
