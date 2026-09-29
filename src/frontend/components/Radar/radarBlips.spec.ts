@@ -574,6 +574,37 @@ describe('computeRadarBlips', () => {
     expect(second.alongM).toBeCloseTo(10.5, 6);
   });
 
+  it('does not let a queue of cars fan the whole pack across the road', () => {
+    // Six cars nose to tail on a straight, two metres apart: the ordinary shape
+    // of a pack bunched behind a slower car. Grouping them by each pair's own
+    // distance chained all six into one group, which was then spread from its
+    // middle — the car two metres in front of the player went a car width to
+    // one side and the tail of the queue drifted five and a half metres
+    // across. A driver reading that sees a pack side by side, not in line.
+    const result = computeRadarBlips({
+      ...baseInput,
+      ...positionsOf([
+        pctOfArc(280),
+        pctOfArc(282),
+        pctOfArc(284),
+        pctOfArc(286),
+        pctOfArc(288),
+        pctOfArc(290),
+        pctOfArc(292),
+      ]),
+    });
+
+    // The road has these cars on one line, so the fan-out is the only thing
+    // that can move them, and a group is spread from its own centre: no car
+    // can travel further than half a lane spacing.
+    const laneSpacing = baseInput.vehicleWidth * 1.1;
+    for (const blip of result.blips) {
+      expect(Math.abs(blip.drawLateralM - blip.lateralM)).toBeLessThanOrEqual(
+        laneSpacing / 2 + 1e-9
+      );
+    }
+  });
+
   describe('the standing grid', () => {
     const GRID = { columns: 2, columnLateralM: 2.5 };
     /** Half the lane pitch either side of the middle of a two-abreast road. */

@@ -278,21 +278,29 @@ const fanOutCoincidentRivals = (
   const lateralWindow = Math.max(0.5, vehicleWidth * 1.25);
   for (let left = 0; left < count; left += 1) {
     const a = blips[left];
-    if (a.side !== null || a.gridLaneOffsetM !== undefined) continue;
+    if (a.gridLaneOffsetM !== undefined) continue;
     for (let right = left + 1; right < count; right += 1) {
       const b = blips[right];
       if (b.side !== null || b.gridLaneOffsetM !== undefined) continue;
-      if (
-        Math.abs(a.alongM - b.alongM) > longitudinalWindow ||
-        Math.abs(a.lateralM - b.lateralM) > lateralWindow
-      ) {
-        continue;
-      }
-
+      // Membership is measured against the group's own first car, not against
+      // each other. Chaining pairwise let a queue of cars two metres apart grow
+      // one group spanning the whole pack, and every member was then fanned
+      // out from the middle of it: the car two metres in front of the player
+      // was drawn a full car width to one side, and the tail of the queue
+      // drifted eight metres sideways. A group is now the cars standing in the
+      // same patch of road as the first one, which is what "coincident" means.
       let leftRoot = left;
       while (fanOutParents[leftRoot] !== leftRoot) {
         leftRoot = fanOutParents[leftRoot];
       }
+      const anchor = blips[leftRoot];
+      if (
+        Math.abs(anchor.alongM - b.alongM) > longitudinalWindow ||
+        Math.abs(anchor.lateralM - b.lateralM) > lateralWindow
+      ) {
+        continue;
+      }
+
       let rightRoot = right;
       while (fanOutParents[rightRoot] !== rightRoot) {
         rightRoot = fanOutParents[rightRoot];
@@ -303,7 +311,7 @@ const fanOutCoincidentRivals = (
 
   for (let index = 0; index < count; index += 1) {
     const blip = blips[index];
-    if (blip.side !== null || blip.gridLaneOffsetM !== undefined) continue;
+    if (blip.gridLaneOffsetM !== undefined) continue;
     let root = index;
     while (fanOutParents[root] !== root) root = fanOutParents[root];
     fanOutCounts[root] += 1;
@@ -313,7 +321,7 @@ const fanOutCoincidentRivals = (
   const laneSpacing = Math.max(1, vehicleWidth) * ABREAST_LATERAL_FACTOR;
   for (let index = 0; index < count; index += 1) {
     const blip = blips[index];
-    if (blip.side !== null || blip.gridLaneOffsetM !== undefined) continue;
+    if (blip.gridLaneOffsetM !== undefined) continue;
     let root = index;
     while (fanOutParents[root] !== root) root = fanOutParents[root];
     const groupCount = fanOutCounts[root];
@@ -323,7 +331,7 @@ const fanOutCoincidentRivals = (
     let rank = 0;
     for (let earlier = 0; earlier < index; earlier += 1) {
       const candidate = blips[earlier];
-      if (candidate.side !== null || candidate.gridLaneOffsetM !== undefined) {
+      if (candidate.gridLaneOffsetM !== undefined) {
         continue;
       }
       let candidateRoot = earlier;
