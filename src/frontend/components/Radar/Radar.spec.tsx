@@ -11,6 +11,7 @@ import {
   type RadarConfig,
   type RadarSnapshot,
 } from '@irdashies/types';
+import { useSessionStore } from '@irdashies/context';
 import { mountFixture } from '../../../testing/renderWithFixture';
 import type { ReplayFixture } from '../../../testing/replayFixture';
 import roadAmerica from '../../../../test-data/fixtures/multiclass-road-america.json';
@@ -34,6 +35,15 @@ import { Radar } from './Radar';
 
 const fixture = roadAmerica as unknown as ReplayFixture;
 const TRACK_LENGTH_M = 6413.5;
+
+const fixtureWithSessionType = (sessionType: string): ReplayFixture => ({
+  ...fixture,
+  sessions: fixture.sessions.map((session) =>
+    session.SessionNum === fixture.meta.sessionNum
+      ? { ...session, SessionType: sessionType }
+      : session
+  ),
+});
 
 const radarDashboard = (config: Partial<RadarConfig>): DashboardLayout => {
   const dashboard = defaultDashboard as unknown as DashboardLayout;
@@ -222,7 +232,7 @@ const fixtureWithRadarOverlap = (
  * The lane pitch the grid is drawn at, and half of it either side of the middle
  * of a two-abreast road. Two cars in one row stand a pitch apart.
  */
-const LANE_PITCH_M = 2.5;
+const LANE_PITCH_M = 3.0;
 const HALF_LANE_M = LANE_PITCH_M / 2;
 
 const fixtureWithPlayerOnTwoWideGrid = (
@@ -263,6 +273,47 @@ const fixtureWithPlayerOnTwoWideGrid = (
       },
     ],
   };
+};
+
+const setGridSession = (
+  startingGrid: string,
+  standingStart: 0 | 1,
+  qualifyingOrder: readonly { CarIdx: number; Position: number }[] = []
+) => {
+  const state = useSessionStore.getState();
+  const session = state.session;
+  if (!session) throw new Error('fixture has no session');
+
+  state.setSession({
+    ...session,
+    WeekendInfo: {
+      ...session.WeekendInfo,
+      WeekendOptions: {
+        ...session.WeekendInfo.WeekendOptions,
+        StartingGrid: startingGrid,
+        StandingStart: standingStart,
+      },
+    },
+    QualifyResultsInfo: {
+      Results: qualifyingOrder.map(({ CarIdx, Position }) => ({
+        Position,
+        ClassPosition: Position,
+        CarIdx,
+        Lap: 0,
+        Time: -1,
+        FastestLap: 0,
+        FastestTime: -1,
+        LastTime: -1,
+        LapsLed: 0,
+        LapsComplete: 0,
+        JokerLapsComplete: 0,
+        LapsDriven: 0,
+        Incidents: 0,
+        ReasonOutId: 0,
+        ReasonOutStr: 'Running',
+      })),
+    },
+  });
 };
 
 /**
@@ -434,6 +485,144 @@ describe('Radar widget over a recorded multiclass session', () => {
     );
     expect(gapToPlayerM).toBeGreaterThan(LANE_PITCH_M * 0.9);
     expect(gapToPlayerM).toBeLessThan(LANE_PITCH_M * 1.1);
+  });
+
+  it('reconstructs standing-start slots from qualifying order', async () => {
+    const playerCarIdx = Number(fixture.driverInfo?.DriverCarIdx);
+    const partnerCarIdx = fixture.drivers
+      .map((driver) => Number(driver.CarIdx))
+      .find((carIdx) => carIdx !== playerCarIdx);
+    if (!Number.isInteger(playerCarIdx) || partnerCarIdx === undefined) {
+      throw new Error('fixture has no player and grid partner');
+    }
+
+    const standingFixture = fixtureWithPlayerOnTwoWideGrid(
+      playerCarIdx,
+      partnerCarIdx
+    );
+    const frame = standingFixture.frames[0];
+    const positions = frame.CarIdxLapDistPct as number[];
+    frame.CarIdxPaceRow = positions.map(() => -1);
+    frame.CarIdxPaceLine = positions.map(() => -1);
+
+    const harness = mountFixture(standingFixture, {
+      dashboard: radarDashboard({ fadeSeconds: 0 }),
+    });
+    setGridSession('2x2 inline pole on left', 1, [
+      { CarIdx: playerCarIdx, Position: 0 },
+      { CarIdx: partnerCarIdx, Position: 1 },
+    ]);
+    render(<Radar />, { wrapper: harness.wrapper });
+    await waitForDisplay();
+
+    expect(latest().playerLateralM).toBe(-HALF_LANE_M);
+    const partner = latest().blips.find(
+      (blip) => blip.carIdx === partnerCarIdx
+    );
+    if (!partner || partner.gridLaneOffsetM === undefined) {
+      throw new Error('standing-start partner was not assigned a lane');
+    }
+    expect(partner.gridLaneOffsetM).toBeCloseTo(HALF_LANE_M, 5);
+  });
+
+  it('places the rolling-start pole lane on the configured side', async () => {
+    const playerCarIdx = Number(fixture.driverInfo?.DriverCarIdx);
+    const partnerCarIdx = fixture.drivers
+      .map((driver) => Number(driver.CarIdx))
+      .find((carIdx) => carIdx !== playerCarIdx);
+    if (!Number.isInteger(playerCarIdx) || partnerCarIdx === undefined) {
+      throw new Error('fixture has no player and grid partner');
+    }
+
+    const harness = mountFixture(
+      fixtureWithPlayerOnTwoWideGrid(playerCarIdx, partnerCarIdx),
+      { dashboard: radarDashboard({ fadeSeconds: 0 }) }
+    );
+    setGridSession('2x2 inline pole on right', 0);
+    render(<Radar />, { wrapper: harness.wrapper });
+    await waitForDisplay();
+
+    expect(latest().playerLateralM).toBe(HALF_LANE_M);
+    const partner = latest().blips.find(
+      (blip) => blip.carIdx === partnerCarIdx
+    );
+    if (!partner || partner.gridLaneOffsetM === undefined) {
+      throw new Error('rolling-start partner was not assigned a lane');
+    }
+    expect(partner.gridLaneOffsetM).toBeCloseTo(-HALF_LANE_M, 5);
+  });
+
+  it('uses the sim side verdict to correct a rolling-start lane', async () => {
+    const playerCarIdx = Number(fixture.driverInfo?.DriverCarIdx);
+    const partnerCarIdx = fixture.drivers
+      .map((driver) => Number(driver.CarIdx))
+      .find((carIdx) => carIdx !== playerCarIdx);
+    if (!Number.isInteger(playerCarIdx) || partnerCarIdx === undefined) {
+      throw new Error('fixture has no player and grid partner');
+    }
+
+    const rollingFixture = fixtureWithPlayerOnTwoWideGrid(
+      playerCarIdx,
+      partnerCarIdx
+    );
+    const frame = rollingFixture.frames[0];
+    const paceLine = frame.CarIdxPaceLine as number[];
+    paceLine[playerCarIdx] = 1;
+    paceLine[partnerCarIdx] = 0;
+    frame.CarLeftRight = CarLeftRight.CarRight;
+
+    const harness = mountFixture(rollingFixture, {
+      dashboard: radarDashboard({ fadeSeconds: 0 }),
+    });
+    setGridSession('2x2 inline pole on left', 0);
+    render(<Radar />, { wrapper: harness.wrapper });
+    await waitForDisplay();
+
+    expect(latest().playerLateralM).toBe(-HALF_LANE_M);
+    const partner = latest().blips.find(
+      (blip) => blip.carIdx === partnerCarIdx
+    );
+    if (!partner || partner.gridLaneOffsetM === undefined) {
+      throw new Error('rolling-start partner was not assigned a lane');
+    }
+    expect(partner.gridLaneOffsetM).toBeCloseTo(HALF_LANE_M, 5);
+  });
+
+  it('stops using standing-start slots once the session is racing', async () => {
+    const playerCarIdx = Number(fixture.driverInfo?.DriverCarIdx);
+    const partnerCarIdx = fixture.drivers
+      .map((driver) => Number(driver.CarIdx))
+      .find((carIdx) => carIdx !== playerCarIdx);
+    if (!Number.isInteger(playerCarIdx) || partnerCarIdx === undefined) {
+      throw new Error('fixture has no player and grid partner');
+    }
+
+    const raceFixture = fixtureWithPlayerOnTwoWideGrid(
+      playerCarIdx,
+      partnerCarIdx,
+      SessionState.Racing
+    );
+    const frame = raceFixture.frames[0];
+    const positions = frame.CarIdxLapDistPct as number[];
+    frame.CarIdxPaceRow = positions.map(() => -1);
+    frame.CarIdxPaceLine = positions.map(() => -1);
+
+    const harness = mountFixture(raceFixture, {
+      dashboard: radarDashboard({ fadeSeconds: 0 }),
+    });
+    setGridSession('2x2 inline pole on left', 1, [
+      { CarIdx: playerCarIdx, Position: 0 },
+      { CarIdx: partnerCarIdx, Position: 1 },
+    ]);
+    render(<Radar />, { wrapper: harness.wrapper });
+    await waitForDisplay();
+
+    expect(latest().playerLateralM).toBe(0);
+    const partner = latest().blips.find(
+      (blip) => blip.carIdx === partnerCarIdx
+    );
+    if (!partner) throw new Error('race partner was not on the radar');
+    expect(partner.gridLaneOffsetM).toBeUndefined();
   });
 
   it('uses pace lines to keep the grid when one lane lacks a road position', async () => {
@@ -645,6 +834,47 @@ describe('Radar widget over a recorded multiclass session', () => {
     await waitForHidden();
 
     expect(rendered).toHaveLength(0);
+  });
+
+  it.each(['Lone Qualify', 'Open Qualify'] as const)(
+    'keeps the radar hidden during %s even when enabled in settings',
+    async (sessionType) => {
+      const harness = mountFixture(fixtureWithSessionType(sessionType), {
+        dashboard: radarDashboard({
+          fadeSeconds: 0,
+          sessionVisibility: {
+            race: true,
+            loneQualify: true,
+            openQualify: true,
+            practice: true,
+            offlineTesting: true,
+          },
+        }),
+      });
+      render(<Radar />, { wrapper: harness.wrapper });
+      await waitForHidden();
+
+      expect(rendered).toHaveLength(0);
+    }
+  );
+
+  it('keeps the radar available during practice', async () => {
+    const harness = mountFixture(fixtureWithSessionType('Practice'), {
+      dashboard: radarDashboard({
+        fadeSeconds: 0,
+        sessionVisibility: {
+          race: true,
+          loneQualify: false,
+          openQualify: false,
+          practice: true,
+          offlineTesting: true,
+        },
+      }),
+    });
+    render(<Radar />, { wrapper: harness.wrapper });
+    await waitForDisplay();
+
+    expect(rendered.length).toBeGreaterThan(0);
   });
 
   it('passes the configured range and colours through to the disc', async () => {

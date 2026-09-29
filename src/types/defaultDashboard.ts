@@ -1114,8 +1114,8 @@ export const defaultDashboard: {
         showOnlyWhenOnTrack: true,
         sessionVisibility: {
           race: true,
-          loneQualify: true,
-          openQualify: true,
+          loneQualify: false,
+          openQualify: false,
           practice: true,
           offlineTesting: true,
         },

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SessionState } from '@irdashies/types';
 import {
   assignGridColumns,
+  candidatesFromQualifyingOrder,
   columnsFromPaceLines,
   gridColumnLateralM,
   isGridBeforeStart,
@@ -19,6 +20,38 @@ const at = (
   row: number,
   line: number
 ): GridColumnCandidate => ({ carIdx, row, line });
+
+describe('candidatesFromQualifyingOrder', () => {
+  it('assigns two-column standing slots from zero-based starting order', () => {
+    expect(
+      candidatesFromQualifyingOrder(
+        [
+          { CarIdx: 7, Position: 0 },
+          { CarIdx: 9, Position: 1 },
+          { CarIdx: 4, Position: 2 },
+          { CarIdx: 3, Position: 3 },
+        ],
+        2,
+        10
+      )
+    ).toEqual([at(7, 0, 0), at(9, 0, 1), at(4, 1, 0), at(3, 1, 1)]);
+  });
+
+  it('ignores invalid or duplicate qualifying slots', () => {
+    expect(
+      candidatesFromQualifyingOrder(
+        [
+          { CarIdx: 1, Position: 0 },
+          { CarIdx: 1, Position: 1 },
+          { CarIdx: 12, Position: 2 },
+          { CarIdx: 2, Position: -1 },
+        ],
+        2,
+        8
+      )
+    ).toEqual([at(1, 0, 0)]);
+  });
+});
 
 describe('columnsFromPaceLines', () => {
   it('reads two columns off the sim numbering whatever the label says', () => {
@@ -84,13 +117,20 @@ describe('parseGridLayout', () => {
     expect(layout?.columnLateralM).toBeGreaterThan(0);
   });
 
-  it('takes only the column count, not which side the pole is on', () => {
-    // Both labels describe the same field shape. The side is not read because
-    // the sim's own line numbering says which side each car is on, which is a
-    // better answer than one inferred from a label.
-    expect(parseGridLayout('2x2 inline pole on right')).toEqual(
-      parseGridLayout(TWO_ABREAST)
-    );
+  it('orients line numbers from the pole-side label', () => {
+    const leftPole = parseGridLayout(TWO_ABREAST);
+    const rightPole = parseGridLayout('2x2 inline pole on right');
+    if (!leftPole || !rightPole) throw new Error('expected two-column grids');
+
+    expect(leftPole.poleSide).toBe('left');
+    expect(gridColumnLateralM(0, leftPole)).toBeLessThan(0);
+    expect(rightPole.poleSide).toBe('right');
+    expect(gridColumnLateralM(0, rightPole)).toBeGreaterThan(0);
+    expect(gridColumnLateralM(1, rightPole)).toBeLessThan(0);
+    expect(
+      parseGridLayout('2x2 inline pole on right', [at(1, 0, 0), at(2, 0, 1)])
+        ?.poleSide
+    ).toBe('right');
   });
 
   it('reports an unknown grid rather than guessing', () => {

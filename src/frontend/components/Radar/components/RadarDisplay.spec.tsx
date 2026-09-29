@@ -346,18 +346,18 @@ describe('RadarDisplay', () => {
   });
 
   it('draws the player in its pace-line lane and repaints when it changes', () => {
-    const view = render(<RadarDisplay {...props} playerLateralM={-2.5} />);
+    const view = render(<RadarDisplay {...props} playerLateralM={-3} />);
     deliverSize(300, 300);
 
     const scale = 148 / props.radarRange;
     expect(record.originsPerPaint.at(-1)?.at(-1)?.[0]).toBeCloseTo(
-      150 - 2.5 * scale,
+      150 - 3 * scale,
       6
     );
 
-    view.rerender(<RadarDisplay {...props} playerLateralM={2.5} />);
+    view.rerender(<RadarDisplay {...props} playerLateralM={3} />);
     expect(record.originsPerPaint.at(-1)?.at(-1)?.[0]).toBeCloseTo(
-      150 + 2.5 * scale,
+      150 + 3 * scale,
       6
     );
   });
@@ -367,14 +367,14 @@ describe('RadarDisplay', () => {
       <RadarDisplay
         {...props}
         radarRange={120}
-        playerLateralM={-2.5}
+        playerLateralM={-3}
         blips={[
           blip({
             carIdx: 1,
             alongM: 0,
             gapM: 0,
             lateralM: 0,
-            gridLaneOffsetM: 2.5,
+            gridLaneOffsetM: 3,
           }),
         ]}
       />
@@ -382,7 +382,7 @@ describe('RadarDisplay', () => {
     deliverSize(300, 300);
 
     const [rival, player] = record.originsPerPaint.at(-1) ?? [];
-    expect(rival[0] - player[0]).toBeCloseTo((5 * 148) / 120, 6);
+    expect(rival[0] - player[0]).toBeCloseTo((6 * 148) / 120, 6);
   });
 
   it('separates grid cars when the map enlarges them at long range', () => {
@@ -391,14 +391,14 @@ describe('RadarDisplay', () => {
         {...props}
         radarRange={120}
         showFollowingMap
-        playerLateralM={-2.5}
+        playerLateralM={-3}
         blips={[
           blip({
             carIdx: 1,
             alongM: 0,
             gapM: 0,
             lateralM: 0,
-            gridLaneOffsetM: 2.5,
+            gridLaneOffsetM: 3,
           }),
         ]}
       />

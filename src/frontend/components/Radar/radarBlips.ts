@@ -148,9 +148,9 @@ export interface RadarBlipInput {
    */
   gridLayout: GridLayout | null;
   /**
-   * The sim's own grid, by CarIdx: `CarIdxPaceRow` and `CarIdxPaceLine`. Read
-   * only where `gridLayout` is set, and every entry is -1 once the session is
-   * racing, so an absent array simply places nothing.
+   * Per-car grid rows and lines: pace telemetry for rolling starts or
+   * qualifying-order slots for standing starts. These are used only when
+   * `gridLayout` is set; they are absent after the standing-start gate closes.
    */
   carIdxPaceRow?: readonly number[];
   carIdxPaceLine?: readonly number[];
@@ -217,6 +217,8 @@ const carPoint = { x: 0, y: 0 };
 // integer indices. These buffers grow with the field, not on every snapshot.
 let gridRowAlongSums = new Float64Array(0);
 let gridRowCounts = new Uint16Array(0);
+let gridRowAlongMin = new Float64Array(0);
+let gridRowAlongMax = new Float64Array(0);
 
 /**
  * A frame that draws nothing, as a result built in the caller's output buffer.
@@ -649,7 +651,9 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
   }
 
   // Pace rows share a centreline position, with row distances averaged to
-  // smooth parked-car noise. A lane offset belongs to the car's local road
+  // smooth parked-car noise. If a row spans more than a car length, the sim is
+  // still assigning slots: preserve measured gaps instead of stacking those
+  // cars onto the player's row. A lane offset belongs to the car's local road
   // frame, so project it into the player's radar frame on both axes.
   if (gridLayout !== null) {
     const paceRow = input.carIdxPaceRow;
@@ -671,10 +675,13 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
       if (gridRowAlongSums.length < rowCount) {
         gridRowAlongSums = new Float64Array(rowCount);
         gridRowCounts = new Uint16Array(rowCount);
+        gridRowAlongMin = new Float64Array(rowCount);
+        gridRowAlongMax = new Float64Array(rowCount);
       }
       gridRowAlongSums.fill(0, 0, rowCount);
       gridRowCounts.fill(0, 0, rowCount);
-
+      gridRowAlongMin.fill(Number.POSITIVE_INFINITY, 0, rowCount);
+      gridRowAlongMax.fill(Number.NEGATIVE_INFINITY, 0, rowCount);
       for (const blip of blips) {
         const row = paceRow[blip.carIdx] ?? -1;
         if (!Number.isInteger(row) || row < 0 || row >= rowCount) continue;
@@ -685,6 +692,8 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
         }
         gridRowAlongSums[row] += blip.alongM;
         gridRowCounts[row] += 1;
+        gridRowAlongMin[row] = Math.min(gridRowAlongMin[row], blip.alongM);
+        gridRowAlongMax[row] = Math.max(gridRowAlongMax[row], blip.alongM);
       }
 
       const playerRow =
@@ -706,9 +715,17 @@ export const computeRadarBlips = (input: RadarBlipInput): RadarBlipResult => {
         blip.gridLaneOffsetM = laneLateralM;
 
         const row = paceRow[blip.carIdx] ?? -1;
-        if (row === playerRow && playerHasGridSlot) {
+        const rowIsMeasured =
+          Number.isInteger(row) &&
+          row >= 0 &&
+          row < rowCount &&
+          gridRowCounts[row] > 0;
+        const rowIsConsistent =
+          rowIsMeasured &&
+          gridRowAlongMax[row] - gridRowAlongMin[row] <= vehicleLength;
+        if (row === playerRow && playerHasGridSlot && rowIsConsistent) {
           blip.alongM = 0;
-        } else if (gridRowCounts[row] > 0) {
+        } else if (rowIsConsistent) {
           blip.alongM = gridRowAlongSums[row] / gridRowCounts[row];
         }
         blip.alongM += laneAlongM;

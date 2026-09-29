@@ -3,27 +3,26 @@ import { SessionState } from '@irdashies/types';
 /**
  * The starting grid, as far as the radar can reconstruct it.
  *
- * iRacing publishes no per-car world lateral position. It does publish
- * `CarIdxPaceRow` and `CarIdxPaceLine` for the starting grid; those identify
- * each car's row and column and are the source used here.
+ * iRacing publishes no per-car world lateral position. Rolling starts provide
+ * `CarIdxPaceRow` and `CarIdxPaceLine`; standing starts leave them unassigned,
+ * so the radar reconstructs slots from qualifying order until the lights.
  */
 export interface GridLayout {
   /** Cars abreast, 1 for a single-file grid. */
   columns: number;
-  /**
-   * Metres from the centreline to the middle of a column, signed to the
-   * driver's right. The sim names the column but not where it stands, so the
-   * distance is the road's own geometry: a car stands in the middle of its lane.
-   */
+  /** Physical side occupied by line 0, the pole lane. */
+  poleSide: 'left' | 'right';
+  /** Metres between adjacent columns, signed to the driver's right. */
   columnLateralM: number;
 }
 /**
  * Spacing between adjacent grid columns, in metres. The sim reports which
  * column a car is in but not how far out it sits, so this is the one part of
  * the placement that is still an assumption — and the only one, since the side,
- * the row and the pairing are all read.
+ * the row and the pairing are all read. It is slightly widened so default-width
+ * car bodies have a visible gap in the radar; it is not measured world geometry.
  */
-const COLUMN_LATERAL_M = 2.5;
+const COLUMN_LATERAL_M = 3.0;
 
 /**
  * A grid the radar cannot reconstruct. A layout it will not place is reported
@@ -34,14 +33,63 @@ const UNKNOWN_GRID: GridLayout | null = null;
 
 const COLUMN_PATTERN = /(\d+)\s*x\s*(\d+)/;
 
+const poleSideFromLabel = (
+  startingGrid: string | undefined
+): 'left' | 'right' =>
+  startingGrid && /pole\s+on\s+right/i.test(startingGrid) ? 'right' : 'left';
+
 /** A car the grid may place, as the sim numbered it. */
 export interface GridColumnCandidate {
   readonly carIdx: number;
-  /** `CarIdxPaceLine`: 0 for the left column of the row, 1 for the right. */
+  /** `CarIdxPaceLine`: 0 for the pole lane, 1 for the other lane. */
   readonly line: number;
   /** `CarIdxPaceRow`; negative means the sim has not assigned the car yet. */
   readonly row: number;
 }
+
+/** A qualifying result used to reconstruct a standing-start slot. */
+export interface QualifyingGridPosition {
+  readonly CarIdx: number;
+  /** Zero-based order: 0 is pole, 1 is the next starter. */
+  readonly Position: number;
+}
+
+/**
+ * Builds two-column grid slots from the order used for standing starts, where
+ * iRacing leaves the pace-row and pace-line telemetry unassigned.
+ */
+export const candidatesFromQualifyingOrder = (
+  results: readonly QualifyingGridPosition[],
+  columns: number,
+  carCount: number
+): GridColumnCandidate[] => {
+  if (!Number.isInteger(columns) || columns < 2 || carCount <= 0) return [];
+
+  const candidates: GridColumnCandidate[] = [];
+  const seenCars = new Set<number>();
+  const seenPositions = new Set<number>();
+  for (const { CarIdx, Position } of results) {
+    if (
+      !Number.isInteger(CarIdx) ||
+      CarIdx < 0 ||
+      CarIdx >= carCount ||
+      !Number.isInteger(Position) ||
+      Position < 0 ||
+      seenCars.has(CarIdx) ||
+      seenPositions.has(Position)
+    ) {
+      continue;
+    }
+    seenCars.add(CarIdx);
+    seenPositions.add(Position);
+    candidates.push({
+      carIdx: CarIdx,
+      row: Math.floor(Position / columns),
+      line: Position % columns,
+    });
+  }
+  return candidates;
+};
 
 /**
  * Reads the column count off the sim's own line numbering.
@@ -82,7 +130,11 @@ export const columnsFromPaceLines = (
   // middle of the player's view, which is a different drawing problem, and the
   // line numbering alone cannot say which side of the road it is on.
   if (widest !== 1) return UNKNOWN_GRID;
-  return { columns: 2, columnLateralM: COLUMN_LATERAL_M };
+  return {
+    columns: 2,
+    poleSide: 'left',
+    columnLateralM: COLUMN_LATERAL_M,
+  };
 };
 
 /**
@@ -99,20 +151,20 @@ const hasNumberedGrid = (cars: readonly GridColumnCandidate[]): boolean =>
   cars.some((car) => car.row >= 0);
 
 /**
- * Reads the column count out of the SDK's grid label.
+ * Reads the two-column shape and pole-side orientation from session metadata.
  *
- * `WeekendInfo.WeekendOptions.StartingGrid` is free text such as
- * `"2x2 inline pole on left"` or `"single file"`. Only the column count is
- * taken, and only as a fallback: the sim's own line numbering is read first,
- * because the label is free text about the session's configuration and a
- * recorded Road Atlanta grid contradicts it outright.
+ * Pace-line telemetry chooses the shape when present; the label is the shape
+ * fallback for standing starts where pace slots are unassigned. Its pole-side
+ * phrase, when present, identifies the physical side occupied by line 0.
  */
 export const parseGridLayout = (
   startingGrid: string | undefined,
   cars: readonly GridColumnCandidate[] = []
 ): GridLayout | null => {
   const fromPace = columnsFromPaceLines(cars);
-  if (fromPace !== null) return fromPace;
+  if (fromPace !== null) {
+    return { ...fromPace, poleSide: poleSideFromLabel(startingGrid) };
+  }
   // The sim numbered a field and it is not the two-abreast one, so the label
   // cannot be used to describe what is standing on the track.
   if (hasNumberedGrid(cars)) return UNKNOWN_GRID;
@@ -121,11 +173,15 @@ export const parseGridLayout = (
   if (!match) return UNKNOWN_GRID;
   const columns = Number.parseInt(match[1], 10);
   if (!Number.isFinite(columns) || columns !== 2) return UNKNOWN_GRID;
-  return { columns, columnLateralM: COLUMN_LATERAL_M };
+  return {
+    columns,
+    poleSide: poleSideFromLabel(startingGrid),
+    columnLateralM: COLUMN_LATERAL_M,
+  };
 };
 
 /**
- * Where a pace line stands across the road, in metres to the driver's right.
+ * Where a grid line stands across the road, in metres to the driver's right.
  *
  * `columnLateralM` is the pitch between columns, not an offset from the
  * centreline: a two-abreast field stands its columns half a pitch either side
@@ -138,27 +194,19 @@ export const gridColumnLateralM = (
   layout: GridLayout
 ): number | null => {
   if (layout.columns < 2 || line < 0 || line >= layout.columns) return null;
-  return (line - (layout.columns - 1) / 2) * layout.columnLateralM;
+  const lineDirection = layout.poleSide === 'left' ? 1 : -1;
+  return (
+    (line - (layout.columns - 1) / 2) * layout.columnLateralM * lineDirection
+  );
 };
 
 /**
- * Puts every car of a standing grid into the column the sim says it is in.
+ * Puts every car of a two-column start into its configured lane.
  *
- * `CarIdxPaceLine` is the sim's own column and there is nothing to infer: line 0
- * is the left column of the row and line 1 the right, which is what a recorded
- * Nürburgring grid shows — the player sat in line 0 with `CarLeftRight`
- * reporting their partner to the right, and the partner was line 1. The sign
- * matches the overlap verdict's, where negative is the player's left.
- *
- * The player's own row is included too: the sim's pace line names both cars
- * even when `CarLeftRight` does not report an overlap for the parked pair.
- * The player is drawn separately, using the same line-to-side mapping.
- *
- * The row's distance along the road is not touched. The measured gap already
- * carries the real fore/aft distance to the player's row, and moving it again
- * would double-count it.
- *
- * @returns Side to draw on by CarIdx, or null when no row could be placed.
+ * Candidates come from the sim's pace slots or, for standing starts, the
+ * qualifying order. In both cases line 0 is the pole lane and the session's
+ * `StartingGrid` label determines which side it occupies. The player's own row
+ * is included too, even when `CarLeftRight` does not report an overlap there.
  */
 export const assignGridColumns = (
   cars: readonly GridColumnCandidate[],

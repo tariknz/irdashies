@@ -157,11 +157,11 @@ export const FollowingMap: Story = {
     followingMapFillOpacity: 70,
     // The player and partner occupy opposite columns; two cars behind show both
     // grid lines as well.
-    playerLateralM: -2.5,
+    playerLateralM: -3,
     blips: [
-      blip(1, 0, 0, '24', { gridLaneOffsetM: 2.5 }),
-      blip(2, -5, 0, '7', { gridLaneOffsetM: -2.5 }),
-      blip(3, -5, 0, '51', { gridLaneOffsetM: 2.5 }),
+      blip(1, 0, 0, '24', { gridLaneOffsetM: 3 }),
+      blip(2, -5, 0, '7', { gridLaneOffsetM: -3 }),
+      blip(3, -5, 0, '51', { gridLaneOffsetM: 3 }),
     ],
   },
 };

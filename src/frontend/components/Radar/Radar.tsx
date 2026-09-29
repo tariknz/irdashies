@@ -104,7 +104,15 @@ export const Radar = () => {
   });
   const { isDemoMode } = useDashboard();
   const demoBlips = useDemoBlips(settings.rivalColorMode, isDemoMode);
-  const sessionVisible = useSessionVisibility(settings.sessionVisibility);
+  const radarSessionVisibility = useMemo(
+    () => ({
+      ...settings.sessionVisibility,
+      loneQualify: false,
+      openQualify: false,
+    }),
+    [settings.sessionVisibility]
+  );
+  const sessionVisible = useSessionVisibility(radarSessionVisibility);
 
   // Equality with the radar range is useless here: the car at the clipping
   // boundary cannot bring on a panel that only appears once it is visible.
@@ -147,7 +155,7 @@ export const Radar = () => {
     (!settings.showOnlyWhenOnTrack || state.isOnTrack) &&
     state.hasGeometry &&
     (!settings.showWhenNearby || gateShownRef.current);
-  // Demo mode ignores visibility rules so the widget can be seen while editing.
+  // Demo mode bypasses visibility rules; live radar remains off in qualifying.
   const fade = useRadarFade(isDemoMode || wanted, settings.fadeSeconds);
 
   if (fade <= 0) return <></>;

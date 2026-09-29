@@ -628,7 +628,11 @@ describe('computeRadarBlips', () => {
   });
 
   describe('the standing grid', () => {
-    const GRID = { columns: 2, columnLateralM: 2.5 };
+    const GRID = {
+      columns: 2,
+      poleSide: 'left' as const,
+      columnLateralM: 3.0,
+    };
     /** Half the lane pitch either side of the middle of a two-abreast road. */
     const HALF_LANE = GRID.columnLateralM / 2;
 
@@ -689,6 +693,9 @@ describe('computeRadarBlips', () => {
         GRID.columnLateralM,
         6
       );
+      expect(
+        Math.abs(partner.drawLateralM - playerColumnM) - baseInput.vehicleWidth
+      ).toBeGreaterThan(0.75);
     });
 
     it('levels cars within each sim-reported grid row', () => {
@@ -702,6 +709,34 @@ describe('computeRadarBlips', () => {
       expect(alongByCar.get(3)).toBeCloseTo(9.5, 6);
       expect(alongByCar.get(4)).toBeCloseTo(17.5, 6);
       expect(alongByCar.get(5)).toBeCloseTo(17.5, 6);
+    });
+
+    it('keeps grid rows distinct while pace-row telemetry is stale', () => {
+      // While the sim is staging the field, it can briefly report every car
+      // in row 0 even though their lap distances already show the separate rows.
+      // Treating that repeated row as authoritative stacks the whole field on
+      // the player's row until the pace-row array catches up.
+      const result = computeRadarBlips({
+        ...baseInput,
+        gridLayout: GRID,
+        radarRange: 40,
+        ...positionsOf([
+          pctOfArc(300),
+          pctOfArc(303),
+          pctOfArc(308),
+          pctOfArc(311),
+          pctOfArc(316),
+          pctOfArc(319),
+        ]),
+        carIdxPaceRow: [0, 0, 0, 0, 0, 0],
+        carIdxPaceLine: [0, 1, 0, 1, 0, 1],
+      });
+
+      const secondRow = result.blips.find((blip) => blip.carIdx === 2);
+      const thirdRow = result.blips.find((blip) => blip.carIdx === 4);
+      if (!secondRow || !thirdRow) throw new Error('expected two grid rows');
+      expect(secondRow.alongM).toBeGreaterThan(5);
+      expect(thirdRow.alongM).toBeGreaterThan(10);
     });
 
     it('survives the overlap offset that used to overwrite it', () => {

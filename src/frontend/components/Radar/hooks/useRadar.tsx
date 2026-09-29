@@ -21,6 +21,7 @@ import {
 } from '../overlapSides';
 import { MAX_RADAR_RANGE_M } from '../radarFade';
 import {
+  candidatesFromQualifyingOrder,
   isGridBeforeStart,
   gridColumnLateralM,
   parseGridLayout,
@@ -196,28 +197,69 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
     (snapshot) => snapshot.carLeftRight
   );
   const driverCarIdx = useDriverCarIdx();
-  // Speed is the player's reading, so it is not evidence of a grid when the
-  // camera follows someone else. Nor is a stopped player on track a grid: the
-  // player's own pace row and line must still identify a slot.
+  const drivers = useSessionDrivers();
+  const session = useSessionStore((state) => state.session);
+  const trackId = session?.WeekendInfo?.TrackID;
+  const startingGrid = session?.WeekendInfo?.WeekendOptions?.StartingGrid;
+  const standingStart =
+    session?.WeekendInfo?.WeekendOptions?.StandingStart === 1;
+  const rollingStart =
+    session?.WeekendInfo?.WeekendOptions?.StandingStart === 0;
+  const paceGridCandidates = useMemo(
+    () => gridCandidatesFromPace(paceRow, paceLine),
+    [paceRow, paceLine]
+  );
+  const qualifyingGridCandidates = useMemo(() => {
+    if (
+      !standingStart ||
+      !isGridBeforeStart(sessionState) ||
+      paceGridCandidates.length > 0
+    ) {
+      return EMPTY_GRID_CANDIDATES;
+    }
+    const labelledLayout = parseGridLayout(startingGrid);
+    const results = session?.QualifyResultsInfo?.Results;
+    if (labelledLayout === null || !results) return EMPTY_GRID_CANDIDATES;
+    return candidatesFromQualifyingOrder(
+      results,
+      labelledLayout.columns,
+      positions.length
+    );
+  }, [
+    standingStart,
+    sessionState,
+    paceGridCandidates.length,
+    startingGrid,
+    session?.QualifyResultsInfo?.Results,
+    positions.length,
+  ]);
+  const qualifyingGridRowsAndLines = useMemo(() => {
+    if (qualifyingGridCandidates.length === 0) return null;
+    const rows = new Array<number>(positions.length).fill(-1);
+    const lines = new Array<number>(positions.length).fill(-1);
+    for (const candidate of qualifyingGridCandidates) {
+      rows[candidate.carIdx] = candidate.row;
+      lines[candidate.carIdx] = candidate.line;
+    }
+    return { rows, lines };
+  }, [qualifyingGridCandidates, positions.length]);
+  const gridRows = qualifyingGridRowsAndLines?.rows ?? paceRow;
+  const gridLines = qualifyingGridRowsAndLines?.lines ?? paceLine;
+  const gridCandidates =
+    qualifyingGridCandidates.length > 0
+      ? qualifyingGridCandidates
+      : paceGridCandidates;
   const playerHasGridSlot =
     focusCarIdx !== null &&
-    (paceRow[focusCarIdx] ?? -1) >= 0 &&
-    (paceLine[focusCarIdx] ?? -1) >= 0;
+    (gridRows[focusCarIdx] ?? -1) >= 0 &&
+    (gridLines[focusCarIdx] ?? -1) >= 0;
   const isGrid =
     focusCarIdx !== null &&
     focusCarIdx === driverCarIdx &&
     carSpeed < 0.5 &&
     playerHasGridSlot &&
     (isGridBeforeStart(sessionState) || sessionState === SessionState.Racing);
-  const drivers = useSessionDrivers();
-  const session = useSessionStore((state) => state.session);
-  const trackId = session?.WeekendInfo?.TrackID;
-  const startingGrid = session?.WeekendInfo?.WeekendOptions?.StartingGrid;
-  const gridCandidates = useMemo(
-    () => gridCandidatesFromPace(paceRow, paceLine),
-    [paceRow, paceLine]
-  );
-  const gridLayout = useMemo<GridLayout | null>(
+  const labelGridLayout = useMemo<GridLayout | null>(
     () => parseGridLayout(startingGrid, gridCandidates),
     [startingGrid, gridCandidates]
   );
@@ -290,9 +332,52 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
     [carLeftRight]
   );
 
-  // Session state is the normal grid gate. If the sim reports Racing before
-  // clearing pace slots, the stopped driver's active row data still identifies
-  // the grid.
+  // Pace-line numbers identify the two lanes, but the pole-side label can be
+  // wrong for a rolling formation. When the sim reports the player's adjacent
+  // car on exactly one side, use that physical verdict to orient the pair.
+  const simReportedPoleSide = useMemo<'left' | 'right' | null>(() => {
+    if (!rollingStart || focusCarIdx === null || focusCarIdx !== driverCarIdx) {
+      return null;
+    }
+    const row = gridRows[focusCarIdx] ?? -1;
+    const line = gridLines[focusCarIdx] ?? -1;
+    if (row < 0 || (line !== 0 && line !== 1)) return null;
+    if (
+      !gridCandidates.some((car) => car.row === row && car.line === 1 - line)
+    ) {
+      return null;
+    }
+    const partnerSide =
+      overlap.left > 0 && overlap.right === 0
+        ? 'left'
+        : overlap.right > 0 && overlap.left === 0
+          ? 'right'
+          : null;
+    if (partnerSide === null) return null;
+    return line === 0
+      ? partnerSide === 'left'
+        ? 'right'
+        : 'left'
+      : partnerSide;
+  }, [
+    rollingStart,
+    focusCarIdx,
+    driverCarIdx,
+    gridRows,
+    gridLines,
+    gridCandidates,
+    overlap,
+  ]);
+  const gridLayout = useMemo<GridLayout | null>(() => {
+    if (labelGridLayout === null || simReportedPoleSide === null) {
+      return labelGridLayout;
+    }
+    return { ...labelGridLayout, poleSide: simReportedPoleSide };
+  }, [labelGridLayout, simReportedPoleSide]);
+
+  // Before the lights, use pace telemetry when present and qualifying order for
+  // standing starts whose pace-row and pace-line variables remain unassigned.
+  // An active pace slot still preserves a rolling-start grid reported late.
   const gridLayoutForFrame =
     isGridBeforeStart(sessionState) || (isGrid && gridCandidates.length > 0)
       ? gridLayout
@@ -300,10 +385,12 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
   const playerLateralM =
     gridLayoutForFrame !== null &&
     playerCarIdx !== null &&
-    (paceRow[playerCarIdx] ?? -1) >= 0 &&
+    (gridRows[playerCarIdx] ?? -1) >= 0 &&
     (positions[playerCarIdx] ?? -1) >= 0
-      ? (gridColumnLateralM(paceLine[playerCarIdx] ?? -1, gridLayoutForFrame) ??
-        0)
+      ? (gridColumnLateralM(
+          gridLines[playerCarIdx] ?? -1,
+          gridLayoutForFrame
+        ) ?? 0)
       : 0;
 
   const safeRadarRange = Number.isFinite(radarRange)
@@ -363,12 +450,11 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
       carNumbers,
       carColors,
       paceCarIdx,
-      // The grid placement is a statement of fact only while the cars are
-      // parked. The sim's own row and line numbering stops at the lights
-      // anyway, so this is the belt to those braces.
+      // Pace slots stay authoritative; qualifying order is only a standing-
+      // start fallback while the session is still before the lights.
       gridLayout: gridLayoutForFrame,
-      carIdxPaceRow: paceRow,
-      carIdxPaceLine: paceLine,
+      carIdxPaceRow: gridRows,
+      carIdxPaceLine: gridLines,
       previousTargets,
       nextTargets,
       followingMapBuffer,
@@ -385,8 +471,8 @@ export const useRadar = (options: UseRadarOptions): RadarState => {
   }, [
     positions,
     onPitRoad,
-    paceRow,
-    paceLine,
+    gridRows,
+    gridLines,
     playerCarIdx,
     targetKey,
     trackDrawing,

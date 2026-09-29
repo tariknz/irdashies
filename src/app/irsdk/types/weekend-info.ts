@@ -5,7 +5,8 @@ export interface WeekendOptions {
   StartingGrid: string;
   QualifyScoring: string;
   CourseCautions: string;
-  StandingStart: number; // maybe bool?
+  /** 1 for a standing start, 0 for a rolling start. */
+  StandingStart: number;
   ShortParadeLap: number; // maybe bool?
   Restarts: string;
   WeatherType: string; // is there an enum for this?

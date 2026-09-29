@@ -7,11 +7,13 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 interface SessionVisibilityProps {
   sessionVisibility: SessionVisibilitySettings;
   handleConfigChange: (newConfig: BaseWidgetSettings['config']) => void;
+  showQualifyingSessions?: boolean;
 }
 
 export const SessionVisibility = ({
   sessionVisibility,
   handleConfigChange,
+  showQualifyingSessions = true,
 }: SessionVisibilityProps) => {
   return (
     <div className="space-y-4">
@@ -26,27 +28,37 @@ export const SessionVisibility = ({
         }
       />
 
-      {/* Show In Lone Qualify Session */}
-      <SettingToggleRow
-        title="Lone Qualify"
-        enabled={sessionVisibility.loneQualify ?? false}
-        onToggle={(enabled) =>
-          handleConfigChange({
-            sessionVisibility: { ...sessionVisibility, loneQualify: enabled },
-          })
-        }
-      />
+      {showQualifyingSessions && (
+        <>
+          {/* Show In Lone Qualify Session */}
+          <SettingToggleRow
+            title="Lone Qualify"
+            enabled={sessionVisibility.loneQualify ?? false}
+            onToggle={(enabled) =>
+              handleConfigChange({
+                sessionVisibility: {
+                  ...sessionVisibility,
+                  loneQualify: enabled,
+                },
+              })
+            }
+          />
 
-      {/* Show In Open Qualify Session */}
-      <SettingToggleRow
-        title="Open Qualify"
-        enabled={sessionVisibility.openQualify ?? false}
-        onToggle={(enabled) =>
-          handleConfigChange({
-            sessionVisibility: { ...sessionVisibility, openQualify: enabled },
-          })
-        }
-      />
+          {/* Show In Open Qualify Session */}
+          <SettingToggleRow
+            title="Open Qualify"
+            enabled={sessionVisibility.openQualify ?? false}
+            onToggle={(enabled) =>
+              handleConfigChange({
+                sessionVisibility: {
+                  ...sessionVisibility,
+                  openQualify: enabled,
+                },
+              })
+            }
+          />
+        </>
+      )}
 
       {/* Show In Practice Session */}
       <SettingToggleRow

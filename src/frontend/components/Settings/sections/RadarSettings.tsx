@@ -378,8 +378,14 @@ export const RadarSettings = () => {
               <SettingsSection title="Session Visibility">
                 <SessionVisibility
                   sessionVisibility={settings.config.sessionVisibility}
+                  showQualifyingSessions={false}
                   handleConfigChange={handleConfigChange}
                 />
+
+                <p className="text-sm text-slate-500">
+                  Live radar is hidden during qualifying; dashboard demo mode
+                  remains available.
+                </p>
 
                 <SettingDivider />
 

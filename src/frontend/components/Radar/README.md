@@ -2,12 +2,19 @@
 
 A proximity radar: the player's car sits at the centre of a disc pointing up.
 iRacing publishes no per-car world position, so moving blips use lap distance
-projected onto the track centreline. On a standing two-column grid, iRacing's
-pace row/line identifies each slot; the lane offset is projected from the local
-road direction into the radar's lateral and longitudinal axes. During racing,
-same-progress rivals that would otherwise occupy the same pixels are fanned out
-in a stable visual order; that separation prevents overdraw but does not claim
-to know their real left/right positions.
+projected onto the track centreline. Rolling starts use iRacing's pace row/line
+for each slot; standing starts use qualifying order while those pace variables
+are unassigned. The pole-side label sets the default orientation; rolling
+starts correct it from `CarLeftRight` when the sim reports the paired car on
+one side. The lane offset is projected from the local road direction into the
+radar's lateral and longitudinal axes. Row positions are averaged only while
+their measured spread stays within one car length, so transient row data cannot
+stack the field on the player's row. During racing, same-progress rivals that
+would otherwise occupy the same pixels are fanned out in a stable visual order;
+that separation prevents overdraw but does not claim to know their real
+left/right positions.
+The live radar is hidden in Lone Qualify and Open Qualify; dashboard demo mode
+remains available.
 
 Everything the widget owns lives in this folder. Nothing here imports from
 another widget folder, and the only things outside it that name the widget are
