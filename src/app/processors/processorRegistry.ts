@@ -162,6 +162,28 @@ export const createProcessorDefinitions = ({
   }),
 ];
 
+const noReferenceLapPersistence: ReferenceLapPersistence = {
+  load: () => null,
+  save: () => undefined,
+};
+
+/**
+ * Metric section name to channel, for the main-process perf report.
+ *
+ * `ProcessorHost` labels every processor's counters with its `metricsPrefix`,
+ * so the report reads the same pairs from here rather than keeping a second
+ * hand-written list that can fall behind the registry.
+ */
+export const PROCESSOR_METRIC_CHANNELS: Readonly<Record<string, string>> =
+  Object.fromEntries(
+    createProcessorDefinitions({
+      referenceLapPersistence: noReferenceLapPersistence,
+    }).map(({ channel, metricsPrefix }) => [
+      `${metricsPrefix}Processing`,
+      channel,
+    ])
+  );
+
 export const createDefaultProcessorHost = (
   options: DefaultProcessorHostOptions
 ): ProcessorHost =>
