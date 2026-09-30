@@ -239,6 +239,26 @@ export const Standings = () => {
     const lastEstimate = lastEstimateCache.current;
     const checkeredCache = checkeredLapsCache.current;
 
+    // The car with the most track progress (lap + distance into it), read
+    // from the same frame. Undefined when no car in the class has a lap.
+    const progressLeader = <T extends { carIdx: number }>(
+      classStandings: readonly T[]
+    ): T | undefined => {
+      let leader: T | undefined;
+      let leaderProgress = 0;
+      for (const standing of classStandings) {
+        const lap = carIdxLap?.[standing.carIdx] ?? -1;
+        if (lap <= 0) continue;
+        const progress =
+          lap + Math.max(0, carIdxLapDistPct?.[standing.carIdx] ?? 0);
+        if (progress > leaderProgress) {
+          leader = standing;
+          leaderProgress = progress;
+        }
+      }
+      return leader;
+    };
+
     type ClassProjection =
       | { classId: string; estimate: ClassLapEstimate }
       | {
@@ -300,7 +320,17 @@ export const Standings = () => {
         // global estimate: the official lap time lands a few ticks after the
         // leader crosses the line, so a value frozen at the crossing would
         // miss the lap just completed.
-        const leader = classStandings[0];
+        //
+        // The leader is the car furthest round the track, not the first row:
+        // the row order comes from iRacing's results, which can put a car with
+        // no lap on the board first (a qualifier still in the garage, a
+        // leader who disconnected) until the results catch up. Projecting from
+        // that car would freeze the estimate at the full-race value. Before
+        // the green flag, grid positions and lap counters don't order the
+        // field, so the first row (the class pole sitter) is kept there.
+        const leader =
+          (isGreen ? progressLeader(classStandings) : undefined) ??
+          classStandings[0];
         // Pace, best source first: the leader's recent official laps; then
         // their best lap, which before the green flag is their qualifying lap
         // — close to race pace, where iRacing's class estimate runs a few
