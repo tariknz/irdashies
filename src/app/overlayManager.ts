@@ -160,8 +160,7 @@ export class OverlayManager {
   private watchingDisplays = false;
   /**
    * Last running state broadcast. Bridges publish this only on a change, so a
-   * settings window opened mid-session would never hear one; it is replayed to
-   * that window on load instead.
+   * window opened mid-session would never hear one; it asks for this instead.
    */
   private latestRunningState = false;
 
@@ -807,6 +806,19 @@ export class OverlayManager {
     return this.latestSessionData;
   }
 
+  /**
+   * Whether a simulator is currently feeding telemetry.
+   *
+   * Pulled by a renderer once it has subscribed, rather than pushed to it on
+   * load: a push cannot be timed reliably, because the page's load event -- the
+   * earliest signal the main process gets -- still precedes React mounting and
+   * registering its IPC listener, and nothing buffers a message sent before
+   * then.
+   */
+  public getRunningState(): boolean {
+    return this.latestRunningState;
+  }
+
   /** Sends the cached session to a visible, subscribed sender window. */
   public seedSessionData(sender: Electron.WebContents): boolean {
     const win = BrowserWindow.fromWebContents(sender);
@@ -1363,15 +1375,6 @@ export class OverlayManager {
 
     // Track window movement and resizing to save bounds
     trackSettingsWindowMovement(browserWindow);
-
-    // Bridges publish the running state only when it changes, so a window
-    // opened after the sim connected would sit on the `false` it starts with
-    // and claim nothing is running. Replay the current value once it can
-    // receive it.
-    browserWindow.webContents.on('did-finish-load', () => {
-      if (browserWindow.isDestroyed()) return;
-      browserWindow.webContents.send('runningState', this.latestRunningState);
-    });
 
     // and load the index.html of the app.
     const hash = widgetType ? `/settings/${widgetType}` : `/settings`;

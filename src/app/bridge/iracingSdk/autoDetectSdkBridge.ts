@@ -79,6 +79,12 @@ export async function publishAutoDetectedSdkEvents(
       )
     ).filter((entry) => entry !== undefined);
 
+  /**
+   * A single function that releases a whole set of probes.
+   *
+   * Each stop is guarded, so one source that cannot be shut down cleanly does
+   * not leave the rest of the set running.
+   */
   const stopperFor = (probes: Probe[]) => () =>
     probes.forEach(({ id, probe }) => {
       try {
@@ -88,6 +94,7 @@ export async function publishAutoDetectedSdkEvents(
       }
     });
 
+  /** Whether one simulator is running, treating a broken probe as inactive. */
   const readProbe = ({ id, probe }: Probe) => {
     try {
       probe.start();
@@ -101,16 +108,27 @@ export async function publishAutoDetectedSdkEvents(
     }
   };
 
+  /**
+   * A round of probe results as one line, for the log.
+   *
+   * Callers compare it against the previous round and only log a change, so a
+   * loop running at 1 Hz does not fill the log with identical lines.
+   */
   const describeProbes = (results: { id: string; active: boolean }[]) =>
     results
       .map(({ id, active }) => `${id}=${active ? 'active' : 'inactive'}`)
       .join(' ');
 
+  /** Stops watching for a replacement, and allows a later watch to start. */
   const cancelWatchdog = () => {
     stopWatchdog?.();
     stopWatchdog = undefined;
   };
 
+  /**
+   * Lets go of the attached simulator entirely: unsubscribes from it, cancels
+   * any watch it started, and shuts its bridge down.
+   */
   const detachAndStopActiveBridge = () => {
     detachActiveBridge?.();
     detachActiveBridge = undefined;
@@ -202,6 +220,13 @@ export async function publishAutoDetectedSdkEvents(
     });
   };
 
+  /**
+   * Points the façade at one simulator's bridge and starts following it.
+   *
+   * Forwards its telemetry, session data and running state to this façade's own
+   * subscribers, and uses the running state to decide when to go looking for a
+   * replacement.
+   */
   const attachBridge = (
     bridge: IrSdkSourceBridge,
     simulator: ActiveSimulator
