@@ -3,7 +3,7 @@ import {
   classReferenceLap,
   lapTimes,
   medianGreenLapTime,
-  recentGreenLapPace,
+  recentOfficialLapPace,
 } from './lapPace';
 import type { LapCrossing } from './types';
 
@@ -118,58 +118,34 @@ describe('medianGreenLapTime', () => {
   });
 });
 
-describe('recentGreenLapPace', () => {
-  it('excludes the pit in-lap and out-lap either side of a stop', () => {
-    // Five green laps of 90s, then a 200s in-lap, a 200s out-lap, then two
-    // more green laps of 90s. A contaminated average would land well above
-    // 90; the pit-bracketing laps must not enter the calculation at all.
-    const crossings = [
-      crossing(1, 0),
-      crossing(2, 90),
-      crossing(3, 180),
-      crossing(4, 270),
-      crossing(5, 360),
-      crossing(6, 450),
-      crossing(7, 650, { inPit: true }),
-      crossing(8, 850),
-      crossing(9, 940),
-      crossing(10, 1030),
-    ];
-
-    expect(recentGreenLapPace(crossings, 5)).toBe(90);
+describe('recentOfficialLapPace', () => {
+  it('drops pit-stop laps as outliers', () => {
+    // Six laps of 90s with a 200s pit lap in the middle: the median of the
+    // filtered window stays on the green pace.
+    expect(recentOfficialLapPace([90, 90, 90, 200, 90, 90, 90], 7)).toBe(90);
   });
 
-  it('windows to the most recent N green laps, not the whole history', () => {
+  it('windows to the most recent N laps, not the whole history', () => {
     // Slow opening stint of 100s laps, then the driver settles into 90s laps.
-    // A window of 3 should see only the settled pace; a wider window drags
-    // the slow laps back in.
-    const crossings = [
-      crossing(1, 0),
-      crossing(2, 100),
-      crossing(3, 200),
-      crossing(4, 300),
-      crossing(5, 390),
-      crossing(6, 480),
-      crossing(7, 570),
-    ];
-
-    expect(recentGreenLapPace(crossings, 3)).toBe(90);
-    expect(recentGreenLapPace(crossings, 100)).toBeCloseTo(95, 5);
+    const history = [100, 100, 100, 90, 90, 90];
+    expect(recentOfficialLapPace(history, 3)).toBe(90);
+    expect(recentOfficialLapPace(history, 100)).toBe(95);
   });
 
-  it('returns undefined with no green laps yet', () => {
-    expect(recentGreenLapPace([], 5)).toBeUndefined();
-    expect(
-      recentGreenLapPace(
-        [crossing(1, 0, { inPit: true }), crossing(2, 200, { inPit: true })],
-        5
-      )
-    ).toBeUndefined();
+  it('uses a single lap once one has been set', () => {
+    // Lap 1 of a race: the only data is the opening lap, and it must drive
+    // the projection straight away, as the session-wide estimate does.
+    expect(recentOfficialLapPace([124.7], 5)).toBe(124.7);
+  });
+
+  it('ignores unset lap times and returns undefined with none', () => {
+    expect(recentOfficialLapPace([], 5)).toBeUndefined();
+    expect(recentOfficialLapPace([-1, 0], 5)).toBeUndefined();
+    expect(recentOfficialLapPace([-1, 91], 5)).toBe(91);
   });
 
   it('treats a window smaller than 1 as 1', () => {
-    const crossings = [crossing(1, 0), crossing(2, 90), crossing(3, 200)];
-    expect(recentGreenLapPace(crossings, 0)).toBe(110);
+    expect(recentOfficialLapPace([90, 110], 0)).toBe(110);
   });
 });
 

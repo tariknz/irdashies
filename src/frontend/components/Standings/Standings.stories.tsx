@@ -11,8 +11,8 @@ import {
   mockDashboardBridge,
   timedRaceTimingSnapshot,
   fixedLapRaceTimingSnapshot,
-  buildLapHistory,
   fixturePlans,
+  RACE_SESSION_NUM,
 } from '@irdashies/storybook';
 import {
   DashboardProvider,
@@ -1486,12 +1486,27 @@ export const AvgLapTime: Story = {
 
 // Each class's leader runs its own class's estimated lap pace over 15 laps, so
 // every class projects a different total — the point of the per-class
-// estimate. The BMW leader (carIdx 5) pits on lap 10: its in-lap and out-lap
-// are excluded from the pace, which is what the "green laps only" setting is
-// there to prove out.
-const EST_LAPS_HISTORY = buildLapHistory(
-  fixturePlans({ laps: 15, pitCarIdx: 5, pitLap: 10 })
-);
+// estimate. The BMW leader (carIdx 5) pits on lap 10: that 34s-slower lap is
+// dropped as an outlier, so it doesn't drag the projected pace down.
+const EST_LAPS_LAP_TIMES = (() => {
+  const plans = fixturePlans({ laps: 15, pitCarIdx: 5, pitLap: 10 });
+  const slots = Math.max(...plans.map((plan) => plan.carIdx)) + 1;
+  const lapTimeHistory = Array.from({ length: slots }, () => [] as number[]);
+  for (const plan of plans) {
+    lapTimeHistory[plan.carIdx] = Array.from(
+      { length: plan.laps },
+      (_, index) =>
+        plan.lapSeconds +
+        (plan.pitLaps?.includes(index + 1) ? (plan.pitLossSeconds ?? 0) : 0)
+    ).slice(-10);
+  }
+  return {
+    lapTimes: lapTimeHistory.map((history) => history.at(-1) ?? 0),
+    lapTimeHistory,
+    sessionNum: RACE_SESSION_NUM,
+    version: 1,
+  };
+})();
 
 const estimatedLapsStory = (
   timing: SessionTimingSnapshot
@@ -1513,7 +1528,7 @@ const estimatedLapsStory = (
   render: () => <Standings />,
   decorators: [
     ChannelSnapshotDecorator({
-      'lap-history.snapshot': EST_LAPS_HISTORY,
+      'lap-times.snapshot': EST_LAPS_LAP_TIMES,
       'standings.snapshot': standingsStorySnapshot,
       'track-state.snapshot': trackStateStorySnapshot,
       'session-bar.snapshot': sessionBarStorySnapshot,

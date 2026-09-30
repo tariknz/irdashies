@@ -1242,7 +1242,7 @@ export const StandingsSettings = () => {
                         <div className="ml-2 pl-4 border-l-2 border-slate-600">
                           <SettingSelectRow
                             title="Laps to average"
-                            description="Green laps only — pit in/out laps are always excluded"
+                            description="Median of the class leader's most recent laps — pit stops and other outlier laps are left out"
                             value={(
                               settings.config.classHeaderStyle?.estimatedLaps
                                 ?.numLaps ?? 5

@@ -30,7 +30,7 @@ export const lapTimes = (crossings: readonly LapCrossing[]): LapPoint[] => {
  * `skipOpening` drops the first racing lap, which carries the standing or
  * rolling start and is never representative of green pace.
  */
-export const greenLapTimes = (
+const greenLapTimes = (
   crossings: readonly LapCrossing[],
   skipOpening = false
 ): number[] => {
@@ -69,19 +69,36 @@ export const medianGreenLapTime = (
 };
 
 /**
- * Median pace from the most recent `numLaps` green laps (neither the crossing
- * that ends nor the one that starts a lap is flagged, so pit in/out laps never
- * enter the average). Windows to the tail of the green-lap list so the pace
- * tracks a driver's current pace rather than their whole-race average.
- * Undefined until at least one green lap has been set.
+ * Drops laps more than one standard deviation from the mean — pit stops,
+ * incidents, the standing-start lap. Mirrors the main-process lap-times
+ * aggregation, so a pace built from it matches the session-wide lap estimate.
+ * Fewer than 3 laps can't give a meaningful spread and are kept as-is.
  */
-export const recentGreenLapPace = (
-  crossings: readonly LapCrossing[],
+const withoutOutlierLaps = (times: readonly number[]): readonly number[] => {
+  if (times.length < 3) return times;
+  const mean = times.reduce((sum, time) => sum + time, 0) / times.length;
+  const variance =
+    times.reduce((sum, time) => sum + (time - mean) ** 2, 0) / times.length;
+  const threshold = Math.sqrt(variance);
+  return times.filter((time) => Math.abs(time - mean) <= threshold);
+};
+
+/**
+ * Pace from a car's official lap times (CarIdxLastLapTime history, oldest
+ * first): the median of the most recent `numLaps`, outliers dropped. Uses
+ * iRacing's own timed laps rather than observed line crossings, so the
+ * opening lap is timed exactly as iRacing times it. Undefined until the car
+ * has set a lap.
+ */
+export const recentOfficialLapPace = (
+  history: readonly number[],
   numLaps: number
 ): number | undefined => {
-  const green = greenLapTimes(crossings);
-  if (green.length === 0) return undefined;
-  return median(green.slice(-Math.max(1, numLaps)));
+  const window = history
+    .filter((time) => time > 0)
+    .slice(-Math.max(1, numLaps));
+  if (window.length === 0) return undefined;
+  return median(withoutOutlierLaps(window));
 };
 
 /**
