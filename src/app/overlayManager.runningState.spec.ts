@@ -15,14 +15,7 @@ class FakeWebContents {
   id = 42;
   send = vi.fn();
   setWindowOpenHandler = vi.fn();
-  private handlers = new Map<string, (() => void)[]>();
-  on = vi.fn((event: string, handler: () => void) => {
-    this.handlers.set(event, [...(this.handlers.get(event) ?? []), handler]);
-  });
-  /** Fires what Electron would fire once the window's page has loaded. */
-  emit(event: string) {
-    this.handlers.get(event)?.forEach((handler) => handler());
-  }
+  on = vi.fn();
 }
 
 class FakeBrowserWindow {
@@ -146,30 +139,24 @@ describe('OverlayManager running state', () => {
     expect(window.webContents.send).not.toHaveBeenCalled();
   });
 
-  it('replays the current running state to a window opened mid-session', () => {
+  it('answers what the running state is for a window that opened mid-session', () => {
     // Bridges publish only on a change, so a window opened after the sim
-    // connected would never hear one and would claim nothing is running.
+    // connected has no event coming and has to ask. It cannot be pushed the
+    // value on load: the page's load event precedes the renderer subscribing,
+    // and nothing buffers a message sent before then.
     const manager = new OverlayManager();
+    expect(manager.getRunningState()).toBe(false);
+
     manager.publishMessage('runningState', true);
 
-    manager.createSettingsWindow();
-    const window = settingsWindow();
-    if (!window) throw new Error('no settings window was created');
-    window.webContents.emit('did-finish-load');
-
-    expect(runningStateSends(window)).toEqual([['runningState', true]]);
+    expect(manager.getRunningState()).toBe(true);
   });
 
-  it('replays the disconnected state when nothing is running', () => {
+  it('answers that nothing is running once the simulator has gone', () => {
     const manager = new OverlayManager();
     manager.publishMessage('runningState', true);
     manager.publishMessage('runningState', false);
 
-    manager.createSettingsWindow();
-    const window = settingsWindow();
-    if (!window) throw new Error('no settings window was created');
-    window.webContents.emit('did-finish-load');
-
-    expect(runningStateSends(window)).toEqual([['runningState', false]]);
+    expect(manager.getRunningState()).toBe(false);
   });
 });

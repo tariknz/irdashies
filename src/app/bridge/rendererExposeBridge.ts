@@ -88,6 +88,7 @@ export function exposeBridge() {
       ipcRenderer.on('runningState', handler);
       return () => ipcRenderer.removeListener('runningState', handler);
     },
+    getRunningState: () => ipcRenderer.invoke('getRunningState'),
     stop: () => {
       for (const stream of rendererDataListenerCounts.keys()) {
         void rendererDataSubscriptions.unsubscribe(stream);
