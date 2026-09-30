@@ -143,6 +143,11 @@ export class OverlayManager {
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
   private rendererDataSubscriptions?: RendererDataSubscriptions;
   private latestSessionData: unknown;
+  /**
+   * Last running state broadcast. Bridges publish this only on a change, so a
+   * window opened mid-session would never hear one; it asks for this instead.
+   */
+  private latestRunningState = false;
 
   /** Padding around the widget bounding box when shrink-wrapping */
   private static readonly SHRINK_WRAP_PADDING = 20;
@@ -657,14 +662,18 @@ export class OverlayManager {
   /**
    * Send a message to the container window and settings window
    */
-  // High-frequency messages that only the overlay container needs
+  // High-frequency messages that only the overlay container needs.
+  //
+  // `runningState` is deliberately not in here: it is published only when the
+  // value changes, and the settings window needs it to tell "iRacing is
+  // feeding us" from "iRacing is closed" in its header.
   private static readonly OVERLAY_ONLY_MESSAGES = new Set([
     'telemetryInspector:telemetry',
-    'runningState',
   ]);
 
   public publishMessage(key: string, value: unknown): void {
     if (key === 'sessionData') this.latestSessionData = value;
+    if (key === 'runningState') this.latestRunningState = Boolean(value);
 
     // Send to all display overlay windows
     for (const win of this.displayWindows.values()) {
@@ -749,6 +758,19 @@ export class OverlayManager {
   /** The most recent session broadcast, or undefined when disconnected. */
   public getLatestSessionData(): unknown {
     return this.latestSessionData;
+  }
+
+  /**
+   * Whether a simulator is currently feeding telemetry.
+   *
+   * Pulled by a renderer once it has subscribed, rather than pushed to it on
+   * load: a push cannot be timed reliably, because the page's load event -- the
+   * earliest signal the main process gets -- still precedes React mounting and
+   * registering its IPC listener, and nothing buffers a message sent before
+   * then.
+   */
+  public getRunningState(): boolean {
+    return this.latestRunningState;
   }
 
   /** Sends the cached session to a visible, subscribed sender window. */

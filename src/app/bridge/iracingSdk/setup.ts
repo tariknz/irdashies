@@ -128,6 +128,10 @@ export async function iRacingSDKSetup(
 
   ipcMain.handle('getActiveSimulator', () => activeSimulator ?? null);
   ipcMain.handle('getAvailableSimulators', () => getAvailableSimulators());
+  // Lets a window that opened mid-session seed itself. The bridges publish the
+  // running state only when it changes, so there may be no next event for a
+  // long time.
+  ipcMain.handle('getRunningState', () => overlayManager.getRunningState());
 
   // The preference lives in the dashboard, so it is per-profile: switching to a
   // profile pinned to another simulator has to move the telemetry source with
@@ -212,6 +216,14 @@ async function setupBridge(
       currentBridge.stop();
       currentBridge = undefined;
     }
+
+    logger.info(
+      isMock
+        ? '[setup] Switching telemetry source to mock data'
+        : simulator
+          ? `[setup] Switching telemetry source to ${simulator}`
+          : `[setup] No pinned simulator; auto-detecting among [${available.join(', ')}]`
+    );
 
     const publishIRacingSDKEvents = isMock
       ? (await import('./mock-data/mockSdkBridge')).publishIRacingSDKEvents
