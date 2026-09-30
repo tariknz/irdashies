@@ -1215,6 +1215,57 @@ export const StandingsSettings = () => {
                         />
                       </>
                     )}
+                    <div className="space-y-3">
+                      <SettingToggleRow
+                        title="Show Estimated Laps"
+                        description="Show each class's projected total lap count in timed sessions, based on the class leader's current pace"
+                        enabled={
+                          settings.config.classHeaderStyle?.estimatedLaps
+                            ?.enabled ?? false
+                        }
+                        onToggle={(newValue) =>
+                          handleConfigChange({
+                            classHeaderStyle: {
+                              ...settings.config.classHeaderStyle,
+                              estimatedLaps: {
+                                ...settings.config.classHeaderStyle
+                                  ?.estimatedLaps,
+                                enabled: newValue,
+                              },
+                            },
+                          })
+                        }
+                      />
+                      {(settings.config.classHeaderStyle?.estimatedLaps
+                        ?.enabled ??
+                        false) && (
+                        <div className="ml-2 pl-4 border-l-2 border-slate-600">
+                          <SettingSelectRow
+                            title="Laps to average"
+                            description="Median of the class leader's most recent laps — pit stops and other outlier laps are left out"
+                            value={(
+                              settings.config.classHeaderStyle?.estimatedLaps
+                                ?.numLaps ?? 5
+                            ).toString()}
+                            options={Array.from({ length: 8 }, (_, i) => ({
+                              label: (i + 3).toString(),
+                              value: (i + 3).toString(),
+                            }))}
+                            onChange={(v) =>
+                              handleConfigChange({
+                                classHeaderStyle: {
+                                  ...settings.config.classHeaderStyle,
+                                  estimatedLaps: {
+                                    enabled: true,
+                                    numLaps: parseInt(v),
+                                  },
+                                },
+                              })
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
                   </SettingsSection>
 
                   <SettingDivider />
