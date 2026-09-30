@@ -71,11 +71,15 @@ describe('publishIRacingSDKEvents session polling', () => {
     vi.useRealTimers();
   });
 
-  const createOverlayManager = () => ({
-    onOverlayReady: vi.fn(),
-    publishMessage: vi.fn(),
-    publishMessageToOverlay: vi.fn(),
-  });
+  const createOverlayManager = () => {
+    const unsubscribeOverlayReady = vi.fn();
+    return {
+      onOverlayReady: vi.fn(() => unsubscribeOverlayReady),
+      unsubscribeOverlayReady,
+      publishMessage: vi.fn(),
+      publishMessageToOverlay: vi.fn(),
+    };
+  };
 
   it('publishes the running state as soon as the SDK produces data', async () => {
     // sessionStatusOK still reads false when the bridge seeds it, which is what
@@ -99,6 +103,54 @@ describe('publishIRacingSDKEvents session polling', () => {
     ]);
 
     bridge.stop();
+  });
+
+  it('replays the running state to a subscriber that attaches after the seed', async () => {
+    // Auto-detect builds this bridge and only then subscribes to it. The state
+    // is seeded during the build and afterwards published only on a change, so
+    // without a replay the detector never learns the sim came up -- and then
+    // reads the disconnect as a blip and never re-probes, leaving the app deaf
+    // to a different sim started afterwards.
+    mockSdkState.sessionStatusOK = true;
+    const overlayManager = createOverlayManager();
+
+    const bridge = await publishIRacingSDKEvents(overlayManager as never);
+
+    const seen: boolean[] = [];
+    bridge.onRunningState((value) => seen.push(value));
+
+    expect(seen).toEqual([true]);
+
+    bridge.stop();
+  });
+
+  it('replays a disconnected state rather than claiming the sim is up', async () => {
+    mockSdkState.sessionStatusOK = false;
+    mockWaitForData.mockReturnValue(false);
+    const overlayManager = createOverlayManager();
+
+    const bridge = await publishIRacingSDKEvents(overlayManager as never);
+
+    const seen: boolean[] = [];
+    bridge.onRunningState((value) => seen.push(value));
+
+    expect(seen).toEqual([false]);
+
+    bridge.stop();
+  });
+
+  it('releases its overlay-ready listener when stopped', async () => {
+    // The bridge is rebuilt whenever the telemetry source changes. A listener
+    // left registered here goes on seeding every newly-opened overlay window
+    // with this dead bridge's last session.
+    const overlayManager = createOverlayManager();
+
+    const bridge = await publishIRacingSDKEvents(overlayManager as never);
+    expect(overlayManager.unsubscribeOverlayReady).not.toHaveBeenCalled();
+
+    bridge.stop();
+
+    expect(overlayManager.unsubscribeOverlayReady).toHaveBeenCalledOnce();
   });
 
   it('polls immediately and every 500 ms using monotonic time', async () => {
