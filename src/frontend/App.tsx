@@ -112,7 +112,11 @@ const App = () => {
     return (
       <ErrorBoundary label="settings" resetAfterMs={2000}>
         <DashboardProvider bridge={window.dashboardBridge}>
-          <SettingsApp />
+          {/* The header names the running simulator, so it needs to know
+              whether one is actually feeding telemetry. */}
+          <RunningStateProvider bridge={window.irsdkBridge}>
+            <SettingsApp />
+          </RunningStateProvider>
         </DashboardProvider>
       </ErrorBoundary>
     );
