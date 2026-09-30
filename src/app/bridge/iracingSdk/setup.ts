@@ -213,6 +213,14 @@ async function setupBridge(
       currentBridge = undefined;
     }
 
+    logger.info(
+      isMock
+        ? '[setup] Switching telemetry source to mock data'
+        : simulator
+          ? `[setup] Switching telemetry source to ${simulator}`
+          : `[setup] No pinned simulator; auto-detecting among [${available.join(', ')}]`
+    );
+
     const publishIRacingSDKEvents = isMock
       ? (await import('./mock-data/mockSdkBridge')).publishIRacingSDKEvents
       : simulator
