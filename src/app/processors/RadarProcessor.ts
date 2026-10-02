@@ -7,7 +7,11 @@ import type {
 } from '@irdashies/types';
 import { CarLeftRight, TrackLocation } from '@irdashies/types';
 import type { TelemetryProcessor } from './TelemetryProcessor';
-import { RadarLaneTracker } from './radarLanes';
+import {
+  RadarLaneTracker,
+  type FormationKind,
+  type PoleSide,
+} from './radarLanes';
 import {
   computeFormation,
   PaceMode,
@@ -64,6 +68,17 @@ export const parseTrackLength = (raw: string | undefined): number => {
   return parsed;
 };
 
+/** Pole sides learnt per track, keyed by WeekendInfo.TrackName. */
+export interface RadarPoleSidePersistence {
+  load(track: string): Partial<Record<FormationKind, PoleSide>>;
+  save(track: string, kind: FormationKind, side: PoleSide): void;
+}
+
+const noPoleSidePersistence: RadarPoleSidePersistence = {
+  load: () => ({}),
+  save: () => undefined,
+};
+
 /**
  * Publishes the rivals around the focus car in metres.
  *
@@ -89,8 +104,13 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     poleSide: 'left',
   };
   private paceCarIdx = -1;
+  private track = '';
 
   private latest: RadarSnapshot = emptySnapshot(0);
+
+  constructor(
+    private readonly poleSides: RadarPoleSidePersistence = noPoleSidePersistence
+  ) {}
 
   init(session: Session): void {
     this.trackLength = parseTrackLength(session?.WeekendInfo?.TrackLength);
@@ -100,6 +120,16 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       ...parseStartingGrid(options?.StartingGrid),
     };
     this.lanes.setPoleSide(this.grid.poleSide);
+    // Which side the pole is on is the track's, and the sim does not say;
+    // what the spotter showed here before beats the grid description.
+    this.track = session?.WeekendInfo?.TrackName ?? '';
+    if (this.track) {
+      const learnt = this.poleSides.load(this.track);
+      for (const kind of ['grid', 'pace'] as const) {
+        const side = learnt[kind];
+        if (side) this.lanes.setPoleSide(side, kind);
+      }
+    }
     this.paceCarIdx = session?.DriverInfo?.PaceCarIdx ?? -1;
     this.excluded.clear();
     for (const driver of session?.DriverInfo?.Drivers ?? []) {
@@ -244,6 +274,9 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       if (!lane) continue;
       car.lane = lane.lane;
       car.laneSource = lane.source;
+    }
+    for (const { kind, side } of this.lanes.takeLearntPoleSides()) {
+      if (this.track) this.poleSides.save(this.track, kind, side);
     }
   }
 

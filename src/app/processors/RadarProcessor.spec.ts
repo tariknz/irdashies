@@ -245,6 +245,67 @@ describe('RadarProcessor', () => {
     expect(cars.every((car) => car.laneSource === 'pace')).toBe(true);
   });
 
+  it('starts from the pole side learnt at this track before', () => {
+    const lanesWith = (learnt: Record<string, string>) => {
+      const loaded: string[] = [];
+      const processor = new RadarProcessor({
+        load: (track) => {
+          loaded.push(track);
+          return learnt;
+        },
+        save: () => undefined,
+      });
+      processor.init(rollingSession as unknown as Session);
+      processor.onFrame(rollingTelemetry as unknown as Telemetry);
+      return {
+        loaded,
+        lanes: new Map(
+          processor.snapshot().cars.map((car) => [car.carIdx, car.lane])
+        ),
+      };
+    };
+    const asDescribed = lanesWith({});
+    const learnt = lanesWith({ pace: 'right' });
+
+    expect(learnt.loaded).toEqual(['interlagos gp']);
+    expect(learnt.lanes.size).toBeGreaterThan(0);
+    for (const [carIdx, lane] of learnt.lanes) {
+      expect(lane).toBeCloseTo(-(asDescribed.lanes.get(carIdx) ?? NaN));
+    }
+    expect([...learnt.lanes.values()].some((lane) => lane !== 0)).toBe(true);
+  });
+
+  it('saves a pole side the spotter settles', () => {
+    const saved: unknown[] = [];
+    const processor = new RadarProcessor({
+      load: () => ({}),
+      save: (...args) => saved.push(args),
+    });
+    processor.init(rollingSession as unknown as Session);
+    const base = rollingTelemetry as unknown as Record<
+      string,
+      { value: unknown[] }
+    >;
+    const player = base.PlayerCarIdx.value[0] as number;
+    const lines = base.CarIdxPaceLine.value as number[];
+    const pcts = [...(base.CarIdxLapDistPct.value as number[])];
+    // Car 35 runs in the other line, level with us.
+    const rival = 35;
+    expect(Math.abs(lines[rival] - lines[player])).toBe(1);
+    pcts[rival] = pcts[player];
+    for (let tick = 0; tick <= 60; tick += 1) {
+      processor.onFrame({
+        ...base,
+        SessionTime: { value: [1000 + tick / 60] },
+        CarIdxLapDistPct: { value: pcts },
+        CarLeftRight: { value: [CarLeftRight.CarLeft] },
+      } as unknown as Telemetry);
+    }
+
+    // The player is in line 1, the rival in line 0 on our left: pole left.
+    expect(saved).toEqual([['interlagos gp', 'pace', 'left']]);
+  });
+
   it('clears everything on disconnect and session change', () => {
     const processor = createProcessor();
     processor.onFrame(frame({ time: 1, pcts: [0.5, 0.5 + m(5)] }));

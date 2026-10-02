@@ -15,7 +15,10 @@ import type {
 import { ProcessorHost } from './ProcessorHost';
 import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
-import { RadarProcessor } from './RadarProcessor';
+import {
+  RadarProcessor,
+  type RadarPoleSidePersistence,
+} from './RadarProcessor';
 import { RadioProcessor } from './RadioProcessor';
 import { ReferenceLapProcessor } from './ReferenceLapProcessor';
 import { RelativeGapProcessor } from './RelativeGapProcessor';
@@ -28,6 +31,8 @@ import { TrackStateProcessor } from './TrackStateProcessor';
 
 interface ProcessorRegistryOptions {
   referenceLapPersistence: ReferenceLapPersistence;
+  /** Where the radar keeps pole sides it learns; nothing is kept without. */
+  radarPoleSidePersistence?: RadarPoleSidePersistence;
 }
 
 interface DefaultProcessorHostOptions extends ProcessorRegistryOptions {
@@ -58,6 +63,7 @@ const defineProcessor = <K extends AnyProcessorDefinition['channel']>(
 
 export const createProcessorDefinitions = ({
   referenceLapPersistence,
+  radarPoleSidePersistence,
 }: ProcessorRegistryOptions): readonly AnyProcessorDefinition[] => [
   defineProcessor({
     channel: 'blind-spot.snapshot',
@@ -114,7 +120,7 @@ export const createProcessorDefinitions = ({
   defineProcessor({
     channel: 'radar.snapshot',
     metricsPrefix: 'radar',
-    create: () => new RadarProcessor(),
+    create: () => new RadarProcessor(radarPoleSidePersistence),
   }),
   defineProcessor({
     channel: 'radio.snapshot',

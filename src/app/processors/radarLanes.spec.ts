@@ -329,6 +329,83 @@ describe('RadarLaneTracker', () => {
       expect(lanes.get(2)).toEqual({ lane: 1, source: 'memory' });
     });
 
+    it('learns the pole side just after the green, from the last formation', () => {
+      // Okayama: pace line 0 runs on the right, the grid text says nothing.
+      const tracker = new RadarLaneTracker();
+      const slots = formation([[9, -1]]);
+      // Pacing: the spotter stays silent, so the default (pole left) holds.
+      let { time, lanes } = settle(
+        tracker,
+        0,
+        [{ carIdx: 9, dist: 0.5 }],
+        CarLeftRight.Clear,
+        1,
+        slots
+      );
+      expect(lanes.get(9)).toEqual({ lane: -1, source: 'pace' });
+
+      // Green: still two abreast, and now the spotter calls car 9 right.
+      ({ time, lanes } = settle(
+        tracker,
+        time,
+        [{ carIdx: 9, dist: 1 }],
+        CarLeftRight.CarRight,
+        1
+      ));
+      expect(laneOf(lanes, 9)).toBe(1);
+      expect(tracker.takeLearntPoleSides()).toEqual([
+        { kind: 'pace', side: 'right' },
+      ]);
+      expect(tracker.takeLearntPoleSides()).toEqual([]);
+
+      // The next start, even after a camera switch, uses the learnt side.
+      tracker.reset();
+      ({ lanes } = settle(
+        tracker,
+        time,
+        [{ carIdx: 9, dist: 0.5 }],
+        CarLeftRight.Clear,
+        1,
+        slots
+      ));
+      expect(lanes.get(9)).toEqual({ lane: 1, source: 'pace' });
+    });
+
+    it('reports a confirmed pole side once', () => {
+      const tracker = new RadarLaneTracker();
+      settle(
+        tracker,
+        0,
+        [{ carIdx: 9, dist: 1 }],
+        CarLeftRight.CarLeft,
+        2,
+        formation([[9, -1]], 'grid')
+      );
+      expect(tracker.takeLearntPoleSides()).toEqual([
+        { kind: 'grid', side: 'left' },
+      ]);
+    });
+
+    it('stops learning long after the formation ended', () => {
+      const tracker = new RadarLaneTracker();
+      const { time } = settle(
+        tracker,
+        0,
+        [{ carIdx: 9, dist: 30 }],
+        CarLeftRight.Clear,
+        1,
+        formation([[9, -1]])
+      );
+      settle(
+        tracker,
+        time + 20,
+        [{ carIdx: 9, dist: 1 }],
+        CarLeftRight.CarRight,
+        1
+      );
+      expect(tracker.takeLearntPoleSides()).toEqual([]);
+    });
+
     it('lets the spotter place a car that is not in formation', () => {
       const tracker = new RadarLaneTracker();
       const { lanes } = settle(

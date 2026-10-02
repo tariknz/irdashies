@@ -58,13 +58,44 @@ const demandFor = (carLeftRight: number): SpotterDemand | null => {
 };
 
 /**
- * Frames the spotter must contradict the pole side before it flips: about
- * half a second, so one misread overlap cannot swap the whole formation.
+ * Frames the spotter must contradict the pole side before it flips, or back
+ * it up before it counts as learnt: about half a second, so one misread
+ * overlap cannot swap the whole formation.
  */
 const POLE_FLIP_FRAMES = 30;
+/**
+ * iRacing silences the spotter while pacing, so the side is mostly learnt
+ * just after the green, while the field is still two abreast in the order
+ * the formation last had.
+ */
+const POLE_LEARN_AFTER_S = 15;
+
+export type FormationKind = 'grid' | 'pace';
+export type PoleSide = 'left' | 'right';
+
+const signOf = (side: PoleSide) => (side === 'left' ? 1 : -1);
+const sideOf = (sign: number): PoleSide => (sign > 0 ? 'left' : 'right');
+
+interface PoleState {
+  /** +1 when the pole column is on the left, so higher columns are right. */
+  sign: number;
+  configured: number;
+  contradictions: number;
+  agreements: number;
+  /** Learnt (or confirmed) from the spotter since the last reset. */
+  settled: boolean;
+}
+
+const poleState = (sign: number): PoleState => ({
+  sign,
+  configured: sign,
+  contradictions: 0,
+  agreements: 0,
+  settled: false,
+});
 
 export interface LaneFormation {
-  kind: 'grid' | 'pace';
+  kind: FormationKind;
   /** Column or line minus ours, counted away from the pole side. */
   slots: ReadonlyMap<number, number>;
 }
@@ -90,8 +121,10 @@ const clampLane = (lane: number) =>
  *
  * In formation — on a standing grid or behind the pace car — the slots
  * the sim gives win over all of that: they are known, not guessed. Which
- * side the pole column is on comes from the grid description, and the
- * spotter overrules it if it keeps disagreeing.
+ * side the pole column is on depends on the track and the sim does not say,
+ * so it starts from the grid description or what was learnt there before,
+ * and the spotter overrules it if it keeps disagreeing. Grid and pace line
+ * are learnt apart: a track may put them on different sides.
  *
  * Everything else sits in our lane. Drawn lanes move at LANE_RATE so a
  * corrected guess slides rather than jumps.
@@ -101,21 +134,41 @@ export class RadarLaneTracker {
   private readonly rememberedAt = new Map<number, number>();
   private readonly drawnLane = new Map<number, number>();
   private previousTime = -1;
-  /** +1 when the pole column is on the left, so higher columns are right. */
-  private poleSign = 1;
-  private configuredPoleSign = 1;
-  private contradictions = 0;
+  private readonly poles: Record<FormationKind, PoleState> = {
+    grid: poleState(1),
+    pace: poleState(1),
+  };
+  /** Cars whose remembered lane came from the formation, not the spotter. */
+  private readonly fromFormation = new Set<number>();
+  private lastFormation: LaneFormation | null = null;
+  private lastFormationAt = -1;
+  private readonly learnt: { kind: FormationKind; side: PoleSide }[] = [];
 
-  /** Side of the pole column, from the session's grid description. */
-  setPoleSide(side: 'left' | 'right'): void {
-    this.configuredPoleSign = side === 'left' ? 1 : -1;
-    this.poleSign = this.configuredPoleSign;
-    this.contradictions = 0;
+  /**
+   * Side of the pole column to start from, for one formation kind or both.
+   */
+  setPoleSide(side: PoleSide, kind?: FormationKind): void {
+    for (const key of kind ? [kind] : (['grid', 'pace'] as const)) {
+      this.poles[key] = poleState(signOf(side));
+    }
+  }
+
+  /** Pole sides the spotter has settled since the last call. */
+  takeLearntPoleSides(): { kind: FormationKind; side: PoleSide }[] {
+    return this.learnt.splice(0);
   }
 
   reset(): void {
-    this.poleSign = this.configuredPoleSign;
-    this.contradictions = 0;
+    for (const pole of Object.values(this.poles)) {
+      pole.sign = pole.configured;
+      pole.contradictions = 0;
+      pole.agreements = 0;
+      pole.settled = false;
+    }
+    this.fromFormation.clear();
+    this.lastFormation = null;
+    this.lastFormationAt = -1;
+    this.learnt.length = 0;
     this.rememberedLane.clear();
     this.rememberedAt.clear();
     this.drawnLane.clear();
@@ -140,9 +193,16 @@ export class RadarLaneTracker {
     const targets = new Map<number, LaneOutput>();
     const demand = carLeftRight === null ? null : demandFor(carLeftRight);
     if (formation) {
-      if (demand) this.calibratePole(cars, demand, formation);
-      this.applyFormation(time, cars, formation, targets);
+      this.lastFormation = formation;
+      this.lastFormationAt = time;
     }
+    const recent =
+      formation ??
+      (this.lastFormation && time - this.lastFormationAt <= POLE_LEARN_AFTER_S
+        ? this.lastFormation
+        : null);
+    if (recent && demand) this.calibratePole(time, cars, demand, recent);
+    if (formation) this.applyFormation(time, cars, formation, targets);
     if (demand) this.applySpotter(time, cars, demand, targets);
 
     const remembered = (carIdx: number): number | undefined => {
@@ -182,6 +242,7 @@ export class RadarLaneTracker {
       if (time - at > MEMORY_HOLD_S) {
         this.rememberedAt.delete(carIdx);
         this.rememberedLane.delete(carIdx);
+        this.fromFormation.delete(carIdx);
       }
     }
     return output;
@@ -243,6 +304,7 @@ export class RadarLaneTracker {
         const lane = side * (index + 1);
         taken.add(car.carIdx);
         targets.set(car.carIdx, { lane, source: 'spotter' });
+        this.fromFormation.delete(car.carIdx);
         this.rememberedLane.set(car.carIdx, lane);
         this.rememberedAt.set(car.carIdx, time);
       });
@@ -261,9 +323,10 @@ export class RadarLaneTracker {
     for (const car of cars) {
       const slot = formation.slots.get(car.carIdx);
       if (slot === undefined) continue;
-      const lane = clampLane(slot * this.poleSign);
+      const lane = clampLane(slot * this.poles[formation.kind].sign);
       targets.set(car.carIdx, { lane, source: formation.kind });
       // Remembered too, so the formation fades out gently after the green.
+      this.fromFormation.add(car.carIdx);
       this.rememberedLane.set(car.carIdx, lane);
       this.rememberedAt.set(car.carIdx, time);
     }
@@ -274,6 +337,7 @@ export class RadarLaneTracker {
    * that pins which side the pole column is on.
    */
   private calibratePole(
+    time: number,
     cars: readonly LaneInput[],
     demand: SpotterDemand,
     formation: LaneFormation
@@ -285,14 +349,37 @@ export class RadarLaneTracker {
     if (slot === undefined || Math.abs(slot) !== 1) return;
     const side = demand.left === 1 ? -1 : 1;
     const impliedSign = side * slot;
-    if (impliedSign === this.poleSign) {
-      this.contradictions = 0;
+    const pole = this.poles[formation.kind];
+    if (impliedSign === pole.sign) {
+      pole.contradictions = 0;
+      pole.agreements += 1;
+      if (!pole.settled && pole.agreements >= POLE_FLIP_FRAMES) {
+        pole.settled = true;
+        this.learnt.push({ kind: formation.kind, side: sideOf(pole.sign) });
+      }
       return;
     }
-    this.contradictions += 1;
-    if (this.contradictions >= POLE_FLIP_FRAMES) {
-      this.poleSign = impliedSign;
-      this.contradictions = 0;
+    pole.agreements = 0;
+    pole.contradictions += 1;
+    if (pole.contradictions >= POLE_FLIP_FRAMES) {
+      pole.sign = impliedSign;
+      // A reset (camera switch, rewind) keeps what was learnt.
+      pole.configured = impliedSign;
+      pole.contradictions = 0;
+      pole.settled = true;
+      this.learnt.push({ kind: formation.kind, side: sideOf(pole.sign) });
+      this.mirrorFormationMemory(time);
+    }
+  }
+
+  /** Lanes the formation left behind were drawn on the wrong side. */
+  private mirrorFormationMemory(time: number): void {
+    for (const carIdx of this.fromFormation) {
+      const lane = this.rememberedLane.get(carIdx);
+      const at = this.rememberedAt.get(carIdx);
+      if (lane === undefined || at === undefined) continue;
+      if (time - at > MEMORY_HOLD_S) continue;
+      this.rememberedLane.set(carIdx, -lane);
     }
   }
 

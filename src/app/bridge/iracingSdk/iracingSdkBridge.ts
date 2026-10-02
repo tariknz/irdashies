@@ -151,6 +151,9 @@ export async function publishIRacingSDKEvents(
   const referenceLapStorage = channelBus
     ? await import('../../storage/referenceLaps')
     : undefined;
+  const radarPoleSideStorage = channelBus
+    ? await import('../../storage/radarPoleSides')
+    : undefined;
   const processorHost =
     channelBus && referenceLapStorage
       ? createDefaultProcessorHost({
@@ -162,6 +165,10 @@ export async function publishIRacingSDKEvents(
           referenceLapPersistence: {
             load: referenceLapStorage.getReferenceLap,
             save: referenceLapStorage.saveReferenceLap,
+          },
+          radarPoleSidePersistence: radarPoleSideStorage && {
+            load: radarPoleSideStorage.loadRadarPoleSides,
+            save: radarPoleSideStorage.saveRadarPoleSide,
           },
         })
       : undefined;
