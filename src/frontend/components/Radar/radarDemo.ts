@@ -6,7 +6,8 @@ import type { RadarConfig } from '@irdashies/types';
 /**
  * A scripted pack for demo mode and stories: one car dives up the left
  * while we brake, sits alongside and drops back, one drops back on the
- * right, and two run nose to tail ahead.
+ * right, two run nose to tail ahead, and a wreck sits by the road ahead
+ * that we come up on and pass.
  */
 const DEMO_SPEED_MS = 40;
 const DEMO_CYCLE_S = 12;
@@ -19,6 +20,11 @@ const diver = (t: number) => {
   return { dist: 2 - 7.5 * (t - 8), closing: -7.5 };
 };
 
+/** Metres ahead the wreck is when each cycle starts. */
+const WRECK_START_M = 320;
+/** The wreck joins the cars once it is this close. */
+const WRECK_ON_DISC_M = 45;
+
 const clamp01 = (value: number) => Math.min(Math.max(value, 0), 1);
 
 export const demoRadarFrame = (seconds: number): RadarFrame => {
@@ -29,6 +35,14 @@ export const demoRadarFrame = (seconds: number): RadarFrame => {
   // Moves out to the left once it is close, back in once it falls away.
   const diverLane =
     t < 8 ? -clamp01((dive.dist + 12) / 3) : -clamp01((dive.dist + 14) / 4);
+  const wreckDist = WRECK_START_M - DEMO_SPEED_MS * t;
+  const wreck = {
+    carIdx: 5,
+    dist: wreckDist,
+    closingSpeed: -DEMO_SPEED_MS,
+    lane: 2,
+    offTrack: false,
+  };
   return {
     playerPct: 0,
     // Moving, so the dashes of the line ahead run past as on track.
@@ -65,7 +79,14 @@ export const demoRadarFrame = (seconds: number): RadarFrame => {
         lane: 0,
         offTrack: false,
       },
+      ...(wreckDist <= WRECK_ON_DISC_M && wreckDist > -WRECK_ON_DISC_M
+        ? [wreck]
+        : []),
     ],
+    hazards:
+      wreckDist > -20
+        ? [{ carIdx: 5, dist: wreckDist, kind: 'crash', speed: 0 }]
+        : [],
   };
 };
 
@@ -74,6 +95,7 @@ export const DEMO_LABELS: Readonly<Record<number, string>> = {
   2: '24',
   3: '3',
   4: '88',
+  5: '42',
 };
 
 /** Made-up licences and classes so every colour mode has something to show. */
@@ -82,6 +104,7 @@ export const DEMO_RIVALS: Readonly<Record<number, RivalColorSource>> = {
   2: { license: 'B 2.45', rating: 1800, classColor: '#33ceff' },
   3: { license: 'C 3.80', rating: 1500, classColor: '#ffda59' },
   4: { license: 'D 1.90', rating: 1100, classColor: '#33ceff' },
+  5: { license: 'R 2.50', rating: 900, classColor: '#ffda59' },
 };
 
 /** How the demo pack looks under the current colour settings. */

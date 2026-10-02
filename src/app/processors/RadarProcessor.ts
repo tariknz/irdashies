@@ -25,6 +25,7 @@ import {
   type Formation,
   type GridOptions,
 } from './radarFormation';
+import { RadarHazardTracker } from './radarHazards';
 
 /**
  * Metres either side of the focus car that still reach the renderer. The
@@ -40,10 +41,18 @@ const CAUTION_FLAGS =
   GlobalFlags.Caution |
   GlobalFlags.CautionWaving;
 
+/** Full-course caution: everybody slows, so nobody ahead is a hazard. */
+const FULL_COURSE_CAUTION = GlobalFlags.Caution | GlobalFlags.CautionWaving;
+
 /** A lap-distance jump faster than this is a tow or reset, not driving. */
 const MAX_PLAUSIBLE_SPEED_MS = 150;
 /** Frames further apart than this restart the speed average. */
 const MAX_FRAME_GAP_S = 0.5;
+/**
+ * Seconds the speed average needs after a restart, during which every car
+ * reads slower than it is and none may be judged a hazard.
+ */
+const SPEED_SETTLE_S = 1;
 
 const valuesOf = (frame: Telemetry, key: string): readonly unknown[] =>
   (frame as unknown as Record<string, { value?: unknown[] } | undefined>)[key]
@@ -107,7 +116,10 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   private previousPcts: number[] = [];
   private speeds: number[] = [];
   private previousTime = -1;
+  /** Session time until which restarted speeds are still climbing back. */
+  private speedsSettleUntil = -1;
   private readonly lanes: RadarLaneTracker;
+  private readonly hazards = new RadarHazardTracker();
   private laneFocus = -1;
   private grid: GridOptions = {
     standingStart: false,
@@ -130,6 +142,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
 
   init(session: Session): void {
     this.trackLength = parseTrackLength(session?.WeekendInfo?.TrackLength);
+    this.hazards.setTrackLength(this.trackLength);
     const options = session?.WeekendInfo?.WeekendOptions;
     this.grid = {
       standingStart: options?.StandingStart === 1,
@@ -237,6 +250,23 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       isOnTrack && focus >= 0 && focus === scalarNumber(frame, 'PlayerCarIdx');
     const brake = scalarNumber(frame, 'Brake');
     const flags = scalarNumber(frame, 'SessionFlags', 0);
+    // Local yellows stay in: they are usually out for the very car we warn of.
+    const hazards = this.hazards.update({
+      time,
+      focus,
+      playerPct,
+      pcts,
+      speeds: this.speeds,
+      surfaces,
+      onPitRoad,
+      excluded: this.excluded,
+      settling: time < this.speedsSettleUntil,
+      quiet:
+        focus < 0 ||
+        playerPct < 0 ||
+        formation !== null ||
+        (flags & FULL_COURSE_CAUTION) !== 0,
+    });
 
     const next: Omit<RadarSnapshot, 'version'> = {
       focusCarIdx: focus >= 0 ? focus : null,
@@ -252,6 +282,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       focusBrake: drivingFocus && brake >= 0 ? brake : null,
       caution: (flags & CAUTION_FLAGS) !== 0,
       cars,
+      hazards,
     };
     if (sameSnapshot(this.latest, next)) return;
     this.latest = { ...next, version: this.latest.version + 1 };
@@ -262,7 +293,9 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     this.previousPcts = [];
     this.speeds = [];
     this.previousTime = -1;
+    this.speedsSettleUntil = -1;
     this.lanes.reset();
+    this.hazards.reset();
     this.laneFocus = -1;
     this.latest = emptySnapshot(this.latest.version + 1);
   }
@@ -322,6 +355,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       dt > MAX_FRAME_GAP_S ||
       this.trackLength <= 0;
     this.previousTime = time;
+    if (restart) this.speedsSettleUntil = time + SPEED_SETTLE_S;
 
     for (let carIdx = 0; carIdx < pcts.length; carIdx += 1) {
       const pct = numberAt(pcts, carIdx);
@@ -356,12 +390,13 @@ const emptySnapshot = (version: number): RadarSnapshot => ({
   focusBrake: null,
   caution: false,
   cars: [],
+  hazards: [],
   version,
 });
 
 /**
  * Any car in range moves every frame, so only an empty radar can stay
- * unchanged. The focus car's progress still counts there: with auto-hide off
+ * unchanged (and a hazard ahead closes in, so it counts as a car). The focus car's progress still counts there: with auto-hide off
  * the map keeps turning under an empty radar.
  */
 const sameSnapshot = (
@@ -370,6 +405,8 @@ const sameSnapshot = (
 ): boolean =>
   previous.cars.length === 0 &&
   next.cars.length === 0 &&
+  previous.hazards.length === 0 &&
+  next.hazards.length === 0 &&
   previous.focusCarIdx === next.focusCarIdx &&
   previous.playerPct === next.playerPct &&
   previous.trackLength === next.trackLength &&

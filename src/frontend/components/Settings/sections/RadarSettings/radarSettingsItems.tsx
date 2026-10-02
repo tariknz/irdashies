@@ -619,6 +619,62 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
     ],
   },
   {
+    id: 'hazards',
+    title: 'Hazards Ahead',
+    items: [
+      toggle(
+        0,
+        'showHazards',
+        'Hazard Warning',
+        'Marks a car ahead that crashed, crawls, went off or is coming back on, before it comes into view: a triangle and an arc on the rim in its direction along the track, with how far it is. Brings the radar up when auto-hide has it away. Off under a full-course caution and behind the pace car.'
+      ),
+      slider(
+        0,
+        'hazardRange',
+        'Warn From',
+        { units: 'm', min: 100, max: 1000, step: 50 },
+        'How far ahead a hazard is shown.',
+        (view) => !view.showHazards
+      ),
+      slider(
+        1,
+        'hazardBlinkDistance',
+        'Flash Closer Than',
+        { units: 'm', min: 0, max: 500, step: 25 },
+        'A crashed or slow car flashes from this close. A car coming back on flashes at any distance; one sitting off the track never does.',
+        (view) => !view.showHazards
+      ),
+      toggle(
+        1,
+        'hazardCrash',
+        'Crashed and Stopped Cars',
+        'A car that dropped from racing speed in a moment, or stands still. Red.',
+        (view) => !view.showHazards
+      ),
+      toggle(
+        1,
+        'hazardSlow',
+        'Slow Cars',
+        'A car under 60% of the speed the field does at that spot of the lap. The radar learns those speeds as cars go round, so this needs a lap or so. Amber.',
+        (view) => !view.showHazards
+      ),
+      toggle(
+        1,
+        'hazardOff',
+        'Off Track and Rejoining',
+        'A car off the track for more than half a second, then while it gets back up to speed. Yellow.',
+        (view) => !view.showHazards
+      ),
+      toggle(
+        1,
+        'hazardShowSpeed',
+        'Show Its Speed',
+        'Write the hazard car speed in km/h under the distance.',
+        (view) => !view.showHazards
+      ),
+    ],
+  },
+  {
     id: 'sizes',
     title: 'Car Sizes',
     items: [

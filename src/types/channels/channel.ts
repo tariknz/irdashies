@@ -147,6 +147,23 @@ export interface RadarCar {
   offTrack: boolean;
 }
 
+/**
+ * What makes a car ahead a hazard: a sudden stop or a stopped car, a car far
+ * slower than the field runs at that spot, a car off the track, or one
+ * coming back on.
+ */
+export type RadarHazardKind = 'crash' | 'slow' | 'off' | 'rejoin';
+
+/** A car ahead in trouble, possibly far beyond the radar's range. */
+export interface RadarHazard {
+  carIdx: number;
+  /** Metres along the track from the focus car; positive is ahead. */
+  dist: number;
+  kind: RadarHazardKind;
+  /** The hazard car's own speed along the track, m/s. */
+  speed: number;
+}
+
 export interface RadarSnapshot {
   focusCarIdx: number | null;
   /** Full-precision lap progress of the focus car, 0..1. */
@@ -178,6 +195,11 @@ export interface RadarSnapshot {
   caution: boolean;
   /** Only cars within the processor's range, nearest first. */
   cars: readonly RadarCar[];
+  /**
+   * Cars in trouble ahead, nearest first, out to `RADAR_HAZARD_MAX_M`. Empty
+   * under a full-course caution and in formation, when everyone is slow.
+   */
+  hazards: readonly RadarHazard[];
   version: number;
 }
 

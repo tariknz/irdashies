@@ -1,6 +1,7 @@
 import { RadarProjector, type ScreenPose } from './radarProjection';
 import type { TrackGeometry } from '@irdashies/domain/track';
 import { overlapOf, type DiveHint } from './radarHints';
+import type { RadarHazardKind } from '@irdashies/types';
 
 export interface RadarDrawCar {
   carIdx: number;
@@ -78,6 +79,15 @@ export interface RadarStyle {
   overlapShowPercent: boolean;
   diveGhost: boolean;
   diveShowClosing: boolean;
+  showHazards: boolean;
+  /** Metres ahead a hazard is shown from. */
+  hazardRange: number;
+  /** Metres under which a hazard flashes. */
+  hazardBlinkDistance: number;
+  hazardCrash: boolean;
+  hazardSlow: boolean;
+  hazardOff: boolean;
+  hazardShowSpeed: boolean;
   /** Car numbers are left out on cars drawn smaller than this, in px. */
   minLabelPx: number;
   debugLabels: boolean;
@@ -90,6 +100,16 @@ export interface RadarDrawFollow {
   carIdx: number | null;
   dist: number;
   label: string;
+}
+
+/** A car in trouble ahead, already filtered by the hazard settings. */
+export interface RadarDrawHazard {
+  carIdx: number;
+  /** Metres along the track from the focus car, positive ahead. */
+  dist: number;
+  kind: RadarHazardKind;
+  /** Its own speed in m/s. */
+  speed: number;
 }
 
 export interface RadarScene {
@@ -111,6 +131,8 @@ export interface RadarScene {
   dives?: ReadonlyMap<number, DiveHint>;
   /** Metres between lane centres, to place a diving car's ghost. */
   laneWidth?: number;
+  /** Cars in trouble ahead, nearest first. */
+  hazards?: readonly RadarDrawHazard[];
 }
 
 const FOLLOW_COLOR = '#22c55e';
@@ -600,6 +622,218 @@ const drawWarningArc = (
   ctx.lineCap = 'butt';
 };
 
+const HAZARD_YELLOW = '#facc15';
+const HAZARD_LABELS: Record<RadarHazardKind, string> = {
+  crash: 'CRASH',
+  slow: 'SLOW',
+  off: 'OFF',
+  rejoin: 'REJOIN',
+};
+/** Flashes per second of a near hazard. */
+const HAZARD_FLASH_HZ = 2;
+/** A crashed car is drawn turned across the road, as wrecks usually are. */
+const CRASH_TILT = 1.1;
+/** Furthest from straight ahead a rim marker may sit, so it never points back. */
+const HAZARD_MAX_BEARING = (100 * Math.PI) / 180;
+
+const hazardColor = (kind: RadarHazardKind, style: RadarStyle): string =>
+  kind === 'crash'
+    ? style.alongsideColor
+    : kind === 'slow'
+      ? style.closeColor
+      : HAZARD_YELLOW;
+
+/** Whether this hazard is wanted at all, with the settings given. */
+export const hazardWanted = (
+  hazard: { dist: number; kind: RadarHazardKind },
+  style: Pick<
+    RadarStyle,
+    'showHazards' | 'hazardRange' | 'hazardCrash' | 'hazardSlow' | 'hazardOff'
+  >
+): boolean => {
+  if (!style.showHazards || hazard.dist > style.hazardRange) return false;
+  if (hazard.kind === 'crash') return style.hazardCrash;
+  if (hazard.kind === 'slow') return style.hazardSlow;
+  return style.hazardOff;
+};
+
+/**
+ * Off the track is steady: the car is out of the way. Everything else
+ * flashes once it is near, and a car coming back on flashes at any distance.
+ */
+const hazardFlashes = (hazard: RadarDrawHazard, style: RadarStyle) =>
+  hazard.kind === 'rejoin' ||
+  (hazard.kind !== 'off' && hazard.dist < style.hazardBlinkDistance);
+
+/** Warning triangle with an exclamation mark, centred on (x, y). */
+const drawHazardTriangle = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string
+) => {
+  const height = size * 0.9;
+  ctx.beginPath();
+  ctx.moveTo(x, y - height * 0.6);
+  ctx.lineTo(x + size / 2, y + height * 0.4);
+  ctx.lineTo(x - size / 2, y + height * 0.4);
+  ctx.closePath();
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(1, size * 0.08);
+  ctx.strokeStyle = '#0f172a';
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.stroke();
+  ctx.font = `bold ${Math.round(size * 0.6)}px Lato, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#0f172a';
+  ctx.fillText('!', x, y + height * 0.1);
+};
+
+/**
+ * A hazard beyond the disc: an arc and a triangle on the rim in its
+ * direction along the track map, with what it is and how far. Both grow as
+ * it nears; `others` more hazards beyond the rim are counted beside it.
+ */
+const drawHazardMarker = (
+  ctx: CanvasRenderingContext2D,
+  centre: number,
+  radius: number,
+  hazard: RadarDrawHazard,
+  others: number,
+  style: RadarStyle,
+  flash: number
+) => {
+  projector.project(hazard.dist, 0, pose);
+  let bearing = Math.atan2(pose.y - centre, pose.x - centre);
+  // Measured from straight up, then kept in front of us.
+  let fromUp = bearing + Math.PI / 2;
+  if (fromUp > Math.PI) fromUp -= Math.PI * 2;
+  fromUp = Math.min(Math.max(fromUp, -HAZARD_MAX_BEARING), HAZARD_MAX_BEARING);
+  bearing = fromUp - Math.PI / 2;
+
+  const span = Math.max(style.hazardRange - style.range, 1);
+  const near = Math.min(
+    Math.max((style.hazardRange - hazard.dist) / span, 0),
+    1
+  );
+  const color = hazardColor(hazard.kind, style);
+  ctx.globalAlpha = hazardFlashes(hazard, style) ? flash : 1;
+
+  const minArc = style.arcMinDeg;
+  const maxArc = Math.max(style.arcMaxDeg, minArc) * 1.3;
+  const half = ((minArc + (maxArc - minArc) * near) * Math.PI) / 180;
+  const thickness = Math.max(4, radius * 0.07);
+  ctx.beginPath();
+  ctx.arc(
+    centre,
+    centre,
+    radius - thickness / 2,
+    bearing - half,
+    bearing + half
+  );
+  ctx.lineWidth = thickness;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  const size = radius * (0.12 + 0.06 * near);
+  const cos = Math.cos(bearing);
+  const sin = Math.sin(bearing);
+  const triangleAt = radius - thickness - size * 0.75;
+  drawHazardTriangle(
+    ctx,
+    centre + cos * triangleAt,
+    centre + sin * triangleAt,
+    size,
+    color
+  );
+  ctx.globalAlpha = 1;
+
+  const fontSize = Math.max(MIN_TEXT_PX, Math.round(radius / 11));
+  if (others > 0) {
+    drawHintText(
+      ctx,
+      `+${others}`,
+      centre + cos * triangleAt + size * 0.6,
+      centre + sin * triangleAt - size * 0.4,
+      '#e2e8f0',
+      Math.max(MIN_TEXT_PX, fontSize - 2),
+      'left'
+    );
+  }
+  const labelAt = triangleAt - size * 0.6 - fontSize;
+  const labelX = centre + cos * labelAt;
+  const labelY = centre + sin * labelAt;
+  drawHintText(
+    ctx,
+    `${HAZARD_LABELS[hazard.kind]} ${Math.round(hazard.dist)}m`,
+    labelX,
+    labelY,
+    color,
+    fontSize,
+    'center'
+  );
+  if (style.hazardShowSpeed) {
+    drawHintText(
+      ctx,
+      `${Math.round(hazard.speed * 3.6)} km/h`,
+      labelX,
+      labelY + fontSize * 1.15,
+      '#e2e8f0',
+      Math.max(MIN_TEXT_PX, fontSize - 2),
+      'center'
+    );
+  }
+};
+
+/** Outline, triangle and speed on a hazard car drawn on the disc. */
+const drawHazardOnCar = (
+  ctx: CanvasRenderingContext2D,
+  hazard: RadarDrawHazard,
+  carLength: number,
+  carWidth: number,
+  style: RadarStyle,
+  flash: number,
+  fontSize: number,
+  centre: number
+) => {
+  const color = hazardColor(hazard.kind, style);
+  ctx.globalAlpha = hazardFlashes(hazard, style) ? flash : 1;
+  drawWarningOutline(ctx, carLength, carWidth, color);
+  // On the car itself: beside it, it would leave the disc near the rim.
+  drawHazardTriangle(ctx, pose.x, pose.y, Math.max(12, fontSize * 1.8), color);
+  ctx.globalAlpha = 1;
+  if (style.hazardShowSpeed) {
+    // On the side away from our line, where the other cars are not.
+    const outward = pose.x >= centre ? 1 : -1;
+    const reach = Math.max(carLength, carWidth) / 2 + 4;
+    drawHintText(
+      ctx,
+      `${Math.round(hazard.speed * 3.6)} km/h`,
+      pose.x + outward * reach,
+      pose.y,
+      color,
+      fontSize,
+      outward > 0 ? 'left' : 'right'
+    );
+  }
+};
+
+const hazardOf = (
+  hazards: readonly RadarDrawHazard[] | undefined,
+  carIdx: number
+): RadarDrawHazard | undefined => {
+  if (!hazards) return undefined;
+  for (const hazard of hazards) {
+    if (hazard.carIdx === carIdx) return hazard;
+  }
+  return undefined;
+};
+
 export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
   const { size, style } = scene;
   const centre = size / 2;
@@ -644,6 +878,10 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
         0.45 * (0.5 + 0.5 * Math.sin(scene.time * style.pulseHz * 2 * Math.PI))
       : 1;
 
+  const flash =
+    0.35 +
+    0.65 * (0.5 + 0.5 * Math.sin(scene.time * HAZARD_FLASH_HZ * 2 * Math.PI));
+
   const hintFont = Math.max(MIN_TEXT_PX + 1, Math.round(radius / 12));
   ourStrips.left = 0;
   ourStrips.right = 0;
@@ -654,6 +892,8 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
     const carLength = car.length * pixelsPerMetre;
     const carWidth = car.width * pixelsPerMetre;
     projector.project(car.dist, car.lateral, pose);
+    const hazard = hazardOf(scene.hazards, car.carIdx);
+    if (hazard?.kind === 'crash') pose.angle += CRASH_TILT;
     ctx.globalAlpha = car.offTrack ? 0.45 : 1;
     drawCarBody(ctx, pose.x, pose.y, pose.angle, carLength, carWidth, car.fill);
     if (showLabels) {
@@ -661,6 +901,25 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
       ctx.fillText(car.label, pose.x, pose.y);
     }
     ctx.globalAlpha = 1;
+    if (hazard) {
+      drawHazardOnCar(
+        ctx,
+        hazard,
+        carLength,
+        carWidth,
+        style,
+        flash,
+        hintFont,
+        centre
+      );
+      // The triangle changed the font; put the car-number one back.
+      if (showLabels) {
+        ctx.font = `bold ${labelSize}px Lato, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+      }
+      if (hazard.kind === 'crash') pose.angle -= CRASH_TILT;
+    }
     if (style.debugLabels) {
       queueDebugLabel(
         `#${car.carIdx} L${car.lane > 0 ? '+' : ''}${car.lane}`,
@@ -902,6 +1161,28 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
   if (follow && followBeyondRange) {
     projector.project(follow.dist, 0, pose);
     drawFollowPointer(ctx, centre, radius, follow);
+  }
+  const hazards = scene.hazards;
+  if (hazards && hazards.length > 0) {
+    // Nearest first, so the first one past the rim is the one to show.
+    let beyond = -1;
+    let others = 0;
+    for (let index = 0; index < hazards.length; index += 1) {
+      if (hazards[index].dist <= style.range) continue;
+      if (beyond < 0) beyond = index;
+      else others += 1;
+    }
+    if (beyond >= 0) {
+      drawHazardMarker(
+        ctx,
+        centre,
+        radius,
+        hazards[beyond],
+        others,
+        style,
+        flash
+      );
+    }
   }
   if (style.debugLabels || style.showFrameTime) {
     drawDebug(ctx, size, style, scene.frameMs);

@@ -25,7 +25,7 @@ import {
 import { demoAppearance } from './radarDemo';
 import { useDemoRadarFrame } from './hooks/useDemoRadarFrame';
 import { paler, rivalFill, textColorFor } from './radarColors';
-import type { RadarStyle } from './radarDraw';
+import { hazardWanted, type RadarStyle } from './radarDraw';
 import { radarStyleFrom } from './radarStyle';
 import { isOvalTrack } from '@irdashies/domain/radar/radarProfile';
 
@@ -42,6 +42,7 @@ const EMPTY_SNAPSHOT: RadarSnapshot = {
   focusBrake: null,
   caution: false,
   cars: [],
+  hazards: [],
   version: 0,
 };
 
@@ -152,6 +153,8 @@ export const Radar = () => {
           snapshot.caution ||
           snapshot.formation !== null ||
           snapshot.focusOnPitRoad,
+        // From pit road the cars on track are none of our business.
+        hazards: snapshot.focusOnPitRoad ? [] : snapshot.hazards,
       },
     [demoFrame, snapshot, cars]
   );
@@ -182,7 +185,11 @@ export const Radar = () => {
     [settings, focusSize.length, focusSize.width]
   );
 
-  const nearest = nearestDistance(frame.cars);
+  // A hazard in range brings the radar up like a car close by would.
+  const hazardShown = (frame.hazards ?? []).some((hazard) =>
+    hazardWanted(hazard, style)
+  );
+  const nearest = hazardShown ? 0 : nearestDistance(frame.cars);
   const [autoVisible, setAutoVisible] = useState(false);
   useEffect(() => {
     setAutoVisible((wasVisible) =>

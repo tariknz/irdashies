@@ -2,11 +2,14 @@ import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { TrackGeometry } from '@irdashies/domain/track';
 import {
   drawRadar,
+  hazardWanted,
   type RadarDrawCar,
+  type RadarDrawHazard,
   type RadarDrawFollow,
   type RadarStyle,
 } from '../radarDraw';
 import { cornerInside, DiveTracker, type DiveHint } from '../radarHints';
+import type { RadarHazard } from '@irdashies/types';
 
 export interface RadarFrameCar {
   carIdx: number;
@@ -29,6 +32,8 @@ export interface RadarFrame {
   focusBrake?: number | null;
   /** No dive warnings: caution, formation, pit road. */
   quiet?: boolean;
+  /** Cars in trouble ahead, nearest first, possibly far past the range. */
+  hazards?: readonly RadarHazard[];
 }
 
 export interface RadarDiveOptions {
@@ -146,6 +151,9 @@ export const RadarDisplay = memo(
       const follow: RadarDrawFollow = { carIdx: null, dist: 0, label: '' };
       const dives = new DiveTracker();
       const diveCars: RadarDrawCar[] = [];
+      const hazards: RadarDrawHazard[] = [];
+      // Reused between paints, like the cars, to spare the collector.
+      const cachedHazards: RadarDrawHazard[] = [];
       let handle = 0;
       // Our own odometer: lap distance jumps at the line, this never does.
       let travelled = 0;
@@ -200,6 +208,19 @@ export const RadarDisplay = memo(
               : '';
           followTarget = follow;
         }
+        hazards.length = 0;
+        for (const hazard of snap.hazards ?? []) {
+          const dist =
+            hazard.dist + (hazard.speed - snap.playerSpeed) * elapsed;
+          if (!hazardWanted({ dist, kind: hazard.kind }, look)) continue;
+          const target = hazards.length;
+          const drawn = (cachedHazards[target] ??= {} as RadarDrawHazard);
+          drawn.carIdx = hazard.carIdx;
+          drawn.dist = dist;
+          drawn.kind = hazard.kind;
+          drawn.speed = hazard.speed;
+          hazards.push(drawn);
+        }
         const playerPct =
           snap.trackLength > 0
             ? snap.playerPct + (snap.playerSpeed * elapsed) / snap.trackLength
@@ -245,6 +266,7 @@ export const RadarDisplay = memo(
           frameMs,
           dives: diveHints,
           laneWidth,
+          hazards,
         });
         frameMs = performance.now() - started;
         if (active) handle = requestAnimationFrame(paint);

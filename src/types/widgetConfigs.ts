@@ -579,6 +579,18 @@ export interface RadarConfig {
   diveGhost: boolean;
   /** Write the closing speed (and time to our side) next to a fast car. */
   diveShowClosing: boolean;
+  /** Mark cars ahead that crashed, crawl, left the track or are rejoining. */
+  showHazards: boolean;
+  /** Metres ahead a hazard is shown from. */
+  hazardRange: number;
+  /** Metres under which the hazard marker flashes. */
+  hazardBlinkDistance: number;
+  hazardCrash: boolean;
+  hazardSlow: boolean;
+  /** Cars off the track, and coming back on. */
+  hazardOff: boolean;
+  /** Write the hazard car's speed under its distance. */
+  hazardShowSpeed: boolean;
   /** Switch to `ovalProfile` on oval tracks. */
   autoProfile: boolean;
   /** Look and distances for ovals; null until the oval profile is edited. */
@@ -625,6 +637,9 @@ export const RADAR_PROFILE_KEYS = [
   'diveWarnSeconds',
   'diveGhost',
   'diveShowClosing',
+  'showHazards',
+  'hazardRange',
+  'hazardBlinkDistance',
 ] as const satisfies readonly (keyof RadarConfig)[];
 
 export type RadarProfileKey = (typeof RADAR_PROFILE_KEYS)[number];
