@@ -15,6 +15,7 @@ import type {
 import { ProcessorHost } from './ProcessorHost';
 import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
+import { RadarProcessor } from './RadarProcessor';
 import { RadioProcessor } from './RadioProcessor';
 import { ReferenceLapProcessor } from './ReferenceLapProcessor';
 import { RelativeGapProcessor } from './RelativeGapProcessor';
@@ -109,6 +110,11 @@ export const createProcessorDefinitions = ({
     channel: 'standings.snapshot',
     metricsPrefix: 'standings',
     create: () => new StandingsProcessor(),
+  }),
+  defineProcessor({
+    channel: 'radar.snapshot',
+    metricsPrefix: 'radar',
+    create: () => new RadarProcessor(),
   }),
   defineProcessor({
     channel: 'radio.snapshot',

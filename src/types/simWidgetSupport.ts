@@ -40,7 +40,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
   message: 'This widget is not compatible with the running sim',
   disabledWidgets: {
     iracing: [],
-    lmu: ['blindspotmonitor'],
+    lmu: ['blindspotmonitor', 'radar'],
   },
 };
 

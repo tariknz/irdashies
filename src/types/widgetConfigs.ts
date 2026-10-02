@@ -488,6 +488,45 @@ export interface BlindSpotMonitorConfig {
   thresholdColor2?: number;
 }
 
+export interface RadarConfig {
+  /** Metres from the centre to the edge of the disc. */
+  range: number;
+  /** Keep the radar off screen while no rival is near. */
+  autoHide: boolean;
+  /** Metres; a rival this close brings the radar on screen. */
+  showDistance: number;
+  /**
+   * Metres; the radar leaves once every rival is further than this. Kept
+   * above `showDistance` so a car sitting on the threshold cannot make it
+   * blink.
+   */
+  hideDistance: number;
+  /** Seconds the fade in and out takes. */
+  fadeSeconds: number;
+  /** Car body size in metres; the SDK reports none. */
+  carLength: number;
+  carWidth: number;
+  showCarNumbers: boolean;
+  /** Draw the road under the cars. */
+  showTrackMap: boolean;
+  /** Drawn road width in metres; the drawings carry no width. */
+  trackWidth: number;
+  /** Road opacity, 0-100. */
+  mapOpacity: number;
+  showRings: boolean;
+  /** Metres between distance rings. */
+  ringSpacing: number;
+  /** Hide cars on pit road while we are on track, and the reverse. */
+  hideInPit: boolean;
+  /** Rival fill: their class colour, or one colour for everyone. */
+  rivalColorMode: 'class' | 'custom';
+  rivalColor: number;
+  playerColor: number;
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 export interface RejoinIndicatorConfig {
   showAtSpeed: number;
   careGap: number;
@@ -955,6 +994,7 @@ export interface WidgetConfigMap {
   tachometer: TachometerConfig;
   fuel: FuelConfig;
   blindspotmonitor: BlindSpotMonitorConfig;
+  radar: RadarConfig;
   garagecover: GarageCoverConfig;
   rejoin: RejoinIndicatorConfig;
   flag: FlagConfig;
@@ -1058,6 +1098,7 @@ export type TachometerWidgetSettings = BaseWidgetSettings<TachometerConfig>;
 export type FuelWidgetSettings = BaseWidgetSettings<FuelConfig>;
 export type BlindSpotMonitorWidgetSettings =
   BaseWidgetSettings<BlindSpotMonitorConfig>;
+export type RadarWidgetSettings = BaseWidgetSettings<RadarConfig>;
 export type RejoinIndicatorWidgetSettings =
   BaseWidgetSettings<RejoinIndicatorConfig>;
 export type FlagWidgetSettings = BaseWidgetSettings<FlagConfig> & {

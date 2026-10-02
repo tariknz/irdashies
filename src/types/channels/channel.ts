@@ -18,6 +18,7 @@ export interface ChannelPayloads {
   'lap-log.snapshot': LapLogSnapshot;
   'lap-history.snapshot': LapHistorySnapshot;
   'reference-laps.snapshot': ReferenceLapsSnapshot;
+  'radar.snapshot': RadarSnapshot;
   'radio.snapshot': RadioSnapshot;
   'relative-gaps.snapshot': RelativeGapsSnapshot;
   'sector-timing.snapshot': SectorTimingSnapshot;
@@ -119,6 +120,38 @@ export interface BlindSpotSnapshot {
   carLeftRight: number;
   carIdxLapDistPct: readonly number[];
   isOnTrack: boolean;
+  version: number;
+}
+
+/** One rival close enough to the focus car to appear on the radar. */
+export interface RadarCar {
+  carIdx: number;
+  /** Metres along the track from the focus car; positive is ahead. */
+  dist: number;
+  /** Rate of change of `dist` in m/s; positive means pulling away ahead. */
+  closingSpeed: number;
+  /**
+   * Lateral lane relative to the focus car, in car widths; 0 is our lane,
+   * negative is left. iRacing publishes no lateral position, so this is 0
+   * until a source such as the spotter or the pace line says otherwise.
+   */
+  lane: number;
+  onPitRoad: boolean;
+  offTrack: boolean;
+}
+
+export interface RadarSnapshot {
+  focusCarIdx: number | null;
+  /** Full-precision lap progress of the focus car, 0..1. */
+  playerPct: number;
+  /** Focus car speed along the track in m/s. */
+  playerSpeed: number;
+  /** Metres, from the session's WeekendInfo. 0 until a session arrives. */
+  trackLength: number;
+  focusOnPitRoad: boolean;
+  isOnTrack: boolean;
+  /** Only cars within the processor's range, nearest first. */
+  cars: readonly RadarCar[];
   version: number;
 }
 
@@ -497,6 +530,11 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 5,
     maxRateHz: 5,
+  },
+  'radar.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 25,
+    maxRateHz: 25,
   },
   'radio.snapshot': {
     kind: 'snapshot',
