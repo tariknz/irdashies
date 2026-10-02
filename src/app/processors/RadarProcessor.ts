@@ -147,7 +147,11 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         paceLines: valuesOf(frame, 'CarIdxPaceLine') as readonly number[],
         paceRows: valuesOf(frame, 'CarIdxPaceRow') as readonly number[],
         sessionState: scalarNumber(frame, 'SessionState'),
-        focusSpeed: playerSpeed,
+        speeds: this.speeds,
+        lapsCompleted: valuesOf(
+          frame,
+          'CarIdxLapCompleted'
+        ) as readonly number[],
         paceCarIdx: this.paceCarIdx,
         grid: this.grid,
       });

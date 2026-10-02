@@ -11,7 +11,11 @@ export const PaceMode = {
 
 export interface GridOptions {
   standingStart: boolean;
-  /** Cars per grid row: 1 for single file, 2 for "2x2". */
+  /**
+   * Cars per grid row: 1 for single file, 2 for "2x2". A standing grid is
+   * staggered two wide even when the session says single file, so fewer
+   * than two only matters for the pace line.
+   */
   columns: number;
   /** Side of the pole column as the sim describes it. */
   poleSide: 'left' | 'right';
@@ -48,8 +52,10 @@ export interface FormationInput {
   paceLines: readonly number[];
   paceRows: readonly number[];
   sessionState: number;
-  /** Focus car speed in m/s. */
-  focusSpeed: number;
+  /** Per car speed along the track in m/s. */
+  speeds: readonly number[];
+  /** CarIdxLapCompleted: -1 until a car first crosses the line. */
+  lapsCompleted: readonly number[];
   paceCarIdx: number;
   grid: GridOptions;
 }
@@ -76,15 +82,25 @@ const GRIDDED_STATES: ReadonlySet<number> = new Set([
 
 const at = (values: readonly number[], index: number) => values[index] ?? -1;
 
+const median = (values: readonly number[]): number => {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
+};
+
 /**
  * Works out where each car sits in a structured formation, when there is
  * one: behind the pace car (rolling start, caution, restart), or on a
  * standing-start grid.
  *
  * Pacing is read straight from the sim's pace line and row. A standing grid
- * has no pace data until the start, so columns come from the order the cars
- * actually sit in: grid slots alternate sides, and the sim closes up gaps
- * left by cars starting from pit road, so qualifying order would be wrong.
+ * has no pace data until the start, so columns come from where the cars
+ * actually sit: grid boxes are staggered at an even spacing and alternate
+ * sides, so a car's box number down the grid gives its column. Counting
+ * boxes rather than cars keeps an empty box from swapping every column
+ * behind it, and qualifying order would miss cars moved to pit lane.
  */
 export const computeFormation = (input: FormationInput): Formation | null =>
   pacingFormation(input) ?? gridFormation(input);
@@ -118,12 +134,27 @@ const pacingFormation = (input: FormationInput): Formation | null => {
   return { kind: 'pace', slots, followCarIdx };
 };
 
+/**
+ * The sim already reports Racing while the lights are still red, so the grid
+ * also holds until the focus car first crosses the line.
+ */
+const onGrid = (input: FormationInput): boolean => {
+  if (GRIDDED_STATES.has(input.sessionState)) return true;
+  return (
+    input.sessionState === SessionState.Racing &&
+    (input.lapsCompleted[input.focus] ?? 0) < 0
+  );
+};
+
+const isStill = (input: FormationInput, carIdx: number) =>
+  Math.abs(input.speeds[carIdx] ?? 0) <= GRID_MAX_SPEED_MS;
+
 const gridFormation = (input: FormationInput): Formation | null => {
   const { focus, grid } = input;
   if (
     !grid.standingStart ||
-    !GRIDDED_STATES.has(input.sessionState) ||
-    input.focusSpeed > GRID_MAX_SPEED_MS ||
+    !onGrid(input) ||
+    !isStill(input, focus) ||
     input.onPitRoad[focus] === true
   ) {
     return null;
@@ -136,7 +167,8 @@ const gridFormation = (input: FormationInput): Formation | null => {
       at(input.pcts, carIdx) < 0 ||
       input.onPitRoad[carIdx] === true ||
       at(input.surfaces, carIdx) !== TrackLocation.OnTrack ||
-      !Number.isFinite(input.dists[carIdx])
+      !Number.isFinite(input.dists[carIdx]) ||
+      !isStill(input, carIdx)
     ) {
       continue;
     }
@@ -146,7 +178,18 @@ const gridFormation = (input: FormationInput): Formation | null => {
 
   // Front of the grid first.
   gridded.sort((a, b) => input.dists[b] - input.dists[a] || a - b);
-  const columnOf = (rank: number) => rank % Math.max(1, grid.columns);
+  const gaps = gridded
+    .slice(1)
+    .map((carIdx, index) => input.dists[gridded[index]] - input.dists[carIdx]);
+  const spacing = gaps.length > 0 ? median(gaps) : 0;
+  const boxes: number[] = [0];
+  gaps.forEach((gap, index) => {
+    const step = spacing > 0 ? Math.max(1, Math.round(gap / spacing)) : 1;
+    boxes.push(boxes[index] + step);
+  });
+
+  const columns = Math.max(2, grid.columns);
+  const columnOf = (rank: number) => boxes[rank] % columns;
   const myColumn = columnOf(gridded.indexOf(focus));
   const slots = new Map<number, number>();
   gridded.forEach((carIdx, rank) => {

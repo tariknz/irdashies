@@ -57,7 +57,8 @@ const fromCapture = (
     paceLines: values<number>('CarIdxPaceLine'),
     paceRows: values<number>('CarIdxPaceRow'),
     sessionState: values<number>('SessionState')[0],
-    focusSpeed: 0,
+    speeds: [],
+    lapsCompleted: values<number>('CarIdxLapCompleted'),
     paceCarIdx: info.DriverInfo.PaceCarIdx,
     grid: {
       standingStart: options.StandingStart === 1,
@@ -155,23 +156,75 @@ describe('computeFormation: standing start (recorded grid)', () => {
     expect(formation?.followCarIdx).toBeNull();
   });
 
-  it('closes up the grid around a car starting from pit road', () => {
+  it('counts grid boxes, not cars, past an empty box', () => {
     const input = fromCapture(pitStartTelemetry, pitStartSession);
     const formation = computeFormation(input);
 
-    // Car 0 is on pit road and car 1 has no slot; player 8 sits third.
+    // Car 0 is on pit road; player 8 sits third, so in the pole column.
     expect(input.focus).toBe(8);
     expect(formation?.slots.has(0)).toBe(false);
     expect(formation?.slots.get(2)).toBe(0);
     expect(formation?.slots.get(6)).toBe(1);
+    // The box 48 m back is empty, so car 12 behind it stays opposite us
+    // even though it is the next car after 9, also opposite.
+    expect(formation?.slots.get(9)).toBe(1);
+    expect(formation?.slots.get(12)).toBe(1);
+    expect(formation?.slots.get(14)).toBe(0);
   });
 
-  it('stops once the field moves or the race is on', () => {
+  it('holds while the lights are on, though the sim says Racing', () => {
+    const input = fromCapture(standingTelemetry, standingSession, {
+      sessionState: SessionState.Racing,
+    });
+    expect(computeFormation(input)?.kind).toBe('grid');
+  });
+
+  it('stops once the field moves or the car has crossed the line', () => {
     const input = fromCapture(standingTelemetry, standingSession);
-    expect(computeFormation({ ...input, focusSpeed: 10 })).toBeNull();
+    const speeds: number[] = [];
+    speeds[input.focus] = 10;
+    expect(computeFormation({ ...input, speeds })).toBeNull();
+    const lapsCompleted = input.lapsCompleted.map(() => 0);
     expect(
-      computeFormation({ ...input, sessionState: SessionState.Racing })
+      computeFormation({
+        ...input,
+        lapsCompleted,
+        sessionState: SessionState.Racing,
+      })
     ).toBeNull();
+  });
+
+  it('leaves cars already moving out of the grid', () => {
+    const input = fromCapture(standingTelemetry, standingSession);
+    const speeds: number[] = [];
+    speeds[6] = 20;
+    expect(computeFormation({ ...input, speeds })?.slots.has(6)).toBe(false);
+  });
+
+  it('runs two columns on a standing grid described as single file', () => {
+    // Sebring, Porsche Cup: StartingGrid "single file", boxes 8 m apart.
+    const dists = [0, 9, 17, -7.5, -15.2];
+    const formation = computeFormation({
+      focus: 0,
+      dists,
+      pcts: dists.map(() => 0.98),
+      surfaces: dists.map(() => TrackLocation.OnTrack),
+      onPitRoad: dists.map(() => false),
+      excluded: new Set(),
+      paceMode: PaceMode.DoubleFileStart,
+      paceLines: dists.map(() => -1),
+      paceRows: dists.map(() => -1),
+      sessionState: SessionState.Racing,
+      speeds: [],
+      lapsCompleted: dists.map(() => -1),
+      paceCarIdx: -1,
+      grid: { standingStart: true, ...parseStartingGrid('single file') },
+    });
+    expect(formation?.kind).toBe('grid');
+    expect(formation?.slots.get(1)).toBe(1);
+    expect(formation?.slots.get(2)).toBe(0);
+    expect(formation?.slots.get(3)).toBe(1);
+    expect(formation?.slots.get(4)).toBe(0);
   });
 
   it('needs the focus car on the grid', () => {
