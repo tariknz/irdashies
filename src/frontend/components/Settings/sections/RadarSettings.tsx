@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
-import { useDashboard } from '@irdashies/context';
+import { useDashboard, useSessionDrivers } from '@irdashies/context';
+import { typicalCarSize, type CarSize } from '@irdashies/domain/radar/carSizes';
 import {
   RadarWidgetSettings,
   SettingsTabType,
@@ -56,6 +57,116 @@ const ColorRow = ({
     </div>
   </div>
 );
+
+interface SessionClass {
+  name: string;
+  color: number;
+  carName: string;
+}
+
+/**
+ * One row per class in the current session, so sizes can be tuned for the
+ * field actually on track. Outside a session there is nothing to list.
+ */
+const ClassSizeRows = ({
+  classSizes,
+  fallback,
+  onChange,
+}: {
+  classSizes: Record<string, CarSize>;
+  fallback: CarSize;
+  onChange: (classSizes: Record<string, CarSize>) => void;
+}) => {
+  const drivers = useSessionDrivers();
+  const classes = useMemo(() => {
+    const byName = new Map<string, SessionClass>();
+    for (const driver of drivers ?? []) {
+      if (driver.CarIsPaceCar === 1 || !driver.CarClassShortName) continue;
+      if (!byName.has(driver.CarClassShortName)) {
+        byName.set(driver.CarClassShortName, {
+          name: driver.CarClassShortName,
+          color: driver.CarClassColor,
+          carName: driver.CarScreenName,
+        });
+      }
+    }
+    return [...byName.values()];
+  }, [drivers]);
+
+  if (classes.length === 0) {
+    return (
+      <p className="text-xs text-slate-400">
+        Join a session to adjust the size of each class in it.
+      </p>
+    );
+  }
+
+  const setSize = (name: string, size: CarSize | undefined) => {
+    const others = Object.fromEntries(
+      Object.entries(classSizes).filter(([key]) => key !== name)
+    );
+    onChange(size ? { ...others, [name]: size } : others);
+  };
+
+  return (
+    <div className="space-y-3">
+      {classes.map((carClass) => {
+        const saved = classSizes[carClass.name];
+        const size =
+          saved ?? typicalCarSize(carClass.name, carClass.carName) ?? fallback;
+        return (
+          <div
+            key={carClass.name}
+            className="rounded border border-slate-700/60 p-2 space-y-2"
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className="rounded-sm shrink-0"
+                style={{
+                  width: 12,
+                  height: 12,
+                  backgroundColor: hex(carClass.color),
+                }}
+              />
+              <span className="text-sm text-slate-200 flex-1">
+                {carClass.name}
+              </span>
+              {saved ? (
+                <button
+                  type="button"
+                  className="text-xs text-slate-400 hover:text-slate-200"
+                  onClick={() => setSize(carClass.name, undefined)}
+                >
+                  Reset
+                </button>
+              ) : (
+                <span className="text-xs text-slate-500">typical</span>
+              )}
+            </div>
+            <SettingSliderRow
+              title="Length"
+              value={size.length}
+              units="m"
+              min={3}
+              max={6}
+              step={0.05}
+              onChange={(length) => setSize(carClass.name, { ...size, length })}
+            />
+            <SettingSliderRow
+              title="Width"
+              value={size.width}
+              units="m"
+              min={1.4}
+              max={2.4}
+              step={0.05}
+              onChange={(width) => setSize(carClass.name, { ...size, width })}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 export const RadarSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -262,9 +373,28 @@ export const RadarSettings = () => {
                 onChange={(v) => handleConfigChange({ fadeSeconds: v })}
               />
               <SettingDivider />
+              <SettingToggleRow
+                title="Warnings"
+                description="Arcs on the rim and outlines on the car: amber when a car is close, pulsing red when it is alongside."
+                enabled={config.showWarnings}
+                onToggle={(v) => handleConfigChange({ showWarnings: v })}
+              />
+              {config.showWarnings && (
+                <SettingSliderRow
+                  title="Close Within"
+                  description="Bumper-to-bumper gap at which a car turns amber."
+                  value={config.cautionDistance}
+                  units="m"
+                  min={2}
+                  max={20}
+                  step={1}
+                  onChange={(v) => handleConfigChange({ cautionDistance: v })}
+                />
+              )}
+              <SettingDivider />
               <SettingSliderRow
-                title="Car Length"
-                description="iRacing does not report car sizes. 4.5 m suits most GT and touring cars."
+                title="Default Car Length"
+                description="iRacing does not report car sizes. Used for classes the radar does not recognise."
                 value={config.carLength}
                 units="m"
                 min={3}
@@ -273,7 +403,7 @@ export const RadarSettings = () => {
                 onChange={(v) => handleConfigChange({ carLength: v })}
               />
               <SettingSliderRow
-                title="Car Width"
+                title="Default Car Width"
                 value={config.carWidth}
                 units="m"
                 min={1.4}
@@ -281,6 +411,22 @@ export const RadarSettings = () => {
                 step={0.1}
                 onChange={(v) => handleConfigChange({ carWidth: v })}
               />
+              <SettingToggleRow
+                title="Size Cars by Class"
+                description="Draw prototypes, stock cars and formula cars at their own typical size instead of the default."
+                enabled={config.sizeByClass}
+                onToggle={(v) => handleConfigChange({ sizeByClass: v })}
+              />
+              {config.sizeByClass && (
+                <ClassSizeRows
+                  classSizes={config.classSizes}
+                  fallback={{
+                    length: config.carLength,
+                    width: config.carWidth,
+                  }}
+                  onChange={(classSizes) => handleConfigChange({ classSizes })}
+                />
+              )}
               <SettingDivider />
               <SettingToggleRow
                 title="Hide Cars Across the Pit Wall"

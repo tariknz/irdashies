@@ -13,6 +13,8 @@ const STYLE: RadarStyle = {
   range: 30,
   carLength: 4.5,
   carWidth: 1.9,
+  showWarnings: true,
+  cautionDistance: 7,
   showCarNumbers: true,
   showTrackMap: true,
   trackWidth: 12,
@@ -29,6 +31,8 @@ const appearanceFor = (fill: string, label: string): RadarCarAppearance => ({
   fill,
   textColor: '#0f172a',
   label,
+  length: 4.6,
+  width: 2.0,
 });
 
 const useTicker = (intervalMs = 40) => {

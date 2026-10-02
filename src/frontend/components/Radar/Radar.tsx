@@ -16,6 +16,7 @@ import {
   type RadarFrame,
 } from './components/RadarDisplay';
 import { useRadarSettings } from './hooks/useRadarSettings';
+import { resolveCarSize, type CarSize } from '@irdashies/domain/radar/carSizes';
 import {
   nearestDistance,
   nextAutoHideVisible,
@@ -50,10 +51,16 @@ const textColorFor = (hex: string): string => {
   return r * 0.299 + g * 0.587 + b * 0.114 > 150 ? '#0f172a' : '#ffffff';
 };
 
-const appearanceFor = (fill: string, label: string): RadarCarAppearance => ({
+const appearanceFor = (
+  fill: string,
+  label: string,
+  size: CarSize
+): RadarCarAppearance => ({
   fill,
   textColor: textColorFor(fill),
   label,
+  length: size.length,
+  width: size.width,
 });
 
 const useDemoFrame = (enabled: boolean): RadarFrame | null => {
@@ -95,11 +102,27 @@ export const Radar = () => {
   }, [trackId, trackLength]);
 
   const rivalFill = colorNumToHex(settings.rivalColor) ?? '#f59e0b';
+  const sizeOptions = useMemo(
+    () => ({
+      sizeByClass: settings.sizeByClass,
+      classSizes: settings.classSizes,
+      fallback: { length: settings.carLength, width: settings.carWidth },
+    }),
+    [
+      settings.sizeByClass,
+      settings.classSizes,
+      settings.carLength,
+      settings.carWidth,
+    ]
+  );
   const appearance = useMemo(() => {
     const map = new Map<number, RadarCarAppearance>();
     if (isDemoMode) {
       for (const [carIdx, label] of Object.entries(DEMO_LABELS)) {
-        map.set(Number(carIdx), appearanceFor(rivalFill, label));
+        map.set(
+          Number(carIdx),
+          appearanceFor(rivalFill, label, sizeOptions.fallback)
+        );
       }
       return map;
     }
@@ -108,10 +131,21 @@ export const Radar = () => {
         settings.rivalColorMode === 'class'
           ? (colorNumToHex(driver.CarClassColor) ?? rivalFill)
           : rivalFill;
-      map.set(driver.CarIdx, appearanceFor(fill, driver.CarNumber ?? ''));
+      const size = resolveCarSize(
+        driver.CarClassShortName,
+        driver.CarScreenName,
+        sizeOptions
+      );
+      map.set(driver.CarIdx, appearanceFor(fill, driver.CarNumber ?? '', size));
     }
     return map;
-  }, [drivers, isDemoMode, rivalFill, settings.rivalColorMode]);
+  }, [drivers, isDemoMode, rivalFill, settings.rivalColorMode, sizeOptions]);
+
+  // Our own size: the focus car's class, so overlap is judged on both cars.
+  const focusSize =
+    (snapshot.focusCarIdx !== null && !isDemoMode
+      ? appearance.get(snapshot.focusCarIdx)
+      : undefined) ?? sizeOptions.fallback;
 
   const cars = useMemo(
     () =>
@@ -138,8 +172,10 @@ export const Radar = () => {
   const style: RadarStyle = useMemo(
     () => ({
       range: settings.range,
-      carLength: settings.carLength,
-      carWidth: settings.carWidth,
+      carLength: focusSize.length,
+      carWidth: focusSize.width,
+      showWarnings: settings.showWarnings,
+      cautionDistance: settings.cautionDistance,
       showCarNumbers: settings.showCarNumbers,
       showTrackMap: settings.showTrackMap,
       trackWidth: settings.trackWidth,
@@ -149,7 +185,7 @@ export const Radar = () => {
       playerColor: colorNumToHex(settings.playerColor) ?? '#ffffff',
       backgroundOpacity: settings.background.opacity,
     }),
-    [settings]
+    [settings, focusSize.length, focusSize.width]
   );
 
   const nearest = nearestDistance(frame.cars);

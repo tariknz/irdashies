@@ -8,15 +8,40 @@ export interface RadarDrawCar {
   /** Metres from our line, positive to the left. */
   lateral: number;
   offTrack: boolean;
+  /** Body size in metres. */
+  length: number;
+  width: number;
   fill: string;
   textColor: string;
   label: string;
 }
 
+export type WarningLevel = 'none' | 'close' | 'alongside';
+
+/**
+ * How worried to be about a rival: alongside once the bodies overlap along
+ * the track, close inside `cautionDistance` metres of bumper-to-bumper gap.
+ */
+export const warningLevel = (
+  dist: number,
+  carLength: number,
+  playerLength: number,
+  cautionDistance: number
+): WarningLevel => {
+  const gap = Math.abs(dist) - (carLength + playerLength) / 2;
+  if (gap <= 0) return 'alongside';
+  if (gap < cautionDistance) return 'close';
+  return 'none';
+};
+
 export interface RadarStyle {
   range: number;
+  /** Our car's body size in metres; also used for the pace car. */
   carLength: number;
   carWidth: number;
+  showWarnings: boolean;
+  /** Metres of bumper gap below which a rival counts as close. */
+  cautionDistance: number;
   showCarNumbers: boolean;
   showTrackMap: boolean;
   trackWidth: number;
@@ -46,9 +71,16 @@ export interface RadarScene {
   cars: readonly RadarDrawCar[];
   follow: RadarDrawFollow | null;
   style: RadarStyle;
+  /** Seconds, for the pulse on cars alongside. */
+  time: number;
 }
 
 const FOLLOW_COLOR = '#22c55e';
+const CLOSE_COLOR = '#f59e0b';
+const ALONGSIDE_COLOR = '#ef4444';
+const PULSE_HZ = 2.5;
+const MIN_ARC_DEG = 6;
+const MAX_ARC_DEG = 18;
 const PACE_CAR_FILL = '#e2e8f0';
 
 /** How far past the rim the road is drawn, so it never ends inside the disc. */
@@ -195,6 +227,64 @@ const drawFollowPointer = (
   );
 };
 
+const drawWarningOutline = (
+  ctx: CanvasRenderingContext2D,
+  length: number,
+  width: number,
+  color: string
+) => {
+  ctx.save();
+  ctx.translate(pose.x, pose.y);
+  ctx.rotate(pose.angle);
+  const pad = Math.max(1.5, width * 0.12);
+  ctx.beginPath();
+  ctx.roundRect(
+    -length / 2 - pad,
+    -width / 2 - pad,
+    length + pad * 2,
+    width + pad * 2,
+    pad * 2
+  );
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  ctx.restore();
+};
+
+/** An arc on the rim in the direction of a rival, as wide as the car looks. */
+const drawWarningArc = (
+  ctx: CanvasRenderingContext2D,
+  centre: number,
+  radius: number,
+  carLengthPx: number,
+  color: string
+) => {
+  const dx = pose.x - centre;
+  const dy = pose.y - centre;
+  const distance = Math.max(Math.hypot(dx, dy), 1);
+  const bearing = Math.atan2(dy, dx);
+  const minArc = (MIN_ARC_DEG * Math.PI) / 180;
+  const maxArc = (MAX_ARC_DEG * Math.PI) / 180;
+  const half = Math.min(
+    maxArc,
+    Math.max(minArc, Math.atan2(carLengthPx / 2, distance))
+  );
+  const thickness = Math.max(4, radius * 0.07);
+  ctx.beginPath();
+  ctx.arc(
+    centre,
+    centre,
+    radius - thickness / 2,
+    bearing - half,
+    bearing + half
+  );
+  ctx.lineWidth = thickness;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+};
+
 export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
   const { size, style } = scene;
   const centre = size / 2;
@@ -230,18 +320,37 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
     ctx.textBaseline = 'middle';
   }
 
+  const pulse =
+    0.55 + 0.45 * (0.5 + 0.5 * Math.sin(scene.time * PULSE_HZ * 2 * Math.PI));
+
   // Furthest first, so the nearest car is drawn on top.
   for (let index = scene.cars.length - 1; index >= 0; index -= 1) {
     const car = scene.cars[index];
+    const carLength = car.length * pixelsPerMetre;
+    const carWidth = car.width * pixelsPerMetre;
     projector.project(car.dist, car.lateral, pose);
     ctx.globalAlpha = car.offTrack ? 0.45 : 1;
-    drawCarBody(ctx, pose.x, pose.y, pose.angle, length, width, car.fill);
+    drawCarBody(ctx, pose.x, pose.y, pose.angle, carLength, carWidth, car.fill);
     if (showLabels) {
       ctx.fillStyle = car.textColor;
       ctx.fillText(car.label, pose.x, pose.y);
     }
+    ctx.globalAlpha = 1;
+
+    if (!style.showWarnings) continue;
+    const level = warningLevel(
+      car.dist,
+      car.length,
+      style.carLength,
+      style.cautionDistance
+    );
+    if (level === 'none') continue;
+    const color = level === 'alongside' ? ALONGSIDE_COLOR : CLOSE_COLOR;
+    ctx.globalAlpha = level === 'alongside' ? pulse : 0.9;
+    drawWarningOutline(ctx, carLength, carWidth, color);
+    drawWarningArc(ctx, centre, radius, carLength, color);
+    ctx.globalAlpha = 1;
   }
-  ctx.globalAlpha = 1;
 
   const { follow } = scene;
   if (follow) {
@@ -250,6 +359,11 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
       const car = scene.cars.find((c) => c.carIdx === follow.carIdx);
       if (car) {
         projector.project(car.dist, car.lateral, pose);
+        drawFollowOutline(
+          ctx,
+          car.length * pixelsPerMetre,
+          car.width * pixelsPerMetre
+        );
       } else {
         drawCarBody(
           ctx,
@@ -268,8 +382,8 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
             pose.y
           );
         }
+        drawFollowOutline(ctx, length, width);
       }
-      drawFollowOutline(ctx, length, width);
     } else {
       drawFollowPointer(ctx, centre, radius, follow);
     }

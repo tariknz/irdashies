@@ -29,6 +29,9 @@ export interface RadarCarAppearance {
   fill: string;
   textColor: string;
   label: string;
+  /** Body size in metres. */
+  length: number;
+  width: number;
 }
 
 export interface RadarDisplayProps {
@@ -49,6 +52,8 @@ const FALLBACK_APPEARANCE: RadarCarAppearance = {
   fill: '#94a3b8',
   textColor: '#0f172a',
   label: '',
+  length: 4.5,
+  width: 1.9,
 };
 
 export const RadarDisplay = memo(
@@ -117,6 +122,8 @@ export const RadarDisplay = memo(
           target.fill = looks.fill;
           target.textColor = looks.textColor;
           target.label = looks.label;
+          target.length = looks.length;
+          target.width = looks.width;
           cars[index] = target;
         }
         let followTarget: RadarDrawFollow | null = null;
@@ -148,6 +155,7 @@ export const RadarDisplay = memo(
           cars,
           follow: followTarget,
           style: look,
+          time: performance.now() / 1000,
         });
         if (active) handle = requestAnimationFrame(paint);
       };

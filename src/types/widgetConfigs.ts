@@ -503,9 +503,20 @@ export interface RadarConfig {
   hideDistance: number;
   /** Seconds the fade in and out takes. */
   fadeSeconds: number;
-  /** Car body size in metres; the SDK reports none. */
+  /**
+   * Car body size in metres; the SDK reports none. Used for every car when
+   * `sizeByClass` is off, and for unknown classes when it is on.
+   */
   carLength: number;
   carWidth: number;
+  /** Size cars by class: saved overrides, then typical sizes per class. */
+  sizeByClass: boolean;
+  /** Per-class size overrides keyed by CarClassShortName. */
+  classSizes: Record<string, { length: number; width: number }>;
+  /** Rim arcs and outlines for close and alongside rivals. */
+  showWarnings: boolean;
+  /** Metres of bumper gap below which a rival is drawn as close. */
+  cautionDistance: number;
   showCarNumbers: boolean;
   /** Draw the road under the cars. */
   showTrackMap: boolean;
