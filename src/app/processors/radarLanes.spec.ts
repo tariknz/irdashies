@@ -1,0 +1,240 @@
+import { describe, expect, it } from 'vitest';
+import { CarLeftRight } from '@irdashies/types';
+import {
+  MEMORY_HOLD_S,
+  RadarLaneTracker,
+  type LaneInput,
+  type LaneOutput,
+} from './radarLanes';
+
+/** Runs long enough at 60 Hz for drawn lanes to settle on their targets. */
+const settle = (
+  tracker: RadarLaneTracker,
+  start: number,
+  cars: readonly LaneInput[],
+  spotter: number | null,
+  seconds = 1
+): { time: number; lanes: Map<number, LaneOutput> } => {
+  let lanes = new Map<number, LaneOutput>();
+  let time = start;
+  for (let tick = 0; tick <= seconds * 60; tick += 1) {
+    time = start + tick / 60;
+    lanes = tracker.update(time, cars, spotter);
+  }
+  return { time, lanes };
+};
+
+const laneOf = (lanes: Map<number, LaneOutput>, carIdx: number) =>
+  lanes.get(carIdx)?.lane;
+
+describe('RadarLaneTracker', () => {
+  it('leaves rivals in our lane while the spotter is clear', () => {
+    const tracker = new RadarLaneTracker();
+    const { lanes } = settle(
+      tracker,
+      0,
+      [{ carIdx: 1, dist: -12 }],
+      CarLeftRight.Clear
+    );
+
+    expect(lanes.get(1)).toEqual({ lane: 0, source: 'none' });
+  });
+
+  it('puts the overlapping car on the side the spotter calls', () => {
+    const tracker = new RadarLaneTracker();
+    const { lanes } = settle(
+      tracker,
+      0,
+      [
+        { carIdx: 1, dist: -2 },
+        { carIdx: 2, dist: 25 },
+      ],
+      CarLeftRight.CarLeft
+    );
+
+    expect(lanes.get(1)).toEqual({ lane: -1, source: 'spotter' });
+    expect(lanes.get(2)).toEqual({ lane: 0, source: 'none' });
+  });
+
+  it('slides into a lane instead of jumping', () => {
+    const tracker = new RadarLaneTracker();
+    tracker.update(0, [{ carIdx: 1, dist: -2 }], CarLeftRight.Clear);
+    const first = tracker.update(
+      1 / 60,
+      [{ carIdx: 1, dist: -2 }],
+      CarLeftRight.CarRight
+    );
+
+    const lane = laneOf(first, 1) ?? 0;
+    expect(lane).toBeGreaterThan(0);
+    expect(lane).toBeLessThan(0.2);
+  });
+
+  it('places three wide: one each side', () => {
+    const tracker = new RadarLaneTracker();
+    const { lanes } = settle(
+      tracker,
+      0,
+      [
+        { carIdx: 1, dist: 1 },
+        { carIdx: 2, dist: -1.5 },
+      ],
+      CarLeftRight.CarLeftRight
+    );
+
+    expect(
+      [laneOf(lanes, 1), laneOf(lanes, 2)].sort((a = 0, b = 0) => a - b)
+    ).toEqual([-1, 1]);
+  });
+
+  it('keeps a known side when the spotter says both sides', () => {
+    const tracker = new RadarLaneTracker();
+    const cars = [{ carIdx: 1, dist: -3 }];
+    let { time } = settle(tracker, 0, cars, CarLeftRight.CarRight);
+
+    // A second car arrives on the other side; car 1 must stay right.
+    ({ time } = settle(
+      tracker,
+      time,
+      [...cars, { carIdx: 2, dist: -1 }],
+      CarLeftRight.CarLeftRight
+    ));
+    const { lanes } = settle(
+      tracker,
+      time,
+      [...cars, { carIdx: 2, dist: -1 }],
+      CarLeftRight.CarLeftRight
+    );
+
+    expect(laneOf(lanes, 1)).toBe(1);
+    expect(laneOf(lanes, 2)).toBe(-1);
+  });
+
+  it('stacks two cars on one side into lanes one and two', () => {
+    const tracker = new RadarLaneTracker();
+    const { lanes } = settle(
+      tracker,
+      0,
+      [
+        { carIdx: 1, dist: 0.5 },
+        { carIdx: 2, dist: -3 },
+      ],
+      CarLeftRight.Cars2Left
+    );
+
+    expect(
+      [laneOf(lanes, 1), laneOf(lanes, 2)].sort((a = 0, b = 0) => a - b)
+    ).toEqual([-2, -1]);
+  });
+
+  it('remembers the side after a pass, then drifts back to the centre', () => {
+    const tracker = new RadarLaneTracker();
+    let { time } = settle(
+      tracker,
+      0,
+      [{ carIdx: 1, dist: 2 }],
+      CarLeftRight.CarLeft
+    );
+
+    // Car 1 pulls ahead and the spotter goes clear.
+    const ahead = [{ carIdx: 1, dist: 12 }];
+    let lanes: Map<number, LaneOutput>;
+    ({ time, lanes } = settle(
+      tracker,
+      time,
+      ahead,
+      CarLeftRight.Clear,
+      MEMORY_HOLD_S - 0.5
+    ));
+    expect(lanes.get(1)).toEqual({ lane: -1, source: 'memory' });
+
+    ({ lanes } = settle(tracker, time, ahead, CarLeftRight.Clear, 1.5));
+    expect(lanes.get(1)).toEqual({ lane: 0, source: 'none' });
+  });
+
+  it('spreads two rivals level with each other behind us', () => {
+    const tracker = new RadarLaneTracker();
+    const { lanes } = settle(
+      tracker,
+      0,
+      [
+        { carIdx: 4, dist: -15 },
+        { carIdx: 7, dist: -16.5 },
+        { carIdx: 9, dist: -30 },
+      ],
+      CarLeftRight.Clear
+    );
+
+    expect(lanes.get(4)).toEqual({ lane: -0.5, source: 'pair' });
+    expect(lanes.get(7)).toEqual({ lane: 0.5, source: 'pair' });
+    expect(lanes.get(9)).toEqual({ lane: 0, source: 'none' });
+  });
+
+  it('anchors a pair on a car whose side it remembers', () => {
+    const tracker = new RadarLaneTracker();
+    const { time } = settle(
+      tracker,
+      0,
+      [{ carIdx: 4, dist: -2 }],
+      CarLeftRight.CarRight
+    );
+
+    // Car 4 drops back level with car 7, which it has never been beside us.
+    const { lanes } = settle(
+      tracker,
+      time,
+      [
+        { carIdx: 4, dist: -10 },
+        { carIdx: 7, dist: -11 },
+      ],
+      CarLeftRight.Clear,
+      1
+    );
+
+    expect(laneOf(lanes, 4)).toBe(1);
+    expect(laneOf(lanes, 7)).toBe(0);
+  });
+
+  it('corrects a pair once the spotter sees one of them', () => {
+    const tracker = new RadarLaneTracker();
+    const behind = [
+      { carIdx: 4, dist: -15 },
+      { carIdx: 7, dist: -15.5 },
+    ];
+    const { time } = settle(tracker, 0, behind, CarLeftRight.Clear);
+
+    // The pair arrives; car 4, guessed left, is called on the right.
+    const alongside = [
+      { carIdx: 4, dist: -2 },
+      { carIdx: 7, dist: -2.5 },
+    ];
+    const { lanes } = settle(
+      tracker,
+      time,
+      alongside,
+      CarLeftRight.CarLeftRight
+    );
+
+    expect(laneOf(lanes, 4)).not.toBe(laneOf(lanes, 7));
+    expect(lanes.get(4)?.source).toBe('spotter');
+  });
+
+  it('ignores the spotter when it does not describe the focus car', () => {
+    const tracker = new RadarLaneTracker();
+    const { lanes } = settle(tracker, 0, [{ carIdx: 1, dist: -1 }], null);
+
+    expect(lanes.get(1)).toEqual({ lane: 0, source: 'none' });
+  });
+
+  it('forgets everything when time runs backwards (replay rewind)', () => {
+    const tracker = new RadarLaneTracker();
+    settle(tracker, 10, [{ carIdx: 1, dist: -1 }], CarLeftRight.CarLeft);
+
+    const lanes = tracker.update(
+      5,
+      [{ carIdx: 1, dist: 20 }],
+      CarLeftRight.Clear
+    );
+    expect(lanes.get(1)).toEqual({ lane: 0, source: 'none' });
+  });
+});

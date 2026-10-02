@@ -131,11 +131,17 @@ export interface RadarCar {
   /** Rate of change of `dist` in m/s; positive means pulling away ahead. */
   closingSpeed: number;
   /**
-   * Lateral lane relative to the focus car, in car widths; 0 is our lane,
-   * negative is left. iRacing publishes no lateral position, so this is 0
-   * until a source such as the spotter or the pace line says otherwise.
+   * Lateral lane relative to the focus car, in lanes; 0 is our lane,
+   * negative is left. iRacing publishes no lateral position, so this is an
+   * estimate (see `laneSource`) and moves smoothly between whole lanes.
    */
   lane: number;
+  /**
+   * Where `lane` came from: the spotter calling this car alongside, a side
+   * remembered after the overlap ended, a guess that two rivals level with
+   * each other must be side by side, or nothing (drawn in our lane).
+   */
+  laneSource: 'none' | 'spotter' | 'memory' | 'pair';
   onPitRoad: boolean;
   offTrack: boolean;
 }

@@ -1,0 +1,263 @@
+import { CarLeftRight } from '@irdashies/types';
+
+import type { RadarCar } from '@irdashies/types';
+
+export type RadarLaneSource = RadarCar['laneSource'];
+
+export interface LaneInput {
+  carIdx: number;
+  /** Metres along the track from the focus car, positive ahead. */
+  dist: number;
+}
+
+export interface LaneOutput {
+  /** Smoothed lane in car widths, negative is left. */
+  lane: number;
+  source: RadarLaneSource;
+}
+
+/**
+ * A rival this close along the track overlaps us, so the spotter is talking
+ * about it. A little longer than a car so lap-distance noise cannot drop a
+ * car that is still alongside.
+ */
+export const OVERLAP_M = 5.5;
+/** Fallback search when the spotter reports more cars than sit in OVERLAP_M. */
+const OVERLAP_SEARCH_M = 8;
+/** Two rivals closer than this to each other must be side by side. */
+export const PAIR_M = 4;
+/** How long a side learnt from the spotter is kept after the overlap ends. */
+export const MEMORY_HOLD_S = 3;
+/** How fast a drawn lane moves towards its target, in lanes per second. */
+const LANE_RATE = 4;
+const MAX_LANE = 2;
+
+interface SpotterDemand {
+  left: number;
+  right: number;
+}
+
+const demandFor = (carLeftRight: number): SpotterDemand | null => {
+  switch (carLeftRight) {
+    case CarLeftRight.Clear:
+      return { left: 0, right: 0 };
+    case CarLeftRight.CarLeft:
+      return { left: 1, right: 0 };
+    case CarLeftRight.CarRight:
+      return { left: 0, right: 1 };
+    case CarLeftRight.CarLeftRight:
+      return { left: 1, right: 1 };
+    case CarLeftRight.Cars2Left:
+      return { left: 2, right: 0 };
+    case CarLeftRight.Cars2Right:
+      return { left: 0, right: 2 };
+    default:
+      // Off: the spotter is silent (not driving, or watching another car).
+      return null;
+  }
+};
+
+const clampLane = (lane: number) =>
+  Math.max(-MAX_LANE, Math.min(MAX_LANE, lane));
+
+/**
+ * Estimates which lane each nearby rival is in.
+ *
+ * iRacing publishes no lateral positions. What it does publish is the
+ * spotter's verdict for the player — car left, car right, two cars left —
+ * and every car's distance along the track. Combining them:
+ *
+ * 1. Rivals overlapping us take the sides the spotter calls, keeping any side
+ *    they already had where possible.
+ * 2. A side outlives the overlap for MEMORY_HOLD_S, so a car that just passed
+ *    on the left is still drawn on the left; after that it drifts back to the
+ *    centre, since a lane change cannot be observed.
+ * 3. Rivals too close to each other to be nose to tail are spread across
+ *    lanes. Which of them is left is unknown until one comes alongside us,
+ *    so the order is only kept stable, anchored on any remembered side.
+ *
+ * Everything else sits in our lane. Drawn lanes move at LANE_RATE so a
+ * corrected guess slides rather than jumps.
+ */
+export class RadarLaneTracker {
+  private readonly rememberedLane = new Map<number, number>();
+  private readonly rememberedAt = new Map<number, number>();
+  private readonly drawnLane = new Map<number, number>();
+  private previousTime = -1;
+
+  reset(): void {
+    this.rememberedLane.clear();
+    this.rememberedAt.clear();
+    this.drawnLane.clear();
+    this.previousTime = -1;
+  }
+
+  /**
+   * @param carLeftRight the spotter's verdict, or null when it does not
+   *   describe the focus car (spectating someone else)
+   */
+  update(
+    time: number,
+    cars: readonly LaneInput[],
+    carLeftRight: number | null
+  ): Map<number, LaneOutput> {
+    if (this.previousTime >= 0 && time < this.previousTime) this.reset();
+    const dt =
+      this.previousTime < 0 ? Infinity : Math.max(0, time - this.previousTime);
+    this.previousTime = time;
+
+    const targets = new Map<number, LaneOutput>();
+    const demand = carLeftRight === null ? null : demandFor(carLeftRight);
+    if (demand) this.applySpotter(time, cars, demand, targets);
+
+    const remembered = (carIdx: number): number | undefined => {
+      const at = this.rememberedAt.get(carIdx);
+      if (at === undefined || time - at > MEMORY_HOLD_S) return undefined;
+      return this.rememberedLane.get(carIdx);
+    };
+
+    for (const car of cars) {
+      if (targets.has(car.carIdx)) continue;
+      const lane = remembered(car.carIdx);
+      if (lane !== undefined)
+        targets.set(car.carIdx, { lane, source: 'memory' });
+    }
+
+    this.spreadPairs(cars, targets, remembered);
+
+    const output = new Map<number, LaneOutput>();
+    const seen = new Set<number>();
+    for (const car of cars) {
+      seen.add(car.carIdx);
+      const target = targets.get(car.carIdx) ?? { lane: 0, source: 'none' };
+      const previous = this.drawnLane.get(car.carIdx);
+      let lane = target.lane;
+      if (previous !== undefined && Number.isFinite(dt)) {
+        const step = LANE_RATE * dt;
+        lane =
+          previous + Math.max(-step, Math.min(step, target.lane - previous));
+      }
+      this.drawnLane.set(car.carIdx, lane);
+      output.set(car.carIdx, { lane, source: target.source });
+    }
+    for (const carIdx of this.drawnLane.keys()) {
+      if (!seen.has(carIdx)) this.drawnLane.delete(carIdx);
+    }
+    for (const [carIdx, at] of this.rememberedAt) {
+      if (time - at > MEMORY_HOLD_S) {
+        this.rememberedAt.delete(carIdx);
+        this.rememberedLane.delete(carIdx);
+      }
+    }
+    return output;
+  }
+
+  private applySpotter(
+    time: number,
+    cars: readonly LaneInput[],
+    demand: SpotterDemand,
+    targets: Map<number, LaneOutput>
+  ): void {
+    if (demand.left + demand.right === 0) return;
+    const wanted = demand.left + demand.right;
+    let candidates = cars.filter((car) => Math.abs(car.dist) <= OVERLAP_M);
+    if (candidates.length < wanted) {
+      candidates = cars.filter((car) => Math.abs(car.dist) <= OVERLAP_SEARCH_M);
+    }
+    const sideOf = (carIdx: number) => {
+      const lane = this.rememberedLane.get(carIdx);
+      return lane === undefined ? 0 : Math.sign(lane);
+    };
+    const taken = new Set<number>();
+
+    const fill = (count: number, side: -1 | 1) => {
+      if (count === 0) return;
+      // Cars already known on this side first, then unknown, then the far
+      // side; nearest first within each group.
+      const ranked = candidates
+        .filter((car) => !taken.has(car.carIdx))
+        .sort((a, b) => {
+          const rank = (car: LaneInput) =>
+            sideOf(car.carIdx) === side ? 0 : sideOf(car.carIdx) === 0 ? 1 : 2;
+          return (
+            rank(a) - rank(b) ||
+            Math.abs(a.dist) - Math.abs(b.dist) ||
+            a.carIdx - b.carIdx
+          );
+        })
+        .slice(0, count);
+      // With two on one side, keep a remembered outer car outside.
+      ranked.sort((a, b) => {
+        const outer = (car: LaneInput) =>
+          Math.abs(this.rememberedLane.get(car.carIdx) ?? 0) >= 2 ? 1 : 0;
+        return outer(a) - outer(b) || Math.abs(a.dist) - Math.abs(b.dist);
+      });
+      ranked.forEach((car, index) => {
+        const lane = side * (index + 1);
+        taken.add(car.carIdx);
+        targets.set(car.carIdx, { lane, source: 'spotter' });
+        this.rememberedLane.set(car.carIdx, lane);
+        this.rememberedAt.set(car.carIdx, time);
+      });
+    };
+
+    fill(demand.left, -1);
+    fill(demand.right, 1);
+  }
+
+  private spreadPairs(
+    cars: readonly LaneInput[],
+    targets: Map<number, LaneOutput>,
+    remembered: (carIdx: number) => number | undefined
+  ): void {
+    // Cars alongside us are the spotter's business, not a pair's.
+    const free = cars
+      .filter(
+        (car) =>
+          targets.get(car.carIdx)?.source !== 'spotter' &&
+          Math.abs(car.dist) > OVERLAP_M
+      )
+      .sort((a, b) => a.dist - b.dist);
+
+    let start = 0;
+    while (start < free.length) {
+      let end = start + 1;
+      while (
+        end < free.length &&
+        free[end].dist - free[end - 1].dist < PAIR_M
+      ) {
+        end += 1;
+      }
+      const group = free.slice(start, end);
+      start = end;
+      if (group.length < 2) continue;
+
+      // Every member already has its own remembered lane: nothing to guess.
+      const lanes = group.map((car) => remembered(car.carIdx));
+      if (
+        lanes.every((lane) => lane !== undefined) &&
+        new Set(lanes).size === lanes.length
+      ) {
+        continue;
+      }
+
+      group.sort(
+        (a, b) =>
+          (remembered(a.carIdx) ?? 0) - (remembered(b.carIdx) ?? 0) ||
+          a.carIdx - b.carIdx
+      );
+      const anchorIndex = group.findIndex(
+        (car) => remembered(car.carIdx) !== undefined
+      );
+      const anchorLane =
+        anchorIndex >= 0
+          ? (remembered(group[anchorIndex].carIdx) ?? 0)
+          : -(group.length - 1) / 2;
+      const offset = anchorIndex >= 0 ? anchorIndex : 0;
+      group.forEach((car, index) => {
+        const lane = clampLane(anchorLane + index - offset);
+        targets.set(car.carIdx, { lane, source: 'pair' });
+      });
+    }
+  }
+}

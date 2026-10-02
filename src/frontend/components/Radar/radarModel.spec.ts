@@ -11,6 +11,7 @@ const car = (carIdx: number, dist: number, onPitRoad = false): RadarCar => ({
   dist,
   closingSpeed: 0,
   lane: 0,
+  laneSource: 'none',
   onPitRoad,
   offTrack: false,
 });

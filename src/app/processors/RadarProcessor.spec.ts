@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Session, Telemetry } from '@irdashies/types';
-import { TrackLocation } from '@irdashies/types';
+import { CarLeftRight, TrackLocation } from '@irdashies/types';
 import {
   parseTrackLength,
   RADAR_MAX_RANGE_M,
@@ -29,6 +29,7 @@ interface FrameOptions {
   onPitRoad?: boolean[];
   surfaces?: number[];
   isOnTrack?: boolean;
+  carLeftRight?: number;
 }
 
 const frame = ({
@@ -39,6 +40,7 @@ const frame = ({
   onPitRoad = pcts.map(() => false),
   surfaces = pcts.map(() => TrackLocation.OnTrack),
   isOnTrack = true,
+  carLeftRight = CarLeftRight.Clear,
 }: FrameOptions) =>
   ({
     SessionTime: { value: [time] },
@@ -48,6 +50,7 @@ const frame = ({
     CarIdxOnPitRoad: { value: onPitRoad },
     CarIdxTrackSurface: { value: surfaces },
     IsOnTrack: { value: [isOnTrack] },
+    CarLeftRight: { value: [carLeftRight] },
   }) as unknown as Telemetry;
 
 /** Lap fraction for a distance in metres on the test track. */
@@ -190,6 +193,42 @@ describe('RadarProcessor', () => {
     processor.onFrame(frame({ time: 1, pcts: [0.5, 0.5 + m(5)] }));
 
     expect(processor.snapshot().cars).toEqual([]);
+  });
+
+  it('puts a car the spotter calls alongside in its lane', () => {
+    const processor = createProcessor();
+    for (let tick = 0; tick <= 60; tick += 1) {
+      processor.onFrame(
+        frame({
+          time: tick / 60,
+          pcts: [0.5, 0.5 - m(1), 0.5 + m(40)],
+          carLeftRight: CarLeftRight.CarLeft,
+        })
+      );
+    }
+
+    expect(processor.snapshot().cars).toMatchObject([
+      { carIdx: 1, lane: -1, laneSource: 'spotter' },
+      { carIdx: 2, lane: 0, laneSource: 'none' },
+    ]);
+  });
+
+  it('does not apply the spotter while watching another car', () => {
+    const processor = createProcessor();
+    for (let tick = 0; tick <= 60; tick += 1) {
+      processor.onFrame(
+        frame({
+          time: tick / 60,
+          pcts: [0.1, 0.5, 0.5 - m(1)],
+          camCarIdx: 1,
+          carLeftRight: CarLeftRight.CarLeft,
+        })
+      );
+    }
+
+    expect(processor.snapshot().cars).toMatchObject([
+      { carIdx: 2, lane: 0, laneSource: 'none' },
+    ]);
   });
 
   it('clears everything on disconnect and session change', () => {

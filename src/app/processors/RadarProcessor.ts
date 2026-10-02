@@ -5,8 +5,9 @@ import type {
   SessionLifecycleEvent,
   Telemetry,
 } from '@irdashies/types';
-import { TrackLocation } from '@irdashies/types';
+import { CarLeftRight, TrackLocation } from '@irdashies/types';
 import type { TelemetryProcessor } from './TelemetryProcessor';
+import { RadarLaneTracker } from './radarLanes';
 
 /**
  * Metres either side of the focus car that still reach the renderer. The
@@ -73,6 +74,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   private previousPcts: number[] = [];
   private speeds: number[] = [];
   private previousTime = -1;
+  private readonly lanes = new RadarLaneTracker();
+  private laneFocus = -1;
 
   private latest: RadarSnapshot = emptySnapshot(0);
 
@@ -114,11 +117,13 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
           dist,
           closingSpeed: (this.speeds[carIdx] ?? playerSpeed) - playerSpeed,
           lane: 0,
+          laneSource: 'none',
           onPitRoad: onPitRoad[carIdx] === true,
           offTrack: surface === TrackLocation.OffTrack,
         });
       }
       cars.sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist));
+      this.assignLanes(frame, time, focus, isOnTrack, cars);
     }
 
     const next: Omit<RadarSnapshot, 'version'> = {
@@ -139,7 +144,44 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     this.previousPcts = [];
     this.speeds = [];
     this.previousTime = -1;
+    this.lanes.reset();
+    this.laneFocus = -1;
     this.latest = emptySnapshot(this.latest.version + 1);
+  }
+
+  /**
+   * The spotter speaks for the player's car only, and only while it is
+   * driving; when the camera is on someone else, lanes come from memory and
+   * pairing alone. Cars across the pit wall are beside the track, not in a
+   * lane of it, so they stay out of the estimate.
+   */
+  private assignLanes(
+    frame: Telemetry,
+    time: number,
+    focus: number,
+    isOnTrack: boolean,
+    cars: RadarCar[]
+  ): void {
+    if (focus !== this.laneFocus) {
+      this.lanes.reset();
+      this.laneFocus = focus;
+    }
+    const focusOnPitRoad = valuesOf(frame, 'CarIdxOnPitRoad')[focus] === true;
+    const spotter =
+      isOnTrack && focus === scalarNumber(frame, 'PlayerCarIdx')
+        ? scalarNumber(frame, 'CarLeftRight', CarLeftRight.Off)
+        : null;
+    const lanes = this.lanes.update(
+      time,
+      cars.filter((car) => car.onPitRoad === focusOnPitRoad),
+      spotter
+    );
+    for (const car of cars) {
+      const lane = lanes.get(car.carIdx);
+      if (!lane) continue;
+      car.lane = lane.lane;
+      car.laneSource = lane.source;
+    }
   }
 
   snapshot(): RadarSnapshot {
