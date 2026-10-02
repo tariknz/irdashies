@@ -445,8 +445,11 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
     style.playerColor
   );
 
-  // Fade everything drawn so far towards the rim, then slide the background
-  // in underneath, so cars ease in and out at the edge of the range.
+  // Slide the background in underneath, then fade the whole disc towards
+  // the rim, so cars and the disc itself ease out at the edge of the range.
+  ctx.globalCompositeOperation = 'destination-over';
+  ctx.fillStyle = `rgba(15, 23, 42, ${style.backgroundOpacity / 100})`;
+  ctx.fillRect(0, 0, size, size);
   const fadeShare = Math.min(Math.max(style.edgeFade, 0), 100) / 100;
   if (fadeShare > 0) {
     const fade = ctx.createRadialGradient(
@@ -463,9 +466,6 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
     ctx.fillStyle = fade;
     ctx.fillRect(0, 0, size, size);
   }
-  ctx.globalCompositeOperation = 'destination-over';
-  ctx.fillStyle = `rgba(15, 23, 42, ${style.backgroundOpacity / 100})`;
-  ctx.fillRect(0, 0, size, size);
   ctx.globalCompositeOperation = 'source-over';
 
   // Rim markers stay at full strength above the fade.
