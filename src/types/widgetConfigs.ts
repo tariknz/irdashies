@@ -488,6 +488,12 @@ export interface BlindSpotMonitorConfig {
   thresholdColor2?: number;
 }
 
+/**
+ * How a warning marks the rim: a solid arc, three segments that light up
+ * with urgency, a soft glow inward from the rim, or a wedge from our car.
+ */
+export type RadarArcStyle = 'arc' | 'segments' | 'glow' | 'sector';
+
 /** Where along our car a rival must reach to be owed room. */
 export type RadarOverlapThreshold = 'rearWheel' | 'door' | 'frontWheel';
 
@@ -520,6 +526,7 @@ export interface RadarConfig {
   showWarnings: boolean;
   /** The rim arc of a close or alongside rival; off leaves the outline. */
   warningArcs: boolean;
+  warningArcStyle: RadarArcStyle;
   /** Metres of bumper gap below which a rival is drawn as close. */
   cautionDistance: number;
   showCarNumbers: boolean;
@@ -559,9 +566,14 @@ export interface RadarConfig {
   alongsideColor: number;
   /** Pulses per second on cars alongside; 0 keeps them steady. */
   pulseHz: number;
-  /** Degrees either side of the bearing a rim warning spans, at least/most. */
+  /**
+   * Degrees either side of the bearing the arc of a close or alongside car
+   * spans, at least/most.
+   */
   arcMinDeg: number;
   arcMaxDeg: number;
+  /** Thickness of every rim arc, % of the radius. */
+  arcThickness: number;
   /**
    * A strip along the side a rival is on, showing how far along our car it
    * reaches (or how far along its car we reach when we attack).
@@ -583,6 +595,9 @@ export interface RadarConfig {
   diveShowClosing: boolean;
   /** The rim arc of a car coming up fast or diving in. */
   diveArcs: boolean;
+  diveArcStyle: RadarArcStyle;
+  diveArcMinDeg: number;
+  diveArcMaxDeg: number;
   /** Mark cars ahead that crashed, crawl, left the track or are rejoining. */
   showHazards: boolean;
   /** Metres ahead a hazard is shown from. */
@@ -597,6 +612,10 @@ export interface RadarConfig {
   hazardShowSpeed: boolean;
   /** The rim arc under a hazard's triangle. */
   hazardArcs: boolean;
+  hazardArcStyle: RadarArcStyle;
+  /** Half-span of a hazard's arc far off and right at the rim, degrees. */
+  hazardArcMinDeg: number;
+  hazardArcMaxDeg: number;
   /** Switch to `ovalProfile` on oval tracks. */
   autoProfile: boolean;
   /** Look and distances for ovals; null until the oval profile is edited. */
@@ -615,6 +634,7 @@ export const RADAR_PROFILE_KEYS = [
   'fadeSeconds',
   'showWarnings',
   'warningArcs',
+  'warningArcStyle',
   'cautionDistance',
   'showCarNumbers',
   'showTrackMap',
@@ -636,6 +656,7 @@ export const RADAR_PROFILE_KEYS = [
   'pulseHz',
   'arcMinDeg',
   'arcMaxDeg',
+  'arcThickness',
   'showOverlap',
   'overlapThreshold',
   'overlapShowPercent',
@@ -645,10 +666,16 @@ export const RADAR_PROFILE_KEYS = [
   'diveGhost',
   'diveShowClosing',
   'diveArcs',
+  'diveArcStyle',
+  'diveArcMinDeg',
+  'diveArcMaxDeg',
   'showHazards',
   'hazardRange',
   'hazardBlinkDistance',
   'hazardArcs',
+  'hazardArcStyle',
+  'hazardArcMinDeg',
+  'hazardArcMaxDeg',
 ] as const satisfies readonly (keyof RadarConfig)[];
 
 export type RadarProfileKey = (typeof RADAR_PROFILE_KEYS)[number];

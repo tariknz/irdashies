@@ -1,7 +1,8 @@
 import { RadarProjector, type ScreenPose } from './radarProjection';
 import type { TrackGeometry } from '@irdashies/domain/track';
 import { overlapOf, type DiveHint } from './radarHints';
-import type { RadarHazardKind } from '@irdashies/types';
+import type { RadarArcStyle, RadarHazardKind } from '@irdashies/types';
+import { arcThicknessPx, paintRimArc } from './radarArcs';
 
 export interface RadarDrawCar {
   carIdx: number;
@@ -47,6 +48,7 @@ export interface RadarStyle {
   carWidth: number;
   showWarnings: boolean;
   warningArcs: boolean;
+  warningArcStyle: RadarArcStyle;
   /** Metres of bumper gap below which a rival counts as close. */
   cautionDistance: number;
   showCarNumbers: boolean;
@@ -74,6 +76,8 @@ export interface RadarStyle {
   pulseHz: number;
   arcMinDeg: number;
   arcMaxDeg: number;
+  /** Rim arc thickness, % of the radius. */
+  arcThickness: number;
   showOverlap: boolean;
   /** Share of a car's length from which the overlap strip turns red. */
   overlapThreshold: number;
@@ -81,6 +85,9 @@ export interface RadarStyle {
   diveGhost: boolean;
   diveShowClosing: boolean;
   diveArcs: boolean;
+  diveArcStyle: RadarArcStyle;
+  diveArcMinDeg: number;
+  diveArcMaxDeg: number;
   showHazards: boolean;
   /** Metres ahead a hazard is shown from. */
   hazardRange: number;
@@ -91,6 +98,9 @@ export interface RadarStyle {
   hazardOff: boolean;
   hazardShowSpeed: boolean;
   hazardArcs: boolean;
+  hazardArcStyle: RadarArcStyle;
+  hazardArcMinDeg: number;
+  hazardArcMaxDeg: number;
   /** Car numbers are left out on cars drawn smaller than this, in px. */
   minLabelPx: number;
   debugLabels: boolean;
@@ -364,6 +374,11 @@ interface RimWarning {
   carLengthPx: number;
   color: string;
   alpha: number;
+  arcStyle: RadarArcStyle;
+  minDeg: number;
+  maxDeg: number;
+  /** 0-1, for how many segments light. */
+  urgency: number;
 }
 
 /**
@@ -539,13 +554,25 @@ const ourStrips = { left: 0, right: 0 };
 const rimWarnings: RimWarning[] = [];
 let rimWarningCount = 0;
 
-const queueRimWarning = (carLengthPx: number, color: string, alpha: number) => {
+const queueRimWarning = (
+  carLengthPx: number,
+  color: string,
+  alpha: number,
+  arcStyle: RadarArcStyle,
+  minDeg: number,
+  maxDeg: number,
+  urgency: number
+) => {
   const warning = rimWarnings[rimWarningCount] ?? ({} as RimWarning);
   warning.x = pose.x;
   warning.y = pose.y;
   warning.carLengthPx = carLengthPx;
   warning.color = color;
   warning.alpha = alpha;
+  warning.arcStyle = arcStyle;
+  warning.minDeg = minDeg;
+  warning.maxDeg = maxDeg;
+  warning.urgency = urgency;
   rimWarnings[rimWarningCount] = warning;
   rimWarningCount += 1;
 };
@@ -591,38 +618,35 @@ const drawDebug = (
   }
 };
 
-/** An arc on the rim in the direction of a rival, as wide as the car looks. */
+/** A mark on the rim in the direction of a rival, as wide as the car looks. */
 const drawWarningArc = (
   ctx: CanvasRenderingContext2D,
   centre: number,
   radius: number,
-  { x, y, carLengthPx, color }: RimWarning,
+  warning: RimWarning,
   style: RadarStyle
 ) => {
-  const dx = x - centre;
-  const dy = y - centre;
+  const dx = warning.x - centre;
+  const dy = warning.y - centre;
   const distance = Math.max(Math.hypot(dx, dy), 1);
   const bearing = Math.atan2(dy, dx);
-  const minArc = (style.arcMinDeg * Math.PI) / 180;
-  const maxArc = (Math.max(style.arcMaxDeg, style.arcMinDeg) * Math.PI) / 180;
+  const minArc = (warning.minDeg * Math.PI) / 180;
+  const maxArc = (Math.max(warning.maxDeg, warning.minDeg) * Math.PI) / 180;
   const half = Math.min(
     maxArc,
-    Math.max(minArc, Math.atan2(carLengthPx / 2, distance))
+    Math.max(minArc, Math.atan2(warning.carLengthPx / 2, distance))
   );
-  const thickness = Math.max(4, radius * 0.07);
-  ctx.beginPath();
-  ctx.arc(
+  paintRimArc(
+    ctx,
     centre,
-    centre,
-    radius - thickness / 2,
-    bearing - half,
-    bearing + half
+    radius,
+    bearing,
+    half,
+    warning.color,
+    warning.arcStyle,
+    warning.urgency,
+    arcThicknessPx(radius, style.arcThickness)
   );
-  ctx.lineWidth = thickness;
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = color;
-  ctx.stroke();
-  ctx.lineCap = 'butt';
 };
 
 const HAZARD_YELLOW = '#facc15';
@@ -725,25 +749,25 @@ const drawHazardMarker = (
   const color = hazardColor(hazard.kind, style);
   ctx.globalAlpha = hazardFlashes(hazard, style) ? flash : 1;
 
-  const minArc = style.arcMinDeg;
-  const maxArc = Math.max(style.arcMaxDeg, minArc) * 1.3;
+  const minArc = style.hazardArcMinDeg;
+  const maxArc = Math.max(style.hazardArcMaxDeg, minArc);
   const half = ((minArc + (maxArc - minArc) * near) * Math.PI) / 180;
   // Without the arc the triangle moves out to the rim in its place.
-  const thickness = style.hazardArcs ? Math.max(4, radius * 0.07) : 2;
+  const thickness = style.hazardArcs
+    ? arcThicknessPx(radius, style.arcThickness)
+    : 2;
   if (style.hazardArcs) {
-    ctx.beginPath();
-    ctx.arc(
+    paintRimArc(
+      ctx,
       centre,
-      centre,
-      radius - thickness / 2,
-      bearing - half,
-      bearing + half
+      radius,
+      bearing,
+      half,
+      color,
+      style.hazardArcStyle,
+      near,
+      thickness
     );
-    ctx.lineWidth = thickness;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = color;
-    ctx.stroke();
-    ctx.lineCap = 'butt';
   }
 
   const size = radius * (0.12 + 0.06 * near);
@@ -975,6 +999,7 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
     }
 
     const dive = scene.dives?.get(car.carIdx);
+    let diveArcCar = -1;
     if (dive) {
       const level = warningLevel(
         car.dist,
@@ -1014,11 +1039,30 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
           pose.y = ghostPose.y;
         }
         if (style.diveArcs) {
-          queueRimWarning(carLength, style.alongsideColor, pulse);
+          queueRimWarning(
+            carLength,
+            style.alongsideColor,
+            pulse,
+            style.diveArcStyle,
+            style.diveArcMinDeg,
+            style.diveArcMaxDeg,
+            1
+          );
+          diveArcCar = car.carIdx;
         }
         ctx.globalAlpha = 1;
       } else if (level === 'none') {
-        if (style.diveArcs) queueRimWarning(carLength, style.closeColor, 0.9);
+        if (style.diveArcs) {
+          queueRimWarning(
+            carLength,
+            style.closeColor,
+            0.9,
+            style.diveArcStyle,
+            style.diveArcMinDeg,
+            style.diveArcMaxDeg,
+            1 / 3
+          );
+        }
       }
       if (style.diveShowClosing) {
         const color =
@@ -1054,7 +1098,18 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
       level === 'alongside' ? style.alongsideColor : style.closeColor;
     ctx.globalAlpha = level === 'alongside' ? pulse : 0.9;
     drawWarningOutline(ctx, carLength, carWidth, color);
-    if (style.warningArcs) queueRimWarning(carLength, color, ctx.globalAlpha);
+    // A diving car already has the more urgent arc of the two.
+    if (style.warningArcs && diveArcCar !== car.carIdx) {
+      queueRimWarning(
+        carLength,
+        color,
+        ctx.globalAlpha,
+        style.warningArcStyle,
+        style.arcMinDeg,
+        style.arcMaxDeg,
+        level === 'alongside' ? 1 : 2 / 3
+      );
+    }
     ctx.globalAlpha = 1;
   }
 

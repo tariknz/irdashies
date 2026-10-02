@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardLayout } from '@irdashies/types';
 import { RadarSettings } from './RadarSettings';
@@ -63,8 +63,16 @@ describe('RadarSettings', () => {
     mocks.setDashboard(dashboard);
   });
 
+  const openSection = (name: string) =>
+    fireEvent.click(
+      within(
+        screen.getByRole('navigation', { name: 'Radar settings sections' })
+      ).getByRole('button', { name })
+    );
+
   it('shows the basics first and more at each level', () => {
     render(<RadarSettings />);
+    openSection('Look');
     expect(screen.getByText('Moving Centre Line')).toBeInTheDocument();
     expect(screen.queryByText(/^Edge Fade/)).not.toBeInTheDocument();
 
@@ -73,6 +81,8 @@ describe('RadarSettings', () => {
     expect(screen.queryByText('speedSmoothing')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Dev' }));
+    // Dev adds its own sections to the side list.
+    openSection('Processing');
     expect(screen.getByText('speedSmoothing')).toBeInTheDocument();
   });
 
@@ -86,6 +96,36 @@ describe('RadarSettings', () => {
     expect(screen.getByText(/^Edge Fade/)).toBeInTheDocument();
     expect(screen.getByText(/^Fade Time/)).toBeInTheDocument();
     expect(screen.queryByText('Car Numbers')).not.toBeInTheDocument();
+  });
+
+  it('opens one section at a time from the side list', () => {
+    render(<RadarSettings />);
+    openSection('Look');
+    expect(screen.getByText('Moving Centre Line')).toBeInTheDocument();
+    expect(screen.queryByText('Warn From')).not.toBeInTheDocument();
+
+    openSection('Hazards Ahead');
+    expect(screen.getByText('Warn From')).toBeInTheDocument();
+    expect(screen.queryByText('Moving Centre Line')).not.toBeInTheDocument();
+  });
+
+  it('turns a module off from its header and hides its settings', () => {
+    render(<RadarSettings />);
+    openSection('Hazards Ahead');
+    const header = screen.getByRole('region', { name: 'Hazards Ahead' });
+    fireEvent.click(within(header).getAllByRole('switch')[0]);
+
+    expect(lastSavedConfig().showHazards).toBe(false);
+    expect(screen.queryByText('Warn From')).not.toBeInTheDocument();
+  });
+
+  it('picks the style of each arc in the Arcs section', () => {
+    render(<RadarSettings />);
+    openSection('Arcs');
+    const dive = screen.getByRole('radiogroup', { name: 'Dive-Bomb style' });
+    fireEvent.click(within(dive).getByRole('radio', { name: 'Sector' }));
+
+    expect(lastSavedConfig().diveArcStyle).toBe('sector');
   });
 
   it('keeps changes made on the oval profile to the oval', () => {

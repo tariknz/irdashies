@@ -7,9 +7,39 @@ import { demoAppearance } from '../../../Radar/radarDemo';
 import { paler } from '../../../Radar/radarColors';
 import { radarStyleFrom } from '../../../Radar/radarStyle';
 
+/**
+ * Demo cars that show off each section: the pack beside and ahead for close
+ * cars, the diver for overlap and dive-bombs, the wreck for hazards. Other
+ * sections show everything.
+ */
+const SCENE_CARS: Readonly<Record<string, readonly number[]>> = {
+  warnings: [2, 3, 4],
+  overlap: [1, 2],
+  dive: [1],
+  hazards: [5],
+};
+
 /** The demo pack drawn with the settings being edited. */
-export const RadarPreview = ({ config }: { config: RadarConfig }) => {
-  const frame = useDemoRadarFrame(true);
+export const RadarPreview = ({
+  config,
+  scene = null,
+}: {
+  config: RadarConfig;
+  /** Section open in the settings, to show only its part of the demo. */
+  scene?: string | null;
+}) => {
+  const demo = useDemoRadarFrame(true);
+  const frame = useMemo(() => {
+    const only = scene ? SCENE_CARS[scene] : undefined;
+    if (!demo || !only) return demo;
+    return {
+      ...demo,
+      cars: demo.cars.filter((car) => only.includes(car.carIdx)),
+      hazards: (demo.hazards ?? []).filter((hazard) =>
+        only.includes(hazard.carIdx)
+      ),
+    };
+  }, [demo, scene]);
   const size = useMemo(
     () => ({ length: config.carLength, width: config.carWidth }),
     [config.carLength, config.carWidth]

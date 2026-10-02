@@ -15,9 +15,11 @@ import {
   ColorPickRow,
   ColorRow,
   CustomColorRow,
+  hex,
   NumberRow,
 } from './controls';
 import { ConfigJson, PoleSidesTable } from './RadarDevTools';
+import { ArcEventCard } from './ArcControls';
 
 export const RADAR_DEFAULTS = getWidgetDefaultConfig('radar');
 
@@ -45,9 +47,22 @@ export interface RadarSettingItem {
   render: (ctx: ItemContext) => ReactNode;
 }
 
+export type RadarSectionGroup = 'radar' | 'modules' | 'other' | 'dev';
+
 export interface RadarSettingSection {
   id: string;
   title: string;
+  /** Where the section sits in the side list. */
+  group: RadarSectionGroup;
+  /** One line under the title. */
+  summary?: string;
+  /**
+   * The module's on/off switch, shown in the section header. While it is
+   * off the section's settings are hidden.
+   */
+  master?: BooleanKey;
+  /** The module's rim arc, set in the Arcs section and linked from here. */
+  arc?: { on: BooleanKey; style: ArcStyleKey };
   dev?: boolean;
   items: RadarSettingItem[];
 }
@@ -58,14 +73,6 @@ type BooleanKey = {
 type NumberKey = {
   [K in keyof RadarConfig]: RadarConfig[K] extends number ? K : never;
 }[keyof RadarConfig];
-
-/** Arc sizes matter while any warning still draws its rim arc. */
-const noRimArcs = (view: RadarConfig) =>
-  !(
-    (view.showWarnings && view.warningArcs) ||
-    (view.showDiveWarning && view.diveArcs) ||
-    (view.showHazards && view.hazardArcs)
-  );
 
 const toggle = (
   level: SettingsLevel,
@@ -186,10 +193,88 @@ const PALETTES = {
   colourBlind: { closeColor: 0x38bdf8, alongsideColor: 0xf97316 },
 } as const;
 
+export type ArcStyleKey = 'warningArcStyle' | 'diveArcStyle' | 'hazardArcStyle';
+
+/** On/off and the look of one event's arc, with pictures to pick from. */
+const arcCard = (
+  key: BooleanKey,
+  styleKey: ArcStyleKey,
+  module: BooleanKey,
+  title: string,
+  description: string,
+  bearing: number
+): RadarSettingItem => ({
+  id: key,
+  level: 0,
+  title: `${title} Arc`,
+  description,
+  keys: [key, styleKey],
+  render: ({ view, set }) => (
+    <ArcEventCard
+      title={title}
+      description={description}
+      enabled={view[key]}
+      onToggle={(value) => set({ [key]: value })}
+      style={view[styleKey]}
+      onStyle={(value) => set({ [styleKey]: value })}
+      moduleOff={!view[module]}
+      moduleName={title}
+      color={hex(view.alongsideColor)}
+      bearing={bearing}
+      thickness={view.arcThickness}
+    />
+  ),
+});
+
+/** The span of one event's arc, as a pair of sliders. */
+const arcLength = (
+  minKey: NumberKey,
+  maxKey: NumberKey,
+  title: string,
+  arcKey: BooleanKey,
+  module: BooleanKey,
+  description = 'Half the arc either side of the car: for one far off, and one right beside you.'
+): RadarSettingItem => ({
+  id: minKey,
+  level: 1,
+  title: `${title} Arc Length`,
+  description,
+  keys: [minKey, maxKey],
+  hidden: (view) => !view[arcKey] || !view[module],
+  render: ({ view, set }) => (
+    <div className="space-y-2 pl-3 border-l-2 border-slate-700">
+      <SettingSliderRow
+        title={`${title} Arc, Smallest`}
+        description={description}
+        value={view[minKey]}
+        units="°"
+        min={2}
+        max={30}
+        step={1}
+        onChange={(value) =>
+          set({ [minKey]: value, [maxKey]: Math.max(view[maxKey], value) })
+        }
+      />
+      <SettingSliderRow
+        title={`${title} Arc, Largest`}
+        value={view[maxKey]}
+        units="°"
+        min={4}
+        max={45}
+        step={1}
+        onChange={(value) =>
+          set({ [maxKey]: value, [minKey]: Math.min(view[minKey], value) })
+        }
+      />
+    </div>
+  ),
+});
+
 export const RADAR_SECTIONS: RadarSettingSection[] = [
   {
     id: 'visibility',
     title: 'When to Show',
+    group: 'radar',
     items: [
       {
         id: 'autoHide',
@@ -304,6 +389,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
   {
     id: 'look',
     title: 'Look',
+    group: 'radar',
     items: [
       slider(
         0,
@@ -448,22 +534,76 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
     ],
   },
   {
-    id: 'warnings',
-    title: 'Warnings',
+    id: 'arcs',
+    title: 'Arcs',
+    group: 'radar',
+    summary:
+      'Marks on the rim towards a car worth watching. Every arc is here: whether it shows, how it looks and how long it is.',
     items: [
-      toggle(
+      slider(
         0,
-        'showWarnings',
-        'Warnings',
-        'Arcs on the rim and outlines on the car: amber when a car is close, pulsing red when it is alongside.'
+        'arcThickness',
+        'Thickness',
+        { units: '%', min: 3, max: 14, step: 1 },
+        'Of every arc, as a share of the radar radius.'
       ),
-      toggle(
-        0,
+      arcCard(
         'warningArcs',
-        'Rim Arcs',
-        'The arc on the rim towards a close or alongside car. Off leaves only the outline on the car.',
-        (view) => !view.showWarnings
+        'warningArcStyle',
+        'showWarnings',
+        'Close Cars',
+        'Towards a car close by or alongside.',
+        Math.PI
       ),
+      arcLength(
+        'arcMinDeg',
+        'arcMaxDeg',
+        'Close Cars',
+        'warningArcs',
+        'showWarnings'
+      ),
+      arcCard(
+        'diveArcs',
+        'diveArcStyle',
+        'showDiveWarning',
+        'Dive-Bomb',
+        'Towards a car closing fast from behind or diving in.',
+        Math.PI * 0.62
+      ),
+      arcLength(
+        'diveArcMinDeg',
+        'diveArcMaxDeg',
+        'Dive-Bomb',
+        'diveArcs',
+        'showDiveWarning'
+      ),
+      arcCard(
+        'hazardArcs',
+        'hazardArcStyle',
+        'showHazards',
+        'Hazards Ahead',
+        'Under the hazard triangle. Off leaves the triangle and the distance.',
+        -Math.PI / 2
+      ),
+      arcLength(
+        'hazardArcMinDeg',
+        'hazardArcMaxDeg',
+        'Hazards Ahead',
+        'hazardArcs',
+        'showHazards',
+        'Far off at the smallest, at the edge of the disc at the largest.'
+      ),
+    ],
+  },
+  {
+    id: 'warnings',
+    title: 'Close Cars',
+    group: 'modules',
+    summary:
+      'Outlines on the car and arcs on the rim: amber when a car is close, pulsing red when it is alongside.',
+    master: 'showWarnings',
+    arc: { on: 'warningArcs', style: 'warningArcStyle' },
+    items: [
       {
         id: 'sensitivity',
         level: 0,
@@ -535,34 +675,16 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         'How fast a car alongside pulses. 0 keeps it steady.',
         (view) => !view.showWarnings
       ),
-      slider(
-        1,
-        'arcMinDeg',
-        'Rim Arc, Smallest',
-        { units: '°', min: 2, max: 30, step: 1 },
-        'Half the width of the arc for a car far off.',
-        noRimArcs
-      ),
-      slider(
-        1,
-        'arcMaxDeg',
-        'Rim Arc, Largest',
-        { units: '°', min: 4, max: 45, step: 1 },
-        'Half the width of the arc for a car right beside you.',
-        noRimArcs
-      ),
     ],
   },
   {
-    id: 'battle',
-    title: 'Overlap & Dive-Bomb',
+    id: 'overlap',
+    title: 'Overlap',
+    group: 'modules',
+    summary:
+      'A strip along the side a car is on, showing how far it reaches along your car. It turns red once the car is owed room. When you attack, it shows on their car how far along it you reach.',
+    master: 'showOverlap',
     items: [
-      toggle(
-        0,
-        'showOverlap',
-        'Overlap Strip',
-        'A strip along the side a car is on, showing how far it reaches along your car. It turns red once the car is owed room. When you attack, it shows on their car how far along it you reach.'
-      ),
       {
         id: 'overlapThreshold',
         level: 0,
@@ -595,12 +717,17 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         'Write the overlap next to the strip.',
         (view) => !view.showOverlap
       ),
-      toggle(
-        0,
-        'showDiveWarning',
-        'Dive-Bomb Warning',
-        'Warns about a car coming up much faster from behind before it gets to your side: amber while it closes, then a pulsing red arc and a dashed outline where it is about to be. Off under yellow, behind the pace car and on pit road.'
-      ),
+    ],
+  },
+  {
+    id: 'dive',
+    title: 'Dive-Bomb',
+    group: 'modules',
+    summary:
+      'Warns about a car coming up much faster from behind before it gets to your side: amber while it closes, then pulsing red and a dashed outline where it is about to be. Off under yellow, behind the pace car and on pit road.',
+    master: 'showDiveWarning',
+    arc: { on: 'diveArcs', style: 'diveArcStyle' },
+    items: [
       slider(
         1,
         'diveMinClosingKmh',
@@ -615,13 +742,6 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         'Seconds to Your Side',
         { units: 's', min: 0.5, max: 2.5, step: 0.1 },
         'Turns red when the car will be beside you within this time and you are braking, or it has already pulled out. Amber starts at twice this.',
-        (view) => !view.showDiveWarning
-      ),
-      toggle(
-        0,
-        'diveArcs',
-        'Rim Arcs',
-        'The arc on the rim towards a car closing fast or diving in.',
         (view) => !view.showDiveWarning
       ),
       toggle(
@@ -643,13 +763,12 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
   {
     id: 'hazards',
     title: 'Hazards Ahead',
+    group: 'modules',
+    summary:
+      'Marks a car ahead that crashed, crawls, went off or is coming back on, before it comes into view: a triangle on the rim in its direction along the track, with how far it is. Brings the radar up when auto-hide has it away. Off under a full-course caution and behind the pace car.',
+    master: 'showHazards',
+    arc: { on: 'hazardArcs', style: 'hazardArcStyle' },
     items: [
-      toggle(
-        0,
-        'showHazards',
-        'Hazard Warning',
-        'Marks a car ahead that crashed, crawls, went off or is coming back on, before it comes into view: a triangle and an arc on the rim in its direction along the track, with how far it is. Brings the radar up when auto-hide has it away. Off under a full-course caution and behind the pace car.'
-      ),
       slider(
         0,
         'hazardRange',
@@ -664,13 +783,6 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         'Flash Closer Than',
         { units: 'm', min: 0, max: 500, step: 25 },
         'A crashed or slow car flashes from this close. A car coming back on flashes at any distance; one sitting off the track never does.',
-        (view) => !view.showHazards
-      ),
-      toggle(
-        0,
-        'hazardArcs',
-        'Rim Arcs',
-        'The arc on the rim under the hazard triangle. Off leaves the triangle and the distance.',
         (view) => !view.showHazards
       ),
       toggle(
@@ -706,6 +818,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
   {
     id: 'sizes',
     title: 'Car Sizes',
+    group: 'other',
     items: [
       toggle(
         1,
@@ -745,6 +858,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
   },
   {
     id: 'processing',
+    group: 'dev',
     title: 'Processing',
     dev: true,
     items: [
@@ -815,6 +929,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
   },
   {
     id: 'debug',
+    group: 'dev',
     title: 'Debug',
     dev: true,
     items: [
@@ -832,6 +947,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
   },
   {
     id: 'tools',
+    group: 'dev',
     title: 'Tools',
     dev: true,
     items: [
