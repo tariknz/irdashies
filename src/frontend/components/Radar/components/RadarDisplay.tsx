@@ -41,12 +41,16 @@ export interface RadarDisplayProps {
   style: RadarStyle;
   /** Paused while the widget is hidden, so a hidden radar costs nothing. */
   active?: boolean;
+  /**
+   * Snapshots arrive at 25 Hz; never extrapolate further than a few missed.
+   */
+  extrapolationS?: number;
+  /** Gap between lane centres beyond the car's own width, in metres. */
+  laneGapM?: number;
 }
 
-/** Snapshots arrive at 25 Hz; never extrapolate further than a few missed. */
-const MAX_EXTRAPOLATION_S = 0.15;
-/** Gap between lane centres beyond the car's own width, in metres. */
-const LANE_GAP_M = 0.7;
+/** Longest pause between paints still counted as driving, for the dashes. */
+const MAX_PAINT_GAP_S = 0.1;
 
 const FALLBACK_APPEARANCE: RadarCarAppearance = {
   fill: '#94a3b8',
@@ -63,21 +67,33 @@ export const RadarDisplay = memo(
     geometry,
     style,
     active = true,
+    extrapolationS = 0.15,
+    laneGapM = 0.7,
   }: RadarDisplayProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [size, setSize] = useState(0);
 
-    const latest = useRef({ frame, appearance, geometry, style, at: 0 });
+    const latest = useRef({
+      frame,
+      appearance,
+      geometry,
+      style,
+      extrapolationS,
+      laneGapM,
+      at: 0,
+    });
     useLayoutEffect(() => {
       latest.current = {
         frame,
         appearance,
         geometry,
         style,
+        extrapolationS,
+        laneGapM,
         at: performance.now(),
       };
-    }, [frame, appearance, geometry, style]);
+    }, [frame, appearance, geometry, style, extrapolationS, laneGapM]);
 
     useLayoutEffect(() => {
       const container = containerRef.current;
@@ -101,14 +117,25 @@ export const RadarDisplay = memo(
       const cars: RadarDrawCar[] = [];
       const follow: RadarDrawFollow = { carIdx: null, dist: 0, label: '' };
       let handle = 0;
+      // Our own odometer: lap distance jumps at the line, this never does.
+      let travelled = 0;
+      let lastPaint = performance.now();
+      let frameMs: number | undefined;
       const paint = () => {
+        const started = performance.now();
         const current = latest.current;
         const { frame: snap, style: look } = current;
         const elapsed = Math.min(
-          Math.max((performance.now() - current.at) / 1000, 0),
-          MAX_EXTRAPOLATION_S
+          Math.max((started - current.at) / 1000, 0),
+          current.extrapolationS
         );
-        const laneWidth = look.carWidth + LANE_GAP_M;
+        const sincePaint = Math.min(
+          (started - lastPaint) / 1000,
+          MAX_PAINT_GAP_S
+        );
+        lastPaint = started;
+        travelled += snap.playerSpeed * sincePaint;
+        const laneWidth = look.carWidth + current.laneGapM;
         cars.length = snap.cars.length;
         for (let index = 0; index < snap.cars.length; index += 1) {
           const car = snap.cars[index];
@@ -118,6 +145,7 @@ export const RadarDisplay = memo(
           target.carIdx = car.carIdx;
           target.dist = car.dist + car.closingSpeed * elapsed;
           target.lateral = -car.lane * laneWidth;
+          target.lane = car.lane;
           target.offTrack = car.offTrack;
           target.fill = looks.fill;
           target.textColor = looks.textColor;
@@ -155,8 +183,11 @@ export const RadarDisplay = memo(
           cars,
           follow: followTarget,
           style: look,
-          time: performance.now() / 1000,
+          time: started / 1000,
+          travelled,
+          frameMs,
         });
+        frameMs = performance.now() - started;
         if (active) handle = requestAnimationFrame(paint);
       };
       paint();

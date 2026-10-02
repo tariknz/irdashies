@@ -1,4 +1,8 @@
-import type { LapTimesSnapshot, ReferenceLapsSnapshot } from '@irdashies/types';
+import type {
+  LapTimesSnapshot,
+  RadarProcessorTuning,
+  ReferenceLapsSnapshot,
+} from '@irdashies/types';
 import type { ReferenceLapPersistence } from './ReferenceLapProcessor';
 import { CarSpeedsProcessor } from './CarSpeedsProcessor';
 import { BlindSpotProcessor } from './BlindSpotProcessor';
@@ -33,6 +37,8 @@ interface ProcessorRegistryOptions {
   referenceLapPersistence: ReferenceLapPersistence;
   /** Where the radar keeps pole sides it learns; nothing is kept without. */
   radarPoleSidePersistence?: RadarPoleSidePersistence;
+  /** The radar's dev tuning from the current dashboard; defaults without. */
+  radarTuning?: () => RadarProcessorTuning;
 }
 
 interface DefaultProcessorHostOptions extends ProcessorRegistryOptions {
@@ -64,6 +70,7 @@ const defineProcessor = <K extends AnyProcessorDefinition['channel']>(
 export const createProcessorDefinitions = ({
   referenceLapPersistence,
   radarPoleSidePersistence,
+  radarTuning,
 }: ProcessorRegistryOptions): readonly AnyProcessorDefinition[] => [
   defineProcessor({
     channel: 'blind-spot.snapshot',
@@ -120,7 +127,7 @@ export const createProcessorDefinitions = ({
   defineProcessor({
     channel: 'radar.snapshot',
     metricsPrefix: 'radar',
-    create: () => new RadarProcessor(radarPoleSidePersistence),
+    create: () => new RadarProcessor(radarPoleSidePersistence, radarTuning),
   }),
   defineProcessor({
     channel: 'radio.snapshot',

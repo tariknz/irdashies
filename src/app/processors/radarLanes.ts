@@ -1,4 +1,8 @@
-import { CarLeftRight } from '@irdashies/types';
+import {
+  CarLeftRight,
+  DEFAULT_RADAR_TUNING,
+  type RadarProcessorTuning,
+} from '@irdashies/types';
 
 import type { RadarCar } from '@irdashies/types';
 
@@ -22,14 +26,10 @@ export interface LaneOutput {
  * car that is still alongside.
  */
 export const OVERLAP_M = 5.5;
-/** Fallback search when the spotter reports more cars than sit in OVERLAP_M. */
-const OVERLAP_SEARCH_M = 8;
 /** Two rivals closer than this to each other must be side by side. */
 export const PAIR_M = 4;
 /** How long a side learnt from the spotter is kept after the overlap ends. */
 export const MEMORY_HOLD_S = 3;
-/** How fast a drawn lane moves towards its target, in lanes per second. */
-const LANE_RATE = 4;
 const MAX_LANE = 2;
 
 interface SpotterDemand {
@@ -56,19 +56,6 @@ const demandFor = (carLeftRight: number): SpotterDemand | null => {
       return null;
   }
 };
-
-/**
- * Frames the spotter must contradict the pole side before it flips, or back
- * it up before it counts as learnt: about half a second, so one misread
- * overlap cannot swap the whole formation.
- */
-const POLE_FLIP_FRAMES = 30;
-/**
- * iRacing silences the spotter while pacing, so the side is mostly learnt
- * just after the green, while the field is still two abreast in the order
- * the formation last had.
- */
-const POLE_LEARN_AFTER_S = 15;
 
 export type FormationKind = 'grid' | 'pace';
 export type PoleSide = 'left' | 'right';
@@ -126,8 +113,16 @@ const clampLane = (lane: number) =>
  * and the spotter overrules it if it keeps disagreeing. Grid and pace line
  * are learnt apart: a track may put them on different sides.
  *
- * Everything else sits in our lane. Drawn lanes move at LANE_RATE so a
- * corrected guess slides rather than jumps.
+ * Everything else sits in our lane. Drawn lanes move at `laneRate` lanes per
+ * second so a corrected guess slides rather than jumps.
+ *
+ * Tuning, see RadarTuning: `overlapSearchM` is the fallback search when the
+ * spotter reports more cars than sit in OVERLAP_M. `poleFlipFrames` (about
+ * half a second) is how long the spotter must contradict the pole side before
+ * it flips, or back it up before it counts as learnt, so one misread overlap
+ * cannot swap the whole formation. iRacing silences the spotter while pacing,
+ * so the side is mostly learnt in the `poleLearnAfterS` after the green,
+ * while the field is still two abreast in the order the formation last had.
  */
 export class RadarLaneTracker {
   private readonly rememberedLane = new Map<number, number>();
@@ -143,6 +138,11 @@ export class RadarLaneTracker {
   private lastFormation: LaneFormation | null = null;
   private lastFormationAt = -1;
   private readonly learnt: { kind: FormationKind; side: PoleSide }[] = [];
+
+  constructor(
+    private readonly tuning: () => RadarProcessorTuning = () =>
+      DEFAULT_RADAR_TUNING
+  ) {}
 
   /**
    * Side of the pole column to start from, for one formation kind or both.
@@ -198,7 +198,8 @@ export class RadarLaneTracker {
     }
     const recent =
       formation ??
-      (this.lastFormation && time - this.lastFormationAt <= POLE_LEARN_AFTER_S
+      (this.lastFormation &&
+      time - this.lastFormationAt <= this.tuning().poleLearnAfterS
         ? this.lastFormation
         : null);
     if (recent && demand) this.calibratePole(time, cars, demand, recent);
@@ -228,7 +229,7 @@ export class RadarLaneTracker {
       const previous = this.drawnLane.get(car.carIdx);
       let lane = target.lane;
       if (previous !== undefined && Number.isFinite(dt)) {
-        const step = LANE_RATE * dt;
+        const step = this.tuning().laneRate * dt;
         lane =
           previous + Math.max(-step, Math.min(step, target.lane - previous));
       }
@@ -270,7 +271,8 @@ export class RadarLaneTracker {
     const free = cars.filter((car) => !targets.has(car.carIdx));
     let candidates = free.filter((car) => Math.abs(car.dist) <= OVERLAP_M);
     if (candidates.length < wanted) {
-      candidates = free.filter((car) => Math.abs(car.dist) <= OVERLAP_SEARCH_M);
+      const search = this.tuning().overlapSearchM;
+      candidates = free.filter((car) => Math.abs(car.dist) <= search);
     }
     const sideOf = (carIdx: number) => {
       const lane = this.rememberedLane.get(carIdx);
@@ -353,7 +355,7 @@ export class RadarLaneTracker {
     if (impliedSign === pole.sign) {
       pole.contradictions = 0;
       pole.agreements += 1;
-      if (!pole.settled && pole.agreements >= POLE_FLIP_FRAMES) {
+      if (!pole.settled && pole.agreements >= this.tuning().poleFlipFrames) {
         pole.settled = true;
         this.learnt.push({ kind: formation.kind, side: sideOf(pole.sign) });
       }
@@ -361,7 +363,7 @@ export class RadarLaneTracker {
     }
     pole.agreements = 0;
     pole.contradictions += 1;
-    if (pole.contradictions >= POLE_FLIP_FRAMES) {
+    if (pole.contradictions >= this.tuning().poleFlipFrames) {
       pole.sign = impliedSign;
       // A reset (camera switch, rewind) keeps what was learnt.
       pole.configured = impliedSign;

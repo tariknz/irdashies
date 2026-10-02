@@ -8,23 +8,13 @@ import {
 } from './components/RadarDisplay';
 import { DEMO_LABELS, demoRadarFrame } from './radarDemo';
 import type { RadarStyle } from './radarDraw';
+import { radarStyleFrom } from './radarStyle';
+import { getWidgetDefaultConfig } from '@irdashies/types';
 
-const STYLE: RadarStyle = {
-  range: 30,
-  carLength: 4.5,
-  carWidth: 1.9,
-  showWarnings: true,
-  cautionDistance: 7,
-  showCarNumbers: true,
-  showTrackMap: true,
-  trackWidth: 12,
-  mapOpacity: 35,
-  showRings: true,
-  ringSpacing: 10,
-  playerColor: '#ffffff',
-  backgroundOpacity: 40,
-  edgeFade: 30,
-};
+const STYLE: RadarStyle = radarStyleFrom(getWidgetDefaultConfig('radar'), {
+  length: 4.5,
+  width: 1.9,
+});
 
 const CLASS_COLORS = ['#f59e0b', '#3b82f6', '#ec4899', '#22c55e'];
 

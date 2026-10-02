@@ -542,8 +542,113 @@ export interface RadarConfig {
   background: { opacity: number };
   /** Share of the radius, 0-100, over which the radar fades out at the rim. */
   edgeFade: number;
+  /** Dashed lines through our car, ahead/behind and left/right. */
+  showCrosshair: boolean;
+  /** Run the dashes of the line ahead/behind past at our speed. */
+  axisMotion: boolean;
+  /** Metres of each dash on the moving line; the gaps are twice as long. */
+  axisDashLength: number;
+  /** Speed of the moving dashes, % of our own. */
+  axisSpeed: number;
+  closeColor: number;
+  alongsideColor: number;
+  /** Pulses per second on cars alongside; 0 keeps them steady. */
+  pulseHz: number;
+  /** Degrees either side of the bearing a rim warning spans, at least/most. */
+  arcMinDeg: number;
+  arcMaxDeg: number;
+  /** Switch to `ovalProfile` on oval tracks. */
+  autoProfile: boolean;
+  /** Look and distances for ovals; null until the oval profile is edited. */
+  ovalProfile: Partial<RadarProfileConfig> | null;
+  tuning: RadarTuning;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
+}
+
+/** Settings that the road and oval profiles each keep their own copy of. */
+export const RADAR_PROFILE_KEYS = [
+  'range',
+  'autoHide',
+  'showDistance',
+  'hideDistance',
+  'fadeSeconds',
+  'showWarnings',
+  'cautionDistance',
+  'showCarNumbers',
+  'showTrackMap',
+  'trackWidth',
+  'mapOpacity',
+  'showRings',
+  'ringSpacing',
+  'showCrosshair',
+  'axisMotion',
+  'axisDashLength',
+  'axisSpeed',
+  'rivalColorMode',
+  'rivalCustomColor',
+  'playerColor',
+  'background',
+  'edgeFade',
+  'closeColor',
+  'alongsideColor',
+  'pulseHz',
+  'arcMinDeg',
+  'arcMaxDeg',
+] as const satisfies readonly (keyof RadarConfig)[];
+
+export type RadarProfileKey = (typeof RADAR_PROFILE_KEYS)[number];
+export type RadarProfileConfig = Pick<RadarConfig, RadarProfileKey>;
+
+/** The part of the radar tuning the telemetry processor reads. */
+export type RadarProcessorTuning = Pick<
+  RadarTuning,
+  | 'speedSmoothing'
+  | 'laneRate'
+  | 'overlapSearchM'
+  | 'poleLearnAfterS'
+  | 'poleFlipFrames'
+  | 'gridMaxSpeedMs'
+>;
+
+export const DEFAULT_RADAR_TUNING: RadarTuning = {
+  extrapolationS: 0.15,
+  laneGapM: 0.7,
+  minLabelPx: 8,
+  debugLabels: false,
+  showFrameTime: false,
+  speedSmoothing: 0.25,
+  laneRate: 4,
+  overlapSearchM: 8,
+  poleLearnAfterS: 15,
+  poleFlipFrames: 30,
+  gridMaxSpeedMs: 3,
+};
+
+/** Internals for the dev view; the defaults are what the radar was tuned on. */
+export interface RadarTuning {
+  /** Seconds a snapshot is extrapolated at most before the next arrives. */
+  extrapolationS: number;
+  /** Gap between lane centres beyond the car's own width, in metres. */
+  laneGapM: number;
+  /** Car numbers are left out on cars drawn smaller than this, in px. */
+  minLabelPx: number;
+  /** Write car index and lane next to every car. */
+  debugLabels: boolean;
+  /** Write how long a frame takes to draw. */
+  showFrameTime: boolean;
+  /** Weight of the newest sample in the per-car speed average, 0-1. */
+  speedSmoothing: number;
+  /** Lanes per second a car may move when it changes lane. */
+  laneRate: number;
+  /** Metres either side searched for an overlapping car. */
+  overlapSearchM: number;
+  /** Seconds after the green flag in which the pole side is learnt. */
+  poleLearnAfterS: number;
+  /** Frames in a row the spotter must disagree before the side flips. */
+  poleFlipFrames: number;
+  /** Below this speed, in m/s, cars count as parked on the grid. */
+  gridMaxSpeedMs: number;
 }
 
 export interface RejoinIndicatorConfig {

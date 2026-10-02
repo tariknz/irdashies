@@ -25,6 +25,7 @@ import {
 import { DEMO_LABELS, DEMO_RIVALS, demoRadarFrame } from './radarDemo';
 import { paler, rivalFill, textColorFor } from './radarColors';
 import type { RadarStyle } from './radarDraw';
+import { radarStyleFrom } from './radarStyle';
 
 const EMPTY_SNAPSHOT: RadarSnapshot = {
   focusCarIdx: null,
@@ -168,23 +169,12 @@ export const Radar = () => {
   );
 
   const style: RadarStyle = useMemo(
-    () => ({
-      range: settings.range,
-      carLength: focusSize.length,
-      carWidth: focusSize.width,
-      showWarnings: settings.showWarnings,
-      cautionDistance: settings.cautionDistance,
-      showCarNumbers: settings.showCarNumbers,
-      showTrackMap: settings.showTrackMap,
-      trackWidth: settings.trackWidth,
-      mapOpacity: settings.mapOpacity,
-      showRings: settings.showRings,
-      ringSpacing: settings.ringSpacing,
-      playerColor: playerFill,
-      backgroundOpacity: settings.background.opacity,
-      edgeFade: settings.edgeFade,
-    }),
-    [settings, playerFill, focusSize.length, focusSize.width]
+    () =>
+      radarStyleFrom(settings, {
+        length: focusSize.length,
+        width: focusSize.width,
+      }),
+    [settings, focusSize.length, focusSize.width]
   );
 
   const nearest = nearestDistance(frame.cars);
@@ -236,6 +226,8 @@ export const Radar = () => {
           geometry={isDemoMode ? null : geometry}
           style={style}
           active={visible || painting}
+          extrapolationS={settings.tuning.extrapolationS}
+          laneGapM={settings.tuning.laneGapM}
         />
       )}
     </div>

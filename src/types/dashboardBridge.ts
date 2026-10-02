@@ -35,6 +35,12 @@ export interface ContainerBoundsInfo {
   allDisplayBounds?: { x: number; y: number; width: number; height: number }[];
 }
 
+/** Pole sides the radar learnt from the spotter, by WeekendInfo.TrackName. */
+export type RadarPoleSides = Record<
+  string,
+  Partial<Record<'grid' | 'pace', 'left' | 'right'>>
+>;
+
 export interface DashboardBridge {
   onEditModeToggled: (
     callback: (value: boolean) => void
@@ -60,6 +66,14 @@ export interface DashboardBridge {
    * does) never saw the change event, so it asks on start.
    */
   getIsDemoMode?: () => Promise<boolean>;
+  /** Pole sides the radar has learnt, by track name. */
+  getRadarPoleSides?: () => Promise<RadarPoleSides>;
+  /** Set a learnt pole side by hand, or forget it with null. */
+  setRadarPoleSide?: (
+    track: string,
+    kind: 'grid' | 'pace',
+    side: 'left' | 'right' | null
+  ) => Promise<void>;
   /** Rebuilds the telemetry bridge after generalSettings.simulator changes. */
   notifySimulatorPreferenceChanged?: () => void;
   /** The running simulator, or null while auto-detection is still probing. */

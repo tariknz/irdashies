@@ -54,6 +54,8 @@ export interface FormationInput {
   sessionState: number;
   /** Per car speed along the track in m/s. */
   speeds: readonly number[];
+  /** Below this speed, in m/s, a car counts as parked in its grid box. */
+  gridMaxSpeedMs?: number;
   /** CarIdxLapCompleted: -1 until a car first crosses the line. */
   lapsCompleted: readonly number[];
   paceCarIdx: number;
@@ -72,7 +74,7 @@ export interface Formation {
 }
 
 /** Faster than this and the field is moving, not sitting on the grid. */
-const GRID_MAX_SPEED_MS = 3;
+const DEFAULT_GRID_MAX_SPEED_MS = 3;
 
 const GRIDDED_STATES: ReadonlySet<number> = new Set([
   SessionState.GetInCar,
@@ -147,7 +149,8 @@ const onGrid = (input: FormationInput): boolean => {
 };
 
 const isStill = (input: FormationInput, carIdx: number) =>
-  Math.abs(input.speeds[carIdx] ?? 0) <= GRID_MAX_SPEED_MS;
+  Math.abs(input.speeds[carIdx] ?? 0) <=
+  (input.gridMaxSpeedMs ?? DEFAULT_GRID_MAX_SPEED_MS);
 
 const gridFormation = (input: FormationInput): Formation | null => {
   const { focus, grid } = input;

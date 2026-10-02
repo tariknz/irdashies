@@ -37,3 +37,28 @@ export const saveRadarPoleSide = (
     logger.error('Failed to write radar pole sides:', error);
   }
 };
+
+/** Everything learnt so far, for the radar's dev settings. */
+export const listRadarPoleSides = (): Record<string, TrackPoleSides> =>
+  readAll();
+
+/** Set a side by hand, or forget it with null so it is learnt again. */
+export const setRadarPoleSide = (
+  track: string,
+  kind: FormationKind,
+  side: PoleSide | null
+) => {
+  const { [track]: current, ...others } = readAll();
+  const sides: TrackPoleSides = Object.fromEntries(
+    Object.entries({ ...current, [kind]: side }).filter(([, value]) => value)
+  );
+  const all = Object.keys(sides).length
+    ? { ...others, [track]: sides }
+    : others;
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(all, null, 2));
+    logger.info(`[Radar] ${kind} pole side at ${track} set to ${side}`);
+  } catch (error) {
+    logger.error('Failed to write radar pole sides:', error);
+  }
+};

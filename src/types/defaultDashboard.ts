@@ -5,7 +5,10 @@ import {
   DEFAULT_LAP_TRACE_COLORS,
   DEFAULT_LAP_TRACE_SOUND,
 } from './lapTrace';
-import { DEFAULT_INCIDENT_CAMERA_GROUP } from './widgetConfigs';
+import {
+  DEFAULT_INCIDENT_CAMERA_GROUP,
+  DEFAULT_RADAR_TUNING,
+} from './widgetConfigs';
 
 export const defaultDashboard: {
   widgets: TypedDashboardWidget[];
@@ -1112,6 +1115,18 @@ export const defaultDashboard: {
           opacity: 40,
         },
         edgeFade: 30,
+        showCrosshair: true,
+        axisMotion: true,
+        axisDashLength: 3,
+        axisSpeed: 100,
+        closeColor: 0xf59e0b,
+        alongsideColor: 0xef4444,
+        pulseHz: 2.5,
+        arcMinDeg: 6,
+        arcMaxDeg: 18,
+        autoProfile: true,
+        ovalProfile: null,
+        tuning: { ...DEFAULT_RADAR_TUNING },
         showOnlyWhenOnTrack: true,
         sessionVisibility: {
           race: true,

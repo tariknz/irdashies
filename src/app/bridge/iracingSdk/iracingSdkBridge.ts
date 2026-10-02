@@ -154,6 +154,9 @@ export async function publishIRacingSDKEvents(
   const radarPoleSideStorage = channelBus
     ? await import('../../storage/radarPoleSides')
     : undefined;
+  const radarTuningStorage = channelBus
+    ? await import('../../storage/radarTuning')
+    : undefined;
   const processorHost =
     channelBus && referenceLapStorage
       ? createDefaultProcessorHost({
@@ -170,6 +173,7 @@ export async function publishIRacingSDKEvents(
             load: radarPoleSideStorage.loadRadarPoleSides,
             save: radarPoleSideStorage.saveRadarPoleSide,
           },
+          radarTuning: radarTuningStorage?.getRadarTuning,
         })
       : undefined;
 

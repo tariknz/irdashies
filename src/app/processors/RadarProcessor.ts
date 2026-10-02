@@ -5,7 +5,12 @@ import type {
   SessionLifecycleEvent,
   Telemetry,
 } from '@irdashies/types';
-import { CarLeftRight, TrackLocation } from '@irdashies/types';
+import {
+  CarLeftRight,
+  DEFAULT_RADAR_TUNING,
+  TrackLocation,
+  type RadarProcessorTuning,
+} from '@irdashies/types';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 import {
   RadarLaneTracker,
@@ -27,8 +32,6 @@ import {
  */
 export const RADAR_MAX_RANGE_M = 120;
 
-/** Weight of the newest sample in the per-car speed average. */
-const SPEED_SMOOTHING = 0.25;
 /** A lap-distance jump faster than this is a tow or reset, not driving. */
 const MAX_PLAUSIBLE_SPEED_MS = 150;
 /** Frames further apart than this restart the speed average. */
@@ -96,7 +99,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   private previousPcts: number[] = [];
   private speeds: number[] = [];
   private previousTime = -1;
-  private readonly lanes = new RadarLaneTracker();
+  private readonly lanes: RadarLaneTracker;
   private laneFocus = -1;
   private grid: GridOptions = {
     standingStart: false,
@@ -109,8 +112,13 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   private latest: RadarSnapshot = emptySnapshot(0);
 
   constructor(
-    private readonly poleSides: RadarPoleSidePersistence = noPoleSidePersistence
-  ) {}
+    private readonly poleSides: RadarPoleSidePersistence = noPoleSidePersistence,
+    /** The dev view's tuning, read every frame so changes apply at once. */
+    private readonly tuning: () => RadarProcessorTuning = () =>
+      DEFAULT_RADAR_TUNING
+  ) {
+    this.lanes = new RadarLaneTracker(tuning);
+  }
 
   init(session: Session): void {
     this.trackLength = parseTrackLength(session?.WeekendInfo?.TrackLength);
@@ -178,6 +186,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         paceRows: valuesOf(frame, 'CarIdxPaceRow') as readonly number[],
         sessionState: scalarNumber(frame, 'SessionState'),
         speeds: this.speeds,
+        gridMaxSpeedMs: this.tuning().gridMaxSpeedMs,
         lapsCompleted: valuesOf(
           frame,
           'CarIdxLapCompleted'
@@ -288,6 +297,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
 
   private updateSpeeds(pcts: readonly unknown[], time: number): void {
     const dt = time - this.previousTime;
+    const smoothing = this.tuning().speedSmoothing;
     // A paused sim or replay repeats SessionTime; keep the last speeds.
     if (this.previousTime >= 0 && dt === 0) return;
     const restart =
@@ -311,7 +321,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         continue;
       }
       const current = this.speeds[carIdx] ?? 0;
-      this.speeds[carIdx] = current + SPEED_SMOOTHING * (sample - current);
+      // Weight of the newest sample in the per-car speed average.
+      this.speeds[carIdx] = current + smoothing * (sample - current);
     }
   }
 }
