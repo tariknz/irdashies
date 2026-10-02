@@ -22,7 +22,8 @@ import {
   nextAutoHideVisible,
   selectRadarCars,
 } from './radarModel';
-import { DEMO_LABELS, DEMO_RIVALS, demoRadarFrame } from './radarDemo';
+import { demoAppearance } from './radarDemo';
+import { useDemoRadarFrame } from './hooks/useDemoRadarFrame';
 import { paler, rivalFill, textColorFor } from './radarColors';
 import type { RadarStyle } from './radarDraw';
 import { radarStyleFrom } from './radarStyle';
@@ -57,23 +58,6 @@ const appearanceFor = (
   width: size.width,
 });
 
-const useDemoFrame = (enabled: boolean): RadarFrame | null => {
-  const [frame, setFrame] = useState<RadarFrame | null>(null);
-  useEffect(() => {
-    if (!enabled) return;
-    const started = performance.now();
-    const timer = setInterval(
-      () => setFrame(demoRadarFrame((performance.now() - started) / 1000)),
-      40
-    );
-    return () => {
-      clearInterval(timer);
-      setFrame(null);
-    };
-  }, [enabled]);
-  return enabled ? (frame ?? demoRadarFrame(0)) : null;
-};
-
 export const Radar = () => {
   const settings = useRadarSettings();
   const { isDemoMode } = useDashboard();
@@ -86,7 +70,7 @@ export const Radar = () => {
     (state) => state.session?.WeekendInfo?.TrackID
   );
   const trackLength = useTrackLength();
-  const demoFrame = useDemoFrame(isDemoMode);
+  const demoFrame = useDemoRadarFrame(isDemoMode);
 
   const geometry = useMemo(() => {
     const path = getTrackPathData(trackId);
@@ -115,14 +99,7 @@ export const Radar = () => {
   const appearance = useMemo(() => {
     const map = new Map<number, RadarCarAppearance>();
     if (isDemoMode) {
-      for (const [carIdx, label] of Object.entries(DEMO_LABELS)) {
-        const fill = rivalFill(colorMode, customFill, DEMO_RIVALS[+carIdx]);
-        map.set(
-          Number(carIdx),
-          appearanceFor(fill, label, sizeOptions.fallback)
-        );
-      }
-      return map;
+      return demoAppearance(colorMode, customFill, sizeOptions.fallback);
     }
     for (const driver of drivers ?? []) {
       const fill = rivalFill(colorMode, customFill, {

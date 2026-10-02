@@ -1,5 +1,7 @@
-import type { RivalColorSource } from './radarColors';
-import type { RadarFrame } from './components/RadarDisplay';
+import { rivalFill, textColorFor, type RivalColorSource } from './radarColors';
+import type { RadarCarAppearance, RadarFrame } from './components/RadarDisplay';
+import type { CarSize } from '@irdashies/domain/radar/carSizes';
+import type { RadarConfig } from '@irdashies/types';
 
 /**
  * A scripted pack for demo mode and stories: one car slides up the left,
@@ -61,4 +63,24 @@ export const DEMO_RIVALS: Readonly<Record<number, RivalColorSource>> = {
   2: { license: 'B 2.45', rating: 1800, classColor: '#33ceff' },
   3: { license: 'C 3.80', rating: 1500, classColor: '#ffda59' },
   4: { license: 'D 1.90', rating: 1100, classColor: '#33ceff' },
+};
+
+/** How the demo pack looks under the current colour settings. */
+export const demoAppearance = (
+  colorMode: RadarConfig['rivalColorMode'],
+  customFill: string,
+  size: CarSize
+): Map<number, RadarCarAppearance> => {
+  const map = new Map<number, RadarCarAppearance>();
+  for (const [carIdx, label] of Object.entries(DEMO_LABELS)) {
+    const fill = rivalFill(colorMode, customFill, DEMO_RIVALS[+carIdx]);
+    map.set(Number(carIdx), {
+      fill,
+      textColor: textColorFor(fill),
+      label,
+      length: size.length,
+      width: size.width,
+    });
+  }
+  return map;
 };

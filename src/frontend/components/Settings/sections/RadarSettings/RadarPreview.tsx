@@ -1,0 +1,46 @@
+import { useMemo } from 'react';
+import type { RadarConfig } from '@irdashies/types';
+import { colorNumToHex } from '@irdashies/utils/colors';
+import { RadarDisplay } from '../../../Radar/components/RadarDisplay';
+import { useDemoRadarFrame } from '../../../Radar/hooks/useDemoRadarFrame';
+import { demoAppearance } from '../../../Radar/radarDemo';
+import { paler } from '../../../Radar/radarColors';
+import { radarStyleFrom } from '../../../Radar/radarStyle';
+
+/** The demo pack drawn with the settings being edited. */
+export const RadarPreview = ({ config }: { config: RadarConfig }) => {
+  const frame = useDemoRadarFrame(true);
+  const size = useMemo(
+    () => ({ length: config.carLength, width: config.carWidth }),
+    [config.carLength, config.carWidth]
+  );
+  const playerFill = colorNumToHex(config.playerColor) ?? '#ffffff';
+  const customFill =
+    colorNumToHex(config.rivalCustomColor ?? undefined) ?? paler(playerFill);
+  const appearance = useMemo(
+    () => demoAppearance(config.rivalColorMode, customFill, size),
+    [config.rivalColorMode, customFill, size]
+  );
+  const style = useMemo(() => radarStyleFrom(config, size), [config, size]);
+
+  if (!frame) return null;
+  return (
+    <div
+      className="w-44 h-44 shrink-0 rounded-md"
+      style={{
+        background:
+          'repeating-linear-gradient(100deg, #3f4a3a 0 24px, #45503f 24px 52px)',
+      }}
+      aria-label="Radar preview"
+    >
+      <RadarDisplay
+        frame={frame}
+        appearance={appearance}
+        geometry={null}
+        style={style}
+        extrapolationS={config.tuning.extrapolationS}
+        laneGapM={config.tuning.laneGapM}
+      />
+    </div>
+  );
+};
