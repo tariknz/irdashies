@@ -156,6 +156,8 @@ export interface RadarSnapshot {
   /** Metres, from the session's WeekendInfo. 0 until a session arrives. */
   trackLength: number;
   focusOnPitRoad: boolean;
+  /** The focus car is parked in its pit box. */
+  focusInPitBox: boolean;
   isOnTrack: boolean;
   /**
    * The field is in a known formation: sitting on a standing-start grid, or

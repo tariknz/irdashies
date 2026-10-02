@@ -170,12 +170,27 @@ describe('RadarProcessor', () => {
       })
     );
 
-    const { cars, focusOnPitRoad } = processor.snapshot();
+    const { cars, focusOnPitRoad, focusInPitBox } = processor.snapshot();
     expect(focusOnPitRoad).toBe(true);
+    expect(focusInPitBox).toBe(false);
     expect(cars).toMatchObject([
       { carIdx: 1, onPitRoad: true, offTrack: false },
       { carIdx: 2, onPitRoad: false, offTrack: true },
     ]);
+  });
+
+  it('reports the focus car parked in its pit box', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      frame({
+        time: 1,
+        pcts: [0.5, 0.5 + m(8)],
+        onPitRoad: [true, true],
+        surfaces: [TrackLocation.InPitStall, TrackLocation.OnTrack],
+      })
+    );
+
+    expect(processor.snapshot().focusInPitBox).toBe(true);
   });
 
   it('does not republish an unchanged empty radar', () => {

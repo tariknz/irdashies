@@ -22,7 +22,8 @@ import {
   nextAutoHideVisible,
   selectRadarCars,
 } from './radarModel';
-import { DEMO_LABELS, demoRadarFrame } from './radarDemo';
+import { DEMO_LABELS, DEMO_RIVALS, demoRadarFrame } from './radarDemo';
+import { paler, rivalFill, textColorFor } from './radarColors';
 import type { RadarStyle } from './radarDraw';
 
 const EMPTY_SNAPSHOT: RadarSnapshot = {
@@ -31,6 +32,7 @@ const EMPTY_SNAPSHOT: RadarSnapshot = {
   playerSpeed: 0,
   trackLength: 0,
   focusOnPitRoad: false,
+  focusInPitBox: false,
   isOnTrack: false,
   formation: null,
   follow: null,
@@ -41,15 +43,6 @@ const EMPTY_SNAPSHOT: RadarSnapshot = {
 const selectSnapshot = (snapshot: RadarSnapshot) => snapshot;
 const sameVersion = (a: RadarSnapshot, b: RadarSnapshot) =>
   a.version === b.version;
-
-/** Black or white, whichever reads better on `hex`. */
-const textColorFor = (hex: string): string => {
-  const value = parseInt(hex.slice(1), 16);
-  const r = (value >> 16) & 0xff;
-  const g = (value >> 8) & 0xff;
-  const b = value & 0xff;
-  return r * 0.299 + g * 0.587 + b * 0.114 > 150 ? '#0f172a' : '#ffffff';
-};
 
 const appearanceFor = (
   fill: string,
@@ -101,7 +94,10 @@ export const Radar = () => {
       : null;
   }, [trackId, trackLength]);
 
-  const rivalFill = colorNumToHex(settings.rivalColor) ?? '#f59e0b';
+  const playerFill = colorNumToHex(settings.playerColor) ?? '#ffffff';
+  const customFill =
+    colorNumToHex(settings.rivalCustomColor ?? undefined) ?? paler(playerFill);
+  const colorMode = settings.rivalColorMode;
   const sizeOptions = useMemo(
     () => ({
       sizeByClass: settings.sizeByClass,
@@ -119,18 +115,20 @@ export const Radar = () => {
     const map = new Map<number, RadarCarAppearance>();
     if (isDemoMode) {
       for (const [carIdx, label] of Object.entries(DEMO_LABELS)) {
+        const fill = rivalFill(colorMode, customFill, DEMO_RIVALS[+carIdx]);
         map.set(
           Number(carIdx),
-          appearanceFor(rivalFill, label, sizeOptions.fallback)
+          appearanceFor(fill, label, sizeOptions.fallback)
         );
       }
       return map;
     }
     for (const driver of drivers ?? []) {
-      const fill =
-        settings.rivalColorMode === 'class'
-          ? (colorNumToHex(driver.CarClassColor) ?? rivalFill)
-          : rivalFill;
+      const fill = rivalFill(colorMode, customFill, {
+        license: driver.LicString,
+        rating: driver.IRating,
+        classColor: colorNumToHex(driver.CarClassColor),
+      });
       const size = resolveCarSize(
         driver.CarClassShortName,
         driver.CarScreenName,
@@ -139,7 +137,7 @@ export const Radar = () => {
       map.set(driver.CarIdx, appearanceFor(fill, driver.CarNumber ?? '', size));
     }
     return map;
-  }, [drivers, isDemoMode, rivalFill, settings.rivalColorMode, sizeOptions]);
+  }, [drivers, isDemoMode, customFill, colorMode, sizeOptions]);
 
   // Our own size: the focus car's class, so overlap is judged on both cars.
   const focusSize =
@@ -182,10 +180,10 @@ export const Radar = () => {
       mapOpacity: settings.mapOpacity,
       showRings: settings.showRings,
       ringSpacing: settings.ringSpacing,
-      playerColor: colorNumToHex(settings.playerColor) ?? '#ffffff',
+      playerColor: playerFill,
       backgroundOpacity: settings.background.opacity,
     }),
-    [settings, focusSize.length, focusSize.width]
+    [settings, playerFill, focusSize.length, focusSize.width]
   );
 
   const nearest = nearestDistance(frame.cars);
@@ -200,9 +198,13 @@ export const Radar = () => {
   }, [nearest, settings.showDistance, settings.hideDistance]);
 
   const onTrackOk = !settings.showOnlyWhenOnTrack || snapshot.isOnTrack;
+  const inPitBox = settings.hideInPitBox && snapshot.focusInPitBox;
   const visible =
     isDemoMode ||
-    (sessionVisible && onTrackOk && (!settings.autoHide || autoVisible));
+    (sessionVisible &&
+      onTrackOk &&
+      !inPitBox &&
+      (!settings.autoHide || autoVisible));
 
   // Keep painting through the fade-out, then stop.
   const fadeMs = Math.max(0, settings.fadeSeconds * 1000);

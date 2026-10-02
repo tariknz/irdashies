@@ -1,3 +1,4 @@
+import type { RivalColorSource } from './radarColors';
 import type { RadarFrame } from './components/RadarDisplay';
 
 /**
@@ -49,4 +50,12 @@ export const DEMO_LABELS: Readonly<Record<number, string>> = {
   2: '24',
   3: '3',
   4: '88',
+};
+
+/** Made-up licences and classes so every colour mode has something to show. */
+export const DEMO_RIVALS: Readonly<Record<number, RivalColorSource>> = {
+  1: { license: 'A 3.12', rating: 2400, classColor: '#ffda59' },
+  2: { license: 'B 2.45', rating: 1800, classColor: '#33ceff' },
+  3: { license: 'C 3.80', rating: 1500, classColor: '#ffda59' },
+  4: { license: 'D 1.90', rating: 1100, classColor: '#33ceff' },
 };

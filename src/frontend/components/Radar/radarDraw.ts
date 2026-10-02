@@ -117,6 +117,27 @@ const drawRoad = (
   ctx.stroke();
 };
 
+const GUIDE_STROKE = 'rgba(148, 163, 184, 0.35)';
+const GUIDE_DASH = [4, 4];
+
+/** Dashed lines through our car, ahead/behind and left/right. */
+const drawCrosshair = (
+  ctx: CanvasRenderingContext2D,
+  centre: number,
+  radius: number
+) => {
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = GUIDE_STROKE;
+  ctx.setLineDash(GUIDE_DASH);
+  ctx.beginPath();
+  ctx.moveTo(centre, centre - radius);
+  ctx.lineTo(centre, centre + radius);
+  ctx.moveTo(centre - radius, centre);
+  ctx.lineTo(centre + radius, centre);
+  ctx.stroke();
+  ctx.setLineDash([]);
+};
+
 const drawRings = (
   ctx: CanvasRenderingContext2D,
   centre: number,
@@ -136,10 +157,12 @@ const drawRings = (
     metres += style.ringSpacing
   ) {
     const ringRadius = metres * pixelsPerMetre;
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.strokeStyle = GUIDE_STROKE;
+    ctx.setLineDash(GUIDE_DASH);
     ctx.beginPath();
     ctx.arc(centre, centre, ringRadius, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.setLineDash([]);
     ctx.fillStyle = 'rgba(203, 213, 225, 0.6)';
     ctx.fillText(`${metres}m`, centre, centre - ringRadius - 1);
   }
@@ -331,7 +354,10 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
   rimWarningCount = 0;
 
   if (style.showTrackMap) drawRoad(ctx, style, pixelsPerMetre);
-  if (style.showRings) drawRings(ctx, centre, radius, style, pixelsPerMetre);
+  if (style.showRings) {
+    drawCrosshair(ctx, centre, radius);
+    drawRings(ctx, centre, radius, style, pixelsPerMetre);
+  }
 
   const length = style.carLength * pixelsPerMetre;
   const width = style.carWidth * pixelsPerMetre;
@@ -452,9 +478,4 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
   }
 
   ctx.restore();
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.6)';
-  ctx.beginPath();
-  ctx.arc(centre, centre, radius, 0, Math.PI * 2);
-  ctx.stroke();
 };

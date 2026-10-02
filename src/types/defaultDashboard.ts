@@ -1104,8 +1104,9 @@ export const defaultDashboard: {
         showRings: true,
         ringSpacing: 10,
         hideInPit: true,
+        hideInPitBox: true,
         rivalColorMode: 'class',
-        rivalColor: 16096779,
+        rivalCustomColor: null,
         playerColor: 16777215,
         background: {
           opacity: 40,

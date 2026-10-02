@@ -529,9 +529,15 @@ export interface RadarConfig {
   ringSpacing: number;
   /** Hide cars on pit road while we are on track, and the reverse. */
   hideInPit: boolean;
-  /** Rival fill: their class colour, or one colour for everyone. */
-  rivalColorMode: 'class' | 'custom';
-  rivalColor: number;
+  /** Keep the radar off screen while our car sits in its pit box. */
+  hideInPitBox: boolean;
+  /**
+   * Rival fill: their licence colour as on the rating badge, their class
+   * colour, or one colour for everyone.
+   */
+  rivalColorMode: 'safety' | 'class' | 'custom';
+  /** Colour for `custom`; null picks a paler shade of `playerColor`. */
+  rivalCustomColor: number | null;
   playerColor: number;
   background: { opacity: number };
   showOnlyWhenOnTrack: boolean;

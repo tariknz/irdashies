@@ -15,6 +15,7 @@ import { SettingsSection } from '../components/SettingSection';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { HIGHLIGHT_COLOR_PRESETS } from './GeneralSettings';
+import { paler } from '../../Radar/radarColors';
 
 const SETTING_ID = 'radar';
 
@@ -57,6 +58,46 @@ const ColorRow = ({
     </div>
   </div>
 );
+
+/** Free colour pick; until one is made, a paler shade of our own car. */
+const CustomColorRow = ({
+  value,
+  playerColor,
+  onChange,
+}: {
+  value: number | null;
+  playerColor: number;
+  onChange: (value: number | null) => void;
+}) => {
+  const shown = value === null ? paler(hex(playerColor)) : hex(value);
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div>
+        <div className="text-sm text-slate-300">Rival Fill</div>
+        <div className="text-xs text-slate-500">
+          {value === null ? 'A paler shade of your car.' : 'Your own pick.'}
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        {value !== null && (
+          <button
+            type="button"
+            className="text-xs text-slate-400 hover:text-slate-200"
+            onClick={() => onChange(null)}
+          >
+            Reset
+          </button>
+        )}
+        <input
+          type="color"
+          value={shown}
+          onChange={(e) => onChange(parseInt(e.target.value.slice(1), 16))}
+          className="w-10 h-8 bg-slate-700 rounded cursor-pointer"
+        />
+      </div>
+    </div>
+  );
+};
 
 interface SessionClass {
   name: string;
@@ -303,19 +344,20 @@ export const RadarSettings = () => {
               />
               <SettingSelectRow
                 title="Rival Colour"
-                description="Colour rivals by their car class, or all the same."
+                description="Colour rivals by licence (as on the rating badge), by car class, or all the same."
                 value={config.rivalColorMode}
                 options={[
+                  { label: 'Licence (safety rating)', value: 'safety' },
                   { label: 'Car class', value: 'class' },
-                  { label: 'Single colour', value: 'custom' },
+                  { label: 'Custom', value: 'custom' },
                 ]}
                 onChange={(v) => handleConfigChange({ rivalColorMode: v })}
               />
               {config.rivalColorMode === 'custom' && (
-                <ColorRow
-                  title="Rival Fill"
-                  value={config.rivalColor}
-                  onChange={(v) => handleConfigChange({ rivalColor: v })}
+                <CustomColorRow
+                  value={config.rivalCustomColor}
+                  playerColor={config.playerColor}
+                  onChange={(v) => handleConfigChange({ rivalCustomColor: v })}
                 />
               )}
               <ColorRow
@@ -413,7 +455,7 @@ export const RadarSettings = () => {
               />
               <SettingToggleRow
                 title="Size Cars by Class"
-                description="Draw prototypes, stock cars and formula cars at their own typical size instead of the default."
+                description="Draw prototypes, stock cars and formula cars at their own typical size instead of the default. Sizes also decide when a car counts as alongside or close."
                 enabled={config.sizeByClass}
                 onToggle={(v) => handleConfigChange({ sizeByClass: v })}
               />
@@ -433,6 +475,12 @@ export const RadarSettings = () => {
                 description="On track, hide cars on pit road; on pit road, hide cars on track."
                 enabled={config.hideInPit}
                 onToggle={(v) => handleConfigChange({ hideInPit: v })}
+              />
+              <SettingToggleRow
+                title="Hide in Pit Box"
+                description="Keep the radar off screen while your car is parked in its pit box."
+                enabled={config.hideInPitBox}
+                onToggle={(v) => handleConfigChange({ hideInPitBox: v })}
               />
             </SettingsSection>
           )}

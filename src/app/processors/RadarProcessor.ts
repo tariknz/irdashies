@@ -221,6 +221,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       playerSpeed: focus >= 0 ? (this.speeds[focus] ?? 0) : 0,
       trackLength: this.trackLength,
       focusOnPitRoad: focus >= 0 && onPitRoad[focus] === true,
+      focusInPitBox:
+        focus >= 0 && numberAt(surfaces, focus) === TrackLocation.InPitStall,
       isOnTrack,
       formation: formation?.kind ?? null,
       follow,
@@ -320,6 +322,7 @@ const emptySnapshot = (version: number): RadarSnapshot => ({
   playerSpeed: 0,
   trackLength: 0,
   focusOnPitRoad: false,
+  focusInPitBox: false,
   isOnTrack: false,
   formation: null,
   follow: null,
@@ -342,6 +345,7 @@ const sameSnapshot = (
   previous.playerPct === next.playerPct &&
   previous.trackLength === next.trackLength &&
   previous.focusOnPitRoad === next.focusOnPitRoad &&
+  previous.focusInPitBox === next.focusInPitBox &&
   previous.isOnTrack === next.isOnTrack &&
   previous.formation === next.formation &&
   previous.follow?.carIdx === next.follow?.carIdx &&
