@@ -290,6 +290,16 @@ export const RadarSettings = () => {
                   handleConfigChange({ background: { opacity: v } })
                 }
               />
+              <SettingSliderRow
+                title="Edge Fade"
+                description="How much of the radar fades out towards the edge, so cars ease in and out. 0% for a hard edge."
+                value={config.edgeFade}
+                units="%"
+                min={0}
+                max={100}
+                step={5}
+                onChange={(v) => handleConfigChange({ edgeFade: v })}
+              />
               <SettingDivider />
               <SettingToggleRow
                 title="Show Road"

@@ -182,6 +182,7 @@ export const Radar = () => {
       ringSpacing: settings.ringSpacing,
       playerColor: playerFill,
       backgroundOpacity: settings.background.opacity,
+      edgeFade: settings.edgeFade,
     }),
     [settings, playerFill, focusSize.length, focusSize.width]
   );

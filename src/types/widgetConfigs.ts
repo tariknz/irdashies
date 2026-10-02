@@ -540,6 +540,8 @@ export interface RadarConfig {
   rivalCustomColor: number | null;
   playerColor: number;
   background: { opacity: number };
+  /** Share of the radius, 0-100, over which the radar fades out at the rim. */
+  edgeFade: number;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }

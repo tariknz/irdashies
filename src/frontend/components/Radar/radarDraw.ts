@@ -52,6 +52,8 @@ export interface RadarStyle {
   playerColor: string;
   /** 0-100 */
   backgroundOpacity: number;
+  /** Share of the radius, 0-100, over which the picture fades out at the rim. */
+  edgeFade: number;
 }
 
 /** The car to line up behind while pacing. */
@@ -87,8 +89,6 @@ const PACE_CAR_FILL = '#e2e8f0';
 const ROAD_OVERSCAN = 1.5;
 const ROAD_STEP_M = 1;
 const MIN_LABEL_PX = 8;
-/** Share of the radius where the picture starts fading out towards the rim. */
-const FADE_START = 0.7;
 
 const projector = new RadarProjector();
 const pose: ScreenPose = { x: 0, y: 0, angle: 0 };
@@ -447,19 +447,22 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
 
   // Fade everything drawn so far towards the rim, then slide the background
   // in underneath, so cars ease in and out at the edge of the range.
-  const fade = ctx.createRadialGradient(
-    centre,
-    centre,
-    radius * FADE_START,
-    centre,
-    centre,
-    radius
-  );
-  fade.addColorStop(0, 'rgba(0, 0, 0, 1)');
-  fade.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  ctx.globalCompositeOperation = 'destination-in';
-  ctx.fillStyle = fade;
-  ctx.fillRect(0, 0, size, size);
+  const fadeShare = Math.min(Math.max(style.edgeFade, 0), 100) / 100;
+  if (fadeShare > 0) {
+    const fade = ctx.createRadialGradient(
+      centre,
+      centre,
+      radius * (1 - fadeShare),
+      centre,
+      centre,
+      radius
+    );
+    fade.addColorStop(0, 'rgba(0, 0, 0, 1)');
+    fade.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.fillStyle = fade;
+    ctx.fillRect(0, 0, size, size);
+  }
   ctx.globalCompositeOperation = 'destination-over';
   ctx.fillStyle = `rgba(15, 23, 42, ${style.backgroundOpacity / 100})`;
   ctx.fillRect(0, 0, size, size);

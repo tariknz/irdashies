@@ -23,6 +23,7 @@ const STYLE: RadarStyle = {
   ringSpacing: 10,
   playerColor: '#ffffff',
   backgroundOpacity: 40,
+  edgeFade: 30,
 };
 
 const CLASS_COLORS = ['#f59e0b', '#3b82f6', '#ec4899', '#22c55e'];

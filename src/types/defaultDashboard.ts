@@ -1111,6 +1111,7 @@ export const defaultDashboard: {
         background: {
           opacity: 40,
         },
+        edgeFade: 30,
         showOnlyWhenOnTrack: true,
         sessionVisibility: {
           race: true,
