@@ -169,6 +169,13 @@ export interface RadarSnapshot {
    * row). `dist` is in metres and not limited to the radar's range.
    */
   follow: { carIdx: number; dist: number; isPaceCar: boolean } | null;
+  /**
+   * Brake pedal 0..1 while we drive the focus car ourselves; null when the
+   * camera is on someone else, whose pedals the sim does not report.
+   */
+  focusBrake: number | null;
+  /** A yellow or caution is out, so position fights are off. */
+  caution: boolean;
   /** Only cars within the processor's range, nearest first. */
   cars: readonly RadarCar[];
   version: number;

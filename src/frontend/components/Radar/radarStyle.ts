@@ -2,6 +2,7 @@ import type { RadarConfig } from '@irdashies/types';
 import { colorNumToHex } from '@irdashies/utils/colors';
 import type { RadarStyle } from './radarDraw';
 import type { CarSize } from '@irdashies/domain/radar/carSizes';
+import { OVERLAP_MARKS } from './radarHints';
 
 /** What the drawing needs from the saved settings; `player` is our size. */
 export const radarStyleFrom = (
@@ -31,6 +32,12 @@ export const radarStyleFrom = (
   pulseHz: settings.pulseHz,
   arcMinDeg: settings.arcMinDeg,
   arcMaxDeg: settings.arcMaxDeg,
+  showOverlap: settings.showOverlap,
+  overlapThreshold:
+    OVERLAP_MARKS[settings.overlapThreshold] ?? OVERLAP_MARKS.door,
+  overlapShowPercent: settings.overlapShowPercent,
+  diveGhost: settings.diveGhost,
+  diveShowClosing: settings.diveShowClosing,
   minLabelPx: settings.tuning.minLabelPx,
   debugLabels: settings.tuning.debugLabels,
   showFrameTime: settings.tuning.showFrameTime,

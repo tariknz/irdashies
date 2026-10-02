@@ -488,6 +488,9 @@ export interface BlindSpotMonitorConfig {
   thresholdColor2?: number;
 }
 
+/** Where along our car a rival must reach to be owed room. */
+export type RadarOverlapThreshold = 'rearWheel' | 'door' | 'frontWheel';
+
 export interface RadarConfig {
   /** Metres from the centre to the edge of the disc. */
   range: number;
@@ -557,6 +560,25 @@ export interface RadarConfig {
   /** Degrees either side of the bearing a rim warning spans, at least/most. */
   arcMinDeg: number;
   arcMaxDeg: number;
+  /**
+   * A strip along the side a rival is on, showing how far along our car it
+   * reaches (or how far along its car we reach when we attack).
+   */
+  showOverlap: boolean;
+  /** How far alongside counts as owed room: the strip turns red from there. */
+  overlapThreshold: RadarOverlapThreshold;
+  /** Write the overlap in per cent next to the strip. */
+  overlapShowPercent: boolean;
+  /** Warn early about a car coming up fast from behind and diving in. */
+  showDiveWarning: boolean;
+  /** Closing speed in km/h below which a car behind is no worry. */
+  diveMinClosingKmh: number;
+  /** Seconds to our side under which a fast car turns into a dive warning. */
+  diveWarnSeconds: number;
+  /** Draw where a diving car will be shortly, as a dashed outline. */
+  diveGhost: boolean;
+  /** Write the closing speed (and time to our side) next to a fast car. */
+  diveShowClosing: boolean;
   /** Switch to `ovalProfile` on oval tracks. */
   autoProfile: boolean;
   /** Look and distances for ovals; null until the oval profile is edited. */
@@ -595,6 +617,14 @@ export const RADAR_PROFILE_KEYS = [
   'pulseHz',
   'arcMinDeg',
   'arcMaxDeg',
+  'showOverlap',
+  'overlapThreshold',
+  'overlapShowPercent',
+  'showDiveWarning',
+  'diveMinClosingKmh',
+  'diveWarnSeconds',
+  'diveGhost',
+  'diveShowClosing',
 ] as const satisfies readonly (keyof RadarConfig)[];
 
 export type RadarProfileKey = (typeof RADAR_PROFILE_KEYS)[number];

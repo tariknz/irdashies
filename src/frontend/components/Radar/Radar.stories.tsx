@@ -77,6 +77,7 @@ const OnTrack = ({
     playerSpeed: speed,
     trackLength,
     cars: demo.cars,
+    focusBrake: demo.focusBrake,
     follow:
       followDist === undefined
         ? null
@@ -102,8 +103,16 @@ const OnTrack = ({
       appearance={appearance}
       geometry={geometry}
       style={style}
+      dive={DIVE}
     />
   );
+};
+
+const DIVE = {
+  enabled: true,
+  minClosingKmh: 15,
+  warnSeconds: 1.2,
+  cornerSide: true,
 };
 
 const meta: Meta<typeof OnTrack> = {

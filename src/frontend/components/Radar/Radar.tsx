@@ -27,6 +27,7 @@ import { useDemoRadarFrame } from './hooks/useDemoRadarFrame';
 import { paler, rivalFill, textColorFor } from './radarColors';
 import type { RadarStyle } from './radarDraw';
 import { radarStyleFrom } from './radarStyle';
+import { isOvalTrack } from '@irdashies/domain/radar/radarProfile';
 
 const EMPTY_SNAPSHOT: RadarSnapshot = {
   focusCarIdx: null,
@@ -38,6 +39,8 @@ const EMPTY_SNAPSHOT: RadarSnapshot = {
   isOnTrack: false,
   formation: null,
   follow: null,
+  focusBrake: null,
+  caution: false,
   cars: [],
   version: 0,
 };
@@ -70,6 +73,9 @@ export const Radar = () => {
     (state) => state.session?.WeekendInfo?.TrackID
   );
   const trackLength = useTrackLength();
+  const trackType = useSessionStore(
+    (state) => state.session?.WeekendInfo?.TrackType
+  );
   const demoFrame = useDemoRadarFrame(isDemoMode);
 
   const geometry = useMemo(() => {
@@ -141,8 +147,30 @@ export const Radar = () => {
         trackLength: snapshot.trackLength,
         cars,
         follow: snapshot.follow,
+        focusBrake: snapshot.focusBrake,
+        quiet:
+          snapshot.caution ||
+          snapshot.formation !== null ||
+          snapshot.focusOnPitRoad,
       },
     [demoFrame, snapshot, cars]
+  );
+
+  // On an oval a car can come by on either side, so no corner guess there.
+  const cornerSide = !isOvalTrack(trackType);
+  const dive = useMemo(
+    () => ({
+      enabled: settings.showDiveWarning,
+      minClosingKmh: settings.diveMinClosingKmh,
+      warnSeconds: settings.diveWarnSeconds,
+      cornerSide,
+    }),
+    [
+      settings.showDiveWarning,
+      settings.diveMinClosingKmh,
+      settings.diveWarnSeconds,
+      cornerSide,
+    ]
   );
 
   const style: RadarStyle = useMemo(
@@ -205,6 +233,7 @@ export const Radar = () => {
           active={visible || painting}
           extrapolationS={settings.tuning.extrapolationS}
           laneGapM={settings.tuning.laneGapM}
+          dive={dive}
         />
       )}
     </div>

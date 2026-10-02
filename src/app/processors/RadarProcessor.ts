@@ -8,6 +8,7 @@ import type {
 import {
   CarLeftRight,
   DEFAULT_RADAR_TUNING,
+  GlobalFlags,
   TrackLocation,
   type RadarProcessorTuning,
 } from '@irdashies/types';
@@ -31,6 +32,13 @@ import {
  * so it sits above the largest range the settings allow.
  */
 export const RADAR_MAX_RANGE_M = 120;
+
+/** Flags under which nobody should be fighting for position. */
+const CAUTION_FLAGS =
+  GlobalFlags.Yellow |
+  GlobalFlags.YellowWaving |
+  GlobalFlags.Caution |
+  GlobalFlags.CautionWaving;
 
 /** A lap-distance jump faster than this is a tow or reset, not driving. */
 const MAX_PLAUSIBLE_SPEED_MS = 150;
@@ -224,6 +232,12 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       this.assignLanes(frame, time, focus, isOnTrack, cars, formation);
     }
 
+    // The pedals are the player's, so they say nothing about a camera car.
+    const drivingFocus =
+      isOnTrack && focus >= 0 && focus === scalarNumber(frame, 'PlayerCarIdx');
+    const brake = scalarNumber(frame, 'Brake');
+    const flags = scalarNumber(frame, 'SessionFlags', 0);
+
     const next: Omit<RadarSnapshot, 'version'> = {
       focusCarIdx: focus >= 0 ? focus : null,
       playerPct: playerPct >= 0 ? playerPct : 0,
@@ -235,6 +249,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       isOnTrack,
       formation: formation?.kind ?? null,
       follow,
+      focusBrake: drivingFocus && brake >= 0 ? brake : null,
+      caution: (flags & CAUTION_FLAGS) !== 0,
       cars,
     };
     if (sameSnapshot(this.latest, next)) return;
@@ -337,6 +353,8 @@ const emptySnapshot = (version: number): RadarSnapshot => ({
   isOnTrack: false,
   formation: null,
   follow: null,
+  focusBrake: null,
+  caution: false,
   cars: [],
   version,
 });

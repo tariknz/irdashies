@@ -22,6 +22,15 @@ export const RadarPreview = ({ config }: { config: RadarConfig }) => {
     [config.rivalColorMode, customFill, size]
   );
   const style = useMemo(() => radarStyleFrom(config, size), [config, size]);
+  const dive = useMemo(
+    () => ({
+      enabled: config.showDiveWarning,
+      minClosingKmh: config.diveMinClosingKmh,
+      warnSeconds: config.diveWarnSeconds,
+      cornerSide: false,
+    }),
+    [config.showDiveWarning, config.diveMinClosingKmh, config.diveWarnSeconds]
+  );
 
   if (!frame) return null;
   return (
@@ -40,6 +49,7 @@ export const RadarPreview = ({ config }: { config: RadarConfig }) => {
         style={style}
         extrapolationS={config.tuning.extrapolationS}
         laneGapM={config.tuning.laneGapM}
+        dive={dive}
       />
     </div>
   );

@@ -4,25 +4,44 @@ import type { CarSize } from '@irdashies/domain/radar/carSizes';
 import type { RadarConfig } from '@irdashies/types';
 
 /**
- * A scripted pack for demo mode and stories: one car slides up the left,
- * one drops back on the right, and two run nose to tail ahead.
+ * A scripted pack for demo mode and stories: one car dives up the left
+ * while we brake, sits alongside and drops back, one drops back on the
+ * right, and two run nose to tail ahead.
  */
 const DEMO_SPEED_MS = 40;
+const DEMO_CYCLE_S = 12;
+
+/** The diving car: where it is and how fast it closes, at `t` seconds. */
+const diver = (t: number) => {
+  // Closes hard from far back, pulls out to the left and brakes level.
+  if (t < 3) return { dist: -28 + 8 * t, closing: 8 };
+  if (t < 8) return { dist: -4 + 1.2 * (t - 3), closing: 1.2 };
+  return { dist: 2 - 7.5 * (t - 8), closing: -7.5 };
+};
+
+const clamp01 = (value: number) => Math.min(Math.max(value, 0), 1);
 
 export const demoRadarFrame = (seconds: number): RadarFrame => {
-  const cycle = (seconds % 12) / 12;
+  const t = seconds % DEMO_CYCLE_S;
+  const cycle = t / DEMO_CYCLE_S;
   const wave = Math.sin(cycle * Math.PI * 2);
+  const dive = diver(t);
+  // Moves out to the left once it is close, back in once it falls away.
+  const diverLane =
+    t < 8 ? -clamp01((dive.dist + 12) / 3) : -clamp01((dive.dist + 14) / 4);
   return {
     playerPct: 0,
     // Moving, so the dashes of the line ahead run past as on track.
     playerSpeed: DEMO_SPEED_MS,
     trackLength: 0,
+    // Braking for a corner while the diver comes in.
+    focusBrake: t > 1.5 && t < 4.5 ? 0.8 : 0,
     cars: [
       {
         carIdx: 1,
-        dist: -22 + cycle * 30,
-        closingSpeed: 0,
-        lane: -1,
+        dist: dive.dist,
+        closingSpeed: dive.closing,
+        lane: diverLane,
         offTrack: false,
       },
       {

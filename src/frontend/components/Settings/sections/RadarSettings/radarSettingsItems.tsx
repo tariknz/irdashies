@@ -539,6 +539,86 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
     ],
   },
   {
+    id: 'battle',
+    title: 'Overlap & Dive-Bomb',
+    items: [
+      toggle(
+        0,
+        'showOverlap',
+        'Overlap Strip',
+        'A strip along the side a car is on, showing how far it reaches along your car. It turns red once the car is owed room. When you attack, it shows on their car how far along it you reach.'
+      ),
+      {
+        id: 'overlapThreshold',
+        level: 0,
+        title: 'Room Owed From',
+        description: 'How far alongside a car must be before it is owed room.',
+        keys: ['overlapThreshold'],
+        hidden: (view) => !view.showOverlap,
+        render: ({ view, set }) => (
+          <SettingButtonGroupRow
+            title="Room Owed From"
+            description="How far alongside a car must be before it is owed room."
+            value={view.overlapThreshold}
+            options={[
+              { label: 'Rear wheel', value: 'rearWheel' },
+              { label: 'Door', value: 'door' },
+              { label: 'Front wheel', value: 'frontWheel' },
+            ]}
+            onChange={(value) =>
+              set({
+                overlapThreshold: value as RadarConfig['overlapThreshold'],
+              })
+            }
+          />
+        ),
+      },
+      toggle(
+        1,
+        'overlapShowPercent',
+        'Overlap in Per Cent',
+        'Write the overlap next to the strip.',
+        (view) => !view.showOverlap
+      ),
+      toggle(
+        0,
+        'showDiveWarning',
+        'Dive-Bomb Warning',
+        'Warns about a car coming up much faster from behind before it gets to your side: amber while it closes, then a pulsing red arc and a dashed outline where it is about to be. Off under yellow, behind the pace car and on pit road.'
+      ),
+      slider(
+        1,
+        'diveMinClosingKmh',
+        'Closing Faster Than',
+        { units: 'km/h', min: 5, max: 40, step: 1 },
+        'Cars closing slower than this are left alone.',
+        (view) => !view.showDiveWarning
+      ),
+      slider(
+        1,
+        'diveWarnSeconds',
+        'Seconds to Your Side',
+        { units: 's', min: 0.5, max: 2.5, step: 0.1 },
+        'Turns red when the car will be beside you within this time and you are braking, or it has already pulled out. Amber starts at twice this.',
+        (view) => !view.showDiveWarning
+      ),
+      toggle(
+        1,
+        'diveGhost',
+        'Show Where It Will Be',
+        'A dashed outline of the diving car 0.8 s ahead, with an arrow to it.',
+        (view) => !view.showDiveWarning
+      ),
+      toggle(
+        1,
+        'diveShowClosing',
+        'Show Closing Speed',
+        'Write how much faster the car is in km/h, and the seconds until it is beside you.',
+        (view) => !view.showDiveWarning
+      ),
+    ],
+  },
+  {
     id: 'sizes',
     title: 'Car Sizes',
     items: [

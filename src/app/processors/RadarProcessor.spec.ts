@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Session, Telemetry } from '@irdashies/types';
-import { CarLeftRight, TrackLocation } from '@irdashies/types';
+import { CarLeftRight, GlobalFlags, TrackLocation } from '@irdashies/types';
 import rollingTelemetry from '../../../test-data/1752616787255/telemetry.json';
 import rollingSession from '../../../test-data/1752616787255/session.json';
 import {
@@ -32,6 +32,8 @@ interface FrameOptions {
   surfaces?: number[];
   isOnTrack?: boolean;
   carLeftRight?: number;
+  brake?: number;
+  sessionFlags?: number;
 }
 
 const frame = ({
@@ -43,6 +45,8 @@ const frame = ({
   surfaces = pcts.map(() => TrackLocation.OnTrack),
   isOnTrack = true,
   carLeftRight = CarLeftRight.Clear,
+  brake = 0,
+  sessionFlags = 0,
 }: FrameOptions) =>
   ({
     SessionTime: { value: [time] },
@@ -53,6 +57,8 @@ const frame = ({
     CarIdxTrackSurface: { value: surfaces },
     IsOnTrack: { value: [isOnTrack] },
     CarLeftRight: { value: [carLeftRight] },
+    Brake: { value: [brake] },
+    SessionFlags: { value: [sessionFlags] },
   }) as unknown as Telemetry;
 
 /** Lap fraction for a distance in metres on the test track. */
@@ -191,6 +197,32 @@ describe('RadarProcessor', () => {
     );
 
     expect(processor.snapshot().focusInPitBox).toBe(true);
+  });
+
+  it('reports our brake pedal only while we drive the focus car', () => {
+    const processor = createProcessor();
+    processor.onFrame(frame({ time: 1, pcts: [0.5, 0.5 + m(8)], brake: 0.7 }));
+    expect(processor.snapshot().focusBrake).toBe(0.7);
+
+    processor.onFrame(
+      frame({ time: 1.04, pcts: [0.5, 0.5 + m(8)], brake: 0.7, camCarIdx: 1 })
+    );
+    expect(processor.snapshot().focusBrake).toBeNull();
+  });
+
+  it('reports a yellow or caution as out', () => {
+    const processor = createProcessor();
+    processor.onFrame(frame({ time: 1, pcts: [0.5, 0.5 + m(8)] }));
+    expect(processor.snapshot().caution).toBe(false);
+
+    processor.onFrame(
+      frame({
+        time: 1.04,
+        pcts: [0.5, 0.5 + m(8)],
+        sessionFlags: GlobalFlags.CautionWaving,
+      })
+    );
+    expect(processor.snapshot().caution).toBe(true);
   });
 
   it('does not republish an unchanged empty radar', () => {

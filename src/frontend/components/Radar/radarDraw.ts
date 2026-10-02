@@ -1,5 +1,6 @@
 import { RadarProjector, type ScreenPose } from './radarProjection';
 import type { TrackGeometry } from '@irdashies/domain/track';
+import { overlapOf, type DiveHint } from './radarHints';
 
 export interface RadarDrawCar {
   carIdx: number;
@@ -7,6 +8,8 @@ export interface RadarDrawCar {
   dist: number;
   /** Metres from our line, positive to the left. */
   lateral: number;
+  /** Rate of change of `dist` in m/s. */
+  closingSpeed: number;
   /** Lane from the spotter, for the debug labels. */
   lane: number;
   offTrack: boolean;
@@ -69,6 +72,12 @@ export interface RadarStyle {
   pulseHz: number;
   arcMinDeg: number;
   arcMaxDeg: number;
+  showOverlap: boolean;
+  /** Share of a car's length from which the overlap strip turns red. */
+  overlapThreshold: number;
+  overlapShowPercent: boolean;
+  diveGhost: boolean;
+  diveShowClosing: boolean;
   /** Car numbers are left out on cars drawn smaller than this, in px. */
   minLabelPx: number;
   debugLabels: boolean;
@@ -98,6 +107,10 @@ export interface RadarScene {
   travelled: number;
   /** Milliseconds the previous frame took, for the dev readout. */
   frameMs?: number;
+  /** Cars coming up fast behind, by car index. */
+  dives?: ReadonlyMap<number, DiveHint>;
+  /** Metres between lane centres, to place a diving car's ghost. */
+  laneWidth?: number;
 }
 
 const FOLLOW_COLOR = '#22c55e';
@@ -328,6 +341,175 @@ interface RimWarning {
   alpha: number;
 }
 
+/**
+ * A strip along one side of a car (side -1 its left, +1 its right) filled
+ * from the rear to `share` of its length, with a notch at `threshold`.
+ */
+const drawOverlapStrip = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  angle: number,
+  length: number,
+  width: number,
+  side: number,
+  share: number,
+  threshold: number,
+  color: string
+) => {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  const thickness = Math.max(2, width * 0.3);
+  const across = side * (width / 2 - thickness / 2);
+  const rear = -length / 2;
+  ctx.lineCap = 'butt';
+  ctx.lineWidth = thickness;
+  ctx.beginPath();
+  ctx.moveTo(rear, across);
+  ctx.lineTo(-rear, across);
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.25)';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(rear, across);
+  ctx.lineTo(rear + length * share, across);
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  const notch = rear + length * threshold;
+  ctx.beginPath();
+  ctx.moveTo(notch, across - thickness / 2 - 1);
+  ctx.lineTo(notch, across + thickness / 2 + 1);
+  ctx.lineWidth = Math.max(1, thickness * 0.4);
+  ctx.strokeStyle = '#0f172a';
+  ctx.stroke();
+  ctx.restore();
+};
+
+/** Text with a dark rim so it reads over cars and the road. */
+const drawHintText = (
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  color: string,
+  fontSize: number,
+  align: CanvasTextAlign
+) => {
+  // Saved, so the car-number font set up for the loop survives.
+  ctx.save();
+  ctx.font = `bold ${fontSize}px Lato, sans-serif`;
+  ctx.textAlign = align;
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.85)';
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
+  ctx.restore();
+};
+
+/** The overlap in per cent, behind the car on the strip's side. */
+const drawOverlapPercent = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  angle: number,
+  length: number,
+  width: number,
+  side: number,
+  share: number,
+  color: string,
+  fontSize: number
+) => {
+  // Beside the car is where the rival is, so the space behind is clearer.
+  const along = -length / 2 - fontSize * 0.9;
+  // Cars near ours point up too, so their local left is the screen's left.
+  const across = side * 2;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  drawHintText(
+    ctx,
+    `${Math.round(share * 100)}%`,
+    x + cos * along - sin * across,
+    y + sin * along + cos * across,
+    color,
+    fontSize,
+    side < 0 ? 'right' : 'left'
+  );
+};
+
+const ghostPose: ScreenPose = { x: 0, y: 0, angle: 0 };
+
+/** Dashed outline where a diving car is headed, and an arrow to it. */
+const drawDiveGhost = (
+  ctx: CanvasRenderingContext2D,
+  from: ScreenPose,
+  to: ScreenPose,
+  length: number,
+  width: number,
+  color: string
+) => {
+  ctx.save();
+  ctx.translate(to.x, to.y);
+  ctx.rotate(to.angle);
+  ctx.beginPath();
+  ctx.roundRect(
+    -length / 2,
+    -width / 2,
+    length,
+    width,
+    Math.min(width, length) * 0.25
+  );
+  ctx.fillStyle = color;
+  ctx.globalAlpha *= 0.15;
+  ctx.fill();
+  ctx.globalAlpha /= 0.15;
+  ctx.setLineDash([Math.max(2, width * 0.35), Math.max(2, width * 0.25)]);
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  ctx.restore();
+
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const reach = Math.hypot(dx, dy);
+  const trim = length / 2;
+  if (reach <= trim * 2) return;
+  const ux = dx / reach;
+  const uy = dy / reach;
+  const startX = from.x + ux * trim;
+  const startY = from.y + uy * trim;
+  const tipX = to.x - ux * trim;
+  const tipY = to.y - uy * trim;
+  const head = Math.max(4, width * 0.6);
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(tipX - ux * head * 0.6, tipY - uy * head * 0.6);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(tipX, tipY);
+  ctx.lineTo(
+    tipX - ux * head - uy * head * 0.6,
+    tipY - uy * head + ux * head * 0.6
+  );
+  ctx.lineTo(
+    tipX - ux * head + uy * head * 0.6,
+    tipY - uy * head - ux * head * 0.6
+  );
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+};
+
+/** Seconds ahead a diving car's ghost is drawn. */
+const GHOST_AHEAD_S = 0.8;
+
+/** Our own strips, one per side, drawn once our car is. */
+const ourStrips = { left: 0, right: 0 };
+
 /** Warning arcs are drawn after the fade, so they are kept here till then. */
 const rimWarnings: RimWarning[] = [];
 let rimWarningCount = 0;
@@ -462,6 +644,10 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
         0.45 * (0.5 + 0.5 * Math.sin(scene.time * style.pulseHz * 2 * Math.PI))
       : 1;
 
+  const hintFont = Math.max(MIN_TEXT_PX + 1, Math.round(radius / 12));
+  ourStrips.left = 0;
+  ourStrips.right = 0;
+
   // Furthest first, so the nearest car is drawn on top.
   for (let index = scene.cars.length - 1; index >= 0; index -= 1) {
     const car = scene.cars[index];
@@ -480,6 +666,113 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
         `#${car.carIdx} L${car.lane > 0 ? '+' : ''}${car.lane}`,
         carWidth
       );
+    }
+
+    if (style.showOverlap && Math.abs(car.lane) >= 0.5) {
+      const overlap = overlapOf(car.dist, car.length, style.carLength);
+      if (overlap?.onRival) {
+        // We attack: measured on its side facing us.
+        const side = Math.sign(car.lateral);
+        const color =
+          overlap.share >= style.overlapThreshold
+            ? style.alongsideColor
+            : style.closeColor;
+        drawOverlapStrip(
+          ctx,
+          pose.x,
+          pose.y,
+          pose.angle,
+          carLength,
+          carWidth,
+          side,
+          overlap.share,
+          style.overlapThreshold,
+          color
+        );
+        if (style.overlapShowPercent) {
+          drawOverlapPercent(
+            ctx,
+            pose.x,
+            pose.y,
+            pose.angle,
+            carLength,
+            carWidth,
+            side,
+            overlap.share,
+            color,
+            hintFont
+          );
+        }
+      } else if (overlap) {
+        const key = car.lateral > 0 ? 'left' : 'right';
+        ourStrips[key] = Math.max(ourStrips[key], overlap.share);
+      }
+    }
+
+    const dive = scene.dives?.get(car.carIdx);
+    if (dive) {
+      const level = warningLevel(
+        car.dist,
+        car.length,
+        style.carLength,
+        style.cautionDistance
+      );
+      const carX = pose.x;
+      const carY = pose.y;
+      if (dive.level === 'dive') {
+        ghostPose.x = pose.x;
+        ghostPose.y = pose.y;
+        ghostPose.angle = pose.angle;
+        const ghostDist = Math.min(
+          car.dist + (dive.closingKmh / 3.6) * GHOST_AHEAD_S,
+          0
+        );
+        projector.project(
+          ghostDist,
+          -dive.side * (scene.laneWidth ?? style.carWidth + 0.7),
+          pose
+        );
+        ctx.globalAlpha = pulse;
+        if (style.diveGhost && dive.side !== 0) {
+          drawDiveGhost(
+            ctx,
+            ghostPose,
+            pose,
+            carLength,
+            carWidth,
+            style.alongsideColor
+          );
+        }
+        if (dive.side === 0) {
+          // No side to point at: warn where the car is.
+          pose.x = ghostPose.x;
+          pose.y = ghostPose.y;
+        }
+        queueRimWarning(carLength, style.alongsideColor, pulse);
+        ctx.globalAlpha = 1;
+      } else if (level === 'none') {
+        queueRimWarning(carLength, style.closeColor, 0.9);
+      }
+      if (style.diveShowClosing) {
+        const color =
+          dive.level === 'dive' ? style.alongsideColor : style.closeColor;
+        const text =
+          dive.level === 'dive'
+            ? `+${Math.round(dive.closingKmh)} ${dive.secondsToSide.toFixed(1)}s`
+            : `+${Math.round(dive.closingKmh)}`;
+        // On the side away from where it is heading.
+        const away = dive.side < 0 ? 1 : dive.side > 0 ? -1 : 1;
+        drawHintText(
+          ctx,
+          text,
+          carX + away * (carWidth / 2 + 4),
+          carY,
+          color,
+          hintFont,
+          away > 0 ? 'left' : 'right'
+        );
+      }
+      projector.project(car.dist, car.lateral, pose);
     }
 
     if (!style.showWarnings) continue;
@@ -541,6 +834,40 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
     width,
     style.playerColor
   );
+  for (const key of ['left', 'right'] as const) {
+    const share = ourStrips[key];
+    if (share <= 0) continue;
+    // Our car points up, so its left is the local -y side.
+    const side = key === 'left' ? -1 : 1;
+    const color =
+      share >= style.overlapThreshold ? style.alongsideColor : style.closeColor;
+    drawOverlapStrip(
+      ctx,
+      centre,
+      centre,
+      -Math.PI / 2,
+      length,
+      width,
+      side,
+      share,
+      style.overlapThreshold,
+      color
+    );
+    if (style.overlapShowPercent) {
+      drawOverlapPercent(
+        ctx,
+        centre,
+        centre,
+        -Math.PI / 2,
+        length,
+        width,
+        side,
+        share,
+        color,
+        hintFont
+      );
+    }
+  }
 
   // Slide the background in underneath, then fade the whole disc towards
   // the rim, so cars and the disc itself ease out at the edge of the range.
