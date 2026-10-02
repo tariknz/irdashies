@@ -87,6 +87,8 @@ const PACE_CAR_FILL = '#e2e8f0';
 const ROAD_OVERSCAN = 1.5;
 const ROAD_STEP_M = 1;
 const MIN_LABEL_PX = 8;
+/** Share of the radius where the picture starts fading out towards the rim. */
+const FADE_START = 0.7;
 
 const projector = new RadarProjector();
 const pose: ScreenPose = { x: 0, y: 0, angle: 0 };
@@ -251,16 +253,38 @@ const drawWarningOutline = (
   ctx.restore();
 };
 
+interface RimWarning {
+  x: number;
+  y: number;
+  carLengthPx: number;
+  color: string;
+  alpha: number;
+}
+
+/** Warning arcs are drawn after the fade, so they are kept here till then. */
+const rimWarnings: RimWarning[] = [];
+let rimWarningCount = 0;
+
+const queueRimWarning = (carLengthPx: number, color: string, alpha: number) => {
+  const warning = rimWarnings[rimWarningCount] ?? ({} as RimWarning);
+  warning.x = pose.x;
+  warning.y = pose.y;
+  warning.carLengthPx = carLengthPx;
+  warning.color = color;
+  warning.alpha = alpha;
+  rimWarnings[rimWarningCount] = warning;
+  rimWarningCount += 1;
+};
+
 /** An arc on the rim in the direction of a rival, as wide as the car looks. */
 const drawWarningArc = (
   ctx: CanvasRenderingContext2D,
   centre: number,
   radius: number,
-  carLengthPx: number,
-  color: string
+  { x, y, carLengthPx, color }: RimWarning
 ) => {
-  const dx = pose.x - centre;
-  const dy = pose.y - centre;
+  const dx = x - centre;
+  const dy = y - centre;
   const distance = Math.max(Math.hypot(dx, dy), 1);
   const bearing = Math.atan2(dy, dx);
   const minArc = (MIN_ARC_DEG * Math.PI) / 180;
@@ -303,9 +327,8 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
   ctx.save();
   ctx.beginPath();
   ctx.arc(centre, centre, radius, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(15, 23, 42, ${style.backgroundOpacity / 100})`;
-  ctx.fill();
   ctx.clip();
+  rimWarningCount = 0;
 
   if (style.showTrackMap) drawRoad(ctx, style, pixelsPerMetre);
   if (style.showRings) drawRings(ctx, centre, radius, style, pixelsPerMetre);
@@ -348,44 +371,41 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
     const color = level === 'alongside' ? ALONGSIDE_COLOR : CLOSE_COLOR;
     ctx.globalAlpha = level === 'alongside' ? pulse : 0.9;
     drawWarningOutline(ctx, carLength, carWidth, color);
-    drawWarningArc(ctx, centre, radius, carLength, color);
+    queueRimWarning(carLength, color, ctx.globalAlpha);
     ctx.globalAlpha = 1;
   }
 
   const { follow } = scene;
-  if (follow) {
+  const followBeyondRange = !!follow && Math.abs(follow.dist) > style.range;
+  if (follow && !followBeyondRange) {
     projector.project(follow.dist, 0, pose);
-    if (Math.abs(follow.dist) <= style.range) {
-      const car = scene.cars.find((c) => c.carIdx === follow.carIdx);
-      if (car) {
-        projector.project(car.dist, car.lateral, pose);
-        drawFollowOutline(
-          ctx,
-          car.length * pixelsPerMetre,
-          car.width * pixelsPerMetre
-        );
-      } else {
-        drawCarBody(
-          ctx,
-          pose.x,
-          pose.y,
-          pose.angle,
-          length,
-          width,
-          PACE_CAR_FILL
-        );
-        if (showLabels) {
-          ctx.fillStyle = '#0f172a';
-          ctx.fillText(
-            follow.carIdx === null ? 'PC' : follow.label,
-            pose.x,
-            pose.y
-          );
-        }
-        drawFollowOutline(ctx, length, width);
-      }
+    const car = scene.cars.find((c) => c.carIdx === follow.carIdx);
+    if (car) {
+      projector.project(car.dist, car.lateral, pose);
+      drawFollowOutline(
+        ctx,
+        car.length * pixelsPerMetre,
+        car.width * pixelsPerMetre
+      );
     } else {
-      drawFollowPointer(ctx, centre, radius, follow);
+      drawCarBody(
+        ctx,
+        pose.x,
+        pose.y,
+        pose.angle,
+        length,
+        width,
+        PACE_CAR_FILL
+      );
+      if (showLabels) {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillText(
+          follow.carIdx === null ? 'PC' : follow.label,
+          pose.x,
+          pose.y
+        );
+      }
+      drawFollowOutline(ctx, length, width);
     }
   }
 
@@ -398,6 +418,38 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
     width,
     style.playerColor
   );
+
+  // Fade everything drawn so far towards the rim, then slide the background
+  // in underneath, so cars ease in and out at the edge of the range.
+  const fade = ctx.createRadialGradient(
+    centre,
+    centre,
+    radius * FADE_START,
+    centre,
+    centre,
+    radius
+  );
+  fade.addColorStop(0, 'rgba(0, 0, 0, 1)');
+  fade.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.fillStyle = fade;
+  ctx.fillRect(0, 0, size, size);
+  ctx.globalCompositeOperation = 'destination-over';
+  ctx.fillStyle = `rgba(15, 23, 42, ${style.backgroundOpacity / 100})`;
+  ctx.fillRect(0, 0, size, size);
+  ctx.globalCompositeOperation = 'source-over';
+
+  // Rim markers stay at full strength above the fade.
+  for (let index = 0; index < rimWarningCount; index += 1) {
+    const warning = rimWarnings[index];
+    ctx.globalAlpha = warning.alpha;
+    drawWarningArc(ctx, centre, radius, warning);
+  }
+  ctx.globalAlpha = 1;
+  if (follow && followBeyondRange) {
+    projector.project(follow.dist, 0, pose);
+    drawFollowPointer(ctx, centre, radius, follow);
+  }
 
   ctx.restore();
   ctx.lineWidth = 1.5;
