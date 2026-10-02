@@ -46,6 +46,7 @@ export interface RadarStyle {
   carLength: number;
   carWidth: number;
   showWarnings: boolean;
+  warningArcs: boolean;
   /** Metres of bumper gap below which a rival counts as close. */
   cautionDistance: number;
   showCarNumbers: boolean;
@@ -79,6 +80,7 @@ export interface RadarStyle {
   overlapShowPercent: boolean;
   diveGhost: boolean;
   diveShowClosing: boolean;
+  diveArcs: boolean;
   showHazards: boolean;
   /** Metres ahead a hazard is shown from. */
   hazardRange: number;
@@ -88,6 +90,7 @@ export interface RadarStyle {
   hazardSlow: boolean;
   hazardOff: boolean;
   hazardShowSpeed: boolean;
+  hazardArcs: boolean;
   /** Car numbers are left out on cars drawn smaller than this, in px. */
   minLabelPx: number;
   debugLabels: boolean;
@@ -725,20 +728,23 @@ const drawHazardMarker = (
   const minArc = style.arcMinDeg;
   const maxArc = Math.max(style.arcMaxDeg, minArc) * 1.3;
   const half = ((minArc + (maxArc - minArc) * near) * Math.PI) / 180;
-  const thickness = Math.max(4, radius * 0.07);
-  ctx.beginPath();
-  ctx.arc(
-    centre,
-    centre,
-    radius - thickness / 2,
-    bearing - half,
-    bearing + half
-  );
-  ctx.lineWidth = thickness;
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = color;
-  ctx.stroke();
-  ctx.lineCap = 'butt';
+  // Without the arc the triangle moves out to the rim in its place.
+  const thickness = style.hazardArcs ? Math.max(4, radius * 0.07) : 2;
+  if (style.hazardArcs) {
+    ctx.beginPath();
+    ctx.arc(
+      centre,
+      centre,
+      radius - thickness / 2,
+      bearing - half,
+      bearing + half
+    );
+    ctx.lineWidth = thickness;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = color;
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+  }
 
   const size = radius * (0.12 + 0.06 * near);
   const cos = Math.cos(bearing);
@@ -1007,10 +1013,12 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
           pose.x = ghostPose.x;
           pose.y = ghostPose.y;
         }
-        queueRimWarning(carLength, style.alongsideColor, pulse);
+        if (style.diveArcs) {
+          queueRimWarning(carLength, style.alongsideColor, pulse);
+        }
         ctx.globalAlpha = 1;
       } else if (level === 'none') {
-        queueRimWarning(carLength, style.closeColor, 0.9);
+        if (style.diveArcs) queueRimWarning(carLength, style.closeColor, 0.9);
       }
       if (style.diveShowClosing) {
         const color =
@@ -1046,7 +1054,7 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
       level === 'alongside' ? style.alongsideColor : style.closeColor;
     ctx.globalAlpha = level === 'alongside' ? pulse : 0.9;
     drawWarningOutline(ctx, carLength, carWidth, color);
-    queueRimWarning(carLength, color, ctx.globalAlpha);
+    if (style.warningArcs) queueRimWarning(carLength, color, ctx.globalAlpha);
     ctx.globalAlpha = 1;
   }
 

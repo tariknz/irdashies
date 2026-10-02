@@ -59,6 +59,14 @@ type NumberKey = {
   [K in keyof RadarConfig]: RadarConfig[K] extends number ? K : never;
 }[keyof RadarConfig];
 
+/** Arc sizes matter while any warning still draws its rim arc. */
+const noRimArcs = (view: RadarConfig) =>
+  !(
+    (view.showWarnings && view.warningArcs) ||
+    (view.showDiveWarning && view.diveArcs) ||
+    (view.showHazards && view.hazardArcs)
+  );
+
 const toggle = (
   level: SettingsLevel,
   key: BooleanKey,
@@ -449,6 +457,13 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         'Warnings',
         'Arcs on the rim and outlines on the car: amber when a car is close, pulsing red when it is alongside.'
       ),
+      toggle(
+        0,
+        'warningArcs',
+        'Rim Arcs',
+        'The arc on the rim towards a close or alongside car. Off leaves only the outline on the car.',
+        (view) => !view.showWarnings
+      ),
       {
         id: 'sensitivity',
         level: 0,
@@ -526,7 +541,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         'Rim Arc, Smallest',
         { units: '°', min: 2, max: 30, step: 1 },
         'Half the width of the arc for a car far off.',
-        (view) => !view.showWarnings
+        noRimArcs
       ),
       slider(
         1,
@@ -534,7 +549,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         'Rim Arc, Largest',
         { units: '°', min: 4, max: 45, step: 1 },
         'Half the width of the arc for a car right beside you.',
-        (view) => !view.showWarnings
+        noRimArcs
       ),
     ],
   },
@@ -603,6 +618,13 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         (view) => !view.showDiveWarning
       ),
       toggle(
+        0,
+        'diveArcs',
+        'Rim Arcs',
+        'The arc on the rim towards a car closing fast or diving in.',
+        (view) => !view.showDiveWarning
+      ),
+      toggle(
         1,
         'diveGhost',
         'Show Where It Will Be',
@@ -642,6 +664,13 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         'Flash Closer Than',
         { units: 'm', min: 0, max: 500, step: 25 },
         'A crashed or slow car flashes from this close. A car coming back on flashes at any distance; one sitting off the track never does.',
+        (view) => !view.showHazards
+      ),
+      toggle(
+        0,
+        'hazardArcs',
+        'Rim Arcs',
+        'The arc on the rim under the hazard triangle. Off leaves the triangle and the distance.',
         (view) => !view.showHazards
       ),
       toggle(

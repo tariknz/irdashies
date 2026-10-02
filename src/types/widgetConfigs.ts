@@ -518,6 +518,8 @@ export interface RadarConfig {
   classSizes: Record<string, { length: number; width: number }>;
   /** Rim arcs and outlines for close and alongside rivals. */
   showWarnings: boolean;
+  /** The rim arc of a close or alongside rival; off leaves the outline. */
+  warningArcs: boolean;
   /** Metres of bumper gap below which a rival is drawn as close. */
   cautionDistance: number;
   showCarNumbers: boolean;
@@ -579,6 +581,8 @@ export interface RadarConfig {
   diveGhost: boolean;
   /** Write the closing speed (and time to our side) next to a fast car. */
   diveShowClosing: boolean;
+  /** The rim arc of a car coming up fast or diving in. */
+  diveArcs: boolean;
   /** Mark cars ahead that crashed, crawl, left the track or are rejoining. */
   showHazards: boolean;
   /** Metres ahead a hazard is shown from. */
@@ -591,6 +595,8 @@ export interface RadarConfig {
   hazardOff: boolean;
   /** Write the hazard car's speed under its distance. */
   hazardShowSpeed: boolean;
+  /** The rim arc under a hazard's triangle. */
+  hazardArcs: boolean;
   /** Switch to `ovalProfile` on oval tracks. */
   autoProfile: boolean;
   /** Look and distances for ovals; null until the oval profile is edited. */
@@ -608,6 +614,7 @@ export const RADAR_PROFILE_KEYS = [
   'hideDistance',
   'fadeSeconds',
   'showWarnings',
+  'warningArcs',
   'cautionDistance',
   'showCarNumbers',
   'showTrackMap',
@@ -637,9 +644,11 @@ export const RADAR_PROFILE_KEYS = [
   'diveWarnSeconds',
   'diveGhost',
   'diveShowClosing',
+  'diveArcs',
   'showHazards',
   'hazardRange',
   'hazardBlinkDistance',
+  'hazardArcs',
 ] as const satisfies readonly (keyof RadarConfig)[];
 
 export type RadarProfileKey = (typeof RADAR_PROFILE_KEYS)[number];
