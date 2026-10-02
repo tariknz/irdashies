@@ -8,6 +8,13 @@ import type {
 import { CarLeftRight, TrackLocation } from '@irdashies/types';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 import { RadarLaneTracker } from './radarLanes';
+import {
+  computeFormation,
+  PaceMode,
+  parseStartingGrid,
+  type Formation,
+  type GridOptions,
+} from './radarFormation';
 
 /**
  * Metres either side of the focus car that still reach the renderer. The
@@ -76,11 +83,24 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   private previousTime = -1;
   private readonly lanes = new RadarLaneTracker();
   private laneFocus = -1;
+  private grid: GridOptions = {
+    standingStart: false,
+    columns: 2,
+    poleSide: 'left',
+  };
+  private paceCarIdx = -1;
 
   private latest: RadarSnapshot = emptySnapshot(0);
 
   init(session: Session): void {
     this.trackLength = parseTrackLength(session?.WeekendInfo?.TrackLength);
+    const options = session?.WeekendInfo?.WeekendOptions;
+    this.grid = {
+      standingStart: options?.StandingStart === 1,
+      ...parseStartingGrid(options?.StartingGrid),
+    };
+    this.lanes.setPoleSide(this.grid.poleSide);
+    this.paceCarIdx = session?.DriverInfo?.PaceCarIdx ?? -1;
     this.excluded.clear();
     for (const driver of session?.DriverInfo?.Drivers ?? []) {
       if (driver.CarIsPaceCar === 1 || driver.IsSpectator === 1) {
@@ -103,15 +123,50 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     const isOnTrack = valuesOf(frame, 'IsOnTrack')[0] === true;
 
     const cars: RadarCar[] = [];
+    let formation: Formation | null = null;
+    let follow: RadarSnapshot['follow'] = null;
     if (focus >= 0 && playerPct >= 0 && this.trackLength > 0) {
       const playerSpeed = this.speeds[focus] ?? 0;
+      const dists: number[] = [];
       for (let carIdx = 0; carIdx < pcts.length; carIdx += 1) {
-        if (carIdx === focus || this.excluded.has(carIdx)) continue;
         const pct = numberAt(pcts, carIdx);
         const surface = numberAt(surfaces, carIdx);
-        if (pct < 0 || surface === TrackLocation.NotInWorld) continue;
-        const dist = wrapDelta(pct, playerPct) * this.trackLength;
-        if (Math.abs(dist) > RADAR_MAX_RANGE_M) continue;
+        dists[carIdx] =
+          pct < 0 || surface === TrackLocation.NotInWorld
+            ? NaN
+            : wrapDelta(pct, playerPct) * this.trackLength;
+      }
+      formation = computeFormation({
+        focus,
+        dists,
+        pcts: pcts as readonly number[],
+        surfaces: surfaces as readonly number[],
+        onPitRoad: onPitRoad as readonly boolean[],
+        excluded: this.excluded,
+        paceMode: scalarNumber(frame, 'PaceMode', PaceMode.NotPacing),
+        paceLines: valuesOf(frame, 'CarIdxPaceLine') as readonly number[],
+        paceRows: valuesOf(frame, 'CarIdxPaceRow') as readonly number[],
+        sessionState: scalarNumber(frame, 'SessionState'),
+        focusSpeed: playerSpeed,
+        paceCarIdx: this.paceCarIdx,
+        grid: this.grid,
+      });
+      const followCarIdx = formation?.followCarIdx ?? null;
+      if (followCarIdx !== null && Number.isFinite(dists[followCarIdx])) {
+        follow = {
+          carIdx: followCarIdx,
+          dist: dists[followCarIdx],
+          isPaceCar: followCarIdx === this.paceCarIdx,
+        };
+      }
+
+      for (let carIdx = 0; carIdx < pcts.length; carIdx += 1) {
+        if (carIdx === focus || this.excluded.has(carIdx)) continue;
+        const dist = dists[carIdx];
+        const surface = numberAt(surfaces, carIdx);
+        if (!Number.isFinite(dist) || Math.abs(dist) > RADAR_MAX_RANGE_M) {
+          continue;
+        }
         cars.push({
           carIdx,
           dist,
@@ -123,7 +178,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         });
       }
       cars.sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist));
-      this.assignLanes(frame, time, focus, isOnTrack, cars);
+      this.assignLanes(frame, time, focus, isOnTrack, cars, formation);
     }
 
     const next: Omit<RadarSnapshot, 'version'> = {
@@ -133,6 +188,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       trackLength: this.trackLength,
       focusOnPitRoad: focus >= 0 && onPitRoad[focus] === true,
       isOnTrack,
+      formation: formation?.kind ?? null,
+      follow,
       cars,
     };
     if (sameSnapshot(this.latest, next)) return;
@@ -160,7 +217,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     time: number,
     focus: number,
     isOnTrack: boolean,
-    cars: RadarCar[]
+    cars: RadarCar[],
+    formation: Formation | null
   ): void {
     if (focus !== this.laneFocus) {
       this.lanes.reset();
@@ -174,7 +232,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     const lanes = this.lanes.update(
       time,
       cars.filter((car) => car.onPitRoad === focusOnPitRoad),
-      spotter
+      spotter,
+      formation
     );
     for (const car of cars) {
       const lane = lanes.get(car.carIdx);
@@ -225,6 +284,8 @@ const emptySnapshot = (version: number): RadarSnapshot => ({
   trackLength: 0,
   focusOnPitRoad: false,
   isOnTrack: false,
+  formation: null,
+  follow: null,
   cars: [],
   version,
 });
@@ -244,4 +305,7 @@ const sameSnapshot = (
   previous.playerPct === next.playerPct &&
   previous.trackLength === next.trackLength &&
   previous.focusOnPitRoad === next.focusOnPitRoad &&
-  previous.isOnTrack === next.isOnTrack;
+  previous.isOnTrack === next.isOnTrack &&
+  previous.formation === next.formation &&
+  previous.follow?.carIdx === next.follow?.carIdx &&
+  previous.follow?.dist === next.follow?.dist;

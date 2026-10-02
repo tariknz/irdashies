@@ -31,6 +31,8 @@ const EMPTY_SNAPSHOT: RadarSnapshot = {
   trackLength: 0,
   focusOnPitRoad: false,
   isOnTrack: false,
+  formation: null,
+  follow: null,
   cars: [],
   version: 0,
 };
@@ -128,6 +130,7 @@ export const Radar = () => {
         playerSpeed: snapshot.playerSpeed,
         trackLength: snapshot.trackLength,
         cars,
+        follow: snapshot.follow,
       },
     [demoFrame, snapshot, cars]
   );

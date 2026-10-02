@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Session, Telemetry } from '@irdashies/types';
 import { CarLeftRight, TrackLocation } from '@irdashies/types';
+import rollingTelemetry from '../../../test-data/1752616787255/telemetry.json';
+import rollingSession from '../../../test-data/1752616787255/session.json';
 import {
   parseTrackLength,
   RADAR_MAX_RANGE_M,
@@ -229,6 +231,18 @@ describe('RadarProcessor', () => {
     expect(processor.snapshot().cars).toMatchObject([
       { carIdx: 2, lane: 0, laneSource: 'none' },
     ]);
+  });
+
+  it('reads the pace formation from a recorded rolling start', () => {
+    const processor = new RadarProcessor();
+    processor.init(rollingSession as unknown as Session);
+    processor.onFrame(rollingTelemetry as unknown as Telemetry);
+
+    const { formation, follow, cars } = processor.snapshot();
+    expect(formation).toBe('pace');
+    expect(follow).toMatchObject({ isPaceCar: false });
+    expect(follow?.dist).toBeGreaterThan(0);
+    expect(cars.every((car) => car.laneSource === 'pace')).toBe(true);
   });
 
   it('clears everything on disconnect and session change', () => {

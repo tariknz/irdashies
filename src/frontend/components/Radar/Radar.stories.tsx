@@ -51,6 +51,10 @@ interface StoryProps {
   startPct: number;
   speed: number;
   multiclass: boolean;
+  /** Metres to the car to line up behind; unset when not pacing. */
+  followDist?: number;
+  followCarIdx?: number;
+  followPaceCar?: boolean;
   style: RadarStyle;
 }
 
@@ -61,6 +65,9 @@ const OnTrack = ({
   startPct,
   speed,
   multiclass,
+  followDist,
+  followCarIdx = 3,
+  followPaceCar = false,
   style,
 }: StoryProps) => {
   const seconds = useTicker();
@@ -75,6 +82,10 @@ const OnTrack = ({
     playerSpeed: speed,
     trackLength,
     cars: demo.cars,
+    follow:
+      followDist === undefined
+        ? null
+        : { carIdx: followCarIdx, dist: followDist, isPaceCar: followPaceCar },
   };
   const appearance = useMemo(
     () =>
@@ -145,4 +156,16 @@ export const WideRange: Story = {
 
 export const NoRoadNoRings: Story = {
   args: { style: { ...STYLE, showTrackMap: false, showRings: false } },
+};
+
+export const PacingFollowCarAhead: Story = {
+  args: { followDist: 16 },
+};
+
+export const PacingFollowBeyondRange: Story = {
+  args: { followDist: 85, followCarIdx: 9 },
+};
+
+export const PacingFollowPaceCar: Story = {
+  args: { followDist: 25, followPaceCar: true },
 };

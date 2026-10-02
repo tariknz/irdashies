@@ -3,6 +3,7 @@ import { CarLeftRight } from '@irdashies/types';
 import {
   MEMORY_HOLD_S,
   RadarLaneTracker,
+  type LaneFormation,
   type LaneInput,
   type LaneOutput,
 } from './radarLanes';
@@ -13,13 +14,14 @@ const settle = (
   start: number,
   cars: readonly LaneInput[],
   spotter: number | null,
-  seconds = 1
+  seconds = 1,
+  formation: LaneFormation | null = null
 ): { time: number; lanes: Map<number, LaneOutput> } => {
   let lanes = new Map<number, LaneOutput>();
   let time = start;
   for (let tick = 0; tick <= seconds * 60; tick += 1) {
     time = start + tick / 60;
-    lanes = tracker.update(time, cars, spotter);
+    lanes = tracker.update(time, cars, spotter, formation);
   }
   return { time, lanes };
 };
@@ -236,5 +238,114 @@ describe('RadarLaneTracker', () => {
       CarLeftRight.Clear
     );
     expect(lanes.get(1)).toEqual({ lane: 0, source: 'none' });
+  });
+
+  describe('in formation', () => {
+    const formation = (
+      slots: [number, number][],
+      kind: 'grid' | 'pace' = 'pace'
+    ) => ({
+      kind,
+      slots: new Map(slots),
+    });
+
+    it('takes lanes from the formation, pole side left by default', () => {
+      const tracker = new RadarLaneTracker();
+      const { lanes } = settle(
+        tracker,
+        0,
+        [
+          { carIdx: 1, dist: 8 },
+          { carIdx: 2, dist: 4 },
+          { carIdx: 3, dist: -8 },
+        ],
+        CarLeftRight.Clear,
+        1,
+        formation([
+          [1, 0],
+          [2, -1],
+          [3, 0],
+        ])
+      );
+
+      // We are in the outside column; the car one column towards the pole
+      // is on our left, and the formation beats the pair guess for 1 and 2.
+      expect(lanes.get(1)).toEqual({ lane: 0, source: 'pace' });
+      expect(lanes.get(2)).toEqual({ lane: -1, source: 'pace' });
+      expect(lanes.get(3)).toEqual({ lane: 0, source: 'pace' });
+    });
+
+    it('mirrors for a pole on the right', () => {
+      const tracker = new RadarLaneTracker();
+      tracker.setPoleSide('right');
+      const { lanes } = settle(
+        tracker,
+        0,
+        [{ carIdx: 2, dist: 4 }],
+        CarLeftRight.Clear,
+        1,
+        formation([[2, -1]], 'grid')
+      );
+
+      expect(lanes.get(2)).toEqual({ lane: 1, source: 'grid' });
+    });
+
+    it('flips the pole side only when the spotter keeps disagreeing', () => {
+      const tracker = new RadarLaneTracker();
+      const cars = [{ carIdx: 2, dist: 1 }];
+      const slots = formation([[2, 1]]);
+      // Formation says right (pole left, car one column out); spotter says left.
+      let lanes = tracker.update(0, cars, CarLeftRight.CarLeft, slots);
+      expect(lanes.get(2)?.source).toBe('pace');
+      for (let tick = 1; tick < 10; tick += 1) {
+        lanes = tracker.update(tick / 60, cars, CarLeftRight.CarLeft, slots);
+      }
+      expect(lanes.get(2)?.lane).toBeGreaterThan(0);
+
+      ({ lanes } = settle(
+        tracker,
+        10 / 60,
+        cars,
+        CarLeftRight.CarLeft,
+        1,
+        slots
+      ));
+      expect(lanes.get(2)).toEqual({ lane: -1, source: 'pace' });
+    });
+
+    it('keeps formation lanes for a while after the green', () => {
+      const tracker = new RadarLaneTracker();
+      const cars = [{ carIdx: 2, dist: 12 }];
+      const { time } = settle(
+        tracker,
+        0,
+        cars,
+        CarLeftRight.Clear,
+        1,
+        formation([[2, 1]], 'grid')
+      );
+      const { lanes } = settle(tracker, time, cars, CarLeftRight.Clear, 1);
+
+      expect(lanes.get(2)).toEqual({ lane: 1, source: 'memory' });
+    });
+
+    it('lets the spotter place a car that is not in formation', () => {
+      const tracker = new RadarLaneTracker();
+      const { lanes } = settle(
+        tracker,
+        0,
+        [
+          { carIdx: 2, dist: 1 },
+          { carIdx: 5, dist: -2 },
+        ],
+        CarLeftRight.CarLeftRight,
+        1,
+        formation([[2, 1]])
+      );
+
+      // Car 2 fills the right from the formation; car 5 must be the left one.
+      expect(lanes.get(2)).toEqual({ lane: 1, source: 'pace' });
+      expect(lanes.get(5)).toEqual({ lane: -1, source: 'spotter' });
+    });
   });
 });

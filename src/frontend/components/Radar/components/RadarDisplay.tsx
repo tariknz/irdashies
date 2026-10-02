@@ -1,6 +1,11 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { TrackGeometry } from '@irdashies/domain/track';
-import { drawRadar, type RadarDrawCar, type RadarStyle } from '../radarDraw';
+import {
+  drawRadar,
+  type RadarDrawCar,
+  type RadarDrawFollow,
+  type RadarStyle,
+} from '../radarDraw';
 
 export interface RadarFrameCar {
   carIdx: number;
@@ -16,6 +21,8 @@ export interface RadarFrame {
   playerSpeed: number;
   trackLength: number;
   cars: readonly RadarFrameCar[];
+  /** The car to line up behind while pacing, if any. */
+  follow?: { carIdx: number; dist: number; isPaceCar: boolean } | null;
 }
 
 export interface RadarCarAppearance {
@@ -87,6 +94,7 @@ export const RadarDisplay = memo(
       canvas.height = Math.round(size * ratio);
 
       const cars: RadarDrawCar[] = [];
+      const follow: RadarDrawFollow = { carIdx: null, dist: 0, label: '' };
       let handle = 0;
       const paint = () => {
         const current = latest.current;
@@ -111,6 +119,21 @@ export const RadarDisplay = memo(
           target.label = looks.label;
           cars[index] = target;
         }
+        let followTarget: RadarDrawFollow | null = null;
+        if (snap.follow) {
+          const { carIdx, dist, isPaceCar } = snap.follow;
+          const tracked = isPaceCar
+            ? undefined
+            : cars.find((car) => car.carIdx === carIdx);
+          follow.carIdx = isPaceCar ? null : carIdx;
+          follow.dist = tracked ? tracked.dist : dist;
+          follow.label = isPaceCar
+            ? 'PACE'
+            : current.appearance.get(carIdx)?.label
+              ? `#${current.appearance.get(carIdx)?.label}`
+              : '';
+          followTarget = follow;
+        }
         const playerPct =
           snap.trackLength > 0
             ? snap.playerPct + (snap.playerSpeed * elapsed) / snap.trackLength
@@ -123,6 +146,7 @@ export const RadarDisplay = memo(
           trackLength: snap.trackLength,
           playerPct,
           cars,
+          follow: followTarget,
           style: look,
         });
         if (active) handle = requestAnimationFrame(paint);

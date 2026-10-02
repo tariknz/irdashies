@@ -29,6 +29,14 @@ export interface RadarStyle {
   backgroundOpacity: number;
 }
 
+/** The car to line up behind while pacing. */
+export interface RadarDrawFollow {
+  /** Car index, or null for the pace car (which is not in `cars`). */
+  carIdx: number | null;
+  dist: number;
+  label: string;
+}
+
 export interface RadarScene {
   /** CSS pixels of the square the radar fills. */
   size: number;
@@ -36,8 +44,12 @@ export interface RadarScene {
   trackLength: number;
   playerPct: number;
   cars: readonly RadarDrawCar[];
+  follow: RadarDrawFollow | null;
   style: RadarStyle;
 }
+
+const FOLLOW_COLOR = '#22c55e';
+const PACE_CAR_FILL = '#e2e8f0';
 
 /** How far past the rim the road is drawn, so it never ends inside the disc. */
 const ROAD_OVERSCAN = 1.5;
@@ -123,6 +135,66 @@ const drawCarBody = (
   ctx.restore();
 };
 
+const drawFollowOutline = (
+  ctx: CanvasRenderingContext2D,
+  length: number,
+  width: number
+) => {
+  ctx.save();
+  ctx.translate(pose.x, pose.y);
+  ctx.rotate(pose.angle);
+  const pad = Math.max(2, width * 0.25);
+  ctx.beginPath();
+  ctx.roundRect(
+    -length / 2 - pad,
+    -width / 2 - pad,
+    length + pad * 2,
+    width + pad * 2,
+    pad * 2
+  );
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = FOLLOW_COLOR;
+  ctx.stroke();
+  ctx.restore();
+};
+
+/** Chevron on the rim pointing at a follow target beyond the range. */
+const drawFollowPointer = (
+  ctx: CanvasRenderingContext2D,
+  centre: number,
+  radius: number,
+  follow: RadarDrawFollow
+) => {
+  const bearing = Math.atan2(pose.y - centre, pose.x - centre);
+  const tipX = centre + Math.cos(bearing) * (radius - 3);
+  const tipY = centre + Math.sin(bearing) * (radius - 3);
+  const size = Math.max(7, radius / 12);
+  ctx.save();
+  ctx.translate(tipX, tipY);
+  ctx.rotate(bearing);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(-size, -size * 0.7);
+  ctx.lineTo(-size, size * 0.7);
+  ctx.closePath();
+  ctx.fillStyle = FOLLOW_COLOR;
+  ctx.fill();
+  ctx.restore();
+
+  const fontSize = Math.max(MIN_LABEL_PX, Math.round(radius / 11));
+  ctx.font = `bold ${fontSize}px Lato, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const labelDistance = radius - size - fontSize * 1.2;
+  const text = `${follow.label} ${Math.round(Math.abs(follow.dist))}m`.trim();
+  ctx.fillStyle = FOLLOW_COLOR;
+  ctx.fillText(
+    text,
+    centre + Math.cos(bearing) * labelDistance,
+    centre + Math.sin(bearing) * labelDistance
+  );
+};
+
 export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
   const { size, style } = scene;
   const centre = size / 2;
@@ -170,6 +242,38 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
     }
   }
   ctx.globalAlpha = 1;
+
+  const { follow } = scene;
+  if (follow) {
+    projector.project(follow.dist, 0, pose);
+    if (Math.abs(follow.dist) <= style.range) {
+      const car = scene.cars.find((c) => c.carIdx === follow.carIdx);
+      if (car) {
+        projector.project(car.dist, car.lateral, pose);
+      } else {
+        drawCarBody(
+          ctx,
+          pose.x,
+          pose.y,
+          pose.angle,
+          length,
+          width,
+          PACE_CAR_FILL
+        );
+        if (showLabels) {
+          ctx.fillStyle = '#0f172a';
+          ctx.fillText(
+            follow.carIdx === null ? 'PC' : follow.label,
+            pose.x,
+            pose.y
+          );
+        }
+      }
+      drawFollowOutline(ctx, length, width);
+    } else {
+      drawFollowPointer(ctx, centre, radius, follow);
+    }
+  }
 
   drawCarBody(
     ctx,

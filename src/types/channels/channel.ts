@@ -137,11 +137,12 @@ export interface RadarCar {
    */
   lane: number;
   /**
-   * Where `lane` came from: the spotter calling this car alongside, a side
+   * Where `lane` came from: the standing-start grid or the pace line (both
+   * known from the sim), the spotter calling this car alongside, a side
    * remembered after the overlap ended, a guess that two rivals level with
    * each other must be side by side, or nothing (drawn in our lane).
    */
-  laneSource: 'none' | 'spotter' | 'memory' | 'pair';
+  laneSource: 'none' | 'grid' | 'pace' | 'spotter' | 'memory' | 'pair';
   onPitRoad: boolean;
   offTrack: boolean;
 }
@@ -156,6 +157,16 @@ export interface RadarSnapshot {
   trackLength: number;
   focusOnPitRoad: boolean;
   isOnTrack: boolean;
+  /**
+   * The field is in a known formation: sitting on a standing-start grid, or
+   * lined up behind the pace car. Lanes then come from the sim, not guesses.
+   */
+  formation: 'grid' | 'pace' | null;
+  /**
+   * While pacing, the car to line up behind (the pace car from the front
+   * row). `dist` is in metres and not limited to the radar's range.
+   */
+  follow: { carIdx: number; dist: number; isPaceCar: boolean } | null;
   /** Only cars within the processor's range, nearest first. */
   cars: readonly RadarCar[];
   version: number;

@@ -57,6 +57,18 @@ const demandFor = (carLeftRight: number): SpotterDemand | null => {
   }
 };
 
+/**
+ * Frames the spotter must contradict the pole side before it flips: about
+ * half a second, so one misread overlap cannot swap the whole formation.
+ */
+const POLE_FLIP_FRAMES = 30;
+
+export interface LaneFormation {
+  kind: 'grid' | 'pace';
+  /** Column or line minus ours, counted away from the pole side. */
+  slots: ReadonlyMap<number, number>;
+}
+
 const clampLane = (lane: number) =>
   Math.max(-MAX_LANE, Math.min(MAX_LANE, lane));
 
@@ -76,6 +88,11 @@ const clampLane = (lane: number) =>
  *    lanes. Which of them is left is unknown until one comes alongside us,
  *    so the order is only kept stable, anchored on any remembered side.
  *
+ * In formation — on a standing grid or behind the pace car — the slots
+ * the sim gives win over all of that: they are known, not guessed. Which
+ * side the pole column is on comes from the grid description, and the
+ * spotter overrules it if it keeps disagreeing.
+ *
  * Everything else sits in our lane. Drawn lanes move at LANE_RATE so a
  * corrected guess slides rather than jumps.
  */
@@ -84,8 +101,21 @@ export class RadarLaneTracker {
   private readonly rememberedAt = new Map<number, number>();
   private readonly drawnLane = new Map<number, number>();
   private previousTime = -1;
+  /** +1 when the pole column is on the left, so higher columns are right. */
+  private poleSign = 1;
+  private configuredPoleSign = 1;
+  private contradictions = 0;
+
+  /** Side of the pole column, from the session's grid description. */
+  setPoleSide(side: 'left' | 'right'): void {
+    this.configuredPoleSign = side === 'left' ? 1 : -1;
+    this.poleSign = this.configuredPoleSign;
+    this.contradictions = 0;
+  }
 
   reset(): void {
+    this.poleSign = this.configuredPoleSign;
+    this.contradictions = 0;
     this.rememberedLane.clear();
     this.rememberedAt.clear();
     this.drawnLane.clear();
@@ -99,7 +129,8 @@ export class RadarLaneTracker {
   update(
     time: number,
     cars: readonly LaneInput[],
-    carLeftRight: number | null
+    carLeftRight: number | null,
+    formation: LaneFormation | null = null
   ): Map<number, LaneOutput> {
     if (this.previousTime >= 0 && time < this.previousTime) this.reset();
     const dt =
@@ -108,6 +139,10 @@ export class RadarLaneTracker {
 
     const targets = new Map<number, LaneOutput>();
     const demand = carLeftRight === null ? null : demandFor(carLeftRight);
+    if (formation) {
+      if (demand) this.calibratePole(cars, demand, formation);
+      this.applyFormation(time, cars, formation, targets);
+    }
     if (demand) this.applySpotter(time, cars, demand, targets);
 
     const remembered = (carIdx: number): number | undefined => {
@@ -155,14 +190,26 @@ export class RadarLaneTracker {
   private applySpotter(
     time: number,
     cars: readonly LaneInput[],
-    demand: SpotterDemand,
+    spotterDemand: SpotterDemand,
     targets: Map<number, LaneOutput>
   ): void {
+    let demand = spotterDemand;
+    // Formation cars alongside already fill some of the sides it calls.
+    for (const car of cars) {
+      const target = targets.get(car.carIdx);
+      if (!target || Math.abs(car.dist) > OVERLAP_M) continue;
+      if (target.lane <= -0.5 && demand.left > 0) {
+        demand = { ...demand, left: demand.left - 1 };
+      } else if (target.lane >= 0.5 && demand.right > 0) {
+        demand = { ...demand, right: demand.right - 1 };
+      }
+    }
     if (demand.left + demand.right === 0) return;
     const wanted = demand.left + demand.right;
-    let candidates = cars.filter((car) => Math.abs(car.dist) <= OVERLAP_M);
+    const free = cars.filter((car) => !targets.has(car.carIdx));
+    let candidates = free.filter((car) => Math.abs(car.dist) <= OVERLAP_M);
     if (candidates.length < wanted) {
-      candidates = cars.filter((car) => Math.abs(car.dist) <= OVERLAP_SEARCH_M);
+      candidates = free.filter((car) => Math.abs(car.dist) <= OVERLAP_SEARCH_M);
     }
     const sideOf = (carIdx: number) => {
       const lane = this.rememberedLane.get(carIdx);
@@ -205,6 +252,50 @@ export class RadarLaneTracker {
     fill(demand.right, 1);
   }
 
+  private applyFormation(
+    time: number,
+    cars: readonly LaneInput[],
+    formation: LaneFormation,
+    targets: Map<number, LaneOutput>
+  ): void {
+    for (const car of cars) {
+      const slot = formation.slots.get(car.carIdx);
+      if (slot === undefined) continue;
+      const lane = clampLane(slot * this.poleSign);
+      targets.set(car.carIdx, { lane, source: formation.kind });
+      // Remembered too, so the formation fades out gently after the green.
+      this.rememberedLane.set(car.carIdx, lane);
+      this.rememberedAt.set(car.carIdx, time);
+    }
+  }
+
+  /**
+   * One car alongside, called on one side, sitting one column or line away:
+   * that pins which side the pole column is on.
+   */
+  private calibratePole(
+    cars: readonly LaneInput[],
+    demand: SpotterDemand,
+    formation: LaneFormation
+  ): void {
+    if (demand.left + demand.right !== 1) return;
+    const alongside = cars.filter((car) => Math.abs(car.dist) <= OVERLAP_M);
+    if (alongside.length !== 1) return;
+    const slot = formation.slots.get(alongside[0].carIdx);
+    if (slot === undefined || Math.abs(slot) !== 1) return;
+    const side = demand.left === 1 ? -1 : 1;
+    const impliedSign = side * slot;
+    if (impliedSign === this.poleSign) {
+      this.contradictions = 0;
+      return;
+    }
+    this.contradictions += 1;
+    if (this.contradictions >= POLE_FLIP_FRAMES) {
+      this.poleSign = impliedSign;
+      this.contradictions = 0;
+    }
+  }
+
   private spreadPairs(
     cars: readonly LaneInput[],
     targets: Map<number, LaneOutput>,
@@ -214,7 +305,7 @@ export class RadarLaneTracker {
     const free = cars
       .filter(
         (car) =>
-          targets.get(car.carIdx)?.source !== 'spotter' &&
+          (targets.get(car.carIdx)?.source ?? 'memory') === 'memory' &&
           Math.abs(car.dist) > OVERLAP_M
       )
       .sort((a, b) => a.dist - b.dist);
