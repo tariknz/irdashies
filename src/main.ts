@@ -38,6 +38,7 @@ import {
   getGarage61SearchInfoFromSession,
   setupLapTraceBridge,
 } from './app/bridge/lapTraceBridge';
+import { setupRadarBridge } from './app/bridge/radarBridge';
 import {
   validateReferenceLapFile,
   flushReferenceLapsOnShutdown,
@@ -333,6 +334,7 @@ app.on('ready', async () => {
   setupPitLaneBridge();
   setupPersonalBestLapTimesBridge();
   setupLapTraceBridge(overlayManager);
+  setupRadarBridge();
   setupGarage61SearchSession(dashboard);
   setupChromiumFlagsBridge();
   incidentRuntime = new IncidentRuntime(

@@ -15,6 +15,7 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   fastercarsfrombehind: 'Faster Cars From Behind',
   fuel: 'Fuel Calculator',
   blindspotmonitor: 'Blind Spot Monitor',
+  radar: 'Radar',
   garagecover: 'Garage Cover',
   rejoin: 'Rejoin Indicator',
   telemetryinspector: 'Telemetry Inspector',

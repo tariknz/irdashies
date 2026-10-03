@@ -15,6 +15,7 @@ import { RejoinIndicatorSettings } from './sections/RejoinIndicatorSettings';
 import { PitlaneHelperSettings } from './sections/PitlaneHelperSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
+import { RadarSettings } from './sections/RadarSettings';
 import { GarageCoverSettings } from './sections/GarageCoverSettings';
 import { ProfileSettings } from './sections/ProfileSettings';
 import { FlagSettings } from './sections/FlagSettings';
@@ -84,6 +85,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <FasterCarsFromBehindSettings />;
     case 'blindspotmonitor':
       return <BlindSpotMonitorSettings />;
+    case 'radar':
+      return <RadarSettings />;
     case 'garagecover':
       return <GarageCoverSettings />;
     case 'flag':

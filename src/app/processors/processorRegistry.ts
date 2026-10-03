@@ -1,4 +1,8 @@
-import type { LapTimesSnapshot, ReferenceLapsSnapshot } from '@irdashies/types';
+import type {
+  LapTimesSnapshot,
+  RadarProcessorTuning,
+  ReferenceLapsSnapshot,
+} from '@irdashies/types';
 import type { ReferenceLapPersistence } from './ReferenceLapProcessor';
 import { CarSpeedsProcessor } from './CarSpeedsProcessor';
 import { BlindSpotProcessor } from './BlindSpotProcessor';
@@ -15,6 +19,10 @@ import type {
 import { ProcessorHost } from './ProcessorHost';
 import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
+import {
+  RadarProcessor,
+  type RadarPoleSidePersistence,
+} from './RadarProcessor';
 import { RadioProcessor } from './RadioProcessor';
 import { ReferenceLapProcessor } from './ReferenceLapProcessor';
 import { RelativeGapProcessor } from './RelativeGapProcessor';
@@ -27,6 +35,10 @@ import { TrackStateProcessor } from './TrackStateProcessor';
 
 interface ProcessorRegistryOptions {
   referenceLapPersistence: ReferenceLapPersistence;
+  /** Where the radar keeps pole sides it learns; nothing is kept without. */
+  radarPoleSidePersistence?: RadarPoleSidePersistence;
+  /** The radar's dev tuning from the current dashboard; defaults without. */
+  radarTuning?: () => RadarProcessorTuning;
 }
 
 interface DefaultProcessorHostOptions extends ProcessorRegistryOptions {
@@ -57,6 +69,8 @@ const defineProcessor = <K extends AnyProcessorDefinition['channel']>(
 
 export const createProcessorDefinitions = ({
   referenceLapPersistence,
+  radarPoleSidePersistence,
+  radarTuning,
 }: ProcessorRegistryOptions): readonly AnyProcessorDefinition[] => [
   defineProcessor({
     channel: 'blind-spot.snapshot',
@@ -109,6 +123,16 @@ export const createProcessorDefinitions = ({
     channel: 'standings.snapshot',
     metricsPrefix: 'standings',
     create: () => new StandingsProcessor(),
+  }),
+  defineProcessor({
+    channel: 'radar.snapshot',
+    metricsPrefix: 'radar',
+    // A replayed tape must not teach live sessions which side the pole is on.
+    create: ({ aggregateReplay }) =>
+      new RadarProcessor(
+        aggregateReplay ? undefined : radarPoleSidePersistence,
+        radarTuning
+      ),
   }),
   defineProcessor({
     channel: 'radio.snapshot',
