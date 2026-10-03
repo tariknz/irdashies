@@ -7,6 +7,7 @@ import type {
   RadarWidgetSettings,
 } from '@irdashies/types';
 import {
+  activeProfile,
   applyProfileChange,
   isOvalTrack,
   profileView,
@@ -277,7 +278,7 @@ export const RadarSettings = () => {
     }
   }, [sectionId]);
   const [profile, setProfile] = useState<RadarProfileId>(() =>
-    isOvalTrack(trackType) ? 'oval' : 'road'
+    activeProfile(settings.config, trackType)
   );
 
   const config = settings.config;
@@ -303,7 +304,13 @@ export const RadarSettings = () => {
           handleConfigChange(applyProfileChange(config, profile, change));
         const setTuning = (change: Partial<RadarTuning>) =>
           handleConfigChange({ tuning: { ...config.tuning, ...change } });
-        const ctx: ItemContext = { view, set, setTuning };
+        const ctx: ItemContext = {
+          view,
+          set,
+          setTuning,
+          config,
+          setConfig: handleConfigChange,
+        };
 
         const found = RADAR_SECTIONS.map((section) => ({
           section,

@@ -35,6 +35,11 @@ const SUDDEN_WINDOW_S = 2;
 const OFF_HOLD_S = 0.5;
 /** Seconds after coming back on during which a car not yet up to speed is rejoining. */
 const REJOIN_S = 5;
+/**
+ * Seconds after a caution or formation ends before anyone is judged: at the
+ * green the field is still at pace speed or launching from the grid.
+ */
+const QUIET_GRACE_S = 5;
 
 interface CarHazardState {
   /** Session time the car was last at racing speed, or -1. */
@@ -68,7 +73,7 @@ export interface HazardFrame {
   excluded: ReadonlySet<number>;
   /** Speeds are still settling after a restart: judge nobody yet. */
   settling?: boolean;
-  /** Report nothing: full-course caution or a formation, when all are slow. */
+  /** Judge nobody: full-course caution or a formation, when all are slow. */
   quiet: boolean;
 }
 
@@ -93,6 +98,8 @@ export class RadarHazardTracker {
   private profile = new Float64Array(0);
   private samples = new Uint32Array(0);
   private readonly states = new Map<number, CarHazardState>();
+  /** Session time the radar was last quiet. */
+  private lastQuiet = -Infinity;
 
   setTrackLength(metres: number): void {
     if (metres === this.trackLength) return;
@@ -106,6 +113,7 @@ export class RadarHazardTracker {
   /** Forget every car; the speed profile is the track's and stays. */
   reset(): void {
     this.states.clear();
+    this.lastQuiet = -Infinity;
   }
 
   /** Field speed at lap progress `pct` in m/s, or null while unknown. */
@@ -119,6 +127,14 @@ export class RadarHazardTracker {
     const hazards: RadarHazard[] = [];
     if (this.trackLength <= 0 || frame.settling) return hazards;
     const { time, pcts } = frame;
+    // Nothing done under a caution or on the grid says anything afterwards.
+    if (frame.quiet) {
+      this.states.clear();
+      this.lastQuiet = time;
+      return hazards;
+    }
+    const sinceQuiet = time - this.lastQuiet;
+    if (sinceQuiet >= 0 && sinceQuiet < QUIET_GRACE_S) return hazards;
 
     for (let carIdx = 0; carIdx < pcts.length; carIdx += 1) {
       const pct = pcts[carIdx];
@@ -137,7 +153,7 @@ export class RadarHazardTracker {
       }
       const speed = frame.speeds[carIdx] ?? 0;
       const kind = this.judge(carIdx, pct, speed, surface, time);
-      if (!kind || carIdx === frame.focus || frame.quiet) continue;
+      if (!kind || carIdx === frame.focus) continue;
       const dist = wrapDelta(pct, frame.playerPct) * this.trackLength;
       if (dist < -HAZARD_BEHIND_M || dist > RADAR_HAZARD_MAX_M) continue;
       hazards.push({ carIdx, dist, kind, speed });

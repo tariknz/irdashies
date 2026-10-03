@@ -30,6 +30,9 @@ export interface ItemContext {
   /** The config as the profile being edited sees it. */
   view: RadarConfig;
   set: (change: Partial<RadarConfig>) => void;
+  /** The stored config, both profiles, and its unrouted setter. */
+  config: RadarConfig;
+  setConfig: (change: Partial<RadarConfig>) => void;
   setTuning: (change: Partial<RadarTuning>) => void;
 }
 
@@ -964,7 +967,9 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         level: 2,
         title: 'Export / Import',
         description: 'The whole radar config as JSON, to share or attach.',
-        render: ({ view, set }) => <ConfigJson config={view} onApply={set} />,
+        render: ({ config, setConfig }) => (
+          <ConfigJson config={config} onApply={setConfig} />
+        ),
       },
     ],
   },

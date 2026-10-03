@@ -136,6 +136,27 @@ describe('RadarHazardTracker', () => {
     expect(field.run(2, { speed: 0 })).toEqual([]);
   });
 
+  it('does not flag the field still at pace speed when the green comes', () => {
+    const field = new Field();
+    field.learnLaps(3);
+    field.quiet = true;
+    field.speeds = [25, 25, 25];
+    field.run(10);
+    field.quiet = false;
+    expect(field.run(2)).toEqual([]);
+    field.speeds = [50, 50, 50];
+    expect(field.run(5)).toEqual([]);
+  });
+
+  it('still reports a car stalled after the green', () => {
+    const field = new Field();
+    field.speeds[0] = 10;
+    field.quiet = true;
+    field.run(10, { speed: 0 });
+    field.quiet = false;
+    expect(field.run(7).map((h) => h.kind)).toEqual(['crash']);
+  });
+
   it('only reports cars within range ahead', () => {
     const field = new Field();
     field.pcts[2] = (RADAR_HAZARD_MAX_M + 200) / TRACK_M;

@@ -417,6 +417,9 @@ const sameSnapshot = (
   next.hazards.length === 0 &&
   previous.focusCarIdx === next.focusCarIdx &&
   previous.playerPct === next.playerPct &&
+  previous.playerSpeed === next.playerSpeed &&
+  previous.focusBrake === next.focusBrake &&
+  previous.caution === next.caution &&
   previous.trackLength === next.trackLength &&
   previous.focusOnPitRoad === next.focusOnPitRoad &&
   previous.focusInPitBox === next.focusInPitBox &&
