@@ -124,12 +124,33 @@ export const ConfigJson = ({
 
   const apply = () => {
     try {
-      const parsed = JSON.parse(text) as Record<string, unknown>;
+      const parsed: unknown = JSON.parse(text);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        setMessage('Expected a JSON object of settings.');
+        return;
+      }
       const unknown = Object.keys(parsed).filter(
         (key) => !(key in RADAR_DEFAULTS)
       );
       if (unknown.length) {
         setMessage(`Unknown settings: ${unknown.join(', ')}`);
+        return;
+      }
+      // A wrong type would be saved as is and break the radar, e.g. a null
+      // tuning drops every tuning default when spread over them.
+      const defaults: Record<string, unknown> = { ...RADAR_DEFAULTS };
+      const kindOf = (value: unknown) =>
+        Array.isArray(value) ? 'array' : value === null ? 'null' : typeof value;
+      const wrong = Object.entries(parsed).filter(
+        ([key, value]) =>
+          // Settings off by default (null) take any value.
+          defaults[key] != null && kindOf(value) !== kindOf(defaults[key])
+      );
+      if (wrong.length) {
+        const expected = wrong.map(
+          ([key]) => `${key} (expected ${kindOf(defaults[key])})`
+        );
+        setMessage(`Wrong type: ${expected.join(', ')}`);
         return;
       }
       onApply(parsed as Partial<RadarConfig>);

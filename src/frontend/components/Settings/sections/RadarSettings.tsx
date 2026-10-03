@@ -67,8 +67,12 @@ const LEVELS: { level: SettingsLevel; label: string; active: string }[] = [
 ];
 
 const readLevel = (): SettingsLevel => {
-  const saved = Number(localStorage.getItem(LEVEL_KEY));
-  return saved === 1 || saved === 2 ? saved : 0;
+  try {
+    const saved = Number(localStorage.getItem(LEVEL_KEY));
+    return saved === 1 || saved === 2 ? saved : 0;
+  } catch {
+    return 0;
+  }
 };
 
 const Segmented = <T extends string | number>({
@@ -257,7 +261,11 @@ export const RadarSettings = () => {
 
   const [level, setLevel] = useState<SettingsLevel>(readLevel);
   useEffect(() => {
-    localStorage.setItem(LEVEL_KEY, String(level));
+    try {
+      localStorage.setItem(LEVEL_KEY, String(level));
+    } catch {
+      // Only a convenience: Basic opens next time instead.
+    }
   }, [level]);
   const [query, setQuery] = useState('');
   const [sectionId, setSectionId] = useState(readSection);

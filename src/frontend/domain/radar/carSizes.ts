@@ -22,12 +22,12 @@ const TYPICAL_SIZES: readonly [RegExp, CarSize][] = [
   [/lmp2/i, { length: 4.75, width: 1.9 }],
   [/lmp3/i, { length: 4.6, width: 1.9 }],
   [
-    /indy|ir-?18|ir-?01|super formula|sf23|f1|w1[23]|mp4/i,
+    /indy|ir-?18|ir-?01|super formula|\bsf23\b|\bf1\b|\bw1[23]\b|\bmp4/i,
     { length: 5.2, width: 1.95 },
   ],
-  [/f4|fia f4|formula vee|skip barber|ray/i, { length: 4.3, width: 1.75 }],
+  [/\bf4\b|formula vee|skip barber|\bray\b/i, { length: 4.3, width: 1.75 }],
   [
-    /f3|fr ?2\.0|formula|dallara|pro mazda|usf|super ?lights/i,
+    /\bf3\b|fr ?2\.0|formula|dallara|pro mazda|usf|super ?lights/i,
     { length: 4.9, width: 1.85 },
   ],
   [

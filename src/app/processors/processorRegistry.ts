@@ -127,7 +127,12 @@ export const createProcessorDefinitions = ({
   defineProcessor({
     channel: 'radar.snapshot',
     metricsPrefix: 'radar',
-    create: () => new RadarProcessor(radarPoleSidePersistence, radarTuning),
+    // A replayed tape must not teach live sessions which side the pole is on.
+    create: ({ aggregateReplay }) =>
+      new RadarProcessor(
+        aggregateReplay ? undefined : radarPoleSidePersistence,
+        radarTuning
+      ),
   }),
   defineProcessor({
     channel: 'radio.snapshot',

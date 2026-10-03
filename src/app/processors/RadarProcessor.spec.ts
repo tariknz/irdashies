@@ -353,6 +353,34 @@ describe('RadarProcessor', () => {
     expect(saved).toEqual([['interlagos gp', 'pace', 'left']]);
   });
 
+  it('keeps learning the pole side across session revisions', () => {
+    const saved: unknown[] = [];
+    const processor = new RadarProcessor({
+      load: () => ({}),
+      save: (...args) => saved.push(args),
+    });
+    processor.init(rollingSession as unknown as Session);
+    const base = rollingTelemetry as unknown as Record<
+      string,
+      { value: unknown[] }
+    >;
+    const player = base.PlayerCarIdx.value[0] as number;
+    const pcts = [...(base.CarIdxLapDistPct.value as number[])];
+    pcts[35] = pcts[player];
+    // 40 agreeing frames, split by a new revision of the same session.
+    for (let tick = 0; tick < 40; tick += 1) {
+      if (tick === 20) processor.init(rollingSession as unknown as Session);
+      processor.onFrame({
+        ...base,
+        SessionTime: { value: [1000 + tick / 60] },
+        CarIdxLapDistPct: { value: pcts },
+        CarLeftRight: { value: [CarLeftRight.CarLeft] },
+      } as unknown as Telemetry);
+    }
+
+    expect(saved).toEqual([['interlagos gp', 'pace', 'left']]);
+  });
+
   it('clears everything on disconnect and session change', () => {
     const processor = createProcessor();
     processor.onFrame(frame({ time: 1, pcts: [0.5, 0.5 + m(5)] }));

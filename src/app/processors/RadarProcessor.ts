@@ -128,6 +128,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   };
   private paceCarIdx = -1;
   private track = '';
+  private poleKey = '';
 
   private latest: RadarSnapshot = emptySnapshot(0);
 
@@ -148,15 +149,22 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       standingStart: options?.StandingStart === 1,
       ...parseStartingGrid(options?.StartingGrid),
     };
-    this.lanes.setPoleSide(this.grid.poleSide);
-    // Which side the pole is on is the track's, and the sim does not say;
-    // what the spotter showed here before beats the grid description.
-    this.track = session?.WeekendInfo?.TrackName ?? '';
-    if (this.track) {
-      const learnt = this.poleSides.load(this.track);
-      for (const kind of ['grid', 'pace'] as const) {
-        const side = learnt[kind];
-        if (side) this.lanes.setPoleSide(side, kind);
+    // Session revisions arrive throughout a session; only a new track or
+    // grid description may reset what the spotter is part way to learning.
+    const track = session?.WeekendInfo?.TrackName ?? '';
+    const poleKey = `${track}|${this.grid.poleSide}`;
+    if (poleKey !== this.poleKey) {
+      this.poleKey = poleKey;
+      this.track = track;
+      this.lanes.setPoleSide(this.grid.poleSide);
+      // Which side the pole is on is the track's, and the sim does not say;
+      // what the spotter showed here before beats the grid description.
+      if (track) {
+        const learnt = this.poleSides.load(track);
+        for (const kind of ['grid', 'pace'] as const) {
+          const side = learnt[kind];
+          if (side) this.lanes.setPoleSide(side, kind);
+        }
       }
     }
     this.paceCarIdx = session?.DriverInfo?.PaceCarIdx ?? -1;

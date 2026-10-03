@@ -17,6 +17,10 @@ describe('typicalCarSize', () => {
     ['NASCAR Craftsman Truck Series', 5.6],
     ['Porsche 963 GTP', 5.1],
     ['Porsche 718 Cayman GT4 Clubsport MR', 4.5],
+    ['Ray FF1600', 4.3],
+    ['Super Formula SF23', 5.2],
+    ['McLaren MP4-30', 5.2],
+    ['Dallara F3', 4.9],
   ])('%s is %s m long', (name, length) => {
     expect(typicalCarSize(name)?.length).toBe(length);
   });
