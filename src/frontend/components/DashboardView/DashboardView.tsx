@@ -23,6 +23,10 @@ import { ResizeHandles } from '../WidgetContainer/ResizeHandle';
 import logger from '@irdashies/utils/logger';
 import { WidgetRuntimeProvider } from '../../widgetRuntime';
 
+const singleWidgetId = new URLSearchParams(window.location.search).get(
+  'widget'
+);
+
 interface WidgetPosition {
   x: number;
   y: number;
@@ -218,7 +222,8 @@ export const DashboardView = () => {
     }
     const seen = new Set<string>();
     const filtered = currentDashboard.widgets.filter((w) => {
-      if (!w.enabled || seen.has(w.id)) return false;
+      if (singleWidgetId ? w.id !== singleWidgetId : !w.enabled) return false;
+      if (seen.has(w.id)) return false;
       if (isWidgetDisabledForSim(simWidgetSupport, w.type ?? w.id, simulator))
         return false;
       seen.add(w.id);
@@ -241,7 +246,14 @@ export const DashboardView = () => {
         WidgetPosition | undefined;
 
       // Use saved browserPosition if available, otherwise use layout dimensions from Electron config
-      if (browserPos && typeof browserPos.x === 'number') {
+      if (singleWidgetId) {
+        positions[widget.id] = {
+          x: 0,
+          y: 0,
+          width: widget.layout?.width ?? window.innerWidth,
+          height: widget.layout?.height ?? window.innerHeight,
+        };
+      } else if (browserPos && typeof browserPos.x === 'number') {
         positions[widget.id] = browserPos;
       } else {
         positions[widget.id] = {
