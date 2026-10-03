@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import {
+  RADAR_PROFILE_KEYS,
   getWidgetDefaultConfig,
   type RadarConfig,
   type RadarPoleSides,
 } from '@irdashies/types';
+import { isValidSize, type CarSize } from '@irdashies/domain/radar/carSizes';
 
 const RADAR_DEFAULTS = getWidgetDefaultConfig('radar');
+const PROFILE_DEFAULTS: Record<string, unknown> = Object.fromEntries(
+  RADAR_PROFILE_KEYS.map((key) => [key, RADAR_DEFAULTS[key]])
+);
 
 const kindOf = (value: unknown) =>
   Array.isArray(value) ? 'array' : value === null ? 'null' : typeof value;
@@ -19,8 +24,7 @@ const wrongTypes = (
 ): string[] =>
   Object.entries(value).flatMap(([key, item]) => {
     const fallback = defaults[key];
-    // Settings off by default (null) and free keys, such as the class names
-    // in classSizes, take any value.
+    // Settings off by default (null) take any value.
     if (fallback == null) return [];
     const path = prefix + key;
     if (kindOf(item) !== kindOf(fallback)) {
@@ -34,6 +38,42 @@ const wrongTypes = (
         )
       : [];
   });
+
+/**
+ * Every pasted value that would be saved wrong. The oval profile (null until
+ * used) and the class sizes (keyed by class name) have no default to compare
+ * with, so each is checked against what it holds.
+ */
+const wrongSettings = (settings: Record<string, unknown>): string[] => {
+  const { ovalProfile, classSizes, ...rest } = settings;
+  const wrong = wrongTypes(rest, { ...RADAR_DEFAULTS });
+  if (ovalProfile != null) {
+    if (kindOf(ovalProfile) !== 'object') {
+      wrong.push('ovalProfile (expected object or null)');
+    } else {
+      const profile = ovalProfile as Record<string, unknown>;
+      for (const key of Object.keys(profile)) {
+        if (!(key in PROFILE_DEFAULTS)) {
+          wrong.push(`ovalProfile.${key} (not an oval setting)`);
+        }
+      }
+      wrong.push(...wrongTypes(profile, PROFILE_DEFAULTS, 'ovalProfile.'));
+    }
+  }
+  if (classSizes !== undefined) {
+    if (kindOf(classSizes) !== 'object') {
+      wrong.push('classSizes (expected object)');
+    } else {
+      const sizes = classSizes as Record<string, unknown>;
+      for (const [name, size] of Object.entries(sizes)) {
+        if (!isValidSize(size as CarSize)) {
+          wrong.push(`classSizes.${name} (expected a length and width)`);
+        }
+      }
+    }
+  }
+  return wrong;
+};
 
 const BUTTON =
   'px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors';
@@ -165,9 +205,7 @@ export const ConfigJson = ({
       }
       // A wrong type would be saved as is and break the radar, e.g. a null
       // tuning drops every tuning default when spread over them.
-      const wrong = wrongTypes(parsed as Record<string, unknown>, {
-        ...RADAR_DEFAULTS,
-      });
+      const wrong = wrongSettings(parsed as Record<string, unknown>);
       if (wrong.length) {
         setMessage(`Wrong type: ${wrong.join(', ')}`);
         return;

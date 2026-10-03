@@ -53,7 +53,7 @@ export const typicalCarSize = (
 };
 
 /** Saved settings are untrusted; only a sane size is used. */
-const isValidSize = (size: CarSize | undefined): size is CarSize =>
+export const isValidSize = (size: CarSize | undefined): size is CarSize =>
   !!size &&
   Number.isFinite(size.length) &&
   Number.isFinite(size.width) &&

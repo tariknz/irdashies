@@ -24,6 +24,15 @@ describe('ConfigJson', () => {
     });
   });
 
+  it('applies an oval profile and class sizes that make sense', () => {
+    const settings = {
+      ovalProfile: { range: 50 },
+      classSizes: { GT3: { length: 4.7, width: 2 } },
+    };
+    const onApply = applyPasted(JSON.stringify(settings));
+    expect(onApply).toHaveBeenCalledWith(settings);
+  });
+
   it.each([
     ['null', 'Expected a JSON object'],
     ['[1]', 'Expected a JSON object'],
@@ -32,6 +41,14 @@ describe('ConfigJson', () => {
     [
       '{"sessionVisibility": {"race": "false"}}',
       'Wrong type: sessionVisibility.race (expected boolean)',
+    ],
+    ['{"ovalProfile": 42}', 'ovalProfile (expected object or null)'],
+    ['{"ovalProfile": {"range": "x"}}', 'ovalProfile.range (expected number)'],
+    ['{"ovalProfile": {"nope": 1}}', 'ovalProfile.nope (not an oval setting)'],
+    ['{"classSizes": {"GT3": null}}', 'classSizes.GT3 (expected a length'],
+    [
+      '{"classSizes": {"GT3": {"length": "4"}}}',
+      'classSizes.GT3 (expected a length',
     ],
     ['{"nope": 1}', 'Unknown settings: nope'],
   ])('rejects %s', (text, message) => {
