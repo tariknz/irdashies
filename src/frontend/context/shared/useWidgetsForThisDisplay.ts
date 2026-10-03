@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
-import type { DashboardWidget } from '@irdashies/types';
+import { isWidgetDisabledForSim, type DashboardWidget } from '@irdashies/types';
 import { useDashboard } from '../DashboardContext/DashboardContext';
+import { useActiveSimulator } from './useActiveSimulator';
+import { useSimWidgetSupport } from './useSimWidgetSupport';
 
 /** Does the widget's centre point fall inside these bounds? */
 const isWidgetOnDisplay = (
@@ -41,17 +43,34 @@ export const rendersInOwnWindow = (widget: DashboardWidget): boolean =>
  * their behalf, and the lap-trace recorder, which writes to disk and would
  * duplicate its work if every window ran one.
  *
- * `browser` skips the filtering entirely — a browser-source view has no
- * display bounds of its own and should show the lot.
+ * A widget the running sim cannot support counts as switched off here, the
+ * same as it does when main decides which windows to build. Window creation
+ * alone is not enough: one window can span several widgets, so an unsupported
+ * widget sitting between two supported ones is inside a window that was built
+ * anyway, and would render and subscribe unless it is dropped here too.
+ *
+ * `browser` skips the display filtering — a browser-source view has no display
+ * bounds of its own and should show the lot — but not the compatibility
+ * filtering, which is about the sim rather than the screen.
  */
 export const useWidgetsForThisDisplay = (
   browser = false
 ): DashboardWidget[] => {
   const { currentDashboard, containerBoundsInfo } = useDashboard();
+  const simulator = useActiveSimulator();
+  const simWidgetSupport = useSimWidgetSupport();
 
   return useMemo(() => {
     const enabled =
-      currentDashboard?.widgets.filter((widget) => widget.enabled) ?? [];
+      currentDashboard?.widgets.filter(
+        (widget) =>
+          widget.enabled &&
+          !isWidgetDisabledForSim(
+            simWidgetSupport,
+            widget.type ?? widget.id,
+            simulator
+          )
+      ) ?? [];
     if (browser || !containerBoundsInfo?.displayId) return enabled;
 
     return enabled.filter((widget) => {
@@ -64,5 +83,11 @@ export const useWidgetsForThisDisplay = (
         ) ?? onThisDisplay;
       return onThisDisplay || (containerBoundsInfo.isPrimary && !onAnyDisplay);
     });
-  }, [browser, containerBoundsInfo, currentDashboard?.widgets]);
+  }, [
+    browser,
+    containerBoundsInfo,
+    currentDashboard?.widgets,
+    simWidgetSupport,
+    simulator,
+  ]);
 };

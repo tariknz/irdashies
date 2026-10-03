@@ -24,3 +24,5 @@ export * from './telemetryInspectorBridge';
 export * from './carSystems';
 export * from './sessionProfiles';
 export * from './trackNotes';
+export * from './simulators';
+export * from './simWidgetSupport';

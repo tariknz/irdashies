@@ -11,7 +11,8 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router-dom';
-import { useDashboard } from '@irdashies/context';
+import { useActiveSimulator, useDashboard } from '@irdashies/context';
+import { simulatorDisplayName } from '@irdashies/types';
 import { SettingsLoader } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
 
@@ -26,6 +27,7 @@ export const SettingsLayout = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [editModeAccelerator, setEditModeAccelerator] = useState('F6');
+  const simulatorName = simulatorDisplayName(useActiveSimulator());
 
   useEffect(() => {
     window.keybindingsBridge?.getKeybindings().then((bindings) => {
@@ -56,7 +58,14 @@ export const SettingsLayout = () => {
         <div className="flex flex-row gap-4 items-center">
           <GearIcon size={32} weight="bold" />
           <div>
-            <h1 className="text-2xl font-bold">Overlay Settings</h1>
+            <div className="flex flex-row gap-6 items-baseline">
+              <h1 className="text-2xl font-bold">Overlay Settings</h1>
+              {simulatorName && (
+                <span className="text-lg font-medium text-slate-300">
+                  {simulatorName}
+                </span>
+              )}
+            </div>
             {currentProfile && (
               <p className="text-sm text-slate-300">
                 {currentProfile.name} Profile

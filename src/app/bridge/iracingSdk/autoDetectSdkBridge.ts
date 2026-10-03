@@ -3,10 +3,24 @@ import type { OverlayManager } from '../../overlayManager';
 import logger from '../../logger';
 import type { SessionLifecycle } from '../../sessionLifecycle';
 import type { ChannelBus } from '../channelBridge';
-import { selectDetectedSimulator, type Simulator } from './simSelection';
+import { getSimDefinitions } from './sims/registry';
+import { selectDetectedSimulator } from './simSelection';
+import type { SimProbe } from './sims/types';
 
 const RETRY_INTERVAL = 1000;
 
+/**
+ * Polls every simulator in the registry until one is running, then hands over
+ * to that simulator's bridge.
+ *
+ * Only reached when the build has more than one simulator to choose between —
+ * with a single source, `setup` resolves it outright and never gets here.
+ *
+ * The returned bridge is a stable façade: it is handed to callers immediately,
+ * while detection is still running, and forwards to the real bridge once one
+ * exists. Subscribers therefore do not have to care that the source arrived
+ * late.
+ */
 export async function publishAutoDetectedSdkEvents(
   overlayManager: OverlayManager,
   lifecycle?: SessionLifecycle,
@@ -43,36 +57,67 @@ export async function publishAutoDetectedSdkEvents(
   };
 
   void (async () => {
-    const [{ NativeSDK }, { NativeLmu }] = await Promise.all([
-      import('../../irsdk/native'),
-      import('../../irsdk/native/lmu'),
-    ]);
+    const definitions = getSimDefinitions();
+    // Per-definition rather than a bare Promise.all: one source whose native
+    // module is missing or wedged should drop out of the running, not reject
+    // the batch and end detection for every other simulator.
+    const probes = (
+      await Promise.all(
+        definitions.map(async (definition) => {
+          try {
+            return { id: definition.id, probe: await definition.createProbe() };
+          } catch (error) {
+            logger.error(
+              `[autoDetectSdkBridge] Failed to create ${definition.id} probe`,
+              error
+            );
+            return undefined;
+          }
+        })
+      )
+    ).filter((entry) => entry !== undefined);
     if (shouldStop) return;
 
-    const iracing = new NativeSDK();
-    const lmu = new NativeLmu();
-    stopProbes = () => {
-      iracing.stopSDK();
-      lmu.stop();
+    stopProbes = () =>
+      probes.forEach(({ id, probe }) => {
+        try {
+          probe.stop();
+        } catch (error) {
+          logger.error(
+            `[autoDetectSdkBridge] Failed to stop ${id} probe`,
+            error
+          );
+        }
+      });
+
+    const readProbe = ({ id, probe }: { id: string; probe: SimProbe }) => {
+      try {
+        probe.start();
+        return probe.isActive();
+      } catch (error) {
+        // One unhappy source must not end detection for the others — a sim
+        // whose native module is missing or wedged should look inactive, not
+        // take the whole probe loop down.
+        logger.error(`[autoDetectSdkBridge] ${id} probe failed`, error);
+        return false;
+      }
     };
 
-    let simulator: Simulator | undefined;
+    let simulator: ReturnType<typeof selectDetectedSimulator>;
     let lastProbeState = '';
     while (!shouldStop && !simulator) {
-      iracing.startSDK();
-      lmu.start();
-      const iracingActive = iracing.waitForData(0);
-      const lmuFrame = lmu.read();
-      const lmuActive =
-        lmuFrame.running &&
-        lmuFrame.trackName.length > 0 &&
-        lmuFrame.numVehicles > 0;
-      const probeState = `iracing=${iracingActive ? 'active' : 'inactive'} lmu=${lmuActive ? 'active' : 'inactive'}`;
+      const results = probes.map((entry) => ({
+        id: entry.id,
+        active: readProbe(entry),
+      }));
+      const probeState = results
+        .map(({ id, active }) => `${id}=${active ? 'active' : 'inactive'}`)
+        .join(' ');
       if (probeState !== lastProbeState) {
         lastProbeState = probeState;
         logger.info(`[autoDetectSdkBridge] Probe ${probeState}`);
       }
-      simulator = selectDetectedSimulator(iracingActive, lmuActive);
+      simulator = selectDetectedSimulator(results);
       if (!simulator)
         await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL));
     }
@@ -84,15 +129,22 @@ export async function publishAutoDetectedSdkEvents(
     logger.info(
       `[autoDetectSdkBridge] Selected ${simulator} (${lastProbeState})`
     );
-    const module =
-      simulator === 'lmu'
-        ? await import('./lmuSdkBridge')
-        : await import('./iracingSdkBridge');
-    const bridge = await module.publishIRacingSDKEvents(
-      overlayManager,
-      lifecycle,
-      channelBus
-    );
+
+    const definition = definitions.find(({ id }) => id === simulator);
+    if (!definition) return;
+
+    // Only known once the probe settles, so the settings window shows nothing
+    // until here rather than guessing.
+    const { setActiveSimulator } = await import('./setup');
+    // A newer setupBridge may have stopped this detector while it awaited the
+    // import. Writing the simulator now would name a sim the newer setup has
+    // already replaced, and rebuild every overlay for it.
+    if (shouldStop) return;
+    setActiveSimulator(overlayManager, simulator);
+
+    const publishEvents = await definition.loadBridge();
+    if (shouldStop) return;
+    const bridge = await publishEvents(overlayManager, lifecycle, channelBus);
     if (shouldStop) {
       bridge.stop();
       return;
