@@ -492,10 +492,18 @@ export interface BlindSpotMonitorConfig {
  * How a warning marks the rim: a solid arc, three segments that light up
  * with urgency, a soft glow inward from the rim, or a wedge from our car.
  */
-export type RadarArcStyle = 'arc' | 'segments' | 'glow' | 'sector';
+export const RADAR_ARC_STYLES = ['arc', 'segments', 'glow', 'sector'] as const;
+export type RadarArcStyle = (typeof RADAR_ARC_STYLES)[number];
 
 /** Where along our car a rival must reach to be owed room. */
-export type RadarOverlapThreshold = 'rearWheel' | 'door' | 'frontWheel';
+export const RADAR_OVERLAP_THRESHOLDS = [
+  'rearWheel',
+  'door',
+  'frontWheel',
+] as const;
+export type RadarOverlapThreshold = (typeof RADAR_OVERLAP_THRESHOLDS)[number];
+
+export const RADAR_RIVAL_COLOR_MODES = ['safety', 'class', 'custom'] as const;
 
 export interface RadarConfig {
   /** Metres from the centre to the edge of the disc. */
@@ -547,7 +555,7 @@ export interface RadarConfig {
    * Rival fill: their licence colour as on the rating badge, their class
    * colour, or one colour for everyone.
    */
-  rivalColorMode: 'safety' | 'class' | 'custom';
+  rivalColorMode: (typeof RADAR_RIVAL_COLOR_MODES)[number];
   /** Colour for `custom`; null picks a paler shade of `playerColor`. */
   rivalCustomColor: number | null;
   playerColor: number;

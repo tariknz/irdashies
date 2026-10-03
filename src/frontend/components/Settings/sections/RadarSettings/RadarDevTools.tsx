@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useDashboard } from '@irdashies/context';
 import {
+  RADAR_ARC_STYLES,
+  RADAR_OVERLAP_THRESHOLDS,
   RADAR_PROFILE_KEYS,
+  RADAR_RIVAL_COLOR_MODES,
   getWidgetDefaultConfig,
   type RadarConfig,
   type RadarPoleSides,
@@ -16,6 +19,18 @@ const PROFILE_DEFAULTS: Record<string, unknown> = Object.fromEntries(
 const kindOf = (value: unknown) =>
   Array.isArray(value) ? 'array' : value === null ? 'null' : typeof value;
 
+/** Types of the settings that default to null (ovalProfile is checked apart). */
+const NULLABLE_KINDS: Record<string, string> = { rivalCustomColor: 'number' };
+
+/** Settings that take one of a few words. */
+const CHOICES: Record<string, readonly string[]> = {
+  warningArcStyle: RADAR_ARC_STYLES,
+  diveArcStyle: RADAR_ARC_STYLES,
+  hazardArcStyle: RADAR_ARC_STYLES,
+  overlapThreshold: RADAR_OVERLAP_THRESHOLDS,
+  rivalColorMode: RADAR_RIVAL_COLOR_MODES,
+};
+
 /** Each value, nested ones included, whose type differs from its default. */
 const wrongTypes = (
   value: Record<string, unknown>,
@@ -24,11 +39,21 @@ const wrongTypes = (
 ): string[] =>
   Object.entries(value).flatMap(([key, item]) => {
     const fallback = defaults[key];
-    // Settings off by default (null) take any value.
-    if (fallback == null) return [];
     const path = prefix + key;
+    if (fallback === null) {
+      // Off by default, so the default says nothing about the type.
+      const kind = NULLABLE_KINDS[key];
+      return item === null || kindOf(item) === kind
+        ? []
+        : [`${path} (expected ${kind} or null)`];
+    }
+    if (fallback === undefined) return [];
     if (kindOf(item) !== kindOf(fallback)) {
       return [`${path} (expected ${kindOf(fallback)})`];
+    }
+    const choices = CHOICES[key];
+    if (choices && !choices.includes(item as string)) {
+      return [`${path} (expected one of ${choices.join(', ')})`];
     }
     return kindOf(fallback) === 'object'
       ? wrongTypes(

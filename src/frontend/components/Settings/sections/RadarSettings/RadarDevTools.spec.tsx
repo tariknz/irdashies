@@ -17,10 +17,10 @@ const applyPasted = (text: string) => {
 
 describe('ConfigJson', () => {
   it('applies pasted settings of the right type', () => {
-    const onApply = applyPasted('{"range": 40, "rivalCustomColor": "#fff"}');
+    const onApply = applyPasted('{"range": 40, "rivalCustomColor": 16711680}');
     expect(onApply).toHaveBeenCalledWith({
       range: 40,
-      rivalCustomColor: '#fff',
+      rivalCustomColor: 16711680,
     });
   });
 
@@ -41,6 +41,22 @@ describe('ConfigJson', () => {
     [
       '{"sessionVisibility": {"race": "false"}}',
       'Wrong type: sessionVisibility.race (expected boolean)',
+    ],
+    [
+      '{"rivalCustomColor": "#fff"}',
+      'rivalCustomColor (expected number or null)',
+    ],
+    [
+      '{"ovalProfile": {"rivalCustomColor": "red"}}',
+      'ovalProfile.rivalCustomColor (expected number or null)',
+    ],
+    [
+      '{"warningArcStyle": "zigzag"}',
+      'warningArcStyle (expected one of arc, segments, glow, sector)',
+    ],
+    [
+      '{"ovalProfile": {"rivalColorMode": "rainbow"}}',
+      'ovalProfile.rivalColorMode (expected one of safety, class, custom)',
     ],
     ['{"ovalProfile": 42}', 'ovalProfile (expected object or null)'],
     ['{"ovalProfile": {"range": "x"}}', 'ovalProfile.range (expected number)'],
