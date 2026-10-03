@@ -8,6 +8,33 @@ import {
 
 const RADAR_DEFAULTS = getWidgetDefaultConfig('radar');
 
+const kindOf = (value: unknown) =>
+  Array.isArray(value) ? 'array' : value === null ? 'null' : typeof value;
+
+/** Each value, nested ones included, whose type differs from its default. */
+const wrongTypes = (
+  value: Record<string, unknown>,
+  defaults: Record<string, unknown>,
+  prefix = ''
+): string[] =>
+  Object.entries(value).flatMap(([key, item]) => {
+    const fallback = defaults[key];
+    // Settings off by default (null) and free keys, such as the class names
+    // in classSizes, take any value.
+    if (fallback == null) return [];
+    const path = prefix + key;
+    if (kindOf(item) !== kindOf(fallback)) {
+      return [`${path} (expected ${kindOf(fallback)})`];
+    }
+    return kindOf(fallback) === 'object'
+      ? wrongTypes(
+          item as Record<string, unknown>,
+          fallback as Record<string, unknown>,
+          `${path}.`
+        )
+      : [];
+  });
+
 const BUTTON =
   'px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors';
 
@@ -138,19 +165,11 @@ export const ConfigJson = ({
       }
       // A wrong type would be saved as is and break the radar, e.g. a null
       // tuning drops every tuning default when spread over them.
-      const defaults: Record<string, unknown> = { ...RADAR_DEFAULTS };
-      const kindOf = (value: unknown) =>
-        Array.isArray(value) ? 'array' : value === null ? 'null' : typeof value;
-      const wrong = Object.entries(parsed).filter(
-        ([key, value]) =>
-          // Settings off by default (null) take any value.
-          defaults[key] != null && kindOf(value) !== kindOf(defaults[key])
-      );
+      const wrong = wrongTypes(parsed as Record<string, unknown>, {
+        ...RADAR_DEFAULTS,
+      });
       if (wrong.length) {
-        const expected = wrong.map(
-          ([key]) => `${key} (expected ${kindOf(defaults[key])})`
-        );
-        setMessage(`Wrong type: ${expected.join(', ')}`);
+        setMessage(`Wrong type: ${wrong.join(', ')}`);
         return;
       }
       onApply(parsed as Partial<RadarConfig>);

@@ -29,6 +29,10 @@ describe('ConfigJson', () => {
     ['[1]', 'Expected a JSON object'],
     ['{"range": "x"}', 'Wrong type: range (expected number)'],
     ['{"tuning": null}', 'Wrong type: tuning (expected object)'],
+    [
+      '{"sessionVisibility": {"race": "false"}}',
+      'Wrong type: sessionVisibility.race (expected boolean)',
+    ],
     ['{"nope": 1}', 'Unknown settings: nope'],
   ])('rejects %s', (text, message) => {
     const onApply = applyPasted(text);
