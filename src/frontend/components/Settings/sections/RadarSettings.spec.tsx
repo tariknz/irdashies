@@ -5,9 +5,15 @@ import { RadarSettings } from './RadarSettings';
 
 const mocks = vi.hoisted(() => {
   let dashboard: DashboardLayout | undefined;
+  let trackType: string | undefined;
   const listeners = new Set<() => void>();
   return {
     listeners,
+    getTrackType: () => trackType,
+    setTrackType: (next: string | undefined) => {
+      trackType = next;
+      listeners.forEach((listener) => listener());
+    },
     onDashboardUpdated: vi.fn(),
     getDashboard: () => dashboard,
     setDashboard: (next: DashboardLayout | undefined) => {
@@ -31,7 +37,21 @@ vi.mock('@irdashies/context', async () => {
     }),
     useActiveSimulator: () => null,
     useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
-    useSessionStore: () => undefined,
+    useSessionStore: <T,>(
+      selector: (state: {
+        session: { WeekendInfo: { TrackType?: string } };
+      }) => T
+    ) =>
+      useSyncExternalStore(
+        (onChange) => {
+          mocks.listeners.add(onChange);
+          return () => mocks.listeners.delete(onChange);
+        },
+        () =>
+          selector({
+            session: { WeekendInfo: { TrackType: mocks.getTrackType() } },
+          })
+      ),
     useSessionDrivers: () => [],
   };
 });
@@ -61,6 +81,7 @@ describe('RadarSettings', () => {
     localStorage.clear();
     mocks.onDashboardUpdated.mockClear();
     mocks.setDashboard(dashboard);
+    mocks.setTrackType(undefined);
   });
 
   const openSection = (name: string) =>
@@ -136,5 +157,20 @@ describe('RadarSettings', () => {
     const config = lastSavedConfig();
     expect(config.showTrackMap).toBe(true);
     expect(config.ovalProfile).toMatchObject({ showTrackMap: false });
+  });
+
+  it('follows the active profile until one is picked', () => {
+    render(<RadarSettings />);
+    const pressed = (name: string) =>
+      screen.getByRole('button', { name }).getAttribute('aria-pressed');
+    expect(pressed('Road')).toBe('true');
+
+    // The session arrives after the settings opened.
+    act(() => mocks.setTrackType('oval'));
+    expect(pressed('Oval')).toBe('true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Road' }));
+    act(() => mocks.setTrackType('dirt oval'));
+    expect(pressed('Road')).toBe('true');
   });
 });

@@ -277,9 +277,10 @@ export const RadarSettings = () => {
       // Only a convenience: the first section opens next time instead.
     }
   }, [sectionId]);
-  const [profile, setProfile] = useState<RadarProfileId>(() =>
-    activeProfile(settings.config, trackType)
-  );
+  // Follows the active profile until Road or Oval is picked: the saved
+  // settings and the track type can both arrive after mount.
+  const [profileOverride, setProfileOverride] = useState<RadarProfileId>();
+  const profile = profileOverride ?? activeProfile(settings.config, trackType);
 
   const config = settings.config;
   const view = useMemo(() => profileView(config, profile), [config, profile]);
@@ -358,7 +359,7 @@ export const RadarSettings = () => {
                       { value: 'road', label: 'Road' },
                       { value: 'oval', label: 'Oval' },
                     ]}
-                    onChange={setProfile}
+                    onChange={setProfileOverride}
                   />
                 </div>
                 <div className="flex-1 min-w-56">
