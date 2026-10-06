@@ -356,3 +356,57 @@ describe('useFuelCalculation channel parity', () => {
     await waitFor(() => expect(saveLap).toHaveBeenCalledTimes(2));
   });
 });
+
+describe('useFuelCalculation tank capacity', () => {
+  /** A snapshot with no completed laps, as every session has until lap one. */
+  const withoutLaps = (
+    overrides: Partial<FuelProjectionSnapshot> = {}
+  ): FuelProjectionSnapshot => ({
+    ...projection,
+    completedLaps: [],
+    currentLap: 1,
+    ...overrides,
+  });
+
+  const renderWith = (snapshot: FuelProjectionSnapshot) => {
+    window.channelBridge = {
+      subscribe: <K extends ChannelName>(
+        _channel: K,
+        callback: (payload: ChannelPayloads[K]) => void
+      ) => {
+        callback(snapshot as ChannelPayloads[K]);
+        return () => undefined;
+      },
+    };
+    return renderHook(() =>
+      useFuelCalculation(defaultFuelCalculatorSettings.safetyMargin, {
+        ...defaultFuelCalculatorSettings,
+        enableStorage: false,
+        enableLogging: false,
+      })
+    );
+  };
+
+  it("reports the session's capacity before any lap is complete", async () => {
+    // The early return used to carry a hardcoded 60, so an LMP2 that had
+    // already reported a 100 L tank was shown as 60 until its first lap.
+    const { result } = renderWith(withoutLaps({ fuelTankCapacity: 100 }));
+
+    await waitFor(() => expect(result.current).not.toBeNull());
+    expect(result.current?.fuelTankCapacity).toBe(100);
+  });
+
+  it('falls back to the default when the session reports none', async () => {
+    const { result } = renderWith(withoutLaps({ fuelTankCapacity: 0 }));
+
+    await waitFor(() => expect(result.current).not.toBeNull());
+    expect(result.current?.fuelTankCapacity).toBe(60);
+  });
+
+  it('keeps reporting it once laps exist', async () => {
+    const { result } = renderWith({ ...projection, fuelTankCapacity: 100 });
+
+    await waitFor(() => expect(result.current).not.toBeNull());
+    expect(result.current?.fuelTankCapacity).toBe(100);
+  });
+});
