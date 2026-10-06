@@ -7,6 +7,7 @@ import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandin
 import type { Standings } from '@irdashies/domain';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
+import { clampSetting } from '@irdashies/utils/clampSetting';
 import {
   DriverName as formatDriverName,
   extractDriverName,
@@ -79,7 +80,8 @@ export const BroadcastTicker = () => {
 
   if (!isSessionVisible || entries.length === 0) return null;
 
-  const loopSeconds = entries.length * (settings?.secondsPerEntry ?? 3);
+  const loopSeconds =
+    entries.length * clampSetting(settings?.secondsPerEntry, 1, 10, 3);
   const list = entries.map((s) => (
     <Entry key={s.carIdx} standing={s} mode={mode} teamRacing={teamRacing} />
   ));

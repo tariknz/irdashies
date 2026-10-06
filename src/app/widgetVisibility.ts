@@ -1,3 +1,5 @@
+import logger from './logger';
+
 /**
  * Widgets hidden for this session by their per-widget hotkey. Kept here
  * rather than in KeybindingManager so the web server can tell browser views
@@ -11,7 +13,13 @@ export const toggleWidgetHidden = (widgetId: string): boolean => {
   const hide = !hidden.has(widgetId);
   if (hide) hidden.add(widgetId);
   else hidden.delete(widgetId);
-  listeners.forEach((cb) => cb(widgetId, hide));
+  listeners.forEach((cb) => {
+    try {
+      cb(widgetId, hide);
+    } catch (err) {
+      logger.error('[widgetVisibility] listener failed:', err);
+    }
+  });
   return hide;
 };
 

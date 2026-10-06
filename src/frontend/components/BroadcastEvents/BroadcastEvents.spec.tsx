@@ -7,7 +7,7 @@ import { BroadcastEvents } from './BroadcastEvents';
 const dashboard = vi.hoisted(() => ({ isDemoMode: true }));
 
 vi.mock('@irdashies/context', () => ({
-  trackStateSelectors: { sessionFlags: () => 0 },
+  trackStateSelectors: { sessionFlags: () => 0, sessionNum: () => 0 },
   useTrackStateSelector: () => 0,
   // Demo sessions are usually practice, which this widget hides by default.
   useSessionVisibility: () => false,

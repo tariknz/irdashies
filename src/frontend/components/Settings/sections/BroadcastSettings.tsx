@@ -78,7 +78,7 @@ export const BroadcastSettings = () => {
                 up to 300 KB.
               </p>
               <div className="flex items-center gap-3">
-                {config.logo && (
+                {config.logo.startsWith('data:image/') && (
                   <img
                     src={config.logo}
                     alt=""

@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   CaretDownIcon,
   CaretUpIcon,
@@ -21,6 +21,7 @@ import type {
   StandingsWidgetSettings,
 } from '@irdashies/types';
 import { formatTime } from '@irdashies/utils/time';
+import { clampSetting } from '@irdashies/utils/clampSetting';
 import { CarManufacturer } from '../shared/CarManufacturer/CarManufacturer';
 import { Compound } from '../shared/Compound/Compound';
 import { useBroadcastSettings } from './hooks/useBroadcastSettings';
@@ -198,7 +199,7 @@ const THEMES: Record<
   f1: {
     header: 'bg-red-600 text-white',
     panel: 'bg-zinc-900/(--bg-opacity)',
-    position: 'rounded-xs bg-white text-slate-900 not-italic text-center',
+    position: 'rounded-xs bg-white text-center text-slate-900 not-italic',
   },
 };
 
@@ -252,62 +253,59 @@ const GainedCell = ({ change }: { change?: number }) => {
   );
 };
 
-const DriverRow = memo(
-  ({
-    standing,
-    page,
-    nameFormat,
-    positionStyle,
-  }: {
-    standing: Standings;
-    page: Page;
-    nameFormat: NameFormat;
-    positionStyle: string;
-  }) => {
-    const color = classColor(standing.carClass.color);
-    const dimmed =
-      page.kind === 'gaps' && page.classId !== String(standing.carClass.id);
-    return (
-      <div
-        className={[
-          'relative flex h-full items-center gap-1.5 pr-2 font-bold italic uppercase transition-opacity duration-500',
-          dimmed || standing.dnf ? 'opacity-40' : '',
-          standing.isPlayer ? 'text-amber-300' : 'text-white',
-        ].join(' ')}
+const DriverRow = ({
+  standing,
+  page,
+  nameFormat,
+  positionStyle,
+}: {
+  standing: Standings;
+  page: Page;
+  nameFormat: NameFormat;
+  positionStyle: string;
+}) => {
+  const color = classColor(standing.carClass.color);
+  const dimmed =
+    page.kind === 'gaps' && page.classId !== String(standing.carClass.id);
+  return (
+    <div
+      className={[
+        'relative flex h-full items-center gap-1.5 pr-2 font-bold italic uppercase transition-opacity duration-500',
+        dimmed || standing.dnf ? 'opacity-40' : '',
+        standing.isPlayer ? 'text-amber-300' : 'text-white',
+      ].join(' ')}
+    >
+      <span className={`relative w-6 ${positionStyle || 'text-right'}`}>
+        {standing.classPosition}.
+      </span>
+      <span
+        className={`relative w-9 rounded-xs text-center text-slate-900 ${color}`}
       >
-        <span className={`relative w-6 text-right ${positionStyle}`}>
-          {standing.classPosition}.
-        </span>
-        <span
-          className={`relative w-9 rounded-xs text-center text-slate-900 ${color}`}
-        >
-          {standing.driver.carNum}
-        </span>
-        <span className="relative flex-1 truncate">
-          {driverName(standing, nameFormat)}
-        </span>
-        {standing.radioActive && (
-          <MicrophoneIcon className="relative" size={12} weight="fill" />
+        {standing.driver.carNum}
+      </span>
+      <span className="relative flex-1 truncate">
+        {driverName(standing, nameFormat)}
+      </span>
+      {standing.radioActive && (
+        <MicrophoneIcon className="relative" size={12} weight="fill" />
+      )}
+      <span className="relative tabular-nums">
+        {page.kind === 'gaps' && !dimmed && <GapCell standing={standing} />}
+        {page.kind === 'makes' && standing.carId !== undefined && (
+          <CarManufacturer carId={standing.carId} />
         )}
-        <span className="relative tabular-nums">
-          {page.kind === 'gaps' && !dimmed && <GapCell standing={standing} />}
-          {page.kind === 'makes' && standing.carId !== undefined && (
-            <CarManufacturer carId={standing.carId} />
-          )}
-          {page.kind === 'gained' && (
-            <GainedCell change={standing.positionChange} />
-          )}
-          {page.kind === 'pits' &&
-            (standing.lastPitLap ? `L${standing.lastPitLap}` : '-')}
-          {page.kind === 'tyres' && (
-            <Compound tireCompound={standing.tireCompound} />
-          )}
-        </span>
-      </div>
-    );
-  }
-);
-DriverRow.displayName = 'DriverRow';
+        {page.kind === 'gained' && (
+          <GainedCell change={standing.positionChange} />
+        )}
+        {page.kind === 'pits' &&
+          (standing.lastPitLap ? `L${standing.lastPitLap}` : '-')}
+        {page.kind === 'tyres' && (
+          <Compound tireCompound={standing.tireCompound} />
+        )}
+      </span>
+    </div>
+  );
+};
 
 const ClassHeader = ({
   row,
@@ -416,7 +414,7 @@ export const Broadcast = () => {
     showAll: true,
     livePositions: true,
   });
-  const perClass = settings?.driversPerClass ?? 5;
+  const perClass = clampSetting(settings?.driversPerClass, 1, 30, 5);
   const standings = useMemo(() => groups.flatMap(([, d]) => d), [groups]);
   const sessionNum = useSessionBarSelector(sessionBarSelectors.sessionNum);
   const changes = usePositionChanges(standings, sessionNum);
@@ -425,29 +423,33 @@ export const Broadcast = () => {
     () => buildBroadcastRows(groups, perClass),
     [groups, perClass]
   );
+  // Rebuilt only when the set of classes or available pages changes, not on
+  // every standings update, so the page rotation keeps its place.
+  const classList = JSON.stringify(
+    groups.map(([classId, drivers]) => [
+      classId,
+      drivers[0]?.carClass.name ?? '',
+    ])
+  );
+  // Positions gained only exist in a race, against the qualifying grid.
+  const hasGained = standings.some((s) => s.positionChange !== undefined);
+  const hasPits = standings.some((s) => s.lastPitLap);
   const pages = useMemo<Page[]>(
     () => [
       { kind: 'names' },
-      ...groups.map(([classId, drivers]): Page => ({
-        kind: 'gaps',
-        classId,
-        className: drivers[0]?.carClass.name ?? '',
-      })),
+      ...(JSON.parse(classList) as [string, string][]).map(
+        ([classId, className]): Page => ({ kind: 'gaps', classId, className })
+      ),
       { kind: 'makes' },
-      // Positions gained only exist in a race, against the qualifying grid.
-      ...(standings.some((s) => s.positionChange !== undefined)
-        ? [{ kind: 'gained' } as const]
-        : []),
-      ...(standings.some((s) => s.lastPitLap)
-        ? [{ kind: 'pits' } as const]
-        : []),
+      ...(hasGained ? [{ kind: 'gained' } as const] : []),
+      ...(hasPits ? [{ kind: 'pits' } as const] : []),
       ...(hasTyreChoice ? [{ kind: 'tyres' } as const] : []),
     ],
-    [groups, standings, hasTyreChoice]
+    [classList, hasGained, hasPits, hasTyreChoice]
   );
   const { page, tick, effect } = usePageRotation(
     pages,
-    settings?.pageSeconds ?? 8
+    clampSetting(settings?.pageSeconds, 3, 30, 8)
   );
   const battle =
     page.kind === 'gaps'
@@ -550,8 +552,13 @@ export const Broadcast = () => {
       {phase === 'podium' && <PodiumCard groups={groups} />}
       {settings?.weather?.enabled && (
         <WeatherCard
-          intervalMinutes={settings.weather.intervalMinutes}
-          showSeconds={settings.weather.showSeconds}
+          intervalMinutes={clampSetting(
+            settings.weather.intervalMinutes,
+            0,
+            30,
+            10
+          )}
+          showSeconds={clampSetting(settings.weather.showSeconds, 5, 30, 12)}
         />
       )}
       {settings?.showFocusCard !== false && focus && (

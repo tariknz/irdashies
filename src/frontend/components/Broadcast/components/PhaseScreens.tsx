@@ -77,7 +77,6 @@ export const PodiumCard = ({ groups }: { groups: Groups }) => (
                 <div
                   key={s.carIdx}
                   className="flex min-w-0 flex-1 flex-col items-center"
-                  style={{ animationDelay: `${i * 150}ms` }}
                 >
                   {s.carId !== undefined && (
                     <span className="text-2xl">

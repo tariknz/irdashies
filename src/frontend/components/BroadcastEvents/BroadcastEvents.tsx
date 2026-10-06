@@ -17,6 +17,7 @@ import {
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import type { Standings } from '@irdashies/domain';
 import { getTailwindStyle } from '@irdashies/utils/colors';
+import { clampSetting } from '@irdashies/utils/clampSetting';
 import {
   DriverName as formatDriverName,
   extractDriverName,
@@ -190,7 +191,7 @@ export const BroadcastEvents = () => {
     () => new Map(groups.flatMap(([, d]) => d).map((s) => [s.carIdx, s])),
     [groups]
   );
-  const showSeconds = settings?.showSeconds ?? 8;
+  const showSeconds = clampSetting(settings?.showSeconds, 3, 20, 8);
   const { current, push } = useEventQueue(showSeconds);
   const kinds = settings?.kinds;
   const lastIncident = useRef<{ event: BroadcastEvent; at: number }>(undefined);
@@ -207,12 +208,23 @@ export const BroadcastEvents = () => {
   );
 
   // Pit stops, fastest laps, meatballs and DQs come from the standings.
-  const tracker = useRef(emptyCarTracker());
+  // A new session starts from a fresh baseline: last session's best lap
+  // would otherwise hide every fastest lap of this one.
+  const sessionNum = useTrackStateSelector(trackStateSelectors.sessionNum);
+  const tracker = useRef({ sessionNum, state: emptyCarTracker() });
   useEffect(() => {
-    const out = carEvents(tracker.current, [...byCarIdx.values()], Date.now());
-    tracker.current = out.tracker;
+    if (tracker.current.sessionNum !== sessionNum) {
+      tracker.current = { sessionNum, state: emptyCarTracker() };
+    }
+    // Pit lane time is wall-clock, so it is only right for live or 1x replay.
+    const out = carEvents(
+      tracker.current.state,
+      [...byCarIdx.values()],
+      Date.now()
+    );
+    tracker.current.state = out.tracker;
     out.events.filter((e) => kinds?.[e.kind] !== false).forEach((e) => push(e));
-  }, [byCarIdx, kinds, push]);
+  }, [byCarIdx, kinds, push, sessionNum]);
 
   const sessionFlags =
     useTrackStateSelector(trackStateSelectors.sessionFlags) ?? 0;
