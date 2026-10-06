@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlagIcon, WarningIcon } from '@phosphor-icons/react';
+import {
+  FlagCheckeredIcon,
+  FlagIcon,
+  ProhibitIcon,
+  TimerIcon,
+  WarningIcon,
+  WrenchIcon,
+  type Icon,
+} from '@phosphor-icons/react';
 import {
   trackStateSelectors,
   useDashboard,
@@ -16,7 +24,9 @@ import {
 import { CarManufacturer } from '../shared/CarManufacturer/CarManufacturer';
 import { useBroadcastEventsSettings } from './hooks/useBroadcastEventsSettings';
 import {
+  carEvents,
   demoEvent,
+  emptyCarTracker,
   eventFromIncident,
   flagKind,
   type BroadcastEvent,
@@ -28,27 +38,76 @@ const MAX_QUEUE = 4;
 /** A flag that follows an incident this soon is shown with that car. */
 const FLAG_LINK_MS = 15_000;
 
-const KIND_STYLE: Record<
-  EventKind,
-  { title: string; bar: string; flag?: string }
-> = {
-  crash: { title: 'Incident', bar: 'bg-red-600 text-white' },
-  offTrack: { title: 'Off Track', bar: 'bg-amber-500 text-slate-900' },
-  slowdown: { title: 'Slow Car', bar: 'bg-orange-500 text-slate-900' },
+interface KindStyle {
+  title: string;
+  bar: string;
+  icon: Icon;
+  /** Colour of a waving flag; other icons pulse instead. */
+  flag?: string;
+}
+
+const KIND_STYLE: Record<EventKind, KindStyle> = {
+  crash: { title: 'Incident', bar: 'bg-red-600 text-white', icon: WarningIcon },
+  offTrack: {
+    title: 'Off Track',
+    bar: 'bg-amber-500 text-slate-900',
+    icon: WarningIcon,
+  },
+  slowdown: {
+    title: 'Slow Car',
+    bar: 'bg-orange-500 text-slate-900',
+    icon: WarningIcon,
+  },
   blackFlag: {
     title: 'Black Flag',
     bar: 'bg-black text-white',
+    icon: FlagIcon,
     flag: 'text-white',
   },
   yellow: {
     title: 'Yellow Flag',
     bar: 'bg-yellow-400 text-slate-900',
+    icon: FlagIcon,
     flag: 'text-yellow-400',
   },
   caution: {
     title: 'Full Course Yellow',
     bar: 'bg-yellow-400 text-slate-900',
+    icon: FlagIcon,
     flag: 'text-yellow-400',
+  },
+  fastestLap: {
+    title: 'Fastest Lap',
+    bar: 'bg-purple-600 text-white',
+    icon: TimerIcon,
+  },
+  pitStop: {
+    title: 'Pit Stop',
+    bar: 'bg-sky-600 text-white',
+    icon: WrenchIcon,
+  },
+  meatball: {
+    title: 'Meatball Flag',
+    bar: 'bg-black text-white',
+    icon: FlagIcon,
+    flag: 'text-orange-500',
+  },
+  disqualified: {
+    title: 'Disqualified',
+    bar: 'bg-black text-red-400',
+    icon: ProhibitIcon,
+  },
+  finalLap: {
+    title: 'Final Lap',
+    bar: 'bg-white text-slate-900',
+    icon: FlagIcon,
+    flag: 'text-slate-300',
+  },
+  checkered: {
+    title: 'Checkered Flag',
+    bar: 'bg-white text-slate-900',
+    icon: FlagCheckeredIcon,
+    flag: 'text-slate-900',
   },
 };
 
@@ -109,6 +168,9 @@ const DriverCard = ({
             .join(' · ')}
           {event.lap ? ` · Lap ${event.lap}` : ''}
         </div>
+        {event.detail && (
+          <div className="text-lg font-bold tabular-nums">{event.detail}</div>
+        )}
       </div>
       {standing?.carId !== undefined && (
         <span className="text-3xl">
@@ -144,6 +206,14 @@ export const BroadcastEvents = () => {
     [kinds, push]
   );
 
+  // Pit stops, fastest laps, meatballs and DQs come from the standings.
+  const tracker = useRef(emptyCarTracker());
+  useEffect(() => {
+    const out = carEvents(tracker.current, [...byCarIdx.values()], Date.now());
+    tracker.current = out.tracker;
+    out.events.filter((e) => kinds?.[e.kind] !== false).forEach((e) => push(e));
+  }, [byCarIdx, kinds, push]);
+
   const sessionFlags =
     useTrackStateSelector(trackStateSelectors.sessionFlags) ?? 0;
   const prevFlags = useRef(sessionFlags);
@@ -151,11 +221,18 @@ export const BroadcastEvents = () => {
     const kind = flagKind(prevFlags.current, sessionFlags);
     prevFlags.current = sessionFlags;
     if (!kind || kinds?.[kind] === false) return;
+    const id = `${kind}-${Date.now()}`;
+    if (kind === 'finalLap') return push({ id, kind });
+    if (kind === 'checkered') {
+      // Show the overall winner; the podium screen has every class.
+      const winner = [...byCarIdx.values()].find((s) => s.position === 1);
+      return push({ id, kind, carIdx: winner?.carIdx });
+    }
     const recent = lastIncident.current;
     const linked =
       recent && Date.now() - recent.at < FLAG_LINK_MS ? recent.event : {};
-    push({ ...linked, kind, id: `${kind}-${Date.now()}` });
-  }, [sessionFlags, kinds, push]);
+    push({ ...linked, kind, id });
+  }, [sessionFlags, kinds, push, byCarIdx]);
 
   // Demo telemetry never crashes or flags, so make events up on real cars.
   const carIdxs = useRef<number[]>([]);
@@ -195,15 +272,15 @@ export const BroadcastEvents = () => {
       <div
         className={`flex items-center gap-2 px-3 py-1 text-lg font-bold italic uppercase ${style.bar}`}
       >
-        {style.flag ? (
-          <FlagIcon
-            size={22}
-            weight="fill"
-            className={`origin-bottom-left animate-[broadcast-wave_0.6s_ease-in-out_infinite_alternate] ${style.flag} drop-shadow`}
-          />
-        ) : (
-          <WarningIcon size={22} weight="fill" className="animate-pulse" />
-        )}
+        <style.icon
+          size={22}
+          weight="fill"
+          className={
+            style.flag
+              ? `origin-bottom-left animate-[broadcast-wave_0.6s_ease-in-out_infinite_alternate] ${style.flag} drop-shadow`
+              : 'animate-pulse'
+          }
+        />
         {style.title}
       </div>
       {hasCar && <DriverCard event={current} standing={standing} />}

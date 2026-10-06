@@ -15,6 +15,7 @@ import {
 import { getAvailableSimulators } from '../bridge/iracingSdk/sims/registry';
 import { loadSimWidgetSupport } from '../storage/simWidgetSupport';
 import logger from '../logger';
+import { getHiddenWidgets, onWidgetHiddenChanged } from '../widgetVisibility';
 import type { ChannelBus } from '../bridge/channelBridge';
 
 // Export current state so it can be accessed by other parts of the app
@@ -127,6 +128,12 @@ export function createBridgeProxy(
     broadcast('simulatorChanged', simulator);
   });
 
+  // Per-widget hotkeys only reach overlay windows; forward them so a
+  // commentator can show or hide broadcast widgets on the OBS page too.
+  onWidgetHiddenChanged((widgetId, hide) =>
+    broadcast('widgetToggleHide', { widgetId, hide })
+  );
+
   if (dashboardBridge) {
     dashboardBridge.dashboardUpdated(
       (dashboard: DashboardLayout, profileId?: string) => {
@@ -172,6 +179,7 @@ export function createBridgeProxy(
           dashboard: currentDashboard,
           isDemoMode,
           simulator: activeSimulator,
+          hiddenWidgets: getHiddenWidgets(),
         },
       })
     );

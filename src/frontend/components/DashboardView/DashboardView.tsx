@@ -11,6 +11,7 @@ import {
   useActiveSimulator,
   useDashboard,
   useSimWidgetSupport,
+  useHiddenWidgetIds,
   SessionTimingUpdater,
   isGantryOnly,
 } from '@irdashies/context';
@@ -257,6 +258,8 @@ export const DashboardView = ({ soloWidgetId }: DashboardViewProps = {}) => {
   const { currentDashboard, bridge, currentProfile } = useDashboard();
   const simulator = useActiveSimulator();
   const simWidgetSupport = useSimWidgetSupport();
+  // Per-widget hotkeys, so a commentator can switch widgets on the stream.
+  const hiddenWidgetIds = useHiddenWidgetIds();
   const [widgetPositions, setWidgetPositions] = useState<
     Record<string, WidgetPosition>
   >({});
@@ -446,6 +449,9 @@ export const DashboardView = ({ soloWidgetId }: DashboardViewProps = {}) => {
     >
       <SessionTimingUpdater />
       {enabledWidgets.map((widget) => {
+        // Hidden by its hotkey; skipped here so the cascade of unsaved
+        // positions does not shift.
+        if (hiddenWidgetIds.has(widget.id)) return null;
         const position =
           widgetPositions[widget.id] ?? initialPositions[widget.id];
         if (!position) return null;

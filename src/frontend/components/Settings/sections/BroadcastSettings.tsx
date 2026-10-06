@@ -117,6 +117,12 @@ export const BroadcastSettings = () => {
               enabled={config.showFocusCard}
               onToggle={(v) => handleConfigChange({ showFocusCard: v })}
             />
+            <SettingToggleRow
+              title="Grid and Podium"
+              description="Show the starting grid before the race starts and the podium of each class after the checkered flag."
+              enabled={config.phaseScreens}
+              onToggle={(v) => handleConfigChange({ phaseScreens: v })}
+            />
             <div className="py-2">
               <div className="text-sm text-slate-300">Driver Name</div>
               <div className="flex flex-wrap gap-3 justify-end mt-3">

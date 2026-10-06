@@ -1238,6 +1238,8 @@ export interface BroadcastConfig {
   pageSeconds: number;
   /** Lower-third card for the car the camera is on. */
   showFocusCard: boolean;
+  /** Starting grid before the green flag, podium after the checkered. */
+  phaseScreens: boolean;
   /**
    * Weather card that pops up on change, and every `intervalMinutes`
    * (0 = only on change), for `showSeconds`.
@@ -1274,6 +1276,12 @@ export interface BroadcastEventsConfig {
     blackFlag: boolean;
     yellow: boolean;
     caution: boolean;
+    fastestLap: boolean;
+    pitStop: boolean;
+    meatball: boolean;
+    disqualified: boolean;
+    finalLap: boolean;
+    checkered: boolean;
   };
   sessionVisibility: SessionVisibilitySettings;
 }

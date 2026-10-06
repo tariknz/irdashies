@@ -1330,6 +1330,7 @@ export const defaultDashboard: {
         title: '',
         pageSeconds: 8,
         showFocusCard: true,
+        phaseScreens: true,
         weather: { enabled: true, intervalMinutes: 10, showSeconds: 12 },
         driverNameFormat: 'surname',
         sessionVisibility: {
@@ -1382,6 +1383,12 @@ export const defaultDashboard: {
           blackFlag: true,
           yellow: true,
           caution: true,
+          fastestLap: true,
+          pitStop: true,
+          meatball: true,
+          disqualified: true,
+          finalLap: true,
+          checkered: true,
         },
         sessionVisibility: {
           race: true,

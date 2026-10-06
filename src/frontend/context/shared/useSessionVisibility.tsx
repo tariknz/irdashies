@@ -2,11 +2,7 @@ import { useCurrentSessionType } from './useCurrentSessionType';
 import type { SessionVisibilitySettings } from '@irdashies/types';
 
 type SessionType =
-  | 'Race'
-  | 'Lone Qualify'
-  | 'Open Qualify'
-  | 'Practice'
-  | 'Offline Testing';
+  'Race' | 'Lone Qualify' | 'Open Qualify' | 'Practice' | 'Offline Testing';
 
 const SESSION_TYPE_MAP: Record<SessionType, keyof SessionVisibilitySettings> = {
   Race: 'race',

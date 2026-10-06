@@ -1,6 +1,13 @@
 import { memo, useEffect, useMemo, useState } from 'react';
-import { MicrophoneIcon } from '@phosphor-icons/react';
 import {
+  CaretDownIcon,
+  CaretUpIcon,
+  MicrophoneIcon,
+} from '@phosphor-icons/react';
+import {
+  sessionBarSelectors,
+  useDriverTires,
+  useSessionBarSelector,
   useSessionLapsTiming,
   useSessionTimeTiming,
   useSessionVisibility,
@@ -9,21 +16,20 @@ import {
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import type { Standings } from '@irdashies/domain';
 import type { NameFormat, StandingsWidgetSettings } from '@irdashies/types';
-import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
-import {
-  DriverName as formatDriverName,
-  extractDriverName,
-} from '../shared/DriverName/DriverName';
 import { CarManufacturer } from '../shared/CarManufacturer/CarManufacturer';
+import { Compound } from '../shared/Compound/Compound';
 import { useBroadcastSettings } from './hooks/useBroadcastSettings';
 import { WeatherCard } from './WeatherCard';
 import {
   buildBroadcastRows,
   diffClassPositions,
   findBattle,
+  racePhase,
   type BroadcastRow,
 } from './broadcastRows';
+import { GridCard, PodiumCard } from './components/PhaseScreens';
+import { classColor, driverName } from './format';
 
 const ROW_HEIGHT = 24;
 const BATTLE_GAP_SECONDS = 1;
@@ -38,13 +44,17 @@ const STANDINGS_OPTIONS = {
 type Page =
   | { kind: 'names' }
   | { kind: 'gaps'; classId: string; className: string }
-  | { kind: 'makes' };
+  | { kind: 'makes' }
+  | { kind: 'gained' }
+  | { kind: 'pits' }
+  | { kind: 'tyres' };
 
-const classColor = (color: number) =>
-  getTailwindStyle(color, undefined, true).classHeader;
-
-const driverName = (standing: Standings, format: NameFormat) =>
-  formatDriverName(extractDriverName(standing.driver.name), format);
+/** Header label for the pages that show the same column for every class. */
+const PAGE_LABELS: Partial<Record<Page['kind'], string>> = {
+  gained: '+/- Start',
+  pits: 'Last Pit',
+  tyres: 'Tyres',
+};
 
 const ordinal = (n: number) =>
   `${n}${['th', 'st', 'nd', 'rd'][n % 100 > 10 && n % 100 < 14 ? 0 : n % 10] ?? 'th'}`;
@@ -55,19 +65,28 @@ interface PositionChange {
   seq: number;
 }
 
-/** Remembers the last class position change of each car. */
-const usePositionChanges = (standings: readonly Standings[]) => {
+/**
+ * Remembers the last class position change of each car. A new session
+ * reorders everyone at once, which is not an overtake, so it starts clean.
+ */
+const usePositionChanges = (
+  standings: readonly Standings[],
+  sessionNum: number | null | undefined
+) => {
   const [state, setState] = useState({
     standings,
+    sessionNum,
     seq: 0,
     changes: new Map<number, PositionChange>(),
   });
-  if (state.standings !== standings) {
+  if (state.sessionNum !== sessionNum) {
+    setState({ standings, sessionNum, seq: state.seq, changes: new Map() });
+  } else if (state.standings !== standings) {
     const diff = diffClassPositions(state.standings, standings);
     const seq = state.seq + 1;
     const changes = diff.size ? new Map(state.changes) : state.changes;
     for (const [carIdx, delta] of diff) changes.set(carIdx, { delta, seq });
-    setState({ standings, seq, changes });
+    setState({ standings, sessionNum, seq, changes });
   }
   return state.changes;
 };
@@ -175,6 +194,20 @@ const GapCell = ({ standing }: { standing: Standings }) => {
   return <>-{standing.gap.value.toFixed(3)}</>;
 };
 
+const GainedCell = ({ change }: { change?: number }) => {
+  if (!change) return <span className="text-white/50">-</span>;
+  const gained = change > 0;
+  const Arrow = gained ? CaretUpIcon : CaretDownIcon;
+  return (
+    <span
+      className={`flex items-center ${gained ? 'text-green-400' : 'text-red-400'}`}
+    >
+      <Arrow size={12} weight="fill" />
+      {Math.abs(change)}
+    </span>
+  );
+};
+
 const DriverRow = memo(
   ({
     standing,
@@ -215,6 +248,14 @@ const DriverRow = memo(
           {page.kind === 'makes' && standing.carId !== undefined && (
             <CarManufacturer carId={standing.carId} />
           )}
+          {page.kind === 'gained' && (
+            <GainedCell change={standing.positionChange} />
+          )}
+          {page.kind === 'pits' &&
+            (standing.lastPitLap ? `L${standing.lastPitLap}` : '-')}
+          {page.kind === 'tyres' && (
+            <Compound tireCompound={standing.tireCompound} />
+          )}
         </span>
       </div>
     );
@@ -229,16 +270,24 @@ const ClassHeader = ({
   row: Extract<BroadcastRow, { kind: 'class' }>;
   page: Page;
 }) => {
-  const showsGaps = page.kind === 'gaps' && `class-${page.classId}` === row.key;
+  const label =
+    page.kind === 'gaps'
+      ? `class-${page.classId}` === row.key
+        ? 'Intervals'
+        : undefined
+      : PAGE_LABELS[page.kind];
   return (
     <div className="flex h-full items-end justify-between border-t-2 border-white/10 px-2 font-bold italic uppercase">
       <span className="flex items-center gap-2 text-white">
         <span className={`h-3 w-1 ${classColor(row.color)}`} />
         {row.name}
       </span>
-      {showsGaps && (
-        <span className="animate-broadcast-enter text-xs text-white/70">
-          Intervals
+      {label && (
+        <span
+          key={page.kind}
+          className="animate-broadcast-enter text-xs text-white/70"
+        >
+          {label}
         </span>
       )}
     </div>
@@ -323,7 +372,9 @@ export const Broadcast = () => {
   });
   const perClass = settings?.driversPerClass ?? 5;
   const standings = useMemo(() => groups.flatMap(([, d]) => d), [groups]);
-  const changes = usePositionChanges(standings);
+  const sessionNum = useSessionBarSelector(sessionBarSelectors.sessionNum);
+  const changes = usePositionChanges(standings, sessionNum);
+  const hasTyreChoice = (useDriverTires()?.length ?? 0) > 1;
   const rows = useMemo(
     () => buildBroadcastRows(groups, perClass),
     [groups, perClass]
@@ -337,8 +388,16 @@ export const Broadcast = () => {
         className: drivers[0]?.carClass.name ?? '',
       })),
       { kind: 'makes' },
+      // Positions gained only exist in a race, against the qualifying grid.
+      ...(standings.some((s) => s.positionChange !== undefined)
+        ? [{ kind: 'gained' } as const]
+        : []),
+      ...(standings.some((s) => s.lastPitLap)
+        ? [{ kind: 'pits' } as const]
+        : []),
+      ...(hasTyreChoice ? [{ kind: 'tyres' } as const] : []),
     ],
-    [groups]
+    [groups, standings, hasTyreChoice]
   );
   const { page, tick, effect } = usePageRotation(
     pages,
@@ -353,6 +412,11 @@ export const Broadcast = () => {
         )
       : undefined;
   const focus = standings.find((s) => s.isPlayer);
+  const { sessionType, state: sessionState } = useSessionTimeTiming();
+  const phase =
+    settings?.phaseScreens !== false
+      ? racePhase(sessionType, sessionState)
+      : undefined;
   const nameFormat = settings?.driverNameFormat ?? 'surname';
 
   if (!isSessionVisible || rows.length === 0) return null;
@@ -429,6 +493,8 @@ export const Broadcast = () => {
           </div>
         )}
       </div>
+      {phase === 'grid' && <GridCard groups={groups} perClass={perClass} />}
+      {phase === 'podium' && <PodiumCard groups={groups} />}
       {settings?.weather?.enabled && (
         <WeatherCard
           intervalMinutes={settings.weather.intervalMinutes}

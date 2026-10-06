@@ -64,6 +64,11 @@ export class WebSocketBridge
    * waiting would leave the widget filtering off for the whole run.
    */
   private currentSimulator: ActiveSimulator | null = null;
+  /** Widgets hidden by their hotkey, so a late subscriber is told at once. */
+  private hiddenWidgets = new Set<string>();
+  private widgetToggleCallbacks = new Set<
+    (widgetId: string, hide: boolean) => void
+  >();
 
   constructor() {
     this.telemetryCallbacks = new Set();
@@ -144,6 +149,13 @@ export class WebSocketBridge
           if (state.simulator !== undefined) {
             this.publishSimulator(state.simulator);
           }
+          if (Array.isArray(state.hiddenWidgets)) {
+            // A reconnect may follow a toggle we missed; resync both ways.
+            const next = new Set<string>(state.hiddenWidgets);
+            new Set([...this.hiddenWidgets, ...next]).forEach((id) =>
+              this.publishWidgetToggle(id, next.has(id))
+            );
+          }
           break;
         }
         case 'telemetry':
@@ -211,6 +223,11 @@ export class WebSocketBridge
           break;
         case 'simulatorChanged':
           this.publishSimulator(data ?? null);
+          break;
+        case 'widgetToggleHide':
+          if (typeof data?.widgetId === 'string') {
+            this.publishWidgetToggle(data.widgetId, !!data.hide);
+          }
           break;
         case 'dashboard':
           this.lastDashboard = data;
@@ -751,6 +768,27 @@ export class WebSocketBridge
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify({ type: 'toggleDemoMode', data: value }));
     }
+  }
+
+  private publishWidgetToggle(widgetId: string, hide: boolean) {
+    if (hide) this.hiddenWidgets.add(widgetId);
+    else this.hiddenWidgets.delete(widgetId);
+    this.widgetToggleCallbacks.forEach((cb) => {
+      try {
+        cb(widgetId, hide);
+      } catch (e) {
+        logger.error('Error in widget toggle callback:', e);
+      }
+    });
+  }
+
+  /** Per-widget hotkey hide/show, mirroring the overlay windows. */
+  onWidgetToggle(callback: (widgetId: string, hide: boolean) => void) {
+    this.widgetToggleCallbacks.add(callback);
+    this.hiddenWidgets.forEach((id) => callback(id, true));
+    return () => {
+      this.widgetToggleCallbacks.delete(callback);
+    };
   }
 
   onDemoModeChanged(

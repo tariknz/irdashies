@@ -4,7 +4,9 @@ import {
   buildBroadcastRows,
   diffClassPositions,
   findBattle,
+  racePhase,
 } from './broadcastRows';
+import { SessionState } from '@irdashies/types';
 
 const car = (
   carIdx: number,
@@ -73,5 +75,17 @@ describe('findBattle', () => {
     expect(findBattle([withInterval(1), withInterval(2, 1.5)], 5, 1)).toBe(
       undefined
     );
+  });
+});
+
+describe('racePhase', () => {
+  it('shows the grid before the green flag and the podium after the flag', () => {
+    expect(racePhase('Race', SessionState.Warmup)).toBe('grid');
+    expect(racePhase('Race', SessionState.Racing)).toBe(undefined);
+    expect(racePhase('Race', SessionState.CoolDown)).toBe('podium');
+  });
+
+  it('only applies to races', () => {
+    expect(racePhase('Practice', SessionState.Checkered)).toBe(undefined);
   });
 });

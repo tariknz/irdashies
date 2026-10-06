@@ -22,6 +22,12 @@ const KIND_LABELS: Record<keyof BroadcastEventsConfig['kinds'], string> = {
   blackFlag: 'Black flag',
   yellow: 'Yellow flag',
   caution: 'Full course yellow',
+  fastestLap: 'Fastest lap in class',
+  pitStop: 'Pit stop (pit lane time)',
+  meatball: 'Meatball (repair) flag',
+  disqualified: 'Disqualified',
+  finalLap: 'Final lap (white flag)',
+  checkered: 'Checkered flag with winner',
 };
 
 export const BroadcastEventsSettings = () => {
@@ -40,6 +46,8 @@ export const BroadcastEventsSettings = () => {
   }
 
   const { config } = settings;
+  // Configs saved before a kind existed lack it; show those as on.
+  const kinds = { ...defaultConfig.kinds, ...config.kinds };
 
   return (
     <BaseSettingsSection
@@ -83,9 +91,9 @@ export const BroadcastEventsSettings = () => {
               <SettingToggleRow
                 key={kind}
                 title={KIND_LABELS[kind]}
-                enabled={config.kinds[kind]}
+                enabled={kinds[kind]}
                 onToggle={(v) =>
-                  handleConfigChange({ kinds: { ...config.kinds, [kind]: v } })
+                  handleConfigChange({ kinds: { ...kinds, [kind]: v } })
                 }
               />
             ))}

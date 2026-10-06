@@ -32,6 +32,12 @@ async function initializeDashboardView() {
   window.irsdkBridge = bridge;
   window.channelBridge = bridge;
   window.telemetryInspectorBridge = bridge;
+  // Only the per-widget toggles reach the browser view; the global hide
+  // (Alt+H) is for the overlay on the streamer's own screen.
+  window.globalKey = {
+    onToggle: () => () => undefined,
+    onWidgetToggle: (cb) => bridge.onWidgetToggle(cb),
+  };
   window.fuelCalculatorBridge = {
     getHistoricalLaps: async () => [],
     saveLap: async () => undefined,

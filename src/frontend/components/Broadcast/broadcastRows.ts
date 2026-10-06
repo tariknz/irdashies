@@ -1,4 +1,5 @@
 import type { Standings } from '@irdashies/domain';
+import { SessionState } from '@irdashies/types';
 
 export type BroadcastRow =
   | { kind: 'class'; key: string; name: string; color: number }
@@ -67,4 +68,25 @@ export const findBattle = (
     }
   }
   return best;
+};
+
+export type RacePhase = 'grid' | 'podium';
+
+/** The grid before the green flag of a race, the podium after the checkered. */
+export const racePhase = (
+  sessionType: string | undefined,
+  state: number
+): RacePhase | undefined => {
+  if (sessionType !== 'Race') return undefined;
+  if (
+    state === SessionState.GetInCar ||
+    state === SessionState.Warmup ||
+    state === SessionState.ParadeLaps
+  ) {
+    return 'grid';
+  }
+  if (state === SessionState.Checkered || state === SessionState.CoolDown) {
+    return 'podium';
+  }
+  return undefined;
 };

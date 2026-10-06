@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { GlobalFlags, IncidentType, type Incident } from '@irdashies/types';
-import { demoEvent, eventFromIncident, flagKind } from './broadcastEvents';
+import {
+  carEvents,
+  demoEvent,
+  emptyCarTracker,
+  eventFromIncident,
+  flagKind,
+} from './broadcastEvents';
+import type { Standings } from '@irdashies/domain';
 
 const incident = (type: IncidentType) =>
   ({ id: 'a', type, carIdx: 3, carNumber: '7', lapNum: 4 }) as Incident;
@@ -44,16 +51,33 @@ describe('demoEvent', () => {
       carIdx: 5,
     });
     expect(demoEvent(1, [5, 6], enabled)).toMatchObject({
-      kind: 'slowdown',
+      kind: 'fastestLap',
       carIdx: 6,
+      detail: '1:47.382',
     });
   });
 
-  it('gives a full course yellow no car', () => {
-    expect(demoEvent(4, [1], {})).toMatchObject({
-      kind: 'caution',
-      carIdx: undefined,
-    });
+  it('gives field-wide flags no car', () => {
+    const only = (kind: string) =>
+      Object.fromEntries(
+        [
+          'crash',
+          'offTrack',
+          'slowdown',
+          'blackFlag',
+          'yellow',
+          'caution',
+          'fastestLap',
+          'pitStop',
+          'meatball',
+          'disqualified',
+          'finalLap',
+          'checkered',
+        ].map((k) => [k, k === kind])
+      );
+    expect(demoEvent(0, [1], only('caution'))?.carIdx).toBe(undefined);
+    expect(demoEvent(0, [1], only('finalLap'))?.carIdx).toBe(undefined);
+    expect(demoEvent(0, [1], only('checkered'))?.carIdx).toBe(1);
   });
 
   it('returns nothing when every kind is off', () => {
@@ -64,7 +88,88 @@ describe('demoEvent', () => {
       blackFlag: false,
       yellow: false,
       caution: false,
+      fastestLap: false,
+      pitStop: false,
+      meatball: false,
+      disqualified: false,
+      finalLap: false,
+      checkered: false,
     };
     expect(demoEvent(0, [1], off)).toBe(undefined);
+  });
+});
+
+describe('flagKind finish flags', () => {
+  it('reports the white and checkered flags', () => {
+    expect(flagKind(0, GlobalFlags.White)).toBe('finalLap');
+    expect(flagKind(GlobalFlags.White, GlobalFlags.Checkered)).toBe(
+      'checkered'
+    );
+  });
+});
+
+describe('carEvents', () => {
+  const car = (over: Partial<Standings> = {}) =>
+    ({
+      carIdx: 1,
+      lap: 5,
+      onPitRoad: false,
+      repair: false,
+      dnf: false,
+      fastestTime: 90,
+      carClass: { id: 1 },
+      ...over,
+    }) as Standings;
+
+  const run = (frames: Partial<Standings>[][], step = 1000) => {
+    let tracker = emptyCarTracker();
+    const kinds: string[][] = [];
+    const details: (string | undefined)[][] = [];
+    frames.forEach((frame, i) => {
+      const out = carEvents(tracker, frame.map(car), i * step);
+      tracker = out.tracker;
+      kinds.push(out.events.map((e) => e.kind));
+      details.push(out.events.map((e) => e.detail));
+    });
+    return { kinds, details };
+  };
+
+  it('sets a baseline first, so a mid-race open stays quiet', () => {
+    const { kinds } = run([[{ repair: true, onPitRoad: true }]]);
+    expect(kinds).toEqual([[]]);
+  });
+
+  it('times a pit stop from entry to exit', () => {
+    const { kinds, details } = run(
+      [[{}], [{ onPitRoad: true }], [{ onPitRoad: true }], [{}]],
+      10_000
+    );
+    expect(kinds[3]).toEqual(['pitStop']);
+    expect(details[3]).toEqual(['Pit lane 20.0s']);
+  });
+
+  it('skips a pit exit whose entry it never saw', () => {
+    const { kinds } = run([[{ onPitRoad: true }], [{}]]);
+    expect(kinds[1]).toEqual([]);
+  });
+
+  it('reports a new class fastest lap, but not the first one', () => {
+    const { kinds } = run([
+      [{ fastestTime: 0 }],
+      [{ fastestTime: 92 }],
+      [{ fastestTime: 91 }],
+      [{ fastestTime: 91 }],
+    ]);
+    expect(kinds).toEqual([[], [], ['fastestLap'], []]);
+  });
+
+  it('reports a meatball and a disqualification once', () => {
+    const { kinds } = run([
+      [{}],
+      [{ repair: true }],
+      [{ repair: true, dnf: true }],
+      [{ repair: true, dnf: true }],
+    ]);
+    expect(kinds).toEqual([[], ['meatball'], ['disqualified'], []]);
   });
 });
