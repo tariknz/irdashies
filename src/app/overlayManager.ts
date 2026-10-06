@@ -405,8 +405,11 @@ export class OverlayManager {
     });
     browserWindow.on('closed', () => {
       logger.info(`Display ${display.id} overlay window closed`);
-      this.displayWindows.delete(display.id);
-      this.displayBoundsInfo.delete(display.id);
+      // A rebuild may already have put a new window under this id
+      if (this.displayWindows.get(display.id) === browserWindow) {
+        this.displayWindows.delete(display.id);
+        this.displayBoundsInfo.delete(display.id);
+      }
     });
 
     browserWindow.webContents.on('render-process-gone', (_event, details) => {
