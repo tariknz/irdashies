@@ -61,6 +61,7 @@ vi.mock('electron', () => ({
   BrowserWindow: FakeBrowserWindow,
   Notification: vi.fn(),
   screen: {
+    on: vi.fn(),
     getAllDisplays: () => [
       {
         id: 1,
