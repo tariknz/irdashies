@@ -34,6 +34,9 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   laptrace: 'Lap Trace',
   battle: 'Battle',
   gantry: 'The Gantry',
+  broadcast: 'Broadcast',
+  broadcastticker: 'Broadcast Ticker',
+  broadcastevents: 'Broadcast Events',
 };
 
 /**

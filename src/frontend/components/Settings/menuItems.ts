@@ -58,6 +58,24 @@ export const widgetItems: MenuItem[] = [
     widgetType: 'battle',
   },
   {
+    to: '/settings/broadcast',
+    path: '/broadcast',
+    label: 'Broadcast',
+    widgetType: 'broadcast',
+  },
+  {
+    to: '/settings/broadcastevents',
+    path: '/broadcastevents',
+    label: 'Broadcast Events',
+    widgetType: 'broadcastevents',
+  },
+  {
+    to: '/settings/broadcastticker',
+    path: '/broadcastticker',
+    label: 'Broadcast Ticker',
+    widgetType: 'broadcastticker',
+  },
+  {
     to: '/settings/blindspotmonitor',
     path: '/blindspotmonitor',
     label: 'Blind Spot Monitor',

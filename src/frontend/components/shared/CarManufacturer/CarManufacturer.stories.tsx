@@ -26,7 +26,7 @@ type Story = StoryObj<typeof meta>;
 export const AllManufacturers: Story = {
   render: () => {
     const manufacturerToCarId = new Map<string, number>();
-    
+
     Object.entries(CAR_ID_TO_CAR_MANUFACTURER).forEach(([carId, data]) => {
       const manufacturer = data.manufacturer;
       if (!manufacturerToCarId.has(manufacturer)) {
@@ -34,8 +34,9 @@ export const AllManufacturers: Story = {
       }
     });
 
-    const sortedManufacturers = Array.from(manufacturerToCarId.entries())
-      .sort(([a], [b]) => a.localeCompare(b));
+    const sortedManufacturers = Array.from(manufacturerToCarId.entries()).sort(
+      ([a], [b]) => a.localeCompare(b)
+    );
 
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -101,16 +102,14 @@ export const AllCarsByManufacturer: Story = {
         acc[manufacturer].push(car);
         return acc;
       },
-      {} as Record<string, typeof carEntries>,
+      {} as Record<string, typeof carEntries>
     );
 
     const sortedManufacturers = Object.keys(groupedByManufacturer).sort();
 
     return (
       <div className="p-4 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">
-          All Cars by Manufacturer
-        </h2>
+        <h2 className="text-xl font-bold mb-4">All Cars by Manufacturer</h2>
         <div className="space-y-6">
           {sortedManufacturers.map((manufacturer) => (
             <div key={manufacturer} className="pb-4">

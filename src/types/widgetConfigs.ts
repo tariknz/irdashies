@@ -1225,6 +1225,62 @@ export const DEFAULT_INCIDENT_CAMERA_GROUP = 'Far Chase';
 
 export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;
 
+/** TV-style leaderboard and focus-car card, meant for OBS capture. */
+export interface BroadcastConfig {
+  background: { opacity: number };
+  /** Fades the whole widget, text included, so it covers less of the stream. */
+  translucent: { enabled: boolean; opacity: number };
+  /** Rows shown per class; the focus car is added below when outside them. */
+  driversPerClass: number;
+  /** Header text; blank shows the track name. */
+  title: string;
+  /** How long each tower page (names, gaps per class, makes) stays up. */
+  pageSeconds: number;
+  /** Lower-third card for the car the camera is on. */
+  showFocusCard: boolean;
+  /**
+   * Weather card that pops up on change, and every `intervalMinutes`
+   * (0 = only on change), for `showSeconds`.
+   */
+  weather: { enabled: boolean; intervalMinutes: number; showSeconds: number };
+  driverNameFormat: NameFormat;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export type BroadcastWidgetSettings = BaseWidgetSettings<BroadcastConfig>;
+
+/** Scrolling bottom-of-screen ticker that cycles standings views. */
+export interface BroadcastTickerConfig {
+  background: { opacity: number };
+  /** Fades the whole widget, text included, so it covers less of the stream. */
+  translucent: { enabled: boolean; opacity: number };
+  /** Scroll speed: how long each car stays in the loop. */
+  secondsPerEntry: number;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export type BroadcastTickerWidgetSettings =
+  BaseWidgetSettings<BroadcastTickerConfig>;
+
+/** Race control popups: incidents and flags, with the driver involved. */
+export interface BroadcastEventsConfig {
+  background: { opacity: number };
+  /** How long each event stays up; queued events follow one by one. */
+  showSeconds: number;
+  kinds: {
+    crash: boolean;
+    offTrack: boolean;
+    slowdown: boolean;
+    blackFlag: boolean;
+    yellow: boolean;
+    caution: boolean;
+  };
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export type BroadcastEventsWidgetSettings =
+  BaseWidgetSettings<BroadcastEventsConfig>;
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
@@ -1266,6 +1322,9 @@ export interface WidgetConfigMap {
   battle: BattleConfig;
   laptrace: LapTraceConfig;
   gantry: GantryConfig;
+  broadcast: BroadcastConfig;
+  broadcastticker: BroadcastTickerConfig;
+  broadcastevents: BroadcastEventsConfig;
 }
 
 export type TypedDashboardWidget<

@@ -27,6 +27,9 @@ import { CornerNameOverlay } from './components/CornerNameOverlay';
 import { LapTrace } from './components/LapTrace';
 import { Battle } from './components/Battle/Battle';
 import { Gantry } from './components/Gantry/Gantry';
+import { Broadcast } from './components/Broadcast/Broadcast';
+import { BroadcastTicker } from './components/BroadcastTicker/BroadcastTicker';
+import { BroadcastEvents } from './components/BroadcastEvents/BroadcastEvents';
 import type { WidgetConfigMap } from '@irdashies/types';
 import type { ElementType } from 'react';
 
@@ -59,6 +62,9 @@ export {
   LapTrace,
   Battle,
   Gantry,
+  Broadcast,
+  BroadcastTicker,
+  BroadcastEvents,
 };
 
 export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
@@ -91,6 +97,9 @@ export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
   laptrace: LapTrace,
   battle: Battle,
   gantry: Gantry,
+  broadcast: Broadcast,
+  broadcastticker: BroadcastTicker,
+  broadcastevents: BroadcastEvents,
 };
 
 export type WidgetId = keyof WidgetConfigMap;

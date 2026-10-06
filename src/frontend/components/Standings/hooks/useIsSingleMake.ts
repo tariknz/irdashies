@@ -3,7 +3,7 @@ import {
   useSessionDrivers,
   useWeekendInfoNumCarClasses,
 } from '@irdashies/context';
-import { CAR_ID_TO_CAR_MANUFACTURER } from '../components/CarManufacturer/carManufacturerMapping';
+import { CAR_ID_TO_CAR_MANUFACTURER } from '../../shared/CarManufacturer/carManufacturerMapping';
 
 /**
  * Returns true when the session contains only a single car manufacturer.

@@ -76,6 +76,30 @@ layer(base);
     }
   }
 
+  --animate-broadcast-enter: broadcast-enter 400ms ease-out;
+  --animate-broadcast-fade: broadcast-fade 5s ease-in forwards;
+
+  @keyframes broadcast-enter {
+    from {
+      transform: translateX(-24px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes broadcast-fade {
+    0%,
+    80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
   --animate-name-slide-primary: name-slide-primary 5s ease-in-out infinite;
   --animate-name-slide-secondary: name-slide-secondary 5s ease-in-out infinite;
 
@@ -484,4 +508,76 @@ html {
   --color-slate-800: var(--color-stone-800);
   --color-slate-900: var(--color-stone-900);
   --color-slate-950: var(--color-stone-950);
+}
+
+/* Broadcast tower page transitions, picked at random by the widget. */
+@keyframes broadcast-slide-left {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes broadcast-slide-right {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes broadcast-slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+@keyframes broadcast-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes broadcast-flip {
+  from {
+    transform: perspective(400px) rotateX(-90deg);
+    opacity: 0;
+  }
+}
+@keyframes broadcast-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes broadcast-zoom {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+@keyframes broadcast-checker {
+  to {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+@keyframes broadcast-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes broadcast-rain {
+  from {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+}
+@keyframes broadcast-wave {
+  from {
+    transform: rotate(-8deg) skewY(-4deg);
+  }
+  to {
+    transform: rotate(6deg) skewY(4deg);
+  }
 }
