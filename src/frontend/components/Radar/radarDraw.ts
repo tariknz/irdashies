@@ -678,7 +678,13 @@ export const hazardWanted = (
     'showHazards' | 'hazardRange' | 'hazardCrash' | 'hazardSlow' | 'hazardOff'
   >
 ): boolean => {
-  if (!style.showHazards || hazard.dist > style.hazardRange) return false;
+  if (
+    !style.showHazards ||
+    hazard.dist < 0 ||
+    hazard.dist > style.hazardRange
+  ) {
+    return false;
+  }
   if (hazard.kind === 'crash') return style.hazardCrash;
   if (hazard.kind === 'slow') return style.hazardSlow;
   return style.hazardOff;

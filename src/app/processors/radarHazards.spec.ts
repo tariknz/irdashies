@@ -164,6 +164,13 @@ describe('RadarHazardTracker', () => {
     expect(field.run(2, { speed: 0 })).toEqual([]);
   });
 
+  it('drops a hazard once we are past it', () => {
+    const field = new Field();
+    field.pcts[2] = 1 - 5 / TRACK_M; // 5 m behind us
+    field.run(5);
+    expect(field.run(0.4, { speed: 0 })).toEqual([]);
+  });
+
   it('judges nobody while speeds settle', () => {
     const field = new Field();
     field.run(5);

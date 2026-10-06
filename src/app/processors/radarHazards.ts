@@ -3,8 +3,6 @@ import { TrackLocation } from '@irdashies/types';
 
 /** Metres ahead hazards are reported to the renderer, past any setting. */
 export const RADAR_HAZARD_MAX_M = 1000;
-/** Metres behind a hazard is still reported, so the car on the disc keeps its mark. */
-const HAZARD_BEHIND_M = 30;
 
 /** Length of one stretch of the speed profile, in metres. */
 const PROFILE_BIN_M = 25;
@@ -155,7 +153,8 @@ export class RadarHazardTracker {
       const kind = this.judge(carIdx, pct, speed, surface, time);
       if (!kind || carIdx === frame.focus) continue;
       const dist = wrapDelta(pct, frame.playerPct) * this.trackLength;
-      if (dist < -HAZARD_BEHIND_M || dist > RADAR_HAZARD_MAX_M) continue;
+      // Only what is still ahead: once passed, it no longer concerns us.
+      if (dist < 0 || dist > RADAR_HAZARD_MAX_M) continue;
       hazards.push({ carIdx, dist, kind, speed });
     }
     hazards.sort((a, b) => a.dist - b.dist);
