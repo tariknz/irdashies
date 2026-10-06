@@ -1225,8 +1225,17 @@ export const DEFAULT_INCIDENT_CAMERA_GROUP = 'Far Chase';
 
 export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;
 
+/** Series look for the broadcast tower. */
+export type BroadcastTheme = 'imsa' | 'wec' | 'f1';
+
 /** TV-style leaderboard and focus-car card, meant for OBS capture. */
 export interface BroadcastConfig {
+  theme: BroadcastTheme;
+  /**
+   * Series logo above the tower title, as an image data URL. Stored inline so
+   * it reaches the OBS page with the rest of the dashboard.
+   */
+  logo: string;
   background: { opacity: number };
   /** Fades the whole widget, text included, so it covers less of the stream. */
   translucent: { enabled: boolean; opacity: number };

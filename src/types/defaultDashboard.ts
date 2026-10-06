@@ -1324,6 +1324,8 @@ export const defaultDashboard: {
         height: 900,
       },
       config: {
+        theme: 'imsa',
+        logo: '',
         background: { opacity: 85 },
         translucent: { enabled: false, opacity: 70 },
         driversPerClass: 5,

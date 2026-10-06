@@ -15,7 +15,11 @@ import {
 } from '@irdashies/context';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import type { Standings } from '@irdashies/domain';
-import type { NameFormat, StandingsWidgetSettings } from '@irdashies/types';
+import type {
+  BroadcastTheme,
+  NameFormat,
+  StandingsWidgetSettings,
+} from '@irdashies/types';
 import { formatTime } from '@irdashies/utils/time';
 import { CarManufacturer } from '../shared/CarManufacturer/CarManufacturer';
 import { Compound } from '../shared/Compound/Compound';
@@ -175,8 +179,48 @@ const SessionClock = () => {
   return <>{formatTime(Math.max(timeRemaining, 0), 'duration')}</>;
 };
 
-const Header = ({ title }: { title: string }) => (
-  <div className="rounded-t-sm border border-white/20 bg-linear-to-b from-slate-700 to-slate-950 px-2 py-0.5 text-center font-bold italic leading-tight tracking-wide text-cyan-300 uppercase">
+/** Tower look per series style; class names stay literal for Tailwind. */
+const THEMES: Record<
+  BroadcastTheme,
+  { header: string; panel: string; position: string }
+> = {
+  imsa: {
+    header:
+      'border border-white/20 bg-linear-to-b from-slate-700 to-slate-950 text-cyan-300 italic',
+    panel: 'bg-slate-950/(--bg-opacity)',
+    position: '',
+  },
+  wec: {
+    header: 'bg-linear-to-r from-sky-700 to-blue-950 text-white italic',
+    panel: 'bg-blue-950/(--bg-opacity)',
+    position: '',
+  },
+  f1: {
+    header: 'bg-red-600 text-white',
+    panel: 'bg-zinc-900/(--bg-opacity)',
+    position: 'rounded-xs bg-white text-slate-900 not-italic text-center',
+  },
+};
+
+/** Only inline images are shown; the config is user-editable JSON. */
+const isImageDataUrl = (src?: string): src is string =>
+  !!src && src.startsWith('data:image/');
+
+const Header = ({
+  title,
+  logo,
+  theme,
+}: {
+  title: string;
+  logo?: string;
+  theme: BroadcastTheme;
+}) => (
+  <div
+    className={`rounded-t-sm px-2 py-0.5 text-center font-bold leading-tight tracking-wide uppercase ${THEMES[theme].header}`}
+  >
+    {isImageDataUrl(logo) && (
+      <img src={logo} alt="" className="mx-auto max-h-12 py-1" />
+    )}
     <div className="truncate text-base">{title}</div>
     <div className="text-lg tabular-nums">
       <SessionClock />
@@ -213,10 +257,12 @@ const DriverRow = memo(
     standing,
     page,
     nameFormat,
+    positionStyle,
   }: {
     standing: Standings;
     page: Page;
     nameFormat: NameFormat;
+    positionStyle: string;
   }) => {
     const color = classColor(standing.carClass.color);
     const dimmed =
@@ -229,7 +275,7 @@ const DriverRow = memo(
           standing.isPlayer ? 'text-amber-300' : 'text-white',
         ].join(' ')}
       >
-        <span className="relative w-6 text-right">
+        <span className={`relative w-6 text-right ${positionStyle}`}>
           {standing.classPosition}.
         </span>
         <span
@@ -418,6 +464,8 @@ export const Broadcast = () => {
       ? racePhase(sessionType, sessionState)
       : undefined;
   const nameFormat = settings?.driverNameFormat ?? 'surname';
+  const theme = settings?.theme ?? 'imsa';
+  const look = THEMES[theme] ?? THEMES.imsa;
 
   if (!isSessionVisible || rows.length === 0) return null;
 
@@ -431,8 +479,12 @@ export const Broadcast = () => {
           : undefined,
       }}
     >
-      <div className="overflow-hidden rounded-sm bg-slate-950/(--bg-opacity) shadow-lg">
-        <Header title={settings?.title || trackName || ''} />
+      <div className={`overflow-hidden rounded-sm shadow-lg ${look.panel}`}>
+        <Header
+          title={settings?.title || trackName || ''}
+          logo={settings?.logo}
+          theme={theme}
+        />
         {/* Rows are absolutely placed so a position swap slides instead of jumping. */}
         <div
           className="relative"
@@ -472,6 +524,7 @@ export const Broadcast = () => {
                       standing={row.standing}
                       page={page}
                       nameFormat={nameFormat}
+                      positionStyle={look.position}
                     />
                   )}
                 </div>
