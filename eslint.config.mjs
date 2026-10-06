@@ -12,6 +12,20 @@ const eslintReactErrorRules = Object.fromEntries(
   )
 );
 
+// Architectural boundary: prevent cross-imports between frontend and app
+const FRONTEND_NO_APP_IMPORTS = {
+  group: ['**/app/**', '../app/**', '../../app/**'],
+  message:
+    'Frontend code cannot import from app/. Use IPC bridges and import types from @irdashies/types instead.',
+};
+
+// Enforce context namespace: imports from context subdirectories must go via @irdashies/context
+const FRONTEND_CONTEXT_VIA_ALIAS = {
+  group: ['**/context/**'],
+  message:
+    "Import from '@irdashies/context' instead of importing context internals directly.",
+};
+
 export default defineConfig([
   {
     ignores: [
@@ -55,41 +69,38 @@ export default defineConfig([
       '@eslint-react/rules-of-hooks': 'off',
     },
   },
-  // Architectural boundary: prevent cross-imports between frontend and app
+  // Frontend import boundaries. In flat config a later block that sets
+  // no-restricted-imports replaces the earlier one for overlapping files, so
+  // each block lists every pattern that applies to its files.
   {
     files: ['src/frontend/**/*.{ts,tsx}'],
     ignores: ['src/frontend/components/**/*.stories.tsx'],
     rules: {
       'no-restricted-imports': [
         'error',
-        {
-          patterns: [
-            {
-              group: ['**/app/**', '../app/**', '../../app/**'],
-              message:
-                'Frontend code cannot import from app/. Use IPC bridges and import types from @irdashies/types instead.',
-            },
-          ],
-        },
+        { patterns: [FRONTEND_NO_APP_IMPORTS] },
       ],
     },
   },
-  // Enforce context namespace: imports from context subdirectories must go via @irdashies/context
   {
     files: ['src/frontend/**/*.{ts,tsx}'],
-    ignores: ['src/frontend/context/**'],
+    ignores: [
+      'src/frontend/context/**',
+      'src/frontend/components/**/*.stories.tsx',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',
-        {
-          patterns: [
-            {
-              group: ['**/context/**'],
-              message:
-                "Import from '@irdashies/context' instead of importing context internals directly.",
-            },
-          ],
-        },
+        { patterns: [FRONTEND_NO_APP_IMPORTS, FRONTEND_CONTEXT_VIA_ALIAS] },
+      ],
+    },
+  },
+  {
+    files: ['src/frontend/components/**/*.stories.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [FRONTEND_CONTEXT_VIA_ALIAS] },
       ],
     },
   },
