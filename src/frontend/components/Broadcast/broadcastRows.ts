@@ -11,7 +11,8 @@ export type BroadcastRow =
  */
 export const buildBroadcastRows = (
   groups: readonly [string, Standings[]][],
-  perClass: number
+  perClass: number,
+  focusCarIdx?: number
 ): BroadcastRow[] => {
   const rows: BroadcastRow[] = [];
   for (const [classId, drivers] of groups) {
@@ -24,7 +25,7 @@ export const buildBroadcastRows = (
       color: first.carClass.color,
     });
     drivers.forEach((standing, index) => {
-      if (index < perClass || standing.isPlayer) {
+      if (index < perClass || standing.carIdx === focusCarIdx) {
         rows.push({ kind: 'driver', key: `car-${standing.carIdx}`, standing });
       }
     });

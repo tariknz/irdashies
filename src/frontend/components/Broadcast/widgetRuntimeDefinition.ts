@@ -5,6 +5,7 @@ export default {
   sessionData: true,
   // raceControl.incidents is an event channel, subscribed directly.
   channels: [
+    'car-speeds.snapshot',
     'lap-times.snapshot',
     'radio.snapshot',
     'session-bar.snapshot',

@@ -29,6 +29,7 @@ import { Battle } from './components/Battle/Battle';
 import { Gantry } from './components/Gantry/Gantry';
 import { Broadcast } from './components/Broadcast/Broadcast';
 import { BroadcastTicker } from './components/BroadcastTicker/BroadcastTicker';
+import { BroadcastWeather } from './components/BroadcastWeather/BroadcastWeather';
 import { BroadcastEvents } from './components/BroadcastEvents/BroadcastEvents';
 import type { WidgetConfigMap } from '@irdashies/types';
 import type { ElementType } from 'react';
@@ -65,6 +66,7 @@ export {
   Broadcast,
   BroadcastTicker,
   BroadcastEvents,
+  BroadcastWeather,
 };
 
 export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
@@ -100,6 +102,7 @@ export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
   broadcast: Broadcast,
   broadcastticker: BroadcastTicker,
   broadcastevents: BroadcastEvents,
+  broadcastweather: BroadcastWeather,
 };
 
 export type WidgetId = keyof WidgetConfigMap;

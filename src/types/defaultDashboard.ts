@@ -1333,8 +1333,29 @@ export const defaultDashboard: {
         pageSeconds: 8,
         showFocusCard: true,
         phaseScreens: true,
-        weather: { enabled: true, intervalMinutes: 10, showSeconds: 12 },
         driverNameFormat: 'surname',
+        sessionVisibility: {
+          race: true,
+          loneQualify: true,
+          openQualify: true,
+          practice: true,
+          offlineTesting: true,
+        },
+      },
+    },
+    {
+      id: 'broadcastweather',
+      enabled: false,
+      layout: {
+        x: 320,
+        y: 20,
+        width: 280,
+        height: 140,
+      },
+      config: {
+        background: { opacity: 85 },
+        intervalMinutes: 10,
+        showSeconds: 12,
         sessionVisibility: {
           race: true,
           loneQualify: true,

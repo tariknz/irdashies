@@ -1243,22 +1243,31 @@ export interface BroadcastConfig {
   driversPerClass: number;
   /** Header text; blank shows the track name. */
   title: string;
-  /** How long each tower page (names, gaps per class, makes) stays up. */
+  /** How long each tower page (names, gaps per class, gained, pits, tyres) stays up. */
   pageSeconds: number;
   /** Lower-third card for the car the camera is on. */
   showFocusCard: boolean;
   /** Starting grid before the green flag, podium after the checkered. */
   phaseScreens: boolean;
-  /**
-   * Weather card that pops up on change, and every `intervalMinutes`
-   * (0 = only on change), for `showSeconds`.
-   */
-  weather: { enabled: boolean; intervalMinutes: number; showSeconds: number };
   driverNameFormat: NameFormat;
   sessionVisibility: SessionVisibilitySettings;
 }
 
 export type BroadcastWidgetSettings = BaseWidgetSettings<BroadcastConfig>;
+
+/**
+ * Weather card that pops up on change, and every `intervalMinutes`
+ * (0 = only on change), for `showSeconds`.
+ */
+export interface BroadcastWeatherConfig {
+  background: { opacity: number };
+  intervalMinutes: number;
+  showSeconds: number;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export type BroadcastWeatherWidgetSettings =
+  BaseWidgetSettings<BroadcastWeatherConfig>;
 
 /** Scrolling bottom-of-screen ticker that cycles standings views. */
 export interface BroadcastTickerConfig {
@@ -1342,6 +1351,7 @@ export interface WidgetConfigMap {
   broadcast: BroadcastConfig;
   broadcastticker: BroadcastTickerConfig;
   broadcastevents: BroadcastEventsConfig;
+  broadcastweather: BroadcastWeatherConfig;
 }
 
 export type TypedDashboardWidget<

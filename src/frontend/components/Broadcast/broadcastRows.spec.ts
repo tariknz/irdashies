@@ -8,23 +8,19 @@ import {
 } from './broadcastRows';
 import { SessionState } from '@irdashies/types';
 
-const car = (
-  carIdx: number,
-  classPosition: number | undefined,
-  isPlayer = false
-) =>
+const car = (carIdx: number, classPosition: number | undefined) =>
   ({
     carIdx,
     classPosition,
-    isPlayer,
     carClass: { id: 1, color: 0xffda59, name: 'GTP' },
   }) as Standings;
 
 describe('buildBroadcastRows', () => {
   it('keeps the top drivers per class and adds the focus car', () => {
     const rows = buildBroadcastRows(
-      [['1', [car(1, 1), car(2, 2), car(3, 3), car(4, 4, true)]]],
-      2
+      [['1', [car(1, 1), car(2, 2), car(3, 3), car(4, 4)]]],
+      2,
+      4
     );
     expect(rows.map((r) => r.key)).toEqual([
       'class-1',

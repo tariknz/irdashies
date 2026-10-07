@@ -57,7 +57,7 @@ export const BroadcastSettings = () => {
   return (
     <BaseSettingsSection
       title="Broadcast"
-      description="TV-style timing tower that cycles between names, per-class intervals with close battles, and car makes, plus a card for the car on camera. Put it in its own profile and add that profile's /dashboard page to OBS as a Browser Source."
+      description="TV-style timing tower that cycles between names, per-class intervals with close battles, positions gained, pit laps and tyres, plus a card for the car on camera. Put it in its own profile and add that profile's /dashboard page to OBS as a Browser Source."
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
@@ -211,49 +211,6 @@ export const BroadcastSettings = () => {
                 ))}
               </div>
             </div>
-          </SettingsSection>
-
-          <SettingsSection title="Weather">
-            <SettingToggleRow
-              title="Weather Card"
-              description="Pops up with an animated card when rain starts or stops, the track gets wetter or dries, or track temperature swings by 3 degrees."
-              enabled={config.weather.enabled}
-              onToggle={(v) =>
-                handleConfigChange({
-                  weather: { ...config.weather, enabled: v },
-                })
-              }
-            />
-            {config.weather.enabled && (
-              <>
-                <SettingSliderRow
-                  title="Also Every (0 = Only On Change)"
-                  value={config.weather.intervalMinutes}
-                  units="min"
-                  min={0}
-                  max={30}
-                  step={1}
-                  onChange={(v) =>
-                    handleConfigChange({
-                      weather: { ...config.weather, intervalMinutes: v },
-                    })
-                  }
-                />
-                <SettingSliderRow
-                  title="Show For"
-                  value={config.weather.showSeconds}
-                  units="s"
-                  min={5}
-                  max={30}
-                  step={1}
-                  onChange={(v) =>
-                    handleConfigChange({
-                      weather: { ...config.weather, showSeconds: v },
-                    })
-                  }
-                />
-              </>
-            )}
           </SettingsSection>
 
           <SettingsSection title="Visibility">

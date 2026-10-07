@@ -36,6 +36,7 @@ import { LapTraceSettings } from './sections/LapTraceSettings';
 import { BattleSettings } from './sections/BattleSettings';
 import { BroadcastSettings } from './sections/BroadcastSettings';
 import { BroadcastTickerSettings } from './sections/BroadcastTickerSettings';
+import { BroadcastWeatherSettings } from './sections/BroadcastWeatherSettings';
 import { BroadcastEventsSettings } from './sections/BroadcastEventsSettings';
 import { GantrySettings } from './sections/GantrySettings';
 
@@ -122,6 +123,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <BroadcastTickerSettings />;
     case 'broadcastevents':
       return <BroadcastEventsSettings />;
+    case 'broadcastweather':
+      return <BroadcastWeatherSettings />;
     case 'gantry':
       return <GantrySettings />;
     default:

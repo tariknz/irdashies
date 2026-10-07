@@ -2,11 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   CaretDownIcon,
   CaretUpIcon,
+  FlagIcon,
   MicrophoneIcon,
 } from '@phosphor-icons/react';
 import {
   sessionBarSelectors,
+  useCarIdxSpeed,
   useDriverTires,
+  useFocusCarIdx,
   useSessionBarSelector,
   useSessionLapsTiming,
   useSessionTimeTiming,
@@ -24,8 +27,8 @@ import { formatTime } from '@irdashies/utils/time';
 import { clampSetting } from '@irdashies/utils/clampSetting';
 import { CarManufacturer } from '../shared/CarManufacturer/CarManufacturer';
 import { Compound } from '../shared/Compound/Compound';
+import { CountryFlag } from '../Standings/components/CountryFlag/CountryFlag';
 import { useBroadcastSettings } from './hooks/useBroadcastSettings';
-import { WeatherCard } from './WeatherCard';
 import {
   buildBroadcastRows,
   diffClassPositions,
@@ -49,7 +52,6 @@ const STANDINGS_OPTIONS = {
 type Page =
   | { kind: 'names' }
   | { kind: 'gaps'; classId: string; className: string }
-  | { kind: 'makes' }
   | { kind: 'gained' }
   | { kind: 'pits' }
   | { kind: 'tyres' };
@@ -230,10 +232,7 @@ const Header = ({
 );
 
 const GapCell = ({ standing }: { standing: Standings }) => {
-  if (standing.onPitRoad) {
-    return <span className="bg-white px-1 not-italic text-slate-900">PIT</span>;
-  }
-  if (standing.classPosition === 1) return null;
+  if (standing.onPitRoad || standing.classPosition === 1) return null;
   if (standing.gap?.laps) return <>-{standing.gap.laps}L</>;
   if (standing.gap?.value === undefined) return null;
   return <>-{standing.gap.value.toFixed(3)}</>;
@@ -253,16 +252,43 @@ const GainedCell = ({ change }: { change?: number }) => {
   );
 };
 
+/** Pit, repair and penalty markers, like the circled P on TV towers. */
+const StatusBadges = ({ standing }: { standing: Standings }) => (
+  <>
+    {standing.repair && (
+      <span
+        title="Repair"
+        className="relative size-3.5 rounded-full border-2 border-black bg-orange-500"
+      />
+    )}
+    {(standing.penalty || standing.slowdown) && (
+      <FlagIcon
+        className="relative rounded-xs bg-black p-px text-white"
+        size={14}
+        weight="fill"
+      />
+    )}
+    {standing.onPitRoad && (
+      <span className="relative flex size-4 items-center justify-center rounded-full border border-current text-[10px] not-italic leading-none">
+        P
+      </span>
+    )}
+  </>
+);
+
 const DriverRow = ({
   standing,
   page,
   nameFormat,
   positionStyle,
+  focused,
 }: {
   standing: Standings;
   page: Page;
   nameFormat: NameFormat;
   positionStyle: string;
+  /** The car the camera is on. */
+  focused: boolean;
 }) => {
   const color = classColor(standing.carClass.color);
   const dimmed =
@@ -272,28 +298,36 @@ const DriverRow = ({
       className={[
         'relative flex h-full items-center gap-1.5 pr-2 font-bold italic uppercase transition-opacity duration-500',
         dimmed || standing.dnf ? 'opacity-40' : '',
-        standing.isPlayer ? 'text-amber-300' : 'text-white',
+        focused ? `${color} text-slate-900` : 'text-white',
       ].join(' ')}
     >
       <span className={`relative w-6 ${positionStyle || 'text-right'}`}>
         {standing.classPosition}.
       </span>
+      <span className="relative flex size-5 items-center justify-center rounded-xs bg-slate-700/80 text-sm">
+        {standing.carId !== undefined && (
+          <CarManufacturer carId={standing.carId} />
+        )}
+      </span>
       <span
-        className={`relative w-9 rounded-xs text-center text-slate-900 ${color}`}
+        className={`relative w-8 rounded-xs text-center ${focused ? 'bg-slate-900 text-white' : `text-slate-900 ${color}`}`}
       >
         {standing.driver.carNum}
       </span>
+      {standing.driver.flairId !== undefined && (
+        <span className="relative text-xs not-italic">
+          <CountryFlag flairId={standing.driver.flairId} />
+        </span>
+      )}
       <span className="relative flex-1 truncate">
         {driverName(standing, nameFormat)}
       </span>
       {standing.radioActive && (
         <MicrophoneIcon className="relative" size={12} weight="fill" />
       )}
+      <StatusBadges standing={standing} />
       <span className="relative tabular-nums">
         {page.kind === 'gaps' && !dimmed && <GapCell standing={standing} />}
-        {page.kind === 'makes' && standing.carId !== undefined && (
-          <CarManufacturer carId={standing.carId} />
-        )}
         {page.kind === 'gained' && (
           <GainedCell change={standing.positionChange} />
         )}
@@ -364,47 +398,55 @@ const BattleCard = ({
   </div>
 );
 
-const FocusCard = ({ standing }: { standing: Standings }) => (
-  <div className="animate-broadcast-enter overflow-hidden rounded-sm bg-slate-950/(--bg-opacity) text-white">
-    <div
-      className={`flex items-center justify-between px-2 py-0.5 text-sm font-bold italic uppercase text-slate-900 ${classColor(standing.carClass.color)}`}
-    >
-      <span>{standing.carClass.name}</span>
-      <span>P{standing.classPosition}</span>
-    </div>
-    <div className="flex items-center gap-3 px-2 py-1">
-      <span className="text-2xl font-bold italic text-white/70">
-        {standing.driver.carNum}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1 truncate text-lg font-bold italic uppercase">
-          {driverName(standing, 'name-surname')}
-          {standing.radioActive && <MicrophoneIcon size={16} weight="fill" />}
-        </div>
-        {standing.driver.teamName && (
-          <div className="truncate text-sm text-white/60">
-            {standing.driver.teamName}
+/** Lower third for the car on camera; reads speed itself so speed ticks
+    re-render only this card, not the tower. */
+const FocusCard = ({ standing }: { standing: Standings }) => {
+  const speed = useCarIdxSpeed()[standing.carIdx];
+  return (
+    <div className="animate-broadcast-enter overflow-hidden rounded-sm bg-slate-950/(--bg-opacity) text-white">
+      <div
+        className={`flex items-center justify-between px-2 py-0.5 text-sm font-bold italic uppercase text-slate-900 ${classColor(standing.carClass.color)}`}
+      >
+        <span>{standing.carClass.name}</span>
+        <span>P{standing.classPosition}</span>
+      </div>
+      <div className="flex items-center gap-3 px-2 py-1">
+        <span className="text-2xl font-bold italic text-white/70">
+          {standing.driver.carNum}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1 truncate text-lg font-bold italic uppercase">
+            {driverName(standing, 'name-surname')}
+            {standing.radioActive && <MicrophoneIcon size={16} weight="fill" />}
           </div>
+          {standing.driver.teamName && (
+            <div className="truncate text-sm text-white/60">
+              {standing.driver.teamName}
+            </div>
+          )}
+        </div>
+        {standing.carId !== undefined && (
+          <span className="text-3xl">
+            <CarManufacturer carId={standing.carId} />
+          </span>
         )}
       </div>
-      {standing.carId !== undefined && (
-        <span className="text-3xl">
-          <CarManufacturer carId={standing.carId} />
+      <div className="flex gap-4 border-t border-white/10 px-2 py-1 text-sm tabular-nums">
+        <span>
+          <span className="text-white/50">LAST </span>
+          {formatTime(standing.lastTime, 'full') || '-'}
         </span>
-      )}
+        <span>
+          <span className="text-white/50">BEST </span>
+          {formatTime(standing.fastestTime, 'full') || '-'}
+        </span>
+        {speed !== undefined && (
+          <span className="ml-auto">{Math.round(speed)} km/h</span>
+        )}
+      </div>
     </div>
-    <div className="flex gap-4 border-t border-white/10 px-2 py-1 text-sm tabular-nums">
-      <span>
-        <span className="text-white/50">LAST </span>
-        {formatTime(standing.lastTime, 'full') || '-'}
-      </span>
-      <span>
-        <span className="text-white/50">BEST </span>
-        {formatTime(standing.fastestTime, 'full') || '-'}
-      </span>
-    </div>
-  </div>
-);
+  );
+};
 
 export const Broadcast = () => {
   const settings = useBroadcastSettings();
@@ -418,10 +460,11 @@ export const Broadcast = () => {
   const standings = useMemo(() => groups.flatMap(([, d]) => d), [groups]);
   const sessionNum = useSessionBarSelector(sessionBarSelectors.sessionNum);
   const changes = usePositionChanges(standings, sessionNum);
+  const focusCarIdx = useFocusCarIdx();
   const hasTyreChoice = (useDriverTires()?.length ?? 0) > 1;
   const rows = useMemo(
-    () => buildBroadcastRows(groups, perClass),
-    [groups, perClass]
+    () => buildBroadcastRows(groups, perClass, focusCarIdx),
+    [groups, perClass, focusCarIdx]
   );
   // Rebuilt only when the set of classes or available pages changes, not on
   // every standings update, so the page rotation keeps its place.
@@ -440,7 +483,6 @@ export const Broadcast = () => {
       ...(JSON.parse(classList) as [string, string][]).map(
         ([classId, className]): Page => ({ kind: 'gaps', classId, className })
       ),
-      { kind: 'makes' },
       ...(hasGained ? [{ kind: 'gained' } as const] : []),
       ...(hasPits ? [{ kind: 'pits' } as const] : []),
       ...(hasTyreChoice ? [{ kind: 'tyres' } as const] : []),
@@ -459,7 +501,7 @@ export const Broadcast = () => {
           BATTLE_GAP_SECONDS
         )
       : undefined;
-  const focus = standings.find((s) => s.isPlayer);
+  const focus = standings.find((s) => s.carIdx === focusCarIdx);
   const { sessionType, state: sessionState } = useSessionTimeTiming();
   const phase =
     settings?.phaseScreens !== false
@@ -506,12 +548,17 @@ export const Broadcast = () => {
                   transform: `translateY(${index * ROW_HEIGHT}px)`,
                 }}
               >
-                {/* A car that just moved is painted in its class colour, then
-                    fades. Kept outside the page transition so it never replays. */}
+                {/* A car that just moved glows green (gained) or red (lost),
+                    then fades. Kept outside the page transition so it never
+                    replays. */}
                 {change && row.kind === 'driver' && (
                   <span
                     key={change.seq}
-                    className={`absolute inset-y-0.5 right-0 left-6 animate-broadcast-fade ${classColor(row.standing.carClass.color)}`}
+                    className={`absolute inset-y-0.5 right-0 left-0 animate-broadcast-fade rounded-xs ${
+                      change.delta > 0
+                        ? 'bg-green-500/35 shadow-[0_0_12px_2px_rgba(34,197,94,0.8)]'
+                        : 'bg-red-500/35 shadow-[0_0_12px_2px_rgba(239,68,68,0.8)]'
+                    }`}
                   />
                 )}
                 <div
@@ -527,6 +574,7 @@ export const Broadcast = () => {
                       page={page}
                       nameFormat={nameFormat}
                       positionStyle={look.position}
+                      focused={row.standing.carIdx === focusCarIdx}
                     />
                   )}
                 </div>
@@ -550,17 +598,6 @@ export const Broadcast = () => {
       </div>
       {phase === 'grid' && <GridCard groups={groups} perClass={perClass} />}
       {phase === 'podium' && <PodiumCard groups={groups} />}
-      {settings?.weather?.enabled && (
-        <WeatherCard
-          intervalMinutes={clampSetting(
-            settings.weather.intervalMinutes,
-            0,
-            30,
-            10
-          )}
-          showSeconds={clampSetting(settings.weather.showSeconds, 5, 30, 12)}
-        />
-      )}
       {settings?.showFocusCard !== false && focus && (
         <FocusCard key={focus.carIdx} standing={focus} />
       )}

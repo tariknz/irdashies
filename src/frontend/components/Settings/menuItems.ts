@@ -76,6 +76,12 @@ export const widgetItems: MenuItem[] = [
     widgetType: 'broadcastticker',
   },
   {
+    to: '/settings/broadcastweather',
+    path: '/broadcastweather',
+    label: 'Broadcast Weather',
+    widgetType: 'broadcastweather',
+  },
+  {
     to: '/settings/blindspotmonitor',
     path: '/blindspotmonitor',
     label: 'Blind Spot Monitor',
