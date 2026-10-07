@@ -39,6 +39,7 @@ import {
   setupLapTraceBridge,
 } from './app/bridge/lapTraceBridge';
 import { setupRadarBridge } from './app/bridge/radarBridge';
+import { flushRadarPoleSidesOnShutdown } from './app/storage/radarPoleSides';
 import {
   validateReferenceLapFile,
   flushReferenceLapsOnShutdown,
@@ -532,6 +533,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
     await Promise.all([
       flushLapTracesOnShutdown(),
       flushReferenceLapsOnShutdown(),
+      flushRadarPoleSidesOnShutdown(),
       flushIncidentsOnShutdown(),
       flushLapHistoryOnShutdown(),
       flushGarage61SearchSessionOnShutdown(),

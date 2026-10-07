@@ -154,6 +154,8 @@ export async function publishIRacingSDKEvents(
   const radarPoleSideStorage = channelBus
     ? await import('../../storage/radarPoleSides')
     : undefined;
+  // Learnt sides are read once, off the telemetry path, before any session.
+  await radarPoleSideStorage?.loadRadarPoleSidesFile();
   const radarTuningStorage = channelBus
     ? await import('../../storage/radarTuning')
     : undefined;
