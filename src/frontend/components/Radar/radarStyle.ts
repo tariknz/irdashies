@@ -4,11 +4,29 @@ import type { RadarStyle } from './radarDraw';
 import type { CarSize } from '@irdashies/domain/radar/carSizes';
 import { OVERLAP_MARKS } from './radarHints';
 
+const FEET_PER_METRE = 3.28084;
+const MPH_PER_MS = 2.23694;
+
+/** Speed in km/h or mph, rounded, without the unit. */
+export const speedIn = (metresPerSecond: number, metric: boolean): number =>
+  Math.round(metresPerSecond * (metric ? 3.6 : MPH_PER_MS));
+
+export const speedUnit = (metric: boolean) => (metric ? 'km/h' : 'mph');
+
+/** A distance for the disc: tenths under 10, whole numbers above. */
+export const formatDistance = (metres: number, metric: boolean): string => {
+  const value = metric ? metres : metres * FEET_PER_METRE;
+  const text = value < 10 ? value.toFixed(1) : String(Math.round(value));
+  return `${text}${metric ? 'm' : 'ft'}`;
+};
+
 /** What the drawing needs from the saved settings; `player` is our size. */
 export const radarStyleFrom = (
   settings: RadarConfig,
-  player: CarSize
+  player: CarSize,
+  metric = true
 ): RadarStyle => ({
+  metric,
   range: settings.range,
   carLength: player.length,
   carWidth: player.width,
@@ -16,6 +34,7 @@ export const radarStyleFrom = (
   warningArcs: settings.warningArcs,
   warningArcStyle: settings.warningArcStyle,
   cautionDistance: settings.cautionDistance,
+  showGapLabel: settings.showGapLabel,
   showCarNumbers: settings.showCarNumbers,
   showTrackMap: settings.showTrackMap,
   trackWidth: settings.trackWidth,

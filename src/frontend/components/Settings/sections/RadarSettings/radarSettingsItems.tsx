@@ -632,6 +632,13 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         'Bumper-to-bumper gap at which a car turns amber.',
         (view) => !view.showWarnings
       ),
+      toggle(
+        1,
+        'showGapLabel',
+        'Gap Distance',
+        'Write the bumper-to-bumper gap next to an amber car.',
+        (view) => !view.showWarnings
+      ),
       {
         id: 'warningColors',
         level: 1,

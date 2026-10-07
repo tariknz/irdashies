@@ -33,6 +33,9 @@ export const nearestDistance = (
 export interface AutoHideOptions {
   showDistance: number;
   hideDistance: number;
+  /** The disc's radius and a body length: where `selectRadarCars` stops. */
+  range: number;
+  carLength: number;
 }
 
 /**
@@ -42,8 +45,11 @@ export interface AutoHideOptions {
 export const nextAutoHideVisible = (
   wasVisible: boolean,
   nearest: number,
-  { showDistance, hideDistance }: AutoHideOptions
-): boolean =>
-  wasVisible
-    ? nearest <= Math.max(hideDistance, showDistance)
-    : nearest <= showDistance;
+  { showDistance, hideDistance, range, carLength }: AutoHideOptions
+): boolean => {
+  // Past the disc a threshold would wake an empty radar, or hide one with a
+  // car still sliding off the rim.
+  const show = Math.min(showDistance, range);
+  const hide = Math.min(Math.max(hideDistance, show), range + carLength);
+  return wasVisible ? nearest <= hide : nearest <= show;
+};

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  sessionBarSelectors,
   useDashboard,
   useRadarSelector,
+  useSessionBarSelector,
   useSessionDrivers,
   useSessionStore,
   useSessionVisibility,
@@ -78,6 +80,9 @@ export const Radar = () => {
     (state) => state.session?.WeekendInfo?.TrackType
   );
   const demoFrame = useDemoRadarFrame(isDemoMode);
+  // iRacing's DisplayUnits: 0 is imperial. Unknown (no sim) reads metric.
+  const displayUnits = useSessionBarSelector(sessionBarSelectors.displayUnits);
+  const metric = isDemoMode || displayUnits !== 0;
 
   const geometry = useMemo(() => {
     const path = getTrackPathData(trackId);
@@ -178,11 +183,12 @@ export const Radar = () => {
 
   const style: RadarStyle = useMemo(
     () =>
-      radarStyleFrom(settings, {
-        length: focusSize.length,
-        width: focusSize.width,
-      }),
-    [settings, focusSize.length, focusSize.width]
+      radarStyleFrom(
+        settings,
+        { length: focusSize.length, width: focusSize.width },
+        metric
+      ),
+    [settings, focusSize.length, focusSize.width, metric]
   );
 
   // A hazard in range brings the radar up like a car close by would.
@@ -196,9 +202,17 @@ export const Radar = () => {
       nextAutoHideVisible(wasVisible, nearest, {
         showDistance: settings.showDistance,
         hideDistance: settings.hideDistance,
+        range: settings.range,
+        carLength: settings.carLength,
       })
     );
-  }, [nearest, settings.showDistance, settings.hideDistance]);
+  }, [
+    nearest,
+    settings.showDistance,
+    settings.hideDistance,
+    settings.range,
+    settings.carLength,
+  ]);
 
   const onTrackOk = !settings.showOnlyWhenOnTrack || snapshot.isOnTrack;
   const inPitBox = settings.hideInPitBox && snapshot.focusInPitBox;

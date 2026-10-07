@@ -3,6 +3,7 @@ import type { TrackGeometry } from '@irdashies/domain/track';
 import { overlapOf, type DiveHint } from './radarHints';
 import type { RadarArcStyle, RadarHazardKind } from '@irdashies/types';
 import { arcThicknessPx, paintRimArc } from './radarArcs';
+import { formatDistance, speedIn, speedUnit } from './radarStyle';
 
 export interface RadarDrawCar {
   carIdx: number;
@@ -42,6 +43,8 @@ export const warningLevel = (
 };
 
 export interface RadarStyle {
+  /** Labels in metres and km/h; imperial otherwise. */
+  metric: boolean;
   range: number;
   /** Our car's body size in metres; also used for the pace car. */
   carLength: number;
@@ -51,6 +54,8 @@ export interface RadarStyle {
   warningArcStyle: RadarArcStyle;
   /** Metres of bumper gap below which a rival counts as close. */
   cautionDistance: number;
+  /** Bumper gap written next to a close rival. */
+  showGapLabel: boolean;
   showCarNumbers: boolean;
   showTrackMap: boolean;
   trackWidth: number;
@@ -256,7 +261,11 @@ const drawRings = (
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = 'rgba(203, 213, 225, 0.6)';
-    ctx.fillText(`${metres}m`, centre, centre - ringRadius - 1);
+    ctx.fillText(
+      formatDistance(metres, style.metric),
+      centre,
+      centre - ringRadius - 1
+    );
   }
 };
 
@@ -312,7 +321,8 @@ const drawFollowPointer = (
   ctx: CanvasRenderingContext2D,
   centre: number,
   radius: number,
-  follow: RadarDrawFollow
+  follow: RadarDrawFollow,
+  metric: boolean
 ) => {
   const bearing = Math.atan2(pose.y - centre, pose.x - centre);
   const tipX = centre + Math.cos(bearing) * (radius - 3);
@@ -335,7 +345,8 @@ const drawFollowPointer = (
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const labelDistance = radius - size - fontSize * 1.2;
-  const text = `${follow.label} ${Math.round(Math.abs(follow.dist))}m`.trim();
+  const text =
+    `${follow.label} ${formatDistance(Math.abs(follow.dist), metric)}`.trim();
   ctx.fillStyle = FOLLOW_COLOR;
   ctx.fillText(
     text,
@@ -806,7 +817,7 @@ const drawHazardMarker = (
   const labelY = centre + sin * labelAt;
   drawHintText(
     ctx,
-    `${HAZARD_LABELS[hazard.kind]} ${Math.round(hazard.dist)}m`,
+    `${HAZARD_LABELS[hazard.kind]} ${formatDistance(hazard.dist, style.metric)}`,
     labelX,
     labelY,
     color,
@@ -816,7 +827,7 @@ const drawHazardMarker = (
   if (style.hazardShowSpeed) {
     drawHintText(
       ctx,
-      `${Math.round(hazard.speed * 3.6)} km/h`,
+      `${speedIn(hazard.speed, style.metric)} ${speedUnit(style.metric)}`,
       labelX,
       labelY + fontSize * 1.15,
       '#e2e8f0',
@@ -849,7 +860,7 @@ const drawHazardOnCar = (
     const reach = Math.max(carLength, carWidth) / 2 + 4;
     drawHintText(
       ctx,
-      `${Math.round(hazard.speed * 3.6)} km/h`,
+      `${speedIn(hazard.speed, style.metric)} ${speedUnit(style.metric)}`,
       pose.x + outward * reach,
       pose.y,
       color,
@@ -1073,10 +1084,11 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
       if (style.diveShowClosing) {
         const color =
           dive.level === 'dive' ? style.alongsideColor : style.closeColor;
+        const closing = speedIn(dive.closingKmh / 3.6, style.metric);
         const text =
           dive.level === 'dive'
-            ? `+${Math.round(dive.closingKmh)} ${dive.secondsToSide.toFixed(1)}s`
-            : `+${Math.round(dive.closingKmh)}`;
+            ? `+${closing} ${dive.secondsToSide.toFixed(1)}s`
+            : `+${closing}`;
         // On the side away from where it is heading.
         const away = dive.side < 0 ? 1 : dive.side > 0 ? -1 : 1;
         drawHintText(
@@ -1104,6 +1116,27 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
       level === 'alongside' ? style.alongsideColor : style.closeColor;
     ctx.globalAlpha = level === 'alongside' ? pulse : 0.9;
     drawWarningOutline(ctx, carLength, carWidth, color);
+    // Alongside has the overlap strip; a diving or hazard car already has
+    // its own text on that side.
+    if (
+      style.showGapLabel &&
+      level === 'close' &&
+      !(dive && style.diveShowClosing) &&
+      !(hazard && style.hazardShowSpeed)
+    ) {
+      const gap = Math.abs(car.dist) - (car.length + style.carLength) / 2;
+      // On the side away from our line, where the other cars are not.
+      const outward = pose.x >= centre ? 1 : -1;
+      drawHintText(
+        ctx,
+        formatDistance(gap, style.metric),
+        pose.x + outward * (carWidth / 2 + 4),
+        pose.y,
+        color,
+        hintFont,
+        outward > 0 ? 'left' : 'right'
+      );
+    }
     // A diving car already has the more urgent arc of the two.
     if (style.warningArcs && diveArcCar !== car.carIdx) {
       queueRimWarning(
@@ -1229,7 +1262,7 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
   ctx.globalAlpha = 1;
   if (follow && followBeyondRange) {
     projector.project(follow.dist, 0, pose);
-    drawFollowPointer(ctx, centre, radius, follow);
+    drawFollowPointer(ctx, centre, radius, follow, style.metric);
   }
   const hazards = scene.hazards;
   if (hazards && hazards.length > 0) {

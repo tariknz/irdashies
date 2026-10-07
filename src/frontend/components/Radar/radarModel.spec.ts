@@ -59,7 +59,12 @@ describe('nearestDistance', () => {
 });
 
 describe('nextAutoHideVisible', () => {
-  const thresholds = { showDistance: 20, hideDistance: 25 };
+  const thresholds = {
+    showDistance: 20,
+    hideDistance: 25,
+    range: 30,
+    carLength: 4.5,
+  };
 
   it('appears at the show distance and leaves past the hide distance', () => {
     expect(nextAutoHideVisible(false, 22, thresholds)).toBe(false);
@@ -71,7 +76,17 @@ describe('nextAutoHideVisible', () => {
 
   it('never hides inside the show distance, even if set inverted', () => {
     expect(
-      nextAutoHideVisible(true, 18, { showDistance: 20, hideDistance: 10 })
+      nextAutoHideVisible(true, 18, { ...thresholds, hideDistance: 10 })
     ).toBe(true);
+  });
+
+  it('keeps both thresholds inside what the disc draws', () => {
+    const wide = { ...thresholds, showDistance: 50, hideDistance: 60 };
+    // A car at 40 m is off the disc: no waking for it.
+    expect(nextAutoHideVisible(false, 40, wide)).toBe(false);
+    expect(nextAutoHideVisible(false, 30, wide)).toBe(true);
+    // Still sliding off the rim, then gone.
+    expect(nextAutoHideVisible(true, 34, wide)).toBe(true);
+    expect(nextAutoHideVisible(true, 35, wide)).toBe(false);
   });
 });

@@ -537,6 +537,8 @@ export interface RadarConfig {
   warningArcStyle: RadarArcStyle;
   /** Metres of bumper gap below which a rival is drawn as close. */
   cautionDistance: number;
+  /** Write the bumper gap next to a close rival. */
+  showGapLabel: boolean;
   showCarNumbers: boolean;
   /** Draw the road under the cars. */
   showTrackMap: boolean;
@@ -644,6 +646,7 @@ export const RADAR_PROFILE_KEYS = [
   'warningArcs',
   'warningArcStyle',
   'cautionDistance',
+  'showGapLabel',
   'showCarNumbers',
   'showTrackMap',
   'trackWidth',

@@ -1102,6 +1102,7 @@ export const defaultDashboard: {
         warningArcs: true,
         warningArcStyle: 'arc',
         cautionDistance: 7,
+        showGapLabel: true,
         showCarNumbers: true,
         showTrackMap: true,
         trackWidth: 12,
