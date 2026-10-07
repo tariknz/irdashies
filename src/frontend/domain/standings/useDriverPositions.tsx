@@ -228,7 +228,11 @@ export const useDriverStandings = () => {
         // Only fall back to qualifying before race start
         // During the race class position should be available
         // After the race we can fallback to session position
-        if (sessionState === SessionState.GetInCar || sessionState === SessionState.ParadeLaps) {
+        if (
+           sessionState === SessionState.GetInCar ||
+           sessionState === SessionState.Warmup ||
+           sessionState === SessionState.ParadeLaps
+         ) {
           const qualifyingPosition = qualifyingPositionsByCarIdx.get(
             driver.carIdx
           );
