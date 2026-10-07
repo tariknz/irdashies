@@ -21,7 +21,7 @@ import {
   useTrackStateSelector,
 } from '@irdashies/context';
 import { getTailwindStyle } from '@irdashies/utils/colors';
-import type { NameFormat } from '@irdashies/types';
+import type { LapHistorySnapshot, NameFormat } from '@irdashies/types';
 import {
   DriverName as formatDriverName,
   extractDriverName,
@@ -32,6 +32,7 @@ import { LapGraphDriverList } from './components/LapGraphDriverList/LapGraphDriv
 import type { DriverListEntry } from './components/LapGraphDriverList/LapGraphDriverList';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { useGantrySettings } from '../../hooks/useGantrySettings';
+import { useHeld } from '../../hooks/useGantrySessionHold';
 import { autoPinCarIdxs } from './lapGraphAutoPin';
 import { identityForGridSlot } from './lapGraphPalette';
 
@@ -89,6 +90,12 @@ const MODE_OPTIONS: {
 /** One driver in the active class, with everything the chart needs to draw. */
 /** Stable identity for "nothing pinned", so the canvas prop never churns. */
 const EMPTY_PINS: readonly number[] = [];
+
+const isEmptyStandings = (standings: readonly unknown[]) =>
+  standings.length === 0;
+const isEmptyGrid = (grid: ReadonlyMap<number, number>) => grid.size === 0;
+const isEmptyHistory = (history: LapHistorySnapshot | undefined) =>
+  !history || !history.count.some((count) => count > 0);
 
 interface ClassMember {
   carIdx: number;
@@ -149,7 +156,12 @@ export const LapGraphView = memo(
     chosenPins,
     onPinsChange,
   }: Props) => {
-    const standingsByClass = useDriverStandings(undefined, { showAll: true });
+    // After the sim closes these hold the finished session, so the race can
+    // still be looked over until the next session loads.
+    const standingsByClass = useHeld(
+      useDriverStandings(undefined, { showAll: true }),
+      isEmptyStandings
+    );
     const liveSnapshot = useLapHistorySnapshot();
     const replayContext = useReplayContextSnapshot();
     const cursorSessionNum = useTrackStateSelector(
@@ -287,7 +299,10 @@ export const LapGraphView = memo(
       () => members.map((member) => member.carIdx),
       [members]
     );
-    const qualifyingGrid = useQualifyingGrid(classCarIdxs);
+    const qualifyingGrid = useHeld(
+      useQualifyingGrid(classCarIdxs),
+      isEmptyGrid
+    );
 
     // Hold the snapshot at an identity that only moves when `version` moves. A
     // resend, or resubscribing after a tab switch, delivers an equal snapshot as
@@ -296,11 +311,16 @@ export const LapGraphView = memo(
     const historyKey = isReplayFile
       ? archivedSnapshot
       : (liveSnapshot?.version ?? -1);
-    const history = useMemo(
+    const currentHistory = useMemo(
       () => (isReplayFile ? (archivedSnapshot ?? undefined) : liveSnapshot),
       // Deliberately keyed on the version, not the snapshot identity.
       // eslint-disable-next-line @eslint-react/exhaustive-deps
       [isReplayFile, historyKey]
+    );
+    const history = useHeld(
+      currentHistory,
+      isEmptyHistory,
+      currentHistory?.sessionNum
     );
 
     const built = useMemo(() => {
