@@ -84,12 +84,30 @@ const GRIDDED_STATES: ReadonlySet<number> = new Set([
 
 const at = (values: readonly number[], index: number) => values[index] ?? -1;
 
-const median = (values: readonly number[]): number => {
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2
-    ? sorted[middle]
-    : (sorted[middle - 1] + sorted[middle]) / 2;
+/** Closer than this, two still cars cannot both be in grid boxes. */
+const MIN_BOX_GAP_M = 3;
+/** A gap further than this share of a box from a whole number is not one. */
+const MAX_BOX_ERROR = 0.25;
+
+/**
+ * Boxes between each pair of neighbours down the grid, or null when the gaps
+ * do not fit one box spacing. The spacing is the shortest gap, since that is
+ * one box wherever two neighbouring boxes are filled: a median goes wrong
+ * while the grid fills up and most gaps span empty boxes. A grid with no two
+ * neighbours filled at all still reads as full; distances cannot tell.
+ */
+const boxSteps = (gaps: readonly number[]): number[] | null => {
+  const plausible = gaps.filter((gap) => gap >= MIN_BOX_GAP_M);
+  if (plausible.length === 0) return gaps.length === 0 ? [] : null;
+  // Not refitted over all gaps: a refit bends towards a gap that is no whole
+  // number of boxes until it passes. Recorded grids sit within 0.2 m, so the
+  // error carried down long gaps stays far below the limit.
+  const spacing = Math.min(...plausible);
+  const steps = gaps.map((gap) => Math.max(1, Math.round(gap / spacing)));
+  const fits = gaps.every(
+    (gap, index) => Math.abs(gap / spacing - steps[index]) <= MAX_BOX_ERROR
+  );
+  return fits ? steps : null;
 };
 
 /**
@@ -184,12 +202,12 @@ const gridFormation = (input: FormationInput): Formation | null => {
   const gaps = gridded
     .slice(1)
     .map((carIdx, index) => input.dists[gridded[index]] - input.dists[carIdx]);
-  const spacing = gaps.length > 0 ? median(gaps) : 0;
+  const steps = boxSteps(gaps);
+  // Columns we cannot trust are worse than none: the field still counts as
+  // on the grid, but lanes come from the spotter alone.
+  if (!steps) return { kind: 'grid', slots: new Map(), followCarIdx: null };
   const boxes: number[] = [0];
-  gaps.forEach((gap, index) => {
-    const step = spacing > 0 ? Math.max(1, Math.round(gap / spacing)) : 1;
-    boxes.push(boxes[index] + step);
-  });
+  steps.forEach((step, index) => boxes.push(boxes[index] + step));
 
   const columns = Math.max(2, grid.columns);
   const columnOf = (rank: number) => boxes[rank] % columns;

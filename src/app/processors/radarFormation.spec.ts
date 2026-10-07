@@ -227,6 +227,46 @@ describe('computeFormation: standing start (recorded grid)', () => {
     expect(formation?.slots.get(4)).toBe(0);
   });
 
+  /** Still cars on a two-wide standing grid, car 0 the focus. */
+  const gridAt = (dists: number[]) =>
+    computeFormation({
+      focus: 0,
+      dists,
+      pcts: dists.map(() => 0.98),
+      surfaces: dists.map(() => TrackLocation.OnTrack),
+      onPitRoad: dists.map(() => false),
+      excluded: new Set(),
+      paceMode: PaceMode.NotPacing,
+      paceLines: dists.map(() => -1),
+      paceRows: dists.map(() => -1),
+      sessionState: SessionState.GetInCar,
+      speeds: [],
+      lapsCompleted: dists.map(() => -1),
+      paceCarIdx: -1,
+      grid: { standingStart: true, columns: 2, poleSide: 'left' },
+    });
+
+  it('keeps columns while the grid fills and most boxes are empty', () => {
+    // Boxes 0, 1, 3 and 6 of 8 m: most gaps span empty boxes, which put a
+    // median spacing at two boxes and swapped car 2 into our column.
+    const formation = gridAt([0, -8.1, -24.2, -47.9]);
+    expect(formation?.slots.get(1)).toBe(1);
+    expect(formation?.slots.get(2)).toBe(1);
+    expect(formation?.slots.get(3)).toBe(0);
+  });
+
+  it('draws no columns from gaps that fit no box spacing', () => {
+    // 12 m is a box and a half; a car still creeping in sits 1.5 m short.
+    for (const dists of [
+      [0, -8, -20],
+      [0, -8, -9.5, -16],
+    ]) {
+      const formation = gridAt(dists);
+      expect(formation?.kind).toBe('grid');
+      expect(formation?.slots.size).toBe(0);
+    }
+  });
+
   it('needs the focus car on the grid', () => {
     const input = fromCapture(standingTelemetry, standingSession);
     const surfaces = [...input.surfaces];
