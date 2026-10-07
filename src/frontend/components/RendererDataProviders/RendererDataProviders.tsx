@@ -4,6 +4,7 @@ import {
   ReferenceStoreProvider,
   SessionProvider,
   TelemetryInspectorProvider,
+  useDashboard,
   useWidgetsForThisDisplay,
 } from '@irdashies/context';
 import {
@@ -31,17 +32,22 @@ export const RendererDataProviders = ({
   widgetId?: string;
 }) => {
   const widgets = useWidgetsForThisDisplay(browser);
+  const { currentDashboard } = useDashboard();
+  // Looked up in the whole profile, not the enabled list above, so a disabled
+  // widget still resolves. Only the type is taken from it: a second instance
+  // of a widget (id `fuel-2`, type `fuel`) is registered under its type.
+  const scopedType = widgetId
+    ? currentDashboard?.widgets.find((widget) => widget.id === widgetId)?.type
+    : undefined;
   const runtimeNeeds = useMemo(() => {
-    // Resolved straight from the registry rather than the dashboard, so it
-    // holds even when the widget is disabled or missing from the profile.
-    const scoped = widgetId ? [{ id: widgetId, type: widgetId }] : widgets;
+    const scoped = widgetId ? [{ id: widgetId, type: scopedType }] : widgets;
     return {
       telemetryInspector: rendererNeedsTelemetryInspector(scoped),
       referenceLaps: rendererNeedsChannel(scoped, 'reference-laps.snapshot'),
       sessionData: rendererNeedsSessionData(scoped),
       pitLaneData: rendererNeedsPitLaneData(scoped),
     };
-  }, [widgets, widgetId]);
+  }, [widgets, widgetId, scopedType]);
 
   if (
     !runtimeNeeds.telemetryInspector &&

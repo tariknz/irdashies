@@ -5,6 +5,7 @@ import type { DashboardLayout } from '@irdashies/types';
 let dashboard: DashboardLayout;
 
 vi.mock('@irdashies/context', () => ({
+  useDashboard: () => ({ currentDashboard: dashboard }),
   // No display bounds in these tests, so the real hook would return every
   // enabled widget; the mock stands in for exactly that.
   useWidgetsForThisDisplay: () =>
@@ -108,6 +109,16 @@ describe('RendererDataProviders scoped to one browser-source widget', () => {
 
   it('mounts what it needs even when the profile has no such widget', () => {
     render(<RendererDataProviders browser widgetId="map" />);
+
+    expect(screen.getByTestId('session-provider')).toBeInTheDocument();
+  });
+
+  // A second instance of a widget has its own id and names what it is in
+  // `type`. The registry only knows the type.
+  it('resolves a second instance of a widget by its type', () => {
+    dashboard.widgets = [{ id: 'map-2', type: 'map', enabled: false, layout }];
+
+    render(<RendererDataProviders browser widgetId="map-2" />);
 
     expect(screen.getByTestId('session-provider')).toBeInTheDocument();
   });
