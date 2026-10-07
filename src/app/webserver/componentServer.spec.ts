@@ -160,6 +160,26 @@ describe('single-widget routes', () => {
     expect(res.body).toContain('index-dashboard-view.html');
   });
 
+  it('opens the widget in the profile named in the URL', async () => {
+    const res = await request('/widget/carsystems?profile=race');
+
+    expect(res.body).toContain('profile=race');
+  });
+
+  it('falls back to the current profile when the URL names none', async () => {
+    const res = await request('/widget/carsystems');
+
+    expect(res.body).toContain('profile=test-profile');
+  });
+
+  it('does not serve a widget page for an id it would not accept', async () => {
+    for (const path of ['/widget/', '/widget/a.b', '/widget/a/b']) {
+      const res = await request(path);
+
+      expect(res.body, path).not.toContain('<iframe');
+    }
+  });
+
   it('leaves /dashboard drawing every widget, with no widget parameter', async () => {
     const res = await request('/dashboard');
 
@@ -204,6 +224,40 @@ describe('single-widget routes', () => {
     expect(res.body).toContain('href="/widget/carsystems"');
     expect(res.body).toContain('href="/widget/standings"');
     expect(res.body).toContain('href="/widget/weather"');
+  });
+
+  it('lists enabled widgets first, and a repeated id once', async () => {
+    bridgeProxyState.currentDashboard = {
+      widgets: [
+        { id: 'weather', enabled: false },
+        { id: 'standings', enabled: true },
+        { id: 'standings', enabled: true },
+      ],
+    };
+
+    const res = await request('/components');
+
+    expect(JSON.parse(res.body).components).toEqual(['standings', 'weather']);
+  });
+
+  it('escapes widget ids, which come from a user-editable profile', async () => {
+    bridgeProxyState.currentDashboard = {
+      widgets: [{ id: '<img src=x onerror=alert(1)>', enabled: true }],
+    };
+
+    const res = await request('/');
+
+    expect(res.body).not.toContain('<img');
+    expect(res.body).toContain('&lt;img');
+  });
+
+  it('says so when the profile has no widgets to link', async () => {
+    bridgeProxyState.currentDashboard = { widgets: [] };
+
+    const res = await request('/');
+
+    expect(res.body).toContain('This profile has no widgets.');
+    expect(res.body).not.toContain('href="/widget/');
   });
 
   it('marks the ones that are switched off for the desktop overlays', async () => {

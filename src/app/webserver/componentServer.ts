@@ -445,7 +445,7 @@ export async function startComponentServer(
         )
         .join('');
 
-      // One row per enabled widget. This is the page people copy URLs out of
+      // One row per widget. This is the page people copy URLs out of
       // when setting up a VR overlay host, so each row shows the URL itself
       // rather than only linking it.
       const widgets = listDashboardWidgets();

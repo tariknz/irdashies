@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { DEFAULT_SIM_WIDGET_SUPPORT } from '@irdashies/types';
 import type { DashboardLayout } from '@irdashies/types';
 import { DashboardView } from './DashboardView';
 
@@ -9,6 +10,8 @@ const dashboard = {
     { id: 'standings', enabled: true, config: {} },
     // Disabled for the desktop overlays, but still addressable by URL.
     { id: 'weather', enabled: false, config: {} },
+    // A second instance: its own id, with the component named by `type`.
+    { id: 'standings-2', type: 'standings', enabled: false, config: {} },
   ],
 } as unknown as DashboardLayout;
 
@@ -19,6 +22,9 @@ vi.mock('@irdashies/context', () => ({
     bridge: { saveDashboard: vi.fn() },
   }),
   SessionTimingUpdater: () => null,
+  // No simulator detected, so no widget is dropped as unsupported.
+  useActiveSimulator: () => null,
+  useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
 }));
 
 vi.mock('../../WidgetIndex', () => ({
@@ -62,6 +68,12 @@ describe('DashboardView solo widget mode', () => {
 
     expect(container.querySelector('[data-resize-handle]')).toBeNull();
     expect(container.querySelector('.absolute')).toBeNull();
+  });
+
+  it('draws a second instance of a widget by its type', () => {
+    render(<DashboardView soloWidgetId="standings-2" />);
+
+    expect(screen.getByText('standings widget')).toBeInTheDocument();
   });
 
   it('says so when the profile has no such widget', () => {
