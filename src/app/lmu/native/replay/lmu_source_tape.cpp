@@ -62,6 +62,18 @@ struct LmuSource::Impl {
   /** Set by a Disconnect record, so the player reports the sim going away. */
   bool disconnected = false;
   bool exhausted = false;
+  /**
+   * Set when a tape runs out and is not looping, and deliberately kept across
+   * close() and open().
+   *
+   * The bridge treats the end of a tape as the sim disconnecting, and a
+   * disconnect is followed by stop() and start() -- which closed the source
+   * and opened it again. close() cleared `exhausted`, so open() read the tape
+   * from its first record and playback began over. Every tape therefore
+   * looped, and IRDASHIES_LMU_REPLAY_LOOP=0 and the launcher's --loop flag
+   * made no difference at all.
+   */
+  bool finished = false;
   double speed = 1.0;
   bool loop = false;
   std::uint64_t startedAtMicros = 0;
@@ -94,6 +106,7 @@ struct LmuSource::Impl {
       if (result == TapeReadResult::EndOfFile) {
         if (!loop || !reader->rewind(error)) {
           exhausted = true;
+          finished = true;
           return false;
         }
         // A loop boundary is a disconnect: the app sees the session end and a
@@ -111,6 +124,7 @@ struct LmuSource::Impl {
       if (kind == RecordKind::End) {
         if (!loop || !reader->rewind(error)) {
           exhausted = true;
+          finished = true;
           return false;
         }
         startedAtMicros = nowMicros();
@@ -137,6 +151,10 @@ LmuSource::~LmuSource() = default;
 
 bool LmuSource::open() {
   if (impl_->reader) return true;
+  // A tape that has already run out does not start over. The bridge reconnects
+  // after a disconnect, and the end of a tape is a disconnect, so without this
+  // every tape looped no matter what the loop setting said.
+  if (impl_->finished) return false;
 
   const std::string path = envOrEmpty("IRDASHIES_LMU_REPLAY");
   if (path.empty()) return false;
@@ -165,6 +183,10 @@ void LmuSource::close() {
   impl_->hasPending = false;
   impl_->disconnected = false;
   impl_->exhausted = false;
+  // Not `finished`: that is the whole point of it. A tape that has run out
+  // stays run out, rather than starting over the next time the bridge
+  // reconnects.
+  impl_->restBodies.clear();
 }
 
 bool LmuSource::capture(LMUObjectOut& out) {

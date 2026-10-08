@@ -220,9 +220,26 @@ void restCaptureLoop(
 
   std::map<std::string, std::string> lastBody;
   bool announced = false;
-  bool absent = false;
+  bool reportedAbsent = false;
+  /**
+   * How long to wait before probing again once nothing is serving the API.
+   *
+   * This used to stop asking for good, which lost every REST record whenever
+   * the recorder was started first -- which is the documented workflow: start
+   * it, see "Waiting for LMU shared memory...", then launch the sim. LMU's
+   * REST server is not listening at that point, so the very first probe is
+   * refused, and the tape came out with pit estimates, the refuel target,
+   * energy, wear and weather all missing, announced by one line that is easy
+   * to miss.
+   *
+   * Doubling to a ceiling: quick to catch an API that is merely not up yet,
+   * while an installation that has none settles at one probe a minute.
+   */
+  int absentRetryMs = 2000;
+  const int maxAbsentRetryMs = 60000;
 
-  while (!gStopRequested && !absent) {
+  while (!gStopRequested) {
+    bool refused = false;
     for (const char* path : kRestPaths) {
       if (gStopRequested) break;
       std::string body;
@@ -230,11 +247,14 @@ void restCaptureLoop(
           irdashies::lmu_replay::httpGet(host, port, path, timeoutMs, body);
 
       if (result == HttpResult::Refused) {
-        // Nothing is serving the API. An older LMU has none, so stop asking
-        // rather than retry four paths a second for the whole session.
-        std::cout << "No REST API on " << host << ":" << port
-                  << "; recording shared memory only.\n";
-        absent = true;
+        // Nothing is serving the API yet. Said once, then retried on a
+        // lengthening interval rather than given up on.
+        if (!reportedAbsent) {
+          reportedAbsent = true;
+          std::cout << "No REST API on " << host << ":" << port
+                    << " yet; retrying while recording shared memory.\n";
+        }
+        refused = true;
         break;
       }
       if (result != HttpResult::Ok) continue;
@@ -250,7 +270,16 @@ void restCaptureLoop(
       std::lock_guard<std::mutex> guard(gRestMutex);
       gRestQueue.push_back({path, body, nowMicros() - startedAt});
     }
-    if (absent || gStopRequested) break;
+    if (gStopRequested) break;
+    if (refused) {
+      // Slept in slices so a stop request is still acted on promptly.
+      for (int waited = 0; waited < absentRetryMs && !gStopRequested;
+           waited += 100) {
+        Sleep(100);
+      }
+      absentRetryMs = (std::min)(absentRetryMs * 2, maxAbsentRetryMs);
+      continue;
+    }
     Sleep(static_cast<DWORD>(intervalMs));
   }
 
@@ -300,6 +329,11 @@ int runRecord(const Options& options) {
   bool wasMapped = false;
   LMUObjectOut snapshot{};
   std::uint64_t frames = 0;
+  // Matches the grace the app's bridge allows before it calls a disconnect, so
+  // a tape and a live session agree about when the sim has gone.
+  const std::uint64_t kStaleLimitMicros = 3'000'000;
+  std::uint32_t lastTick = 0;
+  std::uint64_t lastTickAt = 0;
 
   // On its own thread: see restCaptureLoop. Disabled with --no-rest, which is
   // the way to record a tape deliberately without them.
@@ -343,6 +377,35 @@ int runRecord(const Options& options) {
     if (view != nullptr) {
       const auto* mapped = reinterpret_cast<const LMUObjectOut*>(view);
       if (captureSnapshot(mapped, snapshot)) {
+        // The mapping outlives the sim: this process holds its own handle, so
+        // after LMU exits the view stays readable and the last frame sits
+        // there forever. Reading on alone, the recorder appended zero-deltas
+        // for as long as it was left running and never wrote a Disconnect --
+        // and on replay those frames look like a live, perfectly still car.
+        //
+        // The publisher's own counter is what distinguishes the two. It stops
+        // advancing when nothing is writing.
+        const std::uint32_t tick = snapshot.generic.events.SME_UPDATE_TELEMETRY;
+        const std::uint64_t now = nowMicros();
+        if (tick != lastTick) {
+          lastTick = tick;
+          lastTickAt = now;
+        }
+        if (lastTickAt != 0 && now - lastTickAt > kStaleLimitMicros) {
+          if (!writer.appendDisconnect(now - startedAt, error)) {
+            std::cerr << error << "\n";
+            break;
+          }
+          UnmapViewOfFile(view);
+          view = nullptr;
+          CloseHandle(mapping);
+          mapping = NULL;
+          wasMapped = false;
+          lastTickAt = 0;
+          std::cout << "LMU stopped publishing; waiting again.\n";
+          continue;
+        }
+
         if (!writer.appendSnapshot(
                 snapshot, nowMicros() - startedAt, error)) {
           std::cerr << error << "\n";
@@ -855,6 +918,14 @@ void anonymiseSnapshot(LMUObjectOut& snapshot, NamePool& pool) {
   // claim to be an address.
   info.mServerPublicIP = 0;
   info.mServerPort = 0;
+  // Five 260-byte filesystem paths -- userData, customVariables,
+  // stewardResults, playerProfile, pluginsFolder -- which on Windows are
+  // rooted under C:\Users\<name>, so the block carries the account name
+  // outright. Nothing in the app reads any of it, which is exactly why it went
+  // unnoticed: it is copied into every snapshot and encoded into every tape
+  // without ever being looked at. Zeroed whole rather than field by field,
+  // since none of it is wanted.
+  std::memset(&snapshot.paths, 0, sizeof(snapshot.paths));
   std::memset(
       snapshot.scoring.scoringStream,
       0,
