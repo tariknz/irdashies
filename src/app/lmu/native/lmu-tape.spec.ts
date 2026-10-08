@@ -202,13 +202,14 @@ describeIfBuilt('lmu_replay tape', () => {
    */
   it('keeps an instance attached when another one is released', () => {
     const tape = tapeFor('isolation');
-    // Long enough that it cannot run out mid-test and turn an exhausted reader
-    // into a false positive for the detachment this is actually checking.
-    //
-    // Length rather than looping: openTape's speed and loop arguments only
-    // take effect on the first call in the process -- see the note on it --
-    // and this is not the first, so asking for loop '1' here achieved nothing.
-    writeFixture(tape, 6000);
+    writeFixture(tape, 300);
+    // No tape, speed or loop asked for: openTape cannot honour any of them
+    // after the first call in the process -- see the note on it -- so these
+    // instances replay whatever that call selected. This test does not depend
+    // on which tape that is. It asked for loop '1' before, to stop an
+    // exhausted reader faking the detachment it checks, and that request was
+    // silently inert; sizing a tape here instead was inert for the same
+    // reason, and merely slower.
     const probe = openTape(tape);
     const bridge = openTape(tape);
     expect(probe.start()).toBe(true);
