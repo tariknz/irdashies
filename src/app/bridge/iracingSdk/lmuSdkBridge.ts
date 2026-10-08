@@ -159,7 +159,13 @@ export async function publishLmuSDKEvents(
     runningStateCallbacks.forEach((callback) => callback(isSimRunning));
   };
 
-  overlayManager.onOverlayReady((id) => {
+  // Held so stop() can let go of it. setupBridge rebuilds this bridge on every
+  // source change, and auto-detect rebuilds it on every sim takeover, so a
+  // listener left registered belongs to a bridge that has stopped -- and it
+  // kept answering, handing the dead bridge's running state and session to
+  // every overlay opened afterwards. A stale `true` would overwrite the real
+  // state. The iRacing bridge already does this.
+  const unsubscribeOverlayReady = overlayManager.onOverlayReady((id) => {
     if (lastRunningState !== undefined)
       overlayManager.publishMessageToOverlay(
         id,
@@ -434,7 +440,11 @@ export async function publishLmuSDKEvents(
     },
     stop: () => {
       shouldStop = true;
+      unsubscribeOverlayReady?.();
       restPoller.stop();
+      // Dropped too, so nothing can replay this bridge's last session after it
+      // has gone.
+      latestSession = null;
       overlayManager.clearLatestSessionData?.();
       sdk.stop();
       telemetryCallbacks.clear();

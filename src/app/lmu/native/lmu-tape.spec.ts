@@ -51,8 +51,14 @@ interface TapeSdk {
 
 /**
  * Builds one addon instance. Each owns its own tape reader, so instances are
- * independent; the environment is read when `start()` opens that reader, which
- * is why it is set here rather than once for the file.
+ * independent.
+ *
+ * **Only the first call in a process takes effect.** It sets the tape, speed
+ * and loop through `process.env`, and the addon reads them through the CRT,
+ * which on Windows does not see a write made after the process started. So
+ * every later instance replays whatever the first call asked for, and a test
+ * that needs a different tape has to run in its own process -- see
+ * `replayedSession` in the anonymise block, which does exactly that.
  */
 const openTape = (tape: string, speed = '100', loop = '0'): TapeSdk => {
   process.env.IRDASHIES_LMU_REPLAY = tape;
@@ -196,11 +202,15 @@ describeIfBuilt('lmu_replay tape', () => {
    */
   it('keeps an instance attached when another one is released', () => {
     const tape = tapeFor('isolation');
-    writeFixture(tape, 300);
-    // Looping, so the tape cannot run out and turn an exhausted reader into a
-    // false positive for the detachment this is actually checking.
-    const probe = openTape(tape, '100', '1');
-    const bridge = openTape(tape, '100', '1');
+    // Long enough that it cannot run out mid-test and turn an exhausted reader
+    // into a false positive for the detachment this is actually checking.
+    //
+    // Length rather than looping: openTape's speed and loop arguments only
+    // take effect on the first call in the process -- see the note on it --
+    // and this is not the first, so asking for loop '1' here achieved nothing.
+    writeFixture(tape, 6000);
+    const probe = openTape(tape);
+    const bridge = openTape(tape);
     expect(probe.start()).toBe(true);
     expect(bridge.start()).toBe(true);
 

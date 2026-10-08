@@ -304,3 +304,55 @@ describe('estimateLmuLapDistPct invariants', () => {
     expect(afterLine).toBe(0.002);
   });
 });
+
+describe('a lap that turns over before scoring wraps', () => {
+  it('anchors the new lap at zero, not at the end of the old one', () => {
+    // LMU increments the lap counter a little before scoring's percentage
+    // wraps, so for a few frames lapNumber says "new lap" while scoringPct
+    // still reads ~0.99. Anchoring up there started the lap at 99% and then
+    // stepped back to zero when scoring caught up -- far enough backwards for
+    // LapTrace to read as impossible, which discarded the partial lap and
+    // began a dirty one.
+    const state = createLmuLapDistanceState();
+
+    estimateLmuLapDistPct(
+      state,
+      frame({ lapNumber: 4, scoringPct: 0.97, elapsedTime: 100 })
+    );
+    const atTurnover = estimateLmuLapDistPct(
+      state,
+      frame({ lapNumber: 5, scoringPct: 0.99, elapsedTime: 100.1 })
+    );
+
+    expect(atTurnover).toBeLessThan(0.1);
+  });
+
+  it('still trusts scoring on the very first frame', () => {
+    // No previous lap to have changed from, so scoring is the only truth
+    // available -- joining a session mid-lap must not snap to zero.
+    const state = createLmuLapDistanceState();
+
+    const first = estimateLmuLapDistPct(
+      state,
+      frame({ lapNumber: 3, scoringPct: 0.8, elapsedTime: 50 })
+    );
+
+    expect(first).toBeCloseTo(0.8, 5);
+  });
+
+  it('anchors on scoring when the lap turns over after it wrapped', () => {
+    // The ordinary case: scoring has already wrapped, so it is the anchor.
+    const state = createLmuLapDistanceState();
+
+    estimateLmuLapDistPct(
+      state,
+      frame({ lapNumber: 4, scoringPct: 0.9, elapsedTime: 100 })
+    );
+    const after = estimateLmuLapDistPct(
+      state,
+      frame({ lapNumber: 5, scoringPct: 0.02, elapsedTime: 100.2 })
+    );
+
+    expect(after).toBeCloseTo(0.02, 2);
+  });
+});

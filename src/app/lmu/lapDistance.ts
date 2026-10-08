@@ -103,17 +103,31 @@ export function estimateLmuLapDistPct(
     return scoringPct >= 0 ? clamp(scoringPct) : scoringPct;
   }
 
+  // A genuine lap change, as opposed to the first frame we have ever seen.
+  const lapChanged = state.syncedPct >= 0 && lapNumber !== state.syncedLap;
+
   const hardResync =
     state.syncedPct < 0 ||
-    lapNumber !== state.syncedLap ||
+    lapChanged ||
     scoringPct < state.syncedPct - DISCONTINUITY_PCT ||
     elapsedTime < state.syncedAt;
 
   if (hardResync) {
-    state.syncedPct = scoringPct;
+    // The lap counter increments a little before scoring's percentage wraps,
+    // so for those few frames lapNumber says "new lap" while scoringPct still
+    // reads ~0.99. Anchoring the new lap up there meant the estimate started
+    // the lap at 99% and then fell to zero when scoring caught up -- a
+    // backwards step large enough for LapTrace's jump detection to read as
+    // impossible, which discarded the partial lap and began a dirty one.
+    //
+    // So a new lap anchors at zero when scoring has not wrapped yet. The first
+    // frame of all is excluded: there is no previous lap to have changed from,
+    // and scoring's value is the only truth available.
+    const anchorPct = lapChanged && scoringPct > 0.5 ? 0 : scoringPct;
+    state.syncedPct = anchorPct;
     state.syncedAt = elapsedTime;
     state.syncedLap = lapNumber;
-    state.lastPct = clamp(scoringPct);
+    state.lastPct = clamp(anchorPct);
     return state.lastPct;
   }
 

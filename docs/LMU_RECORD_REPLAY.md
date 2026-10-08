@@ -107,13 +107,25 @@ Two cars on a made-up circuit with a player car, moving lap distance, fuel
 burn and engine RPM. It is what `src/app/lmu/native/lmu-tape.spec.ts` uses to
 cover the format and the player without needing a copy of LMU.
 
-## Not provided
+## The curated tape
 
-**There is no curated committed fixture.** `npm run lmu:replay:curated` points
-at `test-data/telemetry/lmu-session.lmudt`, which does not exist yet — it needs
-a real session recorded on a machine running LMU. Record one and commit it, or
-keep it out of the repository and pass `--input` explicitly. The iRacing
-equivalent is 348 MB, so weigh that before committing one.
+`npm run lmu:replay:curated` plays `test-data/telemetry/lmu-session.lmudt`: a
+four-minute AI race at Laguna Seca, 38 cars, carrying all five REST endpoints
+as well as the shared-memory snapshots. `test-data/telemetry/lmu-session.json`
+beside it records what the capture is and what was done to it.
+
+It is **anonymised** — every driver name replaced, the player name, the server
+name and its address cleared, and the profile paths zeroed — with
+`npm run lmu:anonymise`, described below. Do the same to any capture of your
+own before sharing it, and check the result.
+
+It is **stored in Git LFS**, like the iRacing tape beside it, so a clone needs
+`git lfs` installed to materialise it. `GIT_LFS_SKIP_SMUDGE=1` leaves a pointer
+file in its place, which the replay specs detect and skip; fetch it later with:
+
+```bash
+git lfs pull --include="test-data/telemetry/lmu-session.lmudt"
+```
 
 ## REST API values
 
@@ -147,11 +159,12 @@ npm run lmu:record -- --output telemetry-captures\session.lmudt --no-rest
 
 `--rest-interval <ms>` sets the poll cadence (default 200), `--rest-host` and
 `--rest-port` point it elsewhere, and `--no-rest` records shared memory alone.
-If nothing is serving the port — an older LMU has no REST API — it says so once
-and records shared memory only, rather than retrying four paths a second for
-the whole session.
+If nothing is serving the port yet — the documented order is to start the
+recorder and then launch the sim, so its REST server is usually not listening
+at first — it says so once and keeps retrying on a lengthening interval, from
+two seconds out to a minute, recording shared memory throughout.
 
-The paths polled are listed in `lmu_replay_main.cpp` and must stay in step with
+The five paths polled are listed as `kRestPaths` in `lmu_replay_main.cpp` and must stay in step with
 `LMU_REST_TASKS` in [`src/app/lmu/rest/tasks.ts`](../src/app/lmu/rest/tasks.ts),
 which is what the app actually reads. A path recorded but unread is harmless; a
 path read but never recorded replays as pending forever.
