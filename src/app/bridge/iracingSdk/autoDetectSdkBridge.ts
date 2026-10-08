@@ -134,6 +134,13 @@ export async function publishAutoDetectedSdkEvents(
     detachActiveBridge = undefined;
     activeBridge?.stop();
     activeBridge = undefined;
+    // Forget what the sim we just let go of was reporting. onRunningState
+    // replays the last value to a new subscriber, so without this an overlay
+    // mounting between one sim detaching and the next one speaking was told
+    // the previous sim's state -- "running" for a bridge that is not attached.
+    // Undefined means the subscriber simply waits, which is the honest answer
+    // for the window where no simulator is attached.
+    lastRunningState = undefined;
   };
 
   /**
