@@ -215,7 +215,16 @@ export function createLmuRestPoller({
     }
 
     // A response from before a reset describes a session that has ended.
-    if (stopped || !active || generation !== startedIn) return;
+    if (stopped || !active || generation !== startedIn) {
+      // Discarding it is not enough: the reactivation that invalidated it
+      // tried to start this task and found inFlight still true, so it never
+      // scheduled anything. Dropping out here as well left the task polling
+      // nothing for the rest of the session. Reactivation lost a cycle, so
+      // this one goes out immediately rather than at the usual interval;
+      // `schedule` re-checks stopped, active, missing and absent itself.
+      if (!stopped && active) schedule(task, 0);
+      return;
+    }
 
     if (!response.ok) {
       // Not an error: the source has nothing for this path yet. Try again at

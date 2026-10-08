@@ -433,6 +433,43 @@ describe('createLmuRestPoller', () => {
     expect(data.cells.pitStopTime?.value[0] ?? 0).toBe(0);
   });
 
+  it('keeps polling after discarding a response from before a reset', async () => {
+    // Discarding the stale response was only half of it. The reactivation
+    // tried to start this task, found inFlight still true from the request
+    // that was yet to settle, and scheduled nothing -- so the task then
+    // polled nothing at all for the rest of the session.
+    let release: ((value: LmuRestResponse) => void) | undefined;
+    let served = 0;
+    const data = createLmuRestData();
+    const poller = createLmuRestPoller({
+      data,
+      transport: () => {
+        served += 1;
+        if (served === 1) {
+          return new Promise<LmuRestResponse>((resolve) => {
+            release = resolve;
+          });
+        }
+        return Promise.resolve(ok('{"total":42}'));
+      },
+      tasks: [repeatTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    poller.setActive(false);
+    poller.setActive(true);
+
+    // The first request settles late. Its body is thrown away -- the test
+    // above covers that -- and what matters here is that the task goes on to
+    // poll again rather than falling silent.
+    release?.(ok('{"total":30}'));
+    await advance(1000);
+
+    expect(served).toBeGreaterThan(1);
+    expect(data.cells.pitStopTime?.value[0]).toBe(42);
+  });
+
   it('clears the data and publishes the clear when deactivated', async () => {
     const data = createLmuRestData();
     const { transport } = makeTransport((path) =>
