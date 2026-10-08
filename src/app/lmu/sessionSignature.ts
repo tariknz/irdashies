@@ -27,6 +27,11 @@ export const lmuSessionSignature = (session: LmuRawSession): string =>
       className: driver.className,
       vehFilename: driver.vehFilename,
       classId: driver.classId,
+      // mapLmuSession derives CarIsAI and CarIsAIControlled from this, and the
+      // bridge republishes only when the signature moves -- so an AI takeover
+      // on its own left those flags stale until some other tracked field
+      // happened to change.
+      control: driver.control,
       qualification: driver.qualification,
       // The running order in a race. Without it an overtake changed nothing
       // the signature could see, so the standings held their old order until

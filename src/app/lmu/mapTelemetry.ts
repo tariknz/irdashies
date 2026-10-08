@@ -404,7 +404,12 @@ export function mapLmuTelemetry(
   t.CarDistAhead = numArr(undefined);
   t.CarDistBehind = numArr(undefined);
   t.LmuCarIdxRelativeAvailable = {
-    value: relativePositions?.available ?? [],
+    // Copied, like the three numeric channels below. `available` is the
+    // reusable buffer that deriveLmuRelativePositions overwrites in place
+    // every frame, so publishing the reference handed consumers an array that
+    // changed under them -- anything holding a previous frame to compare
+    // against, and anything serialising one later, saw this frame's values.
+    value: relativePositions ? [...relativePositions.available] : [],
   };
   t.LmuCarIdxRelativeLateral = numArr(relativePositions?.lateral);
   t.LmuCarIdxRelativeLongitudinal = numArr(relativePositions?.longitudinal);

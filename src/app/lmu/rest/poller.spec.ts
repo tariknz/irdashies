@@ -406,6 +406,33 @@ describe('createLmuRestPoller', () => {
     expect(calls.length).toBeGreaterThan(probes);
   });
 
+  it('discards a response that arrives after a reset', async () => {
+    // Deactivating and reactivating while a request is outstanding used to
+    // pass the stopped/active check, so the previous session's body was
+    // applied into data that had just been cleared.
+    let release: ((value: LmuRestResponse) => void) | undefined;
+    const data = createLmuRestData();
+    const poller = createLmuRestPoller({
+      data,
+      transport: () =>
+        new Promise<LmuRestResponse>((resolve) => {
+          release = resolve;
+        }),
+      tasks: [repeatTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    expect(release).toBeDefined();
+
+    poller.setActive(false);
+    poller.setActive(true);
+    release?.(ok('{"total":30}'));
+    await advance(0);
+
+    expect(data.cells.pitStopTime?.value[0] ?? 0).toBe(0);
+  });
+
   it('clears the data and publishes the clear when deactivated', async () => {
     const data = createLmuRestData();
     const { transport } = makeTransport((path) =>

@@ -132,6 +132,13 @@ const fingerprintOf = (frame: LmuClassPositionFrame, count: number): number => {
     const key = isRace
       ? (places?.[carIdx] ?? 0)
       : Math.round((bestLapTimes?.[carIdx] ?? 0) * MS);
+    // The slot, not just its contents. Skipping empty slots without hashing
+    // the index made two frames identical whenever occupancy moved but the
+    // sequence of (key, class) pairs did not -- a car with no time leaving
+    // slot 1 as another of the same class joins slot 2. The early return below
+    // then kept the previous answer, so the new slot read 0 and the vacated
+    // one held its rank until some other ordering input changed.
+    hash = (Math.imul(hash, 31) + carIdx) | 0;
     hash = (Math.imul(hash, 31) + key) | 0;
     hash = (Math.imul(hash, 31) + (classes?.[carIdx] ?? 0)) | 0;
   }

@@ -120,6 +120,16 @@ export function createLmuRestPoller({
   let absent = false;
   let reportedAbsent = false;
   let absentRetryMs = REST_ABSENT_RETRY_MS;
+  /**
+   * Bumped whenever the poller is reset, so a request that was already in
+   * flight can tell that the world moved while it was away.
+   *
+   * Checking `stopped || !active` after the await was not enough: deactivate
+   * and reactivate while a request is outstanding and the check passes, so the
+   * previous session's response was applied into data that had just been
+   * cleared.
+   */
+  let generation = 0;
   let absentTimer: ReturnType<typeof setTimeout> | undefined;
 
   const stateOf = (task: LmuRestTask) => states.get(task.id) as TaskState;
@@ -190,6 +200,7 @@ export function createLmuRestPoller({
     const state = stateOf(task);
     if (stopped || !active || state.missing || absent || state.inFlight) return;
     state.inFlight = true;
+    const startedIn = generation;
 
     let response: LmuRestResponse;
     try {
@@ -203,7 +214,8 @@ export function createLmuRestPoller({
       state.inFlight = false;
     }
 
-    if (stopped || !active) return;
+    // A response from before a reset describes a session that has ended.
+    if (stopped || !active || generation !== startedIn) return;
 
     if (!response.ok) {
       // Not an error: the source has nothing for this path yet. Try again at
@@ -270,6 +282,7 @@ export function createLmuRestPoller({
     setActive: (next: boolean) => {
       if (stopped || next === active) return;
       active = next;
+      generation += 1;
       if (!active) {
         clearTimers();
         if (absentTimer !== undefined) clearTimeout(absentTimer);
