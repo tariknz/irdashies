@@ -34,6 +34,13 @@ import { resetLmuRestData, type LmuRestData } from './state';
  * older LMU has no REST API at all. A refused connection on the first request
  * after activation latches every task off at once and logs a single line, so a
  * session costs one failed connect rather than one per task per interval.
+ *
+ * That latch expires rather than holding for the session, because the API is a
+ * server inside the sim and its port need not be open at the moment the app
+ * first reaches shared memory. It is re-probed on a doubling interval, from
+ * REST_ABSENT_RETRY_MS out to REST_ABSENT_MAX_RETRY_MS, so an API that was
+ * merely late is picked up within half a minute while an installation that has
+ * none settles at one failed connect every few minutes.
  */
 
 export type LmuRestFailure =
@@ -311,9 +318,6 @@ export function createLmuRestPoller({
         tasks.forEach((task) => {
           stateOf(task).intervalMs = task.baseIntervalMs;
         });
-        // Deliberately not clearing `absent`: a build with no REST API will
-        // not grow one between sessions, and re-probing every activation is
-        // the retry storm this avoids.
         return;
       }
       startAll();
