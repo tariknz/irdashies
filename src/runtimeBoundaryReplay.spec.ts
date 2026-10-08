@@ -34,6 +34,7 @@ type SnapshotChannelName = Exclude<
 const SNAPSHOT_CHANNELS = [
   'blind-spot.snapshot',
   'car-speeds.snapshot',
+  'car-systems.snapshot',
   'driver-controls.snapshot',
   'fuel.projection',
   'lap-times.snapshot',

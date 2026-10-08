@@ -21,4 +21,7 @@ export * from './performance';
 export * from './gamepadToken';
 export * from './channels';
 export * from './telemetryInspectorBridge';
+export * from './carSystems';
 export * from './sessionProfiles';
+export * from './simulators';
+export * from './simWidgetSupport';
