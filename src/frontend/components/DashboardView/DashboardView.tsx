@@ -228,7 +228,7 @@ const SoloWidgetView = ({ widgetId, widgets }: SoloWidgetViewProps) => {
       style={{ background: 'transparent' }}
       data-widget-id={widget.id}
     >
-      <SessionTimingUpdater />
+      <SessionTimingUpdater soloWidgetType={widget.type || widget.id} />
       <div className="w-full h-full overflow-hidden text-white">
         <WidgetRuntimeProvider widgetType={widget.type || widget.id}>
           <WidgetComponent {...widget.config} />
