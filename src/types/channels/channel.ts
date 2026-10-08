@@ -120,8 +120,24 @@ export interface LapTraceSampleSnapshot {
 
 export interface BlindSpotSnapshot {
   carLeftRight: number;
+  /**
+   * Only populated when the running sim reports no true relative position, so
+   * the consumer has to reconstruct one by subtracting lap fractions. Left
+   * empty when the offsets below are supplied, which also keeps a 100-plus
+   * element array off the channel on every tick.
+   */
   carIdxLapDistPct: readonly number[];
   isOnTrack: boolean;
+  /**
+   * Fore(+)/aft(-) metres of the nearest car on each side.
+   *
+   * null means the sim does not report it -- iRacing publishes no per-car
+   * world position -- and the lap-fraction fallback applies. A sim that does
+   * report it gives a signal in metres at the telemetry rate, rather than one
+   * quantised by a slower scoring block.
+   */
+  leftLongitudinalM: number | null;
+  rightLongitudinalM: number | null;
   version: number;
 }
 
