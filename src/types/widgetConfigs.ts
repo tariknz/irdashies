@@ -91,6 +91,7 @@ export interface SessionBarConfig {
 export interface StylingOptions {
   badge?: boolean;
   statusBadges?: boolean;
+  columnHeaders?: { enabled: boolean };
   driverPosition?: { background?: boolean };
   driverNumber?: { background?: boolean; border?: boolean };
   lapCount?: { minimal?: boolean };
@@ -337,6 +338,14 @@ export interface InputConfig {
   };
   background: { opacity: number };
   displayOrder: string[];
+  /** When set, decides which elements show and where. Supersedes the enabled flags and displayOrder. */
+  layoutTree?: LayoutNode;
+  /** Flash the whole layout at the redline or at the Tachometer custom shift points. */
+  shiftFlash?: {
+    enabled: boolean;
+    source: 'redline' | 'shiftPoints';
+    color: string;
+  };
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }
@@ -661,6 +670,29 @@ export interface SectorDeltaConfig {
    * widget. The center line stays pinned to your exact track position.
    */
   alwaysScroll?: boolean;
+}
+
+/**
+ * In-car systems readout.
+ *
+ * `rows` is an explicit ordered list of telemetry keys rather than a set of
+ * booleans, so the rows keep a fixed screen position and a car that lacks one
+ * shows a blank in place rather than shifting everything up.
+ */
+export interface CarSystemsConfig {
+  rows: string[];
+  /** Blank rows for adjustments the current car does not have. */
+  showUnsupportedRows: boolean;
+  /**
+   * Rows for systems the driver has switched off, which read 0 on an unsigned
+   * scale. Separate from `showUnsupportedRows`: a car that lacks a system and a
+   * driver who turned one off are different facts, and a driver who wants only
+   * live readings wants both gone.
+   */
+  showOffRows: boolean;
+  background: { opacity: number };
+  sessionVisibility: SessionVisibilitySettings;
+  showOnlyWhenOnTrack: boolean;
 }
 
 export interface DeltaSpeedConfig {
@@ -990,6 +1022,7 @@ export interface WidgetConfigMap {
   slowcarahead: SlowCarAheadConfig;
   sectordelta: SectorDeltaConfig;
   deltaspeed: DeltaSpeedConfig;
+  carsystems: CarSystemsConfig;
   heartrate: HeartRateConfig;
   cornername: CornerNameOverlayConfig;
   battle: BattleConfig;
@@ -1110,6 +1143,7 @@ export type InformationBarWidgetSettings =
 export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;
 export type SectorDeltaWidgetSettings = BaseWidgetSettings<SectorDeltaConfig>;
 export type DeltaSpeedWidgetSettings = BaseWidgetSettings<DeltaSpeedConfig>;
+export type CarSystemsWidgetSettings = BaseWidgetSettings<CarSystemsConfig>;
 export type HeartRateWidgetSettings = BaseWidgetSettings<HeartRateConfig>;
 export type CornerNameWidgetSettings =
   BaseWidgetSettings<CornerNameOverlayConfig>;

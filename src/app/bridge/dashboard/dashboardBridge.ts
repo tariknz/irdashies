@@ -34,6 +34,11 @@ import {
 import { writeData } from '../../storage/storage';
 import { OverlayManager } from '../../overlayManager';
 import {
+  getSettingsShowAllWidgets,
+  setSettingsShowAllWidgets,
+} from '../../storage/settingsPreferences';
+import { loadSimWidgetSupport } from '../../storage/simWidgetSupport';
+import {
   getAnalyticsOptOut as getAnalyticsOptOutStorage,
   setAnalyticsOptOut as setAnalyticsOptOutStorage,
 } from '../../storage/analytics';
@@ -400,6 +405,16 @@ export async function publishDashboardUpdates(
       }
     }
   );
+  ipcMain.handle('getSimWidgetSupport', () => loadSimWidgetSupport());
+
+  ipcMain.handle('getSettingsShowAllWidgets', () =>
+    getSettingsShowAllWidgets()
+  );
+
+  ipcMain.handle('setSettingsShowAllWidgets', (_, showAll: boolean) => {
+    setSettingsShowAllWidgets(showAll);
+  });
+
   ipcMain.handle('getAnalyticsOptOut', () => {
     return getAnalyticsOptOutStorage();
   });

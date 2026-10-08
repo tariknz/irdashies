@@ -1622,3 +1622,151 @@ export const RecordedIL15P2P: Story = {
     layout: 'padded',
   },
 };
+
+export const ColumnHeaders: Story = {
+  argTypes: {
+    columnHeaders: {
+      control: { type: 'boolean' },
+      name: 'Show column headers',
+    },
+    manufacturerStats: {
+      control: { type: 'boolean' },
+      name: 'Show manufacturer counts',
+    },
+    driverTag: { control: { type: 'boolean' }, name: 'Column: driver tag' },
+    countryFlags: {
+      control: { type: 'boolean' },
+      name: 'Column: country flag',
+    },
+    teamName: { control: { type: 'boolean' }, name: 'Column: team name' },
+    pitStatus: { control: { type: 'boolean' }, name: 'Column: pit status' },
+    carManufacturer: {
+      control: { type: 'boolean' },
+      name: 'Column: car manufacturer',
+    },
+    badge: { control: { type: 'boolean' }, name: 'Column: license/irating' },
+    iratingChange: {
+      control: { type: 'boolean' },
+      name: 'Column: irating change',
+    },
+    positionChange: {
+      control: { type: 'boolean' },
+      name: 'Column: position change',
+    },
+    gap: { control: { type: 'boolean' }, name: 'Column: gap' },
+    interval: { control: { type: 'boolean' }, name: 'Column: interval' },
+    fastestTime: { control: { type: 'boolean' }, name: 'Column: best' },
+    lastTime: { control: { type: 'boolean' }, name: 'Column: last' },
+    compound: { control: { type: 'boolean' }, name: 'Column: tire' },
+    lapTimeDeltas: {
+      control: { type: 'boolean' },
+      name: 'Column: lap time deltas',
+    },
+    avgLapTime: { control: { type: 'boolean' }, name: 'Column: avg lap time' },
+    lapCount: { control: { type: 'boolean' }, name: 'Column: lap count' },
+    pushToPass: { control: { type: 'boolean' }, name: 'Column: push to pass' },
+  },
+  args: {
+    columnHeaders: true,
+    manufacturerStats: true,
+    driverTag: true,
+    countryFlags: true,
+    teamName: true,
+    pitStatus: true,
+    carManufacturer: true,
+    badge: true,
+    iratingChange: true,
+    positionChange: true,
+    gap: true,
+    interval: true,
+    fastestTime: true,
+    lastTime: true,
+    compound: true,
+    lapTimeDeltas: true,
+    avgLapTime: true,
+    lapCount: true,
+    pushToPass: true,
+  },
+  decorators: [
+    (Story, context) => {
+      const {
+        columnHeaders,
+        manufacturerStats,
+        driverTag,
+        countryFlags,
+        teamName,
+        pitStatus,
+        carManufacturer,
+        badge,
+        iratingChange,
+        positionChange,
+        gap,
+        interval,
+        fastestTime,
+        lastTime,
+        compound,
+        lapTimeDeltas,
+        avgLapTime,
+        lapCount,
+        pushToPass,
+      } = context.args as Record<string, boolean>;
+      return (
+        <div
+          style={{
+            resize: 'both',
+            overflow: 'auto',
+            width: '700px',
+            height: '400px',
+            border: '1px dashed gray',
+          }}
+        >
+          {TelemetryDecoratorWithConfig('/test-data/1732355190142', {
+            standings: {
+              driverTag: { enabled: driverTag },
+              countryFlags: { enabled: countryFlags },
+              teamName: { enabled: teamName },
+              pitStatus: {
+                enabled: pitStatus,
+                pitLapDisplayMode: 'lastPitLap',
+              },
+              carManufacturer: { enabled: carManufacturer },
+              badge: {
+                enabled: badge,
+                badgeFormat: 'license-color-fullrating-combo',
+              },
+              iratingChange: { enabled: iratingChange },
+              positionChange: { enabled: positionChange },
+              gap: { enabled: gap },
+              interval: { enabled: interval },
+              fastestTime: { enabled: fastestTime, timeFormat: 'full' },
+              lastTime: { enabled: lastTime, timeFormat: 'full' },
+              compound: { enabled: compound },
+              lapTimeDeltas: {
+                enabled: lapTimeDeltas,
+                numLaps: 3,
+                decimalPlaces: 1,
+              },
+              avgLapTime: {
+                enabled: avgLapTime,
+                numLaps: 5,
+                timeFormat: 'full',
+              },
+              lapCount: { enabled: lapCount },
+              pushToPass: { enabled: pushToPass },
+              stylingOptions: {
+                columnHeaders: { enabled: columnHeaders },
+              },
+              classHeaderStyle: {
+                manufacturerStats: {
+                  enabled: manufacturerStats,
+                  cap: 5,
+                  showPlayerManufacturer: true,
+                },
+              },
+            },
+          })(Story, context)}
+        </div>
+      );
+    },
+  ],
+};

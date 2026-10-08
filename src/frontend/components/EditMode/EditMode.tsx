@@ -25,9 +25,9 @@ export const EditMode = ({ children }: PropsWithChildren) => {
   if (editMode) {
     const widgetId = getWidgetIdFromUrl();
     // Find widget definition to get true type
-    const widgetDef = currentDashboard?.widgets.find(w => w.id === widgetId);
+    const widgetDef = currentDashboard?.widgets.find((w) => w.id === widgetId);
     const componentType = widgetDef?.type || widgetId;
-    
+
     const widgetName = componentType ? getWidgetName(componentType) : null;
 
     return (
@@ -37,8 +37,10 @@ export const EditMode = ({ children }: PropsWithChildren) => {
             <ResizeIcon />
             <span>
               {widgetName ?? 'Edit Mode'}
-               {widgetId && componentType === 'fuel' && widgetId !== 'fuel' && (
-                <span className="ml-1 text-xs opacity-80 font-mono">({widgetId})</span>
+              {widgetId && componentType && widgetId !== componentType && (
+                <span className="ml-1 text-xs opacity-80 font-mono">
+                  ({widgetId})
+                </span>
               )}
             </span>
           </div>

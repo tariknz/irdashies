@@ -28,6 +28,93 @@ import {
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 import { computeStintLap } from './components/DriverInfoRow/cells/lapCountUtils';
 
+const COLUMN_LABELS: Record<string, string> = {
+  position: '',
+  carNumber: '',
+  driverTag: 'TAG',
+  countryFlags: '',
+  driverName: '',
+  teamName: '',
+  pitStatus: 'PIT',
+  carManufacturer: '',
+  badge: '',
+  iratingChange: '',
+  positionChange: '',
+  delta: 'DELTA',
+  gap: 'GAP',
+  interval: 'INT',
+  fastestTime: 'BEST',
+  lastTime: 'LAST',
+  compound: 'TIRE',
+  lapTimeDeltas: 'DELTA',
+  avgLapTime: 'AVG',
+  lapCount: 'LAPS',
+  pushToPass: 'P2P',
+};
+
+const COLUMN_ORDER = Object.keys(COLUMN_LABELS);
+
+export interface OrderedColumn {
+  id: string;
+  label: string;
+  colSpan: number;
+  kind: 'identity' | 'data';
+}
+
+// Ordered list of every enabled data column, matching the exact column
+// structure (id order + colSpan) that DriverInfoRow renders as <td>s, so
+// a header row built from this list lines up with the data cells below.
+const getOrderedColumns = (
+  config: NonNullable<ReturnType<typeof useStandingsSettings>>,
+  hasAnyDriverTag: boolean,
+  hasAnyCountryFlag: boolean,
+  isTeamRacing: boolean,
+  hideCarManufacturer: boolean
+): OrderedColumn[] => {
+  const isEnabled = (value: unknown): boolean =>
+    typeof value === 'object' &&
+    value !== null &&
+    'enabled' in value &&
+    value.enabled === true;
+  const enabledColumns = new Set(
+    COLUMN_ORDER.filter((id) => {
+      const column = config?.[id as keyof typeof config];
+      if (id === 'driverTag') return isEnabled(column) && hasAnyDriverTag;
+      if (id === 'countryFlags') {
+        return isEnabled(column) && hasAnyCountryFlag;
+      }
+      if (id === 'teamName') return isEnabled(column) && isTeamRacing;
+      if (id === 'carManufacturer') {
+        return isEnabled(column) && !hideCarManufacturer;
+      }
+      if (id === 'delta') return isEnabled(column) && !('gap' in config);
+      return isEnabled(column);
+    })
+  );
+  const orderedColumns = [
+    ...(config.displayOrder ?? []),
+    ...COLUMN_ORDER,
+  ].filter(
+    (id, index, order) => enabledColumns.has(id) && order.indexOf(id) === index
+  );
+
+  return orderedColumns.map((id) => {
+    const label = COLUMN_LABELS[id];
+    return {
+      id,
+      label,
+      colSpan:
+        id === 'lapTimeDeltas'
+          ? Math.max(1, config.lapTimeDeltas?.numLaps ?? 1)
+          : 1,
+      // Columns without a label (position, driver name, ...) are merged
+      // into the class header's info bar; columns with a label get their
+      // own header cell so it lines up with the matching data column.
+      kind: label ? 'data' : 'identity',
+    };
+  });
+};
+
 export const Standings = () => {
   const settings = useStandingsSettings();
   const generalSettings = useGeneralSettings();
@@ -80,6 +167,20 @@ export const Standings = () => {
 
   // Check if this is a team racing session
   const isTeamRacing = useWeekendInfoTeamRacing();
+
+  const orderedColumns = useMemo(
+    () =>
+      settings && settings.stylingOptions?.columnHeaders?.enabled
+        ? getOrderedColumns(
+            settings,
+            hasAnyTag,
+            !!hasAnyCountryFlag,
+            !!isTeamRacing,
+            hideCarManufacturer
+          )
+        : undefined,
+    [settings, hasAnyTag, hasAnyCountryFlag, isTeamRacing, hideCarManufacturer]
+  );
 
   // Determine table border spacing based on compact mode
   const isCompact =
@@ -159,6 +260,7 @@ export const Standings = () => {
                     compactMode={generalSettings?.compactMode}
                     manufacturerCounts={manufacturerStats?.counts}
                     playerManufacturerEntry={manufacturerStats?.playerEntry}
+                    orderedColumns={orderedColumns}
                   />
                   {classStandings.map((result, driverIndex) => {
                     const prev = classStandings[driverIndex - 1];
@@ -295,6 +397,10 @@ export const Standings = () => {
                           lapCountUnknown={stintLap.unknown}
                           pitExitAfterSF={pitExitAfterSF}
                           hideCarManufacturer={hideCarManufacturer}
+                          hideLeaderGapIntervalLabels={
+                            settings?.stylingOptions?.columnHeaders?.enabled ??
+                            false
+                          }
                           compactMode={generalSettings?.compactMode}
                           p2pDisplayState={p2pDisplayStates[result.carIdx]}
                         />
