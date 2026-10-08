@@ -848,6 +848,13 @@ void anonymiseSnapshot(LMUObjectOut& snapshot, NamePool& pool) {
   }
   std::memset(info.mPlrFileName, 0, sizeof(info.mPlrFileName));
   writeBounded(info.mServerName, sizeof(info.mServerName), "SERVER");
+  // The host's address, which identifies a server and the people on it just as
+  // plainly as a name does. Nothing in the app reads either, and an offline
+  // capture leaves them zero -- so they went unnoticed until an online one was
+  // considered. Zeroed rather than replaced, because any value here would
+  // claim to be an address.
+  info.mServerPublicIP = 0;
+  info.mServerPort = 0;
   std::memset(
       snapshot.scoring.scoringStream,
       0,
@@ -1159,6 +1166,10 @@ int runFixture(const Options& options) {
       snapshot.scoring.scoringInfo.mPlrFileName,
       "Synthetic Player.PLR",
       sizeof(snapshot.scoring.scoringInfo.mPlrFileName) - 1);
+  // A non-zero address, so a spec can prove anonymise clears it. An offline
+  // capture leaves these zero, which is why they went unnoticed.
+  snapshot.scoring.scoringInfo.mServerPublicIP = 0x0A000001;
+  snapshot.scoring.scoringInfo.mServerPort = 54297;
   std::strncpy(
       snapshot.scoring.scoringInfo.mServerName,
       "Synthetic Server",

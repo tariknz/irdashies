@@ -324,14 +324,70 @@ describe('createLmuRestPoller', () => {
 
     poller.setActive(true);
     await advance(0);
-    await advance(60_000);
+    const firstPass = calls.length;
+    // Before the retry falls due, nothing more is attempted.
+    await advance(20_000);
 
-    expect(calls.length).toBeLessThanOrEqual(2);
+    expect(firstPass).toBeLessThanOrEqual(2);
+    expect(calls).toHaveLength(firstPass);
     expect(logger.info).toHaveBeenCalledTimes(1);
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  it('does not re-probe an absent API on the next activation', async () => {
+  it('probes again a while after the API looked absent', async () => {
+    // The latch used to hold for the life of the process, on the reasoning
+    // that a build without a REST API will not grow one. But the API is a
+    // server inside the sim, and its port need not be open at the moment the
+    // app first reaches shared memory -- so one refusal during that window
+    // turned every REST value off for the whole run.
+    let refuse = true;
+    const { transport, calls } = makeTransport(() =>
+      refuse ? fail('refused') : ok('{"total":30}')
+    );
+    const data = createLmuRestData();
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      tasks: [repeatTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    const afterGivingUp = calls.length;
+
+    refuse = false;
+    // The latch lifts at 30s and the tasks then schedule at their own
+    // interval, so the request lands just after the boundary.
+    await advance(31_000);
+
+    expect(calls.length).toBeGreaterThan(afterGivingUp);
+    expect(data.cells.pitStopTime?.value[0]).toBe(30);
+  });
+
+  it('backs the retry off rather than probing a missing API forever', async () => {
+    // An installation that really has no REST API should settle at the
+    // occasional failed connect, not a steady drip.
+    const { transport, calls } = makeTransport(() => fail('refused'));
+    const poller = createLmuRestPoller({
+      data: createLmuRestData(),
+      transport,
+      tasks: [repeatTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    await advance(31_000);
+    const afterFirstRetry = calls.length;
+    expect(afterFirstRetry).toBeGreaterThan(0);
+    // The second wait is 60s, so a 30s window adds nothing.
+    await advance(30_000);
+    expect(calls).toHaveLength(afterFirstRetry);
+
+    await advance(31_000);
+    expect(calls.length).toBeGreaterThan(afterFirstRetry);
+  });
+
+  it('starts a fresh short probe on the next activation', async () => {
     const { transport, calls } = makeTransport(() => fail('refused'));
     const poller = createLmuRestPoller({
       data: createLmuRestData(),
@@ -345,9 +401,9 @@ describe('createLmuRestPoller', () => {
 
     poller.setActive(false);
     poller.setActive(true);
-    await advance(60_000);
+    await advance(0);
 
-    expect(calls).toHaveLength(probes);
+    expect(calls.length).toBeGreaterThan(probes);
   });
 
   it('clears the data and publishes the clear when deactivated', async () => {

@@ -1,6 +1,8 @@
 import { fnv1a32 } from '../hash';
 import {
   REST_BACKOFF_FACTOR,
+  REST_ABSENT_MAX_RETRY_MS,
+  REST_ABSENT_RETRY_MS,
   REST_MAX_INTERVAL_MS,
   REST_RETRY_DELAY_MS,
   REST_RETRY_LIMIT,
@@ -117,6 +119,8 @@ export function createLmuRestPoller({
    */
   let absent = false;
   let reportedAbsent = false;
+  let absentRetryMs = REST_ABSENT_RETRY_MS;
+  let absentTimer: ReturnType<typeof setTimeout> | undefined;
 
   const stateOf = (task: LmuRestTask) => states.get(task.id) as TaskState;
 
@@ -125,6 +129,24 @@ export function createLmuRestPoller({
       if (state.timer !== undefined) clearTimeout(state.timer);
       state.timer = undefined;
     });
+  };
+
+  /**
+   * Lifts the absent latch after a wait, so the tasks probe once more.
+   *
+   * Doubling to a ceiling: quick enough to catch an API that was merely slow
+   * to open its port, cheap enough that an installation without one settles at
+   * a single failed connect every few minutes rather than a retry storm.
+   */
+  const scheduleAbsentProbe = () => {
+    if (stopped || !active || absentTimer !== undefined) return;
+    absentTimer = setTimeout(() => {
+      absentTimer = undefined;
+      if (stopped || !active) return;
+      absent = false;
+      absentRetryMs = Math.min(absentRetryMs * 2, REST_ABSENT_MAX_RETRY_MS);
+      startAll();
+    }, absentRetryMs);
   };
 
   const schedule = (task: LmuRestTask, delayMs: number) => {
@@ -191,16 +213,20 @@ export function createLmuRestPoller({
         return;
       }
 
-      // Nothing has ever answered and the port refused: the API is not there.
+      // Nothing has ever answered and the port refused: the API is not there
+      // -- for now. The sim's REST server need not have its port open at the
+      // moment the app first reaches shared memory, so this is re-probed
+      // rather than latched for the life of the process.
       if (response.reason === 'refused' && state.hash === undefined) {
         absent = true;
         clearTimers();
         if (!reportedAbsent) {
           reportedAbsent = true;
           logger?.info(
-            '[lmuRest] No REST API on this port; LMU REST properties unavailable'
+            `[lmuRest] No REST API on this port; retrying in ${absentRetryMs / 1000}s`
           );
         }
+        scheduleAbsentProbe();
         return;
       }
 
@@ -246,6 +272,12 @@ export function createLmuRestPoller({
       active = next;
       if (!active) {
         clearTimers();
+        if (absentTimer !== undefined) clearTimeout(absentTimer);
+        absentTimer = undefined;
+        // A fresh session gets a fresh probe at the short interval.
+        absent = false;
+        reportedAbsent = false;
+        absentRetryMs = REST_ABSENT_RETRY_MS;
         resetLmuRestData(data);
         states.forEach((state) => {
           state.intervalMs = 0;
@@ -278,6 +310,8 @@ export function createLmuRestPoller({
 
     stop: () => {
       stopped = true;
+      if (absentTimer !== undefined) clearTimeout(absentTimer);
+      absentTimer = undefined;
       active = false;
       clearTimers();
     },

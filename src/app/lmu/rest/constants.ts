@@ -40,3 +40,22 @@ export const REST_RETRY_DELAY_MS = 1000;
  */
 export const REST_BACKOFF_FACTOR = 1.5;
 export const REST_MAX_INTERVAL_MS = 5000;
+
+/**
+ * How long to wait before probing again once the API looks absent, and the
+ * ceiling that wait grows to.
+ *
+ * The absent latch used to be permanent for the life of the process, on the
+ * reasoning that a build without a REST API will not grow one. That is wrong
+ * in the case that matters: the API is a server inside the sim, and its port
+ * need not be open at the moment the app first reaches shared memory. A single
+ * refused connection during that window turned every REST-backed value --
+ * pit-stop and repair estimates, the refuel target, virtual energy, the
+ * weather forecast -- off for the rest of the run.
+ *
+ * So the latch now expires. Doubling from 30 s to a 5 minute ceiling recovers
+ * within half a minute when the API is merely late, while an installation that
+ * really has none settles at one failed connect every five minutes.
+ */
+export const REST_ABSENT_RETRY_MS = 30_000;
+export const REST_ABSENT_MAX_RETRY_MS = 300_000;
