@@ -1,6 +1,6 @@
 import { render as rtlRender } from '@testing-library/react';
 import type { ReactElement } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import { useLapTimesStoreUpdater } from '@irdashies/context';
 import { GantryStandings } from './GantryStandings';
@@ -18,6 +18,9 @@ vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({
 const dashboardMock = vi.hoisted(() => ({
   current: undefined as unknown,
 }));
+const simulatorMock = vi.hoisted(() => ({
+  current: 'iracing' as 'iracing' | 'lmu' | null,
+}));
 
 vi.mock('@irdashies/context', () => ({
   useLapTimesStoreUpdater: vi.fn(),
@@ -32,6 +35,8 @@ vi.mock('@irdashies/context', () => ({
     subSessionId: '',
   }),
   useArchivedLapHistory: () => null,
+  // iRacing by default, so these specs keep exercising the rating badge.
+  useActiveSimulator: () => simulatorMock.current,
 }));
 
 vi.mock('@irdashies/domain/standings/useQualifyingGrid', () => ({
@@ -122,5 +127,28 @@ describe('GantryStandings', () => {
     const { getByText } = render(<GantryStandings followedCarIdx={null} />);
 
     expect(getByText('Verstappen')).toBeTruthy();
+  });
+});
+
+describe('GantryStandings rating badge', () => {
+  afterEach(() => {
+    simulatorMock.current = 'iracing';
+  });
+
+  it('shows the rating under a simulator that has one', () => {
+    simulatorMock.current = 'iracing';
+    const { container } = render(<GantryStandings followedCarIdx={null} />);
+    // The mock driver is rated 4300, rendered as "4.3k" by this format.
+    expect(container.textContent).toContain('4.3k');
+  });
+
+  it('shows nothing under a simulator with no rating system', () => {
+    // LMU has neither iRating nor a licence, so the badge would otherwise
+    // render its "AI" fallback for every driver.
+    simulatorMock.current = 'lmu';
+    const { container } = render(<GantryStandings followedCarIdx={null} />);
+
+    expect(container.textContent).not.toContain('4.3k');
+    expect(container.textContent).not.toContain('AI');
   });
 });

@@ -90,6 +90,7 @@ describe('PitlaneHelper', () => {
   const defaultSpeedResult = {
     limitKph: 72,
     limitMph: 45,
+    hasLimit: true,
     speedKph: 67,
     speedMph: 41.6,
     deltaKph: -5.0,
@@ -388,6 +389,7 @@ describe('PitlaneHelper', () => {
       vi.mocked(usePitSpeed).mockReturnValue({
         limitKph: 72,
         limitMph: 45,
+        hasLimit: true,
         speedKph: 67,
         speedMph: 41.6,
         deltaKph: -5.0,
@@ -414,6 +416,7 @@ describe('PitlaneHelper', () => {
       vi.mocked(usePitSpeed).mockReturnValue({
         limitKph: 45,
         limitMph: 72,
+        hasLimit: true,
         speedKph: 41.6,
         speedMph: 67,
         deltaKph: -3.1,
@@ -444,6 +447,7 @@ describe('PitlaneHelper', () => {
       vi.mocked(usePitSpeed).mockReturnValue({
         limitKph: 72,
         limitMph: 45,
+        hasLimit: true,
         speedKph: 67,
         speedMph: 41.6,
         deltaKph: -5.0,
@@ -472,6 +476,7 @@ describe('PitlaneHelper', () => {
       vi.mocked(usePitSpeed).mockReturnValue({
         limitKph: 72,
         limitMph: 45,
+        hasLimit: true,
         speedKph: 67,
         speedMph: 41.6,
         deltaKph: -5.0,
