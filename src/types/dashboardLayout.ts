@@ -130,10 +130,8 @@ export interface GeneralSettingsType {
   startMinimized?: boolean;
   closeToTray?: boolean;
   /**
-   * Which simulator to read telemetry from. 'auto' picks whichever available
-   * simulator is publishing, and defaults to 'auto' when unset. A `--sim=`
-   * argument or IRDASHIES_SIM overrides it. A simulator this build cannot talk
-   * to falls back to 'auto' rather than leaving the app with no source.
+   * Left on older profiles. The app simulator preference lives in config.json;
+   * loading a profile must not copy this field over it.
    */
   simulator?: SimulatorPreference;
   compactMode?: 'off' | 'compact' | 'ultra';

@@ -2,9 +2,21 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from '@irdashies/context';
 import type {
+  ActiveSimulator,
   DashboardProfile,
+  GameDetectionStatus,
+  GameProfileAssignments,
+  GameProfileDefaults,
   ProfileTriggerKey,
   SessionProfileMap,
+} from '@irdashies/types';
+import {
+  isActiveSimulator,
+  isProfileAssignedToGame,
+  isProfileAssignmentLocked,
+  profileIdForGame,
+  SIMULATOR_IDS,
+  SIMULATOR_LABELS,
 } from '@irdashies/types';
 import {
   SESSION_PROFILE_KEYS,
@@ -20,6 +32,11 @@ import {
   CaretDownIcon,
   TrashIcon,
 } from '@phosphor-icons/react';
+
+const GAME_LABEL_CLASS: Record<ActiveSimulator, string> = {
+  iracing: 'bg-blue-600 text-white',
+  lmu: 'bg-orange-600 text-white',
+};
 
 interface SessionProfileRowProps {
   triggerKey: ProfileTriggerKey;
@@ -62,6 +79,161 @@ const SessionProfileRow = ({
   </div>
 );
 
+const detectionText = (detection: GameDetectionStatus): string => {
+  if (!detection.game) return 'Nothing detected yet';
+  const name = SIMULATOR_LABELS[detection.game];
+  return detection.running ? `Detected: ${name}` : `Last detected: ${name}`;
+};
+
+const GameDefaultRow = ({
+  game,
+  profiles,
+  value,
+  disabled,
+  emptyLabel,
+  onChange,
+}: {
+  game: ActiveSimulator;
+  profiles: DashboardProfile[];
+  value: string;
+  disabled: boolean;
+  emptyLabel: string;
+  onChange: (game: ActiveSimulator, profileId: string) => void;
+}) => (
+  <div className="flex items-center justify-between gap-4">
+    <label
+      htmlFor={`game-default-${game}`}
+      className="text-md font-medium text-slate-300"
+    >
+      {SIMULATOR_LABELS[game]}
+    </label>
+    <select
+      id={`game-default-${game}`}
+      value={value}
+      disabled={disabled}
+      onChange={(e) => onChange(game, e.target.value)}
+      className="bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm min-w-52 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {profiles.length === 0 ? (
+        <option value="">{emptyLabel}</option>
+      ) : (
+        <>
+          {value === '' && (
+            <option value="" disabled>
+              Choose a profile
+            </option>
+          )}
+          {profiles.map((profile) => (
+            <option key={profile.id} value={profile.id}>
+              {profile.name}
+            </option>
+          ))}
+        </>
+      )}
+    </select>
+  </div>
+);
+
+const GameProfileSection = ({
+  autodetect,
+  detection,
+  profiles,
+  defaults,
+  defaultsLoaded,
+  assignments,
+  assignmentsLoaded,
+  onToggle,
+  onDefaultChange,
+}: {
+  autodetect: boolean;
+  detection: GameDetectionStatus;
+  profiles: DashboardProfile[];
+  defaults: GameProfileDefaults;
+  defaultsLoaded: boolean;
+  assignments: GameProfileAssignments;
+  assignmentsLoaded: boolean;
+  onToggle: (enabled: boolean) => void;
+  onDefaultChange: (game: ActiveSimulator, profileId: string) => void;
+}) => {
+  const loaded = defaultsLoaded && assignmentsLoaded;
+  return (
+    <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold text-white mb-2">Game profiles</h3>
+        <p className="text-sm text-slate-400">
+          Pick the profile each game loads when it starts. The list only
+          includes profiles assigned to that game. Assign more from a
+          profile&apos;s Actions menu so the keyboard shortcut can cycle them
+          while that game is running. Autodetect follows the game that is
+          running. If both are open, the one that started first stays — the
+          overlays use one layout.
+        </p>
+        <p className="text-sm text-slate-400 mt-2">
+          A profile assigned to more than one game is the same profile. Editing
+          its widgets changes them for every game it is assigned to. For
+          different widgets per game, use a separate profile per game.
+        </p>
+      </div>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h4
+            id="autodetect-game-profiles-label"
+            className="text-md font-medium text-slate-300"
+          >
+            Autodetect running game
+          </h4>
+          <p className="text-sm text-slate-400">{detectionText(detection)}</p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={autodetect}
+            onChange={(e) => onToggle(e.target.checked)}
+            aria-labelledby="autodetect-game-profiles-label"
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+        </label>
+      </div>
+      <div className="space-y-2">
+        {SIMULATOR_IDS.map((id) => {
+          const assigned = profiles.filter((profile) =>
+            isProfileAssignedToGame(profile.id, id, assignments)
+          );
+          return (
+            <GameDefaultRow
+              key={id}
+              game={id}
+              profiles={loaded ? assigned : []}
+              value={
+                loaded
+                  ? defaultProfileId(id, defaults, profiles, assignments)
+                  : ''
+              }
+              disabled={!loaded || assigned.length === 0}
+              emptyLabel={
+                loaded ? 'Assign a profile first' : 'Choose a profile'
+              }
+              onChange={onDefaultChange}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const defaultProfileId = (
+  game: ActiveSimulator,
+  defaults: GameProfileDefaults,
+  profiles: DashboardProfile[],
+  assignments: GameProfileAssignments
+): string => {
+  const exists = (profileId: string) =>
+    profiles.some((profile) => profile.id === profileId);
+  return profileIdForGame(game, defaults[game], exists, assignments) ?? '';
+};
+
 export const ProfileSettings = () => {
   const {
     currentDashboard,
@@ -87,16 +259,35 @@ export const ProfileSettings = () => {
   // The rows stay disabled until the stored map has arrived. Editing one before
   // then would build a new map from an empty one and wipe what is on disk.
   const [sessionProfileMapLoaded, setSessionProfileMapLoaded] = useState(false);
+  const [autodetectGameProfiles, setAutodetectGameProfiles] = useState(true);
+  const [gameProfileDefaults, setGameProfileDefaults] =
+    useState<GameProfileDefaults>({});
+  const [gameProfileDefaultsLoaded, setGameProfileDefaultsLoaded] =
+    useState(false);
+  const [gameProfileAssignments, setGameProfileAssignments] =
+    useState<GameProfileAssignments>({});
+  const [gameProfileAssignmentsLoaded, setGameProfileAssignmentsLoaded] =
+    useState(false);
+  const [detection, setDetection] = useState<GameDetectionStatus>({
+    game: null,
+    running: false,
+  });
 
   // Every write sends the whole map, so it must be derived from the newest one
   // rather than from a render's closure. Two edits in quick succession would
   // otherwise both build on the same state and the second would drop the
   // first's selection.
   const sessionProfileMapRef = useRef<SessionProfileMap>({});
+  const gameProfileDefaultsRef = useRef<GameProfileDefaults>({});
+  const gameProfileAssignmentsRef = useRef<GameProfileAssignments>({});
   // Writes are chained so they reach storage in the order they were made. Two
   // in flight at once can otherwise be persisted out of order, leaving the
   // stored map disagreeing with what the page shows.
   const sessionProfileWrites = useRef<Promise<unknown>>(Promise.resolve());
+  const gameProfileWrites = useRef<Promise<unknown>>(Promise.resolve());
+  const gameProfileAssignmentWrites = useRef<Promise<unknown>>(
+    Promise.resolve()
+  );
 
   useEffect(() => {
     bridge.getCycleProfiles?.().then((v) => setCycleProfiles(v ?? false));
@@ -108,6 +299,36 @@ export const ProfileSettings = () => {
       setSessionProfileMap(v ?? {});
       setSessionProfileMapLoaded(true);
     });
+    bridge.getAutodetectGameProfiles?.().then((value) => {
+      if (value !== undefined) setAutodetectGameProfiles(value);
+    });
+    const defaultsPromise = bridge.getGameProfileDefaults?.();
+    if (defaultsPromise) {
+      void defaultsPromise.then((value) => {
+        gameProfileDefaultsRef.current = value ?? {};
+        setGameProfileDefaults(value ?? {});
+        setGameProfileDefaultsLoaded(true);
+      });
+    } else {
+      setGameProfileDefaultsLoaded(true);
+    }
+    const assignmentsPromise = bridge.getGameProfileAssignments?.();
+    if (assignmentsPromise) {
+      void assignmentsPromise.then((value) => {
+        gameProfileAssignmentsRef.current = value ?? {};
+        setGameProfileAssignments(value ?? {});
+        setGameProfileAssignmentsLoaded(true);
+      });
+    } else {
+      setGameProfileAssignmentsLoaded(true);
+    }
+    bridge.getGameDetectionStatus?.().then((value) => {
+      if (value) setDetection(value);
+    });
+    const unsubscribe = bridge.onGameDetectionStatus?.((value) => {
+      setDetection(value);
+    });
+    return () => unsubscribe?.();
   }, [bridge]);
 
   const persistSessionProfileMap = (next: SessionProfileMap) => {
@@ -232,9 +453,89 @@ export const ProfileSettings = () => {
     }
   };
 
+  const handleToggleAutodetect = async (checked: boolean) => {
+    setAutodetectGameProfiles(checked);
+    await bridge.setAutodetectGameProfiles?.(checked);
+  };
+
+  const persistGameProfileDefaults = (next: GameProfileDefaults) => {
+    gameProfileDefaultsRef.current = next;
+    setGameProfileDefaults(next);
+    gameProfileWrites.current = gameProfileWrites.current
+      .then(() => bridge.setGameProfileDefaults?.(next))
+      .catch((err) => {
+        logger.error('Failed to save the game profile defaults', err);
+      });
+  };
+
+  const handleGameDefaultChange = (
+    game: ActiveSimulator,
+    profileId: string
+  ) => {
+    if (
+      !profileId ||
+      !isProfileAssignedToGame(
+        profileId,
+        game,
+        gameProfileAssignmentsRef.current
+      )
+    ) {
+      return;
+    }
+    persistGameProfileDefaults({
+      ...gameProfileDefaultsRef.current,
+      [game]: profileId,
+    });
+  };
+
+  const persistGameProfileAssignments = (next: GameProfileAssignments) => {
+    gameProfileAssignmentsRef.current = next;
+    setGameProfileAssignments(next);
+    gameProfileAssignmentWrites.current = gameProfileAssignmentWrites.current
+      .then(() => bridge.setGameProfileAssignments?.(next))
+      .catch((err) => {
+        logger.error('Failed to save the game profile assignments', err);
+      });
+  };
+
+  const handleToggleGameAssignment = (
+    profileId: string,
+    game: ActiveSimulator
+  ) => {
+    if (isProfileAssignmentLocked(profileId, game)) return;
+    const current = gameProfileAssignmentsRef.current;
+    const games = current[profileId] ?? [];
+    const removing = games.includes(game);
+    const nextGames = removing
+      ? games.filter((id) => id !== game)
+      : [...games, game];
+    const ordered = SIMULATOR_IDS.filter((id) => nextGames.includes(id));
+    const next: GameProfileAssignments =
+      ordered.length === 0
+        ? (Object.fromEntries(
+            Object.entries(current).filter(([id]) => id !== profileId)
+          ) as GameProfileAssignments)
+        : { ...current, [profileId]: ordered };
+    persistGameProfileAssignments(next);
+    if (!removing) return;
+    const resolved = defaultProfileId(
+      game,
+      gameProfileDefaultsRef.current,
+      profiles,
+      current
+    );
+    if (resolved !== profileId) return;
+    const defaults = Object.fromEntries(
+      Object.entries(gameProfileDefaultsRef.current).filter(
+        ([id]) => id !== game
+      )
+    ) as GameProfileDefaults;
+    persistGameProfileDefaults(defaults);
+  };
+
   const handleDeleteProfile = async (profileId: string) => {
-    if (profileId === 'default') {
-      setError('Cannot delete the Default profile');
+    if (profileId === 'default' || isActiveSimulator(profileId)) {
+      setError('Cannot delete that profile');
       return;
     }
 
@@ -255,6 +556,24 @@ export const ProfileSettings = () => {
     setError(null);
     try {
       await deleteProfile(profileId);
+      const current = gameProfileDefaultsRef.current;
+      const next = Object.fromEntries(
+        Object.entries(current).filter(([, id]) => id !== profileId)
+      ) as GameProfileDefaults;
+      if (Object.keys(next).length !== Object.keys(current).length) {
+        gameProfileDefaultsRef.current = next;
+        setGameProfileDefaults(next);
+        gameProfileWrites.current = gameProfileWrites.current.then(() =>
+          bridge.setGameProfileDefaults?.(next)
+        );
+      }
+      const assigned = gameProfileAssignmentsRef.current;
+      const remaining = Object.fromEntries(
+        Object.entries(assigned).filter(([id]) => id !== profileId)
+      ) as GameProfileAssignments;
+      if (Object.keys(remaining).length !== Object.keys(assigned).length) {
+        persistGameProfileAssignments(remaining);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete profile');
     }
@@ -323,6 +642,17 @@ export const ProfileSettings = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 space-y-6 p-4 mt-4">
+        <GameProfileSection
+          autodetect={autodetectGameProfiles}
+          detection={detection}
+          profiles={profiles}
+          defaults={gameProfileDefaults}
+          defaultsLoaded={gameProfileDefaultsLoaded}
+          assignments={gameProfileAssignments}
+          assignmentsLoaded={gameProfileAssignmentsLoaded}
+          onToggle={handleToggleAutodetect}
+          onDefaultChange={handleGameDefaultChange}
+        />
         {error && (
           <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded">
             {error}
@@ -401,11 +731,44 @@ export const ProfileSettings = () => {
                         />
                       ) : (
                         <div className="flex-1">
-                          <div className="text-white font-medium">
-                            {profile.name}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="text-white font-medium">
+                              {profile.name}
+                            </div>
+                            {gameProfileDefaultsLoaded &&
+                              gameProfileAssignmentsLoaded &&
+                              SIMULATOR_IDS.filter((game) =>
+                                isProfileAssignedToGame(
+                                  profile.id,
+                                  game,
+                                  gameProfileAssignments
+                                )
+                              ).map((game) => {
+                                const isDefault =
+                                  defaultProfileId(
+                                    game,
+                                    gameProfileDefaults,
+                                    profiles,
+                                    gameProfileAssignments
+                                  ) === profile.id;
+                                return (
+                                  <span
+                                    key={game}
+                                    title={
+                                      isDefault
+                                        ? `Loads when ${SIMULATOR_LABELS[game]} starts`
+                                        : `Cycled while ${SIMULATOR_LABELS[game]} is running`
+                                    }
+                                    className={`text-xs font-medium px-1.5 py-0.5 rounded ${GAME_LABEL_CLASS[game]}`}
+                                  >
+                                    {SIMULATOR_LABELS[game]}
+                                    {isDefault ? ' · default' : ''}
+                                  </span>
+                                );
+                              })}
                           </div>
                           {profile.lastModified && (
-                            <div className="text-xs text-gray-500">
+                            <div className="mt-1 text-xs text-gray-500">
                               Modified:{' '}
                               {new Date(profile.lastModified).toLocaleString()}
                             </div>
@@ -500,6 +863,40 @@ export const ProfileSettings = () => {
                                 }}
                                 className="bg-slate-700 border border-slate-600 rounded shadow-lg min-w-[130px]"
                               >
+                                {gameProfileAssignmentsLoaded &&
+                                  SIMULATOR_IDS.map((game) => {
+                                    if (isProfileAssignmentLocked(profile.id, game)) {
+                                      return (
+                                        <div
+                                          key={game}
+                                          className="w-full px-3 py-2 text-sm text-slate-400 text-left whitespace-nowrap"
+                                        >
+                                          Assigned to {SIMULATOR_LABELS[game]}
+                                        </div>
+                                      );
+                                    }
+                                    const assigned =
+                                      gameProfileAssignments[
+                                        profile.id
+                                      ]?.includes(game) ?? false;
+                                    return (
+                                      <button
+                                        key={game}
+                                        onClick={() => {
+                                          setOpenDropdownId(null);
+                                          handleToggleGameAssignment(
+                                            profile.id,
+                                            game
+                                          );
+                                        }}
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-600 transition-colors text-left whitespace-nowrap"
+                                      >
+                                        {assigned
+                                          ? `Unassign from ${SIMULATOR_LABELS[game]}`
+                                          : `Assign to ${SIMULATOR_LABELS[game]}`}
+                                      </button>
+                                    );
+                                  })}
                                 <button
                                   onClick={() => {
                                     setOpenDropdownId(null);
@@ -520,18 +917,19 @@ export const ProfileSettings = () => {
                                   <PencilSimpleIcon size={14} />
                                   Rename
                                 </button>
-                                {profile.id !== 'default' && (
-                                  <button
-                                    onClick={() => {
-                                      setOpenDropdownId(null);
-                                      handleDeleteProfile(profile.id);
-                                    }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-600 transition-colors text-left"
-                                  >
-                                    <TrashIcon size={14} />
-                                    Delete
-                                  </button>
-                                )}
+                                {profile.id !== 'default' &&
+                                  !isActiveSimulator(profile.id) && (
+                                    <button
+                                      onClick={() => {
+                                        setOpenDropdownId(null);
+                                        handleDeleteProfile(profile.id);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-600 transition-colors text-left"
+                                    >
+                                      <TrashIcon size={14} />
+                                      Delete
+                                    </button>
+                                  )}
                               </div>,
                               document.body
                             )}
@@ -557,7 +955,9 @@ export const ProfileSettings = () => {
               </h4>
               <p className="text-sm text-slate-400">
                 When switching profiles with the keyboard shortcut, wrap around
-                from the last profile back to the first (and vice versa).
+                from the last profile back to the first (and vice versa). While
+                a game is running, that shortcut only walks profiles assigned to
+                it.
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">

@@ -8,6 +8,10 @@ import type {
   ActiveSimulator,
   DashboardProfile,
   SessionProfileMap,
+  GameProfileAssignments,
+  GameProfileDefaults,
+  GameDetectionStatus,
+  SimulatorPreference,
   SaveDashboardOptions,
   ContainerBoundsInfo,
   FuelCalculatorBridge,
@@ -178,6 +182,22 @@ export function exposeBridge() {
     notifySimulatorPreferenceChanged: () => {
       ipcRenderer.send('simulatorPreferenceChanged');
     },
+    getSimulatorPreference: () => {
+      return ipcRenderer.invoke('getSimulatorPreference');
+    },
+    setSimulatorPreference: (preference: SimulatorPreference) => {
+      return ipcRenderer.invoke('setSimulatorPreference', preference);
+    },
+    onSimulatorPreference: (callback: (preference: SimulatorPreference) => void) => {
+      const handler = (
+        _: Electron.IpcRendererEvent,
+        preference: SimulatorPreference
+      ) => {
+        callback(preference);
+      };
+      ipcRenderer.on('simulatorPreference', handler);
+      return () => ipcRenderer.removeListener('simulatorPreference', handler);
+    },
     getActiveSimulator: () => {
       return ipcRenderer.invoke('getActiveSimulator');
     },
@@ -233,6 +253,62 @@ export function exposeBridge() {
     setSessionProfileMap: (map: SessionProfileMap) => {
       return ipcRenderer.invoke('setSessionProfileMap', map);
     },
+    getAutodetectGameProfiles: () => {
+      return ipcRenderer.invoke('getAutodetectGameProfiles');
+    },
+    setAutodetectGameProfiles: (enabled: boolean) => {
+      return ipcRenderer.invoke('setAutodetectGameProfiles', enabled);
+    },
+    getGameProfileDefaults: () => {
+      return ipcRenderer.invoke('getGameProfileDefaults');
+    },
+    setGameProfileDefaults: (map: GameProfileDefaults) => {
+      return ipcRenderer.invoke('setGameProfileDefaults', map);
+    },
+    onGameProfileDefaults: (callback: (map: GameProfileDefaults) => void) => {
+      const handler = (
+        _: Electron.IpcRendererEvent,
+        map: GameProfileDefaults
+      ) => {
+        callback(map);
+      };
+      ipcRenderer.on('gameProfileDefaults', handler);
+      return () => ipcRenderer.removeListener('gameProfileDefaults', handler);
+    },
+    getGameProfileAssignments: () => {
+      return ipcRenderer.invoke('getGameProfileAssignments');
+    },
+    setGameProfileAssignments: (map: GameProfileAssignments) => {
+      return ipcRenderer.invoke('setGameProfileAssignments', map);
+    },
+    onGameProfileAssignments: (
+      callback: (map: GameProfileAssignments) => void
+    ) => {
+      const handler = (
+        _: Electron.IpcRendererEvent,
+        map: GameProfileAssignments
+      ) => {
+        callback(map);
+      };
+      ipcRenderer.on('gameProfileAssignments', handler);
+      return () =>
+        ipcRenderer.removeListener('gameProfileAssignments', handler);
+    },
+    getGameDetectionStatus: () => {
+      return ipcRenderer.invoke('getGameDetectionStatus');
+    },
+    onGameDetectionStatus: (
+      callback: (status: GameDetectionStatus) => void
+    ) => {
+      const handler = (
+        _: Electron.IpcRendererEvent,
+        status: GameDetectionStatus
+      ) => {
+        callback(status);
+      };
+      ipcRenderer.on('gameDetectionStatus', handler);
+      return () => ipcRenderer.removeListener('gameDetectionStatus', handler);
+    },
     getShowProfileBanner: () => {
       return ipcRenderer.invoke('getShowProfileBanner');
     },
@@ -275,6 +351,10 @@ export function exposeBridge() {
       ipcRenderer.removeAllListeners('dashboardUpdated');
       ipcRenderer.removeAllListeners('demoModeChanged');
       ipcRenderer.removeAllListeners('simulatorChanged');
+      ipcRenderer.removeAllListeners('simulatorPreference');
+      ipcRenderer.removeAllListeners('gameDetectionStatus');
+      ipcRenderer.removeAllListeners('gameProfileDefaults');
+      ipcRenderer.removeAllListeners('gameProfileAssignments');
       ipcRenderer.removeAllListeners('containerBoundsInfo');
     },
     setAutoStart: (enabled: boolean) => {

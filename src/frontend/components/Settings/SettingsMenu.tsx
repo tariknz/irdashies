@@ -6,13 +6,30 @@ import {
   useDashboard,
   useSimWidgetSupport,
 } from '@irdashies/context';
-import { widgetDisabledMessage } from '@irdashies/types';
+import {
+  SIMULATOR_IDS,
+  SIMULATOR_LABELS,
+  isWidgetVisibleInGameFilter,
+  widgetDisabledMessage,
+  type WidgetGameFilter,
+} from '@irdashies/types';
 import {
   generalItems,
   widgetItems,
   bottomItems,
   type MenuItem,
 } from './menuItems';
+
+const GAME_FILTERS: { value: WidgetGameFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  ...SIMULATOR_IDS.map((id) => ({ value: id, label: SIMULATOR_LABELS[id] })),
+];
+
+const FILTER_PANEL_CLASS: Record<WidgetGameFilter, string> = {
+  all: 'bg-slate-700/60 border-slate-500/40',
+  iracing: 'bg-blue-900/30 border-blue-500/40',
+  lmu: 'bg-orange-900/30 border-orange-500/40',
+};
 
 const MenuLink = ({
   item,
@@ -70,6 +87,7 @@ export const SettingsMenu = () => {
   // cannot run in the sim you are using. Persisted in config.json, so the
   // choice survives a restart.
   const [showAllWidgets, setShowAllWidgets] = useState(false);
+  const [gameFilter, setGameFilter] = useState<WidgetGameFilter>('all');
 
   useEffect(() => {
     let cancelled = false;
@@ -106,10 +124,20 @@ export const SettingsMenu = () => {
       simulator
     ),
   }));
-  const visibleItems = showAllWidgets
+  const runningSimItems = showAllWidgets
     ? itemsWithSupport
     : itemsWithSupport.filter(({ disabledReason }) => !disabledReason);
-  const hiddenCount = itemsWithSupport.length - visibleItems.length;
+  const hiddenCount = itemsWithSupport.length - runningSimItems.length;
+  const visibleItems =
+    gameFilter === 'all'
+      ? runningSimItems
+      : itemsWithSupport.filter(({ item }) =>
+          isWidgetVisibleInGameFilter(
+            supportConfig,
+            item.widgetType,
+            gameFilter
+          )
+        );
 
   return (
     <div className="w-1/4 bg-slate-800 p-3 rounded-md flex flex-col gap-0 overflow-y-auto">
@@ -118,6 +146,31 @@ export const SettingsMenu = () => {
           <MenuLink key={item.path} item={item} pathname={pathname} showIcon />
         ))}
       </ul>
+
+      <div
+        className={`mt-2 rounded border p-2 ${FILTER_PANEL_CLASS[gameFilter]}`}
+      >
+        <label
+          htmlFor="widget-game-filter"
+          className="mb-1 block text-xs font-medium text-slate-200"
+        >
+          Show widgets for
+        </label>
+        <select
+          id="widget-game-filter"
+          value={gameFilter}
+          onChange={(event) =>
+            setGameFilter(event.target.value as WidgetGameFilter)
+          }
+          className="w-full bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm"
+        >
+          {GAME_FILTERS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="flex items-center gap-1 px-2 pt-2 pb-1">
         <button
@@ -140,19 +193,25 @@ export const SettingsMenu = () => {
           <span className="text-xs text-slate-600">({hiddenCount} hidden)</span>
         )}
       </div>
-      <ul className="flex flex-col">
-        {visibleItems.map(({ item, disabledReason }) => (
-          <MenuLink
-            key={item.path}
-            item={item}
-            pathname={pathname}
-            disabledReason={disabledReason}
-            isEnabled={
-              item.widgetType ? isWidgetEnabled(item.widgetType) : undefined
-            }
-          />
-        ))}
-      </ul>
+      {visibleItems.length === 0 ? (
+        <p className="px-2 py-1 text-xs text-slate-500">
+          No widgets match this filter.
+        </p>
+      ) : (
+        <ul className="flex flex-col">
+          {visibleItems.map(({ item, disabledReason }) => (
+            <MenuLink
+              key={item.path}
+              item={item}
+              pathname={pathname}
+              disabledReason={disabledReason}
+              isEnabled={
+                item.widgetType ? isWidgetEnabled(item.widgetType) : undefined
+              }
+            />
+          ))}
+        </ul>
+      )}
 
       <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col">
         {bottomItems.map((item) => (

@@ -39,8 +39,8 @@ export interface SimWidgetSupportConfig {
 export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
   message: 'This widget is not compatible with the running sim',
   disabledWidgets: {
-    iracing: [],
-    lmu: ['blindspotmonitor'],
+    iracing: ['radar'],
+    lmu: [],
   },
 };
 
@@ -67,6 +67,15 @@ export const widgetDisabledMessage = (
   simulator: ActiveSimulator | null | undefined
 ): string | null =>
   isWidgetDisabledForSim(config, widgetId, simulator) ? config.message : null;
+
+export type WidgetGameFilter = 'all' | ActiveSimulator;
+
+export const isWidgetVisibleInGameFilter = (
+  config: SimWidgetSupportConfig,
+  widgetId: string | undefined,
+  filter: WidgetGameFilter
+): boolean =>
+  filter === 'all' || !isWidgetDisabledForSim(config, widgetId, filter);
 
 /** The label under a greyed-out toggle, e.g. "Not iRacing compatible". */
 export const widgetIncompatibleLabel = (

@@ -1,7 +1,11 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { DashboardProvider } from '@irdashies/context';
 import { mockDashboardBridge } from '@irdashies/storybook';
-import type { DashboardBridge, SessionProfileMap } from '@irdashies/types';
+import type {
+  DashboardBridge,
+  GameProfileAssignments,
+  SessionProfileMap,
+} from '@irdashies/types';
 import { ProfileSettings } from './ProfileSettings';
 
 const profiles = [
@@ -21,12 +25,18 @@ const profiles = [
  */
 const bridgeWithProfiles = (initial: SessionProfileMap): DashboardBridge => {
   let map: SessionProfileMap = { ...initial };
+  let assignments: GameProfileAssignments = {};
   return {
     ...mockDashboardBridge,
     listProfiles: () => Promise.resolve(profiles),
     getSessionProfileMap: () => Promise.resolve(map),
     setSessionProfileMap: (next: SessionProfileMap) => {
       map = next;
+      return Promise.resolve();
+    },
+    getGameProfileAssignments: () => Promise.resolve(assignments),
+    setGameProfileAssignments: (next: GameProfileAssignments) => {
+      assignments = next;
       return Promise.resolve();
     },
   };

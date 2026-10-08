@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CarLeftRight } from '@irdashies/types';
+import { BlindSpotProcessor } from '../../processors/BlindSpotProcessor';
 import type { LmuRawTelemetry } from '../native/lmu';
 import { mapLmuSectorTimes, mapLmuTelemetry } from './mapTelemetry';
 
@@ -271,6 +272,31 @@ describe('mapLmuTelemetry', () => {
     });
 
     expect(t.CarLeftRight.value[0]).toBe(CarLeftRight.CarLeft);
+  });
+
+  it('maps a car 2 m ahead on the left into the snapshot the widget shows', () => {
+    const telemetry = mapLmuTelemetry({
+      ...fixture(),
+      playerVehicleIdx: 0,
+      inRealtime: true,
+      vehTelemetryAvailable: new Uint8Array([1, 1, 0]),
+      vehPosX: new Float64Array([0, 3, 0]),
+      vehPosZ: new Float64Array([0, 2, 0]),
+      vehOriX: new Float64Array([0, 0, 0]),
+      vehOriZ: new Float64Array([1, 1, 1]),
+      vehLapDistPct: new Float64Array([0.5, 0.5004, -1]),
+    });
+    const processor = new BlindSpotProcessor();
+    processor.onFrame(telemetry);
+    const snapshot = processor.snapshot();
+
+    expect(snapshot.carLeftRight).toBe(CarLeftRight.CarLeft);
+    expect(snapshot.isOnTrack).toBe(true);
+    expect(snapshot.carIdxLapDistPct[0]).toBeCloseTo(0.5);
+    expect(snapshot.carIdxLapDistPct[1]).toBeCloseTo(0.5004);
+    expect(snapshot.relativeAvailable?.[1]).toBe(true);
+    expect(snapshot.relativeLateral?.[1]).toBeCloseTo(-3);
+    expect(snapshot.relativeLongitudinal?.[1]).toBeCloseTo(2);
   });
 
   it('turns the blind-spot signal off when native position data is missing', () => {
