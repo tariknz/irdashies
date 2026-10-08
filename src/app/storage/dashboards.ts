@@ -4,7 +4,13 @@ import type {
   DashboardProfile,
 } from '@irdashies/types';
 import { emitDashboardUpdated } from './dashboardEvents';
-import { defaultDashboard, deepMergeConfig } from '@irdashies/types';
+import {
+  defaultDashboard,
+  deepMergeConfig,
+  isActiveSimulator,
+  SIMULATOR_IDS,
+  SIMULATOR_LABELS,
+} from '@irdashies/types';
 import { readData, writeData } from './storage';
 import { writeFile, mkdir, readFile, readdir, unlink } from 'node:fs/promises';
 import { resolve, basename, sep } from 'node:path';
@@ -555,11 +561,44 @@ export const createProfile = (name: string): DashboardProfile => {
 };
 
 /**
- * Delete a profile and its associated dashboard
+ * iRacing and Le Mans Ultimate profiles, created once from the layout in use
+ * so each game can diverge without blanking an existing dashboard.
  */
+export const ensureGameProfiles = (): void => {
+  const sourceId = getCurrentProfileId();
+  const source = getDashboard(sourceId) ?? defaultDashboard;
+  const profiles =
+    readData<Record<string, DashboardProfile>>(PROFILES_KEY) ?? {};
+  let changed = false;
+
+  for (const id of SIMULATOR_IDS) {
+    if (profiles[id]) continue;
+    const now = new Date().toISOString();
+    profiles[id] = {
+      id,
+      name: SIMULATOR_LABELS[id],
+      createdAt: now,
+      lastModified: now,
+    };
+    changed = true;
+    const cloned = structuredClone(source);
+    cloned.generalSettings = {
+      ...cloned.generalSettings,
+      simulator: id,
+    };
+    saveDashboard(id, cloned);
+  }
+
+  if (changed) writeData(PROFILES_KEY, profiles);
+};
+
+/** Delete a profile and its associated dashboard. */
 export const deleteProfile = (profileId: string): void => {
   if (profileId === 'default') {
     throw new Error('Cannot delete the Default');
+  }
+  if (isActiveSimulator(profileId)) {
+    throw new Error('Cannot delete a game profile');
   }
 
   // Remove the profile

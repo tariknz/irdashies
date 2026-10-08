@@ -3,6 +3,7 @@ import { useAvailableSimulators, useDashboard } from '@irdashies/context';
 import { SIMULATOR_IDS, SIMULATOR_LABELS } from '@irdashies/types';
 import type { GeneralSettingsType } from '@irdashies/types';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { useSimulatorPreference } from '../useSimulatorPreference';
 
 const FONT_PRESETS = {
   lato: 'Lato',
@@ -84,6 +85,8 @@ interface GeneralSettingsProps {
 export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
   const { bridge, currentDashboard, onDashboardUpdated } = useDashboard();
   const availableSimulators = useAvailableSimulators();
+  const [simulatorPreference, setSimulatorPreference] =
+    useSimulatorPreference();
   const [settings, setSettings] = useState<GeneralSettingsType>({
     fontType: currentDashboard?.generalSettings?.fontType ?? 'lato',
     fontSize: currentDashboard?.generalSettings?.fontSize ?? 'sm',
@@ -119,7 +122,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
   const updateDashboard = (newSettings: GeneralSettingsType) => {
     const updatedDashboard = {
       ...currentDashboard,
-      generalSettings: newSettings,
+      generalSettings: {
+        ...newSettings,
+        simulator: currentDashboard.generalSettings?.simulator,
+      },
     };
     onDashboardUpdated(updatedDashboard);
   };
@@ -263,17 +269,6 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
     const newSettings = { ...settings, closeToTray: enabled };
     setSettings(newSettings);
     updateDashboard(newSettings);
-  };
-
-  const handleSimulatorChange = (
-    selectedSimulator: NonNullable<GeneralSettingsType['simulator']>
-  ) => {
-    const newSettings = { ...settings, simulator: selectedSimulator };
-    setSettings(newSettings);
-    updateDashboard(newSettings);
-    // Rebuild the bridge in place rather than asking for a restart, so the
-    // change is not a setting that appears to do nothing until relaunch.
-    bridge.notifySimulatorPreferenceChanged?.();
   };
 
   const handleCompactModeChange = (
@@ -803,9 +798,9 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
                   </p>
                 </div>
                 <select
-                  value={settings.simulator ?? 'auto'}
+                  value={simulatorPreference}
                   onChange={(e) =>
-                    handleSimulatorChange(
+                    setSimulatorPreference(
                       e.target.value as NonNullable<
                         GeneralSettingsType['simulator']
                       >
