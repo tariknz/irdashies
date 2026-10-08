@@ -5,7 +5,25 @@ import { VitePlugin } from '@electron-forge/plugin-vite';
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import fs from 'node:fs';
 import path from 'node:path';
+
+/**
+ * The LMU tape recorder, in the builds that have one.
+ *
+ * It is a standalone executable rather than an addon, so no JS requires it and
+ * AutoUnpackNativesPlugin never sees it -- which left it out of every packaged
+ * build, and recording a tape means running it on the machine running the sim,
+ * where there is no npm and no checkout to run it from.
+ *
+ * Gated on the file existing because its gyp target is Windows-only and
+ * because packaging has to keep working before `npm run irsdk:build` has
+ * produced it. Absent, a packaged build is exactly what it was before.
+ */
+const lmuRecorderPath = path.resolve(import.meta.dirname, 'build/Release/lmu_replay.exe');
+const optionalResources = fs.existsSync(lmuRecorderPath)
+  ? [lmuRecorderPath]
+  : [];
 
 const config: ForgeConfig = {
   hooks: {
@@ -23,7 +41,10 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     icon: path.resolve(import.meta.dirname, 'docs/assets/icons/logo'),
-    extraResource: [path.resolve(import.meta.dirname, 'docs/assets/icons')],
+    extraResource: [
+      path.resolve(import.meta.dirname, 'docs/assets/icons'),
+      ...optionalResources,
+    ],
   },
   rebuildConfig: {
     force: true,
