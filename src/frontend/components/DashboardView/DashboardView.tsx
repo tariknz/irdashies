@@ -210,6 +210,7 @@ const SoloWidgetView = ({ widgetId, widgets }: SoloWidgetViewProps) => {
   const WidgetComponent = widget
     ? getWidget(widget.type || widget.id)
     : undefined;
+  const hiddenWidgetIds = useHiddenWidgetIds();
 
   if (!widget || !WidgetComponent) {
     return (
@@ -232,9 +233,12 @@ const SoloWidgetView = ({ widgetId, widgets }: SoloWidgetViewProps) => {
     >
       <SessionTimingUpdater soloWidgetType={widget.type || widget.id} />
       <div className="w-full h-full overflow-hidden text-white">
-        <WidgetRuntimeProvider widgetType={widget.type || widget.id}>
-          <WidgetComponent {...widget.config} />
-        </WidgetRuntimeProvider>
+        {/* Hidden by its hotkey; the page stays up so the source keeps its slot. */}
+        {!hiddenWidgetIds.has(widget.id) && (
+          <WidgetRuntimeProvider widgetType={widget.type || widget.id}>
+            <WidgetComponent {...widget.config} />
+          </WidgetRuntimeProvider>
+        )}
       </div>
     </div>
   );
