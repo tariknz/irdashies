@@ -1,7 +1,12 @@
+import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { IncidentType } from '@irdashies/types';
 import type { Incident } from '@irdashies/types';
-import { currentHydrationEpoch, useRaceControlStore } from './RaceControlStore';
+import {
+  currentHydrationEpoch,
+  useFilteredIncidents,
+  useRaceControlStore,
+} from './RaceControlStore';
 
 const MAX_INCIDENTS = 2_000;
 
@@ -24,6 +29,7 @@ const reset = () =>
   useRaceControlStore.setState({
     incidents: [],
     driverFilter: null,
+    sessionFilter: 'all',
     hydrationEpoch: 0,
   });
 
@@ -116,15 +122,17 @@ describe('RaceControlStore', () => {
   });
 
   describe('resetForSession', () => {
-    it('clears incidents and the session-scoped driver filter', () => {
+    it('clears incidents and the session-scoped driver and session filters', () => {
       useRaceControlStore.getState().addIncident(incident('old', 100));
       useRaceControlStore.getState().setDriverFilter(7);
+      useRaceControlStore.getState().setSessionFilter(2);
 
       useRaceControlStore.getState().resetForSession();
 
       expect(useRaceControlStore.getState()).toMatchObject({
         incidents: [],
         driverFilter: null,
+        sessionFilter: 'all',
         hydrationEpoch: 1,
       });
     });
@@ -139,6 +147,57 @@ describe('RaceControlStore', () => {
       expect(useRaceControlStore.getState().incidents).toHaveLength(
         MAX_INCIDENTS
       );
+    });
+  });
+
+  describe('useFilteredIncidents session filter', () => {
+    const seed = () =>
+      useRaceControlStore.getState().hydrateIncidents([
+        { ...incident('race', 300), sessionNum: 2 },
+        { ...incident('qualify', 200), sessionNum: 1 },
+        { ...incident('practice', 100), sessionNum: 0 },
+      ]);
+    const ids = (currentSessionNum: number | null) =>
+      renderHook(() =>
+        useFilteredIncidents(currentSessionNum)
+      ).result.current.map((i) => i.id);
+
+    it('shows every session by default', () => {
+      seed();
+      expect(ids(2)).toEqual(['race', 'qualify', 'practice']);
+    });
+
+    it('follows the live session for "current"', () => {
+      seed();
+      useRaceControlStore.getState().setSessionFilter('current');
+      expect(ids(1)).toEqual(['qualify']);
+      expect(ids(2)).toEqual(['race']);
+    });
+
+    it('shows every session for "current" until the live session is known', () => {
+      seed();
+      useRaceControlStore.getState().setSessionFilter('current');
+      expect(ids(null)).toEqual(['race', 'qualify', 'practice']);
+    });
+
+    it('shows one session when a session number is selected', () => {
+      seed();
+      useRaceControlStore.getState().setSessionFilter(0);
+      expect(ids(2)).toEqual(['practice']);
+    });
+
+    it('combines with the driver filter', () => {
+      seed();
+      useRaceControlStore
+        .getState()
+        .addIncident({
+          ...incident('other-car', 400),
+          sessionNum: 2,
+          carIdx: 9,
+        });
+      useRaceControlStore.getState().setSessionFilter(2);
+      useRaceControlStore.getState().setDriverFilter(9);
+      expect(ids(2)).toEqual(['other-car']);
     });
   });
 });
