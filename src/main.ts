@@ -85,6 +85,7 @@ import { connectSessionLifecycleChannel } from './app/bridge/sessionLifecycleCha
 import { setupRendererDataSubscriptions } from './app/bridge/rendererDataSubscriptions';
 import { PerfHeapProfiler } from './app/perfHeapProfiler';
 import { createBeforeQuitHandler } from './app/shutdownCoordinator';
+import { monitorDevParent } from './app/devParentMonitor';
 
 const safeErrorDetails = (error: unknown) => {
   const code =
@@ -543,3 +544,11 @@ const handleBeforeQuit = createBeforeQuitHandler({
 });
 
 app.on('before-quit', handleBeforeQuit);
+
+// Terminal shutdown must use the same cleanup and storage flush as tray quit.
+process.on('SIGINT', () => app.quit());
+process.on('SIGTERM', () => app.quit());
+
+if (!app.isPackaged) {
+  monitorDevParent(process.ppid, () => app.quit());
+}
