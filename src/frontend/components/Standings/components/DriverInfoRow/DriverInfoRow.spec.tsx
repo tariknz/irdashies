@@ -15,6 +15,7 @@ describe('DriverInfoRow', () => {
       const config = deepMergeConfig(
         { ...defaults },
         {
+          driverName: { subtext: 'none' },
           [key]: null,
         }
       ) as unknown as typeof defaults;
