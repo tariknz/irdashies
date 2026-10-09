@@ -19,6 +19,24 @@ logger.transports.file.level =
     : 'info';
 logger.transports.console.level = 'debug';
 
+const isBrokenPipe = (error: unknown): boolean =>
+  typeof error === 'object' &&
+  error !== null &&
+  'code' in error &&
+  error.code === 'EPIPE';
+
+// Pipe write failures can arrive asynchronously as stream errors, outside
+// writeFn's try/catch. Listen on both outputs before any logging starts.
+const handleOutputError = (error: Error) => {
+  if (isBrokenPipe(error)) {
+    logger.transports.console.level = false;
+    return;
+  }
+  throw error;
+};
+process.stdout.on('error', handleOutputError);
+process.stderr.on('error', handleOutputError);
+
 // A dev launcher can close its output pipe while Electron is still running.
 // Keep file logging available instead of crashing on the next console write.
 const writeToConsole = logger.transports.console.writeFn;
@@ -26,12 +44,7 @@ logger.transports.console.writeFn = (options) => {
   try {
     writeToConsole(options);
   } catch (error) {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      error.code === 'EPIPE'
-    ) {
+    if (isBrokenPipe(error)) {
       logger.transports.console.level = false;
       return;
     }

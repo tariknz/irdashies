@@ -8,6 +8,15 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import path from 'node:path';
 
 const config: ForgeConfig = {
+  hooks: {
+    postStart: async (_config, appProcess) => {
+      // Vite's SIGINT handler exits Forge before its signal forwarding runs.
+      // Also stop Electron on launcher exit, including after a dev restart.
+      const stopApp = () => appProcess.kill('SIGTERM');
+      process.once('exit', stopApp);
+      appProcess.once('exit', () => process.removeListener('exit', stopApp));
+    },
+  },
   packagerConfig: {
     asar: true,
     icon: path.resolve(import.meta.dirname, 'docs/assets/icons/logo'),
