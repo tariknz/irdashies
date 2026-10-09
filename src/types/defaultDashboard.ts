@@ -71,9 +71,11 @@ export const defaultDashboard: {
           enabled: true,
           showStatusBadges: true,
           removeNumbersFromName: false,
+          subtext: 'teamName',
         },
         teamName: {
           enabled: false,
+          subtext: 'none',
         },
         pitStatus: {
           enabled: true,
