@@ -291,6 +291,20 @@ export const useDashboard = (): DashboardContextProps => {
   return context;
 };
 
+/**
+ * The dashboard bridge, without requiring a provider.
+ *
+ * The browser view hands its WebSocket bridge to DashboardProvider and never
+ * assigns window.dashboardBridge, so a hook reading only the global sees
+ * nothing there and reports every answer as unavailable. Hooks that also run
+ * outside a provider fall back to the global, which is what the Electron
+ * renderers have.
+ */
+export const useDashboardBridge = (): DashboardBridge | undefined => {
+  const context = useContext(DashboardContext);
+  return context?.bridge ?? window.dashboardBridge;
+};
+
 export const useGeneralSettings = (): GeneralSettingsType | undefined => {
   const { currentDashboard } = useDashboard();
   return currentDashboard?.generalSettings;

@@ -1,5 +1,5 @@
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
-import type { ChannelName, DashboardWidget } from '@irdashies/types';
+import type { ChannelName } from '@irdashies/types';
 
 export type WidgetRatePreset =
   'driverFocused' | 'gapTiming' | 'informational' | 'static';
@@ -44,18 +44,26 @@ export const getWidgetRuntimeDefinition = (
   widgetType: string
 ): WidgetRuntimeDefinition => definitions.get(widgetType) ?? DEFAULT_DEFINITION;
 
-export const widgetUsesTelemetryInspector = (
-  widget: DashboardWidget
-): boolean =>
+/**
+ * Only `id` and `type` are read when resolving what a widget needs, so these
+ * helpers take any widget-like shape. That lets a single-widget browser source
+ * ask about one id without fabricating a whole DashboardWidget around it.
+ */
+export interface WidgetRef {
+  id: string;
+  type?: string;
+}
+
+export const widgetUsesTelemetryInspector = (widget: WidgetRef): boolean =>
   getWidgetRuntimeDefinition(widget.type || widget.id).telemetryInspector ===
   true;
 
 export const rendererNeedsTelemetryInspector = (
-  widgets: readonly DashboardWidget[]
+  widgets: readonly WidgetRef[]
 ): boolean => widgets.some(widgetUsesTelemetryInspector);
 
 export const rendererNeedsChannel = (
-  widgets: readonly DashboardWidget[],
+  widgets: readonly WidgetRef[],
   channel: ChannelName
 ): boolean =>
   widgets.some((widget) =>
@@ -65,7 +73,7 @@ export const rendererNeedsChannel = (
   );
 
 export const rendererNeedsSessionData = (
-  widgets: readonly DashboardWidget[]
+  widgets: readonly WidgetRef[]
 ): boolean =>
   widgets.some(
     (widget) =>
@@ -73,7 +81,7 @@ export const rendererNeedsSessionData = (
   );
 
 export const rendererNeedsPitLaneData = (
-  widgets: readonly DashboardWidget[]
+  widgets: readonly WidgetRef[]
 ): boolean =>
   widgets.some(
     (widget) =>

@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { PushPin } from '@phosphor-icons/react';
 import { Tooltip } from '../Tooltip/Tooltip';
 type GantryView = 'standings-incidents' | 'lap-graph';
 
@@ -8,6 +9,8 @@ interface GantryTabBarProps {
   drivers: { carIdx: number; name: string; carNumber: string }[];
   followedCarIdx: number | null;
   onFollowChange: (carIdx: number | null) => void;
+  alwaysOnTop: boolean;
+  onAlwaysOnTopChange: (alwaysOnTop: boolean) => void;
 }
 
 const VIEW_TOOLTIPS: Record<GantryView, string> = {
@@ -17,6 +20,14 @@ const VIEW_TOOLTIPS: Record<GantryView, string> = {
     "Plots every driver's gap to the class leader lap by lap, so you can see where positions were won and lost.",
 };
 
+const FOCUS_NOTE =
+  'Clicking the Gantry takes keyboard focus away from iRacing, the same as when it is not pinned.';
+
+const PIN_TOOLTIPS = {
+  on: `Kept on top of iRacing and other apps. Click to unpin. ${FOCUS_NOTE}`,
+  off: `Keep the Gantry on top of iRacing and other apps. iRacing must run in borderless or windowed mode. ${FOCUS_NOTE}`,
+};
+
 export const GantryTabBar = memo(
   ({
     activeView,
@@ -24,6 +35,8 @@ export const GantryTabBar = memo(
     drivers,
     followedCarIdx,
     onFollowChange,
+    alwaysOnTop,
+    onAlwaysOnTopChange,
   }: GantryTabBarProps) => {
     return (
       <div className="flex items-center gap-1 bg-slate-900 border-b border-slate-700/50 px-2 py-1 flex-shrink-0">
@@ -71,6 +84,25 @@ export const GantryTabBar = memo(
             </select>
           </Tooltip>
         </div>
+        <Tooltip
+          content={alwaysOnTop ? PIN_TOOLTIPS.on : PIN_TOOLTIPS.off}
+          placement="bottom"
+        >
+          <button
+            type="button"
+            aria-label="Keep on top"
+            aria-pressed={alwaysOnTop}
+            onClick={() => onAlwaysOnTopChange(!alwaysOnTop)}
+            className={[
+              'ml-1 p-1 rounded transition-colors',
+              alwaysOnTop
+                ? 'text-amber-400 hover:text-amber-300'
+                : 'text-slate-400 hover:text-slate-200',
+            ].join(' ')}
+          >
+            <PushPin size={16} weight={alwaysOnTop ? 'fill' : 'regular'} />
+          </button>
+        </Tooltip>
       </div>
     );
   }

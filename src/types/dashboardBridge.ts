@@ -1,3 +1,5 @@
+import type { ActiveSimulator } from './simulators';
+import type { SimWidgetSupportConfig } from './simWidgetSupport';
 import type {
   DashboardLayout,
   DashboardProfile,
@@ -52,6 +54,19 @@ export interface DashboardBridge {
   onDemoModeChanged: (
     callback: (value: boolean) => void
   ) => (() => void) | undefined;
+  /** Rebuilds the telemetry bridge after generalSettings.simulator changes. */
+  notifySimulatorPreferenceChanged?: () => void;
+  /** The running simulator, or null while auto-detection is still probing. */
+  getActiveSimulator?: () => Promise<ActiveSimulator | null>;
+  /** The simulators whose telemetry source is present in this build. */
+  getAvailableSimulators?: () => Promise<ActiveSimulator[]>;
+  onSimulatorChanged?: (
+    callback: (value: ActiveSimulator | null) => void
+  ) => (() => void) | undefined;
+  /** The per-simulator disabled-widget list, read from simWidgetSupport.json. */
+  getSimWidgetSupport?: () => Promise<SimWidgetSupportConfig>;
+  getSettingsShowAllWidgets?: () => Promise<boolean>;
+  setSettingsShowAllWidgets?: (showAll: boolean) => Promise<void>;
   getCurrentDashboard: () => DashboardLayout | null;
   saveGarageCoverImage: (buffer: Uint8Array) => Promise<string>;
   getGarageCoverImageAsDataUrl: (imagePath: string) => Promise<string | null>;

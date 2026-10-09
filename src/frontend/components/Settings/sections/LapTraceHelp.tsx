@@ -71,8 +71,8 @@ export const LapTraceHelp = () => (
           <img
             src={garage61ExportMenu}
             alt="The Garage 61 toolbar, with the menu beside the Analyze button open on Copy lap ID, Export to CSV and View event"
-            width={210}
-            height={134}
+            width={105}
+            height={67}
             className="mt-2 max-w-full rounded border border-slate-700/60"
           />
         </Step>
@@ -233,6 +233,24 @@ export const LapTraceHelp = () => (
         <Note>
           Brake cues are suppressed during replay playback, in the pits, and
           whenever you are not on track.
+        </Note>
+      </Topic>
+
+      <Topic title="Not every touch of the brake is a braking zone">
+        <Note>
+          A brake marker is drawn wherever the reference lap touched the pedal
+          at all. A countdown and a brake-distance delta need more than that:
+          the application has to reach the Minimum brake pressure setting and to
+          have actually slowed the car. That keeps a brush taken to settle the
+          car mid-corner from beeping at you and from stealing the corner&apos;s
+          brake-point comparison.
+        </Note>
+        <Note>
+          So a marker with no beep behind it means that application was judged
+          too light. If it was a real brake point, lower Minimum brake pressure;
+          if light touches are being counted, raise it. Cars differ — brake bias
+          and pedal travel are not the same from one to the next, and some log
+          pedal force rather than travel.
         </Note>
       </Topic>
     </SettingsSection>

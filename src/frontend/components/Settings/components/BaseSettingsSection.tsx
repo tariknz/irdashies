@@ -1,7 +1,15 @@
 import { ReactNode, useState } from 'react';
 import { ToggleSwitch } from './ToggleSwitch';
 import { BaseWidgetSettings } from '@irdashies/types';
-import { useDashboard } from '@irdashies/context';
+import {
+  useActiveSimulator,
+  useDashboard,
+  useSimWidgetSupport,
+} from '@irdashies/context';
+import {
+  widgetDisabledMessage,
+  widgetIncompatibleLabel,
+} from '@irdashies/types';
 
 interface BaseSettingsSectionProps<T> {
   title: string;
@@ -27,6 +35,19 @@ export const BaseSettingsSection = <T,>({
   disableInternalScroll = false,
 }: BaseSettingsSectionProps<T>) => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const simulator = useActiveSimulator();
+  const supportConfig = useSimWidgetSupport();
+  // The running sim cannot show this widget. The toggle is greyed and the saved
+  // setting is left untouched, so it returns as the user left it under a sim
+  // that supports it.
+  const simDisabledReason = widgetDisabledMessage(
+    supportConfig,
+    widgetId,
+    simulator
+  );
+  const simIncompatibleLabel = simDisabledReason
+    ? widgetIncompatibleLabel(simulator)
+    : null;
   const [localSettings, setLocalSettings] = useState<BaseWidgetSettings<T>>(
     settings ?? { enabled: false, config: {} as T }
   );
@@ -160,12 +181,24 @@ export const BaseSettingsSection = <T,>({
         <div>
           <div className="flex justify-between items-center mb-1">
             <h2 className="text-xl">{title}</h2>
-            <ToggleSwitch
-              enabled={localSettings.enabled}
-              onToggle={(enabled) =>
-                handleSettingsChange({ ...localSettings, enabled })
-              }
-            />
+            <div className="flex flex-col items-end gap-0.5">
+              <ToggleSwitch
+                enabled={localSettings.enabled}
+                disabled={!!simDisabledReason}
+                disabledReason={simDisabledReason ?? undefined}
+                onToggle={(enabled) =>
+                  handleSettingsChange({ ...localSettings, enabled })
+                }
+              />
+              {simIncompatibleLabel && (
+                <span
+                  className="text-xs text-slate-500"
+                  title={simDisabledReason ?? undefined}
+                >
+                  {simIncompatibleLabel}
+                </span>
+              )}
+            </div>
           </div>
           <p className="text-slate-400 text-sm">{description}</p>
         </div>

@@ -1,10 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   channelRegistry,
+  DEFAULT_SIM_WIDGET_SUPPORT,
+  type ActiveSimulator,
   type ChannelBridge,
   type ChannelName,
   type ChannelPayloads,
   type IrSdkBridge,
+  type SimWidgetSupportConfig,
   type TelemetryInspectorBridge,
   type Session,
   type Telemetry,
@@ -51,8 +54,16 @@ export class WebSocketBridge
     (value: any, profileId?: string) => void
   >;
   private demoModeCallbacks: Set<(value: boolean) => void>;
+  private simulatorCallbacks: Set<(value: ActiveSimulator | null) => void>;
   private lastDashboard: any = null;
   private currentIsDemoMode = false;
+  /**
+   * The running simulator, as last reported by the server. Held so a hook that
+   * subscribes after initialState landed is answered immediately rather than
+   * waiting for the next change -- the sim rarely changes mid-session, so
+   * waiting would leave the widget filtering off for the whole run.
+   */
+  private currentSimulator: ActiveSimulator | null = null;
 
   constructor() {
     this.telemetryCallbacks = new Set();
@@ -60,6 +71,7 @@ export class WebSocketBridge
     this.runningCallbacks = new Set();
     this.dashboardUpdateCallbacks = new Set();
     this.demoModeCallbacks = new Set();
+    this.simulatorCallbacks = new Set();
     this.socket = null;
     this.isConnecting = false;
     this.isConnected = false;
@@ -129,6 +141,9 @@ export class WebSocketBridge
               }
             });
           }
+          if (state.simulator !== undefined) {
+            this.publishSimulator(state.simulator);
+          }
           break;
         }
         case 'telemetry':
@@ -193,6 +208,9 @@ export class WebSocketBridge
               logger.error('Error in demo mode callback:', e);
             }
           });
+          break;
+        case 'simulatorChanged':
+          this.publishSimulator(data ?? null);
           break;
         case 'dashboard':
           this.lastDashboard = data;
@@ -435,6 +453,88 @@ export class WebSocketBridge
     this.channelCallbacks.clear();
     this.dashboardUpdateCallbacks.clear();
     this.demoModeCallbacks.clear();
+    this.simulatorCallbacks.clear();
+  }
+
+  private publishSimulator(simulator: ActiveSimulator | null): void {
+    this.currentSimulator = simulator;
+    this.simulatorCallbacks.forEach((cb) => {
+      try {
+        cb(simulator);
+      } catch (e) {
+        logger.error('Error in simulator changed callback:', e);
+      }
+    });
+  }
+
+  /**
+   * One request/response round trip over the socket.
+   *
+   * Resolves with `fallback` when the socket is down or the server does not
+   * answer, because every caller here is filling in an optional part of the UI
+   * and a hung promise would leave it blank for good.
+   */
+  private request<T>(type: string, fallback: T, data?: unknown): Promise<T> {
+    return new Promise<T>((resolve) => {
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        resolve(fallback);
+        return;
+      }
+      const requestId = Math.random().toString(36).substring(7);
+      const handler = (event: MessageEvent) => {
+        try {
+          const message = JSON.parse(event.data);
+          if (message.type === type && message.requestId === requestId) {
+            this.socket?.removeEventListener('message', handler);
+            clearTimeout(timeout);
+            resolve((message.data ?? fallback) as T);
+          }
+        } catch (e) {
+          logger.error(`Error in ${type} callback:`, e);
+        }
+      };
+      const timeout = setTimeout(() => {
+        this.socket?.removeEventListener('message', handler);
+        resolve(fallback);
+      }, 5000);
+      this.socket.addEventListener('message', handler);
+      this.socket.send(JSON.stringify({ type, requestId, data }));
+    });
+  }
+
+  async getActiveSimulator(): Promise<ActiveSimulator | null> {
+    return this.request<ActiveSimulator | null>(
+      'getActiveSimulator',
+      this.currentSimulator
+    );
+  }
+
+  async getAvailableSimulators(): Promise<ActiveSimulator[]> {
+    return this.request<ActiveSimulator[]>('getAvailableSimulators', []);
+  }
+
+  onSimulatorChanged(
+    callback: (value: ActiveSimulator | null) => void
+  ): (() => void) | undefined {
+    this.simulatorCallbacks.add(callback);
+    // Replayed only once something has actually been reported: a null replay
+    // would mark the hook's seeding request as superseded by an answer that
+    // says nothing.
+    if (this.currentSimulator !== null) {
+      try {
+        callback(this.currentSimulator);
+      } catch (e) {
+        logger.error('Error in simulator changed callback:', e);
+      }
+    }
+    return () => this.simulatorCallbacks.delete(callback);
+  }
+
+  async getSimWidgetSupport(): Promise<SimWidgetSupportConfig> {
+    return this.request<SimWidgetSupportConfig>(
+      'getSimWidgetSupport',
+      DEFAULT_SIM_WIDGET_SUPPORT
+    );
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

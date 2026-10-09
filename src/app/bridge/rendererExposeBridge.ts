@@ -5,6 +5,7 @@ import type {
   IrSdkBridge,
   DashboardBridge,
   DashboardLayout,
+  ActiveSimulator,
   DashboardProfile,
   SessionProfileMap,
   SaveDashboardOptions,
@@ -174,6 +175,34 @@ export function exposeBridge() {
       ipcRenderer.on('demoModeChanged', handler);
       return () => ipcRenderer.removeListener('demoModeChanged', handler);
     },
+    notifySimulatorPreferenceChanged: () => {
+      ipcRenderer.send('simulatorPreferenceChanged');
+    },
+    getActiveSimulator: () => {
+      return ipcRenderer.invoke('getActiveSimulator');
+    },
+    getAvailableSimulators: () => {
+      return ipcRenderer.invoke('getAvailableSimulators');
+    },
+    onSimulatorChanged: (callback: (value: ActiveSimulator | null) => void) => {
+      const handler = (
+        _: Electron.IpcRendererEvent,
+        value: ActiveSimulator | null
+      ) => {
+        callback(value);
+      };
+      ipcRenderer.on('simulatorChanged', handler);
+      return () => ipcRenderer.removeListener('simulatorChanged', handler);
+    },
+    getSimWidgetSupport: () => {
+      return ipcRenderer.invoke('getSimWidgetSupport');
+    },
+    getSettingsShowAllWidgets: () => {
+      return ipcRenderer.invoke('getSettingsShowAllWidgets');
+    },
+    setSettingsShowAllWidgets: (showAll: boolean) => {
+      return ipcRenderer.invoke('setSettingsShowAllWidgets', showAll);
+    },
     saveGarageCoverImage: (buffer: Uint8Array) => {
       return ipcRenderer.invoke('saveGarageCoverImage', Array.from(buffer));
     },
@@ -245,6 +274,7 @@ export function exposeBridge() {
       ipcRenderer.removeAllListeners('editModeToggled');
       ipcRenderer.removeAllListeners('dashboardUpdated');
       ipcRenderer.removeAllListeners('demoModeChanged');
+      ipcRenderer.removeAllListeners('simulatorChanged');
       ipcRenderer.removeAllListeners('containerBoundsInfo');
     },
     setAutoStart: (enabled: boolean) => {

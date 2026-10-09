@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   CameraGroup,
@@ -37,6 +37,9 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('@irdashies/context', async () => {
   const { useSyncExternalStore } = await import('react');
+  // Imported inside the factory: vi.mock is hoisted above the file's own
+  // imports, so a top-level binding would not exist yet.
+  const { DEFAULT_SIM_WIDGET_SUPPORT } = await import('@irdashies/types');
   return {
     useDashboard: () => ({
       currentDashboard: useSyncExternalStore((onChange) => {
@@ -47,6 +50,10 @@ vi.mock('@irdashies/context', async () => {
     }),
     useTrackStateSelector: () => 1,
     useSessionCameraGroups: () => mocks.cameraGroups,
+    // No simulator detected, so BaseSettingsSection greys nothing and the
+    // toggle behaves exactly as it did before per-sim support existed.
+    useActiveSimulator: () => null,
+    useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
   };
 });
 
@@ -259,6 +266,45 @@ describe('GantrySettings lap graph', () => {
 
     expect(lapWindowInput().min).toBe('5');
     expect(lapWindowInput().max).toBe('300');
+  });
+});
+
+const keepOnTopSwitch = () => {
+  const title = screen.getByText('Keep on top of other windows');
+  return within(title.parentElement?.parentElement as HTMLElement).getByRole(
+    'switch'
+  );
+};
+
+describe('GantrySettings keep on top', () => {
+  beforeEach(() => {
+    mocks.onDashboardUpdated.mockClear();
+  });
+
+  it('is off when the saved config has no window block', () => {
+    mocks.setDashboard(dashboardWith('all'));
+    render(<GantrySettings />);
+
+    expect(keepOnTopSwitch()).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('shows the saved value', () => {
+    mocks.setDashboard(
+      dashboardFor(gantryConfig({ window: { alwaysOnTop: true } }))
+    );
+    render(<GantrySettings />);
+
+    expect(keepOnTopSwitch()).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('writes the setting without touching the rest of the config', () => {
+    mocks.setDashboard(dashboardWith(10));
+    render(<GantrySettings />);
+
+    fireEvent.click(keepOnTopSwitch());
+
+    expect(savedGantryConfig().window).toEqual({ alwaysOnTop: true });
+    expect(savedGantryConfig().sessionRetention).toBe(10);
   });
 });
 

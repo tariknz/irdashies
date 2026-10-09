@@ -50,6 +50,7 @@ class FakeBrowserWindow {
   setAlwaysOnTop = vi.fn();
   setIgnoreMouseEvents = vi.fn();
   setVisibleOnAllWorkspaces = vi.fn();
+  moveTop = vi.fn();
   once = vi.fn();
   on = vi.fn();
 
@@ -61,6 +62,7 @@ class FakeBrowserWindow {
 vi.mock('electron', () => ({
   app: {
     getVersion: () => '0.0.0',
+    getPath: () => '/tmp/irdashies-test',
     disableHardwareAcceleration: vi.fn(),
     commandLine: { appendSwitch: vi.fn() },
   },
@@ -85,6 +87,13 @@ vi.mock('./perfRendererArguments', () => ({
   createRendererPerfArguments: vi.fn(() => []),
 }));
 vi.mock('./hardenWindow', () => ({ hardenWindow: vi.fn() }));
+const simWidgetSupport = vi.hoisted(() => ({
+  message: 'This widget is not compatible with the running sim',
+  disabledWidgets: { iracing: [] as string[], lmu: [] as string[] },
+}));
+vi.mock('./storage/simWidgetSupport', () => ({
+  getSimWidgetSupport: () => simWidgetSupport,
+}));
 vi.mock('./logger', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
@@ -92,8 +101,11 @@ vi.mock('./logger', () => ({
 const { OverlayManager } = await import('./overlayManager');
 const { hardenWindow } = await import('./hardenWindow');
 
-const dashboard = (enabled: boolean) =>
-  ({ widgets: [{ id: 'gantry', enabled, config: {} }] }) as DashboardLayout;
+const dashboard = (enabled: boolean, config: Record<string, unknown> = {}) =>
+  ({ widgets: [{ id: 'gantry', enabled, config }] }) as DashboardLayout;
+
+const pinned = (alwaysOnTop: unknown) =>
+  dashboard(true, { window: { alwaysOnTop } });
 
 const gantryWindows = () =>
   createdWindows.filter((w) => w.options.title === 'irDashies - Gantry');
@@ -102,6 +114,39 @@ describe('OverlayManager Gantry window', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createdWindows.length = 0;
+    simWidgetSupport.disabledWidgets.iracing = [];
+    simWidgetSupport.disabledWidgets.lmu = [];
+  });
+
+  it('stays shut when the running simulator cannot support the widget', () => {
+    // The Gantry has its own window rather than an ordinary overlay, so it
+    // needs the same visibility rule applied explicitly -- the enabled flag
+    // alone would keep it open under a sim that cannot feed it.
+    simWidgetSupport.disabledWidgets.iracing = ['gantry'];
+    const manager = new OverlayManager();
+    manager.setActiveSimulator('iracing');
+
+    expect(manager.createGantryWindow(dashboard(true))).toBe(false);
+    expect(gantryWindows()).toHaveLength(0);
+  });
+
+  it('closes an open window when the simulator stops supporting the widget', () => {
+    const manager = new OverlayManager();
+    manager.syncGantryWindow(dashboard(true));
+    const [window] = gantryWindows();
+
+    simWidgetSupport.disabledWidgets.iracing = ['gantry'];
+    manager.setActiveSimulator('iracing');
+    manager.syncGantryWindow(dashboard(true));
+
+    expect(window.destroy).toHaveBeenCalledOnce();
+  });
+
+  it('is unaffected while no simulator is known', () => {
+    simWidgetSupport.disabledWidgets.iracing = ['gantry'];
+    const manager = new OverlayManager();
+
+    expect(manager.createGantryWindow(dashboard(true))).toBe(true);
   });
 
   it('opens the window when the widget is switched on', () => {
@@ -300,5 +345,110 @@ describe('OverlayManager Gantry window', () => {
     // The stale reference is gone, so a fresh window can be created.
     manager.createGantryWindow(dashboard(true));
     expect(gantryWindows()).toHaveLength(2);
+  });
+});
+
+describe('OverlayManager Gantry always on top', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    createdWindows.length = 0;
+  });
+
+  const focusHandler = (window: FakeBrowserWindow) =>
+    window.on.mock.calls.find(
+      ([event]) => event === 'focus'
+    )?.[1] as () => void;
+
+  it('pins the window on create when the setting is on', () => {
+    const manager = new OverlayManager();
+    manager.createGantryWindow(pinned(true));
+    const [window] = gantryWindows();
+
+    expect(window.setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver', 0);
+    expect(window.setVisibleOnAllWorkspaces).toHaveBeenCalledWith(true, {
+      visibleOnFullScreen: true,
+    });
+  });
+
+  it('leaves the window unpinned on create when the setting is off', () => {
+    const manager = new OverlayManager();
+    manager.createGantryWindow(pinned(false));
+    const [window] = gantryWindows();
+
+    expect(window.setAlwaysOnTop).toHaveBeenCalledWith(false);
+    expect(window.setAlwaysOnTop).not.toHaveBeenCalledWith(
+      true,
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  it('re-applies the setting on a dashboard update without recreating the window', () => {
+    const manager = new OverlayManager();
+    manager.syncGantryWindow(pinned(false));
+    const [window] = gantryWindows();
+    window.setAlwaysOnTop.mockClear();
+
+    manager.syncGantryWindow(pinned(true));
+    expect(window.setAlwaysOnTop).toHaveBeenLastCalledWith(
+      true,
+      'screen-saver',
+      0
+    );
+
+    manager.syncGantryWindow(pinned(false));
+    expect(window.setAlwaysOnTop).toHaveBeenLastCalledWith(false);
+
+    expect(gantryWindows()).toHaveLength(1);
+  });
+
+  it('does not re-pin on updates that leave the setting unchanged', () => {
+    const manager = new OverlayManager();
+    manager.syncGantryWindow(pinned(true));
+    const [window] = gantryWindows();
+    window.setAlwaysOnTop.mockClear();
+
+    manager.syncGantryWindow(pinned(true));
+
+    expect(window.setAlwaysOnTop).not.toHaveBeenCalled();
+  });
+
+  it.each([['true'], [1], [null], [undefined], [{}]])(
+    'treats a non-boolean value (%j) as off',
+    (value) => {
+      const manager = new OverlayManager();
+      manager.createGantryWindow(pinned(value));
+      const [window] = gantryWindows();
+
+      expect(window.setAlwaysOnTop).toHaveBeenCalledWith(false);
+      expect(window.setAlwaysOnTop).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it('treats a malformed window block as off', () => {
+    const manager = new OverlayManager();
+    manager.createGantryWindow(dashboard(true, { window: 'yes' }));
+    const [window] = gantryWindows();
+
+    expect(window.setAlwaysOnTop).toHaveBeenCalledWith(false);
+  });
+
+  it('keeps the overlays above a pinned Gantry when it is pinned or focused', () => {
+    const manager = new OverlayManager();
+    const overlay = new FakeBrowserWindow({ title: 'overlay' });
+    (
+      manager as unknown as { displayWindows: Map<number, FakeBrowserWindow> }
+    ).displayWindows.set(1, overlay);
+
+    manager.syncGantryWindow(pinned(false));
+    const [window] = gantryWindows();
+    focusHandler(window)();
+    expect(overlay.moveTop).not.toHaveBeenCalled();
+
+    manager.syncGantryWindow(pinned(true));
+    expect(overlay.moveTop).toHaveBeenCalledOnce();
+
+    focusHandler(window)();
+    expect(overlay.moveTop).toHaveBeenCalledTimes(2);
   });
 });
