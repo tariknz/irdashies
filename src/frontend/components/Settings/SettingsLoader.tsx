@@ -34,10 +34,7 @@ import { HeartRateSettings } from './sections/HeartRateSettings';
 import { CornerNameSettings } from './sections/CornerNameSettings';
 import { LapTraceSettings } from './sections/LapTraceSettings';
 import { BattleSettings } from './sections/BattleSettings';
-import { BroadcastSettings } from './sections/BroadcastSettings';
-import { BroadcastTickerSettings } from './sections/BroadcastTickerSettings';
-import { BroadcastWeatherSettings } from './sections/BroadcastWeatherSettings';
-import { BroadcastEventsSettings } from './sections/BroadcastEventsSettings';
+import { BroadcastGroupSettings } from './sections/BroadcastGroupSettings';
 import { GantrySettings } from './sections/GantrySettings';
 
 interface SettingsLoaderProps {
@@ -118,13 +115,10 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
     case 'battle':
       return <BattleSettings />;
     case 'broadcast':
-      return <BroadcastSettings />;
     case 'broadcastticker':
-      return <BroadcastTickerSettings />;
     case 'broadcastevents':
-      return <BroadcastEventsSettings />;
     case 'broadcastweather':
-      return <BroadcastWeatherSettings />;
+      return <BroadcastGroupSettings active={type} />;
     case 'gantry':
       return <GantrySettings />;
     default:

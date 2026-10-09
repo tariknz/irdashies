@@ -15,6 +15,8 @@ export interface MenuItem {
   label: string;
   widgetType?: string;
   icon?: Icon;
+  /** Reached through a tab on another item's page rather than the menu. */
+  hideInMenu?: boolean;
 }
 
 export const generalItems: MenuItem[] = [
@@ -68,18 +70,21 @@ export const widgetItems: MenuItem[] = [
     path: '/broadcastevents',
     label: 'Broadcast Events',
     widgetType: 'broadcastevents',
+    hideInMenu: true,
   },
   {
     to: '/settings/broadcastticker',
     path: '/broadcastticker',
     label: 'Broadcast Ticker',
     widgetType: 'broadcastticker',
+    hideInMenu: true,
   },
   {
     to: '/settings/broadcastweather',
     path: '/broadcastweather',
     label: 'Broadcast Weather',
     widgetType: 'broadcastweather',
+    hideInMenu: true,
   },
   {
     to: '/settings/blindspotmonitor',

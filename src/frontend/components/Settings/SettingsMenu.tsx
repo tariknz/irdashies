@@ -98,14 +98,16 @@ export const SettingsMenu = () => {
     return widget?.enabled ?? false;
   };
 
-  const itemsWithSupport = widgetItems.map((item) => ({
-    item,
-    disabledReason: widgetDisabledMessage(
-      supportConfig,
-      item.widgetType,
-      simulator
-    ),
-  }));
+  const itemsWithSupport = widgetItems
+    .filter((item) => !item.hideInMenu)
+    .map((item) => ({
+      item,
+      disabledReason: widgetDisabledMessage(
+        supportConfig,
+        item.widgetType,
+        simulator
+      ),
+    }));
   const visibleItems = showAllWidgets
     ? itemsWithSupport
     : itemsWithSupport.filter(({ disabledReason }) => !disabledReason);
