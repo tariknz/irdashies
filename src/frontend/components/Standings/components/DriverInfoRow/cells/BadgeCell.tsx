@@ -7,6 +7,7 @@ import {
 interface BadgeCellProps {
   license?: string;
   rating?: number;
+  isAi?: boolean;
   badgeFormat?: DriverRatingBadgeProps['format'];
   isMinimal?: boolean;
   compactMode?: string;
@@ -16,6 +17,7 @@ export const BadgeCell = memo(
   ({
     license,
     rating,
+    isAi,
     badgeFormat,
     isMinimal,
     compactMode,
@@ -34,6 +36,7 @@ export const BadgeCell = memo(
         <DriverRatingBadge
           license={license}
           rating={rating}
+          isAi={isAi}
           format={badgeFormat}
           isMinimal={isMinimal}
         />

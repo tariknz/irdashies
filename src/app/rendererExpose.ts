@@ -4,6 +4,7 @@ import type {
   LogLevel,
   PitLaneBridge,
   PitLaneTrackData,
+  TrackNotesBridge,
 } from '@irdashies/types';
 
 export function exposeInMainWorld() {
@@ -57,4 +58,10 @@ export function exposeInMainWorld() {
   };
 
   contextBridge.exposeInMainWorld('pitLaneBridge', pitLaneBridge);
+
+  const trackNotesBridge: TrackNotesBridge = {
+    getNotes: () => ipcRenderer.invoke('trackNotes:get'),
+    saveNotes: (notes) => ipcRenderer.invoke('trackNotes:save', notes),
+  };
+  contextBridge.exposeInMainWorld('trackNotesBridge', trackNotesBridge);
 }

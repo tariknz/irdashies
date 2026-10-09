@@ -34,6 +34,7 @@ export interface DriverIdentity {
 
 export interface TrackProps {
   trackId: number;
+  trackDrawing?: TrackDrawing;
   drivers: TrackDriver[];
   driverIdentities?: DriverIdentity[];
   turnLabels?: {
@@ -101,6 +102,7 @@ const TRACK_DRAWING_HEIGHT = 1080;
 
 export const TrackCanvas = ({
   trackId,
+  trackDrawing: trackDrawingOverride,
   drivers,
   driverIdentities,
   turnLabels = {
@@ -137,8 +139,13 @@ export const TrackCanvas = ({
   const playerIconElRef = useRef<HTMLImageElement>(null);
   const playerPitBadgeRef = useRef<HTMLDivElement>(null);
 
-  const trackDrawing = (tracks as unknown as TrackDrawing[])[trackId];
-  const shouldShow = shouldShowTrack(trackId, trackDrawing);
+  const trackDrawing =
+    trackDrawingOverride ?? (tracks as unknown as TrackDrawing[])[trackId];
+  const shouldShow =
+    trackDrawingOverride !== undefined
+      ? !!trackDrawingOverride.active?.inside &&
+        !!trackDrawingOverride.startFinish?.line
+      : shouldShowTrack(trackId, trackDrawing);
 
   const driversOffTrack = useCarIdxOffTrack();
   const carIdxIsOnPitRoad =
@@ -365,7 +372,7 @@ export const TrackCanvas = ({
     }
 
     drawStartFinishLine(cacheCtx, startFinishLine);
-    drawTurnNames(cacheCtx, trackDrawing.turns, turnLabels);
+    drawTurnNames(cacheCtx, trackDrawing?.turns, turnLabels);
 
     cacheCtx.restore();
 

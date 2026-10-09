@@ -32,11 +32,15 @@ export const usePitSpeed = (): PitSpeedResult => {
     const limitString = session?.WeekendInfo?.TrackPitSpeedLimit ?? '0 kph';
     const limitValue = parseFloat(limitString.split(' ')[0]);
     const limitUnit = limitString.split(' ')[1]?.toLowerCase();
+    const hasLimit = Number.isFinite(limitValue) && limitValue > 0;
 
     // Determine limit in both units. iRacing writes the limit in whichever unit
     // the track uses, so normalise via km/h rather than trusting one of them.
-    const limitKph =
-      limitUnit === 'mph' ? kphFromSpeed(limitValue, 'mph') : limitValue;
+    const limitKph = hasLimit
+      ? limitUnit === 'mph'
+        ? kphFromSpeed(limitValue, 'mph')
+        : limitValue
+      : 0;
     const limitMph = speedFromKph(limitKph, 'mph');
 
     // Current speed (convert m/s to km/h and mph)
@@ -44,8 +48,8 @@ export const usePitSpeed = (): PitSpeedResult => {
     const speedMph = speedFromMs(speed, 'mph');
 
     // Calculate deltas
-    const deltaKph = speedKph - limitKph;
-    const deltaMph = speedMph - limitMph;
+    const deltaKph = hasLimit ? speedKph - limitKph : 0;
+    const deltaMph = hasLimit ? speedMph - limitMph : 0;
 
     // Color coding:
     // < -5: green (safe)

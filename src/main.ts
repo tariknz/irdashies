@@ -21,6 +21,7 @@ import {
   dashboardBridge,
 } from './app/bridge/dashboard/dashboardBridge';
 import { setupPitLaneBridge } from './app/bridge/pitLaneBridge';
+import { setupTrackNotesBridge } from './app/bridge/trackNotesBridge';
 import { setupFuelCalculatorBridge } from './app/bridge/fuelCalculatorBridge';
 import { OverlayManager } from './app/overlayManager';
 import {
@@ -331,6 +332,7 @@ app.on('ready', async () => {
   setupLogBridge();
   setupFuelCalculatorBridge();
   setupPitLaneBridge();
+  setupTrackNotesBridge();
   setupPersonalBestLapTimesBridge();
   setupLapTraceBridge(overlayManager);
   setupGarage61SearchSession(dashboard);
