@@ -577,6 +577,7 @@ A race control window with live standings, an automatic incident feed, and a per
   - Dashboard import/export to share layouts between users or back up your setup
 - Streamer & OBS Ready
   - Built-in Web Server: All overlays can be used as a browser source in OBS. Use `http://localhost:3000/dashboard` for the default profile, or `http://localhost:3000/dashboard?profile=<profileId>` for specific profiles.
+  - Single Widget URLs: `http://localhost:3000/widget/<widgetId>` shows one widget filling the page, for hosts that take one page per source such as OpenKneeboard in VR. `http://localhost:3000` lists the URL for every widget in the profile.
   - Network Access: Enable network access in settings to allow other devices on your local network to access the dashboard (useful for dual-PC streaming setups).
   - Garage Cover: Automatically hide your screen with a custom image when you enter the garage to keep your car setup private.
   - Transparent backgrounds: All overlays are designed to look great on top of your game or stream.
