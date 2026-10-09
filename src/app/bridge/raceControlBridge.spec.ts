@@ -250,6 +250,26 @@ describe('setupRaceControlBridge', () => {
     expect(loadIncidents).not.toHaveBeenCalled();
     expect(clearIncidents).not.toHaveBeenCalled();
   });
+
+  it('hides and protects the archive while a replay irDashies did not record is loaded', async () => {
+    const { runtime } = createRuntime();
+    let readable = false;
+    setupRaceControlBridge(runtime, undefined, {
+      canReadArchive: () => readable,
+    });
+
+    expect(handlers.get('raceControl:getIncidents')?.({})).toEqual({
+      sessionId: '1',
+      incidents: [],
+    });
+    expect(handlers.get('raceControl:clearIncidents')?.({})).toBeUndefined();
+    expect(loadIncidents).not.toHaveBeenCalled();
+    expect(clearIncidents).not.toHaveBeenCalled();
+
+    readable = true;
+    await handlers.get('raceControl:getIncidents')?.({});
+    expect(loadIncidents).toHaveBeenCalledWith('1');
+  });
 });
 
 describe('camera group across a bridge change', () => {

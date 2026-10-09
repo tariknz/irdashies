@@ -2,6 +2,7 @@ import type { FuelLapData } from '../fuelCalculatorBridge';
 import type { Incident } from '../raceControl';
 import type { ReferenceLap } from '../referenceLaps';
 import type { Sector } from '../session';
+import type { ReplayContextSnapshot } from './replayContext';
 
 export type SessionLifecycleEvent =
   | { type: 'enter'; replay: boolean }
@@ -33,6 +34,7 @@ export interface ChannelPayloads {
    * disconnected. The Gantry reloads its persisted incidents on each change.
    */
   'raceControl.sessionId': string;
+  'replay.context': ReplayContextSnapshot;
 }
 
 export interface TrackStateSnapshot {
@@ -541,6 +543,12 @@ export const channelRegistry = {
   'session.lifecycle': { kind: 'event' },
   'raceControl.incidents': { kind: 'event' },
   'raceControl.sessionId': { kind: 'event' },
+  // Publishes on change only: a replay is loaded, or its provenance resolves.
+  'replay.context': {
+    kind: 'snapshot',
+    defaultRateHz: 1,
+    maxRateHz: 1,
+  },
 } as const satisfies ChannelRegistry;
 
 export interface ChannelBridge {

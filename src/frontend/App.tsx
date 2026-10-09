@@ -18,6 +18,7 @@ import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 import { RendererDataProviders } from './components/RendererDataProviders/RendererDataProviders';
 import { WidgetRuntimeProvider } from './widgetRuntime';
 import { Gantry } from './components/Gantry/Gantry';
+import { GantrySessionHoldProvider } from './components/Gantry/hooks/useGantrySessionHold';
 
 /**
  * Check if this window is the settings window based on URL hash
@@ -63,7 +64,9 @@ const GantryApp = () => {
     <WidgetRuntimeProvider widgetType="gantry">
       <ThemeManager>
         <div className="w-full h-full bg-slate-900 text-white">
-          <Gantry />
+          <GantrySessionHoldProvider running={running}>
+            <Gantry />
+          </GantrySessionHoldProvider>
         </div>
       </ThemeManager>
     </WidgetRuntimeProvider>

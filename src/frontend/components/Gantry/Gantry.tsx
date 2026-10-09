@@ -5,13 +5,23 @@ import { GantryIncidents } from './components/GantryIncidents/GantryIncidents';
 import { LapGraphView } from './components/LapGraph/LapGraphView';
 import { SplitPane } from './components/SplitPane/SplitPane';
 import { useGantryAlwaysOnTop } from './hooks/useGantryAlwaysOnTop';
-import { useRaceControlBridge, useSessionDrivers } from '@irdashies/context';
+import { GantryReplayNotice } from './components/GantryReplayBanner/GantryReplayBanner';
+import { GantrySessionEndedNotice } from './components/GantrySessionEndedNotice/GantrySessionEndedNotice';
+import { useHeld } from './hooks/useGantrySessionHold';
+import {
+  useRaceControlBridge,
+  useReplayContextUpdater,
+  useSessionDrivers,
+} from '@irdashies/context';
 import type { LapGraphMode } from '@irdashies/domain';
 
 type GantryView = 'standings-incidents' | 'lap-graph';
 
 /** Where the standings/incidents divider sits. A UI preference, not config. */
 const SPLIT_STORAGE_KEY = 'gantryStandingsSplitPercent';
+
+const isEmptyRoster = (drivers: readonly unknown[] | undefined) =>
+  !drivers || drivers.length === 0;
 
 const GantryInner = memo(() => {
   const [activeView, setActiveView] = useState<GantryView>(
@@ -28,6 +38,7 @@ const GantryInner = memo(() => {
     null
   );
 
+  useReplayContextUpdater();
   useRaceControlBridge(); // subscribe to incidents on mount
 
   // Roster for the follow-driver dropdown — sourced from the session (not
@@ -35,7 +46,7 @@ const GantryInner = memo(() => {
   // The raw roster includes the pace car and spectators, which the previous
   // standings-derived list excluded; filter them so the dropdown stays to
   // drivers you can actually follow.
-  const sessionDrivers = useSessionDrivers();
+  const sessionDrivers = useHeld(useSessionDrivers(), isEmptyRoster);
   const drivers = useMemo(
     () =>
       (sessionDrivers ?? [])
@@ -59,6 +70,8 @@ const GantryInner = memo(() => {
         alwaysOnTop={alwaysOnTop}
         onAlwaysOnTopChange={setAlwaysOnTop}
       />
+      <GantryReplayNotice />
+      <GantrySessionEndedNotice />
       {activeView === 'standings-incidents' && (
         <SplitPane
           label="Standings and incidents split"

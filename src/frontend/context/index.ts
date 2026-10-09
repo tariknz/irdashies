@@ -18,6 +18,8 @@ export * from './LapTimesStore/LapTimesStore';
 export * from './LapTimesStore/LapTimesStoreUpdater';
 export * from './SectorTimingStore/SectorTimingStore';
 export * from './RaceControlStore';
+export * from './ReplayContextStore';
+export * from './LapHistoryArchive';
 export * from './PushToPassStore/PushToPassStore';
 export * from './PushToPassStore/PushToPassStoreUpdater';
 export * from './BattleGapStore/BattleGapStore';
