@@ -44,7 +44,12 @@ const sortableSettings: SortableSetting[] = [
     configKey: 'driverName',
     hasSubSetting: true,
   },
-  { id: 'teamName', label: 'Team Name', configKey: 'teamName' },
+  {
+    id: 'teamName',
+    label: 'Team Name',
+    configKey: 'teamName',
+    hasSubSetting: true,
+  },
   {
     id: 'pitStatus',
     label: 'Pit Status',
@@ -473,6 +478,50 @@ const DisplaySettingsList = ({
                       />
                     ))}
                   </div>
+                </div>
+              )}
+            {setting.configKey === 'driverName' &&
+              settings.config.driverName.enabled && (
+                <div className="pl-8 mt-2">
+                  <SettingSelectRow<'none' | 'teamName'>
+                    title="Driver Name Subtext"
+                    value={
+                      settings.config.driverName.subtext === 'teamName'
+                        ? 'teamName'
+                        : 'none'
+                    }
+                    options={[
+                      { label: 'None', value: 'none' },
+                      { label: 'Team Name', value: 'teamName' },
+                    ]}
+                    onChange={(subtext) =>
+                      handleConfigChange({
+                        driverName: { ...settings.config.driverName, subtext },
+                      })
+                    }
+                  />
+                </div>
+              )}
+            {setting.configKey === 'teamName' &&
+              settings.config.teamName.enabled && (
+                <div className="pl-8 mt-2">
+                  <SettingSelectRow<'none' | 'driverName'>
+                    title="Team Name Subtext"
+                    value={
+                      settings.config.teamName.subtext === 'driverName'
+                        ? 'driverName'
+                        : 'none'
+                    }
+                    options={[
+                      { label: 'None', value: 'none' },
+                      { label: 'Driver Name', value: 'driverName' },
+                    ]}
+                    onChange={(subtext) =>
+                      handleConfigChange({
+                        teamName: { ...settings.config.teamName, subtext },
+                      })
+                    }
+                  />
                 </div>
               )}
             {setting.hasSubSetting &&
@@ -1215,6 +1264,57 @@ export const StandingsSettings = () => {
                         />
                       </>
                     )}
+                    <div className="space-y-3">
+                      <SettingToggleRow
+                        title="Show Estimated Laps"
+                        description="Show each class's projected total lap count in timed sessions, based on the class leader's current pace"
+                        enabled={
+                          settings.config.classHeaderStyle?.estimatedLaps
+                            ?.enabled ?? false
+                        }
+                        onToggle={(newValue) =>
+                          handleConfigChange({
+                            classHeaderStyle: {
+                              ...settings.config.classHeaderStyle,
+                              estimatedLaps: {
+                                ...settings.config.classHeaderStyle
+                                  ?.estimatedLaps,
+                                enabled: newValue,
+                              },
+                            },
+                          })
+                        }
+                      />
+                      {(settings.config.classHeaderStyle?.estimatedLaps
+                        ?.enabled ??
+                        false) && (
+                        <div className="ml-2 pl-4 border-l-2 border-slate-600">
+                          <SettingSelectRow
+                            title="Laps to average"
+                            description="Median of the class leader's most recent laps — pit stops and other outlier laps are left out"
+                            value={(
+                              settings.config.classHeaderStyle?.estimatedLaps
+                                ?.numLaps ?? 5
+                            ).toString()}
+                            options={Array.from({ length: 8 }, (_, i) => ({
+                              label: (i + 3).toString(),
+                              value: (i + 3).toString(),
+                            }))}
+                            onChange={(v) =>
+                              handleConfigChange({
+                                classHeaderStyle: {
+                                  ...settings.config.classHeaderStyle,
+                                  estimatedLaps: {
+                                    enabled: true,
+                                    numLaps: parseInt(v),
+                                  },
+                                },
+                              })
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
                   </SettingsSection>
 
                   <SettingDivider />

@@ -29,6 +29,40 @@ const getNestedValue = (obj: unknown, path: string): unknown => {
   return current;
 };
 
+/**
+ * Units for channels whose unit is not guessable from the number.
+ *
+ * This is a legibility aid, not a conversion: the inspector exists to show
+ * what the app actually receives, so the value stays exactly as the channel
+ * carries it. Speed is the one that prompts the question -- it is metres per
+ * second, so a car at 60 kph reads 16.6667, in LMU and iRacing alike -- and
+ * without the unit printed beside it that looks like a wrong number rather
+ * than a different one.
+ *
+ * Keyed on the telemetry path. Anything absent simply prints bare.
+ */
+const TELEMETRY_UNITS: Readonly<Record<string, string>> = {
+  Speed: 'm/s',
+  SessionTime: 's',
+  SessionTimeRemain: 's',
+  LapCurrentLapTime: 's',
+  LapLastLapTime: 's',
+  LapBestLapTime: 's',
+  FuelLevel: 'L',
+  FuelUsePerHour: 'kg/h',
+  SteeringWheelAngle: 'rad',
+  LapDistPct: 'fraction',
+  Throttle: 'fraction',
+  Brake: 'fraction',
+  Clutch: 'fraction',
+  RPM: 'rpm',
+  AirTemp: '°C',
+  TrackTempCrew: '°C',
+  Lat: '°',
+  Lon: '°',
+  Alt: 'm',
+};
+
 const formatValue = (value: unknown): string => {
   if (value === undefined || value === null) return 'N/A';
   if (typeof value === 'number') {
@@ -53,6 +87,7 @@ interface PropertyRowProps {
 }
 
 const PropertyRow = ({ label, path, source }: PropertyRowProps) => {
+  const unit = source === 'telemetry' ? TELEMETRY_UNITS[path] : undefined;
   const telemetry = useTelemetryStore((state) => state.telemetry);
   const session = useSessionStore((state) => state.session);
 
@@ -83,6 +118,9 @@ const PropertyRow = ({ label, path, source }: PropertyRowProps) => {
         title={String(value)}
       >
         {formatValue(value)}
+        {unit !== undefined && (
+          <span className="text-slate-500 ml-1">{unit}</span>
+        )}
       </span>
     </div>
   );

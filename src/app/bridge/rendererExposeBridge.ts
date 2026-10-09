@@ -22,6 +22,7 @@ import type {
   LapTraceRecord,
   LapTraceSource,
   RaceControlBridge,
+  LapHistoryBridge,
   Incident,
   IncidentThresholds,
   SessionRetention,
@@ -455,5 +456,9 @@ export function exposeBridge() {
     updateRetention: (retention: SessionRetention) =>
       ipcRenderer.invoke('raceControl:updateRetention', retention),
     showGantryWindow: () => ipcRenderer.invoke('raceControl:showGantryWindow'),
+  });
+  defineBridge<LapHistoryBridge>('lapHistoryBridge', {
+    getArchived: (sessionNum: number) =>
+      ipcRenderer.invoke('lapHistory:getArchived', sessionNum),
   });
 }

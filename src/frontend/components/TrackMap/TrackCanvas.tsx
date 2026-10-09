@@ -60,6 +60,8 @@ export interface TrackProps {
   currentSectorIdx?: number;
   playerIconDataUrl?: string | null;
   driverLivePositions?: Record<number, number>;
+  /** Caps redraws, e.g. for a map docked in the Gantry. */
+  maxFps?: number;
 }
 
 export interface TrackDriver {
@@ -127,6 +129,7 @@ export const TrackCanvas = ({
   currentSectorIdx,
   playerIconDataUrl = null,
   driverLivePositions = {},
+  maxFps,
 }: TrackProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -501,7 +504,7 @@ export const TrackCanvas = ({
         pitEl.style.display = 'none';
       }
     }
-  });
+  }, maxFps);
 
   const renderIconOverlay = () =>
     playerIconDataUrl ? (

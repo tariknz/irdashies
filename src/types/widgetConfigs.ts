@@ -111,6 +111,7 @@ export interface ClassHeaderStyle {
     cap: number | null; // null = All
     showPlayerManufacturer: boolean;
   };
+  estimatedLaps?: { enabled: boolean; numLaps?: number };
 }
 
 // ===========================
@@ -182,8 +183,8 @@ export interface StandingsConfig {
   showOnlyWhenOnTrack: boolean;
   useLivePosition?: boolean;
   position: { enabled: boolean };
-  driverName: DriverNameConfig;
-  teamName: { enabled: boolean };
+  driverName: DriverNameConfig & { subtext?: 'none' | 'teamName' };
+  teamName: { enabled: boolean; subtext?: 'none' | 'driverName' };
   pitStatus: PitStatusConfig;
   pushToPass: { enabled: boolean };
   driverTag: { enabled: boolean; widthPx?: number };
@@ -1113,6 +1114,13 @@ export interface LapTraceConfig {
   brakeCueVolume: number;
   /** Seconds to trigger every brake audio cue before its visual timing, 0..0.6. */
   brakeCueLeadSec: number;
+  /**
+   * Peak brake pressure a reference application must reach to count as a braking
+   * zone, 0.05..0.25. Anything softer is treated as a stabilising brush and gets
+   * neither a countdown nor a brake-distance delta. Car-dependent (brake bias,
+   * pedal travel, and some cars log force rather than travel), hence a setting.
+   */
+  brakeCueMinPeak: number;
   /** Per-cue synthesis of the countdown tones (frequency/type/duration/peak). */
   sound: LapTraceSound;
   /** A four-bar countdown strip on the edge of the widget. */
@@ -1153,6 +1161,27 @@ export interface LapGraphConfig {
 /** The recorder keeps 300 laps per car, so a wider window has nothing to show. */
 export const LAP_GRAPH_LAP_WINDOW_BOUNDS = { min: 5, max: 300 } as const;
 
+/** Overlay widgets that can be docked under the Gantry incident feed. */
+export const GANTRY_DOCK_WIDGET_TYPES = ['fuel', 'map', 'flatmap'] as const;
+export type GantryDockWidgetType = (typeof GANTRY_DOCK_WIDGET_TYPES)[number];
+
+export const GANTRY_DOCK_MAX_PANELS = 3;
+
+export interface GantryDockPanel {
+  /** Stable key for React and the remembered collapsed state. */
+  id: string;
+  type: GantryDockWidgetType;
+  /** Fuel only: the linked overlay instance or a Gantry-only instance. */
+  widgetId?: string;
+}
+
+export interface GantryDockConfig {
+  enabled: boolean;
+  arrangement: 'row' | 'tabs';
+  /** At most GANTRY_DOCK_MAX_PANELS. */
+  panels: GantryDockPanel[];
+}
+
 export interface GantryConfig {
   /** Display units for speed values. Stored thresholds stay in km/h. */
   speedUnit: 'mph' | 'km/h' | 'auto';
@@ -1181,6 +1210,14 @@ export interface GantryConfig {
   incidentCameraGroup: string;
   // Lap Graph tab
   lapGraph: LapGraphConfig;
+  window: GantryWindowConfig;
+  /** Panels shown under the incident feed. Sanitise with sanitizeGantryDock. */
+  dock: GantryDockConfig;
+}
+
+export interface GantryWindowConfig {
+  /** Keep the Gantry window above iRacing and other apps. */
+  alwaysOnTop: boolean;
 }
 
 /** Chase camera far enough back to show what happened around the car. */
@@ -1270,7 +1307,8 @@ export type SettingsTabType =
   | 'trace'
   | 'corner'
   | 'braking'
-  | 'help';
+  | 'help'
+  | 'dock';
 
 /** Available widgets for the Fuel Calculator */
 export type FuelWidgetType =

@@ -6,13 +6,13 @@ import {
   useWidgetsForThisDisplay,
   rendersInOwnWindow,
   SessionTimingUpdater,
+  SectorTimingUpdater,
 } from '@irdashies/context';
 import type { WidgetLayout } from '@irdashies/types';
 import { WidgetContainer } from '../WidgetContainer';
 import { getWidget } from '../../WidgetIndex';
 import { XIcon } from '@phosphor-icons/react';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
-import { SectorTimingUpdater } from './SectorTimingUpdater';
 import { PushToPassUpdater } from './PushToPassUpdater';
 import { PitLapUpdater } from './PitLapUpdater';
 import { WidgetRuntimeProvider } from '../../widgetRuntime';

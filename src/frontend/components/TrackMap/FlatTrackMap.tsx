@@ -13,7 +13,10 @@ import { useDriverLivePositions } from '@irdashies/domain';
 
 const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 
-export const FlatTrackMap = () => {
+/** Redraw rate for a map docked in the Gantry, which shares the GPU with the overlays. */
+const EMBEDDED_MAX_FPS = 30;
+
+export const FlatTrackMap = ({ embedded = false }: { embedded?: boolean }) => {
   const trackId = useTrackId();
   const { drivers: driversTrackData } = useDriverProgress();
   const settings = useFlatTrackMapSettings();
@@ -62,6 +65,7 @@ export const FlatTrackMap = () => {
         trackOutlineWidth={settings?.trackOutlineWidth ?? 40}
         invertTrackColors={settings?.invertTrackColors ?? false}
         driverLivePositions={driverLivePositions}
+        maxFps={embedded ? EMBEDDED_MAX_FPS : undefined}
       />
     </div>
   );

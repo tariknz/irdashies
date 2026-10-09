@@ -12,6 +12,7 @@ import {
   useDashboard,
   useSimWidgetSupport,
   SessionTimingUpdater,
+  isGantryOnly,
 } from '@irdashies/context';
 import { getWidget } from '../../WidgetIndex';
 import { getWidgetName } from '../../constants/widgetNames';
@@ -187,7 +188,72 @@ const DashboardWidgetItem = memo(
 
 DashboardWidgetItem.displayName = 'DashboardWidgetItem';
 
-export const DashboardView = () => {
+interface SoloWidgetViewProps {
+  widgetId: string;
+  widgets: DashboardWidget[];
+}
+
+/**
+ * A single widget filling the window, with none of the edit-mode chrome.
+ *
+ * Drag handles, resize handles and the click-to-outline border are all
+ * deliberately absent: the host window is the frame here, so position and size
+ * are set by whatever is showing the page rather than saved to the dashboard.
+ */
+const SoloWidgetView = ({ widgetId, widgets }: SoloWidgetViewProps) => {
+  const widget = useMemo(
+    () => widgets.find((w) => w.id === widgetId),
+    [widgets, widgetId]
+  );
+
+  const WidgetComponent = widget
+    ? getWidget(widget.type || widget.id)
+    : undefined;
+
+  if (!widget || !WidgetComponent) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-900 text-white">
+        <div className="text-center">
+          <div className="text-xl mb-2">Unknown widget</div>
+          <div className="text-sm text-gray-400">
+            This profile has no widget called &quot;{widgetId}&quot;
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="w-full h-screen overflow-hidden"
+      style={{ background: 'transparent' }}
+      data-widget-id={widget.id}
+    >
+      <SessionTimingUpdater soloWidgetType={widget.type || widget.id} />
+      <div className="w-full h-full overflow-hidden text-white">
+        <WidgetRuntimeProvider widgetType={widget.type || widget.id}>
+          <WidgetComponent {...widget.config} />
+        </WidgetRuntimeProvider>
+      </div>
+    </div>
+  );
+};
+
+SoloWidgetView.displayName = 'SoloWidgetView';
+
+interface DashboardViewProps {
+  /**
+   * Draw only this widget, filling the window, instead of the whole dashboard.
+   *
+   * Comes from the `widget` URL parameter behind /widget/<id>. A widget named
+   * this way renders even when it is disabled for the desktop overlays: the URL
+   * is an explicit request for it, and a VR overlay host is a separate surface
+   * from the screen.
+   */
+  soloWidgetId?: string;
+}
+
+export const DashboardView = ({ soloWidgetId }: DashboardViewProps = {}) => {
   const { currentDashboard, bridge, currentProfile } = useDashboard();
   const simulator = useActiveSimulator();
   const simWidgetSupport = useSimWidgetSupport();
@@ -218,7 +284,7 @@ export const DashboardView = () => {
     }
     const seen = new Set<string>();
     const filtered = currentDashboard.widgets.filter((w) => {
-      if (!w.enabled || seen.has(w.id)) return false;
+      if (!w.enabled || isGantryOnly(w) || seen.has(w.id)) return false;
       if (isWidgetDisabledForSim(simWidgetSupport, w.type ?? w.id, simulator))
         return false;
       seen.add(w.id);
@@ -361,6 +427,15 @@ export const DashboardView = () => {
           <div className="text-xl">Loading dashboard...</div>
         </div>
       </div>
+    );
+  }
+
+  if (soloWidgetId) {
+    return (
+      <SoloWidgetView
+        widgetId={soloWidgetId}
+        widgets={currentDashboard.widgets ?? []}
+      />
     );
   }
 

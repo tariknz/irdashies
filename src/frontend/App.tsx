@@ -1,4 +1,5 @@
 // App.tsx
+import { useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import {
@@ -18,6 +19,11 @@ import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 import { RendererDataProviders } from './components/RendererDataProviders/RendererDataProviders';
 import { WidgetRuntimeProvider } from './widgetRuntime';
 import { Gantry } from './components/Gantry/Gantry';
+import {
+  GantryDockHost,
+  useGantryDock,
+} from './components/GantryDock/GantryDockHost';
+import { GantrySessionHoldProvider } from './components/Gantry/hooks/useGantrySessionHold';
 
 /**
  * Check if this window is the settings window based on URL hash
@@ -57,13 +63,20 @@ const SettingsApp = () => {
 const GantryApp = () => {
   const { running } = useRunningState();
   useResetOnDisconnect(running);
+  const dock = useGantryDock();
+  const dockHost = useMemo(
+    () => (dock.panels.length > 0 ? <GantryDockHost dock={dock} /> : undefined),
+    [dock]
+  );
   return (
     // The runtime provider supplies Gantry's declared channel rates; without
     // it every channel hook here would fall back to the unthrottled default.
     <WidgetRuntimeProvider widgetType="gantry">
       <ThemeManager>
         <div className="w-full h-full bg-slate-900 text-white">
-          <Gantry />
+          <GantrySessionHoldProvider running={running}>
+            <Gantry dock={dockHost} />
+          </GantrySessionHoldProvider>
         </div>
       </ThemeManager>
     </WidgetRuntimeProvider>

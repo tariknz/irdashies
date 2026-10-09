@@ -4,6 +4,10 @@ import { IncidentType } from '@irdashies/types';
 import type { ChannelBridge, Incident } from '@irdashies/types';
 import { useRaceControlStore } from './RaceControlStore';
 import { useRaceControlBridge } from './useRaceControlBridge';
+import {
+  INITIAL_REPLAY_CONTEXT,
+  useReplayContextStore,
+} from '../ReplayContextStore/ReplayContextStore';
 
 const incident = (id: string, timestamp: number): Incident => ({
   id,
@@ -46,8 +50,10 @@ describe('useRaceControlBridge', () => {
     useRaceControlStore.setState({
       incidents: [],
       driverFilter: null,
+      sessionFilter: 'all',
       hydrationEpoch: 0,
     });
+    useReplayContextStore.getState().reset();
   });
 
   afterEach(() => {
@@ -106,6 +112,7 @@ describe('useRaceControlBridge', () => {
 
     renderHook(() => useRaceControlBridge());
     useRaceControlStore.getState().setDriverFilter(7);
+    useRaceControlStore.getState().setSessionFilter(1);
 
     // The first value can represent a transition from the SubSessionID loaded
     // on mount, so it must replace rather than merge with that snapshot.
@@ -116,6 +123,7 @@ describe('useRaceControlBridge', () => {
       )
     );
     expect(useRaceControlStore.getState().driverFilter).toBeNull();
+    expect(useRaceControlStore.getState().sessionFilter).toBe('all');
 
     publish('raceControl.sessionId', '222');
     await waitFor(() =>
@@ -262,5 +270,95 @@ describe('useRaceControlBridge', () => {
 
     await waitFor(() => expect(getIncidents).toHaveBeenCalledTimes(3));
     expect(useRaceControlStore.getState().incidents).toEqual([]);
+  });
+
+  describe('replay files', () => {
+    const replayContext = (
+      provenance: 'none' | 'archived' | 'localNotArchived' | 'foreign',
+      version: number
+    ) =>
+      useReplayContextStore.getState().setSnapshot({
+        ...INITIAL_REPLAY_CONTEXT,
+        mode: 'replayFile',
+        provenance,
+        subSessionId: '111',
+        archivedSessionNums: provenance === 'archived' ? [0] : [],
+        version,
+      });
+
+    it('hydrates again once the replay is known to be archived', async () => {
+      const { bridge } = createChannelBridge();
+      window.channelBridge = bridge;
+      const getIncidents = vi
+        .fn<() => Promise<ReturnType<typeof snapshot>>>()
+        // Main hides the archive until provenance resolves.
+        .mockResolvedValueOnce(snapshot('111', []))
+        .mockResolvedValue(snapshot('111', [incident('archived', 100)]));
+      window.raceControlBridge = {
+        getIncidents,
+      } as unknown as typeof window.raceControlBridge;
+
+      renderHook(() => useRaceControlBridge());
+      replayContext('none', 1);
+      await waitFor(() => expect(getIncidents).toHaveBeenCalledTimes(1));
+
+      replayContext('archived', 2);
+
+      await waitFor(() =>
+        expect(
+          useRaceControlStore.getState().incidents.map((i) => i.id)
+        ).toEqual(['archived'])
+      );
+      expect(getIncidents).toHaveBeenCalledTimes(2);
+    });
+
+    it.each(['localNotArchived', 'foreign'] as const)(
+      'drops the list for a %s replay so no other event shows',
+      async (provenance) => {
+        const { bridge } = createChannelBridge();
+        window.channelBridge = bridge;
+        window.raceControlBridge = {
+          getIncidents: vi.fn(() => Promise.resolve(snapshot('0', []))),
+        } as unknown as typeof window.raceControlBridge;
+        useRaceControlStore.setState({
+          incidents: [incident('other-test-session', 100)],
+        });
+
+        renderHook(() => useRaceControlBridge());
+        replayContext(provenance, 1);
+
+        expect(useRaceControlStore.getState().incidents).toEqual([]);
+      }
+    );
+
+    it('keeps the epoch guard: a clear during the archived load wins', async () => {
+      const { bridge } = createChannelBridge();
+      window.channelBridge = bridge;
+      let resolveArchived: (value: ReturnType<typeof snapshot>) => void = () =>
+        undefined;
+      const getIncidents = vi
+        .fn<() => Promise<ReturnType<typeof snapshot>>>()
+        .mockResolvedValueOnce(snapshot('111', []))
+        .mockImplementationOnce(
+          () =>
+            new Promise<ReturnType<typeof snapshot>>(
+              (resolve) => (resolveArchived = resolve)
+            )
+        );
+      window.raceControlBridge = {
+        getIncidents,
+      } as unknown as typeof window.raceControlBridge;
+
+      renderHook(() => useRaceControlBridge());
+      await waitFor(() => expect(getIncidents).toHaveBeenCalledTimes(1));
+      replayContext('archived', 1);
+      await waitFor(() => expect(getIncidents).toHaveBeenCalledTimes(2));
+
+      useRaceControlStore.getState().clearIncidents();
+      resolveArchived(snapshot('111', [incident('archived', 100)]));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(useRaceControlStore.getState().incidents).toEqual([]);
+    });
   });
 });

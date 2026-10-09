@@ -10,7 +10,7 @@ import {
 // can't silently drift out of sync when widgets are added to the app.
 import { WIDGET_MAP, type WidgetId } from '../../../src/frontend/WidgetIndex';
 import { WIDGET_NAMES } from '../../../src/frontend/constants/widgetNames';
-import { SectorTimingUpdater } from '../../../src/frontend/components/OverlayContainer/SectorTimingUpdater';
+import { SectorTimingUpdater } from '../../../src/frontend/context/SectorTimingStore/SectorTimingUpdater';
 import { WidgetRuntimeProvider } from '../../../src/frontend/widgetRuntime';
 import { defaultDashboard } from '@irdashies/types';
 

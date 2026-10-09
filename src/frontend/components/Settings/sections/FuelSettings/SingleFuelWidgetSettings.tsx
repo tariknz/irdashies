@@ -27,6 +27,7 @@ import { SettingToggleRow } from '../../components/SettingToggleRow';
 import { SettingSliderRow } from '../../components/SettingSliderRow';
 import { SettingSelectRow } from '../../components/SettingSelectRow';
 import { SettingNumberRow } from '../../components/SettingNumberRow';
+import { deleteFuelLayout } from '../gantryDockEdits';
 
 const defaultConfig = getWidgetDefaultConfig('fuel');
 const DEFAULT_TREE_FUEL = DEFAULT_FUEL_LAYOUT_TREE;
@@ -76,11 +77,11 @@ export const SingleFuelWidgetSettings = ({
 
   const handleDeleteWidget = () => {
     if (!currentDashboard || !onDashboardUpdated) return;
-    const newWidgets = currentDashboard.widgets.filter(
-      (w) => w.id !== selectedId
+    const updated = deleteFuelLayout(currentDashboard, selectedId);
+    onDashboardUpdated(updated);
+    const remaining = updated.widgets.filter(
+      (w) => (w.type || w.id) === 'fuel'
     );
-    onDashboardUpdated({ ...currentDashboard, widgets: newWidgets });
-    const remaining = newWidgets.filter((w) => (w.type || w.id) === 'fuel');
     if (remaining.length > 0) handleWidgetChange(remaining[0].id);
     else navigate('/settings/fuel');
   };
@@ -88,6 +89,9 @@ export const SingleFuelWidgetSettings = ({
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === widgetId
   ) as FuelWidgetSettings | undefined;
+  const isGantryOnly =
+    currentDashboard?.widgets.find((w) => w.id === widgetId)?.placement ===
+    'gantry';
 
   const [settings, setSettings] = useState<FuelWidgetSettings>(() => {
     const savedConfig =
@@ -137,6 +141,7 @@ export const SingleFuelWidgetSettings = ({
       onSettingsChange={setSettings}
       widgetId={widgetId}
       disableInternalScroll={true}
+      hidePositionReset={isGantryOnly}
     >
       {(handleConfigChange) => {
         const handleTreeUpdate = (newTree: LayoutNode) => {
@@ -201,10 +206,20 @@ export const SingleFuelWidgetSettings = ({
                       >
                         {fuelWidgets.map((w) => (
                           <option key={w.id} value={w.id}>
-                            {w.id}
+                            {w.placement === 'gantry'
+                              ? `${w.id} (Gantry)`
+                              : w.id}
                           </option>
                         ))}
                       </select>
+                      {isGantryOnly && (
+                        <span
+                          className="px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                          title="Only shown docked in the Gantry, never on the overlay."
+                        >
+                          Gantry
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -444,16 +459,20 @@ export const SingleFuelWidgetSettings = ({
                     handleConfigChange={handleConfigChange}
                   />
 
-                  <SettingDivider />
+                  {!isGantryOnly && (
+                    <>
+                      <SettingDivider />
 
-                  <SettingToggleRow
-                    title="Show only when on track"
-                    description="If enabled, fuel will only be shown when driving"
-                    enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                    }
-                  />
+                      <SettingToggleRow
+                        title="Show only when on track"
+                        description="If enabled, fuel will only be shown when driving"
+                        enabled={settings.config.showOnlyWhenOnTrack ?? false}
+                        onToggle={(newValue) =>
+                          handleConfigChange({ showOnlyWhenOnTrack: newValue })
+                        }
+                      />
+                    </>
+                  )}
                 </SettingsSection>
               )}
             </div>

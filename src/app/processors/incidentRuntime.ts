@@ -25,6 +25,7 @@ export interface IncidentRuntimeOptions {
 export class IncidentRuntime {
   private readonly processor: IncidentProcessor;
   private enabled = true;
+  private replayPaused = false;
   private currentSessionId = '';
   private readonly sessionIdChangeListeners = new Set<(id: string) => void>();
   private readonly disconnects: (() => void)[];
@@ -65,7 +66,7 @@ export class IncidentRuntime {
   }
 
   onFrame(frame: Telemetry): void {
-    if (!this.enabled) return;
+    if (!this.enabled || this.replayPaused) return;
     this.metrics.markStart('incidentProcessing');
     this.processor.onFrame(frame);
     this.metrics.markEnd('incidentProcessing');
@@ -91,6 +92,17 @@ export class IncidentRuntime {
     if (enabled === this.enabled) return;
     this.enabled = enabled;
     this.processor.onLifecycle({ type: 'enter', replay: false });
+  }
+
+  /**
+   * Pauses detection while an iRacing replay file is loaded. Scrubbing would
+   * re-detect incidents under new ids and add them to the archive. Spectating
+   * live is not paused.
+   */
+  updateReplayPaused(paused: boolean): void {
+    if (paused === this.replayPaused) return;
+    this.replayPaused = paused;
+    if (!paused) this.processor.onLifecycle({ type: 'enter', replay: false });
   }
 
   getCurrentSessionId(): string {

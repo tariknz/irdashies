@@ -7,9 +7,15 @@ import {
 import type {
   ActiveSimulator,
   DashboardLayout,
+  DashboardWidget,
   ContainerBoundsInfo,
+  GantryConfig,
 } from '@irdashies/types';
-import { isWidgetDisabledForSim } from '@irdashies/types';
+import {
+  fitLayoutToDisplay,
+  isLayoutOnDisplay,
+  isWidgetDisabledForSim,
+} from '@irdashies/types';
 import { getSimWidgetSupport } from './storage/simWidgetSupport';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -90,6 +96,8 @@ export class OverlayManager {
   private gantryWindow: BrowserWindow | undefined;
   /** Last-applied enabled state, so syncGantryWindow only acts on changes. */
   private gantryEnabled = false;
+  /** Last-applied always-on-top state of the current Gantry window. */
+  private gantryPinned: boolean | undefined;
   private currentDashboard: DashboardLayout | undefined;
   /**
    * The running simulator, or null while none is detected. Widgets the sim
@@ -114,6 +122,11 @@ export class OverlayManager {
       widget.type ?? widget.id,
       this.activeSimulator
     );
+  }
+
+  /** Gantry-only widgets live in the Gantry window, so no overlay needs them. */
+  private isOnOverlay(widget: DashboardWidget): boolean {
+    return widget.placement !== 'gantry' && this.isWidgetVisible(widget);
   }
 
   /**
@@ -143,6 +156,8 @@ export class OverlayManager {
   private onWindowReadyCallbacks = new Set<(windowId: string) => void>();
   private rendererDataSubscriptions?: RendererDataSubscriptions;
   private latestSessionData: unknown;
+  private displayChangeTimer?: ReturnType<typeof setTimeout>;
+  private watchingDisplays = false;
 
   /** Padding around the widget bounding box when shrink-wrapping */
   private static readonly SHRINK_WRAP_PADDING = 20;
@@ -167,6 +182,32 @@ export class OverlayManager {
   }
 
   /**
+   * Overlay windows are built per display, so switching a monitor off or on
+   * while the app runs leaves them sized for displays that no longer exist —
+   * and widgets from a removed monitor never reach the primary. Rebuild once
+   * the display set settles (Windows fires several events per change).
+   */
+  private watchDisplayChanges(): void {
+    if (this.watchingDisplays) return;
+    this.watchingDisplays = true;
+    const rebuild = () => {
+      clearTimeout(this.displayChangeTimer);
+      this.displayChangeTimer = setTimeout(() => {
+        if (this.isQuitting || !this.currentDashboard) return;
+        logger.info('[OverlayManager] Displays changed, rebuilding overlays');
+        this.forceRefreshOverlays(this.currentDashboard, {
+          createSettingsWindow: false,
+        });
+      }, 1000);
+    };
+    screen.on('display-added', rebuild);
+    screen.on('display-removed', rebuild);
+    screen.on('display-metrics-changed', (_event, _display, changed) => {
+      if (changed.includes('bounds')) rebuild();
+    });
+  }
+
+  /**
    * Create one overlay window per display
    */
   public createOverlays(
@@ -177,6 +218,8 @@ export class OverlayManager {
     const { generalSettings } = dashboardLayout;
     this.skipTaskbar = generalSettings?.skipTaskbar ?? true;
     this.overlayAlwaysOnTop = generalSettings?.overlayAlwaysOnTop ?? true;
+
+    this.watchDisplayChanges();
 
     const allDisplays = screen.getAllDisplays();
     const primaryDisplay = screen.getPrimaryDisplay();
@@ -192,7 +235,7 @@ export class OverlayManager {
     // Determine which displays have widgets assigned (by center-point)
     const displaysWithWidgets = new Set<number>();
     for (const widget of dashboardLayout.widgets) {
-      if (!this.isWidgetVisible(widget)) continue;
+      if (!this.isOnOverlay(widget)) continue;
       const centerX = widget.layout.x + widget.layout.width / 2;
       const centerY = widget.layout.y + widget.layout.height / 2;
       for (const display of allDisplays) {
@@ -277,7 +320,7 @@ export class OverlayManager {
       backgroundColor: '#00000000',
       icon: getIconPath(),
       webPreferences: {
-        preload: path.join(__dirname, 'preload.js'),
+        preload: path.join(__dirname, 'preload.cjs'),
         backgroundThrottling: false,
         additionalArguments: createRendererPerfArguments(),
         // Overlay windows are click-through whenever overlays are locked (see
@@ -371,8 +414,11 @@ export class OverlayManager {
     });
     browserWindow.on('closed', () => {
       logger.info(`Display ${display.id} overlay window closed`);
-      this.displayWindows.delete(display.id);
-      this.displayBoundsInfo.delete(display.id);
+      // A rebuild may already have put a new window under this id
+      if (this.displayWindows.get(display.id) === browserWindow) {
+        this.displayWindows.delete(display.id);
+        this.displayBoundsInfo.delete(display.id);
+      }
     });
 
     browserWindow.webContents.on('render-process-gone', (_event, details) => {
@@ -513,18 +559,18 @@ export class OverlayManager {
     const primaryDisplay = screen.getPrimaryDisplay();
     const isPrimary = displayId === primaryDisplay.id;
 
-    const enabledWidgets = dashboard.widgets.filter((w) =>
-      this.isWidgetVisible(w)
-    );
-    const widgetsForDisplay = enabledWidgets.filter((widget) => {
-      const centerX = widget.layout.x + widget.layout.width / 2;
-      const centerY = widget.layout.y + widget.layout.height / 2;
-      const inThisDisplay =
-        centerX >= displayBounds.x &&
-        centerX < displayBounds.x + displayBounds.width &&
-        centerY >= displayBounds.y &&
-        centerY < displayBounds.y + displayBounds.height;
-      return inThisDisplay || (!inThisDisplay && isPrimary);
+    const allDisplayBounds = screen.getAllDisplays().map((d) => d.bounds);
+    // Same assignment as useWidgetsForThisDisplay: widgets on no connected
+    // display render on the primary, moved inside it.
+    const widgetsForDisplay = dashboard.widgets.flatMap((widget) => {
+      if (!this.isOnOverlay(widget)) return [];
+      if (isLayoutOnDisplay(widget.layout, displayBounds)) return [widget];
+      if (!isPrimary) return [];
+      if (allDisplayBounds.some((b) => isLayoutOnDisplay(widget.layout, b)))
+        return [];
+      return [
+        { ...widget, layout: fitLayoutToDisplay(widget.layout, displayBounds) },
+      ];
     });
 
     if (widgetsForDisplay.length === 0) return null;
@@ -838,7 +884,7 @@ export class OverlayManager {
 
     const displaysWithWidgets = new Set<number>();
     for (const widget of dashboardLayout.widgets) {
-      if (!this.isWidgetVisible(widget)) continue;
+      if (!this.isOnOverlay(widget)) continue;
       const centerX = widget.layout.x + widget.layout.width / 2;
       const centerY = widget.layout.y + widget.layout.height / 2;
       for (const display of allDisplays) {
@@ -1092,17 +1138,27 @@ export class OverlayManager {
       icon: getIconPath(),
       show: false,
       webPreferences: {
-        preload: path.join(__dirname, 'preload.js'),
+        preload: path.join(__dirname, 'preload.cjs'),
         backgroundThrottling: false,
       },
     });
 
     this.gantryWindow = browserWindow;
+    this.gantryPinned = undefined;
     applyBaselineSecurity(browserWindow, 'Gantry');
+    this.applyGantryWindowPrefs(dashboardLayout);
 
     browserWindow.once('ready-to-show', () => {
       if (browserWindow.isDestroyed()) return;
       browserWindow.show();
+    });
+
+    // Focusing a window on Windows lifts it to the top of its band, above
+    // the overlays, so lift them back over a pinned Gantry.
+    browserWindow.on('focus', () => {
+      if (this.gantryWindow === browserWindow && this.gantryPinned) {
+        this.raiseAboveGantry();
+      }
     });
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -1176,6 +1232,7 @@ export class OverlayManager {
       // Open on the disabled -> enabled edge only. A window the user closed by
       // hand should stay closed while they edit unrelated settings.
       if (!wasEnabled) this.createGantryWindow(dashboardLayout);
+      this.applyGantryWindowPrefs(dashboardLayout);
       return;
     }
 
@@ -1186,6 +1243,48 @@ export class OverlayManager {
       this.gantryWindow.destroy();
     }
     this.gantryWindow = undefined;
+  }
+
+  /**
+   * Apply the Gantry's saved window preferences. Only acts when the value
+   * changes, because re-pinning lifts the window above the overlays again.
+   */
+  private applyGantryWindowPrefs(dashboardLayout?: DashboardLayout): void {
+    const win = this.gantryWindow;
+    if (!win || win.isDestroyed()) return;
+
+    const config = dashboardLayout?.widgets.find((w) => w.id === 'gantry')
+      ?.config as Partial<GantryConfig> | undefined;
+    const pinned = config?.window?.alwaysOnTop === true;
+    if (pinned === this.gantryPinned) return;
+    this.gantryPinned = pinned;
+
+    if (pinned) {
+      // Level 0 keeps it below the overlays (1) and edit-mode Settings (2).
+      win.setAlwaysOnTop(true, 'screen-saver', 0);
+      win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      this.raiseAboveGantry();
+    } else {
+      win.setAlwaysOnTop(false);
+      win.setVisibleOnAllWorkspaces(false);
+    }
+  }
+
+  /**
+   * Relative levels are only honoured on macOS. On Windows every
+   * always-on-top window shares one band, so re-raise the overlays (and
+   * Settings in edit mode) to keep them above a pinned Gantry.
+   */
+  private raiseAboveGantry(): void {
+    if (this.overlayAlwaysOnTop) {
+      for (const win of this.displayWindows.values()) {
+        if (!win.isDestroyed()) win.moveTop();
+      }
+    }
+    const settings = this.currentSettingsWindow;
+    if (!this.isLocked && settings && !settings.isDestroyed()) {
+      settings.moveTop();
+    }
   }
 
   public createSettingsWindow(
@@ -1219,7 +1318,7 @@ export class OverlayManager {
       // hide() call — which is what broke the "Start minimized" setting.
       show: false,
       webPreferences: {
-        preload: path.join(__dirname, 'preload.js'),
+        preload: path.join(__dirname, 'preload.cjs'),
         backgroundThrottling: false,
       },
     };
