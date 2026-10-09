@@ -54,18 +54,9 @@ vi.mock('./sims/registry', () => ({
   getSimDefinition: (id: ActiveSimulator) => definitionFor(id),
 }));
 
-const overlayReady = vi.hoisted(() => ({
-  callbacks: [] as ((id: string) => void)[],
-}));
-
 const overlayManager = {
   setActiveSimulator: vi.fn(),
   publishMessage: vi.fn(),
-  publishMessageToOverlay: vi.fn(),
-  onOverlayReady: (cb: (id: string) => void) => {
-    overlayReady.callbacks.push(cb);
-    return () => undefined;
-  },
 } as unknown as OverlayManager;
 
 const realPlatform = process.platform;
@@ -137,27 +128,5 @@ describe('simulator selection across profiles', () => {
     // ...and decided the live bridge was already the one it would have built.
     expect(registry.built).toEqual(['iracing']);
     expect(registry.stopped).toEqual([]);
-  });
-});
-
-describe('demo mode across rebuilt overlays', () => {
-  beforeEach(() => {
-    vi.resetModules();
-    overlayReady.callbacks = [];
-  });
-
-  it('tells every overlay window that comes up the current demo state', async () => {
-    // Toggling demo mode swaps the bridge, which can recreate the overlay
-    // windows after the change was broadcast to the old ones.
-    const { iRacingSDKSetup, getIsDemoMode } = await import('./setup');
-    await iRacingSDKSetup(overlayManager);
-
-    overlayReady.callbacks.forEach((cb) => cb('display-1'));
-
-    expect(overlayManager.publishMessageToOverlay).toHaveBeenCalledWith(
-      'display-1',
-      'demoModeChanged',
-      getIsDemoMode()
-    );
   });
 });

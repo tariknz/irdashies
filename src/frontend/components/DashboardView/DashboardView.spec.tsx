@@ -22,6 +22,7 @@ vi.mock('@irdashies/context', () => ({
     bridge: { saveDashboard: vi.fn() },
   }),
   SessionTimingUpdater: () => null,
+  useHiddenWidgetIds: () => new Set<string>(),
   // No simulator detected, so no widget is dropped as unsupported.
   useActiveSimulator: () => null,
   useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
