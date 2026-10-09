@@ -1,6 +1,5 @@
 import { memo, useCallback, useMemo, useState } from 'react';
-import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
-import { useQualifyingGrid } from '@irdashies/domain/standings/useQualifyingGrid';
+import { qualifyingGridSlots } from '@irdashies/domain/standings/useQualifyingGrid';
 import {
   classReferenceLap,
   gapToClassLeader,
@@ -12,16 +11,9 @@ import {
   type LapGraphMode,
   type LapPoint,
 } from '@irdashies/domain';
-import {
-  trackStateSelectors,
-  useArchivedLapHistory,
-  useCurrentSessionType,
-  useLapHistorySnapshot,
-  useReplayContextSnapshot,
-  useTrackStateSelector,
-} from '@irdashies/context';
+import { useCurrentSessionType } from '@irdashies/context';
 import { getTailwindStyle } from '@irdashies/utils/colors';
-import type { LapHistorySnapshot, NameFormat } from '@irdashies/types';
+import type { NameFormat } from '@irdashies/types';
 import {
   DriverName as formatDriverName,
   extractDriverName,
@@ -32,12 +24,15 @@ import { LapGraphDriverList } from './components/LapGraphDriverList/LapGraphDriv
 import type { DriverListEntry } from './components/LapGraphDriverList/LapGraphDriverList';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { useGantrySettings } from '../../hooks/useGantrySettings';
-import { useHeld } from '../../hooks/useGantrySessionHold';
+import {
+  useGantrySessionData,
+  type GantrySessionData,
+} from '../../hooks/useGantrySessionData';
 import { autoPinCarIdxs } from './lapGraphAutoPin';
 import { identityForGridSlot } from './lapGraphPalette';
 
 /**
- * Fallback grid slot for a carIdx `useQualifyingGrid` somehow has no entry
+ * Fallback grid slot for a carIdx `qualifyingGridSlots` somehow has no entry
  * for. Unreachable in practice: the map is built from this exact class's
  * carIdx list, which always covers every member below.
  */
@@ -91,12 +86,6 @@ const MODE_OPTIONS: {
 /** Stable identity for "nothing pinned", so the canvas prop never churns. */
 const EMPTY_PINS: readonly number[] = [];
 
-const isEmptyStandings = (standings: readonly unknown[]) =>
-  standings.length === 0;
-const isEmptyGrid = (grid: ReadonlyMap<number, number>) => grid.size === 0;
-const isEmptyHistory = (history: LapHistorySnapshot | undefined) =>
-  !history || !history.count.some((count) => count > 0);
-
 interface ClassMember {
   carIdx: number;
   carNumber: string;
@@ -104,8 +93,10 @@ interface ClassMember {
   isPlayer: boolean;
 }
 
+type ClassDrivers = GantrySessionData['standingsByClass'][number][1];
+
 const buildMembers = (
-  drivers: ReturnType<typeof useDriverStandings>[number][1],
+  drivers: ClassDrivers,
   nameFormat: NameFormat
 ): ClassMember[] =>
   drivers.map((driver) => ({
@@ -124,9 +115,7 @@ const membersSignature = (members: readonly ClassMember[]): string =>
     .join(',');
 
 /** Live class positions, as a primitive the side list can memoise on. */
-const positionsSignature = (
-  drivers: ReturnType<typeof useDriverStandings>[number][1]
-): string =>
+const positionsSignature = (drivers: ClassDrivers): string =>
   drivers
     .map((d) => `${d.carIdx}:${d.classPosition ?? d.position ?? ''}`)
     .join(',');
@@ -156,26 +145,14 @@ export const LapGraphView = memo(
     chosenPins,
     onPinsChange,
   }: Props) => {
-    // After the sim closes these hold the finished session, so the race can
-    // still be looked over until the next session loads.
-    const standingsByClass = useHeld(
-      useDriverStandings(undefined, { showAll: true }),
-      isEmptyStandings
-    );
-    const liveSnapshot = useLapHistorySnapshot();
-    const replayContext = useReplayContextSnapshot();
-    const cursorSessionNum = useTrackStateSelector(
-      trackStateSelectors.sessionNum
-    );
-    const isReplayFile = replayContext.mode === 'replayFile';
-    const isArchivedReplay =
-      isReplayFile && replayContext.provenance === 'archived';
-    // Recording is paused in a replay file, so an archived replay shows the
-    // session under the replay cursor from the archive instead.
-    const archivedSnapshot = useArchivedLapHistory(
-      isArchivedReplay ? (cursorSessionNum ?? null) : null,
-      replayContext.subSessionId
-    );
+    const {
+      standingsByClass,
+      qualifyingResults,
+      history,
+      isReplayFile,
+      isArchivedReplay,
+      hasArchivedHistory,
+    } = useGantrySessionData();
     const sessionType = useCurrentSessionType();
     const settings = useGantrySettings();
     const nameFormat = settings?.driverNameFormat ?? 'surname';
@@ -299,28 +276,9 @@ export const LapGraphView = memo(
       () => members.map((member) => member.carIdx),
       [members]
     );
-    const qualifyingGrid = useHeld(
-      useQualifyingGrid(classCarIdxs),
-      isEmptyGrid
-    );
-
-    // Hold the snapshot at an identity that only moves when `version` moves. A
-    // resend, or resubscribing after a tab switch, delivers an equal snapshot as
-    // a fresh object, which would otherwise rebuild 60 series for nothing.
-    // Archived history is fetched once per session, so its identity is stable.
-    const historyKey = isReplayFile
-      ? archivedSnapshot
-      : (liveSnapshot?.version ?? -1);
-    const currentHistory = useMemo(
-      () => (isReplayFile ? (archivedSnapshot ?? undefined) : liveSnapshot),
-      // Deliberately keyed on the version, not the snapshot identity.
-      // eslint-disable-next-line @eslint-react/exhaustive-deps
-      [isReplayFile, historyKey]
-    );
-    const history = useHeld(
-      currentHistory,
-      isEmptyHistory,
-      currentHistory?.sessionNum
+    const qualifyingGrid = useMemo(
+      () => qualifyingGridSlots(qualifyingResults, classCarIdxs),
+      [qualifyingResults, classCarIdxs]
     );
 
     const built = useMemo(() => {
@@ -439,7 +397,7 @@ export const LapGraphView = memo(
       if (isReplayFile && !isArchivedReplay) {
         return 'No lap history was recorded on this PC for this replay.';
       }
-      if (isArchivedReplay && !archivedSnapshot) {
+      if (isArchivedReplay && !hasArchivedHistory) {
         return 'No laps were recorded on this PC for this session.';
       }
       if (!activeClass || leaderCarIdx === null) return 'Waiting for the grid.';
@@ -451,7 +409,7 @@ export const LapGraphView = memo(
       sessionType,
       isReplayFile,
       isArchivedReplay,
-      archivedSnapshot,
+      hasArchivedHistory,
       activeClass,
       leaderCarIdx,
       mode,

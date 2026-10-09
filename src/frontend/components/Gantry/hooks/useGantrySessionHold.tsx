@@ -70,7 +70,7 @@ export const useGantrySessionHold = (): GantrySessionHold =>
 
 interface Kept<T> {
   epoch: number;
-  key: number | null | undefined;
+  key: string | number | null | undefined;
   value: T;
 }
 
@@ -86,7 +86,7 @@ interface Kept<T> {
 export const useHeld = <T,>(
   live: T,
   isEmpty: (value: T) => boolean,
-  key?: number | null
+  key?: string | number | null
 ): T => {
   const { holding, epoch } = useGantrySessionHold();
   const kept = useRef<Kept<T> | null>(null);
