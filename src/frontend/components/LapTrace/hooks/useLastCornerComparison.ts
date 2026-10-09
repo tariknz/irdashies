@@ -11,7 +11,10 @@ import {
   brakeReleasesFor,
   compareCornerBrakePoint,
 } from '../../../domain/lapTrace/cornerBrakePointDelta';
-import { selectBrakeCuePoints } from '../../../domain/lapTrace/brakeCuePoints';
+import {
+  BRAKE_CUE_MIN_PEAK_DEFAULT,
+  selectBrakeCuePoints,
+} from '../../../domain/lapTrace/brakeCuePoints';
 import { BRAKE_POINT_LOOKBACK_M } from '../layout';
 
 /**
@@ -249,7 +252,14 @@ export const useLastCornerLabels = (
 
 export const useLastCornerComparison = (
   enabled: boolean,
-  labelStyle: LastCornerLabelStyle = 'name'
+  labelStyle: LastCornerLabelStyle = 'name',
+  /**
+   * Peak brake pressure a reference application must reach to count as a braking
+   * zone. Supplied by the widget from its settings so this hook and the audible
+   * countdown filter the reference lap with the same threshold; left out, it
+   * falls back to the same default the countdown would use.
+   */
+  brakeCueMinPeak: number = BRAKE_CUE_MIN_PEAK_DEFAULT
 ): LastCornerEntry[] => {
   const referenceLap = useLapTraceStore((s) => s.referenceLap);
   const trackLengthM = useLapTraceStore((s) => s.trackLengthM);
@@ -261,13 +271,14 @@ export const useLastCornerComparison = (
    * Built once per reference lap rather than searched per corner exit, which
    * is both cheaper and the whole reason attribution can be exclusive.
    *
-   * The points come from the same filter the audible countdown uses, so the
-   * two features agree on what a braking zone is: a stabilising dab, or raw
-   * pedal noise across the 1% event threshold, is not one.
+   * The points come from the same filter the audible countdown uses, at the same
+   * threshold, so the two features agree on what a braking zone is: a
+   * stabilising brush, or raw pedal noise across the 1% event threshold, is not
+   * one.
    */
   const cornerBrakePointsM = useMemo(() => {
     const brakePointsM = referenceLap
-      ? selectBrakeCuePoints(referenceLap)
+      ? selectBrakeCuePoints(referenceLap, { minPeak: brakeCueMinPeak })
       : NO_BRAKE_POINTS;
     return assignCornerBrakePoints({
       cornerStartPcts: corners.map((c) => c.start_pct),
@@ -287,7 +298,7 @@ export const useLastCornerComparison = (
       trackLengthM,
       maxLeadM: BRAKE_POINT_LOOKBACK_M,
     });
-  }, [corners, referenceLap, trackLengthM]);
+  }, [corners, referenceLap, trackLengthM, brakeCueMinPeak]);
 
   const [entries, setEntries] = useState<LastCornerEntry[]>(EMPTY);
   const entriesRef = useRef<LastCornerEntry[]>(EMPTY);

@@ -4,6 +4,7 @@ import { GantryStandings } from './components/GantryStandings/GantryStandings';
 import { GantryIncidents } from './components/GantryIncidents/GantryIncidents';
 import { LapGraphView } from './components/LapGraph/LapGraphView';
 import { SplitPane } from './components/SplitPane/SplitPane';
+import { useGantryAlwaysOnTop } from './hooks/useGantryAlwaysOnTop';
 import { GantryReplayNotice } from './components/GantryReplayBanner/GantryReplayBanner';
 import { GantrySessionEndedNotice } from './components/GantrySessionEndedNotice/GantrySessionEndedNotice';
 import { useHeld } from './hooks/useGantrySessionHold';
@@ -27,6 +28,7 @@ const GantryInner = memo(() => {
     'standings-incidents'
   );
   const [followedCarIdx, setFollowedCarIdx] = useState<number | null>(null);
+  const [alwaysOnTop, setAlwaysOnTop] = useGantryAlwaysOnTop();
 
   // The lap graph unmounts when the other tab is showing, so its choices live
   // here. null means "follow the saved setting"; the view decides what that is.
@@ -65,6 +67,8 @@ const GantryInner = memo(() => {
         drivers={drivers}
         followedCarIdx={followedCarIdx}
         onFollowChange={setFollowedCarIdx}
+        alwaysOnTop={alwaysOnTop}
+        onAlwaysOnTopChange={setAlwaysOnTop}
       />
       <GantryReplayNotice />
       <GantrySessionEndedNotice />

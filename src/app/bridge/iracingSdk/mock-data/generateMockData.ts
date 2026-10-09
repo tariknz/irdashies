@@ -2,6 +2,19 @@ import type { IrSdkSourceBridge, Session, Telemetry } from '@irdashies/types';
 import mockSessionInfo from '../../../irsdk/node/utils/mock-data/session.json';
 import mockTelemetry from '../../../irsdk/node/utils/mock-data/telemetry.json';
 
+const MOCK_TEAM_NAMES = [
+  'Apex Racing',
+  'Northstar Motorsport',
+  'Pacific Coast Endurance Racing',
+  'Cornerstone Esports',
+  'Velocity Works',
+  'Blue Flag Racing',
+  'Redline Motorsport',
+  'Silver Arrow Racing',
+  'Gridline Engineering',
+  'Summit Racing',
+];
+
 export async function generateMockDataFromPath(
   path?: string
 ): Promise<IrSdkSourceBridge> {
@@ -347,13 +360,27 @@ export function generateMockData(sessionData?: {
           // Demo mode: override CarID for P2P demo drivers
           s = {
             ...base,
+            WeekendInfo: {
+              ...base.WeekendInfo,
+              TeamRacing: 1,
+              MinDrivers: 1,
+              MaxDrivers: 4,
+            },
             DriverInfo: {
               ...base.DriverInfo,
-              Drivers: base.DriverInfo.Drivers.map((driver) =>
-                P2P_DEMO_CAR_IDXS.includes(driver.CarIdx)
-                  ? { ...driver, CarID: P2P_IR18_CAR_ID }
-                  : driver
-              ),
+              Drivers: base.DriverInfo.Drivers.map((driver) => {
+                if (driver.CarIsPaceCar) return driver;
+
+                const teamIndex = (driver.CarIdx - 1) % MOCK_TEAM_NAMES.length;
+                return {
+                  ...driver,
+                  TeamID: teamIndex + 1,
+                  TeamName: MOCK_TEAM_NAMES[teamIndex],
+                  CarID: P2P_DEMO_CAR_IDXS.includes(driver.CarIdx)
+                    ? P2P_IR18_CAR_ID
+                    : driver.CarID,
+                };
+              }),
             },
           };
         }

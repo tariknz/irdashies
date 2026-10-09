@@ -98,6 +98,22 @@ export interface Incident {
   debug?: IncidentDebugSnapshot;
 }
 
+/** Which sessions the incident feed shows: every one, the live one, or one by number. */
+export type IncidentSessionFilter = 'all' | 'current' | number;
+
+/**
+ * The session number a filter selects, or null for every session. "Current"
+ * shows every session until the live session number is known.
+ */
+export const resolveSessionFilter = (
+  filter: IncidentSessionFilter,
+  currentSessionNum: number | null
+): number | null => {
+  if (filter === 'all') return null;
+  if (filter === 'current') return currentSessionNum;
+  return filter;
+};
+
 export interface CarIncidentState {
   prevTrackSurface: number;
   prevSessionFlags: number;

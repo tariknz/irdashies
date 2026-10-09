@@ -25,4 +25,5 @@ export * from './carSystems';
 export * from './sessionProfiles';
 export * from './simulators';
 export * from './simWidgetSupport';
+export * from './displayFallback';
 export * from './lapHistoryBridge';
