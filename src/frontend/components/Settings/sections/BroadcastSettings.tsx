@@ -6,10 +6,12 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
+import { SettingSelectRow } from '../components/SettingSelectRow';
 import { useDashboard } from '@irdashies/context';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import type {
   BroadcastTheme,
+  BroadcastTransition,
   BroadcastWidgetSettings,
   NameFormat,
 } from '@irdashies/types';
@@ -22,6 +24,18 @@ const THEME_OPTIONS: { label: string; value: BroadcastTheme }[] = [
   { label: 'IMSA', value: 'imsa' },
   { label: 'WEC', value: 'wec' },
   { label: 'F1', value: 'f1' },
+];
+
+const TRANSITION_OPTIONS: { label: string; value: BroadcastTransition }[] = [
+  { label: 'Random', value: 'random' },
+  { label: 'Slide Left', value: 'slide-left' },
+  { label: 'Slide Right', value: 'slide-right' },
+  { label: 'Slide Up', value: 'slide-up' },
+  { label: 'Fade', value: 'fade-in' },
+  { label: 'Flip', value: 'flip' },
+  { label: 'Wipe', value: 'wipe' },
+  { label: 'Zoom', value: 'zoom' },
+  { label: 'Checker', value: 'checker' },
 ];
 
 // ponytail: the logo lives inline in the dashboard config so it reaches the
@@ -173,6 +187,13 @@ export const BroadcastSettings = () => {
               max={30}
               step={1}
               onChange={(v) => handleConfigChange({ pageSeconds: v })}
+            />
+            <SettingSelectRow<BroadcastTransition>
+              title="Page Transition"
+              description="How the tower changes page. Random never uses the same one twice in a row."
+              value={config.pageTransition}
+              options={TRANSITION_OPTIONS}
+              onChange={(v) => handleConfigChange({ pageTransition: v })}
             />
             <div className="space-y-2 py-2">
               <label className="text-sm text-slate-300">Title</label>

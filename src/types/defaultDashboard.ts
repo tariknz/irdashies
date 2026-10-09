@@ -1331,6 +1331,7 @@ export const defaultDashboard: {
         driversPerClass: 5,
         title: '',
         pageSeconds: 8,
+        pageTransition: 'random',
         showFocusCard: true,
         phaseScreens: true,
         driverNameFormat: 'surname',

@@ -1228,6 +1228,18 @@ export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;
 /** Series look for the broadcast tower. */
 export type BroadcastTheme = 'imsa' | 'wec' | 'f1';
 
+/** How the tower animates from one page to the next. */
+export type BroadcastTransition =
+  | 'random'
+  | 'slide-left'
+  | 'slide-right'
+  | 'slide-up'
+  | 'fade-in'
+  | 'flip'
+  | 'wipe'
+  | 'zoom'
+  | 'checker';
+
 /** TV-style leaderboard and focus-car card, meant for OBS capture. */
 export interface BroadcastConfig {
   theme: BroadcastTheme;
@@ -1245,6 +1257,8 @@ export interface BroadcastConfig {
   title: string;
   /** How long each tower page (names, gaps per class, gained, pits, tyres) stays up. */
   pageSeconds: number;
+  /** Page change animation; random never repeats the last one. */
+  pageTransition: BroadcastTransition;
   /** Lower-third card for the car the camera is on. */
   showFocusCard: boolean;
   /** Starting grid before the green flag, podium after the checkered. */
