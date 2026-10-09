@@ -74,6 +74,10 @@ export const findBattle = (
 export type RacePhase = 'grid' | 'podium';
 
 /** The grid before the green flag of a race, the podium after the checkered. */
+/** The flag has fallen: the session clock no longer means anything. */
+export const isSessionFinished = (state: number): boolean =>
+  state === SessionState.Checkered || state === SessionState.CoolDown;
+
 export const racePhase = (
   sessionType: string | undefined,
   state: number
@@ -86,8 +90,6 @@ export const racePhase = (
   ) {
     return 'grid';
   }
-  if (state === SessionState.Checkered || state === SessionState.CoolDown) {
-    return 'podium';
-  }
+  if (isSessionFinished(state)) return 'podium';
   return undefined;
 };

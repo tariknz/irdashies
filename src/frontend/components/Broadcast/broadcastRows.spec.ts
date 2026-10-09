@@ -4,6 +4,7 @@ import {
   buildBroadcastRows,
   diffClassPositions,
   findBattle,
+  isSessionFinished,
   racePhase,
 } from './broadcastRows';
 import { SessionState } from '@irdashies/types';
@@ -71,6 +72,14 @@ describe('findBattle', () => {
     expect(findBattle([withInterval(1), withInterval(2, 1.5)], 5, 1)).toBe(
       undefined
     );
+  });
+});
+
+describe('isSessionFinished', () => {
+  it('stops the clock once the checkered flag falls', () => {
+    expect(isSessionFinished(SessionState.Racing)).toBe(false);
+    expect(isSessionFinished(SessionState.Checkered)).toBe(true);
+    expect(isSessionFinished(SessionState.CoolDown)).toBe(true);
   });
 });
 

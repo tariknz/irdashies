@@ -33,6 +33,7 @@ import {
   buildBroadcastRows,
   diffClassPositions,
   findBattle,
+  isSessionFinished,
   racePhase,
   type BroadcastRow,
 } from './broadcastRows';
@@ -170,8 +171,11 @@ const CheckerOverlay = ({ rowCount }: { rowCount: number }) => (
 );
 
 const SessionClock = () => {
-  const { sessionType, timeRemaining, isFixedLapRace } = useSessionTimeTiming();
+  const { sessionType, timeRemaining, isFixedLapRace, state } =
+    useSessionTimeTiming();
   const { currentLap, totalRaceLaps } = useSessionLapsTiming();
+  // iRacing keeps the clock and lap counter running through the cool-down.
+  if (isSessionFinished(state)) return <>FINISH</>;
   if (sessionType === 'Race' && isFixedLapRace && totalRaceLaps > 0) {
     return (
       <>
