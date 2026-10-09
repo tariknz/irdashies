@@ -280,7 +280,7 @@ export class OverlayManager {
       backgroundColor: '#00000000',
       icon: getIconPath(),
       webPreferences: {
-        preload: path.join(__dirname, 'preload.js'),
+        preload: path.join(__dirname, 'preload.cjs'),
         backgroundThrottling: false,
         additionalArguments: createRendererPerfArguments(),
         // Overlay windows are click-through whenever overlays are locked (see
@@ -1095,7 +1095,7 @@ export class OverlayManager {
       icon: getIconPath(),
       show: false,
       webPreferences: {
-        preload: path.join(__dirname, 'preload.js'),
+        preload: path.join(__dirname, 'preload.cjs'),
         backgroundThrottling: false,
       },
     });
@@ -1275,7 +1275,7 @@ export class OverlayManager {
       // hide() call — which is what broke the "Start minimized" setting.
       show: false,
       webPreferences: {
-        preload: path.join(__dirname, 'preload.js'),
+        preload: path.join(__dirname, 'preload.cjs'),
         backgroundThrottling: false,
       },
     };

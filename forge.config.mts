@@ -10,19 +10,22 @@ import path from 'node:path';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    icon: path.resolve(__dirname, 'docs/assets/icons/logo'),
-    extraResource: [path.resolve(__dirname, 'docs/assets/icons')],
+    icon: path.resolve(import.meta.dirname, 'docs/assets/icons/logo'),
+    extraResource: [path.resolve(import.meta.dirname, 'docs/assets/icons')],
   },
   rebuildConfig: {
     force: true,
   },
   makers: [
     new MakerSquirrel({
-      iconUrl: path.resolve(__dirname, 'docs/assets/icons/logo.ico'),
-      setupIcon: path.resolve(__dirname, 'docs/assets/icons/logo.ico'),
+      iconUrl: path.resolve(import.meta.dirname, 'docs/assets/icons/logo.ico'),
+      setupIcon: path.resolve(
+        import.meta.dirname,
+        'docs/assets/icons/logo.ico'
+      ),
     }),
     new MakerDMG({
-      icon: path.resolve(__dirname, 'docs/assets/icons/logo.icns'),
+      icon: path.resolve(import.meta.dirname, 'docs/assets/icons/logo.icns'),
     }),
   ],
   publishers: [
