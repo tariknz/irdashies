@@ -11,6 +11,7 @@ import {
   useHighlightColor,
   useDriverTagMap,
   useManufacturerCounts,
+  useClassLapEstimates,
 } from './hooks';
 import {
   useGeneralSettings,
@@ -121,8 +122,15 @@ export const Standings = () => {
   const { isDriving } = useDrivingState();
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
+  const estimatedLapsEnabled =
+    !!settings?.classHeaderStyle?.estimatedLaps?.enabled;
+
   useLapTimesStoreUpdater(
-    !!(settings?.lapTimeDeltas?.enabled || settings?.avgLapTime?.enabled)
+    !!(
+      settings?.lapTimeDeltas?.enabled ||
+      settings?.avgLapTime?.enabled ||
+      estimatedLapsEnabled
+    )
   );
 
   const p2pDisplayStates = useP2PDisplayStates();
@@ -146,6 +154,12 @@ export const Standings = () => {
 
   const avgLapTimes = useCarIdxRollingAvgLapTime(
     settings?.avgLapTime?.numLaps ?? 5
+  );
+
+  const estimatedLapsByClass = useClassLapEstimates(
+    standings,
+    estimatedLapsEnabled,
+    settings?.classHeaderStyle?.estimatedLaps?.numLaps
   );
 
   const pitStopDurations = usePitStopDuration();
@@ -253,6 +267,7 @@ export const Standings = () => {
                     }
                     totalDrivers={classStats?.[classId]?.total}
                     sof={classStats?.[classId]?.sof}
+                    estimatedLaps={estimatedLapsByClass[classId]}
                     highlightColor={highlightColor}
                     isMultiClass={isMultiClass}
                     colSpan={100}
