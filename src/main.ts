@@ -280,7 +280,9 @@ function setupGarage61SearchSession(initialDashboard: DashboardLayout): void {
   };
 }
 
-app.on('ready', async () => {
+// Native startup calls can let Electron become ready before we reach this
+// registration. The promise also runs initialization when ready already fired.
+void app.whenReady().then(async () => {
   // Don't start services if we don't have the single instance lock
   // (this instance should be quitting)
   if (!overlayManager.hasLock()) {
