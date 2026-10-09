@@ -67,6 +67,16 @@ describe('GamepadManager', () => {
     expect(trigger).not.toHaveBeenCalled();
   });
 
+  it('does not retrigger a held binding when an unbound status bit changes', () => {
+    const trigger = vi.fn();
+    const manager = new GamepadManager(trigger);
+    manager.syncBindings(gamepadBinding());
+    press(manager, 'gamepad:btn0');
+    press(manager, 'gamepad:btn7');
+    release(manager, 'gamepad:btn7');
+    expect(trigger).toHaveBeenCalledExactlyOnceWith('toggle-edit-mode');
+  });
+
   it('forwards the captured combo to the capture callback on first release, instead of triggering', () => {
     const trigger = vi.fn();
     const manager = new GamepadManager(trigger);
@@ -105,6 +115,7 @@ describe('GamepadManager', () => {
     release(manager, 'gamepad:btn0');
     expect(trigger).not.toHaveBeenCalled();
 
+    press(manager, 'gamepad:btn0'); // Old binding must no longer block the new one.
     press(manager, 'gamepad:btn5');
     expect(trigger).toHaveBeenCalledWith('toggle-edit-mode');
   });
@@ -148,7 +159,7 @@ describe('GamepadManager', () => {
       expect(trigger).toHaveBeenCalledWith('toggle-edit-mode');
     });
 
-    it('does not fire on a 2-of-3 subset — an extra held button breaks the exact match', () => {
+    it('ignores unbound held controls when matching a chord', () => {
       const trigger = vi.fn();
       const manager = new GamepadManager(trigger);
       manager.syncBindings(comboBinding());
@@ -157,6 +168,23 @@ describe('GamepadManager', () => {
       press(manager, 'gamepad:btn0');
       press(manager, 'gamepad:btn1');
 
+      expect(trigger).toHaveBeenCalledExactlyOnceWith('toggle-edit-mode');
+    });
+
+    it('does not match a subset when the extra control belongs to another binding', () => {
+      const trigger = vi.fn();
+      const manager = new GamepadManager(trigger);
+      manager.syncBindings({
+        ...comboBinding(),
+        'toggle-hide-ui': {
+          ...gamepadBinding()['toggle-edit-mode'],
+          accelerator: 'gamepad:btn2',
+        },
+      });
+      press(manager, 'gamepad:btn2');
+      trigger.mockClear();
+      press(manager, 'gamepad:btn0');
+      press(manager, 'gamepad:btn1');
       expect(trigger).not.toHaveBeenCalled();
     });
 

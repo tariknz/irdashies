@@ -20,6 +20,7 @@ vi.mock('@irdashies/utils/logger', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
+/** Build a wheel with vendor bits and a hat on two independent reports. */
 function wheel(name = 'Wheel') {
   return Object.assign(new EventTarget(), {
     productName: name,
@@ -45,6 +46,7 @@ function wheel(name = 'Wheel') {
   });
 }
 
+/** Deliver a WebHID report through the real host event handler. */
 function report(device: EventTarget, buttons: number, hat = 8, reportId = 1) {
   device.dispatchEvent(
     Object.assign(new Event('inputreport'), {
@@ -68,6 +70,7 @@ describe('HID host startup', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  /** Start the host with persisted bindings and route its edges to the manager. */
   async function start(
     devices = [wheel()],
     accelerator = 'gamepad:Wheel:btn0'
@@ -93,7 +96,7 @@ describe('HID host startup', () => {
   it('restores a binding with an initially active status bit and hat', async () => {
     const [device] = await start();
     report(device, 0b10000000, 0);
-    expect(sendButton).not.toHaveBeenCalled();
+    expect(trigger).not.toHaveBeenCalled();
 
     report(device, 0b10000001, 0);
     expect(trigger).toHaveBeenCalledExactlyOnceWith('toggle-edit-mode');
@@ -102,23 +105,49 @@ describe('HID host startup', () => {
     expect(trigger).toHaveBeenCalledTimes(2);
   });
 
-  it('requires release and re-press for a button held at startup', async () => {
+  it('fires on the first event-driven press alongside active status bits', async () => {
     const [device] = await start();
-    report(device, 1);
-    report(device, 1);
-    expect(trigger).not.toHaveBeenCalled();
-    report(device, 0);
-    report(device, 1);
+    report(device, 0b10000001, 0);
+    expect(trigger).toHaveBeenCalledExactlyOnceWith('toggle-edit-mode');
+    report(device, 0b10000001, 0);
+    expect(trigger).toHaveBeenCalledTimes(1);
+    report(device, 0b10000000, 0);
+    report(device, 0b10000001, 0);
+    expect(trigger).toHaveBeenCalledTimes(2);
+  });
+
+  it('fires a button and hat chord in the first report', async () => {
+    const [device] = await start(
+      [wheel()],
+      'gamepad:Wheel:btn0+gamepad:Wheel:hat0_up'
+    );
+    report(device, 0b10000001, 0);
     expect(trigger).toHaveBeenCalledExactlyOnceWith('toggle-edit-mode');
   });
 
-  it('initializes each report and device independently', async () => {
+  it('fires a hat binding in the first report', async () => {
+    const [device] = await start([wheel()], 'gamepad:Wheel:hat0_up');
+    report(device, 0b10000000, 0);
+    expect(trigger).toHaveBeenCalledExactlyOnceWith('toggle-edit-mode');
+  });
+
+  it('tracks each report and device independently', async () => {
     const [device, other] = await start([wheel(), wheel('Other')]);
     report(device, 0);
     report(device, 0b10000000, 0, 2);
     report(other, 0b10000000, 0);
-    expect(sendButton).not.toHaveBeenCalled();
+    expect(trigger).not.toHaveBeenCalled();
     report(device, 1);
+    expect(trigger).toHaveBeenCalledExactlyOnceWith('toggle-edit-mode');
+  });
+
+  it('fires on the first report after hotplug', async () => {
+    await start([]);
+    const device = wheel();
+    navigator.hid.dispatchEvent(
+      Object.assign(new Event('connect'), { device })
+    );
+    report(device, 0b10000001, 0);
     expect(trigger).toHaveBeenCalledExactlyOnceWith('toggle-edit-mode');
   });
 

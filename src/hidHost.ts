@@ -25,7 +25,6 @@ interface DeviceState {
   hats: HatField[];
   pressed: Map<number, boolean>;
   hatState: Map<number, HatDirection | null>;
-  initializedReports: Set<number>;
 }
 
 const devices = new Map<HIDDevice, DeviceState>();
@@ -48,7 +47,6 @@ async function openDevice(device: HIDDevice): Promise<void> {
     hats,
     pressed: new Map(),
     hatState: new Map(),
-    initializedReports: new Set(),
   };
   devices.set(device, state);
 
@@ -60,17 +58,8 @@ async function openDevice(device: HIDDevice): Promise<void> {
   }
 
   device.addEventListener('inputreport', (event) => {
-    // The first report is a snapshot, not a set of presses. Wheels can have
-    // always-on status bits or latched controls; forwarding those as presses
-    // leaves extra tokens held in GamepadManager and blocks exact chord matches
-    // after restart. Seed each report's state before forwarding later edges.
-    if (!state.initializedReports.has(event.reportId)) {
-      buttonChanges(event.data, state.buttons, event.reportId, state.pressed);
-      hatChanges(event.data, state.hats, event.reportId, state.hatState);
-      state.initializedReports.add(event.reportId);
-      return;
-    }
-
+    // Devices may send their first report only on a real press. Forward all
+    // edges; GamepadManager excludes unbound status bits from chord matching.
     for (const change of buttonChanges(
       event.data,
       state.buttons,

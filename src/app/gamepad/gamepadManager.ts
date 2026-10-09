@@ -1,5 +1,5 @@
 import type { KeybindingActionId, KeybindingsMap } from '@irdashies/types';
-import { gamepadComboToken, isGamepadBinding } from '@irdashies/shared';
+import { gamepadComboToken, parseGamepadTokens } from '@irdashies/shared';
 import logger from '../logger';
 import { GamepadHost } from './gamepadHost';
 
@@ -15,13 +15,15 @@ import { GamepadHost } from './gamepadHost';
  * Buttons and d-pad directions both support combos (chords): a binding can be
  * a single token ("gamepad:btn0", "gamepad:hat0_up") or several joined with
  * '+' in canonical (sorted) order ("gamepad:btn0+gamepad:hat0_up"). A combo
- * fires the moment its exact set of controls is held — pressing an extra,
- * unrelated control breaks the match, it does not fire a 2-of-3 subset.
+ * fires the moment its exact set of configured controls is held. An extra
+ * control used by another binding breaks the match; unbound controls are ignored.
  */
 export class GamepadManager {
   /** Canonical accelerator (single token or sorted combo) -> action it triggers. */
   private map = new Map<string, KeybindingActionId>();
-  /** Controls (buttons and hat directions) currently held down. */
+  /** Controls participating in configured bindings; excludes unbound status bits. */
+  private boundTokens = new Set<string>();
+  /** Configured controls (buttons and hat directions) currently held down. */
   private held = new Set<string>();
   /** Lazily-created WebHID host window manager (see start). */
   private host?: GamepadHost;
@@ -35,8 +37,11 @@ export class GamepadManager {
   /** Rebuild the gamepad token -> action lookup from the current bindings. */
   public syncBindings(bindings: KeybindingsMap): void {
     this.map.clear();
+    this.boundTokens.clear();
     for (const [actionId, entry] of Object.entries(bindings)) {
-      if (isGamepadBinding(entry.accelerator)) {
+      const tokens = parseGamepadTokens(entry.accelerator);
+      if (tokens) {
+        for (const token of tokens) this.boundTokens.add(token);
         this.map.set(entry.accelerator, actionId as KeybindingActionId);
       }
     }
@@ -61,6 +66,10 @@ export class GamepadManager {
       }
       return;
     }
+
+    // Vendor status bits and idle hats must not poison exact chord matches.
+    // Capture above still accepts every control, including newly bound ones.
+    if (!this.boundTokens.has(token)) return;
 
     if (!down) {
       this.held.delete(token);
