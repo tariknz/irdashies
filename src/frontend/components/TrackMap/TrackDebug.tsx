@@ -1,5 +1,5 @@
 import { TrackDrawing } from './TrackCanvas';
-import { getBrokenTrackInfo } from './tracks/brokenTracks';
+import { getBrokenTrackInfo } from '@irdashies/domain/track/tracks/brokenTracks';
 
 interface TrackDebugProps {
   trackId: number;

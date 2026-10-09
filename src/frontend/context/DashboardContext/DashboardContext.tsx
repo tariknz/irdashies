@@ -153,9 +153,17 @@ export const DashboardProvider: React.FC<{
       setEditMode(editMode)
     );
     bridge.getAppVersion?.().then((version) => setVersion(version));
-    const unsubDemoMode = bridge.onDemoModeChanged?.((demoMode) =>
-      setIsDemoMode(demoMode)
-    );
+    // Toggling demo mode can rebuild the overlay windows after the change
+    // was announced, so a new window asks for the current state; an event
+    // that lands first is newer than the answer and wins.
+    let demoModeHeard = false;
+    const unsubDemoMode = bridge.onDemoModeChanged?.((demoMode) => {
+      demoModeHeard = true;
+      setIsDemoMode(demoMode);
+    });
+    bridge.getIsDemoMode?.().then((demoMode) => {
+      if (!demoModeHeard) setIsDemoMode(demoMode);
+    });
     const unsubContainerBounds = bridge.onContainerBoundsInfo?.((info) => {
       setContainerBoundsInfo(info);
     });

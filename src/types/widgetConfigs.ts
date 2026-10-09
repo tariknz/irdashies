@@ -489,6 +489,261 @@ export interface BlindSpotMonitorConfig {
   thresholdColor2?: number;
 }
 
+/**
+ * How a warning marks the rim: a solid arc, three segments that light up
+ * with urgency, a soft glow inward from the rim, or a wedge from our car.
+ */
+export const RADAR_ARC_STYLES = ['arc', 'segments', 'glow', 'sector'] as const;
+export type RadarArcStyle = (typeof RADAR_ARC_STYLES)[number];
+
+/** Where along our car a rival must reach to be owed room. */
+export const RADAR_OVERLAP_THRESHOLDS = [
+  'rearWheel',
+  'door',
+  'frontWheel',
+] as const;
+export type RadarOverlapThreshold = (typeof RADAR_OVERLAP_THRESHOLDS)[number];
+
+export const RADAR_RIVAL_COLOR_MODES = ['safety', 'class', 'custom'] as const;
+
+export interface RadarConfig {
+  /** Metres from the centre to the edge of the disc. */
+  range: number;
+  /** Keep the radar off screen while no rival is near. */
+  autoHide: boolean;
+  /** Metres; a rival this close brings the radar on screen. */
+  showDistance: number;
+  /**
+   * Metres; the radar leaves once every rival is further than this. Kept
+   * above `showDistance` so a car sitting on the threshold cannot make it
+   * blink.
+   */
+  hideDistance: number;
+  /** Seconds the fade in and out takes. */
+  fadeSeconds: number;
+  /**
+   * Car body size in metres; the SDK reports none. Used for every car when
+   * `sizeByClass` is off, and for unknown classes when it is on.
+   */
+  carLength: number;
+  carWidth: number;
+  /** Size cars by class: saved overrides, then typical sizes per class. */
+  sizeByClass: boolean;
+  /** Per-class size overrides keyed by CarClassShortName. */
+  classSizes: Record<string, { length: number; width: number }>;
+  /** Rim arcs and outlines for close and alongside rivals. */
+  showWarnings: boolean;
+  /** The rim arc of a close or alongside rival; off leaves the outline. */
+  warningArcs: boolean;
+  warningArcStyle: RadarArcStyle;
+  /** Metres of bumper gap below which a rival is drawn as close. */
+  cautionDistance: number;
+  /** Write the bumper gap next to a close rival. */
+  showGapLabel: boolean;
+  showCarNumbers: boolean;
+  /** Draw the road under the cars. */
+  showTrackMap: boolean;
+  /** Drawn road width in metres; the drawings carry no width. */
+  trackWidth: number;
+  /** Road opacity, 0-100. */
+  mapOpacity: number;
+  showRings: boolean;
+  /** Metres between distance rings. */
+  ringSpacing: number;
+  /** Hide cars on pit road while we are on track, and the reverse. */
+  hideInPit: boolean;
+  /** Keep the radar off screen while our car sits in its pit box. */
+  hideInPitBox: boolean;
+  /**
+   * Rival fill: their licence colour as on the rating badge, their class
+   * colour, or one colour for everyone.
+   */
+  rivalColorMode: (typeof RADAR_RIVAL_COLOR_MODES)[number];
+  /** Colour for `custom`; null picks a paler shade of `playerColor`. */
+  rivalCustomColor: number | null;
+  playerColor: number;
+  background: { opacity: number };
+  /** Share of the radius, 0-100, over which the radar fades out at the rim. */
+  edgeFade: number;
+  /** Dashed lines through our car, ahead/behind and left/right. */
+  showCrosshair: boolean;
+  /** Run the dashes of the line ahead/behind past at our speed. */
+  axisMotion: boolean;
+  /** Metres of each dash on the moving line; the gaps are twice as long. */
+  axisDashLength: number;
+  /** Speed of the moving dashes, % of our own. */
+  axisSpeed: number;
+  closeColor: number;
+  alongsideColor: number;
+  /** Pulses per second on cars alongside; 0 keeps them steady. */
+  pulseHz: number;
+  /**
+   * Degrees either side of the bearing the arc of a close or alongside car
+   * spans, at least/most.
+   */
+  arcMinDeg: number;
+  arcMaxDeg: number;
+  /** Thickness of every rim arc, % of the radius. */
+  arcThickness: number;
+  /**
+   * A strip along the side a rival is on, showing how far along our car it
+   * reaches (or how far along its car we reach when we attack).
+   */
+  showOverlap: boolean;
+  /** How far alongside counts as owed room: the strip turns red from there. */
+  overlapThreshold: RadarOverlapThreshold;
+  /** Write the overlap in per cent next to the strip. */
+  overlapShowPercent: boolean;
+  /** Warn early about a car coming up fast from behind and diving in. */
+  showDiveWarning: boolean;
+  /** Closing speed in km/h below which a car behind is no worry. */
+  diveMinClosingKmh: number;
+  /** Seconds to our side under which a fast car turns into a dive warning. */
+  diveWarnSeconds: number;
+  /** Draw where a diving car will be shortly, as a dashed outline. */
+  diveGhost: boolean;
+  /** Write the closing speed (and time to our side) next to a fast car. */
+  diveShowClosing: boolean;
+  /** The rim arc of a car coming up fast or diving in. */
+  diveArcs: boolean;
+  diveArcStyle: RadarArcStyle;
+  diveArcMinDeg: number;
+  diveArcMaxDeg: number;
+  /** Mark cars ahead that crashed, crawl, left the track or are rejoining. */
+  showHazards: boolean;
+  /** Metres ahead a hazard is shown from. */
+  hazardRange: number;
+  /** Metres under which the hazard marker flashes. */
+  hazardBlinkDistance: number;
+  hazardCrash: boolean;
+  hazardSlow: boolean;
+  /** Cars off the track, and coming back on. */
+  hazardOff: boolean;
+  /** Write the hazard car's speed under its distance. */
+  hazardShowSpeed: boolean;
+  /** The rim arc under a hazard's triangle. */
+  hazardArcs: boolean;
+  hazardArcStyle: RadarArcStyle;
+  /** Half-span of a hazard's arc far off and right at the rim, degrees. */
+  hazardArcMinDeg: number;
+  hazardArcMaxDeg: number;
+  /** Switch to `ovalProfile` on oval tracks. */
+  autoProfile: boolean;
+  /** Look and distances for ovals; null until the oval profile is edited. */
+  ovalProfile: Partial<RadarProfileConfig> | null;
+  tuning: RadarTuning;
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+/** Settings that the road and oval profiles each keep their own copy of. */
+export const RADAR_PROFILE_KEYS = [
+  'range',
+  'autoHide',
+  'showDistance',
+  'hideDistance',
+  'fadeSeconds',
+  'showWarnings',
+  'warningArcs',
+  'warningArcStyle',
+  'cautionDistance',
+  'showGapLabel',
+  'showCarNumbers',
+  'showTrackMap',
+  'trackWidth',
+  'mapOpacity',
+  'showRings',
+  'ringSpacing',
+  'showCrosshair',
+  'axisMotion',
+  'axisDashLength',
+  'axisSpeed',
+  'rivalColorMode',
+  'rivalCustomColor',
+  'playerColor',
+  'background',
+  'edgeFade',
+  'closeColor',
+  'alongsideColor',
+  'pulseHz',
+  'arcMinDeg',
+  'arcMaxDeg',
+  'arcThickness',
+  'showOverlap',
+  'overlapThreshold',
+  'overlapShowPercent',
+  'showDiveWarning',
+  'diveMinClosingKmh',
+  'diveWarnSeconds',
+  'diveGhost',
+  'diveShowClosing',
+  'diveArcs',
+  'diveArcStyle',
+  'diveArcMinDeg',
+  'diveArcMaxDeg',
+  'showHazards',
+  'hazardRange',
+  'hazardBlinkDistance',
+  'hazardArcs',
+  'hazardArcStyle',
+  'hazardArcMinDeg',
+  'hazardArcMaxDeg',
+] as const satisfies readonly (keyof RadarConfig)[];
+
+export type RadarProfileKey = (typeof RADAR_PROFILE_KEYS)[number];
+export type RadarProfileConfig = Pick<RadarConfig, RadarProfileKey>;
+
+/** The part of the radar tuning the telemetry processor reads. */
+export type RadarProcessorTuning = Pick<
+  RadarTuning,
+  | 'speedSmoothing'
+  | 'laneRate'
+  | 'overlapSearchM'
+  | 'poleLearnAfterS'
+  | 'poleFlipFrames'
+  | 'gridMaxSpeedMs'
+>;
+
+export const DEFAULT_RADAR_TUNING: RadarTuning = {
+  extrapolationS: 0.15,
+  laneGapM: 0.7,
+  minLabelPx: 8,
+  debugLabels: false,
+  showFrameTime: false,
+  speedSmoothing: 0.25,
+  laneRate: 4,
+  overlapSearchM: 8,
+  poleLearnAfterS: 15,
+  poleFlipFrames: 30,
+  gridMaxSpeedMs: 3,
+};
+
+/** Internals for the dev view; the defaults are what the radar was tuned on. */
+export interface RadarTuning {
+  /** Seconds a snapshot is extrapolated at most before the next arrives. */
+  extrapolationS: number;
+  /** Gap between lane centres beyond the car's own width, in metres. */
+  laneGapM: number;
+  /** Car numbers are left out on cars drawn smaller than this, in px. */
+  minLabelPx: number;
+  /** Write car index and lane next to every car. */
+  debugLabels: boolean;
+  /** Write how long a frame takes to draw. */
+  showFrameTime: boolean;
+  /** Weight of the newest sample in the per-car speed average, 0-1. */
+  speedSmoothing: number;
+  /** Lanes per second a car may move when it changes lane. */
+  laneRate: number;
+  /** Metres either side searched for an overlapping car. */
+  overlapSearchM: number;
+  /** Seconds after the green flag in which the pole side is learnt. */
+  poleLearnAfterS: number;
+  /** Frames in a row the spotter must disagree before the side flips. */
+  poleFlipFrames: number;
+  /** Below this speed, in m/s, cars count as parked on the grid. */
+  gridMaxSpeedMs: number;
+}
+
 export interface RejoinIndicatorConfig {
   showAtSpeed: number;
   careGap: number;
@@ -992,6 +1247,7 @@ export interface WidgetConfigMap {
   tachometer: TachometerConfig;
   fuel: FuelConfig;
   blindspotmonitor: BlindSpotMonitorConfig;
+  radar: RadarConfig;
   garagecover: GarageCoverConfig;
   rejoin: RejoinIndicatorConfig;
   flag: FlagConfig;
@@ -1096,6 +1352,7 @@ export type TachometerWidgetSettings = BaseWidgetSettings<TachometerConfig>;
 export type FuelWidgetSettings = BaseWidgetSettings<FuelConfig>;
 export type BlindSpotMonitorWidgetSettings =
   BaseWidgetSettings<BlindSpotMonitorConfig>;
+export type RadarWidgetSettings = BaseWidgetSettings<RadarConfig>;
 export type RejoinIndicatorWidgetSettings =
   BaseWidgetSettings<RejoinIndicatorConfig>;
 export type FlagWidgetSettings = BaseWidgetSettings<FlagConfig> & {

@@ -1,8 +1,8 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { TrackCanvas, TrackDriver } from './TrackCanvas';
 import { useEffect, useMemo, useState } from 'react';
-import tracks from './tracks/tracks.json';
-import { BROKEN_TRACKS } from './tracks/brokenTracks';
+import tracks from '@irdashies/domain/track/tracks/tracks.json';
+import { BROKEN_TRACKS } from '@irdashies/domain/track/tracks/brokenTracks';
 import { useTelemetryStore } from '@irdashies/context';
 import type { Telemetry } from '@irdashies/types';
 import {

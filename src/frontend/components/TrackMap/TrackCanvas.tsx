@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
-import tracks from './tracks/tracks.json';
+import tracks from '@irdashies/domain/track/tracks/tracks.json';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
-import { shouldShowTrack } from './tracks/brokenTracks';
+import { shouldShowTrack } from '@irdashies/domain/track/tracks/brokenTracks';
 import { TrackDebug } from './TrackDebug';
 import { useStartFinishLine } from './hooks/useStartFinishLine';
 import {

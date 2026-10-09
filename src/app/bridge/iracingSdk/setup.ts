@@ -106,6 +106,8 @@ export async function iRacingSDKSetup(
   overlayManager: OverlayManager,
   channelBus?: ChannelBus
 ) {
+  ipcMain.handle('getIsDemoMode', () => isDemoMode);
+
   ipcMain.on('toggleDemoMode', async (_, value: boolean) => {
     isDemoMode = value;
 

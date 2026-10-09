@@ -151,6 +151,14 @@ export async function publishIRacingSDKEvents(
   const referenceLapStorage = channelBus
     ? await import('../../storage/referenceLaps')
     : undefined;
+  const radarPoleSideStorage = channelBus
+    ? await import('../../storage/radarPoleSides')
+    : undefined;
+  // Learnt sides are read once, off the telemetry path, before any session.
+  await radarPoleSideStorage?.loadRadarPoleSidesFile();
+  const radarTuningStorage = channelBus
+    ? await import('../../storage/radarTuning')
+    : undefined;
   const processorHost =
     channelBus && referenceLapStorage
       ? createDefaultProcessorHost({
@@ -163,6 +171,11 @@ export async function publishIRacingSDKEvents(
             load: referenceLapStorage.getReferenceLap,
             save: referenceLapStorage.saveReferenceLap,
           },
+          radarPoleSidePersistence: radarPoleSideStorage && {
+            load: radarPoleSideStorage.loadRadarPoleSides,
+            save: radarPoleSideStorage.saveRadarPoleSide,
+          },
+          radarTuning: radarTuningStorage?.getRadarTuning,
         })
       : undefined;
 
