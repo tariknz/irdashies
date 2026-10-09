@@ -105,6 +105,52 @@ describe('IncidentRuntime', () => {
     expect(metrics.markEnd).toHaveBeenCalledWith('incidentPublication');
   });
 
+  it('pauses detection while a replay file is loaded and resumes after', () => {
+    const bus = new ChannelBus();
+    const publish = vi.spyOn(bus, 'publish');
+    const metrics = newMetrics();
+    const persistence = { save: vi.fn() };
+    const runtime = new IncidentRuntime(
+      bus,
+      createSessionLifecycle(),
+      metrics,
+      persistence
+    );
+    runtime.onSession(raceSession());
+    const pitEntry = (start: number) => {
+      runtime.onFrame(
+        frame({
+          CarIdxOnPitRoad: { value: [false] },
+          SessionTime: { value: [start] },
+        })
+      );
+      for (let i = 0; i < 3; i++) {
+        runtime.onFrame(
+          frame({
+            CarIdxOnPitRoad: { value: [true] },
+            SessionTime: { value: [start + (i + 1) * PIT_STEP] },
+          })
+        );
+      }
+    };
+
+    runtime.updateReplayPaused(true);
+    pitEntry(100);
+    expect(metrics.markStart).not.toHaveBeenCalled();
+    expect(persistence.save).not.toHaveBeenCalled();
+    expect(publish).not.toHaveBeenCalledWith(
+      'raceControl.incidents',
+      expect.anything()
+    );
+
+    runtime.updateReplayPaused(false);
+    pitEntry(200);
+    expect(persistence.save).toHaveBeenCalledWith(
+      '123',
+      expect.objectContaining({ type: IncidentType.PitEntry })
+    );
+  });
+
   it('clears a stale session id and does not persist when session data omits it', () => {
     const bus = new ChannelBus();
     const publish = vi.spyOn(bus, 'publish');

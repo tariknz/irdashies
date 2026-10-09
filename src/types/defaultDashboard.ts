@@ -108,6 +108,12 @@ export const defaultDashboard: {
         lapCount: {
           enabled: false,
         },
+        classHeaderStyle: {
+          estimatedLaps: {
+            enabled: false,
+            numLaps: 5,
+          },
+        },
         driverStandings: {
           buffer: 3,
           numNonClassDrivers: 3,

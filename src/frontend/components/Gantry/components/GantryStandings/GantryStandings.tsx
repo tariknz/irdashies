@@ -13,6 +13,7 @@ import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandin
 import { useLapTimesStoreUpdater } from '@irdashies/context';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { useGantrySettings } from '../../hooks/useGantrySettings';
+import { useHeld } from '../../hooks/useGantrySessionHold';
 import type { NameFormat } from '@irdashies/types';
 
 interface Props {
@@ -155,13 +156,16 @@ const formatInterval = (
   return interval.toFixed(1);
 };
 
+const isEmptyStandings = (standings: readonly unknown[]) =>
+  standings.length === 0;
+
 export const GantryStandings = memo(({ followedCarIdx }: Props) => {
   useLapTimesStoreUpdater(true);
   const nameFormat = useGantrySettings()?.driverNameFormat ?? 'surname';
   // Gap and interval are only calculated when the settings say they are
   // enabled, so passing nothing leaves both columns empty. The cast is needed
   // because the settings type marks these fields required.
-  const standingsByClass = useDriverStandings(
+  const liveStandings = useDriverStandings(
     {
       gap: { enabled: true },
       interval: { enabled: true },
@@ -169,6 +173,7 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
     } as Parameters<typeof useDriverStandings>[0],
     { showAll: true }
   );
+  const standingsByClass = useHeld(liveStandings, isEmptyStandings);
   const followedRef = useRef<HTMLDivElement | null>(null);
 
   // Clicking a row points the sim's camera at that car. Only meaningful in a

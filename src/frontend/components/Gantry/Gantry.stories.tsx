@@ -15,6 +15,8 @@ import {
 } from '@irdashies/storybook';
 import type { Incident } from '@irdashies/types';
 import { Gantry, type GantryProps } from './Gantry';
+import { useEffect, useState } from 'react';
+import { GantrySessionHoldProvider } from './hooks/useGantrySessionHold';
 
 interface GantrySetup extends GantryDecoratorOptions {
   channels?: Partial<GantryChannels>;
@@ -35,6 +37,20 @@ const gantrySetup = ({
   GantryDecorator(providers),
   GantryChannelDecorator(channels),
 ];
+
+/** Runs the sim briefly, then closes it so the Gantry holds the session. */
+const SimClosesDecorator: Decorator = (Story) => {
+  const [running, setRunning] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setRunning(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+  return (
+    <GantrySessionHoldProvider running={running}>
+      <Story />
+    </GantrySessionHoldProvider>
+  );
+};
 
 const meta: Meta<GantryStoryArgs & GantryProps> = {
   component: Gantry,
@@ -105,4 +121,9 @@ export const WithDock: Story = {
     ),
   },
   decorators: gantrySetup(),
+};
+
+/** The sim has closed: the final results and lap graph stay up for review. */
+export const SessionEnded: Story = {
+  decorators: [SimClosesDecorator, ...gantrySetup()],
 };

@@ -111,6 +111,7 @@ export interface ClassHeaderStyle {
     cap: number | null; // null = All
     showPlayerManufacturer: boolean;
   };
+  estimatedLaps?: { enabled: boolean; numLaps?: number };
 }
 
 // ===========================

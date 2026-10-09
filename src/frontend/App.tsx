@@ -23,6 +23,7 @@ import {
   GantryDockHost,
   useGantryDock,
 } from './components/GantryDock/GantryDockHost';
+import { GantrySessionHoldProvider } from './components/Gantry/hooks/useGantrySessionHold';
 
 /**
  * Check if this window is the settings window based on URL hash
@@ -73,7 +74,9 @@ const GantryApp = () => {
     <WidgetRuntimeProvider widgetType="gantry">
       <ThemeManager>
         <div className="w-full h-full bg-slate-900 text-white">
-          <Gantry dock={dockHost} />
+          <GantrySessionHoldProvider running={running}>
+            <Gantry dock={dockHost} />
+          </GantrySessionHoldProvider>
         </div>
       </ThemeManager>
     </WidgetRuntimeProvider>

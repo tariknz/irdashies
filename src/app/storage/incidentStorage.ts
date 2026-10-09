@@ -206,6 +206,24 @@ export async function loadIncidents(
   return [...entry.incidents];
 }
 
+/**
+ * Session numbers with stored incidents, lowest first. Reads without caching
+ * the file: a cached file is rewritten at shutdown, which would leave an empty
+ * archive behind for every replay that was only checked.
+ */
+export async function listArchivedIncidentSessions(
+  sessionId: string,
+  storageDir = getStorageDir()
+): Promise<number[]> {
+  if (!hasSessionId(sessionId)) return [];
+  const filePath = getFilePath(sessionId, storageDir);
+  const incidents =
+    caches.get(filePath)?.incidents ?? (await readIncidentsFile(filePath));
+  return [...new Set(incidents.map((incident) => incident.sessionNum))].sort(
+    (a, b) => a - b
+  );
+}
+
 async function appendIncidentInternal(
   sessionId: string,
   incident: Incident,
