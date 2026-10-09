@@ -19,6 +19,26 @@ logger.transports.file.level =
     : 'info';
 logger.transports.console.level = 'debug';
 
+// A dev launcher can close its output pipe while Electron is still running.
+// Keep file logging available instead of crashing on the next console write.
+const writeToConsole = logger.transports.console.writeFn;
+logger.transports.console.writeFn = (options) => {
+  try {
+    writeToConsole(options);
+  } catch (error) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'EPIPE'
+    ) {
+      logger.transports.console.level = false;
+      return;
+    }
+    throw error;
+  }
+};
+
 const perfLogPath = process.env.PERF_LOG_PATH;
 if (perfLogPath) {
   // Packaged Electron apps do not reliably forward console output to the
