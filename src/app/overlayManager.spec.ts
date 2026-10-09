@@ -44,6 +44,7 @@ class FakeBrowserWindow {
     this.shown = true;
   });
   focus = vi.fn();
+  close = vi.fn();
   setAlwaysOnTop = vi.fn();
   setBounds = vi.fn();
   setPosition = vi.fn();
@@ -73,6 +74,7 @@ vi.mock('electron', () => ({
   BrowserWindow: FakeBrowserWindow,
   Notification: vi.fn(),
   screen: {
+    on: vi.fn(),
     getAllDisplays: () => screenState.displays,
     getPrimaryDisplay: () => ({
       id: 1,
@@ -257,6 +259,23 @@ describe('OverlayManager display windows', () => {
     expect(displayWindow.showInactive).toHaveBeenCalledOnce();
     expect(displayWindow.show).not.toHaveBeenCalled();
     expect(displayWindow.focus).not.toHaveBeenCalled();
+  });
+
+  it('keeps the rebuilt overlay when the old one reports closed late', () => {
+    const manager = new OverlayManager();
+    const dashboard = { widgets: [] } as DashboardLayout;
+    manager.createOverlays(dashboard, { createSettingsWindow: false });
+    const oldWindow = createdWindows[0];
+
+    manager.forceRefreshOverlays(dashboard, { createSettingsWindow: false });
+    const newWindow = createdWindows[1];
+    // win.close() is async, so 'closed' arrives after the new window exists
+    const closedHandler = oldWindow.on.mock.calls.find(
+      ([event]) => event === 'closed'
+    )?.[1] as () => void;
+    closedHandler();
+
+    expect(manager.getOverlays().map((o) => o.window)).toEqual([newWindow]);
   });
 });
 

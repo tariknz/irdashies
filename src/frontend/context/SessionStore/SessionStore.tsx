@@ -47,6 +47,24 @@ export const useSingleSession = (sessionNum: number | undefined) =>
     shallow
   );
 
+/**
+ * Number, name and type of every session in the event. Only changes when the
+ * session list itself changes, not on every session-info update.
+ */
+export const useSessionList = () =>
+  useStoreWithEqualityFn(
+    useSessionStore,
+    (state) =>
+      state.session?.SessionInfo?.Sessions?.map(
+        ({ SessionNum, SessionName, SessionType }) => ({
+          SessionNum,
+          SessionName,
+          SessionType,
+        })
+      ),
+    arrayShallowCompare
+  );
+
 export const useSessionType = (sessionNum: number | undefined) =>
   useStore(
     useSessionStore,

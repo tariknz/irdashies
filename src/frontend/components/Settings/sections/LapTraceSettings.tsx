@@ -22,6 +22,7 @@ import {
   GARAGE61_IMPORT_TRACK_ID,
 } from '../../../domain/lapTrace/garage61CsvImport';
 import { MAX_METERS_BEHIND } from '../../../domain/lapTrace/lapTraceWindow';
+import { BRAKE_CUE_MIN_PEAK_DEFAULT } from '../../../domain/lapTrace/brakeCuePoints';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
@@ -921,6 +922,25 @@ export const LapTraceSettings = () => {
 
             {activeTab === 'braking' && (
               <SettingsSection title="Brake Point Countdown">
+                {/* Not nested under either toggle below: this threshold decides
+                    what counts as a braking zone for the countdown AND for the
+                    Last Corner brake-distance delta. */}
+                <SettingSliderRow
+                  title="Minimum brake pressure"
+                  description="How hard the reference lap had to press for a brake application to count as a braking zone, and so earn a countdown and a brake-distance delta. Raise it if light stabilising brushes inside fast corners are being counted; lower it if a real corner brake point is being missed. Depends on the car, since brake bias and pedal travel differ."
+                  value={Math.round(
+                    (settings.config.brakeCueMinPeak ??
+                      BRAKE_CUE_MIN_PEAK_DEFAULT) * 100
+                  )}
+                  units="%"
+                  min={5}
+                  max={25}
+                  step={1}
+                  onChange={(v) =>
+                    handleConfigChange({ brakeCueMinPeak: v / 100 })
+                  }
+                />
+
                 <SettingToggleRow
                   title="Countdown Bar(s)"
                   description="Display bar(s) that drain before your reference lap braked. Turning red at the brake point itself. Follows the reference lap's brake points; light dabs of the brake are ignored."

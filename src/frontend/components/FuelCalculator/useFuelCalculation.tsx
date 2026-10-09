@@ -407,7 +407,14 @@ export function useFuelCalculation(
       lapsPerStint: 0,
       targetScenarios: [],
       earliestPitLap: undefined,
-      fuelTankCapacity: 60,
+      // The session's own capacity, when it has one. This is returned before a
+      // valid lap exists -- which is every session until the first lap is
+      // complete -- so hardcoding 60 here reported a 60 L tank for a car that
+      // had already told us it holds 100.
+      fuelTankCapacity:
+        fuelTankCapacityFromSession && fuelTankCapacityFromSession > 0
+          ? fuelTankCapacityFromSession
+          : DEFAULT_TANK_CAPACITY,
       fuelStatus: 'safe',
       maxQualify: qualifyConsumption,
     };

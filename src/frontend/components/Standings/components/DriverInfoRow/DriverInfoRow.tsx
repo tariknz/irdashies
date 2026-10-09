@@ -274,6 +274,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
   }, [numLapDeltasToShow]);
 
   const columnDefinitions = useMemo(() => {
+    const standingsConfig = config && 'gap' in config ? config : undefined;
     const columns = [
       {
         id: 'position',
@@ -374,6 +375,11 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
               config?.driverName?.removeNumbersFromName ?? false
             }
             fullName={name}
+            teamName={
+              standingsConfig?.driverName?.subtext === 'teamName'
+                ? teamName
+                : undefined
+            }
             nameFormat={config?.driverName?.nameFormat}
             label={resolvedTag?.label}
             nameDisplay={tagSettings?.display?.nameDisplay}
@@ -392,6 +398,20 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <TeamNameCell
             key="teamName"
             teamName={teamName}
+            fillAvailableWidth={
+              !(config?.driverName?.enabled ?? true) ||
+              (displayOrder !== undefined &&
+                !displayOrder.includes('driverName'))
+            }
+            driverName={
+              standingsConfig?.teamName?.subtext === 'driverName'
+                ? name
+                : undefined
+            }
+            nameFormat={config?.driverName?.nameFormat}
+            removeNumbersFromName={
+              config?.driverName?.removeNumbersFromName ?? false
+            }
             compactMode={compactMode}
           />
         ),

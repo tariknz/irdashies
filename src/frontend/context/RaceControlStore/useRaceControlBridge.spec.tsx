@@ -46,6 +46,7 @@ describe('useRaceControlBridge', () => {
     useRaceControlStore.setState({
       incidents: [],
       driverFilter: null,
+      sessionFilter: 'all',
       hydrationEpoch: 0,
     });
   });
@@ -106,6 +107,7 @@ describe('useRaceControlBridge', () => {
 
     renderHook(() => useRaceControlBridge());
     useRaceControlStore.getState().setDriverFilter(7);
+    useRaceControlStore.getState().setSessionFilter(1);
 
     // The first value can represent a transition from the SubSessionID loaded
     // on mount, so it must replace rather than merge with that snapshot.
@@ -116,6 +118,7 @@ describe('useRaceControlBridge', () => {
       )
     );
     expect(useRaceControlStore.getState().driverFilter).toBeNull();
+    expect(useRaceControlStore.getState().sessionFilter).toBe('all');
 
     publish('raceControl.sessionId', '222');
     await waitFor(() =>
