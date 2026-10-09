@@ -376,7 +376,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             }
             fullName={name}
             teamName={
-              standingsConfig?.driverName.subtext === 'teamName'
+              standingsConfig?.driverName?.subtext === 'teamName'
                 ? teamName
                 : undefined
             }
@@ -399,7 +399,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="teamName"
             teamName={teamName}
             driverName={
-              standingsConfig?.teamName.subtext === 'driverName'
+              standingsConfig?.teamName?.subtext === 'driverName'
                 ? name
                 : undefined
             }

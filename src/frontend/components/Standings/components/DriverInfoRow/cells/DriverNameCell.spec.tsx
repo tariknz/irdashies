@@ -60,13 +60,35 @@ describe('DriverNameCell', () => {
     );
   });
 
-  it('keeps a single line when the team name is missing', () => {
-    const { container } = renderInTable(
-      <DriverNameCell fullName="Alice Smith" teamName=" " />
-    );
+  it.each([123, 0])(
+    'renders numeric team name %s from session data',
+    (value) => {
+      const { container } = renderInTable(
+        <DriverNameCell
+          fullName="Alice Smith"
+          teamName={value as unknown as string}
+        />
+      );
 
-    expect(container.querySelector('.text-slate-400')).toBeNull();
-  });
+      expect(container.querySelector('.text-slate-400')?.textContent).toBe(
+        String(value)
+      );
+    }
+  );
+
+  it.each([undefined, null, '', ' '])(
+    'keeps a single line for missing team name %s',
+    (value) => {
+      const { container } = renderInTable(
+        <DriverNameCell
+          fullName="Alice Smith"
+          teamName={value as unknown as string}
+        />
+      );
+
+      expect(container.querySelector('.text-slate-400')).toBeNull();
+    }
+  );
 
   it('creates WAAPI animations when shouldAnimate is true', () => {
     renderInTable(

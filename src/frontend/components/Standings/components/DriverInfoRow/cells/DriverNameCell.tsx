@@ -119,7 +119,7 @@ export const DriverNameCell = memo(
 
     const shouldAnimate = !!label && (!nameDisplay || nameDisplay === 'both');
     const staticText = nameDisplay === 'label' && label ? label : displayName;
-    const hasTeamSubtext = !!teamName?.trim();
+    const hasTeamSubtext = !!String(teamName ?? '').trim();
     const freq = alternateFrequency ?? 5;
     const spanPrimaryRef = useRef<HTMLSpanElement>(null);
     const spanSecondaryRef = useRef<HTMLSpanElement>(null);
