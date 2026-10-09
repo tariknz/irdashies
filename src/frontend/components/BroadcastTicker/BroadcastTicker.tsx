@@ -78,10 +78,20 @@ export const BroadcastTicker = () => {
     [groups, mode]
   );
 
-  if (!isSessionVisible || entries.length === 0) return null;
+  // Fixed when a loop starts: a car joining or leaving mid-scroll would
+  // otherwise change the animation length and make the ticker jump.
+  const [loop, setLoop] = useState<{ index: number; seconds: number }>();
+  if (entries.length > 0 && loop?.index !== modeIndex) {
+    setLoop({
+      index: modeIndex,
+      seconds:
+        entries.length * clampSetting(settings?.secondsPerEntry, 1, 10, 3),
+    });
+  }
 
-  const loopSeconds =
-    entries.length * clampSetting(settings?.secondsPerEntry, 1, 10, 3);
+  if (!isSessionVisible || entries.length === 0 || !loop) return null;
+
+  const loopSeconds = loop.seconds;
   const list = entries.map((s) => (
     <Entry key={s.carIdx} standing={s} mode={mode} teamRacing={teamRacing} />
   ));

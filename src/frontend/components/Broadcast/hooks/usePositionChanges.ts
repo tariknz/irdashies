@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Standings } from '@irdashies/domain';
 import { diffClassPositions } from '../broadcastRows';
 
-export interface PositionChange {
+interface PositionChange {
   delta: number;
   /** Bumps on every change so the highlight animation restarts. */
   seq: number;

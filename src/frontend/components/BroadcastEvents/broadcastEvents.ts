@@ -64,7 +64,7 @@ export const flagKind = (prev: number, next: number): EventKind | undefined => {
 };
 
 /** What the car tracker remembers between standings updates. */
-export interface CarTracker {
+interface CarTracker {
   cars: Map<
     number,
     { onPitRoad: boolean; repair: boolean; dnf: boolean; pitSince?: number }

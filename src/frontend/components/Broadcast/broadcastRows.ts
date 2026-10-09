@@ -71,7 +71,7 @@ export const findBattle = (
   return best;
 };
 
-export type RacePhase = 'grid' | 'podium';
+type RacePhase = 'grid' | 'podium';
 
 /** The grid before the green flag of a race, the podium after the checkered. */
 /** The flag has fallen: the session clock no longer means anything. */

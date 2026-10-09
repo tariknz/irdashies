@@ -71,7 +71,7 @@ export const BroadcastSettings = () => {
   return (
     <BaseSettingsSection
       title="Broadcast"
-      description="TV-style timing tower that cycles between names, per-class intervals with close battles, positions gained, pit laps and tyres, plus a card for the car on camera. Put it in its own profile and add that profile's /dashboard page to OBS as a Browser Source."
+      description="TV-style timing tower that cycles between names, per-class intervals with close battles, positions gained, pit laps and tyres, plus a card for the car on camera."
       settings={settings}
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}

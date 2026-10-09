@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDashboard } from '@irdashies/context';
 import { BroadcastSettings } from './BroadcastSettings';
@@ -29,14 +30,21 @@ const MODULES = [
   },
 ] as const;
 
-export type BroadcastModuleType = (typeof MODULES)[number]['type'];
+type BroadcastModuleType = (typeof MODULES)[number]['type'];
 
 export const BroadcastGroupSettings = ({
   active,
 }: {
   active: BroadcastModuleType;
 }) => {
-  const { currentDashboard } = useDashboard();
+  const { currentDashboard, currentProfile, bridge } = useDashboard();
+  const [serverPort, setServerPort] = useState(3000);
+  useEffect(() => {
+    void bridge?.getComponentServerPort?.().then(setServerPort);
+  }, [bridge]);
+  const obsUrl = `http://localhost:${serverPort}/widget/${active}${
+    currentProfile ? `?profile=${currentProfile.id}` : ''
+  }`;
   const isEnabled = (type: string) =>
     currentDashboard?.widgets.some(
       (w) => (w.type ?? w.id) === type && w.enabled
@@ -66,6 +74,11 @@ export const BroadcastGroupSettings = ({
           </Link>
         ))}
       </nav>
+      <p className="mb-4 flex-none text-sm text-slate-400">
+        Add each module to OBS as its own Browser Source, so each gets its own
+        size and place on the stream:{' '}
+        <span className="select-all font-mono text-slate-300">{obsUrl}</span>
+      </p>
       <div className="min-h-0 flex-1">
         <Section key={active} />
       </div>
