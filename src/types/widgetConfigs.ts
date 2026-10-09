@@ -944,6 +944,25 @@ export interface InformationBarConfig extends SessionBarConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
+export interface CompactTelemetryWidgetConfig {
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export interface TyrePanelConfig extends CompactTelemetryWidgetConfig {
+  pressureUnit: 'kPa' | 'psi';
+  temperatureUnit: 'C' | 'F';
+  temperatureThresholds: {
+    cold: number;
+    hot: number;
+  };
+  wearThresholds: {
+    worn: number;
+    replace: number;
+  };
+}
+
 export interface WidgetConfigMap {
   standings: StandingsConfig;
   relative: RelativeConfig;
@@ -973,6 +992,7 @@ export interface WidgetConfigMap {
   battle: BattleConfig;
   laptrace: LapTraceConfig;
   gantry: GantryConfig;
+  tyrepanel: TyrePanelConfig;
 }
 
 export type TypedDashboardWidget<

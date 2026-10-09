@@ -63,6 +63,27 @@
             ],
         },
         {
+            "target_name": "lmu_node",
+            "sources": [],
+            "defines": [
+                "NAPI_DISABLE_CPP_EXCEPTIONS",
+            ],
+            "include_dirs": [
+                "<!(node -p \"require('node-addon-api').include_dir\")",
+            ],
+            "conditions": [
+                [
+                    "OS=='win'",
+                    {
+                        "sources": [
+                            "src/app/irsdk/native/lmu/lmu_node.cc",
+                            "src/app/irsdk/native/lmu/lmu_struct.h",
+                        ]
+                    },
+                ]
+            ],
+        },
+        {
             "target_name": "irsdk_replay",
             "type": "none",
             "sources": [],

@@ -405,6 +405,7 @@ export async function startComponentServer(
         'garagecover',
         'rejoin',
         'laptimelog',
+        'tyrepanel',
       ];
 
       sendJSON(res, 200, {

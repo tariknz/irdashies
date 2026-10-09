@@ -355,6 +355,7 @@ const GantryDriverRow = memo(
           <DriverRatingBadge
             license={driver.driver.license}
             rating={driver.driver.rating}
+            isAi={driver.driver.isAi}
             format="rating-bw-no-license"
           />
         </span>

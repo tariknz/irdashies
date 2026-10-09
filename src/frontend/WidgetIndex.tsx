@@ -26,6 +26,7 @@ import { CornerNameOverlay } from './components/CornerNameOverlay';
 import { LapTrace } from './components/LapTrace';
 import { Battle } from './components/Battle/Battle';
 import { Gantry } from './components/Gantry/Gantry';
+import { TyrePanel } from './components/TyrePanel/TyrePanel';
 import type { WidgetConfigMap } from '@irdashies/types';
 import type { ElementType } from 'react';
 
@@ -57,6 +58,7 @@ export {
   LapTrace,
   Battle,
   Gantry,
+  TyrePanel,
 };
 
 export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
@@ -88,6 +90,7 @@ export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
   laptrace: LapTrace,
   battle: Battle,
   gantry: Gantry,
+  tyrepanel: TyrePanel,
 };
 
 export type WidgetId = keyof WidgetConfigMap;
