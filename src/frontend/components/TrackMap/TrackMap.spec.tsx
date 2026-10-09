@@ -2,6 +2,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TrackMap } from './TrackMap';
 import { render } from '@testing-library/react';
 
+const mockSessionState = vi.hoisted(() => ({
+  session: undefined as
+    | { SplitTimeInfo?: { Sectors: unknown[] }; LmuTrackMap?: unknown }
+    | undefined,
+}));
+
 vi.mock('./hooks/useTrackId');
 vi.mock('./hooks/useDriverProgress');
 vi.mock('./hooks/useTrackMapSettings');
@@ -21,7 +27,11 @@ vi.mock('@irdashies/context', () => {
     useTrackStateSnapshot: vi.fn(() => ({
       isOnTrack: useTelemetryValue('IsOnTrack'),
     })),
-    useSessionStore: vi.fn(() => []),
+    useSessionStore: vi.fn(
+      (
+        selector: (state: typeof mockSessionState) => unknown
+      ) => selector(mockSessionState)
+    ),
     useSectorColors: vi.fn(() => []),
     useSectorTimingStore: vi.fn(() => 0),
   };
@@ -53,6 +63,7 @@ describe('TrackMap', () => {
     });
     vi.mocked(useHighlightColor).mockReturnValue(undefined);
     vi.mocked(useSessionVisibility).mockReturnValue(true);
+    mockSessionState.session = undefined;
   });
 
   it('should render when all conditions are met', () => {
@@ -225,6 +236,43 @@ describe('TrackMap', () => {
     const { container } = render(<TrackMap />);
 
     expect(container.firstChild).toBeNull();
+  });
+
+  it('renders a recorded LMU map without an iRacing track id', () => {
+    vi.mocked(useTrackMapSettings).mockReturnValue({
+      showOnlyWhenOnTrack: false,
+      sessionVisibility: {
+        race: true,
+        loneQualify: true,
+        openQualify: true,
+        practice: true,
+        offlineTesting: true,
+      },
+    } as ReturnType<typeof useTrackMapSettings>);
+    vi.mocked(useTrackId).mockReturnValue(0);
+    vi.mocked(useTelemetryValue).mockReturnValue(true);
+    mockSessionState.session = {
+      LmuTrackMap: {
+        active: {
+          inside: 'M0,0 L1,1 Z',
+          outside: 'M0,0 L1,1 Z',
+          trackPathPoints: [
+            { x: 0, y: 0 },
+            { x: 1, y: 1 },
+          ],
+          totalLength: 1,
+        },
+        startFinish: {
+          line: 'M0,-1 L0,1',
+          point: { x: 0, y: 0, length: 0 },
+          direction: 'anticlockwise',
+        },
+      },
+    };
+
+    const { container } = render(<TrackMap />);
+
+    expect(container.textContent).toContain('Track Canvas');
   });
 
   it('should pass displayMode setting to TrackCanvas', () => {

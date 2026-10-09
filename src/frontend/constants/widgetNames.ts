@@ -15,6 +15,7 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   fastercarsfrombehind: 'Faster Cars From Behind',
   fuel: 'Fuel Calculator',
   blindspotmonitor: 'Blind Spot Monitor',
+  radar: 'Radar (LMU)',
   garagecover: 'Garage Cover',
   rejoin: 'Rejoin Indicator',
   telemetryinspector: 'Telemetry Inspector',
@@ -33,6 +34,16 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   laptrace: 'Lap Trace',
   battle: 'Battle',
   gantry: 'The Gantry',
+  tracknotes: 'Track Notes',
+  accelerationtimer: 'Acceleration Timer',
+  stinthistory: 'Stint History',
+  frictioncircle: 'Friction Circle',
+  tyrepanel: 'Tyre Panel',
+  brakepressure: 'Brake Pressure',
+  suspensionposition: 'Suspension Position',
+  trackclock: 'Track Clock',
+  steeringmeter: 'Steering Meter',
+  cruiseodometer: 'Cruise / Odometer',
 };
 
 /**

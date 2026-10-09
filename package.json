@@ -19,6 +19,8 @@
     "irsdk:replay": "build\\Release\\irsdk_replay.exe play",
     "irsdk:replay:curated": "build\\Release\\irsdk_replay.exe play --input test-data\\telemetry\\ai-race-10min.irdt",
     "irsdk:replay:app": "node tools/run-telemetry-replay.mjs",
+    "simhub:overlays": "node tools/generate-simhub-overlays.mjs",
+    "simhub:previews": "node tools/capture-overlay-previews.mjs",
     "irsdk:replay:app:curated": "node tools/run-telemetry-replay.mjs --input test-data/telemetry/ai-race-10min.irdt --loop",
     "test:replay:curated": "tsx tools/telemetry-replay/run-curated-validation.ts",
     "test:replay:curated:update": "npm run test:replay:curated -- --update",

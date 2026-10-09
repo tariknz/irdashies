@@ -349,14 +349,19 @@ export async function startComponentServer(
         profileId = getCurrentProfileId();
       }
 
+      const widgetParam = url.searchParams.get('widget');
+      const widgetQuery = widgetParam
+        ? `&widget=${encodeURIComponent(widgetParam)}`
+        : '';
+
       let dashboardViewUrl: string;
 
       const cacheBust = Date.now();
       if (isDev) {
         const vitePort = process.env.VITE_PORT || '5173';
-        dashboardViewUrl = `http://${SERVER_IP}:${vitePort}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}&debug=${debug}&v=${cacheBust}`;
+        dashboardViewUrl = `http://${SERVER_IP}:${vitePort}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}${widgetQuery}&debug=${debug}&v=${cacheBust}`;
       } else {
-        dashboardViewUrl = `http://${SERVER_IP}:${actualPort}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}&debug=${debug}&v=${cacheBust}`;
+        dashboardViewUrl = `http://${SERVER_IP}:${actualPort}/index-dashboard-view.html?wsUrl=${encodeURIComponent(wsUrl)}&profile=${encodeURIComponent(profileId)}${widgetQuery}&debug=${debug}&v=${cacheBust}`;
       }
 
       // Serve HTML with iframe to dashboard view
@@ -402,9 +407,20 @@ export async function startComponentServer(
         'fastercarsfrombehind',
         'fuel',
         'blindspotmonitor',
+        'radar',
         'garagecover',
         'rejoin',
         'laptimelog',
+        'tracknotes',
+        'accelerationtimer',
+        'stinthistory',
+        'frictioncircle',
+        'tyrepanel',
+        'brakepressure',
+        'suspensionposition',
+        'trackclock',
+        'steeringmeter',
+        'cruiseodometer',
       ];
 
       sendJSON(res, 200, {

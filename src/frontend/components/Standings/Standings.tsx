@@ -369,6 +369,7 @@ export const Standings = () => {
                           prevCarTrackSurface={result.prevCarTrackSurface}
                           license={result.driver?.license}
                           rating={result.driver?.rating}
+                          isAi={result.driver?.isAi}
                           lapTimeDeltas={
                             settings?.lapTimeDeltas?.enabled
                               ? result.lapTimeDeltas

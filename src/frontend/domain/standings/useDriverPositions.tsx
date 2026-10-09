@@ -102,6 +102,7 @@ export const useDrivers = () => {
       carNumRaw: driver.CarNumberRaw,
       license: driver.LicString,
       rating: driver.IRating,
+      isAi: driver.CarIsAIControlled,
       flairId: driver.FlairID,
       teamName: driver.TeamName,
       carClass: {

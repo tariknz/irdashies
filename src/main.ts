@@ -8,19 +8,29 @@ import {
 } from './app/bridge/iracingSdk/setup';
 import {
   getOrCreateDefaultDashboard,
+  ensureGameProfiles,
   getCurrentProfileId,
   getProfile,
   setCurrentProfile,
 } from './app/storage/dashboards';
-import { getSessionProfileMap } from './app/storage/appSettings';
+import {
+  getAutodetectGameProfiles,
+  getGameProfileAssignments,
+  getGameProfileDefaults,
+  getSessionProfileMap,
+} from './app/storage/appSettings';
 import { createSessionProfileSwitcher } from './app/services/sessionProfileSwitcher';
 import type { SessionProfileSwitcher } from './app/services/sessionProfileSwitcher';
+import { createGameProfileSwitcher } from './app/services/gameProfileSwitcher';
+import type { GameProfileSwitcher } from './app/services/gameProfileSwitcher';
+import { listSimProcesses } from './app/gameProfiles/simProcesses';
 import { setupTaskbar, KeybindingManager } from './app';
 import {
   publishDashboardUpdates,
   dashboardBridge,
 } from './app/bridge/dashboard/dashboardBridge';
 import { setupPitLaneBridge } from './app/bridge/pitLaneBridge';
+import { setupTrackNotesBridge } from './app/bridge/trackNotesBridge';
 import { setupFuelCalculatorBridge } from './app/bridge/fuelCalculatorBridge';
 import { OverlayManager } from './app/overlayManager';
 import {
@@ -137,6 +147,7 @@ const channelBus = new ChannelBus({
 });
 let disconnectLifecycleChannel: (() => void) | undefined;
 let sessionProfileSwitcher: SessionProfileSwitcher | undefined;
+let gameProfileSwitcher: GameProfileSwitcher | undefined;
 let incidentRuntime: IncidentRuntime | undefined;
 let disposeLapHistoryRuntime: (() => void) | undefined;
 let disposeGarage61SearchSession: (() => void) | undefined;
@@ -294,6 +305,7 @@ app.on('ready', async () => {
   // Resolve benchmark metadata before metrics reporting starts so every
   // interval carries the same active-widget workload description.
   const dashboard = getOrCreateDefaultDashboard();
+  ensureGameProfiles();
   const runDashboard = createPerfDashboard(dashboard, perfRun);
   if (perfRun.enabled) {
     process.env.PERF_ACTIVE_WIDGET_TYPES = JSON.stringify(
@@ -331,6 +343,7 @@ app.on('ready', async () => {
   setupLogBridge();
   setupFuelCalculatorBridge();
   setupPitLaneBridge();
+  setupTrackNotesBridge();
   setupPersonalBestLapTimesBridge();
   setupLapTraceBridge(overlayManager);
   setupGarage61SearchSession(dashboard);
@@ -487,12 +500,24 @@ app.on('ready', async () => {
   // lifecycle's current state on construction: by now the SDK has been
   // publishing for a while, and the events it fires are transitions that are
   // not replayed to a new subscriber.
+  gameProfileSwitcher = createGameProfileSwitcher({
+    getEnabled: getAutodetectGameProfiles,
+    getGameProfileDefaults,
+    getGameProfileAssignments,
+    getCurrentProfileId,
+    profileExists: (profileId) => getProfile(profileId) !== null,
+    switchProfile: (profileId) => setCurrentProfile(profileId),
+    listProcesses: listSimProcesses,
+    publishStatus: (status) =>
+      overlayManager.publishMessage('gameDetectionStatus', status),
+  });
   sessionProfileSwitcher = createSessionProfileSwitcher({
     lifecycle: getSessionLifecycle(),
     getMap: getSessionProfileMap,
     getCurrentProfileId,
     profileExists: (profileId) => getProfile(profileId) !== null,
     switchProfile: (profileId) => setCurrentProfile(profileId),
+    shouldYield: () => gameProfileSwitcher?.isHolding() ?? false,
   });
   setupKeybindingsBridge(keybindingManager);
 
@@ -519,6 +544,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
   shutdown: async () => {
     keybindingManager?.stopGamepad();
     disconnectLifecycleChannel?.();
+    gameProfileSwitcher?.dispose();
     sessionProfileSwitcher?.dispose();
     disposeRendererDataSubscriptions?.();
     incidentRuntime?.dispose();

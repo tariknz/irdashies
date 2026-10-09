@@ -84,3 +84,24 @@ describe('startComponentServer web server flag', () => {
     expect(listen).not.toHaveBeenCalled();
   });
 });
+
+describe('/dashboard route', () => {
+  it('forwards the widget param to the dashboard view', async () => {
+    await startWith({ enableWebServer: true });
+    const handler = createServer.mock.calls[0][0] as (
+      req: unknown,
+      res: unknown
+    ) => Promise<void>;
+    const end = vi.fn();
+    await handler(
+      {
+        url: '/dashboard?profile=p1&widget=radar',
+        method: 'GET',
+        headers: { host: 'localhost:3000' },
+      },
+      { setHeader: vi.fn(), end }
+    );
+    const html = end.mock.calls[0][0] as string;
+    expect(html).toContain('profile=p1&widget=radar&');
+  });
+});

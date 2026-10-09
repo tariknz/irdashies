@@ -34,6 +34,7 @@ export interface Standings {
     carNum: string;
     license: string;
     rating: number;
+    isAi?: boolean;
     flairId?: number;
     teamName?: string;
   };
@@ -238,6 +239,7 @@ export const createDriverStandings = (
           carNum: driver.CarNumber,
           license: driver.LicString,
           rating: driver.IRating,
+          isAi: driver.CarIsAIControlled,
           flairId: driver.FlairID,
           teamName: driver.TeamName,
         },
@@ -339,6 +341,7 @@ export const createDriverStandings = (
           carNum: driver.CarNumber,
           license: driver.LicString,
           rating: driver.IRating,
+          isAi: driver.CarIsAIControlled,
           flairId: driver.FlairID,
           teamName: driver.TeamName,
         },

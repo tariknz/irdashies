@@ -5,9 +5,9 @@ import type { KeybindingActionId, KeybindingsMap } from '@irdashies/types';
 import {
   isGamepadBinding,
   isWidgetToggleActionId,
-  nextProfileIndex,
   widgetIdFromToggleActionId,
 } from '@irdashies/shared';
+import { nextCycledProfileId } from './gameProfiles/resolveGameProfile';
 import { getKeybindings } from './storage/keybindings';
 import { OverlayManager } from './overlayManager';
 import logger from './logger';
@@ -63,30 +63,30 @@ export class KeybindingManager {
     try {
       const { listProfiles, getCurrentProfileId, setCurrentProfile } =
         await import('./storage/dashboards');
-      const { getCycleProfiles } = await import('./storage/appSettings');
+      const { getCycleProfiles, getGameProfileAssignments } =
+        await import('./storage/appSettings');
+      const { getGameDetectionStatus } =
+        await import('./services/gameProfileSwitcher');
 
       const profiles = listProfiles();
-      if (profiles.length < 2) return;
+      const status = getGameDetectionStatus();
+      // The switcher publishes the game that started first when both are open.
+      const runningGame = status.running ? status.game : null;
 
-      const currentId = getCurrentProfileId();
-      const currentIndex = profiles.findIndex((p) => p.id === currentId);
-      const cycle = getCycleProfiles();
-
-      const targetIndex = nextProfileIndex(
-        currentIndex,
-        profiles.length,
+      const targetId = nextCycledProfileId({
+        profileIds: profiles.map((profile) => profile.id),
+        currentId: getCurrentProfileId(),
         direction,
-        cycle
-      );
-      if (targetIndex === -1) return;
-
-      const target = profiles[targetIndex];
-      if (!target || target.id === currentId) return;
+        cycle: getCycleProfiles(),
+        runningGame,
+        assignments: getGameProfileAssignments(),
+      });
+      if (!targetId) return;
 
       // setCurrentProfile emits dashboardUpdated, which live-updates the
       // existing overlay windows (closeOrCreateWindows + publishMessage). No
       // destroy/recreate — see publishDashboardUpdates in dashboardBridge.
-      setCurrentProfile(target.id);
+      setCurrentProfile(targetId);
     } catch (error) {
       logger.error('Error switching profile via keybind:', error);
     }

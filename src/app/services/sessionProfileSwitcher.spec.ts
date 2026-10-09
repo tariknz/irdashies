@@ -75,10 +75,12 @@ const setup = (
     currentProfileId = 'default',
     existingProfiles = ['default', 'quali', 'race', 'spotter'],
     initialState = {},
+    shouldYield,
   }: {
     currentProfileId?: string;
     existingProfiles?: string[];
     initialState?: { sessionType?: string; isDriving?: boolean };
+    shouldYield?: () => boolean;
   } = {}
 ) => {
   const harness = makeLifecycle(initialState);
@@ -94,6 +96,7 @@ const setup = (
     getCurrentProfileId: () => current,
     profileExists: (profileId) => existingProfiles.includes(profileId),
     switchProfile,
+    shouldYield,
   });
 
   return { ...harness, switcher, switchProfile };
@@ -437,6 +440,17 @@ describe('sessionProfileSwitcher', () => {
       emitDriving(true);
 
       expect(switchProfile).toHaveBeenCalledWith('default');
+    });
+
+    it('does not switch while a game profile is holding the layout', () => {
+      const { emitSessionType, switchProfile } = setup(
+        { race: 'race' },
+        { shouldYield: () => true }
+      );
+
+      emitSessionType('Race');
+
+      expect(switchProfile).not.toHaveBeenCalled();
     });
   });
 });

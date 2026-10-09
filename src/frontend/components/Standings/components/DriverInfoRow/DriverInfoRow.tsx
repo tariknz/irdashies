@@ -43,6 +43,7 @@ interface DriverRowInfoProps {
   lap?: number;
   license?: string;
   rating?: number;
+  isAi?: boolean;
   iratingChangeValue?: number;
   positionChange?: number;
   lastTime?: number;
@@ -131,6 +132,7 @@ const getDisplayProps = (props: DriverRowInfoProps) => {
     tireCompound: dummyData.tireCompound,
     license: dummyData.license,
     rating: dummyData.rating,
+    isAi: undefined,
     iratingChangeValue: dummyData.iratingChangeValue,
     positionChange: 0,
     lapTimeDeltas: dummyData.lapTimeDeltas,
@@ -197,6 +199,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lap,
     license,
     rating,
+    isAi,
     iratingChangeValue,
     positionChange,
     lastTime,
@@ -445,6 +448,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="badge"
             license={license}
             rating={rating}
+            isAi={isAi}
             badgeFormat={config?.badge?.badgeFormat}
             isMinimal={badgeMinimal}
             compactMode={compactMode}
@@ -686,6 +690,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     carId,
     license,
     rating,
+    isAi,
     iratingChangeValue,
     positionChange,
     delta,

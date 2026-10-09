@@ -36,6 +36,8 @@ import { OverlayManager } from '../../overlayManager';
 import {
   getSettingsShowAllWidgets,
   setSettingsShowAllWidgets,
+  getSimulatorPreference,
+  setSimulatorPreference,
 } from '../../storage/settingsPreferences';
 import { loadSimWidgetSupport } from '../../storage/simWidgetSupport';
 import {
@@ -49,10 +51,25 @@ import {
   setShowProfileBanner as setShowProfileBannerStorage,
   getSessionProfileMap as getSessionProfileMapStorage,
   setSessionProfileMap as setSessionProfileMapStorage,
+  getAutodetectGameProfiles as getAutodetectGameProfilesStorage,
+  setAutodetectGameProfiles as setAutodetectGameProfilesStorage,
+  getGameProfileDefaults as getGameProfileDefaultsStorage,
+  setGameProfileDefaults as setGameProfileDefaultsStorage,
+  getGameProfileAssignments as getGameProfileAssignmentsStorage,
+  setGameProfileAssignments as setGameProfileAssignmentsStorage,
 } from '../../storage/appSettings';
 import {
+  getGameDetectionStatus,
+  kickGameProfileSwitcher,
+} from '../../services/gameProfileSwitcher';
+import { profileIdForSimulatorChoice } from '../../gameProfiles/resolveGameProfile';
+import {
+  isSimulatorPreference,
   SESSION_PROFILE_KEYS,
+  SIMULATOR_IDS,
   SPOTTING_TRIGGER_KEY,
+  type GameProfileAssignments,
+  type GameProfileDefaults,
   type ProfileTriggerKey,
   type SessionProfileMap,
 } from '@irdashies/types';
@@ -63,6 +80,34 @@ const PROFILE_TRIGGER_KEYS: ProfileTriggerKey[] = [
   ...SESSION_PROFILE_KEYS,
   SPOTTING_TRIGGER_KEY,
 ];
+
+/** Drops unknown games and blank ids. A missing key leaves that game on the default profile. */
+const sanitiseGameProfileDefaults = (input: unknown): GameProfileDefaults => {
+  const map: GameProfileDefaults = {};
+  if (!input || typeof input !== 'object') return map;
+  const source = input as Record<string, unknown>;
+  for (const id of SIMULATOR_IDS) {
+    const value = source[id];
+    if (typeof value === 'string' && value) map[id] = value;
+  }
+  return map;
+};
+
+/** Drops unknown games, blank profile ids, and empty lists. */
+const sanitiseGameProfileAssignments = (
+  input: unknown
+): GameProfileAssignments => {
+  const map: GameProfileAssignments = {};
+  if (!input || typeof input !== 'object') return map;
+  for (const [profileId, games] of Object.entries(
+    input as Record<string, unknown>
+  )) {
+    if (!profileId || !Array.isArray(games)) continue;
+    const assigned = SIMULATOR_IDS.filter((id) => games.includes(id));
+    if (assigned.length > 0) map[profileId] = assigned;
+  }
+  return map;
+};
 
 /**
  * The mapping arrives over IPC, so it is rebuilt from an allowlist of keys
@@ -407,6 +452,25 @@ export async function publishDashboardUpdates(
   );
   ipcMain.handle('getSimWidgetSupport', () => loadSimWidgetSupport());
 
+  ipcMain.handle('getSimulatorPreference', () => getSimulatorPreference());
+
+  ipcMain.handle('setSimulatorPreference', (_, value: unknown) => {
+    if (!isSimulatorPreference(value)) return;
+    setSimulatorPreference(value);
+    if (value === 'iracing' || value === 'lmu') {
+      const profileId = profileIdForSimulatorChoice(
+        value,
+        getGameProfileDefaultsStorage(),
+        (id) => getProfile(id) !== null,
+        getGameProfileAssignmentsStorage()
+      );
+      if (profileId && profileId !== getCurrentProfileId()) {
+        setCurrentProfile(profileId);
+      }
+    }
+    overlayManager.publishMessage('simulatorPreference', value);
+  });
+
   ipcMain.handle('getSettingsShowAllWidgets', () =>
     getSettingsShowAllWidgets()
   );
@@ -441,6 +505,38 @@ export async function publishDashboardUpdates(
     setSessionProfileMapStorage(sanitiseSessionProfileMap(map))
   );
 
+  ipcMain.handle('getAutodetectGameProfiles', () =>
+    getAutodetectGameProfilesStorage()
+  );
+
+  ipcMain.handle('setAutodetectGameProfiles', (_, enabled: boolean) => {
+    setAutodetectGameProfilesStorage(Boolean(enabled));
+    kickGameProfileSwitcher();
+  });
+
+  ipcMain.handle('getGameProfileDefaults', () =>
+    getGameProfileDefaultsStorage()
+  );
+
+  ipcMain.handle('setGameProfileDefaults', (_, map: unknown) => {
+    const next = sanitiseGameProfileDefaults(map);
+    setGameProfileDefaultsStorage(next);
+    kickGameProfileSwitcher();
+    overlayManager.publishMessage('gameProfileDefaults', next);
+  });
+
+  ipcMain.handle('getGameProfileAssignments', () =>
+    getGameProfileAssignmentsStorage()
+  );
+
+  ipcMain.handle('setGameProfileAssignments', (_, map: unknown) => {
+    const next = sanitiseGameProfileAssignments(map);
+    setGameProfileAssignmentsStorage(next);
+    overlayManager.publishMessage('gameProfileAssignments', next);
+  });
+
+  ipcMain.handle('getGameDetectionStatus', () => getGameDetectionStatus());
+
   ipcMain.handle('getShowProfileBanner', () => getShowProfileBannerStorage());
 
   ipcMain.handle('setShowProfileBanner', (_, enabled: boolean) =>
@@ -462,6 +558,23 @@ export async function publishDashboardUpdates(
 
   ipcMain.handle('deleteProfile', (_, profileId: string) => {
     deleteProfile(profileId);
+    const map = getGameProfileDefaultsStorage();
+    const next = Object.fromEntries(
+      Object.entries(map).filter(([, id]) => id !== profileId)
+    ) as GameProfileDefaults;
+    if (Object.keys(next).length !== Object.keys(map).length) {
+      setGameProfileDefaultsStorage(next);
+      kickGameProfileSwitcher();
+      overlayManager.publishMessage('gameProfileDefaults', next);
+    }
+    const assignments = getGameProfileAssignmentsStorage();
+    const remaining = Object.fromEntries(
+      Object.entries(assignments).filter(([id]) => id !== profileId)
+    ) as GameProfileAssignments;
+    if (Object.keys(remaining).length !== Object.keys(assignments).length) {
+      setGameProfileAssignmentsStorage(remaining);
+      overlayManager.publishMessage('gameProfileAssignments', remaining);
+    }
   });
 
   ipcMain.handle('renameProfile', (_, profileId: string, newName: string) => {
