@@ -71,9 +71,11 @@ export const defaultDashboard: {
           enabled: true,
           showStatusBadges: true,
           removeNumbersFromName: false,
+          subtext: 'teamName',
         },
         teamName: {
           enabled: false,
+          subtext: 'none',
         },
         pitStatus: {
           enabled: true,
@@ -1547,6 +1549,7 @@ export const defaultDashboard: {
         brakeCueOutputDeviceId: DEFAULT_AUDIO_OUTPUT_DEVICE_ID,
         brakeCueVolume: 0.6,
         brakeCueLeadSec: 0,
+        brakeCueMinPeak: 0.12,
         sound: DEFAULT_LAP_TRACE_SOUND,
         brakeCueBars: false,
         brakeCueBarSide: 'right',
@@ -1588,6 +1591,9 @@ export const defaultDashboard: {
           yAxisMode: 'trace',
           lapWindow: 75,
           autoPin: true,
+        },
+        window: {
+          alwaysOnTop: false,
         },
       },
     },

@@ -69,4 +69,44 @@ describe('SessionTimingUpdater', () => {
 
     expect(lastEnabledArg()).toBe(true);
   });
+
+  it('is enabled for a second instance of a widget, which names its type', () => {
+    vi.mocked(useDashboard).mockReturnValue({
+      currentDashboard: {
+        widgets: [{ id: 'standings-2', type: 'standings', enabled: true }],
+      },
+    } as unknown as ReturnType<typeof useDashboard>);
+
+    render(<SessionTimingUpdater />);
+
+    expect(lastEnabledArg()).toBe(true);
+  });
+
+  describe('on a single-widget page', () => {
+    // The VR setup: every desktop overlay switched off, the widget opened by
+    // its own URL.
+    it('is enabled for a timing widget that is disabled on the desktop', () => {
+      vi.mocked(useDashboard).mockReturnValue({
+        currentDashboard: {
+          widgets: [{ id: 'standings', enabled: false }],
+        },
+      } as unknown as ReturnType<typeof useDashboard>);
+
+      render(<SessionTimingUpdater soloWidgetType="standings" />);
+
+      expect(lastEnabledArg()).toBe(true);
+    });
+
+    it('does not mount for a widget with no session bar, whatever else is enabled', () => {
+      vi.mocked(useDashboard).mockReturnValue({
+        currentDashboard: {
+          widgets: [{ id: 'standings', enabled: true }],
+        },
+      } as unknown as ReturnType<typeof useDashboard>);
+
+      render(<SessionTimingUpdater soloWidgetType="map" />);
+
+      expect(SessionTimingStoreUpdater).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -8,21 +8,36 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import path from 'node:path';
 
 const config: ForgeConfig = {
+  hooks: {
+    postStart: async (_config, appProcess) => {
+      // Windows treats SIGTERM as a hard kill. Let the development parent
+      // monitor request app.quit() so pending storage writes can flush.
+      if (process.platform === 'win32') return;
+      // Vite's SIGINT handler exits Forge before its signal forwarding runs.
+      // Also stop Electron on launcher exit, including after a dev restart.
+      const stopApp = () => appProcess.kill('SIGTERM');
+      process.once('exit', stopApp);
+      appProcess.once('exit', () => process.removeListener('exit', stopApp));
+    },
+  },
   packagerConfig: {
     asar: true,
-    icon: path.resolve(__dirname, 'docs/assets/icons/logo'),
-    extraResource: [path.resolve(__dirname, 'docs/assets/icons')],
+    icon: path.resolve(import.meta.dirname, 'docs/assets/icons/logo'),
+    extraResource: [path.resolve(import.meta.dirname, 'docs/assets/icons')],
   },
   rebuildConfig: {
     force: true,
   },
   makers: [
     new MakerSquirrel({
-      iconUrl: path.resolve(__dirname, 'docs/assets/icons/logo.ico'),
-      setupIcon: path.resolve(__dirname, 'docs/assets/icons/logo.ico'),
+      iconUrl: path.resolve(import.meta.dirname, 'docs/assets/icons/logo.ico'),
+      setupIcon: path.resolve(
+        import.meta.dirname,
+        'docs/assets/icons/logo.ico'
+      ),
     }),
     new MakerDMG({
-      icon: path.resolve(__dirname, 'docs/assets/icons/logo.icns'),
+      icon: path.resolve(import.meta.dirname, 'docs/assets/icons/logo.icns'),
     }),
   ],
   publishers: [

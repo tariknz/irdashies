@@ -5,6 +5,7 @@ import {
   MAX_SAMPLE_GAP_M,
   SampleBuffer,
   indexAtOrBefore,
+  maxOver,
   minOver,
   normalisePct,
   sampleRange,
@@ -268,6 +269,25 @@ describe('minOver', () => {
   it('is NaN when a boundary is outside the lap or the range is inverted', () => {
     expect(minOver(lap, lap.speed, -5, 10)).toBeNaN();
     expect(minOver(lap, lap.speed, 10, 5)).toBeNaN();
+  });
+});
+
+describe('maxOver', () => {
+  const lap = lapAt([0, 10, 20, 30, 40], [10, 30, 50, 30, 10]);
+
+  it('includes the interior samples', () => {
+    expect(maxOver(lap, lap.speed, 0, 40)).toBe(50);
+  });
+
+  it('includes the interpolated boundaries, not just samples', () => {
+    // From 25 m to 35 m: interior sample at 30 (30 m/s); the boundary at
+    // 25 m interpolates to 40 m/s and is the true maximum.
+    expect(maxOver(lap, lap.speed, 25, 35)).toBeCloseTo(40, 6);
+  });
+
+  it('is NaN when a boundary is outside the lap or the range is inverted', () => {
+    expect(maxOver(lap, lap.speed, -5, 10)).toBeNaN();
+    expect(maxOver(lap, lap.speed, 10, 5)).toBeNaN();
   });
 });
 

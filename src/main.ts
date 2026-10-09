@@ -85,6 +85,7 @@ import { connectSessionLifecycleChannel } from './app/bridge/sessionLifecycleCha
 import { setupRendererDataSubscriptions } from './app/bridge/rendererDataSubscriptions';
 import { PerfHeapProfiler } from './app/perfHeapProfiler';
 import { createBeforeQuitHandler } from './app/shutdownCoordinator';
+import { monitorDevParent } from './app/devParentMonitor';
 
 const safeErrorDetails = (error: unknown) => {
   const code =
@@ -280,7 +281,9 @@ function setupGarage61SearchSession(initialDashboard: DashboardLayout): void {
   };
 }
 
-app.on('ready', async () => {
+// Native startup calls can let Electron become ready before we reach this
+// registration. The promise also runs initialization when ready already fired.
+void app.whenReady().then(async () => {
   // Don't start services if we don't have the single instance lock
   // (this instance should be quitting)
   if (!overlayManager.hasLock()) {
@@ -541,3 +544,11 @@ const handleBeforeQuit = createBeforeQuitHandler({
 });
 
 app.on('before-quit', handleBeforeQuit);
+
+// Terminal shutdown must use the same cleanup and storage flush as tray quit.
+process.on('SIGINT', () => app.quit());
+process.on('SIGTERM', () => app.quit());
+
+if (!app.isPackaged) {
+  monitorDevParent(process.ppid, () => app.quit());
+}

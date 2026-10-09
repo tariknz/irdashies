@@ -48,7 +48,7 @@ export class GamepadHost {
       width: 1,
       height: 1,
       webPreferences: {
-        preload: path.join(__dirname, 'preload.js'),
+        preload: path.join(__dirname, 'preload.cjs'),
         backgroundThrottling: false,
         partition: HID_PARTITION,
       },

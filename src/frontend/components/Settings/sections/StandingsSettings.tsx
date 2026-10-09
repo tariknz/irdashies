@@ -44,7 +44,12 @@ const sortableSettings: SortableSetting[] = [
     configKey: 'driverName',
     hasSubSetting: true,
   },
-  { id: 'teamName', label: 'Team Name', configKey: 'teamName' },
+  {
+    id: 'teamName',
+    label: 'Team Name',
+    configKey: 'teamName',
+    hasSubSetting: true,
+  },
   {
     id: 'pitStatus',
     label: 'Pit Status',
@@ -473,6 +478,50 @@ const DisplaySettingsList = ({
                       />
                     ))}
                   </div>
+                </div>
+              )}
+            {setting.configKey === 'driverName' &&
+              settings.config.driverName.enabled && (
+                <div className="pl-8 mt-2">
+                  <SettingSelectRow<'none' | 'teamName'>
+                    title="Driver Name Subtext"
+                    value={
+                      settings.config.driverName.subtext === 'teamName'
+                        ? 'teamName'
+                        : 'none'
+                    }
+                    options={[
+                      { label: 'None', value: 'none' },
+                      { label: 'Team Name', value: 'teamName' },
+                    ]}
+                    onChange={(subtext) =>
+                      handleConfigChange({
+                        driverName: { ...settings.config.driverName, subtext },
+                      })
+                    }
+                  />
+                </div>
+              )}
+            {setting.configKey === 'teamName' &&
+              settings.config.teamName.enabled && (
+                <div className="pl-8 mt-2">
+                  <SettingSelectRow<'none' | 'driverName'>
+                    title="Team Name Subtext"
+                    value={
+                      settings.config.teamName.subtext === 'driverName'
+                        ? 'driverName'
+                        : 'none'
+                    }
+                    options={[
+                      { label: 'None', value: 'none' },
+                      { label: 'Driver Name', value: 'driverName' },
+                    ]}
+                    onChange={(subtext) =>
+                      handleConfigChange({
+                        teamName: { ...settings.config.teamName, subtext },
+                      })
+                    }
+                  />
                 </div>
               )}
             {setting.hasSubSetting &&

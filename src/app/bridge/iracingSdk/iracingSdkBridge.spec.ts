@@ -71,8 +71,9 @@ describe('publishIRacingSDKEvents session polling', () => {
     vi.useRealTimers();
   });
 
+  const offOverlayReady = vi.fn();
   const createOverlayManager = () => ({
-    onOverlayReady: vi.fn(),
+    onOverlayReady: vi.fn(() => offOverlayReady),
     publishMessage: vi.fn(),
     publishMessageToOverlay: vi.fn(),
   });
@@ -99,6 +100,18 @@ describe('publishIRacingSDKEvents session polling', () => {
     ]);
 
     bridge.stop();
+  });
+
+  it('stops listening for new overlays when it stops', async () => {
+    // Each demo toggle builds a new bridge; a listener left behind sends every
+    // new window the initial data once per toggle so far.
+    const overlayManager = createOverlayManager();
+    const bridge = await publishIRacingSDKEvents(overlayManager as never);
+    offOverlayReady.mockClear();
+
+    bridge.stop();
+
+    expect(offOverlayReady).toHaveBeenCalledOnce();
   });
 
   it('polls immediately and every 500 ms using monotonic time', async () => {
