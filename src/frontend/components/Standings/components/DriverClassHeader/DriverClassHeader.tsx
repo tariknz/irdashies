@@ -124,7 +124,7 @@ export const DriverClassHeader = ({
           <span className="flex items-center gap-1 mr-3">
             <TimerIcon />
             <span>
-              {estimatedLaps.currentLap}/
+              {estimatedLaps.currentLap} / 
               {estimatedLaps.exact
                 ? estimatedLaps.total
                 : `≈${estimatedLaps.total.toFixed(2)}`}
