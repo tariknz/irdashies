@@ -573,6 +573,18 @@ export const TeamSession: Story = {
   ],
 };
 
+export const TeamSessionWithoutSubtext: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      standings: { driverName: { subtext: 'none' } },
+    }),
+  ],
+};
+
+export const TeamSessionDefault: Story = {
+  decorators: [TelemetryDecorator('/test-data/1763227688917')],
+};
+
 export const TeamSessionDriverWithTeamSubtext: Story = {
   decorators: [
     TelemetryDecoratorWithConfig('/test-data/1763227688917', {

@@ -398,6 +398,11 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <TeamNameCell
             key="teamName"
             teamName={teamName}
+            fillAvailableWidth={
+              !(config?.driverName?.enabled ?? true) ||
+              (displayOrder !== undefined &&
+                !displayOrder.includes('driverName'))
+            }
             driverName={
               standingsConfig?.teamName?.subtext === 'driverName'
                 ? name

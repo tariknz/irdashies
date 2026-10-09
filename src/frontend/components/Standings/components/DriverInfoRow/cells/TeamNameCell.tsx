@@ -10,6 +10,7 @@ interface TeamNameCellProps {
   driverName?: string;
   nameFormat?: DriverNameFormat;
   removeNumbersFromName?: boolean;
+  fillAvailableWidth?: boolean;
   compactMode?: string;
 }
 
@@ -19,6 +20,7 @@ export const TeamNameCell = memo(
     driverName,
     nameFormat,
     removeNumbersFromName = false,
+    fillAvailableWidth = false,
     compactMode,
   }: TeamNameCellProps) => {
     const paddingClass = compactMode !== 'ultra' ? 'px-1 py-0.5' : '';
@@ -29,7 +31,10 @@ export const TeamNameCell = memo(
         )
       : undefined;
     return (
-      <td data-column="teamName" className={`${paddingClass} max-w-[150px]`}>
+      <td
+        data-column="teamName"
+        className={`${paddingClass} ${fillAvailableWidth ? 'w-full max-w-0' : 'max-w-[150px]'}`}
+      >
         <div className="overflow-hidden">
           <span
             className={[
