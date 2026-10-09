@@ -6,9 +6,13 @@ const applySnapshot = vi.fn();
 const setThresholds = vi.fn();
 const useDashboard = vi.fn();
 
-vi.mock('@irdashies/context', () => ({
+vi.mock('../DashboardContext/DashboardContext', () => ({
   useDashboard: () => useDashboard(),
+}));
+vi.mock('../ChannelStore/useSectorTimingSnapshot', () => ({
   useSectorTimingSnapshot: vi.fn(() => undefined),
+}));
+vi.mock('./SectorTimingStore', () => ({
   useSectorTimingStore: vi.fn((selector: (state: unknown) => unknown) =>
     selector({ applySnapshot, setThresholds })
   ),

@@ -1595,6 +1595,11 @@ export const defaultDashboard: {
         window: {
           alwaysOnTop: false,
         },
+        dock: {
+          enabled: false,
+          arrangement: 'row',
+          panels: [],
+        },
       },
     },
   ],

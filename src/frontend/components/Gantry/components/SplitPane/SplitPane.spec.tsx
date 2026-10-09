@@ -189,4 +189,44 @@ describe('SplitPane', () => {
     expect(divider()).toHaveAttribute('aria-valuenow', '70');
     expect(localStorage.getItem(STORAGE_KEY)).toBe('70');
   });
+
+  describe('vertical', () => {
+    it('stacks the panes and resizes by the pointer height', () => {
+      renderSplit({ orientation: 'vertical' });
+
+      expect(divider()).toHaveAttribute('aria-orientation', 'horizontal');
+
+      const handle = divider();
+      fireEvent.pointerDown(handle, {
+        pointerId: 1,
+        button: 0,
+        isPrimary: true,
+      });
+      fireEvent.pointerMove(handle, {
+        pointerId: 1,
+        clientX: 900,
+        clientY: 350,
+        buttons: 1,
+      });
+      fireEvent.pointerUp(handle, { pointerId: 1 });
+
+      expect(divider()).toHaveAttribute('aria-valuenow', '70');
+      expect(leftPane()).toHaveStyle({ flexBasis: '70%' });
+      expect(localStorage.getItem(STORAGE_KEY)).toBe('70');
+    });
+
+    it('nudges with the up and down keys only', () => {
+      renderSplit({ orientation: 'vertical' });
+
+      fireEvent.keyDown(divider(), { key: 'ArrowRight' });
+      expect(divider()).toHaveAttribute('aria-valuenow', '50');
+
+      fireEvent.keyDown(divider(), { key: 'ArrowDown' });
+      expect(divider()).toHaveAttribute('aria-valuenow', '52');
+
+      fireEvent.keyDown(divider(), { key: 'ArrowUp' });
+      fireEvent.keyDown(divider(), { key: 'ArrowUp' });
+      expect(divider()).toHaveAttribute('aria-valuenow', '48');
+    });
+  });
 });

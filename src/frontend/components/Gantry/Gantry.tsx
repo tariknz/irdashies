@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useState } from 'react';
+import React, { memo, useMemo, useState, type ReactNode } from 'react';
 import { GantryTabBar } from './components/GantryTabBar/GantryTabBar';
 import { GantryStandings } from './components/GantryStandings/GantryStandings';
 import { GantryIncidents } from './components/GantryIncidents/GantryIncidents';
@@ -19,11 +19,17 @@ type GantryView = 'standings-incidents' | 'lap-graph';
 
 /** Where the standings/incidents divider sits. A UI preference, not config. */
 const SPLIT_STORAGE_KEY = 'gantryStandingsSplitPercent';
+const DOCK_SPLIT_STORAGE_KEY = 'gantryDockSplitPercent';
 
 const isEmptyRoster = (drivers: readonly unknown[] | undefined) =>
   !drivers || drivers.length === 0;
 
-const GantryInner = memo(() => {
+export interface GantryProps {
+  /** Panels shown under the incident feed. The host renders them. */
+  dock?: ReactNode;
+}
+
+const GantryInner = memo(({ dock }: GantryProps) => {
   const [activeView, setActiveView] = useState<GantryView>(
     'standings-incidents'
   );
@@ -77,7 +83,20 @@ const GantryInner = memo(() => {
           label="Standings and incidents split"
           storageKey={SPLIT_STORAGE_KEY}
           left={<GantryStandings followedCarIdx={followedCarIdx} />}
-          right={<GantryIncidents />}
+          right={
+            dock ? (
+              <SplitPane
+                orientation="vertical"
+                label="Incidents and docked panels split"
+                storageKey={DOCK_SPLIT_STORAGE_KEY}
+                defaultPercent={60}
+                left={<GantryIncidents />}
+                right={dock}
+              />
+            ) : (
+              <GantryIncidents />
+            )
+          }
         />
       )}
       {activeView === 'lap-graph' && (
@@ -98,7 +117,8 @@ const GantryInner = memo(() => {
 });
 GantryInner.displayName = 'Gantry';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function Gantry(_config?: unknown): React.JSX.Element {
-  return <GantryInner />;
+// Also mounted from the widget registry, where it receives the saved config
+// as props. Only `dock` is read.
+export function Gantry({ dock }: GantryProps = {}): React.JSX.Element {
+  return <GantryInner dock={dock} />;
 }

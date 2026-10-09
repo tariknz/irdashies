@@ -14,8 +14,8 @@ import {
   type GantryStoryArgs,
 } from '@irdashies/storybook';
 import type { Incident } from '@irdashies/types';
+import { Gantry, type GantryProps } from './Gantry';
 import { useEffect, useState } from 'react';
-import { Gantry } from './Gantry';
 import { GantrySessionHoldProvider } from './hooks/useGantrySessionHold';
 
 interface GantrySetup extends GantryDecoratorOptions {
@@ -52,7 +52,7 @@ const SimClosesDecorator: Decorator = (Story) => {
   );
 };
 
-const meta: Meta<GantryStoryArgs> = {
+const meta: Meta<GantryStoryArgs & GantryProps> = {
   component: Gantry,
   title: 'widgets/Gantry',
   parameters: { layout: 'fullscreen' },
@@ -61,7 +61,7 @@ const meta: Meta<GantryStoryArgs> = {
 };
 
 export default meta;
-type Story = StoryObj<GantryStoryArgs>;
+type Story = StoryObj<GantryStoryArgs & GantryProps>;
 
 /** A 28-lap sprint over the mock grid, with a mixed incident feed. */
 export const Default: Story = {
@@ -93,6 +93,34 @@ export const QuietRace: Story = {
 /** A single-driver feed, for checking the incident row layout in isolation. */
 export const OneIncident: Story = {
   decorators: gantrySetup({ incidents: mockIncidents.slice(0, 1) }),
+};
+
+const DockPlaceholder = ({ label }: { label: string }) => (
+  <div className="flex-1 flex flex-col min-w-0">
+    <div className="px-2 py-0.5 bg-slate-800/60 border-b border-slate-700/50 text-xs font-bold uppercase tracking-wider text-slate-400">
+      {label}
+    </div>
+    <div className="flex-1 flex items-center justify-center text-xs text-slate-500">
+      Docked widget
+    </div>
+  </div>
+);
+
+/**
+ * Panels docked under the incident feed. The real panels come from
+ * GantryDockHost; Gantry only places whatever it is given.
+ */
+export const WithDock: Story = {
+  argTypes: { dock: { control: false } },
+  args: {
+    dock: (
+      <div className="flex h-full divide-x divide-slate-700/50">
+        <DockPlaceholder label="Fuel Calculator" />
+        <DockPlaceholder label="Track Map" />
+      </div>
+    ),
+  },
+  decorators: gantrySetup(),
 };
 
 /** The sim has closed: the final results and lap graph stay up for review. */

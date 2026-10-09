@@ -906,6 +906,27 @@ export interface LapGraphConfig {
 /** The recorder keeps 300 laps per car, so a wider window has nothing to show. */
 export const LAP_GRAPH_LAP_WINDOW_BOUNDS = { min: 5, max: 300 } as const;
 
+/** Overlay widgets that can be docked under the Gantry incident feed. */
+export const GANTRY_DOCK_WIDGET_TYPES = ['fuel', 'map', 'flatmap'] as const;
+export type GantryDockWidgetType = (typeof GANTRY_DOCK_WIDGET_TYPES)[number];
+
+export const GANTRY_DOCK_MAX_PANELS = 3;
+
+export interface GantryDockPanel {
+  /** Stable key for React and the remembered collapsed state. */
+  id: string;
+  type: GantryDockWidgetType;
+  /** Fuel only: the linked overlay instance or a Gantry-only instance. */
+  widgetId?: string;
+}
+
+export interface GantryDockConfig {
+  enabled: boolean;
+  arrangement: 'row' | 'tabs';
+  /** At most GANTRY_DOCK_MAX_PANELS. */
+  panels: GantryDockPanel[];
+}
+
 export interface GantryConfig {
   /** Display units for speed values. Stored thresholds stay in km/h. */
   speedUnit: 'mph' | 'km/h' | 'auto';
@@ -935,6 +956,8 @@ export interface GantryConfig {
   // Lap Graph tab
   lapGraph: LapGraphConfig;
   window: GantryWindowConfig;
+  /** Panels shown under the incident feed. Sanitise with sanitizeGantryDock. */
+  dock: GantryDockConfig;
 }
 
 export interface GantryWindowConfig {
@@ -1028,7 +1051,8 @@ export type SettingsTabType =
   | 'trace'
   | 'corner'
   | 'braking'
-  | 'help';
+  | 'help'
+  | 'dock';
 
 /** Available widgets for the Fuel Calculator */
 export type FuelWidgetType =

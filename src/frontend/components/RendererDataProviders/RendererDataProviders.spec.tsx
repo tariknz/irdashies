@@ -90,6 +90,31 @@ describe('RendererDataProviders', () => {
 
     expect(screen.getByTestId('session-provider')).toBeInTheDocument();
   });
+
+  it('mounts for the widgets it is given instead of this display', () => {
+    dashboard.widgets = [{ id: 'fuel', enabled: true, layout }];
+
+    render(
+      <RendererDataProviders
+        widgets={[{ id: 'map', enabled: false, layout }]}
+      />
+    );
+
+    expect(screen.getByTestId('reference-provider')).toBeInTheDocument();
+    expect(screen.getByTestId('session-provider')).toBeInTheDocument();
+  });
+
+  it('skips session data when the window already mounts it', () => {
+    render(
+      <RendererDataProviders
+        widgets={[{ id: 'map', enabled: true, layout }]}
+        sessionAlreadyMounted
+      />
+    );
+
+    expect(screen.getByTestId('reference-provider')).toBeInTheDocument();
+    expect(screen.queryByTestId('session-provider')).not.toBeInTheDocument();
+  });
 });
 
 describe('RendererDataProviders scoped to one browser-source widget', () => {

@@ -26,6 +26,7 @@ import { SettingNumberRow } from '../components/SettingNumberRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { DriverNamePreview } from '../components/DriverNamePreview';
+import { GantryDockSettings } from './GantryDockSettings';
 import {
   kphFromSpeed,
   resolveSpeedUnit,
@@ -308,6 +309,13 @@ export const GantrySettings = memo(() => {
             >
               Incidents
             </TabButton>
+            <TabButton
+              id="dock"
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            >
+              Docked Panels
+            </TabButton>
           </div>
 
           <div>
@@ -522,6 +530,8 @@ export const GantrySettings = memo(() => {
                 })}
               </SettingsSection>
             )}
+
+            {activeTab === 'dock' && <GantryDockSettings />}
           </div>
         </div>
       )}

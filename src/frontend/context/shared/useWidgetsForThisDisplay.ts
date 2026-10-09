@@ -16,9 +16,13 @@ import { useSimWidgetSupport } from './useSimWidgetSupport';
  */
 const OWN_WINDOW_WIDGET_TYPES = new Set(['gantry']);
 
+/** Shown only docked in the Gantry, never on an overlay or browser source. */
+export const isGantryOnly = (widget: DashboardWidget): boolean =>
+  widget.placement === 'gantry';
+
 /** Does this widget render in its own window instead of the overlay? */
 export const rendersInOwnWindow = (widget: DashboardWidget): boolean =>
-  OWN_WINDOW_WIDGET_TYPES.has(widget.type || widget.id);
+  OWN_WINDOW_WIDGET_TYPES.has(widget.type || widget.id) || isGantryOnly(widget);
 
 /**
  * The enabled widgets this overlay window is responsible for.
@@ -55,6 +59,7 @@ export const useWidgetsForThisDisplay = (
       currentDashboard?.widgets.filter(
         (widget) =>
           widget.enabled &&
+          !isGantryOnly(widget) &&
           !isWidgetDisabledForSim(
             simWidgetSupport,
             widget.type ?? widget.id,

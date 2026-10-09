@@ -14,6 +14,18 @@ if (!process.resourcesPath) {
 
 const createdWindows: FakeBrowserWindow[] = [];
 
+const PRIMARY_DISPLAY = {
+  id: 1,
+  bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+};
+const SECOND_DISPLAY = {
+  id: 2,
+  bounds: { x: 1920, y: 0, width: 1920, height: 1080 },
+};
+const screenState = vi.hoisted(() => ({
+  displays: [] as { id: number; bounds: Record<string, number> }[],
+}));
+
 class FakeWebContents {
   id = 42;
   on = vi.fn();
@@ -63,12 +75,7 @@ vi.mock('electron', () => ({
   Notification: vi.fn(),
   screen: {
     on: vi.fn(),
-    getAllDisplays: () => [
-      {
-        id: 1,
-        bounds: { x: 0, y: 0, width: 1920, height: 1080 },
-      },
-    ],
+    getAllDisplays: () => screenState.displays,
     getPrimaryDisplay: () => ({
       id: 1,
       bounds: { x: 0, y: 0, width: 1920, height: 1080 },
@@ -149,11 +156,40 @@ describe('overlay renderer data visibility recovery', () => {
   });
 });
 
+beforeEach(() => {
+  screenState.displays = [PRIMARY_DISPLAY];
+});
+
 describe('OverlayManager display windows', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createdWindows.length = 0;
   });
+
+  it.each([
+    ['an overlay widget', undefined, 2],
+    ['a Gantry-only widget', 'gantry' as const, 1],
+  ])(
+    'opens a window for a display holding %s',
+    (_label, placement, expectedWindows) => {
+      screenState.displays = [PRIMARY_DISPLAY, SECOND_DISPLAY];
+      const manager = new OverlayManager();
+
+      manager.ensureDisplayWindows({
+        widgets: [
+          {
+            id: 'fuel-2',
+            type: 'fuel',
+            enabled: true,
+            placement,
+            layout: { x: 2000, y: 100, width: 300, height: 200 },
+          },
+        ],
+      } as DashboardLayout);
+
+      expect(createdWindows).toHaveLength(expectedWindows);
+    }
+  );
 
   it.each([true, false])(
     'creates overlays with alwaysOnTop=%s when configured',

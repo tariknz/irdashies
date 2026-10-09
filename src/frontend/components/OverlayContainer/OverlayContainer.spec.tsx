@@ -19,8 +19,7 @@ vi.mock('@irdashies/context', () => ({
   SessionTimingUpdater: vi.fn(() => null),
   TrackTemperatureStoreUpdater: vi.fn(),
   SessionBestLapStoreUpdater: vi.fn(),
-  useSectorTimingSnapshot: vi.fn(),
-  useSectorTimingStore: vi.fn(() => vi.fn()),
+  SectorTimingUpdater: vi.fn(() => null),
 }));
 vi.mock('@irdashies/domain', () => ({
   useStandingsSettings: vi.fn(),
@@ -31,10 +30,13 @@ vi.mock('@irdashies/domain', () => ({
 import {
   useDashboard,
   useRunningState,
-  useSectorTimingSnapshot,
+  SectorTimingUpdater,
   useWidgetsForThisDisplay,
 } from '@irdashies/context';
 import { getWidget } from '../../WidgetIndex';
+
+const sectorTimingEnabled = () =>
+  vi.mocked(SectorTimingUpdater).mock.calls.at(-1)?.[0]?.enabled;
 
 const mockDashboard = (widgets: unknown[]) => {
   vi.mocked(useDashboard).mockReturnValue({
@@ -61,7 +63,7 @@ describe('OverlayContainer', () => {
   it('does not subscribe to sector timing without a sector consumer', () => {
     render(<OverlayContainer />);
 
-    expect(useSectorTimingSnapshot).toHaveBeenCalledWith(false);
+    expect(sectorTimingEnabled()).toBe(false);
   });
 
   it('does not render Gantry, which has a window of its own', () => {
@@ -92,6 +94,6 @@ describe('OverlayContainer', () => {
 
     render(<OverlayContainer />);
 
-    expect(useSectorTimingSnapshot).toHaveBeenCalledWith(true);
+    expect(sectorTimingEnabled()).toBe(true);
   });
 });

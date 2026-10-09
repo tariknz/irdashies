@@ -300,6 +300,64 @@ describe('useFuelCalculation channel parity', () => {
     );
   });
 
+  it('never writes to disk when embedded', async () => {
+    const getHistoricalLaps = vi.fn(async () => []);
+    const saveLap = vi.fn(async () => undefined);
+    const saveQualifyMax = vi.fn(async () => undefined);
+    const startNewLog = vi.fn(async () => undefined);
+    const logData = vi.fn(async () => undefined);
+    window.fuelCalculatorBridge = {
+      getHistoricalLaps,
+      saveLap,
+      clearHistory: vi.fn(async () => undefined),
+      clearAllHistory: vi.fn(async () => undefined),
+      getQualifyMax: vi.fn(async () => null),
+      saveQualifyMax,
+      startNewLog,
+      logData,
+    } satisfies FuelCalculatorBridge;
+    window.channelBridge = {
+      subscribe: <K extends ChannelName>(
+        _channel: K,
+        callback: (payload: ChannelPayloads[K]) => void
+      ) => {
+        callback({
+          ...projection,
+          sessionType: 'Open Qualify',
+          trackId: 'new-track',
+          carName: 'new-car',
+        } as unknown as ChannelPayloads[K]);
+        return () => undefined;
+      },
+    };
+
+    const { result } = renderHook(() =>
+      useFuelCalculation(
+        defaultFuelCalculatorSettings.safetyMargin,
+        {
+          ...defaultFuelCalculatorSettings,
+          enableStorage: true,
+          enableLogging: true,
+        },
+        true
+      )
+    );
+
+    // Reads still run. The same effects that would write have now fired.
+    await waitFor(() => expect(getHistoricalLaps).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(useFuelStore.getState().qualifyConsumption).not.toBeNull()
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result.current).not.toBeNull();
+    expect(saveLap).not.toHaveBeenCalled();
+    expect(saveQualifyMax).not.toHaveBeenCalled();
+    expect(startNewLog).not.toHaveBeenCalled();
+    expect(logData).not.toHaveBeenCalled();
+  });
+
   it('retries lap persistence after a failed save', async () => {
     const saveLap = vi
       .fn<FuelCalculatorBridge['saveLap']>()
