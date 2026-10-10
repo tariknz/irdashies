@@ -8,8 +8,6 @@ import {
 import { useDashboard } from '@irdashies/context';
 import { TabButton } from '../components/TabButton';
 import { SettingsSection } from '../components/SettingSection';
-import { SettingToggleRow } from '../components/SettingToggleRow';
-import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingActionButton } from '../components/SettingActionButton';
 import {
   SessionBarItemsList,
@@ -18,6 +16,7 @@ import {
 import { SessionVisibility } from '../components/SessionVisibility';
 import { DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { SettingDivider } from '../components/SettingDivider';
+import { SettingProp, SettingProps } from '../components/SettingProp';
 
 const SETTING_ID = 'infobar';
 const defaultConfig = getWidgetDefaultConfig('infobar');
@@ -56,135 +55,111 @@ export const InformationBarSettings = () => {
       widgetId="infobar"
     >
       {(handleConfigChange) => (
-        <div className="space-y-4">
-          <div className="flex border-b border-slate-700/50">
-            <TabButton
-              id="display"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Display
-            </TabButton>
-            <TabButton
-              id="styling"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Styling
-            </TabButton>
-            <TabButton
-              id="visibility"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Visibility
-            </TabButton>
-          </div>
+        <SettingProps
+          widget="infobar"
+          config={settings.config}
+          onChange={handleConfigChange}
+        >
+          <div className="space-y-4">
+            <div className="flex border-b border-slate-700/50">
+              <TabButton
+                id="display"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Display
+              </TabButton>
+              <TabButton
+                id="styling"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Styling
+              </TabButton>
+              <TabButton
+                id="visibility"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Visibility
+              </TabButton>
+            </div>
 
-          <div className="pt-4 space-y-4">
-            {activeTab === 'display' && (
-              <SettingsSection title="Display Order">
-                <p className="text-xs text-slate-400 px-4 mb-4">
-                  Enable and reorder items for the information bar.
-                </p>
-                <SessionBarItemsList
-                  items={settings.config.displayOrder}
-                  onReorder={(newOrder) =>
-                    handleConfigChange({ displayOrder: newOrder })
-                  }
-                  getItemConfig={(id) => {
-                    const item =
-                      settings.config[id as keyof typeof settings.config];
-                    if (
-                      typeof item === 'object' &&
-                      item !== null &&
-                      'enabled' in item
-                    ) {
-                      return item as SessionBarItemConfig;
+            <div className="pt-4 space-y-4">
+              {activeTab === 'display' && (
+                <SettingsSection title="Display Order">
+                  <p className="text-xs text-slate-400 px-4 mb-4">
+                    Enable and reorder items for the information bar.
+                  </p>
+                  <SessionBarItemsList
+                    items={settings.config.displayOrder}
+                    onReorder={(newOrder) =>
+                      handleConfigChange({ displayOrder: newOrder })
                     }
-                    return undefined;
-                  }}
-                  updateItemConfig={(id, config) => {
-                    const item =
-                      settings.config[id as keyof typeof settings.config];
-                    if (
-                      typeof item === 'object' &&
-                      item !== null &&
-                      'enabled' in item
-                    ) {
-                      handleConfigChange({
-                        [id]: {
-                          ...(item as SessionBarItemConfig),
-                          ...config,
-                        },
-                      });
-                    }
-                  }}
-                />
-                <div className="mt-4">
-                  <SettingActionButton
-                    label="Reset to Default Order"
-                    onClick={() =>
-                      handleConfigChange({
-                        displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER],
-                      })
-                    }
+                    getItemConfig={(id) => {
+                      const item =
+                        settings.config[id as keyof typeof settings.config];
+                      if (
+                        typeof item === 'object' &&
+                        item !== null &&
+                        'enabled' in item
+                      ) {
+                        return item as SessionBarItemConfig;
+                      }
+                      return undefined;
+                    }}
+                    updateItemConfig={(id, config) => {
+                      const item =
+                        settings.config[id as keyof typeof settings.config];
+                      if (
+                        typeof item === 'object' &&
+                        item !== null &&
+                        'enabled' in item
+                      ) {
+                        handleConfigChange({
+                          [id]: {
+                            ...(item as SessionBarItemConfig),
+                            ...config,
+                          },
+                        });
+                      }
+                    }}
                   />
-                </div>
-              </SettingsSection>
-            )}
+                  <div className="mt-4">
+                    <SettingActionButton
+                      label="Reset to Default Order"
+                      onClick={() =>
+                        handleConfigChange({
+                          displayOrder: [...DEFAULT_SESSION_BAR_DISPLAY_ORDER],
+                        })
+                      }
+                    />
+                  </div>
+                </SettingsSection>
+              )}
 
-            {activeTab === 'styling' && (
-              <SettingsSection title="Background">
-                <SettingSliderRow
-                  title="Background Opacity"
-                  value={settings.config.background?.opacity ?? 70}
-                  units="%"
-                  min={0}
-                  max={100}
-                  step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ background: { opacity: v } })
-                  }
-                />
+              {activeTab === 'styling' && (
+                <SettingsSection title="Background">
+                  <SettingProp path="background.opacity" />
+                  <SettingProp path="foreground.opacity" />
+                </SettingsSection>
+              )}
 
-                <SettingSliderRow
-                  title="Session Bar Opacity"
-                  value={settings.config.foreground?.opacity ?? 70}
-                  units="%"
-                  min={0}
-                  max={100}
-                  step={1}
-                  onChange={(v) =>
-                    handleConfigChange({
-                      foreground: { opacity: v },
-                    })
-                  }
-                />
-              </SettingsSection>
-            )}
+              {activeTab === 'visibility' && (
+                <SettingsSection title="Session Visibility">
+                  <SessionVisibility
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
 
-            {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
+                  <SettingDivider />
 
-                <SettingDivider />
-
-                <SettingToggleRow
-                  title="Show only when on track"
-                  description="Hide the widget when you are not in the car"
-                  enabled={settings.config.showOnlyWhenOnTrack}
-                  onToggle={(v) =>
-                    handleConfigChange({ showOnlyWhenOnTrack: v })
-                  }
-                />
-              </SettingsSection>
-            )}
+                  <SettingProp path="showOnlyWhenOnTrack" />
+                </SettingsSection>
+              )}
+            </div>
           </div>
-        </div>
+        </SettingProps>
       )}
     </BaseSettingsSection>
   );

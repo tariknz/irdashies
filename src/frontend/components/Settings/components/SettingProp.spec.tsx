@@ -96,3 +96,22 @@ describe('SettingProp enum extensions', () => {
     });
   });
 });
+
+describe('SettingProp number input', () => {
+  it('renders a number input with the declared limits', () => {
+    const onChange = vi.fn();
+    render(
+      <SettingProps
+        widget="rejoin"
+        config={{ showAtSpeed: 30, careGap: 2 }}
+        onChange={onChange}
+      >
+        <SettingProp path="showAtSpeed" />
+      </SettingProps>
+    );
+    const input = screen.getByRole('spinbutton');
+    expect(input).toHaveAttribute('min', '0');
+    fireEvent.change(input, { target: { value: '12.5' } });
+    expect(onChange).toHaveBeenLastCalledWith({ showAtSpeed: 12.5 });
+  });
+});

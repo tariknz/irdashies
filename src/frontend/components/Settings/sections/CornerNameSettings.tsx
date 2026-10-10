@@ -7,11 +7,10 @@ import {
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SettingsSection } from '../components/SettingSection';
-import { SettingToggleRow } from '../components/SettingToggleRow';
-import { SettingNumberRow } from '../components/SettingNumberRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
+import { SettingProp, SettingProps } from '../components/SettingProp';
 
 const SETTING_ID = 'cornername';
 
@@ -51,92 +50,73 @@ export const CornerNameSettings = () => {
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
-        <div className="space-y-4">
-          <div className="flex border-b border-slate-700/50">
-            <TabButton
-              id="display"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Display
-            </TabButton>
-            <TabButton
-              id="styling"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Appearance
-            </TabButton>
-            <TabButton
-              id="visibility"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Visibility
-            </TabButton>
+        <SettingProps
+          widget={SETTING_ID}
+          config={settings.config}
+          onChange={handleConfigChange}
+        >
+          <div className="space-y-4">
+            <div className="flex border-b border-slate-700/50">
+              <TabButton
+                id="display"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Display
+              </TabButton>
+              <TabButton
+                id="styling"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Appearance
+              </TabButton>
+              <TabButton
+                id="visibility"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Visibility
+              </TabButton>
+            </div>
+
+            <div>
+              {activeTab === 'display' && (
+                <SettingsSection title="Elements">
+                  <SettingProp path="showCornerNumber" />
+                  <SettingProp path="showProgressBar" />
+                  <SettingProp path="showTrackPct" />
+                </SettingsSection>
+              )}
+
+              {activeTab === 'styling' && (
+                <SettingsSection title="Appearance">
+                  <SettingProp path="fontSize" />
+
+                  <SettingSliderRow
+                    title="Opacity"
+                    description="Background opacity of the overlay"
+                    value={Math.round(settings.config.opacity * 100)}
+                    units="%"
+                    min={20}
+                    max={100}
+                    step={5}
+                    onChange={(v) => handleConfigChange({ opacity: v / 100 })}
+                  />
+                </SettingsSection>
+              )}
+
+              {activeTab === 'visibility' && (
+                <SettingsSection title="Session Visibility">
+                  <SessionVisibility
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
+                </SettingsSection>
+              )}
+            </div>
           </div>
-
-          <div>
-            {activeTab === 'display' && (
-              <SettingsSection title="Elements">
-                <SettingToggleRow
-                  title="Show Corner Number"
-                  description="Display the corner number badge (e.g. T1, T3)"
-                  enabled={settings.config.showCornerNumber}
-                  onToggle={(v) => handleConfigChange({ showCornerNumber: v })}
-                />
-
-                <SettingToggleRow
-                  title="Show Progress Bar"
-                  description="Display progress through the current section"
-                  enabled={settings.config.showProgressBar}
-                  onToggle={(v) => handleConfigChange({ showProgressBar: v })}
-                />
-
-                <SettingToggleRow
-                  title="Show Track Percentage"
-                  description="Display overall track position percentage"
-                  enabled={settings.config.showTrackPct}
-                  onToggle={(v) => handleConfigChange({ showTrackPct: v })}
-                />
-              </SettingsSection>
-            )}
-
-            {activeTab === 'styling' && (
-              <SettingsSection title="Appearance">
-                <SettingNumberRow
-                  title="Font Size"
-                  description="Base font size for corner names (px)"
-                  value={settings.config.fontSize}
-                  min={12}
-                  max={32}
-                  step={1}
-                  onChange={(v) => handleConfigChange({ fontSize: v })}
-                />
-
-                <SettingSliderRow
-                  title="Opacity"
-                  description="Background opacity of the overlay"
-                  value={Math.round(settings.config.opacity * 100)}
-                  units="%"
-                  min={20}
-                  max={100}
-                  step={5}
-                  onChange={(v) => handleConfigChange({ opacity: v / 100 })}
-                />
-              </SettingsSection>
-            )}
-
-            {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-              </SettingsSection>
-            )}
-          </div>
-        </div>
+        </SettingProps>
       )}
     </BaseSettingsSection>
   );

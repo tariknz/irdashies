@@ -10,12 +10,10 @@ import { TabButton } from '../components/TabButton';
 import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { SessionVisibility } from '../components/SessionVisibility';
-import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
-import { SettingSliderRow } from '../components/SettingSliderRow';
-import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingActionButton } from '../components/SettingActionButton';
+import { SettingProp, SettingProps } from '../components/SettingProp';
 
 const SETTING_ID = 'weather';
 
@@ -85,8 +83,8 @@ const DisplaySettingsList = ({
             onToggle={(enabled) => {
               const cv =
                 (settings.config[setting.configKey] as
-                  | { enabled?: boolean; [key: string]: unknown }
-                  | undefined) ?? {};
+                  { enabled?: boolean; [key: string]: unknown } | undefined) ??
+                {};
               handleConfigChange({
                 [setting.configKey]: { ...cv, enabled },
               });
@@ -145,128 +143,90 @@ export const WeatherSettings = () => {
         };
 
         return (
-          <div className="space-y-4">
-            {/* Tabs */}
-            <div className="flex border-b border-slate-700/50">
-              <TabButton
-                id="display"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Display
-              </TabButton>
-              <TabButton
-                id="options"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Options
-              </TabButton>
-              <TabButton
-                id="visibility"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Visibility
-              </TabButton>
-            </div>
+          <SettingProps
+            widget={SETTING_ID}
+            config={settings.config}
+            onChange={handleConfigChange}
+          >
+            <div className="space-y-4">
+              {/* Tabs */}
+              <div className="flex border-b border-slate-700/50">
+                <TabButton
+                  id="display"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Display
+                </TabButton>
+                <TabButton
+                  id="options"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Options
+                </TabButton>
+                <TabButton
+                  id="visibility"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Visibility
+                </TabButton>
+              </div>
 
-            <div>
-              {/* DISPLAY TAB */}
-              {activeTab === 'display' && (
-                <SettingsSection title="Display Order">
-                  <DisplaySettingsList
-                    itemsOrder={itemsOrder}
-                    onReorder={handleDisplayOrderChange}
-                    settings={settings}
-                    handleConfigChange={handleConfigChange}
-                  />
-
-                  <SettingActionButton
-                    label="Reset to Default Order"
-                    onClick={() => {
-                      const defaultOrder = sortableSettings.map((s) => s.id);
-                      setItemsOrder(defaultOrder);
-                      handleConfigChange({ displayOrder: defaultOrder });
-                    }}
-                  />
-                </SettingsSection>
-              )}
-
-              {/* OPTIONS TAB */}
-              {activeTab === 'options' && (
-                <SettingsSection title="Options">
-                  <SettingSliderRow
-                    title="Background Opacity"
-                    value={settings.config.background.opacity ?? 40}
-                    units="%"
-                    min={0}
-                    max={100}
-                    step={1}
-                    onChange={(v) =>
-                      handleConfigChange({ background: { opacity: v } })
-                    }
-                  />
-
-                  <SettingButtonGroupRow<'vertical' | 'horizontal'>
-                    title="Layout"
-                    value={settings.config.layout ?? 'vertical'}
-                    options={[
-                      { label: 'Vertical', value: 'vertical' },
-                      { label: 'Horizontal', value: 'horizontal' },
-                    ]}
-                    onChange={(v) => handleConfigChange({ layout: v })}
-                  />
-
-                  {settings.config.layout === 'horizontal' && (
-                    <SettingButtonGroupRow<'compact' | 'full'>
-                      title="Horizontal View"
-                      value={settings.config.horizontalMode ?? 'compact'}
-                      options={[
-                        { label: 'Compact', value: 'compact' },
-                        { label: 'Full', value: 'full' },
-                      ]}
-                      onChange={(v) =>
-                        handleConfigChange({ horizontalMode: v })
-                      }
+              <div>
+                {/* DISPLAY TAB */}
+                {activeTab === 'display' && (
+                  <SettingsSection title="Display Order">
+                    <DisplaySettingsList
+                      itemsOrder={itemsOrder}
+                      onReorder={handleDisplayOrderChange}
+                      settings={settings}
+                      handleConfigChange={handleConfigChange}
                     />
-                  )}
 
-                  <SettingButtonGroupRow<'auto' | 'Metric' | 'Imperial'>
-                    title="Temperature Units"
-                    value={settings.config.units ?? 'auto'}
-                    options={[
-                      { label: 'Auto', value: 'auto' },
-                      { label: '°C', value: 'Metric' },
-                      { label: '°F', value: 'Imperial' },
-                    ]}
-                    onChange={(v) => handleConfigChange({ units: v })}
-                  />
-                </SettingsSection>
-              )}
+                    <SettingActionButton
+                      label="Reset to Default Order"
+                      onClick={() => {
+                        const defaultOrder = sortableSettings.map((s) => s.id);
+                        setItemsOrder(defaultOrder);
+                        handleConfigChange({ displayOrder: defaultOrder });
+                      }}
+                    />
+                  </SettingsSection>
+                )}
 
-              {/* VISIBILITY TAB */}
-              {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
-                  <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
+                {/* OPTIONS TAB */}
+                {activeTab === 'options' && (
+                  <SettingsSection title="Options">
+                    <SettingProp path="background.opacity" />
 
-                  <SettingDivider />
+                    <SettingProp path="layout" />
 
-                  <SettingToggleRow
-                    title="Show only when on track"
-                    description="If enabled, weather will only be shown when driving"
-                    enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                    }
-                  />
-                </SettingsSection>
-              )}
+                    {settings.config.layout === 'horizontal' && (
+                      <SettingProp path="horizontalMode" />
+                    )}
+
+                    <SettingProp path="units" />
+                  </SettingsSection>
+                )}
+
+                {/* VISIBILITY TAB */}
+                {activeTab === 'visibility' && (
+                  <SettingsSection title="Session Visibility">
+                    <SessionVisibility
+                      sessionVisibility={settings.config.sessionVisibility}
+                      handleConfigChange={handleConfigChange}
+                    />
+
+                    <SettingDivider />
+
+                    <SettingProp path="showOnlyWhenOnTrack" />
+                  </SettingsSection>
+                )}
+              </div>
             </div>
-          </div>
+          </SettingProps>
         );
       }}
     </BaseSettingsSection>

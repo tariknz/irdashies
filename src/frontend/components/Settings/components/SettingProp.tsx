@@ -7,6 +7,7 @@ import {
 } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
 import { SettingButtonGroupRow } from './SettingButtonGroupRow';
+import { SettingNumberRow } from './SettingNumberRow';
 import { SettingSelectRow } from './SettingSelectRow';
 import { SettingSliderRow } from './SettingSliderRow';
 import { SettingToggleRow } from './SettingToggleRow';
@@ -107,6 +108,19 @@ export const SettingProp = ({
 
   switch (spec.type) {
     case 'number':
+      if (spec.control === 'input') {
+        return (
+          <SettingNumberRow
+            title={spec.label}
+            description={spec.description}
+            value={value as number}
+            min={spec.min}
+            max={spec.max}
+            step={spec.step}
+            onChange={change}
+          />
+        );
+      }
       return (
         <SettingSliderRow
           title={spec.label}

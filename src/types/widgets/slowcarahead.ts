@@ -24,4 +24,50 @@ export default defineWidgetManifest({
       offlineTesting: true,
     },
   },
+  properties: {
+    maxDistance: {
+      type: 'number',
+      label: 'Maximum Distance (m)',
+      description:
+        'The maximum distance the slow car can be for the widget to be visible.',
+      control: 'input',
+      min: 100,
+      max: 999,
+      step: 1,
+    },
+    slowSpeedThreshold: {
+      type: 'number',
+      label: 'Slow Speed Threshold (km/h)',
+      description:
+        'The threshold for when a car is considered slow, and the widget will appear.',
+      control: 'input',
+      min: 1,
+      max: 100,
+      step: 1,
+    },
+    stoppedSpeedThreshold: {
+      type: 'number',
+      label: 'Stopped Speed Threshold (km/h)',
+      description:
+        'The threshold for when a car is considered stopped, and the bar will turn red.',
+      control: 'input',
+      min: 1,
+      max: 100,
+      step: 1,
+    },
+    barThickness: {
+      type: 'number',
+      label: 'Bar Thickness',
+      description: 'The thickness of the colored bar of the widget (px).',
+      min: 0,
+      max: 100,
+      step: 1,
+      units: 'px',
+    },
+    showOnlyWhenOnTrack: {
+      type: 'boolean',
+      label: 'Show only when on track',
+      description: 'If enabled, widget will only be shown when driving',
+    },
+  },
 });

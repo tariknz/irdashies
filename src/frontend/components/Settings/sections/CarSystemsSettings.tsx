@@ -13,7 +13,7 @@ import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingDivider } from '../components/SettingDivider';
-import { SettingSliderRow } from '../components/SettingSliderRow';
+import { SettingProp, SettingProps } from '../components/SettingProp';
 
 const SETTING_ID = 'carsystems';
 
@@ -100,101 +100,76 @@ export const CarSystemsSettings = () => {
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
-        <div className="space-y-4">
-          <div className="flex border-b border-slate-700/50">
-            <TabButton
-              id="options"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Options
-            </TabButton>
-            <TabButton
-              id="visibility"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Visibility
-            </TabButton>
-          </div>
+        <SettingProps
+          widget={SETTING_ID}
+          config={settings.config}
+          onChange={handleConfigChange}
+        >
+          <div className="space-y-4">
+            <div className="flex border-b border-slate-700/50">
+              <TabButton
+                id="options"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Options
+              </TabButton>
+              <TabButton
+                id="visibility"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Visibility
+              </TabButton>
+            </div>
 
-          <div>
-            {activeTab === 'options' && (
-              <>
-                <SettingsSection title="Display">
-                  <SettingSliderRow
-                    title="Background Opacity"
-                    description="Opacity of the widget background."
-                    value={settings.config.background?.opacity ?? 80}
-                    units="%"
-                    min={0}
-                    max={100}
-                    step={5}
-                    onChange={(v) =>
-                      handleConfigChange({ background: { opacity: v } })
-                    }
+            <div>
+              {activeTab === 'options' && (
+                <>
+                  <SettingsSection title="Display">
+                    <SettingProp path="background.opacity" />
+                    <SettingProp path="showUnsupportedRows" />
+                    <SettingProp path="showOffRows" />
+                  </SettingsSection>
+
+                  <SettingsSection title="Rows">
+                    {SELECTABLE_ROWS.map((adjustment) => (
+                      <SettingToggleRow
+                        key={adjustment.key}
+                        title={adjustment.label}
+                        // Settings configures every car at once, so rows keep
+                        // their catalogue name here. Saying so matters for the
+                        // ones a car renames, otherwise the driver enables "ABS"
+                        // and a column headed MIGR appears.
+                        description={
+                          carSystemIsRenamedSomewhere(adjustment.key)
+                            ? 'Named differently on some cars, which control the widget follows.'
+                            : undefined
+                        }
+                        enabled={rows.includes(adjustment.key)}
+                        onToggle={(v) =>
+                          toggleRow(adjustment.key, v, handleConfigChange)
+                        }
+                      />
+                    ))}
+                  </SettingsSection>
+                </>
+              )}
+
+              {activeTab === 'visibility' && (
+                <SettingsSection title="Session Visibility">
+                  <SessionVisibility
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
                   />
-                  <SettingToggleRow
-                    title="Keep rows the car does not have"
-                    description="Shows a blank row so each adjustment keeps the same position between cars. Turn off to show only what the current car exposes."
-                    enabled={settings.config.showUnsupportedRows ?? true}
-                    onToggle={(v) =>
-                      handleConfigChange({ showUnsupportedRows: v })
-                    }
-                  />
-                  <SettingToggleRow
-                    title="Keep rows switched off"
-                    description="Shows a system the driver has turned off, greyed and reading zero. Turn off to leave only the systems actually in use."
-                    enabled={settings.config.showOffRows ?? true}
-                    onToggle={(v) => handleConfigChange({ showOffRows: v })}
-                  />
+
+                  <SettingDivider />
+                  <SettingProp path="showOnlyWhenOnTrack" />
                 </SettingsSection>
-
-                <SettingsSection title="Rows">
-                  {SELECTABLE_ROWS.map((adjustment) => (
-                    <SettingToggleRow
-                      key={adjustment.key}
-                      title={adjustment.label}
-                      // Settings configures every car at once, so rows keep
-                      // their catalogue name here. Saying so matters for the
-                      // ones a car renames, otherwise the driver enables "ABS"
-                      // and a column headed MIGR appears.
-                      description={
-                        carSystemIsRenamedSomewhere(adjustment.key)
-                          ? 'Named differently on some cars, which control the widget follows.'
-                          : undefined
-                      }
-                      enabled={rows.includes(adjustment.key)}
-                      onToggle={(v) =>
-                        toggleRow(adjustment.key, v, handleConfigChange)
-                      }
-                    />
-                  ))}
-                </SettingsSection>
-              </>
-            )}
-
-            {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-
-                <SettingDivider />
-
-                <SettingToggleRow
-                  title="Show only when on track"
-                  description="If enabled, widget will only be shown when driving."
-                  enabled={settings.config.showOnlyWhenOnTrack}
-                  onToggle={(v) =>
-                    handleConfigChange({ showOnlyWhenOnTrack: v })
-                  }
-                />
-              </SettingsSection>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        </SettingProps>
       )}
     </BaseSettingsSection>
   );

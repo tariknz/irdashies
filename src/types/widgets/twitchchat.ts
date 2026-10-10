@@ -22,4 +22,35 @@ export default defineWidgetManifest({
       intervalSeconds: 20,
     },
   },
+  properties: {
+    'background.opacity': {
+      type: 'number',
+      label: 'Background Opacity',
+      min: 0,
+      max: 100,
+      step: 5,
+      units: '%',
+    },
+    fontSize: {
+      type: 'number',
+      label: 'Font size',
+      min: 8,
+      max: 45,
+      step: 1,
+      units: 'px',
+    },
+    'autoHide.enabled': {
+      type: 'boolean',
+      label: 'Automatic message disappearance',
+      description: 'Messages will automatically disappear after the set time.',
+    },
+    'autoHide.intervalSeconds': {
+      type: 'number',
+      label: 'Disappearance interval',
+      min: 10,
+      max: 90,
+      step: 1,
+      units: 's',
+    },
+  },
 });
