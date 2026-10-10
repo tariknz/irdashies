@@ -1377,6 +1377,7 @@ export const defaultDashboard: {
       },
       config: {
         background: { opacity: 90 },
+        style: 'steps',
       },
     },
     {

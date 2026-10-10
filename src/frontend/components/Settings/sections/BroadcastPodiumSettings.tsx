@@ -2,13 +2,22 @@ import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
+import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { useDashboard } from '@irdashies/context';
 import { getWidgetDefaultConfig } from '@irdashies/types';
-import type { BroadcastPodiumWidgetSettings } from '@irdashies/types';
+import type {
+  BroadcastPodiumStyle,
+  BroadcastPodiumWidgetSettings,
+} from '@irdashies/types';
 
 const SETTING_ID = 'broadcastpodium';
 
 const defaultConfig = getWidgetDefaultConfig('broadcastpodium');
+
+const STYLE_OPTIONS: { label: string; value: BroadcastPodiumStyle }[] = [
+  { label: 'Steps', value: 'steps' },
+  { label: 'Trophies', value: 'trophy' },
+];
 
 export const BroadcastPodiumSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -35,6 +44,13 @@ export const BroadcastPodiumSettings = () => {
     >
       {(handleConfigChange) => (
         <SettingsSection title="Options">
+          <SettingButtonGroupRow<BroadcastPodiumStyle>
+            title="Style"
+            description="Gold, silver and bronze steps, or a trophy for each place."
+            value={settings.config.style}
+            options={STYLE_OPTIONS}
+            onChange={(v) => handleConfigChange({ style: v })}
+          />
           <SettingSliderRow
             title="Background Opacity"
             value={settings.config.background.opacity}

@@ -1283,9 +1283,13 @@ export interface BroadcastWeatherConfig {
 export type BroadcastWeatherWidgetSettings =
   BaseWidgetSettings<BroadcastWeatherConfig>;
 
+/** Podium places drawn as metal steps or as trophies. */
+export type BroadcastPodiumStyle = 'steps' | 'trophy';
+
 /** Podium of each class after the checkered flag of a race. */
 export interface BroadcastPodiumConfig {
   background: { opacity: number };
+  style: BroadcastPodiumStyle;
 }
 
 export type BroadcastPodiumWidgetSettings =
