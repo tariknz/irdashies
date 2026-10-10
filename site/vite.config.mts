@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/postcss';
 import path from 'node:path';
 
-const APP_LOGGER = path.resolve(__dirname, '../src/app/logger.ts');
-const LOGGER_STUB = path.resolve(__dirname, 'src/shims/logger.ts');
+const APP_LOGGER = path.resolve(import.meta.dirname, '../src/app/logger.ts');
+const LOGGER_STUB = path.resolve(import.meta.dirname, 'src/shims/logger.ts');
 
 /**
  * The preview reuses the app's processors, which log through the Electron
@@ -43,17 +43,26 @@ export default defineConfig({
     fs: {
       allow: [
         // Allow serving files from the parent project
-        path.resolve(__dirname, '..'),
+        path.resolve(import.meta.dirname, '..'),
       ],
     },
   },
   resolve: {
     alias: {
-      '@irdashies/utils': path.resolve(__dirname, '../src/frontend/utils'),
-      '@irdashies/context': path.resolve(__dirname, '../src/frontend/context'),
-      '@irdashies/domain': path.resolve(__dirname, '../src/frontend/domain'),
-      '@irdashies/types': path.resolve(__dirname, '../src/types'),
-      '@irdashies/shared': path.resolve(__dirname, '../src/shared'),
+      '@irdashies/utils': path.resolve(
+        import.meta.dirname,
+        '../src/frontend/utils'
+      ),
+      '@irdashies/context': path.resolve(
+        import.meta.dirname,
+        '../src/frontend/context'
+      ),
+      '@irdashies/domain': path.resolve(
+        import.meta.dirname,
+        '../src/frontend/domain'
+      ),
+      '@irdashies/types': path.resolve(import.meta.dirname, '../src/types'),
+      '@irdashies/shared': path.resolve(import.meta.dirname, '../src/shared'),
     },
   },
   css: {
