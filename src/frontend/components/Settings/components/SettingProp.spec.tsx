@@ -38,3 +38,61 @@ describe('SettingProp', () => {
     expect(onChange).toHaveBeenLastCalledWith({ showOnlyWhenOnTrack: true });
   });
 });
+
+describe('SettingProp enum extensions', () => {
+  const renderStandings = (
+    config: Record<string, unknown>,
+    compact = false
+  ) => {
+    const onChange = vi.fn();
+    render(
+      <SettingProps widget="standings" config={config} onChange={onChange}>
+        <SettingProp
+          path="lapTimeDeltas.numLaps"
+          variant={compact ? 'compact' : 'row'}
+        />
+        <SettingProp
+          path="iratingChange.estimateInPractice"
+          variant={compact ? 'compact' : 'row'}
+        />
+      </SettingProps>
+    );
+    return onChange;
+  };
+  const config = {
+    lapTimeDeltas: { enabled: true, numLaps: 3, decimalPlaces: 1 },
+    iratingChange: { enabled: true, estimateInPractice: false },
+  };
+
+  it('select control keeps numeric option values numeric', () => {
+    const onChange = vi.fn();
+    render(
+      <SettingProps
+        widget="standings"
+        config={{ driverStandings: { buffer: 3, numTopDrivers: 3 } }}
+        onChange={onChange}
+      >
+        <SettingProp path="driverStandings.buffer" />
+      </SettingProps>
+    );
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '4' } });
+    expect(onChange).toHaveBeenLastCalledWith({
+      driverStandings: { buffer: 4, numTopDrivers: 3 },
+    });
+  });
+
+  it('compact variant renders the inline sub-setting markup', () => {
+    const onChange = renderStandings(config, true);
+    expect(
+      screen.getByText('Number of Laps to Show').parentElement
+    ).toHaveClass('pl-8', 'mt-2', 'indent-8');
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '5' } });
+    expect(onChange).toHaveBeenLastCalledWith({
+      lapTimeDeltas: { enabled: true, numLaps: 5, decimalPlaces: 1 },
+    });
+    fireEvent.click(screen.getByRole('switch'));
+    expect(onChange).toHaveBeenLastCalledWith({
+      iratingChange: { enabled: true, estimateInPractice: true },
+    });
+  });
+});

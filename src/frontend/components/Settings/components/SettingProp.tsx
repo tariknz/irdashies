@@ -7,8 +7,10 @@ import {
 } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
 import { SettingButtonGroupRow } from './SettingButtonGroupRow';
+import { SettingSelectRow } from './SettingSelectRow';
 import { SettingSliderRow } from './SettingSliderRow';
 import { SettingToggleRow } from './SettingToggleRow';
+import { ToggleSwitch } from './ToggleSwitch';
 
 interface SettingPropsValue {
   specs: PropertySpecs;
@@ -50,8 +52,21 @@ export const SettingProps = <T extends object>({
   );
 };
 
+/** Maps a <select>'s string back to the option's original (maybe numeric) value. */
+const fromString = (
+  options: readonly { value: string | number }[],
+  chosen: string
+) => options.find((o) => String(o.value) === chosen)?.value;
+
 /** One setting row; the control is chosen from the property's manifest spec. */
-export const SettingProp = ({ path }: { path: string }) => {
+export const SettingProp = ({
+  path,
+  variant = 'row',
+}: {
+  path: string;
+  /** 'compact' = the inline sub-setting inside a DraggableSettingItem. */
+  variant?: 'row' | 'compact';
+}) => {
   const ctx = useContext(SettingPropsContext);
   const spec = ctx?.specs[path];
   if (!ctx || !spec) {
@@ -66,6 +81,29 @@ export const SettingProp = ({ path }: { path: string }) => {
     const top = path.split('.')[0];
     ctx.onChange({ [top]: setPath(ctx.config, path, next)[top] });
   };
+
+  if (variant === 'compact' && spec.type !== 'number') {
+    return (
+      <div className="flex items-center justify-between pl-8 mt-2 indent-8">
+        <span className="text-sm text-slate-300">{spec.label}</span>
+        {spec.type === 'boolean' ? (
+          <ToggleSwitch enabled={value as boolean} onToggle={change} />
+        ) : (
+          <select
+            value={String(value)}
+            onChange={(e) => change(fromString(spec.options, e.target.value))}
+            className="bg-slate-700 text-white rounded-md px-2 py-1"
+          >
+            {spec.options.map((o) => (
+              <option key={o.value} value={String(o.value)}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+    );
+  }
 
   switch (spec.type) {
     case 'number':
@@ -82,12 +120,29 @@ export const SettingProp = ({ path }: { path: string }) => {
         />
       );
     case 'enum':
+      if (spec.control === 'select') {
+        return (
+          <SettingSelectRow
+            title={spec.label}
+            description={spec.description}
+            value={String(value)}
+            options={spec.options.map((o) => ({
+              value: String(o.value),
+              label: o.label,
+            }))}
+            onChange={(v) => change(fromString(spec.options, v))}
+          />
+        );
+      }
       return (
         <SettingButtonGroupRow
           title={spec.label}
           description={spec.description}
           value={value as string}
-          options={spec.options.map(({ value, label }) => ({ value, label }))}
+          options={spec.options.map(({ value, label }) => ({
+            value: value as string,
+            label,
+          }))}
           onChange={change}
         />
       );

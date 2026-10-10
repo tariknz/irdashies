@@ -21,7 +21,9 @@ export type PropertySpec =
     })
   | (PropertyBase & {
       type: 'enum';
-      options: readonly { value: string; label: string }[];
+      options: readonly { value: string | number; label: string }[];
+      /** 'buttons' (default) or a dropdown for long option lists. */
+      control?: 'buttons' | 'select';
     })
   | (PropertyBase & { type: 'boolean' });
 
@@ -102,3 +104,10 @@ export const sessionVisibilityProperties = (
       { type: 'boolean', label: SESSION_VISIBILITY_LABELS[key] },
     ])
   );
+
+/** Numeric enum options `from..to`, labelled with the number. */
+export const numberOptions = (from: number, to: number) =>
+  Array.from({ length: to - from + 1 }, (_, i) => ({
+    value: from + i,
+    label: String(from + i),
+  }));
