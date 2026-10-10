@@ -9,6 +9,7 @@ import {
   useTrackDisplayName,
 } from '@irdashies/context';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
+import type { Standings } from '@irdashies/domain';
 import type {
   BroadcastConfig,
   StandingsWidgetSettings,
@@ -44,12 +45,55 @@ export const Broadcast = () => {
     showAll: true,
     livePositions: true,
   });
-  const perClass = clampSetting(settings?.driversPerClass, 1, 30, 5);
   const standings = useMemo(() => groups.flatMap(([, d]) => d), [groups]);
   const sessionNum = useSessionBarSelector(sessionBarSelectors.sessionNum);
   const changes = usePositionChanges(standings, sessionNum);
   const focusCarIdx = useFocusCarIdx();
   const hasTyreChoice = (useDriverTires()?.length ?? 0) > 1;
+  const { sessionType, state: sessionState } = useSessionTimeTiming();
+  // The podium after the flag is its own module, Broadcast Podium.
+  const showGrid =
+    settings?.phaseScreens !== false &&
+    racePhase(sessionType, sessionState) === 'grid';
+
+  if (!isSessionVisible) return null;
+
+  return (
+    <TowerView
+      settings={settings}
+      groups={groups}
+      title={settings?.title || trackName || ''}
+      focusCarIdx={focusCarIdx}
+      changes={changes}
+      hasTyreChoice={hasTyreChoice}
+      showGrid={showGrid}
+    />
+  );
+};
+
+/**
+ * The tower drawn from data it is handed, so the settings preview can show
+ * it with made-up cars.
+ */
+export const TowerView = ({
+  settings,
+  groups,
+  title,
+  focusCarIdx,
+  changes,
+  hasTyreChoice,
+  showGrid,
+}: {
+  settings: Partial<BroadcastConfig> | undefined;
+  groups: [string, Standings[]][];
+  title: string;
+  focusCarIdx?: number;
+  changes: ReadonlyMap<number, { delta: number; seq: number }>;
+  hasTyreChoice: boolean;
+  showGrid: boolean;
+}) => {
+  const perClass = clampSetting(settings?.driversPerClass, 1, 30, 5);
+  const standings = useMemo(() => groups.flatMap(([, d]) => d), [groups]);
   const rows = useMemo(
     () => buildBroadcastRows(groups, perClass, focusCarIdx),
     [groups, perClass, focusCarIdx]
@@ -107,16 +151,11 @@ export const Broadcast = () => {
         )
       : undefined;
   const focus = standings.find((s) => s.carIdx === focusCarIdx);
-  const { sessionType, state: sessionState } = useSessionTimeTiming();
-  // The podium after the flag is its own module, Broadcast Podium.
-  const showGrid =
-    settings?.phaseScreens !== false &&
-    racePhase(sessionType, sessionState) === 'grid';
   const nameFormat = settings?.driverNameFormat ?? 'surname';
   const theme = settings?.theme ?? 'imsa';
   const look = THEMES[theme] ?? THEMES.imsa;
 
-  if (!isSessionVisible || rows.length === 0) return null;
+  if (rows.length === 0) return null;
 
   return (
     <div
@@ -130,7 +169,7 @@ export const Broadcast = () => {
     >
       <div className={`overflow-hidden rounded-sm shadow-lg ${look.panel}`}>
         <TowerHeader
-          title={settings?.title || trackName || ''}
+          title={title}
           logo={settings?.logo}
           theme={theme}
           clock={settings?.headerClock}

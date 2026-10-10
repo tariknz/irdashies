@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
@@ -109,204 +110,268 @@ export const BroadcastSettings = () => {
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
-      {(handleConfigChange) => (
-        <div className="space-y-4">
-          <SettingsSection title="Look">
-            <SettingButtonGroupRow<BroadcastTheme>
-              title="Theme"
-              value={config.theme}
-              options={THEME_OPTIONS}
-              onChange={(v) => handleConfigChange({ theme: v })}
-            />
-            <div className="space-y-2 py-2">
-              <div className="text-sm text-slate-300">Series Logo</div>
-              <p className="text-sm text-slate-500">
-                Shown above the tower title. PNG with transparency works best,
-                up to 300 KB.
-              </p>
-              <div className="flex items-center gap-3">
-                {config.logo.startsWith('data:image/') && (
-                  <img
-                    src={config.logo}
-                    alt=""
-                    className="max-h-10 rounded bg-slate-900 p-1"
-                  />
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="text-sm text-slate-300"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    e.target.value = '';
-                    if (!file) return;
-                    if (!file.type.startsWith('image/')) {
-                      return setLogoError('Pick an image file.');
-                    }
-                    if (file.size > MAX_LOGO_BYTES) {
-                      return setLogoError('That image is over 300 KB.');
-                    }
-                    setLogoError('');
-                    const reader = new FileReader();
-                    reader.onload = () =>
-                      handleConfigChange({ logo: String(reader.result) });
-                    reader.readAsDataURL(file);
-                  }}
+      {(handleConfigChange) => {
+        const mark = changeMarker(config, defaultConfig, handleConfigChange);
+        const markFade = changeMarker(
+          config.translucent,
+          defaultConfig.translucent,
+          (c) =>
+            handleConfigChange({ translucent: { ...config.translucent, ...c } })
+        );
+        const markPages = changeMarker(config.pages, defaultConfig.pages, (c) =>
+          handleConfigChange({ pages: { ...config.pages, ...c } })
+        );
+        return (
+          <div className="space-y-4">
+            <SettingsSection title="Look">
+              {mark(
+                ['theme'],
+                <SettingButtonGroupRow<BroadcastTheme>
+                  title="Theme"
+                  value={config.theme}
+                  options={THEME_OPTIONS}
+                  onChange={(v) => handleConfigChange({ theme: v })}
                 />
-                {config.logo && (
-                  <button
-                    type="button"
-                    onClick={() => handleConfigChange({ logo: '' })}
-                    className="rounded bg-slate-600 px-3 py-1 text-sm text-slate-200 hover:bg-slate-500"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-              {logoError && <p className="text-sm text-red-400">{logoError}</p>}
-            </div>
-          </SettingsSection>
+              )}
+              {mark(
+                ['logo'],
+                <div className="space-y-2 py-2">
+                  <div className="text-sm text-slate-300">Series Logo</div>
+                  <p className="text-sm text-slate-500">
+                    Shown above the tower title. PNG with transparency works
+                    best, up to 300 KB.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    {config.logo.startsWith('data:image/') && (
+                      <img
+                        src={config.logo}
+                        alt=""
+                        className="max-h-10 rounded bg-slate-900 p-1"
+                      />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="text-sm text-slate-300"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (!file) return;
+                        if (!file.type.startsWith('image/')) {
+                          return setLogoError('Pick an image file.');
+                        }
+                        if (file.size > MAX_LOGO_BYTES) {
+                          return setLogoError('That image is over 300 KB.');
+                        }
+                        setLogoError('');
+                        const reader = new FileReader();
+                        reader.onload = () =>
+                          handleConfigChange({ logo: String(reader.result) });
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                    {config.logo && (
+                      <button
+                        type="button"
+                        onClick={() => handleConfigChange({ logo: '' })}
+                        className="rounded bg-slate-600 px-3 py-1 text-sm text-slate-200 hover:bg-slate-500"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  {logoError && (
+                    <p className="text-sm text-red-400">{logoError}</p>
+                  )}
+                </div>
+              )}
+            </SettingsSection>
 
-          <SettingsSection title="Options">
-            <SettingSliderRow
-              title="Background Opacity"
-              value={config.background.opacity}
-              units="%"
-              min={0}
-              max={100}
-              step={1}
-              onChange={(v) =>
-                handleConfigChange({ background: { opacity: v } })
-              }
-            />
-            <SettingToggleRow
-              title="Translucent"
-              description="Fade the whole widget, text included, so it hides less of the stream."
-              enabled={config.translucent.enabled}
-              onToggle={(v) =>
-                handleConfigChange({
-                  translucent: { ...config.translucent, enabled: v },
-                })
-              }
-            />
-            {config.translucent.enabled && (
-              <SettingSliderRow
-                title="Widget Opacity"
-                value={config.translucent.opacity}
-                units="%"
-                min={20}
-                max={100}
-                step={5}
-                onChange={(v) =>
-                  handleConfigChange({
-                    translucent: { ...config.translucent, opacity: v },
-                  })
-                }
-              />
-            )}
-            <SettingSliderRow
-              title="Drivers Per Class"
-              value={config.driversPerClass}
-              min={1}
-              max={30}
-              step={1}
-              onChange={(v) => handleConfigChange({ driversPerClass: v })}
-            />
-            <SettingSelectRow<BroadcastHeaderClock>
-              title="Header Clock"
-              description="The session clock, plus the time of day at the track or on this PC, or laps and time together."
-              value={config.headerClock}
-              options={CLOCK_OPTIONS}
-              onChange={(v) => handleConfigChange({ headerClock: v })}
-            />
-            <SettingButtonGroupRow<BroadcastConfig['pageMode']>
-              title="Pages"
-              description="Rotate through the pages you pick, or keep one page up."
-              value={config.pageMode}
-              options={PAGE_MODE_OPTIONS}
-              onChange={(v) => handleConfigChange({ pageMode: v })}
-            />
-            {config.pageMode === 'static' ? (
-              <SettingSelectRow<BroadcastPage>
-                title="Page"
-                description="Intervals here show every class at once."
-                value={config.staticPage}
-                options={PAGE_OPTIONS}
-                onChange={(v) => handleConfigChange({ staticPage: v })}
-              />
-            ) : (
-              <>
-                {PAGE_OPTIONS.map(({ label, value, description }) => (
-                  <SettingToggleRow
-                    key={value}
-                    title={label}
-                    description={description}
-                    enabled={config.pages[value]}
-                    onToggle={(v) =>
+            <SettingsSection title="Options">
+              {mark(
+                ['background'],
+                <SettingSliderRow
+                  title="Background Opacity"
+                  value={config.background.opacity}
+                  units="%"
+                  min={0}
+                  max={100}
+                  step={1}
+                  onChange={(v) =>
+                    handleConfigChange({ background: { opacity: v } })
+                  }
+                />
+              )}
+              {markFade(
+                ['enabled'],
+                <SettingToggleRow
+                  title="Translucent"
+                  description="Fade the whole widget, text included, so it hides less of the stream."
+                  enabled={config.translucent.enabled}
+                  onToggle={(v) =>
+                    handleConfigChange({
+                      translucent: { ...config.translucent, enabled: v },
+                    })
+                  }
+                />
+              )}
+              {config.translucent.enabled &&
+                markFade(
+                  ['opacity'],
+                  <SettingSliderRow
+                    title="Widget Opacity"
+                    value={config.translucent.opacity}
+                    units="%"
+                    min={20}
+                    max={100}
+                    step={5}
+                    onChange={(v) =>
                       handleConfigChange({
-                        pages: { ...config.pages, [value]: v },
+                        translucent: { ...config.translucent, opacity: v },
                       })
                     }
                   />
-                ))}
+                )}
+              {mark(
+                ['driversPerClass'],
                 <SettingSliderRow
-                  title="Page Time"
-                  value={config.pageSeconds}
-                  units="s"
-                  min={3}
+                  title="Drivers Per Class"
+                  value={config.driversPerClass}
+                  min={1}
                   max={30}
                   step={1}
-                  onChange={(v) => handleConfigChange({ pageSeconds: v })}
+                  onChange={(v) => handleConfigChange({ driversPerClass: v })}
                 />
-              </>
-            )}
-            <div className="space-y-2 py-2">
-              <label className="text-sm text-slate-300">Title</label>
-              <input
-                type="text"
-                value={config.title}
-                placeholder="Track name"
-                onChange={(e) => handleConfigChange({ title: e.target.value })}
-                className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
-              />
-            </div>
-            <SettingToggleRow
-              title="Focus Car Card"
-              description="Show name, team and lap times of the car the camera is on."
-              enabled={config.showFocusCard}
-              onToggle={(v) => handleConfigChange({ showFocusCard: v })}
-            />
-            <SettingToggleRow
-              title="Starting Grid"
-              description="Show the starting grid under the tower before the race starts. The podium is its own module."
-              enabled={config.phaseScreens}
-              onToggle={(v) => handleConfigChange({ phaseScreens: v })}
-            />
-            <div className="py-2">
-              <div className="text-sm text-slate-300">Driver Name</div>
-              <div className="flex flex-wrap gap-3 justify-end mt-3">
-                {NAME_FORMATS.map((format) => (
-                  <DriverNamePreview
-                    key={format}
-                    format={format}
-                    selected={config.driverNameFormat === format}
-                    onClick={() =>
-                      handleConfigChange({ driverNameFormat: format })
-                    }
+              )}
+              {mark(
+                ['headerClock'],
+                <SettingSelectRow<BroadcastHeaderClock>
+                  title="Header Clock"
+                  description="The session clock, plus the time of day at the track or on this PC, or laps and time together."
+                  value={config.headerClock}
+                  options={CLOCK_OPTIONS}
+                  onChange={(v) => handleConfigChange({ headerClock: v })}
+                />
+              )}
+              {mark(
+                ['pageMode'],
+                <SettingButtonGroupRow<BroadcastConfig['pageMode']>
+                  title="Pages"
+                  description="Rotate through the pages you pick, or keep one page up."
+                  value={config.pageMode}
+                  options={PAGE_MODE_OPTIONS}
+                  onChange={(v) => handleConfigChange({ pageMode: v })}
+                />
+              )}
+              {config.pageMode === 'static' ? (
+                mark(
+                  ['staticPage'],
+                  <SettingSelectRow<BroadcastPage>
+                    title="Page"
+                    description="Intervals here show every class at once."
+                    value={config.staticPage}
+                    options={PAGE_OPTIONS}
+                    onChange={(v) => handleConfigChange({ staticPage: v })}
                   />
-                ))}
-              </div>
-            </div>
-          </SettingsSection>
+                )
+              ) : (
+                <>
+                  {PAGE_OPTIONS.map(({ label, value, description }) => (
+                    <Fragment key={value}>
+                      {markPages(
+                        [value],
+                        <SettingToggleRow
+                          title={label}
+                          description={description}
+                          enabled={config.pages[value]}
+                          onToggle={(v) =>
+                            handleConfigChange({
+                              pages: { ...config.pages, [value]: v },
+                            })
+                          }
+                        />
+                      )}
+                    </Fragment>
+                  ))}
+                  {mark(
+                    ['pageSeconds'],
+                    <SettingSliderRow
+                      title="Page Time"
+                      value={config.pageSeconds}
+                      units="s"
+                      min={3}
+                      max={30}
+                      step={1}
+                      onChange={(v) => handleConfigChange({ pageSeconds: v })}
+                    />
+                  )}
+                </>
+              )}
+              {mark(
+                ['title'],
+                <div className="space-y-2 py-2">
+                  <label className="text-sm text-slate-300">Title</label>
+                  <input
+                    type="text"
+                    value={config.title}
+                    placeholder="Track name"
+                    onChange={(e) =>
+                      handleConfigChange({ title: e.target.value })
+                    }
+                    className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
+                  />
+                </div>
+              )}
+              {mark(
+                ['showFocusCard'],
+                <SettingToggleRow
+                  title="Focus Car Card"
+                  description="Show name, team and lap times of the car the camera is on."
+                  enabled={config.showFocusCard}
+                  onToggle={(v) => handleConfigChange({ showFocusCard: v })}
+                />
+              )}
+              {mark(
+                ['phaseScreens'],
+                <SettingToggleRow
+                  title="Starting Grid"
+                  description="Show the starting grid under the tower before the race starts. The podium is its own module."
+                  enabled={config.phaseScreens}
+                  onToggle={(v) => handleConfigChange({ phaseScreens: v })}
+                />
+              )}
+              {mark(
+                ['driverNameFormat'],
+                <div className="py-2">
+                  <div className="text-sm text-slate-300">Driver Name</div>
+                  <div className="flex flex-wrap gap-3 justify-end mt-3">
+                    {NAME_FORMATS.map((format) => (
+                      <DriverNamePreview
+                        key={format}
+                        format={format}
+                        selected={config.driverNameFormat === format}
+                        onClick={() =>
+                          handleConfigChange({ driverNameFormat: format })
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </SettingsSection>
 
-          <SettingsSection title="Visibility">
-            <SessionVisibility
-              sessionVisibility={config.sessionVisibility}
-              handleConfigChange={handleConfigChange}
-            />
-          </SettingsSection>
-        </div>
-      )}
+            <SettingsSection title="Visibility">
+              {mark(
+                ['sessionVisibility'],
+                <SessionVisibility
+                  sessionVisibility={config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+              )}
+            </SettingsSection>
+          </div>
+        );
+      }}
     </BaseSettingsSection>
   );
 };

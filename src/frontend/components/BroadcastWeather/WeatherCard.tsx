@@ -72,7 +72,7 @@ const useTrackRubber = () =>
       )?.SessionTrackRubberState
   );
 
-interface Popup {
+export interface Popup {
   headline: string;
   id: number;
 }
@@ -192,6 +192,28 @@ export const WeatherCard = ({
   const popup = useWeatherPopup(sample, intervalMinutes, showSeconds);
   if (!popup || !sample) return null;
 
+  return (
+    <WeatherView
+      popup={popup}
+      sample={sample}
+      metric={metric}
+      rubber={rubber}
+    />
+  );
+};
+
+/** The weather card drawn from what it is handed (the settings preview too). */
+export const WeatherView = ({
+  popup,
+  sample,
+  metric,
+  rubber,
+}: {
+  popup: Popup;
+  sample: WeatherSample;
+  metric: boolean;
+  rubber?: string;
+}) => {
   return (
     <BroadcastEnter
       id={popup.id}

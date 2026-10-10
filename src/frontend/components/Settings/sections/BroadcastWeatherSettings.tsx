@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -36,48 +37,63 @@ export const BroadcastWeatherSettings = () => {
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
-      {(handleConfigChange) => (
-        <div className="space-y-4">
-          <SettingsSection title="Options">
-            <SettingSliderRow
-              title="Background Opacity"
-              value={config.background.opacity}
-              units="%"
-              min={0}
-              max={100}
-              step={1}
-              onChange={(v) =>
-                handleConfigChange({ background: { opacity: v } })
-              }
-            />
-            <SettingSliderRow
-              title="Also Every (0 = Only On Change)"
-              value={config.intervalMinutes}
-              units="min"
-              min={0}
-              max={30}
-              step={1}
-              onChange={(v) => handleConfigChange({ intervalMinutes: v })}
-            />
-            <SettingSliderRow
-              title="Show For"
-              value={config.showSeconds}
-              units="s"
-              min={5}
-              max={30}
-              step={1}
-              onChange={(v) => handleConfigChange({ showSeconds: v })}
-            />
-          </SettingsSection>
+      {(handleConfigChange) => {
+        const mark = changeMarker(config, defaultConfig, handleConfigChange);
+        return (
+          <div className="space-y-4">
+            <SettingsSection title="Options">
+              {mark(
+                ['background'],
+                <SettingSliderRow
+                  title="Background Opacity"
+                  value={config.background.opacity}
+                  units="%"
+                  min={0}
+                  max={100}
+                  step={1}
+                  onChange={(v) =>
+                    handleConfigChange({ background: { opacity: v } })
+                  }
+                />
+              )}
+              {mark(
+                ['intervalMinutes'],
+                <SettingSliderRow
+                  title="Also Every (0 = Only On Change)"
+                  value={config.intervalMinutes}
+                  units="min"
+                  min={0}
+                  max={30}
+                  step={1}
+                  onChange={(v) => handleConfigChange({ intervalMinutes: v })}
+                />
+              )}
+              {mark(
+                ['showSeconds'],
+                <SettingSliderRow
+                  title="Show For"
+                  value={config.showSeconds}
+                  units="s"
+                  min={5}
+                  max={30}
+                  step={1}
+                  onChange={(v) => handleConfigChange({ showSeconds: v })}
+                />
+              )}
+            </SettingsSection>
 
-          <SettingsSection title="Visibility">
-            <SessionVisibility
-              sessionVisibility={config.sessionVisibility}
-              handleConfigChange={handleConfigChange}
-            />
-          </SettingsSection>
-        </div>
-      )}
+            <SettingsSection title="Visibility">
+              {mark(
+                ['sessionVisibility'],
+                <SessionVisibility
+                  sessionVisibility={config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+              )}
+            </SettingsSection>
+          </div>
+        );
+      }}
     </BaseSettingsSection>
   );
 };

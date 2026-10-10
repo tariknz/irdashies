@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
@@ -42,26 +43,41 @@ export const BroadcastPodiumSettings = () => {
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
-      {(handleConfigChange) => (
-        <SettingsSection title="Options">
-          <SettingButtonGroupRow<BroadcastPodiumStyle>
-            title="Style"
-            description="Gold, silver and bronze steps, or a trophy for each place."
-            value={settings.config.style}
-            options={STYLE_OPTIONS}
-            onChange={(v) => handleConfigChange({ style: v })}
-          />
-          <SettingSliderRow
-            title="Background Opacity"
-            value={settings.config.background.opacity}
-            units="%"
-            min={0}
-            max={100}
-            step={1}
-            onChange={(v) => handleConfigChange({ background: { opacity: v } })}
-          />
-        </SettingsSection>
-      )}
+      {(handleConfigChange) => {
+        const mark = changeMarker(
+          settings.config,
+          defaultConfig,
+          handleConfigChange
+        );
+        return (
+          <SettingsSection title="Options">
+            {mark(
+              ['style'],
+              <SettingButtonGroupRow<BroadcastPodiumStyle>
+                title="Style"
+                description="Gold, silver and bronze steps, or a trophy for each place."
+                value={settings.config.style}
+                options={STYLE_OPTIONS}
+                onChange={(v) => handleConfigChange({ style: v })}
+              />
+            )}
+            {mark(
+              ['background'],
+              <SettingSliderRow
+                title="Background Opacity"
+                value={settings.config.background.opacity}
+                units="%"
+                min={0}
+                max={100}
+                step={1}
+                onChange={(v) =>
+                  handleConfigChange({ background: { opacity: v } })
+                }
+              />
+            )}
+          </SettingsSection>
+        );
+      }}
     </BaseSettingsSection>
   );
 };

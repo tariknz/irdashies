@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingToggleRow } from '../components/SettingToggleRow';
@@ -57,56 +58,75 @@ export const BroadcastEventsSettings = () => {
       onSettingsChange={setSettings}
       widgetId={SETTING_ID}
     >
-      {(handleConfigChange) => (
-        <div className="space-y-4">
-          <SettingsSection title="Options">
-            <SettingSliderRow
-              title="Background Opacity"
-              value={config.background.opacity}
-              units="%"
-              min={0}
-              max={100}
-              step={1}
-              onChange={(v) =>
-                handleConfigChange({ background: { opacity: v } })
-              }
-            />
-            <SettingSliderRow
-              title="Show Each Event For"
-              value={config.showSeconds}
-              units="s"
-              min={3}
-              max={20}
-              step={1}
-              onChange={(v) => handleConfigChange({ showSeconds: v })}
-            />
-          </SettingsSection>
+      {(handleConfigChange) => {
+        const mark = changeMarker(config, defaultConfig, handleConfigChange);
+        const markKind = changeMarker(kinds, defaultConfig.kinds, (c) =>
+          handleConfigChange({ kinds: { ...kinds, ...c } })
+        );
+        return (
+          <div className="space-y-4">
+            <SettingsSection title="Options">
+              {mark(
+                ['background'],
+                <SettingSliderRow
+                  title="Background Opacity"
+                  value={config.background.opacity}
+                  units="%"
+                  min={0}
+                  max={100}
+                  step={1}
+                  onChange={(v) =>
+                    handleConfigChange({ background: { opacity: v } })
+                  }
+                />
+              )}
+              {mark(
+                ['showSeconds'],
+                <SettingSliderRow
+                  title="Show Each Event For"
+                  value={config.showSeconds}
+                  units="s"
+                  min={3}
+                  max={20}
+                  step={1}
+                  onChange={(v) => handleConfigChange({ showSeconds: v })}
+                />
+              )}
+            </SettingsSection>
 
-          <SettingsSection title="Events">
-            {(
-              Object.keys(
-                KIND_LABELS
-              ) as (keyof BroadcastEventsConfig['kinds'])[]
-            ).map((kind) => (
-              <SettingToggleRow
-                key={kind}
-                title={KIND_LABELS[kind]}
-                enabled={kinds[kind]}
-                onToggle={(v) =>
-                  handleConfigChange({ kinds: { ...kinds, [kind]: v } })
-                }
-              />
-            ))}
-          </SettingsSection>
+            <SettingsSection title="Events">
+              {(
+                Object.keys(
+                  KIND_LABELS
+                ) as (keyof BroadcastEventsConfig['kinds'])[]
+              ).map((kind) => (
+                <Fragment key={kind}>
+                  {markKind(
+                    [kind],
+                    <SettingToggleRow
+                      title={KIND_LABELS[kind]}
+                      enabled={kinds[kind]}
+                      onToggle={(v) =>
+                        handleConfigChange({ kinds: { ...kinds, [kind]: v } })
+                      }
+                    />
+                  )}
+                </Fragment>
+              ))}
+            </SettingsSection>
 
-          <SettingsSection title="Visibility">
-            <SessionVisibility
-              sessionVisibility={config.sessionVisibility}
-              handleConfigChange={handleConfigChange}
-            />
-          </SettingsSection>
-        </div>
-      )}
+            <SettingsSection title="Visibility">
+              {mark(
+                ['sessionVisibility'],
+                <SessionVisibility
+                  sessionVisibility={config.sessionVisibility}
+                  handleConfigChange={handleConfigChange}
+                />
+              )}
+            </SettingsSection>
+          </div>
+        );
+      }}
     </BaseSettingsSection>
   );
 };

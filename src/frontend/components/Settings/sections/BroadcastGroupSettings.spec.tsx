@@ -7,7 +7,7 @@ const onDashboardUpdated = vi.fn();
 const currentDashboard = {
   widgets: [
     { id: 'broadcast', enabled: true },
-    { id: 'broadcastticker', enabled: false },
+    { id: 'broadcastticker', enabled: false, config: { secondsPerEntry: 9 } },
     { id: 'standings', enabled: true },
   ],
 };
@@ -22,6 +22,12 @@ vi.mock('./BroadcastTickerSettings', () => ({
 }));
 vi.mock('./BroadcastEventsSettings', () => ({
   BroadcastEventsSettings: () => <div>events settings</div>,
+}));
+vi.mock('./BroadcastPreview', () => ({
+  BroadcastPreview: () => null,
+}));
+vi.mock('./BroadcastPodiumSettings', () => ({
+  BroadcastPodiumSettings: () => <div>podium settings</div>,
 }));
 vi.mock('./BroadcastWeatherSettings', () => ({
   BroadcastWeatherSettings: () => <div>weather settings</div>,
@@ -67,9 +73,31 @@ describe('BroadcastGroupSettings', () => {
     expect(onDashboardUpdated).toHaveBeenCalledWith({
       widgets: [
         { id: 'broadcast', enabled: false },
-        { id: 'broadcastticker', enabled: false },
+        {
+          id: 'broadcastticker',
+          enabled: false,
+          config: { secondsPerEntry: 9 },
+        },
         { id: 'standings', enabled: true },
       ],
     });
+  });
+
+  it('marks a changed module and resets it to the defaults', () => {
+    onDashboardUpdated.mockClear();
+    renderAt('broadcastticker');
+
+    expect(screen.getByRole('link', { name: /Ticker/ })).toContainHTML(
+      'title="Changed"'
+    );
+    expect(screen.getByRole('link', { name: /Tower/ })).not.toContainHTML(
+      'title="Changed"'
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Reset section' }));
+
+    const saved = onDashboardUpdated.mock.calls[0][0].widgets.find(
+      (w: { id: string }) => w.id === 'broadcastticker'
+    );
+    expect(saved.config.secondsPerEntry).toBe(3);
   });
 });

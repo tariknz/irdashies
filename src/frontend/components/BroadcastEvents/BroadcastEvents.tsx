@@ -269,17 +269,36 @@ export const BroadcastEvents = () => {
 
   if ((!isDemoMode && !isSessionVisible) || !current) return null;
 
-  const style = KIND_STYLE[current.kind];
-  const standing =
-    current.carIdx !== undefined ? byCarIdx.get(current.carIdx) : undefined;
-  const hasCar = current.carIdx !== undefined || !!current.carNumber;
+  return (
+    <EventCard
+      event={current}
+      standing={
+        current.carIdx !== undefined ? byCarIdx.get(current.carIdx) : undefined
+      }
+      opacity={settings?.background?.opacity}
+    />
+  );
+};
+
+/** One event card, drawn from what it is handed (the settings preview too). */
+export const EventCard = ({
+  event,
+  standing,
+  opacity = 90,
+}: {
+  event: BroadcastEvent;
+  standing?: Standings;
+  opacity?: number;
+}) => {
+  const style = KIND_STYLE[event.kind];
+  const hasCar = event.carIdx !== undefined || !!event.carNumber;
 
   return (
     <BroadcastEnter
-      id={current.id}
+      id={event.id}
       className="w-full overflow-hidden rounded-sm bg-slate-950/(--bg-opacity) text-white shadow-lg"
       style={{
-        ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 90}%`,
+        ['--bg-opacity' as string]: `${opacity}%`,
       }}
     >
       <div
@@ -296,7 +315,7 @@ export const BroadcastEvents = () => {
         />
         {style.title}
       </div>
-      {hasCar && <DriverCard event={current} standing={standing} />}
+      {hasCar && <DriverCard event={event} standing={standing} />}
     </BroadcastEnter>
   );
 };

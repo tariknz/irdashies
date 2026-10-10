@@ -5,6 +5,7 @@ import {
 } from '@irdashies/context';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import type { Standings } from '@irdashies/domain';
+import type { BroadcastTickerConfig } from '@irdashies/types';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime } from '@irdashies/utils/time';
 import { clampSetting } from '@irdashies/utils/clampSetting';
@@ -68,6 +69,22 @@ export const BroadcastTicker = () => {
     showAll: true,
     livePositions: true,
   });
+  if (!isSessionVisible) return null;
+  return (
+    <TickerView settings={settings} groups={groups} teamRacing={teamRacing} />
+  );
+};
+
+/** The ticker drawn from data it is handed, for the settings preview too. */
+export const TickerView = ({
+  settings,
+  groups,
+  teamRacing,
+}: {
+  settings: Partial<BroadcastTickerConfig> | undefined;
+  groups: [string, Standings[]][];
+  teamRacing: boolean;
+}) => {
   const [modeIndex, setModeIndex] = useState(0);
   const mode = TICKER_MODES[modeIndex % TICKER_MODES.length];
   const entries = useMemo(
@@ -96,7 +113,7 @@ export const BroadcastTicker = () => {
     });
   }
 
-  if (!isSessionVisible || entries.length === 0 || !loop) return null;
+  if (entries.length === 0 || !loop) return null;
 
   const loopSeconds = loop.seconds;
   const list = entries.map((s) => (
