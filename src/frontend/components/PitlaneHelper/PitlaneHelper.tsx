@@ -242,7 +242,7 @@ export const PitlaneHelperBody = ({
                     : '',
               ].join(' ')}
             >
-              {config.showSpeedDelta && (
+              {config.showSpeedDelta && speed.hasLimit && (
                 <>
                   <div
                     className={[
@@ -298,7 +298,8 @@ export const PitlaneHelperBody = ({
         )}
 
         {/* Row 2: Speed & Pitbox Progress */}
-        {(config.showProgressBar || config.showSpeedBar) && (
+        {(config.showProgressBar ||
+          (config.showSpeedBar && speed.hasLimit)) && (
           <div
             className={`flex gap-3 w-full h-full flex-2 ${
               config.showSpeedBar &&
@@ -310,7 +311,7 @@ export const PitlaneHelperBody = ({
             }`}
           >
             {/* 2b. SPEED BAR SECTION */}
-            {config.showSpeedBar && (
+            {config.showSpeedBar && speed.hasLimit && (
               <div
                 className={`h-full ${
                   config.progressBarOrientation === 'vertical' &&

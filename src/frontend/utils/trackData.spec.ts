@@ -39,6 +39,8 @@ describe('loadTrackData', () => {
     expect(loadTrackData('WeatherTech Raceway Laguna Seca')).toBeNull();
     expect(loadTrackData('Bahrain International Circuit')).toBeNull();
     expect(loadTrackData('Lusail International Circuit')).toBeNull();
+    expect(loadTrackData('road imaginary')).toBeNull();
+    expect(loadTrackData('daytona road')?.trackId).toBe('daytona 2011 road');
   });
 
   it('never guesses at a name from another sim', () => {

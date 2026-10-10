@@ -130,6 +130,33 @@ describe('ActiveSimulatorStore', () => {
     expect(store.getSnapshot()).toBe('lmu');
   });
 
+  it('ignores a seed that resolves after closing', async () => {
+    const h = makeBridge();
+    const store = new ActiveSimulatorStore(h.bridge);
+    const unsubscribe = store.subscribe(vi.fn());
+    unsubscribe();
+    h.seed('iracing');
+    await Promise.resolve();
+    expect(store.getSnapshot()).toBeNull();
+  });
+
+  it('ignores an older seed after reopening', async () => {
+    const h = makeBridge();
+    const seeds: ((value: ActiveSimulator | null) => void)[] = [];
+    h.getActiveSimulator.mockImplementation(
+      () => new Promise((resolve) => seeds.push(resolve))
+    );
+    const store = new ActiveSimulatorStore(h.bridge);
+    const unsubscribe = store.subscribe(vi.fn());
+    unsubscribe();
+    store.subscribe(vi.fn());
+    seeds[1]('lmu');
+    await Promise.resolve();
+    seeds[0]('iracing');
+    await Promise.resolve();
+    expect(store.getSnapshot()).toBe('lmu');
+  });
+
   it('survives a bridge that reports nothing at all', () => {
     const store = new ActiveSimulatorStore({} as DashboardBridge);
     const unsubscribe = store.subscribe(vi.fn());

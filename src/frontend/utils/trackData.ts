@@ -139,6 +139,7 @@ function normalizeTrackId(trackName: string): string | null {
     'circuit',
     'international',
     'raceway',
+    'road',
     'speedway',
     'park',
     'autodromo',

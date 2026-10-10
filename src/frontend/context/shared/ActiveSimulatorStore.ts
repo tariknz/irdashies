@@ -28,6 +28,7 @@ export class ActiveSimulatorStore {
    * the previous sim until the next event.
    */
   private sawChange = false;
+  private generation = 0;
 
   constructor(private readonly bridge: DashboardBridge) {}
 
@@ -43,6 +44,7 @@ export class ActiveSimulatorStore {
   };
 
   private open(): void {
+    const generation = ++this.generation;
     // Subscribed before the request is made, so a change that lands while it
     // is in flight is seen rather than missed.
     this.sawChange = false;
@@ -55,11 +57,12 @@ export class ActiveSimulatorStore {
     // was no subscription, so any change in that window was missed and the
     // cached value may be stale.
     void this.bridge.getActiveSimulator?.().then((value) => {
-      if (!this.sawChange) this.set(value);
+      if (generation === this.generation && !this.sawChange) this.set(value);
     });
   }
 
   private close(): void {
+    this.generation++;
     this.unsubscribeBridge?.();
     this.unsubscribeBridge = undefined;
   }
