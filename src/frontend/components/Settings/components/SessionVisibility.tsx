@@ -41,7 +41,7 @@ export const SessionVisibility = ({
         <SettingToggleRow
           key={key}
           title={TITLES[key]}
-          enabled={sessionVisibility[key] ?? false}
+          enabled={sessionVisibility[key] ?? true}
           onToggle={(enabled) =>
             handleConfigChange({
               sessionVisibility: { ...sessionVisibility, [key]: enabled },
