@@ -185,19 +185,22 @@ async function setupBridge(
 ) {
   try {
     const isTapeReplay = Boolean(process.env.IRDASHIES_TELEMETRY_REPLAY);
+    const isLmuTapeReplay = Boolean(process.env.IRDASHIES_LMU_REPLAY);
     const isMock =
-      isDemoMode || (process.platform !== 'win32' && !isTapeReplay);
+      isDemoMode ||
+      (process.platform !== 'win32' && !isTapeReplay && !isLmuTapeReplay);
     const available = getAvailableSimulators();
 
-    // Tape replay always feeds the iRacing bridge, whatever the preference
-    // says: the tape is an iRacing recording.
+    // A tape selects its simulator regardless of the saved preference.
     const simulator = isTapeReplay
       ? 'iracing'
-      : (resolveSimulatorPreference(
-          getDashboard(getCurrentProfileId())?.generalSettings?.simulator,
-          getSimulatorOverride(process.argv, process.env.IRDASHIES_SIM),
-          available
-        ) ?? resolveWithoutProbing(available));
+      : isLmuTapeReplay
+        ? 'lmu'
+        : (resolveSimulatorPreference(
+            getDashboard(getCurrentProfileId())?.generalSettings?.simulator,
+            getSimulatorOverride(process.argv, process.env.IRDASHIES_SIM),
+            available
+          ) ?? resolveWithoutProbing(available));
 
     // Resolved before anything is torn down, and entirely synchronously, so
     // the decision sees the bridge that is actually up. Skipping here is what

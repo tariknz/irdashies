@@ -58,6 +58,8 @@ std::string envOrEmpty(const char* name) {
 struct LmuSource::Impl {
   std::unique_ptr<TapeReader> reader;
   LMUObjectOut pending{};
+  LMUObjectOut latest{};
+  bool hasLatest = false;
   bool hasPending = false;
   /** Set by a Disconnect record, so the player reports the sim going away. */
   bool disconnected = false;
@@ -173,6 +175,7 @@ bool LmuSource::open() {
   impl_->reader = std::move(reader);
   impl_->startedAtMicros = nowMicros();
   impl_->hasPending = false;
+  impl_->hasLatest = false;
   impl_->disconnected = false;
   impl_->exhausted = false;
   return true;
@@ -181,6 +184,7 @@ bool LmuSource::open() {
 void LmuSource::close() {
   impl_->reader.reset();
   impl_->hasPending = false;
+  impl_->hasLatest = false;
   impl_->disconnected = false;
   impl_->exhausted = false;
   // Not `finished`: that is the whole point of it. A tape that has run out
@@ -195,19 +199,31 @@ bool LmuSource::capture(LMUObjectOut& out) {
   if (impl_->disconnected) {
     // Reported once, then playback carries on with whatever follows.
     impl_->disconnected = false;
+    impl_->hasLatest = false;
     return false;
   }
 
-  if (!impl_->hasPending && !impl_->advance()) return false;
+  if (!impl_->hasPending && !impl_->advance()) {
+    impl_->hasLatest = false;
+    return false;
+  }
 
   // Hold the frame until its recorded moment comes round, so a tape plays at
   // the cadence it was captured at rather than as fast as it can be read.
   const std::uint64_t elapsed = nowMicros() - impl_->startedAtMicros;
   const auto due = static_cast<std::uint64_t>(
       static_cast<double>(impl_->pendingAtMicros) / impl_->speed);
-  if (elapsed < due) return false;
+  if (elapsed < due) {
+    // Shared memory keeps the last snapshot readable between updates. A tape
+    // does too: waiting for the next recorded frame is not a disconnect.
+    if (!impl_->hasLatest) return false;
+    out = impl_->latest;
+    return true;
+  }
 
   out = impl_->pending;
+  impl_->latest = out;
+  impl_->hasLatest = true;
   impl_->hasPending = false;
   return true;
 }

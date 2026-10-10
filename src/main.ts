@@ -295,6 +295,7 @@ function setupReplayContextRuntime(
       isLiveSource: () =>
         !getIsDemoMode() &&
         !process.env.IRDASHIES_TELEMETRY_REPLAY &&
+        !process.env.IRDASHIES_LMU_REPLAY &&
         process.env.IRDASHIES_IRSDK_REPLAY !== '1',
     }
   );
