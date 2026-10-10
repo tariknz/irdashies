@@ -88,4 +88,259 @@ export default defineWidgetManifest({
       warmup: true,
     },
   },
+  properties: {
+    fadeSeconds: {
+      type: 'number',
+      label: 'Fade Time',
+      min: 0,
+      max: 2,
+      step: 0.1,
+      units: 's',
+    },
+    showOnlyWhenOnTrack: {
+      type: 'boolean',
+      label: 'Only When on Track',
+      description: 'Hide the radar while you are not driving.',
+    },
+    hideInPitBox: {
+      type: 'boolean',
+      label: 'Hide in Pit Box',
+      description:
+        'Keep the radar off screen while your car is parked in its pit box.',
+    },
+    hideInPit: {
+      type: 'boolean',
+      label: 'Hide Cars Across the Pit Wall',
+      description:
+        'On track, hide cars on pit road; on pit road, hide cars on track.',
+    },
+    range: {
+      type: 'number',
+      label: 'Range',
+      description: 'Metres from your car to the edge of the radar.',
+      min: 10,
+      max: 100,
+      step: 5,
+      units: 'm',
+    },
+    showTrackMap: {
+      type: 'boolean',
+      label: 'Show Road',
+      description: 'Draw the track under the cars, turning with your car.',
+    },
+    mapOpacity: {
+      type: 'number',
+      label: 'Road Opacity',
+      min: 5,
+      max: 100,
+      step: 5,
+      units: '%',
+    },
+    trackWidth: {
+      type: 'number',
+      label: 'Road Width',
+      description:
+        'The track drawings carry no width, so pick one that looks right.',
+      min: 6,
+      max: 25,
+      step: 1,
+      units: 'm',
+    },
+    showCarNumbers: {
+      type: 'boolean',
+      label: 'Car Numbers',
+    },
+    edgeFade: {
+      type: 'number',
+      label: 'Edge Fade',
+      description:
+        'How much of the radar fades out towards the edge, so cars ease in and out. 0% for a hard edge.',
+      min: 0,
+      max: 100,
+      step: 5,
+      units: '%',
+    },
+    showRings: {
+      type: 'boolean',
+      label: 'Distance Rings',
+    },
+    ringSpacing: {
+      type: 'number',
+      label: 'Ring Spacing',
+      min: 5,
+      max: 50,
+      step: 5,
+      units: 'm',
+    },
+    showCrosshair: {
+      type: 'boolean',
+      label: 'Crosshair',
+      description:
+        'Dashed lines through your car, ahead/behind and left/right.',
+    },
+    axisMotion: {
+      type: 'boolean',
+      label: 'Moving Centre Line',
+      description:
+        'The dashes of the line ahead run past at your speed, like road markings.',
+    },
+    axisDashLength: {
+      type: 'number',
+      label: 'Dash Length',
+      description: 'Each gap is twice as long as a dash.',
+      min: 1,
+      max: 10,
+      step: 0.5,
+      units: 'm',
+    },
+    axisSpeed: {
+      type: 'number',
+      label: 'Dash Speed',
+      description: 'Share of your own speed. Lower it if fast dashes flicker.',
+      min: 10,
+      max: 100,
+      step: 5,
+      units: '%',
+    },
+    arcThickness: {
+      type: 'number',
+      label: 'Thickness',
+      description: 'Of every arc, as a share of the radar radius.',
+      min: 3,
+      max: 14,
+      step: 1,
+      units: '%',
+    },
+    cautionDistance: {
+      type: 'number',
+      label: 'Close Within',
+      description: 'Bumper-to-bumper gap at which a car turns amber.',
+      min: 1,
+      max: 20,
+      step: 0.5,
+      units: 'm',
+    },
+    showGapLabel: {
+      type: 'boolean',
+      label: 'Gap Distance',
+      description: 'Write the bumper-to-bumper gap next to an amber car.',
+    },
+    pulseHz: {
+      type: 'number',
+      label: 'Pulse Rate',
+      description: 'How fast a car alongside pulses. 0 keeps it steady.',
+      min: 0,
+      max: 5,
+      step: 0.5,
+      units: 'Hz',
+    },
+    overlapShowPercent: {
+      type: 'boolean',
+      label: 'Overlap in Per Cent',
+      description: 'Write the overlap next to the strip.',
+    },
+    diveMinClosingKmh: {
+      type: 'number',
+      label: 'Closing Faster Than',
+      description: 'Cars closing slower than this are left alone.',
+      min: 5,
+      max: 40,
+      step: 1,
+      units: 'km/h',
+    },
+    diveWarnSeconds: {
+      type: 'number',
+      label: 'Seconds to Your Side',
+      description:
+        'Turns red when the car will be beside you within this time and you are braking, or it has already pulled out. Amber starts at twice this.',
+      min: 0.5,
+      max: 2.5,
+      step: 0.1,
+      units: 's',
+    },
+    diveGhost: {
+      type: 'boolean',
+      label: 'Show Where It Will Be',
+      description:
+        'A dashed outline of the diving car 0.8 s ahead, with an arrow to it.',
+    },
+    diveShowClosing: {
+      type: 'boolean',
+      label: 'Show Closing Speed',
+      description:
+        'Write how much faster the car is in km/h, and the seconds until it is beside you.',
+    },
+    hazardRange: {
+      type: 'number',
+      label: 'Warn From',
+      description: 'How far ahead a hazard is shown.',
+      min: 100,
+      max: 1000,
+      step: 50,
+      units: 'm',
+    },
+    hazardBlinkDistance: {
+      type: 'number',
+      label: 'Flash Closer Than',
+      description:
+        'A crashed or slow car flashes from this close. A car coming back on flashes at any distance; one sitting off the track never does.',
+      min: 0,
+      max: 500,
+      step: 25,
+      units: 'm',
+    },
+    hazardCrash: {
+      type: 'boolean',
+      label: 'Crashed and Stopped Cars',
+      description:
+        'A car that dropped from racing speed in a moment, or stands still. Red.',
+    },
+    hazardSlow: {
+      type: 'boolean',
+      label: 'Slow Cars',
+      description:
+        'A car under 60% of the speed the field does at that spot of the lap. The radar learns those speeds as cars go round, so this needs a lap or so. Amber.',
+    },
+    hazardOff: {
+      type: 'boolean',
+      label: 'Off Track and Rejoining',
+      description:
+        'A car off the track for more than half a second, then while it gets back up to speed. Yellow.',
+    },
+    hazardShowLabel: {
+      type: 'boolean',
+      label: 'Show What Happened',
+      description:
+        'Write CRASH, SLOW, OFF or REJOIN before the distance on the rim.',
+    },
+    hazardShowSpeed: {
+      type: 'boolean',
+      label: 'Show Its Speed',
+      description: 'Write the hazard car speed in km/h under the distance.',
+    },
+    sizeByClass: {
+      type: 'boolean',
+      label: 'Size Cars by Class',
+      description:
+        'Draw prototypes, stock cars and formula cars at their own typical size instead of the default. Sizes also decide when a car counts as alongside or close.',
+    },
+    carLength: {
+      type: 'number',
+      label: 'Default Car Length',
+      description:
+        'iRacing does not report car sizes. Used for classes the radar does not recognise.',
+      min: 3,
+      max: 6,
+      step: 0.1,
+      units: 'm',
+    },
+    carWidth: {
+      type: 'number',
+      label: 'Default Car Width',
+      min: 1.4,
+      max: 2.4,
+      step: 0.1,
+      units: 'm',
+    },
+  },
 });

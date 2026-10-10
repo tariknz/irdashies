@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import {
   DEFAULT_RADAR_TUNING,
   getWidgetDefaultConfig,
+  getWidgetManifest,
+  type PropertySpec,
   type RadarConfig,
   type RadarTuning,
 } from '@irdashies/types';
@@ -77,60 +79,64 @@ type NumberKey = {
   [K in keyof RadarConfig]: RadarConfig[K] extends number ? K : never;
 }[keyof RadarConfig];
 
+/** Label, description and range of a config setting live in the manifest. */
+const specOf = <T extends PropertySpec['type']>(key: string, type: T) => {
+  const spec = getWidgetManifest('radar')?.properties?.[key];
+  if (spec?.type !== type) throw new Error(`radar: no ${type} property ${key}`);
+  return spec as Extract<PropertySpec, { type: T }>;
+};
+
 const toggle = (
   level: SettingsLevel,
   key: BooleanKey,
-  title: string,
-  description?: string,
   hidden?: RadarSettingItem['hidden']
-): RadarSettingItem => ({
-  id: key,
-  level,
-  title,
-  description,
-  keys: [key],
-  hidden,
-  render: ({ view, set }) => (
-    <SettingToggleRow
-      title={title}
-      description={description}
-      enabled={view[key]}
-      onToggle={(value) => set({ [key]: value })}
-    />
-  ),
-});
-
-interface SliderRange {
-  units?: string;
-  min: number;
-  max: number;
-  step: number;
-}
+): RadarSettingItem => {
+  const { label, description } = specOf(key, 'boolean');
+  return {
+    id: key,
+    level,
+    title: label,
+    description,
+    keys: [key],
+    hidden,
+    render: ({ view, set }) => (
+      <SettingToggleRow
+        title={label}
+        description={description}
+        enabled={view[key]}
+        onToggle={(value) => set({ [key]: value })}
+      />
+    ),
+  };
+};
 
 const slider = (
   level: SettingsLevel,
   key: NumberKey,
-  title: string,
-  range: SliderRange,
-  description?: string,
   hidden?: RadarSettingItem['hidden']
-): RadarSettingItem => ({
-  id: key,
-  level,
-  title,
-  description,
-  keys: [key],
-  hidden,
-  render: ({ view, set }) => (
-    <SettingSliderRow
-      title={title}
-      description={description}
-      value={view[key]}
-      {...range}
-      onChange={(value) => set({ [key]: value })}
-    />
-  ),
-});
+): RadarSettingItem => {
+  const { label, description, min, max, step, units } = specOf(key, 'number');
+  return {
+    id: key,
+    level,
+    title: label,
+    description,
+    keys: [key],
+    hidden,
+    render: ({ view, set }) => (
+      <SettingSliderRow
+        title={label}
+        description={description}
+        value={view[key]}
+        min={min}
+        max={max}
+        step={step}
+        units={units}
+        onChange={(value) => set({ [key]: value })}
+      />
+    ),
+  };
+};
 
 type NumericTuningKey = {
   [K in keyof RadarTuning]: RadarTuning[K] extends number ? K : never;
@@ -355,30 +361,10 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
           />
         ),
       },
-      slider(1, 'fadeSeconds', 'Fade Time', {
-        units: 's',
-        min: 0,
-        max: 2,
-        step: 0.1,
-      }),
-      toggle(
-        0,
-        'showOnlyWhenOnTrack',
-        'Only When on Track',
-        'Hide the radar while you are not driving.'
-      ),
-      toggle(
-        0,
-        'hideInPitBox',
-        'Hide in Pit Box',
-        'Keep the radar off screen while your car is parked in its pit box.'
-      ),
-      toggle(
-        1,
-        'hideInPit',
-        'Hide Cars Across the Pit Wall',
-        'On track, hide cars on pit road; on pit road, hide cars on track.'
-      ),
+      slider(1, 'fadeSeconds'),
+      toggle(0, 'showOnlyWhenOnTrack'),
+      toggle(0, 'hideInPitBox'),
+      toggle(1, 'hideInPit'),
       {
         id: 'sessionVisibility',
         level: 0,
@@ -405,13 +391,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
     title: 'Look',
     group: 'radar',
     items: [
-      slider(
-        0,
-        'range',
-        'Range',
-        { units: 'm', min: 10, max: 100, step: 5 },
-        'Metres from your car to the edge of the radar.'
-      ),
+      slider(0, 'range'),
       {
         id: 'background',
         level: 0,
@@ -429,29 +409,10 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
           />
         ),
       },
-      toggle(
-        0,
-        'showTrackMap',
-        'Show Road',
-        'Draw the track under the cars, turning with your car.'
-      ),
-      slider(
-        1,
-        'mapOpacity',
-        'Road Opacity',
-        { units: '%', min: 5, max: 100, step: 5 },
-        undefined,
-        (view) => !view.showTrackMap
-      ),
-      slider(
-        1,
-        'trackWidth',
-        'Road Width',
-        { units: 'm', min: 6, max: 25, step: 1 },
-        'The track drawings carry no width, so pick one that looks right.',
-        (view) => !view.showTrackMap
-      ),
-      toggle(0, 'showCarNumbers', 'Car Numbers'),
+      toggle(0, 'showTrackMap'),
+      slider(1, 'mapOpacity', (view) => !view.showTrackMap),
+      slider(1, 'trackWidth', (view) => !view.showTrackMap),
+      toggle(0, 'showCarNumbers'),
       {
         id: 'rivalColorMode',
         level: 0,
@@ -500,51 +461,17 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
           />
         ),
       },
-      slider(
-        1,
-        'edgeFade',
-        'Edge Fade',
-        { units: '%', min: 0, max: 100, step: 5 },
-        'How much of the radar fades out towards the edge, so cars ease in and out. 0% for a hard edge.'
-      ),
-      toggle(1, 'showRings', 'Distance Rings'),
-      slider(
-        1,
-        'ringSpacing',
-        'Ring Spacing',
-        { units: 'm', min: 5, max: 50, step: 5 },
-        undefined,
-        (view) => !view.showRings
-      ),
-      toggle(
-        1,
-        'showCrosshair',
-        'Crosshair',
-        'Dashed lines through your car, ahead/behind and left/right.'
-      ),
-      toggle(
-        0,
-        'axisMotion',
-        'Moving Centre Line',
-        'The dashes of the line ahead run past at your speed, like road markings.',
-        (view) => !view.showCrosshair
-      ),
+      slider(1, 'edgeFade'),
+      toggle(1, 'showRings'),
+      slider(1, 'ringSpacing', (view) => !view.showRings),
+      toggle(1, 'showCrosshair'),
+      toggle(0, 'axisMotion', (view) => !view.showCrosshair),
       slider(
         1,
         'axisDashLength',
-        'Dash Length',
-        { units: 'm', min: 1, max: 10, step: 0.5 },
-        'Each gap is twice as long as a dash.',
         (view) => !view.showCrosshair || !view.axisMotion
       ),
-      slider(
-        1,
-        'axisSpeed',
-        'Dash Speed',
-        { units: '%', min: 10, max: 100, step: 5 },
-        'Share of your own speed. Lower it if fast dashes flicker.',
-        (view) => !view.showCrosshair || !view.axisMotion
-      ),
+      slider(1, 'axisSpeed', (view) => !view.showCrosshair || !view.axisMotion),
     ],
   },
   {
@@ -554,13 +481,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
     summary:
       'Marks on the rim towards a car worth watching. Every arc is here: whether it shows, how it looks and how long it is.',
     items: [
-      slider(
-        0,
-        'arcThickness',
-        'Thickness',
-        { units: '%', min: 3, max: 14, step: 1 },
-        'Of every arc, as a share of the radar radius.'
-      ),
+      slider(0, 'arcThickness'),
       arcCard(
         'warningArcs',
         'warningArcStyle',
@@ -635,21 +556,8 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
           />
         ),
       },
-      slider(
-        1,
-        'cautionDistance',
-        'Close Within',
-        { units: 'm', min: 1, max: 20, step: 0.5 },
-        'Bumper-to-bumper gap at which a car turns amber.',
-        (view) => !view.showWarnings
-      ),
-      toggle(
-        1,
-        'showGapLabel',
-        'Gap Distance',
-        'Write the bumper-to-bumper gap next to an amber car.',
-        (view) => !view.showWarnings
-      ),
+      slider(1, 'cautionDistance', (view) => !view.showWarnings),
+      toggle(1, 'showGapLabel', (view) => !view.showWarnings),
       {
         id: 'warningColors',
         level: 1,
@@ -688,14 +596,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
           </div>
         ),
       },
-      slider(
-        1,
-        'pulseHz',
-        'Pulse Rate',
-        { units: 'Hz', min: 0, max: 5, step: 0.5 },
-        'How fast a car alongside pulses. 0 keeps it steady.',
-        (view) => !view.showWarnings
-      ),
+      slider(1, 'pulseHz', (view) => !view.showWarnings),
     ],
   },
   {
@@ -731,13 +632,7 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
           />
         ),
       },
-      toggle(
-        1,
-        'overlapShowPercent',
-        'Overlap in Per Cent',
-        'Write the overlap next to the strip.',
-        (view) => !view.showOverlap
-      ),
+      toggle(1, 'overlapShowPercent', (view) => !view.showOverlap),
     ],
   },
   {
@@ -749,36 +644,10 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
     master: 'showDiveWarning',
     arc: { on: 'diveArcs', style: 'diveArcStyle' },
     items: [
-      slider(
-        1,
-        'diveMinClosingKmh',
-        'Closing Faster Than',
-        { units: 'km/h', min: 5, max: 40, step: 1 },
-        'Cars closing slower than this are left alone.',
-        (view) => !view.showDiveWarning
-      ),
-      slider(
-        1,
-        'diveWarnSeconds',
-        'Seconds to Your Side',
-        { units: 's', min: 0.5, max: 2.5, step: 0.1 },
-        'Turns red when the car will be beside you within this time and you are braking, or it has already pulled out. Amber starts at twice this.',
-        (view) => !view.showDiveWarning
-      ),
-      toggle(
-        1,
-        'diveGhost',
-        'Show Where It Will Be',
-        'A dashed outline of the diving car 0.8 s ahead, with an arrow to it.',
-        (view) => !view.showDiveWarning
-      ),
-      toggle(
-        1,
-        'diveShowClosing',
-        'Show Closing Speed',
-        'Write how much faster the car is in km/h, and the seconds until it is beside you.',
-        (view) => !view.showDiveWarning
-      ),
+      slider(1, 'diveMinClosingKmh', (view) => !view.showDiveWarning),
+      slider(1, 'diveWarnSeconds', (view) => !view.showDiveWarning),
+      toggle(1, 'diveGhost', (view) => !view.showDiveWarning),
+      toggle(1, 'diveShowClosing', (view) => !view.showDiveWarning),
     ],
   },
   {
@@ -790,57 +659,13 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
     master: 'showHazards',
     arc: { on: 'hazardArcs', style: 'hazardArcStyle' },
     items: [
-      slider(
-        0,
-        'hazardRange',
-        'Warn From',
-        { units: 'm', min: 100, max: 1000, step: 50 },
-        'How far ahead a hazard is shown.',
-        (view) => !view.showHazards
-      ),
-      slider(
-        1,
-        'hazardBlinkDistance',
-        'Flash Closer Than',
-        { units: 'm', min: 0, max: 500, step: 25 },
-        'A crashed or slow car flashes from this close. A car coming back on flashes at any distance; one sitting off the track never does.',
-        (view) => !view.showHazards
-      ),
-      toggle(
-        1,
-        'hazardCrash',
-        'Crashed and Stopped Cars',
-        'A car that dropped from racing speed in a moment, or stands still. Red.',
-        (view) => !view.showHazards
-      ),
-      toggle(
-        1,
-        'hazardSlow',
-        'Slow Cars',
-        'A car under 60% of the speed the field does at that spot of the lap. The radar learns those speeds as cars go round, so this needs a lap or so. Amber.',
-        (view) => !view.showHazards
-      ),
-      toggle(
-        1,
-        'hazardOff',
-        'Off Track and Rejoining',
-        'A car off the track for more than half a second, then while it gets back up to speed. Yellow.',
-        (view) => !view.showHazards
-      ),
-      toggle(
-        0,
-        'hazardShowLabel',
-        'Show What Happened',
-        'Write CRASH, SLOW, OFF or REJOIN before the distance on the rim.',
-        (view) => !view.showHazards
-      ),
-      toggle(
-        1,
-        'hazardShowSpeed',
-        'Show Its Speed',
-        'Write the hazard car speed in km/h under the distance.',
-        (view) => !view.showHazards
-      ),
+      slider(0, 'hazardRange', (view) => !view.showHazards),
+      slider(1, 'hazardBlinkDistance', (view) => !view.showHazards),
+      toggle(1, 'hazardCrash', (view) => !view.showHazards),
+      toggle(1, 'hazardSlow', (view) => !view.showHazards),
+      toggle(1, 'hazardOff', (view) => !view.showHazards),
+      toggle(0, 'hazardShowLabel', (view) => !view.showHazards),
+      toggle(1, 'hazardShowSpeed', (view) => !view.showHazards),
     ],
   },
   {
@@ -848,25 +673,9 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
     title: 'Car Sizes',
     group: 'other',
     items: [
-      toggle(
-        1,
-        'sizeByClass',
-        'Size Cars by Class',
-        'Draw prototypes, stock cars and formula cars at their own typical size instead of the default. Sizes also decide when a car counts as alongside or close.'
-      ),
-      slider(
-        1,
-        'carLength',
-        'Default Car Length',
-        { units: 'm', min: 3, max: 6, step: 0.1 },
-        'iRacing does not report car sizes. Used for classes the radar does not recognise.'
-      ),
-      slider(1, 'carWidth', 'Default Car Width', {
-        units: 'm',
-        min: 1.4,
-        max: 2.4,
-        step: 0.1,
-      }),
+      toggle(1, 'sizeByClass'),
+      slider(1, 'carLength'),
+      slider(1, 'carWidth'),
       {
         id: 'classSizes',
         level: 1,
