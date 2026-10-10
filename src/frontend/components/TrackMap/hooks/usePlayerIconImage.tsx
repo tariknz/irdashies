@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDashboard } from '@irdashies/context';
+import { validateImageDataUrl } from '@irdashies/utils/imageDataUrl';
 
 export const usePlayerIconImage = (
   imageFilename: string | undefined
@@ -15,7 +16,9 @@ export const usePlayerIconImage = (
         if (!cancelled) setDataUrl(null);
         return;
       }
-      const url = await bridge.getPlayerIconImageAsDataUrl(imageFilename);
+      const url = validateImageDataUrl(
+        await bridge.getPlayerIconImageAsDataUrl(imageFilename)
+      );
       if (cancelled) return;
       if (!url) {
         setDataUrl(null);

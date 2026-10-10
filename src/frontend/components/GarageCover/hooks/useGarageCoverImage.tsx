@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDashboard } from '@irdashies/context';
+import { validateImageDataUrl } from '@irdashies/utils/imageDataUrl';
 
 export const useGarageCoverImage = (
   imageFilename: string | undefined
@@ -14,7 +15,7 @@ export const useGarageCoverImage = (
 
     const loadImage = async () => {
       const dataUrl = await bridge.getGarageCoverImageAsDataUrl(imageFilename);
-      setImageUrl(dataUrl);
+      setImageUrl(validateImageDataUrl(dataUrl));
     };
 
     loadImage();

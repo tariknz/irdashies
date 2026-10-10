@@ -71,7 +71,7 @@ describe('ConfigJson', () => {
     const onApply = applyPasted(text);
     expect(onApply).not.toHaveBeenCalled();
     expect(
-      screen.getByText(new RegExp(message.replace(/[()]/g, '\\$&')))
+      screen.getByText((content) => content.includes(message))
     ).toBeTruthy();
   });
 });

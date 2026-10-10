@@ -4,6 +4,7 @@ import { useGeneralSettings, useSessionBarSnapshot } from '@irdashies/context';
 import { useCurrentTime } from '../../hooks/useCurrentTime';
 import { SessionBar } from './SessionBar';
 import type { SessionBarConfig } from '@irdashies/types';
+import { isSessionBarItemEnabled } from './sessionBarItemRegistry';
 
 vi.mock('@irdashies/context', async () => {
   const actual = await vi.importActual('@irdashies/context');
@@ -91,4 +92,51 @@ describe('SessionBar', () => {
     expect(wrapperDivs[1].textContent).toBe('1:23 PM');
     expect(wrapperDivs[1].className).toContain('last:text-right');
   });
+});
+
+describe('SessionBar untrusted configuration', () => {
+  it.each([
+    '__proto__',
+    '__defineGetter__',
+    'constructor',
+    'toString',
+    'missing',
+  ])('ignores the unregistered key %s', (key) => {
+    expect(isSessionBarItemEnabled(key, undefined, 'header')).toBe(false);
+    const { container } = render(
+      <SessionBar
+        settings={{ ...baseSettings, displayOrder: [key, 'sessionName'] }}
+      />
+    );
+    expect(container.textContent).toBe('Race');
+  });
+
+  it.each([null, 'sessionName', {}, 42])(
+    'falls back for malformed order %j',
+    (displayOrder) => {
+      const { container } = render(
+        <SessionBar
+          settings={
+            { ...baseSettings, displayOrder } as unknown as SessionBarConfig
+          }
+        />
+      );
+      expect(container.textContent).toBe('Race1:23 PM');
+    }
+  );
+
+  it.each(['false', 0, null, {}])(
+    'uses the default for a nonboolean enabled value %j',
+    (enabled) => {
+      const settings = {
+        sessionName: { enabled },
+      } as unknown as SessionBarConfig;
+      expect(isSessionBarItemEnabled('sessionName', settings, 'header')).toBe(
+        true
+      );
+      expect(isSessionBarItemEnabled('sessionName', settings, 'footer')).toBe(
+        false
+      );
+    }
+  );
 });
