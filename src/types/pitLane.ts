@@ -5,5 +5,8 @@ export interface PitLaneTrackData {
 
 export interface PitLaneBridge {
   getPitLaneData: (trackId: string) => Promise<PitLaneTrackData | null>;
-  updatePitLaneData: (trackId: string, data: Partial<PitLaneTrackData>) => Promise<void>;
+  updatePitLaneData: (
+    trackId: string,
+    data: Partial<PitLaneTrackData>
+  ) => Promise<void>;
 }

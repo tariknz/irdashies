@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CAR_MANUFACTURER_SPRITE_POSITIONS } from '../frontend/components/Standings/components/CarManufacturer/carManufacturerSpritePositions';
-import { CAR_ID_TO_CAR_MANUFACTURER } from '../frontend/components/Standings/components/CarManufacturer/carManufacturerMapping';
+import { CAR_MANUFACTURER_SPRITE_POSITIONS } from '../frontend/components/shared/CarManufacturer/carManufacturerSpritePositions';
+import { CAR_ID_TO_CAR_MANUFACTURER } from '../frontend/components/shared/CarManufacturer/carManufacturerMapping';
 import { LMU_CAR_ID_TO_MANUFACTURER, LMU_MANUFACTURERS } from './lmuCars';
 
 describe('LMU manufacturers', () => {

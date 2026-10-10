@@ -22,13 +22,29 @@ export function exposeInMainWorld() {
       return () => ipcRenderer.removeListener('global-toggle-hide', listener);
     },
     onWidgetToggle: (cb: (widgetId: string, hide: boolean) => void) => {
+      let active = true;
+      const seen = new Set<string>();
       const listener = (
         _: Electron.IpcRendererEvent,
         widgetId: string,
         hide: boolean
-      ) => cb(widgetId, hide);
+      ) => {
+        seen.add(widgetId);
+        cb(widgetId, hide);
+      };
       ipcRenderer.on('widget-toggle-hide', listener);
-      return () => ipcRenderer.removeListener('widget-toggle-hide', listener);
+      // Replay widgets already hidden, so remounted overlays stay hidden.
+      // Live events that beat the reply win over its stale snapshot.
+      ipcRenderer
+        .invoke('widgetVisibility:getHidden')
+        .then((ids: string[]) =>
+          ids.forEach((id) => active && !seen.has(id) && cb(id, true))
+        )
+        .catch(() => undefined);
+      return () => {
+        active = false;
+        ipcRenderer.removeListener('widget-toggle-hide', listener);
+      };
     },
   });
 

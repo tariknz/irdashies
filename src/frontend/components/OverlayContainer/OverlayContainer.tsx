@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   useDashboard,
   useRunningState,
@@ -7,6 +7,7 @@ import {
   rendersInOwnWindow,
   SessionTimingUpdater,
   SectorTimingUpdater,
+  useHiddenWidgetIds,
 } from '@irdashies/context';
 import type { WidgetLayout } from '@irdashies/types';
 import { WidgetContainer } from '../WidgetContainer';
@@ -23,26 +24,8 @@ export const OverlayContainer = memo(() => {
   const { running } = useRunningState();
   useResetOnDisconnect(running);
 
-  // Session-only per-widget visibility, toggled via a hotkey in the main
-  // process (see KeybindingManager.toggleWidgetHide). Does not touch the saved
-  // dashboard — purely transient, mirroring the global Alt+H hide.
-  const [hiddenWidgetIds, setHiddenWidgetIds] = useState<Set<string>>(
-    () => new Set()
-  );
-  useEffect(() => {
-    if (!window.globalKey?.onWidgetToggle) return;
-    return window.globalKey.onWidgetToggle((widgetId, hide) => {
-      setHiddenWidgetIds((prev) => {
-        const next = new Set(prev);
-        if (hide) {
-          next.add(widgetId);
-        } else {
-          next.delete(widgetId);
-        }
-        return next;
-      });
-    });
-  }, []);
+  // Session-only per-widget visibility, toggled via a hotkey.
+  const hiddenWidgetIds = useHiddenWidgetIds();
 
   const handleExitEditMode = useCallback(() => {
     bridge.toggleLockOverlays();

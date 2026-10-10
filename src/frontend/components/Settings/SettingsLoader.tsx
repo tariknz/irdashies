@@ -35,6 +35,7 @@ import { HeartRateSettings } from './sections/HeartRateSettings';
 import { CornerNameSettings } from './sections/CornerNameSettings';
 import { LapTraceSettings } from './sections/LapTraceSettings';
 import { BattleSettings } from './sections/BattleSettings';
+import { BroadcastGroupSettings } from './sections/BroadcastGroupSettings';
 import { GantrySettings } from './sections/GantrySettings';
 
 interface SettingsLoaderProps {
@@ -116,6 +117,12 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <LapTraceSettings />;
     case 'battle':
       return <BattleSettings />;
+    case 'broadcast':
+    case 'broadcastticker':
+    case 'broadcastevents':
+    case 'broadcastweather':
+    case 'broadcastpodium':
+      return <BroadcastGroupSettings active={type} />;
     case 'gantry':
       return <GantrySettings />;
     default:
