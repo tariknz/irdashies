@@ -101,6 +101,7 @@ export interface RadarStyle {
   hazardCrash: boolean;
   hazardSlow: boolean;
   hazardOff: boolean;
+  hazardShowLabel: boolean;
   hazardShowSpeed: boolean;
   hazardArcs: boolean;
   hazardArcStyle: RadarArcStyle;
@@ -817,7 +818,9 @@ const drawHazardMarker = (
   const labelY = centre + sin * labelAt;
   drawHintText(
     ctx,
-    `${HAZARD_LABELS[hazard.kind]} ${formatDistance(hazard.dist, style.metric)}`,
+    style.hazardShowLabel
+      ? `${HAZARD_LABELS[hazard.kind]} ${formatDistance(hazard.dist, style.metric)}`
+      : formatDistance(hazard.dist, style.metric),
     labelX,
     labelY,
     color,

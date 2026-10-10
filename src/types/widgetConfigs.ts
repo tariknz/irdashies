@@ -12,6 +12,8 @@ export interface SessionVisibilitySettings {
   openQualify: boolean;
   practice: boolean;
   offlineTesting: boolean;
+  /** Optional: only widgets that offer it save it; unset shows the widget. */
+  warmup?: boolean;
 }
 
 export type TimeFormat =
@@ -642,6 +644,8 @@ export interface RadarConfig {
   hazardSlow: boolean;
   /** Cars off the track, and coming back on. */
   hazardOff: boolean;
+  /** Write what happened (CRASH, SLOW, OFF, REJOIN) before the distance. */
+  hazardShowLabel: boolean;
   /** Write the hazard car's speed under its distance. */
   hazardShowSpeed: boolean;
   /** The rim arc under a hazard's triangle. */
