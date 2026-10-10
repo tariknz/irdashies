@@ -19,12 +19,18 @@ const SCENE_CARS: Readonly<Record<string, readonly number[]>> = {
   hazards: [5],
 };
 
+/** The preview's side in px; matches `w-50 h-50` below. */
+const PREVIEW_PX = 200;
+
 /** The demo pack drawn with the settings being edited. */
 export const RadarPreview = ({
   config,
   scene = null,
+  widgetSize,
 }: {
   config: RadarConfig;
+  /** Side of the radar widget on screen, in px, to scale the label cut-off. */
+  widgetSize?: number;
   /** Section open in the settings, to show only its part of the demo. */
   scene?: string | null;
 }) => {
@@ -51,7 +57,13 @@ export const RadarPreview = ({
     () => demoAppearance(config.rivalColorMode, customFill, size),
     [config.rivalColorMode, customFill, size]
   );
-  const style = useMemo(() => radarStyleFrom(config, size), [config, size]);
+  const style = useMemo(() => {
+    const base = radarStyleFrom(config, size);
+    // Cars are drawn smaller here than on the widget, so the car-number
+    // cut-off shrinks with it: numbers show here when they would there.
+    const scale = widgetSize ? PREVIEW_PX / widgetSize : 1;
+    return { ...base, minLabelPx: base.minLabelPx * scale };
+  }, [config, size, widgetSize]);
   const dive = useMemo(
     () => ({
       enabled: config.showDiveWarning,
@@ -65,7 +77,7 @@ export const RadarPreview = ({
   if (!frame) return null;
   return (
     <div
-      className="w-44 h-44 shrink-0 rounded-md"
+      className="w-50 h-50 shrink-0 rounded-md"
       style={{
         background:
           'repeating-linear-gradient(100deg, #3f4a3a 0 24px, #45503f 24px 52px)',

@@ -237,6 +237,10 @@ export const RadarSettings = () => {
   const savedSettings = currentDashboard?.widgets.find(
     (w) => w.id === SETTING_ID
   ) as RadarWidgetSettings | undefined;
+  const layout = currentDashboard?.widgets.find(
+    (w) => w.id === SETTING_ID
+  )?.layout;
+  const widgetSize = layout && Math.min(layout.width, layout.height);
   const [settings, setSettings] = useState<RadarWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
     config: withRadarDefaults(savedSettings?.config),
@@ -522,8 +526,12 @@ export const RadarSettings = () => {
                 ))}
               </div>
 
-              <div className="w-44 shrink-0 sticky top-2">
-                <RadarPreview config={view} scene={search ? null : open.id} />
+              <div className="w-50 shrink-0 sticky top-2">
+                <RadarPreview
+                  config={view}
+                  scene={search ? null : open.id}
+                  widgetSize={widgetSize}
+                />
               </div>
             </div>
           </div>
