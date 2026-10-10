@@ -14,6 +14,7 @@ import { RejoinIndicator } from './components/RejoinIndicator/RejoinIndicator';
 import { TelemetryInspector } from './components/TelemetryInspector/TelemetryInspector';
 import { PitlaneHelper } from './components/PitlaneHelper/PitlaneHelper';
 import { Tachometer } from './components/Tachometer/Tachometer';
+import { ShiftLight } from './components/ShiftLight/ShiftLight';
 import { Flag } from './components/Flag';
 import { TwitchChat } from './components/TwitchChat/TwitchChat';
 import { LapTimeLog } from './components/LapTimeLog/LapTimeLog';
@@ -47,6 +48,7 @@ export {
   TelemetryInspector,
   PitlaneHelper,
   Tachometer,
+  ShiftLight,
   Flag,
   TwitchChat,
   LapTimeLog,
@@ -78,6 +80,7 @@ export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
   telemetryinspector: TelemetryInspector,
   pitlanehelper: PitlaneHelper,
   tachometer: Tachometer,
+  shiftlight: ShiftLight,
   flag: Flag,
   twitchchat: TwitchChat,
   laptimelog: LapTimeLog,
