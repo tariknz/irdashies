@@ -1154,6 +1154,7 @@ export const defaultDashboard: {
         hazardCrash: true,
         hazardSlow: true,
         hazardOff: true,
+        hazardShowLabel: true,
         hazardShowSpeed: true,
         hazardArcs: true,
         hazardArcStyle: 'glow',

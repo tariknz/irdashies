@@ -828,6 +828,13 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         (view) => !view.showHazards
       ),
       toggle(
+        0,
+        'hazardShowLabel',
+        'Show What Happened',
+        'Write CRASH, SLOW, OFF or REJOIN before the distance on the rim.',
+        (view) => !view.showHazards
+      ),
+      toggle(
         1,
         'hazardShowSpeed',
         'Show Its Speed',

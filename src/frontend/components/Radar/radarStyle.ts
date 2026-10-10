@@ -70,6 +70,7 @@ export const radarStyleFrom = (
   hazardCrash: settings.hazardCrash,
   hazardSlow: settings.hazardSlow,
   hazardOff: settings.hazardOff,
+  hazardShowLabel: settings.hazardShowLabel,
   hazardShowSpeed: settings.hazardShowSpeed,
   hazardArcs: settings.hazardArcs,
   hazardArcStyle: settings.hazardArcStyle,
