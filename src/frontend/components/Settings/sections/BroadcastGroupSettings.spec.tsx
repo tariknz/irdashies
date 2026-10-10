@@ -1,17 +1,18 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { BroadcastGroupSettings } from './BroadcastGroupSettings';
 
+const onDashboardUpdated = vi.fn();
+const currentDashboard = {
+  widgets: [
+    { id: 'broadcast', enabled: true },
+    { id: 'broadcastticker', enabled: false },
+    { id: 'standings', enabled: true },
+  ],
+};
 vi.mock('@irdashies/context', () => ({
-  useDashboard: () => ({
-    currentDashboard: {
-      widgets: [
-        { id: 'broadcast', enabled: true },
-        { id: 'broadcastticker', enabled: false },
-      ],
-    },
-  }),
+  useDashboard: () => ({ currentDashboard, onDashboardUpdated }),
 }));
 vi.mock('./BroadcastSettings', () => ({
   BroadcastSettings: () => <div>tower settings</div>,
@@ -56,5 +57,19 @@ describe('BroadcastGroupSettings', () => {
     expect(screen.getByRole('link', { name: /Ticker/ })).toContainHTML(
       'title="Off"'
     );
+  });
+
+  it('the master switch turns every module off, leaving other widgets', () => {
+    renderAt('broadcast');
+
+    fireEvent.click(screen.getByRole('switch'));
+
+    expect(onDashboardUpdated).toHaveBeenCalledWith({
+      widgets: [
+        { id: 'broadcast', enabled: false },
+        { id: 'broadcastticker', enabled: false },
+        { id: 'standings', enabled: true },
+      ],
+    });
   });
 });

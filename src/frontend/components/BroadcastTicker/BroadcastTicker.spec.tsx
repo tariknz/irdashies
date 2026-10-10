@@ -23,6 +23,7 @@ const car = (carIdx: number) =>
   ({
     carIdx,
     position: carIdx + 1,
+    fastestTime: 90 + carIdx,
     carClass: { id: 1, color: 0xffffff },
     driver: { name: `Driver ${carIdx}`, carNum: `${carIdx}` },
   }) as unknown as Standings;
@@ -45,5 +46,14 @@ describe('BroadcastTicker', () => {
     if (el) fireEvent(el, new Event('webkitAnimationEnd', { bubbles: true }));
     expect(container.textContent).toContain('Fastest Lap');
     expect(marquee(container)?.style.animation).toContain('8s');
+  });
+
+  it('skips the fastest view while nobody has a lap time', () => {
+    standings.cars = [car(0), car(1)].map((c) => ({ ...c, fastestTime: 0 }));
+    const { container } = render(<BroadcastTicker />);
+
+    const el = marquee(container);
+    if (el) fireEvent(el, new Event('webkitAnimationEnd', { bubbles: true }));
+    expect(container.textContent).toContain('Manufacturers');
   });
 });

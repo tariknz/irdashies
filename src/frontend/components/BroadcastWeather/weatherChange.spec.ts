@@ -16,6 +16,12 @@ describe('describeWeatherChange', () => {
     expect(describeWeatherChange(wet, dry)).toBe('Rain stopped');
   });
 
+  it('does not flip on rain hovering around one level', () => {
+    const drizzle = (precipitation: number) => ({ ...dry, precipitation });
+    expect(describeWeatherChange(drizzle(0.03), drizzle(0.01))).toBe(undefined);
+    expect(describeWeatherChange(drizzle(0), drizzle(0.01))).toBe(undefined);
+  });
+
   it('reports the track wetness trend', () => {
     const damp = { ...dry, wetness: 3 };
     expect(describeWeatherChange(dry, damp)).toBe('Track getting wetter');

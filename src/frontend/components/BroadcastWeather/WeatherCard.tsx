@@ -9,7 +9,11 @@ import {
 import { useSessionBarSelector, useSessionStore } from '@irdashies/context';
 import type { SessionBarSnapshot } from '@irdashies/types';
 import { useStore } from 'zustand';
-import { describeWeatherChange, type WeatherSample } from './weatherChange';
+import {
+  describeWeatherChange,
+  RAIN_STOP,
+  type WeatherSample,
+} from './weatherChange';
 
 const WETNESS_LABELS = [
   '-',
@@ -133,7 +137,7 @@ const wind = (ms: number | undefined, metric: boolean) =>
 
 /** Sun turns, rain falls, a wet track pulses. */
 const WeatherIcon = ({ sample }: { sample: WeatherSample }) => {
-  if (sample.precipitation > 0.01) {
+  if (sample.precipitation > RAIN_STOP) {
     return (
       <span className="relative inline-block h-12 w-12">
         <CloudRainIcon size={48} weight="fill" className="text-sky-300" />

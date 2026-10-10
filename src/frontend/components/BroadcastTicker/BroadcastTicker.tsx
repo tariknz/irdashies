@@ -78,6 +78,12 @@ export const BroadcastTicker = () => {
     [groups, mode]
   );
 
+  // Before anyone sets a lap time the fastest view is empty. Move past it,
+  // or nothing would scroll to end the loop and the ticker would stay hidden.
+  if (mode === 'fastest' && entries.length === 0 && groups.length > 0) {
+    setModeIndex(modeIndex + 1);
+  }
+
   // Fixed when a loop starts: a car joining or leaving mid-scroll would
   // otherwise change the animation length and make the ticker jump.
   const [loop, setLoop] = useState<{ index: number; seconds: number }>();
@@ -107,9 +113,6 @@ export const BroadcastTicker = () => {
       }}
     >
       <div className="flex gap-1 pl-6 text-sm font-bold uppercase">
-        <span className="rounded-t-md bg-slate-900/(--bg-opacity) px-6 py-0.5">
-          Overall
-        </span>
         <span
           key={mode}
           className="animate-broadcast-enter rounded-t-md bg-slate-900/(--bg-opacity) px-6 py-0.5"

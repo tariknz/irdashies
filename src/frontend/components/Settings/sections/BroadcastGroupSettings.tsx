@@ -5,6 +5,7 @@ import { BroadcastSettings } from './BroadcastSettings';
 import { BroadcastTickerSettings } from './BroadcastTickerSettings';
 import { BroadcastEventsSettings } from './BroadcastEventsSettings';
 import { BroadcastWeatherSettings } from './BroadcastWeatherSettings';
+import { ToggleSwitch } from '../components/ToggleSwitch';
 
 /**
  * The broadcast modules stay separate widgets, so each keeps its own place in
@@ -31,13 +32,15 @@ const MODULES = [
 ] as const;
 
 type BroadcastModuleType = (typeof MODULES)[number]['type'];
+const MODULE_TYPES: readonly string[] = MODULES.map((m) => m.type);
 
 export const BroadcastGroupSettings = ({
   active,
 }: {
   active: BroadcastModuleType;
 }) => {
-  const { currentDashboard, currentProfile, bridge } = useDashboard();
+  const { currentDashboard, currentProfile, bridge, onDashboardUpdated } =
+    useDashboard();
   const [serverPort, setServerPort] = useState(3000);
   useEffect(() => {
     void bridge?.getComponentServerPort?.().then(setServerPort);
@@ -49,10 +52,30 @@ export const BroadcastGroupSettings = ({
     currentDashboard?.widgets.some(
       (w) => (w.type ?? w.id) === type && w.enabled
     ) ?? false;
+  // The master switch turns every module on or off at once; each tab keeps its
+  // own switch for running just some of them.
+  const anyEnabled = MODULE_TYPES.some(isEnabled);
+  const setAllEnabled = (enabled: boolean) => {
+    if (!currentDashboard || !onDashboardUpdated) return;
+    onDashboardUpdated({
+      ...currentDashboard,
+      widgets: currentDashboard.widgets.map((w) =>
+        MODULE_TYPES.includes(w.type ?? w.id) ? { ...w, enabled } : w
+      ),
+    });
+  };
   const { Section } = MODULES.find((m) => m.type === active) ?? MODULES[0];
 
   return (
     <div className="flex h-full flex-col">
+      <div className="mb-4 flex flex-none items-center justify-between">
+        <h2 className="text-xl">Broadcast</h2>
+        <ToggleSwitch
+          label="All modules"
+          enabled={anyEnabled}
+          onToggle={setAllEnabled}
+        />
+      </div>
       <nav className="mb-4 flex flex-none border-b border-slate-700">
         {MODULES.map(({ type, label }) => (
           <Link

@@ -23,4 +23,13 @@ describe('tickerEntries', () => {
       1, 3, 4,
     ]);
   });
+
+  it('orders the fastest view by lap time and drops cars without one', () => {
+    const list = [
+      { ...car(1, 1, 56), fastestTime: 92.1 },
+      { ...car(2, 2, 56), fastestTime: 91.4 },
+      { ...car(3, 3, 56), fastestTime: 0 },
+    ];
+    expect(tickerEntries(list, 'fastest').map((s) => s.carIdx)).toEqual([2, 1]);
+  });
 });

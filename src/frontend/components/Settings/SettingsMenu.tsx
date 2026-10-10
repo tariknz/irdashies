@@ -150,7 +150,9 @@ export const SettingsMenu = () => {
             pathname={pathname}
             disabledReason={disabledReason}
             isEnabled={
-              item.widgetType ? isWidgetEnabled(item.widgetType) : undefined
+              item.widgetType
+                ? (item.groupTypes ?? [item.widgetType]).some(isWidgetEnabled)
+                : undefined
             }
           />
         ))}

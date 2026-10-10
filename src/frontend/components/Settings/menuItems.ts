@@ -14,6 +14,8 @@ export interface MenuItem {
   path: string;
   label: string;
   widgetType?: string;
+  /** Widgets that share this item's page; it shows On while any of them is. */
+  groupTypes?: string[];
   icon?: Icon;
   /** Reached through a tab on another item's page rather than the menu. */
   hideInMenu?: boolean;
@@ -64,6 +66,12 @@ export const widgetItems: MenuItem[] = [
     path: '/broadcast',
     label: 'Broadcast',
     widgetType: 'broadcast',
+    groupTypes: [
+      'broadcast',
+      'broadcastticker',
+      'broadcastevents',
+      'broadcastweather',
+    ],
   },
   {
     to: '/settings/broadcastevents',

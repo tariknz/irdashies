@@ -10,7 +10,10 @@ export interface WeatherSample {
   windSpeed?: number;
 }
 
-const RAIN = 0.01;
+// Rain has to pass a higher bar to start than to stop, so precipitation
+// hovering near one level cannot flip the popup back and forth.
+const RAIN_START = 0.02;
+export const RAIN_STOP = 0.005;
 const TRACK_TEMP_STEP = 3;
 
 /**
@@ -21,10 +24,10 @@ export const describeWeatherChange = (
   seen: WeatherSample,
   now: WeatherSample
 ): string | undefined => {
-  if (seen.precipitation <= RAIN && now.precipitation > RAIN) {
+  if (seen.precipitation < RAIN_START && now.precipitation >= RAIN_START) {
     return 'Rain started';
   }
-  if (seen.precipitation > RAIN && now.precipitation <= RAIN) {
+  if (seen.precipitation > RAIN_STOP && now.precipitation <= RAIN_STOP) {
     return 'Rain stopped';
   }
   if (seen.wetness && now.wetness > seen.wetness) return 'Track getting wetter';
