@@ -6,7 +6,6 @@ import {
   SettingsTabType,
   getWidgetDefaultConfig,
 } from '@irdashies/types';
-import { ToggleSwitch } from '../components/ToggleSwitch';
 import { TabButton } from '../components/TabButton';
 import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
@@ -16,10 +15,8 @@ import { SessionVisibility } from '../components/SessionVisibility';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
-import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingActionButton } from '../components/SettingActionButton';
-import { SettingSelectRow } from '../components/SettingSelectRow';
-import { SettingSliderRow } from '../components/SettingSliderRow';
+import { SettingProp, SettingProps } from '../components/SettingProp';
 import {
   SessionBarItemsList,
   SessionBarItemConfig,
@@ -255,174 +252,45 @@ const DisplaySettingsList = ({
             {setting.hasSubSetting &&
               setting.configKey === 'pitStatus' &&
               settings.config.pitStatus.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                  <span className="text-sm text-slate-300">Pit Time</span>
-                  <ToggleSwitch
-                    enabled={settings.config.pitStatus.showPitTime ?? false}
-                    onToggle={(enabled) => {
-                      const cv = settings.config[setting.configKey] as {
-                        enabled: boolean;
-                        showPitTime?: boolean;
-                        pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';
-                        [key: string]: unknown;
-                      };
-                      handleConfigChange({
-                        [setting.configKey]: { ...cv, showPitTime: enabled },
-                      });
-                    }}
+                <>
+                  <SettingProp path="pitStatus.showPitTime" variant="compact" />
+                  <SettingProp
+                    path="pitStatus.pitLapDisplayMode"
+                    variant="compact"
                   />
-                  <span className="textP-sm text-slate-300">
-                    Pitlap display mode
-                  </span>
-                  <select
-                    value={settings.config.pitStatus.pitLapDisplayMode}
-                    onChange={(e) => {
-                      const cv = settings.config[setting.configKey] as {
-                        enabled: boolean;
-                        showPitTime?: boolean;
-                        pitLapDisplayMode?: 'lastPitLap' | 'lapsSinceLastPit';
-                        [key: string]: unknown;
-                      };
-                      handleConfigChange({
-                        [setting.configKey]: {
-                          ...cv,
-                          pitLapDisplayMode: e.target.value as
-                            'lastPitLap' | 'lapsSinceLastPit',
-                        },
-                      });
-                    }}
-                    className="bg-slate-700 text-white rounded-md px-2 py-1"
-                  >
-                    <option value="lastPitLap">Last pit lap</option>
-                    <option value="lapsSinceLastPit">
-                      Laps since last pit
-                    </option>
-                  </select>
-                </div>
+                </>
               )}
             {setting.hasSubSetting &&
               setting.configKey === 'driverName' &&
               settings.config.driverName.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                  <span className="text-sm text-slate-300">
-                    Remove Numbers From Names
-                  </span>
-                  <ToggleSwitch
-                    enabled={settings.config.driverName.removeNumbersFromName}
-                    onToggle={(enabled) => {
-                      const cv = settings.config[setting.configKey] as {
-                        enabled: boolean;
-                        removeNumbersFromName: boolean;
-                        [key: string]: unknown;
-                      };
-                      handleConfigChange({
-                        [setting.configKey]: {
-                          ...cv,
-                          removeNumbersFromName: enabled,
-                        },
-                      });
-                    }}
+                <>
+                  <SettingProp
+                    path="driverName.removeNumbersFromName"
+                    variant="compact"
                   />
-                </div>
-              )}
-            {setting.hasSubSetting &&
-              setting.configKey === 'driverName' &&
-              settings.config.driverName.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                  <span className="text-sm text-slate-300">Status Badges</span>
-                  <ToggleSwitch
-                    enabled={settings.config.driverName.showStatusBadges}
-                    onToggle={(enabled) => {
-                      const cv = settings.config[setting.configKey] as {
-                        enabled: boolean;
-                        showStatusBadges: boolean;
-                        [key: string]: unknown;
-                      };
-                      handleConfigChange({
-                        [setting.configKey]: {
-                          ...cv,
-                          showStatusBadges: enabled,
-                        },
-                      });
-                    }}
+                  <SettingProp
+                    path="driverName.showStatusBadges"
+                    variant="compact"
                   />
-                </div>
+                </>
               )}
             {setting.hasSubSetting &&
               setting.configKey === 'carManufacturer' &&
               settings.config.carManufacturer.enabled && (
-                <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                  <span className="text-sm text-slate-300">
-                    Hide If Single Make
-                  </span>
-                  <ToggleSwitch
-                    enabled={
-                      settings.config.carManufacturer.hideIfSingleMake ?? false
-                    }
-                    onToggle={(enabled) => {
-                      const cv = settings.config[setting.configKey] as {
-                        enabled: boolean;
-                        hideIfSingleMake?: boolean;
-                        [key: string]: unknown;
-                      };
-                      handleConfigChange({
-                        [setting.configKey]: {
-                          ...cv,
-                          hideIfSingleMake: enabled,
-                        },
-                      });
-                    }}
-                  />
-                </div>
+                <SettingProp
+                  path="carManufacturer.hideIfSingleMake"
+                  variant="compact"
+                />
               )}
             {setting.hasSubSetting &&
               setting.configKey === 'lapTimeDeltas' &&
               settings.config.lapTimeDeltas.enabled && (
                 <>
-                  <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                    <span className="text-sm text-slate-300">
-                      Number of Laps to Show
-                    </span>
-                    <select
-                      value={settings.config.lapTimeDeltas.numLaps}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          lapTimeDeltas: {
-                            ...settings.config.lapTimeDeltas,
-                            numLaps: parseInt(e.target.value),
-                          },
-                        })
-                      }
-                      className="bg-slate-700 text-white rounded-md px-2 py-1"
-                    >
-                      <option value={1}>1</option>
-                      <option value={2}>2</option>
-                      <option value={3}>3</option>
-                      <option value={4}>4</option>
-                      <option value={5}>5</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center justify-between pl-8 mt-2 indent-8">
-                    <span className="text-sm text-slate-300">
-                      Decimal Places
-                    </span>
-                    <select
-                      value={settings.config.lapTimeDeltas.decimalPlaces ?? 1}
-                      onChange={(e) =>
-                        handleConfigChange({
-                          lapTimeDeltas: {
-                            ...settings.config.lapTimeDeltas,
-                            decimalPlaces: parseInt(e.target.value, 10),
-                          },
-                        })
-                      }
-                      className="bg-slate-700 text-white rounded-md px-2 py-1"
-                    >
-                      <option value={1}>1</option>
-                      <option value={2}>2</option>
-                      <option value={3}>3</option>
-                    </select>
-                  </div>
+                  <SettingProp path="lapTimeDeltas.numLaps" variant="compact" />
+                  <SettingProp
+                    path="lapTimeDeltas.decimalPlaces"
+                    variant="compact"
+                  />
                 </>
               )}
           </DraggableSettingItem>
@@ -482,547 +350,310 @@ export const RelativeSettings = () => {
         };
 
         return (
-          <div className="space-y-4">
-            {/* Tabs */}
-            <div className="flex border-b border-slate-700/50">
-              <TabButton
-                id="display"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Display
-              </TabButton>
-              <TabButton
-                id="options"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Options
-              </TabButton>
-              <TabButton
-                id="header"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Header
-              </TabButton>
-              <TabButton
-                id="footer"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Footer
-              </TabButton>
-              <TabButton
-                id="styling"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Styling
-              </TabButton>
-              <TabButton
-                id="visibility"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Visibility
-              </TabButton>
-            </div>
+          <SettingProps
+            widget={SETTING_ID}
+            config={settings.config}
+            onChange={handleConfigChange}
+          >
+            <div className="space-y-4">
+              {/* Tabs */}
+              <div className="flex border-b border-slate-700/50">
+                <TabButton
+                  id="display"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Display
+                </TabButton>
+                <TabButton
+                  id="options"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Options
+                </TabButton>
+                <TabButton
+                  id="header"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Header
+                </TabButton>
+                <TabButton
+                  id="footer"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Footer
+                </TabButton>
+                <TabButton
+                  id="styling"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Styling
+                </TabButton>
+                <TabButton
+                  id="visibility"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Visibility
+                </TabButton>
+              </div>
 
-            <div>
-              {/* DISPLAY TAB */}
-              {activeTab === 'display' && (
-                <SettingsSection title="Display Order">
-                  <DisplaySettingsList
-                    itemsOrder={itemsOrder}
-                    onReorder={handleDisplayOrderChange}
-                    settings={settings}
-                    handleConfigChange={handleConfigChange}
-                  />
-
-                  <SettingActionButton
-                    label="Reset to Default Order"
-                    onClick={() => {
-                      const defaultOrder = sortableSettings.map((s) => s.id);
-                      setItemsOrder(defaultOrder);
-                      handleConfigChange({ displayOrder: defaultOrder });
-                    }}
-                  />
-                </SettingsSection>
-              )}
-
-              {/* OPTIONS TAB */}
-              {activeTab === 'options' && (
-                <>
-                  <SettingsSection title="Driver Standings">
-                    <SettingSelectRow
-                      title="Drivers to show around player"
-                      value={settings.config.buffer.toString()}
-                      options={Array.from({ length: 10 }, (_, i) => {
-                        const num = i + 1;
-                        return { label: num.toString(), value: num.toString() };
-                      })}
-                      onChange={(v) =>
-                        handleConfigChange({ buffer: parseInt(v) })
-                      }
+              <div>
+                {/* DISPLAY TAB */}
+                {activeTab === 'display' && (
+                  <SettingsSection title="Display Order">
+                    <DisplaySettingsList
+                      itemsOrder={itemsOrder}
+                      onReorder={handleDisplayOrderChange}
+                      settings={settings}
+                      handleConfigChange={handleConfigChange}
                     />
 
-                    <SettingToggleRow
-                      title="Use Live Position Standings"
-                      description="If enabled, live telemetry will be used to compute driver
-                          positions. This may be less stable but will update live and
-                          not only on start/finish line."
-                      enabled={settings.config.useLivePosition ?? false}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ useLivePosition: newValue })
-                      }
-                    />
-
-                    <SettingSliderRow
-                      title="Radio Icon Duration"
-                      description="How long the speaker icon keeps showing after a driver stops talking. Set to 0 to only show it while they are actively transmitting."
-                      value={settings.config.radio?.persistenceSeconds ?? 3}
-                      units="s"
-                      min={0}
-                      max={10}
-                      step={0.5}
-                      onChange={(v) =>
-                        handleConfigChange({ radio: { persistenceSeconds: v } })
-                      }
+                    <SettingActionButton
+                      label="Reset to Default Order"
+                      onClick={() => {
+                        const defaultOrder = sortableSettings.map((s) => s.id);
+                        setItemsOrder(defaultOrder);
+                        handleConfigChange({ displayOrder: defaultOrder });
+                      }}
                     />
                   </SettingsSection>
+                )}
 
-                  <SettingDivider />
+                {/* OPTIONS TAB */}
+                {activeTab === 'options' && (
+                  <>
+                    <SettingsSection title="Driver Standings">
+                      <SettingProp path="buffer" />
+                      <SettingProp path="useLivePosition" />
+                      <SettingProp path="radio.persistenceSeconds" />
+                    </SettingsSection>
 
-                  <SettingsSection title="Title Bar">
-                    <SettingToggleRow
-                      title="Show Title Bar"
-                      enabled={settings.config.titleBar.enabled}
-                      onToggle={(enabled) =>
-                        handleConfigChange({
-                          titleBar: {
-                            ...settings.config.titleBar,
-                            enabled,
-                          },
-                        })
-                      }
-                    />
+                    <SettingDivider />
 
-                    {settings.config.titleBar.enabled && (
+                    <SettingsSection title="Title Bar">
+                      <SettingProp path="titleBar.enabled" />
+
+                      {settings.config.titleBar.enabled && (
+                        <SettingsSection>
+                          <SettingProp path="titleBar.progressBar.enabled" />
+                        </SettingsSection>
+                      )}
+                    </SettingsSection>
+
+                    <SettingDivider />
+
+                    <SettingsSection title="Background">
+                      <SettingProp path="background.opacity" />
+                      <SettingProp path="foreground.opacity" />
+                    </SettingsSection>
+
+                    <SettingDivider />
+
+                    <SettingsSection title="Relative Time">
+                      <SettingProp path="delta.precision" />
+                    </SettingsSection>
+                  </>
+                )}
+
+                {/* HEADER TAB */}
+                {activeTab === 'header' && (
+                  <SettingsSection title="Header Bar">
+                    <SettingProp path="headerBar.enabled" />
+
+                    {settings.config.headerBar.enabled && (
                       <SettingsSection>
-                        <SettingToggleRow
-                          title="Show Progress Bar"
-                          enabled={settings.config.titleBar.progressBar.enabled}
-                          onToggle={(enabled) =>
+                        <SessionBarItemsList
+                          items={settings.config.headerBar.displayOrder}
+                          onReorder={(newOrder) => {
                             handleConfigChange({
-                              titleBar: {
-                                ...settings.config.titleBar,
-                                progressBar: { enabled },
+                              headerBar: {
+                                ...settings.config.headerBar,
+                                displayOrder: newOrder,
                               },
-                            })
-                          }
+                            });
+                          }}
+                          getItemConfig={(id) => {
+                            const item =
+                              settings.config.headerBar[
+                                id as keyof typeof settings.config.headerBar
+                              ];
+                            if (
+                              typeof item === 'object' &&
+                              item !== null &&
+                              'enabled' in item
+                            ) {
+                              return item as SessionBarItemConfig;
+                            }
+                            return undefined;
+                          }}
+                          updateItemConfig={(id, config) => {
+                            const item =
+                              settings.config.headerBar[
+                                id as keyof typeof settings.config.headerBar
+                              ];
+                            if (
+                              typeof item === 'object' &&
+                              item !== null &&
+                              'enabled' in item
+                            ) {
+                              handleConfigChange({
+                                headerBar: {
+                                  ...settings.config.headerBar,
+                                  [id]: {
+                                    ...(item as SessionBarItemConfig),
+                                    ...config,
+                                  },
+                                },
+                              });
+                            }
+                          }}
+                        />
+
+                        <SettingActionButton
+                          label="Reset to Default Order"
+                          onClick={() => {
+                            handleConfigChange({
+                              headerBar: {
+                                ...settings.config.headerBar,
+                                displayOrder: [
+                                  ...DEFAULT_SESSION_BAR_DISPLAY_ORDER,
+                                ],
+                              },
+                            });
+                          }}
                         />
                       </SettingsSection>
                     )}
                   </SettingsSection>
+                )}
 
-                  <SettingDivider />
+                {/* FOOTER TAB */}
+                {activeTab === 'footer' && (
+                  <SettingsSection title="Footer Bar">
+                    <SettingProp path="footerBar.enabled" />
 
-                  <SettingsSection title="Background">
-                    <SettingSliderRow
-                      title="Background Opacity"
-                      value={settings.config.background.opacity ?? 40}
-                      units="%"
-                      min={0}
-                      max={100}
-                      step={1}
-                      onChange={(v) =>
-                        handleConfigChange({ background: { opacity: v } })
-                      }
-                    />
-
-                    <SettingSliderRow
-                      title="Session Bar Opacity"
-                      value={settings.config.foreground?.opacity ?? 70}
-                      units="%"
-                      min={0}
-                      max={100}
-                      step={1}
-                      onChange={(v) =>
-                        handleConfigChange({ foreground: { opacity: v } })
-                      }
-                    />
-                  </SettingsSection>
-
-                  <SettingDivider />
-
-                  <SettingsSection title="Relative Time">
-                    <SettingSelectRow
-                      title="Decimal places"
-                      description="Number of decimal places to display"
-                      value={settings.config.delta.precision.toString()}
-                      options={Array.from({ length: 4 }, (_, i) => ({
-                        label: i.toString(),
-                        value: i.toString(),
-                      }))}
-                      onChange={(v) =>
-                        handleConfigChange({
-                          delta: {
-                            ...settings.config.delta,
-                            precision: parseInt(v),
-                          },
-                        })
-                      }
-                    />
-                  </SettingsSection>
-                </>
-              )}
-
-              {/* HEADER TAB */}
-              {activeTab === 'header' && (
-                <SettingsSection title="Header Bar">
-                  <SettingToggleRow
-                    title="Show Header Bar"
-                    enabled={settings.config.headerBar.enabled}
-                    onToggle={(enabled) =>
-                      handleConfigChange({
-                        headerBar: {
-                          ...settings.config.headerBar,
-                          enabled,
-                        },
-                      })
-                    }
-                  />
-
-                  {settings.config.headerBar.enabled && (
-                    <SettingsSection>
-                      <SessionBarItemsList
-                        items={settings.config.headerBar.displayOrder}
-                        onReorder={(newOrder) => {
-                          handleConfigChange({
-                            headerBar: {
-                              ...settings.config.headerBar,
-                              displayOrder: newOrder,
-                            },
-                          });
-                        }}
-                        getItemConfig={(id) => {
-                          const item =
-                            settings.config.headerBar[
-                              id as keyof typeof settings.config.headerBar
-                            ];
-                          if (
-                            typeof item === 'object' &&
-                            item !== null &&
-                            'enabled' in item
-                          ) {
-                            return item as SessionBarItemConfig;
-                          }
-                          return undefined;
-                        }}
-                        updateItemConfig={(id, config) => {
-                          const item =
-                            settings.config.headerBar[
-                              id as keyof typeof settings.config.headerBar
-                            ];
-                          if (
-                            typeof item === 'object' &&
-                            item !== null &&
-                            'enabled' in item
-                          ) {
-                            handleConfigChange({
-                              headerBar: {
-                                ...settings.config.headerBar,
-                                [id]: {
-                                  ...(item as SessionBarItemConfig),
-                                  ...config,
-                                },
-                              },
-                            });
-                          }
-                        }}
-                      />
-
-                      <SettingActionButton
-                        label="Reset to Default Order"
-                        onClick={() => {
-                          handleConfigChange({
-                            headerBar: {
-                              ...settings.config.headerBar,
-                              displayOrder: [
-                                ...DEFAULT_SESSION_BAR_DISPLAY_ORDER,
-                              ],
-                            },
-                          });
-                        }}
-                      />
-                    </SettingsSection>
-                  )}
-                </SettingsSection>
-              )}
-
-              {/* FOOTER TAB */}
-              {activeTab === 'footer' && (
-                <SettingsSection title="Footer Bar">
-                  <SettingToggleRow
-                    title="Show Footer Bar"
-                    enabled={settings.config.footerBar.enabled}
-                    onToggle={(enabled) =>
-                      handleConfigChange({
-                        footerBar: {
-                          ...settings.config.footerBar,
-                          enabled,
-                        },
-                      })
-                    }
-                  />
-
-                  {settings.config.footerBar.enabled && (
-                    <SettingsSection>
-                      <SessionBarItemsList
-                        items={settings.config.footerBar.displayOrder}
-                        onReorder={(newOrder) => {
-                          handleConfigChange({
-                            footerBar: {
-                              ...settings.config.footerBar,
-                              displayOrder: newOrder,
-                            },
-                          });
-                        }}
-                        getItemConfig={(id) => {
-                          const item =
-                            settings.config.footerBar[
-                              id as keyof typeof settings.config.footerBar
-                            ];
-                          if (
-                            typeof item === 'object' &&
-                            item !== null &&
-                            'enabled' in item
-                          ) {
-                            return item as SessionBarItemConfig;
-                          }
-                          return undefined;
-                        }}
-                        updateItemConfig={(id, config) => {
-                          const item =
-                            settings.config.footerBar[
-                              id as keyof typeof settings.config.footerBar
-                            ];
-                          if (
-                            typeof item === 'object' &&
-                            item !== null &&
-                            'enabled' in item
-                          ) {
+                    {settings.config.footerBar.enabled && (
+                      <SettingsSection>
+                        <SessionBarItemsList
+                          items={settings.config.footerBar.displayOrder}
+                          onReorder={(newOrder) => {
                             handleConfigChange({
                               footerBar: {
                                 ...settings.config.footerBar,
-                                [id]: {
-                                  ...(item as SessionBarItemConfig),
-                                  ...config,
-                                },
+                                displayOrder: newOrder,
                               },
                             });
-                          }
-                        }}
-                      />
+                          }}
+                          getItemConfig={(id) => {
+                            const item =
+                              settings.config.footerBar[
+                                id as keyof typeof settings.config.footerBar
+                              ];
+                            if (
+                              typeof item === 'object' &&
+                              item !== null &&
+                              'enabled' in item
+                            ) {
+                              return item as SessionBarItemConfig;
+                            }
+                            return undefined;
+                          }}
+                          updateItemConfig={(id, config) => {
+                            const item =
+                              settings.config.footerBar[
+                                id as keyof typeof settings.config.footerBar
+                              ];
+                            if (
+                              typeof item === 'object' &&
+                              item !== null &&
+                              'enabled' in item
+                            ) {
+                              handleConfigChange({
+                                footerBar: {
+                                  ...settings.config.footerBar,
+                                  [id]: {
+                                    ...(item as SessionBarItemConfig),
+                                    ...config,
+                                  },
+                                },
+                              });
+                            }
+                          }}
+                        />
 
-                      <SettingActionButton
-                        label="Reset to Default Order"
-                        onClick={() => {
-                          handleConfigChange({
-                            footerBar: {
-                              ...settings.config.footerBar,
-                              displayOrder: [
-                                ...DEFAULT_SESSION_BAR_DISPLAY_ORDER,
-                              ],
-                            },
-                          });
-                        }}
-                      />
-                    </SettingsSection>
-                  )}
-                </SettingsSection>
-              )}
-
-              {/* STYLING TAB */}
-              {activeTab === 'styling' && (
-                <>
-                  <SettingsSection title="Driver Position">
-                    <SettingToggleRow
-                      title="Position Background"
-                      description="Highlight the player's position cell with a colored background"
-                      enabled={
-                        settings.config.stylingOptions?.driverPosition
-                          ?.background ?? true
-                      }
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          stylingOptions: {
-                            ...settings.config.stylingOptions,
-                            driverPosition: { background: newValue },
-                          },
-                        })
-                      }
-                    />
-                  </SettingsSection>
-
-                  <SettingDivider />
-
-                  <SettingsSection title="Car Number">
-                    <SettingToggleRow
-                      title="Number Background"
-                      description="Show a colored background on the car number cell"
-                      enabled={
-                        settings.config.stylingOptions?.driverNumber
-                          ?.background ?? true
-                      }
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          stylingOptions: {
-                            ...settings.config.stylingOptions,
-                            driverNumber: {
-                              ...settings.config.stylingOptions?.driverNumber,
-                              background: newValue,
-                            },
-                          },
-                        })
-                      }
-                    />
-                    <SettingToggleRow
-                      title="Number Left Border"
-                      description="Show a colored left border on the car number cell"
-                      enabled={
-                        settings.config.stylingOptions?.driverNumber?.border ??
-                        true
-                      }
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          stylingOptions: {
-                            ...settings.config.stylingOptions,
-                            driverNumber: {
-                              ...settings.config.stylingOptions?.driverNumber,
-                              border: newValue,
-                            },
-                          },
-                        })
-                      }
-                    />
-                  </SettingsSection>
-
-                  <SettingDivider />
-
-                  <SettingsSection title="Badges">
-                    <SettingToggleRow
-                      title="Minimal License Badge"
-                      description="Use desaturated colors for the iRating/license badge"
-                      enabled={settings.config.stylingOptions?.badge ?? false}
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          stylingOptions: {
-                            ...settings.config.stylingOptions,
-                            badge: newValue,
-                          },
-                        })
-                      }
-                    />
-                    <SettingToggleRow
-                      title="Minimal Status Badges"
-                      description="Use muted borders for PIT, OUT, DNF and other status badges"
-                      enabled={
-                        settings.config.stylingOptions?.statusBadges ?? false
-                      }
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          stylingOptions: {
-                            ...settings.config.stylingOptions,
-                            statusBadges: newValue,
-                          },
-                        })
-                      }
-                    />
-                  </SettingsSection>
-
-                  <SettingDivider />
-
-                  <SettingsSection title="Flag Contour">
-                    <SettingToggleRow
-                      title="Show Flag Contour"
-                      description="Draw a colored border around the widget when a session flag is active"
-                      enabled={
-                        settings.config.stylingOptions?.flagContour?.enabled ??
-                        false
-                      }
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          stylingOptions: {
-                            ...settings.config.stylingOptions,
-                            flagContour: {
-                              ...settings.config.stylingOptions?.flagContour,
-                              enabled: newValue,
-                            },
-                          },
-                        })
-                      }
-                    />
-                    {settings.config.stylingOptions?.flagContour?.enabled && (
-                      <SettingSliderRow
-                        title="Border Width"
-                        description="Width of the flag contour border in pixels"
-                        min={1}
-                        max={10}
-                        step={1}
-                        value={
-                          settings.config.stylingOptions?.flagContour
-                            .borderWidth ?? 5
-                        }
-                        onChange={(newValue) =>
-                          handleConfigChange({
-                            stylingOptions: {
-                              ...settings.config.stylingOptions,
-                              flagContour: {
-                                ...settings.config.stylingOptions?.flagContour,
-                                borderWidth: newValue,
+                        <SettingActionButton
+                          label="Reset to Default Order"
+                          onClick={() => {
+                            handleConfigChange({
+                              footerBar: {
+                                ...settings.config.footerBar,
+                                displayOrder: [
+                                  ...DEFAULT_SESSION_BAR_DISPLAY_ORDER,
+                                ],
                               },
-                            },
-                          })
-                        }
-                      />
+                            });
+                          }}
+                        />
+                      </SettingsSection>
                     )}
                   </SettingsSection>
-                </>
-              )}
+                )}
 
-              {/* VISIBILITY TAB */}
-              {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
-                  <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
+                {/* STYLING TAB */}
+                {activeTab === 'styling' && (
+                  <>
+                    <SettingsSection title="Driver Position">
+                      <SettingProp path="stylingOptions.driverPosition.background" />
+                    </SettingsSection>
 
-                  <SettingDivider />
+                    <SettingDivider />
 
-                  <SettingToggleRow
-                    title="Show only when on track"
-                    description="If enabled, relatives will only be shown when driving"
-                    enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                    }
-                  />
+                    <SettingsSection title="Car Number">
+                      <SettingProp path="stylingOptions.driverNumber.background" />
+                      <SettingProp path="stylingOptions.driverNumber.border" />
+                    </SettingsSection>
 
-                  <SettingToggleRow
-                    title="Hide drivers in their pit stall"
-                    description="If enabled, drivers parked in their pit stall are removed from the relative instead of scrolling past lap after lap. Drivers driving down pit road, entering or exiting, are still shown."
-                    enabled={settings.config.hideDriversInPitStall ?? false}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ hideDriversInPitStall: newValue })
-                    }
-                  />
-                </SettingsSection>
-              )}
+                    <SettingDivider />
+
+                    <SettingsSection title="Badges">
+                      <SettingProp path="stylingOptions.badge" />
+                      <SettingProp path="stylingOptions.statusBadges" />
+                    </SettingsSection>
+
+                    <SettingDivider />
+
+                    <SettingsSection title="Flag Contour">
+                      <SettingProp path="stylingOptions.flagContour.enabled" />
+                      {settings.config.stylingOptions?.flagContour?.enabled && (
+                        <SettingProp path="stylingOptions.flagContour.borderWidth" />
+                      )}
+                    </SettingsSection>
+                  </>
+                )}
+
+                {/* VISIBILITY TAB */}
+                {activeTab === 'visibility' && (
+                  <SettingsSection title="Session Visibility">
+                    <SessionVisibility
+                      sessionVisibility={settings.config.sessionVisibility}
+                      handleConfigChange={handleConfigChange}
+                    />
+
+                    <SettingDivider />
+
+                    <SettingProp path="showOnlyWhenOnTrack" />
+
+                    <SettingProp path="hideDriversInPitStall" />
+                  </SettingsSection>
+                )}
+              </div>
             </div>
-          </div>
+          </SettingProps>
         );
       }}
     </BaseSettingsSection>
