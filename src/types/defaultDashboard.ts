@@ -1169,6 +1169,7 @@ export const defaultDashboard: {
           openQualify: false,
           practice: false,
           offlineTesting: false,
+          warmup: false,
         },
       },
     },

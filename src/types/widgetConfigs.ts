@@ -12,6 +12,8 @@ export interface SessionVisibilitySettings {
   openQualify: boolean;
   practice: boolean;
   offlineTesting: boolean;
+  /** Optional: only widgets that offer it save it; unset shows the widget. */
+  warmup?: boolean;
 }
 
 export type TimeFormat =
