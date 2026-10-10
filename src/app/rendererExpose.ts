@@ -28,6 +28,11 @@ export function exposeInMainWorld() {
         hide: boolean
       ) => cb(widgetId, hide);
       ipcRenderer.on('widget-toggle-hide', listener);
+      // Replay widgets already hidden, so remounted overlays stay hidden.
+      ipcRenderer
+        .invoke('widgetVisibility:getHidden')
+        .then((ids: string[]) => ids.forEach((id) => cb(id, true)))
+        .catch(() => undefined);
       return () => ipcRenderer.removeListener('widget-toggle-hide', listener);
     },
   });

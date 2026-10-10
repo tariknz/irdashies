@@ -227,12 +227,15 @@ export const BroadcastEvents = () => {
     out.events.filter((e) => kinds?.[e.kind] !== false).forEach((e) => push(e));
   }, [byCarIdx, kinds, push, sessionNum]);
 
-  const sessionFlags =
-    useTrackStateSelector(trackStateSelectors.sessionFlags) ?? 0;
-  const prevFlags = useRef(sessionFlags);
+  const sessionFlags = useTrackStateSelector(trackStateSelectors.sessionFlags);
+  const prevFlags = useRef<number | undefined>(undefined);
   useEffect(() => {
-    const kind = flagKind(prevFlags.current, sessionFlags);
+    // The first delivered value is a baseline, not a flag change.
+    if (sessionFlags == null) return;
+    const prev = prevFlags.current;
     prevFlags.current = sessionFlags;
+    if (prev === undefined) return;
+    const kind = flagKind(prev, sessionFlags);
     if (!kind || kinds?.[kind] === false) return;
     const id = `${kind}-${Date.now()}`;
     if (kind === 'finalLap') return push({ id, kind });
