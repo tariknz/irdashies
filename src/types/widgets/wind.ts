@@ -1,3 +1,4 @@
+import { sessionVisibilityProperties } from './properties';
 import { defineWidgetManifest } from './types';
 
 export default defineWidgetManifest({
@@ -23,5 +24,30 @@ export default defineWidgetManifest({
       practice: true,
       offlineTesting: true,
     },
+  },
+  properties: {
+    'background.opacity': {
+      type: 'number',
+      label: 'Background Opacity',
+      min: 0,
+      max: 100,
+      step: 1,
+      units: '%',
+    },
+    units: {
+      type: 'enum',
+      label: 'Speed Units',
+      options: [
+        { value: 'auto', label: 'Auto' },
+        { value: 'Metric', label: 'km/h' },
+        { value: 'Imperial', label: 'mph' },
+      ],
+    },
+    showOnlyWhenOnTrack: {
+      type: 'boolean',
+      label: 'Show only when on track',
+      description: 'If enabled, wind will only be shown when driving',
+    },
+    ...sessionVisibilityProperties(),
   },
 });

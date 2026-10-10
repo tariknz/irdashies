@@ -2,6 +2,7 @@ import type { WidgetId } from '../widgetId';
 import type { WidgetManifest } from './types';
 
 export * from './types';
+export * from './properties';
 
 /**
  * Order of the built-in widgets wherever they are listed: the default
@@ -56,7 +57,7 @@ const rank = (id: string) => {
 // Vitest builds), like main.ts and sims/registry.ts. Scripts run with tsx may
 // only import types from @irdashies/types.
 const discovered = import.meta.glob<{ default?: WidgetManifest }>(
-  ['./*.ts', '!./index.ts', '!./types.ts', '!./*.spec.ts'],
+  ['./*.ts', '!./index.ts', '!./types.ts', '!./properties.ts', '!./*.spec.ts'],
   { eager: true }
 );
 

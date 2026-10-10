@@ -2,55 +2,25 @@ import { useEffect, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
   getWidgetDefaultConfig,
+  getWidgetManifest,
+  isConfigValid,
   type DashboardWidget,
   type WindWidgetSettings,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
-import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingDivider } from '../components/SettingDivider';
-import { SettingSliderRow } from '../components/SettingSliderRow';
-import { SettingToggleRow } from '../components/SettingToggleRow';
+import { SettingProp, SettingProps } from '../components/SettingProp';
 import { SettingsSection } from '../components/SettingSection';
 
 const SETTING_ID = 'wind';
 const defaultConfig = getWidgetDefaultConfig('wind');
 
-const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const isSessionVisibility = (value: unknown) => {
-  if (!isObjectRecord(value)) return false;
-
-  return (
-    typeof value.race === 'boolean' &&
-    typeof value.loneQualify === 'boolean' &&
-    typeof value.openQualify === 'boolean' &&
-    typeof value.practice === 'boolean' &&
-    typeof value.offlineTesting === 'boolean'
-  );
-};
-
-const isWindConfig = (
-  config: object | undefined
-): config is WindWidgetSettings['config'] => {
-  if (!isObjectRecord(config)) return false;
-
-  const { background, units, showOnlyWhenOnTrack, sessionVisibility } = config;
-
-  return (
-    isObjectRecord(background) &&
-    typeof background.opacity === 'number' &&
-    (units === 'auto' || units === 'Metric' || units === 'Imperial') &&
-    typeof showOnlyWhenOnTrack === 'boolean' &&
-    isSessionVisibility(sessionVisibility)
-  );
-};
-
 const isWindWidgetSettings = (
   widget: DashboardWidget | undefined
 ): widget is DashboardWidget & WindWidgetSettings =>
-  widget?.id === SETTING_ID && isWindConfig(widget.config);
+  widget?.id === SETTING_ID &&
+  isConfigValid(getWidgetManifest(SETTING_ID)?.properties ?? {}, widget.config);
 
 export const WindSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -109,50 +79,29 @@ export const WindSettings = () => {
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
-        <div className="space-y-4">
-          <SettingsSection title="Options">
-            <SettingSliderRow
-              title="Background Opacity"
-              value={settings.config.background.opacity ?? 80}
-              units="%"
-              min={0}
-              max={100}
-              step={1}
-              onChange={(v) =>
-                handleConfigChange({ background: { opacity: v } })
-              }
-            />
+        <SettingProps
+          widget={SETTING_ID}
+          config={settings.config}
+          onChange={handleConfigChange}
+        >
+          <div className="space-y-4">
+            <SettingsSection title="Options">
+              <SettingProp path="background.opacity" />
+              <SettingProp path="units" />
+            </SettingsSection>
 
-            <SettingButtonGroupRow<'auto' | 'Metric' | 'Imperial'>
-              title="Speed Units"
-              value={settings.config.units ?? 'auto'}
-              options={[
-                { label: 'Auto', value: 'auto' },
-                { label: 'km/h', value: 'Metric' },
-                { label: 'mph', value: 'Imperial' },
-              ]}
-              onChange={(v) => handleConfigChange({ units: v })}
-            />
-          </SettingsSection>
+            <SettingsSection title="Visibility">
+              <SessionVisibility
+                sessionVisibility={settings.config.sessionVisibility}
+                handleConfigChange={handleConfigChange}
+              />
 
-          <SettingsSection title="Visibility">
-            <SessionVisibility
-              sessionVisibility={settings.config.sessionVisibility}
-              handleConfigChange={handleConfigChange}
-            />
+              <SettingDivider />
 
-            <SettingDivider />
-
-            <SettingToggleRow
-              title="Show only when on track"
-              description="If enabled, wind will only be shown when driving"
-              enabled={settings.config.showOnlyWhenOnTrack ?? false}
-              onToggle={(newValue) =>
-                handleConfigChange({ showOnlyWhenOnTrack: newValue })
-              }
-            />
-          </SettingsSection>
-        </div>
+              <SettingProp path="showOnlyWhenOnTrack" />
+            </SettingsSection>
+          </div>
+        </SettingProps>
       )}
     </BaseSettingsSection>
   );
