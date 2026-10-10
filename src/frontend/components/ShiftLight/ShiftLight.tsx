@@ -23,10 +23,7 @@ export const ShiftLight = () => {
       gear={tachometerData.gear}
       maxRpm={tachometerData.maxRpm}
       shiftRpm={tachometerData.shiftRpm}
-      blinkRpm={tachometerData.blinkRpm}
       showRpmText={settings?.showRpmText ?? true}
-      gearRpmThresholds={tachometerData.gearRpmThresholds}
-      ledColors={tachometerData.carData?.ledColor}
       carData={tachometerData.carData}
       carPath={tachometerData.carPath}
       shiftPointSettings={settings?.shiftPointSettings}

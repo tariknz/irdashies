@@ -13,7 +13,6 @@ import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingDivider } from '../components/SettingDivider';
 import { TabButton } from '../components/TabButton';
-import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import logger from '@irdashies/utils/logger';
 
@@ -478,8 +477,6 @@ export const ShiftLightSettings = () => {
                     })
                   }
                 />
-
-                
               </SettingsSection>
             )}
 

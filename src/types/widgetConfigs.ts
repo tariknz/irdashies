@@ -1268,7 +1268,7 @@ export interface WidgetConfigMap {
   flatmap: FlatTrackMapConfig;
   input: InputConfig;
   tachometer: TachometerConfig;
-  shiftlight: ShiftlightConfig;
+  shiftlight: ShiftLightConfig;
   fuel: FuelConfig;
   blindspotmonitor: BlindSpotMonitorConfig;
   radar: RadarConfig;

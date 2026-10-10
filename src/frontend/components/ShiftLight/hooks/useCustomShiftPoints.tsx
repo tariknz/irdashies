@@ -1,38 +1,35 @@
-import { useDriverControlsSnapshot } from '@irdashies/context';
-import { useCarTachometerData } from './useCarTachometerData';
+import { useMemo } from 'react';
+import { loadCarData, type CarData } from '@irdashies/utils/carData';
 import type { ShiftPointSettings } from '@irdashies/types';
 
-/**
- * Hook for custom shift point logic
- */
-export const useCustomShiftPoints = (settings?: ShiftPointSettings) => {
-  const snapshot = useDriverControlsSnapshot();
-  const gear = snapshot?.gear ?? 0;
-  const rpm = snapshot?.rpm ?? 0;
-  const { carData } = useCarTachometerData(gear);
-
-  // Get current car's shift config (only if enabled)
-  const carConfig = carData && settings?.carConfigs[carData.carId];
-  const isCarConfigEnabled = carConfig?.enabled ?? false;
-
-  // Get shift point for current gear (only if car config is enabled)
-  const currentShiftPoint = isCarConfigEnabled
-    ? carConfig?.gearShiftPoints[gear.toString()]?.shiftRpm
-    : undefined;
-
-  // Check if we should show shift indicator
-  const shouldShowShiftIndicator = !!(
-    settings?.enabled &&
-    isCarConfigEnabled &&
-    currentShiftPoint &&
-    rpm >= currentShiftPoint &&
-    gear > 0 // Only for forward gears
+/** Shared lookup and trigger logic for the standalone shift cue. */
+export const useCustomShiftPoints = (
+  settings: ShiftPointSettings | undefined,
+  carPath: string | undefined,
+  gear: number,
+  rpm: number,
+  carData?: CarData | null
+) => {
+  const carId = useMemo(
+    () =>
+      carData?.carId ??
+      (carPath ? (loadCarData(carPath)?.carId ?? carPath) : undefined),
+    [carData?.carId, carPath]
   );
-
+  const carConfig = carId ? settings?.carConfigs[carId] : undefined;
+  const currentShiftPoint = carConfig?.enabled
+    ? carConfig.gearShiftPoints[gear.toString()]?.shiftRpm
+    : undefined;
   return {
-    shouldShowShiftIndicator,
-    indicatorType: settings?.indicatorType || 'glow',
-    indicatorColor: settings?.indicatorColor || '#00ff00',
+    shouldShowShiftIndicator: !!(
+      settings?.enabled &&
+      carConfig?.enabled &&
+      currentShiftPoint &&
+      rpm >= currentShiftPoint &&
+      gear > 0
+    ),
+    indicatorType: settings?.indicatorType ?? 'glow',
+    indicatorColor: settings?.indicatorColor ?? '#00ff00',
     currentShiftPoint,
     carConfig,
   };

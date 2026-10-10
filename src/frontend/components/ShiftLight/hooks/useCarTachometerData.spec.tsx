@@ -2,6 +2,7 @@ import { renderHook } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useCarTachometerData } from './useCarTachometerData';
 import * as Context from '@irdashies/context';
+import { loadCarData } from '@irdashies/utils/carData';
 
 // Mock the dependencies
 vi.mock('@irdashies/context', async (importOriginal) => {
@@ -24,6 +25,7 @@ const mockUseDriverControlsSnapshot = vi.mocked(
 describe('useCarTachometerData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(loadCarData).mockReturnValue(null);
 
     // Default mocks
     mockUseDriverCarIdx.mockReturnValue(0);

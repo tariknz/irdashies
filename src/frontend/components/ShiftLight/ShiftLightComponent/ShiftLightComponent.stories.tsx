@@ -11,8 +11,8 @@ export default meta;
 
 type Story = StoryObj<typeof ShiftLight>;
 
-const RandomRPM = () => {
-  const [rpm, setRpm] = useState(4250); // Start from 5th LED (4250 RPM out of 8500)
+const RandomRPMDemo = () => {
+  const [rpm, setRpm] = useState(4250);
   const [isRevLimiter, setIsRevLimiter] = useState(false);
   const [, setRevLimiterTimer] = useState(0);
 
@@ -22,9 +22,9 @@ const RandomRPM = () => {
         // Rev limiter phase - count down timer
         setRevLimiterTimer((prev) => {
           if (prev <= 0) {
-            // Reset to 5th LED after 2 seconds
+            // Reset RPM after 2 seconds
             setIsRevLimiter(false);
-            setRpm(4250); // 5th LED position
+            setRpm(4250);
             return 0;
           }
           return prev - 50;
@@ -52,18 +52,13 @@ const RandomRPM = () => {
 
   return (
     <div className="h-30 w-150">
-      <ShiftLight
-        rpm={rpm}
-        maxRpm={8500}
-        showRpmText={true}
-        rpmOrientation="bottom"
-      />
+      <ShiftLight rpm={rpm} maxRpm={8500} showRpmText={true} />
     </div>
   );
 };
 
 // Ferrari 296 GT3 car data example
-const Ferrari296GT3 = () => {
+const Ferrari296GT3Demo = () => {
   const [rpm, setRpm] = useState(6500);
   const [isRevLimiter, setIsRevLimiter] = useState(false);
   const [, setRevLimiterTimer] = useState(0);
@@ -72,8 +67,11 @@ const Ferrari296GT3 = () => {
     carName: 'Ferrari 296 GT3',
     carId: 'ferrari296gt3',
     carClass: 'GT3',
+    ledNumber: 6,
+    redlineBlinkInterval: 250,
+    ledColor: [],
+    ledRpm: [],
   };
-
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -107,19 +105,18 @@ const Ferrari296GT3 = () => {
 
   return (
     <div className="h-30 w-150">
-        <ShiftLight
-          rpm={rpm}
-          maxRpm={7360}
-          showRpmText={true}
-          gearRpmThresholds={ferrariGear1Rpm}
-          carData={ferrariCarData}
-        />
+      <ShiftLight
+        rpm={rpm}
+        maxRpm={7360}
+        showRpmText={true}
+        carData={ferrariCarData}
+      />
     </div>
   );
 };
 
 // Custom shift point demos with different indicator types
-const CustomShiftPointDemos = () => {
+const CustomShiftPointsDemo = () => {
   const [rpm, setRpm] = useState(6500);
   const [isRevLimiter, setIsRevLimiter] = useState(false);
   const [, setRevLimiterTimer] = useState(0);
@@ -128,6 +125,10 @@ const CustomShiftPointDemos = () => {
     carName: 'Ferrari 296 GT3',
     carId: 'ferrari296gt3',
     carClass: 'GT3',
+    ledNumber: 6,
+    redlineBlinkInterval: 250,
+    ledColor: [],
+    ledRpm: [],
   };
 
   const glowSettings: ShiftPointSettings = {
@@ -209,7 +210,6 @@ const CustomShiftPointDemos = () => {
               gear={1}
               carPath="ferrari296gt3"
               showRpmText={true}
-              gearRpmThresholds={ferrariGear1Rpm}
               carData={ferrariCarData}
               shiftPointSettings={glowSettings}
             />
@@ -227,7 +227,6 @@ const CustomShiftPointDemos = () => {
               gear={1}
               carPath="ferrari296gt3"
               showRpmText={false}
-              gearRpmThresholds={ferrariGear1Rpm}
               carData={ferrariCarData}
               shiftPointSettings={glowSettings}
             />
@@ -245,7 +244,6 @@ const CustomShiftPointDemos = () => {
               gear={1}
               carPath="ferrari296gt3"
               showRpmText={true}
-              gearRpmThresholds={ferrariGear1Rpm}
               carData={ferrariCarData}
               shiftPointSettings={borderSettings}
             />
@@ -263,7 +261,6 @@ const CustomShiftPointDemos = () => {
               gear={1}
               carPath="ferrari296gt3"
               showRpmText={false}
-              gearRpmThresholds={ferrariGear1Rpm}
               carData={ferrariCarData}
               shiftPointSettings={borderSettings}
             />
@@ -281,7 +278,6 @@ const CustomShiftPointDemos = () => {
               gear={1}
               carPath="ferrari296gt3"
               showRpmText={true}
-              gearRpmThresholds={ferrariGear1Rpm}
               carData={ferrariCarData}
               shiftPointSettings={pulseSettings}
             />
@@ -299,7 +295,6 @@ const CustomShiftPointDemos = () => {
               gear={1}
               carPath="ferrari296gt3"
               showRpmText={false}
-              gearRpmThresholds={ferrariGear1Rpm}
               carData={ferrariCarData}
               shiftPointSettings={pulseSettings}
             />
@@ -308,4 +303,12 @@ const CustomShiftPointDemos = () => {
       </div>
     </div>
   );
+};
+
+export const RandomRPM: Story = { render: () => <RandomRPMDemo /> };
+
+export const Ferrari296GT3: Story = { render: () => <Ferrari296GT3Demo /> };
+
+export const CustomShiftPointDemos: Story = {
+  render: () => <CustomShiftPointsDemo />,
 };

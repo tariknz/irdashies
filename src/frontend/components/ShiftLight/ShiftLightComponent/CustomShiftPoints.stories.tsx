@@ -13,8 +13,6 @@ const meta: Meta<typeof ShiftLight> = {
   title: 'widgets/ShiftLight/components/CustomShiftPoints',
   argTypes: {
     shiftPointSettings: { table: { disable: true } },
-    gearRpmThresholds: { table: { disable: true } },
-    ledColors: { table: { disable: true } },
     carData: { table: { disable: true } },
   },
 };
@@ -41,8 +39,6 @@ const testCarData = {
   ledRpm: [{}],
 };
 
-const testGearRpm = [7360, 6760, 6860, 6960, 7060, 7160, 7260];
-
 // Animated RPM component for testing
 const AnimatedRPM = ({
   indicatorType,
@@ -50,14 +46,12 @@ const AnimatedRPM = ({
   title,
   color = '#00ff00',
   showRpmText = true,
-  rpmOrientation = 'horizontal',
 }: {
   indicatorType: 'glow' | 'pulse' | 'border';
   shiftRpm?: number;
   title: string;
   color?: string;
   showRpmText?: boolean;
-  rpmOrientation?: 'horizontal' | 'bottom' | 'top';
 }) => {
   const [rpm, setRpm] = useState(6500);
   const [isRevLimiter, setIsRevLimiter] = useState(false);
@@ -134,9 +128,7 @@ const AnimatedRPM = ({
           gear={1}
           carPath="ferrari296gt3"
           showRpmText={showRpmText}
-          rpmOrientation={rpmOrientation}
-          gearRpmThresholds={testGearRpm}
-          ledColors={testCarData.ledColor}
+
           carData={testCarData}
           shiftPointSettings={shiftPointSettings}
         />
@@ -170,7 +162,7 @@ export const PulseStyle: Story = {
     <AnimatedRPM
       indicatorType="pulse"
       title="Pulse Effect Style"
-	  color="#00ff00"
+      color="#00ff00"
       //color="#ff0066"
     />
   ),
@@ -183,7 +175,7 @@ export const WithoutRpmText: Story = {
         Custom Shift Points Without RPM Text
       </div>
       <p className="text-gray-400 mb-4">
-        RPM box appears only when shift point is active, showing
+        RPM box stays visible for an enabled car configuration, showing
         &quot;SHIFT&quot; text
       </p>
       <AnimatedRPM
@@ -191,7 +183,6 @@ export const WithoutRpmText: Story = {
         title="Glow Effect - No RPM Text"
         color="#00ff00"
         showRpmText={false}
-        rpmOrientation="bottom"
       />
     </div>
   ),
@@ -204,14 +195,13 @@ export const WithRpmText: Story = {
         Custom Shift Points With RPM Text
       </div>
       <p className="text-gray-400 mb-4">
-        RPM box always visible, shows both RPM and &quot;SHIFT&quot; when active
+        RPM box always visible, replaces RPM with &quot;SHIFT&quot; when active
       </p>
       <AnimatedRPM
         indicatorType="glow"
         title="Glow Effect - With RPM Text"
         color="#00ff00"
         showRpmText={true}
-        rpmOrientation="bottom"
       />
     </div>
   ),
@@ -228,19 +218,12 @@ export const Comparison: Story = {
           indicatorType="border"
           title="Border Glow"
           color="#ffff00"
-          rpmOrientation="bottom"
         />
-        <AnimatedRPM
-          indicatorType="glow"
-          title="Glow Effect"
-          color="#00ff00"
-          rpmOrientation="bottom"
-        />
+        <AnimatedRPM indicatorType="glow" title="Glow Effect" color="#00ff00" />
         <AnimatedRPM
           indicatorType="pulse"
           title="Pulse Effect"
           color="#ff0066"
-          rpmOrientation="bottom"
         />
       </div>
     </div>
@@ -260,7 +243,6 @@ export const DifferentShiftPoints: Story = {
           title="Early Shift Point (6800 RPM) - Glow - With RPM Text"
           color="#00ff00"
           showRpmText={true}
-          rpmOrientation="bottom"
         />
         <AnimatedRPM
           indicatorType="border"
@@ -268,7 +250,6 @@ export const DifferentShiftPoints: Story = {
           title="Medium Shift Point (7000 RPM) - Border - RPM Text OFF"
           color="#ff6600"
           showRpmText={false}
-          rpmOrientation="bottom"
         />
         <AnimatedRPM
           indicatorType="pulse"
@@ -276,7 +257,6 @@ export const DifferentShiftPoints: Story = {
           title="Late Shift Point (7200 RPM) - Pulse - With RPM Text"
           color="#ff0066"
           showRpmText={true}
-          rpmOrientation="bottom"
         />
       </div>
     </div>
