@@ -14,6 +14,7 @@ const sim = vi.hoisted(() => ({
   replay: { mode: 'live', provenance: 'none', subSessionId: '' },
   cursorSessionNum: null as number | null,
   archived: null as unknown,
+  qualifying: undefined as unknown,
 }));
 
 vi.mock('@irdashies/context', () => ({
@@ -38,7 +39,7 @@ vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({
 }));
 
 vi.mock('@irdashies/domain/standings/useQualifyingGrid', () => ({
-  useQualifyingResults: () => undefined,
+  useQualifyingResults: () => sim.qualifying,
 }));
 
 const history = (
@@ -59,10 +60,14 @@ const history = (
 });
 
 const Probe = () => {
-  const { standingsByClass, history } = useGantrySessionData();
+  const { standingsByClass, history, qualifyingResults } =
+    useGantrySessionData();
   return (
     <div>
       <span data-testid="standings">{standingsByClass.length}</span>
+      <span data-testid="qualifying">
+        {qualifyingResults?.length ?? 'none'}
+      </span>
       <span data-testid="laps">{history?.count[0] ?? 'none'}</span>
     </div>
   );
@@ -83,6 +88,7 @@ const closeSim = (
   sim.standings = [];
   sim.live = undefined;
   sim.archived = null;
+  sim.qualifying = undefined;
   rerender(view(false, showProbe));
   sim.hasDrivers = false;
   rerender(view(false, showProbe));
@@ -96,6 +102,7 @@ describe('GantrySessionDataProvider', () => {
     sim.replay = { mode: 'live', provenance: 'none', subSessionId: '' };
     sim.cursorSessionNum = null;
     sim.archived = null;
+    sim.qualifying = undefined;
   });
 
   it('keeps the finished session for a tab opened after the sim closes', () => {
@@ -128,5 +135,30 @@ describe('GantrySessionDataProvider', () => {
     closeSim(rerender, true);
 
     expect(screen.getByTestId('laps').textContent).toBe('none');
+  });
+
+  it('keeps qualifying results for the session that ended', () => {
+    sim.cursorSessionNum = 1;
+    sim.qualifying = [{ CarIdx: 0 }, { CarIdx: 1 }];
+    const { rerender } = render(view(true, true));
+    rerender(view(true, true));
+
+    closeSim(rerender, true);
+
+    expect(screen.getByTestId('qualifying').textContent).toBe('2');
+  });
+
+  it('drops the heat qualifying results once a race without any starts', () => {
+    sim.cursorSessionNum = 1;
+    sim.qualifying = [{ CarIdx: 0 }, { CarIdx: 1 }];
+    const { rerender } = render(view(true, true));
+    rerender(view(true, true));
+
+    sim.cursorSessionNum = 2;
+    sim.qualifying = undefined;
+    rerender(view(true, true));
+    closeSim(rerender, true);
+
+    expect(screen.getByTestId('qualifying').textContent).toBe('none');
   });
 });

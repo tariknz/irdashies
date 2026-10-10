@@ -67,12 +67,18 @@ export const GantrySessionDataProvider = ({
     useDriverStandings(STANDINGS_CONFIG, { showAll: true }),
     isEmptyStandings
   );
-  const qualifyingResults = useHeld(useQualifyingResults(), isEmptyResults);
 
   const liveSnapshot = useLapHistorySnapshot();
   const replayContext = useReplayContextSnapshot();
   const cursorSessionNum = useTrackStateSelector(
     trackStateSelectors.sessionNum
+  );
+  // Keyed by session: a feature race with no qualifying data must not inherit
+  // the heat before it once the sim closes.
+  const qualifyingResults = useHeld(
+    useQualifyingResults(),
+    isEmptyResults,
+    cursorSessionNum
   );
   const isReplayFile = replayContext.mode === 'replayFile';
   const isArchivedReplay =
