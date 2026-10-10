@@ -4,11 +4,28 @@ import { widgetItems } from '../frontend/components/Settings/menuItems';
 import { SIMULATOR_IDS } from './simulators';
 import {
   DEFAULT_SIM_WIDGET_SUPPORT,
+  LMU_DISABLED_WIDGETS,
+  LMU_SUPPORTED_WIDGETS,
   isWidgetDisabledForSim,
+  KNOWN_WIDGET_IDS,
   normalizeSimWidgetSupport,
+  normalizeSimWidgetSupportVerbose,
   widgetDisabledMessage,
   widgetIncompatibleLabel,
+  type SimWidgetSupportConfig,
 } from './simWidgetSupport';
+
+/**
+ * A config that actually disables something.
+ *
+ * The shipped defaults disable nothing for any simulator, so they cannot
+ * demonstrate the lookup -- these specs are about the function, not about
+ * which widgets happen to be listed today.
+ */
+const configured: SimWidgetSupportConfig = {
+  message: DEFAULT_SIM_WIDGET_SUPPORT.message,
+  disabledWidgets: { iracing: [], lmu: ['blindspotmonitor'] },
+};
 
 const config = DEFAULT_SIM_WIDGET_SUPPORT;
 
@@ -41,14 +58,42 @@ describe('per-simulator widget support', () => {
   });
 
   it('disables a widget only under the sim that lists it', () => {
-    expect(isWidgetDisabledForSim(config, 'blindspotmonitor', 'lmu')).toBe(
+    expect(isWidgetDisabledForSim(configured, 'blindspotmonitor', 'lmu')).toBe(
       true
     );
-    expect(isWidgetDisabledForSim(config, 'blindspotmonitor', 'iracing')).toBe(
+    expect(
+      isWidgetDisabledForSim(configured, 'blindspotmonitor', 'iracing')
+    ).toBe(false);
+    expect(isWidgetDisabledForSim(configured, 'standings', 'lmu')).toBe(false);
+    expect(isWidgetDisabledForSim(configured, 'standings', 'iracing')).toBe(
       false
     );
-    expect(isWidgetDisabledForSim(config, 'standings', 'lmu')).toBe(false);
-    expect(isWidgetDisabledForSim(config, 'standings', 'iracing')).toBe(false);
+  });
+
+  it('hides nothing under iRacing', () => {
+    // iRacing is the sim every widget is written against, so the list exists
+    // for the other direction only.
+    expect(config.disabledWidgets.iracing).toEqual([]);
+  });
+
+  it('hides everything under LMU that is not on its supported list', () => {
+    expect(config.disabledWidgets.lmu).toEqual([...LMU_DISABLED_WIDGETS]);
+    LMU_SUPPORTED_WIDGETS.forEach((id) => {
+      expect(isWidgetDisabledForSim(config, id, 'lmu')).toBe(false);
+    });
+    LMU_DISABLED_WIDGETS.forEach((id) => {
+      expect(isWidgetDisabledForSim(config, id, 'lmu')).toBe(true);
+    });
+  });
+
+  it('accounts for every widget in the build under LMU', () => {
+    // The guard that makes two hand-kept lists safe. A widget added to the app
+    // and to neither list would quietly appear under LMU unverified; one added
+    // to both would be hidden while claiming to be supported.
+    const all = Object.keys(WIDGET_MAP).sort();
+    const listed = [...LMU_SUPPORTED_WIDGETS, ...LMU_DISABLED_WIDGETS].sort();
+
+    expect(listed).toEqual(all);
   });
 
   it('disables nothing while no simulator is known', () => {
@@ -64,10 +109,10 @@ describe('per-simulator widget support', () => {
   });
 
   it('gives a message only for a widget that is actually disabled', () => {
-    expect(widgetDisabledMessage(config, 'blindspotmonitor', 'lmu')).toBe(
-      config.message
+    expect(widgetDisabledMessage(configured, 'blindspotmonitor', 'lmu')).toBe(
+      configured.message
     );
-    expect(widgetDisabledMessage(config, 'standings', 'lmu')).toBeNull();
+    expect(widgetDisabledMessage(configured, 'standings', 'lmu')).toBeNull();
   });
 
   it('names the sim in the toggle label', () => {
@@ -117,5 +162,58 @@ describe('per-simulator widget support', () => {
       normalizeSimWidgetSupport({ disabledWidgets: { iracing: [], lmu: [] } })
         .disabledWidgets.lmu
     ).toEqual([]);
+  });
+});
+
+describe('a hand-edited file with a mistake in it', () => {
+  it('knows every widget in the build', () => {
+    expect([...KNOWN_WIDGET_IDS].sort()).toEqual(
+      Object.keys(WIDGET_MAP).sort()
+    );
+  });
+
+  it('drops an id no widget answers to, and says which', () => {
+    // The mistake this exists for. Kept, it matched nothing and the widget it
+    // was meant to hide stayed on screen with nothing said anywhere.
+    const { config, problems } = normalizeSimWidgetSupportVerbose({
+      disabledWidgets: { iracing: [], lmu: ['fuelcalculator', 'carsystems'] },
+    });
+
+    expect(config.disabledWidgets.lmu).toEqual(['carsystems']);
+    expect(problems.unknownWidgets).toEqual([
+      { simulator: 'lmu', id: 'fuelcalculator' },
+    ]);
+  });
+
+  it('reports a section that is not a simulator', () => {
+    // Worth saying because the fallback is not "disable nothing": a simulator
+    // the file does not mention takes the shipped defaults instead.
+    const { config, problems } = normalizeSimWidgetSupportVerbose({
+      disabledWidgets: { iracing: [], LMU: ['carsystems'] },
+    });
+
+    expect(problems.unknownSimulators).toEqual(['LMU']);
+    expect(config.disabledWidgets.lmu).toEqual(
+      DEFAULT_SIM_WIDGET_SUPPORT.disabledWidgets.lmu
+    );
+  });
+
+  it('reports nothing when the file is correct', () => {
+    const { problems } = normalizeSimWidgetSupportVerbose({
+      disabledWidgets: { iracing: [], lmu: ['carsystems'] },
+    });
+
+    expect(problems.unknownWidgets).toEqual([]);
+    expect(problems.unknownSimulators).toEqual([]);
+  });
+
+  it('still disables nothing for an empty list', () => {
+    // An empty list is a deliberate choice, not a mistake.
+    const { config, problems } = normalizeSimWidgetSupportVerbose({
+      disabledWidgets: { iracing: [], lmu: [] },
+    });
+
+    expect(config.disabledWidgets.lmu).toEqual([]);
+    expect(problems.unknownWidgets).toEqual([]);
   });
 });

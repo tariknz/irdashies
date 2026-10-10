@@ -50,6 +50,20 @@ const commonTelemetryProperties = [
   { path: 'AirTemp', label: 'Air Temperature' },
   { path: 'TrackTemp', label: 'Track Temperature' },
   { path: 'TrackTempCrew', label: 'Track Temp (Crew)' },
+  // LMU only. Absent under iRacing, where they read N/A.
+  { path: 'LmuPitStopTime', label: 'LMU Pit Stop Time' },
+  { path: 'LmuRepairTime', label: 'LMU Repair Time' },
+  { path: 'LmuRefuelTarget', label: 'LMU Refuel Target' },
+  {
+    path: 'LmuRefuelTargetIsVirtualEnergy',
+    label: 'LMU Refuel Is Virtual Energy',
+  },
+  { path: 'LmuVirtualEnergy', label: 'LMU Virtual Energy' },
+  { path: 'LmuStateOfCharge', label: 'LMU State Of Charge' },
+  { path: 'LmuRegen', label: 'LMU Regen' },
+  { path: 'LmuBrakeWear', label: 'LMU Brake Wear' },
+  { path: 'LmuSuspensionDamage', label: 'LMU Suspension Damage' },
+  { path: 'LmuAeroDamage', label: 'LMU Aero Damage' },
 ];
 
 // Common session properties for quick add
@@ -61,6 +75,13 @@ const commonSessionProperties = [
   { path: 'WeekendInfo.EventType', label: 'Event Type' },
   { path: 'DriverInfo.DriverCarIdx', label: 'Driver Car Index' },
   { path: 'DriverInfo.DriverPitTrkPct', label: 'Pit Track %' },
+  // LMU only, from its REST API.
+  { path: 'DriverInfo.DriverCarFuelMaxLtr', label: 'Fuel Capacity (L)' },
+  { path: 'LmuRest.timeScale', label: 'LMU Time Scale' },
+  { path: 'LmuRest.maxVirtualEnergy', label: 'LMU Max Virtual Energy' },
+  { path: 'LmuRest.privateQualifying', label: 'LMU Private Qualifying' },
+  { path: 'LmuRest.fuelRatio', label: 'LMU Fuel Ratio (L per % VE)' },
+  { path: 'LmuRest.fuelLevelMax', label: 'LMU Fuel Slider Max (L)' },
 ];
 
 export const TelemetryInspectorSettings = () => {

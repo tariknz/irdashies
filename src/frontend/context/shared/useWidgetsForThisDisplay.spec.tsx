@@ -18,16 +18,21 @@ const main = vi.hoisted(() => ({
   support: undefined as SimWidgetSupportConfig | undefined,
 }));
 
+// One object, not a fresh literal per call: the real useDashboardBridge
+// returns the provider's bridge or window.dashboardBridge, both stable, and
+// the shared simulator store is keyed on that identity.
+const bridge = vi.hoisted(() => ({
+  getActiveSimulator: () => Promise.resolve(main.simulator),
+  getSimWidgetSupport: () => Promise.resolve(main.support),
+  onSimulatorChanged: () => () => undefined,
+}));
+
 vi.mock('../DashboardContext/DashboardContext', () => ({
   useDashboard: () => ({
     currentDashboard: { widgets: dashboard.widgets },
     containerBoundsInfo: dashboard.containerBoundsInfo,
   }),
-  useDashboardBridge: () => ({
-    getActiveSimulator: () => Promise.resolve(main.simulator),
-    getSimWidgetSupport: () => Promise.resolve(main.support),
-    onSimulatorChanged: () => () => undefined,
-  }),
+  useDashboardBridge: () => bridge,
 }));
 
 import {

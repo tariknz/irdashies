@@ -1,8 +1,15 @@
+import { LMU_CAR_ID_TO_MANUFACTURER } from '@irdashies/types';
+
 // Cars models
 export const CAR_ID_TO_CAR_MANUFACTURER: Record<
   number,
   { name: string; manufacturer: string }
 > = {
+  // Le Mans Ultimate's cars, whose ids are synthesised per manufacturer by the
+  // LMU session mapper. Spread from the shared table rather than copied, so
+  // the ids cannot drift away from the ones the mapper actually assigns --
+  // which is why none of them resolved to a badge before.
+  ...LMU_CAR_ID_TO_MANUFACTURER,
   1: { name: 'Skip Barber Formula 2000', manufacturer: 'skipbarber' },
   2: { name: 'Modified - SK', manufacturer: 'unknown' },
   3: { name: 'Pontiac Solstice', manufacturer: 'pontiac' },
