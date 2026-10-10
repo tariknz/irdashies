@@ -1,8 +1,10 @@
-import { render } from '@testing-library/react';
+import { render as rtlRender } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import { useLapTimesStoreUpdater } from '@irdashies/context';
 import { GantryStandings } from './GantryStandings';
+import { GantrySessionDataProvider } from '../../hooks/useGantrySessionData';
 import type { NameFormat } from '@irdashies/types';
 
 vi.mock('@irdashies/domain', () => ({
@@ -20,7 +22,24 @@ const dashboardMock = vi.hoisted(() => ({
 vi.mock('@irdashies/context', () => ({
   useLapTimesStoreUpdater: vi.fn(),
   useDashboard: () => ({ currentDashboard: dashboardMock.current }),
+  // Read by GantrySessionDataProvider for the lap graph; unused here.
+  trackStateSelectors: { sessionNum: () => null },
+  useTrackStateSelector: () => null,
+  useLapHistorySnapshot: () => undefined,
+  useReplayContextSnapshot: () => ({
+    mode: 'live',
+    provenance: 'none',
+    subSessionId: '',
+  }),
+  useArchivedLapHistory: () => null,
 }));
+
+vi.mock('@irdashies/domain/standings/useQualifyingGrid', () => ({
+  useQualifyingResults: () => undefined,
+}));
+
+const render = (ui: ReactElement) =>
+  rtlRender(ui, { wrapper: GantrySessionDataProvider });
 
 type StandingsByClass = ReturnType<typeof useDriverStandings>;
 type StandingsRow = StandingsByClass[number][1][number];

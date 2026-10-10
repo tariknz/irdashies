@@ -9,11 +9,12 @@ import {
   extractDriverName,
 } from '../../../shared/DriverName/DriverName';
 import { type Gap, useHighlightColor } from '@irdashies/domain';
-import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
-import { useLapTimesStoreUpdater } from '@irdashies/context';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { useGantrySettings } from '../../hooks/useGantrySettings';
-import { useHeld } from '../../hooks/useGantrySessionHold';
+import {
+  useGantrySessionData,
+  type GantrySessionData,
+} from '../../hooks/useGantrySessionData';
 import type { NameFormat } from '@irdashies/types';
 
 interface Props {
@@ -156,24 +157,9 @@ const formatInterval = (
   return interval.toFixed(1);
 };
 
-const isEmptyStandings = (standings: readonly unknown[]) =>
-  standings.length === 0;
-
 export const GantryStandings = memo(({ followedCarIdx }: Props) => {
-  useLapTimesStoreUpdater(true);
   const nameFormat = useGantrySettings()?.driverNameFormat ?? 'surname';
-  // Gap and interval are only calculated when the settings say they are
-  // enabled, so passing nothing leaves both columns empty. The cast is needed
-  // because the settings type marks these fields required.
-  const liveStandings = useDriverStandings(
-    {
-      gap: { enabled: true },
-      interval: { enabled: true },
-      lapTimeDeltas: { enabled: true, numLaps: 3 },
-    } as Parameters<typeof useDriverStandings>[0],
-    { showAll: true }
-  );
-  const standingsByClass = useHeld(liveStandings, isEmptyStandings);
+  const { standingsByClass } = useGantrySessionData();
   const followedRef = useRef<HTMLDivElement | null>(null);
 
   // Clicking a row points the sim's camera at that car. Only meaningful in a
@@ -257,7 +243,7 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
 GantryStandings.displayName = 'GantryStandings';
 
 interface GantryDriverRowProps {
-  driver: ReturnType<typeof useDriverStandings>[number][1][number];
+  driver: GantrySessionData['standingsByClass'][number][1][number];
   idx: number;
   followedCarIdx: number | null;
   followedRef: React.RefObject<HTMLDivElement | null>;
