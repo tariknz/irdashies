@@ -30,6 +30,12 @@ describe('sim registry', () => {
     expect(priorities).toEqual([...priorities].sort((a, b) => b - a));
   });
 
+  it('puts iRacing ahead of LMU, so it takes any auto-detect tie', () => {
+    const ids = getAvailableSimulators();
+    if (!ids.includes('lmu')) return;
+    expect(ids.indexOf('iracing')).toBeLessThan(ids.indexOf('lmu'));
+  });
+
   it('gives every definition a distinct id', () => {
     const ids = getAvailableSimulators();
     expect(new Set(ids).size).toBe(ids.length);

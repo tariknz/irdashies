@@ -53,7 +53,13 @@ export async function publishIRacingSDKEvents(
     perfMetrics.tick(telemetry);
   });
 
+  // The mock re-asserts the same running state every second. The real bridges
+  // publish only on a change, and consumers now include the settings window,
+  // so match them rather than broadcasting a boolean that never moves.
+  let lastRunningState: boolean | undefined;
   bridge.onRunningState((running) => {
+    if (running === lastRunningState) return;
+    lastRunningState = running;
     overlayManager.publishMessage('runningState', running);
   });
 
