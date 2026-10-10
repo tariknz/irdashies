@@ -2,7 +2,7 @@ import { useDashboard, useSessionTimeTiming } from '@irdashies/context';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import { racePhase } from '../Broadcast/broadcastRows';
 import { BroadcastEnter } from '../Broadcast/BroadcastEnter';
-import { useBroadcastPodiumSettings } from './hooks/useBroadcastPodiumSettings';
+import { useBroadcastConfig } from '../Broadcast/hooks/useBroadcastConfig';
 import { PodiumCard } from './PodiumCard';
 
 /**
@@ -11,7 +11,7 @@ import { PodiumCard } from './PodiumCard';
  */
 export const BroadcastPodium = () => {
   const { isDemoMode } = useDashboard();
-  const settings = useBroadcastPodiumSettings();
+  const settings = useBroadcastConfig('broadcastpodium');
   const { sessionType, state } = useSessionTimeTiming();
   const groups = useDriverStandings(undefined, { showAll: true });
 

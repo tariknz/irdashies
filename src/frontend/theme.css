@@ -510,7 +510,7 @@ html {
   --color-slate-950: var(--color-stone-950);
 }
 
-/* Broadcast tower page transitions, picked at random by the widget. */
+/* Broadcast transitions, chosen on the Broadcast settings page. */
 @keyframes broadcast-slide-left {
   from {
     transform: translateX(100%);

@@ -57,18 +57,18 @@ const StatusBadges = ({ standing }: { standing: Standings }) => (
     {standing.repair && (
       <span
         title="Repair"
-        className="relative size-3.5 rounded-full border-2 border-black bg-orange-500"
+        className="size-3.5 rounded-full border-2 border-black bg-orange-500"
       />
     )}
     {(standing.penalty || standing.slowdown) && (
       <FlagIcon
-        className="relative rounded-xs bg-black p-px text-white"
+        className="rounded-xs bg-black p-px text-white"
         size={14}
         weight="fill"
       />
     )}
     {standing.onPitRoad && (
-      <span className="relative flex size-4 items-center justify-center rounded-full border border-current text-[10px] not-italic leading-none">
+      <span className="flex size-4 items-center justify-center rounded-full border border-current text-[10px] not-italic leading-none">
         P
       </span>
     )}
@@ -97,39 +97,37 @@ export const DriverRow = ({
   return (
     <div
       className={[
-        'relative flex h-full items-center gap-1.5 pr-2 font-bold italic uppercase transition-opacity duration-500',
+        'flex h-full items-center gap-1.5 pr-2 font-bold italic uppercase transition-opacity duration-500',
         dimmed || standing.dnf ? 'opacity-40' : '',
         focused ? `${color} text-slate-900` : 'text-white',
       ].join(' ')}
     >
-      <span className={`relative w-6 ${positionStyle || 'text-right'}`}>
+      <span className={`w-6 ${positionStyle || 'text-right'}`}>
         {standing.classPosition}.
       </span>
       {/* Room for the PositionArrow, which sits outside the page flip. */}
       <span className="w-3" />
-      <span className="relative flex size-5 items-center justify-center rounded-xs bg-slate-700/80 text-sm">
+      <span className="flex size-5 items-center justify-center rounded-xs bg-slate-700/80 text-sm">
         {standing.carId !== undefined && (
           <CarManufacturer carId={standing.carId} />
         )}
       </span>
       <span
-        className={`relative w-8 rounded-xs text-center ${focused ? 'bg-slate-900 text-white' : `text-slate-900 ${color}`}`}
+        className={`w-8 rounded-xs text-center ${focused ? 'bg-slate-900 text-white' : `text-slate-900 ${color}`}`}
       >
         {standing.driver.carNum}
       </span>
       {standing.driver.flairId !== undefined && (
-        <span className="relative text-xs not-italic">
+        <span className="text-xs not-italic">
           <CountryFlag flairId={standing.driver.flairId} />
         </span>
       )}
-      <span className="relative flex-1 truncate">
+      <span className="flex-1 truncate">
         {driverName(standing, nameFormat)}
       </span>
-      {standing.radioActive && (
-        <MicrophoneIcon className="relative" size={12} weight="fill" />
-      )}
+      {standing.radioActive && <MicrophoneIcon size={12} weight="fill" />}
       <StatusBadges standing={standing} />
-      <span className="relative tabular-nums">
+      <span className="tabular-nums">
         {page.kind === 'gaps' && !dimmed && <GapCell standing={standing} />}
         {page.kind === 'gained' && (
           <GainedCell change={standing.positionChange} />

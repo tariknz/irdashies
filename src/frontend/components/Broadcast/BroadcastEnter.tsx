@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
-import { useBroadcastSettings } from './hooks/useBroadcastSettings';
+import { useBroadcastConfig } from './hooks/useBroadcastConfig';
 import { pickTransition, rowAnimation } from './towerPages';
 
 const CHECKER_COLUMNS = 8;
@@ -46,7 +46,7 @@ export const BroadcastEnter = ({
   style?: CSSProperties;
   children: ReactNode;
 }) => {
-  const mode = useBroadcastSettings()?.pageTransition;
+  const mode = useBroadcastConfig('broadcast')?.pageTransition;
   const [entry, setEntry] = useState(() => ({
     id,
     effect: pickTransition(mode),

@@ -24,7 +24,7 @@ import {
 } from '../shared/DriverName/DriverName';
 import { CarManufacturer } from '../shared/CarManufacturer/CarManufacturer';
 import { BroadcastEnter } from '../Broadcast/BroadcastEnter';
-import { useBroadcastEventsSettings } from './hooks/useBroadcastEventsSettings';
+import { useBroadcastConfig } from '../Broadcast/hooks/useBroadcastConfig';
 import {
   carEvents,
   demoEvent,
@@ -185,7 +185,7 @@ const DriverCard = ({
 
 export const BroadcastEvents = () => {
   const { isDemoMode } = useDashboard();
-  const settings = useBroadcastEventsSettings();
+  const settings = useBroadcastConfig('broadcastevents');
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
   const groups = useDriverStandings(undefined, { showAll: true });
   const byCarIdx = useMemo(

@@ -15,7 +15,7 @@ import type {
   StandingsWidgetSettings,
 } from '@irdashies/types';
 import { clampSetting } from '@irdashies/utils/clampSetting';
-import { useBroadcastSettings } from './hooks/useBroadcastSettings';
+import { useBroadcastConfig } from './hooks/useBroadcastConfig';
 import { usePageRotation } from './hooks/usePageRotation';
 import { usePositionChanges } from './hooks/usePositionChanges';
 import { buildBroadcastRows, findBattle, racePhase } from './broadcastRows';
@@ -38,7 +38,7 @@ const ordinal = (n: number) =>
   `${n}${['th', 'st', 'nd', 'rd'][n % 100 > 10 && n % 100 < 14 ? 0 : n % 10] ?? 'th'}`;
 
 export const Broadcast = () => {
-  const settings = useBroadcastSettings();
+  const settings = useBroadcastConfig('broadcast');
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
   const trackName = useTrackDisplayName();
   const groups = useDriverStandings(STANDINGS_OPTIONS, {
@@ -111,14 +111,14 @@ export const TowerView = ({
   const hasPits = standings.some((s) => s.lastPitLap);
   const pageMode = settings?.pageMode;
   const staticPage = settings?.staticPage;
-  const pageSet = JSON.stringify(settings?.pages ?? {});
+  const pageSet = settings?.pages;
   const pages = useMemo(
     () =>
       buildPages(
         {
           pageMode,
           staticPage,
-          pages: JSON.parse(pageSet) as BroadcastConfig['pages'],
+          pages: pageSet,
         },
         {
           classes: JSON.parse(classList) as [string, string][],

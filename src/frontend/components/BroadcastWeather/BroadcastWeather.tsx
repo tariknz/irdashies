@@ -1,11 +1,11 @@
 import { useSessionVisibility } from '@irdashies/context';
 import { clampSetting } from '@irdashies/utils/clampSetting';
-import { useBroadcastWeatherSettings } from './hooks/useBroadcastWeatherSettings';
+import { useBroadcastConfig } from '../Broadcast/hooks/useBroadcastConfig';
 import { WeatherCard } from './WeatherCard';
 
 /** Broadcast weather card, placed on its own next to the tower. */
 export const BroadcastWeather = () => {
-  const settings = useBroadcastWeatherSettings();
+  const settings = useBroadcastConfig('broadcastweather');
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
   if (!isSessionVisible) return null;
   return (

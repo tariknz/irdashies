@@ -15,7 +15,7 @@ import {
 } from '../shared/DriverName/DriverName';
 import { CarManufacturer } from '../shared/CarManufacturer/CarManufacturer';
 import { BroadcastEnter } from '../Broadcast/BroadcastEnter';
-import { useBroadcastTickerSettings } from './hooks/useBroadcastTickerSettings';
+import { useBroadcastConfig } from '../Broadcast/hooks/useBroadcastConfig';
 import { TICKER_MODES, tickerEntries, type TickerMode } from './tickerEntries';
 
 const MODE_LABELS: Record<TickerMode, string> = {
@@ -62,7 +62,7 @@ const Entry = ({
 );
 
 export const BroadcastTicker = () => {
-  const settings = useBroadcastTickerSettings();
+  const settings = useBroadcastConfig('broadcastticker');
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
   const teamRacing = !!useWeekendInfoTeamRacing();
   const groups = useDriverStandings(undefined, {

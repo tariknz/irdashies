@@ -104,7 +104,7 @@ export const BroadcastSettings = () => {
 
   return (
     <BaseSettingsSection
-      title="Broadcast"
+      title="Broadcast Tower"
       description="TV-style timing tower that cycles between names, per-class intervals with close battles, positions gained, pit laps and tyres, plus a card for the car on camera."
       settings={settings}
       onSettingsChange={setSettings}

@@ -72,7 +72,7 @@ const useTrackRubber = () =>
       )?.SessionTrackRubberState
   );
 
-export interface Popup {
+interface Popup {
   headline: string;
   id: number;
 }

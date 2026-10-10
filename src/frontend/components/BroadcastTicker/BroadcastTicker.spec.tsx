@@ -8,13 +8,13 @@ const standings = vi.hoisted(() => ({ cars: [] as unknown[] }));
 vi.mock('@irdashies/context', () => ({
   useSessionVisibility: () => true,
   useWeekendInfoTeamRacing: () => 0,
-  useDashboard: () => ({}),
 }));
 vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({
   useDriverStandings: () => [['1', standings.cars]],
 }));
-vi.mock('./hooks/useBroadcastTickerSettings', () => ({
-  useBroadcastTickerSettings: () => ({ secondsPerEntry: 2 }),
+vi.mock('../Broadcast/hooks/useBroadcastConfig', () => ({
+  useBroadcastConfig: (id: string) =>
+    id === 'broadcastticker' ? { secondsPerEntry: 2 } : undefined,
 }));
 vi.mock('../shared/CarManufacturer/CarManufacturer', () => ({
   CarManufacturer: () => null,
