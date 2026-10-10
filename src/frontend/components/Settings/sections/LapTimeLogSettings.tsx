@@ -9,11 +9,8 @@ import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
 import { SettingsSection } from '../components/SettingSection';
-import { SettingSliderRow } from '../components/SettingSliderRow';
-import { SettingToggleRow } from '../components/SettingToggleRow';
-import { SettingSelectRow } from '../components/SettingSelectRow';
-import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { SettingDivider } from '../components/SettingDivider';
+import { SettingProp, SettingProps } from '../components/SettingProp';
 
 const SETTING_ID = 'laptimelog';
 
@@ -53,296 +50,109 @@ export const LapTimeLogSettings = () => {
       widgetId={SETTING_ID}
     >
       {(handleConfigChange) => (
-        <div className="space-y-4">
-          {/* Tabs */}
-          <div className="flex border-b border-slate-700/50">
-            <TabButton
-              id="display"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Display
-            </TabButton>
-            <TabButton
-              id="options"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Options
-            </TabButton>
-            <TabButton
-              id="visibility"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Visibility
-            </TabButton>
-          </div>
+        <SettingProps
+          widget={SETTING_ID}
+          config={settings.config}
+          onChange={handleConfigChange}
+        >
+          <div className="space-y-4">
+            {/* Tabs */}
+            <div className="flex border-b border-slate-700/50">
+              <TabButton
+                id="display"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Display
+              </TabButton>
+              <TabButton
+                id="options"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Options
+              </TabButton>
+              <TabButton
+                id="visibility"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Visibility
+              </TabButton>
+            </div>
 
-          <div>
-            {/* DISPLAY TAB */}
-            {activeTab === 'display' && (
-              <>
-                <SettingsSection title="Display">
-                  <SettingToggleRow
-                    title="Show Current Lap"
-                    description="Display the live lap time for the current lap."
-                    enabled={settings.config.showCurrentLap ?? true}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showCurrentLap: newValue })
-                    }
-                  />
+            <div>
+              {/* DISPLAY TAB */}
+              {activeTab === 'display' && (
+                <>
+                  <SettingsSection title="Display">
+                    <SettingProp path="showCurrentLap" />
 
-                  <SettingToggleRow
-                    title="Show Predicted Lap"
-                    description="Show the current predicted lap based on the current delta time."
-                    enabled={settings.config.showPredictedLap ?? true}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showPredictedLap: newValue })
-                    }
-                  />
+                    <SettingProp path="showPredictedLap" />
 
-                  <SettingToggleRow
-                    title="Show Last Lap"
-                    description="Show the driver's last lap time."
-                    enabled={settings.config.showLastLap ?? true}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showLastLap: newValue })
-                    }
-                  />
+                    <SettingProp path="showLastLap" />
 
-                  <SettingToggleRow
-                    title="Show Session Best Lap"
-                    description="Show the driver's best lap time this session."
-                    enabled={settings.config.showBestLap ?? true}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showBestLap: newValue })
-                    }
-                  />
+                    <SettingProp path="showBestLap" />
 
-                  <SettingToggleRow
-                    title="Show Personal Best Lap"
-                    description="Shows the best lap time ever recorded by irDashies for the car and track combo."
-                    enabled={settings.config.showAllTimeLap ?? false}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showAllTimeLap: newValue })
-                    }
-                  />
+                    <SettingProp path="showAllTimeLap" />
 
-                  <SettingToggleRow
-                    title="Display Lap Delta"
-                    description="Choose which lap to base the delta calculation on. This can be the driver's last lap, best lap, or the overall session best lap."
-                    enabled={settings.config.delta?.enabled ?? true}
-                    onToggle={(v) =>
-                      handleConfigChange({
-                        ...settings.config,
-                        delta: {
-                          ...settings.config.delta,
-                          enabled: v,
-                        },
-                      })
-                    }
-                  />
+                    <SettingProp path="delta.enabled" />
 
-                  {settings.config.delta?.enabled && (
-                    <SettingsSection>
-                      <SettingButtonGroupRow<'lastlap' | 'bestlap'>
-                        title="Delta Calculation Base Lap"
-                        value={settings.config.delta?.method ?? 'bestlap'}
-                        options={[
-                          { label: 'Last Lap', value: 'lastlap' },
-                          { label: 'Best Lap', value: 'bestlap' },
-                        ]}
-                        onChange={(v) =>
-                          handleConfigChange({
-                            delta: {
-                              ...settings.config.delta,
-                              method: v,
-                            },
-                          })
-                        }
-                      />
-                    </SettingsSection>
-                  )}
+                    {settings.config.delta?.enabled && (
+                      <SettingsSection>
+                        <SettingProp path="delta.method" />
+                      </SettingsSection>
+                    )}
 
-                  <SettingToggleRow
-                    title="Show Lap History"
-                    description="Show the driver's lap history. You can configure how many to show below."
-                    enabled={settings.config.history?.enabled ?? true}
-                    onToggle={(v) =>
-                      handleConfigChange({
-                        ...settings.config,
-                        history: {
-                          ...settings.config.history,
-                          enabled: v,
-                        },
-                      })
-                    }
-                  />
+                    <SettingProp path="history.enabled" />
 
-                  {settings.config.history?.enabled && (
-                    <SettingsSection>
-                      <SettingButtonGroupRow<'list' | 'chart'>
-                        title="History Style"
-                        value={settings.config.history?.style ?? 'list'}
-                        options={[
-                          { label: 'List', value: 'list' },
-                          { label: 'Graph', value: 'chart' },
-                        ]}
-                        onChange={(v) =>
-                          handleConfigChange({
-                            ...settings.config,
-                            history: {
-                              ...settings.config.history,
-                              style: v,
-                            },
-                          })
-                        }
-                      />
+                    {settings.config.history?.enabled && (
+                      <SettingsSection>
+                        <SettingProp path="history.style" />
 
-                      <SettingSelectRow
-                        title="Number Of Laps To Show"
-                        value={(
-                          settings.config.history?.count ?? 10
-                        ).toString()}
-                        options={Array.from({ length: 20 }, (_, i) => {
-                          const num = i + 1;
-                          return {
-                            label: num.toString(),
-                            value: num.toString(),
-                          };
-                        })}
-                        onChange={(v) =>
-                          handleConfigChange({
-                            ...settings.config,
-                            history: {
-                              ...settings.config.history,
-                              count: parseInt(v),
-                            },
-                          })
-                        }
-                      />
+                        <SettingProp path="history.count" />
 
-                      <SettingToggleRow
-                        title="Hide Pitted Laps"
-                        description="Leave out laps where you pitted. They are much slower than a green lap, so they stretch the chart and pull the average away from your real pace."
-                        enabled={
-                          settings.config.history?.hidePittedLaps ?? false
-                        }
-                        onToggle={(v) =>
-                          handleConfigChange({
-                            ...settings.config,
-                            history: {
-                              ...settings.config.history,
-                              hidePittedLaps: v,
-                            },
-                          })
-                        }
-                      />
-                    </SettingsSection>
-                  )}
+                        <SettingProp path="history.hidePittedLaps" />
+                      </SettingsSection>
+                    )}
+                  </SettingsSection>
+                </>
+              )}
+
+              {/* OPTIONS TAB */}
+              {activeTab === 'options' && (
+                <SettingsSection title="Options">
+                  {/* Background Opacity */}
+                  <SettingProp path="background.opacity" />
+
+                  {/* Foreground Opacity */}
+                  <SettingProp path="foreground.opacity" />
+
+                  {/* Scale */}
+                  <SettingProp path="scale" />
+
+                  <SettingProp path="reverse" />
+
+                  <SettingProp path="alignment" />
                 </SettingsSection>
-              </>
-            )}
+              )}
 
-            {/* OPTIONS TAB */}
-            {activeTab === 'options' && (
-              <SettingsSection title="Options">
-                {/* Background Opacity */}
-                <SettingSliderRow
-                  title="Background Opacity"
-                  value={settings.config.background?.opacity ?? 30}
-                  units="%"
-                  min={0}
-                  max={100}
-                  step={5}
-                  onChange={(v) =>
-                    handleConfigChange({
-                      background: { opacity: v },
-                    })
-                  }
-                />
+              {/* VISIBILITY TAB */}
+              {activeTab === 'visibility' && (
+                <SettingsSection title="Session Visibility">
+                  <SessionVisibility
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
 
-                {/* Foreground Opacity */}
-                <SettingSliderRow
-                  title="Foreground Opacity"
-                  value={settings.config.foreground?.opacity ?? 30}
-                  units="%"
-                  min={0}
-                  max={100}
-                  step={5}
-                  onChange={(v) =>
-                    handleConfigChange({
-                      foreground: { opacity: v },
-                    })
-                  }
-                />
+                  <SettingDivider />
 
-                {/* Scale */}
-                <SettingSliderRow
-                  title="Scale"
-                  description="Adjust the size of the font by adjusting this widget's scale"
-                  value={settings.config.scale ?? 1}
-                  units="%"
-                  min={50}
-                  max={150}
-                  step={1}
-                  onChange={(v) =>
-                    handleConfigChange({
-                      scale: v,
-                    })
-                  }
-                />
-
-                <SettingToggleRow
-                  title="Reverse Order"
-                  description="Display the lap time elements in reverse order"
-                  enabled={settings.config.reverse ?? false}
-                  onToggle={(v) =>
-                    handleConfigChange({
-                      reverse: v,
-                    })
-                  }
-                />
-
-                <SettingButtonGroupRow<'top' | 'bottom'>
-                  title="Widget Alignment"
-                  value={settings.config.alignment ?? 'top'}
-                  options={[
-                    { label: 'Top', value: 'top' },
-                    { label: 'Bottom', value: 'bottom' },
-                  ]}
-                  onChange={(v) =>
-                    handleConfigChange({
-                      alignment: v,
-                    })
-                  }
-                />
-              </SettingsSection>
-            )}
-
-            {/* VISIBILITY TAB */}
-            {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-
-                <SettingDivider />
-
-                <SettingToggleRow
-                  title="Show only when on track"
-                  description="If enabled, lap times will only be shown when driving"
-                  enabled={settings.config.showOnlyWhenOnTrack ?? true}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                  }
-                />
-              </SettingsSection>
-            )}
+                  <SettingProp path="showOnlyWhenOnTrack" />
+                </SettingsSection>
+              )}
+            </div>
           </div>
-        </div>
+        </SettingProps>
       )}
     </BaseSettingsSection>
   );

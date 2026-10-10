@@ -11,9 +11,8 @@ import { useFasterCarsSettings } from '../../FasterCarsFromBehind/hooks/useFaste
 import { TabButton } from '../components/TabButton';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingDivider } from '../components/SettingDivider';
-import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingSliderRow } from '../components/SettingSliderRow';
-import { SettingSelectRow } from '../components/SettingSelectRow';
+import { SettingProp, SettingProps } from '../components/SettingProp';
 
 const SETTING_ID = 'fastercarsfrombehind';
 
@@ -51,187 +50,126 @@ export const FasterCarsFromBehindSettings = () => {
       widgetId="fastercarsfrombehind"
     >
       {(handleConfigChange) => (
-        <div className="space-y-4">
-          {/* Tabs */}
-          <div className="flex border-b border-slate-700/50">
-            <TabButton
-              id="display"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Display
-            </TabButton>
-            <TabButton
-              id="visibility"
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            >
-              Visibility
-            </TabButton>
-          </div>
+        <SettingProps
+          widget={SETTING_ID}
+          config={settings.config}
+          onChange={handleConfigChange}
+        >
+          <div className="space-y-4">
+            {/* Tabs */}
+            <div className="flex border-b border-slate-700/50">
+              <TabButton
+                id="display"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Display
+              </TabButton>
+              <TabButton
+                id="visibility"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Visibility
+              </TabButton>
+            </div>
 
-          <div>
-            {/* DISPLAY TAB */}
-            {activeTab === 'display' && (
-              <SettingsSection title="Display">
-                {/* Distance Threshold */}
-                <SettingSliderRow
-                  title="Distance Threshold"
-                  description="Minimum gap to a faster car before it is displayed. Smaller values
+            <div>
+              {/* DISPLAY TAB */}
+              {activeTab === 'display' && (
+                <SettingsSection title="Display">
+                  {/* Distance Threshold */}
+                  <SettingSliderRow
+                    title="Distance Threshold"
+                    description="Minimum gap to a faster car before it is displayed. Smaller values
                     show cars that are closer behind you."
-                  value={Math.abs(settings.config.distanceThreshold)}
-                  units="seconds"
-                  min={0.3}
-                  max={20}
-                  step={0.1}
-                  onChange={(v) => handleConfigChange({ distanceThreshold: v })}
-                />
+                    value={Math.abs(settings.config.distanceThreshold)}
+                    units="seconds"
+                    min={0.3}
+                    max={20}
+                    step={0.1}
+                    onChange={(v) =>
+                      handleConfigChange({ distanceThreshold: v })
+                    }
+                  />
 
-                {/* Show Distance Section */}
-                <SettingToggleRow
-                  title="Show Distance"
-                  description="Display the distance to the faster car."
-                  enabled={settings.config.showDistance ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showDistance: newValue })
-                  }
-                />
+                  {/* Show Distance Section */}
+                  <SettingProp path="showDistance" />
 
-                {/* Show Name Section */}
-                <SettingToggleRow
-                  title="Show Name"
-                  description="Display the driver name in the faster cars widget."
-                  enabled={settings.config.showName ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showName: newValue })
-                  }
-                />
+                  {/* Show Name Section */}
+                  <SettingProp path="showName" />
 
-                {settings.config.showName && (
-                  <SettingsSection>
-                    <SettingToggleRow
-                      title="Remove Numbers From Names"
-                      description="Remove numbers from the displayed driver name."
-                      enabled={settings.config.removeNumbersFromName ?? false}
-                      onToggle={(newValue) =>
-                        handleConfigChange({ removeNumbersFromName: newValue })
-                      }
-                    />
-                  </SettingsSection>
-                )}
+                  {settings.config.showName && (
+                    <SettingsSection>
+                      <SettingProp path="removeNumbersFromName" />
+                    </SettingsSection>
+                  )}
 
-                {/* Show Badge Section */}
-                <SettingToggleRow
-                  title="Show Driver Badge"
-                  description="Display the driver license and iRating badge."
-                  enabled={settings.config.showBadge ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showBadge: newValue })
-                  }
-                />
+                  {/* Show Badge Section */}
+                  <SettingProp path="showBadge" />
 
-                {/* Badge Format Selector */}
-                {settings.config.showBadge && (
-                  <div className="mt-3">
-                    <div className="flex flex-wrap gap-3 justify-end">
-                      {(
-                        [
-                          'license-color-fullrating-combo',
-                          'fullrating-color-no-license',
-                          'rating-color-no-license',
-                          'license-color-fullrating-bw',
-                          'license-color-rating-bw',
-                          'rating-only-color-rating-bw',
-                          'license-color-rating-bw-no-license',
-                          'license-bw-rating-bw',
-                          'rating-only-bw-rating-bw',
-                          'license-bw-rating-bw-no-license',
-                          'rating-bw-no-license',
-                          'fullrating-bw-no-license',
-                        ] as const
-                      ).map((format) => (
-                        <BadgeFormatPreview
-                          key={format}
-                          format={format}
-                          selected={settings.config.badgeFormat === format}
-                          onClick={() => {
-                            handleConfigChange({
-                              badgeFormat: format,
-                            });
-                          }}
-                        />
-                      ))}
+                  {/* Badge Format Selector */}
+                  {settings.config.showBadge && (
+                    <div className="mt-3">
+                      <div className="flex flex-wrap gap-3 justify-end">
+                        {(
+                          [
+                            'license-color-fullrating-combo',
+                            'fullrating-color-no-license',
+                            'rating-color-no-license',
+                            'license-color-fullrating-bw',
+                            'license-color-rating-bw',
+                            'rating-only-color-rating-bw',
+                            'license-color-rating-bw-no-license',
+                            'license-bw-rating-bw',
+                            'rating-only-bw-rating-bw',
+                            'license-bw-rating-bw-no-license',
+                            'rating-bw-no-license',
+                            'fullrating-bw-no-license',
+                          ] as const
+                        ).map((format) => (
+                          <BadgeFormatPreview
+                            key={format}
+                            format={format}
+                            selected={settings.config.badgeFormat === format}
+                            onClick={() => {
+                              handleConfigChange({
+                                badgeFormat: format,
+                              });
+                            }}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                <SettingSelectRow
-                  title="Drivers Behind"
-                  value={(settings.config.numberDriversBehind ?? 1).toString()}
-                  options={Array.from({ length: 10 }, (_, i) => {
-                    const num = i + 1;
-                    return { label: num.toString(), value: num.toString() };
-                  })}
-                  onChange={(v) =>
-                    handleConfigChange({ numberDriversBehind: parseInt(v) })
-                  }
-                />
+                  <SettingProp path="numberDriversBehind" />
 
-                <SettingSelectRow<'Top' | 'Bottom'>
-                  title="Align Driver Boxes"
-                  value={settings.config.alignDriverBoxes ?? 'Top'}
-                  options={[
-                    { label: 'Align to Top of Widget', value: 'Top' },
-                    { label: 'Align to Bottom of Widget', value: 'Bottom' },
-                  ]}
-                  onChange={(v) => handleConfigChange({ alignDriverBoxes: v })}
-                />
+                  <SettingProp path="alignDriverBoxes" />
 
-                <SettingSelectRow<'Top' | 'Reverse'>
-                  title="Closest Driver"
-                  value={settings.config.closestDriverBox ?? 'Top'}
-                  options={[
-                    { label: 'Closest Driver at Top', value: 'Top' },
-                    { label: 'Closest Driver at Bottom', value: 'Reverse' },
-                  ]}
-                  onChange={(v) => handleConfigChange({ closestDriverBox: v })}
-                />
+                  <SettingProp path="closestDriverBox" />
 
-                {/* Only Show Faster Classes Section */}
-                <SettingToggleRow
-                  title="Only show faster classes"
-                  description="If enabled, only cars from faster classes will be shown.
-                      Same-class competitors will be hidden."
-                  enabled={settings.config.onlyShowFasterClasses ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ onlyShowFasterClasses: newValue })
-                  }
-                />
-              </SettingsSection>
-            )}
+                  {/* Only Show Faster Classes Section */}
+                  <SettingProp path="onlyShowFasterClasses" />
+                </SettingsSection>
+              )}
 
-            {/* VISIBILITY TAB */}
-            {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
+              {/* VISIBILITY TAB */}
+              {activeTab === 'visibility' && (
+                <SettingsSection title="Session Visibility">
+                  <SessionVisibility
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
 
-                <SettingDivider />
+                  <SettingDivider />
 
-                <SettingToggleRow
-                  title="Show only when on track"
-                  description="If enabled, faster cars will only be shown when driving"
-                  enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                  }
-                />
-              </SettingsSection>
-            )}
+                  <SettingProp path="showOnlyWhenOnTrack" />
+                </SettingsSection>
+              )}
+            </div>
           </div>
-        </div>
+        </SettingProps>
       )}
     </BaseSettingsSection>
   );

@@ -38,4 +38,121 @@ export default defineWidgetManifest({
       offlineTesting: true,
     },
   },
+  properties: {
+    approachDistance: {
+      type: 'number',
+      label: 'Approach Distance',
+      min: 100,
+      max: 500,
+      step: 10,
+      units: 'm',
+    },
+    showSpeedSummary: {
+      type: 'boolean',
+      label: 'Show Speed Summary',
+      description: 'Show summary of speed delta, speed unit and speed limit',
+    },
+    showSpeedDelta: {
+      type: 'boolean',
+      label: 'Show Speed Delta',
+      description: 'Show speed delta plus/minus the speed limit',
+    },
+    speedLimitStyle: {
+      type: 'enum',
+      label: 'Speed Limit Style',
+      options: [
+        { value: 'none', label: 'None' },
+        { value: 'text', label: 'Text' },
+        { value: 'european', label: 'European' },
+        { value: 'american', label: 'American' },
+      ],
+    },
+    speedUnit: {
+      type: 'enum',
+      label: 'Speed Unit',
+      options: [
+        { value: 'auto', label: 'Auto' },
+        { value: 'mph', label: 'MPH' },
+        { value: 'km/h', label: 'KM/H' },
+      ],
+    },
+    showSpeedBar: {
+      type: 'boolean',
+      label: 'Speed Bar',
+      description: 'Show bar indicating speed relative to pit limit',
+    },
+    speedBarOrientation: {
+      type: 'enum',
+      label: 'Speed Bar Orientation',
+      options: [
+        { value: 'horizontal', label: 'Horizontal' },
+        { value: 'vertical', label: 'Vertical' },
+      ],
+    },
+    showProgressBar: {
+      type: 'boolean',
+      label: 'Progress Bar',
+      description: 'Show bar indicating distance to pit box',
+    },
+    progressBarOrientation: {
+      type: 'enum',
+      label: 'Progress Bar Orientation',
+      options: [
+        { value: 'horizontal', label: 'Horizontal' },
+        { value: 'vertical', label: 'Vertical' },
+      ],
+    },
+    showPastPitBox: {
+      type: 'boolean',
+      label: 'Show Past Box',
+      description: 'Show bar indicating distance past the pit box',
+    },
+    'background.opacity': {
+      type: 'number',
+      label: 'Background Opacity',
+      min: 0,
+      max: 100,
+      step: 1,
+      units: '%',
+    },
+    enablePitLimiterWarning: {
+      type: 'boolean',
+      label: 'Pit Limiter Warning',
+      description: 'Flash warning if entering pit without limiter',
+    },
+    showPitlaneTraffic: {
+      type: 'boolean',
+      label: 'Show Pitlane Traffic',
+      description: 'Display count of cars ahead/behind in pitlane',
+    },
+    enableEarlyPitboxWarning: {
+      type: 'boolean',
+      label: 'Early Pitbox Warning',
+      description: 'Alert when pitbox is near pit entry',
+    },
+    earlyPitboxThreshold: {
+      type: 'number',
+      label: 'Early Warning Threshold',
+      description: 'Distance from pitbox to trigger warning (meters)',
+      min: 25,
+      max: 300,
+      step: 10,
+      units: 'm',
+    },
+    showPitExitInputs: {
+      type: 'boolean',
+      label: 'Show Pit Exit Inputs',
+      description: 'Display throttle/clutch bars for pit exit',
+    },
+    showInputsPhase: {
+      type: 'enum',
+      label: 'When to Show',
+      options: [
+        { value: 'atPitbox', label: 'At Pitbox' },
+        { value: 'afterPitbox', label: 'After Pitbox' },
+        { value: 'always', label: 'Always (on pit road)' },
+      ],
+      control: 'select',
+    },
+  },
 });
