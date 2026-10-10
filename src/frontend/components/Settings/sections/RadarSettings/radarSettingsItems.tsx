@@ -115,7 +115,10 @@ const slider = (
   key: NumberKey,
   hidden?: RadarSettingItem['hidden']
 ): RadarSettingItem => {
-  const { label, description, min, max, step, units } = specOf(key, 'number');
+  const spec = specOf(key, 'number');
+  if (spec.control === 'input')
+    throw new Error(`radar: ${key} is not a slider`);
+  const { label, description, min, max, step, units } = spec;
   return {
     id: key,
     level,

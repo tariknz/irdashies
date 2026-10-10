@@ -14,8 +14,16 @@ interface PropertyBase {
 export type PropertySpec =
   | (PropertyBase & {
       type: 'number';
-      /** 'slider' (default) or a typed number input. */
-      control?: 'slider' | 'input';
+      control?: 'slider';
+      min: number;
+      max: number;
+      step?: number;
+      units?: string;
+    })
+  /** A typed number input; limits are optional. */
+  | (PropertyBase & {
+      type: 'number';
+      control: 'input';
       min?: number;
       max?: number;
       step?: number;
