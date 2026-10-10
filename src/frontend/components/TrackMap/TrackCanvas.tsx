@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
 import tracks from '@irdashies/domain/track/tracks/tracks.json';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
+import { validateImageDataUrl } from '@irdashies/utils/imageDataUrl';
 import { shouldShowTrack } from '@irdashies/domain/track/tracks/brokenTracks';
 import { TrackDebug } from './TrackDebug';
 import { useStartFinishLine } from './hooks/useStartFinishLine';
@@ -127,10 +128,14 @@ export const TrackCanvas = ({
   sectors,
   sectorColors,
   currentSectorIdx,
-  playerIconDataUrl = null,
+  playerIconDataUrl: rawPlayerIconDataUrl = null,
   driverLivePositions = {},
   maxFps,
 }: TrackProps) => {
+  const playerIconDataUrl = useMemo(
+    () => validateImageDataUrl(rawPlayerIconDataUrl),
+    [rawPlayerIconDataUrl]
+  );
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const debounceResizeRef = useRef<ReturnType<typeof setTimeout> | undefined>(
