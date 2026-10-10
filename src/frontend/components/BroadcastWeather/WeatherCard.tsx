@@ -14,6 +14,7 @@ import {
   RAIN_STOP,
   type WeatherSample,
 } from './weatherChange';
+import { BroadcastEnter } from '../Broadcast/BroadcastEnter';
 
 const WETNESS_LABELS = [
   '-',
@@ -192,9 +193,9 @@ export const WeatherCard = ({
   if (!popup || !sample) return null;
 
   return (
-    <div
-      key={popup.id}
-      className="animate-broadcast-enter overflow-hidden rounded-sm bg-slate-950/(--bg-opacity) text-white"
+    <BroadcastEnter
+      id={popup.id}
+      className="overflow-hidden rounded-sm bg-slate-950/(--bg-opacity) text-white"
     >
       <div className="flex justify-between bg-linear-to-r from-sky-700 to-slate-900 px-2 py-0.5 font-bold italic uppercase">
         <span>Weather</span>
@@ -226,6 +227,6 @@ export const WeatherCard = ({
           )}
         </div>
       </div>
-    </div>
+    </BroadcastEnter>
   );
 };

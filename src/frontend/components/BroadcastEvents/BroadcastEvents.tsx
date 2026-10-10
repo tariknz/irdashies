@@ -23,6 +23,7 @@ import {
   extractDriverName,
 } from '../shared/DriverName/DriverName';
 import { CarManufacturer } from '../shared/CarManufacturer/CarManufacturer';
+import { BroadcastEnter } from '../Broadcast/BroadcastEnter';
 import { useBroadcastEventsSettings } from './hooks/useBroadcastEventsSettings';
 import {
   carEvents,
@@ -274,9 +275,9 @@ export const BroadcastEvents = () => {
   const hasCar = current.carIdx !== undefined || !!current.carNumber;
 
   return (
-    <div
-      key={current.id}
-      className="w-full animate-broadcast-enter overflow-hidden rounded-sm bg-slate-950/(--bg-opacity) text-white shadow-lg"
+    <BroadcastEnter
+      id={current.id}
+      className="w-full overflow-hidden rounded-sm bg-slate-950/(--bg-opacity) text-white shadow-lg"
       style={{
         ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 90}%`,
       }}
@@ -296,6 +297,6 @@ export const BroadcastEvents = () => {
         {style.title}
       </div>
       {hasCar && <DriverCard event={current} standing={standing} />}
-    </div>
+    </BroadcastEnter>
   );
 };

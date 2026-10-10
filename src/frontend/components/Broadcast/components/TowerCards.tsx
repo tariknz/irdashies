@@ -24,7 +24,7 @@ export const BattleCard = ({
   standing: Standings;
   showGap: boolean;
 }) => (
-  <div className="animate-broadcast-enter">
+  <div>
     <div className="flex h-12 items-center justify-center bg-slate-800/(--bg-opacity) text-[2.5rem]">
       {standing.carId !== undefined && (
         <CarManufacturer carId={standing.carId} />
@@ -49,7 +49,7 @@ export const FocusCard = ({ standing }: { standing: Standings }) => {
   const speed = useCarIdxSpeed()[standing.carIdx];
   const displayUnits = useSessionBarSelector(sessionBarSelectors.displayUnits);
   return (
-    <div className="animate-broadcast-enter overflow-hidden rounded-sm bg-slate-950/(--bg-opacity) text-white">
+    <div className="overflow-hidden rounded-sm bg-slate-950/(--bg-opacity) text-white">
       <div
         className={`flex items-center justify-between px-2 py-0.5 text-sm font-bold italic uppercase text-slate-900 ${classColor(standing.carClass.color)}`}
       >

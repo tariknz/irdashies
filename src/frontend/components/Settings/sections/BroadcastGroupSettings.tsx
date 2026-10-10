@@ -5,6 +5,9 @@ import { BroadcastSettings } from './BroadcastSettings';
 import { BroadcastTickerSettings } from './BroadcastTickerSettings';
 import { BroadcastEventsSettings } from './BroadcastEventsSettings';
 import { BroadcastWeatherSettings } from './BroadcastWeatherSettings';
+import { BroadcastPodiumSettings } from './BroadcastPodiumSettings';
+import { SettingSelectRow } from '../components/SettingSelectRow';
+import type { BroadcastTransition } from '@irdashies/types';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 
 /**
@@ -29,10 +32,27 @@ const MODULES = [
     label: 'Weather',
     Section: BroadcastWeatherSettings,
   },
+  {
+    type: 'broadcastpodium',
+    label: 'Podium',
+    Section: BroadcastPodiumSettings,
+  },
 ] as const;
 
 type BroadcastModuleType = (typeof MODULES)[number]['type'];
 const MODULE_TYPES: readonly string[] = MODULES.map((m) => m.type);
+
+const TRANSITION_OPTIONS: { label: string; value: BroadcastTransition }[] = [
+  { label: 'Random', value: 'random' },
+  { label: 'Slide Left', value: 'slide-left' },
+  { label: 'Slide Right', value: 'slide-right' },
+  { label: 'Slide Up', value: 'slide-up' },
+  { label: 'Fade', value: 'fade-in' },
+  { label: 'Flip', value: 'flip' },
+  { label: 'Wipe', value: 'wipe' },
+  { label: 'Zoom', value: 'zoom' },
+  { label: 'Checker', value: 'checker' },
+];
 
 export const BroadcastGroupSettings = ({
   active,
@@ -64,6 +84,23 @@ export const BroadcastGroupSettings = ({
       ),
     });
   };
+  // One transition for every module. It is kept in the tower config, where it
+  // started out, so saved dashboards need no migration.
+  const tower = currentDashboard?.widgets.find((w) => w.id === 'broadcast');
+  const transition =
+    (tower?.config?.pageTransition as BroadcastTransition | undefined) ??
+    'random';
+  const setTransition = (pageTransition: BroadcastTransition) => {
+    if (!currentDashboard || !onDashboardUpdated) return;
+    onDashboardUpdated({
+      ...currentDashboard,
+      widgets: currentDashboard.widgets.map((w) =>
+        w.id === 'broadcast'
+          ? { ...w, config: { ...w.config, pageTransition } }
+          : w
+      ),
+    });
+  };
   const { Section } = MODULES.find((m) => m.type === active) ?? MODULES[0];
 
   return (
@@ -74,6 +111,15 @@ export const BroadcastGroupSettings = ({
           label="All modules"
           enabled={anyEnabled}
           onToggle={setAllEnabled}
+        />
+      </div>
+      <div className="mb-4 flex-none">
+        <SettingSelectRow<BroadcastTransition>
+          title="Transition"
+          description="How every module animates: tower page changes, ticker views, and events, weather and podium cards popping up. Random never uses the same one twice in a row."
+          value={transition}
+          options={TRANSITION_OPTIONS}
+          onChange={setTransition}
         />
       </div>
       <nav className="mb-4 flex flex-none border-b border-slate-700">

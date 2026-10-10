@@ -8,6 +8,7 @@ const standings = vi.hoisted(() => ({ cars: [] as unknown[] }));
 vi.mock('@irdashies/context', () => ({
   useSessionVisibility: () => true,
   useWeekendInfoTeamRacing: () => 0,
+  useDashboard: () => ({}),
 }));
 vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({
   useDriverStandings: () => [['1', standings.cars]],

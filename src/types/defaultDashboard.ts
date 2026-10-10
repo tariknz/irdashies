@@ -1367,6 +1367,19 @@ export const defaultDashboard: {
       },
     },
     {
+      id: 'broadcastpodium',
+      enabled: false,
+      layout: {
+        x: 320,
+        y: 180,
+        width: 320,
+        height: 400,
+      },
+      config: {
+        background: { opacity: 90 },
+      },
+    },
+    {
       id: 'broadcastticker',
       enabled: false,
       layout: {

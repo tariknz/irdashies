@@ -1,9 +1,9 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import type { Standings } from '@irdashies/domain';
-import { GridCard } from './PhaseScreens';
+import { PodiumCard } from './PodiumCard';
 
 export default {
-  title: 'widgets/Broadcast/PhaseScreens',
+  title: 'widgets/BroadcastPodium',
 } as Meta;
 
 type Story = StoryObj;
@@ -56,6 +56,6 @@ const frame = (children: React.ReactNode) => (
   </div>
 );
 
-export const Grid: Story = {
-  render: () => frame(<GridCard groups={groups} perClass={4} />),
+export const Podium: Story = {
+  render: () => frame(<PodiumCard groups={groups} />),
 };

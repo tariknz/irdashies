@@ -71,6 +71,7 @@ export const widgetItems: MenuItem[] = [
       'broadcastticker',
       'broadcastevents',
       'broadcastweather',
+      'broadcastpodium',
     ],
   },
   {
@@ -92,6 +93,13 @@ export const widgetItems: MenuItem[] = [
     path: '/broadcastweather',
     label: 'Broadcast Weather',
     widgetType: 'broadcastweather',
+    hideInMenu: true,
+  },
+  {
+    to: '/settings/broadcastpodium',
+    path: '/broadcastpodium',
+    label: 'Broadcast Podium',
+    widgetType: 'broadcastpodium',
     hideInMenu: true,
   },
   {

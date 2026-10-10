@@ -118,6 +118,7 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
     case 'broadcastticker':
     case 'broadcastevents':
     case 'broadcastweather':
+    case 'broadcastpodium':
       return <BroadcastGroupSettings active={type} />;
     case 'gantry':
       return <GantrySettings />;

@@ -15,9 +15,10 @@ import { useBroadcastSettings } from './hooks/useBroadcastSettings';
 import { usePageRotation } from './hooks/usePageRotation';
 import { usePositionChanges } from './hooks/usePositionChanges';
 import { buildBroadcastRows, findBattle, racePhase } from './broadcastRows';
-import { GridCard, PodiumCard } from './components/PhaseScreens';
+import { GridCard } from './components/PhaseScreens';
 import { THEMES, TowerHeader } from './components/TowerHeader';
-import { CheckerOverlay, ClassHeader, DriverRow } from './components/TowerRows';
+import { ClassHeader, DriverRow, PositionArrow } from './components/TowerRows';
+import { BroadcastEnter, CheckerOverlay } from './BroadcastEnter';
 import { BattleCard, FocusCard } from './components/TowerCards';
 import { ROW_HEIGHT, rowAnimation, type Page } from './towerPages';
 
@@ -88,10 +89,10 @@ export const Broadcast = () => {
       : undefined;
   const focus = standings.find((s) => s.carIdx === focusCarIdx);
   const { sessionType, state: sessionState } = useSessionTimeTiming();
-  const phase =
-    settings?.phaseScreens !== false
-      ? racePhase(sessionType, sessionState)
-      : undefined;
+  // The podium after the flag is its own module, Broadcast Podium.
+  const showGrid =
+    settings?.phaseScreens !== false &&
+    racePhase(sessionType, sessionState) === 'grid';
   const nameFormat = settings?.driverNameFormat ?? 'surname';
   const theme = settings?.theme ?? 'imsa';
   const look = THEMES[theme] ?? THEMES.imsa;
@@ -133,19 +134,6 @@ export const Broadcast = () => {
                   transform: `translateY(${index * ROW_HEIGHT}px)`,
                 }}
               >
-                {/* A car that just moved glows green (gained) or red (lost),
-                    then fades. Kept outside the page transition so it never
-                    replays. */}
-                {change && row.kind === 'driver' && (
-                  <span
-                    key={change.seq}
-                    className={`absolute inset-y-0.5 right-0 left-0 animate-broadcast-fade rounded-xs ${
-                      change.delta > 0
-                        ? 'bg-green-500/35 shadow-[0_0_12px_2px_rgba(34,197,94,0.8)]'
-                        : 'bg-red-500/35 shadow-[0_0_12px_2px_rgba(239,68,68,0.8)]'
-                    }`}
-                  />
-                )}
                 <div
                   key={tick}
                   className="relative h-full"
@@ -163,28 +151,38 @@ export const Broadcast = () => {
                     />
                   )}
                 </div>
+                {change && (
+                  <PositionArrow key={change.seq} delta={change.delta} />
+                )}
               </div>
             );
           })}
           {effect === 'checker' && (
-            <CheckerOverlay key={tick} rowCount={rows.length} />
+            <CheckerOverlay key={tick} rows={rows.length} />
           )}
         </div>
         {battle && page.kind === 'gaps' && (
-          <div key={`${battle[0].carIdx}-${battle[1].carIdx}`}>
+          <BroadcastEnter
+            id={`${tick}-${battle[0].carIdx}-${battle[1].carIdx}`}
+          >
             <div className="border-t-2 border-white/10 px-2 py-0.5 font-bold italic text-white uppercase">
               {page.className} battle for{' '}
               {ordinal(battle[0].classPosition ?? 0)}
             </div>
             <BattleCard standing={battle[0]} showGap={false} />
             <BattleCard standing={battle[1]} showGap />
-          </div>
+          </BroadcastEnter>
         )}
       </div>
-      {phase === 'grid' && <GridCard groups={groups} perClass={perClass} />}
-      {phase === 'podium' && <PodiumCard groups={groups} />}
+      {showGrid && (
+        <BroadcastEnter id="grid">
+          <GridCard groups={groups} perClass={perClass} />
+        </BroadcastEnter>
+      )}
       {settings?.showFocusCard !== false && focus && (
-        <FocusCard key={focus.carIdx} standing={focus} />
+        <BroadcastEnter id={focus.carIdx}>
+          <FocusCard standing={focus} />
+        </BroadcastEnter>
       )}
     </div>
   );

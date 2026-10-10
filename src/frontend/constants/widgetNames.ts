@@ -38,6 +38,7 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   broadcastticker: 'Broadcast Ticker',
   broadcastevents: 'Broadcast Events',
   broadcastweather: 'Broadcast Weather',
+  broadcastpodium: 'Broadcast Podium',
 };
 
 /**

@@ -1261,7 +1261,7 @@ export interface BroadcastConfig {
   pageTransition: BroadcastTransition;
   /** Lower-third card for the car the camera is on. */
   showFocusCard: boolean;
-  /** Starting grid before the green flag, podium after the checkered. */
+  /** Starting grid before the green flag (the podium is its own widget). */
   phaseScreens: boolean;
   driverNameFormat: NameFormat;
   sessionVisibility: SessionVisibilitySettings;
@@ -1282,6 +1282,14 @@ export interface BroadcastWeatherConfig {
 
 export type BroadcastWeatherWidgetSettings =
   BaseWidgetSettings<BroadcastWeatherConfig>;
+
+/** Podium of each class after the checkered flag of a race. */
+export interface BroadcastPodiumConfig {
+  background: { opacity: number };
+}
+
+export type BroadcastPodiumWidgetSettings =
+  BaseWidgetSettings<BroadcastPodiumConfig>;
 
 /** Scrolling bottom-of-screen ticker that cycles standings views. */
 export interface BroadcastTickerConfig {
@@ -1366,6 +1374,7 @@ export interface WidgetConfigMap {
   broadcastticker: BroadcastTickerConfig;
   broadcastevents: BroadcastEventsConfig;
   broadcastweather: BroadcastWeatherConfig;
+  broadcastpodium: BroadcastPodiumConfig;
 }
 
 export type TypedDashboardWidget<

@@ -13,6 +13,7 @@ import {
   extractDriverName,
 } from '../shared/DriverName/DriverName';
 import { CarManufacturer } from '../shared/CarManufacturer/CarManufacturer';
+import { BroadcastEnter } from '../Broadcast/BroadcastEnter';
 import { useBroadcastTickerSettings } from './hooks/useBroadcastTickerSettings';
 import { TICKER_MODES, tickerEntries, type TickerMode } from './tickerEntries';
 
@@ -112,27 +113,26 @@ export const BroadcastTicker = () => {
           : undefined,
       }}
     >
-      <div className="flex gap-1 pl-6 text-sm font-bold uppercase">
-        <span
-          key={mode}
-          className="animate-broadcast-enter rounded-t-md bg-slate-900/(--bg-opacity) px-6 py-0.5"
-        >
-          {MODE_LABELS[mode]}
-        </span>
-      </div>
-      <div className="flex h-10 items-center overflow-hidden bg-slate-900/(--bg-opacity)">
-        {/* The list is rendered twice and slid by half its width, so the loop
-            is seamless. Each finished loop moves on to the next mode. */}
-        <div
-          key={mode}
-          className="flex w-max"
-          style={{ animation: `broadcast-marquee ${loopSeconds}s linear` }}
-          onAnimationEnd={() => setModeIndex((i) => i + 1)}
-        >
-          {list}
-          {list}
+      <BroadcastEnter id={mode}>
+        <div className="flex gap-1 pl-6 text-sm font-bold uppercase">
+          <span className="rounded-t-md bg-slate-900/(--bg-opacity) px-6 py-0.5">
+            {MODE_LABELS[mode]}
+          </span>
         </div>
-      </div>
+        <div className="flex h-10 items-center overflow-hidden bg-slate-900/(--bg-opacity)">
+          {/* The list is rendered twice and slid by half its width, so the loop
+            is seamless. Each finished loop moves on to the next mode. */}
+          <div
+            key={mode}
+            className="flex w-max"
+            style={{ animation: `broadcast-marquee ${loopSeconds}s linear` }}
+            onAnimationEnd={() => setModeIndex((i) => i + 1)}
+          >
+            {list}
+            {list}
+          </div>
+        </div>
+      </BroadcastEnter>
     </div>
   );
 };

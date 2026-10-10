@@ -11,7 +11,24 @@ import { Compound } from '../../shared/Compound/Compound';
 import { CountryFlag } from '../../Standings/components/CountryFlag/CountryFlag';
 import type { BroadcastRow } from '../broadcastRows';
 import { classColor, driverName } from '../format';
-import { PAGE_LABELS, ROW_HEIGHT, type Page } from '../towerPages';
+import { PAGE_LABELS, type Page } from '../towerPages';
+
+/**
+ * Gained or lost a class place just now: an arrow that fades out. Placed by the
+ * tower over the gap DriverRow leaves after the position, outside the page
+ * flip animation so a page change does not replay it.
+ */
+export const PositionArrow = ({ delta }: { delta: number }) => (
+  <span
+    className={`pointer-events-none absolute inset-y-0 left-7.5 flex animate-broadcast-fade items-center ${delta > 0 ? 'text-green-400' : 'text-red-400'}`}
+  >
+    {delta > 0 ? (
+      <CaretUpIcon size={12} weight="fill" />
+    ) : (
+      <CaretDownIcon size={12} weight="fill" />
+    )}
+  </span>
+);
 
 const GapCell = ({ standing }: { standing: Standings }) => {
   if (standing.onPitRoad || standing.classPosition === 1) return null;
@@ -86,6 +103,8 @@ export const DriverRow = ({
       <span className={`relative w-6 ${positionStyle || 'text-right'}`}>
         {standing.classPosition}.
       </span>
+      {/* Room for the PositionArrow, which sits outside the page flip. */}
+      <span className="w-3" />
       <span className="relative flex size-5 items-center justify-center rounded-xs bg-slate-700/80 text-sm">
         {standing.carId !== undefined && (
           <CarManufacturer carId={standing.carId} />
@@ -153,31 +172,3 @@ export const ClassHeader = ({
     </div>
   );
 };
-
-const CHECKER_COLUMNS = 8;
-
-/** Dark tiles that cover the tower and vanish in a chessboard pattern. */
-export const CheckerOverlay = ({ rowCount }: { rowCount: number }) => (
-  <div
-    className="pointer-events-none absolute inset-0 grid"
-    style={{
-      gridTemplateColumns: `repeat(${CHECKER_COLUMNS}, 1fr)`,
-      gridAutoRows: ROW_HEIGHT,
-    }}
-  >
-    {Array.from({ length: rowCount * CHECKER_COLUMNS }, (_, i) => {
-      const row = Math.floor(i / CHECKER_COLUMNS);
-      const col = i % CHECKER_COLUMNS;
-      const delay = ((row + col) % 2) * 250 + (row + col) * 15;
-      return (
-        <span
-          key={i}
-          className="bg-slate-950"
-          style={{
-            animation: `broadcast-checker 300ms ease-in ${delay}ms both`,
-          }}
-        />
-      );
-    })}
-  </div>
-);
