@@ -75,7 +75,16 @@ describe('simulator selection across profiles', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     Object.defineProperty(process, 'platform', { value: realPlatform });
+  });
+
+  it('selects the LMU tape on macOS despite an iRacing profile preference', async () => {
+    Object.defineProperty(process, 'platform', { value: 'darwin' });
+    vi.stubEnv('IRDASHIES_LMU_REPLAY', 'session.lmudt');
+    const { iRacingSDKSetup } = await import('./setup');
+    await iRacingSDKSetup(overlayManager);
+    expect(registry.built).toEqual(['lmu']);
   });
 
   it('moves the telemetry source when the active profile pins another sim', async () => {

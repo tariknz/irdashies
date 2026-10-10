@@ -131,27 +131,19 @@
         },
         {
             "target_name": "lmu_tape_node",
-            "sources": [],
+            "sources": [
+                "src/app/lmu/native/lmu_node.cc",
+                "src/app/lmu/native/replay/lmu_source_tape.cpp",
+                "src/app/lmu/native/replay/lmu_tape.cpp",
+                "src/app/lmu/native/replay/lmu_tape.h",
+                "src/app/lmu/native/lmu_source.h",
+                "src/app/lmu/native/lmu_struct.h",
+            ],
             "defines": [
                 "NAPI_DISABLE_CPP_EXCEPTIONS",
             ],
             "include_dirs": [
                 "<!(node -p \"require('node-addon-api').include_dir\")",
-            ],
-            "conditions": [
-                [
-                    "OS=='win'",
-                    {
-                        "sources": [
-                            "src/app/lmu/native/lmu_node.cc",
-                            "src/app/lmu/native/replay/lmu_source_tape.cpp",
-                            "src/app/lmu/native/replay/lmu_tape.cpp",
-                            "src/app/lmu/native/replay/lmu_tape.h",
-                            "src/app/lmu/native/lmu_source.h",
-                            "src/app/lmu/native/lmu_struct.h",
-                        ]
-                    },
-                ]
             ],
         }
     ]

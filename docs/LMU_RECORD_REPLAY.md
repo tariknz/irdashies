@@ -41,8 +41,9 @@ achieves is worth measuring before assuming a size.
 npm run irsdk:build
 ```
 
-Produces `build\Release\lmu_replay.exe` and
-`build\Release\lmu_tape_node.node`, alongside the iRacing artefacts.
+Builds `build/Release/lmu_tape_node.node` on macOS, Windows, and Linux,
+alongside the iRacing artefacts. Windows also builds the recorder and
+inspector, `build\Release\lmu_replay.exe`.
 
 ## Record a live session
 
