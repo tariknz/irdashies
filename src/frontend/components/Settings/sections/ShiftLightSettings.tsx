@@ -13,8 +13,8 @@ import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingDivider } from '../components/SettingDivider';
 import { TabButton } from '../components/TabButton';
-import { SettingSliderRow } from '../components/SettingSliderRow';
 import logger from '@irdashies/utils/logger';
+import { SettingProp, SettingProps } from '../components/SettingProp';
 
 const SETTING_ID = 'shiftlight';
 
@@ -427,90 +427,71 @@ export const ShiftLightSettings = () => {
         const config = settings.config;
 
         return (
-          <div className="space-y-6">
-            {/* Tabs */}
-            <div className="flex border-b border-slate-700/50">
-              <TabButton
-                id="display"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Display
-              </TabButton>
-              <TabButton
-                id="options"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Custom Shift Points
-              </TabButton>
-              <TabButton
-                id="visibility"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Visibility
-              </TabButton>
+          <SettingProps
+            widget={SETTING_ID}
+            config={settings.config}
+            onChange={handleConfigChange}
+          >
+            <div className="space-y-6">
+              {/* Tabs */}
+              <div className="flex border-b border-slate-700/50">
+                <TabButton
+                  id="display"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Display
+                </TabButton>
+                <TabButton
+                  id="options"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Custom Shift Points
+                </TabButton>
+                <TabButton
+                  id="visibility"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Visibility
+                </TabButton>
+              </div>
+
+              {/* DISPLAY TAB */}
+              {activeTab === 'display' && (
+                <SettingsSection title="Display">
+                  <SettingProp path="background.opacity" />
+
+                  <SettingProp path="showRpmText" />
+                </SettingsSection>
+              )}
+
+              {/* OPTIONS TAB */}
+              {activeTab === 'options' && (
+                <SettingsSection title="Custom Shift Points">
+                  <CustomShiftPointsSection
+                    config={config}
+                    handleConfigChange={handleConfigChange}
+                  />
+                </SettingsSection>
+              )}
+
+              {/* VISIBILITY TAB */}
+              {activeTab === 'visibility' && (
+                <SettingsSection title="Session Visibility">
+                  <SessionVisibility
+                    sessionVisibility={settings.config.sessionVisibility}
+                    handleConfigChange={handleConfigChange}
+                  />
+
+                  <SettingDivider />
+
+                  <SettingProp path="showOnlyWhenOnTrack" />
+                </SettingsSection>
+              )}
             </div>
-
-            {/* DISPLAY TAB */}
-            {activeTab === 'display' && (
-              <SettingsSection title="Display">
-                <SettingSliderRow
-                  title="Background Opacity"
-                  value={settings.config.background.opacity ?? 40}
-                  units="%"
-                  min={0}
-                  max={100}
-                  step={1}
-                  onChange={(v) =>
-                    handleConfigChange({ background: { opacity: v } })
-                  }
-                />
-
-                <SettingToggleRow
-                  title="Show RPM Text"
-                  enabled={config.showRpmText}
-                  onToggle={(newValue) =>
-                    handleConfigChange({
-                      showRpmText: newValue,
-                    })
-                  }
-                />
-              </SettingsSection>
-            )}
-
-            {/* OPTIONS TAB */}
-            {activeTab === 'options' && (
-              <SettingsSection title="Custom Shift Points">
-                <CustomShiftPointsSection
-                  config={config}
-                  handleConfigChange={handleConfigChange}
-                />
-              </SettingsSection>
-            )}
-
-            {/* VISIBILITY TAB */}
-            {activeTab === 'visibility' && (
-              <SettingsSection title="Session Visibility">
-                <SessionVisibility
-                  sessionVisibility={settings.config.sessionVisibility}
-                  handleConfigChange={handleConfigChange}
-                />
-
-                <SettingDivider />
-
-                <SettingToggleRow
-                  title="Show only when on track"
-                  description="If enabled, Shift Light will only be shown when driving"
-                  enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                  onToggle={(newValue) =>
-                    handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                  }
-                />
-              </SettingsSection>
-            )}
-          </div>
+          </SettingProps>
         );
       }}
     </BaseSettingsSection>

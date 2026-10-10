@@ -1,8 +1,8 @@
 import { FuelWidgetSettings } from '@irdashies/types';
 import { SettingsSection } from '../../components/SettingSection';
-import { SettingToggleRow } from '../../components/SettingToggleRow';
 import { SettingNumberRow } from '../../components/SettingNumberRow';
 import { SettingSelectRow } from '../../components/SettingSelectRow';
+import { SettingProp } from '../../components/SettingProp';
 
 interface PitStrategySectionProps {
   settings: FuelWidgetSettings;
@@ -15,12 +15,7 @@ export const PitStrategySection = ({
 }: PitStrategySectionProps) => {
   return (
     <SettingsSection title="Pit Strategy">
-      <SettingToggleRow
-        title="Fixed Target Lap"
-        description="Enable a specific lap target for strategy"
-        enabled={settings.config.enableTargetPitLap || false}
-        onToggle={(enabled) => onChange({ enableTargetPitLap: enabled })}
-      />
+      <SettingProp path="enableTargetPitLap" />
 
       {settings.config.enableTargetPitLap && (
         <SettingsSection>

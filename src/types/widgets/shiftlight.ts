@@ -28,4 +28,20 @@ export default defineWidgetManifest({
       offlineTesting: true,
     },
   },
+  properties: {
+    'background.opacity': {
+      type: 'number',
+      label: 'Background Opacity',
+      min: 0,
+      max: 100,
+      step: 1,
+      units: '%',
+    },
+    showRpmText: { type: 'boolean', label: 'Show RPM Text' },
+    showOnlyWhenOnTrack: {
+      type: 'boolean',
+      label: 'Show only when on track',
+      description: 'If enabled, Shift Light will only be shown when driving',
+    },
+  },
 });

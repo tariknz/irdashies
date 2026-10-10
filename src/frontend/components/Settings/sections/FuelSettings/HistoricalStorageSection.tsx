@@ -1,34 +1,14 @@
-import { FuelWidgetSettings } from '@irdashies/types';
 import { useFuelStore } from '../../../FuelCalculator/FuelStore';
-import { SettingToggleRow } from '../../components/SettingToggleRow';
 import { SettingsSection } from '../../components/SettingSection';
 import logger from '@irdashies/utils/logger';
+import { SettingProp } from '../../components/SettingProp';
 
-interface HistoricalStorageSectionProps {
-  settings: FuelWidgetSettings;
-  onChange: (change: Partial<FuelWidgetSettings['config']>) => void;
-}
-
-export const HistoricalStorageSection = ({
-  settings,
-  onChange,
-}: HistoricalStorageSectionProps) => {
+export const HistoricalStorageSection = () => {
   return (
     <SettingsSection title="Historical Storage">
-      <SettingToggleRow
-        title="Enable Historical Persistence"
-        description="Saves the last 10 laps for each car/track to provide immediate
-              estimates."
-        enabled={settings.config.enableStorage ?? false}
-        onToggle={(newValue) => onChange({ enableStorage: newValue })}
-      />
+      <SettingProp path="enableStorage" />
 
-      <SettingToggleRow
-        title="Enable Debug Logging"
-        description="Log comprehensive data to file for troubleshooting."
-        enabled={settings.config.enableLogging ?? false}
-        onToggle={(newValue) => onChange({ enableLogging: newValue })}
-      />
+      <SettingProp path="enableLogging" />
 
       <div className="pt-4 border-t border-slate-700/50">
         <div className="flex items-center justify-between">

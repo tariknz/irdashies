@@ -123,4 +123,78 @@ export default defineWidgetManifest({
       },
     },
   },
+  properties: {
+    useGeneralCompactMode: {
+      type: 'boolean',
+      label: 'Use General Compact Mode',
+      description: 'Syncs with Compact Mode in General tab',
+    },
+    'background.opacity': {
+      type: 'number',
+      label: 'Background Opacity',
+      min: 0,
+      max: 100,
+      step: 1,
+      units: '%',
+    },
+    useGeneralFontSize: {
+      type: 'boolean',
+      label: 'Use General font Sizes',
+      description: 'Syncs with Font Size slider in General tab',
+    },
+    fuelUnits: {
+      type: 'enum',
+      label: 'Fuel Units',
+      description: 'Show fuel in litres or gallons.',
+      options: [
+        { value: 'L', label: 'Litres (L)' },
+        { value: 'gal', label: 'Gallons (gal)' },
+      ],
+      control: 'select',
+    },
+    safetyMargin: {
+      type: 'number',
+      label: 'Safety Margin',
+      description: 'Extra fuel added to "To Finish" calculation.',
+      control: 'input',
+      min: 0,
+      max: 50,
+      step: 0.1,
+    },
+    showOnlyWhenOnTrack: {
+      type: 'boolean',
+      label: 'Show only when on track',
+      description: 'If enabled, fuel will only be shown when driving',
+    },
+    showFuelStatusBorder: {
+      type: 'boolean',
+      label: 'Show Border Color',
+      description: 'Green (safe), Orange (caution), Red (danger)',
+    },
+    enableStorage: {
+      type: 'boolean',
+      label: 'Enable Historical Persistence',
+      description:
+        'Saves the last 10 laps for each car/track to provide immediate estimates.',
+    },
+    enableLogging: {
+      type: 'boolean',
+      label: 'Enable Debug Logging',
+      description: 'Log comprehensive data to file for troubleshooting.',
+    },
+    enableTargetPitLap: {
+      type: 'boolean',
+      label: 'Fixed Target Lap',
+      description: 'Enable a specific lap target for strategy',
+    },
+    fuelHistoryType: {
+      type: 'enum',
+      label: 'Graph Type',
+      options: [
+        { value: 'line', label: 'Line Chart' },
+        { value: 'histogram', label: 'Histogram' },
+      ],
+      control: 'select',
+    },
+  },
 });

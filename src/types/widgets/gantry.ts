@@ -39,4 +39,12 @@ export default defineWidgetManifest({
       panels: [],
     },
   },
+  properties: {
+    'window.alwaysOnTop': {
+      type: 'boolean',
+      label: 'Keep on top of other windows',
+      description:
+        'The Gantry stays visible above iRacing and other apps. iRacing must run in borderless or windowed mode. Exclusive fullscreen hides every window, including this one.',
+    },
+  },
 });

@@ -32,4 +32,29 @@ export default defineWidgetManifest({
       offlineTesting: true,
     },
   },
+  properties: {
+    'background.opacity': {
+      type: 'number',
+      label: 'Background Opacity',
+      min: 0,
+      max: 100,
+      step: 1,
+      units: '%',
+    },
+    showRpmText: { type: 'boolean', label: 'Show RPM Text' },
+    rpmOrientation: {
+      type: 'enum',
+      label: 'RPM Text Orientaion',
+      options: [
+        { value: 'horizontal', label: 'Horizontal' },
+        { value: 'bottom', label: 'Bottom' },
+        { value: 'top', label: 'Top' },
+      ],
+    },
+    showOnlyWhenOnTrack: {
+      type: 'boolean',
+      label: 'Show only when on track',
+      description: 'If enabled, tachometer will only be shown when driving',
+    },
+  },
 });

@@ -15,7 +15,6 @@ import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingActionButton } from '../components/SettingActionButton';
-import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { LayoutVisualizer } from './LayoutVisualizer';
@@ -25,6 +24,7 @@ import {
   hasLayoutTree,
   isEmptyLayoutTree,
 } from '../../Input/layout';
+import { SettingProp, SettingProps } from '../components/SettingProp';
 
 const WIDGET_TYPE = 'input';
 const TABS: SettingsTabType[] = ['layout', 'options', 'visibility'];
@@ -144,511 +144,264 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
         const shiftFlash = { ...DEFAULT_SHIFT_FLASH, ...config.shiftFlash };
 
         return (
-          <div className="space-y-4">
-            {/* Instance manager */}
-            <div className="bg-slate-800 p-3 rounded flex items-center justify-between border border-slate-700">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-bold text-slate-200">
-                  Editing Widget:
-                </span>
-                <select
-                  value={widgetId}
-                  onChange={(e) => handleWidgetChange(e.target.value)}
-                  className="bg-slate-900 border border-slate-600 text-white text-sm rounded px-2 py-1"
-                >
-                  {inputWidgets.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.id}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <SettingProps
+            widget={WIDGET_TYPE}
+            config={settings.config}
+            onChange={handleConfigChange}
+          >
+            <div className="space-y-4">
+              {/* Instance manager */}
+              <div className="bg-slate-800 p-3 rounded flex items-center justify-between border border-slate-700">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-bold text-slate-200">
+                    Editing Widget:
+                  </span>
+                  <select
+                    value={widgetId}
+                    onChange={(e) => handleWidgetChange(e.target.value)}
+                    className="bg-slate-900 border border-slate-600 text-white text-sm rounded px-2 py-1"
+                  >
+                    {inputWidgets.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleDeleteWidget}
-                  disabled={isDefaultWidget}
-                  title={
-                    isDefaultWidget
-                      ? 'Default widget cannot be deleted. Disable it instead.'
-                      : 'Delete this input widget'
-                  }
-                  className={`px-3 py-1 text-xs rounded border transition-colors ${
-                    isDefaultWidget
-                      ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed opacity-50'
-                      : 'bg-red-900/50 hover:bg-red-900 text-red-200 border-red-800'
-                  }`}
-                >
-                  {isDefaultWidget ? 'Default (Locked)' : 'Delete Widget'}
-                </button>
-                <button
-                  onClick={handleAddWidget}
-                  className="flex items-center gap-1 px-3 py-1 bg-green-700 hover:bg-green-600 text-white text-xs rounded transition-colors"
-                >
-                  <PlusIcon /> New Input Widget
-                </button>
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex border-b border-slate-700/50">
-              <TabButton
-                id="layout"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Layout
-              </TabButton>
-              <TabButton
-                id="options"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Options
-              </TabButton>
-              <TabButton
-                id="visibility"
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              >
-                Visibility
-              </TabButton>
-            </div>
-
-            <div>
-              {/* LAYOUT TAB */}
-              {activeTab === 'layout' && (
-                <SettingsSection title="Layout Editor">
-                  {isEmptyLayoutTree(currentTree) ? (
-                    <div className="h-[450px] flex items-center justify-center bg-slate-900 border border-slate-700 rounded text-sm text-slate-400">
-                      This layout shows no elements. Use Reset to Default Layout
-                      to start editing.
-                    </div>
-                  ) : (
-                    <LayoutVisualizer
-                      tree={currentTree}
-                      onChange={handleTreeUpdate}
-                      availableWidgets={INPUT_ELEMENTS}
-                    />
-                  )}
-
-                  <SettingActionButton
-                    label="Reset to Default Layout"
-                    onClick={() =>
-                      handleTreeUpdate(buildDefaultInputTree(defaultConfig))
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleDeleteWidget}
+                    disabled={isDefaultWidget}
+                    title={
+                      isDefaultWidget
+                        ? 'Default widget cannot be deleted. Disable it instead.'
+                        : 'Delete this input widget'
                     }
-                  />
-                </SettingsSection>
-              )}
+                    className={`px-3 py-1 text-xs rounded border transition-colors ${
+                      isDefaultWidget
+                        ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed opacity-50'
+                        : 'bg-red-900/50 hover:bg-red-900 text-red-200 border-red-800'
+                    }`}
+                  >
+                    {isDefaultWidget ? 'Default (Locked)' : 'Delete Widget'}
+                  </button>
+                  <button
+                    onClick={handleAddWidget}
+                    className="flex items-center gap-1 px-3 py-1 bg-green-700 hover:bg-green-600 text-white text-xs rounded transition-colors"
+                  >
+                    <PlusIcon /> New Input Widget
+                  </button>
+                </div>
+              </div>
 
-              {/* OPTIONS TAB */}
-              {activeTab === 'options' && (
-                <>
-                  <SettingsSection title="Options">
-                    <SettingToggleRow
-                      title="Use Raw Inputs"
-                      description="Disables iRacing's automated input processing, showing direct pedal telemetry without assists like auto-clutch or anti-stall."
-                      enabled={config.useRawValues}
-                      onToggle={(enabled) =>
-                        handleConfigChange({
-                          useRawValues: enabled,
-                        })
-                      }
-                    />
-                    <SettingSliderRow
-                      title="Background Opacity"
-                      value={settings.config.background.opacity ?? 40}
-                      units="%"
-                      min={0}
-                      max={100}
-                      step={1}
-                      onChange={(v) =>
-                        handleConfigChange({ background: { opacity: v } })
-                      }
-                    />
-                  </SettingsSection>
+              {/* Tabs */}
+              <div className="flex border-b border-slate-700/50">
+                <TabButton
+                  id="layout"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Layout
+                </TabButton>
+                <TabButton
+                  id="options"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Options
+                </TabButton>
+                <TabButton
+                  id="visibility"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                >
+                  Visibility
+                </TabButton>
+              </div>
 
-                  {/* Shift Flash Settings */}
-                  <SettingsSection title="Shift Flash">
-                    <SettingToggleRow
-                      title="Flash Layout at Shift Point"
-                      description="Flash the whole layout background when it is time to shift"
-                      enabled={shiftFlash.enabled}
-                      onToggle={(enabled) =>
-                        handleConfigChange({
-                          shiftFlash: { ...shiftFlash, enabled },
-                        })
-                      }
-                    />
-
-                    {shiftFlash.enabled && (
-                      <SettingsSection>
-                        <SettingButtonGroupRow<'redline' | 'shiftPoints'>
-                          title="Flash At"
-                          description="Shift Points uses the custom shift points set for this car in the Tachometer settings. Gears without one use the redline."
-                          value={shiftFlash.source}
-                          options={[
-                            { label: 'Redline', value: 'redline' },
-                            { label: 'Shift Points', value: 'shiftPoints' },
-                          ]}
-                          onChange={(source) =>
-                            handleConfigChange({
-                              shiftFlash: { ...shiftFlash, source },
-                            })
-                          }
-                        />
-
-                        <div className="flex items-center justify-between">
-                          <span className="text-md text-slate-300">
-                            Flash Color
-                          </span>
-                          <input
-                            type="color"
-                            value={shiftFlash.color}
-                            onChange={(e) =>
-                              handleConfigChange({
-                                shiftFlash: {
-                                  ...shiftFlash,
-                                  color: e.target.value,
-                                },
-                              })
-                            }
-                            className="h-8 w-12 rounded bg-slate-700 cursor-pointer"
-                          />
-                        </div>
-                      </SettingsSection>
-                    )}
-                  </SettingsSection>
-
-                  {/* Trace Settings */}
-                  <SettingsSection title="Trace">
-                    <SettingToggleRow
-                      title="Show Clutch Trace"
-                      enabled={config.trace.includeClutch}
-                      onToggle={(enabled) =>
-                        handleConfigChange({
-                          trace: {
-                            ...config.trace,
-                            includeClutch: enabled,
-                          },
-                        })
-                      }
-                    />
-
-                    <SettingToggleRow
-                      title="Show Throttle Trace"
-                      enabled={config.trace.includeThrottle}
-                      onToggle={(enabled) =>
-                        handleConfigChange({
-                          trace: {
-                            ...config.trace,
-                            includeThrottle: enabled,
-                          },
-                        })
-                      }
-                    />
-
-                    <SettingToggleRow
-                      title="Show Brake Trace"
-                      enabled={config.trace.includeBrake}
-                      onToggle={(enabled) =>
-                        handleConfigChange({
-                          trace: {
-                            ...config.trace,
-                            includeBrake: enabled,
-                          },
-                        })
-                      }
-                    />
-
-                    <SettingToggleRow
-                      title="Show ABS"
-                      enabled={config.trace.includeAbs}
-                      onToggle={(enabled) =>
-                        handleConfigChange({
-                          trace: {
-                            ...config.trace,
-                            includeAbs: enabled,
-                          },
-                        })
-                      }
-                    />
-
-                    {config.trace.includeAbs && (
-                      <SettingSelectRow<'overlay' | 'bar'>
-                        title="ABS Style"
-                        description="How ABS is shown in the trace"
-                        value={config.trace.absStyle ?? 'overlay'}
-                        options={[
-                          {
-                            label: 'Overlay',
-                            value: 'overlay',
-                          },
-                          {
-                            label: 'Bar (fill under curve)',
-                            value: 'bar',
-                          },
-                        ]}
-                        onChange={(v) =>
-                          handleConfigChange({
-                            trace: {
-                              ...config.trace,
-                              absStyle: v,
-                            },
-                          })
-                        }
+              <div>
+                {/* LAYOUT TAB */}
+                {activeTab === 'layout' && (
+                  <SettingsSection title="Layout Editor">
+                    {isEmptyLayoutTree(currentTree) ? (
+                      <div className="h-[450px] flex items-center justify-center bg-slate-900 border border-slate-700 rounded text-sm text-slate-400">
+                        This layout shows no elements. Use Reset to Default
+                        Layout to start editing.
+                      </div>
+                    ) : (
+                      <LayoutVisualizer
+                        tree={currentTree}
+                        onChange={handleTreeUpdate}
+                        availableWidgets={INPUT_ELEMENTS}
                       />
                     )}
 
-                    <SettingToggleRow
-                      title="Show Steering Trace"
-                      enabled={config.trace.includeSteer ?? true}
-                      onToggle={(enabled) =>
-                        handleConfigChange({
-                          trace: {
-                            ...config.trace,
-                            includeSteer: enabled,
-                          },
-                        })
-                      }
-                    />
-
-                    <SettingSliderRow
-                      title="Stroke Width"
-                      value={config.trace.strokeWidth ?? 3}
-                      units="px"
-                      min={0}
-                      max={10}
-                      step={1}
-                      onChange={(v) =>
-                        handleConfigChange({
-                          trace: {
-                            ...config.trace,
-                            strokeWidth: v,
-                          },
-                        })
-                      }
-                    />
-
-                    <SettingSliderRow
-                      title="Max Samples"
-                      value={config.trace.maxSamples ?? 400}
-                      units=" samples"
-                      min={40}
-                      max={1000}
-                      step={1}
-                      onChange={(v) =>
-                        handleConfigChange({
-                          trace: {
-                            ...config.trace,
-                            maxSamples: v,
-                          },
-                        })
+                    <SettingActionButton
+                      label="Reset to Default Layout"
+                      onClick={() =>
+                        handleTreeUpdate(buildDefaultInputTree(defaultConfig))
                       }
                     />
                   </SettingsSection>
+                )}
 
-                  {/* Bar Settings */}
-                  <SettingsSection title="Bar">
-                    <SettingToggleRow
-                      title="Show Clutch Bar"
-                      enabled={config.bar.includeClutch}
-                      onToggle={(enabled) =>
-                        handleConfigChange({
-                          bar: {
-                            ...config.bar,
-                            includeClutch: enabled,
-                          },
-                        })
-                      }
-                    />
+                {/* OPTIONS TAB */}
+                {activeTab === 'options' && (
+                  <>
+                    <SettingsSection title="Options">
+                      <SettingProp path="useRawValues" />
+                      <SettingProp path="background.opacity" />
+                    </SettingsSection>
 
-                    <SettingToggleRow
-                      title="Show Throttle Bar"
-                      enabled={config.bar.includeThrottle}
-                      onToggle={(enabled) =>
-                        handleConfigChange({
-                          bar: {
-                            ...config.bar,
-                            includeThrottle: enabled,
-                          },
-                        })
-                      }
-                    />
+                    {/* Shift Flash Settings */}
+                    <SettingsSection title="Shift Flash">
+                      <SettingToggleRow
+                        title="Flash Layout at Shift Point"
+                        description="Flash the whole layout background when it is time to shift"
+                        enabled={shiftFlash.enabled}
+                        onToggle={(enabled) =>
+                          handleConfigChange({
+                            shiftFlash: { ...shiftFlash, enabled },
+                          })
+                        }
+                      />
 
-                    <SettingToggleRow
-                      title="Show Brake Bar"
-                      enabled={config.bar.includeBrake}
-                      onToggle={(enabled) =>
-                        handleConfigChange({
-                          bar: {
-                            ...config.bar,
-                            includeBrake: enabled,
-                          },
-                        })
-                      }
-                    />
+                      {shiftFlash.enabled && (
+                        <SettingsSection>
+                          <SettingButtonGroupRow<'redline' | 'shiftPoints'>
+                            title="Flash At"
+                            description="Shift Points uses the custom shift points set for this car in the Tachometer settings. Gears without one use the redline."
+                            value={shiftFlash.source}
+                            options={[
+                              { label: 'Redline', value: 'redline' },
+                              { label: 'Shift Points', value: 'shiftPoints' },
+                            ]}
+                            onChange={(source) =>
+                              handleConfigChange({
+                                shiftFlash: { ...shiftFlash, source },
+                              })
+                            }
+                          />
 
-                    <SettingToggleRow
-                      title="Show ABS Indicator"
-                      enabled={config.bar.includeAbs}
-                      onToggle={(enabled) =>
-                        handleConfigChange({
-                          bar: {
-                            ...config.bar,
-                            includeAbs: enabled,
-                          },
-                        })
-                      }
-                    />
-                  </SettingsSection>
+                          <div className="flex items-center justify-between">
+                            <span className="text-md text-slate-300">
+                              Flash Color
+                            </span>
+                            <input
+                              type="color"
+                              value={shiftFlash.color}
+                              onChange={(e) =>
+                                handleConfigChange({
+                                  shiftFlash: {
+                                    ...shiftFlash,
+                                    color: e.target.value,
+                                  },
+                                })
+                              }
+                              className="h-8 w-12 rounded bg-slate-700 cursor-pointer"
+                            />
+                          </div>
+                        </SettingsSection>
+                      )}
+                    </SettingsSection>
 
-                  {/* Steer Settings */}
-                  <SettingsSection title="Steer">
-                    <SettingSelectRow<
-                      | 'default'
-                      | 'formula'
-                      | 'lmp'
-                      | 'nascar'
-                      | 'ushape'
-                      | 'ring'
-                    >
-                      title="Wheel Style"
-                      value={config.steer.config.style ?? 'default'}
-                      options={[
-                        { label: 'Default', value: 'default' },
-                        { label: 'Formula', value: 'formula' },
-                        { label: 'LMP', value: 'lmp' },
-                        { label: 'NASCAR', value: 'nascar' },
-                        { label: 'U-Shape', value: 'ushape' },
-                        { label: 'Ring (gear inside)', value: 'ring' },
-                      ]}
-                      onChange={(v) =>
-                        handleConfigChange({
-                          steer: {
-                            ...config.steer,
-                            config: { ...config.steer.config, style: v },
-                          },
-                        })
-                      }
-                    />
+                    {/* Trace Settings */}
+                    <SettingsSection title="Trace">
+                      <SettingProp path="trace.includeClutch" />
 
-                    <SettingSelectRow<'dark' | 'light'>
-                      title="Wheel Color"
-                      value={config.steer.config.color ?? 'light'}
-                      options={[
-                        { label: 'Light', value: 'light' },
-                        { label: 'Dark', value: 'dark' },
-                      ]}
-                      onChange={(v) =>
-                        handleConfigChange({
-                          steer: {
-                            ...config.steer,
-                            config: { ...config.steer.config, color: v },
-                          },
-                        })
-                      }
-                    />
-                  </SettingsSection>
+                      <SettingProp path="trace.includeThrottle" />
 
-                  {/* Gear Settings */}
-                  <SettingsSection title="Gear">
-                    <SettingSliderRow
-                      title="Gear Display Scale"
-                      description="Relative size of the gear number display"
-                      value={settings.config.gear.size ?? 100}
-                      units="%"
-                      min={50}
-                      max={150}
-                      step={1}
-                      onChange={(v) =>
-                        handleConfigChange({
-                          gear: { ...config.gear, size: v },
-                        })
-                      }
-                    />
+                      <SettingProp path="trace.includeBrake" />
 
-                    <SettingToggleRow
-                      title="Show Speed"
-                      description="Show the current speed beneath the gear number"
-                      enabled={config.gear.showspeed}
-                      onToggle={(newValue) =>
-                        handleConfigChange({
-                          gear: { ...config.gear, showspeed: newValue },
-                        })
-                      }
-                    />
+                      <SettingProp path="trace.includeAbs" />
 
-                    {config.gear.showspeed && (
-                      <SettingsSection>
-                        <SettingButtonGroupRow<'auto' | 'mph' | 'km/h'>
-                          title="Speed Unit"
-                          value={config.gear.unit ?? 'auto'}
+                      {config.trace.includeAbs && (
+                        <SettingSelectRow<'overlay' | 'bar'>
+                          title="ABS Style"
+                          description="How ABS is shown in the trace"
+                          value={config.trace.absStyle ?? 'overlay'}
                           options={[
-                            { label: 'Auto', value: 'auto' },
-                            { label: 'MPH', value: 'mph' },
-                            { label: 'KM/H', value: 'km/h' },
+                            {
+                              label: 'Overlay',
+                              value: 'overlay',
+                            },
+                            {
+                              label: 'Bar (fill under curve)',
+                              value: 'bar',
+                            },
                           ]}
                           onChange={(v) =>
                             handleConfigChange({
-                              gear: { ...config.gear, unit: v },
-                            })
-                          }
-                        />
-
-                        <SettingToggleRow
-                          title="Show Speed Unit Label"
-                          enabled={config.gear.showspeedunit}
-                          onToggle={(newValue) =>
-                            handleConfigChange({
-                              gear: {
-                                ...config.gear,
-                                showspeedunit: newValue,
+                              trace: {
+                                ...config.trace,
+                                absStyle: v,
                               },
                             })
                           }
                         />
+                      )}
 
-                        <SettingToggleRow
-                          title="Swap Speed & Unit"
-                          enabled={config.gear.swapSpeedUnit ?? false}
-                          onToggle={(newValue) =>
-                            handleConfigChange({
-                              gear: {
-                                ...config.gear,
-                                swapSpeedUnit: newValue,
-                              },
-                            })
-                          }
-                        />
-                      </SettingsSection>
-                    )}
+                      <SettingProp path="trace.includeSteer" />
+
+                      <SettingProp path="trace.strokeWidth" />
+
+                      <SettingProp path="trace.maxSamples" />
+                    </SettingsSection>
+
+                    {/* Bar Settings */}
+                    <SettingsSection title="Bar">
+                      <SettingProp path="bar.includeClutch" />
+
+                      <SettingProp path="bar.includeThrottle" />
+
+                      <SettingProp path="bar.includeBrake" />
+
+                      <SettingProp path="bar.includeAbs" />
+                    </SettingsSection>
+
+                    {/* Steer Settings */}
+                    <SettingsSection title="Steer">
+                      <SettingProp path="steer.config.style" />
+
+                      <SettingProp path="steer.config.color" />
+                    </SettingsSection>
+
+                    {/* Gear Settings */}
+                    <SettingsSection title="Gear">
+                      <SettingProp path="gear.size" />
+
+                      <SettingProp path="gear.showspeed" />
+
+                      {config.gear.showspeed && (
+                        <SettingsSection>
+                          <SettingProp path="gear.unit" />
+
+                          <SettingProp path="gear.showspeedunit" />
+
+                          <SettingProp path="gear.swapSpeedUnit" />
+                        </SettingsSection>
+                      )}
+                    </SettingsSection>
+                  </>
+                )}
+
+                {/* VISIBILITY TAB */}
+                {activeTab === 'visibility' && (
+                  <SettingsSection title="Session Visibility">
+                    <SessionVisibility
+                      sessionVisibility={settings.config.sessionVisibility}
+                      handleConfigChange={handleConfigChange}
+                    />
+
+                    <SettingDivider />
+
+                    <SettingProp path="showOnlyWhenOnTrack" />
                   </SettingsSection>
-                </>
-              )}
-
-              {/* VISIBILITY TAB */}
-              {activeTab === 'visibility' && (
-                <SettingsSection title="Session Visibility">
-                  <SessionVisibility
-                    sessionVisibility={settings.config.sessionVisibility}
-                    handleConfigChange={handleConfigChange}
-                  />
-
-                  <SettingDivider />
-
-                  <SettingToggleRow
-                    title="Show only when on track"
-                    description="If enabled, inputs will only be shown when driving"
-                    enabled={settings.config.showOnlyWhenOnTrack ?? false}
-                    onToggle={(newValue) =>
-                      handleConfigChange({ showOnlyWhenOnTrack: newValue })
-                    }
-                  />
-                </SettingsSection>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          </SettingProps>
         );
       }}
     </BaseSettingsSection>
