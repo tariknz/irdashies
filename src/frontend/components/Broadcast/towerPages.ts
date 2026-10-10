@@ -1,14 +1,60 @@
-import type { BroadcastTransition } from '@irdashies/types';
+import type {
+  BroadcastConfig,
+  BroadcastPage,
+  BroadcastTransition,
+} from '@irdashies/types';
 
 export const ROW_HEIGHT = 24;
 
-/** What the right-hand column of the tower shows right now. */
+/**
+ * What the right-hand column of the tower shows right now. Gaps without a
+ * class are the intervals of every class at once, for a static tower.
+ */
 export type Page =
   | { kind: 'names' }
-  | { kind: 'gaps'; classId: string; className: string }
+  | { kind: 'gaps'; classId?: string; className?: string }
   | { kind: 'gained' }
   | { kind: 'pits' }
   | { kind: 'tyres' };
+
+/** What the session can fill right now; other pages are left out. */
+interface PageData {
+  classes: [classId: string, className: string][];
+  hasGained: boolean;
+  hasPits: boolean;
+  hasTyreChoice: boolean;
+}
+
+/**
+ * The tower pages: the one static page, or the rotation the user picked,
+ * minus pages with nothing to show yet. Never empty: names is the fallback.
+ */
+export const buildPages = (
+  config: Partial<
+    Pick<BroadcastConfig, 'pageMode' | 'pages' | 'staticPage'>
+  > = {},
+  data: PageData
+): Page[] => {
+  if (config.pageMode === 'static') {
+    const kind: BroadcastPage = config.staticPage ?? 'gaps';
+    return [kind === 'gaps' ? { kind: 'gaps' } : { kind }];
+  }
+  const on = (kind: BroadcastPage) => config.pages?.[kind] !== false;
+  const pages: Page[] = [
+    ...(on('names') ? [{ kind: 'names' } as const] : []),
+    ...(on('gaps')
+      ? data.classes.map(([classId, className]): Page => ({
+          kind: 'gaps',
+          classId,
+          className,
+        }))
+      : []),
+    ...(on('gained') && data.hasGained ? [{ kind: 'gained' } as const] : []),
+    ...(on('pits') && data.hasPits ? [{ kind: 'pits' } as const] : []),
+    ...(on('tyres') && data.hasTyreChoice ? [{ kind: 'tyres' } as const] : []),
+  ];
+  return pages.length ? pages : [{ kind: 'names' }];
+};
 
 /** Header label for the pages that show the same column for every class. */
 export const PAGE_LABELS: Partial<Record<Page['kind'], string>> = {

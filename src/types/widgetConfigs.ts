@@ -1240,6 +1240,16 @@ export type BroadcastTransition =
   | 'zoom'
   | 'checker';
 
+/** What the right-hand column of the tower can show. */
+export type BroadcastPage = 'names' | 'gaps' | 'gained' | 'pits' | 'tyres';
+
+/**
+ * The tower clock: the session clock alone, with the time of day at the
+ * track or on this PC, or laps and time together.
+ */
+export type BroadcastHeaderClock =
+  'session' | 'session-track' | 'session-local' | 'laps-time';
+
 /** TV-style leaderboard and focus-car card, meant for OBS capture. */
 export interface BroadcastConfig {
   theme: BroadcastTheme;
@@ -1255,8 +1265,15 @@ export interface BroadcastConfig {
   driversPerClass: number;
   /** Header text; blank shows the track name. */
   title: string;
+  /** Rotate through the chosen pages, or keep one page up. */
+  pageMode: 'rotate' | 'static';
+  /** Pages in the rotation; one with nothing to show yet is skipped. */
+  pages: Record<BroadcastPage, boolean>;
+  /** The page a static tower shows; its intervals cover every class. */
+  staticPage: BroadcastPage;
   /** How long each tower page (names, gaps per class, gained, pits, tyres) stays up. */
   pageSeconds: number;
+  headerClock: BroadcastHeaderClock;
   /** Page change animation; random never repeats the last one. */
   pageTransition: BroadcastTransition;
   /** Lower-third card for the car the camera is on. */

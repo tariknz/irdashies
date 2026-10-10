@@ -15,8 +15,7 @@ export type WidgetToggleActionId = `toggle-widget:${string}`;
 
 /** Identifiers for every bindable action in the app */
 export type KeybindingActionId =
-  | StaticKeybindingActionId
-  | WidgetToggleActionId;
+  StaticKeybindingActionId | WidgetToggleActionId;
 
 export interface KeybindingEntry {
   /**

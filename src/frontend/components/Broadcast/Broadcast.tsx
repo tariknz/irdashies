@@ -9,7 +9,10 @@ import {
   useTrackDisplayName,
 } from '@irdashies/context';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
-import type { StandingsWidgetSettings } from '@irdashies/types';
+import type {
+  BroadcastConfig,
+  StandingsWidgetSettings,
+} from '@irdashies/types';
 import { clampSetting } from '@irdashies/utils/clampSetting';
 import { useBroadcastSettings } from './hooks/useBroadcastSettings';
 import { usePageRotation } from './hooks/usePageRotation';
@@ -20,7 +23,7 @@ import { THEMES, TowerHeader } from './components/TowerHeader';
 import { ClassHeader, DriverRow, PositionArrow } from './components/TowerRows';
 import { BroadcastEnter, CheckerOverlay } from './BroadcastEnter';
 import { BattleCard, FocusCard } from './components/TowerCards';
-import { ROW_HEIGHT, rowAnimation, type Page } from './towerPages';
+import { ROW_HEIGHT, buildPages, rowAnimation } from './towerPages';
 
 const BATTLE_GAP_SECONDS = 1;
 
@@ -62,17 +65,33 @@ export const Broadcast = () => {
   // Positions gained only exist in a race, against the qualifying grid.
   const hasGained = standings.some((s) => s.positionChange !== undefined);
   const hasPits = standings.some((s) => s.lastPitLap);
-  const pages = useMemo<Page[]>(
-    () => [
-      { kind: 'names' },
-      ...(JSON.parse(classList) as [string, string][]).map(
-        ([classId, className]): Page => ({ kind: 'gaps', classId, className })
+  const pageMode = settings?.pageMode;
+  const staticPage = settings?.staticPage;
+  const pageSet = JSON.stringify(settings?.pages ?? {});
+  const pages = useMemo(
+    () =>
+      buildPages(
+        {
+          pageMode,
+          staticPage,
+          pages: JSON.parse(pageSet) as BroadcastConfig['pages'],
+        },
+        {
+          classes: JSON.parse(classList) as [string, string][],
+          hasGained,
+          hasPits,
+          hasTyreChoice,
+        }
       ),
-      ...(hasGained ? [{ kind: 'gained' } as const] : []),
-      ...(hasPits ? [{ kind: 'pits' } as const] : []),
-      ...(hasTyreChoice ? [{ kind: 'tyres' } as const] : []),
-    ],
-    [classList, hasGained, hasPits, hasTyreChoice]
+    [
+      pageMode,
+      staticPage,
+      pageSet,
+      classList,
+      hasGained,
+      hasPits,
+      hasTyreChoice,
+    ]
   );
   const { page, tick, effect } = usePageRotation(
     pages,
@@ -80,7 +99,7 @@ export const Broadcast = () => {
     settings?.pageTransition
   );
   const battle =
-    page.kind === 'gaps'
+    page.kind === 'gaps' && page.classId
       ? findBattle(
           groups.find(([id]) => id === page.classId)?.[1] ?? [],
           perClass,
@@ -114,6 +133,7 @@ export const Broadcast = () => {
           title={settings?.title || trackName || ''}
           logo={settings?.logo}
           theme={theme}
+          clock={settings?.headerClock}
         />
         {/* Rows are absolutely placed so a position swap slides instead of jumping. */}
         <div

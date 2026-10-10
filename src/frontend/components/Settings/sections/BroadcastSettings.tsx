@@ -8,7 +8,11 @@ import { DriverNamePreview } from '../components/DriverNamePreview';
 import { SettingButtonGroupRow } from '../components/SettingButtonGroupRow';
 import { useDashboard } from '@irdashies/context';
 import { getWidgetDefaultConfig } from '@irdashies/types';
+import { SettingSelectRow } from '../components/SettingSelectRow';
 import type {
+  BroadcastConfig,
+  BroadcastHeaderClock,
+  BroadcastPage,
   BroadcastTheme,
   BroadcastWidgetSettings,
   NameFormat,
@@ -22,6 +26,49 @@ const THEME_OPTIONS: { label: string; value: BroadcastTheme }[] = [
   { label: 'IMSA', value: 'imsa' },
   { label: 'WEC', value: 'wec' },
   { label: 'F1', value: 'f1' },
+];
+
+const CLOCK_OPTIONS: { label: string; value: BroadcastHeaderClock }[] = [
+  { label: 'Session', value: 'session' },
+  { label: 'Session + Track Time', value: 'session-track' },
+  { label: 'Session + Local Time', value: 'session-local' },
+  { label: 'Laps + Time', value: 'laps-time' },
+];
+
+const PAGE_MODE_OPTIONS: {
+  label: string;
+  value: BroadcastConfig['pageMode'];
+}[] = [
+  { label: 'Rotate', value: 'rotate' },
+  { label: 'Static', value: 'static' },
+];
+
+const PAGE_OPTIONS: {
+  label: string;
+  value: BroadcastPage;
+  description: string;
+}[] = [
+  { label: 'Names', value: 'names', description: 'Positions and drivers.' },
+  {
+    label: 'Intervals',
+    value: 'gaps',
+    description: 'One page per class, with the closest battle under it.',
+  },
+  {
+    label: '+/- Start',
+    value: 'gained',
+    description: 'Places gained since the start. Races only.',
+  },
+  {
+    label: 'Last Pit',
+    value: 'pits',
+    description: 'Lap of the last stop, once someone has pitted.',
+  },
+  {
+    label: 'Tyres',
+    value: 'tyres',
+    description: 'Current compound, when the car has a choice.',
+  },
 ];
 
 // ponytail: the logo lives inline in the dashboard config so it reaches the
@@ -165,15 +212,54 @@ export const BroadcastSettings = () => {
               step={1}
               onChange={(v) => handleConfigChange({ driversPerClass: v })}
             />
-            <SettingSliderRow
-              title="Page Time"
-              value={config.pageSeconds}
-              units="s"
-              min={3}
-              max={30}
-              step={1}
-              onChange={(v) => handleConfigChange({ pageSeconds: v })}
+            <SettingSelectRow<BroadcastHeaderClock>
+              title="Header Clock"
+              description="The session clock, plus the time of day at the track or on this PC, or laps and time together."
+              value={config.headerClock}
+              options={CLOCK_OPTIONS}
+              onChange={(v) => handleConfigChange({ headerClock: v })}
             />
+            <SettingButtonGroupRow<BroadcastConfig['pageMode']>
+              title="Pages"
+              description="Rotate through the pages you pick, or keep one page up."
+              value={config.pageMode}
+              options={PAGE_MODE_OPTIONS}
+              onChange={(v) => handleConfigChange({ pageMode: v })}
+            />
+            {config.pageMode === 'static' ? (
+              <SettingSelectRow<BroadcastPage>
+                title="Page"
+                description="Intervals here show every class at once."
+                value={config.staticPage}
+                options={PAGE_OPTIONS}
+                onChange={(v) => handleConfigChange({ staticPage: v })}
+              />
+            ) : (
+              <>
+                {PAGE_OPTIONS.map(({ label, value, description }) => (
+                  <SettingToggleRow
+                    key={value}
+                    title={label}
+                    description={description}
+                    enabled={config.pages[value]}
+                    onToggle={(v) =>
+                      handleConfigChange({
+                        pages: { ...config.pages, [value]: v },
+                      })
+                    }
+                  />
+                ))}
+                <SettingSliderRow
+                  title="Page Time"
+                  value={config.pageSeconds}
+                  units="s"
+                  min={3}
+                  max={30}
+                  step={1}
+                  onChange={(v) => handleConfigChange({ pageSeconds: v })}
+                />
+              </>
+            )}
             <div className="space-y-2 py-2">
               <label className="text-sm text-slate-300">Title</label>
               <input

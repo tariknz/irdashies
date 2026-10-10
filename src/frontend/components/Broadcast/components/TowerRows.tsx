@@ -91,7 +91,9 @@ export const DriverRow = ({
 }) => {
   const color = classColor(standing.carClass.color);
   const dimmed =
-    page.kind === 'gaps' && page.classId !== String(standing.carClass.id);
+    page.kind === 'gaps' &&
+    page.classId !== undefined &&
+    page.classId !== String(standing.carClass.id);
   return (
     <div
       className={[
@@ -151,7 +153,7 @@ export const ClassHeader = ({
 }) => {
   const label =
     page.kind === 'gaps'
-      ? `class-${page.classId}` === row.key
+      ? page.classId === undefined || `class-${page.classId}` === row.key
         ? 'Intervals'
         : undefined
       : PAGE_LABELS[page.kind];
