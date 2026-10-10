@@ -10,7 +10,7 @@ const ShiftLightForStorybook = (props: Parameters<typeof ShiftLight>[0]) => {
 
 const meta: Meta<typeof ShiftLight> = {
   component: ShiftLight,
-  title: 'widgets/ShiftLight/components/CustomShiftPoints',
+  title: 'widgets/Shift Light/components/CustomShiftPoints',
   argTypes: {
     shiftPointSettings: { table: { disable: true } },
     carData: { table: { disable: true } },

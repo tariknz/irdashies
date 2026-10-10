@@ -8,7 +8,7 @@ import {
 
 const meta: Meta<typeof ShiftLight> = {
   component: ShiftLight,
-  title: 'widgets/ShiftLight/Widget',
+  title: 'widgets/Shift Light/Widget',
   decorators: [
     TelemetryDecorator(),
     ChannelSnapshotDecorator({

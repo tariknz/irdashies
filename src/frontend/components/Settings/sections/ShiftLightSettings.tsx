@@ -417,8 +417,8 @@ export const ShiftLightSettings = () => {
 
   return (
     <BaseSettingsSection
-      title="ShiftLight"
-      description="Configure the shiftlight.   Hint: enable 'Show RPM Text' to see where the box is."
+      title="Shift Light"
+      description="Configure the Shift Light. Hint: enable 'Show RPM Text' to see where the box is."
       settings={settings}
       onSettingsChange={setSettings}
       widgetId="shiftlight"
@@ -502,7 +502,7 @@ export const ShiftLightSettings = () => {
 
                 <SettingToggleRow
                   title="Show only when on track"
-                  description="If enabled, shiftlight will only be shown when driving"
+                  description="If enabled, Shift Light will only be shown when driving"
                   enabled={settings.config.showOnlyWhenOnTrack ?? false}
                   onToggle={(newValue) =>
                     handleConfigChange({ showOnlyWhenOnTrack: newValue })

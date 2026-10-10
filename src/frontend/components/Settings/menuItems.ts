@@ -175,7 +175,7 @@ export const widgetItems: MenuItem[] = [
   {
     to: '/settings/shiftlight',
     path: '/shiftlight',
-    label: 'ShiftLight',
+    label: 'Shift Light',
     widgetType: 'shiftlight',
   },
   {

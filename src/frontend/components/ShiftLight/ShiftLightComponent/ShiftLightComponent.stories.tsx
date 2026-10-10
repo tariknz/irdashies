@@ -5,7 +5,7 @@ import type { ShiftPointSettings } from '@irdashies/types';
 
 const meta: Meta<typeof ShiftLight> = {
   component: ShiftLight,
-  title: 'widgets/ShiftLight',
+  title: 'widgets/Shift Light',
 };
 export default meta;
 
