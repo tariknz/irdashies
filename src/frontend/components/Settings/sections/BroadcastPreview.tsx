@@ -10,7 +10,7 @@ import type {
 import { TowerView } from '../../Broadcast/Broadcast';
 import { TickerView } from '../../BroadcastTicker/BroadcastTicker';
 import { EventCard } from '../../BroadcastEvents/BroadcastEvents';
-import { demoEvent } from '../../BroadcastEvents/broadcastEvents';
+import { demoEvent } from '../../BroadcastEvents/eventDetection';
 import { WeatherView } from '../../BroadcastWeather/WeatherCard';
 import { PodiumCard } from '../../BroadcastPodium/PodiumCard';
 import { DEMO_GROUPS as GROUPS } from '../../Broadcast/demoField';

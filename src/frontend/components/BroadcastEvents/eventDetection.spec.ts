@@ -6,7 +6,7 @@ import {
   emptyCarTracker,
   eventFromIncident,
   flagKind,
-} from './broadcastEvents';
+} from './eventDetection';
 import type { Standings } from '@irdashies/domain';
 
 const incident = (type: IncidentType) =>

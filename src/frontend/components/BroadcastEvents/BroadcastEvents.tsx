@@ -33,7 +33,7 @@ import {
   flagKind,
   type BroadcastEvent,
   type EventKind,
-} from './broadcastEvents';
+} from './eventDetection';
 
 /** Events waiting beyond this are dropped; a pile-up shows its first cars. */
 const MAX_QUEUE = 4;
