@@ -75,8 +75,10 @@ export const useDriverStandings = (
     enabled: useLivePositionStandings,
   });
   const fastestLaps = useSessionFastestLaps(sessionNum);
-  const carIdxLastLapTime = standingsSnapshot?.carIdxLastLapTime ?? EMPTY_NUMBERS;
-  const carIdxBestLapTime = standingsSnapshot?.carIdxBestLapTime ?? EMPTY_NUMBERS;
+  const carIdxLastLapTime =
+    standingsSnapshot?.carIdxLastLapTime ?? EMPTY_NUMBERS;
+  const carIdxBestLapTime =
+    standingsSnapshot?.carIdxBestLapTime ?? EMPTY_NUMBERS;
   const carIdxF2Time = standingsSnapshot?.carIdxF2Time ?? EMPTY_NUMBERS;
   const carIdxEstTime = standingsSnapshot?.carIdxEstTime ?? EMPTY_NUMBERS;
   const carIdxOnPitRoad = standingsSnapshot?.carIdxOnPitRoad ?? EMPTY_BOOLEANS;
@@ -190,9 +192,13 @@ export const useDriverStandings = (
           )
         : iratingAugmentedGroupedByClass;
 
-    // Calculate interval to player when enabled
+    // Calculate interval to the preceding car in class when enabled
     const intervalAugmentedGroupedByClass = intervalEnabled
-      ? augmentStandingsWithInterval(gapAugmentedGroupedByClass)
+      ? augmentStandingsWithInterval(
+          gapAugmentedGroupedByClass,
+          carIdxLap,
+          carIdxLapDistPct
+        )
       : gapAugmentedGroupedByClass;
 
     if (options?.showAll) return intervalAugmentedGroupedByClass;

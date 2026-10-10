@@ -161,6 +161,7 @@ export interface StandingsConfig {
   fastestTime: { enabled: boolean; timeFormat: TimeFormat };
   background: { opacity: number };
   foreground?: { opacity: number };
+  driverRow?: { opacity: number };
   countryFlags: { enabled: boolean };
   carNumber: { enabled: boolean };
   driverStandings: {

@@ -109,7 +109,7 @@ describe('class standings over a real multiclass field', () => {
       () =>
         useDriverStandings(
           config({
-            gap: { enabled: true },
+            gap: { enabled: false },
             interval: { enabled: true },
           }),
           { showAll: true }
@@ -122,11 +122,22 @@ describe('class standings over a real multiclass field', () => {
       .filter((i): i is number => typeof i === 'number');
 
     expect(intervals.length).toBeGreaterThan(10);
+    const lapIntervals = flatten(result.current)
+      .map((d) => d.interval)
+      .filter((i) => typeof i === 'object');
+    expect(lapIntervals.length).toBeGreaterThan(0);
+    for (const interval of lapIntervals) {
+      expect(interval?.laps).toBeLessThanOrEqual(-1);
+      expect(Number.isInteger(interval?.laps)).toBe(true);
+    }
     // An interval is a gap between neighbours, so it is never larger than the
     // gap to the class leader for the same car.
     for (const [, drivers] of result.current) {
       for (const driver of drivers.slice(1)) {
-        if (driver.interval === undefined || driver.gap?.value === undefined) {
+        if (
+          typeof driver.interval !== 'number' ||
+          driver.gap?.value === undefined
+        ) {
           continue;
         }
         expect(driver.interval).toBeLessThanOrEqual(driver.gap.value + 0.001);

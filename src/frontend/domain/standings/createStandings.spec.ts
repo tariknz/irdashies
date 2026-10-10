@@ -694,6 +694,91 @@ describe('createStandings', () => {
       const result = augmentStandingsWithInterval(grouped);
       expect(result[0][1][1].interval).toBeUndefined();
     });
+
+    it.each([1, 2])(
+      'race: shows a %i lap interval even without a time gap',
+      (laps) => {
+        const grouped: [string, Standings[]][] = [
+          [
+            '1',
+            [
+              makeStanding(0, undefined, true, 'Race'),
+              makeStanding(1, undefined, true, 'Race'),
+            ],
+          ],
+        ];
+        const result = augmentStandingsWithInterval(
+          grouped,
+          [5, 5 - laps],
+          [0.6, 0.4]
+        );
+        expect(result[0][1][0].interval).toBeUndefined();
+        expect(result[0][1][1].interval).toEqual({
+          value: undefined,
+          laps: -laps,
+        });
+      }
+    );
+
+    it('race: measures laps against the preceding car, not the leader', () => {
+      const grouped: [string, Standings[]][] = [
+        [
+          '1',
+          [
+            makeStanding(0, undefined, true, 'Race'),
+            makeStanding(1, 125, true, 'Race'),
+            makeStanding(2, 128, true, 'Race'),
+          ],
+        ],
+      ];
+      const result = augmentStandingsWithInterval(
+        grouped,
+        [5, 4, 4],
+        [0.6, 0.4, 0.3]
+      );
+      expect(result[0][1][1].interval).toEqual({ value: undefined, laps: -1 });
+      expect(result[0][1][2].interval).toBe(3);
+    });
+
+    it('race: crossing the finish line alone does not count as a lap interval', () => {
+      const grouped: [string, Standings[]][] = [
+        [
+          '1',
+          [
+            makeStanding(0, undefined, true, 'Race'),
+            makeStanding(1, 2, true, 'Race'),
+          ],
+        ],
+      ];
+      const result = augmentStandingsWithInterval(
+        grouped,
+        [5, 4],
+        [0.01, 0.99]
+      );
+      expect(result[0][1][1].interval).toBe(2);
+    });
+
+    it('race: hides lap intervals for drivers off track', () => {
+      const grouped: [string, Standings[]][] = [
+        [
+          '1',
+          [
+            makeStanding(0, undefined, true, 'Race'),
+            makeStanding(1, undefined, false, 'Race'),
+          ],
+        ],
+      ];
+      const result = augmentStandingsWithInterval(grouped, [5, 3], [0.6, 0.4]);
+      expect(result[0][1][1].interval).toBeUndefined();
+    });
+
+    it('practice: ignores lap differences', () => {
+      const grouped: [string, Standings[]][] = [
+        ['1', [makeStanding(0, undefined, false), makeStanding(1, 1.5, false)]],
+      ];
+      const result = augmentStandingsWithInterval(grouped, [5, 3], [0.6, 0.4]);
+      expect(result[0][1][1].interval).toBe(1.5);
+    });
   });
 
   describe('augmentStandingsWithPositionChange', () => {

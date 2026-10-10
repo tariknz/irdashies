@@ -880,6 +880,18 @@ export const StandingsSettings = () => {
                         handleConfigChange({ foreground: { opacity: v } })
                       }
                     />
+                    <SettingSliderRow
+                      title="Driver Row Opacity"
+                      description="Adjust driver row backgrounds and the player highlight"
+                      value={settings.config.driverRow?.opacity ?? 70}
+                      units="%"
+                      min={0}
+                      max={100}
+                      step={1}
+                      onChange={(v) =>
+                        handleConfigChange({ driverRow: { opacity: v } })
+                      }
+                    />
                   </SettingsSection>
                 </>
               )}

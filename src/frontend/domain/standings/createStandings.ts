@@ -27,7 +27,7 @@ export interface Standings {
   lappedState?: 'ahead' | 'behind' | 'same';
   delta?: number;
   gap?: Gap;
-  interval?: number;
+  interval?: number | Gap;
   isPlayer: boolean;
   driver: {
     name: string;
@@ -209,15 +209,13 @@ export const createDriverStandings = (
       const isClassFastest = result.CarIdx === classFastestCarIdx;
 
       // Ensure we always produce numeric fastest/last times (fallback to -1)
-      const bestLapTime = (telemetry?.carIdxBestLapTime?.[result.CarIdx] ?? 0);
-      const computedBestTime = bestLapTime > 1
-          ? bestLapTime
-          : result.FastestTime ?? -1;
+      const bestLapTime = telemetry?.carIdxBestLapTime?.[result.CarIdx] ?? 0;
+      const computedBestTime =
+        bestLapTime > 1 ? bestLapTime : (result.FastestTime ?? -1);
 
-      const lastLapTime = (telemetry?.carIdxLastLapTime?.[result.CarIdx] ?? 0);
-      const computedLastTime = lastLapTime > 1
-          ? lastLapTime
-          : result.LastTime ?? -1;
+      const lastLapTime = telemetry?.carIdxLastLapTime?.[result.CarIdx] ?? 0;
+      const computedLastTime =
+        lastLapTime > 1 ? lastLapTime : (result.LastTime ?? -1);
 
       return {
         carIdx: result.CarIdx,
@@ -267,12 +265,12 @@ export const createDriverStandings = (
           result.CarIdx === session.playerIdx
             ? undefined // Don't show deltas for player (comparing to themselves)
             : lapDeltasVsPlayer &&
-              lapDeltasVsPlayer[result.CarIdx] &&
-              lapDeltasVsPlayer[result.CarIdx].length > 0
-            ? lapDeltasVsPlayer[result.CarIdx].slice(
-                -(numLapsToShow ?? lapDeltasVsPlayer[result.CarIdx].length)
+                lapDeltasVsPlayer[result.CarIdx] &&
+                lapDeltasVsPlayer[result.CarIdx].length > 0
+              ? lapDeltasVsPlayer[result.CarIdx].slice(
+                  -(numLapsToShow ?? lapDeltasVsPlayer[result.CarIdx].length)
                 ) // Use most recent laps
-            : undefined,
+              : undefined,
         lastPitLap: lastPitLap[result.CarIdx] ?? undefined,
         lastLap: lastLap[result.CarIdx] ?? undefined,
         prevCarTrackSurface: prevCarTrackSurface[result.CarIdx] ?? undefined,
@@ -406,7 +404,8 @@ export const groupStandingsByClass = (
   }
 
   sorted.sort(
-    ([, a], [, b]) => b[0].carClass.relativeSpeed - a[0].carClass.relativeSpeed);
+    ([, a], [, b]) => b[0].carClass.relativeSpeed - a[0].carClass.relativeSpeed
+  );
 
   return sorted;
 };
@@ -430,7 +429,7 @@ export const groupStandingsBySpeed = (
     const validDrivers = drivers
       .filter(
         (d) =>
-          d.position !== undefined &&  //Check for valid position
+          d.position !== undefined && //Check for valid position
           //Check for valid time to filter qualifying positions with no set time
           ((d.fastestTime !== undefined && d.fastestTime > 0) ||
             (d.lastTime !== undefined && d.lastTime > 0))
@@ -621,8 +620,12 @@ export const augmentStandingsWithGap = (
         }
 
         const classLeaderTrackPctForLaps = carIdxLapDistPct[classLeader.carIdx];
-        const driverLapNumber = !carIdxLap[driverStanding.carIdx] ? 1 : carIdxLap[driverStanding.carIdx];
-        const classLeaderLapNumber = !carIdxLap[classLeader.carIdx] ? 1 : carIdxLap[classLeader.carIdx];
+        const driverLapNumber = !carIdxLap[driverStanding.carIdx]
+          ? 1
+          : carIdxLap[driverStanding.carIdx];
+        const classLeaderLapNumber = !carIdxLap[classLeader.carIdx]
+          ? 1
+          : carIdxLap[classLeader.carIdx];
 
         const gap = {
           value: gapValue ? Math.abs(gapValue) : undefined,
@@ -656,32 +659,55 @@ export const augmentStandingsWithGap = (
 };
 
 /**
- * This method will augment the standings with interval calculations to player
- * Interval shows time gaps between consecutive cars, calculated by subtracting gaps
- * For each driver, interval = gap_of_driver_behind - gap_of_current_driver
- * Player shows as undefined (no interval)
+ * Interval shows the gap to the preceding car in the same class.
+ * Whole lap differences use the same signed lap convention as gap.
+ * The class leader has no interval.
  */
 export const augmentStandingsWithInterval = (
-  groupedStandings: [string, Standings[]][]
+  groupedStandings: [string, Standings[]][],
+  carIdxLap: number[] = [],
+  carIdxLapDistPct: number[] = []
 ): [string, Standings[]][] => {
   return groupedStandings.map(([classId, classStandings]) => {
-    // Sort drivers by their gap values (ascending - smallest gaps first = closest to leader)
     const augmentedClassStandings = classStandings.map(
       (driverStanding, index) => {
         // The driver physically in front of this one in the standings
         const driverAhead = classStandings[index - 1];
 
-        let interval: number | undefined = undefined;
+        let interval: number | Gap | undefined = undefined;
+
+        const isRace = driverStanding.currentSessionType === 'Race';
+        const aheadPct = driverAhead
+          ? carIdxLapDistPct[driverAhead.carIdx]
+          : undefined;
+        const driverPct = carIdxLapDistPct[driverStanding.carIdx];
+        const lapsBehind =
+          driverAhead &&
+          isRace &&
+          aheadPct !== undefined &&
+          aheadPct >= 0 &&
+          driverPct >= 0
+            ? Math.floor(
+                (carIdxLap[driverAhead.carIdx] || 1) +
+                  aheadPct -
+                  ((carIdxLap[driverStanding.carIdx] || 1) + driverPct)
+              )
+            : 0;
 
         // If there's no one ahead (P1 in class), the interval is typically undefined or 0
         if (!driverAhead) {
           interval = undefined;
+        } else if (
+          lapsBehind > 0 &&
+          driverStanding.onTrack &&
+          driverAhead.onTrack
+        ) {
+          interval = { value: undefined, laps: -lapsBehind };
         }
         // If the car ahead is the leader (who has no gap value),
         // the interval for P2 is simply their own gap to the leader.
         // For race sessions, onTrack is still required.
         else if (driverAhead.gap?.value === undefined) {
-          const isRace = driverStanding.currentSessionType === 'Race';
           if (!isRace || driverStanding.onTrack) {
             interval = driverStanding.gap?.value;
           }

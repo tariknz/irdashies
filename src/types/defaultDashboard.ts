@@ -61,6 +61,9 @@ export const defaultDashboard: {
         foreground: {
           opacity: 70,
         },
+        driverRow: {
+          opacity: 70,
+        },
         countryFlags: {
           enabled: true,
         },
