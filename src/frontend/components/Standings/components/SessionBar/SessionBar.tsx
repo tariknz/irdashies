@@ -49,16 +49,20 @@ export const SessionBar = ({
         ? 'px-2'
         : 'px-3';
 
-  // Get display order, fallback to default order
-  const displayOrder = Array.isArray(effectiveBarSettings?.displayOrder)
+  // Preserve an intentionally empty order, but fall back if every configured
+  // entry in a nonempty order is invalid.
+  const configuredOrder = Array.isArray(effectiveBarSettings?.displayOrder)
     ? effectiveBarSettings.displayOrder
     : DEFAULT_DISPLAY_ORDER[position];
+  const validOrder = configuredOrder.filter(isSessionBarItemKey);
+  const displayOrder =
+    configuredOrder.length > 0 && validOrder.length === 0
+      ? DEFAULT_DISPLAY_ORDER[position]
+      : validOrder;
 
-  const enabledKeys = displayOrder
-    .filter(isSessionBarItemKey)
-    .filter((key) =>
-      isSessionBarItemEnabled(key, effectiveBarSettings, position)
-    );
+  const enabledKeys = displayOrder.filter((key) =>
+    isSessionBarItemEnabled(key, effectiveBarSettings, position)
+  );
 
   return (
     <div

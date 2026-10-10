@@ -32,17 +32,17 @@ const baseSettings = {
   displayOrder: [] as string[],
 } satisfies SessionBarConfig;
 
-describe('SessionBar', () => {
-  beforeEach(() => {
-    vi.mocked(useGeneralSettings).mockReturnValue({
-      compactMode: 'normal',
-    } as never);
-    vi.mocked(useSessionBarSnapshot).mockReturnValue({
-      sessionName: 'Race',
-    } as never);
-    vi.mocked(useCurrentTime).mockReturnValue('1:23 PM');
-  });
+beforeEach(() => {
+  vi.mocked(useGeneralSettings).mockReturnValue({
+    compactMode: 'normal',
+  } as never);
+  vi.mocked(useSessionBarSnapshot).mockReturnValue({
+    sessionName: 'Race',
+  } as never);
+  vi.mocked(useCurrentTime).mockReturnValue('1:23 PM');
+});
 
+describe('SessionBar', () => {
   it('renders enabled items in the given displayOrder', () => {
     const { container } = render(
       <SessionBar
@@ -95,6 +95,37 @@ describe('SessionBar', () => {
 });
 
 describe('SessionBar untrusted configuration', () => {
+  it.each([[42], ['missing'], ['__proto__', 'constructor'], [null], [{}]])(
+    'uses header and footer defaults for an invalid-only order %j',
+    (...displayOrder) => {
+      for (const position of ['header', 'footer'] as const) {
+        const { container } = render(
+          <SessionBar
+            settings={
+              { ...baseSettings, displayOrder } as unknown as SessionBarConfig
+            }
+            position={position}
+          />
+        );
+        expect(container.textContent).toBe(
+          position === 'header' ? 'Race1:23 PM' : '1:23 PM'
+        );
+      }
+    }
+  );
+
+  it('retains valid keys in the configured order alongside invalid entries', () => {
+    const { container } = render(
+      <SessionBar
+        settings={{
+          ...baseSettings,
+          displayOrder: ['missing', 'localTime', '__proto__', 'sessionName'],
+        }}
+      />
+    );
+    expect(container.textContent).toBe('1:23 PMRace');
+  });
+
   it.each([
     '__proto__',
     '__defineGetter__',
