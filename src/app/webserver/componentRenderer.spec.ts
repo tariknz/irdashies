@@ -290,3 +290,42 @@ describe('WebSocketBridge simulator compatibility', () => {
     await expect(bridge.getAvailableSimulators()).resolves.toEqual([]);
   });
 });
+
+describe('WebSocketBridge image responses', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each([
+    'getGarageCoverImageAsDataUrl',
+    'getPlayerIconImageAsDataUrl',
+  ] as const)(
+    '%s validates the response before returning it to image consumers',
+    async (method) => {
+      vi.stubGlobal('WebSocket', FakeWebSocket);
+      const bridge = new WebSocketBridge();
+      const connecting = bridge.connect('http://localhost:3000');
+      const socket = FakeWebSocket.latest;
+      socket?.onopen?.();
+      await connecting;
+      for (const payload of [
+        'data:image/png;base64,YQ==',
+        'data:image/svg+xml;base64,PHN2Zy8+',
+        'https://example.com/image.png',
+        'javascript:alert(1)',
+        'data:text/html;base64,PHN2Zy8+',
+        42,
+        {},
+        null,
+      ]) {
+        const response = bridge[method]('image.png');
+        socket?.reply(method, payload);
+        await expect(response).resolves.toBe(
+          typeof payload === 'string' && payload.startsWith('data:image/')
+            ? payload
+            : null
+        );
+        expect(socket?.listeners.size).toBe(0);
+      }
+      bridge.stop();
+    }
+  );
+});

@@ -61,6 +61,15 @@ const TELEMETRY_UNITS: Readonly<Record<string, string>> = {
   Lat: '°',
   Lon: '°',
   Alt: 'm',
+  LmuPitStopTime: 's',
+  LmuRepairTime: 's',
+  // Litres or a virtual-energy percentage -- LmuRefuelTargetIsVirtualEnergy
+  // says which, so no single unit can be printed here.
+  LmuVirtualEnergy: 'fraction',
+  LmuStateOfCharge: 'fraction',
+  LmuBrakeWear: 'fraction',
+  LmuSuspensionDamage: 'fraction',
+  LmuAeroDamage: 'fraction',
 };
 
 const formatValue = (value: unknown): string => {

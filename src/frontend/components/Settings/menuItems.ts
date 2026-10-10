@@ -218,6 +218,12 @@ export const widgetItems: MenuItem[] = [
     widgetType: 'sectordelta',
   },
   {
+    to: '/settings/shiftlight',
+    path: '/shiftlight',
+    label: 'Shift Light',
+    widgetType: 'shiftlight',
+  },
+  {
     to: '/settings/slowcarahead',
     path: '/slowcarahead',
     label: 'Slow Car Ahead',

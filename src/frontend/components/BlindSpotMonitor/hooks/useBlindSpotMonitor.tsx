@@ -21,28 +21,43 @@ interface BlindSpotMonitorState {
 
 const EMPTY_POSITIONS: readonly number[] = [];
 const TELEPORT_THRESHOLD = 0.5;
+const DEFAULT_DIST_M = 4;
+
 const selectBlindSpotTelemetry = (snapshot: BlindSpotSnapshot) =>
   [
     snapshot.carLeftRight as CarLeftRight,
     snapshot.carIdxLapDistPct,
     snapshot.isOnTrack,
+    snapshot.leftLongitudinalM,
+    snapshot.rightLongitudinalM,
   ] as const;
 
+/**
+ * Scalars first, deliberately. The lap-fraction array is over a hundred
+ * elements and `shallow` walks all of it, so comparing it last means a tick
+ * where a scalar moved never pays for the walk -- and a sim supplying true
+ * offsets leaves that array empty, so it never pays at all.
+ */
 const blindSpotTelemetryEqual = (
   previous: ReturnType<typeof selectBlindSpotTelemetry>,
   next: ReturnType<typeof selectBlindSpotTelemetry>
 ) =>
   previous[0] === next[0] &&
-  shallow(previous[1], next[1]) &&
-  previous[2] === next[2];
+  previous[2] === next[2] &&
+  previous[3] === next[3] &&
+  previous[4] === next[4] &&
+  shallow(previous[1], next[1]);
 
 export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
-  const [carLeftRight, lapDistPcts, isOnTrack] = useBlindSpotSelector(
-    selectBlindSpotTelemetry,
-    {
-      equality: blindSpotTelemetryEqual,
-    }
-  ) ?? [CarLeftRight.Off, EMPTY_POSITIONS, false];
+  const [
+    carLeftRight,
+    lapDistPcts,
+    isOnTrack,
+    leftLongitudinalM,
+    rightLongitudinalM,
+  ] = useBlindSpotSelector(selectBlindSpotTelemetry, {
+    equality: blindSpotTelemetryEqual,
+  }) ?? [CarLeftRight.Off, EMPTY_POSITIONS, false, null, null];
   const driverCarIdx = useDriverCarIdx() ?? 0;
   const trackLength = useTrackLength();
   const settings = useBlindSpotMonitorSettings();
@@ -53,6 +68,16 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     left: number | null;
     right: number | null;
   }>({ left: null, right: null });
+
+  /**
+   * Whether the sim reports a true relative position.
+   *
+   * At least one side carries a number whenever a car is alongside, because
+   * the producer picks the offsets from the very cars that set the state. So
+   * both being null while the state says otherwise means this sim does not
+   * report them, and the lap-fraction reconstruction applies.
+   */
+  const hasOffsets = leftLongitudinalM !== null || rightLongitudinalM !== null;
 
   const result = useMemo(() => {
     const defaultState = {
@@ -65,37 +90,45 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       disableTransition: false,
     };
 
-    if (
-      !lapDistPcts ||
-      driverCarIdx === undefined ||
-      !trackLength ||
-      !settings ||
-      !isOnTrack ||
-      carLeftRight <= CarLeftRight.Clear
-    ) {
+    if (!settings || !isOnTrack || carLeftRight <= CarLeftRight.Clear) {
       return defaultState;
     }
 
-    const driverCarDistPct = lapDistPcts[driverCarIdx];
-    if (driverCarDistPct === undefined || driverCarDistPct === -1)
-      return defaultState;
+    const distAhead = settings.distAhead ?? DEFAULT_DIST_M;
+    const distBehind = settings.distBehind ?? DEFAULT_DIST_M;
+    const clampToBar = (ratio: number) =>
+      Math.round(Math.max(-1, Math.min(1, ratio)) * 1000) / 1000;
 
-    const maxDistAPct = (settings.distAhead ?? 4) / trackLength;
-    const maxDistBPct = (settings.distBehind ?? 4) / trackLength;
+    /** Metres fore or aft, straight to a bar position. */
+    const percentFromMetres = (metres: number | null): number =>
+      metres === null
+        ? 0
+        : clampToBar(metres / (metres > 0 ? distAhead : distBehind));
 
-    const calculatePercent = (idx: number | null): number => {
+    /**
+     * The fallback: reconstruct a fore/aft offset by subtracting lap
+     * fractions. Only as good as the rate the sim updates them at.
+     */
+    const percentFromLapDist = (idx: number | null): number => {
       if (
         idx === null ||
+        !trackLength ||
         lapDistPcts[idx] === undefined ||
         lapDistPcts[idx] === -1
-      )
+      ) {
         return 0;
+      }
+      const driverCarDistPct = lapDistPcts[driverCarIdx];
+      if (driverCarDistPct === undefined || driverCarDistPct === -1) return 0;
       let diff = lapDistPcts[idx] - driverCarDistPct;
       if (diff > 0.5) diff -= 1;
       else if (diff < -0.5) diff += 1;
-      const percent = diff / (diff > 0 ? maxDistAPct : maxDistBPct);
-      return Math.round(Math.max(-1, Math.min(1, percent)) * 1000) / 1000;
+      return clampToBar(
+        diff / ((diff > 0 ? distAhead : distBehind) / trackLength)
+      );
     };
+
+    if (!hasOffsets && !trackLength) return defaultState;
 
     let leftState = CarLeftRight.Off;
     let rightState = CarLeftRight.Off;
@@ -113,15 +146,16 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       carLeftRight === CarLeftRight.CarRight ||
       carLeftRight === CarLeftRight.Cars2Right;
 
-    // Logic for Left Slot
     if (hasLeft) {
       leftState =
         carLeftRight === CarLeftRight.Cars2Left
           ? CarLeftRight.Cars2Left
           : CarLeftRight.CarLeft;
-      // If 3-wide but we don't have a locked ID, keep it centered (0)
-      leftPercent =
-        is3Wide && leftCarIdx === null ? 0 : calculatePercent(leftCarIdx);
+      leftPercent = hasOffsets
+        ? percentFromMetres(leftLongitudinalM)
+        : is3Wide && leftCarIdx === null
+          ? 0
+          : percentFromLapDist(leftCarIdx);
 
       const previousLeft = prevPercentsRef.current.left;
       if (
@@ -132,15 +166,16 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       }
     }
 
-    // Logic for Right Slot
     if (hasRight) {
       rightState =
         carLeftRight === CarLeftRight.Cars2Right
           ? CarLeftRight.Cars2Right
           : CarLeftRight.CarRight;
-      // If 3-wide but we don't have a locked ID, keep it centered (0)
-      rightPercent =
-        is3Wide && rightCarIdx === null ? 0 : calculatePercent(rightCarIdx);
+      rightPercent = hasOffsets
+        ? percentFromMetres(rightLongitudinalM)
+        : is3Wide && rightCarIdx === null
+          ? 0
+          : percentFromLapDist(rightCarIdx);
 
       const previousRight = prevPercentsRef.current.right;
       if (
@@ -169,6 +204,9 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     isOnTrack,
     leftCarIdx,
     rightCarIdx,
+    hasOffsets,
+    leftLongitudinalM,
+    rightLongitudinalM,
   ]);
 
   useEffect(() => {
@@ -178,6 +216,16 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       prevPercentsRef.current = { left: null, right: null };
       return;
     }
+
+    prevPercentsRef.current = {
+      left: result.leftPercent !== 0 ? result.leftPercent : null,
+      right: result.rightPercent !== 0 ? result.rightPercent : null,
+    };
+
+    // Nothing to search for. The producer already named the car alongside, so
+    // tracking indices here would cost two state updates -- and a re-render --
+    // per tick to arrive at the number already in hand.
+    if (hasOffsets) return;
 
     const driverDist = lapDistPcts[driverCarIdx];
     const findClosestExcluding = (excludeIdx: number | null) => {
@@ -222,11 +270,6 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       }
       // If BOTH are null (fresh 3-wide), we stay at 0%
     }
-
-    prevPercentsRef.current = {
-      left: result.leftPercent !== 0 ? result.leftPercent : null,
-      right: result.rightPercent !== 0 ? result.rightPercent : null,
-    };
   }, [
     result.show,
     carLeftRight,
@@ -236,6 +279,7 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     result.rightPercent,
     leftCarIdx,
     rightCarIdx,
+    hasOffsets,
   ]);
 
   return result;

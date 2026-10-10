@@ -5,7 +5,7 @@ import {
   SESSION_BAR_ITEM_COMPONENTS,
   isSessionBarItemEnabled,
 } from './sessionBarItemRegistry';
-import type { SessionBarItemKey } from './sessionBarItemTypes';
+import { isSessionBarItemKey } from './sessionBarItemTypes';
 
 interface SessionBarProps {
   settings: SessionBarConfig;
@@ -49,14 +49,19 @@ export const SessionBar = ({
         ? 'px-2'
         : 'px-3';
 
-  // Get display order, fallback to default order
-  const displayOrder = (effectiveBarSettings?.displayOrder ||
-    DEFAULT_DISPLAY_ORDER[position]) as SessionBarItemKey[];
+  // Preserve an intentionally empty order, but fall back if every configured
+  // entry in a nonempty order is invalid.
+  const configuredOrder = Array.isArray(effectiveBarSettings?.displayOrder)
+    ? effectiveBarSettings.displayOrder
+    : DEFAULT_DISPLAY_ORDER[position];
+  const validOrder = configuredOrder.filter(isSessionBarItemKey);
+  const displayOrder =
+    configuredOrder.length > 0 && validOrder.length === 0
+      ? DEFAULT_DISPLAY_ORDER[position]
+      : validOrder;
 
-  const enabledKeys = displayOrder.filter(
-    (key) =>
-      SESSION_BAR_ITEM_COMPONENTS[key] &&
-      isSessionBarItemEnabled(key, effectiveBarSettings, position)
+  const enabledKeys = displayOrder.filter((key) =>
+    isSessionBarItemEnabled(key, effectiveBarSettings, position)
   );
 
   return (

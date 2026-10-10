@@ -13,6 +13,7 @@ import {
   type Telemetry,
 } from '../../types';
 import logger from '../../frontend/utils/logger';
+import { validateImageDataUrl } from '@irdashies/utils/imageDataUrl';
 
 const isDebugMode = () =>
   typeof window !== 'undefined' && (window as any).__DEBUG_MODE__ === true;
@@ -740,7 +741,7 @@ export class WebSocketBridge
             ) {
               this.socket?.removeEventListener('message', handler);
               clearTimeout(timeout);
-              resolve(message.data);
+              resolve(validateImageDataUrl(message.data));
             }
           } catch (e) {
             logger.error('Error in getGarageCoverImageAsDataUrl callback:', e);
@@ -1129,7 +1130,7 @@ export class WebSocketBridge
             ) {
               this.socket?.removeEventListener('message', handler);
               clearTimeout(timeout);
-              resolve(message.data);
+              resolve(validateImageDataUrl(message.data));
             }
           } catch (e) {
             logger.error('Error in getPlayerIconImageAsDataUrl callback:', e);

@@ -1,15 +1,18 @@
-import { useCurrentSessionType } from './useCurrentSessionType';
+import {
+  useCurrentSessionType,
+  type SessionType,
+} from './useCurrentSessionType';
 import type { SessionVisibilitySettings } from '@irdashies/types';
 
-type SessionType =
-  'Race' | 'Lone Qualify' | 'Open Qualify' | 'Practice' | 'Offline Testing';
-
-const SESSION_TYPE_MAP: Record<SessionType, keyof SessionVisibilitySettings> = {
+const SESSION_TYPE_MAP: Partial<
+  Record<SessionType, keyof SessionVisibilitySettings>
+> = {
   Race: 'race',
   'Lone Qualify': 'loneQualify',
   'Open Qualify': 'openQualify',
   Practice: 'practice',
   'Offline Testing': 'offlineTesting',
+  Warmup: 'warmup',
 };
 
 /**

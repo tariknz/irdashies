@@ -181,6 +181,16 @@ const tuningToggle = (
   ),
 });
 
+/** Every session, Warmup included, which the other widgets leave out. */
+const RADAR_SESSIONS = [
+  'race',
+  'loneQualify',
+  'openQualify',
+  'practice',
+  'warmup',
+  'offlineTesting',
+] as const satisfies readonly (keyof RadarConfig['sessionVisibility'])[];
+
 const autoHideOff = (view: RadarConfig) => !view.autoHide;
 
 /** Warn early, normally or late: bumper gaps for the amber warning. */
@@ -373,13 +383,14 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         id: 'sessionVisibility',
         level: 0,
         title: 'Sessions',
-        description: 'Race, qualifying, practice, testing.',
+        description: 'Race, qualifying, practice, warmup, testing.',
         keys: ['sessionVisibility'],
         render: ({ view, set }) => (
           <div className="space-y-3">
             <h4 className="text-md font-medium text-slate-300">Sessions</h4>
             <SessionVisibility
               sessionVisibility={view.sessionVisibility}
+              sessions={RADAR_SESSIONS}
               handleConfigChange={(change) =>
                 set(change as Partial<RadarConfig>)
               }
@@ -814,6 +825,13 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         'hazardOff',
         'Off Track and Rejoining',
         'A car off the track for more than half a second, then while it gets back up to speed. Yellow.',
+        (view) => !view.showHazards
+      ),
+      toggle(
+        0,
+        'hazardShowLabel',
+        'Show What Happened',
+        'Write CRASH, SLOW, OFF or REJOIN before the distance on the rim.',
         (view) => !view.showHazards
       ),
       toggle(

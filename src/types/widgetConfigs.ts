@@ -12,6 +12,8 @@ export interface SessionVisibilitySettings {
   openQualify: boolean;
   practice: boolean;
   offlineTesting: boolean;
+  /** Optional: only widgets that offer it save it; unset shows the widget. */
+  warmup?: boolean;
 }
 
 export type TimeFormat =
@@ -392,6 +394,29 @@ export interface TachometerConfig {
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }
+export interface ShiftLightConfig {
+  showRpmText: boolean;
+  shiftPointStyle?: 'glow' | 'pulse' | 'border';
+  shiftPointSettings: {
+    enabled: boolean;
+    indicatorType: 'glow' | 'pulse' | 'border';
+    indicatorColor: string;
+    carConfigs: Record<
+      string,
+      {
+        enabled: boolean;
+        carId: string;
+        carName: string;
+        gearCount: number;
+        redlineRpm: number;
+        gearShiftPoints: Record<string, { shiftRpm: number }>;
+      }
+    >;
+  };
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
 
 export type LayoutDirection = 'row' | 'col';
 
@@ -619,6 +644,8 @@ export interface RadarConfig {
   hazardSlow: boolean;
   /** Cars off the track, and coming back on. */
   hazardOff: boolean;
+  /** Write what happened (CRASH, SLOW, OFF, REJOIN) before the distance. */
+  hazardShowLabel: boolean;
   /** Write the hazard car's speed under its distance. */
   hazardShowSpeed: boolean;
   /** The rim arc under a hazard's triangle. */
@@ -1370,6 +1397,7 @@ export interface WidgetConfigMap {
   flatmap: FlatTrackMapConfig;
   input: InputConfig;
   tachometer: TachometerConfig;
+  shiftlight: ShiftLightConfig;
   fuel: FuelConfig;
   blindspotmonitor: BlindSpotMonitorConfig;
   radar: RadarConfig;
@@ -1479,6 +1507,7 @@ export type FlatTrackMapWidgetSettings = BaseWidgetSettings<FlatTrackMapConfig>;
 export type SteerWidgetSettings = BaseWidgetSettings<SteerConfig>;
 export type InputWidgetSettings = BaseWidgetSettings<InputConfig>;
 export type TachometerWidgetSettings = BaseWidgetSettings<TachometerConfig>;
+export type ShiftLightWidgetSettings = BaseWidgetSettings<ShiftLightConfig>;
 export type FuelWidgetSettings = BaseWidgetSettings<FuelConfig>;
 export type BlindSpotMonitorWidgetSettings =
   BaseWidgetSettings<BlindSpotMonitorConfig>;

@@ -8,6 +8,7 @@ import { useGantryAlwaysOnTop } from './hooks/useGantryAlwaysOnTop';
 import { GantryReplayNotice } from './components/GantryReplayBanner/GantryReplayBanner';
 import { GantrySessionEndedNotice } from './components/GantrySessionEndedNotice/GantrySessionEndedNotice';
 import { useHeld } from './hooks/useGantrySessionHold';
+import { GantrySessionDataProvider } from './hooks/useGantrySessionData';
 import {
   useRaceControlBridge,
   useReplayContextUpdater,
@@ -78,40 +79,44 @@ const GantryInner = memo(({ dock }: GantryProps) => {
       />
       <GantryReplayNotice />
       <GantrySessionEndedNotice />
-      {activeView === 'standings-incidents' && (
-        <SplitPane
-          label="Standings and incidents split"
-          storageKey={SPLIT_STORAGE_KEY}
-          left={<GantryStandings followedCarIdx={followedCarIdx} />}
-          right={
-            dock ? (
-              <SplitPane
-                orientation="vertical"
-                label="Incidents and docked panels split"
-                storageKey={DOCK_SPLIT_STORAGE_KEY}
-                defaultPercent={60}
-                left={<GantryIncidents />}
-                right={dock}
-              />
-            ) : (
-              <GantryIncidents />
-            )
-          }
-        />
-      )}
-      {activeView === 'lap-graph' && (
-        <div className="flex-1 overflow-hidden">
-          <LapGraphView
-            followedCarIdx={followedCarIdx}
-            selectedClassId={lapGraphClassId}
-            onClassChange={setLapGraphClassId}
-            chosenMode={lapGraphMode}
-            onModeChange={setLapGraphMode}
-            chosenPins={lapGraphPins}
-            onPinsChange={setLapGraphPins}
+      {/* Above the tab switch, so both tabs' data keeps being collected and
+          held whichever one is showing. */}
+      <GantrySessionDataProvider>
+        {activeView === 'standings-incidents' && (
+          <SplitPane
+            label="Standings and incidents split"
+            storageKey={SPLIT_STORAGE_KEY}
+            left={<GantryStandings followedCarIdx={followedCarIdx} />}
+            right={
+              dock ? (
+                <SplitPane
+                  orientation="vertical"
+                  label="Incidents and docked panels split"
+                  storageKey={DOCK_SPLIT_STORAGE_KEY}
+                  defaultPercent={60}
+                  left={<GantryIncidents />}
+                  right={dock}
+                />
+              ) : (
+                <GantryIncidents />
+              )
+            }
           />
-        </div>
-      )}
+        )}
+        {activeView === 'lap-graph' && (
+          <div className="flex-1 overflow-hidden">
+            <LapGraphView
+              followedCarIdx={followedCarIdx}
+              selectedClassId={lapGraphClassId}
+              onClassChange={setLapGraphClassId}
+              chosenMode={lapGraphMode}
+              onModeChange={setLapGraphMode}
+              chosenPins={lapGraphPins}
+              onPinsChange={setLapGraphPins}
+            />
+          </div>
+        )}
+      </GantrySessionDataProvider>
     </div>
   );
 });

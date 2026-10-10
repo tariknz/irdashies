@@ -9,11 +9,14 @@ import {
   extractDriverName,
 } from '../../../shared/DriverName/DriverName';
 import { type Gap, useHighlightColor } from '@irdashies/domain';
-import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
-import { useLapTimesStoreUpdater } from '@irdashies/context';
+import { useActiveSimulator } from '@irdashies/context';
+import { simulatorHasDriverRatings } from '@irdashies/types';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { useGantrySettings } from '../../hooks/useGantrySettings';
-import { useHeld } from '../../hooks/useGantrySessionHold';
+import {
+  useGantrySessionData,
+  type GantrySessionData,
+} from '../../hooks/useGantrySessionData';
 import type { NameFormat } from '@irdashies/types';
 
 interface Props {
@@ -156,24 +159,13 @@ const formatInterval = (
   return interval.toFixed(1);
 };
 
-const isEmptyStandings = (standings: readonly unknown[]) =>
-  standings.length === 0;
-
 export const GantryStandings = memo(({ followedCarIdx }: Props) => {
-  useLapTimesStoreUpdater(true);
+  // Resolved here and passed down, so the rows stay driven by props rather
+  // than reaching into context themselves.
+  const simulator = useActiveSimulator();
+  const showRatings = simulatorHasDriverRatings(simulator);
   const nameFormat = useGantrySettings()?.driverNameFormat ?? 'surname';
-  // Gap and interval are only calculated when the settings say they are
-  // enabled, so passing nothing leaves both columns empty. The cast is needed
-  // because the settings type marks these fields required.
-  const liveStandings = useDriverStandings(
-    {
-      gap: { enabled: true },
-      interval: { enabled: true },
-      lapTimeDeltas: { enabled: true, numLaps: 3 },
-    } as Parameters<typeof useDriverStandings>[0],
-    { showAll: true }
-  );
-  const standingsByClass = useHeld(liveStandings, isEmptyStandings);
+  const { standingsByClass } = useGantrySessionData();
   const followedRef = useRef<HTMLDivElement | null>(null);
 
   // Clicking a row points the sim's camera at that car. Only meaningful in a
@@ -244,6 +236,7 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
                     highlightColorHex={highlightColorHex}
                     nameFormat={nameFormat}
                     onFocusDriver={handleFocusDriver}
+                    showRatings={showRatings}
                   />
                 ))}
               </div>
@@ -257,7 +250,7 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
 GantryStandings.displayName = 'GantryStandings';
 
 interface GantryDriverRowProps {
-  driver: ReturnType<typeof useDriverStandings>[number][1][number];
+  driver: GantrySessionData['standingsByClass'][number][1][number];
   idx: number;
   followedCarIdx: number | null;
   followedRef: React.RefObject<HTMLDivElement | null>;
@@ -265,6 +258,8 @@ interface GantryDriverRowProps {
   highlightColorHex: string;
   nameFormat: NameFormat;
   onFocusDriver: (carNumber: string) => void;
+  /** False when the running simulator has no driver-rating system. */
+  showRatings: boolean;
 }
 
 const GantryDriverRow = memo(
@@ -277,6 +272,7 @@ const GantryDriverRow = memo(
     highlightColorHex,
     nameFormat,
     onFocusDriver,
+    showRatings,
   }: GantryDriverRowProps) => {
     const isPlayer = driver.isPlayer;
     const isFollowed = driver.carIdx === followedCarIdx;
@@ -355,13 +351,16 @@ const GantryDriverRow = memo(
             <Compound tireCompound={driver.tireCompound} />
           )}
         </span>
-        {/* iR */}
+        {/* iR -- empty under a sim with no rating system; the column keeps
+            its width so the rows below stay aligned. */}
         <span className={`${COL.rating} flex items-center justify-end`}>
-          <DriverRatingBadge
-            license={driver.driver.license}
-            rating={driver.driver.rating}
-            format="rating-bw-no-license"
-          />
+          {showRatings && (
+            <DriverRatingBadge
+              license={driver.driver.license}
+              rating={driver.driver.rating}
+              format="rating-bw-no-license"
+            />
+          )}
         </span>
         {/* Pit */}
         <span className={`${COL.pit} text-xs`}>

@@ -1,0 +1,345 @@
+import { fnv1a32 } from '../hash';
+import {
+  REST_BACKOFF_FACTOR,
+  REST_ABSENT_MAX_RETRY_MS,
+  REST_ABSENT_RETRY_MS,
+  REST_MAX_INTERVAL_MS,
+  REST_RETRY_DELAY_MS,
+  REST_RETRY_LIMIT,
+} from './constants';
+import { LMU_REST_TASKS, type LmuRestTask } from './tasks';
+import { resetLmuRestData, type LmuRestData } from './state';
+
+/**
+ * Polls LMU's REST API outside the telemetry loop.
+ *
+ * The loop runs on an 8 ms budget (see TELEMETRY_POLL_INTERVAL in
+ * lmuSdkBridge.ts) and a loopback connect can take a second to fail. So nothing
+ * here is ever awaited by the loop: this owns its own setTimeout chain, writes
+ * into the shared LmuRestData, and the loop reads that object synchronously.
+ *
+ * CPU, which is the reason for most of the machinery below:
+ *
+ * - A response identical to the previous one is **not parsed at all**. The body
+ *   is hashed and compared first, and only a changed hash pays for JSON.parse
+ *   and the parsers.
+ * - An unchanged response also grows the task's interval by REST_BACKOFF_FACTOR
+ *   up to REST_MAX_INTERVAL_MS. A pit menu nobody is touching settles from its
+ *   base rate to the cap within a handful of polls, after which the steady
+ *   cost is one request per cap-interval and one hash pass over a few KB.
+ * - A changed response resets the interval, so the moment the driver opens the
+ *   pit menu it is responsive again.
+ *
+ * Absence is the common case and must be cheap: most people run iRacing, and an
+ * older LMU has no REST API at all. A refused connection on the first request
+ * after activation latches every task off at once and logs a single line, so a
+ * session costs one failed connect rather than one per task per interval.
+ *
+ * That latch expires rather than holding for the session, because the API is a
+ * server inside the sim and its port need not be open at the moment the app
+ * first reaches shared memory. It is re-probed on a doubling interval, from
+ * REST_ABSENT_RETRY_MS out to REST_ABSENT_MAX_RETRY_MS, so an API that was
+ * merely late is picked up within half a minute while an installation that has
+ * none settles at one failed connect every few minutes.
+ */
+
+export type LmuRestFailure =
+  | 'refused'
+  | 'timeout'
+  | 'status'
+  | 'network'
+  /**
+   * Nothing to serve yet, and that is not a fault.
+   *
+   * A tape's REST records are interleaved with its snapshots, so early in
+   * playback a path legitimately has no body yet. Counting that as a failure
+   * would latch the task off three seconds into every replay. Retried at the
+   * base interval, indefinitely, without consuming a retry.
+   */
+  | 'pending';
+
+export type LmuRestResponse =
+  | { readonly ok: true; readonly body: string }
+  | { readonly ok: false; readonly reason: LmuRestFailure };
+
+/** Injected so specs drive the poller with no server and no sockets. */
+export type LmuRestTransport = (path: string) => Promise<LmuRestResponse>;
+
+export interface LmuRestPollerLogger {
+  info: (message: string) => void;
+  warn: (message: string) => void;
+}
+
+export interface LmuRestPollerOptions {
+  data: LmuRestData;
+  transport: LmuRestTransport;
+  logger?: LmuRestPollerLogger;
+  tasks?: readonly LmuRestTask[];
+}
+
+export interface LmuRestPoller {
+  /** True while LMU is running. Turning it off clears the data. */
+  setActive: (active: boolean) => void;
+  /** Re-runs the one-shot tasks, for a track or session change. */
+  invalidateOnce: () => void;
+  stop: () => void;
+}
+
+interface TaskState {
+  intervalMs: number;
+  hash: number | undefined;
+  failures: number;
+  /** Latched off until the next activation. */
+  missing: boolean;
+  /** A one-shot task that has already landed. */
+  satisfied: boolean;
+  inFlight: boolean;
+  timer: ReturnType<typeof setTimeout> | undefined;
+}
+
+export function createLmuRestPoller({
+  data,
+  transport,
+  logger,
+  tasks = LMU_REST_TASKS,
+}: LmuRestPollerOptions): LmuRestPoller {
+  const states = new Map<string, TaskState>(
+    tasks.map((task) => [
+      task.id,
+      {
+        intervalMs: task.baseIntervalMs,
+        hash: undefined,
+        failures: 0,
+        missing: false,
+        satisfied: false,
+        inFlight: false,
+        timer: undefined,
+      },
+    ])
+  );
+
+  let active = false;
+  let stopped = false;
+  /**
+   * Set once a connection is refused before anything has ever answered, which
+   * means the API is not there at all rather than one resource being absent.
+   */
+  let absent = false;
+  let reportedAbsent = false;
+  let absentRetryMs = REST_ABSENT_RETRY_MS;
+  /**
+   * Bumped whenever the poller is reset, so a request that was already in
+   * flight can tell that the world moved while it was away.
+   *
+   * Checking `stopped || !active` after the await was not enough: deactivate
+   * and reactivate while a request is outstanding and the check passes, so the
+   * previous session's response was applied into data that had just been
+   * cleared.
+   */
+  let generation = 0;
+  let absentTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const stateOf = (task: LmuRestTask) => states.get(task.id) as TaskState;
+
+  const clearTimers = () => {
+    states.forEach((state) => {
+      if (state.timer !== undefined) clearTimeout(state.timer);
+      state.timer = undefined;
+    });
+  };
+
+  /**
+   * Lifts the absent latch after a wait, so the tasks probe once more.
+   *
+   * Doubling to a ceiling: quick enough to catch an API that was merely slow
+   * to open its port, cheap enough that an installation without one settles at
+   * a single failed connect every few minutes rather than a retry storm.
+   */
+  const scheduleAbsentProbe = () => {
+    if (stopped || !active || absentTimer !== undefined) return;
+    absentTimer = setTimeout(() => {
+      absentTimer = undefined;
+      if (stopped || !active) return;
+      absent = false;
+      absentRetryMs = Math.min(absentRetryMs * 2, REST_ABSENT_MAX_RETRY_MS);
+      startAll();
+    }, absentRetryMs);
+  };
+
+  const schedule = (task: LmuRestTask, delayMs: number) => {
+    const state = stateOf(task);
+    if (stopped || !active || state.missing || absent) return;
+    if (state.timer !== undefined) clearTimeout(state.timer);
+    state.timer = setTimeout(() => {
+      state.timer = undefined;
+      void run(task);
+    }, delayMs);
+  };
+
+  const applyBody = (task: LmuRestTask, body: string): boolean => {
+    const state = stateOf(task);
+    const hash = fnv1a32(body);
+    if (hash === state.hash) return false;
+    state.hash = hash;
+
+    let payload: unknown;
+    try {
+      payload = JSON.parse(body);
+    } catch {
+      // Served something that is not JSON. Treated as a changed-but-useless
+      // response: the hash is remembered, so an endpoint stuck on a non-JSON
+      // error page is not re-parsed every interval.
+      return true;
+    }
+
+    let sessionChanged = false;
+    for (const output of task.outputs) {
+      const value = output.parse(payload);
+      if (value === undefined) continue;
+      output.apply(data, value);
+      if (output.target === 'session') sessionChanged = true;
+    }
+    if (sessionChanged) data.revision += 1;
+    return true;
+  };
+
+  const run = async (task: LmuRestTask) => {
+    const state = stateOf(task);
+    if (stopped || !active || state.missing || absent || state.inFlight) return;
+    state.inFlight = true;
+    const startedIn = generation;
+
+    let response: LmuRestResponse;
+    try {
+      response = await transport(task.path);
+    } catch {
+      // A transport is contracted to resolve, not reject. Treat a throw as a
+      // network failure rather than letting it escape into an unhandled
+      // rejection and kill the chain.
+      response = { ok: false, reason: 'network' };
+    } finally {
+      state.inFlight = false;
+    }
+
+    // A response from before a reset describes a session that has ended.
+    if (stopped || !active || generation !== startedIn) {
+      // Discarding it is not enough: the reactivation that invalidated it
+      // tried to start this task and found inFlight still true, so it never
+      // scheduled anything. Dropping out here as well left the task polling
+      // nothing for the rest of the session. Reactivation lost a cycle, so
+      // this one goes out immediately rather than at the usual interval;
+      // `schedule` re-checks stopped, active, missing and absent itself.
+      if (!stopped && active) schedule(task, 0);
+      return;
+    }
+
+    if (!response.ok) {
+      // Not an error: the source has nothing for this path yet. Try again at
+      // the base rate without spending a retry.
+      if (response.reason === 'pending') {
+        schedule(task, task.baseIntervalMs);
+        return;
+      }
+
+      // Nothing has ever answered and the port refused: the API is not there
+      // -- for now. The sim's REST server need not have its port open at the
+      // moment the app first reaches shared memory, so this is re-probed
+      // rather than latched for the life of the process.
+      if (response.reason === 'refused' && state.hash === undefined) {
+        absent = true;
+        clearTimers();
+        if (!reportedAbsent) {
+          reportedAbsent = true;
+          logger?.info(
+            `[lmuRest] No REST API on this port; retrying in ${absentRetryMs / 1000}s`
+          );
+        }
+        scheduleAbsentProbe();
+        return;
+      }
+
+      state.failures += 1;
+      if (state.failures >= REST_RETRY_LIMIT) {
+        state.missing = true;
+        logger?.warn(
+          `[lmuRest] Giving up on ${task.path} after ${state.failures} failures (${response.reason})`
+        );
+        return;
+      }
+      schedule(task, REST_RETRY_DELAY_MS);
+      return;
+    }
+
+    state.failures = 0;
+    const changed = applyBody(task, response.body);
+
+    if (task.mode === 'once') {
+      state.satisfied = true;
+      return;
+    }
+
+    state.intervalMs = changed
+      ? task.baseIntervalMs
+      : Math.min(state.intervalMs * REST_BACKOFF_FACTOR, REST_MAX_INTERVAL_MS);
+    schedule(task, state.intervalMs);
+  };
+
+  const startAll = () => {
+    tasks.forEach((task) => {
+      const state = stateOf(task);
+      if (state.missing || (task.mode === 'once' && state.satisfied)) return;
+      // First request immediately: waiting a full interval for a pit-stop
+      // estimate that is already available is a visible delay.
+      schedule(task, 0);
+    });
+  };
+
+  return {
+    setActive: (next: boolean) => {
+      if (stopped || next === active) return;
+      active = next;
+      generation += 1;
+      if (!active) {
+        clearTimers();
+        if (absentTimer !== undefined) clearTimeout(absentTimer);
+        absentTimer = undefined;
+        // A fresh session gets a fresh probe at the short interval.
+        absent = false;
+        reportedAbsent = false;
+        absentRetryMs = REST_ABSENT_RETRY_MS;
+        resetLmuRestData(data);
+        states.forEach((state) => {
+          state.intervalMs = 0;
+          state.hash = undefined;
+          state.failures = 0;
+          state.missing = false;
+          state.satisfied = false;
+        });
+        tasks.forEach((task) => {
+          stateOf(task).intervalMs = task.baseIntervalMs;
+        });
+        return;
+      }
+      startAll();
+    },
+
+    invalidateOnce: () => {
+      if (stopped) return;
+      tasks.forEach((task) => {
+        if (task.mode !== 'once') return;
+        const state = stateOf(task);
+        state.satisfied = false;
+        state.hash = undefined;
+        if (active) schedule(task, 0);
+      });
+    },
+
+    stop: () => {
+      stopped = true;
+      if (absentTimer !== undefined) clearTimeout(absentTimer);
+      absentTimer = undefined;
+      active = false;
+      clearTimers();
+    },
+  };
+}
