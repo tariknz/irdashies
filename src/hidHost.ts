@@ -58,6 +58,8 @@ async function openDevice(device: HIDDevice): Promise<void> {
   }
 
   device.addEventListener('inputreport', (event) => {
+    // Devices may send their first report only on a real press. Forward all
+    // edges; GamepadManager excludes unbound status bits from chord matching.
     for (const change of buttonChanges(
       event.data,
       state.buttons,
