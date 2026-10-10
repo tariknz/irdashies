@@ -73,6 +73,8 @@ describe('DashboardContext', () => {
     mockBridge.dashboardUpdated = vi.fn();
     mockBridge.listProfiles = vi.fn().mockResolvedValue([]);
     mockBridge.getCurrentProfile = vi.fn().mockResolvedValue(null);
+    mockBridge.onDemoModeChanged = vi.fn();
+    mockBridge.getIsDemoMode = undefined;
   });
 
   it('provides the current dashboard', async () => {
@@ -161,6 +163,50 @@ describe('DashboardContext', () => {
       expect(screen.getByTestId('current-dashboard').textContent).toBe(
         JSON.stringify(mockDashboard)
       );
+    });
+  });
+
+  describe('demo mode', () => {
+    const DemoModeProbe = () => {
+      const { isDemoMode } = useDashboard();
+      return <div data-testid="demo-mode">{String(isDemoMode)}</div>;
+    };
+
+    it('picks up demo mode switched on before the window opened', async () => {
+      mockBridge.getIsDemoMode = vi.fn().mockResolvedValue(true);
+
+      render(
+        <DashboardProvider bridge={mockBridge}>
+          <DemoModeProbe />
+        </DashboardProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('demo-mode').textContent).toBe('true');
+      });
+    });
+
+    it('lets a change event beat a stale answer', async () => {
+      let answer: (value: boolean) => void = () => undefined;
+      mockBridge.getIsDemoMode = vi.fn(
+        () => new Promise<boolean>((resolve) => (answer = resolve))
+      );
+      let announce: (value: boolean) => void = () => undefined;
+      mockBridge.onDemoModeChanged = vi.fn((callback) => {
+        announce = callback;
+        return undefined;
+      });
+
+      render(
+        <DashboardProvider bridge={mockBridge}>
+          <DemoModeProbe />
+        </DashboardProvider>
+      );
+
+      act(() => announce(false));
+      await act(async () => answer(true));
+
+      expect(screen.getByTestId('demo-mode').textContent).toBe('false');
     });
   });
 

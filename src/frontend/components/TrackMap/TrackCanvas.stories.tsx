@@ -1,8 +1,8 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { TrackCanvas, TrackDriver } from './TrackCanvas';
 import { useEffect, useMemo, useState } from 'react';
-import tracks from './tracks/tracks.json';
-import { BROKEN_TRACKS } from './tracks/brokenTracks';
+import tracks from '@irdashies/domain/track/tracks/tracks.json';
+import { BROKEN_TRACKS } from '@irdashies/domain/track/tracks/brokenTracks';
 import { useTelemetryStore } from '@irdashies/context';
 import type { Telemetry } from '@irdashies/types';
 import {
@@ -13,8 +13,8 @@ import {
 // Inline data URL for a recognisable car-shaped icon. Embedding it inline keeps
 // the story self-contained — no bridge or filesystem access required.
 const SAMPLE_ICON_DATA_URL =
-  'data:image/svg+xml;utf8,' +
-  encodeURIComponent(`
+  'data:image/svg+xml;base64,' +
+  btoa(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
       <defs>
         <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">

@@ -2,6 +2,7 @@ import type { FuelLapData } from '../fuelCalculatorBridge';
 import type { Incident } from '../raceControl';
 import type { ReferenceLap } from '../referenceLaps';
 import type { Sector } from '../session';
+import type { ReplayContextSnapshot } from './replayContext';
 
 export type SessionLifecycleEvent =
   | { type: 'enter'; replay: boolean }
@@ -18,6 +19,7 @@ export interface ChannelPayloads {
   'lap-log.snapshot': LapLogSnapshot;
   'lap-history.snapshot': LapHistorySnapshot;
   'reference-laps.snapshot': ReferenceLapsSnapshot;
+  'radar.snapshot': RadarSnapshot;
   'radio.snapshot': RadioSnapshot;
   'relative-gaps.snapshot': RelativeGapsSnapshot;
   'sector-timing.snapshot': SectorTimingSnapshot;
@@ -33,6 +35,7 @@ export interface ChannelPayloads {
    * disconnected. The Gantry reloads its persisted incidents on each change.
    */
   'raceControl.sessionId': string;
+  'replay.context': ReplayContextSnapshot;
 }
 
 export interface TrackStateSnapshot {
@@ -117,8 +120,104 @@ export interface LapTraceSampleSnapshot {
 
 export interface BlindSpotSnapshot {
   carLeftRight: number;
+  /**
+   * Only populated when the running sim reports no true relative position, so
+   * the consumer has to reconstruct one by subtracting lap fractions. Left
+   * empty when the offsets below are supplied, which also keeps a 100-plus
+   * element array off the channel on every tick.
+   */
   carIdxLapDistPct: readonly number[];
   isOnTrack: boolean;
+  /**
+   * Fore(+)/aft(-) metres of the nearest car on each side.
+   *
+   * null means the sim does not report it -- iRacing publishes no per-car
+   * world position -- and the lap-fraction fallback applies. A sim that does
+   * report it gives a signal in metres at the telemetry rate, rather than one
+   * quantised by a slower scoring block.
+   */
+  leftLongitudinalM: number | null;
+  rightLongitudinalM: number | null;
+  version: number;
+}
+
+/** One rival close enough to the focus car to appear on the radar. */
+export interface RadarCar {
+  carIdx: number;
+  /** Metres along the track from the focus car; positive is ahead. */
+  dist: number;
+  /** Rate of change of `dist` in m/s; positive means pulling away ahead. */
+  closingSpeed: number;
+  /**
+   * Lateral lane relative to the focus car, in lanes; 0 is our lane,
+   * negative is left. iRacing publishes no lateral position, so this is an
+   * estimate (see `laneSource`) and moves smoothly between whole lanes.
+   */
+  lane: number;
+  /**
+   * Where `lane` came from: the standing-start grid or the pace line (both
+   * known from the sim), the spotter calling this car alongside, a side
+   * remembered after the overlap ended, a guess that two rivals level with
+   * each other must be side by side, or nothing (drawn in our lane).
+   */
+  laneSource: 'none' | 'grid' | 'pace' | 'spotter' | 'memory' | 'pair';
+  onPitRoad: boolean;
+  offTrack: boolean;
+}
+
+/**
+ * What makes a car ahead a hazard: a sudden stop or a stopped car, a car far
+ * slower than the field runs at that spot, a car off the track, or one
+ * coming back on.
+ */
+export type RadarHazardKind = 'crash' | 'slow' | 'off' | 'rejoin';
+
+/** A car ahead in trouble, possibly far beyond the radar's range. */
+export interface RadarHazard {
+  carIdx: number;
+  /** Metres along the track from the focus car; positive is ahead. */
+  dist: number;
+  kind: RadarHazardKind;
+  /** The hazard car's own speed along the track, m/s. */
+  speed: number;
+}
+
+export interface RadarSnapshot {
+  focusCarIdx: number | null;
+  /** Full-precision lap progress of the focus car, 0..1. */
+  playerPct: number;
+  /** Focus car speed along the track in m/s. */
+  playerSpeed: number;
+  /** Metres, from the session's WeekendInfo. 0 until a session arrives. */
+  trackLength: number;
+  focusOnPitRoad: boolean;
+  /** The focus car is parked in its pit box. */
+  focusInPitBox: boolean;
+  isOnTrack: boolean;
+  /**
+   * The field is in a known formation: sitting on a standing-start grid, or
+   * lined up behind the pace car. Lanes then come from the sim, not guesses.
+   */
+  formation: 'grid' | 'pace' | null;
+  /**
+   * While pacing, the car to line up behind (the pace car from the front
+   * row). `dist` is in metres and not limited to the radar's range.
+   */
+  follow: { carIdx: number; dist: number; isPaceCar: boolean } | null;
+  /**
+   * Brake pedal 0..1 while we drive the focus car ourselves; null when the
+   * camera is on someone else, whose pedals the sim does not report.
+   */
+  focusBrake: number | null;
+  /** A yellow or caution is out, so position fights are off. */
+  caution: boolean;
+  /** Only cars within the processor's range, nearest first. */
+  cars: readonly RadarCar[];
+  /**
+   * Cars in trouble ahead, nearest first, out to `RADAR_HAZARD_MAX_M`. Empty
+   * under a full-course caution and in formation, when everyone is slow.
+   */
+  hazards: readonly RadarHazard[];
   version: number;
 }
 
@@ -498,6 +597,11 @@ export const channelRegistry = {
     defaultRateHz: 5,
     maxRateHz: 5,
   },
+  'radar.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 25,
+    maxRateHz: 25,
+  },
   'radio.snapshot': {
     kind: 'snapshot',
     defaultRateHz: 25,
@@ -541,6 +645,12 @@ export const channelRegistry = {
   'session.lifecycle': { kind: 'event' },
   'raceControl.incidents': { kind: 'event' },
   'raceControl.sessionId': { kind: 'event' },
+  // Publishes on change only: a replay is loaded, or its provenance resolves.
+  'replay.context': {
+    kind: 'snapshot',
+    defaultRateHz: 1,
+    maxRateHz: 1,
+  },
 } as const satisfies ChannelRegistry;
 
 export interface ChannelBridge {

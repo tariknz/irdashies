@@ -8,6 +8,7 @@ import { FlatTrackMapSettings } from './sections/FlatTrackMapSettings';
 import { AdvancedSettings } from './sections/AdvancedSettings';
 import { InputSettings } from './sections/InputSettings';
 import { TachometerSettings } from './sections/TachometerSettings';
+import { ShiftLightSettings } from './sections/ShiftLightSettings';
 import { AboutSettings } from './sections/AboutSettings';
 import { FasterCarsFromBehindSettings } from './sections/FasterCarsFromBehindSettings';
 import { FuelSettings } from './sections/FuelSettings';
@@ -15,6 +16,7 @@ import { RejoinIndicatorSettings } from './sections/RejoinIndicatorSettings';
 import { PitlaneHelperSettings } from './sections/PitlaneHelperSettings';
 import { GeneralSettings } from './sections/GeneralSettings';
 import { BlindSpotMonitorSettings } from './sections/BlindSpotMonitorSettings';
+import { RadarSettings } from './sections/RadarSettings';
 import { GarageCoverSettings } from './sections/GarageCoverSettings';
 import { ProfileSettings } from './sections/ProfileSettings';
 import { FlagSettings } from './sections/FlagSettings';
@@ -76,6 +78,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <InputSettings widgetId={widget?.id} />;
     case 'tachometer':
       return <TachometerSettings />;
+    case 'shiftlight':
+      return <ShiftLightSettings />;
     case 'pitlanehelper':
       return <PitlaneHelperSettings />;
     case 'rejoin':
@@ -84,6 +88,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <FasterCarsFromBehindSettings />;
     case 'blindspotmonitor':
       return <BlindSpotMonitorSettings />;
+    case 'radar':
+      return <RadarSettings />;
     case 'garagecover':
       return <GarageCoverSettings />;
     case 'flag':

@@ -149,6 +149,12 @@ export const widgetItems: MenuItem[] = [
     widgetType: 'pitlanehelper',
   },
   {
+    to: '/settings/radar',
+    path: '/radar',
+    label: 'Radar',
+    widgetType: 'radar',
+  },
+  {
     to: '/settings/rejoin',
     path: '/rejoin',
     label: 'Rejoin Indicator',
@@ -165,6 +171,12 @@ export const widgetItems: MenuItem[] = [
     path: '/sectordelta',
     label: 'Sector Delta',
     widgetType: 'sectordelta',
+  },
+  {
+    to: '/settings/shiftlight',
+    path: '/shiftlight',
+    label: 'Shift Light',
+    widgetType: 'shiftlight',
   },
   {
     to: '/settings/slowcarahead',

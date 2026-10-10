@@ -62,6 +62,14 @@ interface DriverRowInfoProps {
   avgLapTime?: number;
   isMultiClass: boolean;
   displayOrder?: string[];
+  /**
+   * Columns the running simulator has no data for, resolved by the parent.
+   *
+   * Passed in rather than read from context here so this row stays driven by
+   * its props, and so the header -- which builds its own column list -- is
+   * guaranteed to be filtering from the very same set.
+   */
+  hiddenColumns?: ReadonlySet<string>;
   config?: RelativeWidgetSettings['config'] | StandingsWidgetSettings['config'];
   lastPitLap?: number;
   lastLap?: number;
@@ -216,6 +224,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     avgLapTime,
     isMultiClass,
     displayOrder,
+    hiddenColumns,
     config,
     lastPitLap,
     lastLap,
@@ -662,24 +671,33 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
       },
     ];
 
+    // Applied once, ahead of the ordering logic, so a hidden column is gone
+    // from every path below -- including an explicit displayOrder that names
+    // it. The header row is filtered from the same set by the parent; if the
+    // two disagreed the header would stop lining up with the cells.
+    const renderable = hiddenColumns?.size
+      ? columns.filter((col) => !hiddenColumns.has(col.id))
+      : columns;
+
     if (displayOrder) {
       const orderedColumns = displayOrder
-        .map((orderId) => columns.find((col) => col.id === orderId))
+        .map((orderId) => renderable.find((col) => col.id === orderId))
         .filter(
           (col): col is NonNullable<typeof col> =>
             col !== undefined && col.shouldRender
         );
 
-      const remainingColumns = columns.filter(
+      const remainingColumns = renderable.filter(
         (col) => col.shouldRender && !displayOrder.includes(col.id)
       );
 
       return [...orderedColumns, ...remainingColumns];
     }
 
-    return columns.filter((col) => col.shouldRender);
+    return renderable.filter((col) => col.shouldRender);
   }, [
     displayOrder,
+    hiddenColumns,
     config,
     position,
     lap,

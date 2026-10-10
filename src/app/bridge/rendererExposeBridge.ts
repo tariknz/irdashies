@@ -22,6 +22,7 @@ import type {
   LapTraceRecord,
   LapTraceSource,
   RaceControlBridge,
+  LapHistoryBridge,
   Incident,
   IncidentThresholds,
   SessionRetention,
@@ -88,6 +89,7 @@ export function exposeBridge() {
       ipcRenderer.on('runningState', handler);
       return () => ipcRenderer.removeListener('runningState', handler);
     },
+    getRunningState: () => ipcRenderer.invoke('getRunningState'),
     stop: () => {
       for (const stream of rendererDataListenerCounts.keys()) {
         void rendererDataSubscriptions.unsubscribe(stream);
@@ -175,6 +177,12 @@ export function exposeBridge() {
       ipcRenderer.on('demoModeChanged', handler);
       return () => ipcRenderer.removeListener('demoModeChanged', handler);
     },
+    getIsDemoMode: () => {
+      return ipcRenderer.invoke('getIsDemoMode');
+    },
+    getRadarPoleSides: () => ipcRenderer.invoke('radar:getPoleSides'),
+    setRadarPoleSide: (track, kind, side) =>
+      ipcRenderer.invoke('radar:setPoleSide', track, kind, side),
     notifySimulatorPreferenceChanged: () => {
       ipcRenderer.send('simulatorPreferenceChanged');
     },
@@ -449,5 +457,9 @@ export function exposeBridge() {
     updateRetention: (retention: SessionRetention) =>
       ipcRenderer.invoke('raceControl:updateRetention', retention),
     showGantryWindow: () => ipcRenderer.invoke('raceControl:showGantryWindow'),
+  });
+  defineBridge<LapHistoryBridge>('lapHistoryBridge', {
+    getArchived: (sessionNum: number) =>
+      ipcRenderer.invoke('lapHistory:getArchived', sessionNum),
   });
 }

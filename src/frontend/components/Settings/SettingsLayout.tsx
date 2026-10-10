@@ -11,7 +11,11 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router-dom';
-import { useActiveSimulator, useDashboard } from '@irdashies/context';
+import {
+  useActiveSimulator,
+  useDashboard,
+  useRunningState,
+} from '@irdashies/context';
 import { simulatorDisplayName } from '@irdashies/types';
 import { SettingsLoader } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
@@ -27,7 +31,13 @@ export const SettingsLayout = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [editModeAccelerator, setEditModeAccelerator] = useState('F6');
-  const simulatorName = simulatorDisplayName(useActiveSimulator());
+  const activeSimulator = useActiveSimulator();
+  const { running } = useRunningState();
+  // The name says which sim is feeding the overlays, so it has no business
+  // being up when none is. The active simulator is deliberately not cleared on
+  // a disconnect -- that drives widget filtering and would rebuild every
+  // overlay window -- so the running state is what gates the display.
+  const simulatorName = running ? simulatorDisplayName(activeSimulator) : null;
 
   useEffect(() => {
     window.keybindingsBridge?.getKeybindings().then((bindings) => {

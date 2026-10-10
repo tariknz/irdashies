@@ -25,6 +25,8 @@ vi.mock('@irdashies/context', () => ({
   // No simulator detected, so no widget is dropped as unsupported.
   useActiveSimulator: () => null,
   useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
+  isGantryOnly: (widget: { placement?: string }) =>
+    widget.placement === 'gantry',
 }));
 
 vi.mock('../../WidgetIndex', () => ({

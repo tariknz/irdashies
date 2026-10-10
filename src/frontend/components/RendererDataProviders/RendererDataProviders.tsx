@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { DashboardWidget } from '@irdashies/types';
 import {
   PitLaneProvider,
   ReferenceStoreProvider,
@@ -16,9 +17,13 @@ import {
 
 export const RendererDataProviders = ({
   browser = false,
+  widgets: widgetsOverride,
   widgetId,
+  sessionAlreadyMounted = false,
 }: {
   browser?: boolean;
+  /** Mount for these widgets instead of the ones on this display. */
+  widgets?: readonly DashboardWidget[];
   /**
    * Scope the providers to a single widget, for a one-widget browser source.
    *
@@ -30,8 +35,11 @@ export const RendererDataProviders = ({
    * render permanently empty with nothing to say why.
    */
   widgetId?: string;
+  /** The window already mounts a SessionProvider of its own. */
+  sessionAlreadyMounted?: boolean;
 }) => {
-  const widgets = useWidgetsForThisDisplay(browser);
+  const displayWidgets = useWidgetsForThisDisplay(browser);
+  const widgets = widgetsOverride ?? displayWidgets;
   const { currentDashboard } = useDashboard();
   // Looked up in the whole profile, not the enabled list above, so a disabled
   // widget still resolves. Only the type is taken from it: a second instance
@@ -44,10 +52,10 @@ export const RendererDataProviders = ({
     return {
       telemetryInspector: rendererNeedsTelemetryInspector(scoped),
       referenceLaps: rendererNeedsChannel(scoped, 'reference-laps.snapshot'),
-      sessionData: rendererNeedsSessionData(scoped),
+      sessionData: !sessionAlreadyMounted && rendererNeedsSessionData(scoped),
       pitLaneData: rendererNeedsPitLaneData(scoped),
     };
-  }, [widgets, widgetId, scopedType]);
+  }, [widgets, widgetId, scopedType, sessionAlreadyMounted]);
 
   if (
     !runtimeNeeds.telemetryInspector &&

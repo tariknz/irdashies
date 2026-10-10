@@ -1,0 +1,118 @@
+import type { ForgeConfig } from '@electron-forge/shared-types';
+import { MakerSquirrel } from '@electron-forge/maker-squirrel';
+import { MakerDMG } from '@electron-forge/maker-dmg';
+import { VitePlugin } from '@electron-forge/plugin-vite';
+import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
+import { FusesPlugin } from '@electron-forge/plugin-fuses';
+import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import fs from 'node:fs';
+import path from 'node:path';
+
+/**
+ * The LMU tape recorder, in the builds that have one.
+ *
+ * It is a standalone executable rather than an addon, so no JS requires it and
+ * AutoUnpackNativesPlugin never sees it -- which left it out of every packaged
+ * build, and recording a tape means running it on the machine running the sim,
+ * where there is no npm and no checkout to run it from.
+ *
+ * Gated on the file existing because its gyp target is Windows-only and
+ * because packaging has to keep working before `npm run irsdk:build` has
+ * produced it. Absent, a packaged build is exactly what it was before.
+ */
+const lmuRecorderPath = path.resolve(import.meta.dirname, 'build/Release/lmu_replay.exe');
+const optionalResources = fs.existsSync(lmuRecorderPath)
+  ? [lmuRecorderPath]
+  : [];
+
+const config: ForgeConfig = {
+  hooks: {
+    postStart: async (_config, appProcess) => {
+      // Windows treats SIGTERM as a hard kill. Let the development parent
+      // monitor request app.quit() so pending storage writes can flush.
+      if (process.platform === 'win32') return;
+      // Vite's SIGINT handler exits Forge before its signal forwarding runs.
+      // Also stop Electron on launcher exit, including after a dev restart.
+      const stopApp = () => appProcess.kill('SIGTERM');
+      process.once('exit', stopApp);
+      appProcess.once('exit', () => process.removeListener('exit', stopApp));
+    },
+  },
+  packagerConfig: {
+    asar: true,
+    icon: path.resolve(import.meta.dirname, 'docs/assets/icons/logo'),
+    extraResource: [
+      path.resolve(import.meta.dirname, 'docs/assets/icons'),
+      ...optionalResources,
+    ],
+  },
+  rebuildConfig: {
+    force: true,
+  },
+  makers: [
+    new MakerSquirrel({
+      iconUrl: path.resolve(import.meta.dirname, 'docs/assets/icons/logo.ico'),
+      setupIcon: path.resolve(
+        import.meta.dirname,
+        'docs/assets/icons/logo.ico'
+      ),
+    }),
+    new MakerDMG({
+      icon: path.resolve(import.meta.dirname, 'docs/assets/icons/logo.icns'),
+    }),
+  ],
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'tariknz',
+          name: 'irdashies',
+        },
+        prerelease: true,
+      },
+    },
+  ],
+  plugins: [
+    // Native addons cannot be loaded directly from an ASAR. Keep them beside
+    // the archive so Electron loads them from the installation directory
+    // instead of extracting executable code to a temporary directory.
+    new AutoUnpackNativesPlugin({}),
+    new VitePlugin({
+      // `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.
+      // If you are familiar with Vite configuration, it will look really familiar.
+      build: [
+        {
+          // `entry` is just an alias for `build.lib.entry` in the corresponding file of `config`.
+          entry: 'src/main.ts',
+          config: 'vite.main.config.mts',
+          target: 'main',
+        },
+        {
+          entry: 'src/preload.ts',
+          config: 'vite.preload.config.mts',
+          target: 'preload',
+        },
+      ],
+      renderer: [
+        {
+          name: 'main_window',
+          config: 'vite.renderer.config.mts',
+        },
+      ],
+    }),
+    // Fuses are used to enable/disable various Electron functionality
+    // at package time, before code signing the application
+    new FusesPlugin({
+      version: FuseVersion.V1,
+      [FuseV1Options.RunAsNode]: false,
+      [FuseV1Options.EnableCookieEncryption]: true,
+      [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+      [FuseV1Options.EnableNodeCliInspectArguments]: false,
+      [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+      [FuseV1Options.OnlyLoadAppFromAsar]: true,
+    }),
+  ],
+};
+
+export default config;

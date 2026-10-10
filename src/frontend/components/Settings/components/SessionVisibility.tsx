@@ -4,74 +4,51 @@ import {
 } from '@irdashies/types';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 
+type SessionKey = keyof SessionVisibilitySettings;
+
+const TITLES: Record<SessionKey, string> = {
+  race: 'Race',
+  loneQualify: 'Lone Qualify',
+  openQualify: 'Open Qualify',
+  practice: 'Practice',
+  offlineTesting: 'Offline Testing',
+  warmup: 'Warmup',
+};
+
+const DEFAULT_SESSIONS: readonly SessionKey[] = [
+  'race',
+  'loneQualify',
+  'openQualify',
+  'practice',
+  'offlineTesting',
+];
+
 interface SessionVisibilityProps {
   sessionVisibility: SessionVisibilitySettings;
   handleConfigChange: (newConfig: BaseWidgetSettings['config']) => void;
+  /** Sessions offered, in order; a widget may leave some out or add some. */
+  sessions?: readonly SessionKey[];
 }
 
 export const SessionVisibility = ({
   sessionVisibility,
   handleConfigChange,
+  sessions = DEFAULT_SESSIONS,
 }: SessionVisibilityProps) => {
   return (
     <div className="space-y-4">
-      {/* Show In Race Session */}
-      <SettingToggleRow
-        title="Race"
-        enabled={sessionVisibility.race ?? false}
-        onToggle={(enabled) =>
-          handleConfigChange({
-            sessionVisibility: { ...sessionVisibility, race: enabled },
-          })
-        }
-      />
-
-      {/* Show In Lone Qualify Session */}
-      <SettingToggleRow
-        title="Lone Qualify"
-        enabled={sessionVisibility.loneQualify ?? false}
-        onToggle={(enabled) =>
-          handleConfigChange({
-            sessionVisibility: { ...sessionVisibility, loneQualify: enabled },
-          })
-        }
-      />
-
-      {/* Show In Open Qualify Session */}
-      <SettingToggleRow
-        title="Open Qualify"
-        enabled={sessionVisibility.openQualify ?? false}
-        onToggle={(enabled) =>
-          handleConfigChange({
-            sessionVisibility: { ...sessionVisibility, openQualify: enabled },
-          })
-        }
-      />
-
-      {/* Show In Practice Session */}
-      <SettingToggleRow
-        title="Practice"
-        enabled={sessionVisibility.practice ?? false}
-        onToggle={(enabled) =>
-          handleConfigChange({
-            sessionVisibility: { ...sessionVisibility, practice: enabled },
-          })
-        }
-      />
-
-      {/* Show In Offline Testing Session */}
-      <SettingToggleRow
-        title="Offline Testing"
-        enabled={sessionVisibility.offlineTesting ?? false}
-        onToggle={(enabled) =>
-          handleConfigChange({
-            sessionVisibility: {
-              ...sessionVisibility,
-              offlineTesting: enabled,
-            },
-          })
-        }
-      />
+      {sessions.map((key) => (
+        <SettingToggleRow
+          key={key}
+          title={TITLES[key]}
+          enabled={sessionVisibility[key] ?? true}
+          onToggle={(enabled) =>
+            handleConfigChange({
+              sessionVisibility: { ...sessionVisibility, [key]: enabled },
+            })
+          }
+        />
+      ))}
     </div>
   );
 };

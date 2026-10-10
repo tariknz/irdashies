@@ -1,14 +1,16 @@
-import { BarbellIcon, UsersIcon } from '@phosphor-icons/react';
+import { BarbellIcon, TimerIcon, UsersIcon } from '@phosphor-icons/react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import type { ClassHeaderStyle } from '@irdashies/types';
 import { CarManufacturer } from '../CarManufacturer/CarManufacturer';
 import type { OrderedColumn } from '../../Standings';
+import type { ClassLapEstimate } from '../../hooks/useClassLapEstimates';
 
-interface DriverClassHeaderProps {
+export interface DriverClassHeaderProps {
   className: string | undefined;
   classColor: number | undefined;
   totalDrivers: number | undefined;
   sof: number | undefined;
+  estimatedLaps?: ClassLapEstimate;
   highlightColor?: number;
   isMultiClass: boolean;
   colSpan?: number;
@@ -24,6 +26,7 @@ export const DriverClassHeader = ({
   classColor,
   totalDrivers,
   sof,
+  estimatedLaps,
   highlightColor,
   isMultiClass,
   colSpan,
@@ -118,6 +121,18 @@ export const DriverClassHeader = ({
         {className}
       </span>
       <span className={`${classInfoStyle} px-2${py} flex items-center gap-1`}>
+        {classHeaderStyle?.estimatedLaps?.enabled && estimatedLaps && (
+          <span className="flex items-center gap-1 mr-3">
+            <TimerIcon />
+            <span>
+              {`${estimatedLaps.currentLap} / ${
+                estimatedLaps.exact
+                  ? estimatedLaps.total
+                  : `≈${estimatedLaps.total.toFixed(2)}`
+              }`}
+            </span>
+          </span>
+        )}
         {sof ? (
           <>
             <BarbellIcon />{' '}

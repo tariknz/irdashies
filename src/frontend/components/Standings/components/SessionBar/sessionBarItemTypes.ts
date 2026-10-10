@@ -24,6 +24,13 @@ export const SESSION_BAR_ITEM_KEYS = [
 
 export type SessionBarItemKey = (typeof SESSION_BAR_ITEM_KEYS)[number];
 
+const SESSION_BAR_ITEM_KEY_SET = new Set<string>(SESSION_BAR_ITEM_KEYS);
+
+export const isSessionBarItemKey = (
+  value: unknown
+): value is SessionBarItemKey =>
+  typeof value === 'string' && SESSION_BAR_ITEM_KEY_SET.has(value);
+
 export interface SessionBarItemProps {
   settings: SessionBarConfig | undefined;
   standalone: boolean;

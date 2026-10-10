@@ -21,6 +21,16 @@ export interface PitSpeedResult {
   isPulsing: boolean;
   isSpeeding: boolean; // Over limit at all
   isSeverelyOver: boolean; // More than 1.5 km/h over limit
+  /**
+   * Whether a pit speed limit is actually known.
+   *
+   * iRacing always publishes one. LMU does not: it exposes no pit limit, so
+   * the bridge calibrates one from live limiter-capped speed and leaves the
+   * field blank until it has -- which may be never, if the driver never
+   * accelerates into the limiter in the pits. Without this the widget judged
+   * speeding against a limit it did not have.
+   */
+  hasLimit: boolean;
 }
 
 export const usePitSpeed = (): PitSpeedResult => {
@@ -29,9 +39,14 @@ export const usePitSpeed = (): PitSpeedResult => {
 
   return useMemo(() => {
     // Parse pit speed limit (format: "60.00 kph" or "35.00 mph")
-    const limitString = session?.WeekendInfo?.TrackPitSpeedLimit ?? '0 kph';
-    const limitValue = parseFloat(limitString.split(' ')[0]);
+    const limitString = session?.WeekendInfo?.TrackPitSpeedLimit ?? '';
+    const parsedLimit = parseFloat(limitString.split(' ')[0]);
     const limitUnit = limitString.split(' ')[1]?.toLowerCase();
+    // An LMU session with no calibrated limit yet writes an empty string here,
+    // which the old `?? '0 kph'` default did not catch -- a blank string is not
+    // nullish -- so the limit, the delta and the bar all rendered NaN.
+    const hasLimit = Number.isFinite(parsedLimit) && parsedLimit > 0;
+    const limitValue = hasLimit ? parsedLimit : 0;
 
     // Determine limit in both units. iRacing writes the limit in whichever unit
     // the track uses, so normalise via km/h rather than trusting one of them.
@@ -54,6 +69,24 @@ export const usePitSpeed = (): PitSpeedResult => {
     // > 2: red + pulse (urgent)
     let colorClass = 'text-green-500';
     let isPulsing = false;
+
+    if (!hasLimit) {
+      // No limit to be over. Judging against 0 would read as speeding from the
+      // moment the car moved.
+      return {
+        deltaKph: 0,
+        deltaMph: 0,
+        limitKph,
+        limitMph,
+        speedKph,
+        speedMph,
+        colorClass,
+        isPulsing,
+        isSpeeding: false,
+        isSeverelyOver: false,
+        hasLimit,
+      };
+    }
 
     if (deltaKph >= 2) {
       colorClass = 'text-red-500';
@@ -79,6 +112,7 @@ export const usePitSpeed = (): PitSpeedResult => {
       isPulsing,
       isSpeeding,
       isSeverelyOver,
+      hasLimit,
     };
   }, [speed, session?.WeekendInfo?.TrackPitSpeedLimit]);
 };

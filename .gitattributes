@@ -1,1 +1,2 @@
 test-data/telemetry/ai-race-10min.irdt filter=lfs diff=lfs merge=lfs -text
+test-data/telemetry/*.lmudt filter=lfs diff=lfs merge=lfs -text
