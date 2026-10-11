@@ -1,3 +1,5 @@
+import type { LapHistorySnapshot } from '@irdashies/types';
+import { readCrossings } from './readCrossings';
 import type { LapCrossing, LapPoint } from './types';
 
 /**
@@ -95,6 +97,24 @@ export const gapToClassLeader = (
   }
 
   return points;
+};
+
+/**
+ * Gap over the line: seconds between `carIdx` and `refCarIdx` crossing the
+ * start/finish line on the most recent lap both have completed. Positive when
+ * `carIdx` crossed later. Null until they share a completed lap.
+ */
+export const lastLineGap = (
+  snapshot: LapHistorySnapshot | undefined,
+  carIdx: number,
+  refCarIdx: number
+): number | null => {
+  if (!snapshot) return null;
+  const points = gapToClassLeader(
+    readCrossings(snapshot, carIdx),
+    readCrossings(snapshot, refCarIdx)
+  );
+  return points.at(-1)?.value ?? null;
 };
 
 /**
