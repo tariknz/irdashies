@@ -60,6 +60,24 @@ const migrateGantryThresholds = (
   return reset;
 };
 
+/** Radar tuning the pole-side learning used; the pole side is fixed now. */
+const REMOVED_RADAR_TUNING_KEYS = ['poleLearnAfterS', 'poleFlipFrames'];
+
+const dropRemovedRadarTuning = (
+  merged: Record<string, unknown>
+): Record<string, unknown> => {
+  const tuning = merged.tuning;
+  if (!tuning || typeof tuning !== 'object' || Array.isArray(tuning)) {
+    return merged;
+  }
+  const kept = Object.fromEntries(
+    Object.entries(tuning).filter(
+      ([key]) => !REMOVED_RADAR_TUNING_KEYS.includes(key)
+    )
+  );
+  return { ...merged, tuning: kept };
+};
+
 const isDashboardChanged = (
   oldDashboard: DashboardLayout | undefined,
   newDashboard: DashboardLayout
@@ -125,7 +143,9 @@ export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
                   defaults,
                   merged
                 )
-              : merged,
+              : widget.id === 'radar'
+                ? dropRemovedRadarTuning(merged)
+                : merged,
         };
       }),
     };

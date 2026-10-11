@@ -338,6 +338,50 @@ describe('dashboards', () => {
     });
   });
 
+  describe('Radar tuning migration', () => {
+    it('drops the pole-side learning tuning and keeps the rest', () => {
+      const radarDefaults = defaultDashboard.widgets.find(
+        (w) => w.id === 'radar'
+      )?.config as Record<string, unknown>;
+      mockReadData.mockImplementation((key: string) => {
+        if (key === 'currentProfile') return 'default';
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
+        if (key === 'dashboards')
+          return {
+            default: {
+              ...defaultDashboard,
+              widgets: defaultDashboard.widgets.map((w) =>
+                w.id === 'radar'
+                  ? {
+                      ...w,
+                      config: {
+                        ...radarDefaults,
+                        tuning: {
+                          laneRate: 2,
+                          poleLearnAfterS: 15,
+                          poleFlipFrames: 30,
+                        },
+                      },
+                    }
+                  : w
+              ),
+            },
+          };
+        return null;
+      });
+
+      const tuning = getOrCreateDefaultDashboard().widgets.find(
+        (w) => w.id === 'radar'
+      )?.config?.tuning as Record<string, unknown>;
+
+      expect(tuning.laneRate).toBe(2);
+      expect(tuning).not.toHaveProperty('poleLearnAfterS');
+      expect(tuning).not.toHaveProperty('poleFlipFrames');
+      expect(tuning.gridMaxSpeedMs).toBeDefined();
+    });
+  });
+
   describe('Gantry threshold migration', () => {
     const gantryDefaults = defaultDashboard.widgets.find(
       (w) => w.id === 'gantry'
