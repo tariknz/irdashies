@@ -7,14 +7,23 @@ const RELEASES_PAGE_URL = 'https://github.com/tariknz/irdashies/releases';
 const LATEST_RELEASE_API_URL =
   'https://api.github.com/repos/tariknz/irdashies/releases/latest';
 const DOWNLOAD_URL_CACHE_KEY = 'irdashies:latest-setup-url';
+const RELEASE_VERSION_CACHE_KEY = 'irdashies:latest-release-version';
 
-function useLatestSetupUrl() {
+function readCachedValue(key: string) {
+  try {
+    return window.sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function useLatestRelease() {
   const [url, setUrl] = useState<string>(() => {
-    if (typeof window === 'undefined') return RELEASES_PAGE_URL;
-    return (
-      window.sessionStorage.getItem(DOWNLOAD_URL_CACHE_KEY) ?? RELEASES_PAGE_URL
-    );
+    return readCachedValue(DOWNLOAD_URL_CACHE_KEY) ?? RELEASES_PAGE_URL;
   });
+  const [version, setVersion] = useState<string | null>(() =>
+    readCachedValue(RELEASE_VERSION_CACHE_KEY)
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -23,15 +32,23 @@ function useLatestSetupUrl() {
         const res = await fetch(LATEST_RELEASE_API_URL);
         if (!res.ok) return;
         const data: {
+          tag_name?: string;
           assets?: { name: string; browser_download_url: string }[];
         } = await res.json();
         const setup = data.assets?.find((a) => a.name.endsWith('.Setup.exe'));
         if (!setup || cancelled) return;
         setUrl(setup.browser_download_url);
+        setVersion(data.tag_name ?? null);
         window.sessionStorage.setItem(
           DOWNLOAD_URL_CACHE_KEY,
           setup.browser_download_url
         );
+        if (data.tag_name) {
+          window.sessionStorage.setItem(
+            RELEASE_VERSION_CACHE_KEY,
+            data.tag_name
+          );
+        }
       } catch {
         // Keep fallback URL.
       }
@@ -41,15 +58,15 @@ function useLatestSetupUrl() {
     };
   }, []);
 
-  return url;
+  return { url, version };
 }
 
 export function Hero() {
   const speedLineWidths = useMemo(() => SPEED_LINE_WIDTHS, []);
-  const downloadUrl = useLatestSetupUrl();
+  const { url: downloadUrl, version } = useLatestRelease();
 
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-[600px] sm:min-h-[70vh] py-20 flex items-center justify-center overflow-hidden">
       {/* Hero background image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 blur-[0.5px] scale-125"
@@ -62,7 +79,7 @@ export function Hero() {
       <div className="absolute inset-0 racing-stripe" />
 
       {/* Speed lines */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none motion-reduce:hidden">
         {speedLineWidths.map((width, i) => (
           <div
             key={width}
@@ -99,9 +116,20 @@ export function Hero() {
         </div>
 
         {/* Tagline */}
-        <p className="text-base text-slate-400 mb-10 max-w-xl mx-auto">
-          Open-source iRacing overlays with real-time telemetry, standings, fuel
-          strategy, and 20+ customizable widgets.
+        <p className="text-base text-slate-300 mb-3 max-w-xl mx-auto">
+          Free, open-source iRacing overlays. Standings, track maps, fuel
+          strategy, and input traces.
+        </p>
+        <p className="text-sm text-slate-400 mb-8">
+          Le Mans Ultimate support is in beta.{' '}
+          <a
+            href="https://github.com/tariknz/irdashies#supported-simulators"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-4 hover:text-white"
+          >
+            Supported widgets & setup
+          </a>
         </p>
 
         {/* CTAs */}
@@ -124,14 +152,17 @@ export function Hero() {
               <CaretDown size={16} weight="bold" />
             </a>
           </div>
-          <a
-            href={RELEASES_PAGE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-slate-500 hover:text-slate-300 underline transition-colors"
-          >
-            Release notes
-          </a>
+          <p className="text-sm text-slate-400 mt-2">
+            <a
+              href={RELEASES_PAGE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-white underline underline-offset-4 transition-colors"
+            >
+              {version ?? 'Release notes'}
+            </a>
+            {' · Automatic updates'}
+          </p>
         </div>
       </div>
     </section>

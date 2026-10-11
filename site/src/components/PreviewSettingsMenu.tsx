@@ -16,6 +16,7 @@ interface PreviewSettingsMenuProps {
 
 export const PreviewSettingsMenu = ({
   activeWidgets,
+  onToggleWidget,
 }: PreviewSettingsMenuProps) => {
   const { pathname } = useLocation();
 
@@ -61,6 +62,16 @@ export const PreviewSettingsMenu = ({
                 {item.label}
               </Link>
               <button
+                onClick={() => {
+                  const types = item.groupTypes ?? [item.widgetType ?? ''];
+                  for (const type of types) {
+                    if (type && activeWidgets.has(type) === isEnabled) {
+                      onToggleWidget(type);
+                    }
+                  }
+                }}
+                aria-label={`Toggle ${item.label}`}
+                aria-pressed={isEnabled}
                 className={[
                   'w-2 h-2 rounded-full shrink-0 transition-colors',
                   isEnabled
