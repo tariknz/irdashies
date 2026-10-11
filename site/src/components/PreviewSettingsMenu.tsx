@@ -1,6 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
 
 import { widgetItems } from '../../../src/frontend/components/Settings/menuItems';
+import type { WidgetId } from '../../../src/frontend/WidgetIndex';
+import { EXCLUDED_WIDGETS } from '../utils/previewWidgets';
+
+const previewWidgetItems = widgetItems.filter(
+  (item) =>
+    !item.hideInMenu && !EXCLUDED_WIDGETS.has(item.widgetType as WidgetId)
+);
 
 interface PreviewSettingsMenuProps {
   activeWidgets: Set<string>;
@@ -35,9 +42,11 @@ export const PreviewSettingsMenu = ({
         Widgets
       </p>
       <ul className="flex flex-col">
-        {widgetItems.map((item) => {
+        {previewWidgetItems.map((item) => {
           const isActive = pathname === item.to;
-          const isEnabled = activeWidgets.has(item.widgetType ?? '');
+          const isEnabled = item.groupTypes
+            ? item.groupTypes.some((type) => activeWidgets.has(type))
+            : activeWidgets.has(item.widgetType ?? '');
           return (
             <li
               key={item.path}

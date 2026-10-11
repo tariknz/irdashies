@@ -13,6 +13,7 @@ import { WIDGET_NAMES } from '../../../src/frontend/constants/widgetNames';
 import { SectorTimingUpdater } from '../../../src/frontend/context/SectorTimingStore/SectorTimingUpdater';
 import { WidgetRuntimeProvider } from '../../../src/frontend/widgetRuntime';
 import { defaultDashboard } from '@irdashies/types';
+import { EXCLUDED_WIDGETS } from '../utils/previewWidgets';
 
 // Site-local components and utilities
 import { DashboardReady } from '../components/DashboardReady';
@@ -94,19 +95,6 @@ interface AvailableWidget {
   component: React.ComponentType<unknown>;
   defaultOn: boolean;
 }
-
-/**
- * Widgets registered in the app but deliberately kept out of the live
- * preview: they need external input or real-app state that the mock bridge
- * can't provide, so they'd render empty or broken. Remove an id here to
- * surface that widget in the preview toolbar.
- */
-const EXCLUDED_WIDGETS = new Set<WidgetId>([
-  'garagecover', // only renders while in the garage
-  'telemetryinspector', // debug tool, not a showcase overlay
-  'twitchchat', // needs a real Twitch channel to display anything
-  'heartrate', // embeds HypeRate, needs a session id
-]);
 
 /** Widgets enabled by default when the preview first loads. */
 const DEFAULT_ON_WIDGETS = new Set<WidgetId>(['relative', 'input', 'map']);
