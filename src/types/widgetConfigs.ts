@@ -1252,6 +1252,131 @@ export const DEFAULT_INCIDENT_CAMERA_GROUP = 'Far Chase';
 
 export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;
 
+/** Series look for the broadcast tower. */
+export type BroadcastTheme = 'imsa' | 'wec' | 'f1';
+
+/** How the tower animates from one page to the next. */
+export type BroadcastTransition =
+  | 'random'
+  | 'slide-left'
+  | 'slide-right'
+  | 'slide-up'
+  | 'fade-in'
+  | 'flip'
+  | 'wipe'
+  | 'zoom'
+  | 'checker';
+
+/** What the right-hand column of the tower can show. */
+export type BroadcastPage = 'names' | 'gaps' | 'gained' | 'pits' | 'tyres';
+
+/**
+ * The tower clock: the session clock alone, with the time of day at the
+ * track or on this PC, or laps and time together.
+ */
+export type BroadcastHeaderClock =
+  'session' | 'session-track' | 'session-local' | 'laps-time';
+
+/** TV-style leaderboard and focus-car card, meant for OBS capture. */
+export interface BroadcastConfig {
+  theme: BroadcastTheme;
+  /**
+   * Series logo above the tower title, as an image data URL. Stored inline so
+   * it reaches the OBS page with the rest of the dashboard.
+   */
+  logo: string;
+  background: { opacity: number };
+  /** Fades the whole widget, text included, so it covers less of the stream. */
+  translucent: { enabled: boolean; opacity: number };
+  /** Rows shown per class; the focus car is added below when outside them. */
+  driversPerClass: number;
+  /** Header text; blank shows the track name. */
+  title: string;
+  /** Rotate through the chosen pages, or keep one page up. */
+  pageMode: 'rotate' | 'static';
+  /** Pages in the rotation; one with nothing to show yet is skipped. */
+  pages: Record<BroadcastPage, boolean>;
+  /** The page a static tower shows; its intervals cover every class. */
+  staticPage: BroadcastPage;
+  /** How long each tower page (names, gaps per class, gained, pits, tyres) stays up. */
+  pageSeconds: number;
+  headerClock: BroadcastHeaderClock;
+  /** Page change animation; random never repeats the last one. */
+  pageTransition: BroadcastTransition;
+  /** Lower-third card for the car the camera is on. */
+  showFocusCard: boolean;
+  /** Starting grid before the green flag (the podium is its own widget). */
+  phaseScreens: boolean;
+  driverNameFormat: NameFormat;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export type BroadcastWidgetSettings = BaseWidgetSettings<BroadcastConfig>;
+
+/**
+ * Weather card that pops up on change, and every `intervalMinutes`
+ * (0 = only on change), for `showSeconds`.
+ */
+export interface BroadcastWeatherConfig {
+  background: { opacity: number };
+  intervalMinutes: number;
+  showSeconds: number;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export type BroadcastWeatherWidgetSettings =
+  BaseWidgetSettings<BroadcastWeatherConfig>;
+
+/** Podium places drawn as metal steps or as trophies. */
+export type BroadcastPodiumStyle = 'steps' | 'trophy';
+
+/** Podium of each class after the checkered flag of a race. */
+export interface BroadcastPodiumConfig {
+  background: { opacity: number };
+  style: BroadcastPodiumStyle;
+}
+
+export type BroadcastPodiumWidgetSettings =
+  BaseWidgetSettings<BroadcastPodiumConfig>;
+
+/** Scrolling bottom-of-screen ticker that cycles standings views. */
+export interface BroadcastTickerConfig {
+  background: { opacity: number };
+  /** Fades the whole widget, text included, so it covers less of the stream. */
+  translucent: { enabled: boolean; opacity: number };
+  /** Scroll speed: how long each car stays in the loop. */
+  secondsPerEntry: number;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export type BroadcastTickerWidgetSettings =
+  BaseWidgetSettings<BroadcastTickerConfig>;
+
+/** Race control popups: incidents and flags, with the driver involved. */
+export interface BroadcastEventsConfig {
+  background: { opacity: number };
+  /** How long each event stays up; queued events follow one by one. */
+  showSeconds: number;
+  kinds: {
+    crash: boolean;
+    offTrack: boolean;
+    slowdown: boolean;
+    blackFlag: boolean;
+    yellow: boolean;
+    caution: boolean;
+    fastestLap: boolean;
+    pitStop: boolean;
+    meatball: boolean;
+    disqualified: boolean;
+    finalLap: boolean;
+    checkered: boolean;
+  };
+  sessionVisibility: SessionVisibilitySettings;
+}
+
+export type BroadcastEventsWidgetSettings =
+  BaseWidgetSettings<BroadcastEventsConfig>;
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
@@ -1294,6 +1419,11 @@ export interface WidgetConfigMap {
   battle: BattleConfig;
   laptrace: LapTraceConfig;
   gantry: GantryConfig;
+  broadcast: BroadcastConfig;
+  broadcastticker: BroadcastTickerConfig;
+  broadcastevents: BroadcastEventsConfig;
+  broadcastweather: BroadcastWeatherConfig;
+  broadcastpodium: BroadcastPodiumConfig;
 }
 
 export type TypedDashboardWidget<

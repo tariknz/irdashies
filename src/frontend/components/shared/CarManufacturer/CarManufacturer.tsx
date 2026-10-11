@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import carLogoImage from '../../../../assets/img/car_manufacturer.png';
+import carLogoImage from '../../../assets/img/car_manufacturer.png';
 import { CAR_ID_TO_CAR_MANUFACTURER } from './carManufacturerMapping';
 import {
   CAR_MANUFACTURER_SPRITE_POSITIONS,

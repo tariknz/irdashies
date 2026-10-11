@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { CountryFlag } from '../../CountryFlag/CountryFlag';
+import { CountryFlag } from '../../../../shared/CountryFlag/CountryFlag';
 
 interface CountryFlagsCellProps {
   flairId?: number;

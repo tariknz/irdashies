@@ -1,7 +1,7 @@
 import { BarbellIcon, TimerIcon, UsersIcon } from '@phosphor-icons/react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import type { ClassHeaderStyle } from '@irdashies/types';
-import { CarManufacturer } from '../CarManufacturer/CarManufacturer';
+import { CarManufacturer } from '../../../shared/CarManufacturer/CarManufacturer';
 import type { OrderedColumn } from '../../Standings';
 import type { ClassLapEstimate } from '../../hooks/useClassLapEstimates';
 

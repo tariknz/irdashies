@@ -58,6 +58,13 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
 /** Everything else, hidden while LMU is the running sim. */
 export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'blindspotmonitor',
+  // Broadcast reads iRacing's standings, timing and race control; not yet
+  // checked against LMU's data.
+  'broadcast',
+  'broadcastevents',
+  'broadcastpodium',
+  'broadcastticker',
+  'broadcastweather',
   'carsystems',
   'deltaspeed',
   'fastercarsfrombehind',
@@ -107,7 +114,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 4;
+export const SIM_WIDGET_SUPPORT_VERSION = 5;
 
 /**
  * Whether a widget is unavailable under the running sim.

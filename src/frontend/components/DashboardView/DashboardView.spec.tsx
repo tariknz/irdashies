@@ -15,6 +15,8 @@ const dashboard = {
   ],
 } as unknown as DashboardLayout;
 
+const hidden = vi.hoisted(() => ({ ids: new Set<string>() }));
+
 vi.mock('@irdashies/context', () => ({
   useDashboard: () => ({
     currentDashboard: dashboard,
@@ -22,6 +24,7 @@ vi.mock('@irdashies/context', () => ({
     bridge: { saveDashboard: vi.fn() },
   }),
   SessionTimingUpdater: () => null,
+  useHiddenWidgetIds: () => hidden.ids,
   // No simulator detected, so no widget is dropped as unsupported.
   useActiveSimulator: () => null,
   useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
@@ -82,5 +85,19 @@ describe('DashboardView solo widget mode', () => {
     render(<DashboardView soloWidgetId="nosuchwidget" />);
 
     expect(screen.getByText('Unknown widget')).toBeInTheDocument();
+  });
+
+  it('hides the named widget while its hotkey has it hidden', () => {
+    hidden.ids = new Set(['carsystems']);
+    try {
+      const { container } = render(<DashboardView soloWidgetId="carsystems" />);
+
+      expect(screen.queryByText('car systems widget')).not.toBeInTheDocument();
+      expect(
+        container.querySelector('[data-widget-id="carsystems"]')
+      ).not.toBeNull();
+    } finally {
+      hidden.ids = new Set();
+    }
   });
 });

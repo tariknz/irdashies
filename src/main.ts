@@ -51,6 +51,7 @@ import {
   saveGarage61SearchSession,
 } from './app/storage/garage61SearchSession';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
+import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
 import {
   flushIncidentsOnShutdown,
@@ -446,6 +447,7 @@ void app.whenReady().then(async () => {
   setupRadarBridge();
   setupGarage61SearchSession(dashboard);
   setupChromiumFlagsBridge();
+  ipcMain.handle('widgetVisibility:getHidden', () => getHiddenWidgets());
   const replayContextRuntime = setupReplayContextRuntime(dashboard);
   const incidents = new IncidentRuntime(
     channelBus,

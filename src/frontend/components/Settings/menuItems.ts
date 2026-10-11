@@ -14,7 +14,11 @@ export interface MenuItem {
   path: string;
   label: string;
   widgetType?: string;
+  /** Widgets that share this item's page; it shows On while any of them is. */
+  groupTypes?: string[];
   icon?: Icon;
+  /** Reached through a tab on another item's page rather than the menu. */
+  hideInMenu?: boolean;
 }
 
 export const generalItems: MenuItem[] = [
@@ -56,6 +60,47 @@ export const widgetItems: MenuItem[] = [
     path: '/battle',
     label: 'Battle',
     widgetType: 'battle',
+  },
+  {
+    to: '/settings/broadcast',
+    path: '/broadcast',
+    label: 'Broadcast',
+    widgetType: 'broadcast',
+    groupTypes: [
+      'broadcast',
+      'broadcastticker',
+      'broadcastevents',
+      'broadcastweather',
+      'broadcastpodium',
+    ],
+  },
+  {
+    to: '/settings/broadcastevents',
+    path: '/broadcastevents',
+    label: 'Broadcast Events',
+    widgetType: 'broadcastevents',
+    hideInMenu: true,
+  },
+  {
+    to: '/settings/broadcastticker',
+    path: '/broadcastticker',
+    label: 'Broadcast Ticker',
+    widgetType: 'broadcastticker',
+    hideInMenu: true,
+  },
+  {
+    to: '/settings/broadcastweather',
+    path: '/broadcastweather',
+    label: 'Broadcast Weather',
+    widgetType: 'broadcastweather',
+    hideInMenu: true,
+  },
+  {
+    to: '/settings/broadcastpodium',
+    path: '/broadcastpodium',
+    label: 'Broadcast Podium',
+    widgetType: 'broadcastpodium',
+    hideInMenu: true,
   },
   {
     to: '/settings/blindspotmonitor',

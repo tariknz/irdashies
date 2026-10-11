@@ -53,7 +53,10 @@ export const PopularCountries: Story = {
   render: () => (
     <div className="flex flex-wrap gap-4 p-4 bg-slate-800 rounded-lg">
       {popularCountries.map((country) => (
-        <div key={country.flairId} className="flex flex-col items-center gap-2 w-24">
+        <div
+          key={country.flairId}
+          className="flex flex-col items-center gap-2 w-24"
+        >
           <CountryFlag flairId={country.flairId} />
           <span className="text-xs text-white text-center">{country.name}</span>
         </div>

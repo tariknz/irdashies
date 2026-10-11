@@ -145,7 +145,10 @@ export const setupRaceControlBridge = (
    */
   const applyDashboard = (dashboard: DashboardLayout | undefined) => {
     const widget = dashboard?.widgets.find((w) => w.id === 'gantry');
-    runtime.updateEnabled(widget?.enabled ?? false);
+    // The broadcast events overlay shows the same incidents, so either widget
+    // turns detection on. Thresholds still come from the Gantry settings.
+    const events = dashboard?.widgets.find((w) => w.id === 'broadcastevents');
+    runtime.updateEnabled(!!(widget?.enabled || events?.enabled));
     const config = widget?.config;
     if (!config) return;
     if (isValidThresholds(config)) {
