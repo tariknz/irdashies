@@ -8,10 +8,10 @@ import type { Standings } from '@irdashies/domain';
 import type { NameFormat } from '@irdashies/types';
 import { CarManufacturer } from '../../shared/CarManufacturer/CarManufacturer';
 import { Compound } from '../../shared/Compound/Compound';
-import { CountryFlag } from '../../Standings/components/CountryFlag/CountryFlag';
-import type { BroadcastRow } from '../broadcastRows';
-import { classColor, driverName } from '../format';
-import { PAGE_LABELS, type Page } from '../towerPages';
+import { CountryFlag } from '../../shared/CountryFlag/CountryFlag';
+import type { BroadcastRow } from '@irdashies/domain/broadcast/broadcastRows';
+import { classColor, driverName } from '../../shared/Broadcast/format';
+import { PAGE_LABELS, type Page } from '@irdashies/domain/broadcast/towerPages';
 
 /**
  * Gained or lost a class place just now: an arrow that fades out. Placed by the

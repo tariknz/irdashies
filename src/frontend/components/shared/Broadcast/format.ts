@@ -4,7 +4,7 @@ import { getTailwindStyle } from '@irdashies/utils/colors';
 import {
   DriverName as formatDriverName,
   extractDriverName,
-} from '../shared/DriverName/DriverName';
+} from '../DriverName/DriverName';
 
 export const classColor = (color: number) =>
   getTailwindStyle(color, undefined, true).classHeader;

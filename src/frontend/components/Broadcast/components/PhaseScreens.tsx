@@ -1,14 +1,7 @@
 import type { Standings } from '@irdashies/domain';
-import { classColor, driverName } from '../format';
-
-export type Groups = [string, Standings[]][];
-
-export const ClassTitle = ({ standing }: { standing: Standings }) => (
-  <div className="flex items-center gap-2 px-2 pt-1 font-bold italic text-white uppercase">
-    <span className={`h-3 w-1 ${classColor(standing.carClass.color)}`} />
-    {standing.carClass.name}
-  </div>
-);
+import type { Groups } from '@irdashies/domain/broadcast/broadcastRows';
+import { ClassTitle } from '../../shared/Broadcast/ClassTitle';
+import { classColor, driverName } from '../../shared/Broadcast/format';
 
 const Slot = ({ standing }: { standing: Standings }) => (
   <div className="flex items-center gap-1.5 border-l-2 border-white/40 bg-slate-900/80 px-1.5 py-0.5 font-bold italic uppercase">

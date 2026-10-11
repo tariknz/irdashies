@@ -12,7 +12,7 @@ vi.mock('@irdashies/context', () => ({
 vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({
   useDriverStandings: () => [['1', standings.cars]],
 }));
-vi.mock('../Broadcast/hooks/useBroadcastConfig', () => ({
+vi.mock('@irdashies/domain/broadcast/useBroadcastConfig', () => ({
   useBroadcastConfig: (id: string) =>
     id === 'broadcastticker' ? { secondsPerEntry: 2 } : undefined,
 }));

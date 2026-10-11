@@ -23,8 +23,8 @@ import {
   extractDriverName,
 } from '../shared/DriverName/DriverName';
 import { CarManufacturer } from '../shared/CarManufacturer/CarManufacturer';
-import { BroadcastEnter } from '../Broadcast/BroadcastEnter';
-import { useBroadcastConfig } from '../Broadcast/hooks/useBroadcastConfig';
+import { BroadcastEnter } from '../shared/Broadcast/BroadcastEnter';
+import { useBroadcastConfig } from '@irdashies/domain/broadcast/useBroadcastConfig';
 import {
   carEvents,
   demoEvent,

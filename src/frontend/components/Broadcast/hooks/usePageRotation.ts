@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import { pickTransition, type Page, type Transition } from '../towerPages';
+import {
+  pickTransition,
+  type Page,
+  type Transition,
+} from '@irdashies/domain/broadcast/towerPages';
 
 /** Cycles through the pages like a TV timing tower; one page stays put. */
 export const usePageRotation = (

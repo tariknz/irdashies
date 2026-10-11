@@ -1,6 +1,6 @@
 import { useSessionVisibility } from '@irdashies/context';
 import { clampSetting } from '@irdashies/utils/clampSetting';
-import { useBroadcastConfig } from '../Broadcast/hooks/useBroadcastConfig';
+import { useBroadcastConfig } from '@irdashies/domain/broadcast/useBroadcastConfig';
 import { WeatherCard } from './WeatherCard';
 
 /** Broadcast weather card, placed on its own next to the tower. */

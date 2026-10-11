@@ -254,18 +254,12 @@ const getCountryCodeFromFlairId = (flairId: number): string => {
   return FLAIR_ID_TO_COUNTRY_CODE[flairId];
 };
 
-export const CountryFlag: React.FC<CountryFlagProps> = ({
-  flairId
-}) => {
+export const CountryFlag: React.FC<CountryFlagProps> = ({ flairId }) => {
   const countryCode = getCountryCodeFromFlairId(flairId);
 
   if (!countryCode) {
     return <IRacingFlag />;
   }
 
-  return (
-    <span
-      className={`fi fi-${countryCode.toLowerCase()}`}
-    />
-  );
+  return <span className={`fi fi-${countryCode.toLowerCase()}`} />;
 };

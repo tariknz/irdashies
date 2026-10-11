@@ -7,7 +7,7 @@ import {
 } from '@irdashies/context';
 import type { BroadcastHeaderClock, BroadcastTheme } from '@irdashies/types';
 import { formatTime } from '@irdashies/utils/time';
-import { isSessionFinished } from '../broadcastRows';
+import { isSessionFinished } from '@irdashies/domain/broadcast/broadcastRows';
 
 /** Tower look per series style; class names stay literal for Tailwind. */
 export const THEMES: Record<

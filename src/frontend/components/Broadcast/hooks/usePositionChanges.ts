@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Standings } from '@irdashies/domain';
-import { diffClassPositions } from '../broadcastRows';
+import { diffClassPositions } from '@irdashies/domain/broadcast/broadcastRows';
 
 interface PositionChange {
   delta: number;

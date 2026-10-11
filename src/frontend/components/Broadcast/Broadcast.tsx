@@ -15,16 +15,27 @@ import type {
   StandingsWidgetSettings,
 } from '@irdashies/types';
 import { clampSetting } from '@irdashies/utils/clampSetting';
-import { useBroadcastConfig } from './hooks/useBroadcastConfig';
+import { useBroadcastConfig } from '@irdashies/domain/broadcast/useBroadcastConfig';
 import { usePageRotation } from './hooks/usePageRotation';
 import { usePositionChanges } from './hooks/usePositionChanges';
-import { buildBroadcastRows, findBattle, racePhase } from './broadcastRows';
+import {
+  buildBroadcastRows,
+  findBattle,
+  racePhase,
+} from '@irdashies/domain/broadcast/broadcastRows';
 import { GridCard } from './components/PhaseScreens';
 import { THEMES, TowerHeader } from './components/TowerHeader';
 import { ClassHeader, DriverRow, PositionArrow } from './components/TowerRows';
-import { BroadcastEnter, CheckerOverlay } from './BroadcastEnter';
+import {
+  BroadcastEnter,
+  CheckerOverlay,
+} from '../shared/Broadcast/BroadcastEnter';
 import { BattleCard, FocusCard } from './components/TowerCards';
-import { ROW_HEIGHT, buildPages, rowAnimation } from './towerPages';
+import {
+  ROW_HEIGHT,
+  buildPages,
+  rowAnimation,
+} from '@irdashies/domain/broadcast/towerPages';
 
 const BATTLE_GAP_SECONDS = 1;
 
@@ -152,8 +163,12 @@ export const TowerView = ({
       : undefined;
   const focus = standings.find((s) => s.carIdx === focusCarIdx);
   const nameFormat = settings?.driverNameFormat ?? 'surname';
-  const theme = settings?.theme ?? 'imsa';
-  const look = THEMES[theme] ?? THEMES.imsa;
+  // Imported or hand-edited dashboards can carry an unknown theme name.
+  const theme =
+    settings?.theme && Object.hasOwn(THEMES, settings.theme)
+      ? settings.theme
+      : 'imsa';
+  const look = THEMES[theme];
 
   if (rows.length === 0) return null;
 

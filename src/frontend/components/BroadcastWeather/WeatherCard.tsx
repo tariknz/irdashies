@@ -14,7 +14,7 @@ import {
   RAIN_STOP,
   type WeatherSample,
 } from './weatherChange';
-import { BroadcastEnter } from '../Broadcast/BroadcastEnter';
+import { BroadcastEnter } from '../shared/Broadcast/BroadcastEnter';
 
 const WETNESS_LABELS = [
   '-',

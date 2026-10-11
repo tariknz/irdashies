@@ -13,7 +13,7 @@ import { EventCard } from '../../BroadcastEvents/BroadcastEvents';
 import { demoEvent } from '../../BroadcastEvents/eventDetection';
 import { WeatherView } from '../../BroadcastWeather/WeatherCard';
 import { PodiumCard } from '../../BroadcastPodium/PodiumCard';
-import { DEMO_GROUPS as GROUPS } from '../../Broadcast/demoField';
+import { DEMO_GROUPS as GROUPS } from '@irdashies/domain/broadcast/demoField';
 
 const STANDINGS = GROUPS.flatMap(([, drivers]) => drivers);
 const CAR_IDXS = STANDINGS.map((s) => s.carIdx);

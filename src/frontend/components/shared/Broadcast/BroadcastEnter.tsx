@@ -1,6 +1,9 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
-import { useBroadcastConfig } from './hooks/useBroadcastConfig';
-import { pickTransition, rowAnimation } from './towerPages';
+import { useBroadcastConfig } from '@irdashies/domain/broadcast/useBroadcastConfig';
+import {
+  pickTransition,
+  rowAnimation,
+} from '@irdashies/domain/broadcast/towerPages';
 
 const CHECKER_COLUMNS = 8;
 

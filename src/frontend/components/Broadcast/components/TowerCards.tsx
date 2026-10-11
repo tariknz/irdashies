@@ -7,7 +7,7 @@ import {
 import type { Standings } from '@irdashies/domain';
 import { formatTime } from '@irdashies/utils/time';
 import { CarManufacturer } from '../../shared/CarManufacturer/CarManufacturer';
-import { classColor, driverName } from '../format';
+import { classColor, driverName } from '../../shared/Broadcast/format';
 
 const KMH_PER_MPH = 1.609344;
 

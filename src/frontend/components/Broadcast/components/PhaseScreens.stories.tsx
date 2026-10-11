@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
-import { DEMO_GROUPS as groups } from '../demoField';
+import { DEMO_GROUPS as groups } from '@irdashies/domain/broadcast/demoField';
 import { GridCard } from './PhaseScreens';
 
 export default {

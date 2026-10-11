@@ -2,8 +2,9 @@ import { TrophyIcon } from '@phosphor-icons/react';
 import type { Standings } from '@irdashies/domain';
 import type { BroadcastPodiumStyle } from '@irdashies/types';
 import { CarManufacturer } from '../shared/CarManufacturer/CarManufacturer';
-import { ClassTitle, type Groups } from '../Broadcast/components/PhaseScreens';
-import { driverName } from '../Broadcast/format';
+import type { Groups } from '@irdashies/domain/broadcast/broadcastRows';
+import { ClassTitle } from '../shared/Broadcast/ClassTitle';
+import { driverName } from '../shared/Broadcast/format';
 
 /** Gold, silver and bronze, indexed by class position - 1. */
 const MEDALS = [

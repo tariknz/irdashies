@@ -1,8 +1,8 @@
 import { useDashboard, useSessionTimeTiming } from '@irdashies/context';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
-import { racePhase } from '../Broadcast/broadcastRows';
-import { BroadcastEnter } from '../Broadcast/BroadcastEnter';
-import { useBroadcastConfig } from '../Broadcast/hooks/useBroadcastConfig';
+import { racePhase } from '@irdashies/domain/broadcast/broadcastRows';
+import { BroadcastEnter } from '../shared/Broadcast/BroadcastEnter';
+import { useBroadcastConfig } from '@irdashies/domain/broadcast/useBroadcastConfig';
 import { PodiumCard } from './PodiumCard';
 
 /**

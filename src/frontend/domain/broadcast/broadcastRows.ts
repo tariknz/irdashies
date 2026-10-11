@@ -1,6 +1,8 @@
 import type { Standings } from '@irdashies/domain';
 import { SessionState } from '@irdashies/types';
 
+export type Groups = [string, Standings[]][];
+
 export type BroadcastRow =
   | { kind: 'class'; key: string; name: string; color: number }
   | { kind: 'driver'; key: string; standing: Standings };
