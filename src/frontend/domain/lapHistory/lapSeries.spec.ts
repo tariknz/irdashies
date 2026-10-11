@@ -442,6 +442,17 @@ describe('lastLineGap', () => {
     expect(lastLineGap(snapshotOf([[500, 700], player]), 1, 0)).toBeNull();
   });
 
+  it('pairs by time when a reset repeats a lap number', () => {
+    // The car ahead was reset and recorded lap 1 twice; crossings are still
+    // matched by time, so the duplicate lap number cannot skew the gap.
+    const base = snapshotOf([ahead, player]);
+    const lap = [...base.lap];
+    lap[1] = 1;
+    const snapshot = { ...base, lap };
+
+    expect(lastLineGap(snapshot, 1, 0)).toBeCloseTo(1.81, 10);
+  });
+
   it('is null without a shared lap or snapshot', () => {
     expect(lastLineGap(snapshotOf([ahead, []]), 1, 0)).toBeNull();
     expect(lastLineGap(undefined, 1, 0)).toBeNull();
