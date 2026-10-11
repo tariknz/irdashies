@@ -1,0 +1,41 @@
+import { defineWidgetManifest } from './types';
+
+export default defineWidgetManifest({
+  id: 'pitlanehelper',
+  name: 'Pitlane Helper',
+  enabled: false,
+  layout: {
+    x: 100,
+    y: 100,
+    width: 150,
+    height: 200,
+  },
+  config: {
+    showMode: 'approaching',
+    approachDistance: 200,
+    enablePitLimiterWarning: true,
+    enableEarlyPitboxWarning: true,
+    earlyPitboxThreshold: 75,
+    showPitlaneTraffic: true,
+    showPastPitBox: false,
+    showSpeedSummary: true,
+    showSpeedDelta: true,
+    speedUnit: 'auto',
+    speedLimitStyle: 'text',
+    progressBarOrientation: 'horizontal',
+    speedBarOrientation: 'horizontal',
+    showProgressBar: true,
+    showSpeedBar: true,
+    showPitExitInputs: false,
+    pitExitInputs: { throttle: true, clutch: false },
+    showInputsPhase: 'atPitbox',
+    background: { opacity: 80 },
+    sessionVisibility: {
+      race: true,
+      loneQualify: false,
+      openQualify: false,
+      practice: true,
+      offlineTesting: true,
+    },
+  },
+});
