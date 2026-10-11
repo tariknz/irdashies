@@ -12,7 +12,7 @@ Arguments: $ARGUMENTS
 
 ## Step 1: Find the full release notes
 
-Use the full release notes supplied in the conversation or the identified GitHub release, or look at `/Users/tarik/Desktop/irdashies-demos/release-<version>.md`. If none are available, tell the user to run `/release-notes` first.
+Use the full release notes supplied in the conversation or the identified GitHub release, or look at `~/Desktop/irdashies-demos/release-<version>.md`. If none are available, tell the user to run `/release-notes` first.
 
 ## Step 2: Look up Discord handles
 
@@ -20,7 +20,7 @@ Use mappings supplied by the user or stored in private local memory to map GitHu
 
 ## Step 3: Write the condensed post
 
-Write to `/Users/tarik/Desktop/irdashies-demos/release-<version>-discord.md`.
+Use a user-specified output path when provided; otherwise write to `~/Desktop/irdashies-demos/release-<version>-discord.md`. Resolve `~` to the current user's home directory and create the output directory if needed.
 
 ### Hard limit: 2000 characters
 
@@ -43,7 +43,7 @@ Check the character count with `wc -m` after writing. If over 2000, trim until i
 **Tracks:** list
 **Logos:** list
 
-Welcome to our first-time contributors <first-timers>!
+Welcome, <first-timers>!
 
 Thanks to <contributors ordered by most PRs> for their contributions!
 

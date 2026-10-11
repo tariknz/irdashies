@@ -47,7 +47,7 @@ gh pr view <number> --json title,body,author
 
 ## Step 3: Write the release notes
 
-By default, write the notes to `/Users/tarik/Desktop/irdashies-demos/release-<version>.md`. Follow an explicit request to edit the GitHub release directly instead: read its current body, preserve existing user edits and relevant images, and update the notes only. Preserve the title, tag, target, assets, and draft/published state; editing a draft does not authorize publishing it.
+Use a user-specified output path when provided; otherwise write the notes to `~/Desktop/irdashies-demos/release-<version>.md`. Resolve `~` to the current user's home directory and create the output directory if needed. Follow an explicit request to edit the GitHub release directly instead: read its current body, preserve existing user edits and relevant images, and update the notes only. Preserve the title, tag, target, assets, and draft/published state; editing a draft does not authorize publishing it.
 
 ### Tone and audience
 
