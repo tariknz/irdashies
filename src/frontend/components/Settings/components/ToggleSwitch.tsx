@@ -9,6 +9,8 @@ interface ToggleSwitchProps {
   disabled?: boolean;
   /** Hover text explaining why it cannot be changed. */
   disabledReason?: string;
+  /** Accessible name when there is no visible `label`. */
+  ariaLabel?: string;
 }
 
 export const ToggleSwitch = ({
@@ -17,6 +19,7 @@ export const ToggleSwitch = ({
   label,
   disabled = false,
   disabledReason,
+  ariaLabel,
 }: ToggleSwitchProps) => {
   return (
     <div className="flex items-center gap-3">
@@ -25,6 +28,7 @@ export const ToggleSwitch = ({
         type="button"
         role="switch"
         aria-checked={enabled}
+        aria-label={ariaLabel}
         aria-disabled={disabled}
         disabled={disabled}
         title={disabled ? disabledReason : undefined}

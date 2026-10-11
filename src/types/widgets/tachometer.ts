@@ -44,7 +44,7 @@ export default defineWidgetManifest({
     showRpmText: { type: 'boolean', label: 'Show RPM Text' },
     rpmOrientation: {
       type: 'enum',
-      label: 'RPM Text Orientaion',
+      label: 'RPM Text Orientation',
       options: [
         { value: 'horizontal', label: 'Horizontal' },
         { value: 'bottom', label: 'Bottom' },
