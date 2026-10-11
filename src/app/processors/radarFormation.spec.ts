@@ -9,6 +9,7 @@ import pitStartSession from '../../../test-data/1732260478001/session.json';
 import {
   computeFormation,
   PaceMode,
+  parseGridPositions,
   parseStartingGrid,
   type FormationInput,
 } from './radarFormation';
@@ -69,24 +70,55 @@ const fromCapture = (
 };
 
 describe('parseStartingGrid', () => {
-  it('reads width and pole side from the sim description', () => {
+  it('reads the width from the sim description', () => {
     expect(parseStartingGrid('2x2 inline pole on left')).toEqual({
       columns: 2,
-      poleSide: 'left',
     });
-    expect(parseStartingGrid('2x2 inline pole on right')).toEqual({
-      columns: 2,
-      poleSide: 'right',
-    });
-    expect(parseStartingGrid('3x3 staggered')).toMatchObject({ columns: 3 });
-    expect(parseStartingGrid('single file')).toMatchObject({ columns: 1 });
+    expect(parseStartingGrid('3x3 staggered')).toEqual({ columns: 3 });
+    expect(parseStartingGrid('single file')).toEqual({ columns: 1 });
   });
 
-  it('falls back to two wide, pole left', () => {
-    expect(parseStartingGrid(undefined)).toEqual({
-      columns: 2,
-      poleSide: 'left',
-    });
+  it('falls back to two wide', () => {
+    expect(parseStartingGrid(undefined)).toEqual({ columns: 2 });
+  });
+});
+
+describe('parseGridPositions', () => {
+  const entry = (CarIdx: number, Position: number) => ({ CarIdx, Position });
+
+  it("takes this session's own grid, else the qualifying order", () => {
+    const session = {
+      SessionInfo: {
+        Sessions: [
+          { SessionNum: 1, QualifyPositions: [entry(7, 0), entry(3, 1)] },
+          { SessionNum: 2, QualifyPositions: [entry(3, 0), entry(7, 1)] },
+          { SessionNum: 3, QualifyPositions: null },
+        ],
+      },
+      QualifyResultsInfo: { Results: [entry(5, 0), entry(3, 1)] },
+    } as never;
+    expect([...parseGridPositions(session, 1)]).toEqual([
+      [7, 0],
+      [3, 1],
+    ]);
+    expect([...parseGridPositions(session, 2)]).toEqual([
+      [3, 0],
+      [7, 1],
+    ]);
+    expect([...parseGridPositions(session, 3)]).toEqual([
+      [5, 0],
+      [3, 1],
+    ]);
+  });
+
+  it('counts pole as 0 when the sim numbers from 1', () => {
+    const session = {
+      QualifyResultsInfo: { Results: [entry(4, 1), entry(9, 2)] },
+    } as never;
+    expect([...parseGridPositions(session, 0)]).toEqual([
+      [4, 0],
+      [9, 1],
+    ]);
   });
 });
 
@@ -172,6 +204,112 @@ describe('computeFormation: standing start (recorded grid)', () => {
     expect(formation?.slots.get(14)).toBe(0);
   });
 
+  it('keeps columns while the pole sitter has not loaded in', () => {
+    const input = fromCapture(standingTelemetry, standingSession);
+    const pcts = [...input.pcts];
+    pcts[6] = -1;
+    const withoutPole = { ...input, pcts, dists: input.dists.with(6, NaN) };
+
+    // Counted from car 4, now the front-most, every column would swap.
+    expect(computeFormation(withoutPole)?.slots.get(7)).toBe(0);
+    expect(computeFormation(withoutPole)?.slots.get(10)).toBe(1);
+
+    const formation = computeFormation({
+      ...withoutPole,
+      gridPositions: parseGridPositions(first(standingSession) as never, -1),
+    });
+    expect(formation?.slots.get(10)).toBe(-1);
+    expect(formation?.slots.get(7)).toBe(0);
+  });
+
+  it('agrees with the grid positions on a full grid and past a pit start', () => {
+    for (const [telemetry, session] of [
+      [standingTelemetry, standingSession],
+      [pitStartTelemetry, pitStartSession],
+    ]) {
+      const input = fromCapture(telemetry, session);
+      const anchored = computeFormation({
+        ...input,
+        gridPositions: parseGridPositions(first(session) as never, -1),
+      });
+      expect(anchored?.slots).toEqual(computeFormation(input)?.slots);
+    }
+  });
+
+  it('takes columns from grid positions when box gaps fit no spacing', () => {
+    // Bathurst, 25 AI cars loaded: P2 is us, gaps 11.5 to 12.9 m and one
+    // off the fit further back, which dropped every column.
+    const dists = [0, 12, 23.9, -12, -24.9, -36.4, -47.9, -59.9, -78];
+    const positions = [2, 1, 0, 3, 4, 5, 6, 7, 8];
+    const input = {
+      focus: 0,
+      dists,
+      pcts: dists.map(() => 0.98),
+      surfaces: dists.map(() => TrackLocation.OnTrack),
+      onPitRoad: dists.map(() => false),
+      excluded: new Set<number>(),
+      paceMode: PaceMode.DoubleFileStart,
+      paceLines: dists.map(() => -1),
+      paceRows: dists.map(() => -1),
+      sessionState: SessionState.GetInCar,
+      speeds: [],
+      lapsCompleted: dists.map(() => -1),
+      paceCarIdx: -1,
+      grid: { standingStart: true, columns: 1 },
+    };
+    expect(computeFormation(input)?.slots.size).toBe(0);
+
+    const slots = computeFormation({
+      ...input,
+      gridPositions: new Map(positions.map((p, carIdx) => [carIdx, p])),
+    })?.slots;
+    expect([...(slots ?? [])].sort((a, b) => a[0] - b[0])).toEqual([
+      [1, 1],
+      [2, 0],
+      [3, 1],
+      [4, 0],
+      [5, 1],
+      [6, 0],
+      [7, 1],
+      [8, 0],
+    ]);
+
+    // Positions out of order with the cars (classes, penalties): boxes decide.
+    const swapped = new Map(positions.map((p, carIdx) => [carIdx, p]));
+    swapped.set(3, 5).set(5, 3);
+    expect(
+      computeFormation({ ...input, gridPositions: swapped })?.slots.size
+    ).toBe(0);
+  });
+
+  it('leaves columns to the boxes when a car has no grid position', () => {
+    const dists = [0, -12, -24, -36];
+    const formation = computeFormation({
+      focus: 0,
+      dists,
+      pcts: dists.map(() => 0.98),
+      surfaces: dists.map(() => TrackLocation.OnTrack),
+      onPitRoad: dists.map(() => false),
+      excluded: new Set<number>(),
+      paceMode: PaceMode.NotPacing,
+      paceLines: dists.map(() => -1),
+      paceRows: dists.map(() => -1),
+      sessionState: SessionState.GetInCar,
+      speeds: [],
+      lapsCompleted: dists.map(() => -1),
+      paceCarIdx: -1,
+      grid: { standingStart: true, columns: 2 },
+      // Car 2 joined late and has no position.
+      gridPositions: new Map([
+        [0, 0],
+        [1, 1],
+        [3, 3],
+      ]),
+    });
+    expect(formation?.slots.get(2)).toBe(0);
+    expect(formation?.slots.get(3)).toBe(1);
+  });
+
   it('holds while the lights are on, though the sim says Racing', () => {
     const input = fromCapture(standingTelemetry, standingSession, {
       sessionState: SessionState.Racing,
@@ -243,7 +381,7 @@ describe('computeFormation: standing start (recorded grid)', () => {
       speeds: [],
       lapsCompleted: dists.map(() => -1),
       paceCarIdx: -1,
-      grid: { standingStart: true, columns: 2, poleSide: 'left' },
+      grid: { standingStart: true, columns: 2 },
     });
 
   it('keeps columns while the grid fills and most boxes are empty', () => {

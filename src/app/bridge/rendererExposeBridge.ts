@@ -180,9 +180,6 @@ export function exposeBridge() {
     getIsDemoMode: () => {
       return ipcRenderer.invoke('getIsDemoMode');
     },
-    getRadarPoleSides: () => ipcRenderer.invoke('radar:getPoleSides'),
-    setRadarPoleSide: (track, kind, side) =>
-      ipcRenderer.invoke('radar:setPoleSide', track, kind, side),
     notifySimulatorPreferenceChanged: () => {
       ipcRenderer.send('simulatorPreferenceChanged');
     },

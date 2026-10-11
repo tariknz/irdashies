@@ -18,7 +18,7 @@ import {
   hex,
   NumberRow,
 } from './controls';
-import { ConfigJson, PoleSidesTable } from './RadarDevTools';
+import { ConfigJson } from './RadarDevTools';
 import { ArcEventCard } from './ArcControls';
 
 export const RADAR_DEFAULTS = getWidgetDefaultConfig('radar');
@@ -926,20 +926,6 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
         0.5
       ),
       tuningNumber(
-        'poleLearnAfterS',
-        'Seconds after the green in which the pole side is learnt.',
-        0,
-        60,
-        1
-      ),
-      tuningNumber(
-        'poleFlipFrames',
-        'Frames in a row the spotter must disagree before the pole side flips (25 a second).',
-        5,
-        250,
-        5
-      ),
-      tuningNumber(
         'gridMaxSpeedMs',
         'Below this speed, in m/s, cars count as parked on the grid.',
         0,
@@ -979,14 +965,6 @@ export const RADAR_SECTIONS: RadarSettingSection[] = [
     title: 'Tools',
     dev: true,
     items: [
-      {
-        id: 'poleSides',
-        level: 2,
-        title: 'Learnt Pole Sides',
-        description:
-          'Sides of the pole column the radar learnt from the spotter, by track.',
-        render: () => <PoleSidesTable />,
-      },
       {
         id: 'json',
         level: 2,
