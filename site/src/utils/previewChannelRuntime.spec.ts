@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   DriverControlsSnapshot,
+  FuelProjectionSnapshot,
   IrSdkSourceBridge,
   Session,
   Telemetry,
@@ -11,6 +12,8 @@ import {
 } from './previewChannelRuntime';
 import mockTelemetry from '../../../src/app/irsdk/node/utils/mock-data/telemetry.json';
 import mockSession from '../../../src/app/irsdk/node/utils/mock-data/session.json';
+import { GlobalFlags, SessionState } from '@irdashies/types';
+import { previewRaceTelemetry } from './previewRaceTelemetry';
 
 /**
  * The site has no Electron main process, so these assert that the real
@@ -88,6 +91,28 @@ describe('createPreviewChannelRuntime', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('feeds an active race to fuel calculations instead of the fixture checkered state', async () => {
+    const fake = createFakeSource();
+    const runtime = createPreviewChannelRuntime(fake.source);
+    const snapshots: FuelProjectionSnapshot[] = [];
+    runtime.bridge.subscribe('fuel.projection', (snapshot) =>
+      snapshots.push(snapshot)
+    );
+    fake.emitSession(mockSession as unknown as Session);
+    const frame = frameAt(600, 0.5);
+    setValue(frame, 'SessionLapsRemain', 12);
+    fake.emitFrame(previewRaceTelemetry(frame));
+    await flushDeliveries();
+    setValue(frame, 'SessionTime', 601);
+    fake.emitFrame(previewRaceTelemetry(frame));
+    await vi.advanceTimersByTimeAsync(250);
+    expect(snapshots.at(-1)?.sessionState).toBe(SessionState.Racing);
+    expect(snapshots.at(-1)?.sessionFlags).toBe(GlobalFlags.Green);
+    expect(snapshots.at(-1)?.sessionLapsRemain).toBe(12);
+    expect(frame.SessionState.value[0]).toBe(SessionState.Checkered);
+    runtime.dispose();
   });
 
   it('runs the real processors in-page and delivers derived snapshots', async () => {

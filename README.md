@@ -72,6 +72,7 @@ Displays the throttle, clutch, and brake input traces, as well as the current ge
   - Configurable stroke width (1-10px)
   - Configurable max samples (50-1000)
   - Toggle individual inputs (throttle, brake, ABS, steering)
+  - ABS activity shown as an overlay or highlighted fill beneath the brake trace
 - Input bar display (clutch, brake, throttle, ABS indicator)
   - Toggle individual inputs (clutch, brake, throttle, ABS)
   - Optional raw input values showing actual pedal/wheel inputs without sim processing (e.g. ABS, traction control)
@@ -170,10 +171,13 @@ Displays standings information for the current session.
   - Configurable decimal precision (1, 2, or 3) for gap and interval
   - Gap and interval display in practice and qualifying sessions
 - Optional column headers
-- Class headers can show estimated race lap counts, or scheduled totals in fixed-lap races
+- Class headers:
+  - Estimated race lap counts, or scheduled totals in fixed-lap races
+  - Compact Strength of Field values and optional manufacturer counts
+- Class ordering: Use iRacing's class order or sort by each class leader's overall position
 - Optional Push-to-Pass column, showing a driver's active state and remaining time in supported series
 - Configurable radio icon duration, so recent transmissions remain visible without flickering
-- iRating change display
+- iRating change display, with optional hypothetical estimates during online practice
 - Lap time deltas (configurable number of laps: 1-5)
 - Title bar with session progress bar
 - Header and footer bars with customizable items and display order:
@@ -182,8 +186,10 @@ Displays standings information for the current session.
   - Brake bias, local time, track wetness, precipitation, wind speed/direction
   - Air and track temperature (Metric/Imperial units)
   - Track name
+  - Fuel level, last and best lap times, top speed, manufacturer position, and class rank
   - Session time: configurable mode (Remaining/Elapsed), format, and label style
   - Accurate race clock for fixed-lap races (calculated from P1 average lap time)
+  - Remaining-lap estimates in lone qualifying
 - Driver standings configuration:
   - Drivers to show around player
   - Drivers to show in other classes
@@ -194,6 +200,7 @@ Displays standings information for the current session.
 - All drivers shown immediately at practice/pre-qualifying start (sorted by car number)
 - Toggle to strip car numbers from driver names
 - Customizable display order for all columns
+- Widget scaling from 50% to 200%
 - Adjustable background opacity
 - Option to show only when on track
 - Option to use live position standings (updates continuously vs only at start/finish line)
@@ -242,6 +249,7 @@ Displays drive relative delta information for the current session.
   - Brake bias, local time, track wetness, precipitation, wind speed/direction
   - Air and track temperature (Metric/Imperial units)
   - Track name
+  - Fuel level, last and best lap times, top speed, manufacturer position, and class rank
   - Session time: configurable mode (Remaining/Elapsed), format, and label style
 - Configurable number of drivers to show around player (1-10)
 - Optional position change column showing positions gained or lost within each class from the qualifying grid during races
@@ -526,6 +534,16 @@ Displays per-sector timing deltas for the current lap, colour-coded by performan
 
 ![Sector Delta](./docs/assets/sector-delta.png)
 
+### Delta Speed
+
+Compares your current speed with your session-best clean lap at the same point on track.
+
+**Features:**
+
+- Colour indicator fades toward green when faster and red when slower
+- Optional numeric speed difference, with Auto, km/h, or mph units
+- Shows "No clean lap" until a usable reference is available
+
 ### Flag Widget
 
 Displays racing flags in an LED-matrix style, automatically showing the most relevant flag when multiple are active. Perfect for keeping track of track conditions and race control messages.
@@ -632,11 +650,13 @@ A race control window with live standings, an automatic incident feed, and a per
   - Filter chips per incident type, plus a dropdown to narrow the feed to a single driver
   - Group incidents by practice, qualifying, warmup, and race, with filters for the current session or a chosen session
   - Replay jump buttons (-5s, -10s, -30s) move the sim's replay to just before the incident and point the camera at the car
+  - Choose the camera used for incident replays, defaulting to Far Chase
   - Incidents are saved to disk: keep every session, or only the last 5, 10, or 20
   - Tunable detection thresholds: slow speed and duration, crash impact severity and minimum speed, off-track duration, pit entry duration, and a per-type cooldown
   - Threshold speeds shown in mph, km/h, or auto (always stored in km/h, so switching units never changes detection)
 - Lap Graph
   - Three y axes: Race Trace (time gained or lost against the class leader's reference pace), Position (class position at the end of each lap), and Gap (seconds behind the class leader)
+  - Consistent driver colours and dash patterns, with matching swatches in the driver list
   - Class selector for multi-class sessions
   - Pin drivers from the side list, or let auto-pin follow the player, the class leader, and the cars around the player
   - Hover the chart for a crosshair readout of the nearby lines; hover a name to lift that driver's line above the field
