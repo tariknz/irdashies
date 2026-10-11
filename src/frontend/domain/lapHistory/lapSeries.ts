@@ -100,9 +100,14 @@ export const gapToClassLeader = (
 };
 
 /**
- * Gap over the line: seconds between `carIdx` and `refCarIdx` crossing the
- * start/finish line on the most recent lap both have completed. Positive when
- * `carIdx` crossed later. Null until they share a completed lap.
+ * Gap over the line: seconds from `refCarIdx` crossing the start/finish line to
+ * `carIdx`'s latest crossing. Pairs crossings by time, not lap number, so it is
+ * the physical gap a relative shows - a car a lap up or down, or any car in
+ * practice, reads its on-track gap rather than a whole-lap difference.
+ *
+ * Null when there is no such pair, when the paired crossing is older than the
+ * reference car's previous lap (stale, e.g. a car that was towed), or when the
+ * gap exceeds half a lap (the car is closer the other way round).
  */
 export const lastLineGap = (
   snapshot: LapHistorySnapshot | undefined,
@@ -110,11 +115,20 @@ export const lastLineGap = (
   refCarIdx: number
 ): number | null => {
   if (!snapshot) return null;
-  const points = gapToClassLeader(
-    readCrossings(snapshot, carIdx),
-    readCrossings(snapshot, refCarIdx)
+  const crossings = readCrossings(snapshot, carIdx);
+  const refCrossings = readCrossings(snapshot, refCarIdx);
+  const last = crossings.at(-1);
+  if (!last) return null;
+
+  const refIndex = refCrossings.findLastIndex(
+    (crossing) => crossing.sessionTime <= last.sessionTime
   );
-  return points.at(-1)?.value ?? null;
+  if (refIndex < 0 || refIndex < refCrossings.length - 2) return null;
+
+  const gap = last.sessionTime - refCrossings[refIndex].sessionTime;
+  const previous = crossings.at(-2);
+  const lapTime = previous ? last.sessionTime - previous.sessionTime : Infinity;
+  return gap < lapTime / 2 ? gap : null;
 };
 
 /**

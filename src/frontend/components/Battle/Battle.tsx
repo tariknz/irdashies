@@ -392,19 +392,23 @@ export const Battle = () => {
   // at the line inherits the reference-lap estimate's error on early laps.
   const gapEnabled = settings?.gap?.enabled ?? true;
   const lapHistory = useLapHistorySnapshot(gapEnabled);
+  // Keyed on carIdx: the entries themselves are rebuilt every frame.
+  const playerCarIdx = playerEntry?.carIdx;
+  const aheadCarIdx = aheadEntry?.carIdx;
+  const behindCarIdx = behindEntry?.carIdx;
   const prevGapAhead = useMemo(
     () =>
-      playerEntry && aheadEntry
-        ? lastLineGap(lapHistory, playerEntry.carIdx, aheadEntry.carIdx)
+      playerCarIdx !== undefined && aheadCarIdx !== undefined
+        ? lastLineGap(lapHistory, playerCarIdx, aheadCarIdx)
         : null,
-    [lapHistory, playerEntry, aheadEntry]
+    [lapHistory, playerCarIdx, aheadCarIdx]
   );
   const prevGapBehind = useMemo(
     () =>
-      playerEntry && behindEntry
-        ? lastLineGap(lapHistory, behindEntry.carIdx, playerEntry.carIdx)
+      playerCarIdx !== undefined && behindCarIdx !== undefined
+        ? lastLineGap(lapHistory, behindCarIdx, playerCarIdx)
         : null,
-    [lapHistory, playerEntry, behindEntry]
+    [lapHistory, playerCarIdx, behindCarIdx]
   );
 
   // Speed: derived from CarIdxLapDistPct movement, in km/h.

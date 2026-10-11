@@ -420,9 +420,26 @@ describe('lastLineGap', () => {
   });
 
   it('falls back to the previous lap until the car behind crosses', () => {
+    // Player has crossed lap 2; the car behind has only crossed lap 1.
     const snapshot = snapshotOf([ahead, player, behind.slice(0, 1)]);
 
     expect(lastLineGap(snapshot, 2, 1)).toBeCloseTo(1, 10);
+  });
+
+  it('measures the on-track gap to a car a lap up, not a whole lap', () => {
+    // The car ahead is a lap up but crossed 8s before the player.
+    const lapUp = [420, 880, 964.81];
+
+    expect(lastLineGap(snapshotOf([lapUp, player]), 1, 0)).toBeCloseTo(8, 10);
+  });
+
+  it('is null when the pair is stale or more than half a lap apart', () => {
+    // Behind car towed after lap 1 while the player kept crossing.
+    const playerOn = [501, 972.81, 1444];
+    expect(lastLineGap(snapshotOf([[502], playerOn]), 0, 1)).toBeNull();
+
+    // Ahead car stopped well before the player's latest crossing.
+    expect(lastLineGap(snapshotOf([[500, 700], player]), 1, 0)).toBeNull();
   });
 
   it('is null without a shared lap or snapshot', () => {
