@@ -5,16 +5,6 @@ on:
     branches: [main]
     paths:
       - 'site/**'
-      - 'src/frontend/**'
-      - 'src/types/**'
-      - 'src/shared/**'
-      - 'src/app/processors/**'
-      - 'src/app/bridge/**'
-      - 'src/app/sessionLifecycle/**'
-      - 'src/app/irsdk/node/utils/mock-data/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/deploy-site.yml'
   workflow_dispatch:
 
 permissions:
