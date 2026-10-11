@@ -1,43 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 
-interface MenuItem {
-  to: string;
-  id: string;
-  label: string;
-}
-
-const widgetItems: MenuItem[] = [
-  {
-    to: '/settings/blindspotmonitor',
-    id: 'blindspotmonitor',
-    label: 'Blind Spot Monitor',
-  },
-  {
-    to: '/settings/fastercarsfrombehind',
-    id: 'fastercarsfrombehind',
-    label: 'Faster Cars Behind',
-  },
-  { to: '/settings/flag', id: 'flag', label: 'Flag' },
-  { to: '/settings/flatmap', id: 'flatmap', label: 'Flat Track Map' },
-  { to: '/settings/fuel', id: 'fuel', label: 'Fuel Calculator' },
-  { to: '/settings/garagecover', id: 'garagecover', label: 'Garage Cover' },
-  { to: '/settings/infobar', id: 'infobar', label: 'Information Bar' },
-  { to: '/settings/input', id: 'input', label: 'Input' },
-  { to: '/settings/laptimelog', id: 'laptimelog', label: 'Lap Timer' },
-  {
-    to: '/settings/pitlanehelper',
-    id: 'pitlanehelper',
-    label: 'Pitlane Helper',
-  },
-  { to: '/settings/rejoin', id: 'rejoin', label: 'Rejoin Indicator' },
-  { to: '/settings/relative', id: 'relative', label: 'Relative' },
-  { to: '/settings/slowcarahead', id: 'slowcarahead', label: 'Slow Car Ahead' },
-  { to: '/settings/standings', id: 'standings', label: 'Standings' },
-  { to: '/settings/tachometer', id: 'tachometer', label: 'Tachometer' },
-  { to: '/settings/map', id: 'map', label: 'Track Map' },
-  { to: '/settings/twitchchat', id: 'twitchchat', label: 'Twitch Chat' },
-  { to: '/settings/weather', id: 'weather', label: 'Weather' },
-];
+import { widgetItems } from '../../../src/frontend/components/Settings/menuItems';
 
 interface PreviewSettingsMenuProps {
   activeWidgets: Set<string>;
@@ -73,11 +36,11 @@ export const PreviewSettingsMenu = ({
       </p>
       <ul className="flex flex-col">
         {widgetItems.map((item) => {
-          const isActive = pathname.startsWith(`/settings/${item.id}`);
-          const isEnabled = activeWidgets.has(item.id);
+          const isActive = pathname === item.to;
+          const isEnabled = activeWidgets.has(item.widgetType ?? '');
           return (
             <li
-              key={item.id}
+              key={item.path}
               className={[
                 'flex items-center gap-2 w-full px-2 py-1 rounded border-l-2 transition-colors',
                 isActive
