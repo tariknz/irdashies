@@ -17,7 +17,7 @@ import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingActionButton } from '../components/SettingActionButton';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 import { SettingSelectRow } from '../components/SettingSelectRow';
 import {
   SessionBarItemsList,
@@ -25,6 +25,7 @@ import {
 } from '../components/SessionBarItemsList';
 
 const SETTING_ID = 'standings';
+const SettingProp = settingPropFor(SETTING_ID);
 
 interface SortableSetting {
   id: string;

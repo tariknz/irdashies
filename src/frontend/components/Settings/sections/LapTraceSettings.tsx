@@ -39,9 +39,10 @@ import {
 import { useAudioOutputDevices } from '../hooks/useAudioOutputDevices';
 import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 
 const SETTING_ID = 'laptrace';
+const SettingProp = settingPropFor(SETTING_ID);
 
 /** Garage 61's lap search, unfiltered. */
 const GARAGE61_LAPS_URL = 'https://garage61.net/app/laps/';

@@ -1,7 +1,9 @@
 import { useFuelStore } from '../../../FuelCalculator/FuelStore';
 import { SettingsSection } from '../../components/SettingSection';
 import logger from '@irdashies/utils/logger';
-import { SettingProp } from '../../components/SettingProp';
+import { settingPropFor } from '../../components/SettingProp';
+
+const SettingProp = settingPropFor('fuel');
 
 export const HistoricalStorageSection = () => {
   return (

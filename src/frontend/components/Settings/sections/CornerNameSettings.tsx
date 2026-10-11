@@ -10,9 +10,10 @@ import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 
 const SETTING_ID = 'cornername';
+const SettingProp = settingPropFor(SETTING_ID);
 
 const defaultConfig = getWidgetDefaultConfig('cornername');
 

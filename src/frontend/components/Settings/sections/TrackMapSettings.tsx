@@ -19,7 +19,7 @@ import {
   dataUrlToBuffer,
   prepareIconForUpload,
 } from '../../TrackMap/playerIconUpload';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 
 const SUPPORTED_IMAGE_TYPES = [
   'image/png',
@@ -30,6 +30,7 @@ const SUPPORTED_IMAGE_TYPES = [
 ];
 
 const SETTING_ID = 'map';
+const SettingProp = settingPropFor(SETTING_ID);
 const LOCALSTORAGE_KEY = 'trackmap-player-icon';
 
 const defaultConfig = getWidgetDefaultConfig('map');

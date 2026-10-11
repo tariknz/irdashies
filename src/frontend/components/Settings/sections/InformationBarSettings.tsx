@@ -16,7 +16,9 @@ import {
 import { SessionVisibility } from '../components/SessionVisibility';
 import { DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { SettingDivider } from '../components/SettingDivider';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
+
+const SettingProp = settingPropFor('infobar');
 
 const SETTING_ID = 'infobar';
 const defaultConfig = getWidgetDefaultConfig('infobar');

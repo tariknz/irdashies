@@ -24,7 +24,9 @@ import { HistoricalStorageSection } from './HistoricalStorageSection';
 import { SettingDivider } from '../../components/SettingDivider';
 import { SettingsSection } from '../../components/SettingSection';
 import { deleteFuelLayout } from '../gantryDockEdits';
-import { SettingProp, SettingProps } from '../../components/SettingProp';
+import { SettingProps, settingPropFor } from '../../components/SettingProp';
+
+const SettingProp = settingPropFor('fuel');
 
 const defaultConfig = getWidgetDefaultConfig('fuel');
 const DEFAULT_TREE_FUEL = DEFAULT_FUEL_LAYOUT_TREE;

@@ -9,9 +9,10 @@ import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
 import { SettingsSection } from '../components/SettingSection';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 
 const SETTING_ID = 'rejoin';
+const SettingProp = settingPropFor(SETTING_ID);
 
 const defaultConfig = getWidgetDefaultConfig('rejoin');
 

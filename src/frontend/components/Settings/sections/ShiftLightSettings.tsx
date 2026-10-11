@@ -14,9 +14,10 @@ import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingDivider } from '../components/SettingDivider';
 import { TabButton } from '../components/TabButton';
 import logger from '@irdashies/utils/logger';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 
 const SETTING_ID = 'shiftlight';
+const SettingProp = settingPropFor(SETTING_ID);
 
 // Constants for shift points
 const DEFAULT_SHIFT_RPM_RATIO = 0.9;

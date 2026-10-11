@@ -10,10 +10,11 @@ import {
 import { useDashboard } from '@irdashies/context';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingDivider } from '../components/SettingDivider';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 import { SettingsSection } from '../components/SettingSection';
 
 const SETTING_ID = 'wind';
+const SettingProp = settingPropFor(SETTING_ID);
 const defaultConfig = getWidgetDefaultConfig('wind');
 
 const isWindWidgetSettings = (

@@ -12,9 +12,10 @@ import { TabButton } from '../components/TabButton';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingSliderRow } from '../components/SettingSliderRow';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 
 const SETTING_ID = 'fastercarsfrombehind';
+const SettingProp = settingPropFor(SETTING_ID);
 
 export const FasterCarsFromBehindSettings = () => {
   const { currentDashboard } = useDashboard();

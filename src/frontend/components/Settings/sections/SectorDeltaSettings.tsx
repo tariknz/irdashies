@@ -12,12 +12,13 @@ import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingSliderRow } from '../components/SettingSliderRow';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 
 const DEFAULT_GREEN = 0.5;
 const DEFAULT_YELLOW = 1.0;
 
 const SETTING_ID = 'sectordelta';
+const SettingProp = settingPropFor(SETTING_ID);
 
 const defaultConfig = getWidgetDefaultConfig('sectordelta');
 

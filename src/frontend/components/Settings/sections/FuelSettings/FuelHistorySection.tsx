@@ -2,7 +2,9 @@ import { SettingNumberRow } from '../../components/SettingNumberRow';
 import { SettingsSection } from '../../components/SettingSection';
 import { FuelWidgetSettings } from '@irdashies/types';
 import { BarFontSizeInput, HeightInput } from './FontSizeInputs';
-import { SettingProp } from '../../components/SettingProp';
+import { settingPropFor } from '../../components/SettingProp';
+
+const SettingProp = settingPropFor('fuel');
 
 interface FuelHistorySectionProps {
   settings: FuelWidgetSettings;

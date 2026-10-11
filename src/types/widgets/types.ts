@@ -1,7 +1,7 @@
 import type { WidgetLayout } from '../dashboardLayout';
 import type { WidgetConfigMap } from '../widgetConfigs';
 import type { WidgetId } from '../widgetId';
-import type { PropertySpecs } from './properties';
+import type { PropertySpecsOf } from './properties';
 
 /**
  * Main-safe, pure-data description of a widget. One file per widget in
@@ -28,7 +28,7 @@ export interface WidgetManifest<
   layout: WidgetLayout;
   config: WidgetConfigMap[K];
   /** Settings described once; drives SettingProp and config validation. */
-  properties?: PropertySpecs;
+  properties?: K extends unknown ? PropertySpecsOf<WidgetConfigMap[K]> : never;
 }
 
 export const defineWidgetManifest = <K extends keyof WidgetConfigMap>(

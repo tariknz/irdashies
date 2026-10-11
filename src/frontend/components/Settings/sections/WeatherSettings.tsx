@@ -13,9 +13,10 @@ import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingActionButton } from '../components/SettingActionButton';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 
 const SETTING_ID = 'weather';
+const SettingProp = settingPropFor(SETTING_ID);
 
 interface SortableSetting {
   id: string;

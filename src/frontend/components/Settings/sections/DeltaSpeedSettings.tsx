@@ -11,9 +11,10 @@ import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingSelectRow } from '../components/SettingSelectRow';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 
 const SETTING_ID = 'deltaspeed';
+const SettingProp = settingPropFor(SETTING_ID);
 
 const defaultConfig = getWidgetDefaultConfig('deltaspeed');
 

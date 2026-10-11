@@ -7,10 +7,12 @@ import {
   sessionVisibilityProperties,
   setPath,
   type PropertySpecs,
+  type PropertySpecsOf,
 } from './properties';
 import { WIDGET_MANIFESTS } from './index';
+import type { WindWidgetSettings } from '../widgetConfigs';
 
-const specs: PropertySpecs = {
+const specs = {
   'background.opacity': { type: 'number', label: 'Opacity', min: 0, max: 100 },
   units: {
     type: 'enum',
@@ -21,7 +23,7 @@ const specs: PropertySpecs = {
     ],
   },
   show: { type: 'boolean', label: 'Show' },
-};
+} satisfies PropertySpecs;
 
 describe('widget properties', () => {
   it('reads and writes dotted paths without touching siblings', () => {
@@ -209,5 +211,38 @@ describe('property factories', () => {
       'sessionVisibility.race': { type: 'boolean', label: 'Race' },
     });
     expect(sessionVisibilityProperties([])).toEqual({});
+  });
+});
+
+describe('typed property paths', () => {
+  type WindSpecs = PropertySpecsOf<WindWidgetSettings['config']>;
+
+  // Each @ts-expect-error fails `tsc` if the type stops catching the mistake.
+  it('rejects specs that do not fit the widget config at compile time', () => {
+    const fits: WindSpecs = {
+      'background.opacity': { type: 'number', min: 0, max: 100, label: 'x' },
+      units: {
+        type: 'enum',
+        label: 'x',
+        options: [{ value: 'Metric', label: 'x' }],
+      },
+    };
+    // @ts-expect-error not a Wind config path
+    const unknownPath: WindSpecs = { nope: { type: 'boolean', label: 'x' } };
+    // @ts-expect-error a branch, not a leaf value
+    const branch: WindSpecs = { background: { type: 'boolean', label: 'x' } };
+    const wrongKind: WindSpecs = {
+      // @ts-expect-error a boolean setting needs a boolean spec
+      showOnlyWhenOnTrack: { type: 'number', min: 0, max: 1, label: 'x' },
+    };
+    const wrongOption: WindSpecs = {
+      units: {
+        type: 'enum',
+        label: 'x',
+        // @ts-expect-error not one of Wind's units
+        options: [{ value: 'Furlongs', label: 'x' }],
+      },
+    };
+    expect([fits, unknownPath, branch, wrongKind, wrongOption]).toHaveLength(5);
   });
 });

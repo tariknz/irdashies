@@ -12,9 +12,10 @@ import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 
 const SETTING_ID = 'battle';
+const SettingProp = settingPropFor(SETTING_ID);
 
 interface SortableSetting {
   id: string;

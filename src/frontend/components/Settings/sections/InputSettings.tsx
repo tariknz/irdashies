@@ -24,9 +24,10 @@ import {
   hasLayoutTree,
   isEmptyLayoutTree,
 } from '../../Input/layout';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 
 const WIDGET_TYPE = 'input';
+const SettingProp = settingPropFor(WIDGET_TYPE);
 const TABS: SettingsTabType[] = ['layout', 'options', 'visibility'];
 
 const defaultConfig = getWidgetDefaultConfig('input');

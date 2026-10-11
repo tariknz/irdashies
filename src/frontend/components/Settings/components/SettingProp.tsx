@@ -3,7 +3,10 @@ import {
   getPath,
   getWidgetManifest,
   setPath,
+  type ConfigPath,
   type PropertySpecs,
+  type WidgetConfigMap,
+  type WidgetId,
 } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
 import { SettingButtonGroupRow } from './SettingButtonGroupRow';
@@ -14,6 +17,7 @@ import { SettingToggleRow } from './SettingToggleRow';
 import { ToggleSwitch } from './ToggleSwitch';
 
 interface SettingPropsValue {
+  widget: string;
   specs: PropertySpecs;
   config: Record<string, unknown>;
   defaults: Record<string, unknown>;
@@ -42,6 +46,7 @@ export const SettingProps = <T extends object>({
   return (
     <SettingPropsContext.Provider
       value={{
+        widget,
         specs: manifest?.properties ?? {},
         config: config as Record<string, unknown>,
         defaults: (manifest?.config ?? {}) as Record<string, unknown>,
@@ -61,23 +66,40 @@ const fromString = (
 
 const warnedPaths = new Set<string>();
 
-/** One setting row; the control is chosen from the property's manifest spec. */
-export const SettingProp = ({
-  path,
-  variant = 'row',
-}: {
-  path: string;
+interface SettingPropProps<P extends string = string> {
+  path: P;
   /** 'compact' = the inline sub-setting inside a DraggableSettingItem. */
   variant?: 'row' | 'compact';
-}) => {
+}
+
+/**
+ * Returns the SettingProp row for one widget, so TypeScript checks every
+ * `path` against that widget's config type:
+ *
+ *   const SettingProp = settingPropFor('wind');
+ *   <SettingProp path="background.opacity" />
+ */
+export const settingPropFor = <K extends WidgetId>(widget: K) => {
+  const TypedSettingProp = (
+    props: SettingPropProps<ConfigPath<WidgetConfigMap[K]>>
+  ) => <SettingPropRow widget={widget} {...props} />;
+  return TypedSettingProp;
+};
+
+/** One setting row; the control is chosen from the property's manifest spec. */
+const SettingPropRow = ({
+  widget,
+  path,
+  variant = 'row',
+}: SettingPropProps & { widget: string }) => {
   const ctx = useContext(SettingPropsContext);
-  const spec = ctx?.specs[path];
+  const spec = ctx?.widget === widget ? ctx.specs[path] : undefined;
   if (!ctx || !spec) {
     // Once per path: this runs on every render (e.g. each slider step) and
     // the frontend logger forwards to the main-process log file.
     if (!warnedPaths.has(path)) {
       warnedPaths.add(path);
-      logger.warn('SettingProp: no property spec for', path);
+      logger.warn('SettingProp: no property spec for', widget, path);
     }
     return null;
   }

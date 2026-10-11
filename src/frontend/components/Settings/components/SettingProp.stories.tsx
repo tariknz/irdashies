@@ -1,7 +1,9 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { getWidgetDefaultConfig } from '@irdashies/types';
-import { SettingProp, SettingProps } from './SettingProp';
+import { SettingProps, settingPropFor } from './SettingProp';
+
+const SettingProp = settingPropFor('wind');
 
 const meta: Meta<typeof SettingProp> = {
   component: SettingProp,

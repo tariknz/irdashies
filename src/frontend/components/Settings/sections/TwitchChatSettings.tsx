@@ -4,9 +4,10 @@ import type { TwitchChatWidgetSettings } from '@irdashies/types';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SettingsSection } from '../components/SettingSection';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 
 const SETTING_ID = 'twitchchat';
+const SettingProp = settingPropFor(SETTING_ID);
 
 const defaultConfig = getWidgetDefaultConfig('twitchchat');
 

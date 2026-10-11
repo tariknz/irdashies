@@ -1,15 +1,21 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { SettingProp, SettingProps } from './SettingProp';
+import { SettingProps, settingPropFor } from './SettingProp';
+
+const WindProp = settingPropFor('wind');
+const StandingsProp = settingPropFor('standings');
+const RejoinProp = settingPropFor('rejoin');
+const LapTraceProp = settingPropFor('laptrace');
 
 const renderWind = (config: Record<string, unknown>) => {
   const onChange = vi.fn();
   render(
     <SettingProps widget="wind" config={config} onChange={onChange}>
-      <SettingProp path="background.opacity" />
-      <SettingProp path="units" />
-      <SettingProp path="showOnlyWhenOnTrack" />
-      <SettingProp path="no.such.path" />
+      <WindProp path="background.opacity" />
+      <WindProp path="units" />
+      <WindProp path="showOnlyWhenOnTrack" />
+      {/* @ts-expect-error not a Wind config path */}
+      <WindProp path="no.such.path" />
     </SettingProps>
   );
   return onChange;
@@ -47,11 +53,11 @@ describe('SettingProp enum extensions', () => {
     const onChange = vi.fn();
     render(
       <SettingProps widget="standings" config={config} onChange={onChange}>
-        <SettingProp
+        <StandingsProp
           path="lapTimeDeltas.numLaps"
           variant={compact ? 'compact' : 'row'}
         />
-        <SettingProp
+        <StandingsProp
           path="iratingChange.estimateInPractice"
           variant={compact ? 'compact' : 'row'}
         />
@@ -72,7 +78,7 @@ describe('SettingProp enum extensions', () => {
         config={{ driverStandings: { buffer: 3, numTopDrivers: 3 } }}
         onChange={onChange}
       >
-        <SettingProp path="driverStandings.buffer" />
+        <StandingsProp path="driverStandings.buffer" />
       </SettingProps>
     );
     fireEvent.change(screen.getByRole('combobox'), { target: { value: '4' } });
@@ -106,7 +112,7 @@ describe('SettingProp number input', () => {
         config={{ showAtSpeed: 30, careGap: 2 }}
         onChange={onChange}
       >
-        <SettingProp path="showAtSpeed" />
+        <RejoinProp path="showAtSpeed" />
       </SettingProps>
     );
     const input = screen.getByRole('spinbutton');
@@ -126,7 +132,7 @@ describe('SettingProp regression cases', () => {
           config={{ background: { opacity } }}
           onChange={vi.fn()}
         >
-          <SettingProp path="background.opacity" />
+          <WindProp path="background.opacity" />
         </SettingProps>
       );
       expect(screen.getByRole('slider')).toHaveValue('80');
@@ -144,8 +150,8 @@ describe('SettingProp regression cases', () => {
         }}
         onChange={onChange}
       >
-        <SettingProp path="background.opacity" />
-        <SettingProp path="sessionVisibility.race" />
+        <WindProp path="background.opacity" />
+        <WindProp path="sessionVisibility.race" />
       </SettingProps>
     );
     expect(screen.getByRole('slider')).toHaveValue('0');
@@ -161,7 +167,7 @@ describe('SettingProp regression cases', () => {
     const onChange = vi.fn();
     render(
       <SettingProps widget="wind" config={config} onChange={onChange}>
-        <SettingProp path="background.opacity" />
+        <WindProp path="background.opacity" />
       </SettingProps>
     );
     fireEvent.change(screen.getByRole('slider'), { target: { value: '0' } });
@@ -182,7 +188,7 @@ describe('SettingProp regression cases', () => {
     const onChange = vi.fn();
     render(
       <SettingProps widget="standings" config={config} onChange={onChange}>
-        <SettingProp path="lapTimeDeltas.numLaps" />
+        <StandingsProp path="lapTimeDeltas.numLaps" />
       </SettingProps>
     );
     fireEvent.click(screen.getByRole('button', { name: '5' }));
@@ -200,7 +206,7 @@ describe('SettingProp regression cases', () => {
         config={{ units: 'auto' }}
         onChange={onChange}
       >
-        <SettingProp path="units" variant="compact" />
+        <WindProp path="units" variant="compact" />
       </SettingProps>
     );
     fireEvent.change(screen.getByRole('combobox'), {
@@ -217,7 +223,7 @@ describe('SettingProp regression cases', () => {
         config={{ metersAhead: 100 }}
         onChange={onChange}
       >
-        <SettingProp path="metersAhead" variant="compact" />
+        <LapTraceProp path="metersAhead" variant="compact" />
       </SettingProps>
     );
     const slider = screen.getByRole('slider');
@@ -237,7 +243,7 @@ describe('SettingProp regression cases', () => {
         config={{ showAtSpeed: 30 }}
         onChange={onChange}
       >
-        <SettingProp path="showAtSpeed" />
+        <RejoinProp path="showAtSpeed" />
       </SettingProps>
     );
     const input = screen.getByRole('spinbutton');
@@ -249,7 +255,7 @@ describe('SettingProp regression cases', () => {
   });
 
   it('renders nothing when the provider is missing', () => {
-    const { container } = render(<SettingProp path="units" />);
+    const { container } = render(<WindProp path="units" />);
     expect(container).toBeEmptyDOMElement();
   });
 
@@ -259,7 +265,7 @@ describe('SettingProp regression cases', () => {
       const onChange = vi.fn();
       const { container } = render(
         <SettingProps widget={widget} config={{}} onChange={onChange}>
-          <SettingProp path="units" />
+          <WindProp path="units" />
         </SettingProps>
       );
       expect(container).toBeEmptyDOMElement();
@@ -267,10 +273,20 @@ describe('SettingProp regression cases', () => {
     }
   );
 
+  it("renders nothing inside another widget's provider", () => {
+    const { container } = render(
+      <SettingProps widget="standings" config={{}} onChange={vi.fn()}>
+        <WindProp path="units" />
+      </SettingProps>
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it('renders nothing for a property absent from a known manifest', () => {
     const { container } = render(
       <SettingProps widget="wind" config={{}} onChange={vi.fn()}>
-        <SettingProp path="missing.path" />
+        {/* @ts-expect-error not a Wind config path */}
+        <WindProp path="missing.path" />
       </SettingProps>
     );
     expect(container).toBeEmptyDOMElement();

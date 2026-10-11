@@ -1,6 +1,8 @@
 import { FuelWidgetSettings, getWidgetDefaultConfig } from '@irdashies/types';
 import { SettingsSection } from '../../components/SettingSection';
-import { SettingProp } from '../../components/SettingProp';
+import { settingPropFor } from '../../components/SettingProp';
+
+const SettingProp = settingPropFor('fuel');
 
 const defaultConfig = getWidgetDefaultConfig('fuel');
 

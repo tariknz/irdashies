@@ -16,13 +16,14 @@ import { DriverNamePreview } from '../components/DriverNamePreview';
 import { SettingDivider } from '../components/SettingDivider';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingActionButton } from '../components/SettingActionButton';
-import { SettingProp, SettingProps } from '../components/SettingProp';
+import { SettingProps, settingPropFor } from '../components/SettingProp';
 import {
   SessionBarItemsList,
   SessionBarItemConfig,
 } from '../components/SessionBarItemsList';
 
 const SETTING_ID = 'relative';
+const SettingProp = settingPropFor(SETTING_ID);
 
 interface SortableSetting {
   id: string;

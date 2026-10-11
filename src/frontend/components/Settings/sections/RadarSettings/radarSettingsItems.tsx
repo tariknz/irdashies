@@ -4,6 +4,7 @@ import {
   getWidgetDefaultConfig,
   getWidgetManifest,
   type PropertySpec,
+  type PropertySpecs,
   type RadarConfig,
   type RadarTuning,
 } from '@irdashies/types';
@@ -81,7 +82,8 @@ type NumberKey = {
 
 /** Label, description and range of a config setting live in the manifest. */
 const specOf = <T extends PropertySpec['type']>(key: string, type: T) => {
-  const spec = getWidgetManifest('radar')?.properties?.[key];
+  const specs: PropertySpecs = getWidgetManifest('radar')?.properties ?? {};
+  const spec = specs[key];
   if (spec?.type !== type) throw new Error(`radar: no ${type} property ${key}`);
   return spec as Extract<PropertySpec, { type: T }>;
 };

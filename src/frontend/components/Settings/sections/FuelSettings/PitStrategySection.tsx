@@ -2,7 +2,9 @@ import { FuelWidgetSettings } from '@irdashies/types';
 import { SettingsSection } from '../../components/SettingSection';
 import { SettingNumberRow } from '../../components/SettingNumberRow';
 import { SettingSelectRow } from '../../components/SettingSelectRow';
-import { SettingProp } from '../../components/SettingProp';
+import { settingPropFor } from '../../components/SettingProp';
+
+const SettingProp = settingPropFor('fuel');
 
 interface PitStrategySectionProps {
   settings: FuelWidgetSettings;
