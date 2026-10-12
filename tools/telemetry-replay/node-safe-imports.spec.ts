@@ -19,7 +19,7 @@ const RUNNERS = ['run-curated-validation.ts', 'car-systems-report.ts'];
 const specifiersOf = (file: string) =>
   [
     ...readFileSync(path.join(TOOL_DIR, file), 'utf8').matchAll(
-      /from '([^']+)'/g
+      /from ['"]([^'"]+)['"]/g
     ),
   ].map(([, specifier]) => specifier);
 

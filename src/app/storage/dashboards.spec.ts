@@ -347,6 +347,30 @@ describe('dashboards', () => {
     });
   });
 
+  describe('active dashboard without widgets', () => {
+    it('loads it with the default widgets instead of throwing', () => {
+      mockReadData.mockImplementation((key: string) => {
+        if (key === 'currentProfile') return 'default';
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
+        if (key === 'dashboards')
+          return {
+            default: { generalSettings: defaultDashboard.generalSettings },
+          };
+        return null;
+      });
+
+      const dashboard = getOrCreateDefaultDashboard();
+
+      expect(dashboard.widgets.map((w) => w.id)).toEqual(
+        defaultDashboard.widgets.map((w) => w.id)
+      );
+      expect(mockWriteData).toHaveBeenCalledWith('dashboards', {
+        default: dashboard,
+      });
+    });
+  });
+
   describe('applyDefaultsToAllProfiles', () => {
     it('fills in config values for profiles other than the active one', () => {
       const stored: Record<string, DashboardLayout> = {
@@ -427,6 +451,43 @@ describe('dashboards', () => {
       expect(written.nulls.widgets).toHaveLength(
         defaultDashboard.widgets.length
       );
+    });
+
+    it('replaces stored widgets that lack a layout with their defaults', () => {
+      mockReadData.mockImplementation((key: string) => {
+        if (key === 'currentProfile') return 'default';
+        if (key === 'profiles')
+          return {
+            default: { id: 'default', name: 'Default' },
+            race: { id: 'race', name: 'Race' },
+          };
+        if (key === 'dashboards')
+          return {
+            default: defaultDashboard,
+            race: {
+              ...defaultDashboard,
+              widgets: defaultDashboard.widgets.map((w) =>
+                w.id === 'tachometer' ? { id: 'tachometer' } : w
+              ),
+            },
+          };
+        return null;
+      });
+
+      applyDefaultsToAllProfiles();
+
+      const [, written] = mockWriteData.mock.calls[0] as [
+        string,
+        Record<string, DashboardLayout>,
+      ];
+      const tachometer = written.race.widgets.find(
+        (w) => w.id === 'tachometer'
+      );
+      const defaults = defaultDashboard.widgets.find(
+        (w) => w.id === 'tachometer'
+      );
+      expect(tachometer?.layout).toEqual(defaults?.layout);
+      expect(tachometer?.enabled).toBe(defaults?.enabled);
     });
 
     it('never throws on unreadable stored data', () => {

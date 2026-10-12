@@ -92,8 +92,13 @@ const isDashboardChanged = (
     return true;
   }
 
-  // Compare widgets length
-  if (oldDashboard.widgets.length !== newDashboard.widgets.length) return true;
+  // Compare widgets length (stored data may lack widgets, R8.3)
+  if (
+    !Array.isArray(oldDashboard.widgets) ||
+    oldDashboard.widgets.length !== newDashboard.widgets.length
+  ) {
+    return true;
+  }
 
   // Compare each widget
   return oldDashboard.widgets.some((oldWidget, index) => {
@@ -107,10 +112,20 @@ export const getOrCreateDefaultDashboard = () => {
   return getOrCreateDefaultDashboardForProfile(currentProfileId);
 };
 
-const isStoredWidget = (value: unknown): value is DashboardWidget =>
-  typeof value === 'object' &&
-  value !== null &&
-  typeof (value as { id?: unknown }).id === 'string';
+// A widget the overlays can lay out. Anything less is dropped, and a built-in
+// widget then comes back from the defaults.
+const isStoredWidget = (value: unknown): value is DashboardWidget => {
+  if (typeof value !== 'object' || value === null) return false;
+  const { id, enabled, layout } = value as Partial<
+    Record<keyof DashboardWidget, unknown>
+  >;
+  return (
+    typeof id === 'string' &&
+    typeof enabled === 'boolean' &&
+    typeof layout === 'object' &&
+    layout !== null
+  );
+};
 
 /**
  * A stored dashboard with what it predates filled in: widgets added since,
