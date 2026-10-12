@@ -112,36 +112,39 @@ export const getOrCreateDefaultDashboard = () => {
   return getOrCreateDefaultDashboardForProfile(currentProfileId);
 };
 
-const isWidgetLayout = (value: unknown): value is DashboardWidget['layout'] =>
-  typeof value === 'object' &&
-  value !== null &&
-  (['x', 'y', 'width', 'height'] as const).every((key) =>
-    Number.isFinite((value as Record<string, unknown>)[key])
+const isWidgetLayout = (value: unknown): value is DashboardWidget['layout'] => {
+  if (typeof value !== 'object' || value === null) return false;
+  const { x, y, width, height } = value as Record<string, unknown>;
+  return (
+    Number.isFinite(x) &&
+    Number.isFinite(y) &&
+    [width, height].every((size) => Number.isFinite(size) && Number(size) > 0)
   );
+};
 
 /**
- * A stored widget the overlays can lay out. A missing or invalid `enabled` or
- * `layout` comes from the default widget of its type, so the rest of the
- * user's widget is kept; entries with nothing to fall back on are dropped.
+ * A stored widget the overlays can lay out. An invalid layout comes from the
+ * default widget of its type and the rest of the user's widget is kept; a
+ * missing `enabled` stays off, as it was read before. Entries with no layout
+ * to fall back on are dropped.
  */
 const toStoredWidget = (value: unknown): DashboardWidget | undefined => {
   if (typeof value !== 'object' || value === null) return undefined;
   const widget = value as Partial<Record<keyof DashboardWidget, unknown>>;
   if (typeof widget.id !== 'string') return undefined;
   const typeId = typeof widget.type === 'string' ? widget.type : widget.id;
-  const defaultWidget = defaultDashboard.widgets.find((w) => w.id === typeId);
   const layout = isWidgetLayout(widget.layout)
     ? widget.layout
-    : defaultWidget?.layout;
+    : defaultDashboard.widgets.find((w) => w.id === typeId)?.layout;
   if (!layout) return undefined;
-  return {
+  // Spread in place so key order, and the change check, stay the same.
+  const repaired: DashboardWidget = {
     ...(value as DashboardWidget),
-    enabled:
-      typeof widget.enabled === 'boolean'
-        ? widget.enabled
-        : (defaultWidget?.enabled ?? false),
-    layout,
+    enabled: widget.enabled === true,
+    layout: { ...layout },
   };
+  if (typeof repaired.type !== 'string') delete repaired.type;
+  return repaired;
 };
 
 /**

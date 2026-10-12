@@ -482,6 +482,18 @@ describe('dashboards', () => {
                   type: 'standings',
                   layout: instanceLayout,
                 },
+                {
+                  id: 'standings-3',
+                  type: 'standings',
+                  enabled: true,
+                  layout: { x: 0, y: 0, width: -300, height: 0 },
+                },
+                {
+                  id: 'fuel-2',
+                  type: 5,
+                  enabled: true,
+                  layout: instanceLayout,
+                },
                 { id: 'unknown', enabled: true },
               ],
             },
@@ -503,17 +515,21 @@ describe('dashboards', () => {
       expect(byId('tachometer')?.layout).toEqual(
         defaultOf('tachometer')?.layout
       );
-      expect(byId('tachometer')?.enabled).toBe(
-        defaultOf('tachometer')?.enabled
-      );
+      // A missing `enabled` stays off, as it was read before.
+      expect(byId('tachometer')?.enabled).toBe(false);
       expect(byId('tachometer')?.config?.background).toMatchObject({
         opacity: 40,
       });
-      // An extra instance keeps its own layout and takes `enabled` from its type.
+      // An extra instance keeps its own layout.
       expect(byId('standings-2')?.layout).toEqual(instanceLayout);
-      expect(byId('standings-2')?.enabled).toBe(
-        defaultOf('standings')?.enabled
+      expect(byId('standings-2')?.enabled).toBe(false);
+      // An unusable layout comes from the instance's type.
+      expect(byId('standings-3')?.layout).toEqual(
+        defaultOf('standings')?.layout
       );
+      expect(byId('standings-3')?.enabled).toBe(true);
+      // A type that isn't a string is dropped.
+      expect(byId('fuel-2')).not.toHaveProperty('type');
       // Nothing to fall back on for the layout.
       expect(byId('unknown')).toBeUndefined();
     });
