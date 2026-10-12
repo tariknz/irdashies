@@ -11,8 +11,6 @@ const TUNING_KEYS = [
   'speedSmoothing',
   'laneRate',
   'overlapSearchM',
-  'poleLearnAfterS',
-  'poleFlipFrames',
   'gridMaxSpeedMs',
 ] as const satisfies readonly (keyof RadarProcessorTuning)[];
 

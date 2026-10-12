@@ -4,15 +4,7 @@ import { mockDashboardBridge } from '@irdashies/storybook';
 import type { DashboardBridge } from '@irdashies/types';
 import { RadarSettings } from './RadarSettings';
 
-const bridge: DashboardBridge = {
-  ...mockDashboardBridge,
-  getRadarPoleSides: () =>
-    Promise.resolve({
-      'Okayama International Circuit': { pace: 'right' },
-      'Sebring International Raceway': { grid: 'left', pace: 'left' },
-    }),
-  setRadarPoleSide: () => Promise.resolve(),
-};
+const bridge: DashboardBridge = mockDashboardBridge;
 
 const meta: Meta<typeof RadarSettings> = {
   component: RadarSettings,

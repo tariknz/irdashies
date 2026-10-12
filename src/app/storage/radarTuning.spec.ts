@@ -16,8 +16,8 @@ const withTuning = (tuning: unknown) =>
 describe('tuningOf', () => {
   it('takes valid saved values', () => {
     expect(
-      tuningOf(withTuning({ laneRate: 2, poleFlipFrames: 10 }))
-    ).toMatchObject({ laneRate: 2, poleFlipFrames: 10 });
+      tuningOf(withTuning({ laneRate: 2, gridMaxSpeedMs: 5 }))
+    ).toMatchObject({ laneRate: 2, gridMaxSpeedMs: 5 });
   });
 
   it('falls back to defaults for values that would break the processor', () => {
@@ -26,13 +26,13 @@ describe('tuningOf', () => {
         speedSmoothing: 5,
         laneRate: Number.NaN,
         overlapSearchM: -1,
-        poleFlipFrames: '30',
+        gridMaxSpeedMs: '3',
       })
     );
     expect(tuning.speedSmoothing).toBe(DEFAULT_RADAR_TUNING.speedSmoothing);
     expect(tuning.laneRate).toBe(DEFAULT_RADAR_TUNING.laneRate);
     expect(tuning.overlapSearchM).toBe(DEFAULT_RADAR_TUNING.overlapSearchM);
-    expect(tuning.poleFlipFrames).toBe(DEFAULT_RADAR_TUNING.poleFlipFrames);
+    expect(tuning.gridMaxSpeedMs).toBe(DEFAULT_RADAR_TUNING.gridMaxSpeedMs);
   });
 
   it('survives a null tuning', () => {

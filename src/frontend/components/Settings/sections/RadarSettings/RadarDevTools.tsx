@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useDashboard } from '@irdashies/context';
+import { useEffect, useState } from 'react';
 import {
   RADAR_ARC_STYLES,
   RADAR_OVERLAP_THRESHOLDS,
@@ -7,7 +6,6 @@ import {
   RADAR_RIVAL_COLOR_MODES,
   getWidgetDefaultConfig,
   type RadarConfig,
-  type RadarPoleSides,
 } from '@irdashies/types';
 import { isValidSize, type CarSize } from '@irdashies/domain/radar/carSizes';
 
@@ -102,101 +100,6 @@ const wrongSettings = (settings: Record<string, unknown>): string[] => {
 
 const BUTTON =
   'px-3 py-1 text-sm bg-slate-600 hover:bg-slate-500 text-slate-300 rounded-md transition-colors';
-
-type Kind = 'grid' | 'pace';
-type Side = 'left' | 'right';
-
-/** Learnt pole sides, to correct or forget so they are learnt again. */
-export const PoleSidesTable = () => {
-  const { bridge } = useDashboard();
-  const [sides, setSides] = useState<RadarPoleSides | null>(null);
-
-  const reload = useCallback(() => {
-    bridge.getRadarPoleSides?.().then(setSides);
-  }, [bridge]);
-  useEffect(reload, [reload]);
-
-  if (!bridge.getRadarPoleSides) {
-    return (
-      <p className="text-sm text-slate-500">
-        Only available in the desktop app.
-      </p>
-    );
-  }
-  const rows = Object.entries(sides ?? {}).flatMap(([track, byKind]) =>
-    (Object.entries(byKind) as [Kind, Side][]).map(([kind, side]) => ({
-      track,
-      kind,
-      side,
-    }))
-  );
-
-  const change = async (track: string, kind: Kind, side: Side | null) => {
-    await bridge.setRadarPoleSide?.(track, kind, side);
-    reload();
-  };
-
-  return (
-    <div className="space-y-2">
-      <h4 className="text-md font-medium text-slate-300">Learnt Pole Sides</h4>
-      <p className="text-sm text-slate-500">
-        Learnt from the spotter after the green. A change applies from the next
-        session.
-      </p>
-      {rows.length === 0 ? (
-        <p className="text-sm text-slate-500">Nothing learnt yet.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase text-slate-500">
-                <th className="py-1 pr-2 font-medium">Track</th>
-                <th className="py-1 pr-2 font-medium">Start</th>
-                <th className="py-1 pr-2 font-medium">Pole side</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(({ track, kind, side }) => (
-                <tr
-                  key={`${track}:${kind}`}
-                  className="border-t border-slate-700"
-                >
-                  <td className="py-1 pr-2 text-slate-300">{track}</td>
-                  <td className="py-1 pr-2 text-slate-400">
-                    {kind === 'grid' ? 'Standing grid' : 'Pace line'}
-                  </td>
-                  <td className="py-1 pr-2">
-                    <select
-                      aria-label={`Pole side at ${track}`}
-                      className="bg-slate-700 text-white rounded-md px-2 py-0.5"
-                      value={side}
-                      onChange={(e) =>
-                        change(track, kind, e.target.value as Side)
-                      }
-                    >
-                      <option value="left">Left</option>
-                      <option value="right">Right</option>
-                    </select>
-                  </td>
-                  <td className="py-1 text-right">
-                    <button
-                      type="button"
-                      className="text-xs text-slate-400 hover:text-red-400"
-                      onClick={() => change(track, kind, null)}
-                    >
-                      Forget
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-};
 
 /** The radar config as JSON, to copy out or paste back in. */
 export const ConfigJson = ({

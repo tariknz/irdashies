@@ -723,12 +723,7 @@ export type RadarProfileConfig = Pick<RadarConfig, RadarProfileKey>;
 /** The part of the radar tuning the telemetry processor reads. */
 export type RadarProcessorTuning = Pick<
   RadarTuning,
-  | 'speedSmoothing'
-  | 'laneRate'
-  | 'overlapSearchM'
-  | 'poleLearnAfterS'
-  | 'poleFlipFrames'
-  | 'gridMaxSpeedMs'
+  'speedSmoothing' | 'laneRate' | 'overlapSearchM' | 'gridMaxSpeedMs'
 >;
 
 export const DEFAULT_RADAR_TUNING: RadarTuning = {
@@ -740,8 +735,6 @@ export const DEFAULT_RADAR_TUNING: RadarTuning = {
   speedSmoothing: 0.25,
   laneRate: 4,
   overlapSearchM: 8,
-  poleLearnAfterS: 15,
-  poleFlipFrames: 30,
   gridMaxSpeedMs: 3,
 };
 
@@ -763,10 +756,6 @@ export interface RadarTuning {
   laneRate: number;
   /** Metres either side searched for an overlapping car. */
   overlapSearchM: number;
-  /** Seconds after the green flag in which the pole side is learnt. */
-  poleLearnAfterS: number;
-  /** Frames in a row the spotter must disagree before the side flips. */
-  poleFlipFrames: number;
   /** Below this speed, in m/s, cars count as parked on the grid. */
   gridMaxSpeedMs: number;
 }

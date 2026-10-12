@@ -39,8 +39,6 @@ import {
   getGarage61SearchInfoFromSession,
   setupLapTraceBridge,
 } from './app/bridge/lapTraceBridge';
-import { setupRadarBridge } from './app/bridge/radarBridge';
-import { flushRadarPoleSidesOnShutdown } from './app/storage/radarPoleSides';
 import {
   validateReferenceLapFile,
   flushReferenceLapsOnShutdown,
@@ -444,7 +442,6 @@ void app.whenReady().then(async () => {
   setupPitLaneBridge();
   setupPersonalBestLapTimesBridge();
   setupLapTraceBridge(overlayManager);
-  setupRadarBridge();
   setupGarage61SearchSession(dashboard);
   setupChromiumFlagsBridge();
   ipcMain.handle('widgetVisibility:getHidden', () => getHiddenWidgets());
@@ -650,7 +647,6 @@ const handleBeforeQuit = createBeforeQuitHandler({
     await Promise.all([
       flushLapTracesOnShutdown(),
       flushReferenceLapsOnShutdown(),
-      flushRadarPoleSidesOnShutdown(),
       flushIncidentsOnShutdown(),
       flushLapHistoryOnShutdown(),
       knownLocalUserIds.flush(),

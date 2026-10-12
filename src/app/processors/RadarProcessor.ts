@@ -13,14 +13,11 @@ import {
   type RadarProcessorTuning,
 } from '@irdashies/types';
 import type { TelemetryProcessor } from './TelemetryProcessor';
-import {
-  RadarLaneTracker,
-  type FormationKind,
-  type PoleSide,
-} from './radarLanes';
+import { RadarLaneTracker } from './radarLanes';
 import {
   computeFormation,
   PaceMode,
+  parseGridPositions,
   parseStartingGrid,
   type Formation,
   type GridOptions,
@@ -88,17 +85,6 @@ export const parseTrackLength = (raw: string | undefined): number => {
   return parsed;
 };
 
-/** Pole sides learnt per track, keyed by WeekendInfo.TrackName. */
-export interface RadarPoleSidePersistence {
-  load(track: string): Partial<Record<FormationKind, PoleSide>>;
-  save(track: string, kind: FormationKind, side: PoleSide): void;
-}
-
-const noPoleSidePersistence: RadarPoleSidePersistence = {
-  load: () => ({}),
-  save: () => undefined,
-};
-
 /**
  * Publishes the rivals around the focus car in metres.
  *
@@ -124,16 +110,16 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   private grid: GridOptions = {
     standingStart: false,
     columns: 2,
-    poleSide: 'left',
   };
   private paceCarIdx = -1;
-  private track = '';
-  private poleKey = '';
+  private session: Session | null = null;
+  /** Grid positions for the session they were read for. */
+  private gridPositions = new Map<number, number>();
+  private gridSessionNum = NaN;
 
   private latest: RadarSnapshot = emptySnapshot(0);
 
   constructor(
-    private readonly poleSides: RadarPoleSidePersistence = noPoleSidePersistence,
     /** The dev view's tuning, read every frame so changes apply at once. */
     private readonly tuning: () => RadarProcessorTuning = () =>
       DEFAULT_RADAR_TUNING
@@ -149,25 +135,9 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       standingStart: options?.StandingStart === 1,
       ...parseStartingGrid(options?.StartingGrid),
     };
-    // Session revisions arrive throughout a session; only a new track or
-    // grid description may reset what the spotter is part way to learning.
-    const track = session?.WeekendInfo?.TrackName ?? '';
-    const poleKey = `${track}|${this.grid.poleSide}`;
-    if (poleKey !== this.poleKey) {
-      this.poleKey = poleKey;
-      this.track = track;
-      this.lanes.setPoleSide(this.grid.poleSide);
-      // Which side the pole is on is the track's, and the sim does not say;
-      // what the spotter showed here before beats the grid description.
-      if (track) {
-        const learnt = this.poleSides.load(track);
-        for (const kind of ['grid', 'pace'] as const) {
-          const side = learnt[kind];
-          if (side) this.lanes.setPoleSide(side, kind);
-        }
-      }
-    }
     this.paceCarIdx = session?.DriverInfo?.PaceCarIdx ?? -1;
+    this.session = session;
+    this.gridSessionNum = NaN;
     this.excluded.clear();
     for (const driver of session?.DriverInfo?.Drivers ?? []) {
       if (driver.CarIsPaceCar === 1 || driver.IsSpectator === 1) {
@@ -203,6 +173,11 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
             ? NaN
             : wrapDelta(pct, playerPct) * this.trackLength;
       }
+      const sessionNum = scalarNumber(frame, 'SessionNum', -1);
+      if (sessionNum !== this.gridSessionNum) {
+        this.gridSessionNum = sessionNum;
+        this.gridPositions = parseGridPositions(this.session, sessionNum);
+      }
       formation = computeFormation({
         focus,
         dists,
@@ -222,6 +197,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         ) as readonly number[],
         paceCarIdx: this.paceCarIdx,
         grid: this.grid,
+        gridPositions: this.gridPositions,
       });
       const followCarIdx = formation?.followCarIdx ?? null;
       if (followCarIdx !== null && Number.isFinite(dists[followCarIdx])) {
@@ -342,9 +318,6 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       if (!lane) continue;
       car.lane = lane.lane;
       car.laneSource = lane.source;
-    }
-    for (const { kind, side } of this.lanes.takeLearntPoleSides()) {
-      if (this.track) this.poleSides.save(this.track, kind, side);
     }
   }
 
