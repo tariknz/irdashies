@@ -106,7 +106,7 @@ describe('BroadcastGroupSettings', () => {
     expect(saved.config.secondsPerEntry).toBe(3);
   });
 
-  it('keeps one page mounted while switching tabs', () => {
+  it('keeps one page mounted while switching tabs', async () => {
     getComponentServerPort.mockClear();
     const { rerender } = render(
       <MemoryRouter>
@@ -120,6 +120,9 @@ describe('BroadcastGroupSettings', () => {
     );
 
     expect(screen.getByText('ticker settings')).toBeInTheDocument();
+    expect(
+      await screen.findByText(/localhost:3002\/widget\/broadcastticker/)
+    ).toBeInTheDocument();
     // A remount would ask for the port again (and show 3000 meanwhile).
     expect(getComponentServerPort).toHaveBeenCalledTimes(1);
   });
