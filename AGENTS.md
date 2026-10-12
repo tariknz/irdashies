@@ -171,6 +171,7 @@ export default defineWidgetManifest({
 });
 
 // src/frontend/components/MyWidget/widget.ts — component
+import type { WidgetModule } from '@irdashies/domain';
 export default { id: 'mywidget', component: MyWidget } satisfies WidgetModule;
 ```
 

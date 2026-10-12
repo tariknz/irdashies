@@ -1,16 +1,8 @@
 import type { ElementType } from 'react';
+import type { WidgetModule } from '@irdashies/domain';
 import { WIDGET_MANIFESTS, type WidgetId } from '@irdashies/types';
 
-export type { WidgetId };
-
-/**
- * Default export of each `components/<Folder>/widget.ts`: one module, or an
- * array when a folder hosts several widgets.
- */
-export interface WidgetModule {
-  id: WidgetId;
-  component: ElementType;
-}
+export type { WidgetId, WidgetModule };
 
 const discoveredWidgets = import.meta.glob<{
   default: WidgetModule | readonly WidgetModule[];

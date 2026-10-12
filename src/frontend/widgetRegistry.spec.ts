@@ -60,8 +60,13 @@ describe('widget registry', () => {
         const sibling = spec.match(/^\.\.\/([^./][^/]*)/);
         return !!sibling && sibling[1] !== folder;
       });
-      // '../../WidgetIndex' (a parent, not a sibling folder) is allowed.
       expect(crossImports, path).toEqual([]);
+      // WidgetIndex sits above the widgets (R1.1): WidgetModule comes from
+      // @irdashies/domain.
+      expect(
+        specifiers.filter((spec) => spec.includes('WidgetIndex')),
+        path
+      ).toEqual([]);
     }
   });
 
