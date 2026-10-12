@@ -19,6 +19,17 @@ vi.mock('./storage', () => ({
   writeData: mockWriteData,
 }));
 
+const mockLoggerWarn = vi.hoisted(() => vi.fn());
+
+vi.mock('../logger', () => ({
+  default: {
+    info: vi.fn(),
+    warn: mockLoggerWarn,
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
 const mockEmitDashboardUpdated = vi.hoisted(() => vi.fn());
 
 vi.mock('./dashboardEvents', () => ({
@@ -30,6 +41,7 @@ describe('dashboards', () => {
     mockReadData.mockReset();
     mockWriteData.mockReset();
     mockEmitDashboardUpdated.mockReset();
+    mockLoggerWarn.mockReset();
     // Setup intelligent mock for readData that handles different keys
     mockReadData.mockImplementation((key: string) => {
       if (key === 'currentProfile') {
@@ -532,6 +544,19 @@ describe('dashboards', () => {
       expect(byId('fuel-2')).not.toHaveProperty('type');
       // Nothing to fall back on for the layout.
       expect(byId('unknown')).toBeUndefined();
+      // Both the drop and the repair are logged.
+      const warned = mockLoggerWarn.mock.calls.map(([message, id]) => [
+        message,
+        id,
+      ]);
+      expect(warned).toContainEqual([
+        '[toStoredWidget] Dropped widget with no usable layout:',
+        'unknown',
+      ]);
+      expect(warned).toContainEqual([
+        '[toStoredWidget] Replaced an invalid layout with the default for:',
+        'tachometer',
+      ]);
     });
 
     it('never throws on unreadable stored data', () => {

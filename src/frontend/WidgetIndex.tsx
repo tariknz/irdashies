@@ -2,7 +2,7 @@ import type { ElementType } from 'react';
 import type { WidgetModule } from '@irdashies/domain';
 import { WIDGET_MANIFESTS, type WidgetId } from '@irdashies/types';
 
-export type { WidgetId, WidgetModule };
+export type { WidgetId };
 
 const discoveredWidgets = import.meta.glob<{
   default: WidgetModule | readonly WidgetModule[];

@@ -129,14 +129,39 @@ const isWidgetLayout = (value: unknown): value is DashboardWidget['layout'] => {
  * to fall back on are dropped.
  */
 const toStoredWidget = (value: unknown): DashboardWidget | undefined => {
-  if (typeof value !== 'object' || value === null) return undefined;
-  const widget = value as Partial<Record<keyof DashboardWidget, unknown>>;
-  if (typeof widget.id !== 'string') return undefined;
+  const widget =
+    typeof value === 'object' && value !== null
+      ? (value as Partial<Record<keyof DashboardWidget, unknown>>)
+      : undefined;
+  if (typeof widget?.id !== 'string') {
+    logger.warn(
+      '[toStoredWidget] Dropped a stored entry without an id:',
+      value
+    );
+    return undefined;
+  }
   const typeId = typeof widget.type === 'string' ? widget.type : widget.id;
-  const layout = isWidgetLayout(widget.layout)
+  const storedLayout = isWidgetLayout(widget.layout)
     ? widget.layout
-    : defaultDashboard.widgets.find((w) => w.id === typeId)?.layout;
-  if (!layout) return undefined;
+    : undefined;
+  const layout =
+    storedLayout ??
+    defaultDashboard.widgets.find((w) => w.id === typeId)?.layout;
+  if (!layout) {
+    logger.warn(
+      '[toStoredWidget] Dropped widget with no usable layout:',
+      widget.id,
+      widget.layout
+    );
+    return undefined;
+  }
+  if (!storedLayout) {
+    logger.warn(
+      '[toStoredWidget] Replaced an invalid layout with the default for:',
+      widget.id,
+      widget.layout
+    );
+  }
   // Spread in place so key order, and the change check, stay the same.
   const repaired: DashboardWidget = {
     ...(value as DashboardWidget),
@@ -151,8 +176,8 @@ const toStoredWidget = (value: unknown): DashboardWidget | undefined => {
  * A stored dashboard with what it predates filled in: widgets added since,
  * general settings and config values from the defaults, and the config
  * migrations. Stored data is untrusted (R8.3): widgets are repaired or
- * dropped (see toStoredWidget) instead of failing the whole dashboard. Pure;
- * callers save.
+ * dropped (see toStoredWidget, which logs both) instead of failing the whole
+ * dashboard. Doesn't touch storage; callers save.
  */
 export const withDashboardDefaults = (
   dashboard: DashboardLayout
