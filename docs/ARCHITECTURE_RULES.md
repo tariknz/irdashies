@@ -317,5 +317,6 @@ class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectionSnapsh
 // src/types/widgets/mywidget.ts
 export default defineWidgetManifest({ id: 'mywidget', name: 'My Widget', enabled: false, layout, config });
 // src/frontend/components/MyWidget/widget.ts
+import type { WidgetModule } from '@irdashies/domain';
 export default { id: 'mywidget', component: MyWidget } satisfies WidgetModule;
 ```

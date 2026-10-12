@@ -4,7 +4,7 @@ import type {
   StandingsSnapshot,
   Telemetry,
 } from '@irdashies/types';
-import { SessionState, TrackLocation } from '@irdashies/types';
+import { SessionState, TrackLocation } from '../irsdk/types/enums';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 
 const numberValue = (frame: Telemetry, key: keyof Telemetry): number | null => {

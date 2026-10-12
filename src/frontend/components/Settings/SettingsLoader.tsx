@@ -37,7 +37,7 @@ import { HeartRateSettings } from './sections/HeartRateSettings';
 import { CornerNameSettings } from './sections/CornerNameSettings';
 import { LapTraceSettings } from './sections/LapTraceSettings';
 import { BattleSettings } from './sections/BattleSettings';
-import { BroadcastGroupSettings } from './sections/BroadcastGroupSettings';
+import { BroadcastSettingsPage } from './sections/BroadcastGroupSettings';
 import { GantrySettings } from './sections/GantrySettings';
 
 /**
@@ -46,7 +46,7 @@ import { GantrySettings } from './sections/GantrySettings';
  */
 export const WIDGET_SETTINGS: Record<
   Exclude<WidgetId, 'telemetryinspector'>,
-  ComponentType<{ widgetId?: string }>
+  ComponentType<{ widgetId?: string; widgetType?: string }>
 > = {
   standings: StandingsSettings,
   relative: RelativeSettings,
@@ -77,11 +77,11 @@ export const WIDGET_SETTINGS: Record<
   laptrace: LapTraceSettings,
   battle: BattleSettings,
   // The broadcast widgets share one page, with a tab per widget.
-  broadcast: () => <BroadcastGroupSettings active="broadcast" />,
-  broadcastticker: () => <BroadcastGroupSettings active="broadcastticker" />,
-  broadcastevents: () => <BroadcastGroupSettings active="broadcastevents" />,
-  broadcastweather: () => <BroadcastGroupSettings active="broadcastweather" />,
-  broadcastpodium: () => <BroadcastGroupSettings active="broadcastpodium" />,
+  broadcast: BroadcastSettingsPage,
+  broadcastticker: BroadcastSettingsPage,
+  broadcastevents: BroadcastSettingsPage,
+  broadcastweather: BroadcastSettingsPage,
+  broadcastpodium: BroadcastSettingsPage,
   gantry: GantrySettings,
 };
 
@@ -110,7 +110,7 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
   const Settings = Object.hasOwn(WIDGET_SETTINGS, type ?? '')
     ? WIDGET_SETTINGS[type as keyof typeof WIDGET_SETTINGS]
     : undefined;
-  if (Settings) return <Settings widgetId={widget?.id} />;
+  if (Settings) return <Settings widgetId={widget?.id} widgetType={type} />;
 
   return widget ? (
     <div className="text-red-400">No settings available for {type}</div>

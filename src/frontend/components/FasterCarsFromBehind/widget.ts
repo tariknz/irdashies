@@ -1,5 +1,5 @@
 import { FasterCarsFromBehind } from './FasterCarsFromBehind';
-import type { WidgetModule } from '../../WidgetIndex';
+import type { WidgetModule } from '@irdashies/domain';
 
 export default {
   id: 'fastercarsfrombehind',

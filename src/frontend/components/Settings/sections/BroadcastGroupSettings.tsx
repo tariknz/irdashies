@@ -218,3 +218,21 @@ export const BroadcastGroupSettings = ({
     </div>
   );
 };
+
+const isModuleType = (type: string | undefined): type is BroadcastModuleType =>
+  MODULE_TYPES.includes(type ?? '');
+
+/**
+ * The settings page for all five broadcast widgets. One component type for
+ * every tab, so switching tabs updates `active` instead of remounting the page
+ * (which reset the detected component-server port and its OBS URL).
+ */
+export const BroadcastSettingsPage = ({
+  widgetType,
+}: {
+  widgetType?: string;
+}) => (
+  <BroadcastGroupSettings
+    active={isModuleType(widgetType) ? widgetType : 'broadcast'}
+  />
+);

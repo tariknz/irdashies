@@ -8,6 +8,7 @@ import {
   onBridgeChanged,
 } from './app/bridge/iracingSdk/setup';
 import {
+  applyDefaultsToAllProfiles,
   getOrCreateDefaultDashboard,
   getCurrentProfileId,
   getProfile,
@@ -400,6 +401,9 @@ void app.whenReady().then(async () => {
     log.info('[PerfRun] Configuration', perfRun);
   }
 
+  // Every profile, not only the active one: switching profiles reads them as
+  // stored.
+  applyDefaultsToAllProfiles();
   // Resolve benchmark metadata before metrics reporting starts so every
   // interval carries the same active-widget workload description.
   const dashboard = getOrCreateDefaultDashboard();

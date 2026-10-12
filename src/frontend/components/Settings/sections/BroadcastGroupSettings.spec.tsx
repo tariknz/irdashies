@@ -1,7 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
-import { BroadcastGroupSettings } from './BroadcastGroupSettings';
+import {
+  BroadcastGroupSettings,
+  BroadcastSettingsPage,
+} from './BroadcastGroupSettings';
 
 const onDashboardUpdated = vi.fn();
 const currentDashboard = {
@@ -11,8 +14,10 @@ const currentDashboard = {
     { id: 'standings', enabled: true },
   ],
 };
+const getComponentServerPort = vi.fn(() => Promise.resolve(3002));
+const bridge = { getComponentServerPort };
 vi.mock('@irdashies/context', () => ({
-  useDashboard: () => ({ currentDashboard, onDashboardUpdated }),
+  useDashboard: () => ({ currentDashboard, onDashboardUpdated, bridge }),
 }));
 vi.mock('./BroadcastSettings', () => ({
   BroadcastSettings: () => <div>tower settings</div>,
@@ -99,5 +104,26 @@ describe('BroadcastGroupSettings', () => {
       (w: { id: string }) => w.id === 'broadcastticker'
     );
     expect(saved.config.secondsPerEntry).toBe(3);
+  });
+
+  it('keeps one page mounted while switching tabs', async () => {
+    getComponentServerPort.mockClear();
+    const { rerender } = render(
+      <MemoryRouter>
+        <BroadcastSettingsPage widgetType="broadcast" />
+      </MemoryRouter>
+    );
+    rerender(
+      <MemoryRouter>
+        <BroadcastSettingsPage widgetType="broadcastticker" />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('ticker settings')).toBeInTheDocument();
+    expect(
+      await screen.findByText(/localhost:3002\/widget\/broadcastticker/)
+    ).toBeInTheDocument();
+    // A remount would ask for the port again (and show 3000 meanwhile).
+    expect(getComponentServerPort).toHaveBeenCalledTimes(1);
   });
 });

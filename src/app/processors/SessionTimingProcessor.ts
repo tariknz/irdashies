@@ -4,7 +4,7 @@ import type {
   SessionTimingSnapshot,
   Telemetry,
 } from '@irdashies/types';
-import { SessionState } from '@irdashies/types';
+import { SessionState } from '../irsdk/types/enums';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 
 const UPDATE_INTERVAL_SECONDS = 0.2;
