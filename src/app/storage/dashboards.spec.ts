@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
+  applyDefaultsToAllProfiles,
   getOrCreateDefaultDashboard,
   listDashboards,
   getDashboard,
@@ -335,6 +336,51 @@ describe('dashboards', () => {
 
       expect(dashboard).toEqual(completeDashboard);
       expect(mockWriteData).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('applyDefaultsToAllProfiles', () => {
+    it('fills in config values for profiles other than the active one', () => {
+      const stored: Record<string, DashboardLayout> = {
+        default: defaultDashboard,
+        race: {
+          ...defaultDashboard,
+          widgets: defaultDashboard.widgets.map((w) =>
+            w.id === 'tachometer'
+              ? { ...w, config: { background: { opacity: 40 } } }
+              : w
+          ),
+        },
+      };
+      mockReadData.mockImplementation((key: string) => {
+        if (key === 'currentProfile') return 'default';
+        if (key === 'profiles')
+          return {
+            default: { id: 'default', name: 'Default' },
+            race: { id: 'race', name: 'Race' },
+            empty: { id: 'empty', name: 'No dashboard yet' },
+          };
+        if (key === 'dashboards') return stored;
+        return null;
+      });
+
+      applyDefaultsToAllProfiles();
+
+      const [, written] = mockWriteData.mock.calls.find(
+        ([key, value]) => key === 'dashboards' && value.race
+      ) as [string, Record<string, DashboardLayout>];
+      const tachometer = written.race.widgets.find(
+        (w) => w.id === 'tachometer'
+      );
+      const defaults = defaultDashboard.widgets.find(
+        (w) => w.id === 'tachometer'
+      )?.config as Record<string, unknown>;
+      expect(tachometer?.config).toEqual({
+        ...defaults,
+        background: { ...(defaults.background as object), opacity: 40 },
+      });
+      // A profile without a stored dashboard is left for first use.
+      expect(written).not.toHaveProperty('empty');
     });
   });
 

@@ -159,6 +159,22 @@ export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
   return defaultDashboard;
 };
 
+/**
+ * Fills in what stored dashboards predate (widgets, general settings and
+ * config values from the defaults) and runs the config migrations, for every
+ * profile. Switching to a profile reads it as stored, so without this a
+ * profile saved by an older version hands its widgets and their settings
+ * pages missing values, and each falls back to a different default.
+ */
+export const applyDefaultsToAllProfiles = () => {
+  const dashboards = listDashboards();
+  for (const profile of listProfiles()) {
+    if (dashboards[profile.id]) {
+      getOrCreateDefaultDashboardForProfile(profile.id);
+    }
+  }
+};
+
 export const listDashboards = () => {
   const dashboards = readData<Record<string, DashboardLayout>>(DASHBOARDS_KEY);
   if (!dashboards) return {};
