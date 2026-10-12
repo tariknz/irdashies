@@ -49,7 +49,7 @@ describe('widget runtime metadata', () => {
       'pitlanehelper',
       'tachometer',
       'flag',
-      'twitchchat',
+      'streamchat',
       'laptimelog',
       'infobar',
       'slowcarahead',

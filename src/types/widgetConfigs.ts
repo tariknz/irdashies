@@ -853,11 +853,21 @@ export interface PitlaneHelperConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
-export interface TwitchChatConfig {
-  fontSize: number;
-  channel: string;
-  background: { opacity: number };
-  autoHide: { enabled: boolean; intervalSeconds: number };
+export interface StreamChatConfig {
+  display: {
+    fontSize: number;
+    background: { opacity: number };
+    autoHide: { enabled: boolean; intervalSeconds: number };
+    showPlatformIcons: boolean;
+  };
+  twitch: {
+    /** Twitch channel name; empty disables Twitch chat. */
+    channel: string;
+  };
+  youtube: {
+    /** YouTube handle including the leading `@`; empty disables YouTube chat. */
+    channel: string;
+  };
 }
 
 export interface HeartRateConfig {
@@ -1442,7 +1452,7 @@ export interface WidgetConfigMap {
   telemetryinspector: TelemetryInspectorConfig;
   fastercarsfrombehind: FasterCarsFromBehindConfig;
   pitlanehelper: PitlaneHelperConfig;
-  twitchchat: TwitchChatConfig;
+  streamchat: StreamChatConfig;
   laptimelog: LapTimeLogConfig;
   infobar: InformationBarConfig;
   slowcarahead: SlowCarAheadConfig;
@@ -1484,6 +1494,8 @@ export interface BaseWidgetSettings<T = Record<string, unknown>> {
 /** Available settings tabs */
 export type SettingsTabType =
   | 'display'
+  | 'twitch'
+  | 'youtube'
   | 'options'
   | 'visibility'
   | 'styling'
@@ -1560,7 +1572,7 @@ export type FasterCarsFromBehindWidgetSettings =
   BaseWidgetSettings<FasterCarsFromBehindConfig>;
 export type PitlaneHelperWidgetSettings =
   BaseWidgetSettings<PitlaneHelperConfig>;
-export type TwitchChatWidgetSettings = BaseWidgetSettings<TwitchChatConfig>;
+export type StreamChatWidgetSettings = BaseWidgetSettings<StreamChatConfig>;
 export type LapTimeLogWidgetSettings = BaseWidgetSettings<LapTimeLogConfig>;
 export type InformationBarWidgetSettings =
   BaseWidgetSettings<InformationBarConfig>;

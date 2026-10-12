@@ -5,6 +5,8 @@ interface TabButtonProps<Tab extends string = SettingsTabType> {
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
   children: React.ReactNode;
+  /** Shown before the label, e.g. a platform logo. */
+  icon?: React.ReactNode;
 }
 
 export const TabButton = <Tab extends string = SettingsTabType>({
@@ -12,6 +14,7 @@ export const TabButton = <Tab extends string = SettingsTabType>({
   activeTab,
   setActiveTab,
   children,
+  icon,
 }: TabButtonProps<Tab>) => (
   <button
     onClick={() => setActiveTab(id)}
@@ -21,6 +24,7 @@ export const TabButton = <Tab extends string = SettingsTabType>({
         : 'text-slate-400 border-transparent hover:text-slate-200'
     }`}
   >
+    {icon}
     {children}
   </button>
 );
