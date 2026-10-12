@@ -1,4 +1,4 @@
-import { HAT_DIRECTIONS, type ParsedGamepadToken } from '@irdashies/types';
+import { HAT_DIRECTIONS, type ParsedGamepadToken } from '../types/gamepadToken';
 
 /** Prefix marking a binding value as a gamepad button rather than a keyboard accelerator. */
 export const GAMEPAD_TOKEN_PREFIX = 'gamepad:';
