@@ -8,8 +8,7 @@ import {
   useCarLap,
   useFocusCarIdx,
   useGeneralSettings,
-  useBattleGapStoreUpdater,
-  useBattleGapSnapshot,
+  useLapHistorySnapshot,
   useWeekendInfoNumCarClasses,
   useCarIdxSpeed,
   useTrackStateSnapshot,
@@ -23,6 +22,7 @@ import {
   useDriverRelatives,
   useDriverStandings,
   useDriverLivePositions,
+  lastLineGap,
   type Standings,
 } from '@irdashies/domain';
 
@@ -306,7 +306,6 @@ export const Battle = () => {
 
   const pitLaps = usePitLap();
   const carLaps = useCarLap();
-  const gapSnapshot = useBattleGapSnapshot();
 
   // Build a carIdx → live delta map from relatives for O(1) lookups.
   // Updates when the relative-gaps channel publishes.
@@ -388,7 +387,29 @@ export const Battle = () => {
     return d != null ? Math.abs(d) : null;
   }, [behindEntry, relativeDeltaMap]);
 
-  useBattleGapStoreUpdater({ liveGapAhead, liveGapBehind });
+  // Prev: gap over the line on the last lap both cars completed, from real
+  // crossing times - same as the sim's own timing. A live-delta snapshot taken
+  // at the line inherits the reference-lap estimate's error on early laps.
+  const gapEnabled = settings?.gap?.enabled ?? true;
+  const lapHistory = useLapHistorySnapshot(gapEnabled);
+  // Keyed on carIdx: the entries themselves are rebuilt every frame.
+  const playerCarIdx = playerEntry?.carIdx;
+  const aheadCarIdx = aheadEntry?.carIdx;
+  const behindCarIdx = behindEntry?.carIdx;
+  const prevGapAhead = useMemo(
+    () =>
+      playerCarIdx !== undefined && aheadCarIdx !== undefined
+        ? lastLineGap(lapHistory, playerCarIdx, aheadCarIdx)
+        : null,
+    [lapHistory, playerCarIdx, aheadCarIdx]
+  );
+  const prevGapBehind = useMemo(
+    () =>
+      playerCarIdx !== undefined && behindCarIdx !== undefined
+        ? lastLineGap(lapHistory, behindCarIdx, playerCarIdx)
+        : null,
+    [lapHistory, playerCarIdx, behindCarIdx]
+  );
 
   // Speed: derived from CarIdxLapDistPct movement, in km/h.
   const carSpeeds = useCarIdxSpeed(settings?.speed?.enabled ?? false);
@@ -408,7 +429,6 @@ export const Battle = () => {
   const dp = settings?.gap?.decimalPlaces ?? 2;
   const timeFormat = settings?.lastTime?.timeFormat ?? 'mixed';
   const displayOrder = settings?.displayOrder;
-  const gapEnabled = settings?.gap?.enabled ?? true;
 
   const isCompact =
     generalSettings?.compactMode === 'compact' ||
@@ -438,12 +458,10 @@ export const Battle = () => {
               aheadEntry ? positionFor?.(aheadEntry.carIdx) : undefined
             }
             gap={gapEnabled ? formatGap(liveGapAhead, dp) : undefined}
-            prevGap={
-              gapEnabled ? formatGap(gapSnapshot.gapAhead, dp) : undefined
-            }
+            prevGap={gapEnabled ? formatGap(prevGapAhead, dp) : undefined}
             delta={
               gapEnabled
-                ? aheadDelta(liveGapAhead, gapSnapshot.gapAhead, dp)
+                ? aheadDelta(liveGapAhead, prevGapAhead, dp)
                 : undefined
             }
             isPlayer={false}
@@ -485,12 +503,10 @@ export const Battle = () => {
               behindEntry ? positionFor?.(behindEntry.carIdx) : undefined
             }
             gap={gapEnabled ? formatGap(liveGapBehind, dp) : undefined}
-            prevGap={
-              gapEnabled ? formatGap(gapSnapshot.gapBehind, dp) : undefined
-            }
+            prevGap={gapEnabled ? formatGap(prevGapBehind, dp) : undefined}
             delta={
               gapEnabled
-                ? behindDelta(liveGapBehind, gapSnapshot.gapBehind, dp)
+                ? behindDelta(liveGapBehind, prevGapBehind, dp)
                 : undefined
             }
             isPlayer={false}

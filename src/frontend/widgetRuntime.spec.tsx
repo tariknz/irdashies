@@ -124,11 +124,16 @@ describe('widget runtime metadata', () => {
     expect(getWidgetRuntimeDefinition('battle')).toMatchObject({
       channels: [
         'car-speeds.snapshot',
+        'lap-history.snapshot',
         'relative-gaps.snapshot',
         'standings.snapshot',
         'track-state.snapshot',
       ],
-      channelRates: { 'car-speeds.snapshot': 10, 'standings.snapshot': 5 },
+      channelRates: {
+        'car-speeds.snapshot': 10,
+        'lap-history.snapshot': 2,
+        'standings.snapshot': 5,
+      },
     });
     expect(getWidgetRuntimeDefinition('slowcarahead')).toMatchObject({
       channels: ['car-speeds.snapshot', 'track-state.snapshot'],
