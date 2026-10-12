@@ -382,6 +382,28 @@ describe('dashboards', () => {
       // A profile without a stored dashboard is left for first use.
       expect(written).not.toHaveProperty('empty');
     });
+
+    it('skips a malformed inactive dashboard instead of stopping startup', () => {
+      mockReadData.mockImplementation((key: string) => {
+        if (key === 'currentProfile') return 'default';
+        if (key === 'profiles')
+          return {
+            default: { id: 'default', name: 'Default' },
+            broken: { id: 'broken', name: 'Broken' },
+            nulls: { id: 'nulls', name: 'Null widget' },
+          };
+        if (key === 'dashboards')
+          return {
+            default: defaultDashboard,
+            broken: {},
+            nulls: { ...defaultDashboard, widgets: [null] },
+          };
+        return null;
+      });
+
+      expect(() => applyDefaultsToAllProfiles()).not.toThrow();
+      expect(mockWriteData).not.toHaveBeenCalled();
+    });
   });
 
   describe('Radar tuning migration', () => {

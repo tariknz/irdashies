@@ -168,9 +168,29 @@ export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
  */
 export const applyDefaultsToAllProfiles = () => {
   const dashboards = listDashboards();
+  const currentProfileId = getCurrentProfileId();
   for (const profile of listProfiles()) {
-    if (dashboards[profile.id]) {
+    // The active profile is filled in as it loads (getOrCreateDefaultDashboard).
+    if (profile.id === currentProfileId) continue;
+    const dashboard = dashboards[profile.id];
+    if (!dashboard) continue;
+    // Stored data is untrusted (R8.3): a malformed inactive profile is left as
+    // it is and logged, rather than stopping startup.
+    if (!Array.isArray(dashboard.widgets)) {
+      logger.warn(
+        '[applyDefaultsToAllProfiles] Skipping malformed dashboard for profile:',
+        profile.id
+      );
+      continue;
+    }
+    try {
       getOrCreateDefaultDashboardForProfile(profile.id);
+    } catch (error) {
+      logger.warn(
+        '[applyDefaultsToAllProfiles] Could not fill in defaults for profile:',
+        profile.id,
+        error
+      );
     }
   }
 };
