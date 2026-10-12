@@ -1,6 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import logger from '@irdashies/utils/logger';
+import { SettingNumberRow } from './SettingNumberRow';
 import { SettingProps, settingPropFor } from './SettingProp';
+
+vi.mock('@irdashies/utils/logger', () => ({
+  default: { warn: vi.fn() },
+}));
 
 const WindProp = settingPropFor('wind');
 const StandingsProp = settingPropFor('standings');
@@ -290,5 +296,29 @@ describe('SettingProp regression cases', () => {
       </SettingProps>
     );
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe('SettingProp missing-spec warning', () => {
+  it('warns once for each widget, even when they share a path', () => {
+    const warn = vi.mocked(logger.warn);
+    warn.mockClear();
+    // Outside a provider, so neither row finds its spec.
+    const { rerender } = render(<WindProp path="background.opacity" />);
+    rerender(<WindProp path="background.opacity" />);
+    render(<StandingsProp path="background.opacity" />);
+    expect(warn.mock.calls.map((call) => call.slice(1))).toEqual([
+      ['wind', 'background.opacity'],
+      ['standings', 'background.opacity'],
+    ]);
+  });
+});
+
+describe('SettingNumberRow', () => {
+  it('shows the units after the input', () => {
+    render(
+      <SettingNumberRow title="Width" value={4} units="px" onChange={vi.fn()} />
+    );
+    expect(screen.getByText('px')).toBeInTheDocument();
   });
 });

@@ -68,7 +68,10 @@ const warnedPaths = new Set<string>();
 
 interface SettingPropProps<P extends string = string> {
   path: P;
-  /** 'compact' = the inline sub-setting inside a DraggableSettingItem. */
+  /**
+   * 'compact' = the inline sub-setting inside a DraggableSettingItem, for
+   * toggles and enums. Numbers have no compact control and keep their row.
+   */
   variant?: 'row' | 'compact';
 }
 
@@ -95,10 +98,11 @@ const SettingPropRow = ({
   const ctx = useContext(SettingPropsContext);
   const spec = ctx?.widget === widget ? ctx.specs[path] : undefined;
   if (!ctx || !spec) {
-    // Once per path: this runs on every render (e.g. each slider step) and
-    // the frontend logger forwards to the main-process log file.
-    if (!warnedPaths.has(path)) {
-      warnedPaths.add(path);
+    // Once per widget and path: this runs on every render (e.g. each slider
+    // step) and the frontend logger forwards to the main-process log file.
+    const key = `${widget}:${path}`;
+    if (!warnedPaths.has(key)) {
+      warnedPaths.add(key);
       logger.warn('SettingProp: no property spec for', widget, path);
     }
     return null;
@@ -151,6 +155,7 @@ const SettingPropRow = ({
             min={spec.min}
             max={spec.max}
             step={spec.step}
+            units={spec.units}
             onChange={change}
           />
         );

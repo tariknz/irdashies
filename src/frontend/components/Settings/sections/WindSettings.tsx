@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import {
+  deepMergeConfig,
   getWidgetDefaultConfig,
   getWidgetManifest,
   isConfigValid,
@@ -17,11 +18,22 @@ const SETTING_ID = 'wind';
 const SettingProp = settingPropFor(SETTING_ID);
 const defaultConfig = getWidgetDefaultConfig('wind');
 
+// Values a saved config predates come from the defaults, so adding a
+// property to the manifest doesn't invalidate every saved wind config.
+const withDefaults = (config: unknown) =>
+  deepMergeConfig(
+    defaultConfig as unknown as Record<string, unknown>,
+    config
+  ) as unknown as WindWidgetSettings['config'];
+
 const isWindWidgetSettings = (
   widget: DashboardWidget | undefined
 ): widget is DashboardWidget & WindWidgetSettings =>
   widget?.id === SETTING_ID &&
-  isConfigValid(getWidgetManifest(SETTING_ID)?.properties ?? {}, widget.config);
+  isConfigValid(
+    getWidgetManifest(SETTING_ID)?.properties ?? {},
+    withDefaults(widget.config)
+  );
 
 export const WindSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -33,7 +45,7 @@ export const WindSettings = () => {
       ? savedSettings.enabled
       : false,
     config: isWindWidgetSettings(savedSettings)
-      ? savedSettings.config
+      ? withDefaults(savedSettings.config)
       : defaultConfig,
   }));
 
@@ -45,7 +57,7 @@ export const WindSettings = () => {
         ? savedSettings.enabled
         : false,
       config: isWindWidgetSettings(savedSettings)
-        ? savedSettings.config
+        ? withDefaults(savedSettings.config)
         : defaultConfig,
     };
 

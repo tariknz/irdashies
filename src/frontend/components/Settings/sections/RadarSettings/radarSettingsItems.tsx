@@ -8,6 +8,7 @@ import {
   type RadarConfig,
   type RadarTuning,
 } from '@irdashies/types';
+import logger from '@irdashies/utils/logger';
 import { SessionVisibility } from '../../components/SessionVisibility';
 import { SettingButtonGroupRow } from '../../components/SettingButtonGroupRow';
 import { SettingSelectRow } from '../../components/SettingSelectRow';
@@ -80,20 +81,38 @@ type NumberKey = {
   [K in keyof RadarConfig]: RadarConfig[K] extends number ? K : never;
 }[keyof RadarConfig];
 
-/** Label, description and range of a config setting live in the manifest. */
+/** Keys whose manifest spec is missing or of the wrong kind (a spec test keeps this empty). */
+export const RADAR_MISSING_SPECS: string[] = [];
+
+/**
+ * Label, description and range of a config setting live in the manifest.
+ * A missing spec hides that one row instead of failing the whole page.
+ */
 const specOf = <T extends PropertySpec['type']>(key: string, type: T) => {
   const specs: PropertySpecs = getWidgetManifest('radar')?.properties ?? {};
   const spec = specs[key];
-  if (spec?.type !== type) throw new Error(`radar: no ${type} property ${key}`);
-  return spec as Extract<PropertySpec, { type: T }>;
+  if (spec?.type === type) return spec as Extract<PropertySpec, { type: T }>;
+  RADAR_MISSING_SPECS.push(key);
+  logger.warn(`radar: no ${type} property ${key}`);
+  return undefined;
 };
+
+const hiddenItem = (key: string): RadarSettingItem => ({
+  id: key,
+  level: 2,
+  title: key,
+  hidden: () => true,
+  render: () => null,
+});
 
 const toggle = (
   level: SettingsLevel,
   key: BooleanKey,
   hidden?: RadarSettingItem['hidden']
 ): RadarSettingItem => {
-  const { label, description } = specOf(key, 'boolean');
+  const spec = specOf(key, 'boolean');
+  if (!spec) return hiddenItem(key);
+  const { label, description } = spec;
   return {
     id: key,
     level,
@@ -118,8 +137,11 @@ const slider = (
   hidden?: RadarSettingItem['hidden']
 ): RadarSettingItem => {
   const spec = specOf(key, 'number');
-  if (spec.control === 'input')
-    throw new Error(`radar: ${key} is not a slider`);
+  if (spec?.control === 'input') {
+    RADAR_MISSING_SPECS.push(key);
+    logger.warn(`radar: ${key} is not a slider`);
+  }
+  if (!spec || spec.control === 'input') return hiddenItem(key);
   const { label, description, min, max, step, units } = spec;
   return {
     id: key,
@@ -893,6 +915,7 @@ export const matchesQuery = (
   section: RadarSettingSection,
   query: string
 ) =>
+  !RADAR_MISSING_SPECS.includes(item.id) &&
   `${item.title} ${item.description ?? ''} ${section.title}`
     .toLowerCase()
     .includes(query);

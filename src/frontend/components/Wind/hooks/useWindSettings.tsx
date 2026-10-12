@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useDashboard } from '@irdashies/context';
 import {
+  deepMergeConfig,
   getWidgetDefaultConfig,
   getWidgetManifest,
   isConfigValid,
@@ -9,10 +10,19 @@ import {
 
 const defaultConfig = getWidgetDefaultConfig('wind');
 
-const isWindConfig = (
-  config: unknown
-): config is WindWidgetSettings['config'] =>
-  isConfigValid(getWidgetManifest('wind')?.properties ?? {}, config);
+// Fill values a saved config predates from the defaults first, so adding a
+// property to the manifest doesn't invalidate every saved wind config.
+const withDefaults = (config: unknown) =>
+  deepMergeConfig(
+    defaultConfig as unknown as Record<string, unknown>,
+    config
+  ) as unknown as WindWidgetSettings['config'];
+
+const isWindConfig = (config: unknown) =>
+  isConfigValid(
+    getWidgetManifest('wind')?.properties ?? {},
+    withDefaults(config)
+  );
 
 export const useWindSettings = (): WindWidgetSettings['config'] => {
   const { currentDashboard } = useDashboard();
@@ -22,6 +32,6 @@ export const useWindSettings = (): WindWidgetSettings['config'] => {
       (w) => w.id === 'wind'
     )?.config;
 
-    return isWindConfig(config) ? config : defaultConfig;
+    return isWindConfig(config) ? withDefaults(config) : defaultConfig;
   }, [currentDashboard]);
 };
