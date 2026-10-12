@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   applyDefaultsToAllProfiles,
   getOrCreateDefaultDashboard,
+  setCurrentProfile,
   listDashboards,
   getDashboard,
   saveDashboard,
@@ -18,10 +19,17 @@ vi.mock('./storage', () => ({
   writeData: mockWriteData,
 }));
 
+const mockEmitDashboardUpdated = vi.hoisted(() => vi.fn());
+
+vi.mock('./dashboardEvents', () => ({
+  emitDashboardUpdated: mockEmitDashboardUpdated,
+}));
+
 describe('dashboards', () => {
   beforeEach(() => {
     mockReadData.mockReset();
     mockWriteData.mockReset();
+    mockEmitDashboardUpdated.mockReset();
     // Setup intelligent mock for readData that handles different keys
     mockReadData.mockImplementation((key: string) => {
       if (key === 'currentProfile') {
@@ -383,7 +391,7 @@ describe('dashboards', () => {
       expect(written).not.toHaveProperty('empty');
     });
 
-    it('skips a malformed inactive dashboard instead of stopping startup', () => {
+    it('repairs malformed inactive dashboards instead of stopping startup', () => {
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
         if (key === 'profiles')
@@ -391,6 +399,7 @@ describe('dashboards', () => {
             default: { id: 'default', name: 'Default' },
             broken: { id: 'broken', name: 'Broken' },
             nulls: { id: 'nulls', name: 'Null widget' },
+            gone: null,
           };
         if (key === 'dashboards')
           return {
@@ -402,7 +411,72 @@ describe('dashboards', () => {
       });
 
       expect(() => applyDefaultsToAllProfiles()).not.toThrow();
-      expect(mockWriteData).not.toHaveBeenCalled();
+
+      // One write for every inactive profile; bad entries fall back to the
+      // defaults (R8.3) instead of leaving the whole profile unmigrated.
+      expect(mockWriteData).toHaveBeenCalledOnce();
+      const [key, written] = mockWriteData.mock.calls[0] as [
+        string,
+        Record<string, DashboardLayout>,
+      ];
+      expect(key).toBe('dashboards');
+      expect(written.broken.widgets.map((w) => w.id)).toEqual(
+        defaultDashboard.widgets.map((w) => w.id)
+      );
+      expect(written.nulls.widgets).not.toContain(null);
+      expect(written.nulls.widgets).toHaveLength(
+        defaultDashboard.widgets.length
+      );
+    });
+
+    it('never throws on unreadable stored data', () => {
+      mockReadData.mockImplementation(() => {
+        throw new Error('corrupt store');
+      });
+      expect(() => applyDefaultsToAllProfiles()).not.toThrow();
+    });
+  });
+
+  describe('setCurrentProfile', () => {
+    it('fills in the stored dashboard before emitting it', () => {
+      const stored: Record<string, DashboardLayout> = {
+        default: defaultDashboard,
+        race: {
+          ...defaultDashboard,
+          widgets: defaultDashboard.widgets.map((w) =>
+            w.id === 'tachometer'
+              ? { ...w, config: { background: { opacity: 40 } } }
+              : w
+          ),
+        },
+      };
+      mockReadData.mockImplementation((key: string) => {
+        if (key === 'currentProfile') return 'default';
+        if (key === 'profiles')
+          return {
+            default: { id: 'default', name: 'Default' },
+            race: { id: 'race', name: 'Race' },
+          };
+        if (key === 'dashboards') return stored;
+        return null;
+      });
+
+      setCurrentProfile('race');
+
+      const defaults = defaultDashboard.widgets.find(
+        (w) => w.id === 'tachometer'
+      )?.config as Record<string, unknown>;
+      expect(mockEmitDashboardUpdated).toHaveBeenCalledOnce();
+      const [emitted] = mockEmitDashboardUpdated.mock.calls[0] as [
+        DashboardLayout,
+      ];
+      expect(
+        emitted.widgets.find((w) => w.id === 'tachometer')?.config
+      ).toEqual({
+        ...defaults,
+        background: { ...(defaults.background as object), opacity: 40 },
+      });
+      expect(mockWriteData).toHaveBeenCalledWith('currentProfile', 'race');
     });
   });
 
