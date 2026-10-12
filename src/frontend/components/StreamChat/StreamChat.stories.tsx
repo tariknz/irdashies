@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useRef, useState } from 'react';
 import type { ChatMessage } from './types';
-import { ChatMessageList } from './TwitchChat';
+import { ChatMessageList } from './StreamChat';
 import { DEMO_MESSAGES, DEMO_MESSAGE_INTERVAL_MS } from './demoData';
 
 const MAX_VISIBLE_MESSAGES = 10;
@@ -21,7 +21,7 @@ const DisappearingChatDemo = ({
       const template = DEMO_MESSAGES[indexRef.current % DEMO_MESSAGES.length];
       setMessages((prev) => [
         ...prev.slice(-(MAX_VISIBLE_MESSAGES - 1)),
-        { ...template, id: crypto.randomUUID() },
+        { ...template, id: crypto.randomUUID(), timestamp: Date.now() },
       ]);
       indexRef.current++;
     }, DEMO_MESSAGE_INTERVAL_MS);
@@ -56,7 +56,7 @@ const LiveChatDemo = ({
       const template = DEMO_MESSAGES[indexRef.current % DEMO_MESSAGES.length];
       setMessages((prev) => [
         ...prev.slice(-19),
-        { ...template, id: crypto.randomUUID() },
+        { ...template, id: crypto.randomUUID(), timestamp: Date.now() },
       ]);
       indexRef.current++;
     }, DEMO_MESSAGE_INTERVAL_MS);
@@ -77,7 +77,7 @@ const LiveChatDemo = ({
 
 export default {
   component: ChatMessageList,
-  title: 'widgets/TwitchChat',
+  title: 'widgets/StreamChat',
   decorators: [
     (Story) => (
       <div style={{ width: '350px', height: '400px' }}>
@@ -121,4 +121,22 @@ export const DisappearingMessages: Story = {
   render: () => (
     <DisappearingChatDemo fontSize={16} background={{ opacity: 85 }} />
   ),
+};
+
+export const WithPlatformIcons: Story = {
+  args: {
+    messages: DEMO_MESSAGES,
+    fontSize: 16,
+    background: { opacity: 85 },
+    showPlatformIcons: true,
+  },
+};
+
+export const YoutubeOnly: Story = {
+  args: {
+    messages: DEMO_MESSAGES.filter((m) => m.platform === 'youtube'),
+    fontSize: 16,
+    background: { opacity: 85 },
+    showPlatformIcons: true,
+  },
 };

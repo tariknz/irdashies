@@ -127,6 +127,7 @@
     "remark-gfm": "^4.0.1",
     "update-electron-app": "^3.3.0",
     "ws": "^8.22.0",
+    "youtubei.js": "18.1.0",
     "zustand": "^5.0.15"
   },
   "overrides": {

@@ -37,7 +37,7 @@ export const WIDGET_ORDER: readonly WidgetId[] = [
   'broadcastevents',
   'telemetryinspector',
   'pitlanehelper',
-  'twitchchat',
+  'streamchat',
   'infobar',
   'sectordelta',
   'carsystems',
