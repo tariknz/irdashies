@@ -453,7 +453,8 @@ describe('dashboards', () => {
       );
     });
 
-    it('replaces stored widgets that lack a layout with their defaults', () => {
+    it('repairs a stored widget from its defaults and keeps the rest', () => {
+      const instanceLayout = { x: 10, y: 20, width: 300, height: 200 };
       mockReadData.mockImplementation((key: string) => {
         if (key === 'currentProfile') return 'default';
         if (key === 'profiles')
@@ -466,9 +467,23 @@ describe('dashboards', () => {
             default: defaultDashboard,
             race: {
               ...defaultDashboard,
-              widgets: defaultDashboard.widgets.map((w) =>
-                w.id === 'tachometer' ? { id: 'tachometer' } : w
-              ),
+              widgets: [
+                ...defaultDashboard.widgets.map((w) =>
+                  w.id === 'tachometer'
+                    ? {
+                        id: 'tachometer',
+                        layout: {},
+                        config: { background: { opacity: 40 } },
+                      }
+                    : w
+                ),
+                {
+                  id: 'standings-2',
+                  type: 'standings',
+                  layout: instanceLayout,
+                },
+                { id: 'unknown', enabled: true },
+              ],
             },
           };
         return null;
@@ -480,14 +495,27 @@ describe('dashboards', () => {
         string,
         Record<string, DashboardLayout>,
       ];
-      const tachometer = written.race.widgets.find(
-        (w) => w.id === 'tachometer'
+      const byId = (id: string) =>
+        written.race.widgets.find((w) => w.id === id);
+      const defaultOf = (id: string) =>
+        defaultDashboard.widgets.find((w) => w.id === id);
+
+      expect(byId('tachometer')?.layout).toEqual(
+        defaultOf('tachometer')?.layout
       );
-      const defaults = defaultDashboard.widgets.find(
-        (w) => w.id === 'tachometer'
+      expect(byId('tachometer')?.enabled).toBe(
+        defaultOf('tachometer')?.enabled
       );
-      expect(tachometer?.layout).toEqual(defaults?.layout);
-      expect(tachometer?.enabled).toBe(defaults?.enabled);
+      expect(byId('tachometer')?.config?.background).toMatchObject({
+        opacity: 40,
+      });
+      // An extra instance keeps its own layout and takes `enabled` from its type.
+      expect(byId('standings-2')?.layout).toEqual(instanceLayout);
+      expect(byId('standings-2')?.enabled).toBe(
+        defaultOf('standings')?.enabled
+      );
+      // Nothing to fall back on for the layout.
+      expect(byId('unknown')).toBeUndefined();
     });
 
     it('never throws on unreadable stored data', () => {

@@ -112,32 +112,50 @@ export const getOrCreateDefaultDashboard = () => {
   return getOrCreateDefaultDashboardForProfile(currentProfileId);
 };
 
-// A widget the overlays can lay out. Anything less is dropped, and a built-in
-// widget then comes back from the defaults.
-const isStoredWidget = (value: unknown): value is DashboardWidget => {
-  if (typeof value !== 'object' || value === null) return false;
-  const { id, enabled, layout } = value as Partial<
-    Record<keyof DashboardWidget, unknown>
-  >;
-  return (
-    typeof id === 'string' &&
-    typeof enabled === 'boolean' &&
-    typeof layout === 'object' &&
-    layout !== null
+const isWidgetLayout = (value: unknown): value is DashboardWidget['layout'] =>
+  typeof value === 'object' &&
+  value !== null &&
+  (['x', 'y', 'width', 'height'] as const).every((key) =>
+    Number.isFinite((value as Record<string, unknown>)[key])
   );
+
+/**
+ * A stored widget the overlays can lay out. A missing or invalid `enabled` or
+ * `layout` comes from the default widget of its type, so the rest of the
+ * user's widget is kept; entries with nothing to fall back on are dropped.
+ */
+const toStoredWidget = (value: unknown): DashboardWidget | undefined => {
+  if (typeof value !== 'object' || value === null) return undefined;
+  const widget = value as Partial<Record<keyof DashboardWidget, unknown>>;
+  if (typeof widget.id !== 'string') return undefined;
+  const typeId = typeof widget.type === 'string' ? widget.type : widget.id;
+  const defaultWidget = defaultDashboard.widgets.find((w) => w.id === typeId);
+  const layout = isWidgetLayout(widget.layout)
+    ? widget.layout
+    : defaultWidget?.layout;
+  if (!layout) return undefined;
+  return {
+    ...(value as DashboardWidget),
+    enabled:
+      typeof widget.enabled === 'boolean'
+        ? widget.enabled
+        : (defaultWidget?.enabled ?? false),
+    layout,
+  };
 };
 
 /**
  * A stored dashboard with what it predates filled in: widgets added since,
  * general settings and config values from the defaults, and the config
- * migrations. Stored data is untrusted (R8.3): entries that aren't widgets
- * are dropped instead of failing the whole dashboard. Pure; callers save.
+ * migrations. Stored data is untrusted (R8.3): widgets are repaired or
+ * dropped (see toStoredWidget) instead of failing the whole dashboard. Pure;
+ * callers save.
  */
 export const withDashboardDefaults = (
   dashboard: DashboardLayout
 ): DashboardLayout => {
   const storedWidgets = Array.isArray(dashboard.widgets)
-    ? dashboard.widgets.filter(isStoredWidget)
+    ? dashboard.widgets.flatMap((value) => toStoredWidget(value) ?? [])
     : [];
 
   // check missing widgets
