@@ -8,11 +8,11 @@ disable-model-invocation: true
 
 Generate a condensed Discord-friendly version of the release notes. The user will provide the version (e.g. `v0.1.0`).
 
-Arguments: $ARGUMENTS
+Read the version, comparison range, source notes, and output preferences from the user's request or conversation. In Claude Code, invocation arguments are also supplied as `$ARGUMENTS`; in Codex, use the text accompanying `$release-notes-discord`. Ask for any required input that is missing.
 
 ## Step 1: Find the full release notes
 
-Use the full release notes supplied in the conversation or the identified GitHub release, or look at `~/Desktop/irdashies-demos/release-<version>.md`. If none are available, tell the user to run `/release-notes` first.
+Use the full release notes supplied in the conversation or the identified GitHub release, or look at `~/Desktop/irdashies-demos/release-<version>.md`. If none are available, ask the user to generate full notes with the `release-notes` skill first (`/release-notes` in Claude Code or `$release-notes` in Codex).
 
 ## Step 2: Look up Discord handles
 

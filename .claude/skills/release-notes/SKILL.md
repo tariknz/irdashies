@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Generate release notes for the given version tag or range. The user will provide the version (e.g. `v0.1.0`) or a comparison range (e.g. `v0.0.41...v0.1.0`).
 
-Arguments: $ARGUMENTS
+Read the version, comparison range, source notes, and output preferences from the user's request or conversation. In Claude Code, invocation arguments are also supplied as `$ARGUMENTS`; in Codex, use the text accompanying `$release-notes`. Ask for any required input that is missing.
 
 ## Step 1: Get the PR list
 
