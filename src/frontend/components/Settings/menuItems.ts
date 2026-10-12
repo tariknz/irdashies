@@ -8,6 +8,7 @@ import {
   InfoIcon,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
+import { WIDGET_MANIFESTS } from '@irdashies/types';
 
 export interface MenuItem {
   to: string;
@@ -54,213 +55,16 @@ export const generalItems: MenuItem[] = [
   },
 ];
 
-export const widgetItems: MenuItem[] = [
-  {
-    to: '/settings/battle',
-    path: '/battle',
-    label: 'Battle',
-    widgetType: 'battle',
-  },
-  {
-    to: '/settings/broadcast',
-    path: '/broadcast',
-    label: 'Broadcast',
-    widgetType: 'broadcast',
-    groupTypes: [
-      'broadcast',
-      'broadcastticker',
-      'broadcastevents',
-      'broadcastweather',
-      'broadcastpodium',
-    ],
-  },
-  {
-    to: '/settings/broadcastevents',
-    path: '/broadcastevents',
-    label: 'Broadcast Events',
-    widgetType: 'broadcastevents',
-    hideInMenu: true,
-  },
-  {
-    to: '/settings/broadcastticker',
-    path: '/broadcastticker',
-    label: 'Broadcast Ticker',
-    widgetType: 'broadcastticker',
-    hideInMenu: true,
-  },
-  {
-    to: '/settings/broadcastweather',
-    path: '/broadcastweather',
-    label: 'Broadcast Weather',
-    widgetType: 'broadcastweather',
-    hideInMenu: true,
-  },
-  {
-    to: '/settings/broadcastpodium',
-    path: '/broadcastpodium',
-    label: 'Broadcast Podium',
-    widgetType: 'broadcastpodium',
-    hideInMenu: true,
-  },
-  {
-    to: '/settings/blindspotmonitor',
-    path: '/blindspotmonitor',
-    label: 'Blind Spot Monitor',
-    widgetType: 'blindspotmonitor',
-  },
-  {
-    to: '/settings/cornername',
-    path: '/cornername',
-    label: 'Corner Names',
-    widgetType: 'cornername',
-  },
-  {
-    to: '/settings/carsystems',
-    path: '/carsystems',
-    label: 'Car Systems',
-    widgetType: 'carsystems',
-  },
-  {
-    to: '/settings/deltaspeed',
-    path: '/deltaspeed',
-    label: 'Delta Speed',
-    widgetType: 'deltaspeed',
-  },
-  {
-    to: '/settings/fastercarsfrombehind',
-    path: '/fastercarsfrombehind',
-    label: 'Faster Cars Behind',
-    widgetType: 'fastercarsfrombehind',
-  },
-  { to: '/settings/flag', path: '/flag', label: 'Flag', widgetType: 'flag' },
-  {
-    to: '/settings/flatmap',
-    path: '/flatmap',
-    label: 'Flat Track Map',
-    widgetType: 'flatmap',
-  },
-  {
-    to: '/settings/fuel',
-    path: '/fuel',
-    label: 'Fuel Calculator',
-    widgetType: 'fuel',
-  },
-  {
-    to: '/settings/gantry',
-    path: '/gantry',
-    label: 'Gantry',
-    widgetType: 'gantry',
-  },
-  {
-    to: '/settings/garagecover',
-    path: '/garagecover',
-    label: 'Garage Cover',
-    widgetType: 'garagecover',
-  },
-  {
-    to: '/settings/heartrate',
-    path: '/heartrate',
-    label: 'Heart Rate',
-    widgetType: 'heartrate',
-  },
-  {
-    to: '/settings/infobar',
-    path: '/infobar',
-    label: 'Information Bar',
-    widgetType: 'infobar',
-  },
-  {
-    to: '/settings/input',
-    path: '/input',
-    label: 'Input',
-    widgetType: 'input',
-  },
-  {
-    to: '/settings/laptimelog',
-    path: '/laptimelog',
-    label: 'Lap Timer',
-    widgetType: 'laptimelog',
-  },
-  {
-    to: '/settings/laptrace',
-    path: '/laptrace',
-    label: 'Lap Trace',
-    widgetType: 'laptrace',
-  },
-  {
-    to: '/settings/pitlanehelper',
-    path: '/pitlanehelper',
-    label: 'Pitlane Helper',
-    widgetType: 'pitlanehelper',
-  },
-  {
-    to: '/settings/radar',
-    path: '/radar',
-    label: 'Radar',
-    widgetType: 'radar',
-  },
-  {
-    to: '/settings/rejoin',
-    path: '/rejoin',
-    label: 'Rejoin Indicator',
-    widgetType: 'rejoin',
-  },
-  {
-    to: '/settings/relative',
-    path: '/relative',
-    label: 'Relative',
-    widgetType: 'relative',
-  },
-  {
-    to: '/settings/sectordelta',
-    path: '/sectordelta',
-    label: 'Sector Delta',
-    widgetType: 'sectordelta',
-  },
-  {
-    to: '/settings/shiftlight',
-    path: '/shiftlight',
-    label: 'Shift Light',
-    widgetType: 'shiftlight',
-  },
-  {
-    to: '/settings/slowcarahead',
-    path: '/slowcarahead',
-    label: 'Slow Car Ahead',
-    widgetType: 'slowcarahead',
-  },
-  {
-    to: '/settings/standings',
-    path: '/standings',
-    label: 'Standings',
-    widgetType: 'standings',
-  },
-  {
-    to: '/settings/tachometer',
-    path: '/tachometer',
-    label: 'Tachometer',
-    widgetType: 'tachometer',
-  },
-  { to: '/settings/map', path: '/map', label: 'Track Map', widgetType: 'map' },
-  {
-    to: '/settings/twitchchat',
-    path: '/twitchchat',
-    label: 'Twitch Chat',
-    widgetType: 'twitchchat',
-  },
-  {
-    to: '/settings/weather',
-    path: '/weather',
-    label: 'Weather',
-    widgetType: 'weather',
-  },
-  {
-    to: '/settings/wind',
-    path: '/wind',
-    label: 'Wind',
-    widgetType: 'wind',
-  },
-];
+export const widgetItems: MenuItem[] = WIDGET_MANIFESTS.map(
+  ({ id, name, menuLabel, hideInMenu, groupTypes }) => ({
+    to: `/settings/${id}`,
+    path: `/${id}`,
+    label: menuLabel ?? name,
+    widgetType: id,
+    ...(groupTypes && { groupTypes }),
+    ...(hideInMenu && { hideInMenu }),
+  })
+).sort((a, b) => a.label.localeCompare(b.label));
 
 export const bottomItems: MenuItem[] = [
   {

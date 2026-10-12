@@ -147,14 +147,17 @@ Imports flow **downward** in this list. A layer may import from any layer below 
 
 ### 7.1 Adding a widget
 
-Follow the repository's widget checklist in `AGENTS.md`. The current explicit
-registration flow includes `WidgetIndex.tsx`, the settings loader and menu,
-`widgetConfigs.ts`, and `defaultDashboard.ts`; there is no auto-discovered
-`WidgetDefinition` registry.
+Follow the repository's widget checklist in `AGENTS.md`. Widgets are
+auto-discovered with `import.meta.glob`: a main-safe manifest in
+`src/types/widgets/<id>.ts` (name, menu label, default layout and config) and
+a `widget.ts` in the widget's component folder (id and component). The old
+central lists (`WIDGET_MAP`, `WIDGET_NAMES`, `widgetItems`, `defaultDashboard`)
+are derived from these. Only the settings section still needs one line in
+`WIDGET_SETTINGS`.
 
 ### 7.2 Widget rules
 
-- **R7.1** Widgets are pure consumers. They subscribe to channel snapshots and selectors from `frontend/domain/`. They do not derive cross-widget data themselves. Register new widgets through the explicit files listed in `AGENTS.md`.
+- **R7.1** Widgets are pure consumers. They subscribe to channel snapshots and selectors from `frontend/domain/`. They do not derive cross-widget data themselves. Register new widgets through the manifest and `widget.ts` described in `AGENTS.md`.
 - **R7.2** Heavy memoised components MUST receive primitive props (string/number/boolean), not freshly-allocated objects. Either flatten props in the parent, or attach a custom `propsAreEqual` to the `memo()` wrapper.
 - **R7.3** UI text is plain strings. **Never use emojis** — use Phosphor icons (`@phosphor-icons/react`).
 - **R7.4** Styling is Tailwind-only. No custom CSS unless theme-level.
@@ -164,7 +167,7 @@ registration flow includes `WidgetIndex.tsx`, the settings loader and menu,
 
 ## 8. Settings and Migration
 
-- **R8.1** Additive settings changes update the widget type and its entry in `defaultDashboard.ts`; `deepMergeConfig` fills missing fields when dashboards load.
+- **R8.1** Additive settings changes update the widget type and its manifest's default `config` in `src/types/widgets/<id>.ts`; `deepMergeConfig` fills missing fields when dashboards load.
 - **R8.2** Breaking changes (rename, retype, or remove) require an explicit, tested migration at the dashboard-load boundary. Keep a migration close to the storage code unless the project adopts a shared registry later.
 - **R8.3** Treat persisted dashboard data as untrusted. Migrations and merge logic must validate shapes and fall back to typed defaults when values are incompatible.
 - **R8.4** Do not introduce a settings-version or migrator framework as incidental work. That was an unimplemented Phase 2b proposal and requires its own design and migration plan.
@@ -234,7 +237,7 @@ Run through this list before opening any PR. LLM agents: include a filled copy i
 [ ] R3.1 — new session-derived renderer stores participate in centralized reset/lifecycle handling
 [ ] R4.1 — new bridges use defineBridge
 [ ] R6.1 — new storage code is async
-[ ] R7.1 — new widget is added through the explicit registration/settings/default flow
+[ ] R7.1 — new widget is added through the manifest, `widget.ts` and `WIDGET_SETTINGS` flow
 [ ] R8.1/R8.2 — settings defaults are updated; breaking changes ship a tested load-time migration
 [ ] R10.1 — native code null-checks pointers and bounds-checks indices
 [ ] R11.1 — logging uses the project logger and literal level names
@@ -310,9 +313,9 @@ class FuelProjectionProcessor implements TelemetryProcessor<FuelProjectionSnapsh
   // init / onFrame / onLifecycle / snapshot
 }
 
-// REQUIRED — explicit widget registration (plus settings/default files)
-export const WIDGET_MAP = {
-  // existing widgets
-  mywidget: MyWidget,
-};
+// REQUIRED — widget registration: manifest + widget.ts (see AGENTS.md)
+// src/types/widgets/mywidget.ts
+export default defineWidgetManifest({ id: 'mywidget', name: 'My Widget', enabled: false, layout, config });
+// src/frontend/components/MyWidget/widget.ts
+export default { id: 'mywidget', component: MyWidget } satisfies WidgetModule;
 ```
