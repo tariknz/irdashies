@@ -56,4 +56,27 @@ export default defineWidgetManifest({
       'trackName',
     ],
   },
+  properties: {
+    'background.opacity': {
+      type: 'number',
+      label: 'Background Opacity',
+      min: 0,
+      max: 100,
+      step: 1,
+      units: '%',
+    },
+    'foreground.opacity': {
+      type: 'number',
+      label: 'Session Bar Opacity',
+      min: 0,
+      max: 100,
+      step: 1,
+      units: '%',
+    },
+    showOnlyWhenOnTrack: {
+      type: 'boolean',
+      label: 'Show only when on track',
+      description: 'Hide the widget when you are not in the car',
+    },
+  },
 });

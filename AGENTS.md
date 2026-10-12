@@ -323,6 +323,8 @@ Widgets are auto-discovered from their manifest and `widget.ts`; only the config
 3. Create the widget folder `src/frontend/components/MyWidget/` with `MyWidget.tsx`, `widget.ts` (`export default { id, component } satisfies WidgetModule`, or an array when the folder hosts several widgets), `widgetRuntimeDefinition.ts` and `MyWidget.stories.tsx`
 4. Create `Settings/sections/MyWidgetSettings.tsx` and add one line to `WIDGET_SETTINGS` in `src/frontend/components/Settings/SettingsLoader.tsx`
 
+Standard single-value settings are described once in the manifest's `properties` (label, limits, options), keyed by config path. On the settings page, wrap the rows in `<SettingProps widget="mywidget" ...>` and render them with `const SettingProp = settingPropFor('mywidget')`, then `<SettingProp path="background.opacity" />`. TypeScript checks both sides against the widget's config type: a path that isn't in the config, or a spec that doesn't fit the value (for example a slider on a boolean), fails to compile.
+
 Removing a widget: delete those pieces; `widgetRegistry.spec.ts` and TypeScript flag any leftovers (the derived maps are only checked by the spec).
 
 ### Adding a Hook

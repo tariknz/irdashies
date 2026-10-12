@@ -56,4 +56,44 @@ export default defineWidgetManifest({
       offlineTesting: true,
     },
   },
+  properties: {
+    'background.opacity': {
+      type: 'number',
+      label: 'Background Opacity',
+      min: 0,
+      max: 100,
+      step: 1,
+      units: '%',
+    },
+    layout: {
+      type: 'enum',
+      label: 'Layout',
+      options: [
+        { value: 'vertical', label: 'Vertical' },
+        { value: 'horizontal', label: 'Horizontal' },
+      ],
+    },
+    horizontalMode: {
+      type: 'enum',
+      label: 'Horizontal View',
+      options: [
+        { value: 'compact', label: 'Compact' },
+        { value: 'full', label: 'Full' },
+      ],
+    },
+    units: {
+      type: 'enum',
+      label: 'Temperature Units',
+      options: [
+        { value: 'auto', label: 'Auto' },
+        { value: 'Metric', label: '\u00b0C' },
+        { value: 'Imperial', label: '\u00b0F' },
+      ],
+    },
+    showOnlyWhenOnTrack: {
+      type: 'boolean',
+      label: 'Show only when on track',
+      description: 'If enabled, weather will only be shown when driving',
+    },
+  },
 });

@@ -85,8 +85,8 @@ export const TrackMap = ({ embedded = false }: { embedded?: boolean }) => {
           settings?.useHighlightColor ? highlightColor : undefined
         }
         invertLeaderColor={settings?.invertLeaderColor ?? false}
-        isMinimalTrack={settings?.styling?.isMinimalTrack ?? true}
-        isMinimalCar={settings?.styling?.isMinimalCar ?? true}
+        isMinimalTrack={settings?.styling?.isMinimalTrack ?? false}
+        isMinimalCar={settings?.styling?.isMinimalCar ?? false}
         sectors={settings?.sectorColoring?.enabled ? sectors : undefined}
         sectorColors={
           settings?.sectorColoring?.enabled ? sectorColors : undefined

@@ -24,4 +24,32 @@ export default defineWidgetManifest({
       offlineTesting: true,
     },
   },
+  properties: {
+    showAtSpeed: {
+      type: 'number',
+      control: 'input',
+      label: 'Show At Speed',
+      description:
+        'Display the rejoin indicator widget when you are at or below this speed',
+      min: 0,
+      step: 0.1,
+    },
+    careGap: {
+      type: 'number',
+      control: 'input',
+      label: 'Care Gap',
+      description:
+        'Distance to the car behind where you need to be cautious when rejoining. Note: the clear status will show when next car is above this gap',
+      min: 0,
+      step: 0.1,
+    },
+    stopGap: {
+      type: 'number',
+      control: 'input',
+      label: 'Stop Gap',
+      description: 'Distance to the car behind where it is not safe to rejoin',
+      min: 0,
+      step: 0.1,
+    },
+  },
 });

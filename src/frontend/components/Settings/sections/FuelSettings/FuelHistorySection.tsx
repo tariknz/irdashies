@@ -1,8 +1,10 @@
 import { SettingNumberRow } from '../../components/SettingNumberRow';
 import { SettingsSection } from '../../components/SettingSection';
-import { SettingSelectRow } from '../../components/SettingSelectRow';
 import { FuelWidgetSettings } from '@irdashies/types';
 import { BarFontSizeInput, HeightInput } from './FontSizeInputs';
+import { settingPropFor } from '../../components/SettingProp';
+
+const SettingProp = settingPropFor('fuel');
 
 interface FuelHistorySectionProps {
   settings: FuelWidgetSettings;
@@ -36,15 +38,7 @@ export const FuelHistorySection = ({
       {settings.config.showFuelHistory !== false && (
         <>
           {/* Graph Type & Target Wrapper */}
-          <SettingSelectRow<'line' | 'histogram'>
-            title="Graph Type"
-            value={settings.config.fuelHistoryType ?? 'line'}
-            options={[
-              { label: 'Line Chart', value: 'line' },
-              { label: 'Histogram', value: 'histogram' },
-            ]}
-            onChange={(e) => onChange({ fuelHistoryType: e })}
-          />
+          <SettingProp path="fuelHistoryType" />
 
           <SettingNumberRow
             title="Target Line"
