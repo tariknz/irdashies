@@ -6,7 +6,7 @@ import { create } from 'zustand';
 import { FuelLapData } from '@irdashies/types';
 
 /** Maximum number of laps to retain in history */
-const MAX_LAP_HISTORY = 50;
+export const MAX_LAP_HISTORY = 50;
 
 interface FuelStoreState {
   /** Map of lap number to fuel data */

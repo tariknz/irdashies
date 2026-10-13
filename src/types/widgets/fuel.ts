@@ -189,13 +189,13 @@ export default defineWidgetManifest({
       description: 'Enable a specific lap target for strategy',
     },
     fuelHistoryLapCount: {
-      type: 'enum',
+      type: 'number',
       label: 'Laps Shown',
-      options: [
-        { value: 3, label: 'Last 3 Laps' },
-        { value: 5, label: 'Last 5 Laps' },
-      ],
-      control: 'select',
+      description: 'Number of recent completed laps to show (1–50).',
+      min: 1,
+      max: 50,
+      step: 1,
+      control: 'input',
     },
     fuelHistoryType: {
       type: 'enum',

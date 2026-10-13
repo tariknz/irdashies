@@ -64,6 +64,18 @@ describe.skipIf(process.env.IRDASHIES_TEST_CURATED_REPLAY !== '1')(
         useFuelCalculation(0, settings);
         return (
           <>
+            <div data-testid="one-litre">
+              <FuelHistory
+                fuelUnits="L"
+                settings={{ ...settings, fuelHistoryLapCount: 1 }}
+              />
+            </div>
+            <div data-testid="eight-litres">
+              <FuelHistory
+                fuelUnits="L"
+                settings={{ ...settings, fuelHistoryLapCount: 8 }}
+              />
+            </div>
             <div data-testid="three-litres">
               <FuelHistory
                 fuelUnits="L"
@@ -96,6 +108,8 @@ describe.skipIf(process.env.IRDASHIES_TEST_CURATED_REPLAY !== '1')(
       let lastEmittedLapCount = 0;
       const checkRows = () => {
         for (const [id, count, factor, unit] of [
+          ['one-litre', 1, 1, 'L'],
+          ['eight-litres', 8, 1, 'L'],
           ['three-litres', 3, 1, 'L'],
           ['five-litres', 5, 1, 'L'],
           ['five-gallons', 5, 0.264172, 'gal'],
@@ -235,7 +249,7 @@ describe.skipIf(process.env.IRDASHIES_TEST_CURATED_REPLAY !== '1')(
           for (const listener of listeners) listener(processor.snapshot());
         });
         expect(view.getAllByText('Waiting for a completed lap')).toHaveLength(
-          3
+          5
         );
       } finally {
         view.unmount();

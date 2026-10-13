@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import type { FuelCalculatorSettings, FuelCalculation } from '../types';
-import { useFuelStore } from '../FuelStore';
+import { MAX_LAP_HISTORY, useFuelStore } from '../FuelStore';
 import { useDashboard } from '@irdashies/context';
 import { formatFuel } from '../fuelCalculations';
 import {
@@ -50,7 +50,12 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
   // Default to histogram if not specified in settings
   const fuelHistoryType = settings?.fuelHistoryType || 'histogram';
 
-  const tableLapCount = settings?.fuelHistoryLapCount === 3 ? 3 : 5;
+  const configuredLapCount = settings?.fuelHistoryLapCount;
+  const tableLapCount =
+    typeof configuredLapCount === 'number' &&
+    Number.isFinite(configuredLapCount)
+      ? Math.max(1, Math.min(MAX_LAP_HISTORY, Math.floor(configuredLapCount)))
+      : 5;
   const tableLaps = useMemo(() => {
     if (fuelHistoryType !== 'table') return [];
     return Array.from(lapHistory.values())
@@ -109,9 +114,10 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
     const valueFontSize = widgetStyle.valueFontSize || widgetStyle.fontSize;
     // Demo values stay explicitly labelled and never enter the lap store.
     const rows = isDemoMode
-      ? [3.9, 3.85, 3.92, 3.88, 3.91]
-          .slice(0, tableLapCount)
-          .map((fuelUsed, index) => ({ lapNumber: 5 - index, fuelUsed }))
+      ? Array.from({ length: tableLapCount }, (_, index) => ({
+          lapNumber: tableLapCount - index,
+          fuelUsed: [3.9, 3.85, 3.92, 3.88, 3.91][index % 5],
+        }))
       : tableLaps;
 
     return (

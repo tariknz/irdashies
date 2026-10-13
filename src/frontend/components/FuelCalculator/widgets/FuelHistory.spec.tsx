@@ -80,6 +80,64 @@ describe('FuelHistory table', () => {
     ]);
   });
 
+  it('supports an arbitrary count and shows fewer rows when fewer laps exist', () => {
+    useFuelStore
+      .getState()
+      .setProjectionLaps(
+        Array.from({ length: 12 }, (_, index) => lap(index + 1, 3.9))
+      );
+    const view = render(
+      <FuelHistory
+        fuelUnits="L"
+        settings={{ ...settings, fuelHistoryLapCount: 8 }}
+      />
+    );
+    expect(rows().map(([number]) => number)).toEqual([
+      '12',
+      '11',
+      '10',
+      '9',
+      '8',
+      '7',
+      '6',
+      '5',
+    ]);
+    view.rerender(
+      <FuelHistory
+        fuelUnits="L"
+        settings={{ ...settings, fuelHistoryLapCount: 20 }}
+      />
+    );
+    expect(rows()).toHaveLength(12);
+  });
+
+  it.each([
+    [undefined, 5],
+    [NaN, 5],
+    [Infinity, 5],
+    [-2, 1],
+    [0, 1],
+    [7.8, 7],
+    [80, 50],
+  ])(
+    'safely handles a configured count of %s (%s rows)',
+    (configured, expected) => {
+      useFuelStore
+        .getState()
+        .setProjectionLaps(
+          Array.from({ length: 50 }, (_, index) => lap(index + 1, 3.9))
+        );
+      render(
+        <FuelHistory
+          fuelUnits="L"
+          settings={{ ...settings, fuelHistoryLapCount: configured }}
+        />
+      );
+      expect(rows()).toHaveLength(expected);
+      expect(rows()[0]).toEqual(['50', '3.90 L']);
+    }
+  );
+
   it('shows an honest empty state then displays the first completed lap', () => {
     render(<FuelHistory fuelUnits="L" settings={settings} />);
     expect(screen.getByText('Waiting for a completed lap')).toBeInTheDocument();
@@ -129,9 +187,16 @@ describe('FuelHistory table', () => {
 
   it('labels demo values as a preview and never records them', () => {
     dashboard.isDemoMode = true;
-    render(<FuelHistory fuelUnits="L" settings={settings} />);
+    const view = render(<FuelHistory fuelUnits="L" settings={settings} />);
     expect(screen.getByText('Preview')).toBeInTheDocument();
     expect(rows()).toHaveLength(5);
+    view.rerender(
+      <FuelHistory
+        fuelUnits="L"
+        settings={{ ...settings, fuelHistoryLapCount: 8 }}
+      />
+    );
+    expect(rows()).toHaveLength(8);
     expect(useFuelStore.getState().lapHistory.size).toBe(0);
   });
 });

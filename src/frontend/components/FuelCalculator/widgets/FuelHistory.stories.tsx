@@ -16,17 +16,18 @@ const HistoryProvider = ({
   lapCount: number;
 }) => {
   useEffect(() => {
-    const laps: FuelLapData[] = usages
-      .slice(0, lapCount)
-      .map((fuelUsed, index) => ({
+    const laps: FuelLapData[] = Array.from(
+      { length: lapCount },
+      (_, index) => ({
         lapNumber: index + 1,
-        fuelUsed,
+        fuelUsed: usages[index % usages.length],
         lapTime: 90,
         isGreenFlag: true,
         isValidForCalc: true,
         isOutLap: false,
         timestamp: Date.UTC(2026, 0, 1) + index * 90000,
-      }));
+      })
+    );
     useFuelStore.getState().clearAllData();
     useFuelStore.getState().setProjectionLaps(laps);
     return () => useFuelStore.getState().clearAllData();
@@ -37,7 +38,7 @@ const HistoryProvider = ({
 const tableSettings = {
   ...defaultFuelCalculatorSettings,
   fuelHistoryType: 'table' as const,
-  fuelHistoryLapCount: 5 as const,
+  fuelHistoryLapCount: 5,
 };
 
 const meta = {
@@ -70,6 +71,12 @@ export const TableThreeLaps: Story = {
 
 /** Five rows with aligned numbers and units. */
 export const TableFiveLaps: Story = {};
+
+/** Any count within the retained history can be selected. */
+export const TableEightLaps: Story = {
+  parameters: { lapCount: 12 },
+  args: { settings: { ...tableSettings, fuelHistoryLapCount: 8 } },
+};
 
 export const Gallons: Story = { args: { fuelUnits: 'gal' } };
 

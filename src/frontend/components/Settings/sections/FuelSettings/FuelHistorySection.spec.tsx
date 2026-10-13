@@ -29,9 +29,7 @@ describe('Fuel history settings', () => {
       );
     };
     render(<Harness />);
-    expect(
-      screen.queryByRole('combobox', { name: 'Laps Shown' })
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Laps Shown')).not.toBeInTheDocument();
     expect(screen.getByText('Target Line')).toBeInTheDocument();
     fireEvent.change(screen.getByRole('combobox', { name: 'Display' }), {
       target: { value: 'table' },
@@ -39,15 +37,11 @@ describe('Fuel history settings', () => {
     expect(save).toHaveBeenLastCalledWith({ fuelHistoryType: 'table' });
     expect(screen.queryByText('Graph Properties')).not.toBeInTheDocument();
     expect(screen.queryByText('Target Line')).not.toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Laps Shown' })).toHaveValue(
-      '5'
-    );
-    fireEvent.change(screen.getByRole('combobox', { name: 'Laps Shown' }), {
-      target: { value: '3' },
+    expect(screen.getByRole('spinbutton')).toHaveValue(5);
+    fireEvent.change(screen.getByRole('spinbutton'), {
+      target: { value: '8' },
     });
-    expect(save).toHaveBeenLastCalledWith({ fuelHistoryLapCount: 3 });
-    expect(screen.getByRole('combobox', { name: 'Laps Shown' })).toHaveValue(
-      '3'
-    );
+    expect(save).toHaveBeenLastCalledWith({ fuelHistoryLapCount: 8 });
+    expect(screen.getByRole('spinbutton')).toHaveValue(8);
   });
 });

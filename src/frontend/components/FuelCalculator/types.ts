@@ -120,7 +120,7 @@ export interface FuelCalculatorSettings {
   /** Fuel history display type */
   fuelHistoryType: 'line' | 'histogram' | 'table';
   /** Number of completed laps shown in the history table. */
-  fuelHistoryLapCount?: 3 | 5;
+  fuelHistoryLapCount?: number;
   /** Safety margin percentage (0-1) */
   safetyMargin: number;
   manualTarget?: number;

@@ -464,7 +464,7 @@ export interface FuelConfig {
   showFuelHistory: boolean;
   fuelHistoryType: 'line' | 'histogram' | 'table';
   /** Number of completed laps shown in the history table. */
-  fuelHistoryLapCount?: 3 | 5;
+  fuelHistoryLapCount?: number;
   safetyMargin: number;
   manualTarget?: number;
   background: { opacity: number };
