@@ -1,32 +1,10 @@
-import { useMemo } from 'react';
-import { useSessionStore } from '@irdashies/context';
-import { loadTrackData } from '@irdashies/utils/trackData';
-import type { LovelyTrackInfo, LovelyTrackSection } from '@irdashies/types';
-import { mapLovelyToTrackData } from '../lovelyTrackData';
-
-interface LovelyTrackData {
-  sections: LovelyTrackSection[];
-  info: LovelyTrackInfo | null;
-}
-
-const EMPTY: LovelyTrackData = {
-  sections: [],
-  info: null,
-};
-
 /**
- * Loads track section data for the current iRacing session from the bundled
- * Lovely Sim Racing dataset. Synchronous — the bundle is imported at module
- * load (see src/frontend/utils/trackData.ts), mirroring the cars-bundle
- * pattern used by the Tachometer widget.
+ * Re-export, so this widget and the Lap Trace cannot disagree about the track.
+ *
+ * There used to be two near-identical copies of this hook: this one and the
+ * shared one the Lap Trace imports. They drifted into being the same bug twice
+ * -- the Lovely lookup cannot serve LMU, whose track names never match its
+ * iRacing slugs -- and fixing one would have left the other showing another
+ * circuit's corners.
  */
-export const useLovelyTrackData = (): LovelyTrackData => {
-  const trackName = useSessionStore((s) => s.session?.WeekendInfo?.TrackName);
-
-  return useMemo(() => {
-    if (!trackName) return EMPTY;
-    const raw = loadTrackData(trackName);
-    if (!raw) return EMPTY;
-    return mapLovelyToTrackData(raw);
-  }, [trackName]);
-};
+export { useLovelyTrackData } from '@irdashies/context';

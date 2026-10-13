@@ -43,7 +43,7 @@ export const shouldCalculateIRatingChange = (
 
 export const useDriverStandings = (
   settings?: StandingsWidgetSettings['config'],
-  options?: { showAll?: boolean }
+  options?: { showAll?: boolean; livePositions?: boolean }
 ) => {
   const {
     driverStandings: {
@@ -69,7 +69,8 @@ export const useDriverStandings = (
   const positions = useSessionPositions(sessionNum);
   const qualifyingResults = useQualifyingResults();
   const standingsSettings = useStandingsSettings();
-  const useLivePositionStandings = standingsSettings?.useLivePosition ?? false;
+  const useLivePositionStandings =
+    options?.livePositions ?? standingsSettings?.useLivePosition ?? false;
   const customClassOrdering = standingsSettings?.customClassOrdering ?? false;
   const driverLivePositions = useDriverLivePositions({
     enabled: useLivePositionStandings,

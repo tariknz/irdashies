@@ -3,6 +3,10 @@ logs
 *.log
 *.irdt
 !test-data/telemetry/ai-race-10min.irdt
+# LMU tapes, same rule: too large to carry unless deliberately curated.
+*.lmudt
+!test-data/telemetry/lmu-session.lmudt
+telemetry-captures/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

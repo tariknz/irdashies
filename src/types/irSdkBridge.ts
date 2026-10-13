@@ -18,6 +18,15 @@ export interface IrSdkBridge {
   onRunningState: (
     callback: (value: boolean) => void
   ) => (() => void) | undefined;
+  /**
+   * The running state as it stands now, for a subscriber that arrived late.
+   *
+   * `onRunningState` only reports changes, so a window opened mid-session hears
+   * nothing until the sim next starts or stops. Optional because not every
+   * transport can answer — a subscriber that gets no answer simply waits for
+   * the next change, as it did before.
+   */
+  getRunningState?: () => Promise<boolean>;
   stop: () => void;
 }
 

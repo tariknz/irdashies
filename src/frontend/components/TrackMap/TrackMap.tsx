@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useTrackId } from './hooks/useTrackId';
 import { useDriverProgress } from './hooks/useDriverProgress';
 import { useTrackMapSettings } from './hooks/useTrackMapSettings';
@@ -16,7 +17,12 @@ import {
 
 const debug = import.meta.env.DEV || import.meta.env.MODE === 'storybook';
 
-export const TrackMap = () => {
+/** Redraw rate for a map docked in the Gantry, which shares the GPU with the overlays. */
+const EMBEDDED_MAX_FPS = 30;
+
+const NO_SECTORS: never[] = [];
+
+export const TrackMap = ({ embedded = false }: { embedded?: boolean }) => {
   const trackId = useTrackId();
   const { drivers: driversTrackData, identities } = useDriverProgress();
   const settings = useTrackMapSettings();
@@ -26,9 +32,23 @@ export const TrackMap = () => {
   const ghostColors = useGhostSectorColors();
   const sectorColors = ghostColors ?? sessionSectorColors;
   const sectors =
-    useSessionStore((s) => s.session?.SplitTimeInfo?.Sectors) ?? [];
-  const lmuTrackMap = useSessionStore((s) => s.session?.LmuTrackMap);
+    useSessionStore((s) => s.session?.SplitTimeInfo?.Sectors) ?? NO_SECTORS;
   const currentSectorIdx = useSectorTimingStore((s) => s.currentSectorIdx);
+  // A new object each render would redraw the static track layer every update.
+  const turnLabels = useMemo(
+    () => ({
+      enabled: settings?.turnLabels?.enabled ?? false,
+      labelType: settings?.turnLabels?.labelType ?? 'both',
+      highContrast: settings?.turnLabels?.highContrast ?? true,
+      labelFontSize: settings?.turnLabels?.labelFontSize ?? 100,
+    }),
+    [
+      settings?.turnLabels?.enabled,
+      settings?.turnLabels?.labelType,
+      settings?.turnLabels?.highContrast,
+      settings?.turnLabels?.labelFontSize,
+    ]
+  );
   const playerIconEnabled = settings?.playerIcon?.enabled ?? false;
   const playerIconDataUrl = usePlayerIconImage(
     playerIconEnabled ? settings?.playerIcon?.fileName : undefined
@@ -53,12 +73,7 @@ export const TrackMap = () => {
         trackDrawing={lmuTrackMap}
         drivers={driversTrackData}
         driverIdentities={identities}
-        turnLabels={{
-          enabled: settings?.turnLabels?.enabled ?? false,
-          labelType: settings?.turnLabels?.labelType ?? 'both',
-          highContrast: settings?.turnLabels?.highContrast ?? true,
-          labelFontSize: settings?.turnLabels?.labelFontSize ?? 100,
-        }}
+        turnLabels={turnLabels}
         showCarNumbers={settings?.showCarNumbers ?? true}
         displayMode={settings?.displayMode ?? 'carNumber'}
         invertTrackColors={settings?.invertTrackColors ?? false}
@@ -71,8 +86,8 @@ export const TrackMap = () => {
           settings?.useHighlightColor ? highlightColor : undefined
         }
         invertLeaderColor={settings?.invertLeaderColor ?? false}
-        isMinimalTrack={settings?.styling?.isMinimalTrack ?? true}
-        isMinimalCar={settings?.styling?.isMinimalCar ?? true}
+        isMinimalTrack={settings?.styling?.isMinimalTrack ?? false}
+        isMinimalCar={settings?.styling?.isMinimalCar ?? false}
         sectors={settings?.sectorColoring?.enabled ? sectors : undefined}
         sectorColors={
           settings?.sectorColoring?.enabled ? sectorColors : undefined
@@ -83,6 +98,7 @@ export const TrackMap = () => {
         playerIconDataUrl={playerIconDataUrl}
         driverLivePositions={driverLivePositions}
         debug={debug}
+        maxFps={embedded ? EMBEDDED_MAX_FPS : undefined}
       />
     </div>
   );

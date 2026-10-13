@@ -176,7 +176,7 @@ export const generateTrackJson = () => {
   }
 
   fs.writeFileSync(
-    `./src/frontend/components/TrackMap/tracks/tracks.json`,
+    `./src/frontend/domain/track/tracks/tracks.json`,
     JSON.stringify(json, undefined, 2),
     'utf8'
   );

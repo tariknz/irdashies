@@ -6,6 +6,7 @@ import { mountFixture } from '../../../testing/renderWithFixture';
 import type { ReplayFixture } from '../../../testing/replayFixture';
 import roadAmerica from '../../../../test-data/fixtures/multiclass-road-america.json';
 import { useDriverStandings } from './useDriverStandings';
+import { useDriverLivePositions } from './useDriverLivePositions';
 
 const fixture = roadAmerica as unknown as ReplayFixture;
 
@@ -53,6 +54,29 @@ describe('class standings over a real multiclass field', () => {
     const carIdxs = all.map((d) => d.carIdx);
     expect(new Set(carIdxs).size).toBe(carIdxs.length);
     expect(all.length).toBeGreaterThan(50);
+  });
+
+  it('uses live class positions when a caller asks for them', () => {
+    // Broadcast asks for live positions whatever the Standings widget is set
+    // to, so mid-lap overtakes show at once.
+    const { result } = renderHook(
+      () => ({
+        standings: useDriverStandings(config({ useLivePosition: false }), {
+          showAll: true,
+          livePositions: true,
+        }),
+        live: useDriverLivePositions({ enabled: true }),
+      }),
+      { wrapper: harness.wrapper }
+    );
+
+    const drivers = flatten(result.current.standings).filter(
+      (d) => result.current.live[d.carIdx] > 0
+    );
+    expect(drivers.length).toBeGreaterThan(0);
+    for (const d of drivers) {
+      expect(d.classPosition).toBe(result.current.live[d.carIdx]);
+    }
   });
 
   it('orders each class by class position', () => {

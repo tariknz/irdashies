@@ -46,9 +46,9 @@ export const HeartRateSettings = () => {
               className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
             />
             <p className="text-sm text-slate-500">
-              The code at the end of your HypeRate share link
-              (app.hyperate.io/<span className="text-slate-300">KiY</span>). No
-              account or API key required.
+              The code at the end of your HypeRate share link (app.hyperate.io/
+              <span className="text-slate-300">KiY</span>). No account or API
+              key required.
             </p>
           </div>
 
@@ -67,8 +67,8 @@ export const HeartRateSettings = () => {
             />
             <p className="text-sm text-slate-500">
               Pick a widget on hyperate.io and paste its link or just the name —
-              e.g.{' '}
-              <span className="text-slate-300">Bouncing_Heart_Widget</span> or{' '}
+              e.g. <span className="text-slate-300">Bouncing_Heart_Widget</span>{' '}
+              or{' '}
               <span className="text-slate-300">
                 app.hyperate.io/animation/59/YOUR-ID-HERE
               </span>

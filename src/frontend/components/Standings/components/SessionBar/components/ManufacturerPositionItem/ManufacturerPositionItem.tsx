@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { useSessionBarSnapshot } from '@irdashies/context';
-import { CarManufacturer } from '../../../CarManufacturer/CarManufacturer';
-import { CAR_ID_TO_CAR_MANUFACTURER } from '../../../CarManufacturer/carManufacturerMapping';
+import { CarManufacturer } from '../../../../../shared/CarManufacturer/CarManufacturer';
+import { CAR_ID_TO_CAR_MANUFACTURER } from '../../../../../shared/CarManufacturer/carManufacturerMapping';
 import { sessionBarItemWrapperClass } from '../../sessionBarItemWrapperClass';
 import type { SessionBarItemProps } from '../../sessionBarItemTypes';
 

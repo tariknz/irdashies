@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { CarManufacturer } from '../../CarManufacturer/CarManufacturer';
+import { CarManufacturer } from '../../../../shared/CarManufacturer/CarManufacturer';
 
 interface CarManufacturerCellProps {
   carId?: number;

@@ -1,112 +1,262 @@
+import { useEffect, useMemo, useState } from 'react';
 import {
-  useBlindSpotSelector,
+  sessionBarSelectors,
   useDashboard,
-  useDriverCarIdx,
+  useRadarSelector,
+  useSessionBarSelector,
+  useSessionDrivers,
+  useSessionStore,
   useSessionVisibility,
+  useTrackLength,
 } from '@irdashies/context';
-import type { BlindSpotSnapshot } from '@irdashies/types';
-import { deriveRadarCars, type RadarCar } from './deriveRadarCars';
-import { useRadarSettings } from './useRadarSettings';
+import { buildTrackGeometry, getTrackPathData } from '@irdashies/domain/track';
+import type { RadarSnapshot } from '@irdashies/types';
+import { colorNumToHex } from '@irdashies/utils/colors';
+import {
+  RadarDisplay,
+  type RadarCarAppearance,
+  type RadarFrame,
+} from './components/RadarDisplay';
+import { useRadarSettings } from './hooks/useRadarSettings';
+import { resolveCarSize, type CarSize } from '@irdashies/domain/radar/carSizes';
+import {
+  nearestDistance,
+  nextAutoHideVisible,
+  selectRadarCars,
+} from './radarModel';
+import { demoAppearance } from './radarDemo';
+import { useDemoRadarFrame } from './hooks/useDemoRadarFrame';
+import { paler, rivalFill, textColorFor } from './radarColors';
+import { hazardWanted, type RadarStyle } from './radarDraw';
+import { radarStyleFrom } from './radarStyle';
+import { isOvalTrack } from '@irdashies/domain/radar/radarProfile';
 
-const DEMO_CARS: RadarCar[] = [
-  {
-    carIdx: 1,
-    lateral: -3,
-    longitudinal: -8,
-    heading: -0.08,
-    sameClass: true,
-    opacity: 1,
-  },
-  {
-    carIdx: 2,
-    lateral: 4,
-    longitudinal: 12,
-    heading: 0.12,
-    sameClass: false,
-    opacity: 0.8,
-  },
-];
+const EMPTY_SNAPSHOT: RadarSnapshot = {
+  focusCarIdx: null,
+  playerPct: 0,
+  playerSpeed: 0,
+  trackLength: 0,
+  focusOnPitRoad: false,
+  focusInPitBox: false,
+  isOnTrack: false,
+  formation: null,
+  follow: null,
+  focusBrake: null,
+  caution: false,
+  cars: [],
+  hazards: [],
+  version: 0,
+};
+
+const selectSnapshot = (snapshot: RadarSnapshot) => snapshot;
+const sameVersion = (a: RadarSnapshot, b: RadarSnapshot) =>
+  a.version === b.version;
+
+const appearanceFor = (
+  fill: string,
+  label: string,
+  size: CarSize
+): RadarCarAppearance => ({
+  fill,
+  textColor: textColorFor(fill),
+  label,
+  length: size.length,
+  width: size.width,
+});
 
 export const Radar = () => {
-  const snapshot = useBlindSpotSelector(
-    (value: BlindSpotSnapshot) => value,
-    { rateHz: 25 }
-  );
-  const playerCarIdx = useDriverCarIdx();
   const settings = useRadarSettings();
-  const { isDemoMode, currentDashboard } = useDashboard();
-  const sessionVisible = useSessionVisibility(settings?.sessionVisibility);
-  const range = settings?.range ?? 30;
-  const cars = isDemoMode
-    ? DEMO_CARS
-    : deriveRadarCars(snapshot, playerCarIdx, range);
-  const hasLmuData = (snapshot?.relativeAvailable?.length ?? 0) > 0;
-  const highlight = `#${(currentDashboard?.generalSettings?.highlightColor ?? 960745)
-    .toString(16)
-    .padStart(6, '0')}`;
+  const { isDemoMode } = useDashboard();
+  const sessionVisible = useSessionVisibility(settings.sessionVisibility);
+  const snapshot =
+    useRadarSelector(selectSnapshot, { equality: sameVersion }) ??
+    EMPTY_SNAPSHOT;
+  const drivers = useSessionDrivers();
+  const trackId = useSessionStore(
+    (state) => state.session?.WeekendInfo?.TrackID
+  );
+  const trackLength = useTrackLength();
+  const trackType = useSessionStore(
+    (state) => state.session?.WeekendInfo?.TrackType
+  );
+  const demoFrame = useDemoRadarFrame(isDemoMode);
+  // iRacing's DisplayUnits: 0 is imperial. Unknown (no sim) reads metric.
+  const displayUnits = useSessionBarSelector(sessionBarSelectors.displayUnits);
+  const metric = isDemoMode || displayUnits !== 0;
 
-  if (!isDemoMode && (!sessionVisible || !hasLmuData)) return <></>;
-  if (!isDemoMode && settings?.showOnlyWhenOnTrack && !snapshot?.isOnTrack) {
-    return <></>;
-  }
+  const geometry = useMemo(() => {
+    const path = getTrackPathData(trackId);
+    return path && trackLength > 0
+      ? buildTrackGeometry(path, trackLength)
+      : null;
+  }, [trackId, trackLength]);
 
-  const markerWidth = settings?.markerWidth ?? 2.2;
-  const markerLength = settings?.markerLength ?? 4.6;
-  const scale = 50 / range;
+  const playerFill = colorNumToHex(settings.playerColor) ?? '#ffffff';
+  const customFill =
+    colorNumToHex(settings.rivalCustomColor ?? undefined) ?? paler(playerFill);
+  const colorMode = settings.rivalColorMode;
+  const sizeOptions = useMemo(
+    () => ({
+      sizeByClass: settings.sizeByClass,
+      classSizes: settings.classSizes,
+      fallback: { length: settings.carLength, width: settings.carWidth },
+    }),
+    [
+      settings.sizeByClass,
+      settings.classSizes,
+      settings.carLength,
+      settings.carWidth,
+    ]
+  );
+  const appearance = useMemo(() => {
+    const map = new Map<number, RadarCarAppearance>();
+    if (isDemoMode) {
+      return demoAppearance(colorMode, customFill, sizeOptions.fallback);
+    }
+    for (const driver of drivers ?? []) {
+      const fill = rivalFill(colorMode, customFill, {
+        license: driver.LicString,
+        rating: driver.IRating,
+        classColor: colorNumToHex(driver.CarClassColor),
+      });
+      const size = resolveCarSize(
+        driver.CarClassShortName,
+        driver.CarScreenName,
+        sizeOptions
+      );
+      map.set(driver.CarIdx, appearanceFor(fill, driver.CarNumber ?? '', size));
+    }
+    return map;
+  }, [drivers, isDemoMode, customFill, colorMode, sizeOptions]);
+
+  // Our own size: the focus car's class, so overlap is judged on both cars.
+  const focusSize =
+    (snapshot.focusCarIdx !== null && !isDemoMode
+      ? appearance.get(snapshot.focusCarIdx)
+      : undefined) ?? sizeOptions.fallback;
+
+  const cars = useMemo(
+    () =>
+      selectRadarCars(snapshot, {
+        range: settings.range,
+        carLength: settings.carLength,
+        hideInPit: settings.hideInPit,
+      }),
+    [snapshot, settings.range, settings.carLength, settings.hideInPit]
+  );
+
+  const frame: RadarFrame = useMemo(
+    () =>
+      demoFrame ?? {
+        playerPct: snapshot.playerPct,
+        playerSpeed: snapshot.playerSpeed,
+        trackLength: snapshot.trackLength,
+        cars,
+        follow: snapshot.follow,
+        focusBrake: snapshot.focusBrake,
+        quiet:
+          snapshot.caution ||
+          snapshot.formation !== null ||
+          snapshot.focusOnPitRoad,
+        // From pit road the cars on track are none of our business.
+        hazards: snapshot.focusOnPitRoad ? [] : snapshot.hazards,
+      },
+    [demoFrame, snapshot, cars]
+  );
+
+  // On an oval a car can come by on either side, so no corner guess there.
+  const cornerSide = !isOvalTrack(trackType);
+  const dive = useMemo(
+    () => ({
+      enabled: settings.showDiveWarning,
+      minClosingKmh: settings.diveMinClosingKmh,
+      warnSeconds: settings.diveWarnSeconds,
+      cornerSide,
+    }),
+    [
+      settings.showDiveWarning,
+      settings.diveMinClosingKmh,
+      settings.diveWarnSeconds,
+      cornerSide,
+    ]
+  );
+
+  const style: RadarStyle = useMemo(
+    () =>
+      radarStyleFrom(
+        settings,
+        { length: focusSize.length, width: focusSize.width },
+        metric
+      ),
+    [settings, focusSize.length, focusSize.width, metric]
+  );
+
+  // A hazard in range brings the radar up like a car close by would.
+  const hazardShown = (frame.hazards ?? []).some((hazard) =>
+    hazardWanted(hazard, style)
+  );
+  const nearest = hazardShown ? 0 : nearestDistance(frame.cars);
+  const [autoVisible, setAutoVisible] = useState(false);
+  useEffect(() => {
+    setAutoVisible((wasVisible) =>
+      nextAutoHideVisible(wasVisible, nearest, {
+        showDistance: settings.showDistance,
+        hideDistance: settings.hideDistance,
+        range: settings.range,
+        carLength: settings.carLength,
+      })
+    );
+  }, [
+    nearest,
+    settings.showDistance,
+    settings.hideDistance,
+    settings.range,
+    settings.carLength,
+  ]);
+
+  const onTrackOk = !settings.showOnlyWhenOnTrack || snapshot.isOnTrack;
+  const inPitBox = settings.hideInPitBox && snapshot.focusInPitBox;
+  const visible =
+    isDemoMode ||
+    (sessionVisible &&
+      onTrackOk &&
+      !inPitBox &&
+      (!settings.autoHide || autoVisible));
+
+  // Keep painting through the fade-out, then stop.
+  const fadeMs = Math.max(0, settings.fadeSeconds * 1000);
+  const [painting, setPainting] = useState(visible);
+  useEffect(() => {
+    if (visible) {
+      setPainting(true);
+      return;
+    }
+    const timer = setTimeout(() => setPainting(false), fadeMs);
+    return () => clearTimeout(timer);
+  }, [visible, fadeMs]);
+
+  if (!isDemoMode && !sessionVisible) return null;
 
   return (
     <div
-      className="relative w-full h-full overflow-hidden rounded-full border border-slate-500/40"
+      className="w-full h-full"
       style={{
-        backgroundColor: `rgb(2 6 23 / ${(settings?.background?.opacity ?? 65) / 100})`,
+        opacity: visible ? 1 : 0,
+        transition: `opacity ${fadeMs}ms ease-out`,
       }}
-      aria-label="LMU radar"
     >
-      <svg viewBox="0 0 100 100" className="w-full h-full">
-        <circle
-          cx="50"
-          cy="50"
-          r="25"
-          fill="none"
-          stroke="rgb(100 116 139 / 0.25)"
-          strokeWidth="0.5"
+      {(visible || painting) && (
+        <RadarDisplay
+          frame={frame}
+          appearance={appearance}
+          geometry={isDemoMode ? null : geometry}
+          style={style}
+          active={visible || painting}
+          extrapolationS={settings.tuning.extrapolationS}
+          laneGapM={settings.tuning.laneGapM}
+          dive={dive}
         />
-        <path
-          d="M50 2V98M2 50H98"
-          stroke="rgb(148 163 184 / 0.18)"
-          strokeWidth="0.4"
-          strokeDasharray="2 2"
-        />
-        <rect
-          x={50 - (markerWidth * scale) / 2}
-          y={50 - (markerLength * scale) / 2}
-          width={markerWidth * scale}
-          height={markerLength * scale}
-          rx="1"
-          fill={highlight}
-          stroke="white"
-          strokeWidth="0.5"
-        />
-        {cars.map((car) => (
-          <rect
-            key={car.carIdx}
-            x={50 + car.lateral * scale - (markerWidth * scale) / 2}
-            y={50 + car.longitudinal * scale - (markerLength * scale) / 2}
-            width={markerWidth * scale}
-            height={markerLength * scale}
-            rx="1"
-            fill={car.sameClass ? 'white' : 'rgb(251 191 36)'}
-            stroke="rgb(15 23 42)"
-            strokeWidth="0.6"
-            opacity={car.opacity}
-            transform={
-              settings?.showOrientation
-                ? `rotate(${(-car.heading * 180) / Math.PI} ${50 + car.lateral * scale} ${50 + car.longitudinal * scale})`
-                : undefined
-            }
-          />
-        ))}
-      </svg>
+      )}
     </div>
   );
 };

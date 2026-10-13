@@ -7,7 +7,7 @@
  * and reads `process.env`. Both throw in a browser and take down the whole
  * preview chunk, so the site swaps the module out for this console logger.
  *
- * Wired up in `vite.config.ts` via the `stub-app-logger` plugin.
+ * Wired up in `vite.config.mts` via the `stub-app-logger` plugin.
  */
 const write =
   (method: 'log' | 'warn' | 'error') =>

@@ -6,6 +6,7 @@ export * from './captureSnapshots';
 export * from './standingsSnapshot';
 export * from './trackStateSnapshot';
 export * from './sessionBarSnapshot';
+export * from './sessionTimingSnapshot';
 export * from './DynamicTelemetrySelector';
 export * from './mockDashboardBridge';
 export * from './raceControlDecorator';

@@ -1,4 +1,4 @@
-# irDashies - Real-time iRacing Overlays
+# irDashies - Real-time Racing Overlays
 
 <div align="center" style="padding-bottom: 20px;">
   <img src="./docs/assets/icons/logo.svg" alt="Logo" width="200" height="200">
@@ -7,7 +7,7 @@
 
 </div>
 
-An open-source platform for building real-time iRacing overlays and utilities using React and Electron. Designed to be approachable for web developers — no iRacing SDK, C++, or even iRacing installation required to get started.
+An open-source platform for building real-time racing overlays and utilities using React and Electron, with iRacing support and beta support for Le Mans Ultimate. Designed to be approachable for web developers — no iRacing SDK, C++, or simulator installation required to get started.
 
 For bug reports, feature requests, or to get involved, join our [Discord](https://discord.gg/YMAqduF2Ft).
 
@@ -20,6 +20,7 @@ Install the .exe and run it. The application will automatically update when a ne
 ## Table of Contents
 
 - [Introduction](#introduction)
+- [Supported simulators](#supported-simulators)
 - [Available overlays](#available-overlays)
 - [Prerequisites](#prerequisites-for-development)
 - [Installation](#installation-for-development)
@@ -35,9 +36,31 @@ Install the .exe and run it. The application will automatically update when a ne
 
 ## Introduction
 
-This project is built with React and Electron and uses the iRacing SDK to retrieve data from the iRacing live telemetry memory-map.
+This project is built with React and Electron and retrieves live telemetry from iRacing and Le Mans Ultimate to power configurable overlays and race utilities.
+
+## Supported simulators
+
+iRacing is the primary supported simulator. Le Mans Ultimate support is in beta as of [v2.0.0](https://github.com/tariknz/irdashies/releases/tag/v2.0.0), with a limited set of supported widgets.
+
+Choose **Auto**, **iRacing**, or **Le Mans Ultimate** in **Settings > General > Simulator**. Auto detects the running simulator and follows simulator changes without restarting irDashies. If both simulators are active when detection runs, iRacing takes priority; select Le Mans Ultimate explicitly if needed. Unsupported widgets are hidden for the active simulator.
+
+### Le Mans Ultimate setup and limitations
+
+1. In LMU, enable **Settings > Gameplay > Enable Plugins**, then restart the simulator.
+2. Start irDashies and load into an LMU session to receive telemetry.
+
+**Supported overlays:** Standings, Relative, Input, Lap Trace, Pitlane Helper, Corner Names, Battle, Flag, and Information Bar. Telemetry Inspector is also available for diagnostics. All other widgets are currently unavailable in LMU, including Fuel Calculator, both track maps, Radar, Gantry, Car Systems, Lap Timer, Tachometer, and Shift Light.
+
+- Standings use class colours and manufacturer badges, with best-lap ordering in practice and position ordering in races. Driver ratings, incident counts, and team data are not yet integrated; car numbers are placeholders, and iRacing rating columns are hidden.
+- Corner Names and Lap Trace corner feedback depend on available LMU track data. Unnamed turns use turn numbers where provided.
+- Lap Trace does not yet check LMU lap validity, so laps invalidated by track limits may still become saved references. Imports support iRacing `.ibt` files and Garage 61 CSV laps, with no native LMU telemetry-file import.
+- Input and Lap Trace need your own car's telemetry, which can be unavailable while spectating or in the garage.
+- Lap positions are estimated between updates; cars without full telemetry may update in larger steps. Automatic units are metric, and Pitlane Helper currently uses a fixed 60 km/h pit limit.
+- LMU in-game replays do not yet have iRacing's replay-aware handling. LMU session recording and playback tools are development tools.
 
 ## Available overlays
+
+The features below describe iRacing support. See [Supported simulators](#supported-simulators) for LMU availability and limitations.
 
 ### Input trace
 
@@ -49,6 +72,7 @@ Displays the throttle, clutch, and brake input traces, as well as the current ge
   - Configurable stroke width (1-10px)
   - Configurable max samples (50-1000)
   - Toggle individual inputs (throttle, brake, ABS, steering)
+  - ABS activity shown as an overlay or highlighted fill beneath the brake trace
 - Input bar display (clutch, brake, throttle, ABS indicator)
   - Toggle individual inputs (clutch, brake, throttle, ABS)
   - Optional raw input values showing actual pedal/wheel inputs without sim processing (e.g. ABS, traction control)
@@ -56,11 +80,26 @@ Displays the throttle, clutch, and brake input traces, as well as the current ge
 - Optional speed-first gear layout
 - Steering wheel visualization with multiple styles (default, formula, LMP, NASCAR, U-shape, ring) and color themes (light/dark)
 - Customizable display order for all components
+- Drag-and-drop layout editor to arrange traces, bars, steering, gear, and ABS indicators
+- Multiple Input widgets with independent layouts, including a gear-only layout for a detached gear indicator
+- Optional background shift flash at redline or custom Tachometer shift points, with a configurable colour
 - Adjustable background opacity
 - Option to show only when on track
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
 
 ![Input Trace](./docs/assets/input.png)
+
+### Lap Trace
+
+Compares your current lap against a saved reference to show where you gain or lose time.
+
+**Features:**
+
+- Automatically saves the fastest reference lap for each car and track, with clean-lap checks in iRacing
+- Import reference laps from iRacing `.ibt` telemetry files or Garage 61 CSV laps
+- Compare throttle, braking, and gear changes against the reference, with ABS activity where available
+- Configurable audio or visual countdowns to reference braking points, with audio-device selection and a minimum brake-pressure filter
+- Corner feedback showing time gained or lost, braking distance, and minimum speed where corner data is available
 
 ### Tachometer
 
@@ -82,6 +121,26 @@ Displays a real-time tachometer with optional RPM text display.
 
 ![Input Trace](./docs/assets/tachometer.png)
 
+### Shift Light
+
+A standalone shift indicator for drivers who do not need the full Tachometer widget.
+
+**Features:**
+
+- Automatic shift cues or custom shift points for each car and gear
+- Glow, border, or pulse indicators with configurable colour
+- Optional RPM readout
+
+### Car Systems
+
+Displays your car's in-car adjustments in one compact widget.
+
+**Features:**
+
+- Live brake bias, ABS, traction control, and other adjustments supported by your car
+- Car-specific control labels, including brake migration, brake valves, and engine maps
+- Configurable columns, with independent options to hide unsupported or switched-off systems
+
 ### Standings
 
 Displays standings information for the current session.
@@ -91,6 +150,7 @@ Displays standings information for the current session.
 - Driver information: position, car number, country flags, driver name, team name, pit status
   - Country flags: Support for 250+ countries, can be enabled/disabled, shows iRacing flag for unaffiliated drivers
   - Driver name format: Multiple display formats (e.g., "J. Smith", "John S.", "John Smith", etc.)
+  - Configurable name subtext: Show the team below the driver name or the driver below the team name; team names appear beneath driver names by default in team sessions
   - Pit status indicators: DNF (red), TOW (orange, animated), OUT (green), PIT (yellow, animated), last pit lap number, repair/meatball flag (orange dot), penalty/black flag (orange), slowdown (orange, animated)
   - Optional pit time display
   - Pit lap display mode: Show pit lap number or laps since last pit
@@ -110,9 +170,14 @@ Displays standings information for the current session.
 - Timing information: gap, interval, best lap time, last lap time (multiple time format options)
   - Configurable decimal precision (1, 2, or 3) for gap and interval
   - Gap and interval display in practice and qualifying sessions
+- Optional column headers
+- Class headers:
+  - Estimated race lap counts, or scheduled totals in fixed-lap races
+  - Compact Strength of Field values and optional manufacturer counts
+- Class ordering: Use iRacing's class order or sort by each class leader's overall position
 - Optional Push-to-Pass column, showing a driver's active state and remaining time in supported series
 - Configurable radio icon duration, so recent transmissions remain visible without flickering
-- iRating change display
+- iRating change display, with optional hypothetical estimates during online practice
 - Lap time deltas (configurable number of laps: 1-5)
 - Title bar with session progress bar
 - Header and footer bars with customizable items and display order:
@@ -121,8 +186,10 @@ Displays standings information for the current session.
   - Brake bias, local time, track wetness, precipitation, wind speed/direction
   - Air and track temperature (Metric/Imperial units)
   - Track name
+  - Fuel level, last and best lap times, top speed, manufacturer position, and class rank
   - Session time: configurable mode (Remaining/Elapsed), format, and label style
   - Accurate race clock for fixed-lap races (calculated from P1 average lap time)
+  - Remaining-lap estimates in lone qualifying
 - Driver standings configuration:
   - Drivers to show around player
   - Drivers to show in other classes
@@ -133,6 +200,7 @@ Displays standings information for the current session.
 - All drivers shown immediately at practice/pre-qualifying start (sorted by car number)
 - Toggle to strip car numbers from driver names
 - Customizable display order for all columns
+- Widget scaling from 50% to 200%
 - Adjustable background opacity
 - Option to show only when on track
 - Option to use live position standings (updates continuously vs only at start/finish line)
@@ -181,8 +249,11 @@ Displays drive relative delta information for the current session.
   - Brake bias, local time, track wetness, precipitation, wind speed/direction
   - Air and track temperature (Metric/Imperial units)
   - Track name
+  - Fuel level, last and best lap times, top speed, manufacturer position, and class rank
   - Session time: configurable mode (Remaining/Elapsed), format, and label style
 - Configurable number of drivers to show around player (1-10)
+- Optional position change column showing positions gained or lost within each class from the qualifying grid during races
+- Optional pit-stall filtering to hide stopped drivers while keeping pit-road traffic and the focused car visible
 - Toggle to strip car numbers from driver names
 - Customizable display order for all columns
 - Adjustable background opacity
@@ -333,6 +404,20 @@ Displays visual indicators on the left and right sides of the screen when cars a
 
 ![Blind Spot Monitor](./docs/assets/blindspot-monitor.png)
 
+### Radar
+
+Shows nearby rivals ahead, behind, and alongside your car. iRacing positions are estimated from track position and spotter calls.
+
+**Features:**
+
+- Nearby traffic display with bumper-to-bumper gaps and grid or pace-line formations
+- Configurable warnings for close rivals, fast-closing cars, and hazards ahead, including slow, crashed, and rejoining cars
+- Warnings stay quiet during formation and full-course cautions
+- Appearance presets, road or oval profiles, colours, distance rings, car numbers, and warning labels
+- Live settings preview and configurable session visibility, including warmup
+
+![Radar showing nearby cars and hazard warnings](./docs/assets/radar.gif)
+
 ### Battle
 
 Displays a compact three-row view of the cars immediately ahead of and behind you in class position, alongside your own row.
@@ -426,6 +511,7 @@ Helps you manage your pit stops with clear visual guidance. It assists with spee
 - Best and last lap: Display the best and last lap times.
 - Personal best lap: Optionally show the best lap ever recorded by irDashies for the current car and track combo, persisted across sessions.
 - Lap history: Show a history of your most recent lap times along with optional deltas.
+- Optionally hide pit laps from the lap history list and graph.
 - Fully configurable: Decide which laps your interested in and toggle them on and off individually.
 - Fully customisable: Resize, scale and align to position the widget to your taste.
 
@@ -447,6 +533,16 @@ Displays per-sector timing deltas for the current lap, colour-coded by performan
 - Adjustable background opacity
 
 ![Sector Delta](./docs/assets/sector-delta.png)
+
+### Delta Speed
+
+Compares your current speed with your session-best clean lap at the same point on track.
+
+**Features:**
+
+- Colour indicator fades toward green when faster and red when slower
+- Optional numeric speed difference, with Auto, km/h, or mph units
+- Shows "No clean lap" until a usable reference is available
 
 ### Flag Widget
 
@@ -517,7 +613,7 @@ A standalone widget that displays session and timing information independently f
 
 ### Telemetry Inspector
 
-A powerful tool for viewing live data coming from iRacing. While mostly used for debugging, it's great for seeing exactly what data the app is receiving in real-time.
+A powerful tool for viewing live data coming from the active simulator, with units shown for known values. While mostly used for debugging, it's great for seeing exactly what data the app is receiving in real-time.
 
 ### Corner Name Overlay
 
@@ -539,6 +635,10 @@ A race control window with live standings, an automatic incident feed, and a per
 **Features:**
 
 - Standings and incidents shown side by side with a draggable divider, plus a separate Lap Graph tab
+- Optional always-on-top mode, controlled from the tab bar or settings for windowed or borderless simulators
+- Dock Fuel Calculator, Track Map, or Flat Track Map panels beneath the incident feed, side by side or in tabs, with optional Gantry-only fuel layouts
+- Review recorded incidents and lap history while watching an iRacing replay; history follows the selected replay session and requires recordings made by irDashies on this PC
+- Final standings and lap graphs remain available after iRacing closes, including when switching tabs, until the next session loads or irDashies closes
 - Standings list
   - Grouped by car class: position, car number, driver name, tyre compound, iRating, pit/DNF status
   - Gap to the class leader, interval to the car ahead, best lap and last lap
@@ -548,12 +648,15 @@ A race control window with live standings, an automatic incident feed, and a per
 - Incident feed
   - Detects crashes, off-tracks, slowdowns, pit entries, and black flags as they happen
   - Filter chips per incident type, plus a dropdown to narrow the feed to a single driver
+  - Group incidents by practice, qualifying, warmup, and race, with filters for the current session or a chosen session
   - Replay jump buttons (-5s, -10s, -30s) move the sim's replay to just before the incident and point the camera at the car
+  - Choose the camera used for incident replays, defaulting to Far Chase
   - Incidents are saved to disk: keep every session, or only the last 5, 10, or 20
   - Tunable detection thresholds: slow speed and duration, crash impact severity and minimum speed, off-track duration, pit entry duration, and a per-type cooldown
   - Threshold speeds shown in mph, km/h, or auto (always stored in km/h, so switching units never changes detection)
 - Lap Graph
   - Three y axes: Race Trace (time gained or lost against the class leader's reference pace), Position (class position at the end of each lap), and Gap (seconds behind the class leader)
+  - Consistent driver colours and dash patterns, with matching swatches in the driver list
   - Class selector for multi-class sessions
   - Pin drivers from the side list, or let auto-pin follow the player, the class leader, and the cars around the player
   - Hover the chart for a crosshair readout of the nearby lines; hover a name to lift that driver's line above the field
@@ -571,12 +674,16 @@ A race control window with live standings, an automatic incident feed, and a per
 - Profile Management
   - Save and switch between different dashboard configurations
   - Multiple profiles for different racing scenarios or streaming setups
+  - Assign profiles to practice, qualifying, races, testing, time trials, and warmup for automatic layout switching
+  - Optional spotting profile activates after 20 seconds out of the car and switches back immediately when you resume driving
   - Clone existing profiles with one click to create variations without starting from scratch
   - Bind shortcuts to cycle to the previous or next profile, with an on-screen profile-name banner
   - Each profile can be accessed as its own browser source URL for OBS streaming
   - Dashboard import/export to share layouts between users or back up your setup
 - Streamer & OBS Ready
   - Built-in Web Server: All overlays can be used as a browser source in OBS. Use `http://localhost:3000/dashboard` for the default profile, or `http://localhost:3000/dashboard?profile=<profileId>` for specific profiles.
+  - Single Widget URLs: `http://localhost:3000/widget/<widgetId>` shows one widget filling the page, including widgets hidden from the desktop layout, for hosts that take one page per source such as OpenKneeboard in VR. `http://localhost:3000` lists the URL for every widget in the active dashboard; older component links redirect to the widget pages.
+  - Optional Web Server: Disable the built-in server when browser sources are not needed; restart the app to free its port.
   - Network Access: Enable network access in settings to allow other devices on your local network to access the dashboard (useful for dual-PC streaming setups).
   - Garage Cover: Automatically hide your screen with a custom image when you enter the garage to keep your car setup private.
   - Transparent backgrounds: All overlays are designed to look great on top of your game or stream.
@@ -646,12 +753,11 @@ This will start the application.
 
 Look for the application in your app tray.
 
-### Le Mans Ultimate
+### Simulator overrides
 
-1. In LMU, enable **Settings → Gameplay → Enable Plugins**, then restart LMU.
-2. Start irDashies normally. It detects LMU or iRacing when either game starts.
+For normal use, choose the simulator in **Settings > General > Simulator**. See [Supported simulators](#supported-simulators) for LMU setup and beta limitations.
 
-To force a simulator, use `irdashies.exe --sim=lmu` or
+To override the saved simulator setting, use `irdashies.exe --sim=lmu` or
 `irdashies.exe --sim=iracing`. For development, set `IRDASHIES_SIM` instead:
 
 ```powershell
@@ -659,9 +765,9 @@ $env:IRDASHIES_SIM = 'lmu'
 npm start
 ```
 
-Without an override, irDashies waits for the first game it detects and uses that
-game until irDashies restarts. If both games are running when detection occurs,
-LMU is selected.
+Without an override, irDashies uses the saved simulator preference. In Auto mode,
+it detects the running simulator and follows changes without restarting, giving
+iRacing priority if both simulators are active when detection runs.
 
 > You will need to have Node.js installed on your machine to run the application. You can download it from [here](https://nodejs.org/).
 

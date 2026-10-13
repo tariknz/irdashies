@@ -37,6 +37,7 @@ export const defaultFuelCalculatorSettings: FuelCalculatorSettings = {
   showQualifyConsumption: false,
   showFuelHistory: true,
   fuelHistoryType: 'histogram',
+  fuelHistoryLapCount: 5,
   safetyMargin: 0,
   background: { opacity: 85 },
   fuelRequiredMode: 'toFinish',

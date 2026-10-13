@@ -9,6 +9,10 @@ import {
   sessionBarStorySnapshot,
   trackStateStorySnapshot,
   mockDashboardBridge,
+  timedRaceTimingSnapshot,
+  fixedLapRaceTimingSnapshot,
+  fixturePlans,
+  RACE_SESSION_NUM,
 } from '@irdashies/storybook';
 import {
   DashboardProvider,
@@ -25,6 +29,7 @@ import {
 } from '@irdashies/context';
 import type {
   DashboardBridge,
+  SessionTimingSnapshot,
   StandingsConfig,
   StandingsWidgetSettings,
 } from '@irdashies/types';
@@ -570,6 +575,89 @@ export const TeamSession: Story = {
         ],
       },
     }),
+  ],
+};
+
+export const TeamSessionWithoutSubtext: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      standings: { driverName: { subtext: 'none' } },
+    }),
+  ],
+};
+
+export const TeamSessionDefault: Story = {
+  decorators: [TelemetryDecorator('/test-data/1763227688917')],
+};
+
+export const TeamSessionDriverWithTeamSubtext: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      standings: {
+        driverName: { subtext: 'teamName' },
+      },
+    }),
+  ],
+};
+
+export const TeamSessionDriverWithTeamSubtextCompact: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(
+      '/test-data/1763227688917',
+      { standings: { driverName: { subtext: 'teamName' } } },
+      { compactMode: 'compact' }
+    ),
+  ],
+};
+
+export const TeamSessionDriverWithTeamSubtextUltra: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(
+      '/test-data/1763227688917',
+      { standings: { driverName: { subtext: 'teamName' } } },
+      { compactMode: 'ultra' }
+    ),
+  ],
+};
+
+export const TeamSessionTeamWithDriverSubtext: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1763227688917', {
+      standings: {
+        driverName: { enabled: false },
+        teamName: { enabled: true, subtext: 'driverName' },
+      },
+    }),
+  ],
+};
+
+export const TeamSessionTeamWithDriverSubtextCompact: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(
+      '/test-data/1763227688917',
+      {
+        standings: {
+          driverName: { enabled: false },
+          teamName: { enabled: true, subtext: 'driverName' },
+        },
+      },
+      { compactMode: 'compact' }
+    ),
+  ],
+};
+
+export const TeamSessionTeamWithDriverSubtextUltra: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig(
+      '/test-data/1763227688917',
+      {
+        standings: {
+          driverName: { enabled: false },
+          teamName: { enabled: true, subtext: 'driverName' },
+        },
+      },
+      { compactMode: 'ultra' }
+    ),
   ],
 };
 
@@ -1477,6 +1565,84 @@ export const AvgLapTime: Story = {
       },
     }),
   ],
+};
+
+// Each class's leader runs its own class's estimated lap pace over 15 laps, so
+// every class projects a different total — the point of the per-class
+// estimate. The BMW leader (carIdx 5) pits on lap 10: that 34s-slower lap is
+// dropped as an outlier, so it doesn't drag the projected pace down.
+const EST_LAPS_LAP_TIMES = (() => {
+  const plans = fixturePlans({ laps: 15, pitCarIdx: 5, pitLap: 10 });
+  const slots = Math.max(...plans.map((plan) => plan.carIdx)) + 1;
+  const lapTimeHistory = Array.from({ length: slots }, () => [] as number[]);
+  for (const plan of plans) {
+    lapTimeHistory[plan.carIdx] = Array.from(
+      { length: plan.laps },
+      (_, index) =>
+        plan.lapSeconds +
+        (plan.pitLaps?.includes(index + 1) ? (plan.pitLossSeconds ?? 0) : 0)
+    ).slice(-10);
+  }
+  return {
+    lapTimes: lapTimeHistory.map((history) => history.at(-1) ?? 0),
+    lapTimeHistory,
+    sessionNum: RACE_SESSION_NUM,
+    version: 1,
+  };
+})();
+
+const estimatedLapsStory = (
+  timing: SessionTimingSnapshot
+): Omit<Story, 'name'> => ({
+  argTypes: {
+    estimatedLaps: {
+      control: { type: 'boolean' },
+      name: 'Show estimated laps',
+    },
+    lapsToAverage: {
+      control: { type: 'number', min: 3, max: 10 },
+      name: 'Laps to average',
+    },
+  },
+  args: {
+    estimatedLaps: true,
+    lapsToAverage: 5,
+  },
+  render: () => <Standings />,
+  decorators: [
+    ChannelSnapshotDecorator({
+      'lap-times.snapshot': EST_LAPS_LAP_TIMES,
+      'standings.snapshot': standingsStorySnapshot,
+      'track-state.snapshot': trackStateStorySnapshot,
+      'session-bar.snapshot': sessionBarStorySnapshot,
+      'session-timing.snapshot': timing,
+    }),
+    (Story, context) => {
+      const { estimatedLaps, lapsToAverage } = context.args as {
+        estimatedLaps: boolean;
+        lapsToAverage: number;
+      };
+      return TelemetryDecoratorWithConfig(undefined, {
+        standings: {
+          classHeaderStyle: {
+            estimatedLaps: { enabled: estimatedLaps, numLaps: lapsToAverage },
+          },
+        },
+      })(Story, context);
+    },
+  ],
+});
+
+/** Timed race: each class projects its own total from the leader's pace. */
+export const EstimatedLaps: Story = {
+  name: 'Estimated Laps (timed race)',
+  ...estimatedLapsStory(timedRaceTimingSnapshot),
+};
+
+/** Fixed-lap race: every class shows the scheduled distance, not a projection. */
+export const EstimatedLapsFixedRace: Story = {
+  name: 'Estimated Laps (fixed-lap race)',
+  ...estimatedLapsStory(fixedLapRaceTimingSnapshot),
 };
 
 // ─── Push to Pass story ───────────────────────────────────────────────────────

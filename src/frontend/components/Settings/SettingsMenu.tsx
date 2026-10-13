@@ -116,15 +116,17 @@ export const SettingsMenu = () => {
     return widget?.enabled ?? false;
   };
 
-  const itemsWithSupport = widgetItems.map((item) => ({
-    item,
-    disabledReason: widgetDisabledMessage(
-      supportConfig,
-      item.widgetType,
-      simulator
-    ),
-  }));
-  const runningSimItems = showAllWidgets
+  const itemsWithSupport = widgetItems
+    .filter((item) => !item.hideInMenu)
+    .map((item) => ({
+      item,
+      disabledReason: widgetDisabledMessage(
+        supportConfig,
+        item.widgetType,
+        simulator
+      ),
+    }));
+  const visibleItems = showAllWidgets
     ? itemsWithSupport
     : itemsWithSupport.filter(({ disabledReason }) => !disabledReason);
   const hiddenCount = itemsWithSupport.length - runningSimItems.length;
@@ -193,25 +195,21 @@ export const SettingsMenu = () => {
           <span className="text-xs text-slate-600">({hiddenCount} hidden)</span>
         )}
       </div>
-      {visibleItems.length === 0 ? (
-        <p className="px-2 py-1 text-xs text-slate-500">
-          No widgets match this filter.
-        </p>
-      ) : (
-        <ul className="flex flex-col">
-          {visibleItems.map(({ item, disabledReason }) => (
-            <MenuLink
-              key={item.path}
-              item={item}
-              pathname={pathname}
-              disabledReason={disabledReason}
-              isEnabled={
-                item.widgetType ? isWidgetEnabled(item.widgetType) : undefined
-              }
-            />
-          ))}
-        </ul>
-      )}
+      <ul className="flex flex-col">
+        {visibleItems.map(({ item, disabledReason }) => (
+          <MenuLink
+            key={item.path}
+            item={item}
+            pathname={pathname}
+            disabledReason={disabledReason}
+            isEnabled={
+              item.widgetType
+                ? (item.groupTypes ?? [item.widgetType]).some(isWidgetEnabled)
+                : undefined
+            }
+          />
+        ))}
+      </ul>
 
       <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col">
         {bottomItems.map((item) => (

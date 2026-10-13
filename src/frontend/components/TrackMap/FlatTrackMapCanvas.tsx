@@ -20,6 +20,8 @@ export interface FlatTrackMapCanvasProps {
   invertTrackColors?: boolean;
   driverLivePositions?: Record<number, number>;
   carIdxIsOnPitRoad?: readonly boolean[];
+  /** Caps redraws, e.g. for a map docked in the Gantry. */
+  maxFps?: number;
 }
 
 const HORIZONTAL_PADDING = 40; // Fixed padding on each side
@@ -38,6 +40,7 @@ export const FlatTrackMapCanvas = ({
   invertTrackColors = false,
   driverLivePositions = [0, 0],
   carIdxIsOnPitRoad = [],
+  maxFps,
 }: FlatTrackMapCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
@@ -288,7 +291,7 @@ export const FlatTrackMapCanvas = ({
         }
       }
     }
-  });
+  }, maxFps);
 
   return (
     <div className="w-full h-full">

@@ -14,6 +14,7 @@ export default {
     'standings.snapshot',
     'track-state.snapshot',
     'radio.snapshot',
+    'replay.context',
   ],
   // 5 Hz - the supported sortable rate for standings.
   ratePreset: 'gapTiming',
@@ -26,5 +27,7 @@ export default {
     // Publishes on version change, so this only caps the worst case. A 60-car
     // field completes a lap about 0.6 times a second.
     'lap-history.snapshot': 2,
+    // Publishes only when a replay loads or its provenance resolves.
+    'replay.context': 1,
   },
 } satisfies WidgetRuntimeDefinition;

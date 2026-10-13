@@ -69,6 +69,39 @@ export const medianGreenLapTime = (
 };
 
 /**
+ * Drops laps more than one standard deviation from the mean — pit stops,
+ * incidents, the standing-start lap. Mirrors the main-process lap-times
+ * aggregation, so a pace built from it matches the session-wide lap estimate.
+ * Fewer than 3 laps can't give a meaningful spread and are kept as-is.
+ */
+const withoutOutlierLaps = (times: readonly number[]): readonly number[] => {
+  if (times.length < 3) return times;
+  const mean = times.reduce((sum, time) => sum + time, 0) / times.length;
+  const variance =
+    times.reduce((sum, time) => sum + (time - mean) ** 2, 0) / times.length;
+  const threshold = Math.sqrt(variance);
+  return times.filter((time) => Math.abs(time - mean) <= threshold);
+};
+
+/**
+ * Pace from a car's official lap times (CarIdxLastLapTime history, oldest
+ * first): the median of the most recent `numLaps`, outliers dropped. Uses
+ * iRacing's own timed laps rather than observed line crossings, so the
+ * opening lap is timed exactly as iRacing times it. Undefined until the car
+ * has set a lap.
+ */
+export const recentOfficialLapPace = (
+  history: readonly number[],
+  numLaps: number
+): number | undefined => {
+  const window = history
+    .filter((time) => time > 0)
+    .slice(-Math.max(1, numLaps));
+  if (window.length === 0) return undefined;
+  return median(withoutOutlierLaps(window));
+};
+
+/**
  * Reference pace for a class. Median of the leader's green laps once there are
  * at least 3, otherwise their fastest lap so far. `source` tells the caller
  * which, so the axis can say so.

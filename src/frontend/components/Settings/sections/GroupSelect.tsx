@@ -7,8 +7,7 @@ interface GroupSelectProps {
   value: string;
   onChange: (value: string) => void;
   groups: (
-    | TagGroup
-    | { id: string; name: string; icon: unknown; color: number }
+    TagGroup | { id: string; name: string; icon: unknown; color: number }
   )[];
   displayStyle?: 'tag' | 'badge';
   iconWeight?: 'fill' | 'regular';

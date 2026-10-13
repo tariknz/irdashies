@@ -14,6 +14,7 @@ import {
 } from '@irdashies/storybook';
 import type { LapGraphMode } from '@irdashies/domain';
 import { LapGraphView } from './LapGraphView';
+import { GantrySessionDataProvider } from '../../hooks/useGantrySessionData';
 
 const CLASS_IDS = [
   ...new Set(fixtureDrivers.map((driver) => String(driver.CarClassID))),
@@ -42,15 +43,17 @@ const Harness = (args: LapGraphArgs) => {
 
   return (
     <div className="h-screen bg-slate-900 text-white">
-      <LapGraphView
-        followedCarIdx={args.followedCarIdx}
-        selectedClassId={classId}
-        onClassChange={setClassId}
-        chosenMode={mode}
-        onModeChange={setMode}
-        chosenPins={pins}
-        onPinsChange={setPins}
-      />
+      <GantrySessionDataProvider>
+        <LapGraphView
+          followedCarIdx={args.followedCarIdx}
+          selectedClassId={classId}
+          onClassChange={setClassId}
+          chosenMode={mode}
+          onModeChange={setMode}
+          chosenPins={pins}
+          onPinsChange={setPins}
+        />
+      </GantrySessionDataProvider>
     </div>
   );
 };

@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+# Git LFS installs its own hook at .git/hooks/pre-push, but core.hooksPath
+# points at .husky/_, so git never runs it. Without this delegation, pushing a
+# commit that touches an LFS-tracked file uploads no objects and the remote
+# rejects it with GH008 ("unknown Git LFS object"), which reads as a server
+# problem rather than a missing hook.
+#
+# test-data/telemetry/ai-race-10min.irdt is tracked in LFS, so this affects
+# anyone who adds or changes a capture there.
+git lfs pre-push "$@"

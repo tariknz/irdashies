@@ -7,6 +7,7 @@ import {
 
 export const standingsSelectors = {
   carIdxLap: (snapshot: StandingsSnapshot) => snapshot.carIdxLap,
+  carIdxLapDistPct: (snapshot: StandingsSnapshot) => snapshot.carIdxLapDistPct,
   sessionNum: (snapshot: StandingsSnapshot) => snapshot.sessionNum,
 } as const;
 

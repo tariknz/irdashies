@@ -1,5 +1,4 @@
-/**
- * Re-exports WidgetId type from frontend for use in app code.
- * This allows app code to use the type without importing from frontend directly.
- */
-export type { WidgetId } from '../frontend/WidgetIndex';
+import type { WidgetConfigMap } from './widgetConfigs';
+
+/** Id of a built-in widget type; derived from the widget config map. */
+export type WidgetId = keyof WidgetConfigMap;

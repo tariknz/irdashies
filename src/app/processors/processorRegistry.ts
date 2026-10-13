@@ -1,4 +1,8 @@
-import type { LapTimesSnapshot, ReferenceLapsSnapshot } from '@irdashies/types';
+import type {
+  LapTimesSnapshot,
+  RadarProcessorTuning,
+  ReferenceLapsSnapshot,
+} from '@irdashies/types';
 import type { ReferenceLapPersistence } from './ReferenceLapProcessor';
 import { CarSpeedsProcessor } from './CarSpeedsProcessor';
 import { BlindSpotProcessor } from './BlindSpotProcessor';
@@ -15,6 +19,7 @@ import type {
 import { ProcessorHost } from './ProcessorHost';
 import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
+import { RadarProcessor } from './RadarProcessor';
 import { RadioProcessor } from './RadioProcessor';
 import { ReferenceLapProcessor } from './ReferenceLapProcessor';
 import { RelativeGapProcessor } from './RelativeGapProcessor';
@@ -27,6 +32,8 @@ import { TrackStateProcessor } from './TrackStateProcessor';
 
 interface ProcessorRegistryOptions {
   referenceLapPersistence: ReferenceLapPersistence;
+  /** The radar's dev tuning from the current dashboard; defaults without. */
+  radarTuning?: () => RadarProcessorTuning;
 }
 
 interface DefaultProcessorHostOptions extends ProcessorRegistryOptions {
@@ -57,6 +64,7 @@ const defineProcessor = <K extends AnyProcessorDefinition['channel']>(
 
 export const createProcessorDefinitions = ({
   referenceLapPersistence,
+  radarTuning,
 }: ProcessorRegistryOptions): readonly AnyProcessorDefinition[] => [
   defineProcessor({
     channel: 'blind-spot.snapshot',
@@ -109,6 +117,11 @@ export const createProcessorDefinitions = ({
     channel: 'standings.snapshot',
     metricsPrefix: 'standings',
     create: () => new StandingsProcessor(),
+  }),
+  defineProcessor({
+    channel: 'radar.snapshot',
+    metricsPrefix: 'radar',
+    create: () => new RadarProcessor(radarTuning),
   }),
   defineProcessor({
     channel: 'radio.snapshot',

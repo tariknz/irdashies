@@ -12,29 +12,59 @@ import logger from '../../logger';
 import type { SessionLifecycle } from '../../sessionLifecycle';
 import type { ChannelBus } from '../channelBridge';
 import { createDefaultProcessorHost } from '../../processors/processorRegistry';
-import { mapLmuSession } from '../../irsdk/lmu/mapSession';
-import { lmuSessionSignature } from '../../irsdk/lmu/sessionSignature';
+import { mapLmuSession } from '../../lmu/mapSession';
+import { lmuSessionSignature } from '../../lmu/sessionSignature';
 import {
   LMU_DISCONNECT_GRACE_MS,
   shouldHoldLmuRunningState,
-} from '../../irsdk/lmu/runningState';
+} from '../../lmu/runningState';
+import { mapLmuTelemetry } from '../../lmu/mapTelemetry';
+import { lmuRelativePositionsAvailable } from '../../lmu/proximity';
 import {
-  mapLmuCarLeftRight,
-  mapLmuTelemetry,
-} from '../../irsdk/lmu/mapTelemetry';
+  createLmuLapDistanceState,
+  resetLmuLapDistanceState,
+} from '../../lmu/lapDistance';
+import {
+  createLmuOpponentLapDistanceState,
+  resetLmuOpponentLapDistanceState,
+} from '../../lmu/opponentLapDistance';
+import { lmuRestOrigin } from '../../lmu/rest/constants';
+import { createLmuRestTransport } from '../../lmu/rest/httpJson';
+import { createLmuRestPoller } from '../../lmu/rest/poller';
+import { createLmuRestData } from '../../lmu/rest/state';
+import { createLmuTapeRestTransport } from '../../lmu/rest/tapeTransport';
 import {
   loadLmuTrackMap,
   LmuTrackMapRecorder,
   LmuTrackMapStorage,
   tinyPedalTrackMapDirectories,
-} from '../../irsdk/lmu/trackMap';
+} from '../../lmu/trackMap';
 import { app } from 'electron';
 import path from 'node:path';
 
-// Poll cadence for the LMU shared-memory frame. LMU writes at the sim's
-// physics rate (~60 Hz); a fixed 16 ms poll keeps latency low without burning
-// CPU waiting between frames.
-const TELEMETRY_POLL_INTERVAL = 16;
+/**
+ * Poll cadence for the LMU shared-memory frame.
+ *
+ * LMU publishes telemetry at 100 Hz -- measured, not assumed: 999 frames in
+ * 10 s against LMU 14150, median gap 9.92 ms. Not the ~60 Hz this once
+ * claimed, which is where the 16 ms came from.
+ *
+ * 16 ms was close to the worst value available. The Windows timer tick is
+ * ~15.6 ms, so a 16 ms request cannot be met by the next tick and waits for
+ * the second one: measured in the Electron main process, setTimeout(16)
+ * delivered a 30.7 ms median -- 37 Hz against a 100 Hz writer, dropping ~60%
+ * of frames. 8 ms rounds to a single tick, 15.5 ms, 64 Hz.
+ *
+ * 64 Hz is the JS ceiling here. setTimeout(4) measured identically, and
+ * reaching 100 Hz needs a native capture thread.
+ *
+ * There is deliberately no gate on delivery. Because the poll is slower than
+ * the writer, nearly every poll carries a new frame -- the measured duplicate
+ * rate is 0.3% -- so a gate saves almost nothing while sitting in front of
+ * every telemetry consumer in the app, where it can silence all of them at
+ * once.
+ */
+const TELEMETRY_POLL_INTERVAL = 8;
 // Session snapshots are rebuilt from shared memory on demand; 2 Hz is plenty
 // for driver-grid changes and mirrors the iRacing bridge's session poll rate.
 const SESSION_POLL_INTERVAL = 500;
@@ -44,7 +74,7 @@ const perfRunConfig = getPerfRunConfig();
 const perfTelemetryDeliveryEnabled =
   !perfRunConfig.enabled || perfRunConfig.telemetryDelivery === 'on';
 
-export async function publishIRacingSDKEvents(
+export async function publishLmuSDKEvents(
   overlayManager: OverlayManager,
   lifecycle?: SessionLifecycle,
   channelBus?: ChannelBus
@@ -52,12 +82,34 @@ export async function publishIRacingSDKEvents(
   logger.info(
     '[lmuSdkBridge] Loading Le Mans Ultimate shared-memory bridge...'
   );
-  const { NativeLmu } = await import('../../irsdk/native/lmu');
+  const { NativeLmu } = await import('../../lmu/native');
   const sdk = new NativeLmu();
   const mapRecorder = new LmuTrackMapRecorder();
   const mapStorage = new LmuTrackMapStorage(
     path.join(app.getPath('userData'), 'lmu-track-maps.json')
   );
+
+  // Properties LMU serves over its local REST API. The poller runs on its own
+  // timers; this loop only ever reads the object it fills, synchronously. See
+  // lmu/rest/poller.ts for why that separation is structural rather than a
+  // matter of discipline.
+  const restData = createLmuRestData();
+  // A tape carries its own recorded REST responses, so a replay must read them
+  // rather than hit a port the sim is not serving. Everything above the
+  // transport is identical either way, which is the point of injecting it:
+  // a replay exercises the real poller, not a shortcut around it.
+  const restTransport = process.env.IRDASHIES_LMU_REPLAY
+    ? createLmuTapeRestTransport(sdk)
+    : createLmuRestTransport(lmuRestOrigin());
+  const restPoller = createLmuRestPoller({
+    data: restData,
+    transport: restTransport,
+    logger: {
+      info: (message) => logger.info(message),
+      warn: (message) => logger.warn(message),
+    },
+  });
+  let lastRestRevision = restData.revision;
 
   const perfMetrics = new TelemetryPerfMetrics(undefined, channelBus);
   perfMetrics.startReporting();
@@ -86,8 +138,14 @@ export async function publishIRacingSDKEvents(
   let activeTrackName = '';
   let trackMap: LmuTrackMap | null = null;
   let lastBlindSpotDataIssue: string | null | undefined;
-  let pitSpeedLimitMs: number | undefined;
-  let lastPitCalibrationSpeed: number | undefined;
+  // Lifts the player's lap fraction from LMU's 5 Hz scoring block to the poll
+  // rate. Held across frames, and reset only at the two real discontinuities
+  // below -- never on the grace-hold path, where re-anchoring mid-lap would
+  // drop the estimate back a few centimetres and silently cost a sample.
+  const lapDistanceState = createLmuLapDistanceState();
+  // Per-car integrators, so opponents get a poll-rate lap position too rather
+  // than the 5 Hz scoring steps everything downstream would differentiate.
+  const opponentLapDistanceState = createLmuOpponentLapDistanceState();
 
   const telemetryCallbacks = new Set<(value: Telemetry) => void>();
   const sessionCallbacks = new Set<(value: Session) => void>();
@@ -101,7 +159,13 @@ export async function publishIRacingSDKEvents(
     runningStateCallbacks.forEach((callback) => callback(isSimRunning));
   };
 
-  overlayManager.onOverlayReady((id) => {
+  // Held so stop() can let go of it. setupBridge rebuilds this bridge on every
+  // source change, and auto-detect rebuilds it on every sim takeover, so a
+  // listener left registered belongs to a bridge that has stopped -- and it
+  // kept answering, handing the dead bridge's running state and session to
+  // every overlay opened afterwards. A stale `true` would overwrite the real
+  // state. The iRacing bridge already does this.
+  const unsubscribeOverlayReady = overlayManager.onOverlayReady((id) => {
     if (lastRunningState !== undefined)
       overlayManager.publishMessageToOverlay(
         id,
@@ -167,6 +231,9 @@ export async function publishIRacingSDKEvents(
           lifecycle?._onDisconnect();
           wasRunning = false;
           lastSessionSignature = null;
+          resetLmuLapDistanceState(lapDistanceState);
+          resetLmuOpponentLapDistanceState(opponentLapDistanceState);
+          restPoller.setActive(false);
         }
         unavailableSince = null;
         await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL));
@@ -190,8 +257,6 @@ export async function publishIRacingSDKEvents(
           tinyPedalTrackMapDirectories()
         );
         trackMap = loadedMap?.map ?? null;
-        pitSpeedLimitMs = undefined;
-        lastPitCalibrationSpeed = undefined;
         if (loadedMap?.source === 'tinyPedal') {
           try {
             mapStorage.save(activeTrackName, loadedMap.map);
@@ -206,16 +271,91 @@ export async function publishIRacingSDKEvents(
           }
         }
         mapRecorder.reset(activeTrackName);
+        // Session settings and the forecast are fetched once per activation,
+        // and a new track means a new session.
+        restPoller.invalidateOnce();
+        resetLmuLapDistanceState(lapDistanceState);
+        resetLmuOpponentLapDistanceState(opponentLapDistanceState);
         lastSessionSignature = null;
         logger.info(
           `[lmuSdkBridge] Track ${activeTrackName}; map ${trackMap ? 'loaded' : 'not found; recording starts at the next finish-line crossing'}`
         );
-        logger.warn(
-          '[lmuSdkBridge] LMU does not expose a pit speed limit; the limit will remain hidden until calibrated from live limiter-capped speed'
-        );
       }
+
+      if (!wasRunning) {
+        logger.info(
+          `[lmuSdkBridge] LMU is running; version=${raw.gameVersion} session=${raw.session} phase=${raw.gamePhase} vehicles=${raw.numVehicles}/${raw.activeVehicles} player=${raw.playerVehicleIdx} trackLength=${raw.lapDist}`
+        );
+        wasRunning = true;
+        restPoller.setActive(true);
+        publishRunningState(true);
+        lifecycle?._onEnter({ replay: false });
+      }
+
+      const tickTime = performance.now();
+
+      // A REST-sourced session value changing is invisible to
+      // lmuSessionSignature, which only sees shared memory. Forcing the
+      // signature null is the same lever the track map uses above, and without
+      // it a value like timeScale would arrive and never be published.
+      if (restData.revision !== lastRestRevision) {
+        lastRestRevision = restData.revision;
+        lastSessionSignature = null;
+      }
+
+      let session: Session | null = null;
+      if (rawSession) {
+        lastSessionPollTime = tickTime;
+        const signature = lmuSessionSignature(rawSession);
+        if (signature !== lastSessionSignature) {
+          lastSessionSignature = signature;
+          session = mapLmuSession(rawSession, trackMap, restData.session);
+          const playerIdx = rawSession.playerVehicleIdx;
+          logger.info(
+            `[lmuSdkBridge] Session snapshot track=${rawSession.trackName} session=${rawSession.session} phase=${rawSession.gamePhase} flags=${Array.from(rawSession.sectorFlags).join(',')} sector=${rawSession.vehSector[playerIdx] ?? -1} sectors=${rawSession.vehLastSector1[playerIdx] ?? -1},${rawSession.vehLastSector2[playerIdx] ?? -1},${rawSession.vehLastLapTime[playerIdx] ?? -1}`
+          );
+        }
+      }
+
+      const blindSpotDataIssue = !lmuRelativePositionsAvailable(raw)
+        ? 'vehicle world positions or player orientation are unavailable'
+        : raw.lapDist <= 0
+          ? `track length is invalid (${raw.lapDist} m)`
+          : null;
+      if (blindSpotDataIssue !== lastBlindSpotDataIssue) {
+        lastBlindSpotDataIssue = blindSpotDataIssue;
+        if (blindSpotDataIssue) {
+          logger.warn(
+            `[lmuSdkBridge] Blind spot monitor unavailable: ${blindSpotDataIssue}`
+          );
+        } else {
+          logger.info('[lmuSdkBridge] Blind spot monitor data available');
+        }
+      }
+
+      perfMetrics.markStart('lifecycleTelemetry');
+      const telemetry = mapLmuTelemetry(
+        raw,
+        lapDistanceState,
+        opponentLapDistanceState
+      );
+      lifecycle?._onTelemetry(telemetry);
+      perfMetrics.markEnd('lifecycleTelemetry');
+
+      // Runs below the frame build because it consumes it: the reconstructed
+      // fraction moves at the poll rate, where raw scoring only steps at 5 Hz
+      // and left the recorder sampling about one point in thirteen. Kept out
+      // of the span above so a map save cannot inflate that metric.
+      //
+      // A map first recorded on this frame is therefore published on the next
+      // poll carrying a session snapshot -- up to SESSION_POLL_INTERVAL later
+      // -- rather than in this one. A map appears once per track, so the
+      // delay is invisible; the existing signature reset is what forces it.
       if (!trackMap) {
-        const recordedMap = mapRecorder.update(raw);
+        const recordedMap = mapRecorder.update(
+          raw,
+          telemetry.LapDistPct?.value[0] as number | undefined
+        );
         if (recordedMap) {
           try {
             mapStorage.save(activeTrackName, recordedMap);
@@ -229,81 +369,6 @@ export async function publishIRacingSDKEvents(
           }
         }
       }
-
-      if (!wasRunning) {
-        logger.info(
-          `[lmuSdkBridge] LMU is running; version=${raw.gameVersion} session=${raw.session} phase=${raw.gamePhase} vehicles=${raw.numVehicles}/${raw.activeVehicles} player=${raw.playerVehicleIdx} trackLength=${raw.lapDist}`
-        );
-        wasRunning = true;
-        publishRunningState(true);
-        lifecycle?._onEnter({ replay: false });
-      }
-
-      const tickTime = performance.now();
-      const playerInPits =
-        raw.playerVehicleIdx >= 0 && raw.vehInPits[raw.playerVehicleIdx] === 1;
-      const calibrationSpeed = raw.speed;
-      const canCalibratePitSpeed =
-        pitSpeedLimitMs === undefined &&
-        playerInPits &&
-        Boolean(raw.speedLimiter) &&
-        (raw.unfilteredThrottle ?? 0) > 0.95 &&
-        (raw.unfilteredBrake ?? 1) < 0.01 &&
-        calibrationSpeed !== undefined &&
-        Number.isFinite(calibrationSpeed) &&
-        calibrationSpeed > 1;
-      if (canCalibratePitSpeed) {
-        const speedDelta =
-          lastPitCalibrationSpeed === undefined
-            ? Number.POSITIVE_INFINITY
-            : calibrationSpeed - lastPitCalibrationSpeed;
-        if (speedDelta >= 0 && speedDelta < 0.1) {
-          pitSpeedLimitMs = Math.round(calibrationSpeed * 3.6) / 3.6;
-          lastSessionSignature = null;
-          logger.info(
-            `[lmuSdkBridge] Calibrated pit speed limit at ${(pitSpeedLimitMs * 3.6).toFixed(0)} kph from live LMU telemetry`
-          );
-        }
-        lastPitCalibrationSpeed = calibrationSpeed;
-      } else {
-        lastPitCalibrationSpeed = undefined;
-      }
-
-      let session: Session | null = null;
-      if (rawSession) {
-        lastSessionPollTime = tickTime;
-        const signature = lmuSessionSignature(rawSession);
-        if (signature !== lastSessionSignature) {
-          lastSessionSignature = signature;
-          session = mapLmuSession(rawSession, trackMap, pitSpeedLimitMs);
-          const playerIdx = rawSession.playerVehicleIdx;
-          logger.info(
-            `[lmuSdkBridge] Session snapshot track=${rawSession.trackName} session=${rawSession.session} phase=${rawSession.gamePhase} flags=${Array.from(rawSession.sectorFlags).join(',')} sector=${rawSession.vehSector[playerIdx] ?? -1} sectors=${rawSession.vehLastSector1[playerIdx] ?? -1},${rawSession.vehLastSector2[playerIdx] ?? -1},${rawSession.vehLastLapTime[playerIdx] ?? -1}`
-          );
-        }
-      }
-
-      const blindSpotDataIssue =
-        mapLmuCarLeftRight(raw) === null
-          ? 'vehicle world positions or player orientation are unavailable'
-          : raw.lapDist <= 0
-            ? `track length is invalid (${raw.lapDist} m)`
-            : null;
-      if (blindSpotDataIssue !== lastBlindSpotDataIssue) {
-        lastBlindSpotDataIssue = blindSpotDataIssue;
-        if (blindSpotDataIssue) {
-          logger.warn(
-            `[lmuSdkBridge] Blind spot monitor unavailable: ${blindSpotDataIssue}`
-          );
-        } else {
-          logger.info('[lmuSdkBridge] Blind spot monitor data available');
-        }
-      }
-
-      perfMetrics.markStart('lifecycleTelemetry');
-      const telemetry = mapLmuTelemetry(raw);
-      lifecycle?._onTelemetry(telemetry);
-      perfMetrics.markEnd('lifecycleTelemetry');
       processorHost?.onFrame(telemetry);
 
       if (
@@ -338,6 +403,18 @@ export async function publishIRacingSDKEvents(
     }
   })().catch((error) => {
     logger.error('[lmuSdkBridge] Telemetry loop failed', error);
+    // This loop is the only thing in this bridge that ever reports LMU going
+    // away -- unlike the iRacing bridge, there is no running-state poll
+    // outside it. Staying quiet here would leave the overlays, and the
+    // auto-detector deciding whether to look for another simulator, believing
+    // a dead source is still feeding them.
+    if (lastRunningState) {
+      latestSession = null;
+      overlayManager.clearLatestSessionData?.();
+      lifecycle?._onDisconnect();
+    }
+    restPoller.setActive(false);
+    publishRunningState(false);
   });
 
   return {
@@ -363,6 +440,11 @@ export async function publishIRacingSDKEvents(
     },
     stop: () => {
       shouldStop = true;
+      unsubscribeOverlayReady?.();
+      restPoller.stop();
+      // Dropped too, so nothing can replay this bridge's last session after it
+      // has gone.
+      latestSession = null;
       overlayManager.clearLatestSessionData?.();
       sdk.stop();
       telemetryCallbacks.clear();

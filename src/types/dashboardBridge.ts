@@ -60,7 +60,13 @@ export interface DashboardBridge {
   onDemoModeChanged: (
     callback: (value: boolean) => void
   ) => (() => void) | undefined;
-  /** Rebuilds the telemetry bridge after the app simulator preference changes. */
+  /**
+   * Demo mode as it stands now. A window created after the last toggle (the
+   * overlays are rebuilt whenever the running sim changes, which a toggle
+   * does) never saw the change event, so it asks on start.
+   */
+  getIsDemoMode?: () => Promise<boolean>;
+  /** Rebuilds the telemetry bridge after generalSettings.simulator changes. */
   notifySimulatorPreferenceChanged?: () => void;
   /** App simulator preference. Not stored on a profile. */
   getSimulatorPreference?: () => Promise<SimulatorPreference>;

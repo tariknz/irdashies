@@ -11,18 +11,12 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router-dom';
-import { useAvailableSimulators, useDashboard } from '@irdashies/context';
 import {
-  isProfileAssignedToGame,
-  SIMULATOR_IDS,
-  SIMULATOR_LABELS,
-  type ActiveSimulator,
-  type DashboardProfile,
-  type GameDetectionStatus,
-  type GameProfileAssignments,
-  type SimulatorPreference,
-} from '@irdashies/types';
-import logger from '@irdashies/utils/logger';
+  useActiveSimulator,
+  useDashboard,
+  useRunningState,
+} from '@irdashies/context';
+import { simulatorDisplayName } from '@irdashies/types';
 import { SettingsLoader } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
 import { useSimulatorPreference } from './useSimulatorPreference';
@@ -104,16 +98,13 @@ export const SettingsLayout = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [editModeAccelerator, setEditModeAccelerator] = useState('F6');
-  const [detection, setDetection] = useState<GameDetectionStatus>({
-    game: null,
-    running: false,
-  });
-  const [assignments, setAssignments] = useState<GameProfileAssignments>({});
-  const [assignmentsLoaded, setAssignmentsLoaded] = useState(false);
-  const assignmentsRef = useRef<GameProfileAssignments>({});
-
-  const headerGame = headerGameFor(preference, detection);
-  const profilesReady = assignmentsLoaded;
+  const activeSimulator = useActiveSimulator();
+  const { running } = useRunningState();
+  // The name says which sim is feeding the overlays, so it has no business
+  // being up when none is. The active simulator is deliberately not cleared on
+  // a disconnect -- that drives widget filtering and would rebuild every
+  // overlay window -- so the running state is what gates the display.
+  const simulatorName = running ? simulatorDisplayName(activeSimulator) : null;
 
   useEffect(() => {
     window.keybindingsBridge?.getKeybindings().then((bindings) => {

@@ -1076,6 +1076,49 @@ describe('off-track detection', () => {
   });
 });
 
+describe('incident ids', () => {
+  const goOffTrack = (detector: IncidentDetector, sessionNum: number) => {
+    const surfaces = [
+      TrackLocation.OnTrack,
+      TrackLocation.OffTrack,
+      TrackLocation.OffTrack,
+      TrackLocation.OffTrack,
+    ];
+    surfaces.forEach((surface, i) =>
+      detector.processTelemetry(
+        makeTelemetry({
+          sessionNum,
+          carIdxTrackSurface: [surface],
+          sessionTime: 100 + i * 0.04,
+        }),
+        5000
+      )
+    );
+  };
+
+  it('keeps same-time incidents from different sessions distinct', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    const session = { WeekendInfo: { SubSessionID: 111 }, ...raceSession() };
+
+    detector.updateSession(session, 0);
+    goOffTrack(detector, 0);
+    detector.updateSession(session, 2);
+    goOffTrack(detector, 2);
+
+    const offTracks = incidents.filter((i) => i.type === IncidentType.OffTrack);
+    expect(offTracks).toHaveLength(2);
+    expect(offTracks[0].sessionTime).toBe(offTracks[1].sessionTime);
+    expect(offTracks[0].id).toBe(
+      `0-0-${offTracks[0].sessionTime}-${IncidentType.OffTrack}`
+    );
+    expect(offTracks[1].id).toBe(
+      `2-0-${offTracks[1].sessionTime}-${IncidentType.OffTrack}`
+    );
+  });
+});
+
 describe('debounce cooldown recovery', () => {
   it('emits a pit entry after cooldown even when its threshold frame was suppressed', () => {
     const detector = new IncidentDetector(defaultThresholds, false);

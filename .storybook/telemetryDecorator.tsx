@@ -28,10 +28,15 @@ export const TelemetryDecorator: (path?: string) => Decorator = (path) => {
 };
 
 export const createMockBridgeWithConfig = (
-  widgetConfigOverrides: Record<string, Record<string, unknown>>
+  widgetConfigOverrides: Record<string, Record<string, unknown>>,
+  generalSettingsOverride: Partial<DashboardLayout['generalSettings']> = {}
 ): DashboardBridge => {
   const modifiedDashboard: DashboardLayout = {
     ...defaultDashboard,
+    generalSettings: {
+      ...defaultDashboard.generalSettings,
+      ...generalSettingsOverride,
+    },
     widgets: defaultDashboard.widgets.map((widget) => {
       const configOverride = widgetConfigOverrides[widget.id];
       if (configOverride) {
@@ -61,11 +66,19 @@ export const createMockBridgeWithConfig = (
 
 export const TelemetryDecoratorWithConfig: (
   path?: string,
-  widgetConfigOverrides?: Record<string, Record<string, unknown>>
-) => Decorator = (path, widgetConfigOverrides = {}) => {
+  widgetConfigOverrides?: Record<string, Record<string, unknown>>,
+  generalSettingsOverride?: Partial<DashboardLayout['generalSettings']>
+) => Decorator = (
+  path,
+  widgetConfigOverrides = {},
+  generalSettingsOverride = {}
+) => {
   const DecoratorComponent = (Story: ComponentType) => {
     const bridge = widgetConfigOverrides
-      ? createMockBridgeWithConfig(widgetConfigOverrides)
+      ? createMockBridgeWithConfig(
+          widgetConfigOverrides,
+          generalSettingsOverride
+        )
       : mockDashboardBridge;
 
     return (

@@ -1,17 +1,12 @@
 // Demo data for Pitlane Helper component
 
-export interface PitSpeedResult {
-  deltaKph: number;
-  deltaMph: number;
-  limitKph: number;
-  limitMph: number;
-  speedKph: number;
-  speedMph: number;
-  colorClass: string;
-  isPulsing: boolean;
-  isSpeeding: boolean;
-  isSeverelyOver: boolean;
-}
+// Re-exported rather than redeclared. This file used to carry its own copy of
+// the shape, and the component imports the copy from here -- so a field added
+// to the hook's result was missing on the type the component was checked
+// against, and the component could not see it at all.
+export type { PitSpeedResult } from './hooks/usePitSpeed';
+
+import type { PitSpeedResult } from './hooks/usePitSpeed';
 
 export interface PitboxPositionResult {
   distanceToPit: number;
@@ -77,6 +72,7 @@ export const getDemoPitlaneData = (): PitlaneHelperDemoData => {
       deltaMph: 1.6,
       limitKph: 60,
       limitMph: 37.3,
+      hasLimit: true,
       speedKph: 62.5,
       speedMph: 38.8,
       colorClass: 'text-red-500',

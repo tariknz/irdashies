@@ -85,6 +85,41 @@ describe('incidentStorage', () => {
     expect(fs.readdirSync(tmpDir)).toEqual([]);
   });
 
+  it('lists archived session numbers without caching the file', async () => {
+    const {
+      listArchivedIncidentSessions,
+      flushIncidentsOnShutdown,
+      appendIncident,
+      __awaitPendingWrite,
+    } = await import('./incidentStorage');
+    await appendIncident(
+      'event',
+      { ...makeIncident('a'), sessionNum: 2 },
+      tmpDir
+    );
+    await appendIncident(
+      'event',
+      { ...makeIncident('b'), sessionNum: 0 },
+      tmpDir
+    );
+    await appendIncident(
+      'event',
+      { ...makeIncident('c'), sessionNum: 2 },
+      tmpDir
+    );
+    await __awaitPendingWrite();
+
+    expect(await listArchivedIncidentSessions('event', tmpDir)).toEqual([0, 2]);
+
+    expect(
+      await listArchivedIncidentSessions('never-recorded', tmpDir)
+    ).toEqual([]);
+    await flushIncidentsOnShutdown();
+    expect(
+      fs.existsSync(path.join(tmpDir, 'incidents-never-recorded.json'))
+    ).toBe(false);
+  });
+
   it('appendIncident persists incident and is readable back', async () => {
     const { appendIncident, loadIncidents, __awaitPendingWrite } =
       await import('./incidentStorage');

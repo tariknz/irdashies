@@ -38,6 +38,7 @@ const newMetrics = () => ({ markStart: vi.fn(), markEnd: vi.fn() });
 
 const newPersistence = (stored: StoredLapHistory | null = null) => ({
   save: vi.fn<LapHistoryPersistence['save']>(),
+  seal: vi.fn<LapHistoryPersistence['seal']>(),
   load: vi.fn<LapHistoryPersistence['load']>(() => Promise.resolve(stored)),
 });
 
@@ -226,7 +227,7 @@ describe('LapHistoryRuntime', () => {
     const bus = new ChannelBus();
     const publish = vi.spyOn(bus, 'publish');
     const persistence = newPersistence({
-      sessionNum: 0,
+      sessionNums: [0],
       apply: (target) => {
         writeCrossing(target, 2, 11, 990);
         return true;
@@ -256,7 +257,7 @@ describe('LapHistoryRuntime', () => {
 
   it('keeps recording on top of restored history', async () => {
     const persistence = newPersistence({
-      sessionNum: 0,
+      sessionNums: [0],
       apply: (target) => {
         writeCrossing(target, 0, 3, 270);
         return true;
@@ -282,7 +283,7 @@ describe('LapHistoryRuntime', () => {
 
   it('ignores stored history recorded in a different session number', async () => {
     const persistence = newPersistence({
-      sessionNum: 1,
+      sessionNums: [1],
       apply: (target) => {
         writeCrossing(target, 0, 3, 270);
         return true;
@@ -304,7 +305,7 @@ describe('LapHistoryRuntime', () => {
 
   it('lets live crossings win over a slow disk read', async () => {
     const apply = vi.fn(() => true);
-    const persistence = newPersistence({ sessionNum: 0, apply });
+    const persistence = newPersistence({ sessionNums: [0], apply });
     const runtime = new LapHistoryRuntime(
       new ChannelBus(),
       createSessionLifecycle(),
@@ -330,6 +331,7 @@ describe('LapHistoryRuntime', () => {
     };
     const persistence: LapHistoryPersistence = {
       save: vi.fn(),
+      seal: vi.fn(),
       load: vi.fn((sessionId: string) =>
         sessionId === '111'
           ? new Promise<StoredLapHistory | null>((resolve) => {
@@ -347,7 +349,7 @@ describe('LapHistoryRuntime', () => {
 
     runtime.onSession(raceSession(111));
     runtime.onSession(raceSession(222));
-    resolveFirst({ sessionNum: 0, apply });
+    resolveFirst({ sessionNums: [0], apply });
     await settle();
     runtime.onFrame(frame({ sessionTime: 100, laps: [4] }));
 
@@ -358,6 +360,7 @@ describe('LapHistoryRuntime', () => {
   it('does not persist while a read for the same session is still in flight', () => {
     const persistence: LapHistoryPersistence = {
       save: vi.fn(),
+      seal: vi.fn(),
       load: vi.fn(() => new Promise<StoredLapHistory | null>(() => undefined)),
     };
     const runtime = new LapHistoryRuntime(
@@ -455,5 +458,102 @@ describe('LapHistoryRuntime', () => {
     lifecycle._onDisconnect();
 
     expect(runtime.getCurrentSessionId()).toBe('42');
+  });
+  it('seals the finished session before the next one reuses the buffers', async () => {
+    const lifecycle = createSessionLifecycle();
+    const persistence = newPersistence();
+    const runtime = new LapHistoryRuntime(
+      new ChannelBus(),
+      lifecycle,
+      newMetrics(),
+      persistence
+    );
+    runtime.onSession(raceSession());
+    await settle();
+    lifecycle._onTelemetry(frame({ sessionNum: 1, laps: [4] }));
+    runtime.onFrame(frame({ sessionNum: 1, sessionTime: 100, laps: [4] }));
+    runtime.onFrame(frame({ sessionNum: 1, sessionTime: 190, laps: [5] }));
+
+    const sealed: { sessionNum: number | null; count: number }[] = [];
+    persistence.seal.mockImplementation((_id, snapshot) =>
+      sealed.push({
+        sessionNum: snapshot.sessionNum,
+        count: crossingCount(snapshot, 0),
+      })
+    );
+    lifecycle._onTelemetry(frame({ sessionNum: 2, laps: [5] }));
+
+    // Captured before the reset, so qualifying is still in the buffers.
+    expect(sealed).toEqual([{ sessionNum: 1, count: 1 }]);
+    expect(persistence.seal.mock.calls[0][0]).toBe('123');
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(0);
+  });
+
+  it('seals the session on disconnect', async () => {
+    const lifecycle = createSessionLifecycle();
+    const persistence = newPersistence();
+    const runtime = new LapHistoryRuntime(
+      new ChannelBus(),
+      lifecycle,
+      newMetrics(),
+      persistence
+    );
+    runtime.onSession(raceSession());
+    await settle();
+    runtime.onFrame(frame({ sessionTime: 100, laps: [4] }));
+    runtime.onFrame(frame({ sessionTime: 190, laps: [5] }));
+
+    lifecycle._onDisconnect();
+
+    expect(persistence.seal).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not seal an empty session or one still being restored', async () => {
+    const lifecycle = createSessionLifecycle();
+    const persistence: LapHistoryPersistence = {
+      save: vi.fn(),
+      seal: vi.fn(),
+      load: vi.fn(() => new Promise<StoredLapHistory | null>(() => undefined)),
+    };
+    const runtime = new LapHistoryRuntime(
+      new ChannelBus(),
+      lifecycle,
+      newMetrics(),
+      persistence
+    );
+    runtime.onSession(raceSession());
+    runtime.onFrame(frame({ sessionTime: 100, laps: [4] }));
+    runtime.onFrame(frame({ sessionTime: 190, laps: [5] }));
+
+    lifecycle._onDisconnect();
+
+    expect(persistence.seal).not.toHaveBeenCalled();
+  });
+
+  it('pauses recording while a replay file is loaded and re-baselines after', async () => {
+    const persistence = newPersistence();
+    const metrics = newMetrics();
+    const runtime = new LapHistoryRuntime(
+      new ChannelBus(),
+      createSessionLifecycle(),
+      metrics,
+      persistence
+    );
+    runtime.onSession(raceSession());
+    await settle();
+
+    runtime.updateReplayPaused(true);
+    runtime.onFrame(frame({ sessionTime: 100, laps: [4] }));
+    runtime.onFrame(frame({ sessionTime: 190, laps: [5] }));
+    expect(metrics.markStart).not.toHaveBeenCalled();
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(0);
+    expect(persistence.save).not.toHaveBeenCalled();
+
+    runtime.updateReplayPaused(false);
+    // First frame after the pause only sets the baseline.
+    runtime.onFrame(frame({ sessionTime: 900, laps: [9] }));
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(0);
+    runtime.onFrame(frame({ sessionTime: 990, laps: [10] }));
+    expect(crossingCount(runtime.snapshot(), 0)).toBe(1);
   });
 });

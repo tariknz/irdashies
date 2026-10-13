@@ -8,6 +8,7 @@ import type {
   GamepadHostBridge,
   ChromiumFlagsBridge,
   RaceControlBridge,
+  LapHistoryBridge,
   TelemetryInspectorBridge,
   RendererPerfBridge,
   TrackNotesBridge,
@@ -28,6 +29,8 @@ declare global {
     gamepadHost?: GamepadHostBridge;
     chromiumFlagsBridge: ChromiumFlagsBridge;
     raceControlBridge: RaceControlBridge;
+    /** Absent outside the Electron preload, e.g. the browser server. */
+    lapHistoryBridge?: LapHistoryBridge;
     rendererPerfBridge?: RendererPerfBridge;
     trackNotesBridge?: TrackNotesBridge;
   }

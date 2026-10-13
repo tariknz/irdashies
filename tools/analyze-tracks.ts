@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { TrackDrawing } from '../src/frontend/components/TrackMap/TrackCanvas';
-import { BROKEN_TRACKS } from '../src/frontend/components/TrackMap/tracks/brokenTracks';
+import { BROKEN_TRACKS } from '../src/frontend/domain/track/tracks/brokenTracks';
 
 interface TrackInfo {
   track_id: number;
@@ -30,7 +30,7 @@ export const analyzeTracks = (): void => {
   // Read the tracks.json file
   const tracksData: Record<number, TrackDrawing | undefined> = JSON.parse(
     fs.readFileSync(
-      './src/frontend/components/TrackMap/tracks/tracks.json',
+      './src/frontend/domain/track/tracks/tracks.json',
       'utf8'
     )
   );

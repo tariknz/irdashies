@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import logger from '@irdashies/utils/logger';
 import { currentHydrationEpoch, useRaceControlStore } from './RaceControlStore';
+import { useReplayContextStore } from '../ReplayContextStore/ReplayContextStore';
 
 export const useRaceControlBridge = () => {
   const hydrateIncidents = useRaceControlStore((s) => s.hydrateIncidents);
@@ -70,6 +71,17 @@ export const useRaceControlBridge = () => {
         load();
       }
     );
+    // A replay's provenance resolves after its session id. Load once it is
+    // archived. Otherwise drop the list, so a SubSessionID 0 test replay never
+    // shows events from another test session.
+    const unsubscribeReplay = useReplayContextStore.subscribe((state, prev) => {
+      const { mode, provenance } = state.snapshot;
+      if (mode !== 'replayFile' || provenance === prev.snapshot.provenance) {
+        return;
+      }
+      if (provenance === 'archived') load();
+      else if (provenance !== 'none') resetForSession();
+    });
     const reloadWhenVisible = () => {
       if (document.visibilityState === 'visible') load();
     };
@@ -78,6 +90,7 @@ export const useRaceControlBridge = () => {
     return () => {
       cancelled = true;
       unsubscribe?.();
+      unsubscribeReplay();
       document.removeEventListener('visibilitychange', reloadWhenVisible);
     };
   }, [hydrateIncidents, clearIncidents, resetForSession]);

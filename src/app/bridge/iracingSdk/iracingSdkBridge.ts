@@ -190,6 +190,9 @@ export async function publishIRacingSDKEvents(
   const referenceLapStorage = channelBus
     ? await import('../../storage/referenceLaps')
     : undefined;
+  const radarTuningStorage = channelBus
+    ? await import('../../storage/radarTuning')
+    : undefined;
   const processorHost =
     channelBus && referenceLapStorage
       ? createDefaultProcessorHost({
@@ -202,6 +205,7 @@ export async function publishIRacingSDKEvents(
             load: referenceLapStorage.getReferenceLap,
             save: referenceLapStorage.saveReferenceLap,
           },
+          radarTuning: radarTuningStorage?.getRadarTuning,
         })
       : undefined;
 
@@ -213,7 +217,8 @@ export async function publishIRacingSDKEvents(
   const sessionCallbacks = new Set<(value: Session) => void>();
   const runningStateCallbacks = new Set<(value: boolean) => void>();
 
-  overlayManager.onOverlayReady((id) => {
+  // Removed in stop(): every demo toggle builds a new bridge.
+  const offOverlayReady = overlayManager.onOverlayReady((id) => {
     logger.info(
       '[iracingSdkBridge] New window ready, sending initial data: ',
       id
@@ -410,12 +415,20 @@ export async function publishIRacingSDKEvents(
     },
     onRunningState: (callback: (value: boolean) => void) => {
       runningStateCallbacks.add(callback);
+      // Replayed, as the LMU bridge and the mock already do. The state is
+      // seeded above and then only published on a change, so a subscriber
+      // attaching afterwards -- which auto-detect always does, since it builds
+      // this bridge before subscribing to it -- would otherwise never hear
+      // that the sim is up, and would read the eventual `false` as a blip
+      // rather than a disconnect worth re-probing for.
+      if (lastRunningState !== undefined) callback(lastRunningState);
       return () => {
         runningStateCallbacks.delete(callback);
       };
     },
     stop: () => {
       shouldStop = true;
+      offOverlayReady();
       overlayManager.clearLatestSessionData?.();
       sdk.stopSDK();
       clearInterval(runningStateInterval);

@@ -1,50 +1,13 @@
-import type { WidgetId } from '../WidgetIndex';
+import type { WidgetId } from '@irdashies/types';
+import { WIDGET_MANIFESTS } from '@irdashies/types';
 
 /**
  * Mapping of widget IDs to their display names
  * Used for showing friendly names in Edit Mode and other UI elements
  */
-export const WIDGET_NAMES: Record<WidgetId, string> = {
-  standings: 'Standings',
-  input: 'Input Traces',
-  relative: 'Relative',
-  map: 'Track Map',
-  flatmap: 'Flat Track Map',
-  weather: 'Weather',
-  wind: 'Wind',
-  fastercarsfrombehind: 'Faster Cars From Behind',
-  fuel: 'Fuel Calculator',
-  blindspotmonitor: 'Blind Spot Monitor',
-  radar: 'Radar (LMU)',
-  garagecover: 'Garage Cover',
-  rejoin: 'Rejoin Indicator',
-  telemetryinspector: 'Telemetry Inspector',
-  pitlanehelper: 'Pitlane Helper',
-  tachometer: 'Tachometer',
-  flag: 'Flag',
-  twitchchat: 'Twitch Chat',
-  laptimelog: 'Lap Timer',
-  infobar: 'Information Bar',
-  slowcarahead: 'Slow Car Ahead',
-  sectordelta: 'Sector Delta',
-  deltaspeed: 'Delta Speed',
-  carsystems: 'Car Systems',
-  heartrate: 'Heart Rate',
-  cornername: 'Corner Names',
-  laptrace: 'Lap Trace',
-  battle: 'Battle',
-  gantry: 'The Gantry',
-  tracknotes: 'Track Notes',
-  accelerationtimer: 'Acceleration Timer',
-  stinthistory: 'Stint History',
-  frictioncircle: 'Friction Circle',
-  tyrepanel: 'Tyre Panel',
-  brakepressure: 'Brake Pressure',
-  suspensionposition: 'Suspension Position',
-  trackclock: 'Track Clock',
-  steeringmeter: 'Steering Meter',
-  cruiseodometer: 'Cruise / Odometer',
-};
+export const WIDGET_NAMES = Object.fromEntries(
+  WIDGET_MANIFESTS.map(({ id, name }) => [id, name])
+) as Record<WidgetId, string>;
 
 /**
  * Get the display name for a widget ID

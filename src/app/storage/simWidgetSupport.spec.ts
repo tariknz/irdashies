@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { DEFAULT_SIM_WIDGET_SUPPORT } from '@irdashies/types';
+import {
+  DEFAULT_SIM_WIDGET_SUPPORT,
+  SIM_WIDGET_SUPPORT_VERSION,
+} from '@irdashies/types';
 
 const mockLoggerError = vi.hoisted(() => vi.fn());
 
@@ -48,7 +51,11 @@ describe('simWidgetSupport storage', () => {
 
   it('serves the hand-edited file to both readers once loaded', async () => {
     mockReadFile.mockResolvedValue(
-      JSON.stringify({ message: 'nope', disabledWidgets: { lmu: ['input'] } })
+      JSON.stringify({
+        version: SIM_WIDGET_SUPPORT_VERSION,
+        message: 'nope',
+        disabledWidgets: { lmu: ['input'] },
+      })
     );
 
     const loaded = await loadSimWidgetSupport();
@@ -78,7 +85,10 @@ describe('simWidgetSupport storage', () => {
       string,
     ];
     expect(target).toContain('simWidgetSupport.json');
-    expect(JSON.parse(contents)).toEqual(DEFAULT_SIM_WIDGET_SUPPORT);
+    expect(JSON.parse(contents)).toEqual({
+      version: SIM_WIDGET_SUPPORT_VERSION,
+      ...DEFAULT_SIM_WIDGET_SUPPORT,
+    });
     // A missing file is the first run, not a fault.
     expect(mockLoggerError).not.toHaveBeenCalled();
   });
@@ -94,7 +104,12 @@ describe('simWidgetSupport storage', () => {
   });
 
   it('reads the file once however many callers ask at once', async () => {
-    mockReadFile.mockResolvedValue(JSON.stringify(DEFAULT_SIM_WIDGET_SUPPORT));
+    mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: SIM_WIDGET_SUPPORT_VERSION,
+        ...DEFAULT_SIM_WIDGET_SUPPORT,
+      })
+    );
 
     const [first, second] = await Promise.all([
       loadSimWidgetSupport(),
@@ -105,5 +120,44 @@ describe('simWidgetSupport storage', () => {
     expect(first).toBe(second);
     expect(await loadSimWidgetSupport()).toBe(first);
     expect(mockReadFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('replaces a file written by an older build', async () => {
+    // The file is seeded once and then belongs to the user, so without this a
+    // shipped change to the lists reaches nobody who has already run the app.
+    mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        message: 'old',
+        disabledWidgets: { iracing: [], lmu: [] },
+      })
+    );
+
+    const loaded = await loadSimWidgetSupport();
+
+    expect(loaded).toEqual(DEFAULT_SIM_WIDGET_SUPPORT);
+    const [, contents] = mockWriteFile.mock.calls[0] as unknown as [
+      string,
+      string,
+    ];
+    expect(JSON.parse(contents).version).toBe(SIM_WIDGET_SUPPORT_VERSION);
+    // Expected on upgrade, not a fault.
+    expect(mockLoggerError).not.toHaveBeenCalled();
+  });
+
+  it('leaves a file written by a newer build alone', async () => {
+    // Downgrading must not throw away a list the running build does not know
+    // about; the lists are additive knowledge, and a newer one is better.
+    mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: SIM_WIDGET_SUPPORT_VERSION + 1,
+        message: 'newer',
+        disabledWidgets: { iracing: [], lmu: ['input'] },
+      })
+    );
+
+    const loaded = await loadSimWidgetSupport();
+
+    expect(loaded.message).toBe('newer');
+    expect(mockWriteFile).not.toHaveBeenCalled();
   });
 });

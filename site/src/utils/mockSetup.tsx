@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo } from 'react';
+import { type ReactNode, useMemo, useRef, useLayoutEffect } from 'react';
 import {
   SessionProvider,
   StoryTelemetryProvider,
@@ -14,6 +14,8 @@ import {
   shieldSourceFromStop,
   type PreviewChannelRuntime,
 } from './previewChannelRuntime';
+import { createPreviewStorage } from './previewStorage';
+import { previewRaceTelemetry } from './previewRaceTelemetry';
 
 /**
  * The mock SDK source and the channel runtime built on it are page-lifetime
@@ -28,11 +30,22 @@ import {
 let previewSource: IrSdkSourceBridge | undefined;
 let previewRuntime: PreviewChannelRuntime | undefined;
 let rawSource: IrSdkSourceBridge | undefined;
+let stopStorageSession: (() => void) | undefined;
 
 function getPreviewSource(): IrSdkSourceBridge {
   if (!previewSource) {
+    const storage = createPreviewStorage();
+    window.fuelCalculatorBridge = storage.fuel;
+    window.lapTraceBridge = storage.lapTrace;
+    window.raceControlBridge = storage.raceControl;
     rawSource = generateMockData();
-    previewSource = shieldSourceFromStop(rawSource);
+    const source = rawSource;
+    previewSource = shieldSourceFromStop({
+      ...source,
+      onTelemetry: (callback) =>
+        source.onTelemetry((frame) => callback(previewRaceTelemetry(frame))),
+    });
+    stopStorageSession = previewSource.onSessionData(storage.updateSession);
     previewRuntime = createPreviewChannelRuntime(previewSource);
     window.channelBridge = previewRuntime.bridge;
   }
@@ -47,6 +60,7 @@ function getPreviewSource(): IrSdkSourceBridge {
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     previewRuntime?.dispose();
+    stopStorageSession?.();
     rawSource?.stop();
   });
 }
@@ -89,7 +103,7 @@ function createMockDashboardBridge(
       };
     },
     toggleLockOverlays: () => Promise.resolve(true),
-    getAppVersion: () => Promise.resolve('0.2.0'),
+    getAppVersion: () => Promise.resolve('2.0.0'),
     toggleDemoMode: () => {
       /* noop */
     },
@@ -162,9 +176,15 @@ export function LivePreviewProvider({
   onDashboardSaved,
 }: LivePreviewProviderProps) {
   const bridge = useMemo(() => getPreviewSource(), []);
+  const onSavedRef = useRef(onDashboardSaved);
+  useLayoutEffect(() => {
+    onSavedRef.current = onDashboardSaved;
+  }, [onDashboardSaved]);
   const dashboardBridge = useMemo(
-    () => createMockDashboardBridge(widgets, onDashboardSaved),
-    // eslint-disable-next-line @eslint-react/exhaustive-deps
+    () =>
+      createMockDashboardBridge(widgets, (value) =>
+        onSavedRef.current?.(value)
+      ),
     [widgets]
   );
 

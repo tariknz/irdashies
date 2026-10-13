@@ -3,7 +3,7 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 export default {
   id: 'radar',
   sessionData: true,
-  channels: ['blind-spot.snapshot'],
+  channels: ['radar.snapshot'],
   ratePreset: 'driverFocused',
-  channelRates: { 'blind-spot.snapshot': 25 },
+  channelRates: { 'radar.snapshot': 25 },
 } satisfies WidgetRuntimeDefinition;

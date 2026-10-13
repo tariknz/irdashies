@@ -7,6 +7,7 @@ import {
 } from '@irdashies/storybook';
 import type { NameFormat } from '@irdashies/types';
 import { GantryStandings } from './GantryStandings';
+import { GantrySessionDataProvider } from '../../hooks/useGantrySessionData';
 
 interface StandingsArgs {
   followedCarIdx: number | null;
@@ -31,6 +32,11 @@ const meta: Meta<StandingsArgs> = {
     driverNameFormat: gantryArgTypes.driverNameFormat,
   },
   decorators: [
+    (Story) => (
+      <GantrySessionDataProvider>
+        <Story />
+      </GantrySessionDataProvider>
+    ),
     (Story) => (
       <div className="h-screen bg-slate-900">
         <Story />

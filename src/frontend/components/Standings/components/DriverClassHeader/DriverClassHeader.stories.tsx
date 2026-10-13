@@ -1,5 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { DriverClassHeader } from './DriverClassHeader';
+import type { DriverClassHeaderProps } from './DriverClassHeader';
 
 const TableWrapper = ({ children }: { children: React.ReactNode }) => (
   <table className="text-white text-sm">
@@ -151,6 +152,42 @@ export const TwelveManufacturersCapAll: Story = {
       { carId: 50, count: 1 },
       { carId: 60, count: 1 },
     ],
+  },
+};
+
+export const EstimatedLaps = {
+  argTypes: {
+    estimatedLapsEnabled: { control: 'boolean' },
+  },
+  args: {
+    className: 'GTE',
+    classColor: 0x00d4ff,
+    totalDrivers: 12,
+    sof: 2432,
+    estimatedLaps: { currentLap: 44, total: 55.38 },
+    isMultiClass: true,
+    classHeaderStyle: { compactSof: false, ...mfrStatsEnabled },
+    manufacturerCounts: [
+      { carId: 56, count: 7 },
+      { carId: 122, count: 5 },
+    ],
+    // Not a real prop — toggled via the Storybook Controls panel to drive
+    // classHeaderStyle.estimatedLaps.enabled below.
+    estimatedLapsEnabled: true,
+  } as DriverClassHeaderProps & { estimatedLapsEnabled: boolean },
+  render: (
+    args: DriverClassHeaderProps & { estimatedLapsEnabled: boolean }
+  ) => {
+    const { estimatedLapsEnabled, ...props } = args;
+    return (
+      <DriverClassHeader
+        {...props}
+        classHeaderStyle={{
+          ...props.classHeaderStyle,
+          estimatedLaps: { enabled: estimatedLapsEnabled },
+        }}
+      />
+    );
   },
 };
 

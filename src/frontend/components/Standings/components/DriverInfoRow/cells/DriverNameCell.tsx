@@ -77,6 +77,7 @@ const secondaryKeyframes: Keyframe[] = [
 interface DriverNameCellProps {
   name?: string;
   fullName?: string;
+  teamName?: string;
   nameFormat?: DriverNameFormat;
   radioActive?: boolean;
   repair?: boolean;
@@ -95,6 +96,7 @@ export const DriverNameCell = memo(
   ({
     name,
     fullName,
+    teamName,
     nameFormat,
     radioActive,
     repair,
@@ -117,6 +119,7 @@ export const DriverNameCell = memo(
 
     const shouldAnimate = !!label && (!nameDisplay || nameDisplay === 'both');
     const staticText = nameDisplay === 'label' && label ? label : displayName;
+    const hasTeamSubtext = !!String(teamName ?? '').trim();
     const freq = alternateFrequency ?? 5;
     const spanPrimaryRef = useRef<HTMLSpanElement>(null);
     const spanSecondaryRef = useRef<HTMLSpanElement>(null);
@@ -168,7 +171,14 @@ export const DriverNameCell = memo(
 
           <div className="flex-1 min-w-0 overflow-hidden mask-[linear-gradient(90deg,#000_90%,transparent)]">
             {shouldAnimate ? (
-              <div className="relative overflow-hidden h-[1lh]">
+              <div
+                className={[
+                  'relative overflow-hidden h-[1lh]',
+                  hasTeamSubtext
+                    ? 'text-[0.92em] leading-[1.1] font-semibold'
+                    : '',
+                ].join(' ')}
+              >
                 <span
                   ref={spanPrimaryRef}
                   className="absolute inset-0 flex items-center whitespace-nowrap"
@@ -183,7 +193,21 @@ export const DriverNameCell = memo(
                 </span>
               </div>
             ) : (
-              <span className="block truncate">{staticText}</span>
+              <span
+                className={[
+                  'block truncate',
+                  hasTeamSubtext
+                    ? 'text-[0.92em] leading-[1.1] font-semibold'
+                    : '',
+                ].join(' ')}
+              >
+                {staticText}
+              </span>
+            )}
+            {hasTeamSubtext && (
+              <span className="block truncate text-[0.67em] leading-[1.125] text-slate-400">
+                {teamName}
+              </span>
             )}
           </div>
 
