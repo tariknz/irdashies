@@ -49,6 +49,7 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'infobar',
   'input',
   'laptrace',
+  'map',
   'pitlanehelper',
   'relative',
   'standings',
@@ -84,7 +85,6 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'garagecover',
   'heartrate',
   'laptimelog',
-  'map',
   'radar',
   'rejoin',
   'sectordelta',
@@ -124,7 +124,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 5;
+export const SIM_WIDGET_SUPPORT_VERSION = 6;
 
 /**
  * Whether a widget is unavailable under the running sim.
