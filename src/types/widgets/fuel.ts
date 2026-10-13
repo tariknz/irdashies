@@ -30,6 +30,7 @@ export default defineWidgetManifest({
     showQualifyConsumption: false,
     showFuelHistory: true,
     fuelHistoryType: 'histogram',
+    fuelHistoryLapCount: 5,
     safetyMargin: 0,
     background: {
       opacity: 85,
@@ -187,12 +188,22 @@ export default defineWidgetManifest({
       label: 'Fixed Target Lap',
       description: 'Enable a specific lap target for strategy',
     },
+    fuelHistoryLapCount: {
+      type: 'enum',
+      label: 'Laps Shown',
+      options: [
+        { value: 3, label: 'Last 3 Laps' },
+        { value: 5, label: 'Last 5 Laps' },
+      ],
+      control: 'select',
+    },
     fuelHistoryType: {
       type: 'enum',
-      label: 'Graph Type',
+      label: 'Display',
       options: [
         { value: 'line', label: 'Line Chart' },
         { value: 'histogram', label: 'Histogram' },
+        { value: 'table', label: 'Table' },
       ],
       control: 'select',
     },
