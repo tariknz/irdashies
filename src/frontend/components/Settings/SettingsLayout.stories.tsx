@@ -9,8 +9,8 @@ interface StoryProps {
   initialPath: string;
 }
 
-// The header reads the running state to decide whether to name a simulator.
-// Nothing here drives a sim, so this only has to satisfy the provider.
+// The header selects the simulator and profile itself. This bridge only
+// satisfies providers the settings tree still reads.
 const runningBridge: IrSdkBridge = {
   onSessionData: () => () => undefined,
   onRunningState: (callback) => {
