@@ -37,8 +37,10 @@ function Invoke-SquirrelInstallerRebuild {
     Write-SquirrelReleaseEntry -PackagePath $PackagePath -ReleasesPath $releasesPath
     $expectedReleaseEntry = Get-Content -LiteralPath $releasesPath -Raw
     $signedPackageHash = (Get-FileHash -LiteralPath $PackagePath -Algorithm SHA256).Hash
+    # Squirrel is a Windows GUI executable. Piping its output makes PowerShell
+    # wait for completion before checking its exit code and generated files.
     & $SquirrelPath --releasify $PackagePath --releaseDir $ReleaseDirectory `
-        --loadingGif $LoadingGif --setupIcon $SetupIcon --no-msi --no-delta
+        --loadingGif $LoadingGif --setupIcon $SetupIcon --no-msi --no-delta | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "Squirrel rebuild failed: $LASTEXITCODE" }
 
     $rebuiltPackage = Join-Path $ReleaseDirectory ([System.IO.Path]::GetFileName($PackagePath))
