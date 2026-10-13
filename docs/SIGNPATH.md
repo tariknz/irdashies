@@ -87,10 +87,12 @@ the native Squirrel checks require Windows.
 
 The release job requires valid signatures on the application, launcher, and
 installer before publishing. For a signing smoke test, run the workflow manually
-with `should_release` enabled on the feature branch after configuring the portal.
-Forge creates a draft release; leave it unpublished while checking fresh
-installation, the installed launcher signature, and auto-updates on Windows.
-Use a new version rather than replacing assets of an existing published release.
+with `signing_smoke_test` enabled and `should_release` disabled after configuring
+the portal. This runs the full signing flow and uploads the results as the
+`signed-windows-test-artifacts` CI artifact without creating or changing a release.
+Download those artifacts to check fresh installation, the installed launcher
+signature, and auto-updates on Windows. The signing policy must allow the test's
+source branch; any configured signing approvals still apply.
 
 Normal releases are triggered by a version change on `main`. A draft is not
 offered to users until it is published; prereleases are also skipped by the

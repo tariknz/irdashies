@@ -12,6 +12,11 @@ on:
         required: true
         type: boolean
         default: false
+      signing_smoke_test:
+        description: Build and sign Windows artifacts without creating a release
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -101,7 +106,7 @@ jobs:
 
   release-gate:
     name: Determine release eligibility
-    if: github.event_name == 'push' || inputs.should_release
+    if: github.event_name == 'push' || inputs.should_release || inputs.signing_smoke_test
     runs-on: ubuntu-latest
     outputs:
       should_release: ${{ steps.gate.outputs.should_release }}
@@ -117,11 +122,16 @@ jobs:
         shell: bash
         env:
           DISPATCH_SHOULD_RELEASE: ${{ inputs.should_release }}
+          DISPATCH_SIGNING_SMOKE_TEST: ${{ inputs.signing_smoke_test }}
         run: |
           set -euo pipefail
 
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            echo "should_release=$DISPATCH_SHOULD_RELEASE" >> "$GITHUB_OUTPUT"
+            if [[ "$DISPATCH_SHOULD_RELEASE" == "true" || "$DISPATCH_SIGNING_SMOKE_TEST" == "true" ]]; then
+              echo "should_release=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "should_release=false" >> "$GITHUB_OUTPUT"
+            fi
             exit 0
           fi
 
@@ -142,7 +152,7 @@ jobs:
           fi
 
   release:
-    name: Build and publish signed release
+    name: Build and sign Windows artifacts
     needs: [build, release-gate]
     if: needs.release-gate.outputs.should_release == 'true'
     runs-on: windows-latest
@@ -169,8 +179,9 @@ jobs:
 
       # --- Signed release ----------------------------------------------------
       # Pushes release only when the version changes. Manual runs release only
-      # when the should_release workflow-dispatch input is enabled. Pull
-      # requests never enter this flow.
+      # when should_release is enabled. signing_smoke_test runs the same signing
+      # flow but uploads CI artifacts instead of creating a GitHub release.
+      # Pull requests never enter this flow.
       # Flow: package once -> make Squirrel artifacts and save make results ->
       # sign the app and generated launcher together inside the full package ->
       # rebuild RELEASES and Setup.exe -> sign Setup.exe -> release using the
@@ -290,7 +301,16 @@ jobs:
           }
           Write-Output "Verified signed installer: $($signature.SignerCertificate.Subject)"
 
+      - name: Upload signed Windows test artifacts
+        if: inputs.signing_smoke_test
+        uses: actions/upload-artifact@v7
+        with:
+          name: signed-windows-test-artifacts
+          if-no-files-found: error
+          path: out/make/squirrel.windows/x64/*
+
       - name: Publish signed release
+        if: inputs.signing_smoke_test != true
         run: npx electron-forge release --from-make
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
