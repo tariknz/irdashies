@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ComponentType } from 'react';
 import { useDashboard } from '@irdashies/context';
 import {
   getWidgetDefaultConfig,
@@ -388,3 +388,23 @@ export function DrivingMetricSettings<K extends DrivingMetricId>({
     </BaseSettingsSection>
   );
 }
+
+const drivingMetricPage = (
+  id: DrivingMetricId
+): ComponentType<{ widgetId?: string; widgetType?: string }> =>
+  function DrivingMetricSettingsPage({ widgetId }) {
+    return <DrivingMetricSettings id={id} widgetId={widgetId} />;
+  };
+
+export const drivingMetricSettingsPages = {
+  tracknotes: drivingMetricPage('tracknotes'),
+  accelerationtimer: drivingMetricPage('accelerationtimer'),
+  stinthistory: drivingMetricPage('stinthistory'),
+  frictioncircle: drivingMetricPage('frictioncircle'),
+  tyrepanel: drivingMetricPage('tyrepanel'),
+  brakepressure: drivingMetricPage('brakepressure'),
+  suspensionposition: drivingMetricPage('suspensionposition'),
+  trackclock: drivingMetricPage('trackclock'),
+  steeringmeter: drivingMetricPage('steeringmeter'),
+  cruiseodometer: drivingMetricPage('cruiseodometer'),
+};

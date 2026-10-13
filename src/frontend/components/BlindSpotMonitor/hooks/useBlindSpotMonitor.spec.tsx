@@ -20,9 +20,6 @@ vi.mock('./useBlindSpotMonitorSettings', () => ({
 const snapshot = (rivalProgress: number): BlindSpotSnapshot => ({
   carLeftRight: CarLeftRight.CarLeft,
   carIdxLapDistPct: [0.5, rivalProgress],
-  relativeAvailable: relativeLongitudinal.length ? [false, true] : [],
-  relativeLateral: relativeLongitudinal.length ? [0, -3] : [],
-  relativeLongitudinal,
   isOnTrack: true,
   leftLongitudinalM: null,
   rightLongitudinalM: null,
@@ -50,17 +47,6 @@ describe('useBlindSpotMonitor', () => {
 
     expect(result.current.leftPercent).toBeGreaterThan(0);
     expect(renderCount).toBeLessThan(10);
-  });
-
-  it('uses live world position when LMU scoring progress is unchanged', () => {
-    blindSpotSnapshot = snapshot(0.5004, [0, 2]);
-    const { result, rerender } = renderHook(() => useBlindSpotMonitor());
-    rerender();
-    expect(result.current.leftPercent).toBe(0.5);
-
-    blindSpotSnapshot = snapshot(0.5004, [0, -2]);
-    rerender();
-    expect(result.current.leftPercent).toBe(-0.5);
   });
 });
 

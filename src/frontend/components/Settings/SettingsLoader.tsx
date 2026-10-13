@@ -39,7 +39,7 @@ import { LapTraceSettings } from './sections/LapTraceSettings';
 import { BattleSettings } from './sections/BattleSettings';
 import { BroadcastSettingsPage } from './sections/BroadcastGroupSettings';
 import { GantrySettings } from './sections/GantrySettings';
-import { DrivingMetricSettings } from './sections/DrivingMetricSettings';
+import { drivingMetricSettingsPages } from './sections/DrivingMetricSettings';
 
 /**
  * Settings page per widget type. Telemetry Inspector has none of its own: its
@@ -84,6 +84,7 @@ export const WIDGET_SETTINGS: Record<
   broadcastweather: BroadcastSettingsPage,
   broadcastpodium: BroadcastSettingsPage,
   gantry: GantrySettings,
+  ...drivingMetricSettingsPages,
 };
 
 interface SettingsLoaderProps {

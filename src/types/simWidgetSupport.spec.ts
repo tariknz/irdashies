@@ -9,6 +9,7 @@ import {
   isWidgetDisabledForSim,
   KNOWN_WIDGET_IDS,
   normalizeSimWidgetSupport,
+  isWidgetVisibleInGameFilter,
   normalizeSimWidgetSupportVerbose,
   widgetDisabledMessage,
   widgetIncompatibleLabel,

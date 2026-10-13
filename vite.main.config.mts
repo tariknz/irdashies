@@ -27,6 +27,13 @@ export default defineConfig({
     ),
   ],
   build: {
+    // Forge's Vite plugin names this [name].js. package.json and the running
+    // app load main.cjs, which is what a packaged build has to contain.
+    lib: {
+      entry: 'src/main.ts',
+      formats: ['cjs'],
+      fileName: () => 'main.cjs',
+    },
     rollupOptions: {
       external: ['bufferutil', 'utf-8-validate'],
     },

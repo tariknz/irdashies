@@ -11,7 +11,8 @@ const scalar = (frame: Telemetry, key: string): unknown =>
   (frame as unknown as Record<string, { value?: unknown[] } | undefined>)[key]
     ?.value?.[0];
 
-const copyArray = <T>(target: T[], source: readonly T[]): boolean => {
+const copyPositions = (target: number[], frame: Telemetry): boolean => {
+  const source = frame.CarIdxLapDistPct?.value ?? [];
   let changed = target.length !== source.length;
   target.length = source.length;
   for (let index = 0; index < source.length; index += 1) {
@@ -70,36 +71,6 @@ export class BlindSpotProcessor implements TelemetryProcessor<BlindSpotSnapshot>
       positions.length = 0;
       changed = true;
     }
-    changed =
-      copyArray(
-        this.latest.carIdxOnPitRoad as boolean[],
-        frame.CarIdxOnPitRoad?.value ?? []
-      ) || changed;
-    changed =
-      copyArray(
-        this.latest.carIdxClass as number[],
-        frame.CarIdxClass?.value ?? []
-      ) || changed;
-    changed =
-      copyArray(
-        this.latest.relativeAvailable as boolean[],
-        frame.LmuCarIdxRelativeAvailable?.value ?? []
-      ) || changed;
-    changed =
-      copyArray(
-        this.latest.relativeLateral as number[],
-        frame.LmuCarIdxRelativeLateral?.value ?? []
-      ) || changed;
-    changed =
-      copyArray(
-        this.latest.relativeLongitudinal as number[],
-        frame.LmuCarIdxRelativeLongitudinal?.value ?? []
-      ) || changed;
-    changed =
-      copyArray(
-        this.latest.relativeHeading as number[],
-        frame.LmuCarIdxRelativeHeading?.value ?? []
-      ) || changed;
 
     if (changed) this.latest.version += 1;
   }

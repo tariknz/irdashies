@@ -12,6 +12,8 @@ const snapshot: BlindSpotSnapshot = {
   relativeLongitudinal: [0, -8, 4, 0],
   relativeHeading: [0, 0.2, 0, 0],
   isOnTrack: true,
+  leftLongitudinalM: null,
+  rightLongitudinalM: null,
   version: 1,
 };
 
@@ -33,6 +35,8 @@ describe('deriveRadarCars', () => {
       carLeftRight: 0,
       carIdxLapDistPct: [0.5, 0.51],
       isOnTrack: true,
+      leftLongitudinalM: null,
+      rightLongitudinalM: null,
       version: 1,
     };
 

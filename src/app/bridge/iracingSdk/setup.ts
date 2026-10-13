@@ -15,7 +15,8 @@ import {
   resolveWithoutProbing,
   shouldReuseBridge,
 } from './simSelection';
-import { getSimulatorPreference } from '../../storage/settingsPreferences';
+import { getCurrentProfileId, getDashboard } from '../../storage/dashboards';
+import { onDashboardUpdated } from '../../storage/dashboardEvents';
 
 let isDemoMode = false;
 let currentBridge: IrSdkSourceBridge | undefined;
@@ -121,8 +122,8 @@ export async function iRacingSDKSetup(
     await queueBridgeSetup(overlayManager, channelBus);
   });
 
-  // Rebuild so a new app-level preference takes effect without a restart.
-  // Profile switches do not: the preference is not stored on the dashboard.
+  // The preference itself is persisted with the rest of the dashboard; this
+  // only rebuilds the bridge so the change takes effect without a restart.
   ipcMain.on('simulatorPreferenceChanged', async () => {
     await queueBridgeSetup(overlayManager, channelBus);
   });
@@ -133,6 +134,22 @@ export async function iRacingSDKSetup(
   // running state only when it changes, so there may be no next event for a
   // long time.
   ipcMain.handle('getRunningState', () => overlayManager.getRunningState());
+
+  // The preference lives in the dashboard, so it is per-profile: switching to a
+  // profile pinned to another simulator has to move the telemetry source with
+  // it, or the settings window names one sim while another keeps feeding the
+  // overlays. Only a profile change is reconciled -- an ordinary settings save
+  // emits the same event, and rebuilding on each one would tear the bridge down
+  // on every toggle whenever the resolved sim is still pending a probe.
+  let lastProfileId = getCurrentProfileId();
+  onDashboardUpdated(() => {
+    const profileId = getCurrentProfileId();
+    if (profileId === lastProfileId) return;
+    lastProfileId = profileId;
+    // shouldReuseBridge still guards the rebuild, so profiles that resolve to
+    // the same simulator cost nothing.
+    void queueBridgeSetup(overlayManager, channelBus);
+  });
 
   await queueBridgeSetup(overlayManager, channelBus);
 }

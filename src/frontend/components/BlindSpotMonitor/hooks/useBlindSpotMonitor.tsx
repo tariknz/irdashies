@@ -20,7 +20,6 @@ interface BlindSpotMonitorState {
 }
 
 const EMPTY_POSITIONS: readonly number[] = [];
-const EMPTY_AVAILABILITY: readonly boolean[] = [];
 const TELEPORT_THRESHOLD = 0.5;
 const DEFAULT_DIST_M = 4;
 
@@ -111,25 +110,6 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
      * fractions. Only as good as the rate the sim updates them at.
      */
     const percentFromLapDist = (idx: number | null): number => {
-      if (
-        idx !== null &&
-        relativeAvailable[idx] &&
-        Number.isFinite(relativeLongitudinal[idx])
-      ) {
-        const distance = relativeLongitudinal[idx];
-        return (
-          Math.round(
-            Math.max(
-              -1,
-              Math.min(
-                1,
-                distance /
-                  (distance > 0 ? settings.distAhead : settings.distBehind)
-              )
-            ) * 1000
-          ) / 1000
-        );
-      }
       if (
         idx === null ||
         !trackLength ||
@@ -222,8 +202,6 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     trackLength,
     settings,
     isOnTrack,
-    relativeAvailable,
-    relativeLongitudinal,
     leftCarIdx,
     rightCarIdx,
     hasOffsets,

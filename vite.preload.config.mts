@@ -19,6 +19,8 @@ export default defineConfig({
         if (output && !Array.isArray(output)) {
           delete output.inlineDynamicImports;
           output.codeSplitting = false;
+          output.entryFileNames = '[name].cjs';
+          output.chunkFileNames = '[name].cjs';
         }
       },
     },

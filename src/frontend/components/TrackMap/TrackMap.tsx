@@ -64,13 +64,12 @@ export const TrackMap = ({ embedded = false }: { embedded?: boolean }) => {
     return <></>;
   }
 
-  if (!trackId && !lmuTrackMap) return <></>;
+  if (!trackId) return <></>;
 
   return (
     <div className="w-full h-full">
       <TrackCanvas
-        trackId={trackId ?? 0}
-        trackDrawing={lmuTrackMap}
+        trackId={trackId}
         drivers={driversTrackData}
         driverIdentities={identities}
         turnLabels={turnLabels}

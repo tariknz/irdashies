@@ -39,20 +39,30 @@ export interface SimWidgetSupportConfig {
  * it belongs in.
  */
 export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
+  'accelerationtimer',
   'battle',
+  'brakepressure',
   'cornername',
+  'cruiseodometer',
   'flag',
+  'frictioncircle',
   'infobar',
   'input',
   'laptrace',
   'pitlanehelper',
   'relative',
   'standings',
+  'steeringmeter',
+  'stinthistory',
+  'suspensionposition',
   // Not a sim-specific widget: it reports whatever channels the running sim
   // publishes, which is how LMU's own mapping gets checked. It is also the
   // one widget absent from the settings menu, so there would be no toggle to
   // grey out if it were listed as unsupported.
   'telemetryinspector',
+  'trackclock',
+  'tracknotes',
+  'tyrepanel',
 ];
 
 /** Everything else, hidden while LMU is the running sim. */

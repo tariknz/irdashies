@@ -1459,6 +1459,16 @@ export interface WidgetConfigMap {
   broadcastevents: BroadcastEventsConfig;
   broadcastweather: BroadcastWeatherConfig;
   broadcastpodium: BroadcastPodiumConfig;
+  tracknotes: TrackNotesConfig;
+  accelerationtimer: AccelerationTimerConfig;
+  stinthistory: StintHistoryConfig;
+  frictioncircle: CompactTelemetryWidgetConfig;
+  tyrepanel: TyrePanelConfig;
+  brakepressure: CompactTelemetryWidgetConfig;
+  suspensionposition: CompactTelemetryWidgetConfig;
+  trackclock: CompactTelemetryWidgetConfig;
+  steeringmeter: CompactTelemetryWidgetConfig;
+  cruiseodometer: CruiseOdometerConfig;
 }
 
 export type TypedDashboardWidget<
