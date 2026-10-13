@@ -11,27 +11,32 @@ const usages = [3.91, 3.88, 3.92, 3.85, 3.9];
 const HistoryProvider = ({
   children,
   lapCount,
+  sessionNum,
+  history,
 }: {
   children: React.ReactNode;
   lapCount: number;
+  sessionNum: number;
+  history?: FuelLapData[];
 }) => {
   useEffect(() => {
-    const laps: FuelLapData[] = Array.from(
-      { length: lapCount },
-      (_, index) => ({
+    const laps: FuelLapData[] =
+      history ??
+      Array.from({ length: lapCount }, (_, index) => ({
         lapNumber: index + 1,
+        sessionNum,
         fuelUsed: usages[index % usages.length],
         lapTime: 90,
         isGreenFlag: true,
         isValidForCalc: true,
         isOutLap: false,
         timestamp: Date.UTC(2026, 0, 1) + index * 90000,
-      })
-    );
+      }));
     useFuelStore.getState().clearAllData();
+    useFuelStore.getState().updateSessionInfo(sessionNum);
     useFuelStore.getState().setProjectionLaps(laps);
     return () => useFuelStore.getState().clearAllData();
-  }, [lapCount]);
+  }, [lapCount, sessionNum, history]);
   return <>{children}</>;
 };
 
@@ -53,7 +58,11 @@ const meta = {
   decorators: [
     TelemetryDecorator(),
     (Story, context) => (
-      <HistoryProvider lapCount={context.parameters.lapCount ?? 5}>
+      <HistoryProvider
+        lapCount={context.parameters.lapCount ?? 5}
+        sessionNum={context.parameters.sessionNum ?? 0}
+        history={context.parameters.history}
+      >
         <div className="w-[260px] rounded-sm bg-slate-900 p-2 text-white">
           <Story />
         </div>
@@ -101,4 +110,22 @@ export const Histogram: Story = {
 
 export const LineChart: Story = {
   args: { settings: { ...tableSettings, fuelHistoryType: 'line' } },
+};
+
+/** Qualifying lap numbers restart in the race; only the race lap is displayed. */
+export const NewRaceSession: Story = {
+  parameters: {
+    sessionNum: 1,
+    history: [
+      { lapNumber: 1, sessionNum: 1, fuelUsed: 3.9, timestamp: 3000 },
+      { lapNumber: 20, sessionNum: 0, fuelUsed: 3.8, timestamp: 2000 },
+      { lapNumber: 1, sessionNum: 0, fuelUsed: 3.1, timestamp: 1000 },
+    ].map((lap) => ({
+      ...lap,
+      lapTime: 90,
+      isGreenFlag: true,
+      isValidForCalc: true,
+      isOutLap: false,
+    })) satisfies FuelLapData[],
+  },
 };

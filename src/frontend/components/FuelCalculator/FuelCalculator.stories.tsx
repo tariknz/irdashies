@@ -290,6 +290,7 @@ export const StrategyWithTableHistory: Story = {
         currentLap: 6,
         completedLaps: [2.28, 2.4, 2.3, 2.32, 2.4].map((fuelUsed, index) => ({
           lapNumber: index + 1,
+          sessionNum: 0,
           fuelUsed,
           lapTime: 90,
           isGreenFlag: true,

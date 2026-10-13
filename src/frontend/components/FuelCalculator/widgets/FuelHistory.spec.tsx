@@ -39,6 +39,7 @@ const rows = () =>
 beforeEach(() => {
   dashboard.isDemoMode = false;
   useFuelStore.getState().clearAllData();
+  useFuelStore.getState().updateSessionInfo(-1);
 });
 afterEach(() => act(() => useFuelStore.getState().clearAllData()));
 
@@ -165,6 +166,52 @@ describe('FuelHistory table', () => {
     expect(rows()).toEqual([
       ['5', '3.90 L'],
       ['4', '3.85 L'],
+    ]);
+  });
+
+  it('shows an empty table on a session change, then keeps the new lap when numbers restart', () => {
+    const qualifying = [
+      lap(20, 3.8, { sessionNum: 0, timestamp: 2000 }),
+      lap(1, 3.1, { sessionNum: 0, timestamp: 1000 }),
+    ];
+    useFuelStore.getState().updateSessionInfo(0);
+    useFuelStore.getState().setProjectionLaps(qualifying);
+    render(<FuelHistory fuelUnits="L" settings={settings} />);
+    expect(rows()).toEqual([
+      ['20', '3.80 L'],
+      ['1', '3.10 L'],
+    ]);
+    act(() => useFuelStore.getState().updateSessionInfo(1));
+    expect(screen.getByText('Waiting for a completed lap')).toBeInTheDocument();
+    const firstRaceLap = lap(1, 3.9, { sessionNum: 1, timestamp: 3000 });
+    act(() =>
+      useFuelStore.getState().setProjectionLaps([firstRaceLap, ...qualifying])
+    );
+    expect(rows()).toEqual([['1', '3.90 L']]);
+    // Both sessions remain in the processor history; the existing calculation map is unaffected.
+    expect(useFuelStore.getState().projectionLaps).toEqual([
+      firstRaceLap,
+      ...qualifying,
+    ]);
+    expect(useFuelStore.getState().lapHistory.get(1)?.sessionNum).toBe(0);
+    act(() => useFuelStore.getState().clearAllData());
+    expect(useFuelStore.getState().projectionLaps).toEqual([]);
+    expect(screen.getByText('Waiting for a completed lap')).toBeInTheDocument();
+  });
+
+  it('orders unknown-session history chronologically without losing repeated lap numbers', () => {
+    useFuelStore
+      .getState()
+      .setProjectionLaps([
+        lap(20, 3.8, { sessionNum: 0, timestamp: 2000 }),
+        lap(1, 3.9, { sessionNum: 1, timestamp: 3000 }),
+        lap(1, 3.1, { sessionNum: 0, timestamp: 1000 }),
+      ]);
+    render(<FuelHistory fuelUnits="L" settings={settings} />);
+    expect(rows()).toEqual([
+      ['1', '3.90 L'],
+      ['20', '3.80 L'],
+      ['1', '3.10 L'],
     ]);
   });
 

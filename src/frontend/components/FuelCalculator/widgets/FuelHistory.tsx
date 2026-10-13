@@ -45,6 +45,8 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
 
   // Access store directly to be self-contained
   const lapHistory = useFuelStore((state) => state.lapHistory);
+  const projectionLaps = useFuelStore((state) => state.projectionLaps);
+  const currentSessionNum = useFuelStore((state) => state.sessionNum);
   const { isDemoMode } = useDashboard();
 
   // Default to histogram if not specified in settings
@@ -58,17 +60,28 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
       : 5;
   const tableLaps = useMemo(() => {
     if (fuelHistoryType !== 'table') return [];
-    return Array.from(lapHistory.values())
+    // The lap-number map can overwrite a new race lap with a preserved qualifying lap.
+    const history = projectionLaps.length
+      ? projectionLaps
+      : Array.from(lapHistory.values());
+    return history
       .filter(
         (lap) =>
           !lap.isHistorical &&
+          (currentSessionNum < 0 || lap.sessionNum === currentSessionNum) &&
           lap.lapNumber >= 1 &&
           Number.isFinite(lap.fuelUsed) &&
           lap.fuelUsed > 0
       )
-      .sort((a, b) => b.lapNumber - a.lapNumber)
+      .sort((a, b) => b.timestamp - a.timestamp || b.lapNumber - a.lapNumber)
       .slice(0, tableLapCount);
-  }, [lapHistory, tableLapCount, fuelHistoryType]);
+  }, [
+    lapHistory,
+    projectionLaps,
+    currentSessionNum,
+    tableLapCount,
+    fuelHistoryType,
+  ]);
 
   const graphData = useMemo(() => {
     if (fuelHistoryType === 'table') return null;
@@ -116,6 +129,8 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
     const rows = isDemoMode
       ? Array.from({ length: tableLapCount }, (_, index) => ({
           lapNumber: tableLapCount - index,
+          sessionNum: currentSessionNum,
+          timestamp: 0,
           fuelUsed: [3.9, 3.85, 3.92, 3.88, 3.91][index % 5],
         }))
       : tableLaps;
@@ -150,7 +165,7 @@ export const FuelHistory: React.FC<FuelCalculatorWidgetProps> = ({
           <tbody className="text-slate-100" style={{ fontSize: valueFontSize }}>
             {rows.map((lap) => (
               <tr
-                key={lap.lapNumber}
+                key={`${lap.sessionNum ?? 'unknown'}:${lap.lapNumber}:${lap.timestamp}`}
                 className="border-b border-slate-700/30 last:border-0"
               >
                 <td className={compactMode === 'off' ? 'py-1' : 'py-0.5'}>
