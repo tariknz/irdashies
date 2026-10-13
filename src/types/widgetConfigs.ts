@@ -462,7 +462,9 @@ export interface FuelConfig {
   showFuelScenarios: boolean;
   showFuelRequired: boolean;
   showFuelHistory: boolean;
-  fuelHistoryType: 'line' | 'histogram';
+  fuelHistoryType: 'line' | 'histogram' | 'table';
+  /** Number of completed laps shown in the history table. */
+  fuelHistoryLapCount?: number;
   safetyMargin: number;
   manualTarget?: number;
   background: { opacity: number };
