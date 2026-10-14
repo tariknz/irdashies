@@ -6,7 +6,13 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { ArrowCounterClockwise, CaretDown, Check } from '@phosphor-icons/react';
+import {
+  ArrowCounterClockwise,
+  ArrowsIn,
+  ArrowsOut,
+  CaretDown,
+  Check,
+} from '@phosphor-icons/react';
 import { WIDGET_MAP, type WidgetId } from '../../../src/frontend/WidgetIndex';
 import { WIDGET_NAMES } from '../../../src/frontend/constants/widgetNames';
 import { SectorTimingUpdater } from '../../../src/frontend/context/SectorTimingStore/SectorTimingUpdater';
@@ -83,6 +89,7 @@ function buildDefaultPositions(canvasW: number, canvasH: number) {
 }
 
 export function LivePreview() {
+  const [expanded, setExpanded] = useState(false);
   const compact = useSyncExternalStore(subscribeCompact, getCompactSnapshot);
   const [desktopWidgets, setDesktopWidgets] = useState<Set<string>>(
     () => new Set(DEFAULT_WIDGETS)
@@ -111,6 +118,20 @@ export function LivePreview() {
   const menuRef = useRef<HTMLDetailsElement>(null);
   const measured = useRef(false);
   const desktopCanvasSize = useRef({ width: 1200, height: 620 });
+
+  useEffect(() => {
+    if (!expanded) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !event.defaultPrevented) setExpanded(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [expanded]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -272,8 +293,14 @@ export function LivePreview() {
           <ReferenceStoreProvider bridge={window.channelBridge} />
           <LapTraceUpdater browser />
         </WidgetErrorBoundary>
-        <div className="mx-auto w-full max-w-7xl border border-slate-700/50 rounded-sm">
-          <div className="relative z-30 flex flex-wrap items-center gap-3 p-3 bg-slate-900 rounded-t-sm border-b border-slate-700/50">
+        <div
+          className={
+            expanded
+              ? 'fixed inset-0 z-60 flex h-dvh w-full flex-col bg-slate-900'
+              : 'mx-auto w-full max-w-7xl border border-slate-700/50 rounded-sm'
+          }
+        >
+          <div className="relative z-30 flex shrink-0 flex-wrap items-center gap-3 p-3 bg-slate-900 rounded-t-sm border-b border-slate-700/50">
             {compact ? (
               <label className="flex-1 flex items-center gap-3 text-sm text-slate-300">
                 Widget
@@ -319,6 +346,7 @@ export function LivePreview() {
                   className="relative"
                   onKeyDown={(event) => {
                     if (event.key === 'Escape') {
+                      event.preventDefault();
                       event.currentTarget.open = false;
                       event.currentTarget.querySelector('summary')?.focus();
                     }
@@ -364,10 +392,26 @@ export function LivePreview() {
             >
               <ArrowCounterClockwise size={18} />
             </button>
+            <button
+              onClick={() => setExpanded((previous) => !previous)}
+              aria-label={
+                expanded ? 'Exit fullscreen preview' : 'Expand preview'
+              }
+              aria-pressed={expanded}
+              title={
+                expanded ? 'Exit fullscreen preview (Esc)' : 'Expand preview'
+              }
+              className="p-2 text-slate-400 hover:text-white"
+            >
+              {expanded ? <ArrowsIn size={18} /> : <ArrowsOut size={18} />}
+            </button>
           </div>
           <div
             ref={canvasRef}
-            className="relative h-90 sm:h-120 lg:h-155 overflow-hidden rounded-b-sm bg-slate-900"
+            className={[
+              'relative overflow-hidden rounded-b-sm bg-slate-900',
+              expanded ? 'min-h-0 flex-1' : 'h-90 sm:h-120 lg:h-155',
+            ].join(' ')}
             onClick={compact ? undefined : () => setSelectedWidget(null)}
           >
             <video
