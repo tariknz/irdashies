@@ -506,33 +506,6 @@ Napi::Value iRacingSdkNode::__GetTelemetryTypes(const Napi::CallbackInfo &info)
 // ---------------------------
 // Helper functions
 // ---------------------------
-bool iRacingSdkNode::GetTelemetryBool(int entry, int index)
-{
-  const irsdk_varHeader *headerVar = irsdk_getVarHeaderEntry(entry);
-  return *(reinterpret_cast<bool const *>(_data + headerVar->offset) + index);
-}
-
-int iRacingSdkNode::GetTelemetryInt(int entry, int index)
-{
-  // Each int is 4 bytes
-  const irsdk_varHeader *headerVar = irsdk_getVarHeaderEntry(entry);
-  return *(reinterpret_cast<int const *>(_data + headerVar->offset) + index * 4);
-}
-
-float iRacingSdkNode::GetTelemetryFloat(int entry, int index)
-{
-  // Each float is 4 bytes
-  const irsdk_varHeader *headerVar = irsdk_getVarHeaderEntry(entry);
-  return *(reinterpret_cast<float const *>(_data + headerVar->offset) + index * 4);
-}
-
-double iRacingSdkNode::GetTelemetryDouble(int entry, int index)
-{
-  // Each double is 8 bytes
-  const irsdk_varHeader *headerVar = irsdk_getVarHeaderEntry(entry);
-  return *(reinterpret_cast<double const *>(_data + headerVar->offset) + index * 8);
-}
-
 Napi::Object iRacingSdkNode::GetTelemetryVarByIndex(const Napi::Env env, int index)
 {
   auto telemVar = Napi::Object::New(env);
