@@ -1,7 +1,7 @@
 // tools/perf/run.ts loads this file with plain Node (type stripping), so keep
 // it to type-only imports and erasable syntax: no enums, and no value imports
 // without an extension or through @irdashies/* aliases.
-import type { DashboardLayout } from '@irdashies/types';
+import type { ActiveSimulator, DashboardLayout } from '@irdashies/types';
 
 export const PERF_REPLAY_READY_LOG_MARKER =
   '[PerfRun] Ready for replay publisher';
@@ -20,11 +20,12 @@ export function perfRunSimulator(
   callerSimulator: string | undefined,
   replay: boolean
 ): { simulator?: string; overridden?: string } {
+  const iracing: ActiveSimulator = 'iracing';
   const chosen = callerSimulator?.trim() || undefined;
   if (!replay) return { simulator: chosen };
-  return chosen && chosen !== 'iracing'
-    ? { simulator: 'iracing', overridden: chosen }
-    : { simulator: 'iracing' };
+  return chosen && chosen !== iracing
+    ? { simulator: iracing, overridden: chosen }
+    : { simulator: iracing };
 }
 
 export interface PerfVisibilityPhase {
