@@ -1,6 +1,7 @@
 import type { Telemetry } from '../../src/types';
 import { FuelProjectionProcessor } from '../../src/app/processors/FuelProjectionProcessor';
 import type { ReplayProbe, TelemetryFrame } from './validator';
+import { ranLastFrame, rateLimited } from './rateLimited';
 
 interface FuelProbeState {
   commands: ReturnType<
@@ -19,9 +20,11 @@ const numberValue = (frame: TelemetryFrame, name: string): number => {
 
 export const createFuelStateProbe = (): ReplayProbe<FuelProbeState> => {
   let elapsedMilliseconds = 0;
-  const processor = new FuelProjectionProcessor({
-    clock: () => elapsedMilliseconds,
-  });
+  const processor = rateLimited(
+    new FuelProjectionProcessor({
+      clock: () => elapsedMilliseconds,
+    })
+  );
   let previousOnTrack = false;
   let previousOnPitRoad = false;
   let previousFlags: number | undefined;
@@ -31,6 +34,7 @@ export const createFuelStateProbe = (): ReplayProbe<FuelProbeState> => {
     name: 'fuel-state',
     schemaVersion: 1,
     variables: [
+      'SessionTick',
       'FuelLevel',
       'IsOnTrack',
       'Lap',
@@ -52,7 +56,9 @@ export const createFuelStateProbe = (): ReplayProbe<FuelProbeState> => {
       ) as unknown as Telemetry;
       processor.onFrame(telemetry);
       const validation = processor.validationSnapshot();
-      const commands = validation.commands;
+      // Commands belong to the frame the processor ran on; on skipped frames
+      // the snapshot still holds them, which would repeat lap checkpoints.
+      const commands = ranLastFrame(processor) ? validation.commands : [];
 
       checkpoint = undefined;
       if (onTrack && !previousOnTrack) checkpoint = 'onTrack:enter';
