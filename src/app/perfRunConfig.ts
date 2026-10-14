@@ -1,3 +1,6 @@
+// tools/perf/run.ts loads this file with plain Node (type stripping), so keep
+// it to type-only imports and erasable syntax: no enums, and no value imports
+// without an extension or through @irdashies/* aliases.
 import type { DashboardLayout } from '@irdashies/types';
 
 export const PERF_REPLAY_READY_LOG_MARKER =
@@ -6,6 +9,23 @@ export const PERF_VISIBILITY_LOG_PREFIX = '[PerfVisibility:JSON] ';
 export const PERF_CAPTURE_ORIGIN_LOG_PREFIX = '[PerfRunOrigin:JSON] ';
 
 export type PerfOverlayMode = 'full' | 'empty' | 'observer';
+
+/**
+ * Simulator a perf:run child should use. A publisher replay only starts once
+ * the iRacing bridge logs PERF_REPLAY_READY_LOG_MARKER, so replay runs always
+ * use iRacing, and a different choice from the caller is returned as
+ * `overridden` so the tool can say so. An empty value is no choice.
+ */
+export function perfRunSimulator(
+  callerSimulator: string | undefined,
+  replay: boolean
+): { simulator?: string; overridden?: string } {
+  const chosen = callerSimulator?.trim() || undefined;
+  if (!replay) return { simulator: chosen };
+  return chosen && chosen !== 'iracing'
+    ? { simulator: 'iracing', overridden: chosen }
+    : { simulator: 'iracing' };
+}
 
 export interface PerfVisibilityPhase {
   visibility: 'visible' | 'hidden';

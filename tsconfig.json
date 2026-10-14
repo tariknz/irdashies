@@ -7,11 +7,12 @@
     "esModuleInterop": true,
     "noImplicitAny": true,
     "sourceMap": true,
-    "outDir": "dist",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "jsx": "react-jsx",
     "strict": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "paths": {
       "@irdashies/storybook": ["./.storybook"],
       "@irdashies/utils/*": ["./src/frontend/utils/*"],
