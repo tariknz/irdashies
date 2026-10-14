@@ -166,9 +166,16 @@ export const takeTick = (
   frameTime: number | undefined
 ): boolean => {
   if (tickRateHz === 'event' || frameTime === undefined) return true;
-  // A frozen clock means another frame at the time the processor last ran,
-  // not just a repeat of a frame it skipped.
-  if (frameTime === schedule.lastRunAt) return true;
+  // A repeated frame time means the clock is frozen (a paused session whose
+  // camera can still change), even when the first frame at that time was
+  // skipped. Frozen frames always run, as RelativeGap's paused camera
+  // change needs.
+  if (
+    frameTime === schedule.lastRunAt ||
+    frameTime === schedule.lastFrameTime
+  ) {
+    return true;
+  }
   const previous = schedule.lastFrameTime;
   schedule.lastFrameTime = frameTime;
   const seekBack = previous !== undefined && frameTime < previous;

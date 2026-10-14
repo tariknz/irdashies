@@ -586,11 +586,13 @@ describe('processor tick rate', () => {
     expect(takeTick(schedule, 5, 0.7)).toBe(true);
   });
 
-  it('does not treat a repeat of a skipped frame as a frozen clock', () => {
+  it('treats a repeat of a skipped frame as a frozen clock', () => {
     const schedule = {};
     expect(takeTick(schedule, 5, 1)).toBe(true);
     expect(takeTick(schedule, 5, 1.1)).toBe(false);
-    expect(takeTick(schedule, 5, 1.1)).toBe(false);
+    expect(takeTick(schedule, 5, 1.1)).toBe(true);
+    expect(takeTick(schedule, 5, 1.15)).toBe(false);
+    expect(takeTick(schedule, 5, 1.2)).toBe(true);
   });
 
   it('reads SessionTick as seconds for the LMU mapping', () => {
