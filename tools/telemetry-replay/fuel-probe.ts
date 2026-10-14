@@ -29,6 +29,9 @@ export const createFuelStateProbe = (): ReplayProbe<FuelProbeState> => {
   let previousOnPitRoad = false;
   let previousFlags: number | undefined;
   let checkpoint: string | undefined;
+  // An event seen on a frame the rate-limited processor skipped is held until
+  // the processor runs, so the checkpoint records the state after the event.
+  let pendingCheckpoint: string | undefined;
 
   return {
     name: 'fuel-state',
@@ -60,14 +63,23 @@ export const createFuelStateProbe = (): ReplayProbe<FuelProbeState> => {
       // the snapshot still holds them, which would repeat lap checkpoints.
       const commands = ranLastFrame(processor) ? validation.commands : [];
 
-      checkpoint = undefined;
-      if (onTrack && !previousOnTrack) checkpoint = 'onTrack:enter';
+      let event: string | undefined;
+      if (onTrack && !previousOnTrack) event = 'onTrack:enter';
       else if (onPitRoad !== previousOnPitRoad)
-        checkpoint = `pit:${onPitRoad ? 'enter' : 'exit'}:${lap}`;
-      else if (commands.some(({ type }) => type === 'lapCompleted'))
-        checkpoint = `lap:${lap - 1}`;
+        event = `pit:${onPitRoad ? 'enter' : 'exit'}:${lap}`;
       else if (previousFlags !== undefined && flags !== previousFlags)
-        checkpoint = `flags:${flags}`;
+        event = `flags:${flags}`;
+      pendingCheckpoint ??= event;
+
+      checkpoint = undefined;
+      if (ranLastFrame(processor)) {
+        checkpoint =
+          pendingCheckpoint ??
+          (commands.some(({ type }) => type === 'lapCompleted')
+            ? `lap:${lap - 1}`
+            : undefined);
+        pendingCheckpoint = undefined;
+      }
       previousOnTrack = onTrack;
       previousOnPitRoad = onPitRoad;
       previousFlags = flags;

@@ -441,8 +441,8 @@
             "lapCrossingTime": 90.93333384195805,
             "lapStartFuel": 49.978572845458984,
             "lastLap": 0,
-            "lastLapDistPct": 0.8817068934440613,
-            "lastSessionFlags": 537133568,
+            "lastLapDistPct": 0.8824642300605774,
+            "lastSessionFlags": 537134592,
             "wasOnPitRoad": false
           }
         },
@@ -454,8 +454,8 @@
             "lapCrossingTime": 90.93333384195805,
             "lapStartFuel": 49.978572845458984,
             "lastLap": 0,
-            "lastLapDistPct": 0.9354161024093628,
-            "lastSessionFlags": 537134592,
+            "lastLapDistPct": 0.9365586638450623,
+            "lastSessionFlags": 268699136,
             "wasOnPitRoad": false
           }
         },
@@ -467,8 +467,8 @@
             "lapCrossingTime": 90.93333384195805,
             "lapStartFuel": 49.978572845458984,
             "lastLap": 0,
-            "lastLapDistPct": 0.9365586638450623,
-            "lastSessionFlags": 268699136,
+            "lastLapDistPct": 0.9377010464668274,
+            "lastSessionFlags": 2147745796,
             "wasOnPitRoad": false
           }
         },
@@ -485,8 +485,8 @@
             "lapCrossingTime": 160.316667175315,
             "lapStartFuel": 48.951358795166016,
             "lastLap": 1,
-            "lastLapDistPct": 0.01869872771203518,
-            "lastSessionFlags": 268697636,
+            "lastLapDistPct": 0.020642921328544617,
+            "lastSessionFlags": 268697604,
             "wasOnPitRoad": false
           }
         },
@@ -498,8 +498,8 @@
             "lapCrossingTime": 160.316667175315,
             "lapStartFuel": 48.951358795166016,
             "lastLap": 1,
-            "lastLapDistPct": 0.001606884179636836,
-            "lastSessionFlags": 268697604,
+            "lastLapDistPct": 0.003468296257779002,
+            "lastSessionFlags": 268697636,
             "wasOnPitRoad": false
           }
         },
@@ -516,8 +516,8 @@
             "lapCrossingTime": 160.316667175315,
             "lapStartFuel": 48.951358795166016,
             "lastLap": 1,
-            "lastLapDistPct": 0.41083285212516785,
-            "lastSessionFlags": 268697604,
+            "lastLapDistPct": 0.41176357865333557,
+            "lastSessionFlags": 268697600,
             "wasOnPitRoad": false
           }
         },
