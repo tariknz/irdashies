@@ -7,8 +7,9 @@ import type {
 import type { TelemetryProcessor } from './TelemetryProcessor';
 
 const SPEED_AVG_WINDOW = 5;
-const SPEED_UPDATE_INTERVAL = 0.1;
-const TIME_EPSILON = 1e-6;
+// The processor host sets the 10 Hz rate. This only keeps a frozen clock, or a
+// host without a frame clock, from feeding near-identical samples.
+const MIN_SAMPLE_INTERVAL = 0.05;
 const METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR = 3.6;
 
 const numericValues = (
@@ -44,7 +45,6 @@ export class CarSpeedsProcessor implements TelemetryProcessor<CarSpeedsSnapshot>
   private trackLength = 0;
   private lastLapDistPct: readonly number[] | null = null;
   private lastSessionTime: number | null = null;
-  private lastSpeedUpdate: number | null = null;
   private speedHistory: number[][] = [];
   private latest: CarSpeedsSnapshot = this.emptySnapshot();
   private aggregationEnabled = true;
@@ -68,12 +68,14 @@ export class CarSpeedsProcessor implements TelemetryProcessor<CarSpeedsSnapshot>
     }
 
     const timeWentBackwards =
-      this.lastSpeedUpdate !== null && sessionTime < this.lastSpeedUpdate;
-    const enoughTimePassed =
-      this.lastSpeedUpdate === null ||
-      sessionTime - this.lastSpeedUpdate >=
-        SPEED_UPDATE_INTERVAL - TIME_EPSILON;
-    if (!timeWentBackwards && !enoughTimePassed) return;
+      this.lastSessionTime !== null && sessionTime < this.lastSessionTime;
+    if (
+      !timeWentBackwards &&
+      this.lastSessionTime !== null &&
+      sessionTime - this.lastSessionTime < MIN_SAMPLE_INTERVAL
+    ) {
+      return;
+    }
 
     const lapDistPct = numericValues(frame, 'CarIdxLapDistPct');
     if (lapDistPct.length === 0) return;
@@ -125,7 +127,6 @@ export class CarSpeedsProcessor implements TelemetryProcessor<CarSpeedsSnapshot>
         );
     this.lastLapDistPct = [...lapDistPct];
     this.lastSessionTime = sessionTime;
-    this.lastSpeedUpdate = sessionTime;
     this.publish(speeds, sessionNum);
   }
 
@@ -155,7 +156,6 @@ export class CarSpeedsProcessor implements TelemetryProcessor<CarSpeedsSnapshot>
     const version = this.latest.version + 1;
     this.lastLapDistPct = null;
     this.lastSessionTime = null;
-    this.lastSpeedUpdate = null;
     this.speedHistory = [];
     this.latest = { ...this.emptySnapshot(), sessionNum, version };
   }

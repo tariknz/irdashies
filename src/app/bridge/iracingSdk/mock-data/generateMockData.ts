@@ -297,6 +297,13 @@ export function generateMockData(sessionData?: {
                 ...prevTelemetry.SessionTime,
                 value: [state.sessionTime],
               },
+              // Advance with SessionTime at iRacing's 60 ticks per second: the
+              // processor host rate-limits on SessionTick, so a frozen tick
+              // would run every processor on every frame.
+              SessionTick: {
+                ...prevTelemetry.SessionTick,
+                value: [Math.round(state.sessionTime * 60)],
+              },
               SessionLapsRemain: {
                 ...prevTelemetry.SessionLapsRemain,
                 value: [state.sessionLapsRemain],
