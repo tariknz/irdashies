@@ -124,12 +124,12 @@ export function LivePreview() {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setExpanded(false);
+      if (event.key === 'Escape' && !event.defaultPrevented) setExpanded(false);
     };
-    document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [expanded]);
 
@@ -346,6 +346,7 @@ export function LivePreview() {
                   className="relative"
                   onKeyDown={(event) => {
                     if (event.key === 'Escape') {
+                      event.preventDefault();
                       event.currentTarget.open = false;
                       event.currentTarget.querySelector('summary')?.focus();
                     }
