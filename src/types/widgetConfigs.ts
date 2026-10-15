@@ -752,7 +752,7 @@ export interface RadarTuning {
   debugLabels: boolean;
   /** Write how long a frame takes to draw. */
   showFrameTime: boolean;
-  /** Weight of the newest sample in the per-car speed average, 0-1. */
+  /** Weight of a sample 40 ms after the last (25 Hz) in the per-car speed average, 0-1. */
   speedSmoothing: number;
   /** Lanes per second a car may move when it changes lane. */
   laneRate: number;

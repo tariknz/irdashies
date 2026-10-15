@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Session, Telemetry } from '@irdashies/types';
 import { CarLeftRight, GlobalFlags, TrackLocation } from '@irdashies/types';
+import { DEFAULT_RADAR_TUNING } from '../../types/widgetConfigs';
 import rollingTelemetry from '../../../test-data/1752616787255/telemetry.json';
 import rollingSession from '../../../test-data/1752616787255/session.json';
 import {
@@ -151,6 +152,40 @@ describe('RadarProcessor', () => {
     const snapshot = processor.snapshot();
     expect(snapshot.playerSpeed).toBeCloseTo(50, 1);
     expect(snapshot.cars[0].closingSpeed).toBeCloseTo(5, 1);
+  });
+
+  it('smooths speeds the same at any call rate', () => {
+    // A rival jumps from 50 to 60 m/s; read how far the average has moved
+    // 0.2 s later when called at 25 and at 60 frames a second.
+    const closingAfterStep = (hz: number) => {
+      const processor = createProcessor();
+      let rival = 0.5 - m(20);
+      for (let tick = 0; tick <= hz * 1.2; tick += 1) {
+        const time = tick / hz;
+        rival += m((time <= 1 ? 50 : 60) / hz);
+        processor.onFrame(frame({ time, pcts: [0.5 + m(50 * time), rival] }));
+      }
+      return processor.snapshot().cars[0].closingSpeed;
+    };
+
+    expect(closingAfterStep(25)).toBeCloseTo(closingAfterStep(60), 2);
+  });
+
+  it('weights the newest speed sample by speedSmoothing at 25 Hz', () => {
+    const processor = createProcessor();
+    // Rival at 10 m/s, focus parked: the first frame only seeds positions.
+    for (let tick = 0; tick <= 1; tick += 1) {
+      const time = tick / 25;
+      processor.onFrame(
+        frame({ time, pcts: [0.5, 0.5 - m(20) + m(10 * time)] })
+      );
+    }
+
+    const { speedSmoothing } = DEFAULT_RADAR_TUNING;
+    expect(Math.abs(processor.snapshot().cars[0].closingSpeed)).toBeCloseTo(
+      10 * speedSmoothing,
+      1
+    );
   });
 
   it('ignores a teleport instead of reporting a huge speed', () => {
