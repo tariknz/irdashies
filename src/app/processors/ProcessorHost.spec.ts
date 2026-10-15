@@ -570,6 +570,19 @@ describe('processor tick rate', () => {
     expect(runsPerSecond(25, 3)).toBe(20);
   });
 
+  it('keeps the declared rate when the poll alternates 33 and 50 ms', () => {
+    const schedule = {};
+    let runs = 0;
+    let tick = 0;
+    for (let i = 0; i < 240; i++) {
+      tick += i % 2 === 0 ? 2 : 3;
+      if (takeTick(schedule, 25, iracingFrameClock(tickFrame(tick)))) runs++;
+    }
+    // 240 frames over 10 s is a 24 Hz poll, just under 25 Hz. It used to run
+    // every other frame (12 Hz); the odd skip after a schedule restart is fine.
+    expect(runs).toBeGreaterThan(220);
+  });
+
   it('always runs event processors and frames without a clock', () => {
     expect(takeTick({}, 'event', 1)).toBe(true);
     expect(takeTick({ nextDueAt: 5 }, 5, undefined)).toBe(true);

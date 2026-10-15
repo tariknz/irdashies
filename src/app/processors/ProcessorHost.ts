@@ -157,8 +157,10 @@ export interface TickSchedule {
  * declared rate instead of rounding down to whole frames (25 Hz on 60 Hz
  * frames would otherwise run every third frame, 20 Hz). Event processors,
  * frames without a clock and frames on a frozen clock (a paused replay whose
- * camera still changes) always run. A seek back or a long gap restarts the
- * schedule instead of bursting to catch up.
+ * camera still changes) always run. A seek back or a gap of more than one
+ * interval behind the due time restarts the schedule instead of bursting to
+ * catch up; a lag of less than one interval keeps the carried deadline, or a
+ * poll that alternates 33 and 50 ms would run a 25 Hz processor at 12 Hz.
  */
 export const takeTick = (
   schedule: TickSchedule,
@@ -192,7 +194,7 @@ export const takeTick = (
       ? undefined
       : schedule.nextDueAt + interval;
   schedule.nextDueAt =
-    seekBack || next === undefined || next <= frameTime
+    seekBack || next === undefined || next + interval <= frameTime
       ? frameTime + interval
       : next;
   schedule.lastRunAt = frameTime;
