@@ -269,8 +269,10 @@ export function mapLmuTelemetry(
   // rather than scoring's mCurrentET at 5 Hz. They are the same quantity --
   // seconds since the session began -- but LapTrace timestamps every sample
   // with SessionTime, so the 5 Hz one gave a fine distance axis against a
-  // 200 ms staircase in time. It also gates ProcessorHost.isDue, which cannot
-  // throttle on a clock that stands still.
+  // 200 ms staircase in time. SessionTick also drives the processor host's
+  // rate limits, which cannot throttle on a clock that stands still; the LMU
+  // bridge passes sessionSecondsFrameClock because this is seconds, not
+  // iRacing's 60 Hz ticks.
   //
   // mElapsedTime is absent with no player car (spectating, garage), hence the
   // fallback.

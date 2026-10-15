@@ -38,6 +38,7 @@ describe('relative gaps replay probe', () => {
         CarIdxLapDistPct: [0.2, 0.25],
         CarIdxOnPitRoad: [0, 0],
         SessionNum: 1,
+        SessionTick: 60,
         SessionTime: 1,
       },
       context
@@ -51,6 +52,7 @@ describe('relative gaps replay probe', () => {
         CarIdxLapDistPct: [0.2, 0.25],
         CarIdxOnPitRoad: [0, 0],
         SessionNum: 1,
+        SessionTick: 60,
         SessionTime: 1,
       },
       context

@@ -9,6 +9,9 @@ import { CHANNEL_DELIVERY, ChannelBus } from '../bridge/channelBridge';
 import { createSessionLifecycle } from '../sessionLifecycle';
 import type { TelemetryProcessor } from './TelemetryProcessor';
 import {
+  iracingFrameClock,
+  sessionSecondsFrameClock,
+  takeTick,
   ProcessorHost,
   type ProcessorChannel,
   type ProcessorDefinition,
@@ -531,5 +534,81 @@ describe('ProcessorHost', () => {
     expect(host.snapshot('lap-times.snapshot')).toBeUndefined();
     expect(first.send).not.toHaveBeenCalled();
     expect(second.send).not.toHaveBeenCalled();
+  });
+});
+
+describe('processor tick rate', () => {
+  const tickFrame = (tick: number) =>
+    ({ SessionTick: { value: [tick] } }) as unknown as Telemetry;
+
+  it('reads iRacing SessionTick as 60 ticks per second', () => {
+    expect(iracingFrameClock(tickFrame(120))).toBe(2);
+    expect(iracingFrameClock({} as Telemetry)).toBeUndefined();
+  });
+
+  const runsPerSecond = (tickRateHz: number, ticksPerFrame: number) => {
+    const schedule = {};
+    let runs = 0;
+    for (let tick = 0; tick < 60 * 10; tick += ticksPerFrame) {
+      if (takeTick(schedule, tickRateHz, iracingFrameClock(tickFrame(tick)))) {
+        runs++;
+      }
+    }
+    return runs / 10;
+  };
+
+  it('runs processors at their declared rate on 60 Hz iRacing frames', () => {
+    expect(runsPerSecond(5, 1)).toBe(5);
+    expect(runsPerSecond(10, 1)).toBe(10);
+    expect(runsPerSecond(25, 1)).toBe(25);
+  });
+
+  it('keeps the declared rate when polling at a rate that does not divide it', () => {
+    // 2 ticks per frame is a 30 Hz poll: 25 Hz must not round down to 15 Hz.
+    expect(runsPerSecond(25, 2)).toBeCloseTo(25, 0);
+    // 3 ticks per frame is a 20 Hz poll: a 25 Hz processor runs every frame.
+    expect(runsPerSecond(25, 3)).toBe(20);
+  });
+
+  it('keeps the declared rate when the poll alternates 33 and 50 ms', () => {
+    const schedule = {};
+    let runs = 0;
+    let tick = 0;
+    for (let i = 0; i < 240; i++) {
+      tick += i % 2 === 0 ? 2 : 3;
+      if (takeTick(schedule, 25, iracingFrameClock(tickFrame(tick)))) runs++;
+    }
+    // 240 frames over 10 s is a 24 Hz poll, just under 25 Hz. It used to run
+    // every other frame (12 Hz); the odd skip after a schedule restart is fine.
+    expect(runs).toBeGreaterThan(220);
+  });
+
+  it('always runs event processors and frames without a clock', () => {
+    expect(takeTick({}, 'event', 1)).toBe(true);
+    expect(takeTick({ nextDueAt: 5 }, 5, undefined)).toBe(true);
+  });
+
+  it('runs on a frozen clock without moving the schedule, and restarts on a seek back', () => {
+    const schedule = {};
+    expect(takeTick(schedule, 5, 1)).toBe(true);
+    expect(takeTick(schedule, 5, 1)).toBe(true);
+    expect(takeTick(schedule, 5, 1.1)).toBe(false);
+    expect(takeTick(schedule, 5, 1.2)).toBe(true);
+    expect(takeTick(schedule, 5, 0.5)).toBe(true);
+    expect(takeTick(schedule, 5, 0.6)).toBe(false);
+    expect(takeTick(schedule, 5, 0.7)).toBe(true);
+  });
+
+  it('treats a repeat of a skipped frame as a frozen clock', () => {
+    const schedule = {};
+    expect(takeTick(schedule, 5, 1)).toBe(true);
+    expect(takeTick(schedule, 5, 1.1)).toBe(false);
+    expect(takeTick(schedule, 5, 1.1)).toBe(true);
+    expect(takeTick(schedule, 5, 1.15)).toBe(false);
+    expect(takeTick(schedule, 5, 1.2)).toBe(true);
+  });
+
+  it('reads SessionTick as seconds for the LMU mapping', () => {
+    expect(sessionSecondsFrameClock(tickFrame(250.4))).toBe(250.4);
   });
 });

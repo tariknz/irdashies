@@ -387,7 +387,7 @@
       "name": "fuel-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "ac94993b802f0709830466482c402864d491603245209fbdc89794fb9b086b1b",
+      "rollingHash": "d1e86682196c185c6f497c248558c2d0d317343a5e42f5f1cc319b619e722d05",
       "checkpoints": {
         "firstFrame": {
           "commands": [],
@@ -420,10 +420,10 @@
           "state": {
             "accumulatedRefuel": 0,
             "isLapDistPctReset": false,
-            "lapCrossingTime": 560.4666671751145,
-            "lapStartFuel": 38.04648971557617,
+            "lapCrossingTime": 560.5166671751144,
+            "lapStartFuel": 38.04460144042969,
             "lastLap": 4,
-            "lastLapDistPct": 0.9838072061538696,
+            "lastLapDistPct": 0.9820258021354675,
             "lastSessionFlags": 268697600,
             "wasOnPitRoad": false
           }
@@ -441,7 +441,7 @@
             "lapCrossingTime": 90.93333384195805,
             "lapStartFuel": 49.978572845458984,
             "lastLap": 0,
-            "lastLapDistPct": 0.8817703127861023,
+            "lastLapDistPct": 0.8824642300605774,
             "lastSessionFlags": 537134592,
             "wasOnPitRoad": false
           }
@@ -454,7 +454,7 @@
             "lapCrossingTime": 90.93333384195805,
             "lapStartFuel": 49.978572845458984,
             "lastLap": 0,
-            "lastLapDistPct": 0.936463475227356,
+            "lastLapDistPct": 0.9365586638450623,
             "lastSessionFlags": 268699136,
             "wasOnPitRoad": false
           }
@@ -467,7 +467,7 @@
             "lapCrossingTime": 90.93333384195805,
             "lapStartFuel": 49.978572845458984,
             "lastLap": 0,
-            "lastLapDistPct": 0.9366539120674133,
+            "lastLapDistPct": 0.9377010464668274,
             "lastSessionFlags": 2147745796,
             "wasOnPitRoad": false
           }
@@ -482,10 +482,10 @@
           "state": {
             "accumulatedRefuel": 0,
             "isLapDistPctReset": false,
-            "lapCrossingTime": 160.1500005086482,
-            "lapStartFuel": 48.957698822021484,
+            "lapCrossingTime": 160.316667175315,
+            "lapStartFuel": 48.951358795166016,
             "lastLap": 1,
-            "lastLapDistPct": 0.0188602302223444,
+            "lastLapDistPct": 0.020642921328544617,
             "lastSessionFlags": 268697604,
             "wasOnPitRoad": false
           }
@@ -495,10 +495,10 @@
           "state": {
             "accumulatedRefuel": 0,
             "isLapDistPctReset": false,
-            "lapCrossingTime": 160.1500005086482,
-            "lapStartFuel": 48.957698822021484,
+            "lapCrossingTime": 160.316667175315,
+            "lapStartFuel": 48.951358795166016,
             "lastLap": 1,
-            "lastLapDistPct": 0.0017615258693695068,
+            "lastLapDistPct": 0.003468296257779002,
             "lastSessionFlags": 268697636,
             "wasOnPitRoad": false
           }
@@ -513,10 +513,10 @@
           "state": {
             "accumulatedRefuel": 0,
             "isLapDistPctReset": false,
-            "lapCrossingTime": 160.1500005086482,
-            "lapStartFuel": 48.957698822021484,
+            "lapCrossingTime": 160.316667175315,
+            "lapStartFuel": 48.951358795166016,
             "lastLap": 1,
-            "lastLapDistPct": 0.41129207611083984,
+            "lastLapDistPct": 0.41176357865333557,
             "lastSessionFlags": 268697600,
             "wasOnPitRoad": false
           }
@@ -567,14 +567,14 @@
               "type": "lapCompleted",
               "lap": {
                 "lapNumber": 1,
-                "fuelUsed": 3.565399169921875,
-                "lapTime": 139.73333333336973,
+                "fuelUsed": 3.5603256225585938,
+                "lapTime": 139.60000000003623,
                 "isGreenFlag": true,
                 "isValidForCalc": true,
                 "isOutLap": false,
                 "isInLap": false,
                 "wasTowed": false,
-                "timestamp": 208971,
+                "timestamp": 209004,
                 "sessionNum": 0
               }
             }
@@ -582,10 +582,10 @@
           "state": {
             "accumulatedRefuel": 0,
             "isLapDistPctReset": false,
-            "lapCrossingTime": 299.8833338420179,
-            "lapStartFuel": 45.39229965209961,
+            "lapCrossingTime": 299.9166671753512,
+            "lapStartFuel": 45.39103317260742,
             "lastLap": 2,
-            "lastLapDistPct": 0.000053805717470822856,
+            "lastLapDistPct": 0.0003861219738610089,
             "lastSessionFlags": 268697600,
             "wasOnPitRoad": false
           }
@@ -666,14 +666,14 @@
               "type": "lapCompleted",
               "lap": {
                 "lapNumber": 2,
-                "fuelUsed": 3.6420249938964844,
-                "lapTime": 131.3166666665473,
+                "fuelUsed": 3.6458053588867188,
+                "lapTime": 131.4166666665472,
                 "isGreenFlag": true,
                 "isValidForCalc": true,
                 "isOutLap": false,
                 "isInLap": false,
                 "wasTowed": false,
-                "timestamp": 340270,
+                "timestamp": 340402,
                 "sessionNum": 0
               }
             }
@@ -681,10 +681,10 @@
           "state": {
             "accumulatedRefuel": 0,
             "isLapDistPctReset": false,
-            "lapCrossingTime": 431.2000005085652,
-            "lapStartFuel": 41.750274658203125,
+            "lapCrossingTime": 431.3333338418984,
+            "lapStartFuel": 41.7452278137207,
             "lastLap": 3,
-            "lastLapDistPct": 0.00005058342503616586,
+            "lastLapDistPct": 0.0013813173864036798,
             "lastSessionFlags": 268697600,
             "wasOnPitRoad": false
           }
@@ -795,14 +795,14 @@
               "type": "lapCompleted",
               "lap": {
                 "lapNumber": 3,
-                "fuelUsed": 3.703784942626953,
-                "lapTime": 129.26666666654927,
+                "fuelUsed": 3.7006263732910156,
+                "lapTime": 129.183333333216,
                 "isGreenFlag": true,
                 "isValidForCalc": true,
                 "isOutLap": false,
                 "isInLap": false,
                 "wasTowed": false,
-                "timestamp": 469551,
+                "timestamp": 469601,
                 "sessionNum": 0
               }
             }
@@ -810,10 +810,10 @@
           "state": {
             "accumulatedRefuel": 0,
             "isLapDistPctReset": false,
-            "lapCrossingTime": 560.4666671751145,
-            "lapStartFuel": 38.04648971557617,
+            "lapCrossingTime": 560.5166671751144,
+            "lapStartFuel": 38.04460144042969,
             "lastLap": 4,
-            "lastLapDistPct": 0.00004169505700701848,
+            "lastLapDistPct": 0.0005453471094369888,
             "lastSessionFlags": 268697600,
             "wasOnPitRoad": false
           }
@@ -1953,7 +1953,7 @@
       "name": "car-speeds-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "f51f524285c0f4900d8214a50a58da1eeab6f8e703307fcec4346b0d5f8f1e1d",
+      "rollingHash": "1108dacfcce14860ac418f212a939c2356a5e23c6d5192d6d27b4bd183d83eef",
       "checkpoints": {
         "firstFrame": {
           "carSpeeds": [
@@ -2109,7 +2109,7 @@
             0
           ],
           "sessionNum": 0,
-          "version": 6025
+          "version": 6000
         },
         "session:0": {
           "sourceTick": -1,
@@ -2192,7 +2192,7 @@
             0
           ],
           "sessionNum": 0,
-          "version": 32
+          "version": 7
         },
         "session:1": {
           "sourceTick": 5459,
@@ -3105,7 +3105,7 @@
       "name": "relative-gaps-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "2490a3092f57d7f3683c829b4608e2c73db77e550fa965556a7d4bc44b90e949",
+      "rollingHash": "c8b57cc19f33ab01cfda90ca4594a2bdf5b7ae3013fd1239ccbdcd13cfbb06c6",
       "checkpoints": {
         "firstFrame": {
           "focusCarIdx": 0,
@@ -3922,7 +3922,7 @@
       "name": "sector-timing-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "8b97c6169a6ffdd27d86da09320a344fe4bc9136934a3be0fbb57bb7bac87be9",
+      "rollingHash": "7ef8dc1c26c495f8b218a5575807d879fe079c1d4f4786eea3ecb747a31e7b34",
       "checkpoints": {
         "firstFrame": {
           "sectors": [],
@@ -4079,7 +4079,7 @@
             ]
           },
           "sessionNum": 0,
-          "version": 36
+          "version": 28
         },
         "session:0": {
           "sourceTick": -1,
@@ -4217,7 +4217,7 @@
             ]
           },
           "sessionNum": 0,
-          "version": 12
+          "version": 4
         },
         "session:1": {
           "sourceTick": 5459,
@@ -4570,7 +4570,7 @@
       "name": "standings-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "ec114abaf9014463a78febe81b54fbfd8a909a54a04f6e9dbde348246f9d5903",
+      "rollingHash": "b3ad6e368f32efeee5f7e4d3fb98e65d5af544e222fffb8fb61fa4cb9cc7b46e",
       "checkpoints": {
         "firstFrame": {
           "focusCarIdx": 0,
@@ -7410,46 +7410,46 @@
             -1
           ],
           "carIdxEstTime": [
-            115.83851623535156,
-            107.72123718261719,
-            106.59012603759766,
-            107.30011749267578,
-            107.50415802001953,
-            106.93278503417969,
-            106.7757797241211,
-            107.95696258544922,
-            106.36148834228516,
-            107.1085433959961,
-            106.15574645996094,
-            106.84383392333984,
-            107.11361694335938,
-            107.39722442626953,
-            115.2870101928711,
-            115.58794403076172,
-            115.34146881103516,
-            114.2849349975586,
-            114.73967742919922,
-            115.73790740966797,
-            114.45004272460938,
-            114.98457336425781,
-            114.95654296875,
-            114.3001480102539,
-            115.38677978515625,
-            113.58602905273438,
-            114.92267608642578,
-            103.99053192138672,
-            104.64137268066406,
-            105.1810531616211,
-            106.97702026367188,
-            0.07685614377260208,
-            105.42762756347656,
-            105.00178527832031,
-            104.91497802734375,
-            104.44524383544922,
-            104.843994140625,
-            104.49764251708984,
-            103.45841979980469,
-            105.164306640625,
+            115.8259048461914,
+            107.70780181884766,
+            106.57827758789062,
+            107.2870101928711,
+            107.49091339111328,
+            106.92002868652344,
+            106.76303100585938,
+            107.94329833984375,
+            106.34992980957031,
+            107.09593200683594,
+            106.14431762695312,
+            106.8315658569336,
+            107.10067749023438,
+            107.38419342041016,
+            115.27460479736328,
+            115.57393646240234,
+            115.32918548583984,
+            114.27104187011719,
+            114.72740173339844,
+            115.72410583496094,
+            114.43733215332031,
+            114.9703369140625,
+            114.94180297851562,
+            114.28620910644531,
+            115.37238311767578,
+            113.57255554199219,
+            114.90837097167969,
+            103.97689819335938,
+            104.62731170654297,
+            105.16724395751953,
+            106.96209716796875,
+            0.06185220181941986,
+            105.41291809082031,
+            104.98727416992188,
+            104.90048217773438,
+            104.4312973022461,
+            104.82974243164062,
+            104.48358917236328,
+            103.44561767578125,
+            105.15036010742188,
             0,
             0,
             0,
@@ -7474,7 +7474,7 @@
             0,
             0,
             0,
-            125.60977172851562,
+            125.60415649414062,
             0,
             0,
             0,
@@ -7632,46 +7632,46 @@
             -1
           ],
           "carIdxLapDistPct": [
-            0.9513974189758301,
-            0.9701630473136902,
-            0.9584987163543701,
-            0.9657756090164185,
-            0.9678951501846313,
-            0.9619913697242737,
-            0.9603867530822754,
-            0.9726403951644897,
-            0.956188440322876,
-            0.9637969732284546,
-            0.9541235566139221,
-            0.9610813856124878,
-            0.9638491868972778,
-            0.9667826890945435,
-            0.9465038180351257,
-            0.9503968358039856,
-            0.9482216238975525,
-            0.9412791728973389,
-            0.949735701084137,
-            0.9588339924812317,
-            0.944764256477356,
-            0.9481735825538635,
-            0.9458964467048645,
-            0.9571189880371094,
-            0.9527565240859985,
-            0.9430686831474304,
-            0.9550368189811707,
-            0.976991593837738,
-            0.9847115874290466,
-            0.9765539765357971,
-            0.9980509877204895,
-            0.000944317493122071,
-            0.9957553148269653,
-            0.9905682802200317,
-            0.989517331123352,
-            0.9805847406387329,
-            0.9853382110595703,
-            0.9812065362930298,
-            0.9722621440887451,
-            0.9933361411094666,
+            0.9512848854064941,
+            0.9700222611427307,
+            0.9583786129951477,
+            0.9656398892402649,
+            0.9677571058273315,
+            0.9618606567382812,
+            0.9602567553520203,
+            0.9724963307380676,
+            0.9560720920562744,
+            0.9636670351028442,
+            0.9540092945098877,
+            0.9609560370445251,
+            0.9637159109115601,
+            0.9666475057601929,
+            0.9463945031166077,
+            0.9502729773521423,
+            0.9481135606765747,
+            0.9411576986312866,
+            0.9496251344680786,
+            0.9587065577507019,
+            0.9446523189544678,
+            0.9480470418930054,
+            0.9457663297653198,
+            0.9569904804229736,
+            0.9526270627975464,
+            0.9429498314857483,
+            0.9549066424369812,
+            0.9768313765525818,
+            0.9845433235168457,
+            0.9763925671577454,
+            0.9978684782981873,
+            0.0007598859374411404,
+            0.9955753684043884,
+            0.9903924465179443,
+            0.9893420338630676,
+            0.980419397354126,
+            0.985167384147644,
+            0.9810396432876587,
+            0.9721081256866455,
+            0.9931598901748657,
             -1,
             -1,
             -1,
@@ -7696,7 +7696,7 @@
             -1,
             -1,
             -1,
-            0.9679442644119263,
+            0.9678918719291687,
             -1,
             -1,
             -1,
@@ -8076,7 +8076,7 @@
             -1
           ],
           "sessionUniqueId": 1,
-          "sessionTime": 154.13333384197674,
+          "sessionTime": 154.11666717531006,
           "sessionState": 4,
           "lastPitLap": [
             null,
@@ -9019,7 +9019,7 @@
       "name": "session-timing-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "752edf038f8c05aee6c914c31cf62339a70003338d416b45a5d9d679e32aa29d",
+      "rollingHash": "f5b9a8cf140027a3740405dfed9c2f7cb6061b4ba1cf563b1810582dc68fb9d4",
       "checkpoints": {
         "firstFrame": {
           "state": 3,
@@ -9044,13 +9044,13 @@
           "time": 690.7333338416627,
           "timeTotal": 2100,
           "timeRemaining": 1560.9499994916707,
-          "greenFlagTimestamp": 151.73333384197483,
+          "greenFlagTimestamp": 151.71666717530815,
           "isFixedLapRace": false,
           "totalRaceLaps": 17.256579562025657,
           "totalRaceTime": 2100,
           "adjustedRaceTime": 0,
           "sessionNum": 0,
-          "version": 3000
+          "version": 2993
         },
         "session:0": {
           "sourceTick": -1,
@@ -9067,16 +9067,16 @@
           "state": 4,
           "currentLap": 1,
           "totalLaps": 0,
-          "time": 160.33333384198167,
+          "time": 160.316667175315,
           "timeTotal": 2100,
-          "timeRemaining": 2091.349999491352,
-          "greenFlagTimestamp": 151.73333384197483,
+          "timeRemaining": 2091.3666661580182,
+          "greenFlagTimestamp": 151.71666717530815,
           "isFixedLapRace": false,
-          "totalRaceLaps": 19.59543716205258,
+          "totalRaceLaps": 19.595423010643707,
           "totalRaceTime": 2100,
           "adjustedRaceTime": 0,
           "sessionNum": 0,
-          "version": 348
+          "version": 346
         },
         "session:2": {
           "sourceTick": 8939,
@@ -9424,7 +9424,7 @@
       "name": "session-bar-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "407da505a9fdfd23f5d6ac3d300e2a55108829402a3ef844fbbb50ceb5072335",
+      "rollingHash": "e91b1cbdaf4776ca56e68dbf8aec3b76921a3e7ecf914d1baa0f7fc7a3ebc5d3",
       "checkpoints": {
         "firstFrame": {
           "displayUnits": 1,
@@ -9467,13 +9467,13 @@
           "incidentWarningSubsequentLimit": 17,
           "trackWetness": 1,
           "precipitation": 0,
-          "relativeHumidity": 0.6811808943748474,
-          "airTemp": 24.84444236755371,
+          "relativeHumidity": 0.6811820864677429,
+          "airTemp": 24.844425201416016,
           "trackTemp": 43.888885498046875,
-          "windDirection": 0.053219497203826904,
-          "windVelocity": 4.851924896240234,
-          "windYaw": 3.120600700378418,
-          "fuelLevel": 34.32343673706055,
+          "windDirection": 0.05303299427032471,
+          "windVelocity": 4.85117244720459,
+          "windYaw": 3.1238932609558105,
+          "fuelLevel": 34.32027053833008,
           "lastLapTime": 129.2841033935547,
           "bestLapTime": 129.2841033935547,
           "sessionBestLap": 119.54869842529297,
@@ -9569,9 +9569,9 @@
             5
           ],
           "lastLapTopSpeed": 71.87733459472656,
-          "sessionBestTopSpeed": 71.92518615722656,
+          "sessionBestTopSpeed": 71.92219543457031,
           "sessionNum": 0,
-          "version": 3000
+          "version": 2999
         },
         "session:0": {
           "sourceTick": -1,
@@ -10325,9 +10325,9 @@
     },
     {
       "name": "track-state",
-      "schemaVersion": 2,
+      "schemaVersion": 3,
       "frameCount": 36000,
-      "rollingHash": "382b2a33bff4f802f3cdcc9f2113f5f1a994f051489b1f32293540472c0a0fb6",
+      "rollingHash": "aa3501dfe03f5efd36c1334c3e9c766417bfd0debb985247321866c35440523f",
       "checkpoints": {
         "firstFrame": {
           "focusCarIdx": 0,
@@ -10645,6 +10645,8 @@
           "engineWarnings": 0,
           "lapDistPct": 0.7130685448646545,
           "sessionNum": 0,
+          "lastLapTime": 0,
+          "lapCompleted": -1,
           "version": 1
         },
         "lastFrame": {
@@ -10653,10 +10655,10 @@
             0.984,
             0.171,
             0.12,
-            0.039,
+            0.038,
             0.162,
             0.025,
-            0.031,
+            0.03,
             0.181,
             0.059,
             0.1,
@@ -10664,16 +10666,16 @@
             0.06,
             0.134,
             0.169,
-            0.953,
+            0.952,
             0.988,
-            0.975,
+            0.974,
             0.928,
             0.985,
             0.005,
-            0.925,
+            0.924,
             0.965,
             0.966,
-            0.006,
+            0.005,
             0.996,
             0.926,
             0.998,
@@ -10681,7 +10683,7 @@
             0.233,
             0.159,
             0.388,
-            0.377,
+            0.376,
             0.374,
             0.253,
             0.358,
@@ -10953,17 +10955,19 @@
           "isInGarage": false,
           "isGarageVisible": false,
           "isReplayPlaying": false,
-          "sessionTime": 690.9166671749958,
+          "sessionTime": 690.9000005083292,
           "sessionState": 4,
           "sessionFlags": 268697600,
-          "speed": 62.47682571411133,
+          "speed": 62.45125961303711,
           "displayUnits": 1,
           "pitSpeedLimiterToggle": false,
           "pitstopActive": false,
           "engineWarnings": 0,
-          "lapDistPct": 0.9838072061538696,
+          "lapDistPct": 0.983644962310791,
           "sessionNum": 0,
-          "version": 36000
+          "lastLapTime": 129.2841033935547,
+          "lapCompleted": 3,
+          "version": 15000
         },
         "session:0": {
           "sourceTick": -1,
@@ -11321,7 +11325,7 @@
       "name": "lap-log-state",
       "schemaVersion": 1,
       "frameCount": 36000,
-      "rollingHash": "da1e0ce3ee8224642b8ef092d9ba0b8a9586e3fc9ab45705ef7c57844de6a92c",
+      "rollingHash": "585979fe5b402cbbee4b715deaf9f8cbee145408220b36e06b4f8acec75fee3d",
       "checkpoints": {
         "firstFrame": {
           "lapCompleted": -1,
@@ -11415,7 +11419,7 @@
         },
         "lastFrame": {
           "lapCompleted": 3,
-          "currentLapTime": 130.4542694091797,
+          "currentLapTime": 130.43760681152344,
           "lastLapTime": 129.2841033935547,
           "bestLapTime": 129.2841033935547,
           "carIdxBestLapTime": [
@@ -11493,15 +11497,15 @@
             -1
           ],
           "sessionNum": 0,
-          "sessionTime": 690.9166671749958,
+          "sessionTime": 690.9000005083292,
           "playerTrackSurface": 3,
           "incidentCount": 2,
-          "lapDistPct": 0.9838072061538696,
-          "deltaToSessionLastLap": 2.7908785343170166,
+          "lapDistPct": 0.983644962310791,
+          "deltaToSessionLastLap": 2.7909295558929443,
           "deltaToSessionLastLapOk": true,
-          "deltaToSessionBestLap": 2.7908785343170166,
+          "deltaToSessionBestLap": 2.7909295558929443,
           "deltaToSessionBestLapOk": true,
-          "version": 36000
+          "version": 15000
         },
         "session:0": {
           "sourceTick": -1,

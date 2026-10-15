@@ -2,6 +2,7 @@ import * as yaml from 'js-yaml';
 import type { Session, SessionBarSnapshot, Telemetry } from '@irdashies/types';
 import { SessionBarProcessor } from '../../src/app/processors/SessionBarProcessor';
 import type { ReplayProbe, TelemetryFrame } from './validator';
+import { rateLimited } from './rateLimited';
 
 const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
   Object.fromEntries(
@@ -11,11 +12,12 @@ const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
     ])
   ) as unknown as Telemetry;
 export const createSessionBarProbe = (): ReplayProbe<SessionBarSnapshot> => {
-  const processor = new SessionBarProcessor();
+  const processor = rateLimited(new SessionBarProcessor());
   return {
     name: 'session-bar-state',
     schemaVersion: 1,
     variables: [
+      'SessionTick',
       'AirTemp',
       'CarIdxBestLapTime',
       'CarIdxClassPosition',

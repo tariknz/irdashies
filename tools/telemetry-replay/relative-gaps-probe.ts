@@ -3,6 +3,7 @@ import type { Session, Telemetry } from '@irdashies/types';
 import { ReferenceLapProcessor } from '../../src/app/processors/ReferenceLapProcessor';
 import { RelativeGapProcessor } from '../../src/app/processors/RelativeGapProcessor';
 import type { ReplayProbe, TelemetryFrame } from './validator';
+import { rateLimited } from './rateLimited';
 
 const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
   Object.fromEntries(
@@ -19,7 +20,7 @@ export const createRelativeGapsProbe = (): ReplayProbe<
     load: () => null,
     save: () => undefined,
   });
-  const processor = new RelativeGapProcessor(referenceLaps);
+  const processor = rateLimited(new RelativeGapProcessor(referenceLaps));
   let checkpoint: string | undefined;
   let observedDelta = false;
 
@@ -27,6 +28,7 @@ export const createRelativeGapsProbe = (): ReplayProbe<
     name: 'relative-gaps-state',
     schemaVersion: 1,
     variables: [
+      'SessionTick',
       'CamCarIdx',
       'CarIdxEstTime',
       'CarIdxLap',

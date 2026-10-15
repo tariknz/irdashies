@@ -2,6 +2,7 @@ import type {
   LapTimesSnapshot,
   RadarProcessorTuning,
   ReferenceLapsSnapshot,
+  Telemetry,
 } from '@irdashies/types';
 import type { ReferenceLapPersistence } from './ReferenceLapProcessor';
 import { CarSpeedsProcessor } from './CarSpeedsProcessor';
@@ -41,6 +42,7 @@ interface DefaultProcessorHostOptions extends ProcessorRegistryOptions {
   lifecycle?: SessionLifecycle;
   metrics: ProcessorMetrics;
   aggregateReplay?: boolean;
+  frameClock?: (frame: Telemetry) => number | undefined;
   logError?: (message: string, error: unknown) => void;
 }
 
@@ -177,6 +179,7 @@ export const createDefaultProcessorHost = (
     lifecycle: options.lifecycle,
     metrics: options.metrics,
     aggregateReplay: options.aggregateReplay,
+    frameClock: options.frameClock,
     logError: options.logError,
     definitions: createProcessorDefinitions(options),
   });
