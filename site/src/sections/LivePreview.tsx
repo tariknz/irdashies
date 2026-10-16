@@ -13,12 +13,12 @@ import {
   CaretDown,
   Check,
 } from '@phosphor-icons/react';
-import { WIDGET_MAP, type WidgetId } from '../../../src/frontend/WidgetIndex';
-import { WIDGET_NAMES } from '../../../src/frontend/constants/widgetNames';
-import { SectorTimingUpdater } from '../../../src/frontend/context/SectorTimingStore/SectorTimingUpdater';
-import { LapTraceUpdater } from '../../../src/frontend/components/OverlayContainer/LapTraceUpdater';
+import { WIDGET_MAP } from '@irdashies/frontend/WidgetIndex';
+import { WIDGET_NAMES } from '@irdashies/frontend/constants/widgetNames';
+import { SectorTimingUpdater } from '@irdashies/frontend/context/SectorTimingStore/SectorTimingUpdater';
+import { LapTraceUpdater } from '@irdashies/frontend/components/OverlayContainer/LapTraceUpdater';
 import { ReferenceStoreProvider } from '@irdashies/context';
-import { defaultDashboard } from '@irdashies/types';
+import { defaultDashboard, type WidgetId } from '@irdashies/types';
 import { EXCLUDED_WIDGETS } from '../utils/previewWidgets';
 import { DashboardReady } from '../components/DashboardReady';
 import { PreviewSettingsButton } from '../components/PreviewSettingsPanel';

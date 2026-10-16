@@ -11,7 +11,7 @@ import { PreviewSettingsMenu } from './PreviewSettingsMenu';
 import { GearSix, X } from '@phosphor-icons/react';
 
 const SettingsLoader = lazy(() =>
-  import('../../../src/frontend/components/Settings/SettingsLoader').then(
+  import('@irdashies/frontend/components/Settings/SettingsLoader').then(
     (module) => ({ default: module.SettingsLoader })
   )
 );

@@ -8,7 +8,7 @@ import {
   type RaceControlBridge,
   type Session,
 } from '@irdashies/types';
-import { makeSyntheticLapTrace } from '../../../src/frontend/components/LapTrace/fixtures/syntheticLap';
+import { makeSyntheticLapTrace } from '@irdashies/frontend/components/LapTrace/fixtures/syntheticLap';
 
 /** Browser-only sample storage. Nothing is written to disk or sent to the sim. */
 export function createPreviewStorage() {
