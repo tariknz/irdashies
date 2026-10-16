@@ -43,21 +43,27 @@ describe('telemetry replay tooling', () => {
   // import of the @irdashies/types barrel reaches import.meta.glob and throws.
   it('loads its modules under plain Node (tsx)', () => {
     expect(modules.length).toBeGreaterThan(5);
-    const imports = modules
-      // A file URL, since Windows absolute paths aren't valid import specifiers.
-      .map(
-        (file) => `await import(${JSON.stringify(pathToFileURL(file).href)});`
-      )
-      .join('');
+    // Keep module paths as data, never interpolate them into executable code.
     // tsx --eval compiles to CommonJS, which has no top-level await.
-    const script = `(async () => {${imports}})().catch((error) => {
+    const script = `(async () => {
+      for (const file of process.argv.slice(1)) await import(file);
+    })().catch((error) => {
       process.stderr.write(String(error?.stack ?? error));
       process.exit(1);
     });`;
-    const result = spawnSync(process.execPath, [TSX_CLI, '--eval', script], {
-      cwd: ROOT,
-      encoding: 'utf8',
-    });
+    const result = spawnSync(
+      process.execPath,
+      [
+        TSX_CLI,
+        '--eval',
+        script,
+        ...modules.map((file) => pathToFileURL(file).href),
+      ],
+      {
+        cwd: ROOT,
+        encoding: 'utf8',
+      }
+    );
     expect(result.error).toBeUndefined();
     expect(result.status, result.stderr).toBe(0);
   }, 60_000);

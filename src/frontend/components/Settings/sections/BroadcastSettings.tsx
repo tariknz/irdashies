@@ -1,3 +1,4 @@
+import { validateImageDataUrl } from '@irdashies/utils/imageDataUrl';
 import { Fragment, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { changeMarker } from '../components/ChangedMark';
@@ -101,6 +102,7 @@ export const BroadcastSettings = () => {
   }
 
   const { config } = settings;
+  const logoSrc = validateImageDataUrl(config.logo);
 
   return (
     <BaseSettingsSection
@@ -142,9 +144,9 @@ export const BroadcastSettings = () => {
                     best, up to 300 KB.
                   </p>
                   <div className="flex items-center gap-3">
-                    {config.logo.startsWith('data:image/') && (
+                    {logoSrc && (
                       <img
-                        src={config.logo}
+                        src={logoSrc}
                         alt=""
                         className="max-h-10 rounded bg-slate-900 p-1"
                       />
@@ -165,8 +167,12 @@ export const BroadcastSettings = () => {
                         }
                         setLogoError('');
                         const reader = new FileReader();
-                        reader.onload = () =>
-                          handleConfigChange({ logo: String(reader.result) });
+                        reader.onload = () => {
+                          const logo = validateImageDataUrl(reader.result);
+                          if (!logo)
+                            return setLogoError('Pick a supported image file.');
+                          handleConfigChange({ logo });
+                        };
                         reader.readAsDataURL(file);
                       }}
                     />
