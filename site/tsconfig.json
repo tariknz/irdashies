@@ -14,6 +14,7 @@
     "noFallthroughCasesInSwitch": true,
     "types": ["vite/client", "node"],
     "paths": {
+      "@irdashies/frontend/*": ["../src/frontend/*"],
       "@irdashies/utils/*": ["../src/frontend/utils/*"],
       "@irdashies/context": ["../src/frontend/context"],
       "@irdashies/domain": ["../src/frontend/domain"],

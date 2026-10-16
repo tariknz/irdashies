@@ -88,6 +88,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      '@irdashies/frontend': path.resolve(
+        import.meta.dirname,
+        '../src/frontend'
+      ),
       '@irdashies/utils': path.resolve(
         import.meta.dirname,
         '../src/frontend/utils'

@@ -5,7 +5,7 @@ import { PreviewSettingsButton } from './PreviewSettingsPanel';
 vi.mock('./PreviewSettingsMenu', () => ({
   PreviewSettingsMenu: () => null,
 }));
-vi.mock('../../../src/frontend/components/Settings/SettingsLoader', () => ({
+vi.mock('@irdashies/frontend/components/Settings/SettingsLoader', () => ({
   SettingsLoader: () => null,
 }));
 

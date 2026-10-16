@@ -1,4 +1,4 @@
-import type { WidgetId } from '../../../src/frontend/WidgetIndex';
+import type { WidgetId } from '@irdashies/types';
 
 /**
  * Widgets registered in the app but deliberately kept out of the live
