@@ -6,6 +6,13 @@ const meta = {
   title: 'Components/Standings/PushToPassCell',
   component: PushToPassCell,
   parameters: { layout: 'centered' },
+  decorators: [
+    (Story) => (
+      <div className="pointer-events-none">
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof PushToPassCell>;
 
 export default meta;

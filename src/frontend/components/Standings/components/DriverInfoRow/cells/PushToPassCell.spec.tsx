@@ -21,11 +21,11 @@ describe('PushToPassCell', () => {
   });
 
   it.each([1000, 100000])(
-    'keeps a large practice count of %i compact and available in the tooltip',
+    'shows a visible overflow count for %i without requiring hover',
     (count) => {
       renderCell({ status: 'inactive', count });
-      expect(screen.getByText('— s')).toBeInTheDocument();
-      expect(screen.getByTitle(`${count} s remaining`)).toHaveClass(
+      expect(screen.getByText('999+ s')).toBeInTheDocument();
+      expect(screen.getByText('999+ s').parentElement).toHaveClass(
         'bg-lime-200'
       );
     }
@@ -36,7 +36,7 @@ describe('PushToPassCell', () => {
     ['cooldown', 'bg-sky-500'],
   ] as const)('preserves %s status with a large count', (status, color) => {
     renderCell({ status, count: 1000 });
-    expect(screen.getByTitle('1000 s remaining')).toHaveClass(
+    expect(screen.getByText('999+ s').parentElement).toHaveClass(
       color,
       'animate-pulse'
     );
@@ -45,7 +45,7 @@ describe('PushToPassCell', () => {
   it('keeps an exhausted indicator at zero', () => {
     renderCell({ status: 'exhausted', count: 0 });
     expect(screen.getByText('0 s')).toBeInTheDocument();
-    expect(screen.getByTitle('0 s remaining')).toHaveClass('bg-red-500/80');
+    expect(screen.getByText('0 s').parentElement).toHaveClass('bg-red-500/80');
   });
 
   it('leaves unsupported cars empty', () => {

@@ -17,9 +17,9 @@ export const PushToPassCell = memo(({ state }: PushToPassCellProps) => {
   }
 
   const { status, count } = state;
-  // The badge fits three digits. Practice can report larger counts; keep the
-  // status visible without letting that value overflow into the next column.
-  const displayedCount = count > 999 ? '—' : count;
+  // Keep large practice counts legible in clickthrough overlays, where hover
+  // tooltips are unavailable, without overflowing into the next column.
+  const displayedCount = count > 999 ? '999+' : count;
 
   const isExhausted = status === 'exhausted';
   const isActive = status === 'active';
@@ -59,7 +59,6 @@ export const PushToPassCell = memo(({ state }: PushToPassCellProps) => {
       className="w-[4.5rem] px-1 text-center align-middle"
     >
       <span
-        title={`${isExhausted ? 0 : count} s remaining`}
         className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs w-[4rem] ${bgClass} ${pulseClass}`}
       >
         <span className={iconClass}>{icon}</span>
