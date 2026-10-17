@@ -60,10 +60,12 @@ const demandFor = (carLeftRight: number): SpotterDemand | null => {
 export type FormationKind = 'grid' | 'pace';
 /**
  * Pole column side: on the left of a standing grid, on the right of the pace
- * line. iRacing does not say; this is what its grids do. +1 means the pole is
- * on the left, so higher columns lie to the right.
+ * line on road courses and on the left of it on ovals (the inside line).
+ * iRacing does not say; this is what its grids do. +1 means the pole is on
+ * the left, so higher columns lie to the right.
  */
-const POLE_SIGN: Record<FormationKind, number> = { grid: 1, pace: -1 };
+const poleSign = (kind: FormationKind, oval: boolean): number =>
+  kind === 'grid' || oval ? 1 : -1;
 
 export interface LaneFormation {
   kind: FormationKind;
@@ -92,7 +94,7 @@ const clampLane = (lane: number) =>
  *
  * In formation — on a standing grid or behind the pace car — the slots
  * the sim gives win over all of that: they are known, not guessed, and the
- * pole side comes from POLE_SIGN.
+ * pole side comes from poleSign.
  *
  * Everything else sits in our lane. Drawn lanes move at `laneRate` lanes per
  * second so a corrected guess slides rather than jumps.
@@ -105,10 +107,16 @@ export class RadarLaneTracker {
   private readonly rememberedAt = new Map<number, number>();
   private readonly drawnLane = new Map<number, number>();
   private previousTime = -1;
+  private oval = false;
   constructor(
     private readonly tuning: () => RadarProcessorTuning = () =>
       DEFAULT_RADAR_TUNING
   ) {}
+
+  /** Ovals line the pace field up with the pole on the inside, the left. */
+  setOval(oval: boolean): void {
+    this.oval = oval;
+  }
 
   reset(): void {
     this.rememberedLane.clear();
@@ -254,7 +262,7 @@ export class RadarLaneTracker {
     for (const car of cars) {
       const slot = formation.slots.get(car.carIdx);
       if (slot === undefined) continue;
-      const lane = clampLane(slot * POLE_SIGN[formation.kind]);
+      const lane = clampLane(slot * poleSign(formation.kind, this.oval));
       targets.set(car.carIdx, { lane, source: formation.kind });
       // Remembered too, so the formation fades out gently after the green.
       this.rememberedLane.set(car.carIdx, lane);

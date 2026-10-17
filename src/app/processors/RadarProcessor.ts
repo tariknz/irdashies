@@ -137,6 +137,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   init(session: Session): void {
     this.trackLength = parseTrackLength(session?.WeekendInfo?.TrackLength);
     this.hazards.setTrackLength(this.trackLength);
+    this.lanes.setOval(/oval/i.test(session?.WeekendInfo?.TrackType ?? ''));
     const options = session?.WeekendInfo?.WeekendOptions;
     this.grid = {
       standingStart: options?.StandingStart === 1,
