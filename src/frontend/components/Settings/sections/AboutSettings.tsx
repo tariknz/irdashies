@@ -105,7 +105,8 @@ export const AboutSettings = () => {
                   </strong>
                   <br />
                   Track IDs and learned pit entry and exit positions are sent at
-                  startup to help improve pit-lane detection.
+                  startup when calibration changes to help improve pit-lane
+                  detection.
                 </li>
                 <li>
                   <strong className="text-slate-300">System information</strong>

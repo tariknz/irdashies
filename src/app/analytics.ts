@@ -10,6 +10,10 @@ import logger from './logger';
 import type ElectronLog from 'electron-log';
 import type { LogMessage } from 'electron-log';
 import { readPitLaneCalibrationForAnalytics } from './analytics/pitLaneCalibration';
+import {
+  readPitLaneAnalyticsCheckpoint,
+  writePitLaneAnalyticsCheckpoint,
+} from './storage/pitLaneAnalyticsCheckpoint';
 
 declare const POSTHOG_KEY: string;
 
@@ -20,15 +24,47 @@ const MAX_CALIBRATION_PROPERTIES_BYTES = 512 * 1024;
 
 export interface AnalyticsProvider {
   capture(event: EventMessage): void;
+  captureConfirmed(event: EventMessage): Promise<void>;
   identify(message: IdentifyMessage): void;
   shutdown(shutdownTimeoutMs?: number): void;
 }
 
-class PostHogProvider implements AnalyticsProvider {
+export class PostHogProvider implements AnalyticsProvider {
   constructor(private posthog: PostHog) {}
 
   capture(event: EventMessage): void {
     this.posthog.capture(event);
+  }
+
+  async captureConfirmed(event: EventMessage): Promise<void> {
+    if (!event.uuid || this.posthog.isDisabled || this.posthog.optedOut) {
+      throw new Error('Analytics event cannot be delivered');
+    }
+    let confirmed = false;
+    // captureImmediate swallows HTTP failures in the installed SDK. Public
+    // flush reports successful messages; require our UUID, not just an empty
+    // queue or a resolved promise, before recording a delivery checkpoint.
+    const unsubscribe = this.posthog.on('flush', (messages: unknown) => {
+      if (
+        Array.isArray(messages) &&
+        messages.some(
+          (message: unknown) =>
+            typeof message === 'object' &&
+            message !== null &&
+            'uuid' in message &&
+            message.uuid === event.uuid
+        )
+      ) {
+        confirmed = true;
+      }
+    });
+    try {
+      this.posthog.capture(event);
+      await this.posthog.flush();
+      if (!confirmed) throw new Error('Analytics event was not acknowledged');
+    } finally {
+      unsubscribe();
+    }
   }
 
   identify(message: IdentifyMessage): void {
@@ -187,8 +223,18 @@ export class Analytics {
     try {
       const tracks = await readPitLaneCalibrationForAnalytics();
       if (!tracks || getAnalyticsOptOut()) return;
+      // Tuples fix field order and numeric sorting makes JSON formatting,
+      // object key order, ignored fields, and app version irrelevant.
+      const canonical = Object.keys(tracks)
+        .sort((a, b) => Number(a) - Number(b))
+        .map((id) => [id, tracks[id].pitEntryPct, tracks[id].pitExitPct]);
+      const dataHash = crypto
+        .createHash('sha256')
+        .update(JSON.stringify(canonical))
+        .digest('hex');
       const properties = {
         version,
+        data_hash: dataHash,
         track_count: Object.keys(tracks).length,
         tracks,
       };
@@ -202,10 +248,42 @@ export class Analytics {
         );
         return;
       }
-      this.capture({
+      const checkpoint = await readPitLaneAnalyticsCheckpoint(userId);
+      if (
+        !checkpoint ||
+        (checkpoint.lastAcknowledgedHash === dataHash && !checkpoint.pending) ||
+        getAnalyticsOptOut()
+      ) {
+        return;
+      }
+      const pending =
+        checkpoint.pending?.hash === dataHash
+          ? checkpoint.pending
+          : {
+              hash: dataHash,
+              distinctId: userId,
+              uuid: crypto.randomUUID(),
+              timestamp: new Date().toISOString(),
+            };
+      if (
+        pending !== checkpoint.pending &&
+        !(await writePitLaneAnalyticsCheckpoint({ ...checkpoint, pending }))
+      ) {
+        return;
+      }
+      if (getAnalyticsOptOut()) return;
+      await this.provider.captureConfirmed({
         distinctId: userId,
         event: 'pit_lane_calibration',
+        uuid: pending.uuid,
+        timestamp: new Date(pending.timestamp),
         properties,
+      });
+      if (getAnalyticsOptOut()) return;
+      await writePitLaneAnalyticsCheckpoint({
+        version: 1,
+        distinctId: userId,
+        lastAcknowledgedHash: dataHash,
       });
     } catch {
       logger.warn('[Analytics] Could not publish pit lane calibration');
