@@ -1,4 +1,5 @@
 #include "./irsdk_tape.h"
+#include "../lib/irsdk_capture.h"
 
 #include <algorithm>
 #include <chrono>
@@ -149,7 +150,8 @@ void applySessionRecord() {
   header.sessionInfoUpdate = pendingRecord.value;
 }
 
-bool publishFrameRecord(char* destination, std::string& error) {
+bool publishFrameRecord(irsdk_capture* capture, std::string& error) {
+  if (capture) capture->valid = false;
   if (pendingPayload.size() != frame.size()) {
     error = "Frame record length does not match the SDK buffer length";
     state = PlaybackState::Failed;
@@ -157,13 +159,20 @@ bool publishFrameRecord(char* destination, std::string& error) {
     return false;
   }
   std::memcpy(frame.data(), pendingPayload.data(), frame.size());
-  if (destination != nullptr) {
-    std::memcpy(destination, frame.data(), frame.size());
+  if (capture != nullptr) {
+    // TapeReader validates the fixed schema and frame size when opening.
+    capture->data.resize(frame.size());
+    capture->variables.resize(tape->variables().size());
+    std::memcpy(capture->variables.data(), tape->variables().data(),
+                capture->variables.size() * sizeof(irsdk_varHeader));
+    capture->header = header;
+    std::memcpy(capture->data.data(), frame.data(), capture->data.size());
+    capture->valid = true;
   }
   return true;
 }
 
-bool readTimedFrame(int timeoutMs, char* destination) {
+bool readTimedFrame(int timeoutMs, irsdk_capture* capture) {
   bool foundFrame = false;
   std::string error;
   const auto deadline = std::chrono::steady_clock::now() +
@@ -190,7 +199,7 @@ bool readTimedFrame(int timeoutMs, char* destination) {
     const auto kind = static_cast<replay::RecordKind>(pendingRecord.kind);
     switch (kind) {
       case replay::RecordKind::Frame:
-        if (!publishFrameRecord(destination, error)) {
+        if (!publishFrameRecord(capture, error)) {
           std::cerr << "Telemetry tape playback failed: " << error << '\n';
           return false;
         }
@@ -258,15 +267,16 @@ void irsdk_shutdown() {
   state = PlaybackState::Stopped;
 }
 
-bool irsdk_getNewData(char* data) {
-  return readTimedFrame(1, data);
+bool irsdk_getNewData(irsdk_capture* capture) {
+  return readTimedFrame(1, capture);
 }
 
-bool irsdk_waitForDataReady(int timeoutMs, char* data) {
+bool irsdk_waitForDataReady(int timeoutMs, irsdk_capture* capture) {
   if (state != PlaybackState::Playing && !irsdk_startup()) {
+    if (capture) capture->valid = false;
     return false;
   }
-  return readTimedFrame(timeoutMs, data);
+  return readTimedFrame(timeoutMs, capture);
 }
 
 bool irsdk_isConnected() {

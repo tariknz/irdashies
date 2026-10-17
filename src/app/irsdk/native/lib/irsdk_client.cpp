@@ -35,6 +35,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma warning(disable:4996)
 
+template <typename T>
+static T readScalar(const char* data, int entry) {
+    T value;
+    std::memcpy(&value, data + static_cast<std::size_t>(entry) * sizeof(T), sizeof(T));
+    return value;
+}
+
 irsdkClient& irsdkClient::instance()
 {
 	static irsdkClient INSTANCE;
@@ -43,68 +50,47 @@ irsdkClient& irsdkClient::instance()
 
 bool irsdkClient::waitForData(int timeoutMS)
 {
-	// wait for start of session or new data
-	if(irsdk_waitForDataReady(timeoutMS, m_data) && irsdk_getHeader())
-	{
-		// if new connection, or data changed lenght then init
-		if(!m_data || m_nData != irsdk_getHeader()->bufLen)
-		{
-			// allocate memory to hold incoming data from sim
-			if(m_data) delete [] m_data;
-			m_nData = irsdk_getHeader()->bufLen;
-			m_data = new char[m_nData];
-
-			// indicate a new connection
-			m_statusID++;
-
-			// reset session info str status
-			m_lastSessionCt = -1;
-
-			// and try to fill in the data
-			if(irsdk_getNewData(m_data))
-				return true;
-		}
-		else if(m_data)
-		{
-			// else we are allready initialized, and data is ready for processing
-			return true;
-		}
-	}
-	else if(!isConnected())
-	{
-		// else session ended
-		if(m_data)
-			delete[] m_data;
-		m_data = NULL;
-
-		// reset session info str status
-		m_lastSessionCt = -1;
-	}
-
-	return false;
+    const bool hadFrame = m_capture.valid;
+    const irsdk_header previous = m_capture.header;
+    if (irsdk_waitForDataReady(timeoutMS, &m_capture)) {
+        m_data = m_capture.data.data();
+        if (!hadFrame || !irdashies::irsdk::sameLayout(previous, m_capture.header)) {
+            ++m_statusID;
+            m_lastSessionCt = -1;
+        }
+        return true;
+    }
+    if (!irsdk_isConnected()) {
+        m_capture.valid = false;
+        m_data = NULL;
+        m_lastSessionCt = -1;
+    }
+    return false;
 }
 
 void irsdkClient::shutdown()
 {
-	irsdk_shutdown();
-	if(m_data)
-		delete[] m_data;
-	m_data = NULL;
-
-	// reset session info str status
-	m_lastSessionCt = -1;
+    irsdk_shutdown();
+    m_capture = {};
+    m_data = NULL;
+    m_lastSessionCt = -1;
 }
 
 bool irsdkClient::isConnected()
 {
-	return m_data != NULL && irsdk_isConnected();
+	return m_capture.valid && irsdk_isConnected();
 }
 
 int irsdkClient::getVarIdx(const char*name)
 {
 	if(isConnected())
 	{
-		return irsdk_varNameToIndex(name);
+		if (name) {
+            for (std::size_t i = 0; i < m_capture.variables.size(); ++i) {
+                if (std::strncmp(name, m_capture.variables[i].name, IRSDK_MAX_STRING) == 0)
+                    return static_cast<int>(i);
+            }
+        }
 	}
 
 	return -1;
@@ -114,15 +100,14 @@ int /*irsdk_VarType*/ irsdkClient::getVarType(int idx)
 {
 	if(isConnected())
 	{
-		const irsdk_varHeader *vh = irsdk_getVarHeaderEntry(idx);
+		const irsdk_varHeader *vh = irdashies::irsdk::capturedVariable(m_capture, idx);
 		if(vh)
 		{
 			return vh->type;
 		}
 		else
 		{
-			//invalid variable index
-			assert(false);
+			// Invalid/incompatible descriptors return the safe default below.
 		}
 	}
 
@@ -133,15 +118,14 @@ int irsdkClient::getVarCount(int idx)
 {
 	if(isConnected())
 	{
-		const irsdk_varHeader *vh = irsdk_getVarHeaderEntry(idx);
+		const irsdk_varHeader *vh = irdashies::irsdk::capturedVariable(m_capture, idx);
 		if(vh)
 		{
 			return vh->count;
 		}
 		else
 		{
-			//invalid variable index
-			assert(false);
+			// Invalid/incompatible descriptors return the safe default below.
 		}
 	}
 
@@ -152,7 +136,7 @@ bool irsdkClient::getVarBool(int idx, int entry)
 {
 	if(isConnected())
 	{
-		const irsdk_varHeader *vh = irsdk_getVarHeaderEntry(idx);
+		const irsdk_varHeader *vh = irdashies::irsdk::capturedVariable(m_capture, idx);
 		if(vh)
 		{
 			if(entry >= 0 && entry < vh->count)
@@ -163,25 +147,25 @@ bool irsdkClient::getVarBool(int idx, int entry)
 				// 1 byte
 				case irsdk_char:
 				case irsdk_bool:
-					return (((const char*)data)[entry]) != 0;
+					return readScalar<char>(data, entry) != 0;
 					break;
 
 				// 4 bytes
 				case irsdk_int:
 				case irsdk_bitField:
-					return (((const int*)data)[entry]) != 0;
+					return readScalar<int>(data, entry) != 0;
 					break;
 					
 				// test float/double for greater than 1.0 so that
 				// we have a chance of this being usefull
 				// technically there is no right conversion...
 				case irsdk_float:
-					return (((const float*)data)[entry]) >= 1.0f;
+					return readScalar<float>(data, entry) >= 1.0f;
 					break;
 
 				// 8 bytes
 				case irsdk_double:
-					return (((const double*)data)[entry]) >= 1.0;
+					return readScalar<double>(data, entry) >= 1.0;
 					break;
 				}
 			}
@@ -193,8 +177,7 @@ bool irsdkClient::getVarBool(int idx, int entry)
 		}
 		else
 		{
-			//invalid variable index
-			assert(false);
+			// Invalid/incompatible descriptors return the safe default below.
 		}
 	}
 
@@ -205,7 +188,7 @@ int irsdkClient::getVarInt(int idx, int entry)
 {
 	if(isConnected())
 	{
-		const irsdk_varHeader *vh = irsdk_getVarHeaderEntry(idx);
+		const irsdk_varHeader *vh = irdashies::irsdk::capturedVariable(m_capture, idx);
 		if(vh)
 		{
 			if(entry >= 0 && entry < vh->count)
@@ -216,22 +199,22 @@ int irsdkClient::getVarInt(int idx, int entry)
 				// 1 byte
 				case irsdk_char:
 				case irsdk_bool:
-					return (int)(((const char*)data)[entry]);
+					return (int)readScalar<char>(data, entry);
 					break;
 
 				// 4 bytes
 				case irsdk_int:
 				case irsdk_bitField:
-					return (int)(((const int*)data)[entry]);
+					return (int)readScalar<int>(data, entry);
 					break;
 					
 				case irsdk_float:
-					return (int)(((const float*)data)[entry]);
+					return (int)readScalar<float>(data, entry);
 					break;
 
 				// 8 bytes
 				case irsdk_double:
-					return (int)(((const double*)data)[entry]);
+					return (int)readScalar<double>(data, entry);
 					break;
 				}
 			}
@@ -243,8 +226,7 @@ int irsdkClient::getVarInt(int idx, int entry)
 		}
 		else
 		{
-			//invalid variable index
-			assert(false);
+			// Invalid/incompatible descriptors return the safe default below.
 		}
 	}
 
@@ -255,7 +237,7 @@ float irsdkClient::getVarFloat(int idx, int entry)
 {
 	if(isConnected())
 	{
-		const irsdk_varHeader *vh = irsdk_getVarHeaderEntry(idx);
+		const irsdk_varHeader *vh = irdashies::irsdk::capturedVariable(m_capture, idx);
 		if(vh)
 		{
 			if(entry >= 0 && entry < vh->count)
@@ -266,22 +248,22 @@ float irsdkClient::getVarFloat(int idx, int entry)
 				// 1 byte
 				case irsdk_char:
 				case irsdk_bool:
-					return (float)(((const char*)data)[entry]);
+					return (float)readScalar<char>(data, entry);
 					break;
 
 				// 4 bytes
 				case irsdk_int:
 				case irsdk_bitField:
-					return (float)(((const int*)data)[entry]);
+					return (float)readScalar<int>(data, entry);
 					break;
 					
 				case irsdk_float:
-					return (float)(((const float*)data)[entry]);
+					return (float)readScalar<float>(data, entry);
 					break;
 
 				// 8 bytes
 				case irsdk_double:
-					return (float)(((const double*)data)[entry]);
+					return (float)readScalar<double>(data, entry);
 					break;
 				}
 			}
@@ -293,8 +275,7 @@ float irsdkClient::getVarFloat(int idx, int entry)
 		}
 		else
 		{
-			//invalid variable index
-			assert(false);
+			// Invalid/incompatible descriptors return the safe default below.
 		}
 	}
 
@@ -305,7 +286,7 @@ double irsdkClient::getVarDouble(int idx, int entry)
 {
 	if(isConnected())
 	{
-		const irsdk_varHeader *vh = irsdk_getVarHeaderEntry(idx);
+		const irsdk_varHeader *vh = irdashies::irsdk::capturedVariable(m_capture, idx);
 		if(vh)
 		{
 			if(entry >= 0 && entry < vh->count)
@@ -316,22 +297,22 @@ double irsdkClient::getVarDouble(int idx, int entry)
 				// 1 byte
 				case irsdk_char:
 				case irsdk_bool:
-					return (double)(((const char*)data)[entry]);
+					return (double)readScalar<char>(data, entry);
 					break;
 
 				// 4 bytes
 				case irsdk_int:
 				case irsdk_bitField:
-					return (double)(((const int*)data)[entry]);
+					return (double)readScalar<int>(data, entry);
 					break;
 					
 				case irsdk_float:
-					return (double)(((const float*)data)[entry]);
+					return (double)readScalar<float>(data, entry);
 					break;
 
 				// 8 bytes
 				case irsdk_double:
-					return (double)(((const double*)data)[entry]);
+					return (double)readScalar<double>(data, entry);
 					break;
 				}
 			}
@@ -343,8 +324,7 @@ double irsdkClient::getVarDouble(int idx, int entry)
 		}
 		else
 		{
-			//invalid variable index
-			assert(false);
+			// Invalid/incompatible descriptors return the safe default below.
 		}
 	}
 
