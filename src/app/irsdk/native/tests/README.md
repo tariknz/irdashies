@@ -69,3 +69,35 @@ includes the isolated Win32 mapping/event replay boundary and paused-tick
 heartbeat. The recorder executable compiled; live iRacing capture and recorder
 runtime behavior were not exercised. MSVC reported C4996 for the fixed literal
 `strcpy` in the test fixture; the test completed without sanitizer findings.
+
+## Tape replay header regression
+
+This standalone test links the actual tape backend and checks that a published
+frame's source tick reaches both the replay header and the captured header.
+It covers the first and last buffer slots, startup resets, invalid slot indices
+and polling without a capture buffer. Invalid slots still publish frame data
+without indexing or changing the buffer headers.
+
+With Clang, from the repository root:
+
+```sh
+mkdir -p build/native-tests
+clang++ -std=c++17 -Wall -Wextra -Werror -g \
+  -fsanitize=address,undefined -fno-omit-frame-pointer \
+  src/app/irsdk/native/tests/irsdk_tape_header_test.cpp \
+  src/app/irsdk/native/replay/irsdk_tape_utils.cpp \
+  src/app/irsdk/native/replay/irsdk_tape.cpp \
+  -o build/native-tests/irsdk_tape_header_test
+ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 \
+  build/native-tests/irsdk_tape_header_test build/native-tests/header-test.irdt
+```
+
+Or in an x64 Visual Studio Developer Command Prompt:
+
+```bat
+if not exist build\native-tests mkdir build\native-tests
+cl /nologo /std:c++17 /EHsc /W4 /Zi /fsanitize=address src\app\irsdk\native\tests\irsdk_tape_header_test.cpp src\app\irsdk\native\replay\irsdk_tape_utils.cpp src\app\irsdk\native\replay\irsdk_tape.cpp /Fe:build\native-tests\irsdk_tape_header_test.exe /Fo:build\native-tests\ /Fd:build\native-tests\irsdk_tape_header_test.pdb
+build\native-tests\irsdk_tape_header_test.exe build\native-tests\header-test.irdt
+```
+
+The fixture path is written and removed by the test; use a disposable path.

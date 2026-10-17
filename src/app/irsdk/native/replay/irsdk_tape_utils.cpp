@@ -159,6 +159,9 @@ bool publishFrameRecord(irsdk_capture* capture, std::string& error) {
     return false;
   }
   std::memcpy(frame.data(), pendingPayload.data(), frame.size());
+  if (pendingRecord.value >= 0 && pendingRecord.value < header.numBuf) {
+    header.varBuf[pendingRecord.value].tickCount = pendingRecord.sourceTick;
+  }
   if (capture != nullptr) {
     // TapeReader validates the fixed schema and frame size when opening.
     capture->data.resize(frame.size());
