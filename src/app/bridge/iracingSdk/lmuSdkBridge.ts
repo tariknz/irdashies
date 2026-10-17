@@ -187,8 +187,11 @@ export async function publishLmuSDKEvents(
   const ratingClient = createRaceosClient({
     transport: createRaceosTransport(),
     cache: ratingCache,
-    // Shares the poller's transport, so the ticket comes off a tape during a
-    // replay instead of from a loopback port no sim is serving.
+    // Shares the poller's transport, so a replay asks the tape instead of a
+    // loopback port no sim is serving. The recorder deliberately does not
+    // capture the ticket path -- see ticket.ts -- so a replay resolves no
+    // ratings at all, which is the same quiet absence as a sim that is
+    // running but not signed in.
     fetchTicket: createTicketFetcher(restTransport),
     // Ratings land long after the snapshot that asked for them was published,
     // so something has to force a republish. Dropping the signature is the

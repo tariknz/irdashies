@@ -173,6 +173,11 @@ bool parseOptions(int argc, char** argv, Options& options, std::string& error) {
  * the source of truth for what the app reads. A path recorded but unread is
  * harmless; a path read but never recorded replays as pending forever, which
  * is why this list errs towards recording everything.
+ *
+ * That used to be a comment and nothing more, and the list duly drifted: the
+ * nationalities task was added to the app and not here, so every replay was
+ * missing driver flags with nothing to say why. rest/recorderParity.spec.ts
+ * now reads this array and fails when the two disagree.
  */
 const char* kRestPaths[] = {
     "/rest/strategy/pitstop-estimate",
@@ -180,6 +185,10 @@ const char* kRestPaths[] = {
     "/rest/sessions",
     "/rest/sessions/weather",
     "/rest/garage/UIScreen/CarSetupOverview",
+    // Driver nationalities, and the only source of them. Absent outside
+    // multiplayer, where it answers 404 and simply records nothing -- which
+    // is correct, since an offline session has no nationalities either.
+    "/rest/multiplayer/teams",
 };
 
 struct PendingRest {

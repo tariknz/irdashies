@@ -9,7 +9,13 @@ import type { LmuRestTransport } from '../rest/poller';
  * it buys is the thing worth holding on to (see client.ts).
  *
  * Reuses the same loopback transport as the REST poller, so a tape replay
- * reads the recorded response rather than hitting a port no sim is serving.
+ * asks the tape rather than hitting a port no sim is serving. Nothing records
+ * this path, though, and deliberately: a ticket is a live credential with a
+ * short life, and writing one into a tape meant to be shared or committed
+ * would be storing a credential in a fixture. So on a replay the tape has no
+ * body for it, the transport answers `pending`, and ratings are simply absent
+ * -- the same state as a sim running but not signed in, which is handled
+ * below as an ordinary outcome rather than an error.
  *
  * Returns undefined for every failure. The sim not running, not being signed
  * in, or serving a build without this endpoint are all ordinary states, and
