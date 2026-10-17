@@ -86,6 +86,8 @@ export function exposeInMainWorld() {
       ipcRenderer.invoke('pitLane:getCurrentTrack'),
     resetPitLaneData: (trackId) =>
       ipcRenderer.invoke('pitLane:resetData', trackId),
+    openPitLaneDataFile: () => ipcRenderer.invoke('pitLane:openFile'),
+    reloadPitLaneDataFile: () => ipcRenderer.invoke('pitLane:reloadFile'),
   };
 
   defineBridge<PitLaneBridge>('pitLaneBridge', pitLaneBridge);

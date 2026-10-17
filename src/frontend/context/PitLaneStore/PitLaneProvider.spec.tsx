@@ -224,4 +224,23 @@ describe('PitLaneProvider reset and persistence', () => {
     expect(usePitLaneStore.getState().calibrationSourceId).toBe('new-instance');
     expect(usePitLaneStore.getState().pitEntryPct).toBeNull();
   });
+  it('applies edited values from a file reload without saving the previous calibration again', async () => {
+    render(<PitLaneProvider bridge={bridge} />);
+    await waitFor(() =>
+      expect(usePitLaneStore.getState().pitEntryPct).toBe(0.95)
+    );
+    act(() =>
+      callbacks.forEach((callback) =>
+        callback({
+          trackId: '47',
+          sourceId: 'test-source',
+          revision: 1,
+          data: { pitEntryPct: 0.8, pitExitPct: null },
+        })
+      )
+    );
+    expect(usePitLaneStore.getState().pitEntryPct).toBe(0.8);
+    expect(usePitLaneStore.getState().pitExitPct).toBeNull();
+    expect(bridge.updatePitLaneData).not.toHaveBeenCalled();
+  });
 });

@@ -1,9 +1,11 @@
-import { ipcMain } from 'electron';
+import { ipcMain, shell } from 'electron';
 import { randomUUID } from 'node:crypto';
 import {
   clearPitLaneDataForTrack,
   getPitLaneDataForTrack,
   updatePitLaneDataForTrack,
+  preparePitLaneDataFile,
+  reloadPitLaneDataFile,
 } from '../storage/pitLaneData';
 import type { PitLaneBridge, Session } from '@irdashies/types';
 import type { OverlayManager } from '../overlayManager';
@@ -39,20 +41,14 @@ export const createPitLaneBridge = (
 ): PitLaneBridge => {
   const sourceId = randomUUID();
   const revisions = new Map<string, number>();
-  const pending = new Map<string, Promise<unknown>>();
-  const forTrack = <Result>(
-    trackId: string,
+  // A file reload changes several tracks at once. Keep reads, saves and resets
+  // behind the same barrier so none can restore the pre-edit calibration.
+  let pending: Promise<unknown> = Promise.resolve();
+  const serialize = <Result>(
     operation: () => Promise<Result>
   ): Promise<Result> => {
-    const next = (pending.get(trackId) ?? Promise.resolve())
-      .catch(() => undefined)
-      .then(operation);
-    pending.set(trackId, next);
-    void next
-      .finally(() => {
-        if (pending.get(trackId) === next) pending.delete(trackId);
-      })
-      .catch(() => undefined);
+    const next = pending.catch(() => undefined).then(operation);
+    pending = next;
     return next;
   };
   const currentTrack = () => {
@@ -72,7 +68,7 @@ export const createPitLaneBridge = (
   return {
     async getPitLaneData(trackId) {
       if (!isTrackId(trackId)) throw new TypeError('Invalid pit lane track ID');
-      return forTrack(trackId, async () => ({
+      return serialize(async () => ({
         trackId,
         sourceId,
         revision: revisions.get(trackId) ?? 0,
@@ -89,7 +85,7 @@ export const createPitLaneBridge = (
       ) {
         throw new TypeError('Invalid pit lane update');
       }
-      return forTrack(trackId, async () => {
+      return serialize(async () => {
         if (
           savedSourceId !== sourceId ||
           revision !== (revisions.get(trackId) ?? 0)
@@ -102,9 +98,7 @@ export const createPitLaneBridge = (
     async getCurrentTrackPitLaneInfo() {
       const track = currentTrack();
       if (!track) return null;
-      const data = await forTrack(track.trackId, () =>
-        getPitLaneDataForTrack(track.trackId)
-      );
+      const data = await serialize(() => getPitLaneDataForTrack(track.trackId));
       return {
         ...track,
         hasCalibration: data?.pitEntryPct != null || data?.pitExitPct != null,
@@ -112,7 +106,7 @@ export const createPitLaneBridge = (
     },
     async resetPitLaneData(trackId) {
       if (!isTrackId(trackId)) throw new TypeError('Invalid pit lane track ID');
-      await forTrack(trackId, async () => {
+      await serialize(async () => {
         if (currentTrack()?.trackId !== trackId)
           throw new Error('The current track changed. Refresh and try again.');
         await clearPitLaneDataForTrack(trackId);
@@ -124,6 +118,31 @@ export const createPitLaneBridge = (
           revision,
           data: null,
         });
+      });
+    },
+    async openPitLaneDataFile() {
+      await serialize(async () => {
+        const filePath = await preparePitLaneDataFile();
+        const error = await shell.openPath(filePath);
+        if (error)
+          throw new Error(
+            'Could not open calibration file. Check your default JSON application.'
+          );
+      });
+    },
+    async reloadPitLaneDataFile() {
+      await serialize(async () => {
+        const changes = await reloadPitLaneDataFile();
+        for (const { trackId, data } of changes) {
+          const revision = (revisions.get(trackId) ?? 0) + 1;
+          revisions.set(trackId, revision);
+          channelBus.publish('pit-lane.reset', {
+            trackId,
+            sourceId,
+            revision,
+            data,
+          });
+        }
       });
     },
   };
@@ -146,5 +165,7 @@ export const setupPitLaneBridge = (
   ipcMain.handle('pitLane:resetData', (_, trackId) =>
     bridge.resetPitLaneData(trackId)
   );
+  ipcMain.handle('pitLane:openFile', () => bridge.openPitLaneDataFile?.());
+  ipcMain.handle('pitLane:reloadFile', () => bridge.reloadPitLaneDataFile?.());
   return bridge;
 };

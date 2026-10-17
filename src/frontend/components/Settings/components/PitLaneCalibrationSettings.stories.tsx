@@ -23,6 +23,8 @@ const mockBridge = (connected: boolean, learned: boolean): PitLaneBridge => {
     resetPitLaneData: async () => {
       hasCalibration = false;
     },
+    openPitLaneDataFile: async () => undefined,
+    reloadPitLaneDataFile: async () => undefined,
   };
 };
 

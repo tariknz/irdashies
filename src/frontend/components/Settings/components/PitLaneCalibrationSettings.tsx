@@ -14,7 +14,10 @@ export const PitLaneCalibrationSettings = ({
   const [confirmTrack, setConfirmTrack] =
     useState<CurrentTrackPitLaneInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [pendingAction, setPendingAction] = useState<
+    'reset' | 'open' | 'reload' | null
+  >(null);
+  const busy = pendingAction !== null;
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [readError, setReadError] = useState('');
@@ -51,7 +54,7 @@ export const PitLaneCalibrationSettings = ({
     if (!bridge || !confirmTrack || busy) return;
     const selected = confirmTrack;
     setConfirmTrack(null);
-    setBusy(true);
+    setPendingAction('reset');
     setMessage('');
     setError('');
     try {
@@ -65,7 +68,39 @@ export const PitLaneCalibrationSettings = ({
         'Could not reset calibration. Check that the same track is still connected, then try again.'
       );
     } finally {
-      setBusy(false);
+      setPendingAction(null);
+    }
+  };
+
+  const editFile = async (action: 'open' | 'reload') => {
+    const execute =
+      action === 'open'
+        ? bridge?.openPitLaneDataFile
+        : bridge?.reloadPitLaneDataFile;
+    if (!execute || busy) return;
+    setPendingAction(action);
+    setMessage('');
+    setError('');
+    try {
+      await execute();
+      if (action === 'reload') {
+        setTrack((await bridge?.getCurrentTrackPitLaneInfo()) ?? null);
+        setMessage(
+          'Calibration file reloaded. Saved edits are now applied to the overlays.'
+        );
+      } else {
+        setMessage(
+          'Opened pitLaneData.json. Save your changes, then choose Reload file.'
+        );
+      }
+    } catch {
+      setError(
+        action === 'open'
+          ? 'Could not open the calibration file. Check your default application for JSON files, then try again.'
+          : 'Could not reload the calibration file. Check the JSON, track IDs, and pitEntryPct/pitExitPct values (0 to 1 or null), then try again.'
+      );
+    } finally {
+      setPendingAction(null);
     }
   };
 
@@ -92,9 +127,44 @@ export const PitLaneCalibrationSettings = ({
           onClick={() => setConfirmTrack(track)}
           className="shrink-0 rounded-md bg-slate-600 px-3 py-1 text-sm text-slate-200 transition-colors hover:bg-slate-500 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {busy ? 'Resetting…' : 'Reset calibration'}
+          {pendingAction === 'reset' ? 'Resetting…' : 'Reset calibration'}
         </button>
       </div>
+      {(bridge?.openPitLaneDataFile || bridge?.reloadPitLaneDataFile) && (
+        <div className="mt-4 border-t border-slate-700/50 pt-4">
+          <h4 className="text-md font-medium text-slate-300">
+            Calibration file
+          </h4>
+          <p className="mt-1 text-sm text-slate-500">
+            View or edit pitLaneData.json. Positions are lap fractions from 0 to
+            1, or null. Save changes, then Reload file to apply them.
+          </p>
+          <div className="mt-3 flex gap-2">
+            {bridge.openPitLaneDataFile && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void editFile('open')}
+                className="rounded-md bg-slate-600 px-3 py-1 text-sm text-slate-200 transition-colors hover:bg-slate-500 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {pendingAction === 'open'
+                  ? 'Opening…'
+                  : 'Open calibration file'}
+              </button>
+            )}
+            {bridge.reloadPitLaneDataFile && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void editFile('reload')}
+                className="rounded-md bg-slate-600 px-3 py-1 text-sm text-slate-200 transition-colors hover:bg-slate-500 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {pendingAction === 'reload' ? 'Reloading…' : 'Reload file'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {message && (
         <p role="status" className="mt-3 text-sm text-emerald-400">
           {message}

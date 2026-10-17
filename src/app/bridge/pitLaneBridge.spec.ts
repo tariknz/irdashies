@@ -8,13 +8,21 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   clear: vi.fn(),
   handle: vi.fn(),
+  prepare: vi.fn(),
+  reload: vi.fn(),
+  openPath: vi.fn(),
 }));
 vi.mock('node:crypto', () => ({ randomUUID: () => 'test-source' }));
-vi.mock('electron', () => ({ ipcMain: { handle: mocks.handle } }));
+vi.mock('electron', () => ({
+  ipcMain: { handle: mocks.handle },
+  shell: { openPath: mocks.openPath },
+}));
 vi.mock('../storage/pitLaneData', () => ({
   getPitLaneDataForTrack: mocks.get,
   updatePitLaneDataForTrack: mocks.update,
   clearPitLaneDataForTrack: mocks.clear,
+  preparePitLaneDataFile: mocks.prepare,
+  reloadPitLaneDataFile: mocks.reload,
 }));
 
 let data: Map<string, PitLaneTrackData>;
@@ -27,6 +35,9 @@ let bridge: ReturnType<typeof createPitLaneBridge>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.prepare.mockResolvedValue('/mock/userData/pitLaneData.json');
+  mocks.reload.mockResolvedValue([]);
+  mocks.openPath.mockResolvedValue('');
   data = new Map([
     ['47', { pitEntryPct: 0.92, pitExitPct: 0.05 }],
     ['181', { pitEntryPct: 0.98, pitExitPct: 0.06 }],
@@ -202,5 +213,101 @@ describe('pit lane reset bridge', () => {
       )
     ).toBe(false);
     expect(mocks.update).not.toHaveBeenCalled();
+  });
+  it('opens only the prepared fixed file even if an IPC caller supplies a path', async () => {
+    setupPitLaneBridge(manager, bus);
+    const open = mocks.handle.mock.calls.find(
+      ([name]) => name === 'pitLane:openFile'
+    )?.[1];
+    await open({}, '/tmp/arbitrary-file.json');
+    expect(mocks.prepare).toHaveBeenCalledOnce();
+    expect(mocks.openPath).toHaveBeenCalledWith(
+      '/mock/userData/pitLaneData.json'
+    );
+  });
+
+  it('reports a default application failure when opening the file', async () => {
+    mocks.openPath.mockResolvedValueOnce('No default application');
+    await expect(bridge.openPitLaneDataFile?.()).rejects.toThrow(
+      'Could not open calibration file'
+    );
+  });
+
+  it('reloads changed/deleted tracks across windows and rejects earlier revisions', async () => {
+    mocks.reload.mockImplementationOnce(async () => {
+      data.set('47', { pitEntryPct: 0.8, pitExitPct: 0.04 });
+      data.delete('181');
+      return [
+        { trackId: '47', data: data.get('47') },
+        { trackId: '181', data: null },
+      ];
+    });
+    const publish = vi.spyOn(bus, 'publish');
+    manager.getRunningState.mockReturnValue(false);
+    await bridge.reloadPitLaneDataFile?.();
+    expect(publish).toHaveBeenCalledWith('pit-lane.reset', {
+      trackId: '47',
+      sourceId: 'test-source',
+      revision: 1,
+      data: { pitEntryPct: 0.8, pitExitPct: 0.04 },
+    });
+    expect(publish).toHaveBeenCalledWith('pit-lane.reset', {
+      trackId: '181',
+      sourceId: 'test-source',
+      revision: 1,
+      data: null,
+    });
+    expect(
+      await bridge.updatePitLaneData(
+        '47',
+        { pitEntryPct: 0.92 },
+        0,
+        'test-source'
+      )
+    ).toBe(false);
+    expect((await bridge.getPitLaneData('181')).data).toBeNull();
+  });
+
+  it('does not change revisions or broadcast when edited JSON is invalid', async () => {
+    mocks.reload.mockRejectedValueOnce(new Error('Invalid JSON'));
+    const publish = vi.spyOn(bus, 'publish');
+    await expect(bridge.reloadPitLaneDataFile?.()).rejects.toThrow(
+      'Invalid JSON'
+    );
+    expect((await bridge.getPitLaneData('47')).revision).toBe(0);
+    expect(publish).not.toHaveBeenCalled();
+  });
+
+  it('serializes file reload against reads and saves for every track', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    mocks.reload.mockImplementationOnce(async () => {
+      await gate;
+      data.delete('47');
+      data.delete('181');
+      return [
+        { trackId: '47', data: null },
+        { trackId: '181', data: null },
+      ];
+    });
+    const reloading = bridge.reloadPitLaneDataFile?.();
+    await vi.waitFor(() => expect(mocks.reload).toHaveBeenCalled());
+    const read = bridge.getPitLaneData('181');
+    const save = bridge.updatePitLaneData(
+      '47',
+      { pitEntryPct: 0.92 },
+      0,
+      'test-source'
+    );
+    const readFinished = vi.fn();
+    void read.then(readFinished);
+    await Promise.resolve();
+    expect(readFinished).not.toHaveBeenCalled();
+    release();
+    await reloading;
+    expect(await read).toMatchObject({ revision: 1, data: null });
+    expect(await save).toBe(false);
   });
 });

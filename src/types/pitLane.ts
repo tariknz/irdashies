@@ -13,6 +13,10 @@ export interface PitLaneBridge {
   ) => Promise<boolean>;
   getCurrentTrackPitLaneInfo: () => Promise<CurrentTrackPitLaneInfo | null>;
   resetPitLaneData: (trackId: string) => Promise<void>;
+  /** Desktop only: open the fixed calibration file in its default application. */
+  openPitLaneDataFile?: () => Promise<void>;
+  /** Desktop only: apply externally saved calibration edits to all overlays. */
+  reloadPitLaneDataFile?: () => Promise<void>;
 }
 
 export interface PitLaneCalibration {

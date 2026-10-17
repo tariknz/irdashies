@@ -127,3 +127,126 @@ describe('PitLaneDataStore', () => {
     expect(spy).toHaveBeenCalledOnce();
   });
 });
+
+describe('pit lane calibration file editing', () => {
+  it('creates an empty file only when missing, without requiring a session', async () => {
+    expect(await store.prepareFile()).toBe(file);
+    expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({});
+  });
+
+  it('opens existing malformed JSON as-is, without loading or overwriting it', async () => {
+    const invalid = '{unfinished edit';
+    await writeFile(file, invalid);
+    expect(await store.prepareFile()).toBe(file);
+    await store.flush();
+    expect(await readFile(file, 'utf8')).toBe(invalid);
+  });
+
+  it('flushes pending learned values before opening the file', async () => {
+    await writeFile(file, JSON.stringify(original));
+    await store.update('47', { pitEntryPct: 0.91 });
+    await store.prepareFile();
+    expect(JSON.parse(await readFile(file, 'utf8'))['47'].pitEntryPct).toBe(
+      0.91
+    );
+  });
+
+  it('applies saved edits and deletions while preserving other tracks', async () => {
+    await writeFile(file, JSON.stringify(original));
+    await store.get('47');
+    const edited = {
+      '47': { pitEntryPct: 0.9, pitExitPct: null },
+      '321': { pitEntryPct: null, pitExitPct: 0.1 },
+    };
+    const bytes = JSON.stringify(edited);
+    await writeFile(file, bytes);
+    expect(await store.reload()).toEqual([
+      { trackId: '47', data: edited['47'] },
+      { trackId: '181', data: null },
+      { trackId: '321', data: edited['321'] },
+    ]);
+    expect(await store.get('47')).toEqual(edited['47']);
+    expect(await store.get('181')).toBeNull();
+    await store.flush();
+    expect(await readFile(file, 'utf8')).toBe(bytes);
+  });
+
+  it('cancels an unflushed learned value before reading external edits', async () => {
+    vi.useFakeTimers();
+    try {
+      await writeFile(file, JSON.stringify(original));
+      await store.update('47', { pitEntryPct: 0.91 });
+      const edited = {
+        ...original,
+        '47': { pitEntryPct: 0.8, pitExitPct: 0.04 },
+      };
+      const bytes = JSON.stringify(edited);
+      await writeFile(file, bytes);
+      await store.reload();
+      await vi.advanceTimersByTimeAsync(500);
+      expect(await store.get('47')).toEqual(edited['47']);
+      expect(await store.get('181')).toEqual(original['181']);
+      expect(await readFile(file, 'utf8')).toBe(bytes);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('waits for an in-flight atomic write before reading saved external edits', async () => {
+    await writeFile(file, JSON.stringify(original));
+    await store.update('47', { pitEntryPct: 0.91 });
+    const edited = {
+      ...original,
+      '47': { pitEntryPct: 0.8, pitExitPct: 0.04 },
+    };
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const realRename = fsp.rename.bind(fsp);
+    const rename = vi
+      .spyOn(fsp, 'rename')
+      .mockImplementationOnce(async (...args) => {
+        await gate;
+        await realRename(...args);
+        // The editor saves once the already-started app write has completed.
+        await writeFile(file, JSON.stringify(edited));
+      });
+    const writing = store.flush();
+    await vi.waitFor(() => expect(rename).toHaveBeenCalled());
+    const reading = vi.spyOn(fsp, 'readFile');
+    const reloading = store.reload();
+    await Promise.resolve();
+    expect(reading).not.toHaveBeenCalled();
+    release();
+    await Promise.all([writing, reloading]);
+    expect(await store.get('47')).toEqual(edited['47']);
+    expect(JSON.parse(await readFile(file, 'utf8'))).toEqual(edited);
+  });
+
+  it.each([
+    '{bad json',
+    'null',
+    '[]',
+    '{"bad-track":{"pitEntryPct":0.9,"pitExitPct":0.05}}',
+    '{"47":{"pitEntryPct":2,"pitExitPct":0.05}}',
+    '{"47":{"pitEntryPct":"0.9","pitExitPct":0.05}}',
+    '{"47":{"pitEntryPct":0.9}}',
+    '{"47":{"pitEntryPct":0.9,"pitExitPct":0.05,"unexpected":true}}',
+  ])(
+    'rejects invalid edits %s and preserves good cache plus original edited bytes',
+    async (invalid) => {
+      await writeFile(file, JSON.stringify(original));
+      await store.get('47');
+      await writeFile(file, invalid);
+      await expect(store.reload()).rejects.toThrow();
+      expect(await store.get('47')).toEqual(original['47']);
+      expect(await store.get('181')).toEqual(original['181']);
+      // Neither Open file nor shutdown may overwrite the invalid file the user
+      // still needs to repair from an unchanged cached copy.
+      await store.prepareFile();
+      await store.flush();
+      expect(await readFile(file, 'utf8')).toBe(invalid);
+    }
+  );
+});
