@@ -398,10 +398,6 @@ export async function publishLmuSDKEvents(
             restData.session,
             (steamId) => ratingClient.get(steamId)
           );
-          const playerIdx = rawSession.playerVehicleIdx;
-          logger.info(
-            `[lmuSdkBridge] Session snapshot track=${rawSession.trackName} session=${rawSession.session} phase=${rawSession.gamePhase} flags=${Array.from(rawSession.sectorFlags).join(',')} sector=${rawSession.vehSector[playerIdx] ?? -1} sectors=${rawSession.vehLastSector1[playerIdx] ?? -1},${rawSession.vehLastSector2[playerIdx] ?? -1},${rawSession.vehLastLapTime[playerIdx] ?? -1}`
-          );
         }
       }
 
