@@ -55,7 +55,7 @@ export function createBridgeProxy(
   }
 
   const broadcast = (type: string, data: unknown) => {
-    const message = JSON.stringify({ type, data });
+    let message: string | undefined;
     clients.forEach((client) => {
       if (
         (type === 'telemetry' || type === 'sessionData') &&
@@ -66,6 +66,8 @@ export function createBridgeProxy(
         return;
       }
       if (client.readyState === WebSocket.OPEN) {
+        // Serialize once, only after finding an eligible recipient.
+        message ??= JSON.stringify({ type, data });
         client.send(message);
       }
     });
