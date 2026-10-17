@@ -57,8 +57,9 @@ Keep the title concise, concrete, and understandable without reading the diff. P
 ## Review Images and Videos
 
 - Keep review screenshots and recordings outside the repository worktree, such as in a temporary directory. Do not commit them to `docs/assets/pr-reviews/` or any other repository path. This does not prevent adding product assets that the user explicitly requested as part of the implementation.
-- Upload review media directly to the PR with `gh pr create`, `gh pr edit`, or `gh pr comment` and `--attach`. Check the installed command's `--help` if support is uncertain; do not assume uploads require a browser.
-- For a comment attachment:
+- Before uploading, check the installed subcommand's `--help` for `--attach` (for example, `gh pr comment --help`). Older GitHub CLI versions may lack it; do not run the examples below unless the selected command advertises the flag.
+- When supported, upload directly with `gh pr create`, `gh pr edit`, or `gh pr comment` and `--attach`. If the flag is absent, use an available authenticated GitHub browser upload instead. If neither mechanism is available, keep the media local and report the limitation; do not commit review assets as a workaround.
+- For a comment attachment when `--attach` is supported:
 
   ```bash
   gh pr comment <PR-NUMBER> --body 'Review screenshot' \
@@ -73,7 +74,7 @@ Keep the title concise, concrete, and understandable without reading the diff. P
   ```
 
   Use `![Screenshot](/tmp/screenshot.png)` for an image and `![](/tmp/replay.mp4)` in its own paragraph for a video player. `gh` replaces the local references with uploaded attachment URLs. Repeat `--attach` for additional files.
-- Read back the PR body and verify that the uploaded attachments render and no local paths or repository-hosted review media links remain. If an upload partially fails, inspect the saved body before retrying to avoid duplicates. If direct attachment is unavailable, keep the media local and report the limitation; do not commit review assets as a workaround.
+- Read back the PR body and verify that the uploaded attachments render and no local paths or repository-hosted review media links remain. If an upload partially fails, inspect the saved body before retrying to avoid duplicates.
 
 ## Publication Guardrail
 
