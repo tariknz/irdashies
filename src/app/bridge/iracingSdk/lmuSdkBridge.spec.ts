@@ -38,6 +38,8 @@ const ratingState = vi.hoisted(() => ({
     load: vi.fn(async () => undefined),
     flush: vi.fn(async () => undefined),
   },
+  /** Set when the bridge chose the tape-backed client over the live one. */
+  tapeClientBuilt: false,
 }));
 
 /** Shared so a spec can read the arguments the session mapper was given. */
@@ -187,6 +189,17 @@ vi.mock('../../lmu/raceos/ticket', () => ({
 // Keeps the rating cache off the filesystem.
 vi.mock('../../storage/driverRatings', () => ({
   createDriverRatingCache: () => ratingState.cache,
+}));
+
+vi.mock('../../lmu/raceos/tapeRatings', () => ({
+  createLmuTapeRatingClient: () => {
+    ratingState.tapeClientBuilt = true;
+    return {
+      get: ratingState.get,
+      request: () => undefined,
+      reset: ratingState.reset,
+    };
+  },
 }));
 
 vi.mock('../../lmu/sessionSignature', () => ({
@@ -484,6 +497,7 @@ describe('publishLmuSDKEvents and driver ratings', () => {
     sdkState.drivers = [];
     ratingState.requested = [];
     ratingState.onResolved = undefined;
+    ratingState.tapeClientBuilt = false;
   });
 
   it('asks about the Steam ids on the grid', async () => {
@@ -585,5 +599,54 @@ describe('publishLmuSDKEvents and driver ratings', () => {
     bridge.stop();
 
     expect(ratingState.cache.flush).toHaveBeenCalled();
+  });
+});
+
+/**
+ * Which rating source a replay gets.
+ *
+ * A replay cannot resolve ratings the live way: the ticket that authorises the
+ * lookup is deliberately never recorded, so the live client would build a
+ * cache, open an HTTPS agent, and ask the tape for a credential that is not
+ * in it. The tape-backed client is the whole of what a replay needs, and
+ * taking the other branch is what keeps a replay off the disk and off the
+ * network entirely.
+ */
+describe('publishLmuSDKEvents rating source on a tape replay', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sdkState.running = true;
+    sdkState.readThrows = false;
+    sdkState.drivers = [];
+    ratingState.requested = [];
+    ratingState.tapeClientBuilt = false;
+  });
+
+  it('reads ratings from the tape instead of the service', async () => {
+    vi.stubEnv('IRDASHIES_LMU_REPLAY', 'session.lmudt');
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(mapSessionSpy).toHaveBeenCalled());
+    expect(ratingState.tapeClientBuilt).toBe(true);
+    // No cache either: there is nothing worth persisting from a replay, and
+    // loading one would let a live session's ratings into a tape's standings.
+    expect(ratingState.cache.load).not.toHaveBeenCalled();
+
+    bridge.stop();
+    expect(ratingState.cache.flush).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
+  });
+
+  it('uses the live client when not replaying', async () => {
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(ratingState.cache.load).toHaveBeenCalled());
+    expect(ratingState.tapeClientBuilt).toBe(false);
+
+    bridge.stop();
   });
 });

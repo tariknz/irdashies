@@ -5,12 +5,13 @@ the nationality and flag that `lmu/mapSession.ts` sets from the sim's own data.
 
 ## What is here
 
-| File           | Role                                                              |
-| -------------- | ----------------------------------------------------------------- |
-| `client.ts`    | The auth exchange, the batched lookup, the cache and the backoff. |
-| `parse.ts`     | Reads the rating service's player records.                        |
-| `httpsJson.ts` | A `node:https` JSON transport, mirroring `lmu/rest/httpJson.ts`.  |
-| `ticket.ts`    | Asks LMU for the Steam auth session ticket the exchange needs.    |
+| File             | Role                                                               |
+| ---------------- | ------------------------------------------------------------------ |
+| `client.ts`      | The auth exchange, the batched lookup, the cache and the backoff.  |
+| `parse.ts`       | Reads the rating service's player records.                         |
+| `httpsJson.ts`   | A `node:https` JSON transport, mirroring `lmu/rest/httpJson.ts`.   |
+| `ticket.ts`      | Asks LMU for the Steam auth session ticket the exchange needs.     |
+| `tapeRatings.ts` | The replay path: ratings read from a tape, with no network at all. |
 
 `../../storage/driverRatings.ts` is the persistent cache, positive and
 negative, that the client reads and writes.
@@ -57,3 +58,32 @@ Answers arrive long after the snapshot that asked for them, so the client's
 
 The renderer needs no knowledge of any of this — it draws whatever ranks it
 is given.
+
+## Replays
+
+A tape cannot resolve ratings the live way. The ticket is a live credential and
+a tape is a fixture meant to be shared, so the recorder never captures that
+path; a replay has nothing to authenticate with, and `createRaceosClient` is
+not even built — `tapeRatings.ts` takes its place.
+
+What makes badges work in a replay is that `anonymise` bakes them in. It maps
+every real Steam id to a synthetic one — a Steam id is a permanent, publicly
+resolvable handle, so leaving it beside a pseudonymised name would defeat the
+pseudonym — and then writes the ratings it finds in `lmu-driver-ratings.json`
+under those new ids, as one REST record on a reserved path. The ids in the
+snapshots match, so the join still works and the replay shows the badges it was
+recorded with, carrying no real identity.
+
+```
+lmu_replay anonymise --input raw.lmudt --output anon.lmudt --names names.txt     [--ratings <cache.json>] [--no-ratings]
+```
+
+`--ratings` defaults to `%APPDATA%/irdashies/lmu-driver-ratings.json`. A missing
+file, a grid the cache has nothing for, or `--no-ratings` all mean the same
+thing: the replay shows flags but no badges. A remembered miss is left out
+rather than baked, so a driver the service had nothing for stays that way.
+
+Two lists have to agree for any of this to work, and both are checked by
+`rest/recorderParity.spec.ts` rather than by review: the recorder's REST paths
+against `LMU_REST_TASKS`, and `kReplayRatingsPath` against
+`REPLAY_RATINGS_PATH`.

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { REPLAY_RATINGS_PATH } from '../raceos/tapeRatings';
 import { LMU_REST_TASKS } from './tasks';
 
 /**
@@ -64,5 +65,42 @@ describe('LMU replay recorder REST paths', () => {
     expect(recorderPaths().length).toBeGreaterThanOrEqual(
       LMU_REST_TASKS.length
     );
+  });
+});
+
+/**
+ * The reserved path the anonymiser bakes driver ratings under.
+ *
+ * Another two-language agreement, and one with no natural failure signal: a
+ * mismatch means the record is written to one path and read from another, so
+ * the tape looks complete, the replay looks healthy, and the badges are just
+ * never there.
+ */
+describe('baked driver ratings path', () => {
+  const RECORDER_CONSTANT =
+    /constexpr const char\* kReplayRatingsPath = "([^"]+)";/;
+
+  it('matches the constant the anonymiser writes', () => {
+    const source = fs.readFileSync(RECORDER_SOURCE, 'utf8');
+    const found = RECORDER_CONSTANT.exec(source);
+    if (!found) {
+      throw new Error(`kReplayRatingsPath not found in ${RECORDER_SOURCE}`);
+    }
+
+    expect(found[1]).toBe(REPLAY_RATINGS_PATH);
+  });
+
+  it('is not a path the poller would try to fetch', () => {
+    // LMU serves nothing here. In LMU_REST_TASKS it would be requested over
+    // loopback every session and fail forever.
+    expect(LMU_REST_TASKS.map((task) => task.path)).not.toContain(
+      REPLAY_RATINGS_PATH
+    );
+  });
+
+  it('is not a path the recorder polls', () => {
+    // It is written by anonymise, after recording. Polling the sim for it
+    // would be asking a question nothing can answer.
+    expect(recorderPaths()).not.toContain(REPLAY_RATINGS_PATH);
   });
 });

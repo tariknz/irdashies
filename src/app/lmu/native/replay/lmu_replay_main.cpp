@@ -13,9 +13,11 @@
 #include <chrono>
 #include <cmath>
 #include <csignal>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <mutex>
 #include <set>
@@ -83,6 +85,16 @@ struct Options {
    * so nothing can be derived from it and the literal has to be given.
    */
   std::vector<std::pair<std::string, std::string>> alsoScrub;
+  /**
+   * anonymise: the app's driver-rating cache, baked into the tape.
+   *
+   * Empty means the default location is tried and a missing file is not an
+   * error -- a tape without ratings replays exactly as it did before, just
+   * without badges.
+   */
+  std::string ratingsPath;
+  /** anonymise: set by --no-ratings, to skip baking them in at all. */
+  bool bakeRatings = true;
   double durationSeconds = 0.0;
   std::uint32_t pollMillis = 10;
   std::uint32_t frames = 240;
@@ -109,6 +121,10 @@ bool parseOptions(int argc, char** argv, Options& options, std::string& error) {
     } else if (arg == "--output" && hasNext) {
       options.outputPath = argv[++i];
       if (options.path.empty()) options.path = options.outputPath;
+    } else if (arg == "--ratings" && hasNext) {
+      options.ratingsPath = argv[++i];
+    } else if (arg == "--no-ratings") {
+      options.bakeRatings = false;
     } else if (arg == "--names" && hasNext) {
       options.namesPath = argv[++i];
     } else if (arg == "--also-scrub" && hasNext) {
@@ -848,6 +864,134 @@ bool loadNamePool(
  * Assignment is by order of first appearance, so one tape and one names file
  * always produce the same output.
  */
+/**
+ * The tape path the baked driver ratings are stored under.
+ *
+ * Not a real endpoint: LMU serves nothing here and the app never fetches it.
+ * It is a reserved slot in the tape's REST records, which are just
+ * (path, body) pairs, so ratings ride along in the existing structure rather
+ * than needing a record kind and a format bump of their own.
+ *
+ * Must match REPLAY_RATINGS_PATH in src/app/lmu/raceos/tapeRatings.ts;
+ * rest/recorderParity.spec.ts fails when they disagree.
+ */
+constexpr const char* kReplayRatingsPath = "/irdashies/replay/driver-ratings";
+
+/** Synthetic Steam ids start here, so an anonymised one is obvious on sight. */
+constexpr std::uint64_t kFakeSteamIdBase = 76561190000000000ULL;
+
+/**
+ * Real Steam ids to synthetic ones, stable within a tape.
+ *
+ * A Steam id is a permanent, publicly resolvable account handle, so leaving it
+ * beside a pseudonymised name defeats the pseudonym entirely -- which is what
+ * anonymise is for. Zeroing them would be simpler, but the app keys driver
+ * ratings by Steam id, so a zeroed tape loses its badges; mapping instead
+ * keeps the join intact and lets the ratings be carried along with it.
+ *
+ * Assignment is by order of first appearance, like NamePool, so one tape
+ * always anonymises to the same output.
+ */
+class SteamIdPool {
+ public:
+  const std::string& fakeFor(const std::string& original) {
+    const auto existing = assigned_.find(original);
+    if (existing != assigned_.end()) return existing->second;
+    const std::uint64_t fake = kFakeSteamIdBase + ++taken_;
+    return assigned_.emplace(original, std::to_string(fake)).first->second;
+  }
+
+  const std::map<std::string, std::string>& assigned() const {
+    return assigned_;
+  }
+
+ private:
+  std::map<std::string, std::string> assigned_;
+  std::uint64_t taken_ = 0;
+};
+
+/**
+ * The end of the JSON value starting at `at`, which must be a '{'.
+ *
+ * String-aware, so a brace inside a string value does not close the object
+ * early. Returns std::string::npos when the text runs out first.
+ *
+ * Enough JSON to find one object inside a file this program otherwise only
+ * ever rewrites as text. A parser would be the wrong trade for it: the one
+ * shape read here is written by the app itself, a few lines away in
+ * storage/driverRatings.ts.
+ */
+std::size_t jsonObjectEnd(const std::string& text, std::size_t at) {
+  if (at >= text.size() || text[at] != '{') return std::string::npos;
+  int depth = 0;
+  bool inString = false;
+  bool escaped = false;
+  for (std::size_t i = at; i < text.size(); ++i) {
+    const char c = text[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (c == '\\') {
+        escaped = true;
+      } else if (c == '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (c == '"') {
+      inString = true;
+    } else if (c == '{') {
+      ++depth;
+    } else if (c == '}') {
+      if (--depth == 0) return i + 1;
+    }
+  }
+  return std::string::npos;
+}
+
+/**
+ * Builds the ratings body for the tape, keyed by synthetic Steam id.
+ *
+ * Reads the app's cache file, which stores entries as
+ * `{"version":1,"entries":{"<steamId>":{"rating":{...},"at":<ms>}}}`, and
+ * keeps the rating objects verbatim under the pseudonymous ids. An entry with
+ * no "rating" key is a remembered miss -- a driver the service had nothing
+ * for -- and is skipped, so it stays a miss on replay rather than becoming a
+ * driver with an empty badge.
+ *
+ * Returns an empty string when there is nothing worth writing, which the
+ * caller treats as "no record", not as a failure.
+ */
+std::string buildRatingsBody(
+    const std::string& cacheText,
+    const std::vector<std::string>& realIds,
+    SteamIdPool& steamPool) {
+  std::string body;
+  for (const auto& realId : realIds) {
+    const std::string key = "\"" + realId + "\"";
+    const auto keyAt = cacheText.find(key);
+    if (keyAt == std::string::npos) continue;
+    const auto entryAt = cacheText.find('{', keyAt + key.size());
+    if (entryAt == std::string::npos) continue;
+    const auto entryEnd = jsonObjectEnd(cacheText, entryAt);
+    if (entryEnd == std::string::npos) continue;
+    const std::string entry =
+        cacheText.substr(entryAt, entryEnd - entryAt);
+
+    const auto ratingAt = entry.find("\"rating\":");
+    if (ratingAt == std::string::npos) continue;
+    const auto objectAt = entry.find('{', ratingAt);
+    if (objectAt == std::string::npos) continue;
+    const auto objectEnd = jsonObjectEnd(entry, objectAt);
+    if (objectEnd == std::string::npos) continue;
+
+    if (!body.empty()) body += ",";
+    body += "\"" + steamPool.fakeFor(realId) + "\":" +
+        entry.substr(objectAt, objectEnd - objectAt);
+  }
+  return body.empty() ? std::string() : "{" + body + "}";
+}
+
 class NamePool {
  public:
   explicit NamePool(std::vector<std::string> names) : names_(std::move(names)) {}
@@ -897,9 +1041,22 @@ class NamePool {
  * mServerName is replaced rather than zeroed, so an anonymised tape can be
  * told apart from one recorded offline.
  */
-void anonymiseSnapshot(LMUObjectOut& snapshot, NamePool& pool) {
+void anonymiseSnapshot(
+    LMUObjectOut& snapshot,
+    NamePool& pool,
+    SteamIdPool& steamPool) {
   for (std::size_t i = 0; i < LMU_MAX_VEHICLES; ++i) {
     auto& vehicle = snapshot.scoring.vehScoringInfo[i];
+    // Replaced rather than zeroed: the app keys driver ratings by Steam id, so
+    // a zeroed tape would lose its badges along with the identity. Done for
+    // every occupied slot, including one whose name is empty -- an id without
+    // a name still identifies the person outright.
+    if (vehicle.mSteamID != 0) {
+      vehicle.mSteamID = std::strtoull(
+          steamPool.fakeFor(std::to_string(vehicle.mSteamID)).c_str(),
+          nullptr,
+          10);
+    }
     const std::string original =
         boundedString(vehicle.mDriverName, sizeof(vehicle.mDriverName));
     // An empty slot is not a person. Naming it would invent a driver the tape
@@ -962,6 +1119,27 @@ void collectNames(const LMUObjectOut& snapshot, std::vector<std::string>& out) {
 }
 
 /**
+ * Every real Steam id in the tape, in order of first appearance.
+ *
+ * Collected in the same pre-pass as the names and for the same reason: the
+ * ratings record is written before the snapshots, so the whole mapping has to
+ * exist before a single record goes out.
+ */
+void collectSteamIds(
+    const LMUObjectOut& snapshot,
+    std::vector<std::string>& out) {
+  for (std::size_t i = 0; i < LMU_MAX_VEHICLES; ++i) {
+    const std::uint64_t id = snapshot.scoring.vehScoringInfo[i].mSteamID;
+    // 0 is an AI entry, not a person; there is nothing to anonymise.
+    if (id == 0) continue;
+    const std::string text = std::to_string(id);
+    if (std::find(out.begin(), out.end(), text) == out.end()) {
+      out.push_back(text);
+    }
+  }
+}
+
+/**
  * Rewrites a tape with every driver name replaced.
  *
  * A tape cannot be edited in place: names live inside run-length encoded
@@ -994,6 +1172,7 @@ int runAnonymise(const Options& options) {
   std::string restBody;
 
   std::vector<std::string> originals;
+  std::vector<std::string> realSteamIds;
   while (true) {
     const auto result =
         reader.readNext(record, snapshot, restPath, restBody, error);
@@ -1005,6 +1184,7 @@ int runAnonymise(const Options& options) {
     const auto kind = static_cast<RecordKind>(record.kind);
     if (kind == RecordKind::Keyframe || kind == RecordKind::Delta) {
       collectNames(snapshot, originals);
+      collectSteamIds(snapshot, realSteamIds);
     }
   }
 
@@ -1030,10 +1210,62 @@ int runAnonymise(const Options& options) {
   const auto rewrites =
       buildNameSubstitutions(originals, pool.assigned(), extras);
 
+  // Assigned before anything is written, for the same reason the names are:
+  // the ratings record goes out ahead of the snapshots and has to agree with
+  // the ids they will carry.
+  SteamIdPool steamPool;
+  for (const auto& realId : realSteamIds) steamPool.fakeFor(realId);
+
   TapeWriter writer;
   if (!writer.open(options.outputPath, error)) {
     std::cerr << error << "\n";
     return 1;
+  }
+
+  // Driver ratings, baked in so a replay still shows the badges it was
+  // recorded with. Without this the id mapping above would be the end of
+  // them: the ids are the cache key, so synthetic ids miss the app's cache,
+  // and a replay cannot look anything up either -- the ticket that would
+  // authorise it is deliberately never recorded.
+  bool ratingsBaked = false;
+  if (options.bakeRatings) {
+    std::string cachePath = options.ratingsPath;
+    if (cachePath.empty()) {
+      // Where Electron puts userData on Windows, which is the only platform
+      // LMU runs on. Absent is ordinary, not an error.
+      const char* appData = std::getenv("APPDATA");
+      if (appData) {
+        cachePath = std::string(appData) + "\\irdashies\\lmu-driver-ratings.json";
+      }
+    }
+    std::string cacheText;
+    if (!cachePath.empty()) {
+      std::ifstream cacheFile(cachePath, std::ios::binary);
+      if (cacheFile) {
+        cacheText.assign(
+            std::istreambuf_iterator<char>(cacheFile),
+            std::istreambuf_iterator<char>());
+      }
+    }
+    if (cacheText.empty()) {
+      std::cout << "No driver rating cache at "
+                << (cachePath.empty() ? "(unknown path)" : cachePath)
+                << "; the replay will show no badges.\n";
+    } else {
+      // Through the same substitutions as every other body, so a name that
+      // found its way into a badge string is scrubbed with the rest.
+      const std::string body = rewriteNamesInJson(
+          buildRatingsBody(cacheText, realSteamIds, steamPool), rewrites);
+      if (body.empty()) {
+        std::cout << "No cached ratings matched this tape's drivers; the "
+                     "replay will show no badges.\n";
+      } else if (!writer.appendRest(kReplayRatingsPath, body, 0, error)) {
+        std::cerr << error << "\n";
+        return 1;
+      } else {
+        ratingsBaked = true;
+      }
+    }
   }
 
   std::uint64_t snapshots = 0;
@@ -1056,7 +1288,7 @@ int runAnonymise(const Options& options) {
     switch (static_cast<RecordKind>(record.kind)) {
       case RecordKind::Keyframe:
       case RecordKind::Delta:
-        anonymiseSnapshot(snapshot, pool);
+        anonymiseSnapshot(snapshot, pool, steamPool);
         ok = writer.appendSnapshot(snapshot, record.elapsedMicros, error);
         ++snapshots;
         break;
@@ -1116,7 +1348,10 @@ int runAnonymise(const Options& options) {
             << "Disconnects:     " << disconnects << "\n"
             << "REST records:    " << restRecords << " (" << restRewritten
             << " rewritten)\n"
-            << "Names replaced:  " << pool.assigned().size() << "\n";
+            << "Names replaced:  " << pool.assigned().size() << "\n"
+            << "Steam ids:       " << steamPool.assigned().size()
+            << (ratingsBaked ? " (ratings baked in)" : " (no ratings)")
+            << "\n";
   for (const auto& entry : pool.assigned()) {
     std::cout << "  " << entry.first << " -> " << entry.second << "\n";
   }
@@ -1276,6 +1511,11 @@ int runFixture(const Options& options) {
           // a continuation of the hex escape.
           car == 0 ? "Synthetic Player" : "S\xc3\xa9" "bastien Rival",
           sizeof(scoring.mDriverName) - 1);
+      // Steam ids, so a fixture exercises the id mapping and the baked
+      // ratings as well as the names. Plausible Steam64 values rather than
+      // small integers: the app filters ids that cannot be real.
+      scoring.mSteamID =
+          car == 0 ? 76561198000000111ULL : 76561198000000222ULL;
       scoring.mLapDist = std::fmod(seconds * 60.0 + car * 100.0, 7004.0);
       scoring.mTotalLaps = static_cast<std::int32_t>(seconds / 90.0);
       auto& telemetry = snapshot.telemetry.telemInfo[car];

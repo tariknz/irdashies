@@ -40,10 +40,14 @@ import {
   LmuTrackMapStorage,
   tinyPedalTrackMapDirectories,
 } from '../../lmu/trackMap';
-import { createRaceosClient } from '../../lmu/raceos/client';
+import { createRaceosClient, type RaceosClient } from '../../lmu/raceos/client';
+import { createLmuTapeRatingClient } from '../../lmu/raceos/tapeRatings';
 import { createRaceosTransport } from '../../lmu/raceos/httpsJson';
 import { createTicketFetcher } from '../../lmu/raceos/ticket';
-import { createDriverRatingCache } from '../../storage/driverRatings';
+import {
+  createDriverRatingCache,
+  type DriverRatingCache,
+} from '../../storage/driverRatings';
 import { app } from 'electron';
 import path from 'node:path';
 
@@ -117,7 +121,8 @@ export async function publishLmuSDKEvents(
   // rather than hit a port the sim is not serving. Everything above the
   // transport is identical either way, which is the point of injecting it:
   // a replay exercises the real poller, not a shortcut around it.
-  const restTransport = process.env.IRDASHIES_LMU_REPLAY
+  const isTapeReplay = Boolean(process.env.IRDASHIES_LMU_REPLAY);
+  const restTransport = isTapeReplay
     ? createLmuTapeRestTransport(sdk)
     : createLmuRestTransport(lmuRestOrigin());
   const restPoller = createLmuRestPoller({
@@ -180,28 +185,35 @@ export async function publishLmuSDKEvents(
   // The credential chain is documented in raceos/client.ts; the short version
   // is that it needs a Steam auth ticket the sim mints, so ratings exist only
   // while LMU is running and signed in.
-  const ratingCache = createDriverRatingCache(app.getPath('userData'));
-  // Awaited before the loop starts so the first grid is matched against what
-  // the last session already learned, rather than re-asking for all of it.
-  await ratingCache.load();
-  const ratingClient = createRaceosClient({
-    transport: createRaceosTransport(),
-    cache: ratingCache,
-    // Shares the poller's transport, so a replay asks the tape instead of a
-    // loopback port no sim is serving. The recorder deliberately does not
-    // capture the ticket path -- see ticket.ts -- so a replay resolves no
-    // ratings at all, which is the same quiet absence as a sim that is
-    // running but not signed in.
-    fetchTicket: createTicketFetcher(restTransport),
-    // Ratings land long after the snapshot that asked for them was published,
-    // so something has to force a republish. Dropping the signature is the
-    // same lever the track map and the REST revision pull above; without it a
-    // resolved rank would sit in the cache unseen until an unrelated field
-    // happened to move the signature on its own.
-    onResolved: () => {
-      lastSessionSignature = null;
-    },
-  });
+  //
+  // A replay takes the other branch entirely, because the recorder never
+  // captures that ticket -- it is a live credential and a tape is a fixture.
+  // `anonymise` bakes the ratings into the tape instead, under synthetic Steam
+  // ids matching the ones in its snapshots, so a replay shows the badges it
+  // was recorded with and carries no real identity.
+  let ratingCache: DriverRatingCache | undefined;
+  let ratingClient: RaceosClient;
+  if (isTapeReplay) {
+    ratingClient = createLmuTapeRatingClient(sdk);
+  } else {
+    ratingCache = createDriverRatingCache(app.getPath('userData'));
+    // Awaited before the loop starts so the first grid is matched against what
+    // the last session already learned, rather than re-asking for all of it.
+    await ratingCache.load();
+    ratingClient = createRaceosClient({
+      transport: createRaceosTransport(),
+      cache: ratingCache,
+      fetchTicket: createTicketFetcher(restTransport),
+      // Ratings land long after the snapshot that asked for them was
+      // published, so something has to force a republish. Dropping the
+      // signature is the same lever the track map and the REST revision pull
+      // above; without it a resolved rank would sit in the cache unseen until
+      // an unrelated field happened to move the signature on its own.
+      onResolved: () => {
+        lastSessionSignature = null;
+      },
+    });
+  }
 
   const telemetryCallbacks = new Set<(value: Telemetry) => void>();
   const sessionCallbacks = new Set<(value: Session) => void>();
@@ -518,7 +530,7 @@ export async function publishLmuSDKEvents(
       // resolved in the last second before a quit is only on disk if it is
       // asked for. Losing it would just mean asking again, hence no await.
       void ratingCache
-        .flush()
+        ?.flush()
         .catch((error: unknown) =>
           logger.warn('[lmuSdkBridge] Failed to flush driver ratings', error)
         );
