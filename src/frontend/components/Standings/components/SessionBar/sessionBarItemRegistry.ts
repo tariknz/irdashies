@@ -9,6 +9,7 @@ import { LocalTimeItem } from './components/LocalTimeItem/LocalTimeItem';
 import { SessionClockTimeItem } from './components/SessionClockTimeItem/SessionClockTimeItem';
 import { TrackWetnessItem } from './components/TrackWetnessItem/TrackWetnessItem';
 import { PrecipitationItem } from './components/PrecipitationItem/PrecipitationItem';
+import { HumidityItem } from './components/HumidityItem/HumidityItem';
 import { AirTemperatureItem } from './components/AirTemperatureItem/AirTemperatureItem';
 import { TrackTemperatureItem } from './components/TrackTemperatureItem/TrackTemperatureItem';
 import { TrackNameItem } from './components/TrackNameItem/TrackNameItem';
@@ -38,6 +39,7 @@ export const SESSION_BAR_ITEM_COMPONENTS: Record<
   sessionClockTime: SessionClockTimeItem,
   trackWetness: TrackWetnessItem,
   precipitation: PrecipitationItem,
+  humidity: HumidityItem,
   airTemperature: AirTemperatureItem,
   trackTemperature: TrackTemperatureItem,
   trackName: TrackNameItem,
@@ -65,6 +67,7 @@ const DEFAULT_ENABLED: Record<
   sessionClockTime: () => false,
   trackWetness: (position) => position !== 'header',
   precipitation: () => false,
+  humidity: () => false,
   airTemperature: (position) => position !== 'header',
   trackTemperature: (position) => position !== 'header',
   trackName: () => false,

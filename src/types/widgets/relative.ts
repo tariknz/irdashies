@@ -136,6 +136,9 @@ export default defineWidgetManifest({
       precipitation: {
         enabled: false,
       },
+      humidity: {
+        enabled: false,
+      },
       airTemperature: {
         enabled: false,
         unit: 'Metric',
@@ -178,6 +181,7 @@ export default defineWidgetManifest({
         'sessionClockTime',
         'trackWetness',
         'precipitation',
+        'humidity',
         'airTemperature',
         'trackTemperature',
         'wind',
@@ -220,6 +224,9 @@ export default defineWidgetManifest({
       precipitation: {
         enabled: false,
       },
+      humidity: {
+        enabled: false,
+      },
       airTemperature: {
         enabled: true,
         unit: 'Metric',
@@ -262,6 +269,7 @@ export default defineWidgetManifest({
         'sessionClockTime',
         'trackWetness',
         'precipitation',
+        'humidity',
         'airTemperature',
         'trackTemperature',
         'wind',

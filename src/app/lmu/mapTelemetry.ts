@@ -550,7 +550,7 @@ export function mapLmuTelemetry(
     Math.hypot(raw.wind[0] ?? 0, raw.wind[1] ?? 0, raw.wind[2] ?? 0)
   );
   t.WindDir = num(0);
-  t.RelativeHumidity = num(0);
+  // LMU does not expose humidity; leave it absent rather than report dry air.
   t.FogLevel = num(0);
   t.Precipitation = num(raw.raining);
   t.WeatherDeclaredWet = bool(raw.raining > 0);
