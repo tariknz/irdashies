@@ -9,12 +9,14 @@ import { getAnalyticsOptOut } from './storage/analytics';
 import logger from './logger';
 import type ElectronLog from 'electron-log';
 import type { LogMessage } from 'electron-log';
+import { readPitLaneCalibrationForAnalytics } from './analytics/pitLaneCalibration';
 
 declare const POSTHOG_KEY: string;
 
 const DEDUP_WINDOW_MS = 60 * 60 * 1000;
 const DEDUP_KEY_LENGTH = 30;
 const DEDUP_MAX_ENTRIES = 5000;
+const MAX_CALIBRATION_PROPERTIES_BYTES = 512 * 1024;
 
 export interface AnalyticsProvider {
   capture(event: EventMessage): void;
@@ -40,6 +42,7 @@ class PostHogProvider implements AnalyticsProvider {
 
 export class Analytics {
   private provider: AnalyticsProvider | null = null;
+  private pitLaneCalibrationAttempted = false;
 
   constructor(provider?: AnalyticsProvider) {
     if (provider) {
@@ -165,5 +168,47 @@ export class Analytics {
     this.capture({
       event: 'app_started',
     });
+
+    await this.capturePitLaneCalibration(userId, version);
+  }
+
+  private async capturePitLaneCalibration(
+    userId: string,
+    version: string
+  ): Promise<void> {
+    if (
+      !this.provider ||
+      getAnalyticsOptOut() ||
+      this.pitLaneCalibrationAttempted
+    ) {
+      return;
+    }
+    this.pitLaneCalibrationAttempted = true;
+    try {
+      const tracks = await readPitLaneCalibrationForAnalytics();
+      if (!tracks || getAnalyticsOptOut()) return;
+      const properties = {
+        version,
+        track_count: Object.keys(tracks).length,
+        tracks,
+      };
+      // Leave headroom for SDK metadata below PostHog's 1 MB event limit.
+      if (
+        Buffer.byteLength(JSON.stringify(properties), 'utf8') >
+        MAX_CALIBRATION_PROPERTIES_BYTES
+      ) {
+        logger.warn(
+          '[Analytics] Skipping oversized pit lane calibration event'
+        );
+        return;
+      }
+      this.capture({
+        distinctId: userId,
+        event: 'pit_lane_calibration',
+        properties,
+      });
+    } catch {
+      logger.warn('[Analytics] Could not publish pit lane calibration');
+    }
   }
 }

@@ -100,6 +100,14 @@ export const AboutSettings = () => {
                   informs feature deprecation decisions.
                 </li>
                 <li>
+                  <strong className="text-slate-300">
+                    Pit-lane calibration
+                  </strong>
+                  <br />
+                  Track IDs and learned pit entry and exit positions are sent at
+                  startup to help improve pit-lane detection.
+                </li>
+                <li>
                   <strong className="text-slate-300">System information</strong>
                   <br />
                   Including operating system, CPU, memory, and screen
