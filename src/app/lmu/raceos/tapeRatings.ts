@@ -64,6 +64,14 @@ export function createLmuTapeRatingClient(
 ): RaceosClient {
   /** Undefined until the record has been seen; the tape is read at most once. */
   let ratings: Map<string, LmuDriverRating> | undefined;
+  /**
+   * Whether the absence has been reported.
+   *
+   * `get` runs once per driver per snapshot, so an unguarded log here would
+   * run at tens of lines a second for a tape with no ratings in it -- which is
+   * exactly the tape someone would be trying to read the log of.
+   */
+  let warnedMissing = false;
 
   const load = (): Map<string, LmuDriverRating> | undefined => {
     if (ratings) return ratings;
@@ -79,7 +87,17 @@ export function createLmuTapeRatingClient(
     // anonymised with --no-ratings, or never anonymised at all -- reads null
     // forever. Left unmemoised so a looped tape picks the record up if it
     // arrives later in playback.
-    if (body === null) return undefined;
+    if (body === null) {
+      if (!warnedMissing) {
+        warnedMissing = true;
+        logger.info(
+          '[raceos] This tape carries no baked driver ratings, so the replay ' +
+            'shows no badges. Re-run `lmu_replay anonymise` with --ratings to ' +
+            'bake them in.'
+        );
+      }
+      return undefined;
+    }
     ratings = parse(body);
     logger.info(`[raceos] Replaying ${ratings.size} baked driver ratings`);
     return ratings;

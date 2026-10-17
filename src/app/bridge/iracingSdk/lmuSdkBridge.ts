@@ -194,8 +194,14 @@ export async function publishLmuSDKEvents(
   let ratingCache: DriverRatingCache | undefined;
   let ratingClient: RaceosClient;
   if (isTapeReplay) {
+    logger.info(
+      '[lmuSdkBridge] Driver ratings: reading what the tape was anonymised with'
+    );
     ratingClient = createLmuTapeRatingClient(sdk);
   } else {
+    logger.info(
+      '[lmuSdkBridge] Driver ratings: looking up live via the rating service'
+    );
     ratingCache = createDriverRatingCache(app.getPath('userData'));
     // Awaited before the loop starts so the first grid is matched against what
     // the last session already learned, rather than re-asking for all of it.

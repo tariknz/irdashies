@@ -1,3 +1,4 @@
+import logger from '../../logger';
 import type { LmuRestTransport } from '../rest/poller';
 
 /**
@@ -30,28 +31,71 @@ const isTicket = (value: unknown): value is string =>
 export function createTicketFetcher(
   transport: LmuRestTransport
 ): () => Promise<string | undefined> {
+  /**
+   * The last outcome reported, so a steady state is said once.
+   *
+   * Called off the session poll, so an unconditional log would repeat twice a
+   * second. Which of these outcomes it is matters a great deal -- a refused
+   * connection, a 404 and a ticket that will not parse call for three
+   * different fixes -- and none of them used to be reported at all.
+   */
+  let lastNote: string | undefined;
+  const note = (message: string) => {
+    if (lastNote === message) return;
+    lastNote = message;
+    logger.info(`[raceos] ${message}`);
+  };
+
   return async () => {
     const response = await transport(AUTH_TICKET_PATH);
-    if (!response.ok) return undefined;
+    if (!response.ok) {
+      note(
+        `Ticket endpoint ${AUTH_TICKET_PATH} did not answer (${response.reason})`
+      );
+      return undefined;
+    }
 
     const body = response.body.trim();
-    if (!body) return undefined;
+    if (!body) {
+      note(`Ticket endpoint ${AUTH_TICKET_PATH} returned an empty body`);
+      return undefined;
+    }
 
     // The endpoint has been seen answering with a bare quoted string and
     // with an object wrapping it, so both are accepted rather than betting
     // on one. A bare unquoted token is accepted too: it parses as neither.
+    const found = (ticket: string, how: string): string => {
+      note(`Ticket endpoint answered with a ticket (${how})`);
+      return ticket;
+    };
+
     try {
       const payload: unknown = JSON.parse(body);
-      if (isTicket(payload)) return payload;
+      if (isTicket(payload)) return found(payload, 'bare string');
       if (payload && typeof payload === 'object') {
         const record = payload as Record<string, unknown>;
         for (const key of ['ticket', 'authSessionTicket', 'token']) {
-          if (isTicket(record[key])) return record[key] as string;
+          if (isTicket(record[key])) {
+            return found(record[key] as string, `"${key}" field`);
+          }
         }
       }
+      // Parsed, but nothing in it looks like a ticket. The shape is the thing
+      // worth knowing here, so the keys are named -- without them this is a
+      // dead end with no next step.
+      note(
+        `Ticket endpoint returned JSON with no recognisable ticket; keys: ${
+          payload && typeof payload === 'object'
+            ? Object.keys(payload as Record<string, unknown>).join(', ') ||
+              '(none)'
+            : typeof payload
+        }`
+      );
       return undefined;
     } catch {
-      return isTicket(body) ? body : undefined;
+      if (isTicket(body)) return found(body, 'unquoted body');
+      note('Ticket endpoint returned a body that is neither JSON nor a ticket');
+      return undefined;
     }
   };
 }

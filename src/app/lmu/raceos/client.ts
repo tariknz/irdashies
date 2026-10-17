@@ -88,10 +88,26 @@ export function createRaceosClient({
   /** Nothing is attempted before this; set by the backoff on failure. */
   let notBefore = 0;
   let backoff = RACEOS_BACKOFF_MS;
+  /**
+   * The last thing said, so a state that persists is reported once.
+   *
+   * Everything here is driven off the session poll, so a plain log call would
+   * repeat twice a second for as long as the condition held. Most of these
+   * conditions are steady by nature -- no ticket, nothing left to ask for --
+   * and the useful signal is the transition, not the repetition.
+   */
+  let lastNote: string | undefined;
+
+  const note = (message: string) => {
+    if (lastNote === message) return;
+    lastNote = message;
+    logger.info(`[raceos] ${message}`);
+  };
 
   const fail = (what: string) => {
     notBefore = now() + backoff;
-    logger.info(`[raceos] ${what}; backing off ${Math.round(backoff / 1000)}s`);
+    // Not deduped: each failure moves the backoff, so each one is new news.
+    logger.warn(`[raceos] ${what}; backing off ${Math.round(backoff / 1000)}s`);
     backoff = Math.min(backoff * 2, RACEOS_MAX_BACKOFF_MS);
   };
 
@@ -107,8 +123,19 @@ export function createRaceosClient({
     if (!ticket) {
       // Not running, or not signed in. No backoff: the service has not
       // misbehaved, there is simply nothing to ask with.
+      //
+      // Said out loud because this is the likeliest reason for no badges and
+      // it used to be the one state that logged nothing at all -- leaving "the
+      // sim serves no ticket endpoint" and "everything worked, nobody is
+      // rated" indistinguishable from the outside.
+      note(
+        'No Steam auth ticket from LMU, so no ratings can be looked up. ' +
+          'The sim must be running and signed in to Steam; see ticket.ts for ' +
+          'why a replay never has one.'
+      );
       return undefined;
     }
+    note('Got a Steam auth ticket from LMU; exchanging it for a token');
 
     const response = await transport({
       url: RACEOS_AUTH_URL,
@@ -139,6 +166,9 @@ export function createRaceosClient({
       token = value;
       tokenExpiry = now() + ttl;
       succeed();
+      note(
+        `Authenticated with the rating service; token valid for ${Math.round(ttl / 1000)}s`
+      );
       return token;
     } catch {
       fail('authentication returned unreadable JSON');
@@ -174,6 +204,8 @@ export function createRaceosClient({
       // what stops a grid of AI being re-asked every single session.
       cache.set(id, found.get(id));
     }
+    // Not deduped: one line per completed batch is the record of what the
+    // service actually answered, and a repeat means a new batch.
     logger.info(
       `[raceos] Resolved ${found.size}/${ids.length} driver ratings (cache ${cache.size()})`
     );
@@ -210,16 +242,36 @@ export function createRaceosClient({
     },
 
     request(steamIds) {
-      if (now() < notBefore) return;
-      let queued = false;
+      if (now() < notBefore) {
+        note(
+          `Holding off on ${steamIds.length} grid Steam ids until the backoff expires`
+        );
+        return;
+      }
+      if (steamIds.length === 0) {
+        // An all-AI grid, or a sim reporting no ids. Worth saying, because the
+        // standings look identical to a lookup that failed.
+        note('No human Steam ids on the grid; nothing to look up');
+        return;
+      }
+      let queued = 0;
       for (const id of steamIds) {
         if (!id || pending.has(id)) continue;
         // A remembered miss counts as known: not re-asking is the point.
         if (cache.get(id) !== undefined) continue;
         pending.add(id);
-        queued = true;
+        queued += 1;
       }
-      if (queued) void drain();
+      // Distinguishes the three states that all render as a bare standings
+      // row: asking now, already answered, and still waiting on a batch.
+      note(
+        queued > 0
+          ? `Looking up ${queued} of ${steamIds.length} grid Steam ids`
+          : pending.size > 0
+            ? `All ${steamIds.length} grid Steam ids are queued or in flight`
+            : `All ${steamIds.length} grid Steam ids already known from cache`
+      );
+      if (queued > 0) void drain();
     },
 
     reset() {
@@ -228,6 +280,9 @@ export function createRaceosClient({
       pending.clear();
       notBefore = 0;
       backoff = RACEOS_BACKOFF_MS;
+      // So the next session reports its state afresh rather than staying
+      // quiet because the last one had already said the same thing.
+      lastNote = undefined;
     },
   };
 }
