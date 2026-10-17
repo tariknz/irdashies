@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <string>
 
 namespace
 {
@@ -554,7 +555,10 @@ Napi::Value LmuSdkNode::ReadSession(const Napi::CallbackInfo &info)
     d.Set("countLapFlag", v.mCountLapFlag);
     d.Set("inGarageStall", v.mInGarageStall);
     d.Set("pitLapDist", v.mPitLapDist);
-    d.Set("steamId", static_cast<double>(v.mSteamID));
+    // As a string: a Steam64 id is up to ~7.7e16 and a JS number holds
+    // integers exactly only to 2^53, so a double silently corrupts the last
+    // few digits -- which is fatal for an id used as a lookup key.
+    d.Set("steamId", std::to_string(v.mSteamID));
     d.Set("fuelFraction", v.mFuelFraction);
     SetVect3(d, "pos", v.mPos);
     SetVect3(d, "localVel", v.mLocalVel);

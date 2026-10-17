@@ -12,7 +12,7 @@ import {
 } from '@irdashies/types';
 import { fnv1a32 } from './hash';
 import { compareLmuOrder, lmuOrderingKey } from './classPosition';
-import type { LmuRestSession } from '@irdashies/types';
+import type { LmuDriverRating, LmuRestSession } from '@irdashies/types';
 
 /**
  * LMU's pit and rolling-start speed limit, km/h.
@@ -289,6 +289,23 @@ function buildLmuResults(raw: Raw, isRace: boolean): SessionResults[] {
   });
 }
 
+/**
+ * Combines the two sources of per-driver identity into one optional value.
+ *
+ * Returns undefined when neither answered, so LmuRating stays absent rather
+ * than present-and-empty -- the renderer branches on its presence to decide
+ * whether this is an LMU driver at all.
+ */
+function mergeRating(
+  countryCode: string | undefined,
+  rating: LmuDriverRating | undefined
+): LmuDriverRating | undefined {
+  if (!rating) return countryCode ? { countryCode } : undefined;
+  // The service also reports a country; the sim's own answer wins, being
+  // first-party and present for everyone in the session.
+  return { ...rating, countryCode: countryCode ?? rating.countryCode };
+}
+
 export function mapLmuSession(
   raw: Raw,
   trackMap?: LmuTrackMap | null,
@@ -297,7 +314,13 @@ export function mapLmuSession(
    * absent rather than present and empty, so a consumer can tell "not polled"
    * from "polled and found nothing".
    */
-  rest?: LmuRestSession
+  rest?: LmuRestSession,
+  /**
+   * Ratings already resolved for a Steam id, from the rating service. A
+   * synchronous read: the lookup itself happens off this path, and a driver
+   * with no answer yet simply has no rank until a later snapshot.
+   */
+  ratingFor?: (steamId: string) => LmuDriverRating | undefined
 ): Session {
   const trackLengthM = raw.lapDist;
   const shiftLights = deriveLmuShiftLightRpm(raw.engineMaxRPM);
@@ -382,9 +405,13 @@ export function mapLmuSession(
     // Only the country is populated here. Rank and badge come from the
     // rating service and are merged in by the bridge when available, so a
     // driver can carry a flag with no rating and vice versa.
-    LmuRating: nationalities?.[d.name]
-      ? { countryCode: nationalities[d.name] }
-      : undefined,
+    // Country and rank arrive by different routes -- the sim's own teams
+    // endpoint and the rating service -- so a driver can have either, both
+    // or neither. Merged rather than one overriding the other.
+    LmuRating: mergeRating(
+      nationalities?.[d.name],
+      d.steamId ? ratingFor?.(d.steamId) : undefined
+    ),
   }));
 
   const playerDriver = raw.drivers.find((d) => d.isPlayer);

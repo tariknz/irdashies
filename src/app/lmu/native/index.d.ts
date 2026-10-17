@@ -40,7 +40,14 @@ export interface LmuRawVehicle {
   countLapFlag: number;
   inGarageStall: boolean;
   pitLapDist: number;
-  steamId: number;
+  /**
+   * Steam64 id as a decimal string.
+   *
+   * Not a number: the value exceeds the 2^53 range JS integers are exact
+   * in, so a numeric form loses its last digits and no longer identifies
+   * the player.
+   */
+  steamId: string;
   /**
    * Raw mFuelFraction, straight off a uint8_t, so always a whole number.
    *

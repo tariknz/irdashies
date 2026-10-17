@@ -66,7 +66,7 @@ export function fixture(): LmuRawSession {
         countLapFlag: 1,
         inGarageStall: 0,
         pitLapDist: 0,
-        steamId: 111,
+        steamId: '76561198000000111',
         fuelFraction: 50,
       },
       {
@@ -105,7 +105,7 @@ export function fixture(): LmuRawSession {
         countLapFlag: 1,
         inGarageStall: 0,
         pitLapDist: 0,
-        steamId: 222,
+        steamId: '76561198000000222',
         fuelFraction: 40,
       },
       {
@@ -144,7 +144,7 @@ export function fixture(): LmuRawSession {
         countLapFlag: 1,
         inGarageStall: 0,
         pitLapDist: 0,
-        steamId: 333,
+        steamId: '76561198000000333',
         fuelFraction: 70,
       },
     ],
