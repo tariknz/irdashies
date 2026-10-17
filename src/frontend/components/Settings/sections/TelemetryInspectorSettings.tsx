@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { useDashboard } from '@irdashies/context';
 import { TrashIcon, PlusIcon } from '@phosphor-icons/react';
 
@@ -135,6 +136,7 @@ export const TelemetryInspectorSettings = () => {
 
         return (
           <div className="space-y-4">
+            <WidgetScaleSettings widgetId={SETTING_ID} />
             {/* Current Properties */}
             <div className="space-y-2">
               <h3 className="text-lg font-medium text-slate-200">

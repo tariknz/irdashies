@@ -22,7 +22,6 @@ export default defineWidgetManifest({
   },
   config: {
     customClassOrdering: false,
-    scale: 100,
     useLivePosition: false,
     iratingChange: {
       enabled: true,
@@ -407,15 +406,6 @@ export default defineWidgetManifest({
     },
     'headerBar.enabled': { type: 'boolean', label: 'Show Header Bar' },
     'footerBar.enabled': { type: 'boolean', label: 'Show Footer Bar' },
-    scale: {
-      type: 'number',
-      label: 'Widget Scale',
-      description: 'Scale the entire standings widget',
-      min: 50,
-      max: 200,
-      step: 5,
-      units: '%',
-    },
     'classHeaderStyle.estimatedLaps.enabled': {
       type: 'boolean',
       label: 'Show Estimated Laps',

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   StandingsWidgetSettings,
   SettingsTabType,
@@ -473,23 +474,31 @@ export const StandingsSettings = () => {
               <div>
                 {/* DISPLAY TAB */}
                 {activeTab === 'display' && (
-                  <SettingsSection title="Display Order">
-                    <DisplaySettingsList
-                      itemsOrder={itemsOrder}
-                      onReorder={handleDisplayOrderChange}
-                      settings={settings}
-                      handleConfigChange={handleConfigChange}
+                  <>
+                    <WidgetScaleSettings
+                      widgetId={SETTING_ID}
+                      className="px-4"
                     />
+                    <SettingsSection title="Display Order">
+                      <DisplaySettingsList
+                        itemsOrder={itemsOrder}
+                        onReorder={handleDisplayOrderChange}
+                        settings={settings}
+                        handleConfigChange={handleConfigChange}
+                      />
 
-                    <SettingActionButton
-                      label="Reset to Default Order"
-                      onClick={() => {
-                        const defaultOrder = sortableSettings.map((s) => s.id);
-                        setItemsOrder(defaultOrder);
-                        handleConfigChange({ displayOrder: defaultOrder });
-                      }}
-                    />
-                  </SettingsSection>
+                      <SettingActionButton
+                        label="Reset to Default Order"
+                        onClick={() => {
+                          const defaultOrder = sortableSettings.map(
+                            (s) => s.id
+                          );
+                          setItemsOrder(defaultOrder);
+                          handleConfigChange({ displayOrder: defaultOrder });
+                        }}
+                      />
+                    </SettingsSection>
+                  </>
                 )}
 
                 {/* OPTIONS TAB */}
@@ -683,9 +692,6 @@ export const StandingsSettings = () => {
                 {/* STYLING TAB */}
                 {activeTab === 'styling' && (
                   <>
-                    <SettingsSection title="Scale">
-                      <SettingProp path="scale" />
-                    </SettingsSection>
                     <SettingsSection title="Class Header">
                       <SettingToggleRow
                         title="Class Name Background"

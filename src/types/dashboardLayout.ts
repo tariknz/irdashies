@@ -25,6 +25,8 @@ export interface DashboardWidget {
   alwaysEnabled?: boolean;
   /** The layout of the window for the widget on the dashboard. */
   layout: WidgetLayout;
+  /** Content scale in percent, independent of the layout. Unset means 100%. */
+  scale?: number;
   /** Configuration for the widget. */
   config?: Record<string, unknown>;
   /**

@@ -7,11 +7,17 @@ import { DashboardView } from './DashboardView';
 const dashboard = {
   widgets: [
     { id: 'carsystems', enabled: true, config: { fontSize: 14 } },
-    { id: 'standings', enabled: true, config: {} },
+    { id: 'standings', enabled: true, scale: 125, config: {} },
     // Disabled for the desktop overlays, but still addressable by URL.
     { id: 'weather', enabled: false, config: {} },
     // A second instance: its own id, with the component named by `type`.
-    { id: 'standings-2', type: 'standings', enabled: false, config: {} },
+    {
+      id: 'standings-2',
+      type: 'standings',
+      enabled: false,
+      scale: 75,
+      config: {},
+    },
   ],
 } as unknown as DashboardLayout;
 
@@ -79,6 +85,16 @@ describe('DashboardView solo widget mode', () => {
     render(<DashboardView soloWidgetId="standings-2" />);
 
     expect(screen.getByText('standings widget')).toBeInTheDocument();
+    expect(
+      screen.getByText('standings widget').closest('[data-widget-scale]')
+    ).toHaveAttribute('data-widget-scale', '75');
+  });
+
+  it('uses the same saved scale in the full browser dashboard', () => {
+    render(<DashboardView />);
+    expect(
+      screen.getByText('standings widget').closest('[data-widget-scale]')
+    ).toHaveAttribute('data-widget-scale', '125');
   });
 
   it('says so when the profile has no such widget', () => {
