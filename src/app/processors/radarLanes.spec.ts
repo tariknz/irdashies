@@ -275,6 +275,21 @@ describe('RadarLaneTracker', () => {
       expect(lanes.get(3)).toEqual({ lane: 0, source: 'pace' });
     });
 
+    it('puts the pole line on the left of the pace field on ovals', () => {
+      const tracker = new RadarLaneTracker();
+      tracker.setOval(true);
+      const { lanes } = settle(
+        tracker,
+        0,
+        [{ carIdx: 2, dist: 4 }],
+        CarLeftRight.Clear,
+        1,
+        formation([[2, -1]])
+      );
+
+      expect(lanes.get(2)).toEqual({ lane: -1, source: 'pace' });
+    });
+
     it('puts the pole column left of a standing grid', () => {
       const tracker = new RadarLaneTracker();
       const { lanes } = settle(
