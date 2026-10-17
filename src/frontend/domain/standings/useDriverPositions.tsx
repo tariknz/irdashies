@@ -103,6 +103,7 @@ export const useDrivers = () => {
       license: driver.LicString,
       rating: driver.IRating,
       flairId: driver.FlairID,
+      lmuRating: driver.LmuRating,
       teamName: driver.TeamName,
       carClass: {
         id: driver.CarClassID,
@@ -185,7 +186,7 @@ export const useDriverStandings = () => {
       qualifyingResults && Array.isArray(qualifyingResults)
         ? new Map(qualifyingResults.map((q) => [q.CarIdx, q]))
         : new Map();
-    
+
     const playerLap =
       playerCarIdx !== undefined
         ? (driverPositionsByCarIdx.get(playerCarIdx)?.lapNum ?? 0)
@@ -223,16 +224,16 @@ export const useDriverStandings = () => {
         if (livePosition !== undefined) classPosition = livePosition;
       }
 
- if (!classPosition || !isFinite(classPosition) || classPosition <= 0) {
+      if (!classPosition || !isFinite(classPosition) || classPosition <= 0) {
         // Class position can become 0 or negative in some edge cases
         // Only fall back to qualifying before race start
         // During the race class position should be available
         // After the race we can fallback to session position
         if (
-           sessionState === SessionState.GetInCar ||
-           sessionState === SessionState.Warmup ||
-           sessionState === SessionState.ParadeLaps
-         ) {
+          sessionState === SessionState.GetInCar ||
+          sessionState === SessionState.Warmup ||
+          sessionState === SessionState.ParadeLaps
+        ) {
           const qualifyingPosition = qualifyingPositionsByCarIdx.get(
             driver.carIdx
           );
@@ -264,6 +265,7 @@ export const useDriverStandings = () => {
           license: driver.license,
           rating: driver.rating,
           flairId: driver.flairId,
+          lmuRating: driver.lmuRating,
           teamName: driver.teamName,
         },
         fastestTime: driverPos.bestLap,

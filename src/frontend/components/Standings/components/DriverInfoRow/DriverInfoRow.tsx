@@ -5,6 +5,7 @@ import { useDashboard, type P2PDisplayState } from '@irdashies/context';
 import type { ResolvedDriverTag } from '../../hooks';
 import type { Gap, LastTimeState } from '@irdashies/domain';
 import type {
+  LmuDriverRating,
   RelativeWidgetSettings,
   StandingsWidgetSettings,
 } from '@irdashies/types';
@@ -55,6 +56,8 @@ interface DriverRowInfoProps {
   isLappingAhead?: boolean;
   hidden?: boolean;
   flairId?: number;
+  /** LMU rank, badge and country. Absent on every other sim. */
+  lmuRating?: LmuDriverRating;
   tireCompound?: number;
   carId?: number;
   lapTimeDeltas?: number[];
@@ -217,6 +220,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     isLappingAhead,
     hidden,
     flairId,
+    lmuRating,
     tireCompound,
     carId,
     lapTimeDeltas,
@@ -362,6 +366,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <CountryFlagsCell
             key="countryFlags"
             flairId={flairId}
+            countryCode={lmuRating?.countryCode}
             compactMode={compactMode}
           />
         ),
@@ -474,6 +479,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="badge"
             license={license}
             rating={rating}
+            lmuRating={lmuRating}
             badgeFormat={config?.badge?.badgeFormat}
             isMinimal={badgeMinimal}
             compactMode={compactMode}
@@ -706,6 +712,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     tailwindStyles,
     carNumber,
     flairId,
+    lmuRating,
     name,
     hideLeaderGapIntervalLabels,
     teamName,

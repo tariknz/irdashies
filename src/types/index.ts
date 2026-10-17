@@ -14,6 +14,7 @@ export * from './gantryDock';
 export * from './defaultDashboard';
 export * from './cornerName';
 export * from './lapTrace';
+export * from './lmuRating';
 export * from './logBridge';
 export * from './keybindings';
 export * from './personalBestLapBridge';

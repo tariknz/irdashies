@@ -89,6 +89,19 @@ export interface LmuRestSession {
     qualify?: LmuWeatherNode[];
     race?: LmuWeatherNode[];
   };
+  /**
+   * Driver nationality as ISO 3166-1 alpha-2, keyed by the driver name the
+   * sim reports, from `/rest/multiplayer/teams`.
+   *
+   * Keyed by name rather than by index or id because that endpoint carries
+   * neither -- it is a bare map of names. Names are unique within a session,
+   * so this is sound, but it means an entry only matches while the scoring
+   * name and the teams name agree.
+   *
+   * Absent outside multiplayer: a single-player grid has no teams payload,
+   * and the AI have no nationality to report.
+   */
+  nationalities?: Record<string, string>;
 }
 
 /**

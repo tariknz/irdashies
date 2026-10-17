@@ -29,6 +29,7 @@ import { calculateLapDeltas } from './hooks';
 import { FlagContour } from '@irdashies/utils/FlagContour';
 import { getFlag } from '@irdashies/utils/getFlag';
 import { getFlagColor } from '@irdashies/utils/getFlagColor';
+import { lmuRatingFor } from './lmuRatingFor';
 
 /** Stable identity, so the iRacing path never invalidates dependent memos. */
 const EMPTY_HIDDEN_COLUMNS: ReadonlySet<string> = new Set<string>();
@@ -52,8 +53,16 @@ export const Relative = () => {
     buffer,
     hideDriversInPitStall: settings?.hideDriversInPitStall ?? false,
   });
+  // LMU reports no iRacing flair id, so a grid of LMU drivers is all zeroes
+  // here and the column would stay hidden however many flags are available.
+  // Its country arrives on lmuRating instead.
   const hasAnyCountryFlag = useMemo(
-    () => standings.some((result) => (result.driver?.flairId ?? 0) > 0),
+    () =>
+      standings.some(
+        (result) =>
+          (result.driver?.flairId ?? 0) > 0 ||
+          !!result.driver?.lmuRating?.countryCode
+      ),
     [standings]
   );
   const highlightColor = useHighlightColor();
@@ -257,6 +266,10 @@ export const Relative = () => {
               ? result.driver?.flairId
               : undefined
           }
+          lmuRating={lmuRatingFor(
+            result.driver?.lmuRating,
+            settings?.countryFlags?.enabled ?? true
+          )}
           lastTime={settings?.lastTime?.enabled ? result.lastTime : undefined}
           fastestTime={
             settings?.fastestTime?.enabled ? result.fastestTime : undefined

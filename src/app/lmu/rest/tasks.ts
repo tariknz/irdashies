@@ -1,4 +1,5 @@
 import type { LmuWeatherNode } from '@irdashies/types';
+import { parseTeamNationalities } from '../nationality';
 import type { LmuRestData } from './state';
 
 /**
@@ -225,6 +226,25 @@ const sessionSetting = (
 const garageNumber = (payload: unknown, key: string): number | undefined =>
   firstNumber(at(payload, ['carSetup', 'garageValues', key, 'stringValue']));
 
+/**
+ * Driver nationalities, which only multiplayer reports.
+ *
+ * Returns undefined rather than an empty map when nothing parses, so the
+ * "parser found nothing" case leaves any previous value alone instead of
+ * wiping the flags -- the same contract every other output here follows.
+ */
+const nationalities: LmuRestOutput = {
+  id: 'nationalities',
+  target: 'session',
+  parse: (payload) => {
+    const found = parseTeamNationalities(payload);
+    return found.size > 0 ? Object.fromEntries(found) : undefined;
+  },
+  apply: (data, value) => {
+    data.session.nationalities = value as Record<string, string>;
+  },
+};
+
 export const LMU_REST_TASKS: readonly LmuRestTask[] = [
   {
     id: 'repair-and-refuel',
@@ -366,6 +386,18 @@ export const LMU_REST_TASKS: readonly LmuRestTask[] = [
       forecastFor('forecastQualify', 'QUALIFY', 'qualify'),
       forecastFor('forecastRace', 'RACE', 'race'),
     ],
+  },
+  {
+    id: 'multiplayer-teams',
+    path: '/rest/multiplayer/teams',
+    // The entry list is fixed once a session is joined, so this is fetched
+    // once per activation like the other roster-shaped payloads. A driver
+    // joining mid-session is picked up at the next activation rather than
+    // polled for -- a flag appearing a session late is a fair trade against
+    // re-fetching the whole roster on a timer.
+    mode: 'once',
+    baseIntervalMs: 2000,
+    outputs: [nationalities],
   },
   {
     id: 'pitstop-estimate',

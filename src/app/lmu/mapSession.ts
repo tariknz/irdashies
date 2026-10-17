@@ -302,6 +302,10 @@ export function mapLmuSession(
   const trackLengthM = raw.lapDist;
   const shiftLights = deriveLmuShiftLightRpm(raw.engineMaxRPM);
 
+  // Keyed by the name the sim reports, which is the only handle
+  // /rest/multiplayer/teams gives us. Absent outside multiplayer.
+  const nationalities = rest?.nationalities;
+
   const drivers: Driver[] = raw.drivers.map((d) => ({
     CarIdx: d.id,
     UserName: d.name,
@@ -367,11 +371,20 @@ export function mapLmuSession(
     ClubName: '',
     ClubID: 0,
     FlairName: '',
+    // iRacing's flair id, which LMU has no equivalent of. The flag comes from
+    // LmuRating.countryCode instead; leaving this 0 keeps the iRacing path
+    // inert rather than pointing it at an unrelated country.
     FlairID: 0,
     DivisionName: '',
     DivisionID: 0,
     CurDriverIncidentCount: 0,
     TeamIncidentCount: 0,
+    // Only the country is populated here. Rank and badge come from the
+    // rating service and are merged in by the bridge when available, so a
+    // driver can carry a flag with no rating and vice versa.
+    LmuRating: nationalities?.[d.name]
+      ? { countryCode: nationalities[d.name] }
+      : undefined,
   }));
 
   const playerDriver = raw.drivers.find((d) => d.isPlayer);

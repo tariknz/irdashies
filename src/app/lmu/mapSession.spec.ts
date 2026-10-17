@@ -411,6 +411,47 @@ describe('mapLmuSession REST session values', () => {
   });
 });
 
+describe('mapLmuSession driver nationality', () => {
+  const nameOf = (raw: ReturnType<typeof fixture>) => raw.drivers[0].name;
+
+  it('leaves LmuRating unset when nothing was polled', () => {
+    const s = mapLmuSession(fixture());
+    expect(s.DriverInfo.Drivers.every((d) => d.LmuRating === undefined)).toBe(
+      true
+    );
+  });
+
+  it('attaches the country to the matching driver', () => {
+    const raw = fixture();
+    const s = mapLmuSession(raw, null, {
+      nationalities: { [nameOf(raw)]: 'FR' },
+    });
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
+    expect(driver?.LmuRating?.countryCode).toBe('FR');
+  });
+
+  it('leaves drivers the teams payload does not name alone', () => {
+    const raw = fixture();
+    const s = mapLmuSession(raw, null, {
+      nationalities: { 'Somebody Else': 'IT' },
+    });
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
+    expect(driver?.LmuRating).toBeUndefined();
+  });
+
+  it('leaves the iRacing flair id at zero', () => {
+    // The flag comes from LmuRating.countryCode. A non-zero FlairID here
+    // would point the iRacing lookup table at an unrelated country.
+    const raw = fixture();
+    const s = mapLmuSession(raw, null, {
+      nationalities: { [nameOf(raw)]: 'FR' },
+    });
+    expect(s.DriverInfo.Drivers[0].FlairID).toBe(0);
+  });
+});
+
 describe('mapLmuSession fuel capacity', () => {
   const asClass = (className: string) => {
     const raw = { ...fixture(), fuelCapacity: 100 };

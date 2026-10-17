@@ -30,6 +30,7 @@ import {
 import { RATING_COLUMN_IDS, simulatorHasDriverRatings } from '@irdashies/types';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 import { computeStintLap } from './components/DriverInfoRow/cells/lapCountUtils';
+import { lmuRatingFor } from './lmuRatingFor';
 
 export const COLUMN_LABELS: Record<string, string> = {
   position: '',
@@ -145,10 +146,16 @@ export const Standings = () => {
   const p2pDisplayStates = useP2PDisplayStates();
 
   const standings = useDriverStandings(settings);
+  // See the same gate in Relative.tsx: LMU has no flair id, and its country
+  // comes through lmuRating.
   const hasAnyCountryFlag = useMemo(
     () =>
       standings.some(([, classStandings]) =>
-        classStandings.some((result) => (result.driver?.flairId ?? 0) > 0)
+        classStandings.some(
+          (result) =>
+            (result.driver?.flairId ?? 0) > 0 ||
+            !!result.driver?.lmuRating?.countryCode
+        )
       ),
     [standings]
   );
@@ -403,6 +410,10 @@ export const Standings = () => {
                               ? result.driver?.flairId
                               : undefined
                           }
+                          lmuRating={lmuRatingFor(
+                            result.driver?.lmuRating,
+                            settings?.countryFlags?.enabled ?? true
+                          )}
                           tireCompound={
                             (settings?.compound?.enabled ?? true)
                               ? result.tireCompound

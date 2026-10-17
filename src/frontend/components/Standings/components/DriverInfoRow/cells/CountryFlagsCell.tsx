@@ -3,11 +3,13 @@ import { CountryFlag } from '../../../../shared/CountryFlag/CountryFlag';
 
 interface CountryFlagsCellProps {
   flairId?: number;
+  /** ISO alpha-2 from a sim that names the country outright, e.g. LMU. */
+  countryCode?: string;
   compactMode?: string;
 }
 
 export const CountryFlagsCell = memo(
-  ({ flairId, compactMode }: CountryFlagsCellProps) => {
+  ({ flairId, countryCode, compactMode }: CountryFlagsCellProps) => {
     const pxClass =
       compactMode === 'ultra'
         ? ''
@@ -19,7 +21,9 @@ export const CountryFlagsCell = memo(
         data-column="countryFlags"
         className={`w-auto whitespace-nowrap ${pxClass}`}
       >
-        {flairId && <CountryFlag flairId={flairId} />}
+        {(countryCode || flairId) && (
+          <CountryFlag flairId={flairId ?? 0} countryCode={countryCode} />
+        )}
       </td>
     );
   }
