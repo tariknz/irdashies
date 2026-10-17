@@ -71,6 +71,17 @@ export function createBridgeProxy(
     });
   };
 
+  const hasInspectorSubscribers = (
+    stream: 'telemetryInspector' | 'sessionData'
+  ) => {
+    for (const [client, streams] of inspectorStreams) {
+      if (client.readyState === WebSocket.OPEN && streams.has(stream)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   let currentBridge: IrSdkSourceBridge | null = null;
   let unsubscribeFunctions: (() => void)[] = [];
 
@@ -81,8 +92,9 @@ export function createBridgeProxy(
       currentTelemetry = telemetry;
       const now = performance.now();
       if (
-        clients.size > 0 &&
-        now - lastTelemetryBroadcastTime >= 1000 / TELEMETRY_INSPECTOR_RATE_HZ
+        now - lastTelemetryBroadcastTime >=
+          1000 / TELEMETRY_INSPECTOR_RATE_HZ &&
+        hasInspectorSubscribers('telemetryInspector')
       ) {
         lastTelemetryBroadcastTime = now;
         broadcast('telemetry', telemetry);
@@ -91,7 +103,7 @@ export function createBridgeProxy(
 
     const unsubSession = bridge.onSessionData((session: Session) => {
       currentSession = session;
-      if (clients.size > 0) {
+      if (hasInspectorSubscribers('sessionData')) {
         broadcast('sessionData', session);
       }
     });
