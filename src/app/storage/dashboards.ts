@@ -8,6 +8,7 @@ import {
   defaultDashboard,
   deepMergeConfig,
   normalizeWidgetScale,
+  WIDGET_SCALE,
 } from '@irdashies/types';
 import { readData, writeData } from './storage';
 import { writeFile, mkdir, readFile, readdir, unlink } from 'node:fs/promises';
@@ -400,6 +401,7 @@ export const resetDashboard = (
         );
         return {
           ...widget,
+          scale: WIDGET_SCALE.default,
           config: defaultWidget?.config || widget.config,
         };
       }),

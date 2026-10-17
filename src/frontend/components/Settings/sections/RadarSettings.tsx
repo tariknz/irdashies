@@ -127,6 +127,7 @@ const SectionView = ({
   changed,
   onReset,
   onOpen,
+  showScale,
 }: {
   section: RadarSettingSection;
   items: RadarSettingItem[];
@@ -136,6 +137,7 @@ const SectionView = ({
   changed: RadarSettingItem[];
   onReset: (items: RadarSettingItem[]) => void;
   onOpen: (sectionId: string) => void;
+  showScale: boolean;
 }) => {
   const master = section.master;
   const off = master !== undefined && !view[master];
@@ -170,7 +172,7 @@ const SectionView = ({
           <p className="text-sm text-slate-500">{section.summary}</p>
         )}
       </div>
-      {section.id === 'look' && <WidgetScaleSettings widgetId={SETTING_ID} />}
+      {showScale && <WidgetScaleSettings widgetId={SETTING_ID} />}
       {section.dev && level === 2 && section.id === 'processing' && (
         <p className="text-sm rounded-md border border-amber-500/40 bg-amber-500/10 text-amber-200 px-3 py-2">
           Internals the radar was tuned on. Odd values break lanes and warnings;
@@ -202,7 +204,7 @@ const SectionView = ({
           </button>
         </div>
       )}
-      {!off && !section.arc && items.length === 0 && (
+      {!off && !section.arc && items.length === 0 && !showScale && (
         <p className="text-sm text-slate-400">
           Nothing here at this level. Advanced shows more.
         </p>
@@ -296,6 +298,13 @@ export const RadarSettings = () => {
   }
 
   const search = query.trim().toLowerCase();
+  const scaleMatches =
+    search.length > 0 &&
+    search
+      .split(/\s+/)
+      .every((word) =>
+        ['widget', 'scale'].some((keyword) => keyword.startsWith(word))
+      );
   const preset = matchingPreset(view);
 
   return (
@@ -326,8 +335,7 @@ export const RadarSettings = () => {
           ),
         })).filter(
           ({ section, items }) =>
-            items.length > 0 ||
-            (section.id === 'look' && 'widget scale'.includes(search))
+            items.length > 0 || (section.id === 'look' && scaleMatches)
         );
         // A module that is off shows only its switch.
         const itemsOf = (section: RadarSettingSection) =>
@@ -522,6 +530,9 @@ export const RadarSettings = () => {
                     view={view}
                     ctx={ctx}
                     level={level}
+                    showScale={
+                      section.id === 'look' && (!search || scaleMatches)
+                    }
                     changed={changedIn(section)}
                     onReset={(changed) => set(resetChange(changed, view))}
                     onOpen={(id) => {

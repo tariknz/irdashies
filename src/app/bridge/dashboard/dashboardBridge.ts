@@ -81,6 +81,14 @@ const sanitiseSessionProfileMap = (input: unknown): SessionProfileMap => {
   return map;
 };
 
+/** Checks the export envelope before withDashboardDefaults repairs its widgets. */
+const isDashboardExport = (value: unknown): value is DashboardLayout =>
+  typeof value === 'object' &&
+  value !== null &&
+  !Array.isArray(value) &&
+  'widgets' in value &&
+  Array.isArray(value.widgets);
+
 /**
  * Injects global driver tag settings into a dashboard layout before broadcasting.
  * Overlays read from generalSettings.driverTagSettings, so merging here keeps them
@@ -316,6 +324,10 @@ export async function publishDashboardUpdates(
     'saveDashboard',
     (_, savedDashboard: DashboardLayout, options?: SaveDashboardOptions) => {
       // Advanced settings can replace a dashboard with JSON from an older export.
+      if (options?.forceReload && !isDashboardExport(savedDashboard)) {
+        logger.warn('[saveDashboard] Imported JSON is not a dashboard export');
+        return;
+      }
       const dashboard = options?.forceReload
         ? withDashboardDefaults(savedDashboard)
         : savedDashboard;
@@ -571,7 +583,12 @@ export async function publishDashboardUpdates(
     if (canceled || !filePaths[0]) return null;
     const { readFile } = await import('node:fs/promises');
     const content = await readFile(filePaths[0], 'utf-8');
-    return withDashboardDefaults(JSON.parse(content) as DashboardLayout);
+    const parsed: unknown = JSON.parse(content);
+    if (!isDashboardExport(parsed)) {
+      logger.warn('[importDashboardFromFile] File is not a dashboard export');
+      return null;
+    }
+    return withDashboardDefaults(parsed);
   });
 
   ipcMain.handle('autostart:set', (_event, enabled: boolean) => {

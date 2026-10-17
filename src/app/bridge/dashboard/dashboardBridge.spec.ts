@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DashboardLayout } from '@irdashies/types';
 import type { OverlayManager } from '../../overlayManager';
 import type { Analytics } from '../../analytics';
@@ -57,10 +57,13 @@ const exportedDashboard: DashboardLayout = {
   ],
 };
 
-beforeEach(async () => {
+beforeEach(() => {
   mocks.writeData.mockClear();
   mocks.refresh.mockClear();
   mocks.readFile.mockResolvedValue(JSON.stringify(exportedDashboard));
+});
+
+beforeAll(async () => {
   await publishDashboardUpdates(
     {
       closeOrCreateWindows: vi.fn(),
@@ -72,6 +75,31 @@ beforeEach(async () => {
 });
 
 describe('dashboard import scaling', () => {
+  it.each([
+    'null',
+    '[]',
+    '{}',
+    'false',
+    '123',
+    '"text"',
+    '{"widgets":null}',
+    '{"widgets":{}}',
+    '{"widgets":"wrong"}',
+  ])(
+    'rejects %s from file and pasted JSON before applying defaults',
+    async (content) => {
+      mocks.readFile.mockResolvedValue(content);
+      expect(
+        await mocks.handlers.get('importDashboardFromFile')?.()
+      ).toBeNull();
+      mocks.listeners.get('saveDashboard')?.(null, JSON.parse(content), {
+        forceReload: true,
+      });
+      expect(mocks.writeData).not.toHaveBeenCalled();
+      expect(mocks.refresh).not.toHaveBeenCalled();
+    }
+  );
+
   it('migrates an older file export before returning it to the settings page', async () => {
     const imported = (await mocks.handlers.get(
       'importDashboardFromFile'

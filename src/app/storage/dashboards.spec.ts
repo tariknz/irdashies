@@ -8,6 +8,7 @@ import {
   saveDashboard,
   updateDashboardWidget,
   withDashboardDefaults,
+  resetDashboard,
 } from './dashboards';
 import { defaultDashboard } from '@irdashies/types';
 import { DashboardLayout } from '@irdashies/types';
@@ -608,6 +609,60 @@ describe('dashboards', () => {
         background: { ...(defaults.background as object), opacity: 40 },
       });
       expect(mockWriteData).toHaveBeenCalledWith('currentProfile', 'race');
+    });
+  });
+
+  describe('configuration reset', () => {
+    it('resets shared scales, including migrated standings and custom instances, while preserving the layout', () => {
+      const layout = { x: 20, y: 40, width: 400, height: 300 };
+      const dashboard = withDashboardDefaults({
+        widgets: [
+          {
+            id: 'standings',
+            enabled: false,
+            layout,
+            config: { scale: 125, background: { opacity: 40 } },
+          },
+          {
+            id: 'fuel-2',
+            type: 'fuel',
+            enabled: true,
+            placement: 'gantry',
+            layout: { ...layout, x: 100 },
+            scale: 75,
+            config: {},
+          },
+        ],
+      });
+      mockReadData.mockImplementation((key: string) => {
+        if (key === 'currentProfile') return 'race';
+        if (key === 'dashboards') return { race: dashboard };
+        return null;
+      });
+
+      const reset = resetDashboard(false, 'race');
+
+      expect(reset.widgets.every((widget) => widget.scale === 100)).toBe(true);
+      expect(reset.widgets[0]).toMatchObject({
+        id: 'standings',
+        enabled: false,
+        layout,
+      });
+      expect(reset.widgets[0].config).toEqual(
+        defaultDashboard.widgets.find((widget) => widget.id === 'standings')
+          ?.config
+      );
+      expect(reset.widgets[1]).toMatchObject({
+        id: 'fuel-2',
+        type: 'fuel',
+        enabled: true,
+        placement: 'gantry',
+        layout: { ...layout, x: 100 },
+        scale: 100,
+      });
+      expect(dashboard.widgets[0].scale).toBe(125);
+      expect(dashboard.widgets[1].scale).toBe(75);
+      expect(mockWriteData).toHaveBeenCalledWith('dashboards', { race: reset });
     });
   });
 
