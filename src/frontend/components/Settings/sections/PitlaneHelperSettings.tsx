@@ -83,7 +83,6 @@ export const PitlaneHelperSettings = () => {
               {activeTab === 'options' && (
                 <>
                   <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
-                  <PitLaneCalibrationSettings />
                   {/* Display Settings */}
                   <SettingsSection title="Options">
                     <SettingToggleRow
@@ -192,6 +191,7 @@ export const PitlaneHelperSettings = () => {
                       </SettingsSection>
                     )}
                   </SettingsSection>
+                  <PitLaneCalibrationSettings />
                 </>
               )}
 
