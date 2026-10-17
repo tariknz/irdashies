@@ -4,7 +4,11 @@ import type {
   DashboardProfile,
 } from '@irdashies/types';
 import { emitDashboardUpdated } from './dashboardEvents';
-import { defaultDashboard, deepMergeConfig } from '@irdashies/types';
+import {
+  defaultDashboard,
+  deepMergeConfig,
+  normalizeWidgetScale,
+} from '@irdashies/types';
 import { readData, writeData } from './storage';
 import { writeFile, mkdir, readFile, readdir, unlink } from 'node:fs/promises';
 import { resolve, basename, sep } from 'node:path';
@@ -169,6 +173,24 @@ const toStoredWidget = (value: unknown): DashboardWidget | undefined => {
     layout: { ...layout },
   };
   if (typeof repaired.type !== 'string') delete repaired.type;
+  // Standings originally stored its content scale in its own config. Move it
+  // before merging defaults, including for custom instances of that type.
+  if (
+    typeId === 'standings' &&
+    typeof repaired.config === 'object' &&
+    repaired.config !== null &&
+    !Array.isArray(repaired.config) &&
+    Object.hasOwn(repaired.config, 'scale')
+  ) {
+    if (repaired.scale === undefined) {
+      repaired.scale = normalizeWidgetScale(repaired.config.scale);
+    }
+    repaired.config = { ...repaired.config };
+    delete repaired.config.scale;
+  }
+  if (repaired.scale !== undefined) {
+    repaired.scale = normalizeWidgetScale(repaired.scale);
+  }
   return repaired;
 };
 

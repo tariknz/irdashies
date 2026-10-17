@@ -2,6 +2,7 @@ export * from './enum';
 export * from './irSdkBridge';
 export * from './dashboardBridge';
 export * from './dashboardLayout';
+export * from './widgetScale';
 export * from './session';
 export * from './telemetry';
 export * from './pitLane';

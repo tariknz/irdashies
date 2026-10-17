@@ -1,5 +1,6 @@
 import { memo, useEffect, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   GantryWidgetSettings,
   GantryConfig,
@@ -326,89 +327,92 @@ export const GantrySettings = memo(() => {
 
             <div>
               {activeTab === 'options' && (
-                <SettingsSection title="Options">
-                  <SettingActionButton
-                    title="Gantry Window"
-                    description={`The Gantry runs in its own resizable window rather than as an on-screen overlay. Use this to bring it back if you closed it.${
-                      showDisabledHint
-                        ? ' Turn the Gantry on above to open its window.'
-                        : ''
-                    }`}
-                    label="Show Window"
-                    onClick={() =>
-                      void window.raceControlBridge
-                        ?.showGantryWindow()
-                        .then((opened) => setShowDisabledHint(!opened))
-                    }
-                  />
+                <>
+                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
+                  <SettingsSection title="Options">
+                    <SettingActionButton
+                      title="Gantry Window"
+                      description={`The Gantry runs in its own resizable window rather than as an on-screen overlay. Use this to bring it back if you closed it.${
+                        showDisabledHint
+                          ? ' Turn the Gantry on above to open its window.'
+                          : ''
+                      }`}
+                      label="Show Window"
+                      onClick={() =>
+                        void window.raceControlBridge
+                          ?.showGantryWindow()
+                          .then((opened) => setShowDisabledHint(!opened))
+                      }
+                    />
 
-                  <SettingProp path="window.alwaysOnTop" />
+                    <SettingProp path="window.alwaysOnTop" />
 
-                  <SettingDivider />
+                    <SettingDivider />
 
-                  <SettingButtonGroupRow<GantryConfig['speedUnit']>
-                    title="Speed Units"
-                    description={`Units for the speed settings on the Incidents tab. Values are always saved in km/h, so switching units never changes how incidents are detected.${
-                      autoUnresolved
-                        ? ` Auto follows iRacing's own unit setting, which is only known while the sim is running, so it shows ${speedUnit} for now.`
-                        : ''
-                    }`}
-                    value={unitSetting}
-                    options={[
-                      { label: 'Auto', value: 'auto' },
-                      { label: 'km/h', value: 'km/h' },
-                      { label: 'mph', value: 'mph' },
-                    ]}
-                    onChange={(v) => handleConfigChange({ speedUnit: v })}
-                  />
+                    <SettingButtonGroupRow<GantryConfig['speedUnit']>
+                      title="Speed Units"
+                      description={`Units for the speed settings on the Incidents tab. Values are always saved in km/h, so switching units never changes how incidents are detected.${
+                        autoUnresolved
+                          ? ` Auto follows iRacing's own unit setting, which is only known while the sim is running, so it shows ${speedUnit} for now.`
+                          : ''
+                      }`}
+                      value={unitSetting}
+                      options={[
+                        { label: 'Auto', value: 'auto' },
+                        { label: 'km/h', value: 'km/h' },
+                        { label: 'mph', value: 'mph' },
+                      ]}
+                      onChange={(v) => handleConfigChange({ speedUnit: v })}
+                    />
 
-                  <SettingDivider />
+                    <SettingDivider />
 
-                  <div className="py-2">
-                    <div className="text-sm text-slate-300">Driver Name</div>
-                    <div className="text-xs text-slate-400 mt-1">
-                      How names are written in the Gantry standings list.
-                      Surname only keeps the column narrow, which is what the
-                      panel is sized for.
+                    <div className="py-2">
+                      <div className="text-sm text-slate-300">Driver Name</div>
+                      <div className="text-xs text-slate-400 mt-1">
+                        How names are written in the Gantry standings list.
+                        Surname only keeps the column narrow, which is what the
+                        panel is sized for.
+                      </div>
+                      <div className="flex flex-wrap gap-3 justify-end mt-3">
+                        {NAME_FORMATS.map((format) => (
+                          <DriverNamePreview
+                            key={format}
+                            format={format}
+                            selected={
+                              (config.driverNameFormat ?? 'surname') === format
+                            }
+                            onClick={() =>
+                              handleConfigChange({ driverNameFormat: format })
+                            }
+                          />
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-3 justify-end mt-3">
-                      {NAME_FORMATS.map((format) => (
-                        <DriverNamePreview
-                          key={format}
-                          format={format}
-                          selected={
-                            (config.driverNameFormat ?? 'surname') === format
-                          }
-                          onClick={() =>
-                            handleConfigChange({ driverNameFormat: format })
-                          }
-                        />
-                      ))}
-                    </div>
-                  </div>
 
-                  <SettingSelectRow
-                    title="Incident Camera"
-                    description="Which iRacing camera the incident replay buttons switch to. The list comes from the current session, so it fills in once you are on track. Falls back to the camera already selected when a track does not offer this group."
-                    value={cameraGroup}
-                    options={cameraGroupOptions(cameraGroups, cameraGroup)}
-                    onChange={(v) =>
-                      handleConfigChange({ incidentCameraGroup: v })
-                    }
-                  />
+                    <SettingSelectRow
+                      title="Incident Camera"
+                      description="Which iRacing camera the incident replay buttons switch to. The list comes from the current session, so it fills in once you are on track. Falls back to the camera already selected when a track does not offer this group."
+                      value={cameraGroup}
+                      options={cameraGroupOptions(cameraGroups, cameraGroup)}
+                      onChange={(v) =>
+                        handleConfigChange({ incidentCameraGroup: v })
+                      }
+                    />
 
-                  <SettingSelectRow
-                    title="Keep Sessions"
-                    description="How many past sessions the Gantry keeps in its history. Lower it if the incident feed gets long and you only care about the current race; All keeps everything until you clear it."
-                    value={String(config.sessionRetention)}
-                    options={retentionOptions}
-                    onChange={(v) =>
-                      handleConfigChange({
-                        sessionRetention: toSessionRetention(v),
-                      })
-                    }
-                  />
-                </SettingsSection>
+                    <SettingSelectRow
+                      title="Keep Sessions"
+                      description="How many past sessions the Gantry keeps in its history. Lower it if the incident feed gets long and you only care about the current race; All keeps everything until you clear it."
+                      value={String(config.sessionRetention)}
+                      options={retentionOptions}
+                      onChange={(v) =>
+                        handleConfigChange({
+                          sessionRetention: toSessionRetention(v),
+                        })
+                      }
+                    />
+                  </SettingsSection>
+                </>
               )}
 
               {activeTab === 'options' && (

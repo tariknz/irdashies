@@ -7,6 +7,7 @@ import {
   getDashboard,
   saveDashboard,
   updateDashboardWidget,
+  withDashboardDefaults,
 } from './dashboards';
 import { defaultDashboard } from '@irdashies/types';
 import { DashboardLayout } from '@irdashies/types';
@@ -607,6 +608,72 @@ describe('dashboards', () => {
         background: { ...(defaults.background as object), opacity: 40 },
       });
       expect(mockWriteData).toHaveBeenCalledWith('currentProfile', 'race');
+    });
+  });
+
+  describe('widget scale migration', () => {
+    const layout = { x: 20, y: 40, width: 400, height: 300 };
+
+    it('moves standings scales, including custom instances, without mutating saved data', () => {
+      const dashboard: DashboardLayout = {
+        widgets: [
+          { id: 'standings', enabled: true, layout, config: { scale: 125 } },
+          {
+            id: 'standings-2',
+            type: 'standings',
+            enabled: true,
+            layout,
+            config: { scale: 75, background: { opacity: 40 } },
+          },
+          { id: 'laptimelog', enabled: true, layout, config: { scale: 150 } },
+        ],
+      };
+      const migrated = withDashboardDefaults(dashboard);
+      expect(migrated.widgets[0].scale).toBe(125);
+      expect(migrated.widgets[0].config).not.toHaveProperty('scale');
+      expect(migrated.widgets[1]).toMatchObject({
+        scale: 75,
+        layout,
+        config: { background: { opacity: 40 } },
+      });
+      expect(migrated.widgets[1].config).not.toHaveProperty('scale');
+      expect(migrated.widgets[2].config?.scale).toBe(150);
+      expect(migrated.widgets[2].scale).toBeUndefined();
+      expect(dashboard.widgets[0].config?.scale).toBe(125);
+      expect(withDashboardDefaults(migrated)).toEqual(migrated);
+    });
+
+    it('prefers the shared scale and normalizes malformed values', () => {
+      const migrated = withDashboardDefaults({
+        widgets: [
+          {
+            id: 'standings',
+            enabled: true,
+            layout,
+            scale: 80,
+            config: { scale: 150 },
+          },
+          { id: 'fuel', enabled: true, layout, scale: 1000 },
+          { id: 'fuel-2', type: 'fuel', enabled: true, layout, scale: -10 },
+          {
+            id: 'fuel-3',
+            type: 'fuel',
+            enabled: true,
+            layout,
+            scale: '125' as unknown as number,
+          },
+          {
+            id: 'standings-2',
+            type: 'standings',
+            enabled: true,
+            layout,
+            config: { scale: null },
+          },
+        ],
+      });
+      expect(migrated.widgets.slice(0, 5).map((w) => w.scale)).toEqual([
+        80, 200, 50, 100, 100,
+      ]);
     });
   });
 

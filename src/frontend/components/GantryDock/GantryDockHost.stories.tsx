@@ -12,6 +12,7 @@ import {
   type ResolvedDock,
 } from '@irdashies/types';
 import { GantryDockHost } from './GantryDockHost';
+import { WidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 
 const widget = (id: string) =>
   defaultDashboard.widgets.find((w) => w.id === id) as DashboardWidget;
@@ -93,6 +94,30 @@ type Story = StoryObj<typeof GantryDockHost>;
 /** Fuel calculator and track map side by side. */
 export const FuelAndMap: Story = {
   args: { dock: fuelAndMap },
+};
+
+/** A 200% host must not multiply the panels' independent scales. */
+export const ScaledPanels: Story = {
+  args: {
+    dock: {
+      ...fuelAndMap,
+      panels: fuelAndMap.panels.map((panel, index) =>
+        panel.status === 'ready'
+          ? {
+              ...panel,
+              widget: { ...panel.widget, scale: index === 0 ? 75 : 150 },
+            }
+          : panel
+      ),
+    },
+  },
+  render: (args) => (
+    <WidgetScale scale={200}>
+      <div className="flex h-full flex-col">
+        <GantryDockHost {...args} />
+      </div>
+    </WidgetScale>
+  ),
 };
 
 /** One panel at a time, for a narrow Gantry window. */

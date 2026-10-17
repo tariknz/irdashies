@@ -1,6 +1,7 @@
 import { validateImageDataUrl } from '@irdashies/utils/imageDataUrl';
 import { Fragment, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -126,6 +127,7 @@ export const BroadcastSettings = () => {
         return (
           <div className="space-y-4">
             <SettingsSection title="Look">
+              <WidgetScaleSettings widgetId={SETTING_ID} />
               {mark(
                 ['theme'],
                 <SettingButtonGroupRow<BroadcastTheme>

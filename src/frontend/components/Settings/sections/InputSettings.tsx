@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { TabButton } from '../components/TabButton';
 import {
@@ -250,6 +251,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                 {/* OPTIONS TAB */}
                 {activeTab === 'options' && (
                   <>
+                    <WidgetScaleSettings widgetId={widgetId} className="px-4" />
                     <SettingsSection title="Options">
                       <SettingProp path="useRawValues" />
                       <SettingProp path="background.opacity" />

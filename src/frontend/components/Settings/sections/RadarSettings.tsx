@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { useDashboard, useSessionStore } from '@irdashies/context';
 import type {
   RadarConfig,
@@ -169,6 +170,7 @@ const SectionView = ({
           <p className="text-sm text-slate-500">{section.summary}</p>
         )}
       </div>
+      {section.id === 'look' && <WidgetScaleSettings widgetId={SETTING_ID} />}
       {section.dev && level === 2 && section.id === 'processing' && (
         <p className="text-sm rounded-md border border-amber-500/40 bg-amber-500/10 text-amber-200 px-3 py-2">
           Internals the radar was tuned on. Odd values break lanes and warnings;
@@ -322,7 +324,11 @@ export const RadarSettings = () => {
           items: section.items.filter((item) =>
             matchesQuery(item, section, search)
           ),
-        })).filter(({ items }) => items.length > 0);
+        })).filter(
+          ({ section, items }) =>
+            items.length > 0 ||
+            (section.id === 'look' && 'widget scale'.includes(search))
+        );
         // A module that is off shows only its switch.
         const itemsOf = (section: RadarSettingSection) =>
           section.master && !view[section.master]

@@ -10,6 +10,7 @@ import {
   type ResolvedDockPanel,
 } from '@irdashies/types';
 import { getWidget } from '../../../WidgetIndex';
+import { WidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import { WidgetRuntimeProvider } from '../../../widgetRuntime';
 import { ErrorBoundary } from '../../ErrorBoundary/ErrorBoundary';
 
@@ -149,8 +150,10 @@ export const DockPanelContent = memo(
         fallback={PANEL_ERROR}
       >
         <WidgetRuntimeProvider widgetType={type}>
-          {/* embedded: this copy must never write to disk. */}
-          <Widget {...resolved.widget.config} embedded />
+          <WidgetScale scale={resolved.widget.scale}>
+            {/* embedded: this copy must never write to disk. */}
+            <Widget {...resolved.widget.config} embedded />
+          </WidgetScale>
         </WidgetRuntimeProvider>
       </ErrorBoundary>
     );

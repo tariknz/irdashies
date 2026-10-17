@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { useDashboard } from '@irdashies/context';
 import {
   BlindSpotMonitorWidgetSettings,
@@ -86,68 +87,23 @@ export const BlindSpotMonitorSettings = () => {
             <div>
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
-                <SettingsSection title="Display">
-                  {/* Display Mode */}
-                  <SettingProp path="displayMode" />
+                <>
+                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
+                  <SettingsSection title="Display">
+                    {/* Display Mode */}
+                    <SettingProp path="displayMode" />
 
-                  {/* Standard settings */}
-                  {(settings.config.displayMode ?? 'standard') ===
-                    'standard' && (
-                    <>
-                      <SettingProp path="background.opacity" />
-                      <SettingProp path="width" />
-                      <SettingProp path="borderSize" />
-                      <div className="flex items-center justify-between gap-4 py-2">
-                        <div>
-                          <p className="text-sm font-medium text-slate-200">
-                            Indicator Color
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="rounded border-2"
-                            style={{
-                              width: '20px',
-                              height: '20px',
-                              backgroundColor: `#${(settings.config.indicatorColor ?? 16096779).toString(16).padStart(6, '0')}`,
-                              borderColor: `#${(settings.config.indicatorColor ?? 16096779).toString(16).padStart(6, '0')}`,
-                            }}
-                          />
-                          <select
-                            value={settings.config.indicatorColor ?? 16096779}
-                            onChange={(e) =>
-                              handleConfigChange({
-                                indicatorColor: parseInt(e.target.value),
-                              })
-                            }
-                            className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                          >
-                            {Array.from(HIGHLIGHT_COLOR_PRESETS.entries()).map(
-                              ([key, value]) => (
-                                <option key={key} value={key}>
-                                  {value}
-                                </option>
-                              )
-                            )}
-                          </select>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Simple settings */}
-                  {settings.config.displayMode === 'simple' && (
-                    <>
-                      <SettingProp path="simpleSize" />
-                      <SettingProp path="simpleVerticalPosition" />
-                      <SettingProp path="simpleShowCount" />
-                      <SettingDivider />
-                      <SettingProp path="thresholdColorsEnabled" />
-                      {!(settings.config.thresholdColorsEnabled ?? false) && (
+                    {/* Standard settings */}
+                    {(settings.config.displayMode ?? 'standard') ===
+                      'standard' && (
+                      <>
+                        <SettingProp path="background.opacity" />
+                        <SettingProp path="width" />
+                        <SettingProp path="borderSize" />
                         <div className="flex items-center justify-between gap-4 py-2">
                           <div>
                             <p className="text-sm font-medium text-slate-200">
-                              Square Colour
+                              Indicator Color
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -179,30 +135,41 @@ export const BlindSpotMonitorSettings = () => {
                             </select>
                           </div>
                         </div>
-                      )}
-                      {(settings.config.thresholdColorsEnabled ?? false) && (
-                        <>
+                      </>
+                    )}
+
+                    {/* Simple settings */}
+                    {settings.config.displayMode === 'simple' && (
+                      <>
+                        <SettingProp path="simpleSize" />
+                        <SettingProp path="simpleVerticalPosition" />
+                        <SettingProp path="simpleShowCount" />
+                        <SettingDivider />
+                        <SettingProp path="thresholdColorsEnabled" />
+                        {!(settings.config.thresholdColorsEnabled ?? false) && (
                           <div className="flex items-center justify-between gap-4 py-2">
-                            <p className="text-sm text-slate-400">
-                              1 car colour
-                            </p>
+                            <div>
+                              <p className="text-sm font-medium text-slate-200">
+                                Square Colour
+                              </p>
+                            </div>
                             <div className="flex items-center gap-2">
                               <span
                                 className="rounded border-2"
                                 style={{
                                   width: '20px',
                                   height: '20px',
-                                  backgroundColor: `#${(settings.config.thresholdColor1 ?? 16096779).toString(16).padStart(6, '0')}`,
-                                  borderColor: `#${(settings.config.thresholdColor1 ?? 16096779).toString(16).padStart(6, '0')}`,
+                                  backgroundColor: `#${(settings.config.indicatorColor ?? 16096779).toString(16).padStart(6, '0')}`,
+                                  borderColor: `#${(settings.config.indicatorColor ?? 16096779).toString(16).padStart(6, '0')}`,
                                 }}
                               />
                               <select
                                 value={
-                                  settings.config.thresholdColor1 ?? 16096779
+                                  settings.config.indicatorColor ?? 16096779
                                 }
                                 onChange={(e) =>
                                   handleConfigChange({
-                                    thresholdColor1: parseInt(e.target.value),
+                                    indicatorColor: parseInt(e.target.value),
                                   })
                                 }
                                 className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
@@ -217,46 +184,85 @@ export const BlindSpotMonitorSettings = () => {
                               </select>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between gap-4 py-2">
-                            <p className="text-sm text-slate-400">
-                              2+ cars colour
-                            </p>
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="rounded border-2"
-                                style={{
-                                  width: '20px',
-                                  height: '20px',
-                                  backgroundColor: `#${(settings.config.thresholdColor2 ?? 15680580).toString(16).padStart(6, '0')}`,
-                                  borderColor: `#${(settings.config.thresholdColor2 ?? 15680580).toString(16).padStart(6, '0')}`,
-                                }}
-                              />
-                              <select
-                                value={
-                                  settings.config.thresholdColor2 ?? 15680580
-                                }
-                                onChange={(e) =>
-                                  handleConfigChange({
-                                    thresholdColor2: parseInt(e.target.value),
-                                  })
-                                }
-                                className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                              >
-                                {Array.from(
-                                  HIGHLIGHT_COLOR_PRESETS.entries()
-                                ).map(([key, value]) => (
-                                  <option key={key} value={key}>
-                                    {value}
-                                  </option>
-                                ))}
-                              </select>
+                        )}
+                        {(settings.config.thresholdColorsEnabled ?? false) && (
+                          <>
+                            <div className="flex items-center justify-between gap-4 py-2">
+                              <p className="text-sm text-slate-400">
+                                1 car colour
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="rounded border-2"
+                                  style={{
+                                    width: '20px',
+                                    height: '20px',
+                                    backgroundColor: `#${(settings.config.thresholdColor1 ?? 16096779).toString(16).padStart(6, '0')}`,
+                                    borderColor: `#${(settings.config.thresholdColor1 ?? 16096779).toString(16).padStart(6, '0')}`,
+                                  }}
+                                />
+                                <select
+                                  value={
+                                    settings.config.thresholdColor1 ?? 16096779
+                                  }
+                                  onChange={(e) =>
+                                    handleConfigChange({
+                                      thresholdColor1: parseInt(e.target.value),
+                                    })
+                                  }
+                                  className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                                >
+                                  {Array.from(
+                                    HIGHLIGHT_COLOR_PRESETS.entries()
+                                  ).map(([key, value]) => (
+                                    <option key={key} value={key}>
+                                      {value}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      )}
-                    </>
-                  )}
-                </SettingsSection>
+                            <div className="flex items-center justify-between gap-4 py-2">
+                              <p className="text-sm text-slate-400">
+                                2+ cars colour
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="rounded border-2"
+                                  style={{
+                                    width: '20px',
+                                    height: '20px',
+                                    backgroundColor: `#${(settings.config.thresholdColor2 ?? 15680580).toString(16).padStart(6, '0')}`,
+                                    borderColor: `#${(settings.config.thresholdColor2 ?? 15680580).toString(16).padStart(6, '0')}`,
+                                  }}
+                                />
+                                <select
+                                  value={
+                                    settings.config.thresholdColor2 ?? 15680580
+                                  }
+                                  onChange={(e) =>
+                                    handleConfigChange({
+                                      thresholdColor2: parseInt(e.target.value),
+                                    })
+                                  }
+                                  className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded border border-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                                >
+                                  {Array.from(
+                                    HIGHLIGHT_COLOR_PRESETS.entries()
+                                  ).map(([key, value]) => (
+                                    <option key={key} value={key}>
+                                      {value}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </SettingsSection>
+                </>
               )}
 
               {/* OPTIONS TAB */}

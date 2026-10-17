@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   ShiftLightWidgetSettings,
   getWidgetDefaultConfig,
@@ -461,11 +462,14 @@ export const ShiftLightSettings = () => {
 
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
-                <SettingsSection title="Display">
-                  <SettingProp path="background.opacity" />
+                <>
+                  <WidgetScaleSettings widgetId="shiftlight" className="px-4" />
+                  <SettingsSection title="Display">
+                    <SettingProp path="background.opacity" />
 
-                  <SettingProp path="showRpmText" />
-                </SettingsSection>
+                    <SettingProp path="showRpmText" />
+                  </SettingsSection>
+                </>
               )}
 
               {/* OPTIONS TAB */}

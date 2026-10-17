@@ -232,7 +232,6 @@ export const Standings = () => {
   const tableBorderSpacing = isCompact
     ? 'border-spacing-y-0'
     : 'border-spacing-y-0.5';
-  const scale = Math.min(200, Math.max(50, settings?.scale ?? 100)) / 100;
 
   if (!isSessionVisible) return <></>;
 
@@ -247,9 +246,6 @@ export const Standings = () => {
         className={`bg-slate-800/(--bg-opacity) rounded-sm text-white ${!isCompact ? 'p-2' : ''}`}
         style={{
           ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
-          width: `${100 / scale}%`,
-          transform: `scale(${scale})`,
-          transformOrigin: 'top left',
         }}
       >
         <TitleBar titleBarSettings={settings?.titleBar} />

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import type { TwitchChatWidgetSettings } from '@irdashies/types';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
@@ -43,6 +44,7 @@ export const TwitchChatSettings = () => {
         >
           <>
             <SettingsSection title="Display">
+              <WidgetScaleSettings widgetId={SETTING_ID} />
               {/* Background Opacity */}
               <SettingProp path="background.opacity" />
 
