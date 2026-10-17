@@ -45,6 +45,7 @@ import {
   flushReferenceLapsOnShutdown,
 } from './app/storage/referenceLaps';
 import { flushLapTracesOnShutdown } from './app/storage/lapTraces';
+import { flushPitLaneDataOnShutdown } from './app/storage/pitLaneData';
 import {
   flushGarage61SearchSessionOnShutdown,
   saveGarage61SearchSession,
@@ -443,7 +444,7 @@ void app.whenReady().then(async () => {
   // Setup IPC bridges
   setupLogBridge();
   setupFuelCalculatorBridge();
-  setupPitLaneBridge();
+  const pitLaneBridge = setupPitLaneBridge(overlayManager, channelBus);
   setupPersonalBestLapTimesBridge();
   setupLapTraceBridge(overlayManager);
   setupGarage61SearchSession(dashboard);
@@ -488,7 +489,12 @@ void app.whenReady().then(async () => {
   }
 
   // Start component server for browser components
-  await startComponentServer(bridge, dashboardBridge, channelBus);
+  await startComponentServer(
+    bridge,
+    dashboardBridge,
+    channelBus,
+    pitLaneBridge
+  );
 
   ipcMain.handle('getComponentServerPort', () => getComponentServerPort());
 
@@ -650,6 +656,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
     // coordinator deadline before the process exits.
     await Promise.all([
       flushLapTracesOnShutdown(),
+      flushPitLaneDataOnShutdown(),
       flushReferenceLapsOnShutdown(),
       flushIncidentsOnShutdown(),
       flushLapHistoryOnShutdown(),

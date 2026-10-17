@@ -18,7 +18,10 @@ import {
 
 /** Event channels publish one occurrence at a time, so they have no snapshot. */
 type EventChannelName =
-  'session.lifecycle' | 'raceControl.incidents' | 'raceControl.sessionId';
+  | 'session.lifecycle'
+  | 'raceControl.incidents'
+  | 'raceControl.sessionId'
+  | 'pit-lane.reset';
 /**
  * Channels owned by a standalone runtime rather than the ProcessorHost, so
  * this harness never sees them. `lap-history.snapshot` is recorded by

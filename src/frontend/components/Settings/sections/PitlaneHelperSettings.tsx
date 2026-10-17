@@ -12,6 +12,7 @@ import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingProps, settingPropFor } from '../components/SettingProp';
+import { PitLaneCalibrationSettings } from '../components/PitLaneCalibrationSettings';
 
 const SETTING_ID = 'pitlanehelper';
 const SettingProp = settingPropFor(SETTING_ID);
@@ -82,6 +83,7 @@ export const PitlaneHelperSettings = () => {
               {activeTab === 'options' && (
                 <>
                   <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
+                  <PitLaneCalibrationSettings />
                   {/* Display Settings */}
                   <SettingsSection title="Options">
                     <SettingToggleRow

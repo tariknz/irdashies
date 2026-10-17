@@ -1,212 +1,129 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  readPitLaneData,
-  updatePitLaneDataForTrack,
-  getPitLaneDataForTrack,
-} from './pitLaneData';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import fsp from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { PitLaneDataStore } from './pitLaneData';
 
-const mockReadData = vi.hoisted(() => vi.fn());
-const mockWriteData = vi.hoisted(() => vi.fn());
+vi.mock('electron', () => ({ app: { getPath: () => '/mock/userData' } }));
+vi.mock('../logger', () => ({ default: { warn: vi.fn(), error: vi.fn() } }));
 
-vi.mock('./storage', () => ({
-  readData: mockReadData,
-  writeData: mockWriteData,
-}));
+let directory: string;
+let file: string;
+let store: PitLaneDataStore;
+const original = {
+  '47': { pitEntryPct: 0.92, pitExitPct: 0.05 },
+  '181': { pitEntryPct: 0.9869, pitExitPct: 0.0683 },
+};
 
-// Mock Electron app
-vi.mock('electron', () => ({
-  app: {
-    getPath: vi.fn(() => '/mock/user/data'),
-  },
-}));
+beforeEach(async () => {
+  directory = await mkdtemp(path.join(os.tmpdir(), 'irdashies-pit-lane-'));
+  file = path.join(directory, 'pitLaneData.json');
+  store = new PitLaneDataStore(file);
+});
 
-const mockWriteFileSync = vi.hoisted(() => vi.fn());
-const mockReadFileSync = vi.hoisted(() => vi.fn());
+afterEach(async () => {
+  vi.restoreAllMocks();
+  await store.flush();
+  await rm(directory, { recursive: true, force: true });
+});
 
-// Mock fs module
-vi.mock('node:fs', () => ({
-  default: {
-    writeFileSync: mockWriteFileSync,
-    readFileSync: mockReadFileSync,
-    existsSync: vi.fn(() => true),
-  },
-  writeFileSync: mockWriteFileSync,
-  readFileSync: mockReadFileSync,
-  existsSync: vi.fn(() => true),
-}));
+describe('PitLaneDataStore', () => {
+  it('loads existing legacy calibration and partial null values', async () => {
+    await writeFile(
+      file,
+      JSON.stringify({
+        ...original,
+        '321': { pitEntryPct: null, pitExitPct: 0.06 },
+      })
+    );
+    expect(await store.get('47')).toEqual(original['47']);
+    expect(await store.get('321')).toEqual({
+      pitEntryPct: null,
+      pitExitPct: 0.06,
+    });
+    expect(await store.get('999')).toBeNull();
+  });
 
-describe('pitLaneData', () => {
-  beforeEach(() => {
-    mockReadData.mockReset();
-    mockWriteData.mockReset();
-    mockReadFileSync.mockReset();
-    mockWriteFileSync.mockReset();
-    mockReadData.mockReturnValue(null);
-    // Default: return empty object (no data)
-    mockReadFileSync.mockImplementation(() => {
-      throw new Error('ENOENT');
+  it.each(['null', '[]', '{broken'])(
+    'uses a safe default for invalid storage %s',
+    async (contents) => {
+      await writeFile(file, contents);
+      expect(await store.get('47')).toBeNull();
+    }
+  );
+
+  it('drops malformed records without dropping other tracks', async () => {
+    await writeFile(
+      file,
+      JSON.stringify({ ...original, '5': { pitEntryPct: 3, pitExitPct: 0.1 } })
+    );
+    expect(await store.get('5')).toBeNull();
+    expect(await store.get('181')).toEqual(original['181']);
+  });
+
+  it('preserves other tracks while concurrent updates share the initial read', async () => {
+    await writeFile(file, JSON.stringify(original));
+    await Promise.all([
+      store.update('47', { pitEntryPct: 0.93 }),
+      store.update('321', { pitExitPct: 0.06 }),
+      store.update('321', { pitEntryPct: 0.91 }),
+    ]);
+    await store.flush();
+    expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({
+      ...original,
+      '47': { pitEntryPct: 0.93, pitExitPct: 0.05 },
+      '321': { pitEntryPct: 0.91, pitExitPct: 0.06 },
     });
   });
 
-  describe('readPitLaneData', () => {
-    it('should return empty object if no data exists', () => {
-      mockReadFileSync.mockImplementation(() => {
-        throw new Error('ENOENT');
+  it('removes only the selected track and survives a fresh load', async () => {
+    await writeFile(file, JSON.stringify(original));
+    await store.clear('47');
+    expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({
+      '181': original['181'],
+    });
+    expect(await new PitLaneDataStore(file).get('47')).toBeNull();
+  });
+
+  it('queues reset behind an old in-flight disk write', async () => {
+    await writeFile(file, JSON.stringify(original));
+    await store.update('47', { pitEntryPct: 0.91 });
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const realWrite = fsp.writeFile.bind(fsp);
+    const spy = vi
+      .spyOn(fsp, 'writeFile')
+      .mockImplementationOnce(async (...args) => {
+        await blocked;
+        await realWrite(...args);
       });
-
-      const data = readPitLaneData();
-
-      expect(data).toEqual({});
-    });
-
-    it('should return existing pit lane data', () => {
-      const pitData = {
-        '47': { pitEntryPct: 0.92, pitExitPct: 0.05 },
-        '181': { pitEntryPct: 0.9869, pitExitPct: 0.0683 },
-      };
-      mockReadFileSync.mockReturnValue(JSON.stringify(pitData));
-
-      const data = readPitLaneData();
-
-      expect(data).toEqual(pitData);
+    const oldWrite = store.flush();
+    await vi.waitFor(() => expect(spy).toHaveBeenCalled());
+    const reset = store.clear('47');
+    release();
+    await Promise.all([oldWrite, reset]);
+    expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({
+      '181': original['181'],
     });
   });
 
-  describe('getPitLaneDataForTrack', () => {
-    it('should return null if track has no data', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify({}));
-
-      const data = getPitLaneDataForTrack('47');
-
-      expect(data).toBeNull();
-    });
-
-    it('should return pit lane data for specific track', () => {
-      const pitData = {
-        '47': { pitEntryPct: 0.92, pitExitPct: 0.05 },
-        '181': { pitEntryPct: 0.9869, pitExitPct: 0.0683 },
-      };
-      mockReadFileSync.mockReturnValue(JSON.stringify(pitData));
-
-      const data = getPitLaneDataForTrack('47');
-
-      expect(data).toEqual({ pitEntryPct: 0.92, pitExitPct: 0.05 });
-    });
-
-    it('should return partial data if only one value exists', () => {
-      const pitData = {
-        '47': { pitEntryPct: 0.92, pitExitPct: null },
-      };
-      mockReadFileSync.mockReturnValue(JSON.stringify(pitData));
-
-      const data = getPitLaneDataForTrack('47');
-
-      expect(data).toEqual({ pitEntryPct: 0.92, pitExitPct: null });
-    });
+  it('reports a failed reset and retains the previous cached calibration', async () => {
+    await writeFile(file, JSON.stringify(original));
+    vi.spyOn(fsp, 'writeFile').mockRejectedValueOnce(new Error('disk full'));
+    await expect(store.clear('47')).rejects.toThrow('disk full');
+    expect(await store.get('47')).toEqual(original['47']);
   });
 
-  describe('updatePitLaneDataForTrack', () => {
-    it('should create new entry for track with no existing data', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify({}));
-
-      updatePitLaneDataForTrack('47', { pitEntryPct: 0.92 });
-
-      expect(mockWriteFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('pitLaneData.json'),
-        JSON.stringify({ '47': { pitEntryPct: 0.92, pitExitPct: null } }, null, 2)
-      );
-    });
-
-    it('should update existing track data and preserve other tracks', () => {
-      const existingData = {
-        '47': { pitEntryPct: 0.92, pitExitPct: null },
-        '181': { pitEntryPct: 0.9869, pitExitPct: 0.0683 },
-      };
-      mockReadFileSync.mockReturnValue(JSON.stringify(existingData));
-
-      updatePitLaneDataForTrack('47', { pitExitPct: 0.05 });
-
-      expect(mockWriteFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('pitLaneData.json'),
-        JSON.stringify({
-          '47': { pitEntryPct: 0.92, pitExitPct: 0.05 },
-          '181': { pitEntryPct: 0.9869, pitExitPct: 0.0683 },
-        }, null, 2)
-      );
-    });
-
-    it('should handle partial updates', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify({
-        '47': { pitEntryPct: null, pitExitPct: 0.05 },
-      }));
-
-      updatePitLaneDataForTrack('47', { pitEntryPct: 0.92 });
-
-      expect(mockWriteFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('pitLaneData.json'),
-        JSON.stringify({ '47': { pitEntryPct: 0.92, pitExitPct: 0.05 } }, null, 2)
-      );
-    });
-
-    it('should update both values at once', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify({}));
-
-      updatePitLaneDataForTrack('47', { pitEntryPct: 0.92, pitExitPct: 0.05 });
-
-      expect(mockWriteFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('pitLaneData.json'),
-        JSON.stringify({ '47': { pitEntryPct: 0.92, pitExitPct: 0.05 } }, null, 2)
-      );
-    });
-
-    it('should allow null values to be set', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify({
-        '47': { pitEntryPct: 0.92, pitExitPct: 0.05 },
-      }));
-
-      updatePitLaneDataForTrack('47', { pitEntryPct: null });
-
-      expect(mockWriteFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('pitLaneData.json'),
-        JSON.stringify({ '47': { pitEntryPct: null, pitExitPct: 0.05 } }, null, 2)
-      );
-    });
-  });
-
-  describe('edge cases', () => {
-    it('should handle track with only entry data', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify({}));
-
-      updatePitLaneDataForTrack('47', { pitEntryPct: 0.92 });
-
-      // Verify writeFileSync was called
-      expect(mockWriteFileSync).toHaveBeenCalled();
-    });
-
-    it('should handle track with only exit data', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify({}));
-
-      updatePitLaneDataForTrack('47', { pitExitPct: 0.05 });
-
-      // Verify writeFileSync was called
-      expect(mockWriteFileSync).toHaveBeenCalled();
-    });
-
-    it('should handle multiple tracks', () => {
-      const data = {
-        '47': { pitEntryPct: 0.92, pitExitPct: 0.05 },
-        '181': { pitEntryPct: 0.9869, pitExitPct: 0.0683 },
-        '321': { pitEntryPct: 0.50, pitExitPct: null },
-      };
-      mockReadFileSync.mockReturnValue(JSON.stringify(data));
-
-      const data47 = getPitLaneDataForTrack('47');
-      const data181 = getPitLaneDataForTrack('181');
-      const data321 = getPitLaneDataForTrack('321');
-
-      expect(data47).toEqual({ pitEntryPct: 0.92, pitExitPct: 0.05 });
-      expect(data181).toEqual({ pitEntryPct: 0.9869, pitExitPct: 0.0683 });
-      expect(data321).toEqual({ pitEntryPct: 0.50, pitExitPct: null });
-    });
+  it('coalesces learned values until an explicit shutdown flush', async () => {
+    await writeFile(file, JSON.stringify({}));
+    const spy = vi.spyOn(fsp, 'writeFile');
+    await store.update('47', { pitEntryPct: 0.92 });
+    await store.update('47', { pitExitPct: 0.05 });
+    expect(spy).not.toHaveBeenCalled();
+    await store.flush();
+    expect(spy).toHaveBeenCalledOnce();
   });
 });

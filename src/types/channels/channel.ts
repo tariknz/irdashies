@@ -3,6 +3,7 @@ import type { Incident } from '../raceControl';
 import type { ReferenceLap } from '../referenceLaps';
 import type { Sector } from '../session';
 import type { ReplayContextSnapshot } from './replayContext';
+import type { PitLaneCalibration } from '../pitLane';
 
 export type SessionLifecycleEvent =
   | { type: 'enter'; replay: boolean }
@@ -10,6 +11,7 @@ export type SessionLifecycleEvent =
   | { type: 'disconnect' };
 
 export interface ChannelPayloads {
+  'pit-lane.reset': PitLaneCalibration;
   'blind-spot.snapshot': BlindSpotSnapshot;
   'car-speeds.snapshot': CarSpeedsSnapshot;
   'car-systems.snapshot': CarSystemsSnapshot;
@@ -548,6 +550,7 @@ export type ChannelDefinition =
 export type ChannelRegistry = Readonly<Record<ChannelName, ChannelDefinition>>;
 
 export const channelRegistry = {
+  'pit-lane.reset': { kind: 'event' },
   'blind-spot.snapshot': {
     kind: 'snapshot',
     defaultRateHz: 25,

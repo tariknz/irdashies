@@ -4,9 +4,28 @@ export interface PitLaneTrackData {
 }
 
 export interface PitLaneBridge {
-  getPitLaneData: (trackId: string) => Promise<PitLaneTrackData | null>;
+  getPitLaneData: (trackId: string) => Promise<PitLaneCalibration>;
   updatePitLaneData: (
     trackId: string,
-    data: Partial<PitLaneTrackData>
-  ) => Promise<void>;
+    data: Partial<PitLaneTrackData>,
+    revision: number,
+    sourceId: string
+  ) => Promise<boolean>;
+  getCurrentTrackPitLaneInfo: () => Promise<CurrentTrackPitLaneInfo | null>;
+  resetPitLaneData: (trackId: string) => Promise<void>;
+}
+
+export interface PitLaneCalibration {
+  trackId: string;
+  /** Main-instance identity; a reconnect may start a new revision sequence. */
+  sourceId: string;
+  /** Reset generation. Saves from an older generation cannot restore old data. */
+  revision: number;
+  data: PitLaneTrackData | null;
+}
+
+export interface CurrentTrackPitLaneInfo {
+  trackId: string;
+  trackName: string;
+  hasCalibration: boolean;
 }
