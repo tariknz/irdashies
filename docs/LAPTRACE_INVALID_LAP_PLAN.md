@@ -1,6 +1,6 @@
 # Lap Trace — show why the lap in progress cannot become the reference
 
-> **Status:** Plan only. Nothing implemented.
+> **Status:** Implemented on `feature/laptrace_bestlap_show_invalid_lap`. See §9 for where the build departed from the plan.
 > **Branch:** `feature/laptrace_bestlap_show_invalid_lap`
 > **Scope:** Lap Trace widget, its store, the lap-trace sample processor, and the LMU telemetry map.
 
@@ -369,3 +369,38 @@ no-reference story does.
 [x] R14.1 — processor and selector specs listed in §6
 [x] Storybook stories listed in §6
 ```
+
+## 9. As built
+
+Four departures from the plan above, all found while implementing:
+
+**`resetActiveLap` takes the reason instead of a boolean.** The plan proposed
+adding `reason` alongside the existing `isClean` parameter, and noted the
+invariant `isClean === (reason === null)` as something for review to check.
+Replacing the boolean outright removes the chance of them disagreeing: both
+fields are now derived from one argument.
+
+**A reset into the pit box reports `'out-lap'`, not `'reset'`.** A tow or an
+Active Reset that lands the car in the pits leaves the driver on an out-lap,
+which says more about what happens next than "a reset happened" does. A reset
+elsewhere on track still reports `'reset'`.
+
+**Lap-start classification moved into a `lapStartReason` helper**, shared by
+the first-frame and start/finish-crossing call sites, with pit road and the
+garage taking precedence over `'partial-lap'`.
+
+**The widget spec and stories drive the real recorder** rather than writing
+`invalidReason` into the store directly, so they exercise the classification
+rules instead of restating them.
+
+Two things worth knowing that the plan did not anticipate:
+
+- `MAX_SAMPLE_GAP_M` is 50 m, so on a 5 km track a 0.01 lap-fraction step
+  between test frames lands exactly on the threshold and floating-point error
+  tips it over into `'discontinuity'`. Test frames need a smaller step. The
+  pre-existing "marks the lap dirty when the car teleports" case in
+  `LapTraceStore.spec.ts` turns out to be invalidated by this gap rule rather
+  than by the position-jump detector its comment describes.
+- `src/app/lmu/native/lmu-tape-cadence.spec.ts` fails on this machine, on a
+  clean tree as well as with these changes. It wants an LMU tape fixture that
+  is not present locally. Unrelated to this work.

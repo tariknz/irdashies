@@ -117,6 +117,15 @@ export interface LapTraceSampleSnapshot {
    * lap never gets promoted to "my best lap".
    */
   incidentCount: number;
+  /**
+   * The sim's own "this lap is void" flag, from LMU's mLapInvalidated.
+   *
+   * Always false under iRacing, which has no equivalent channel and reports
+   * the same thing through `incidentCount` instead. LMU is the other way
+   * round — it publishes no incident count at all — so between the two every
+   * supported sim has one working signal.
+   */
+  simLapInvalidated: boolean;
   version: number;
 }
 

@@ -40,6 +40,8 @@ interface Frame {
   lapCompleted?: number;
   /** PlayerCarMyIncidentCount at this instant — cumulative, not per-frame. */
   incidents?: number;
+  /** LMU's own lap-void flag. iRacing never sets it. */
+  simInvalid?: boolean;
 }
 
 let version = 0;
@@ -58,6 +60,7 @@ const sample = (frame: Frame): LapTraceSampleSnapshot => ({
   lastLapTime: frame.lastLapTime ?? 0,
   lapCompleted: frame.lapCompleted ?? 0,
   incidentCount: frame.incidents ?? 0,
+  simLapInvalidated: frame.simInvalid ?? false,
   version: ++version,
 });
 
@@ -307,6 +310,131 @@ describe('LapTraceStore', () => {
         // The frames are still recorded — the corner panel can use them.
         expect(activeLap()?.samples.length).toBe(1);
       });
+  });
+
+  describe('why a lap cannot be recorded', () => {
+    const reason = () => activeLap()?.invalidReason ?? null;
+
+    it('leaves the reason unset while the lap is still a candidate', () => {
+      feed({ pct: 0, time: 0 });
+      feed({ pct: 0.01, time: 1 });
+      expect(reason()).toBeNull();
+      expect(activeLap()?.isCleanLap).toBe(true);
+    });
+
+    it('reports an incident picked up mid-lap', () => {
+      feed({ pct: 0, time: 0, incidents: 2 });
+      feed({ pct: 0.01, time: 1, incidents: 3 });
+      expect(reason()).toBe('incident');
+    });
+
+    it('reports a pit entry part-way through a clean lap', () => {
+      feed({ pct: 0, time: 0 });
+      feed({ pct: 0.01, time: 1, onPitRoad: true });
+      expect(reason()).toBe('pitted');
+    });
+
+    it('reports an out-lap when the lap begins on pit road', () => {
+      // The same OnPitRoad bit as the test above, read at the start of a lap
+      // rather than part-way through: leaving the pits, not entering them.
+      feed({ pct: 0, time: 0, onPitRoad: true });
+      expect(reason()).toBe('out-lap');
+    });
+
+    it('reports an out-lap when the car is still in the garage', () => {
+      feed({ pct: 0, time: 0, onTrack: false });
+      expect(reason()).toBe('out-lap');
+    });
+
+    it('reports an out-lap on the lap that starts as the car leaves the pits', () => {
+      feed({ pct: 0, time: 0 });
+      feed({ pct: 0.96, time: 1 });
+      // Crossing the line while still on pit road: the new lap is an out-lap.
+      feed({ pct: 0.01, time: 2, onPitRoad: true });
+      expect(reason()).toBe('out-lap');
+    });
+
+    it('reports a partial lap when recording joins mid-way round', () => {
+      feed({ pct: 0.5, time: 10 });
+      expect(reason()).toBe('partial-lap');
+    });
+
+    it('reports a reset when the car is moved mid-track', () => {
+      feed({ pct: 0, time: 0 });
+      feed({ pct: 0.5, time: 1 });
+      // 50 m back in a tenth of a second: nothing on wheels does that.
+      feed({ pct: 0.1, time: 1.1 });
+      expect(reason()).toBe('reset');
+    });
+
+    it('reports a reset to the pit box as the out-lap it leaves behind', () => {
+      feed({ pct: 0, time: 0 });
+      feed({ pct: 0.5, time: 1 });
+      // The same teleport, but it lands the car in the pits. What matters
+      // next is that the lap out of them is an out-lap.
+      feed({ pct: 0.1, time: 1.1, onPitRoad: true });
+      expect(reason()).toBe('out-lap');
+    });
+
+    it('reports a spin', () => {
+      feed({ pct: 0, time: 0 });
+      feed({ pct: 0.5, time: 1 });
+      feed({ pct: 0.4, time: 2 });
+      expect(reason()).toBe('spin');
+    });
+
+    it('reports a teleport the jump detector lets through', () => {
+      feed({ pct: 0, time: 0 });
+      // Under the jump detector's threshold for the time elapsed, but a wider
+      // step than a driven sample: continuity is gone even so.
+      feed({ pct: 0.6, time: 30 });
+      expect(reason()).toBe('discontinuity');
+    });
+
+    it("reports the sim's own verdict, with no incident count at all", () => {
+      // The LMU shape: PlayerCarMyIncidentCount is always 0 there, so this
+      // must fire on the void flag alone.
+      feed({ pct: 0, time: 0, incidents: 0 });
+      feed({ pct: 0.01, time: 1, incidents: 0, simInvalid: true });
+      expect(reason()).toBe('sim-invalidated');
+      expect(activeLap()?.isCleanLap).toBe(false);
+    });
+
+    it('keeps the first cause when a later one follows', () => {
+      feed({ pct: 0, time: 0, incidents: 1 });
+      feed({ pct: 0.01, time: 1, incidents: 2 });
+      // The incident is usually what sent the car down the pit lane; it is
+      // the cause worth reporting.
+      feed({ pct: 0.02, time: 2, incidents: 2, onPitRoad: true });
+      expect(reason()).toBe('incident');
+    });
+
+    it('clears the reason when the next lap starts clean', () => {
+      feed({ pct: 0, time: 0 });
+      feed({ pct: 0.01, time: 1, onPitRoad: true });
+      expect(reason()).toBe('pitted');
+
+      feed({ pct: 0.96, time: 2 });
+      feed({ pct: 0.01, time: 3 });
+      expect(reason()).toBeNull();
+      expect(activeLap()?.isCleanLap).toBe(true);
+    });
+
+    it('republishes the store when a car that is not moving invalidates its lap', () => {
+      feed({ pct: 0, time: 0 });
+
+      const published = vi.fn();
+      const unsubscribe = useLapTraceStore.subscribe(published);
+      // Same position, so the sample is dropped and the distance-gated notify
+      // never runs. A car stopped in its pit box or sitting in the garage is
+      // exactly this case, and it is the one this reporting exists for:
+      // without the explicit republish the widget would never hear about it.
+      feed({ pct: 0, time: 1, onPitRoad: true });
+      unsubscribe();
+
+      expect(reason()).toBe('pitted');
+      expect(published).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('promotes a clean lap to the reference', () => {

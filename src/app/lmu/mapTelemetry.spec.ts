@@ -239,6 +239,27 @@ describe('mapLmuTelemetry', () => {
   });
 });
 
+describe('mapLmuTelemetry lap validity', () => {
+  it("carries the sim's lap-void flag", () => {
+    expect(mapLmuTelemetry(fixture()).LmuLapInvalidated?.value[0]).toBe(false);
+    const voided = { ...fixture(), lapInvalidated: true } as LmuRawTelemetry;
+    expect(mapLmuTelemetry(voided).LmuLapInvalidated?.value[0]).toBe(true);
+  });
+
+  it('reads an absent flag as a valid lap', () => {
+    const raw = { ...fixture() } as LmuRawTelemetry;
+    delete raw.lapInvalidated;
+    expect(mapLmuTelemetry(raw).LmuLapInvalidated?.value[0]).toBe(false);
+  });
+
+  it('still reports no incident count, which LMU does not keep', () => {
+    // The void flag is the replacement signal, not a synthetic incident
+    // count: anything reading incidents for LMU would still see nothing.
+    const voided = { ...fixture(), lapInvalidated: true } as LmuRawTelemetry;
+    expect(mapLmuTelemetry(voided).PlayerCarMyIncidentCount.value[0]).toBe(0);
+  });
+});
+
 describe('mapLmuTelemetry lap-distance reconstruction', () => {
   it('advances the fraction between scoring updates', () => {
     // LMU only publishes lap distance at 5 Hz, so two polls 15 ms apart carry

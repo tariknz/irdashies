@@ -324,7 +324,10 @@ export function mapLmuTelemetry(
 
   // Player
   t.PlayerCarIdx = num(playerIdx);
+  // LMU keeps no incident count. Consumers that need to know whether the lap
+  // still counts read LmuLapInvalidated below instead.
   t.PlayerCarMyIncidentCount = num(0);
+  t.LmuLapInvalidated = bool(raw.lapInvalidated === true);
   t.PlayerCarTeamIncidentCount = num(0);
   t.PlayerCarTowTime = num(0);
   t.PlayerCarInPitStall = bool(
