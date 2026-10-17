@@ -14,7 +14,36 @@ const sdkState = vi.hoisted(() => ({
   running: true,
   /** Makes every shared-memory read throw, as a vanished mapping would. */
   readThrows: false,
+  /** The grid a session poll reports, so a spec can choose its Steam ids. */
+  drivers: [] as { steamId: string }[],
 }));
+
+/**
+ * Stands in for the whole rating feature: the client, its transport, its
+ * ticket fetcher and its on-disk cache.
+ *
+ * All of those have their own specs. What is unverifiable anywhere but here is
+ * the bridge's half of the contract -- which ids it hands over, that it reads
+ * answers synchronously while building a snapshot, and that a rating arriving
+ * after the fact still reaches the renderer.
+ */
+const ratingState = vi.hoisted(() => ({
+  /** Captured so a spec can resolve a rating at a moment of its choosing. */
+  onResolved: undefined as (() => void) | undefined,
+  /** Every batch of ids the bridge asked about, in order. */
+  requested: [] as string[][],
+  get: vi.fn<(steamId: string) => undefined>(() => undefined),
+  reset: vi.fn(),
+  cache: {
+    load: vi.fn(async () => undefined),
+    flush: vi.fn(async () => undefined),
+  },
+}));
+
+/** Shared so a spec can read the arguments the session mapper was given. */
+const mapSessionSpy = vi.hoisted(() =>
+  vi.fn<(...args: unknown[]) => { drivers: [] }>(() => ({ drivers: [] }))
+);
 
 /**
  * The REST state the bridge would create for itself, held here so a spec can
@@ -63,7 +92,11 @@ vi.mock('../../lmu/native', () => ({
     stop = vi.fn(() => true);
     isRunning = vi.fn(() => sdkState.running);
     read = vi.fn(rawFrame);
-    readSession = vi.fn(() => ({ ...rawFrame(), classes: [], drivers: [] }));
+    readSession = vi.fn(() => ({
+      ...rawFrame(),
+      classes: [],
+      drivers: sdkState.drivers,
+    }));
   },
 }));
 
@@ -125,7 +158,35 @@ vi.mock('../../lmu/lapDistance', () => ({
 }));
 
 vi.mock('../../lmu/mapSession', () => ({
-  mapLmuSession: () => ({ drivers: [] }),
+  mapLmuSession: mapSessionSpy,
+}));
+
+// The rating client and its IO have their own specs; here only the bridge's
+// use of them matters.
+vi.mock('../../lmu/raceos/client', () => ({
+  createRaceosClient: (options: { onResolved?: () => void }) => {
+    ratingState.onResolved = options.onResolved;
+    return {
+      get: ratingState.get,
+      request: (steamIds: readonly string[]) => {
+        ratingState.requested.push([...steamIds]);
+      },
+      reset: ratingState.reset,
+    };
+  },
+}));
+
+vi.mock('../../lmu/raceos/httpsJson', () => ({
+  createRaceosTransport: () => vi.fn(),
+}));
+
+vi.mock('../../lmu/raceos/ticket', () => ({
+  createTicketFetcher: () => vi.fn(),
+}));
+
+// Keeps the rating cache off the filesystem.
+vi.mock('../../storage/driverRatings', () => ({
+  createDriverRatingCache: () => ratingState.cache,
 }));
 
 vi.mock('../../lmu/sessionSignature', () => ({
@@ -394,5 +455,135 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
       expect(restState.poller.setActive).toHaveBeenCalledWith(false)
     );
     bridge.stop();
+  });
+});
+
+/**
+ * The bridge's half of the driver-rating feature.
+ *
+ * Everything below the bridge -- the token exchange, the batching, the backoff
+ * and the cache -- is covered by raceos/ and storage/driverRatings specs. What
+ * only exists here is the join: which Steam ids leave the grid, that ranks are
+ * read synchronously while a snapshot is built, and that an answer arriving
+ * after that snapshot was published still reaches the renderer.
+ */
+describe('publishLmuSDKEvents and driver ratings', () => {
+  const driver = (steamId: string) => ({ steamId });
+
+  const idsRequested = () => ratingState.requested.flat();
+
+  const sessionPublishCount = (overlayManager: OverlayManager) =>
+    vi
+      .mocked(overlayManager.publishMessage)
+      .mock.calls.filter(([channel]) => channel === 'sessionData').length;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sdkState.running = true;
+    sdkState.readThrows = false;
+    sdkState.drivers = [];
+    ratingState.requested = [];
+    ratingState.onResolved = undefined;
+  });
+
+  it('asks about the Steam ids on the grid', async () => {
+    sdkState.drivers = [
+      driver('76561198000000111'),
+      driver('76561198000000222'),
+    ];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(idsRequested().length).toBeGreaterThan(0));
+    expect(new Set(idsRequested())).toEqual(
+      new Set(['76561198000000111', '76561198000000222'])
+    );
+
+    bridge.stop();
+  });
+
+  it('leaves AI entries out of the lookup', async () => {
+    // The sim stringifies a numeric id, so an AI car arrives as "0" rather
+    // than as an absent value. Sent, it would fill a batch with an id that
+    // cannot match anybody and have the miss remembered against it.
+    sdkState.drivers = [driver('0'), driver('76561198000000111'), driver('0')];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(idsRequested().length).toBeGreaterThan(0));
+    expect(idsRequested()).not.toContain('0');
+
+    bridge.stop();
+  });
+
+  it('hands the session mapper a synchronous rating lookup', async () => {
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(mapSessionSpy).toHaveBeenCalled());
+    const ratingFor = mapSessionSpy.mock.calls[0][3] as (
+      steamId: string
+    ) => unknown;
+    expect(typeof ratingFor).toBe('function');
+
+    // It must read through the client rather than hold a snapshot of its own,
+    // or a rank resolved later would never be picked up.
+    ratingFor('76561198000000111');
+    expect(ratingState.get).toHaveBeenCalledWith('76561198000000111');
+
+    bridge.stop();
+  });
+
+  it('republishes the session when a rating resolves', async () => {
+    // A rating lands long after the snapshot that asked for it. The signature
+    // is pinned to a constant in this file's mocks, so a second sessionData
+    // publish here can only come from the client's onResolved dropping it --
+    // exactly the silent failure this guards: a rank sitting in the cache,
+    // never reaching the renderer.
+    sdkState.drivers = [driver('76561198000000111')];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(sessionPublishCount(overlayManager)).toBe(1));
+
+    ratingState.onResolved?.();
+
+    await vi.waitFor(() =>
+      expect(sessionPublishCount(overlayManager)).toBeGreaterThan(1)
+    );
+    bridge.stop();
+  });
+
+  it('drops the token and queue when the sim is confirmed gone', async () => {
+    // The token was bought with a ticket that sim run minted, and nothing
+    // queued can be asked about once the sim is not there to mint another.
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() =>
+      expect(restState.poller.setActive).toHaveBeenCalledWith(true)
+    );
+    sdkState.readThrows = true;
+
+    await vi.waitFor(() => expect(ratingState.reset).toHaveBeenCalled());
+    bridge.stop();
+  });
+
+  it('flushes the rating cache on teardown', async () => {
+    // Cache writes are debounced behind an unref'd timer, so without this a
+    // rating resolved in the last second before a quit is simply lost.
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(ratingState.cache.load).toHaveBeenCalled());
+    bridge.stop();
+
+    expect(ratingState.cache.flush).toHaveBeenCalled();
   });
 });

@@ -1,53 +1,59 @@
-# raceos — LMU driver ratings (incomplete)
+# raceos — LMU driver ratings
 
-**Nothing in this folder is wired up.** It is the groundwork for fetching LMU
-driver ranks and badges, and it is deliberately inert pending a decision
-described below. The parts of the feature that do ship — driver nationality,
-the flag, and the rank badge component — do not depend on anything here.
+Fetches LMU driver ranks and badges, and merges them into the standings beside
+the nationality and flag that `lmu/mapSession.ts` sets from the sim's own data.
 
 ## What is here
 
-| File           | State                                                                              |
-| -------------- | ---------------------------------------------------------------------------------- |
-| `parse.ts`     | Done and tested. Reads the rating service's player records.                        |
-| `httpsJson.ts` | Done. A `node:https` JSON transport, mirroring `lmu/rest/httpJson.ts`.             |
-| _(client)_     | **Not written.** The piece that performs the auth exchange and the batched lookup. |
+| File           | Role                                                              |
+| -------------- | ----------------------------------------------------------------- |
+| `client.ts`    | The auth exchange, the batched lookup, the cache and the backoff. |
+| `parse.ts`     | Reads the rating service's player records.                        |
+| `httpsJson.ts` | A `node:https` JSON transport, mirroring `lmu/rest/httpJson.ts`.  |
+| `ticket.ts`    | Asks LMU for the Steam auth session ticket the exchange needs.    |
 
-`../../storage/driverRatings.ts` is the persistent cache the client would use.
-It is done and tested, and is also unreferenced until the client exists.
+`../../storage/driverRatings.ts` is the persistent cache, positive and
+negative, that the client reads and writes.
 
-## Why it stopped
+## The credential chain
 
-The lookup only works by taking a Steam auth session ticket that LMU issues
-for the signed-in user (`/rest/profile/getAuthSessionTicket`) and presenting
-it to a third party, `raceos.gg`, to obtain a bearer token.
+This is the part worth knowing before changing anything here. There is no API
+key: the lookup is authorised by a credential the sim mints for the signed-in
+user.
 
-That is how LMUTraceHUB does it, and the endpoints and payload shapes here
-were recovered from that binary. But it means this app would be:
+1. LMU's local REST API issues a Steam auth session ticket
+   (`/rest/profile/getAuthSessionTicket`).
+2. `client.ts` exchanges that ticket at `raceos.gg` for a bearer token.
+3. The token authorises a batched lookup of the Steam ids on the grid
+   (~50 per call).
 
-- authenticating to a service that has no public API, no published terms, and
-  no agreement with this project;
-- relaying a credential the sim minted for a different purpose;
-- doing so for every driver on the grid, not just the signed-in user.
+So the user's Steam identity is relayed to `raceos.gg`, a third party with no
+public API, no published terms and no agreement with this project, and the
+lookup covers every human on the grid rather than only the signed-in user.
+Reading LMU's own loopback API is plainly fine — the user's sim on the user's
+machine — and this is the one part of the LMU support that is not. It is a
+deliberate choice, not an oversight: the endpoints and payload shapes were
+recovered from LMUTraceHUB, which works the same way. If `raceos.gg` ever
+offers a proper API key, steps 1 and 2 collapse into a configured secret and
+most of the concern with them goes away.
 
-Reading LMU's own loopback API is plainly fine — it is the user's sim on the
-user's machine. Forwarding the user's Steam identity to an unaffiliated
-service is a different question, and it is the project owner's to answer, not
-something to slip in behind a feature flag.
+Two consequences fall out of the chain and are not bugs:
 
-## To finish it
+- Ratings exist only while LMU is running and signed in through Steam. There
+  is nothing to configure and nothing for the user to set up, and equally no
+  way to make this work offline or outside a session.
+- Nothing here is on a render path. Every lookup is best-effort: a failure
+  leaves drivers unrated and the standings render exactly as they do without
+  ratings, and a service that is down gets backed off rather than hammered.
 
-Two things are needed, in order:
+## How it is wired
 
-1. **A decision**, ideally with `raceos.gg` asked directly whether third-party
-   clients may use the API and on what terms. If they offer a proper API key,
-   the Steam-ticket relay disappears and most of the concern with it.
-2. **The client**, which would own: ticket → token exchange with expiry,
-   batched lookup (~50 Steam IDs per call), the positive/negative cache in
-   `driverRatings.ts`, and exponential backoff on failure. Roughly 180 lines.
+`bridge/iracingSdk/lmuSdkBridge.ts` owns the join. On each session poll it
+hands `client.request()` the grid's Steam ids from `raw.drivers[].steamId`
+(dropping the `"0"` that AI entries report), and passes `client.get` to
+`mapLmuSession` as the synchronous lookup that fills `Driver.LmuRating`.
+Answers arrive long after the snapshot that asked for them, so the client's
+`onResolved` drops the bridge's session signature to force a republish.
 
-Once it exists, the only other change is in `lmuSdkBridge.ts`: collect the
-grid's Steam IDs from `raw.drivers[].steamId`, hand them to the client, and
-merge its answers into `Driver.LmuRating` beside the nationality that
-`mapSession.ts` already sets. The renderer needs no further change — it
-already draws whatever ranks it is given.
+The renderer needs no knowledge of any of this — it draws whatever ranks it
+is given.
