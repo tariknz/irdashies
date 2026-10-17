@@ -338,6 +338,27 @@ describe('RadarProcessor', () => {
     expect(towardsPole.every((car) => car.lane > 0)).toBe(true);
   });
 
+  it('puts the pole line on the left on a super speedway', () => {
+    const processor = new RadarProcessor();
+    const session = rollingSession as unknown as Session;
+    processor.init({
+      ...session,
+      WeekendInfo: { ...session.WeekendInfo, TrackType: 'super speedway' },
+    });
+    processor.onFrame(rollingTelemetry as unknown as Telemetry);
+
+    const { cars } = processor.snapshot();
+    const base = rollingTelemetry as unknown as Record<
+      string,
+      { value: unknown[] }
+    >;
+    const lines = base.CarIdxPaceLine.value as number[];
+    const mine = lines[base.PlayerCarIdx.value[0] as number];
+    const towardsPole = cars.filter((car) => lines[car.carIdx] < mine);
+    expect(towardsPole.length).toBeGreaterThan(0);
+    expect(towardsPole.every((car) => car.lane < 0)).toBe(true);
+  });
+
   it('clears everything on disconnect and session change', () => {
     const processor = createProcessor();
     processor.onFrame(frame({ time: 1, pcts: [0.5, 0.5 + m(5)] }));
