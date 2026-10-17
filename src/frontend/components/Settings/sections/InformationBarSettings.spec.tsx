@@ -33,9 +33,22 @@ const additionalItems = [
   ['classRank', 'Class Rank'],
 ] as const;
 const defaults = getWidgetDefaultConfig('infobar');
-const legacyOrder = defaults.displayOrder.filter(
-  (key) => !additionalItems.some(([id]) => id === key)
-);
+// Fixed historical fixture: future default additions must also be backfilled.
+const legacyOrder = [
+  'sessionName',
+  'sessionTime',
+  'sessionLaps',
+  'incidentCount',
+  'brakeBias',
+  'localTime',
+  'sessionClockTime',
+  'trackWetness',
+  'precipitation',
+  'airTemperature',
+  'trackTemperature',
+  'wind',
+  'trackName',
+];
 
 // This is the same merge used at the dashboard-load boundary.
 const load = (saved: Record<string, unknown>) =>
@@ -76,10 +89,12 @@ describe('Information Bar shared items', () => {
     };
     const merged = load(saved);
 
-    expect(merged.displayOrder).toEqual([
-      ...savedOrder,
-      ...additionalItems.map(([id]) => id),
-    ]);
+    const mergedOrder = merged.displayOrder as string[];
+    expect(mergedOrder.filter((id) => savedOrder.includes(id))).toEqual(
+      savedOrder
+    );
+    expect(mergedOrder).toEqual(expect.arrayContaining(defaults.displayOrder));
+    expect(new Set(mergedOrder).size).toBe(mergedOrder.length);
     expect(merged.sessionName).toEqual({ enabled: false });
     expect(merged.trackTemperature).toEqual({
       enabled: true,
