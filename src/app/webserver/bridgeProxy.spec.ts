@@ -162,6 +162,31 @@ describe('browser Inspector serialization demand', () => {
     expect(inspector.messages('telemetry')).toHaveLength(11);
   });
 
+  it('preserves the broadcast cadence when an Inspector subscribes between ticks', () => {
+    const { source, connect, clock, serializations } = setup();
+    const inspector = connect();
+    source.telemetry(telemetry(10));
+    expect(serializations('telemetry')).toBe(0);
+
+    clock.mockReturnValue(50);
+    inspector.request('telemetryInspectorSubscribe', 'telemetryInspector');
+    expect(inspector.messages('telemetry')).toEqual([
+      { type: 'telemetry', data: telemetry(10) },
+    ]);
+
+    clock.mockReturnValue(99);
+    source.telemetry(telemetry(20));
+    expect(serializations('telemetry')).toBe(1);
+
+    clock.mockReturnValue(100);
+    source.telemetry(telemetry(30));
+    expect(serializations('telemetry')).toBe(2);
+    expect(inspector.messages('telemetry').map(({ data }) => data)).toEqual([
+      telemetry(10),
+      telemetry(30),
+    ]);
+  });
+
   it('keeps the latest telemetry even inside the 100 ms broadcast interval', () => {
     const { source, connect, clock, serializations } = setup();
     const first = connect();

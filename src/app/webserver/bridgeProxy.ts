@@ -55,7 +55,7 @@ export function createBridgeProxy(
   }
 
   const broadcast = (type: string, data: unknown) => {
-    const message = JSON.stringify({ type, data });
+    let message: string | undefined;
     clients.forEach((client) => {
       if (
         (type === 'telemetry' || type === 'sessionData') &&
@@ -66,20 +66,11 @@ export function createBridgeProxy(
         return;
       }
       if (client.readyState === WebSocket.OPEN) {
+        // Serialize once, only after finding an eligible recipient.
+        message ??= JSON.stringify({ type, data });
         client.send(message);
       }
     });
-  };
-
-  const hasInspectorSubscribers = (
-    stream: 'telemetryInspector' | 'sessionData'
-  ) => {
-    for (const [client, streams] of inspectorStreams) {
-      if (client.readyState === WebSocket.OPEN && streams.has(stream)) {
-        return true;
-      }
-    }
-    return false;
   };
 
   let currentBridge: IrSdkSourceBridge | null = null;
@@ -92,9 +83,8 @@ export function createBridgeProxy(
       currentTelemetry = telemetry;
       const now = performance.now();
       if (
-        now - lastTelemetryBroadcastTime >=
-          1000 / TELEMETRY_INSPECTOR_RATE_HZ &&
-        hasInspectorSubscribers('telemetryInspector')
+        clients.size > 0 &&
+        now - lastTelemetryBroadcastTime >= 1000 / TELEMETRY_INSPECTOR_RATE_HZ
       ) {
         lastTelemetryBroadcastTime = now;
         broadcast('telemetry', telemetry);
@@ -103,7 +93,7 @@ export function createBridgeProxy(
 
     const unsubSession = bridge.onSessionData((session: Session) => {
       currentSession = session;
-      if (hasInspectorSubscribers('sessionData')) {
+      if (clients.size > 0) {
         broadcast('sessionData', session);
       }
     });
