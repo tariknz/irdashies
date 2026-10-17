@@ -87,17 +87,18 @@ describe('isInternalAppUrl', () => {
 });
 
 describe('hardenWindow', () => {
-  it('denies popups and sends http(s) links to the system browser', () => {
+  it.each([
+    'https://github.com/tariknz/irdashies',
+    'http://192.168.1.50:4321/dashboard?profile=race-night',
+  ])('denies popups and opens %s in the system browser', (url) => {
     const openExternal = vi.fn();
     const { window, openWindow } = createWindow();
     hardenWindow(window, { openExternal });
 
-    expect(openWindow('https://github.com/tariknz/irdashies')).toEqual({
+    expect(openWindow(url)).toEqual({
       action: 'deny',
     });
-    expect(openExternal).toHaveBeenCalledWith(
-      'https://github.com/tariknz/irdashies'
-    );
+    expect(openExternal).toHaveBeenCalledWith(url);
   });
 
   it('denies non-http popups without handing them to the browser', () => {
