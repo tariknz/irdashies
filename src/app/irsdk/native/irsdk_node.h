@@ -3,7 +3,7 @@
 
 #include <napi.h>
 #include "./lib/irsdk_defines.h"
-#include "./lib/irsdk_client.h"
+#include "./lib/irsdk_capture.h"
 
 class iRacingSdkNode : public Napi::ObjectWrap<iRacingSdkNode>
 {
@@ -36,8 +36,7 @@ private:
     Napi::Object GetTelemetryVar(const Napi::Env env, const char *varName);
 
     bool _loggingEnabled;
-    char* _data;
-    int _bufLineLen;
+    irsdk_capture _capture;
     int _sessionStatusID;
     int _lastSessionCt;
     const char* _sessionData;
