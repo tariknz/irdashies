@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CurrentTrackPitLaneInfo, PitLaneBridge } from '@irdashies/types';
 import { SettingsSection } from './SettingSection';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -21,6 +21,23 @@ export const PitLaneCalibrationSettings = ({
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [readError, setReadError] = useState('');
+  const currentTrackId = useRef<string | null>(null);
+  const feedbackTrackId = useRef<string | null>(null);
+  const applyTrackInfo = useCallback(
+    (current: CurrentTrackPitLaneInfo | null) => {
+      const nextId = current?.trackId ?? null;
+      currentTrackId.current = nextId;
+      if (feedbackTrackId.current && feedbackTrackId.current !== nextId) {
+        setMessage('');
+        setError('');
+        feedbackTrackId.current = null;
+      }
+      setTrack(current);
+      setLoading(false);
+      setReadError('');
+    },
+    []
+  );
 
   useEffect(() => {
     let active = true;
@@ -28,9 +45,7 @@ export const PitLaneCalibrationSettings = ({
       try {
         const current = (await bridge?.getCurrentTrackPitLaneInfo()) ?? null;
         if (active) {
-          setTrack(current);
-          setLoading(false);
-          setReadError('');
+          applyTrackInfo(current);
         }
       } catch {
         if (active) {
@@ -48,7 +63,7 @@ export const PitLaneCalibrationSettings = ({
       active = false;
       clearInterval(timer);
     };
-  }, [bridge]);
+  }, [bridge, applyTrackInfo]);
 
   const reset = async () => {
     if (!bridge || !confirmTrack || busy) return;
@@ -57,16 +72,34 @@ export const PitLaneCalibrationSettings = ({
     setPendingAction('reset');
     setMessage('');
     setError('');
+    feedbackTrackId.current = selected.trackId;
     try {
       await bridge.resetPitLaneData(selected.trackId);
-      setTrack(await bridge.getCurrentTrackPitLaneInfo());
-      setMessage(
-        `Calibration reset for ${selected.trackName}. Pit entry and exit will be learned again as cars use the pit lane.`
+      setTrack((current) =>
+        current?.trackId === selected.trackId
+          ? { ...current, hasCalibration: false }
+          : current
       );
+      if (currentTrackId.current === selected.trackId) {
+        feedbackTrackId.current = selected.trackId;
+        setMessage(
+          `Calibration reset for ${selected.trackName}. Pit entry and exit will be learned again as cars use the pit lane.`
+        );
+      }
+      try {
+        applyTrackInfo(await bridge.getCurrentTrackPitLaneInfo());
+      } catch {
+        setReadError(
+          'Calibration was reset, but the current track status could not be refreshed.'
+        );
+      }
     } catch {
-      setError(
-        'Could not reset calibration. Check that the same track is still connected, then try again.'
-      );
+      if (currentTrackId.current === selected.trackId) {
+        feedbackTrackId.current = selected.trackId;
+        setError(
+          'Could not reset calibration. Check that the same track is still connected, then try again.'
+        );
+      }
     } finally {
       setPendingAction(null);
     }
@@ -81,13 +114,20 @@ export const PitLaneCalibrationSettings = ({
     setPendingAction(action);
     setMessage('');
     setError('');
+    feedbackTrackId.current = null;
     try {
       await execute();
       if (action === 'reload') {
-        setTrack((await bridge?.getCurrentTrackPitLaneInfo()) ?? null);
         setMessage(
           'Calibration file reloaded. Saved edits are now applied to the overlays.'
         );
+        try {
+          applyTrackInfo((await bridge?.getCurrentTrackPitLaneInfo()) ?? null);
+        } catch {
+          setReadError(
+            'Calibration was reloaded, but the current track status could not be refreshed.'
+          );
+        }
       } else {
         setMessage(
           'Opened pitLaneData.json. Save your changes, then choose Reload file.'

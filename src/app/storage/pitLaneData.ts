@@ -4,6 +4,8 @@ import path from 'node:path';
 import type { PitLaneTrackData } from '@irdashies/types';
 import logger from '../logger';
 
+const MAX_CALIBRATION_TRACKS = 10000;
+
 const safeReadError = (error: unknown): unknown =>
   error instanceof SyntaxError
     ? 'Invalid JSON'
@@ -18,17 +20,45 @@ const isPct = (value: unknown): value is number | null =>
     value >= 0 &&
     value <= 1);
 
+const isTrackData = (
+  trackId: string,
+  value: unknown
+): value is PitLaneTrackData => {
+  if (
+    !/^[1-9]\d{0,9}$/.test(trackId) ||
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value)
+  )
+    return false;
+  const record = value as Record<string, unknown>;
+  return (
+    Object.keys(record).length === 2 &&
+    Object.hasOwn(record, 'pitEntryPct') &&
+    Object.hasOwn(record, 'pitExitPct') &&
+    isPct(record.pitEntryPct) &&
+    isPct(record.pitExitPct)
+  );
+};
+
+interface LoadedPitLaneData {
+  data: Map<string, PitLaneTrackData>;
+  writable: boolean;
+}
+
 /** Shared cache prevents concurrent read/modify/write calls losing other tracks. */
 export class PitLaneDataStore {
-  private loading?: Promise<Map<string, PitLaneTrackData>>;
+  private loading?: Promise<LoadedPitLaneData>;
   private timer?: ReturnType<typeof setTimeout>;
   private writing: Promise<void> = Promise.resolve();
   private dirty = false;
+  private readonly incompleteReadTracks = new Set<string>();
 
   constructor(private readonly filePath: string) {}
 
-  private load(): Promise<Map<string, PitLaneTrackData>> {
-    this.loading ??= (async () => {
+  private load(): Promise<LoadedPitLaneData> {
+    if (this.loading) return this.loading;
+    const loading = (async (): Promise<LoadedPitLaneData> => {
       const data = new Map<string, PitLaneTrackData>();
       try {
         const parsed: unknown = JSON.parse(
@@ -37,41 +67,68 @@ export class PitLaneDataStore {
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
           throw new TypeError('Invalid pit lane data');
         }
-        for (const [key, value] of Object.entries(parsed)) {
-          if (
-            value &&
-            typeof value === 'object' &&
-            isPct(value.pitEntryPct) &&
-            isPct(value.pitExitPct)
-          ) {
+        const entries = Object.entries(parsed);
+        let writable = entries.length <= MAX_CALIBRATION_TRACKS;
+        for (const [key, value] of entries) {
+          if (isTrackData(key, value)) {
             data.set(key, {
               pitEntryPct: value.pitEntryPct,
               pitExitPct: value.pitExitPct,
             });
-          }
+          } else writable = false;
         }
+        if (!writable)
+          logger.warn(
+            'Invalid records in pitLaneData.json; keeping calibration read-only'
+          );
+        return { data, writable };
       } catch (error) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'code' in error &&
+          error.code === 'ENOENT'
+        )
+          return { data, writable: true };
         logger.warn(
           'Failed to read pitLaneData.json; using empty data',
           safeReadError(error)
         );
       }
-      return data;
+      return { data, writable: false };
     })();
-    return this.loading;
+    this.loading = loading;
+    // Failed or partial reads may be displayed, but never become the basis of
+    // a write. Retry the real file before any later read or mutation.
+    void loading.then((result) => {
+      if (!result.writable) {
+        // A renderer may have displayed valid entries from this incomplete
+        // file. A later repair/reload must invalidate those old revisions too.
+        for (const trackId of result.data.keys()) {
+          if (this.incompleteReadTracks.size >= MAX_CALIBRATION_TRACKS) break;
+          this.incompleteReadTracks.add(trackId);
+        }
+        if (this.loading === loading) this.loading = undefined;
+      }
+    });
+    return loading;
   }
 
   async get(trackId: string): Promise<PitLaneTrackData | null> {
-    return (await this.load()).get(trackId) ?? null;
+    return (await this.load()).data.get(trackId) ?? null;
   }
 
   async update(
     trackId: string,
     update: Partial<PitLaneTrackData>
   ): Promise<void> {
-    const data = await this.load();
+    const { data, writable } = await this.load();
+    if (!writable)
+      throw new Error(
+        'Calibration file could not be read safely. Open or repair it before changing calibration.'
+      );
     // Generous bound for the track catalogue; never evict existing calibration.
-    if (!data.has(trackId) && data.size >= 10000)
+    if (!data.has(trackId) && data.size >= MAX_CALIBRATION_TRACKS)
       throw new Error('Pit lane calibration storage is full');
     data.set(trackId, {
       ...(data.get(trackId) ?? { pitEntryPct: null, pitExitPct: null }),
@@ -88,7 +145,11 @@ export class PitLaneDataStore {
   }
 
   async clear(trackId: string): Promise<void> {
-    const data = await this.load();
+    const { data, writable } = await this.load();
+    if (!writable)
+      throw new Error(
+        'Calibration file could not be read safely. Open or repair it before changing calibration.'
+      );
     const existing = data.get(trackId);
     data.delete(trackId);
     this.dirty = true;
@@ -114,7 +175,9 @@ export class PitLaneDataStore {
     const write = this.writing
       .catch(() => undefined)
       .then(async () => {
-        const data = await loading;
+        const { data, writable } = await loading;
+        if (!writable)
+          throw new Error('Calibration file could not be read safely.');
         const temporaryPath = `${this.filePath}.tmp`;
         await fsp.writeFile(
           temporaryPath,
@@ -160,28 +223,18 @@ export class PitLaneDataStore {
     await this.writing.catch(() => undefined);
     this.writing = Promise.resolve();
     this.dirty = false;
-    const previous = await this.load();
+    const previous = (await this.load()).data;
     const parsed: unknown = JSON.parse(
       await fsp.readFile(this.filePath, 'utf8')
     );
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
       throw new Error('Calibration must be a JSON object keyed by track ID.');
     const entries = Object.entries(parsed);
-    if (entries.length > 10000)
+    if (entries.length > MAX_CALIBRATION_TRACKS)
       throw new Error('Too many tracks in calibration file.');
     const next = new Map<string, PitLaneTrackData>();
     for (const [trackId, value] of entries) {
-      if (
-        !/^[1-9]\d{0,9}$/.test(trackId) ||
-        !value ||
-        typeof value !== 'object' ||
-        Array.isArray(value) ||
-        Object.keys(value).length !== 2 ||
-        !Object.hasOwn(value, 'pitEntryPct') ||
-        !Object.hasOwn(value, 'pitExitPct') ||
-        !isPct(value.pitEntryPct) ||
-        !isPct(value.pitExitPct)
-      ) {
+      if (!isTrackData(trackId, value)) {
         throw new Error(
           'Each track must contain only pitEntryPct and pitExitPct, with numbers from 0 to 1 or null.'
         );
@@ -196,13 +249,20 @@ export class PitLaneDataStore {
       const before = previous.get(trackId);
       const after = next.get(trackId);
       if (
+        this.incompleteReadTracks.has(trackId) ||
         before?.pitEntryPct !== after?.pitEntryPct ||
         before?.pitExitPct !== after?.pitExitPct
       ) {
         changes.push({ trackId, data: after ?? null });
       }
     }
-    this.loading = Promise.resolve(next);
+    // Include deleted records that a retried read no longer contains.
+    for (const trackId of this.incompleteReadTracks) {
+      if (!changes.some((change) => change.trackId === trackId))
+        changes.push({ trackId, data: next.get(trackId) ?? null });
+    }
+    this.incompleteReadTracks.clear();
+    this.loading = Promise.resolve({ data: next, writable: true });
     return changes;
   }
 }

@@ -250,3 +250,120 @@ describe('pit lane calibration file editing', () => {
     }
   );
 });
+
+describe('pit lane initial-read write protection', () => {
+  it.each(['EBUSY', 'EPERM', 'EACCES'])(
+    'retries a transient %s read instead of caching an empty writable map',
+    async (code) => {
+      const bytes = JSON.stringify(original);
+      await writeFile(file, bytes);
+      const reading = vi
+        .spyOn(fsp, 'readFile')
+        .mockRejectedValueOnce(
+          Object.assign(new Error('temporary read failure'), { code })
+        );
+      const writing = vi.spyOn(fsp, 'writeFile');
+      expect(await store.get('47')).toBeNull();
+      await store.flush();
+      expect(writing).not.toHaveBeenCalled();
+      expect(await store.get('181')).toEqual(original['181']);
+      expect(reading).toHaveBeenCalledTimes(2);
+      expect(await readFile(file, 'utf8')).toBe(bytes);
+    }
+  );
+
+  it.each(['update', 'clear'] as const)(
+    'rejects %s after a failed read and safely retries the complete file later',
+    async (operation) => {
+      const bytes = JSON.stringify(original);
+      await writeFile(file, bytes);
+      vi.spyOn(fsp, 'readFile').mockRejectedValueOnce(
+        Object.assign(new Error('temporary access failure'), { code: 'EACCES' })
+      );
+      const writing = vi.spyOn(fsp, 'writeFile');
+      const mutation =
+        operation === 'update'
+          ? store.update('47', { pitEntryPct: 0.8 })
+          : store.clear('47');
+      await expect(mutation).rejects.toThrow('could not be read safely');
+      await store.flush();
+      expect(writing).not.toHaveBeenCalled();
+      expect(await readFile(file, 'utf8')).toBe(bytes);
+      await store.update('47', { pitEntryPct: 0.8 });
+      await store.flush();
+      expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({
+        ...original,
+        '47': { pitEntryPct: 0.8, pitExitPct: 0.05 },
+      });
+    }
+  );
+
+  it.each([
+    '{unfinished JSON',
+    JSON.stringify({ ...original, '5': { pitEntryPct: 3, pitExitPct: 0.1 } }),
+  ])(
+    'keeps malformed or partially invalid initial data read-only until repaired',
+    async (bytes) => {
+      await writeFile(file, bytes);
+      const writing = vi.spyOn(fsp, 'writeFile');
+      await store.get('47');
+      await expect(store.update('47', { pitEntryPct: 0.8 })).rejects.toThrow(
+        'could not be read safely'
+      );
+      await expect(store.clear('47')).rejects.toThrow(
+        'could not be read safely'
+      );
+      await store.flush();
+      expect(writing).not.toHaveBeenCalled();
+      expect(await readFile(file, 'utf8')).toBe(bytes);
+      await writeFile(file, JSON.stringify(original));
+      await store.update('47', { pitEntryPct: 0.8 });
+      await store.flush();
+      expect(await store.get('181')).toEqual(original['181']);
+    }
+  );
+
+  it('does not rewrite a read-only session at shutdown', async () => {
+    const bytes = JSON.stringify(original);
+    await writeFile(file, bytes);
+    const writing = vi.spyOn(fsp, 'writeFile');
+    expect(await store.get('47')).toEqual(original['47']);
+    await store.flush();
+    expect(writing).not.toHaveBeenCalled();
+    expect(await readFile(file, 'utf8')).toBe(bytes);
+  });
+
+  it('allows a missing ENOENT file to initialize with newly learned values', async () => {
+    await store.update('47', { pitEntryPct: 0.8 });
+    await store.flush();
+    expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({
+      '47': { pitEntryPct: 0.8, pitExitPct: null },
+    });
+  });
+});
+
+describe('reloading a repaired initial calibration file', () => {
+  it.each(['edit', 'delete'] as const)(
+    'invalidates a record displayed from incomplete data after a repair that %ss it',
+    async (change) => {
+      await writeFile(
+        file,
+        JSON.stringify({
+          ...original,
+          '5': { pitEntryPct: 3, pitExitPct: 0.1 },
+        })
+      );
+      expect(await store.get('47')).toEqual(original['47']);
+      const edited = { pitEntryPct: 0.8, pitExitPct: null };
+      await writeFile(
+        file,
+        JSON.stringify(change === 'edit' ? { '47': edited } : {})
+      );
+      expect(await store.reload()).toEqual(
+        expect.arrayContaining([
+          { trackId: '47', data: change === 'edit' ? edited : null },
+        ])
+      );
+    }
+  );
+});

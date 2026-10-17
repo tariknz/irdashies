@@ -166,3 +166,79 @@ describe('native calibration file actions', () => {
     }
   );
 });
+
+describe('calibration feedback scope and refresh failures', () => {
+  it.each(['success', 'error'] as const)(
+    'keeps %s reset feedback on same-track polls and clears it when the track changes',
+    async (outcome) => {
+      vi.useFakeTimers();
+      const bridge = makeBridge();
+      if (outcome === 'error')
+        vi.mocked(bridge.resetPitLaneData).mockRejectedValue(
+          new Error('disk full')
+        );
+      render(<PitLaneCalibrationSettings bridge={bridge} />);
+      await act(async () => undefined);
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Reset calibration' })
+      );
+      fireEvent.click(
+        screen.getAllByRole('button', { name: 'Reset calibration' })[1]
+      );
+      await act(async () => undefined);
+      const role = outcome === 'success' ? 'status' : 'alert';
+      expect(screen.getByRole(role)).toHaveTextContent(
+        outcome === 'success' ? 'Calibration reset' : 'Could not reset'
+      );
+      await act(async () => vi.advanceTimersByTime(2000));
+      expect(screen.getByRole(role)).toBeInTheDocument();
+      vi.mocked(bridge.getCurrentTrackPitLaneInfo).mockResolvedValue({
+        trackId: '181',
+        trackName: 'Another track',
+        hasCalibration: true,
+      });
+      await act(async () => vi.advanceTimersByTime(2000));
+      expect(screen.getByText('Another track')).toBeInTheDocument();
+      expect(screen.queryByRole(role)).not.toBeInTheDocument();
+    }
+  );
+
+  it.each(['reset', 'reload'] as const)(
+    'reports successful %s even when only the following status read fails',
+    async (action) => {
+      const bridge = makeBridge();
+      bridge.reloadPitLaneDataFile = vi.fn(async () => undefined);
+      vi.mocked(bridge.getCurrentTrackPitLaneInfo)
+        .mockResolvedValueOnce(current)
+        .mockRejectedValueOnce(new Error('Status unavailable'));
+      render(<PitLaneCalibrationSettings bridge={bridge} />);
+      await screen.findByText('Laguna Seca');
+      if (action === 'reset') {
+        fireEvent.click(
+          screen.getByRole('button', { name: 'Reset calibration' })
+        );
+        fireEvent.click(
+          screen.getAllByRole('button', { name: 'Reset calibration' })[1]
+        );
+      } else
+        fireEvent.click(screen.getByRole('button', { name: 'Reload file' }));
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        action === 'reset'
+          ? 'Calibration reset for Laguna Seca'
+          : 'Saved edits are now applied'
+      );
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'status could not be refreshed'
+      );
+      if (action === 'reset')
+        expect(
+          screen.getByRole('button', { name: 'Reset calibration' })
+        ).toBeDisabled();
+      expect(
+        screen.queryByText(
+          /^Could not reset calibration|^Could not reload the calibration file/
+        )
+      ).not.toBeInTheDocument();
+    }
+  );
+});
