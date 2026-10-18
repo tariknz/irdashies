@@ -9,7 +9,7 @@ import {
   NewspaperIcon,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
-import { WIDGET_MANIFESTS } from '@irdashies/types';
+import { WIDGET_MANIFESTS, type WidgetId } from '@irdashies/types';
 
 /** Menu groups, in display order. */
 export const WIDGET_CATEGORIES = [
@@ -70,9 +70,8 @@ export const generalItems: MenuItem[] = [
 ];
 
 /** Menu group and one-line summary per widget; the manifests carry neither. */
-const WIDGET_MENU_META: Record<
-  string,
-  { category: WidgetCategory; description: string }
+const WIDGET_MENU_META: Partial<
+  Record<WidgetId, { category: WidgetCategory; description: string }>
 > = {
   broadcast: {
     category: 'extras',

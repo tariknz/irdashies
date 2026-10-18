@@ -9,7 +9,7 @@ import type {
 import { releaseNotesFixture } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
 import { mockDashboardBridge } from '@irdashies/storybook';
-import { themeClasses } from './Settings';
+import { themeClasses } from './settingsThemeClasses';
 import type { SettingsTheme } from '@irdashies/types';
 
 interface StoryProps {

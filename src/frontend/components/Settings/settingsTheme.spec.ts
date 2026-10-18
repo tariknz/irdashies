@@ -3,11 +3,20 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SETTINGS_THEMES, SETTINGS_TITLE_BAR } from '@irdashies/types';
 import { widgetItems } from './menuItems';
-import { themeClasses } from './Settings';
+import { themeClasses } from './settingsThemeClasses';
 
 const read = (path: string) => readFileSync(join(__dirname, path), 'utf8');
 const themeCss = read('../../theme.css');
 const settingsLayoutSource = read('SettingsLayout.tsx');
+
+// Settings component sources (no stories or specs), for the colour guards.
+const sources = Object.entries(
+  import.meta.glob('./**/*.tsx', {
+    eager: true,
+    query: '?raw',
+    import: 'default',
+  }) as Record<string, string>
+).filter(([path]) => !path.includes('.stories.') && !path.includes('.spec.'));
 
 describe('settings theme', () => {
   // Uncategorised widgets silently fall into "Extras" in the settings menu.
@@ -21,45 +30,27 @@ describe('settings theme', () => {
   // Settings themes only remap slate-* and accent-*; these palettes ignore
   // the selected theme. Use slate-* for neutrals and accent-* for highlights.
   it('uses only themeable colours in settings components', () => {
-    const sources = import.meta.glob('./**/*.tsx', {
-      eager: true,
-      query: '?raw',
-      import: 'default',
-    }) as Record<string, string>;
-    const offenders = Object.entries(sources)
-      .filter(
-        ([path]) => !path.includes('.stories.') && !path.includes('.spec.')
+    const offenders = sources.flatMap(([path, source]) =>
+      [...source.matchAll(/\b[a-z]+-(?:gray|blue|sky|cyan|indigo)-\d+/g)].map(
+        ([match]) => `${path}: ${match}`
       )
-      .flatMap(([path, source]) =>
-        [...source.matchAll(/\b[a-z]+-(?:gray|blue|sky|cyan|indigo)-\d+/g)].map(
-          ([match]) => `${path}: ${match}`
-        )
-      );
+    );
     expect(offenders).toEqual([]);
   });
 
   // Solid accent can be light (Carbon's amber): text on it must be
   // text-on-accent, never text-white.
   it('uses text-on-accent on solid accent backgrounds', () => {
-    const sources = import.meta.glob('./**/*.tsx', {
-      eager: true,
-      query: '?raw',
-      import: 'default',
-    }) as Record<string, string>;
-    const offenders = Object.entries(sources)
-      .filter(
-        ([path]) => !path.includes('.stories.') && !path.includes('.spec.')
-      )
-      .flatMap(([path, source]) =>
-        source
-          .split(/["'`]/)
-          .filter(
-            (literal) =>
-              /\bbg-accent-(?:400|500|600|700)(?![\w/-])/.test(literal) &&
-              /\btext-white\b/.test(literal)
-          )
-          .map((literal) => `${path}: ${literal.trim().slice(0, 80)}`)
-      );
+    const offenders = sources.flatMap(([path, source]) =>
+      source
+        .split(/["'`]/)
+        .filter(
+          (literal) =>
+            /\bbg-accent-(?:400|500|600|700)(?![\w/-])/.test(literal) &&
+            /\btext-white\b/.test(literal)
+        )
+        .map((literal) => `${path}: ${literal.trim().slice(0, 80)}`)
+    );
     expect(offenders).toEqual([]);
   });
 

@@ -550,13 +550,15 @@ html {
 
 .settings-theme :where(h1, h2, h3) {
   font-family: var(--font-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  text-transform: var(--ui-heading-transform, uppercase);
+  letter-spacing: var(--ui-heading-tracking, 0.04em);
 }
 
-/* The original look: the default slate/blue palette, no square corners or
-   uppercase headings. Applied without .settings-theme; the two slate tokens
-   repeat the defaults only because the title bar colours are checked here. */
+/* The default: the stock slate/blue palette with plain headings. Applied
+   without .settings-theme, so no square corners or theme fonts. Shared
+   components (switches, buttons, menu) are restyled for every theme, so this
+   is not pixel-identical to the pre-theme window. The two slate tokens repeat
+   the defaults only because the title bar colours are checked here. */
 .settings-theme-classic {
   --ui-heading-transform: none;
   --ui-heading-tracking: normal;
