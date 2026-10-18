@@ -11,7 +11,13 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
  * ("reported") and the `trackNames` exceptions are
  * kept as they are; everything else is recomputed.
  *
- * Regenerate with: npm run generate-radar-pole-sides
+ * Pass iRacing's track catalogue (the /data/track/get response saved as JSON)
+ * to add each track's name and iRacing's own start_on_left / restart_on_left
+ * flags. They are only hints: they matched what drivers saw on 4 of 7
+ * tracks, so they never decide the side. Without the file, hints already in
+ * radarPoleSides.json are kept.
+ *
+ * Regenerate with: npm run generate-radar-pole-sides [-- <track-info.json>]
  */
 
 const TRACKS_FILE = './src/frontend/domain/track/tracks/tracks.json';
@@ -41,7 +47,40 @@ interface Drawing {
 interface Entry {
   poleLeft: boolean;
   source: 'geometry' | 'verified' | 'reported';
+  /** Track and layout, for people reading the file. */
+  name?: string;
+  /** iRacing's own flags for this track: a hint, not the answer. */
+  iracing?: { start: boolean; restart: boolean };
 }
+
+interface CatalogueTrack {
+  track_id?: number;
+  track_name?: string;
+  config_name?: string;
+  start_on_left?: boolean;
+  restart_on_left?: boolean;
+}
+
+/** Name and flags per track id from iRacing's track catalogue. */
+const readCatalogue = (file: string | undefined) => {
+  const hints = new Map<string, Pick<Entry, 'name' | 'iracing'>>();
+  if (!file) return hints;
+  const rows = JSON.parse(readFileSync(file, 'utf8')) as CatalogueTrack[];
+  for (const row of rows) {
+    if (typeof row.track_id !== 'number') continue;
+    const name = [row.track_name, row.config_name]
+      .filter((part): part is string => typeof part === 'string' && !!part)
+      .join(' - ');
+    hints.set(String(row.track_id), {
+      ...(name && { name }),
+      ...(typeof row.start_on_left === 'boolean' &&
+        typeof row.restart_on_left === 'boolean' && {
+          iracing: { start: row.start_on_left, restart: row.restart_on_left },
+        }),
+    });
+  }
+  return hints;
+};
 
 /** Points along the lap from the start/finish line, in the direction of travel. */
 const lapPoints = (drawing: Drawing) => {
@@ -91,6 +130,7 @@ export const firstCornerIsLeft = (drawing: Drawing): boolean | null => {
 };
 
 const main = () => {
+  const catalogue = readCatalogue(process.argv[2]);
   const drawings = JSON.parse(readFileSync(TRACKS_FILE, 'utf8')) as Record<
     string,
     Drawing
@@ -127,7 +167,15 @@ const main = () => {
     }
   }
   const sorted = Object.fromEntries(
-    Object.entries(tracks).sort(([a], [b]) => Number(a) - Number(b))
+    Object.entries(tracks)
+      .map(([id, entry]): [string, Entry] => {
+        const { name, iracing } = catalogue.get(id) ?? entry;
+        return [
+          id,
+          { ...entry, ...(name && { name }), ...(iracing && { iracing }) },
+        ];
+      })
+      .sort(([a], [b]) => Number(a) - Number(b))
   );
   const output = {
     version: 1,

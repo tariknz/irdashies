@@ -3,1507 +3,3387 @@
   "tracks": {
     "1": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Lime Rock Park - 2008 - [Retired] Full Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "2": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Virginia International Raceway - [Retired] Full Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "3": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Virginia International Raceway - [Retired] Patriot",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "4": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Virginia International Raceway - [Retired] North",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "5": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Virginia International Raceway - [Retired] Grand West",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "6": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Virginia International Raceway - [Retired] Grand East",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "7": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Virginia International Raceway - [Retired] South",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "8": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Summit Point Raceway - Jefferson Circuit",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "9": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Summit Point Raceway - Summit Point Raceway",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "18": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Road America - [Retired] Full Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "21": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Homestead Miami Speedway - Road Course A",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "22": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Homestead Miami Speedway - Road Course B",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "24": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Summit Point Raceway - Short",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "26": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Daytona International Speedway - Road Course - 2008",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "28": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Daytona International Speedway - Moto - 2008",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "29": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Daytona International Speedway - Short - 2008",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "34": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Lime Rock Park - 2008 - [Retired] Chicane",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "37": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Charlotte Motor Speedway - 2008 - [Retired] Road Course",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "38": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Charlotte Motor Speedway - 2008 - [Retired] Infield Road Course",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "39": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Charlotte Motor Speedway - 2008 - [Retired] Legends Oval",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "41": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Silverstone Circuit - 2008 - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "42": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Silverstone Circuit - 2008 - Historical Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "43": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Silverstone Circuit - 2008 - International",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "44": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Silverstone Circuit - 2008 - National",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "45": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Silverstone Circuit - 2008 - Southern",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "46": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Barber Motorsports Park - [Retired] Full Course",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "47": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] WeatherTech Raceway at Laguna Seca - [Retired] Full Course",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "48": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - [Retired] NASCAR Short",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "49": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - [Retired] Open Wheel pre-2008",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "50": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Road America - [Retired] Bend",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "51": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "EchoPark Speedway (Atlanta) - Road - 2008",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "52": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "EchoPark Speedway (Atlanta) - Legends Oval - 2008",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "95": {
       "poleLeft": true,
-      "source": "verified"
+      "source": "verified",
+      "name": "Sebring International Raceway - International",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "96": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sebring International Raceway - Modified",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "97": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sebring International Raceway - Club",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "98": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - [Retired] NASCAR Long",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "99": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Barber Motorsports Park - [Retired] Short A",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "100": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Barber Motorsports Park - [Retired] Short B",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "102": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - [Retired] Open Wheel 2008-2011",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "105": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Phoenix Raceway - 2008 - Road Course",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "106": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Watkins Glen International - [Retired] Cup",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "107": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Watkins Glen International - [Retired] Boot",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "108": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Watkins Glen International - [Retired] Classic Boot",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "109": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Watkins Glen International - [Retired] Classic",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "110": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Las Vegas Motor Speedway - Legends Oval",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "111": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Las Vegas Motor Speedway - Road Course Long",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "112": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Las Vegas Motor Speedway - Road Course Short",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "113": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Las Vegas Motor Speedway - Infield Legends Oval",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "114": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Las Vegas Motor Speedway - Road Course Combined",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "117": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Texas Motor Speedway - 2009 - Road Course Long",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "118": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Texas Motor Speedway - 2009 - Road Course Short A",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "119": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Texas Motor Speedway - 2009 - Road Course Short B",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "120": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Texas Motor Speedway - 2009 - Legends Oval",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "122": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Texas Motor Speedway - 2009 - Road Course Combined",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "126": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Road Atlanta - Club",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "127": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Road Atlanta - Full Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "128": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Road Atlanta - Short",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "129": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "New Hampshire Motor Speedway - Road Course",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "130": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "New Hampshire Motor Speedway - Road Course with North Oval",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "132": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "New Hampshire Motor Speedway - Road Course with South Oval",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "134": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Indianapolis Motor Speedway - Road Course - 2009",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "135": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Indianapolis Motor Speedway - Bike - 2009",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "136": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Pocono Raceway - 2009 - Oval",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "137": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Pocono Raceway - 2009 - East",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "138": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Pocono Raceway - 2009 - South",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "139": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Pocono Raceway - 2009 - North",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "140": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Pocono Raceway - 2009 - International",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "141": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Virginia International Raceway - [Retired] Patriot Reverse",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "142": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Summit Point Raceway - Jefferson Reverse",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "144": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Canadian Tire Motorsports Park",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "145": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Brands Hatch Circuit - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "146": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Brands Hatch Circuit - Indy",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "147": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit Park Zandvoort - Chicane - 2009",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "148": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit Park Zandvoort - Club - 2009",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "149": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit Park Zandvoort - Grand Prix - 2009",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "150": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit Park Zandvoort - Nationaal - 2009",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "151": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit Park Zandvoort - Oostelijk - 2009",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "152": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Phillip Island Circuit",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "153": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Mid-Ohio Sports Car Course - [Retired] Full Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "154": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Mid-Ohio Sports Car Course - [Retired] Chicane",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "155": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Mid-Ohio Sports Car Course - [Retired] Short",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "156": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Mid-Ohio Sports Car Course - [Retired] Oval",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "157": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Mid-Ohio Sports Car Course - [Retired] Alt Oval",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "158": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] WeatherTech Raceway at Laguna Seca - [Retired] School",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "159": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Summit Point Raceway - School",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "160": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Lime Rock Park - 2008 - [Retired] School",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "163": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Spa-Francorchamps - Grand Prix Pits - 2010",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "164": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Spa-Francorchamps - Classic Pits - 2010",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "165": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Spa-Francorchamps - Endurance - 2010",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "166": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Okayama International Circuit - Full Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "167": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Okayama International Circuit - Short",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "168": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Suzuka International Racing Course - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "170": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Iowa Speedway - Road Course - 2011",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "171": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Iowa Speedway - Legends - 2011",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "172": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Iowa Speedway - Infield Legends - 2011",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "173": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Suzuka International Racing Course - Moto",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "174": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Suzuka International Racing Course - East",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "175": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Suzuka International Racing Course - West",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "176": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Suzuka International Racing Course - West w/chicane",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "179": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Long Beach Street Circuit",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "180": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Oulton Park Circuit - International",
+      "iracing": {
+        "start": false,
+        "restart": true
+      }
     },
     "181": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Oulton Park Circuit - Fosters",
+      "iracing": {
+        "start": false,
+        "restart": true
+      }
     },
     "182": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Oulton Park Circuit - Island",
+      "iracing": {
+        "start": false,
+        "restart": true
+      }
     },
     "183": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Oulton Park Circuit - Intl w/out Hislop",
+      "iracing": {
+        "start": false,
+        "restart": true
+      }
     },
     "184": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Oulton Park Circuit - Intl w/out Brittens",
+      "iracing": {
+        "start": false,
+        "restart": true
+      }
     },
     "185": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Oulton Park Circuit - Intl w/no Chicanes",
+      "iracing": {
+        "start": false,
+        "restart": true
+      }
     },
     "186": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Oulton Park Circuit - Fosters w/Hislop",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "187": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Oulton Park Circuit - Island Historic",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "189": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Kentucky Speedway - 2011 - Legends",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "192": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Daytona International Speedway - Road Course",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "193": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Daytona International Speedway - Moto",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "194": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Daytona International Speedway - Short",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "195": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Mobility Resort Motegi - Grand Prix",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "196": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Mobility Resort Motegi - East",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "197": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Mobility Resort Motegi - West",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "199": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit Zolder - Grand Prix",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "200": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit Zolder - Alternate",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "202": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Oran Park Raceway - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "204": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Rockingham Speedway - Road Course",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "205": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Rockingham Speedway - Infield Road Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "206": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Rockingham Speedway - Short Road Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "207": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Oran Park Raceway - North",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "208": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Oran Park Raceway - South",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "209": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Oran Park Raceway - North A",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "210": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Oran Park Raceway - North B",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "211": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Oran Park Raceway - Moto",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "212": {
       "poleLeft": true,
-      "source": "verified"
+      "source": "verified",
+      "name": "Autódromo José Carlos Pace - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "213": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autódromo José Carlos Pace - Moto",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "215": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Kansas Speedway - Road Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "216": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Kansas Speedway - Infield Road Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "217": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Irwindale Speedway - Figure Eight",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "218": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit Gilles Villeneuve",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "219": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Mount Panorama Circuit",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "220": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "New Jersey Motorsports Park - Thunderbolt",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "221": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "New Jersey Motorsports Park - Thunderbolt w/both chicanes",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "222": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "New Hampshire Motor Speedway - Legends",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "223": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "New Jersey Motorsports Park - Thunderbolt w/first chicane",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "224": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "New Jersey Motorsports Park - Thunderbolt w/second chicane",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "226": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Auto Club Speedway - Competition",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "227": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Auto Club Speedway - Moto",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "228": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Auto Club Speedway - Interior",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "229": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit of the Americas - Grand Prix",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "230": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit of the Americas - East",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "231": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit of the Americas - West",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "233": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Donington Park Racing Circuit - Grand Prix",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "234": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Donington Park Racing Circuit - National",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "238": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "World Wide Technology Raceway (Gateway) - Road Course",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "239": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autodromo Nazionale Monza - Grand Prix",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "240": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autodromo Nazionale Monza - Combined without chicanes",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "241": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autodromo Nazionale Monza - Junior",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "242": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autodromo Nazionale Monza - GP without chicanes",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "244": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autodromo Nazionale Monza - GP without first chicane",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "246": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autodromo Nazionale Monza - Combined without first chicane",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "247": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autodromo Nazionale Monza - Combined",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "248": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Five Flags Speedway",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "249": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Nürburgring Nordschleife - Industriefahrten",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "250": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Nürburgring Grand-Prix-Strecke - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "252": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Nürburgring Combined - Gesamtstrecke 24h",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "253": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Nürburgring Nordschleife - Touristenfahrten",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "255": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Nürburgring Grand-Prix-Strecke - BES/WEC",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "257": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Nürburgring Grand-Prix-Strecke - Grand Prix w/out Arena",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "259": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Nürburgring Grand-Prix-Strecke - Sprintstrecke",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "260": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Nürburgring Grand-Prix-Strecke - Kurzanbindung w/out Arena",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "261": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Nürburgring Grand-Prix-Strecke - Müllenbachschleife",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "262": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Nürburgring Combined - Gesamtstrecke VLN",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "263": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Nürburgring Combined - Gesamtstrecke Short w/out Arena",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "264": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Nürburgring Combined - Gesamtstrecke Long",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "266": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autodromo Internazionale Enzo e Dino Ferrari - Grand Prix",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "267": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autodromo Internazionale Enzo e Dino Ferrari - Moto",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "268": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit des 24 Heures du Mans - 24 Heures du Mans",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "269": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit des 24 Heures du Mans - Historic",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "277": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Pocono Raceway",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "290": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Brands Hatch Circuit - Rallycross",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "293": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Daytona Rallycross and Dirt Road - Rallycross Long",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "295": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Iowa Speedway - Rallycross - 2017",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "296": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Daytona Rallycross and Dirt Road - Rallycross Short",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "297": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Snetterton Circuit - 300",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "298": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Snetterton Circuit - 200",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "299": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Snetterton Circuit - 100",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "304": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Lucas Oil Indianapolis Raceway Park - Rallycross",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "306": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Phoenix Raceway - 2008 - Rallycross",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "312": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - Rallycross",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "319": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Detroit Grand Prix at Belle Isle - Belle Isle",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "322": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "EchoPark Speedway (Atlanta) - Rallycross Short",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "323": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "EchoPark Speedway (Atlanta) - Rallycross Long",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "324": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Tsukuba Circuit - 2000 Full",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "325": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Tsukuba Circuit - 2000 Moto",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "326": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Tsukuba Circuit - 2000 Short",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "327": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Tsukuba Circuit - 1000 Full",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "328": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Tsukuba Circuit - 1000 Outer",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "329": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Tsukuba Circuit - 1000 Chicane",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "330": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Charlotte Motor Speedway - [Retired] Roval - 2018",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "332": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Wild West Motorsports Park",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "333": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Tsukuba Circuit - 1000 Full Reverse",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "334": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Firebird Motorsports Park",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "335": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Charlotte Motor Speedway - [Retired] Legends Oval - 2018",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "336": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Charlotte Motor Speedway - [Retired] Legends RC Long - 2018",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "337": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Charlotte Motor Speedway - [Retired] Legends RC Medium - 2018",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "338": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Charlotte Motor Speedway - [Retired] Legends RC Short - 2018",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "340": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Charlotte Motor Speedway - [Retired] Roval Long - 2018",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "341": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Silverstone Circuit - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "342": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Silverstone Circuit - International",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "343": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Silverstone Circuit - National",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "345": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Barcelona Catalunya - Grand Prix",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "346": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Barcelona Catalunya - National",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "347": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Barcelona Catalunya - Club",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "348": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Barcelona Catalunya - Moto",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "349": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Barcelona Catalunya - Historic",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "350": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Charlotte Motor Speedway - [Retired] Roval",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "352": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Lime Rock Park - Classic",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "353": {
       "poleLeft": false,
-      "source": "verified"
+      "source": "verified",
+      "name": "Lime Rock Park - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "354": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Lime Rock Park - Chicanes",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "355": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Lime Rock Park - West Bend Chicane",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "358": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Lånkebanen (Hell RX) - Hell Rallycross",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "359": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Lånkebanen (Hell RX) - Club",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "360": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Lånkebanen (Hell RX) - Rallycross Short",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "361": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Lånkebanen (Hell RX) - Road Short",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "363": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Lånkebanen (Hell RX) - Road Long",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "364": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Texas Motor Speedway - Legends Oval",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "381": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Daytona International Speedway - NASCAR Road",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "382": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Crandon International Raceway - Full",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "383": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Crandon International Raceway - Short",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "384": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "iRacing Superspeedway",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "385": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Retired] Charlotte Motor Speedway - [Retired] Rallycross",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "386": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Barcelona Catalunya - Rallycross",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "388": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Irwindale Speedway - Figure Eight Jump",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "390": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Hockenheimring Baden-Württemberg - Grand Prix",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "391": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Hockenheimring Baden-Württemberg - National A",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "392": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Hockenheimring Baden-Württemberg - National B",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "393": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Hockenheimring Baden-Württemberg - Short A",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "394": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Hockenheimring Baden-Württemberg - Short B",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "395": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Hockenheimring Baden-Württemberg - Outer",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "396": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Bark River International Raceway",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "397": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - [Retired] Open Wheel 2012-2018",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "398": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Mount Washington Hillclimb - Hillclimb",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "399": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Mount Washington Hillclimb - Descent",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "403": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Red Bull Ring - Grand Prix",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "404": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Red Bull Ring - National",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "405": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Chicago Street Course - Prototype",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "407": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Red Bull Ring - North",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "413": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Hungaroring",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "423": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Knockhill Racing Circuit - International",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "424": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Knockhill Racing Circuit - International Reverse",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "425": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Knockhill Racing Circuit - National",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "426": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Knockhill Racing Circuit - National Reverse",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "427": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Knockhill Racing Circuit - Rallycross",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "428": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Hockenheimring Baden-Württemberg - Porsche Experience Center - East",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "429": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Hockenheimring Baden-Württemberg - Porsche Experience Center - Outer",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "430": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Hockenheimring Baden-Württemberg - Porsche Experience Center - West",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "431": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Hockenheimring Baden-Württemberg - Porsche Experience Center - Handling",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "432": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Watkins Glen International - Classic",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "433": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Watkins Glen International - Cup",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "434": {
       "poleLeft": false,
-      "source": "verified"
+      "source": "verified",
+      "name": "Watkins Glen International - Boot",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "435": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Watkins Glen International - Classic Boot",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "436": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Knockhill Racing Circuit - Tri-Oval",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "437": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "LA Coliseum Raceway",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "439": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Winton Motor Raceway - National Circuit",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "440": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Winton Motor Raceway - Club Circuit",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "443": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sandown International Motor Raceway",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "444": {
       "poleLeft": false,
-      "source": "verified"
+      "source": "verified",
+      "name": "Fuji International Speedway - Grand Prix",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "445": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Fuji International Speedway - No Chicane",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "448": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Indianapolis Motor Speedway - Road Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "449": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Motorsport Arena Oschersleben - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "451": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Rudskogen Motorsenter",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "452": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Lucas Oil Speedway - Dirt Oval",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "454": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Motorsport Arena Oschersleben - Alternate",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "455": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Motorsport Arena Oschersleben - B Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "456": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Motorsport Arena Oschersleben - C Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "463": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Nevers Magny-Cours - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "465": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Virginia International Raceway - Full Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "466": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Virginia International Raceway - Grand Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "467": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Virginia International Raceway - North Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "468": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Virginia International Raceway - South Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "469": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Virginia International Raceway - Patriot Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "470": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Daytona Rallycross and Dirt Road - Dirt Road Long",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "471": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Daytona Rallycross and Dirt Road - Dirt Road Short",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "472": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "[Legacy] Phoenix Raceway - 2008 - Dirt Road",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "473": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuito de Jerez - Ángel Nieto - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "474": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuito de Jerez - Ángel Nieto - Moto",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "475": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "MotorLand Aragón - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "476": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "MotorLand Aragón - National",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "477": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "MotorLand Aragón - West",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "478": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "MotorLand Aragón - Motorcycle Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "479": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "MotorLand Aragón - Motorcycle National",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "480": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "MotorLand Aragón - Outer",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "481": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Willow Springs International Raceway - Big Willow",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "482": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "MotorLand Aragón - Touring Car",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "483": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Chicago Street Course - 2023 Cup",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "485": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit Zandvoort - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "486": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit Zandvoort - Grand Prix w/chicane",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "487": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit Zandvoort - Nationaal",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "488": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit Zandvoort - Oostelijk",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "489": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Lédenon",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "496": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Kevin Harvick's Kern Raceway - Legends",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "497": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Kevin Harvick's Kern Raceway - Dirt Mini Oval",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "498": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autodromo Internazionale del Mugello - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "499": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autodromo Internazionale del Mugello - Short",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "501": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Misano World Circuit Marco Simoncelli - Grand Prix",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "502": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Misano World Circuit Marco Simoncelli - Grand Prix - 2007",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "503": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Misano World Circuit Marco Simoncelli - Grand Prix - Historic Reverse",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "504": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Misano World Circuit Marco Simoncelli - Club",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "505": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Misano World Circuit Marco Simoncelli - Truck",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "506": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Slinger Speedway - Figure 8",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "508": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Lime Rock Park - School",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "509": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Algarve International Circuit - Grand Prix",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "510": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Algarve International Circuit - Grand Prix - Chicanes",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "511": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Algarve International Circuit - Moto",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "512": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Algarve International Circuit - Moto - Chicanes",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "515": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuito de Navarra - Speed Circuit",
+      "iracing": {
+        "start": false,
+        "restart": true
+      }
     },
     "516": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuito de Navarra - Speed Circuit - Medium",
+      "iracing": {
+        "start": false,
+        "restart": true
+      }
     },
     "517": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuito de Navarra - Speed Circuit - Short",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "521": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sachsenring",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "523": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Spa-Francorchamps - Grand Prix Pits",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "524": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Spa-Francorchamps - Classic Pits",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "525": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Spa-Francorchamps - Endurance",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "526": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit de Spa-Francorchamps - Bike",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "527": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Cadwell Park Circuit - Full",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "528": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Cadwell Park Circuit - Club",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "529": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Cadwell Park Circuit - Moto",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "530": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Cadwell Park Circuit - Woodlands",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "532": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Thruxton Circuit",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "533": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Miami International Autodrome - Marina Loop",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "534": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Miami International Autodrome - MIA Loop",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "535": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Miami International Autodrome - Extended MIA Loop",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "536": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Portland International Raceway - Full Circuit",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "537": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Portland International Raceway - No Chicane",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "538": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Miami International Autodrome - Extended Marina Loop",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "539": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Miami International Autodrome - Grand Prix",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "540": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Shell V-Power Motorsport Park at The Bend - GT Circuit",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "541": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Shell V-Power Motorsport Park at The Bend - International Circuit",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "542": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Shell V-Power Motorsport Park at The Bend - East Circuit",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "543": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Shell V-Power Motorsport Park at The Bend - West Circuit",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "544": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Shell V-Power Motorsport Park at The Bend - West Plus Circuit",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "545": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Shell V-Power Motorsport Park at The Bend - Sprint Circuit",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "546": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Shell V-Power Motorsport Park at The Bend - South West Circuit",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "550": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Charlotte Motor Speedway - Legends Road Course 2025",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "551": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Charlotte Motor Speedway - Infield Road Course Long",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "552": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Charlotte Motor Speedway - Infield Road Course",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "553": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Charlotte Motor Speedway - Roval 2019",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "554": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Charlotte Motor Speedway - Roval 2025",
+      "iracing": {
+        "start": false,
+        "restart": true
+      }
     },
     "555": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Charlotte Motor Speedway - Roval No Chicanes",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "557": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Charlotte Motor Speedway - Legends Oval",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "558": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Charlotte Motor Speedway - Rallyx",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "563": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - Indycar 2005-2007",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "564": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - Indycar 2008-2011",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "565": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - Indycar 2012-2018",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "566": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - Cup Long",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "567": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - Cup Short",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "568": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - Oval",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "569": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - Short",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "570": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - Sportscar",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "571": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Sonoma Raceway - Sportscar Alt",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "572": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autódromo Hermanos Rodríguez - Grand Prix",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "573": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autódromo Hermanos Rodríguez - Grand Prix Historic",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "574": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autódromo Hermanos Rodríguez - National",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "575": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autódromo Hermanos Rodríguez - National Historic",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "576": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autódromo Hermanos Rodríguez - EV Circuit",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "577": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Autódromo Hermanos Rodríguez - Oval",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "579": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Circuit of the Americas - NASCAR West",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "580": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Adelaide Street Circuit",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "582": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Winton Motor Raceway - Rallycross",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "584": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "St. Petersburg Grand Prix - Grand Prix",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "585": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Barber Motorsports Park",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "586": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "WeatherTech Raceway at Laguna Seca - 2026",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "587": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Charlotte Motor Speedway - Dirt Road",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "588": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Mid-Ohio Sports Car Course - Full Course",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "589": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Qualcomm Circuit (Naval Base Coronado)",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "590": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Mid-Ohio Sports Car Course - Chicane",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "591": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Mid-Ohio Sports Car Course - Short",
+      "iracing": {
+        "start": true,
+        "restart": true
+      }
     },
     "592": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Mid-Ohio Sports Car Course - Oval",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "593": {
       "poleLeft": true,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Mid-Ohio Sports Car Course - Alt Oval",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "595": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "The Milwaukee Mile - Road",
+      "iracing": {
+        "start": false,
+        "restart": false
+      }
     },
     "596": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Road America - Full Course",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "597": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Road America - Bend",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "598": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Road America - Short East",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     },
     "599": {
       "poleLeft": false,
-      "source": "geometry"
+      "source": "geometry",
+      "name": "Road America - Short West",
+      "iracing": {
+        "start": true,
+        "restart": false
+      }
     }
   },
   "trackNames": {

@@ -14,16 +14,34 @@ import poleSidesData from './radarPoleSides.json';
  */
 export type PoleSideSource = 'geometry' | 'verified' | 'reported';
 
+/** iRacing's own start and restart flags for a track: a hint, never the answer. */
+export interface IracingPoleHint {
+  start: boolean;
+  restart: boolean;
+}
+
 export interface RadarPoleSides {
   /** Bumped when the shape changes, so a newer file is never half-read. */
   version: 1;
   /** By iRacing `WeekendInfo.TrackID`. */
   tracks: Readonly<
-    Record<string, { poleLeft: boolean; source: PoleSideSource }>
+    Record<
+      string,
+      {
+        poleLeft: boolean;
+        source: PoleSideSource;
+        /** Track and layout, for people reading the file. */
+        name?: string;
+        iracing?: IracingPoleHint;
+      }
+    >
   >;
   /** By `WeekendInfo.TrackName`, for tracks without a usable id entry. */
   trackNames: Readonly<Record<string, boolean>>;
 }
+
+/** Longer names are not a track's; they are dropped. */
+const MAX_NAME = 120;
 
 /** Keeps what is well formed and drops the rest; never throws. */
 export const parseRadarPoleSides = (raw: unknown): RadarPoleSides => {
@@ -31,12 +49,16 @@ export const parseRadarPoleSides = (raw: unknown): RadarPoleSides => {
   if (!raw || typeof raw !== 'object') return empty;
   const data = raw as Record<string, unknown>;
   if (data.version !== 1) return empty;
-  const tracks: Record<string, { poleLeft: boolean; source: PoleSideSource }> =
-    {};
+  const tracks: Record<string, RadarPoleSides['tracks'][string]> = {};
   for (const [id, entry] of Object.entries(
     (data.tracks ?? {}) as Record<string, unknown>
   )) {
-    const value = entry as { poleLeft?: unknown; source?: unknown } | null;
+    const value = entry as {
+      poleLeft?: unknown;
+      source?: unknown;
+      name?: unknown;
+      iracing?: { start?: unknown; restart?: unknown } | null;
+    } | null;
     if (
       /^\d+$/.test(id) &&
       typeof value?.poleLeft === 'boolean' &&
@@ -50,6 +72,15 @@ export const parseRadarPoleSides = (raw: unknown): RadarPoleSides => {
           value.source === 'verified' || value.source === 'reported'
             ? value.source
             : 'geometry',
+        ...(typeof value.name === 'string' &&
+          value.name.length <= MAX_NAME && { name: value.name }),
+        ...(typeof value.iracing?.start === 'boolean' &&
+          typeof value.iracing.restart === 'boolean' && {
+            iracing: {
+              start: value.iracing.start,
+              restart: value.iracing.restart,
+            },
+          }),
       };
     }
   }

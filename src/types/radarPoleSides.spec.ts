@@ -61,6 +61,39 @@ describe('parseRadarPoleSides', () => {
     expect(parsed.trackNames).toEqual({ a: true });
   });
 
+  it('keeps the name and iRacing hints when well formed', () => {
+    const parsed = parseRadarPoleSides({
+      version: 1,
+      tracks: {
+        '1': {
+          poleLeft: true,
+          source: 'geometry',
+          name: 'Sebring - International',
+          iracing: { start: true, restart: false },
+        },
+        '2': {
+          poleLeft: false,
+          source: 'geometry',
+          name: 42,
+          iracing: { start: true },
+        },
+        '3': {
+          poleLeft: false,
+          source: 'geometry',
+          name: 'x'.repeat(500),
+        },
+      },
+    });
+    expect(parsed.tracks['1']).toEqual({
+      poleLeft: true,
+      source: 'geometry',
+      name: 'Sebring - International',
+      iracing: { start: true, restart: false },
+    });
+    expect(parsed.tracks['2']).toEqual({ poleLeft: false, source: 'geometry' });
+    expect(parsed.tracks['3']).toEqual({ poleLeft: false, source: 'geometry' });
+  });
+
   it('reads a source it does not know as geometry, not as a missing entry', () => {
     const parsed = parseRadarPoleSides({
       version: 1,
