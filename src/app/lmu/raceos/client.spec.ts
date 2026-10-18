@@ -293,6 +293,68 @@ describe('createRaceosClient', () => {
     });
   });
 
+  it('matches an answer whose spelling differs from the request', async () => {
+    // The service answers with its own stored spelling, which need not be the
+    // one asked for. Keyed on its spelling, every rating would be filed under
+    // a name no driver presents -- and nothing would say so, because the
+    // service did answer.
+    const client = build(transportFor([player('HERVE ATTARD')]));
+
+    client.request(['Herve Attard']);
+    await settle();
+
+    expect(client.get('Herve Attard')?.driverRank).toBe('Gold');
+  });
+
+  it('counts what matched, not what came back', async () => {
+    // The old line reported the service's answer count, so a join that failed
+    // for every name on the grid still read as a complete success.
+    const client = build(transportFor([player('Someone Else')]));
+
+    client.request(['Herve Attard']);
+    await settle();
+
+    const notes = vi
+      .mocked(logger.info)
+      .mock.calls.map(([m]) => String(m))
+      .join('\n');
+    expect(notes).toContain('Matched 0/1 driver ratings');
+    expect(notes).toContain('service answered for 1');
+  });
+
+  it('warns when answers came back that match nobody', async () => {
+    // Answers for names nobody on the grid has can only be a bug, so both
+    // spellings go in the log: the difference between them is the diagnosis.
+    const client = build(transportFor([player('Someone Else')]));
+
+    client.request(['Herve Attard']);
+    await settle();
+
+    const warning = vi
+      .mocked(logger.warn)
+      .mock.calls.map(([m]) => String(m))
+      .join('\n');
+    expect(warning).toContain('none');
+    expect(warning).toContain('"Herve Attard"');
+    expect(warning).toContain('"Someone Else"');
+  });
+
+  it('does not republish when nothing matched', async () => {
+    // A rebuild would produce the same standings, twice a second, for as long
+    // as the grid held.
+    const onResolved = vi.fn();
+    const client = build(
+      transportFor([player('Someone Else')]),
+      undefined,
+      onResolved
+    );
+
+    client.request(['Herve Attard']);
+    await settle();
+
+    expect(onResolved).not.toHaveBeenCalled();
+  });
+
   it('says what it decided about the grid', async () => {
     // The three states below all render as a bare standings row, so the log is
     // the only way to tell them apart.

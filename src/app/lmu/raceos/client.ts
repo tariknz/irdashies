@@ -220,17 +220,45 @@ export function createRaceosClient({
     }
 
     succeed();
+
+    // The service answers with its own spelling of each username, which need
+    // not be the one asked for. An exact match is tried first and a
+    // case-insensitive one second, because a rating filed under a key no
+    // driver will ever present is worth exactly as much as no rating -- and
+    // that failure is silent, since the service did answer.
+    const byLower = new Map<string, LmuDriverRating>();
+    for (const [key, rating] of found) byLower.set(key.toLowerCase(), rating);
+
+    let matched = 0;
     for (const name of usernames) {
+      const rating = found.get(name) ?? byLower.get(name.toLowerCase());
+      if (rating) matched += 1;
       // A name the service did not answer for is cached as a miss. That is
       // what stops a grid of AI being re-asked every single session.
-      cache.set(name, found.get(name));
+      cache.set(name, rating);
     }
-    // Not deduped: one line per completed batch is the record of what the
-    // service actually answered, and a repeat means a new batch.
+
+    // Matched, not returned. Reporting what the service answered says nothing
+    // about whether any of it reached a driver, and conflating the two hid a
+    // join that was failing for every name on the grid.
     logger.info(
-      `[raceos] Resolved ${found.size}/${usernames.length} driver ratings (cache ${cache.size()})`
+      `[raceos] Matched ${matched}/${usernames.length} driver ratings ` +
+        `(service answered for ${found.size}; cache ${cache.size()})`
     );
-    if (found.size > 0) onResolved?.();
+    if (matched === 0 && found.size > 0) {
+      // The one combination that cannot be anything but a bug: answers came
+      // back and none of them belong to anybody. Named on both sides, because
+      // the difference between the two spellings is the whole diagnosis.
+      logger.warn(
+        `[raceos] The service answered for ${found.size} players and none ` +
+          `matched the grid. Asked for e.g. ${JSON.stringify(usernames[0])}; ` +
+          `answered for e.g. ${JSON.stringify([...found.keys()][0])}.`
+      );
+    }
+    // Only a match changes a snapshot, so only a match is worth republishing
+    // for; an answer that matched nothing would force a rebuild of the same
+    // standings twice a second for as long as the grid held.
+    if (matched > 0) onResolved?.();
   };
 
   /** Drains `pending` in batches. Only ever one of these at a time. */
