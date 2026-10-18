@@ -11,6 +11,7 @@ import {
   widgetItems,
   bottomItems,
   WIDGET_CATEGORIES,
+  menuHasToggle,
   type MenuItem,
 } from './menuItems';
 import { ToggleSwitch } from './components/ToggleSwitch';
@@ -107,10 +108,9 @@ export const SettingsMenu = () => {
   // The settings page toggles the widget whose id is the widget type, so the
   // menu does the same; extra instances keep their own state. Grouped items
   // share a page and have no single widget to switch.
+  const widgetIds = currentDashboard?.widgets.map((w) => w.id) ?? [];
   const canToggle = (item: MenuItem) =>
-    !!item.widgetType &&
-    !item.groupTypes &&
-    !!currentDashboard?.widgets.some((w) => w.id === item.widgetType);
+    !!item.widgetType && menuHasToggle(item.widgetType, widgetIds);
 
   const setWidgetEnabled = (widgetType: string, enabled: boolean) => {
     if (!currentDashboard || !onDashboardUpdated) return;

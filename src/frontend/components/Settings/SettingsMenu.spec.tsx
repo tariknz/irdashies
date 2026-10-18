@@ -46,6 +46,8 @@ vi.mock('./menuItems', () => ({
     { to: '/settings/general', path: '/general', label: 'General' },
   ],
   bottomItems: [{ to: '/settings/about', path: '/about', label: 'About' }],
+  menuHasToggle: (widgetType: string, ids: string[]) =>
+    ids.includes(widgetType),
   WIDGET_CATEGORIES: [
     { id: 'race', label: 'Timing & Race' },
     { id: 'track', label: 'Track & Conditions' },

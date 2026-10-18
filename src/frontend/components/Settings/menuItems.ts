@@ -141,6 +141,21 @@ export const widgetItems: MenuItem[] = WIDGET_MANIFESTS.map(
   })
 ).sort((a, b) => a.label.localeCompare(b.label));
 
+/**
+ * Whether the settings menu offers a switch for this widget: it is listed
+ * there on its own and exists in the dashboard. The widget's page leaves its
+ * own switch out then, so there is one place to flip it.
+ */
+export const menuHasToggle = (
+  widgetType: string,
+  dashboardWidgetIds: readonly string[]
+): boolean =>
+  dashboardWidgetIds.includes(widgetType) &&
+  widgetItems.some(
+    (item) =>
+      item.widgetType === widgetType && !item.hideInMenu && !item.groupTypes
+  );
+
 export const bottomItems: MenuItem[] = [
   {
     to: '/settings/advanced',
