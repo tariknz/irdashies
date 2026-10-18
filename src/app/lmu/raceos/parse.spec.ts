@@ -25,19 +25,22 @@ describe('raceosUsername', () => {
     expect(raceosUsername('S\u00e9bastien Rival')).toBe('S\u00e9bastien Rival');
   });
 
-  it('drops anything from a hash onward', () => {
-    expect(raceosUsername('Herve Attard#1234')).toBe('Herve Attard');
-    expect(raceosUsername('Name#a#b')).toBe('Name');
+  it('keeps the #1234 discriminator', () => {
+    // Part of the username, not noise: the service answers
+    // {"username":"Sherry Dalton#6487","name":"Sherry Dalton"}, so the full
+    // string identifies the player and the bare name is a shared label.
+    expect(raceosUsername('Sherry Dalton#6487')).toBe('Sherry Dalton#6487');
+    expect(raceosUsername('Name#a#b')).toBe('Name#a#b');
   });
 
-  it('trims surrounding whitespace', () => {
+  it('trims surrounding whitespace and nothing else', () => {
     expect(raceosUsername('  Herve Attard  ')).toBe('Herve Attard');
-    // Trimmed after the hash is cut, so padding before it goes too.
-    expect(raceosUsername(' Herve Attard #9')).toBe('Herve Attard');
+    expect(raceosUsername(' Sherry Dalton#6487 ')).toBe('Sherry Dalton#6487');
+    // Inner spacing is the player's own and is left alone.
+    expect(raceosUsername('Sherry Dalton #6487')).toBe('Sherry Dalton #6487');
   });
 
-  it('returns empty for a name that is only a suffix', () => {
-    expect(raceosUsername('#1234')).toBe('');
+  it('returns empty for a name that is only whitespace', () => {
     expect(raceosUsername('   ')).toBe('');
   });
 });
@@ -45,6 +48,15 @@ describe('raceosUsername', () => {
 describe('usernameOf', () => {
   it('reads the username a record belongs to', () => {
     expect(usernameOf(player())).toBe('Jean Dupont');
+  });
+
+  it('prefers username over name where they differ', () => {
+    // The discriminated form is the identity; `name` is the display label.
+    expect(
+      usernameOf(
+        player({ username: 'Sherry Dalton#6487', name: 'Sherry Dalton' })
+      )
+    ).toBe('Sherry Dalton#6487');
   });
 
   it('canonicalises what the service sent back', () => {

@@ -280,17 +280,91 @@ describe('createRaceosClient', () => {
     expect(exchanges()).toBe(2);
   });
 
-  it('canonicalises the names it sends', async () => {
-    // Sent as the standings spell them, minus any '#' suffix and padding.
+  it('sends the full username, discriminator and all', async () => {
+    // The '#1234' is part of the username. Stripped, the request asks about a
+    // label several players can share and the answer matches none of them.
     const client = build(transportFor([]));
 
-    client.request(['  Herve Attard#1234 ', 'Leonel Gomez']);
+    client.request(['  Sherry Dalton#6487 ', 'Leonel Gomez']);
     await settle();
 
     const lookup = requests.find((r) => r.url === RACEOS_PLAYERS_URL);
     expect(lookup?.body).toEqual({
-      usernames: ['Herve Attard', 'Leonel Gomez'],
+      usernames: ['Sherry Dalton#6487', 'Leonel Gomez'],
     });
+  });
+
+  it("matches on the answer's username, not its name", async () => {
+    // Where they differ, `username` carries the discriminator and `name` is
+    // the bare label -- and the request asked by username.
+    const client = build(
+      transportFor([
+        {
+          username: 'Sherry Dalton#6487',
+          name: 'Sherry Dalton',
+          driverRank: { rank: 'Gold', tier: 3 },
+          profile: { nationality: 'FRA' },
+        },
+      ])
+    );
+
+    client.request(['Sherry Dalton#6487']);
+    await settle();
+
+    expect(client.get('Sherry Dalton#6487')?.driverRank).toBe('Gold');
+  });
+
+  it('sends each name once while a lookup is outstanding', async () => {
+    // Reproduces what the log showed: the grid went to the service twice.
+    //
+    // A batch leaves `pending` once the token is in hand and the request is
+    // sent. For as long as that request is outstanding the names were in no
+    // set at all, so the next session poll -- twice a second -- saw them as
+    // unknown and queued them again, and the drain loop, still running, sent
+    // a second identical batch the moment the first came back.
+    let releaseLookup: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => {
+      releaseLookup = resolve;
+    });
+    const transport = vi.fn(
+      async (request: RaceosRequest): Promise<RaceosResponse> => {
+        requests.push(request);
+        if (request.url === RACEOS_AUTH_URL) {
+          return {
+            ok: true,
+            status: 200,
+            body: JSON.stringify({
+              accessToken: 'tok',
+              expiresAt: new Date(now + 1_800_000).toISOString(),
+            }),
+          };
+        }
+        await held;
+        return { ok: true, status: 200, body: JSON.stringify([]) };
+      }
+    );
+    const client = build(transport as ReturnType<typeof transportFor>);
+
+    client.request(['Herve Attard']);
+    // Let the token exchange complete so the lookup is the thing in flight.
+    await settle();
+    await settle();
+    expect(requests.filter((r) => r.url === RACEOS_PLAYERS_URL)).toHaveLength(
+      1
+    );
+
+    // Session polls landing while that lookup is still outstanding.
+    client.request(['Herve Attard']);
+    client.request(['Herve Attard']);
+    await settle();
+
+    releaseLookup();
+    await settle();
+    await settle();
+
+    expect(requests.filter((r) => r.url === RACEOS_PLAYERS_URL)).toHaveLength(
+      1
+    );
   });
 
   it('matches an answer whose spelling differs from the request', async () => {

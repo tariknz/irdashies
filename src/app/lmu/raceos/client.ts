@@ -92,8 +92,18 @@ export function createRaceosClient({
 }: RaceosClientOptions): RaceosClient {
   let token: string | undefined;
   let tokenExpiry = 0;
-  /** Queued or in flight, so a tick does not re-ask for the same ids. */
+  /** Queued, waiting to be put in a batch. */
   const pending = new Set<string>();
+  /**
+   * Handed to a request that has not come back yet.
+   *
+   * Separate from `pending` because a batch leaves `pending` before its
+   * request is sent, and the token exchange in front of it can take most of a
+   * second. For that whole window the names were in neither set, so the next
+   * session poll -- which runs twice a second -- saw them as unknown and
+   * queued them all over again. The grid went to the service twice.
+   */
+  const inflight = new Set<string>();
   let draining = false;
   /** Nothing is attempted before this; set by the backoff on failure. */
   let notBefore = 0;
@@ -272,11 +282,20 @@ export function createRaceosClient({
         if (!bearer) return;
 
         const batch = [...pending].slice(0, RACEOS_BATCH_SIZE);
-        // Cleared before the request, not after: a failed batch caches
-        // nothing and its names are re-queued by the next session tick.
-        // Holding them pending across a failure would wedge the queue.
-        for (const name of batch) pending.delete(name);
-        await lookupBatch(batch, bearer);
+        // Moved rather than dropped, so a name is accounted for at every
+        // moment: queued, in flight, or answered.
+        for (const name of batch) {
+          pending.delete(name);
+          inflight.add(name);
+        }
+        try {
+          await lookupBatch(batch, bearer);
+        } finally {
+          // Released either way. A failed batch caches nothing and is re-asked
+          // by the next session poll, which is the intended recovery; holding
+          // the names here across a failure would wedge the queue instead.
+          for (const name of batch) inflight.delete(name);
+        }
       }
     } catch (e) {
       logger.warn('[raceos] Rating lookup threw', e);
@@ -306,7 +325,7 @@ export function createRaceosClient({
       }
       let queued = 0;
       for (const name of names) {
-        if (pending.has(name)) continue;
+        if (pending.has(name) || inflight.has(name)) continue;
         // A remembered miss counts as known: not re-asking is the point.
         if (cache.get(name) !== undefined) continue;
         pending.add(name);
@@ -317,7 +336,7 @@ export function createRaceosClient({
       note(
         queued > 0
           ? `Looking up ${queued} of ${names.length} grid drivers`
-          : pending.size > 0
+          : pending.size > 0 || inflight.size > 0
             ? `All ${names.length} grid drivers are queued or in flight`
             : `All ${names.length} grid drivers already known from cache`
       );
@@ -328,6 +347,7 @@ export function createRaceosClient({
       token = undefined;
       tokenExpiry = 0;
       pending.clear();
+      inflight.clear();
       notBefore = 0;
       backoff = RACEOS_BACKOFF_MS;
       // So the next session reports its state afresh rather than staying

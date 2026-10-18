@@ -55,7 +55,20 @@ describe('createLmuTapeRatingClient', () => {
       ),
     });
 
-    expect(client.get('Herve Attard#9')?.driverRank).toBe('Gold');
+    expect(client.get('  Herve Attard ')?.driverRank).toBe('Gold');
+  });
+
+  it('keeps a #1234 discriminator in the key', () => {
+    // The discriminator is part of the username, so a tape keyed by the full
+    // form must be looked up by the full form.
+    const client = createLmuTapeRatingClient({
+      readRest: vi.fn<Reader>(() =>
+        JSON.stringify({ 'Sherry Dalton#6487': { driverRank: 'Silver' } })
+      ),
+    });
+
+    expect(client.get('Sherry Dalton#6487')?.driverRank).toBe('Silver');
+    expect(client.get('Sherry Dalton')).toBeUndefined();
   });
 
   it('reads the tape once rather than per driver', () => {

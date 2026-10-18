@@ -61,10 +61,18 @@ shared memory and in its own `/rest/watch/standings` — so there is no id to ke
 on, and the service takes usernames in any case.
 
 Names are sent as the standings spell them: same capitalisation, UTF-8 intact,
-with anything from a `#` onward dropped and surrounding whitespace trimmed.
-`raceosUsername` in `parse.ts` is that rule, and it is applied to both sides of
-the join — outgoing names and the `username` each record comes back with — so a
-name echoed back with different padding still matches its driver.
+and the `#1234` discriminator **kept**. That suffix is part of the username,
+not noise — for `Sherry Dalton#6487` the service answers
+`{"username":"Sherry Dalton#6487","name":"Sherry Dalton"}`, so the full string
+identifies the player while the bare `name` is a display label several players
+can share. Only surrounding whitespace is removed. `raceosUsername` in
+`parse.ts` is that rule, applied to both sides of the join.
+
+Answers are matched back on `username`, exactly first and then
+case-insensitively: the service replies with its own stored spelling, which
+need not be the one asked for. Getting this wrong is invisible — the service
+has answered, so no failure path is taken — so the log reports what _matched_
+rather than what came back, and warns when answers arrive that match nobody.
 
 So the user's Steam identity is relayed to `raceos.gg`, a third party with no
 public API, no published terms and no agreement with this project, and the

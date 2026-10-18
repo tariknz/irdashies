@@ -68,17 +68,18 @@ const readRank = (value: unknown): { rank?: LmuRank; tier?: number } => {
 /**
  * The name to ask the rating service about, from the name the sim reports.
  *
- * Sent as the standings spell it -- same capitalisation, UTF-8 -- with two
- * adjustments: anything from a `#` onward is dropped, and surrounding
- * whitespace is trimmed.
+ * Sent as the standings spell it: same capitalisation, UTF-8 intact, and the
+ * `#1234` discriminator kept. That suffix is part of the username, not noise
+ * -- for `Sherry Dalton#6487` the service answers
+ * `{"username":"Sherry Dalton#6487","name":"Sherry Dalton"}`, so the full
+ * string is what identifies the player and the bare name is a display label
+ * that several players can share.
  *
- * Applied to both sides of the join. The request is built from it and the
- * response's own `username` is put through it again before matching, so a
- * service that echoes a name back with different padding still lines up with
- * the driver it belongs to.
+ * Only surrounding whitespace is removed. Applied to both sides of the join:
+ * the request is built from it and the response's own `username` goes through
+ * it again before matching, so padding on either side cannot break the join.
  */
-export const raceosUsername = (name: string): string =>
-  name.split('#')[0].trim();
+export const raceosUsername = (name: string): string => name.trim();
 
 /**
  * The username a record belongs to, canonicalised for matching.
@@ -90,8 +91,10 @@ export const raceosUsername = (name: string): string =>
 export const usernameOf = (record: unknown): string | undefined => {
   const player = asRecord(record);
   if (!player) return undefined;
-  // `name` is the fallback: both were identical in every observed response,
-  // but `username` is the field the lookup is keyed by and so wins.
+  // `username` and not `name`: where they differ, `username` carries the
+  // `#1234` discriminator and `name` is the bare label. The request asked by
+  // username, so keying by anything else files the answer under something no
+  // driver presents. `name` is a fallback only for a record without one.
   const raw = asString(player.username) ?? asString(player.name);
   if (!raw) return undefined;
   const cleaned = raceosUsername(raw);

@@ -515,15 +515,16 @@ describe('publishLmuSDKEvents and driver ratings', () => {
   });
 
   it('sends the name as the standings spell it', async () => {
-    // Same capitalisation, UTF-8 intact, with any '#' suffix and surrounding
-    // padding removed -- the service matched the plain name exactly.
+    // Verbatim: same capitalisation, UTF-8 intact, and the '#1234'
+    // discriminator kept -- it is part of the username, and the service
+    // answers with it. Only surrounding padding is removed.
     sdkState.drivers = [driver('  Sébastien Rival#77 ')];
     const overlayManager = createOverlayManager();
     const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
     const bridge = await publishLmuSDKEvents(overlayManager);
 
     await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
-    expect(namesRequested()).toContain('Sébastien Rival');
+    expect(namesRequested()).toContain('Sébastien Rival#77');
 
     bridge.stop();
   });
