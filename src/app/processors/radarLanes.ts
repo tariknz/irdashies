@@ -71,7 +71,7 @@ export type FormationKind = 'grid' | 'pace';
  * what its grids do. +1 means the pole is on the left, so higher columns lie
  * to the right.
  */
-const poleSign = (kind: FormationKind, pacePoleLeft: boolean): number =>
+export const poleSign = (kind: FormationKind, pacePoleLeft: boolean): number =>
   kind === 'grid' || pacePoleLeft ? 1 : -1;
 
 export interface LaneFormation {

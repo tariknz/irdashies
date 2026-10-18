@@ -491,6 +491,46 @@ describe('RadarProcessor', () => {
     ).toBe(true);
   });
 
+  it('puts the middle of the road half a lane over, on the other side after a flip', () => {
+    const player: { poleLeft?: boolean } = {};
+    const poleSides = {
+      override: () => player.poleLeft,
+      setTrack: vi.fn(),
+    };
+    const session = structuredClone(rollingSession) as unknown as Session;
+    session.WeekendInfo.TrackID = 353;
+    session.WeekendInfo.TrackName = 'limerock 2019 gp';
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(session);
+    const base = rollingTelemetry as unknown as Record<
+      string,
+      { value: unknown[] }
+    >;
+    const lines = base.CarIdxPaceLine.value as number[];
+    const myLine = lines[base.PlayerCarIdx.value[0] as number];
+    const at = (time: number) =>
+      ({
+        ...rollingTelemetry,
+        SessionTime: { value: [time] },
+      }) as unknown as Telemetry;
+
+    // Pole line on the right (the table's side here): in the pole line we sit
+    // right of the middle, so the road lies to our left; in the other, right.
+    processor.onFrame(at(100));
+    const before = processor.snapshot().roadLane;
+    expect(before).toBe(myLine === 0 ? -0.5 : 0.5);
+
+    player.poleLeft = true;
+    processor.onFrame(at(101));
+    expect(processor.snapshot().roadLane).toBe(-before);
+  });
+
+  it('has no road offset outside a formation', () => {
+    const processor = new RadarProcessor();
+    processor.init(rollingSession as unknown as Session);
+    expect(processor.snapshot().roadLane).toBe(0);
+  });
+
   it('puts the pole line on the left on a super speedway', () => {
     const processor = new RadarProcessor();
     const session = rollingSession as unknown as Session;

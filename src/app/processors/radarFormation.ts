@@ -106,6 +106,9 @@ export interface Formation {
    * the pole side. Multiply by the pole side's sign to get a lane.
    */
   slots: Map<number, number>;
+  /** How many columns the formation has, and which is ours (0: pole side). */
+  columns: number;
+  ownColumn: number;
   /** The car to line up behind while pacing; null when not pacing. */
   followCarIdx: number | null;
 }
@@ -188,7 +191,13 @@ const pacingFormation = (input: FormationInput): Formation | null => {
     }
   }
   if (myRow === 0 && input.paceCarIdx >= 0) followCarIdx = input.paceCarIdx;
-  return { kind: 'pace', slots, followCarIdx };
+  return {
+    kind: 'pace',
+    slots,
+    columns: double ? 2 : 1,
+    ownColumn: double ? Math.min(Math.max(myLine, 0), 1) : 0,
+    followCarIdx,
+  };
 };
 
 /**
@@ -220,7 +229,7 @@ const positionSlots = (
   focus: number,
   columns: number,
   gridPositions: ReadonlyMap<number, number> | undefined
-): Map<number, number> | null => {
+): { slots: Map<number, number>; ownColumn: number } | null => {
   if (!gridPositions) return null;
   const positions = gridded.map((carIdx) => gridPositions.get(carIdx));
   // Every car placed, front to back in position order; else the boxes decide.
@@ -236,7 +245,7 @@ const positionSlots = (
   gridded.forEach((carIdx, rank) => {
     if (carIdx !== focus) slots.set(carIdx, columnOf(rank) - myColumn);
   });
-  return slots;
+  return { slots, ownColumn: myColumn };
 };
 
 const gridFormation = (input: FormationInput): Formation | null => {
@@ -275,8 +284,15 @@ const gridFormation = (input: FormationInput): Formation | null => {
     columns,
     input.gridPositions
   );
-  if (byPosition)
-    return { kind: 'grid', slots: byPosition, followCarIdx: null };
+  if (byPosition) {
+    return {
+      kind: 'grid',
+      slots: byPosition.slots,
+      columns,
+      ownColumn: byPosition.ownColumn,
+      followCarIdx: null,
+    };
+  }
 
   const gaps = gridded
     .slice(1)
@@ -284,7 +300,15 @@ const gridFormation = (input: FormationInput): Formation | null => {
   const steps = boxSteps(gaps);
   // Columns we cannot trust are worse than none: the field still counts as
   // on the grid, but lanes come from the spotter alone.
-  if (!steps) return { kind: 'grid', slots: new Map(), followCarIdx: null };
+  if (!steps) {
+    return {
+      kind: 'grid',
+      slots: new Map(),
+      columns: 1,
+      ownColumn: 0,
+      followCarIdx: null,
+    };
+  }
   const boxes: number[] = [0];
   steps.forEach((step, index) => boxes.push(boxes[index] + step));
 
@@ -294,5 +318,11 @@ const gridFormation = (input: FormationInput): Formation | null => {
   gridded.forEach((carIdx, rank) => {
     if (carIdx !== focus) slots.set(carIdx, columnOf(rank) - myColumn);
   });
-  return { kind: 'grid', slots, followCarIdx: null };
+  return {
+    kind: 'grid',
+    slots,
+    columns,
+    ownColumn: myColumn,
+    followCarIdx: null,
+  };
 };

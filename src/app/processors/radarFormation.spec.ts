@@ -179,6 +179,11 @@ describe('computeFormation: rolling start (recorded parade lap)', () => {
     expect(fromFront?.followCarIdx).toBe(input.paceCarIdx);
   });
 
+  it('knows how many columns there are and which one is ours', () => {
+    expect(formation?.columns).toBe(2);
+    expect(formation?.ownColumn).toBe(input.paceLines[input.focus]);
+  });
+
   it('puts everyone in our lane when pacing single file', () => {
     const single = computeFormation({
       ...input,
@@ -187,6 +192,8 @@ describe('computeFormation: rolling start (recorded parade lap)', () => {
     expect([...(single?.slots.values() ?? [])].every((s) => s === 0)).toBe(
       true
     );
+    expect(single?.columns).toBe(1);
+    expect(single?.ownColumn).toBe(0);
   });
 
   it('ignores a pace mode with no lines assigned', () => {
@@ -213,6 +220,9 @@ describe('computeFormation: standing start (recorded grid)', () => {
     expect(formation?.slots.get(10)).toBe(-1);
     expect(formation?.slots.get(7)).toBe(0);
     expect(formation?.followCarIdx).toBeNull();
+    // Two columns, and we are in the second.
+    expect(formation?.columns).toBe(2);
+    expect(formation?.ownColumn).toBe(1);
   });
 
   it('counts grid boxes, not cars, past an empty box', () => {

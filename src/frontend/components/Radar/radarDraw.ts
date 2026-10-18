@@ -43,15 +43,24 @@ export { hazardWanted } from './radarDrawHazards';
 const ROAD_OVERSCAN = 1.5;
 const ROAD_STEP_M = 1;
 
+/**
+ * Metres from the road's centreline to the middle of the road as seen from
+ * our car (positive to the left): in a two-wide formation we sit in one
+ * column, so the road lies half a lane over.
+ */
+export const roadLateral = (roadLane: number, laneWidth: number): number =>
+  -roadLane * laneWidth;
+
 const drawRoad = (
   ctx: CanvasRenderingContext2D,
   style: RadarStyle,
-  pixelsPerMetre: number
+  pixelsPerMetre: number,
+  lateral: number
 ) => {
   const reach = style.range * ROAD_OVERSCAN;
   ctx.beginPath();
   for (let dist = -reach; dist <= reach; dist += ROAD_STEP_M) {
-    projector.project(dist, 0, pose);
+    projector.project(dist, lateral, pose);
     if (dist === -reach) ctx.moveTo(pose.x, pose.y);
     else ctx.lineTo(pose.x, pose.y);
   }
@@ -245,7 +254,14 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
   resetRimWarnings();
   resetDebugLabels();
 
-  if (style.showTrackMap) drawRoad(ctx, style, pixelsPerMetre);
+  if (style.showTrackMap) {
+    drawRoad(
+      ctx,
+      style,
+      pixelsPerMetre,
+      roadLateral(scene.roadLane ?? 0, scene.laneWidth ?? style.carWidth + 0.7)
+    );
+  }
   if (style.showCrosshair) {
     drawCrosshair(ctx, centre, radius, style, pixelsPerMetre, scene.travelled);
   }

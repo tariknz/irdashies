@@ -13,7 +13,7 @@ import {
   type RadarProcessorTuning,
 } from '@irdashies/types';
 import type { TelemetryProcessor } from './TelemetryProcessor';
-import { RadarLaneTracker, separateInLaneCars } from './radarLanes';
+import { RadarLaneTracker, poleSign, separateInLaneCars } from './radarLanes';
 import {
   computeFormation,
   paceFieldPoleLeft,
@@ -316,6 +316,10 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       follow,
       focusBrake: drivingFocus && brake >= 0 ? brake : null,
       caution: (flags & CAUTION_FLAGS) !== 0,
+      roadLane: formation
+        ? poleSign(formation.kind, this.poleLeft) *
+          ((formation.columns - 1) / 2 - formation.ownColumn)
+        : 0,
       poleSideNotice:
         time < this.poleNoticeUntil ? (this.poleLeft ? 'left' : 'right') : null,
       cars,
@@ -447,6 +451,7 @@ const emptySnapshot = (version: number): RadarSnapshot => ({
   focusBrake: null,
   caution: false,
   poleSideNotice: null,
+  roadLane: 0,
   cars: [],
   hazards: [],
   version,
@@ -472,6 +477,7 @@ const sameSnapshot = (
   previous.focusBrake === next.focusBrake &&
   previous.caution === next.caution &&
   previous.poleSideNotice === next.poleSideNotice &&
+  previous.roadLane === next.roadLane &&
   previous.trackLength === next.trackLength &&
   previous.focusOnPitRoad === next.focusOnPitRoad &&
   previous.focusInPitBox === next.focusInPitBox &&

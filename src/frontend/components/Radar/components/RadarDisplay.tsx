@@ -37,6 +37,8 @@ export interface RadarFrame {
   hazards?: readonly RadarHazard[];
   /** The pole side the player just flipped to, shown for a few seconds. */
   poleSideNotice?: 'left' | 'right' | null;
+  /** Middle of the road from our car, in lanes, positive to the right. */
+  roadLane?: number;
 }
 
 export interface RadarDiveOptions {
@@ -272,6 +274,7 @@ export const RadarDisplay = memo(
           laneWidth,
           hazards,
           poleSideNotice: snap.poleSideNotice,
+          roadLane: snap.roadLane,
         });
         frameMs = performance.now() - started;
         if (active) handle = requestAnimationFrame(paint);

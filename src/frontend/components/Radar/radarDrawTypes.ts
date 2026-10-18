@@ -151,4 +151,6 @@ export interface RadarScene {
   hazards?: readonly RadarDrawHazard[];
   /** Names the pole side the player just flipped to, for a few seconds. */
   poleSideNotice?: 'left' | 'right' | null;
+  /** Middle of the road from our car, in lanes, positive to the right. */
+  roadLane?: number;
 }
