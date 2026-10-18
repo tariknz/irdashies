@@ -441,6 +441,59 @@ describe('mapLmuSession driver nationality', () => {
     expect(driver?.LmuRating).toBeUndefined();
   });
 
+  it('attaches a looked-up rating to the matching driver', () => {
+    // The ranks path through the mapper, which nothing covered: every other
+    // test here passes nationalities only, so a break between ratingFor and
+    // LmuRating would have shown as standings with flags and no badges.
+    const raw = fixture();
+    const s = mapLmuSession(raw, null, undefined, (name) =>
+      name === nameOf(raw)
+        ? {
+            driverRank: 'Bronze',
+            driverTier: 3,
+            safetyRank: 'Silver',
+            safetyTier: 2,
+            badge: 'sr-saint',
+          }
+        : undefined
+    );
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
+    expect(driver?.LmuRating?.driverRank).toBe('Bronze');
+    expect(driver?.LmuRating?.driverTier).toBe(3);
+    expect(driver?.LmuRating?.safetyRank).toBe('Silver');
+    expect(driver?.LmuRating?.safetyTier).toBe(2);
+    expect(driver?.LmuRating?.badge).toBe('sr-saint');
+  });
+
+  it('asks for the rating by the name the sim reports', () => {
+    // Including any '#1234' discriminator: that is what the service keys by.
+    const raw = fixture();
+    const asked: string[] = [];
+    mapLmuSession(raw, null, undefined, (name) => {
+      asked.push(name);
+      return undefined;
+    });
+
+    expect(asked).toContain(nameOf(raw));
+  });
+
+  it('carries a rank and a country from their separate sources', () => {
+    // Two different lookups, joined on the same name: the sim's own teams
+    // endpoint for the country, the rating service for the ranks.
+    const raw = fixture();
+    const s = mapLmuSession(
+      raw,
+      null,
+      { nationalities: { [nameOf(raw)]: 'FR' } },
+      () => ({ driverRank: 'Gold', driverTier: 1 })
+    );
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
+    expect(driver?.LmuRating?.driverRank).toBe('Gold');
+    expect(driver?.LmuRating?.countryCode).toBe('FR');
+  });
+
   it('leaves the iRacing flair id at zero', () => {
     // The flag comes from LmuRating.countryCode. A non-zero FlairID here
     // would point the iRacing lookup table at an unrelated country.
