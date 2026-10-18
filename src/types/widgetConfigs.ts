@@ -347,6 +347,12 @@ export interface InputConfig {
   displayOrder: string[];
   /** When set, decides which elements show and where. Supersedes the enabled flags and displayOrder. */
   layoutTree?: LayoutNode;
+  /** Briefly flash the gear number on an upshift or downshift. */
+  gearFlash?: {
+    enabled: boolean;
+    upColor: string;
+    downColor: string;
+  };
   /** Flash the whole layout at the redline or at the Tachometer custom shift points. */
   shiftFlash?: {
     enabled: boolean;

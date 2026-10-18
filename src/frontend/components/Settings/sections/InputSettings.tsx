@@ -41,6 +41,14 @@ const DEFAULT_SHIFT_FLASH: NonNullable<
   color: '#9333ea',
 };
 
+const DEFAULT_GEAR_FLASH: NonNullable<
+  InputWidgetSettings['config']['gearFlash']
+> = {
+  enabled: false,
+  upColor: '#22c55e',
+  downColor: '#ef4444',
+};
+
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
 // Configs saved before the layout editor have no tree. Seed one from the
@@ -144,6 +152,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
         const config = settings.config;
         const shiftFlash = { ...DEFAULT_SHIFT_FLASH, ...config.shiftFlash };
+        const gearFlash = { ...DEFAULT_GEAR_FLASH, ...config.gearFlash };
 
         return (
           <SettingProps
@@ -299,6 +308,61 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                                   shiftFlash: {
                                     ...shiftFlash,
                                     color: e.target.value,
+                                  },
+                                })
+                              }
+                              className="h-8 w-12 rounded bg-slate-700 cursor-pointer"
+                            />
+                          </div>
+                        </SettingsSection>
+                      )}
+                    </SettingsSection>
+
+                    {/* Gear Flash Settings */}
+                    <SettingsSection title="Gear Flash">
+                      <SettingToggleRow
+                        title="Flash Gear on Shift"
+                        description="Briefly color the gear number on an upshift or downshift"
+                        enabled={gearFlash.enabled}
+                        onToggle={(enabled) =>
+                          handleConfigChange({
+                            gearFlash: { ...gearFlash, enabled },
+                          })
+                        }
+                      />
+
+                      {gearFlash.enabled && (
+                        <SettingsSection>
+                          <div className="flex items-center justify-between">
+                            <span className="text-md text-slate-300">
+                              Upshift Color
+                            </span>
+                            <input
+                              type="color"
+                              value={gearFlash.upColor}
+                              onChange={(e) =>
+                                handleConfigChange({
+                                  gearFlash: {
+                                    ...gearFlash,
+                                    upColor: e.target.value,
+                                  },
+                                })
+                              }
+                              className="h-8 w-12 rounded bg-slate-700 cursor-pointer"
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-md text-slate-300">
+                              Downshift Color
+                            </span>
+                            <input
+                              type="color"
+                              value={gearFlash.downColor}
+                              onChange={(e) =>
+                                handleConfigChange({
+                                  gearFlash: {
+                                    ...gearFlash,
+                                    downColor: e.target.value,
                                   },
                                 })
                               }
