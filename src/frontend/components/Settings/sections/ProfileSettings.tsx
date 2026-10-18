@@ -19,6 +19,7 @@ import {
   PencilSimpleIcon,
   CaretDownIcon,
   TrashIcon,
+  ArrowSquareOutIcon,
 } from '@phosphor-icons/react';
 
 interface SessionProfileRowProps {
@@ -174,7 +175,9 @@ export const ProfileSettings = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [serverIP, setServerIP] = useState<string>('localhost');
-  const [serverPort, setServerPort] = useState<number>(3000);
+  const [serverPort, setServerPort] = useState<number | null>(null);
+  const [serverPortError, setServerPortError] = useState<string | null>(null);
+  const browserUrlsReady = webServerEnabled && serverPort !== null;
   const [confirmDelete, setConfirmDelete] = useState<{
     isOpen: boolean;
     profileId: string;
@@ -196,12 +199,16 @@ export const ProfileSettings = () => {
   useEffect(() => {
     refreshProfiles();
     // Fetch server port and IP via IPC
-    const bridge = window.dashboardBridge;
-    if (bridge?.getComponentServerPort) {
-      bridge.getComponentServerPort().then((port) => {
+    // A legacy bridge without port discovery uses the original default. While
+    // discovery is pending, keep browser actions unavailable rather than guess.
+    const portPromise = bridge.getComponentServerPort
+      ? bridge.getComponentServerPort()
+      : Promise.resolve(3000);
+    portPromise
+      .then((port) => {
         setServerPort(port);
-        // Fetch server IP using the actual port
-        fetch(`http://localhost:${port}/api/server-ip`)
+        // A missing LAN address can safely fall back to localhost on this port.
+        return fetch(`http://localhost:${port}/api/server-ip`)
           .then((res) => res.json())
           .catch(() => ({ ip: 'localhost' }))
           .then((data) => {
@@ -209,10 +216,20 @@ export const ProfileSettings = () => {
               setServerIP(data.ip);
             }
           });
+      })
+      .catch((err) => {
+        logger.warn('Failed to load the browser source port', err);
+        setServerPortError(
+          'Could not load browser source URLs. Close and reopen Profiles to try again.'
+        );
       });
-    }
     // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, []);
+
+  const browserUrlFor = (profileId: string, host = serverIP) =>
+    serverPort === null
+      ? ''
+      : `http://${host}:${serverPort}/dashboard?profile=${encodeURIComponent(profileId)}`;
 
   const handleCreateProfile = async () => {
     if (!newProfileName.trim()) {
@@ -360,6 +377,12 @@ export const ProfileSettings = () => {
         <div className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
           <div className="px-4 py-3 bg-slate-700/50 border-b border-slate-600">
             <h3 className="text-lg font-semibold text-white">Your Profiles</h3>
+            <p className="text-sm text-slate-400 mt-1">
+              Browser and OBS widget positions are saved separately from the
+              desktop layout. Use Actions &gt; Edit Browser Layout to drag and
+              resize widgets for OBS, then copy the same profile URL into your
+              browser source.
+            </p>
           </div>
           <div className="divide-y divide-slate-700 overflow-y-auto min-h-0">
             {profiles.length === 0 ? (
@@ -374,7 +397,7 @@ export const ProfileSettings = () => {
                 return (
                   <div
                     key={profile.id}
-                    className={`px-4 py-3 flex items-center justify-between transition-colors ${
+                    className={`px-4 py-3 flex flex-wrap items-center justify-between gap-3 transition-colors ${
                       isActive ? 'bg-blue-600/20' : 'hover:bg-slate-700/50'
                     }`}
                   >
@@ -414,7 +437,7 @@ export const ProfileSettings = () => {
                       )}
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       {isEditing ? (
                         <>
                           <button
@@ -441,16 +464,19 @@ export const ProfileSettings = () => {
                             </button>
                           )}
 
-                          <button
-                            onClick={() => {
-                              const url = `http://${serverIP}:${serverPort}/dashboard?profile=${profile.id}`;
-                              navigator.clipboard.writeText(url);
-                            }}
-                            className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
-                            title="Copy browser URL for this profile"
-                          >
-                            Copy URL
-                          </button>
+                          {browserUrlsReady && (
+                            <button
+                              onClick={() =>
+                                navigator.clipboard.writeText(
+                                  browserUrlFor(profile.id)
+                                )
+                              }
+                              className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+                              title="Copy browser URL for this profile"
+                            >
+                              Copy URL
+                            </button>
+                          )}
 
                           {/* Actions dropdown */}
                           <div className="relative">
@@ -500,6 +526,19 @@ export const ProfileSettings = () => {
                                 }}
                                 className="bg-slate-700 border border-slate-600 rounded shadow-lg min-w-[130px]"
                               >
+                                {browserUrlsReady && (
+                                  <a
+                                    href={browserUrlFor(profile.id)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => setOpenDropdownId(null)}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-slate-600 transition-colors text-left"
+                                    title="Open this profile in your browser to arrange its OBS widgets"
+                                  >
+                                    <ArrowSquareOutIcon size={14} />
+                                    Edit Browser Layout
+                                  </a>
+                                )}
                                 <button
                                   onClick={() => {
                                     setOpenDropdownId(null);
@@ -671,7 +710,21 @@ export const ProfileSettings = () => {
           </div>
         )}
 
-        {currentProfile && webServerEnabled && (
+        {currentProfile && webServerEnabled && serverPort === null && (
+          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-white mb-2">
+              OBS Browser Source
+            </h3>
+            <p
+              className="text-sm text-gray-400"
+              role={serverPortError ? 'alert' : 'status'}
+            >
+              {serverPortError ?? 'Loading browser source URLs...'}
+            </p>
+          </div>
+        )}
+
+        {currentProfile && browserUrlsReady && (
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-3">
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">
@@ -691,13 +744,13 @@ export const ProfileSettings = () => {
                 <input
                   type="text"
                   readOnly
-                  value={`http://localhost:${serverPort}/dashboard?profile=${currentProfile.id}`}
+                  value={browserUrlFor(currentProfile.id, 'localhost')}
                   className="flex-1 bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm font-mono"
                 />
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(
-                      `http://localhost:${serverPort}/dashboard?profile=${currentProfile.id}`
+                      browserUrlFor(currentProfile.id, 'localhost')
                     );
                   }}
                   className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap"
@@ -715,13 +768,13 @@ export const ProfileSettings = () => {
                 <input
                   type="text"
                   readOnly
-                  value={`http://${serverIP}:3000/dashboard?profile=${currentProfile.id}`}
+                  value={browserUrlFor(currentProfile.id)}
                   className="flex-1 bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded text-sm font-mono"
                 />
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(
-                      `http://${serverIP}:3000/dashboard?profile=${currentProfile.id}`
+                      browserUrlFor(currentProfile.id)
                     );
                   }}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap"
