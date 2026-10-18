@@ -335,7 +335,13 @@ Displays the weather information for the current session.
 - Option to show only when on track
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
 
-![Weather](./docs/assets/weather.png)
+**Normal layout:**
+
+<img src="./docs/assets/weather.png" alt="Weather in the normal vertical layout" width="210">
+
+**Horizontal layout:**
+
+![Weather in the horizontal layout](./docs/assets/weather-horizontal.png)
 
 ### Wind
 
