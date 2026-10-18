@@ -26,7 +26,8 @@ import { useDriverLivePositions } from './useDriverLivePositions';
 import { useStandingsSettings } from './useStandingsSettings';
 import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
 import { useQualifyingResults } from './useQualifyingGrid';
-import { TrackLocation } from '@irdashies/types';
+import { SessionState, TrackLocation } from '@irdashies/types';
+import { augmentStandingsWithFinalTiming } from './finalRaceTiming';
 
 const EMPTY_NUMBERS: number[] = [];
 const EMPTY_BOOLEANS: boolean[] = [];
@@ -67,6 +68,8 @@ export const useDriverStandings = (
   const standingsSnapshot = useStandingsSnapshot();
   const driverCarIdx = standingsSnapshot?.focusCarIdx ?? undefined;
   const sessionNum = standingsSnapshot?.sessionNum ?? undefined;
+  const finalRaceTiming = standingsSnapshot?.finalRaceTiming;
+  const sessionState = standingsSnapshot?.sessionState ?? 0;
   const sessionType = useSessionType(sessionNum);
   const positions = useSessionPositions(sessionNum);
   const qualifyingResults = useQualifyingResults();
@@ -214,8 +217,26 @@ export const useDriverStandings = (
           )
         : intervalAugmentedGroupedByClass;
 
-    if (options?.showAll) return displayedStandings;
-    return sliceRelevantDrivers(displayedStandings, driverClass, {
+    const finalStandings =
+      sessionType === 'Race' &&
+      sessionState >= SessionState.Checkered &&
+      finalRaceTiming?.length &&
+      (gapEnabled || intervalEnabled)
+        ? perfMetrics.measure('standingsFinalTiming', () =>
+            augmentStandingsWithFinalTiming(
+              displayedStandings,
+              finalRaceTiming,
+              {
+                gap: gapEnabled ?? false,
+                interval: intervalEnabled ?? false,
+                playerReference: gapReference === 'player',
+              }
+            )
+          )
+        : displayedStandings;
+
+    if (options?.showAll) return finalStandings;
+    return sliceRelevantDrivers(finalStandings, driverClass, {
       buffer,
       numNonClassDrivers,
       minPlayerClassDrivers,
@@ -236,6 +257,8 @@ export const useDriverStandings = (
     positions,
     fastestLaps,
     sessionType,
+    sessionState,
+    finalRaceTiming,
     lastPitLap,
     lastLap,
     prevCarTrackSurface,

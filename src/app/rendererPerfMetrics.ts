@@ -10,6 +10,7 @@ export const PERF_RENDERER_LOG_PREFIX = '[PerfRenderer:JSON] ';
 
 let telemetryCallbackTimes: FixedSampleBuffer | undefined;
 let channelCallbackTimes: FixedSampleBuffer | undefined;
+let standingsFinalTimingTimes: FixedSampleBuffer | undefined;
 let standingsPlayerGapTimes: FixedSampleBuffer | undefined;
 let trackMapAnimationFrameTimes: FixedSampleBuffer | undefined;
 
@@ -29,6 +30,9 @@ export function recordRendererMeasure(
   name: RendererPerfMeasureName,
   durationMs: number
 ): void {
+  if (name === 'standingsFinalTiming') {
+    standingsFinalTimingTimes?.add(durationMs);
+  }
   if (name === 'standingsPlayerGaps') {
     standingsPlayerGapTimes?.add(durationMs);
   }
@@ -51,6 +55,8 @@ export function startRendererPerfMetrics(): void {
   telemetryCallbackTimes = callbackTimes;
   const channelTimes = new FixedSampleBuffer(4096);
   channelCallbackTimes = channelTimes;
+  const finalTimingTimes = new FixedSampleBuffer(4096);
+  standingsFinalTimingTimes = finalTimingTimes;
   const playerGapTimes = new FixedSampleBuffer(4096);
   standingsPlayerGapTimes = playerGapTimes;
   const trackMapFrameTimes = new FixedSampleBuffer(4096);
@@ -83,6 +89,7 @@ export function startRendererPerfMetrics(): void {
       channelTimes.reset();
       trackMapFrameTimes.reset();
       playerGapTimes.reset();
+      finalTimingTimes.reset();
       framesOver25Ms = 0;
       framesOver50Ms = 0;
       return;
@@ -101,6 +108,7 @@ export function startRendererPerfMetrics(): void {
       telemetryCallbackMs: callbackTimes.summarize(),
       channelCallbackMs: channelTimes.summarize(),
       trackMapAnimationFrameMs: trackMapFrameTimes.summarize(),
+      standingsFinalTimingMs: finalTimingTimes.summarize(),
       standingsPlayerGapsMs: playerGapTimes.summarize(),
       telemetryWakeups: callbackTimes.summarize().count,
       channelWakeups: channelTimes.summarize().count,
@@ -120,6 +128,7 @@ export function startRendererPerfMetrics(): void {
     channelTimes.reset();
     trackMapFrameTimes.reset();
     playerGapTimes.reset();
+    finalTimingTimes.reset();
     framesOver25Ms = 0;
     framesOver50Ms = 0;
   }, reportIntervalMs);
