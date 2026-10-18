@@ -48,6 +48,26 @@ describe('useGearFlash', () => {
     expect(result.current).toBe(UP);
   });
 
+  it('clears even when neutral arrives during the flash', () => {
+    const { result, rerender } = setup(3);
+    rerender({ g: 4, e: true });
+    rerender({ g: 0, e: true });
+    act(() => vi.advanceTimersByTime(300));
+    expect(result.current).toBeUndefined();
+  });
+
+  it('a second shift inside the window switches colour and restarts the timer', () => {
+    const { result, rerender } = setup(4);
+    rerender({ g: 5, e: true });
+    act(() => vi.advanceTimersByTime(200));
+    rerender({ g: 4, e: true });
+    expect(result.current).toBe(DOWN);
+    act(() => vi.advanceTimersByTime(200));
+    expect(result.current).toBe(DOWN);
+    act(() => vi.advanceTimersByTime(100));
+    expect(result.current).toBeUndefined();
+  });
+
   it('does nothing when disabled', () => {
     const { result, rerender } = setup(3, false);
     rerender({ g: 4, e: false });

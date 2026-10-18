@@ -333,42 +333,34 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
                       {gearFlash.enabled && (
                         <SettingsSection>
-                          <div className="flex items-center justify-between">
-                            <span className="text-md text-slate-300">
-                              Upshift Color
-                            </span>
-                            <input
-                              type="color"
-                              value={gearFlash.upColor}
-                              onChange={(e) =>
-                                handleConfigChange({
-                                  gearFlash: {
-                                    ...gearFlash,
-                                    upColor: e.target.value,
-                                  },
-                                })
-                              }
-                              className="h-8 w-12 rounded bg-slate-700 cursor-pointer"
-                            />
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-md text-slate-300">
-                              Downshift Color
-                            </span>
-                            <input
-                              type="color"
-                              value={gearFlash.downColor}
-                              onChange={(e) =>
-                                handleConfigChange({
-                                  gearFlash: {
-                                    ...gearFlash,
-                                    downColor: e.target.value,
-                                  },
-                                })
-                              }
-                              className="h-8 w-12 rounded bg-slate-700 cursor-pointer"
-                            />
-                          </div>
+                          {(
+                            [
+                              ['upColor', 'Upshift Color'],
+                              ['downColor', 'Downshift Color'],
+                            ] as const
+                          ).map(([key, label]) => (
+                            <div
+                              key={key}
+                              className="flex items-center justify-between"
+                            >
+                              <span className="text-md text-slate-300">
+                                {label}
+                              </span>
+                              <input
+                                type="color"
+                                value={gearFlash[key]}
+                                onChange={(e) =>
+                                  handleConfigChange({
+                                    gearFlash: {
+                                      ...gearFlash,
+                                      [key]: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="h-8 w-12 rounded bg-slate-700 cursor-pointer"
+                              />
+                            </div>
+                          ))}
                         </SettingsSection>
                       )}
                     </SettingsSection>

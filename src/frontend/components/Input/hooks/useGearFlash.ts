@@ -11,7 +11,8 @@ export const useGearFlash = (
 ) => {
   // Last forward gear: a shift passing through neutral (3 -> N -> 4) still counts.
   const prev = useRef(gear);
-  const [up, setUp] = useState<boolean>();
+  // A new object per shift, so a second shift inside the window restarts the timer.
+  const [flash, setFlash] = useState<{ up: boolean }>();
 
   useEffect(() => {
     // Neutral/reverse (<1) are not a shift, so pit entry and launch don't flash.
@@ -19,11 +20,15 @@ export const useGearFlash = (
     const was = prev.current;
     prev.current = gear;
     if (!enabled || was === undefined || was < 1 || gear === was) return;
-    setUp(gear > was);
-    const t = setTimeout(() => setUp(undefined), FLASH_MS);
-    return () => clearTimeout(t);
+    setFlash({ up: gear > was });
   }, [gear, enabled]);
 
-  if (!enabled || up === undefined) return undefined;
-  return up ? upColor : downColor;
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(undefined), FLASH_MS);
+    return () => clearTimeout(t);
+  }, [flash]);
+
+  if (!enabled || !flash) return undefined;
+  return flash.up ? upColor : downColor;
 };
