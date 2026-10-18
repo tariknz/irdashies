@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { releaseNotesFixture } from '../../../../types/releaseNotesFixture';
+import { releaseNotesFixture } from '@irdashies/types';
 import { ReleaseNotesPanel } from './ReleaseNotesPanel';
 import { ReleaseNotesDialog } from './ReleaseNotesDialog';
 import { useState } from 'react';

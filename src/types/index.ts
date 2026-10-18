@@ -34,3 +34,4 @@ export * from './lapHistoryBridge';
 export * from './lmuTrackAliases';
 export * from './widgets';
 export * from './releaseNotes';
+export * from './releaseNotesFixture';

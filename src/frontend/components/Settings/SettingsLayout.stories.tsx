@@ -6,7 +6,7 @@ import type {
   ReleaseNotesBridge,
   ReleaseNotesStatus,
 } from '@irdashies/types';
-import { releaseNotesFixture } from '../../../types/releaseNotesFixture';
+import { releaseNotesFixture } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
 import { mockDashboardBridge } from '@irdashies/storybook';
 

@@ -15,7 +15,7 @@ import {
   type ReleaseNotesStatus,
   type ReleaseNotesResult,
 } from '@irdashies/types';
-import { releaseNotesFixture } from '../../../../types/releaseNotesFixture';
+import { releaseNotesFixture } from '@irdashies/types';
 import { SettingsMenu } from '../SettingsMenu';
 import { ReleaseNotesSettings } from './ReleaseNotesSettings';
 import { ReleaseNotesStatusProvider } from './ReleaseNotesStatusContext';

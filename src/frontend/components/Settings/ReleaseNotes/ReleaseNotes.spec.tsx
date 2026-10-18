@@ -8,7 +8,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReleaseNotesBridge } from '@irdashies/types';
-import { releaseNotesFixture } from '../../../../types/releaseNotesFixture';
+import { releaseNotesFixture } from '@irdashies/types';
 import { ReleaseNotesPanel } from './ReleaseNotesPanel';
 import { ReleaseNotesAnnouncement } from './ReleaseNotesAnnouncement';
 import { ReleaseNotesSettings } from './ReleaseNotesSettings';

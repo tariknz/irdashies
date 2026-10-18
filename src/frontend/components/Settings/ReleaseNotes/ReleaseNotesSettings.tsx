@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { releaseNotesFixture } from '../../../../types/releaseNotesFixture';
+import { releaseNotesFixture } from '@irdashies/types';
 import { useReleaseNotesStatus } from './ReleaseNotesStatusContext';
 import { ReleaseNotesPanel } from './ReleaseNotesPanel';
 import { ReleaseNotesDialog } from './ReleaseNotesDialog';
