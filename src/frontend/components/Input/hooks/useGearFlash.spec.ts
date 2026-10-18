@@ -48,6 +48,18 @@ describe('useGearFlash', () => {
     expect(result.current).toBe(UP);
   });
 
+  it('drops the colour at once when neutral arrives, or when disabled', () => {
+    const { result, rerender } = setup(3);
+    rerender({ g: 4, e: true });
+    rerender({ g: 0, e: true });
+    expect(result.current).toBeUndefined();
+    rerender({ g: 3, e: true });
+    expect(result.current).toBe(DOWN);
+    rerender({ g: 3, e: false });
+    rerender({ g: 3, e: true });
+    expect(result.current).toBeUndefined();
+  });
+
   it('clears even when neutral arrives during the flash', () => {
     const { result, rerender } = setup(3);
     rerender({ g: 4, e: true });

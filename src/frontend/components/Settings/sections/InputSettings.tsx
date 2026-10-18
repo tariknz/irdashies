@@ -339,7 +339,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                               ['downColor', 'Downshift Color'],
                             ] as const
                           ).map(([key, label]) => (
-                            <div
+                            <label
                               key={key}
                               className="flex items-center justify-between"
                             >
@@ -359,7 +359,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
                                 }
                                 className="h-8 w-12 rounded bg-slate-700 cursor-pointer"
                               />
-                            </div>
+                            </label>
                           ))}
                         </SettingsSection>
                       )}

@@ -16,9 +16,13 @@ export const useGearFlash = (
 
   useEffect(() => {
     // Neutral/reverse (<1) are not a shift, so pit entry and launch don't flash.
-    if (gear === undefined || gear < 1) return;
+    if (gear === undefined || gear < 1) {
+      setFlash(undefined);
+      return;
+    }
     const was = prev.current;
     prev.current = gear;
+    if (!enabled) setFlash(undefined);
     if (!enabled || was === undefined || was < 1 || gear === was) return;
     setFlash({ up: gear > was });
   }, [gear, enabled]);

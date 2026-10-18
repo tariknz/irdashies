@@ -124,6 +124,7 @@ export const InputContainer = memo(
                 speedMs={speed}
                 unit={unit}
                 gearSettings={settings.gear}
+                flashColor={gearFlashColor}
               />
             );
           default:
