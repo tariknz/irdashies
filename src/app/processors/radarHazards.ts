@@ -17,6 +17,19 @@ const REACH_MAX_S = 8;
 const RACING_MS = 15;
 /** Dropping below this share of its own recent top speed is sudden. */
 const SUDDEN_SHARE = 0.4;
+/**
+ * ...and below this speed in m/s, so braking for a hairpin is not a crash; a
+ * car that is really crashed or spun is down to a crawl within moments.
+ */
+const SUDDEN_MAX_MS = 12;
+/** Below this, in m/s, a car crawls: slow on any part of the track. */
+const CRAWL_MS = 12;
+/**
+ * Above CRAWL_MS a slow car only counts while it is still shedding speed, below
+ * this share of its own top speed of the last moments: a car steady at corner
+ * pace is cornering, not in trouble.
+ */
+const SHEDDING_SHARE = 0.85;
 /** Back above this share of the speed before a drop, the car is racing again. */
 const RECOVER_SHARE = 0.75;
 /** Seconds a car must stay slow before it is reported. */
@@ -90,7 +103,7 @@ export interface HazardFrame {
  * Nothing here depends on the track or on car classes. A stopped car, an
  * excursion and a rejoin are facts about the car. A sudden drop from the
  * car's own recent speed is a crash or a spin, and a car far slower than the
- * focus car is slow; both only count while the focus car is closing in on
+ * focus car is slow, if it crawls or is still shedding speed; both only count while the focus car is closing in on
  * them fast enough to reach them soon, so a hairpin, a braking zone or a
  * slower class pulling away from nobody raises no alarm.
  */
@@ -99,6 +112,8 @@ export class RadarHazardTracker {
   private readonly states = new Map<number, CarHazardState>();
   /** Session time the radar was last quiet. */
   private lastQuiet = -Infinity;
+  /** Session time of the previous update, to notice a replay scrub back. */
+  private lastTime = -Infinity;
 
   setTrackLength(metres: number): void {
     if (metres === this.trackLength) return;
@@ -110,12 +125,17 @@ export class RadarHazardTracker {
   reset(): void {
     this.states.clear();
     this.lastQuiet = -Infinity;
+    this.lastTime = -Infinity;
   }
 
   update(frame: HazardFrame): RadarHazard[] {
     const hazards: RadarHazard[] = [];
-    if (this.trackLength <= 0 || frame.settling) return hazards;
     const { time, pcts } = frame;
+    // Time running backwards is a replay scrub: the stamps kept per car would
+    // be from the future, so start over.
+    if (time < this.lastTime) this.reset();
+    this.lastTime = time;
+    if (this.trackLength <= 0 || frame.settling) return hazards;
     // Nothing done under a caution or on the grid says anything afterwards.
     if (frame.quiet) {
       this.states.clear();
@@ -185,7 +205,7 @@ export class RadarHazardTracker {
     if (
       state.droppedFrom < 0 &&
       state.peak >= RACING_MS &&
-      speed < state.peak * SUDDEN_SHARE
+      speed < Math.min(state.peak * SUDDEN_SHARE, SUDDEN_MAX_MS)
     ) {
       state.droppedFrom = state.peak;
       state.droppedAt = time;
@@ -238,7 +258,10 @@ export class RadarHazardTracker {
       return 'crash';
     }
 
-    const slow = reachable && speed < focusSpeed * SLOW_SHARE;
+    const slow =
+      reachable &&
+      speed < focusSpeed * SLOW_SHARE &&
+      (speed < CRAWL_MS || speed < state.peak * SHEDDING_SHARE);
     if (!slow) {
       state.slowSince = -1;
       return null;

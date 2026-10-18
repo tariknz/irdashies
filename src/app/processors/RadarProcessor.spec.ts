@@ -352,6 +352,21 @@ describe('RadarProcessor', () => {
     ]);
   });
 
+  it('does not space cars out while watching another car', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      frame({
+        time: 1,
+        pcts: [0.1, 0.5, 0.5 + m(2)],
+        camCarIdx: 1,
+        carLeftRight: CarLeftRight.Off,
+      })
+    );
+
+    // No spotter for a camera car: side by side stays side by side.
+    expect(processor.snapshot().cars[0].dist).toBeCloseTo(2);
+  });
+
   it('reads the pace formation from a recorded rolling start', () => {
     const processor = new RadarProcessor();
     processor.init(rollingSession as unknown as Session);

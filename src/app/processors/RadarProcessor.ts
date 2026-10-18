@@ -239,8 +239,17 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       // Cars across the pit wall are beside the track, not in a lane of it.
       const focusOnPit = onPitRoad[focus] === true;
       const sameSide = cars.filter((car) => car.onPitRoad === focusOnPit);
-      this.assignLanes(frame, time, focus, isOnTrack, sameSide, formation);
-      separateInLaneCars(sameSide);
+      const spotterSpeaks = this.assignLanes(
+        frame,
+        time,
+        focus,
+        isOnTrack,
+        sameSide,
+        formation
+      );
+      // Without the spotter nobody says a car is not alongside: cars side by
+      // side on a replay or a camera car must not be pulled apart.
+      if (spotterSpeaks) separateInLaneCars(sameSide);
     }
 
     // The pedals are the player's, so they say nothing about a camera car.
@@ -302,7 +311,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
    * The spotter speaks for the player's car only, and only while it is
    * driving; when the camera is on someone else, lanes come from memory and
    * pairing alone. Cars across the pit wall are beside the track, not in a
-   * lane of it, so they stay out of the estimate.
+   * lane of it, so they stay out of the estimate. Returns whether the spotter
+   * was listened to.
    */
   private assignLanes(
     frame: Telemetry,
@@ -311,7 +321,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     isOnTrack: boolean,
     cars: RadarCar[],
     formation: Formation | null
-  ): void {
+  ): boolean {
     if (focus !== this.laneFocus) {
       this.lanes.reset();
       this.laneFocus = focus;
@@ -327,6 +337,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       car.lane = lane.lane;
       car.laneSource = lane.source;
     }
+    return spotter !== null;
   }
 
   snapshot(): RadarSnapshot {

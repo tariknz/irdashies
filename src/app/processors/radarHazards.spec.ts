@@ -65,14 +65,51 @@ describe('RadarHazardTracker', () => {
     expect(reported).toEqual([]);
   });
 
-  it('warns when closing fast on a car far slower than us', () => {
+  it('warns when closing fast on a car that crawls', () => {
     const field = new Field();
-    field.speeds = [60, 50, 25];
+    field.speeds = [40, 50, 11];
     field.run(3);
 
     expect(field.run(1)).toEqual([
       expect.objectContaining({ carIdx: 2, kind: 'slow' }),
     ]);
+  });
+
+  it('stays quiet about a car steady at corner pace far below us', () => {
+    const field = new Field();
+    field.speeds = [60, 50, 25];
+
+    // A hairpin ahead while we are still on the straight.
+    expect(field.run(3)).toEqual([]);
+  });
+
+  it('does not call braking for a hairpin a crash', () => {
+    const field = new Field();
+    field.run(5);
+    // 50 to 20 m/s in 1.5 s: far under its own top speed, but not stopped.
+    for (const speed of [40, 30, 20]) field.run(0.5, { speed });
+
+    expect(field.run(1).map((hazard) => hazard.kind)).not.toContain('crash');
+  });
+
+  it('starts over when session time runs backwards', () => {
+    const field = new Field();
+    field.run(5);
+    field.time = 1;
+    // A scrub back: the stale top speed must not make a cornering car crash.
+    field.speeds[2] = 20;
+    field.tracker.update({
+      time: field.time,
+      focus: 0,
+      playerPct: field.pcts[0],
+      pcts: field.pcts,
+      speeds: field.speeds,
+      surfaces: field.surfaces,
+      onPitRoad: field.onPitRoad,
+      excluded: new Set(),
+      quiet: false,
+    });
+    expect(field.run(1)).toEqual([]);
   });
 
   it('stays quiet about a slow car while we crawl up to it', () => {
@@ -117,9 +154,9 @@ describe('RadarHazardTracker', () => {
   it('calls a car slowing gradually far below us slow, not a crash', () => {
     const field = new Field();
     field.run(5);
-    // Gradually down to 25 m/s: no sudden drop, but half our speed.
-    for (let speed = 45; speed >= 25; speed -= 5) field.run(1, { speed });
-    expect(field.run(1.5)).toEqual([
+    // Gradually down to 15 m/s: no sudden drop, but far below our speed.
+    for (let speed = 45; speed >= 15; speed -= 5) field.run(0.5, { speed });
+    expect(field.last).toEqual([
       expect.objectContaining({ carIdx: 2, kind: 'slow' }),
     ]);
   });
