@@ -46,6 +46,21 @@ describe('buildRadarPoleSideReport', () => {
     );
   });
 
+  it('reports a standing grid correction, with no table side', () => {
+    const report = buildRadarPoleSideReport({ '95': { grid: false } }, '2.0.0');
+    expect(report.properties.tracks).toEqual({ '95': { grid_left: false } });
+    const withStart = buildRadarPoleSideReport(
+      { '95': { grid: false, start: true, table: false } },
+      '2.0.0'
+    );
+    expect(withStart.properties.tracks['95']).toEqual({
+      grid_left: false,
+      start_left: true,
+      table_left: false,
+    });
+    expect(withStart.hash).not.toBe(report.hash);
+  });
+
   it('reports no corrections as an empty set, with a hash of its own', () => {
     const empty = buildRadarPoleSideReport({}, '2.0.0');
     expect(empty.properties.track_count).toBe(0);

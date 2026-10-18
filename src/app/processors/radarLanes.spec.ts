@@ -310,7 +310,7 @@ describe('RadarLaneTracker', () => {
 
     it('puts the pole line on the left of the pace field on ovals', () => {
       const tracker = new RadarLaneTracker();
-      tracker.setPacePoleLeft(true);
+      tracker.setPoleLeft(true);
       const { lanes } = settle(
         tracker,
         0,
@@ -323,8 +323,9 @@ describe('RadarLaneTracker', () => {
       expect(lanes.get(2)).toEqual({ lane: -1, source: 'pace' });
     });
 
-    it('puts the pole column left of a standing grid', () => {
+    it('puts the pole column on the side it is told, left of a standing grid by default', () => {
       const tracker = new RadarLaneTracker();
+      tracker.setPoleLeft(true);
       const { lanes } = settle(
         tracker,
         0,
@@ -335,10 +336,23 @@ describe('RadarLaneTracker', () => {
       );
 
       expect(lanes.get(2)).toEqual({ lane: -1, source: 'grid' });
+
+      // Flipped to the right: the same car sits on the other side.
+      tracker.setPoleLeft(false);
+      const { lanes: flipped } = settle(
+        tracker,
+        10,
+        [{ carIdx: 2, dist: 4 }],
+        CarLeftRight.Clear,
+        1,
+        formation([[2, -1]], 'grid')
+      );
+      expect(flipped.get(2)).toEqual({ lane: 1, source: 'grid' });
     });
 
     it('keeps formation lanes for a while after the green', () => {
       const tracker = new RadarLaneTracker();
+      tracker.setPoleLeft(true);
       const cars = [{ carIdx: 2, dist: 12 }];
       const { time } = settle(
         tracker,

@@ -30,10 +30,10 @@ export const RadarPoleSideKey = () => {
         Pole side key
       </div>
       <p className="text-sm text-slate-400">
-        In some cases the radar may draw the lanes on the wrong side at a start
-        or restart, because the sim does not say which side the pole line is on.
-        The key flips the side on the current track and remembers it for future
-        races.
+        In some cases the radar may draw the lanes on the wrong side at a start,
+        restart or standing grid, because the sim does not say which side the
+        pole line is on. The key flips the side on the current track and
+        remembers it for future races.
       </p>
       {entry && (
         <BindingRow

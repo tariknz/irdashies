@@ -58,6 +58,8 @@ const MAX_FRAME_GAP_S = 0.5;
  */
 const SPEED_SETTLE_S = 1;
 const RADAR_TICK_HZ = 25;
+/** A standing grid has no table: its pole is on the left unless flipped. */
+const GRID_POLE_LEFT = true;
 /** Seconds the radar names the pole side after it was flipped. */
 const POLE_NOTICE_S = 3;
 /**
@@ -127,7 +129,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
 
   private latest: RadarSnapshot = emptySnapshot(0);
   private trackId: number | undefined;
-  /** The side the table gives, and the side in use (the player's wins). */
+  /** The side the table gives for a pace field, and the side in use. */
   private tablePoleLeft = false;
   private poleLeft = false;
   /** A race start or a restart: the player corrects each on its own. */
@@ -162,7 +164,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     this.poleLeft =
       this.poleSides.override(this.trackId, this.situation) ??
       this.tablePoleLeft;
-    this.lanes.setPacePoleLeft(this.poleLeft);
+    this.lanes.setPoleLeft(this.poleLeft);
     this.poleNoticeUntil = -Infinity;
     const options = session?.WeekendInfo?.WeekendOptions;
     this.grid = {
@@ -184,10 +186,6 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     const pcts = valuesOf(frame, 'CarIdxLapDistPct');
     const time = scalarNumber(frame, 'SessionTime');
     this.updateSpeeds(pcts, time);
-    this.applyPoleSide(
-      time,
-      scalarNumber(frame, 'PaceMode', PaceMode.NotPacing)
-    );
 
     const camCarIdx = scalarNumber(frame, 'CamCarIdx');
     const focus =
@@ -216,6 +214,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         this.gridSessionNum = sessionNum;
         this.gridPositions = parseGridPositions(this.session, sessionNum);
       }
+      const paceMode = scalarNumber(frame, 'PaceMode', PaceMode.NotPacing);
       formation = computeFormation({
         focus,
         dists,
@@ -223,7 +222,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         surfaces: surfaces as readonly number[],
         onPitRoad: onPitRoad as readonly boolean[],
         excluded: this.excluded,
-        paceMode: scalarNumber(frame, 'PaceMode', PaceMode.NotPacing),
+        paceMode,
         paceLines: valuesOf(frame, 'CarIdxPaceLine') as readonly number[],
         paceRows: valuesOf(frame, 'CarIdxPaceRow') as readonly number[],
         sessionState: scalarNumber(frame, 'SessionState'),
@@ -237,6 +236,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         grid: this.grid,
         gridPositions: this.gridPositions,
       });
+      this.applyPoleSide(time, formation, paceMode);
       const followCarIdx = formation?.followCarIdx ?? null;
       if (followCarIdx !== null && Number.isFinite(dists[followCarIdx])) {
         follow = {
@@ -317,7 +317,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       focusBrake: drivingFocus && brake >= 0 ? brake : null,
       caution: (flags & CAUTION_FLAGS) !== 0,
       roadLane: formation
-        ? poleSign(formation.kind, this.poleLeft) *
+        ? poleSign(this.poleLeft) *
           ((formation.columns - 1) / 2 - formation.ownColumn)
         : 0,
       poleSideNotice:
@@ -378,22 +378,29 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
    * Follows the player's own pole side for this track, which a keybinding can
    * change at any time, and says so on the radar for a few seconds.
    */
-  private applyPoleSide(time: number, paceMode: number): void {
+  private applyPoleSide(
+    time: number,
+    formation: Formation | null,
+    paceMode: number
+  ): void {
     const situation: PoleSituation =
-      paceMode === PaceMode.SingleFileRestart ||
-      paceMode === PaceMode.DoubleFileRestart
-        ? 'restart'
-        : 'start';
+      formation?.kind === 'grid'
+        ? 'grid'
+        : paceMode === PaceMode.SingleFileRestart ||
+            paceMode === PaceMode.DoubleFileRestart
+          ? 'restart'
+          : 'start';
+    const tableLeft =
+      situation === 'grid' ? GRID_POLE_LEFT : this.tablePoleLeft;
     const changedSituation = situation !== this.situation;
     if (changedSituation) {
       this.situation = situation;
-      this.poleSides.setTrack(this.trackId, this.tablePoleLeft, situation);
+      this.poleSides.setTrack(this.trackId, tableLeft, situation);
     }
-    const side =
-      this.poleSides.override(this.trackId, situation) ?? this.tablePoleLeft;
+    const side = this.poleSides.override(this.trackId, situation) ?? tableLeft;
     if (side === this.poleLeft) return;
     this.poleLeft = side;
-    this.lanes.setPacePoleLeft(side);
+    this.lanes.setPoleLeft(side);
     // Only a key press is worth a message, not the situation changing.
     if (!changedSituation) this.poleNoticeUntil = time + POLE_NOTICE_S;
   }

@@ -22,22 +22,24 @@ describe('parsePoleSideOverrides', () => {
     expect(parsePoleSideOverrides(raw)).toEqual({});
   });
 
-  it('keeps canonical ids with a table side and a correction', () => {
+  it('keeps canonical ids with a well formed correction', () => {
     expect(
       parsePoleSideOverrides({
         '95': { start: false, table: true },
         '212': { restart: true, table: false },
+        '444': { grid: false },
         '0': { start: true, table: true },
         '012': { start: true, table: true },
         abc: { start: true, table: true },
         '7': { start: 'left', table: true },
         '8': { table: true },
-        '9': { start: true },
+        '9': { start: true, table: 'left' },
         '10': null,
       })
     ).toEqual({
       '95': { start: false, table: true },
       '212': { restart: true, table: false },
+      '444': { grid: false },
     });
   });
 });
@@ -76,6 +78,32 @@ describe('RadarPoleSideOverrides', () => {
     });
 
     // Back to the table for the restart only.
+    overrides.flip();
+    expect(saved()).toEqual({ '95': { start: false, table: true } });
+  });
+
+  it('keeps a standing grid correction on its own, with no table side', () => {
+    const { overrides, saved } = store();
+    // A grid has no table; the radar says it is left unless flipped.
+    overrides.setTrack(95, true, 'grid');
+
+    expect(overrides.flip()).toEqual({
+      trackId: 95,
+      situation: 'grid',
+      poleLeft: false,
+    });
+    expect(overrides.override(95, 'grid')).toBe(false);
+    expect(overrides.override(95, 'start')).toBeUndefined();
+    expect(saved()).toEqual({ '95': { grid: false } });
+
+    // A start flip later records its table side and keeps the grid one.
+    overrides.setTrack(95, true, 'start');
+    overrides.flip();
+    expect(saved()).toEqual({
+      '95': { start: false, grid: false, table: true },
+    });
+
+    overrides.setTrack(95, true, 'grid');
     overrides.flip();
     expect(saved()).toEqual({ '95': { start: false, table: true } });
   });

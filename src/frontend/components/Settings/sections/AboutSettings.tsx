@@ -113,10 +113,11 @@ export const AboutSettings = () => {
                     Radar pole-side corrections
                   </strong>
                   <br />
-                  Track IDs and the pole side you chose for a race start or a
-                  restart with the radar key, together with the side the
-                  built-in table gave, are sent at startup when your corrections
-                  change, to improve the table for everyone.
+                  Track IDs and the pole side you chose for a race start, a
+                  restart or a standing grid with the radar key, together with
+                  the side the built-in table gave, are sent shortly after your
+                  corrections change (or at the next startup), to improve the
+                  table for everyone.
                 </li>
                 <li>
                   <strong className="text-slate-300">System information</strong>

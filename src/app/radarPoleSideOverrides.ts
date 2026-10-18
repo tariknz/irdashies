@@ -1,17 +1,17 @@
-import type {
-  PoleSideSettings,
-  PoleSituation,
+import {
+  POLE_SITUATIONS,
+  type PoleSideSettings,
+  type PoleSituation,
 } from './processors/radarPoleSideSettings';
 
 /**
  * One track's corrections: the side (true: left) the player chose for a race
- * start and for a restart, and the side the table gave when they chose it.
+ * start, a restart and a standing grid, and the side the table gave for a
+ * start or restart when they chose it (a grid has no table: it is the left).
  */
-export interface PoleSideCorrection {
-  start?: boolean;
-  restart?: boolean;
-  table: boolean;
-}
+export type PoleSideCorrection = Partial<Record<PoleSituation, boolean>> & {
+  table?: boolean;
+};
 
 /** iRacing track id (as a string) -> the player's corrections there. */
 export type PoleSideOverrides = Record<string, PoleSideCorrection>;
@@ -34,14 +34,19 @@ export const parsePoleSideOverrides = (raw: unknown): PoleSideOverrides => {
       !/^[1-9]\d{0,9}$/.test(id) ||
       !value ||
       typeof value !== 'object' ||
-      typeof value.table !== 'boolean'
+      (value.table !== undefined && typeof value.table !== 'boolean')
     ) {
       continue;
     }
-    const correction: PoleSideCorrection = { table: value.table };
-    if (typeof value.start === 'boolean') correction.start = value.start;
-    if (typeof value.restart === 'boolean') correction.restart = value.restart;
-    if (correction.start !== undefined || correction.restart !== undefined) {
+    const correction: PoleSideCorrection = {};
+    if (typeof value.table === 'boolean') correction.table = value.table;
+    for (const situation of POLE_SITUATIONS) {
+      const side = (value as Record<string, unknown>)[situation];
+      if (typeof side === 'boolean') correction[situation] = side;
+    }
+    if (
+      POLE_SITUATIONS.some((situation) => correction[situation] !== undefined)
+    ) {
       overrides[id] = correction;
     }
   }
@@ -121,22 +126,29 @@ export class RadarPoleSideOverrides implements PoleSideSettings {
     const poleLeft = !current;
     // Only a real difference from the table is kept.
     const before = Object.hasOwn(stored, key) ? stored[key] : undefined;
-    const sideOf = (which: PoleSituation) =>
-      which === situation
-        ? poleLeft === tableLeft
-          ? undefined
-          : poleLeft
-        : before?.[which];
-    const start = sideOf('start');
-    const restart = sideOf('restart');
+    const sides = Object.fromEntries(
+      POLE_SITUATIONS.map((which): [PoleSituation, boolean | undefined] => [
+        which,
+        which === situation
+          ? poleLeft === tableLeft
+            ? undefined
+            : poleLeft
+          : before?.[which],
+      ])
+    ) as Record<PoleSituation, boolean | undefined>;
     const overrides: PoleSideOverrides = Object.fromEntries(
       Object.entries(stored).filter(([id]) => id !== key)
     );
-    if (start !== undefined || restart !== undefined) {
+    if (POLE_SITUATIONS.some((which) => sides[which] !== undefined)) {
       overrides[key] = {
-        ...(start !== undefined && { start }),
-        ...(restart !== undefined && { restart }),
-        table: tableLeft,
+        ...Object.fromEntries(
+          POLE_SITUATIONS.filter((which) => sides[which] !== undefined).map(
+            (which) => [which, sides[which]]
+          )
+        ),
+        ...(situation !== 'grid'
+          ? { table: tableLeft }
+          : before?.table !== undefined && { table: before.table }),
       };
     }
     this.persistence.write(overrides);

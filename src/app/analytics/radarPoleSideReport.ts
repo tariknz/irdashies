@@ -13,11 +13,17 @@ export interface RadarPoleSideReport {
     track_count: number;
     /**
      * By iRacing track id: the side (true: left) the player chose for a race
-     * start and a restart, and what the bundled table said at the time.
+     * start, a restart and a standing grid, and what the bundled table said
+     * for a start or restart at the time.
      */
     tracks: Record<
       string,
-      { start_left?: boolean; restart_left?: boolean; table_left: boolean }
+      {
+        start_left?: boolean;
+        restart_left?: boolean;
+        grid_left?: boolean;
+        table_left?: boolean;
+      }
     >;
   };
 }
@@ -36,7 +42,8 @@ export const buildRadarPoleSideReport = (
     id,
     overrides[id].start ?? null,
     overrides[id].restart ?? null,
-    overrides[id].table,
+    overrides[id].grid ?? null,
+    overrides[id].table ?? null,
   ]);
   const hash = crypto
     .createHash('sha256')
@@ -44,11 +51,12 @@ export const buildRadarPoleSideReport = (
     .digest('hex');
   const tracks: RadarPoleSideReport['properties']['tracks'] = {};
   for (const id of ids) {
-    const { start, restart, table } = overrides[id];
+    const { start, restart, grid, table } = overrides[id];
     tracks[id] = {
       ...(start !== undefined && { start_left: start }),
       ...(restart !== undefined && { restart_left: restart }),
-      table_left: table,
+      ...(grid !== undefined && { grid_left: grid }),
+      ...(table !== undefined && { table_left: table }),
     };
   }
   return {

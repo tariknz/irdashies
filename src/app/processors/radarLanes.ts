@@ -66,13 +66,11 @@ const demandFor = (carLeftRight: number): SpotterDemand | null => {
 
 export type FormationKind = 'grid' | 'pace';
 /**
- * Pole column side: on the left of a standing grid; for a pace line it
- * depends on the track, see paceFieldPoleLeft. iRacing does not say; this is
- * what its grids do. +1 means the pole is on the left, so higher columns lie
- * to the right.
+ * Pole column side: iRacing does not say, so it comes from the table, or from
+ * the player's own correction, see paceFieldPoleLeft. +1 means the pole is on
+ * the left, so higher columns lie to the right.
  */
-export const poleSign = (kind: FormationKind, pacePoleLeft: boolean): number =>
-  kind === 'grid' || pacePoleLeft ? 1 : -1;
+export const poleSign = (poleLeft: boolean): number => (poleLeft ? 1 : -1);
 
 export interface LaneFormation {
   kind: FormationKind;
@@ -114,15 +112,15 @@ export class RadarLaneTracker {
   private readonly rememberedAt = new Map<number, number>();
   private readonly drawnLane = new Map<number, number>();
   private previousTime = -1;
-  private pacePoleLeft = false;
+  private poleLeft = false;
   constructor(
     private readonly tuning: () => RadarProcessorTuning = () =>
       DEFAULT_RADAR_TUNING
   ) {}
 
-  /** Which side the pole line of a pace field is on, see paceFieldPoleLeft. */
-  setPacePoleLeft(left: boolean): void {
-    this.pacePoleLeft = left;
+  /** Which side the pole column or line is on, see paceFieldPoleLeft. */
+  setPoleLeft(left: boolean): void {
+    this.poleLeft = left;
   }
 
   reset(): void {
@@ -274,9 +272,7 @@ export class RadarLaneTracker {
     for (const car of cars) {
       const slot = formation.slots.get(car.carIdx);
       if (slot === undefined) continue;
-      const lane = clampLane(
-        slot * poleSign(formation.kind, this.pacePoleLeft)
-      );
+      const lane = clampLane(slot * poleSign(this.poleLeft));
       targets.set(car.carIdx, { lane, source: formation.kind });
       // Remembered too, so the formation fades out gently after the green.
       this.rememberedLane.set(car.carIdx, lane);

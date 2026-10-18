@@ -5,6 +5,8 @@ import { DEFAULT_RADAR_TUNING } from '../../types/widgetConfigs';
 import radarManifest from '../../types/widgets/radar';
 import rollingTelemetry from '../../../test-data/1752616787255/telemetry.json';
 import rollingSession from '../../../test-data/1752616787255/session.json';
+import standingTelemetry from '../../../test-data/1731663749009/telemetry.json';
+import standingSession from '../../../test-data/1731663749009/session.json';
 import {
   parseTrackLength,
   RADAR_MAX_RANGE_M,
@@ -529,6 +531,45 @@ describe('RadarProcessor', () => {
     const processor = new RadarProcessor();
     processor.init(rollingSession as unknown as Session);
     expect(processor.snapshot().roadLane).toBe(0);
+  });
+
+  it('puts the pole column of a standing grid on the left, and a flip moves it', () => {
+    const player: { poleLeft?: boolean } = {};
+    const poleSides = {
+      override: (_trackId: number | undefined, situation: string) =>
+        situation === 'grid' ? player.poleLeft : undefined,
+      setTrack: vi.fn(),
+    };
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(standingSession as unknown as Session);
+    const at = (time: number) =>
+      ({
+        ...standingTelemetry,
+        SessionTime: { value: [time] },
+      }) as unknown as Telemetry;
+
+    processor.onFrame(at(100));
+    expect(processor.snapshot().formation).toBe('grid');
+    expect(poleSides.setTrack).toHaveBeenLastCalledWith(
+      expect.anything(),
+      true,
+      'grid'
+    );
+    const lanes = () =>
+      processor
+        .snapshot()
+        .cars.filter((car) => car.laneSource === 'grid')
+        .map((car) => car.lane);
+    const before = lanes();
+    expect(before.length).toBeGreaterThan(0);
+    const roadBefore = processor.snapshot().roadLane;
+
+    player.poleLeft = false;
+    processor.onFrame(at(101));
+    // Everything mirrors: the cars beside us, and the road under the grid.
+    expect(lanes()).toEqual(before.map((lane) => (lane === 0 ? 0 : -lane)));
+    expect(processor.snapshot().roadLane).toBe(-roadBefore);
+    expect(processor.snapshot().poleSideNotice).toBe('right');
   });
 
   it('puts the pole line on the left on a super speedway', () => {
