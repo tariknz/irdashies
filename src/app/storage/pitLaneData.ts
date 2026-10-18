@@ -52,6 +52,7 @@ export class PitLaneDataStore {
   private timer?: ReturnType<typeof setTimeout>;
   private writing: Promise<void> = Promise.resolve();
   private dirty = false;
+  private editing = false;
   private readonly incompleteReadTracks = new Set<string>();
 
   constructor(private readonly filePath: string) {}
@@ -121,8 +122,10 @@ export class PitLaneDataStore {
   async update(
     trackId: string,
     update: Partial<PitLaneTrackData>
-  ): Promise<void> {
+  ): Promise<boolean> {
+    if (this.editing) return false;
     const { data, writable } = await this.load();
+    if (this.editing) return false;
     if (!writable)
       throw new Error(
         'Calibration file could not be read safely. Open or repair it before changing calibration.'
@@ -142,10 +145,19 @@ export class PitLaneDataStore {
         logger.error('Failed to write pitLaneData.json', safeReadError(error))
       );
     }, 250);
+    return true;
   }
 
   async clear(trackId: string): Promise<void> {
+    if (this.editing)
+      throw new Error(
+        'Reload the calibration file before resetting while editing.'
+      );
     const { data, writable } = await this.load();
+    if (this.editing)
+      throw new Error(
+        'Reload the calibration file before resetting while editing.'
+      );
     if (!writable)
       throw new Error(
         'Calibration file could not be read safely. Open or repair it before changing calibration.'
@@ -163,6 +175,14 @@ export class PitLaneDataStore {
   }
 
   async flush(): Promise<void> {
+    if (this.editing) {
+      await this.writing;
+      return;
+    }
+    await this.flushWrites();
+  }
+
+  private async flushWrites(): Promise<void> {
     if (this.timer) clearTimeout(this.timer);
     this.timer = undefined;
     if (!this.loading) return;
@@ -196,20 +216,36 @@ export class PitLaneDataStore {
 
   /** Create only if missing; opening an existing file must preserve saved edits. */
   async prepareFile(): Promise<string> {
-    await this.flush();
+    const wasEditing = this.editing;
+    // Stop new learning before draining old writes. The editor is launched
+    // only after every pending atomic rename has completed.
+    this.editing = true;
     try {
-      await fsp.access(this.filePath);
+      if (!wasEditing) await this.flushWrites();
+      try {
+        await fsp.access(this.filePath);
+      } catch (error) {
+        if (
+          !error ||
+          typeof error !== 'object' ||
+          !('code' in error) ||
+          error.code !== 'ENOENT'
+        )
+          throw error;
+        await fsp.writeFile(this.filePath, '{}\n', { flag: 'wx' });
+      }
     } catch (error) {
-      if (
-        !error ||
-        typeof error !== 'object' ||
-        !('code' in error) ||
-        error.code !== 'ENOENT'
-      )
-        throw error;
-      await fsp.writeFile(this.filePath, '{}\n', { flag: 'wx' });
+      this.editing = wasEditing;
+      throw error;
     }
     return this.filePath;
+  }
+
+  isEditing(): boolean {
+    return this.editing;
+  }
+  resumeLearning(): void {
+    this.editing = false;
   }
 
   /** Reload is deliberately strict: invalid external edits never replace good data. */
@@ -263,6 +299,7 @@ export class PitLaneDataStore {
     }
     this.incompleteReadTracks.clear();
     this.loading = Promise.resolve({ data: next, writable: true });
+    this.editing = false;
     return changes;
   }
 }
@@ -280,3 +317,5 @@ export const clearPitLaneDataForTrack = (trackId: string) =>
 export const flushPitLaneDataOnShutdown = () => store.flush();
 export const preparePitLaneDataFile = () => store.prepareFile();
 export const reloadPitLaneDataFile = () => store.reload();
+export const isPitLaneDataEditing = () => store.isEditing();
+export const resumePitLaneDataLearning = () => store.resumeLearning();

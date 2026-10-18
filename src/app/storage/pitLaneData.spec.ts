@@ -367,3 +367,81 @@ describe('reloading a repaired initial calibration file', () => {
     }
   );
 });
+
+describe('protecting external calibration edits from automatic learning', () => {
+  it('drains old atomic writes before opening and pauses every later learning write until reload', async () => {
+    await writeFile(file, JSON.stringify(original));
+    await store.update('47', { pitEntryPct: 0.91 });
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const realRename = fsp.rename.bind(fsp);
+    const rename = vi
+      .spyOn(fsp, 'rename')
+      .mockImplementationOnce(async (...args) => {
+        await gate;
+        await realRename(...args);
+      });
+    const opening = store.prepareFile();
+    const opened = vi.fn();
+    void opening.then(opened);
+    await vi.waitFor(() => expect(rename).toHaveBeenCalled());
+    expect(opened).not.toHaveBeenCalled();
+    const draining = store.flush();
+    const drained = vi.fn();
+    void draining.then(drained);
+    await Promise.resolve();
+    expect(drained).not.toHaveBeenCalled();
+    expect(await store.update('47', { pitEntryPct: 0.8 })).toBe(false);
+    release();
+    await Promise.all([opening, draining]);
+    const edited = {
+      ...original,
+      '47': { pitEntryPct: 0.7, pitExitPct: 0.03 },
+    };
+    const bytes = JSON.stringify(edited);
+    await writeFile(file, bytes);
+    expect(await store.update('47', { pitEntryPct: 0.6 })).toBe(false);
+    await expect(store.clear('47')).rejects.toThrow(
+      'before resetting while editing'
+    );
+    await store.flush();
+    expect(await readFile(file, 'utf8')).toBe(bytes);
+    await store.reload();
+    expect(store.isEditing()).toBe(false);
+    expect(await store.update('47', { pitExitPct: 0.04 })).toBe(true);
+    await store.flush();
+    expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({
+      ...edited,
+      '47': { pitEntryPct: 0.7, pitExitPct: 0.04 },
+    });
+  });
+
+  it('keeps invalid external edits protected until a valid reload succeeds', async () => {
+    await writeFile(file, JSON.stringify(original));
+    await store.get('47');
+    await store.prepareFile();
+    await writeFile(file, '{unfinished edit');
+    await expect(store.reload()).rejects.toThrow();
+    expect(store.isEditing()).toBe(true);
+    expect(await store.update('47', { pitEntryPct: 0.8 })).toBe(false);
+    await expect(store.clear('47')).rejects.toThrow();
+    await store.prepareFile();
+    await store.flush();
+    expect(await readFile(file, 'utf8')).toBe('{unfinished edit');
+    await writeFile(file, JSON.stringify(original));
+    await store.reload();
+    expect(store.isEditing()).toBe(false);
+  });
+
+  it('restores learning when preparing the editor fails', async () => {
+    await writeFile(file, JSON.stringify(original));
+    vi.spyOn(fsp, 'access').mockRejectedValueOnce(
+      Object.assign(new Error('locked'), { code: 'EACCES' })
+    );
+    await expect(store.prepareFile()).rejects.toThrow('locked');
+    expect(store.isEditing()).toBe(false);
+    expect(await store.update('47', { pitEntryPct: 0.8 })).toBe(true);
+  });
+});

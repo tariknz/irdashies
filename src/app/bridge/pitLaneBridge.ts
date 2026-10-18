@@ -6,6 +6,8 @@ import {
   updatePitLaneDataForTrack,
   preparePitLaneDataFile,
   reloadPitLaneDataFile,
+  isPitLaneDataEditing,
+  resumePitLaneDataLearning,
 } from '../storage/pitLaneData';
 import type { PitLaneBridge, Session } from '@irdashies/types';
 import type { OverlayManager } from '../overlayManager';
@@ -41,6 +43,13 @@ export const createPitLaneBridge = (
 ): PitLaneBridge => {
   const sourceId = randomUUID();
   const revisions = new Map<string, number>();
+  const registerTrack = (trackId: string): void => {
+    if (!revisions.has(trackId)) {
+      if (revisions.size >= 10000)
+        throw new Error('Too many tracked calibration records.');
+      revisions.set(trackId, 0);
+    }
+  };
   // A file reload changes several tracks at once. Keep reads, saves and resets
   // behind the same barrier so none can restore the pre-edit calibration.
   let pending: Promise<unknown> = Promise.resolve();
@@ -68,12 +77,15 @@ export const createPitLaneBridge = (
   return {
     async getPitLaneData(trackId) {
       if (!isTrackId(trackId)) throw new TypeError('Invalid pit lane track ID');
-      return serialize(async () => ({
-        trackId,
-        sourceId,
-        revision: revisions.get(trackId) ?? 0,
-        data: await getPitLaneDataForTrack(trackId),
-      }));
+      return serialize(async () => {
+        registerTrack(trackId);
+        return {
+          trackId,
+          sourceId,
+          revision: revisions.get(trackId) ?? 0,
+          data: await getPitLaneDataForTrack(trackId),
+        };
+      });
     },
     async updatePitLaneData(trackId, data, revision, savedSourceId) {
       if (
@@ -86,13 +98,13 @@ export const createPitLaneBridge = (
         throw new TypeError('Invalid pit lane update');
       }
       return serialize(async () => {
+        registerTrack(trackId);
         if (
           savedSourceId !== sourceId ||
           revision !== (revisions.get(trackId) ?? 0)
         )
           return false;
-        await updatePitLaneDataForTrack(trackId, data);
-        return true;
+        return updatePitLaneDataForTrack(trackId, data);
       });
     },
     async getCurrentTrackPitLaneInfo() {
@@ -102,11 +114,16 @@ export const createPitLaneBridge = (
       return {
         ...track,
         hasCalibration: data?.pitEntryPct != null || data?.pitExitPct != null,
+        learningPaused: isPitLaneDataEditing(),
       };
     },
     async resetPitLaneData(trackId) {
       if (!isTrackId(trackId)) throw new TypeError('Invalid pit lane track ID');
       await serialize(async () => {
+        if (isPitLaneDataEditing())
+          throw new Error(
+            'Reload the calibration file before resetting while editing.'
+          );
         if (currentTrack()?.trackId !== trackId)
           throw new Error('The current track changed. Refresh and try again.');
         await clearPitLaneDataForTrack(trackId);
@@ -122,18 +139,38 @@ export const createPitLaneBridge = (
     },
     async openPitLaneDataFile() {
       await serialize(async () => {
-        const filePath = await preparePitLaneDataFile();
-        const error = await shell.openPath(filePath);
-        if (error)
-          throw new Error(
-            'Could not open calibration file. Check your default JSON application.'
-          );
+        const wasEditing = isPitLaneDataEditing();
+        try {
+          const filePath = await preparePitLaneDataFile();
+          const error = await shell.openPath(filePath);
+          if (error)
+            throw new Error(
+              'Could not open calibration file. Check your default JSON application.'
+            );
+        } catch (error) {
+          if (!wasEditing) resumePitLaneDataLearning();
+          throw error;
+        }
       });
     },
     async reloadPitLaneDataFile() {
       await serialize(async () => {
-        const changes = await reloadPitLaneDataFile();
-        for (const { trackId, data } of changes) {
+        const wasEditing = isPitLaneDataEditing();
+        const changes = new Map(
+          (await reloadPitLaneDataFile()).map(({ trackId, data }) => [
+            trackId,
+            data,
+          ])
+        );
+        // Even an unchanged file must replace values learned only in renderer
+        // memory while saves were paused, and reject late pre-editor saves.
+        if (wasEditing)
+          for (const trackId of revisions.keys()) {
+            if (!changes.has(trackId))
+              changes.set(trackId, await getPitLaneDataForTrack(trackId));
+          }
+        for (const [trackId, data] of changes) {
+          registerTrack(trackId);
           const revision = (revisions.get(trackId) ?? 0) + 1;
           revisions.set(trackId, revision);
           channelBus.publish('pit-lane.reset', {

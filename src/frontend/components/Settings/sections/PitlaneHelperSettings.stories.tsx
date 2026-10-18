@@ -4,6 +4,7 @@ import { mockDashboardBridge } from '@irdashies/storybook';
 import type { PitLaneBridge } from '@irdashies/types';
 import { PitlaneHelperSettings } from './PitlaneHelperSettings';
 
+let learningPaused = false;
 const pitLaneBridge: PitLaneBridge = {
   getPitLaneData: async (trackId) => ({
     trackId,
@@ -16,10 +17,15 @@ const pitLaneBridge: PitLaneBridge = {
     trackId: '47',
     trackName: 'WeatherTech Raceway Laguna Seca',
     hasCalibration: true,
+    learningPaused,
   }),
   resetPitLaneData: async () => undefined,
-  openPitLaneDataFile: async () => undefined,
-  reloadPitLaneDataFile: async () => undefined,
+  openPitLaneDataFile: async () => {
+    learningPaused = true;
+  },
+  reloadPitLaneDataFile: async () => {
+    learningPaused = false;
+  },
 };
 
 const meta = {

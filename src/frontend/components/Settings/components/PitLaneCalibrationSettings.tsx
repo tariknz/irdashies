@@ -118,6 +118,9 @@ export const PitLaneCalibrationSettings = ({
     try {
       await execute();
       if (action === 'reload') {
+        setTrack((current) =>
+          current ? { ...current, learningPaused: false } : current
+        );
         setMessage(
           'Calibration file reloaded. Saved edits are now applied to the overlays.'
         );
@@ -129,8 +132,11 @@ export const PitLaneCalibrationSettings = ({
           );
         }
       } else {
+        setTrack((current) =>
+          current ? { ...current, learningPaused: true } : current
+        );
         setMessage(
-          'Opened pitLaneData.json. Save your changes, then choose Reload file.'
+          'Opened pitLaneData.json. Save your changes, then choose Reload file. Automatic learning stays paused until a valid reload.'
         );
       }
     } catch {
@@ -148,9 +154,11 @@ export const PitLaneCalibrationSettings = ({
     ? 'Checking the current track…'
     : !track
       ? 'Connect to a simulator session to reset calibration for the current track.'
-      : !track.hasCalibration
-        ? 'No learned calibration for this track. Pit entry and exit are learned as cars use the pit lane.'
-        : 'Clear learned pit entry and exit positions for this track. Other tracks are kept.';
+      : track.learningPaused
+        ? 'Automatic learning is paused while editing. Save changes, then Reload file to resume learning and enable Reset.'
+        : !track.hasCalibration
+          ? 'No learned calibration for this track. Pit entry and exit are learned as cars use the pit lane.'
+          : 'Clear learned pit entry and exit positions for this track. Other tracks are kept.';
 
   return (
     <SettingsSection title="Pit Lane Calibration">
@@ -163,7 +171,9 @@ export const PitLaneCalibrationSettings = ({
         </div>
         <button
           type="button"
-          disabled={loading || busy || !track?.hasCalibration}
+          disabled={
+            loading || busy || !track?.hasCalibration || track.learningPaused
+          }
           onClick={() => setConfirmTrack(track)}
           className="shrink-0 rounded-md bg-slate-600 px-3 py-1 text-sm text-slate-200 transition-colors hover:bg-slate-500 disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -177,7 +187,8 @@ export const PitLaneCalibrationSettings = ({
           </h4>
           <p className="mt-1 text-sm text-slate-500">
             View or edit pitLaneData.json. Positions are lap fractions from 0 to
-            1, or null. Save changes, then Reload file to apply them.
+            1, or null. Opening pauses automatic learning. Save changes, then
+            Reload file to apply them and resume learning.
           </p>
           <div className="mt-3 flex gap-2">
             {bridge.openPitLaneDataFile && (

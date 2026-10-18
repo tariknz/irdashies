@@ -3,6 +3,7 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 export default {
   id: 'standings',
   sessionData: true,
+  pitLaneData: true,
   channels: [
     'lap-times.snapshot',
     'reference-laps.snapshot',

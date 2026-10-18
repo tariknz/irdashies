@@ -242,3 +242,39 @@ describe('calibration feedback scope and refresh failures', () => {
     }
   );
 });
+
+describe('calibration editing pause in settings', () => {
+  it('disables Reset and explains paused learning from Open until a valid Reload', async () => {
+    const bridge = makeBridge();
+    let learningPaused = false;
+    vi.mocked(bridge.getCurrentTrackPitLaneInfo).mockImplementation(
+      async () => ({ ...current, learningPaused })
+    );
+    bridge.openPitLaneDataFile = vi.fn(async () => {
+      learningPaused = true;
+    });
+    bridge.reloadPitLaneDataFile = vi.fn(async () => {
+      learningPaused = false;
+    });
+    render(<PitLaneCalibrationSettings bridge={bridge} />);
+    await screen.findByText('Laguna Seca');
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Open calibration file' })
+    );
+    await screen.findByText(/Automatic learning is paused while editing/);
+    expect(
+      screen.getByRole('button', { name: 'Reset calibration' })
+    ).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Automatic learning stays paused'
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Reload file' }));
+    await screen.findByText(/Saved edits are now applied/);
+    expect(
+      screen.getByRole('button', { name: 'Reset calibration' })
+    ).toBeEnabled();
+    expect(
+      screen.queryByText(/Automatic learning is paused while editing/)
+    ).not.toBeInTheDocument();
+  });
+});

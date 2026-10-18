@@ -32,4 +32,6 @@ export interface CurrentTrackPitLaneInfo {
   trackId: string;
   trackName: string;
   hasCalibration: boolean;
+  /** Native editing workflow pauses automatic saves until a valid reload. */
+  learningPaused?: boolean;
 }

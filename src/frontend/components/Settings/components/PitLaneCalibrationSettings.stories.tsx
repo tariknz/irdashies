@@ -4,6 +4,7 @@ import { PitLaneCalibrationSettings } from './PitLaneCalibrationSettings';
 
 const mockBridge = (connected: boolean, learned: boolean): PitLaneBridge => {
   let hasCalibration = learned;
+  let learningPaused = false;
   return {
     getPitLaneData: async (trackId) => ({
       trackId,
@@ -18,13 +19,18 @@ const mockBridge = (connected: boolean, learned: boolean): PitLaneBridge => {
             trackId: '47',
             trackName: 'WeatherTech Raceway Laguna Seca',
             hasCalibration,
+            learningPaused,
           }
         : null,
     resetPitLaneData: async () => {
       hasCalibration = false;
     },
-    openPitLaneDataFile: async () => undefined,
-    reloadPitLaneDataFile: async () => undefined,
+    openPitLaneDataFile: async () => {
+      learningPaused = true;
+    },
+    reloadPitLaneDataFile: async () => {
+      learningPaused = false;
+    },
   };
 };
 

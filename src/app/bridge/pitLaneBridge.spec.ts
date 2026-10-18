@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   prepare: vi.fn(),
   reload: vi.fn(),
   openPath: vi.fn(),
+  editing: false,
+  resume: vi.fn(),
 }));
 vi.mock('node:crypto', () => ({ randomUUID: () => 'test-source' }));
 vi.mock('electron', () => ({
@@ -23,6 +25,8 @@ vi.mock('../storage/pitLaneData', () => ({
   clearPitLaneDataForTrack: mocks.clear,
   preparePitLaneDataFile: mocks.prepare,
   reloadPitLaneDataFile: mocks.reload,
+  isPitLaneDataEditing: () => mocks.editing,
+  resumePitLaneDataLearning: mocks.resume,
 }));
 
 let data: Map<string, PitLaneTrackData>;
@@ -35,20 +39,32 @@ let bridge: ReturnType<typeof createPitLaneBridge>;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.prepare.mockResolvedValue('/mock/userData/pitLaneData.json');
-  mocks.reload.mockResolvedValue([]);
+  mocks.editing = false;
+  mocks.prepare.mockImplementation(async () => {
+    mocks.editing = true;
+    return '/mock/userData/pitLaneData.json';
+  });
+  mocks.reload.mockImplementation(async () => {
+    mocks.editing = false;
+    return [];
+  });
+  mocks.resume.mockImplementation(() => {
+    mocks.editing = false;
+  });
   mocks.openPath.mockResolvedValue('');
   data = new Map([
     ['47', { pitEntryPct: 0.92, pitExitPct: 0.05 }],
     ['181', { pitEntryPct: 0.98, pitExitPct: 0.06 }],
   ]);
   mocks.get.mockImplementation(async (id) => data.get(id) ?? null);
-  mocks.update.mockImplementation(async (id, update) =>
+  mocks.update.mockImplementation(async (id, update) => {
+    if (mocks.editing) return false;
     data.set(id, {
       ...(data.get(id) ?? { pitEntryPct: null, pitExitPct: null }),
       ...update,
-    })
-  );
+    });
+    return true;
+  });
   mocks.clear.mockImplementation(async (id) => data.delete(id));
   manager = {
     getLatestSessionData: vi.fn(() => ({
@@ -68,6 +84,7 @@ describe('pit lane reset bridge', () => {
       trackId: '47',
       trackName: 'Laguna Seca',
       hasCalibration: true,
+      learningPaused: false,
     });
     manager.getRunningState.mockReturnValue(false);
     expect(await bridge.getCurrentTrackPitLaneInfo()).toBeNull();
@@ -309,5 +326,96 @@ describe('pit lane reset bridge', () => {
     await reloading;
     expect(await read).toMatchObject({ revision: 1, data: null });
     expect(await save).toBe(false);
+  });
+});
+
+describe('native calibration editing lifecycle', () => {
+  it('pauses reset and reports the reason while the editor workflow is active', async () => {
+    await bridge.openPitLaneDataFile?.();
+    expect((await bridge.getCurrentTrackPitLaneInfo())?.learningPaused).toBe(
+      true
+    );
+    await expect(bridge.resetPitLaneData('47')).rejects.toThrow(
+      'before resetting while editing'
+    );
+    expect(mocks.clear).not.toHaveBeenCalled();
+  });
+
+  it('restores learning when the first native open fails, but preserves an existing edit session', async () => {
+    mocks.openPath.mockResolvedValueOnce('No app');
+    await expect(bridge.openPitLaneDataFile?.()).rejects.toThrow(
+      'Could not open'
+    );
+    expect(mocks.editing).toBe(false);
+    expect(mocks.resume).toHaveBeenCalledOnce();
+    await bridge.openPitLaneDataFile?.();
+    mocks.openPath.mockResolvedValueOnce('No app');
+    await expect(bridge.openPitLaneDataFile?.()).rejects.toThrow(
+      'Could not open'
+    );
+    expect(mocks.editing).toBe(true);
+    expect(mocks.resume).toHaveBeenCalledOnce();
+  });
+
+  it('keeps learning paused when a reload fails', async () => {
+    await bridge.openPitLaneDataFile?.();
+    mocks.reload.mockRejectedValueOnce(new Error('Invalid JSON'));
+    await expect(bridge.reloadPitLaneDataFile?.()).rejects.toThrow(
+      'Invalid JSON'
+    );
+    expect(mocks.editing).toBe(true);
+    expect(
+      await bridge.updatePitLaneData(
+        '47',
+        { pitEntryPct: 0.8 },
+        0,
+        'test-source'
+      )
+    ).toBe(false);
+  });
+
+  it('invalidates every served track on resume even if the file did not change', async () => {
+    await bridge.getPitLaneData('47');
+    await bridge.getPitLaneData('181');
+    const publish = vi.spyOn(bus, 'publish');
+    await bridge.openPitLaneDataFile?.();
+    expect(
+      await bridge.updatePitLaneData(
+        '47',
+        { pitEntryPct: 0.8 },
+        0,
+        'test-source'
+      )
+    ).toBe(false);
+    await bridge.reloadPitLaneDataFile?.();
+    expect(mocks.editing).toBe(false);
+    expect(publish).toHaveBeenCalledWith('pit-lane.reset', {
+      trackId: '47',
+      sourceId: 'test-source',
+      revision: 1,
+      data: data.get('47'),
+    });
+    expect(publish).toHaveBeenCalledWith('pit-lane.reset', {
+      trackId: '181',
+      sourceId: 'test-source',
+      revision: 1,
+      data: data.get('181'),
+    });
+    expect(
+      await bridge.updatePitLaneData(
+        '47',
+        { pitEntryPct: 0.8 },
+        0,
+        'test-source'
+      )
+    ).toBe(false);
+    expect(
+      await bridge.updatePitLaneData(
+        '47',
+        { pitEntryPct: 0.8 },
+        1,
+        'test-source'
+      )
+    ).toBe(true);
   });
 });
