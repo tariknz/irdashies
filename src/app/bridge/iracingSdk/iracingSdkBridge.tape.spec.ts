@@ -40,6 +40,7 @@ vi.mock('../../storage/referenceLaps', () => ({
 vi.mock('../../storage/radarTuning', () => ({ getRadarTuning: vi.fn() }));
 vi.mock('../../storage/radarPoleSideOverrides', () => ({
   radarPoleSideOverrides: {},
+  loadRadarPoleSideOverrides: async () => undefined,
 }));
 vi.mock('../../perfMetrics', () => ({
   TelemetryPerfMetrics: class {

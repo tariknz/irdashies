@@ -1,5 +1,4 @@
 import { app } from 'electron';
-import { readFileSync } from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import logger from '../logger';
@@ -48,25 +47,30 @@ export const flushRadarPoleSideOverrides = (): Promise<void> => {
   if (writeTimer) {
     clearTimeout(writeTimer);
     writeTimer = null;
-    return queueWrite();
   }
-  return writeInFlight;
+  // A write that failed left its correction pending with no timer.
+  return writeInFlight.then(() => (pending ? queueWrite() : undefined));
+};
+
+let stored: unknown;
+
+/**
+ * Reads the file ahead of the radar, which looks corrections up synchronously
+ * and so must not be created before this resolves.
+ */
+export const loadRadarPoleSideOverrides = async (): Promise<void> => {
+  try {
+    stored = JSON.parse(await fsp.readFile(filePath(), 'utf8')) as unknown;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      logger.warn('[RadarPoleSide] Failed to read', filePath(), error);
+    }
+  }
 };
 
 /** The player's pole side corrections, kept in a small file of their own. */
 export const radarPoleSideOverrides = new RadarPoleSideOverrides({
-  // shortcut: one sync read of a tiny file, on first use; make it async if
-  // the override lookup ever becomes awaitable.
-  read: () => {
-    try {
-      return JSON.parse(readFileSync(filePath(), 'utf8')) as unknown;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logger.warn('[RadarPoleSide] Failed to read', filePath(), error);
-      }
-      return undefined;
-    }
-  },
+  read: () => stored,
   write: (overrides) => {
     pending = overrides;
     if (writeTimer) clearTimeout(writeTimer);
