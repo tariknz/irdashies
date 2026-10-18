@@ -20,7 +20,6 @@ Install the Windows .exe and run it. The application will automatically update w
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [What's new in v2.0.0](#whats-new-in-v200)
 - [Supported simulators](#supported-simulators)
 - [Available overlays](#available-overlays)
 - [Prerequisites](#prerequisites-for-development)
@@ -41,14 +40,7 @@ Install the Windows .exe and run it. The application will automatically update w
 
 This project is built with React and Electron and retrieves live telemetry from iRacing and Le Mans Ultimate to power configurable overlays and race utilities.
 
-## What's new in v2.0.0
-
-- **Le Mans Ultimate beta:** Automatic simulator detection and an initial set of supported overlays alongside iRacing.
-- **More driving tools:** Lap Trace with imported reference laps and braking cues, Car Systems, a standalone Shift Light, and a close-range Radar with hazard warnings.
-- **Broadcast overlays:** A TV-style standings tower, scrolling ticker, event alerts, weather panel, and podium for OBS streams.
-- **Flexible layouts:** Arrange Input components freely, detach the gear indicator, scale each widget independently, and keep separate desktop and browser layouts per profile.
-- **Automatic profiles:** Switch layouts by session type or when spotting, with keyboard and controller shortcuts.
-- **The Gantry:** Dock fuel and track-map panels, review recorded incidents during replays, and keep final results and lap graphs after the simulator closes.
+See the [latest release notes](https://github.com/tariknz/irdashies/releases/latest) for the latest updates.
 
 ## Supported simulators
 
