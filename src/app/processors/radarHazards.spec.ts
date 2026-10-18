@@ -186,6 +186,14 @@ describe('RadarHazardTracker', () => {
     expect(field.run(0.2, { speed: 50 })).toEqual([]);
   });
 
+  it('forgets a drop once the car keeps moving above a crawl for 5 s', () => {
+    const field = new Field();
+    field.run(5);
+    field.run(1, { speed: 2 });
+    expect(field.run(4, { speed: 35 })).toHaveLength(1);
+    expect(field.run(2, { speed: 35 })).toEqual([]);
+  });
+
   it('shows an excursion, then the rejoin, then nothing', () => {
     const field = new Field();
     field.run(5);

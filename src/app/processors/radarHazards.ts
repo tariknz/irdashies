@@ -32,6 +32,8 @@ const CRAWL_MS = 12;
 const SHEDDING_SHARE = 0.85;
 /** Back above this share of the speed before a drop, the car is racing again. */
 const RECOVER_SHARE = 0.75;
+/** Seconds a car must keep moving above CRAWL_MS before a drop is forgotten. */
+const DROP_FORGET_S = 5;
 /** Seconds a car must stay slow before it is reported. */
 const SLOW_HOLD_S = 1;
 /** Seconds after a sudden drop before it is reported, to skip a single bad frame. */
@@ -58,6 +60,8 @@ interface CarHazardState {
   /** Speed the car had before a sudden drop, or -1 while it has not dropped. */
   droppedFrom: number;
   droppedAt: number;
+  /** Session time the car last got above CRAWL_MS since the drop, or -1. */
+  movingSince: number;
   /** Session time the car was last below STOPPED_MS, or -1 while it moves. */
   stoppedSince: number;
   /** Session time the car was last slow for the focus car, or -1. */
@@ -79,6 +83,7 @@ const freshState = (): CarHazardState => ({
   bucketAt: -1,
   droppedFrom: -1,
   droppedAt: -1,
+  movingSince: -1,
   stoppedSince: -1,
   slowSince: -1,
   offSince: -1,
@@ -221,11 +226,18 @@ export class RadarHazardTracker {
     ) {
       state.droppedFrom = state.peak;
       state.droppedAt = time;
-    } else if (
-      state.droppedFrom >= 0 &&
-      speed >= state.droppedFrom * RECOVER_SHARE
-    ) {
-      state.droppedFrom = -1;
+      state.movingSince = -1;
+    } else if (state.droppedFrom >= 0) {
+      // Still driving, though not back up to speed: the drop is over after a
+      // while and the ordinary slow rule judges the car.
+      if (speed < CRAWL_MS) state.movingSince = -1;
+      else if (state.movingSince < 0) state.movingSince = time;
+      if (
+        speed >= state.droppedFrom * RECOVER_SHARE ||
+        (state.movingSince >= 0 && time - state.movingSince >= DROP_FORGET_S)
+      ) {
+        state.droppedFrom = -1;
+      }
     }
 
     const off = surface === TrackLocation.OffTrack;
