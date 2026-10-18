@@ -60,6 +60,13 @@ describe('useGearFlash', () => {
     expect(result.current).toBeUndefined();
   });
 
+  it('does not flash the first gear after a session boundary', () => {
+    const { result, rerender } = setup(5);
+    rerender({ g: undefined, e: true });
+    rerender({ g: 1, e: true });
+    expect(result.current).toBeUndefined();
+  });
+
   it('clears even when neutral arrives during the flash', () => {
     const { result, rerender } = setup(3);
     rerender({ g: 4, e: true });

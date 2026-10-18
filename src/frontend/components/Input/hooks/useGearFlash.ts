@@ -15,6 +15,8 @@ export const useGearFlash = (
   const [flash, setFlash] = useState<{ up: boolean }>();
 
   useEffect(() => {
+    // Undefined means a session boundary: forget the baseline so the new grid doesn't flash.
+    if (gear === undefined) prev.current = undefined;
     // Neutral/reverse (<1) are not a shift, so pit entry and launch don't flash.
     if (gear === undefined || gear < 1) {
       setFlash(undefined);
