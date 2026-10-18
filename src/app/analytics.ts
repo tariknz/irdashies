@@ -11,11 +11,19 @@ import type ElectronLog from 'electron-log';
 import type { LogMessage } from 'electron-log';
 import { readPitLaneCalibrationForAnalytics } from './analytics/pitLaneCalibration';
 import {
+  MAX_POLE_SIDE_PROPERTIES_BYTES,
+  buildRadarPoleSideReport,
+} from './analytics/radarPoleSideReport';
+import { radarPoleSideOverrides } from './storage/radarPoleSideOverrides';
+import {
   readPitLaneAnalyticsCheckpoint,
   writePitLaneAnalyticsCheckpoint,
 } from './storage/pitLaneAnalyticsCheckpoint';
 
 declare const POSTHOG_KEY: string;
+
+/** Hash of the last radar pole side report PostHog acknowledged. */
+const POLE_SIDE_HASH_KEY = 'radarPoleSideReportHash';
 
 const DEDUP_WINDOW_MS = 60 * 60 * 1000;
 const DEDUP_KEY_LENGTH = 30;
@@ -80,6 +88,7 @@ export class Analytics {
   private provider: AnalyticsProvider | null = null;
   private pitLaneCalibrationAttempted = false;
   private pitLaneCalibrationTask: Promise<void> | undefined;
+  private radarPoleSideTask: Promise<void> | undefined;
 
   constructor(provider?: AnalyticsProvider) {
     if (provider) {
@@ -214,6 +223,56 @@ export class Analytics {
     ).catch(() => {
       logger.warn('[Analytics] Could not publish pit lane calibration');
     });
+    // After the pit lane report, so startup does one thing at a time.
+    this.radarPoleSideTask ??= this.pitLaneCalibrationTask.then(() =>
+      this.captureRadarPoleSides(userId, version)
+    );
+  }
+
+  waitForRadarPoleSideUpload(): Promise<void> {
+    return this.radarPoleSideTask ?? Promise.resolve();
+  }
+
+  /**
+   * Reports the pole sides the player corrected with the radar key, once per
+   * change, in the background. A revert to the table is reported too, but
+   * nothing is sent for an installation that never corrected anything.
+   */
+  private async captureRadarPoleSides(
+    userId: string,
+    version: string
+  ): Promise<void> {
+    try {
+      if (!this.provider || getAnalyticsOptOut()) return;
+      const report = buildRadarPoleSideReport(
+        radarPoleSideOverrides.snapshot(),
+        version
+      );
+      const stored = readData<unknown>(POLE_SIDE_HASH_KEY);
+      const last =
+        typeof stored === 'string' && /^[0-9a-f]{64}$/.test(stored)
+          ? stored
+          : undefined;
+      if (report.properties.track_count === 0 && last === undefined) return;
+      if (last === report.hash) return;
+      if (
+        Buffer.byteLength(JSON.stringify(report.properties), 'utf8') >
+        MAX_POLE_SIDE_PROPERTIES_BYTES
+      ) {
+        logger.warn('[Analytics] Skipping oversized radar pole side report');
+        return;
+      }
+      await this.provider.captureConfirmed({
+        distinctId: userId,
+        event: 'radar_pole_side',
+        uuid: crypto.randomUUID(),
+        properties: report.properties,
+      });
+      // Recorded only after PostHog acknowledged it, so a failure retries.
+      if (!getAnalyticsOptOut()) writeData(POLE_SIDE_HASH_KEY, report.hash);
+    } catch {
+      logger.warn('[Analytics] Could not publish radar pole side report');
+    }
   }
 
   waitForCalibrationUpload(): Promise<void> {

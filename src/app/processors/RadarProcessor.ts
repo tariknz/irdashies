@@ -27,6 +27,7 @@ import { RadarHazardTracker } from './radarHazards';
 import {
   NO_POLE_SIDE_SETTINGS,
   type PoleSideSettings,
+  type PoleSituation,
 } from './radarPoleSideSettings';
 import { wrapDelta } from './radarMath';
 
@@ -129,6 +130,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   /** The side the table gives, and the side in use (the player's wins). */
   private tablePoleLeft = false;
   private poleLeft = false;
+  /** A race start or a restart: the player corrects each on its own. */
+  private situation: PoleSituation = 'start';
   /** Session time until which the radar says which side it flipped to. */
   private poleNoticeUntil = -Infinity;
 
@@ -154,8 +157,11 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       session?.WeekendInfo?.TrackName,
       trackType !== '' && !/road|rally/i.test(trackType)
     );
-    this.poleSides.setTrack(this.trackId, this.tablePoleLeft);
-    this.poleLeft = this.poleSides.override(this.trackId) ?? this.tablePoleLeft;
+    this.situation = 'start';
+    this.poleSides.setTrack(this.trackId, this.tablePoleLeft, this.situation);
+    this.poleLeft =
+      this.poleSides.override(this.trackId, this.situation) ??
+      this.tablePoleLeft;
     this.lanes.setPacePoleLeft(this.poleLeft);
     this.poleNoticeUntil = -Infinity;
     const options = session?.WeekendInfo?.WeekendOptions;
@@ -178,7 +184,10 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     const pcts = valuesOf(frame, 'CarIdxLapDistPct');
     const time = scalarNumber(frame, 'SessionTime');
     this.updateSpeeds(pcts, time);
-    this.applyPoleSide(time);
+    this.applyPoleSide(
+      time,
+      scalarNumber(frame, 'PaceMode', PaceMode.NotPacing)
+    );
 
     const camCarIdx = scalarNumber(frame, 'CamCarIdx');
     const focus =
@@ -365,12 +374,24 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
    * Follows the player's own pole side for this track, which a keybinding can
    * change at any time, and says so on the radar for a few seconds.
    */
-  private applyPoleSide(time: number): void {
-    const side = this.poleSides.override(this.trackId) ?? this.tablePoleLeft;
+  private applyPoleSide(time: number, paceMode: number): void {
+    const situation: PoleSituation =
+      paceMode === PaceMode.SingleFileRestart ||
+      paceMode === PaceMode.DoubleFileRestart
+        ? 'restart'
+        : 'start';
+    const changedSituation = situation !== this.situation;
+    if (changedSituation) {
+      this.situation = situation;
+      this.poleSides.setTrack(this.trackId, this.tablePoleLeft, situation);
+    }
+    const side =
+      this.poleSides.override(this.trackId, situation) ?? this.tablePoleLeft;
     if (side === this.poleLeft) return;
     this.poleLeft = side;
     this.lanes.setPacePoleLeft(side);
-    this.poleNoticeUntil = time + POLE_NOTICE_S;
+    // Only a key press is worth a message, not the situation changing.
+    if (!changedSituation) this.poleNoticeUntil = time + POLE_NOTICE_S;
   }
 
   snapshot(): RadarSnapshot {

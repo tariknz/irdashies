@@ -109,6 +109,16 @@ export const AboutSettings = () => {
                   detection.
                 </li>
                 <li>
+                  <strong className="text-slate-300">
+                    Radar pole-side corrections
+                  </strong>
+                  <br />
+                  Track IDs and the pole side you chose for a race start or a
+                  restart with the radar key, together with the side the
+                  built-in table gave, are sent at startup when your corrections
+                  change, to improve the table for everyone.
+                </li>
+                <li>
                   <strong className="text-slate-300">System information</strong>
                   <br />
                   Including operating system, CPU, memory, and screen

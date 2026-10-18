@@ -416,7 +416,8 @@ describe('RadarProcessor', () => {
   it('follows the pole side the player set, and says so for a moment', () => {
     const player: { poleLeft?: boolean } = {};
     const poleSides = {
-      override: () => player.poleLeft,
+      override: (_trackId: number | undefined, situation: string) =>
+        situation === 'start' ? player.poleLeft : undefined,
       setTrack: vi.fn(),
     };
     const session = structuredClone(rollingSession) as unknown as Session;
@@ -424,7 +425,7 @@ describe('RadarProcessor', () => {
     session.WeekendInfo.TrackName = 'limerock 2019 gp';
     const processor = new RadarProcessor(undefined, poleSides);
     processor.init(session);
-    expect(poleSides.setTrack).toHaveBeenCalledWith(353, false);
+    expect(poleSides.setTrack).toHaveBeenCalledWith(353, false, 'start');
 
     const base = rollingTelemetry as unknown as Record<
       string,
@@ -455,6 +456,39 @@ describe('RadarProcessor', () => {
 
     processor.onFrame(at(105));
     expect(processor.snapshot().poleSideNotice).toBeNull();
+  });
+
+  it('keeps the start and the restart apart, saying nothing when only the situation changes', () => {
+    const player: { restartLeft?: boolean } = { restartLeft: true };
+    const poleSides = {
+      override: (_trackId: number | undefined, situation: string) =>
+        situation === 'restart' ? player.restartLeft : undefined,
+      setTrack: vi.fn(),
+    };
+    const session = structuredClone(rollingSession) as unknown as Session;
+    session.WeekendInfo.TrackID = 353;
+    session.WeekendInfo.TrackName = 'limerock 2019 gp';
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(session);
+
+    const frame = (time: number, paceMode: number) =>
+      ({
+        ...rollingTelemetry,
+        SessionTime: { value: [time] },
+        PaceMode: { value: [paceMode] },
+      }) as unknown as Telemetry;
+
+    // A rolling start: no correction, the table's right-hand pole.
+    processor.onFrame(frame(100, 1));
+    expect(poleSides.setTrack).toHaveBeenLastCalledWith(353, false, 'start');
+
+    // The restart has its own correction; nobody pressed anything.
+    processor.onFrame(frame(101, 3));
+    expect(poleSides.setTrack).toHaveBeenLastCalledWith(353, false, 'restart');
+    expect(processor.snapshot().poleSideNotice).toBeNull();
+    expect(
+      processor.snapshot().cars.some((car) => car.laneSource === 'pace')
+    ).toBe(true);
   });
 
   it('puts the pole line on the left on a super speedway', () => {
