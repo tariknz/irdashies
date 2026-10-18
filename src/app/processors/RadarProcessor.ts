@@ -13,9 +13,10 @@ import {
   type RadarProcessorTuning,
 } from '@irdashies/types';
 import type { TelemetryProcessor } from './TelemetryProcessor';
-import { RadarLaneTracker } from './radarLanes';
+import { RadarLaneTracker, separateInLaneCars } from './radarLanes';
 import {
   computeFormation,
+  paceFieldPoleLeft,
   PaceMode,
   parseGridPositions,
   parseStartingGrid,
@@ -140,7 +141,12 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     // TrackType is "road course", "short track", "super speedway", "dirt oval"
     // and so on; anything that is not road racing is an oval
     const trackType = session?.WeekendInfo?.TrackType ?? '';
-    this.lanes.setOval(trackType !== '' && !/road|rally/i.test(trackType));
+    this.lanes.setPacePoleLeft(
+      paceFieldPoleLeft(
+        session?.WeekendInfo?.TrackName,
+        trackType !== '' && !/road|rally/i.test(trackType)
+      )
+    );
     const options = session?.WeekendInfo?.WeekendOptions;
     this.grid = {
       standingStart: options?.StandingStart === 1,
@@ -238,6 +244,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       }
       cars.sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist));
       this.assignLanes(frame, time, focus, isOnTrack, cars, formation);
+      separateInLaneCars(cars);
     }
 
     // The pedals are the player's, so they say nothing about a camera car.

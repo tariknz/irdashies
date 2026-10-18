@@ -294,6 +294,59 @@ const drawCarBody = (
   ctx.restore();
 };
 
+const FOLLOW_DASH = [6, 5];
+
+/**
+ * Ends of the line from our car to the one we follow, each pulled in by half
+ * a car so it runs nose to tail, or null when the cars nearly touch.
+ */
+export const followLineEnds = (
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  fromHalfLength: number,
+  toHalfLength: number
+) => {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const distance = Math.hypot(dx, dy);
+  if (distance <= fromHalfLength + toHalfLength + 2) return null;
+  const ux = dx / distance;
+  const uy = dy / distance;
+  return {
+    x1: from.x + ux * fromHalfLength,
+    y1: from.y + uy * fromHalfLength,
+    x2: to.x - ux * toHalfLength,
+    y2: to.y - uy * toHalfLength,
+  };
+};
+
+/** Dashed line tying our car to the one we have to hold station behind. */
+const drawFollowLine = (
+  ctx: CanvasRenderingContext2D,
+  centre: number,
+  target: { x: number; y: number },
+  playerLength: number,
+  targetLength: number
+) => {
+  const ends = followLineEnds(
+    { x: centre, y: centre },
+    target,
+    playerLength / 2,
+    targetLength / 2
+  );
+  if (!ends) return;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(ends.x1, ends.y1);
+  ctx.lineTo(ends.x2, ends.y2);
+  ctx.setLineDash(FOLLOW_DASH);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = FOLLOW_COLOR;
+  ctx.globalAlpha = 0.85;
+  ctx.stroke();
+  ctx.restore();
+};
+
 const drawFollowOutline = (
   ctx: CanvasRenderingContext2D,
   length: number,
@@ -1162,12 +1215,14 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
     const car = scene.cars.find((c) => c.carIdx === follow.carIdx);
     if (car) {
       projector.project(car.dist, car.lateral, pose);
+      drawFollowLine(ctx, centre, pose, length, car.length * pixelsPerMetre);
       drawFollowOutline(
         ctx,
         car.length * pixelsPerMetre,
         car.width * pixelsPerMetre
       );
     } else {
+      drawFollowLine(ctx, centre, pose, length, length);
       drawCarBody(
         ctx,
         pose.x,

@@ -9,6 +9,7 @@ import pitStartSession from '../../../test-data/1732260478001/session.json';
 import {
   computeFormation,
   PaceMode,
+  paceFieldPoleLeft,
   parseGridPositions,
   parseStartingGrid,
   type FormationInput,
@@ -80,6 +81,21 @@ describe('parseStartingGrid', () => {
 
   it('falls back to two wide', () => {
     expect(parseStartingGrid(undefined)).toEqual({ columns: 2 });
+  });
+});
+
+describe('paceFieldPoleLeft', () => {
+  it('puts the pole line on the left on Long Beach', () => {
+    expect(paceFieldPoleLeft('longbeach', false)).toBe(true);
+  });
+
+  it('keeps it on the right on other road courses', () => {
+    expect(paceFieldPoleLeft('interlagos gp', false)).toBe(false);
+    expect(paceFieldPoleLeft(undefined, false)).toBe(false);
+  });
+
+  it('puts it on the inside, the left, on ovals', () => {
+    expect(paceFieldPoleLeft('daytona 2011 oval', true)).toBe(true);
   });
 });
 

@@ -39,6 +39,24 @@ export const parseStartingGrid = (
 };
 
 /**
+ * Road courses where the pole line of a pace field is on the left. Everywhere
+ * else on road it is on the right, as checked at Fuji, Watkins Glen and Mount
+ * Panorama. Found by driving: the Sporting Code names no side. Keys are
+ * WeekendInfo.TrackName; add a track here when its pace field shows the wrong
+ * way round.
+ */
+const POLE_LEFT_TRACKS: ReadonlySet<string> = new Set(['longbeach']);
+
+/**
+ * Whether the pole line of a pace field is on the left: on ovals the inside,
+ * and on the road courses listed above.
+ */
+export const paceFieldPoleLeft = (
+  trackName: string | undefined,
+  oval: boolean
+): boolean => oval || POLE_LEFT_TRACKS.has(trackName ?? '');
+
+/**
  * Starting grid positions by car index, 0 for pole: the session's own grid
  * where the sim fills one in (heats, and some series), else the qualifying
  * order. Counted from the lowest position, since LMU numbers from 1. Empty

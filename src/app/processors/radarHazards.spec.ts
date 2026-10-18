@@ -49,14 +49,49 @@ class Field {
     }
     return this.last;
   }
-
-  /** Every car laps a few times, so the whole profile is learnt. */
-  learnLaps(laps: number) {
-    this.run((laps * TRACK_M) / 50);
-  }
 }
 
 describe('RadarHazardTracker', () => {
+  it('does not warn of a slower car it is not closing in on fast', () => {
+    const field = new Field();
+    // 80% of our speed: well above the slow share however long we follow it.
+    field.speeds = [50, 50, 40];
+
+    const reported: RadarHazard[] = [];
+    for (let second = 0; second < 120; second += 1) {
+      reported.push(...field.run(1));
+    }
+
+    expect(reported).toEqual([]);
+  });
+
+  it('warns when closing fast on a car far slower than us', () => {
+    const field = new Field();
+    field.speeds = [60, 50, 25];
+    field.run(3);
+
+    expect(field.run(1)).toEqual([
+      expect.objectContaining({ carIdx: 2, kind: 'slow' }),
+    ]);
+  });
+
+  it('stays quiet about a slow car while we crawl up to it', () => {
+    const field = new Field();
+    // A hairpin: half our speed, but only 10 m/s of closing, 20 s away.
+    field.speeds = [20, 20, 10];
+
+    expect(field.run(3)).toEqual([]);
+  });
+
+  it('stays quiet about a sudden drop we are not closing on', () => {
+    const field = new Field();
+    field.speeds = [20, 20, 50];
+    field.run(5);
+
+    // Braking hard in front of us at the same speed as us.
+    expect(field.run(1, { speed: 18 })).toEqual([]);
+  });
+
   it('reports nothing while the field drives normally', () => {
     const field = new Field();
     expect(field.run(10)).toEqual([]);
@@ -79,21 +114,14 @@ describe('RadarHazardTracker', () => {
     expect(field.run(1, { speed: 50 })).toEqual([]);
   });
 
-  it('judges slow against what the field does at that spot', () => {
+  it('calls a car slowing gradually far below us slow, not a crash', () => {
     const field = new Field();
-    field.learnLaps(3);
-    expect(field.tracker.expectedSpeed(field.pcts[2])).toBeCloseTo(50, 0);
-    // Gradually down to 25 m/s: no sudden drop, but half the field's speed.
+    field.run(5);
+    // Gradually down to 25 m/s: no sudden drop, but half our speed.
     for (let speed = 45; speed >= 25; speed -= 5) field.run(1, { speed });
     expect(field.run(1.5)).toEqual([
       expect.objectContaining({ carIdx: 2, kind: 'slow' }),
     ]);
-  });
-
-  it('leaves a moderately slow car alone until the profile is learnt', () => {
-    const field = new Field();
-    for (let speed = 45; speed >= 25; speed -= 5) field.run(1, { speed });
-    expect(field.run(2)).toEqual([]);
   });
 
   it('clears once the car is back up to speed', () => {
@@ -138,7 +166,6 @@ describe('RadarHazardTracker', () => {
 
   it('does not flag the field still at pace speed when the green comes', () => {
     const field = new Field();
-    field.learnLaps(3);
     field.quiet = true;
     field.speeds = [25, 25, 25];
     field.run(10);

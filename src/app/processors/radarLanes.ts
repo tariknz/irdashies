@@ -28,6 +28,13 @@ export interface LaneOutput {
 export const OVERLAP_M = 5.5;
 /** Two rivals closer than this to each other must be side by side. */
 export const PAIR_M = 4;
+/**
+ * Two cars in one lane cannot be closer than a body length along the track,
+ * so one that is, with no side from the spotter, is drawn this far off.
+ */
+export const IN_LANE_GAP_M = 5;
+/** Distances this close, in metres, count as equally near when ranking. */
+const NEAR_BAND_M = 1.5;
 /** How long a side learnt from the spotter is kept after the overlap ends. */
 export const MEMORY_HOLD_S = 3;
 const MAX_LANE = 2;
@@ -59,13 +66,13 @@ const demandFor = (carLeftRight: number): SpotterDemand | null => {
 
 export type FormationKind = 'grid' | 'pace';
 /**
- * Pole column side: on the left of a standing grid, on the right of the pace
- * line on road courses and on the left of it on ovals (the inside line).
- * iRacing does not say; this is what its grids do. +1 means the pole is on
- * the left, so higher columns lie to the right.
+ * Pole column side: on the left of a standing grid; for a pace line it
+ * depends on the track, see paceFieldPoleLeft. iRacing does not say; this is
+ * what its grids do. +1 means the pole is on the left, so higher columns lie
+ * to the right.
  */
-const poleSign = (kind: FormationKind, oval: boolean): number =>
-  kind === 'grid' || oval ? 1 : -1;
+const poleSign = (kind: FormationKind, pacePoleLeft: boolean): number =>
+  kind === 'grid' || pacePoleLeft ? 1 : -1;
 
 export interface LaneFormation {
   kind: FormationKind;
@@ -107,15 +114,15 @@ export class RadarLaneTracker {
   private readonly rememberedAt = new Map<number, number>();
   private readonly drawnLane = new Map<number, number>();
   private previousTime = -1;
-  private oval = false;
+  private pacePoleLeft = false;
   constructor(
     private readonly tuning: () => RadarProcessorTuning = () =>
       DEFAULT_RADAR_TUNING
   ) {}
 
-  /** Ovals line the pace field up with the pole on the inside, the left. */
-  setOval(oval: boolean): void {
-    this.oval = oval;
+  /** Which side the pole line of a pace field is on, see paceFieldPoleLeft. */
+  setPacePoleLeft(left: boolean): void {
+    this.pacePoleLeft = left;
   }
 
   reset(): void {
@@ -220,14 +227,19 @@ export class RadarLaneTracker {
 
     const fill = (count: number, side: -1 | 1) => {
       if (count === 0) return;
-      // Cars already known on this side first, then unknown, then the far
-      // side; nearest first within each group.
+      // The nearest cars are the ones the spotter sees. Among cars about as
+      // near, those already known on this side first, then unknown, then the
+      // far side; a remembered car that has dropped back loses its place to
+      // one that is now alongside.
       const ranked = candidates
         .filter((car) => !taken.has(car.carIdx))
         .sort((a, b) => {
           const rank = (car: LaneInput) =>
             sideOf(car.carIdx) === side ? 0 : sideOf(car.carIdx) === 0 ? 1 : 2;
+          const band = (car: LaneInput) =>
+            Math.floor(Math.abs(car.dist) / NEAR_BAND_M);
           return (
+            band(a) - band(b) ||
             rank(a) - rank(b) ||
             Math.abs(a.dist) - Math.abs(b.dist) ||
             a.carIdx - b.carIdx
@@ -262,7 +274,9 @@ export class RadarLaneTracker {
     for (const car of cars) {
       const slot = formation.slots.get(car.carIdx);
       if (slot === undefined) continue;
-      const lane = clampLane(slot * poleSign(formation.kind, this.oval));
+      const lane = clampLane(
+        slot * poleSign(formation.kind, this.pacePoleLeft)
+      );
       targets.set(car.carIdx, { lane, source: formation.kind });
       // Remembered too, so the formation fades out gently after the green.
       this.rememberedLane.set(car.carIdx, lane);
@@ -326,3 +340,24 @@ export class RadarLaneTracker {
     }
   }
 }
+
+/**
+ * Pushes cars that overlap the focus car along the track out to a body
+ * length when nothing says they are beside it. The spotter is silent about
+ * them, so they are not alongside; the overlap is noise in lap distance, and
+ * drawing them on top of the focus car is worse than drawing them nose to
+ * tail.
+ */
+export const separateInLaneCars = (
+  cars: { dist: number; lane: number; laneSource: string }[]
+): void => {
+  for (const car of cars) {
+    if (
+      car.laneSource === 'none' &&
+      Math.abs(car.lane) < 0.5 &&
+      Math.abs(car.dist) < IN_LANE_GAP_M
+    ) {
+      car.dist = (car.dist < 0 ? -1 : 1) * IN_LANE_GAP_M;
+    }
+  }
+};

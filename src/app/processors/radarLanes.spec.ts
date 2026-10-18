@@ -3,6 +3,7 @@ import { CarLeftRight } from '@irdashies/types';
 import {
   MEMORY_HOLD_S,
   RadarLaneTracker,
+  separateInLaneCars,
   type LaneFormation,
   type LaneInput,
   type LaneOutput,
@@ -30,6 +31,38 @@ const laneOf = (lanes: Map<number, LaneOutput>, carIdx: number) =>
   lanes.get(carIdx)?.lane;
 
 describe('RadarLaneTracker', () => {
+  it("gives the spotter's sides to the nearest cars, not the longest remembered", () => {
+    const tracker = new RadarLaneTracker();
+    // Two cars settle on our left.
+    const first = settle(
+      tracker,
+      0,
+      [
+        { carIdx: 1, dist: -1 },
+        { carIdx: 2, dist: 1 },
+      ],
+      CarLeftRight.Cars2Left
+    );
+    // They drop back to the edge of the overlap while a third car comes
+    // alongside: the spotter still says two on the left, and the new car
+    // right beside us is one of them.
+    const { lanes } = settle(
+      tracker,
+      first.time + 0.1,
+      [
+        { carIdx: 1, dist: -4.1 },
+        { carIdx: 2, dist: -3.85 },
+        { carIdx: 3, dist: 1.8 },
+      ],
+      CarLeftRight.Cars2Left
+    );
+
+    expect(lanes.get(3)?.source).toBe('spotter');
+    expect(
+      lanes.get(1)?.source === 'spotter' && lanes.get(2)?.source === 'spotter'
+    ).toBe(false);
+  });
+
   it('leaves rivals in our lane while the spotter is clear', () => {
     const tracker = new RadarLaneTracker();
     const { lanes } = settle(
@@ -277,7 +310,7 @@ describe('RadarLaneTracker', () => {
 
     it('puts the pole line on the left of the pace field on ovals', () => {
       const tracker = new RadarLaneTracker();
-      tracker.setOval(true);
+      tracker.setPacePoleLeft(true);
       const { lanes } = settle(
         tracker,
         0,
@@ -338,5 +371,26 @@ describe('RadarLaneTracker', () => {
       expect(lanes.get(2)).toEqual({ lane: 1, source: 'pace' });
       expect(lanes.get(5)).toEqual({ lane: -1, source: 'spotter' });
     });
+  });
+});
+
+describe('separateInLaneCars', () => {
+  it('pushes an unplaced car that overlaps us out to a body length', () => {
+    const cars = [
+      { dist: 1.8, lane: 0, laneSource: 'none' },
+      { dist: -2.7, lane: 0, laneSource: 'none' },
+    ];
+    separateInLaneCars(cars);
+    expect(cars.map((car) => car.dist)).toEqual([5, -5]);
+  });
+
+  it('leaves a car the spotter placed, and cars already clear', () => {
+    const cars = [
+      { dist: 1.8, lane: -1, laneSource: 'spotter' },
+      { dist: 6, lane: 0, laneSource: 'none' },
+      { dist: -1, lane: 0, laneSource: 'pair' },
+    ];
+    separateInLaneCars(cars);
+    expect(cars.map((car) => car.dist)).toEqual([1.8, 6, -1]);
   });
 });
