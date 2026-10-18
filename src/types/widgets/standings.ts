@@ -38,6 +38,7 @@ export default defineWidgetManifest({
       enabled: true,
     },
     gap: {
+      reference: 'classLeader',
       enabled: false,
       decimalPlaces: 1,
     },
@@ -469,6 +470,16 @@ export default defineWidgetManifest({
     'carManufacturer.hideIfSingleMake': {
       type: 'boolean',
       label: 'Hide If Single Make',
+    },
+    'gap.reference': {
+      type: 'enum',
+      label: 'Gap Reference',
+      description:
+        'Player gaps are negative ahead and positive behind, across all classes. Uses the camera car when spectating; practice and qualifying compare best laps.',
+      options: [
+        { value: 'classLeader', label: 'Class Leader' },
+        { value: 'player', label: 'Player' },
+      ],
     },
     'gap.decimalPlaces': {
       type: 'enum',

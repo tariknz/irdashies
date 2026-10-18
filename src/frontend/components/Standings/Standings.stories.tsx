@@ -1291,6 +1291,17 @@ export const PositionDividerNone: Story = {
   ],
 };
 
+export const PlayerRelativeGaps: Story = {
+  decorators: [
+    TelemetryDecoratorWithConfig('/test-data/1731637331038', {
+      standings: {
+        gap: { enabled: true, reference: 'player' },
+        interval: { enabled: true },
+      },
+    }),
+  ],
+};
+
 export const PositionDividerNumerousCells: Story = {
   name: 'Position Divider (Numerous Cells)',
   decorators: [

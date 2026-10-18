@@ -656,6 +656,105 @@ export const augmentStandingsWithGap = (
 };
 
 /**
+ * Signed gaps to the focus car, across classes. Race progress determines the
+ * direction and whole-lap difference; unlike Relative, this never wraps to the
+ * nearest car within half a lap. Called after intervals have been calculated.
+ */
+export const augmentStandingsWithPlayerGap = (
+  groupedStandings: [string, Standings[]][],
+  carIdxLap: number[],
+  carIdxLapDistPct: number[],
+  carIdxOnPitRoad: boolean[],
+  carIdxEstTime: number[],
+  sessionType?: string
+): [string, Standings[]][] => {
+  let player: Standings | undefined;
+  for (const [, drivers] of groupedStandings) {
+    player = drivers.find((driver) => driver.isPlayer);
+    if (player) break;
+  }
+  const refLapStore = useReferenceLapStore.getState();
+  const progress = (driver: Standings): number | undefined => {
+    const lap = carIdxLap[driver.carIdx];
+    const pct = carIdxLapDistPct[driver.carIdx];
+    return Number.isFinite(lap) &&
+      lap >= 0 &&
+      Number.isFinite(pct) &&
+      pct >= 0 &&
+      pct <= 1
+      ? lap + pct
+      : undefined;
+  };
+  const playerProgress = player && progress(player);
+
+  return groupedStandings.map(([classId, drivers]) => [
+    classId,
+    drivers.map((driver) => {
+      let gap: Gap = { value: undefined, laps: 0 };
+      if (!player) return { ...driver, gap };
+      if (driver.isPlayer) return { ...driver, gap: { value: 0, laps: 0 } };
+
+      if (sessionType !== 'Race') {
+        if (driver.fastestTime > 0 && player.fastestTime > 0) {
+          gap.value = driver.fastestTime - player.fastestTime;
+        }
+        return { ...driver, gap };
+      }
+
+      const driverProgress = progress(driver);
+      if (
+        !player.onTrack ||
+        !driver.onTrack ||
+        playerProgress === undefined ||
+        driverProgress === undefined
+      )
+        return { ...driver, gap };
+
+      const progressDifference = playerProgress - driverProgress;
+      // Truncation keeps both cars on the same lap until a full lap separates
+      // them, including when just one car has crossed start/finish.
+      gap.laps = Math.trunc(progressDifference) || 0;
+      const ahead = progressDifference < 0 ? driver : player;
+      const behind = progressDifference < 0 ? player : driver;
+      const refLap = refLapStore.getReferenceLap(
+        behind.carIdx,
+        behind.carClass.id,
+        (behind.lap ?? -1) <= 1
+      );
+      let time: number | undefined;
+      if (
+        !carIdxOnPitRoad[ahead.carIdx] &&
+        !carIdxOnPitRoad[behind.carIdx] &&
+        refLap.finishTime >= 0
+      ) {
+        time = calculateReferenceGap(
+          refLap,
+          carIdxLapDistPct[ahead.carIdx],
+          carIdxLapDistPct[behind.carIdx]
+        );
+      } else if (
+        Number.isFinite(carIdxEstTime[ahead.carIdx]) &&
+        carIdxEstTime[ahead.carIdx] >= 0 &&
+        Number.isFinite(carIdxEstTime[behind.carIdx]) &&
+        carIdxEstTime[behind.carIdx] >= 0
+      ) {
+        time = calculateClassEstimatedGap(
+          getStats(carIdxEstTime[ahead.carIdx], ahead),
+          getStats(carIdxEstTime[behind.carIdx], behind)
+        );
+      }
+      gap.value =
+        time === undefined
+          ? undefined
+          : Math.sign(progressDifference) * Math.abs(time);
+      if (!Number.isFinite(gap.value))
+        gap = { value: undefined, laps: gap.laps };
+      return { ...driver, gap };
+    }),
+  ]);
+};
+
+/**
  * This method will augment the standings with interval calculations to player
  * Interval shows time gaps between consecutive cars, calculated by subtracting gaps
  * For each driver, interval = gap_of_driver_behind - gap_of_current_driver
