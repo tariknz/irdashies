@@ -1,3 +1,4 @@
+import { drawPoleSideNotice } from './radarDrawNotice';
 import { overlapOf } from './radarHints';
 import { formatDistance, speedIn } from './radarStyle';
 import { warningLevel } from './radarDrawTypes';
@@ -568,6 +569,9 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
         flash
       );
     }
+  }
+  if (scene.poleSideNotice) {
+    drawPoleSideNotice(ctx, size, scene.poleSideNotice);
   }
   if (style.debugLabels || style.showFrameTime) {
     drawDebug(ctx, size, style, scene.frameMs);

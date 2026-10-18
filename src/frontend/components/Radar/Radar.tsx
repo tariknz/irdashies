@@ -43,6 +43,7 @@ const EMPTY_SNAPSHOT: RadarSnapshot = {
   follow: null,
   focusBrake: null,
   caution: false,
+  poleSideNotice: null,
   cars: [],
   hazards: [],
   version: 0,
@@ -160,6 +161,7 @@ export const Radar = () => {
           snapshot.focusOnPitRoad,
         // From pit road the cars on track are none of our business.
         hazards: snapshot.focusOnPitRoad ? [] : snapshot.hazards,
+        poleSideNotice: snapshot.poleSideNotice,
       },
     [demoFrame, snapshot, cars]
   );

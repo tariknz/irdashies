@@ -30,11 +30,14 @@ import { CarSystemsProcessor } from './CarSystemsProcessor';
 import { SessionTimingProcessor } from './SessionTimingProcessor';
 import { StandingsProcessor } from './StandingsProcessor';
 import { TrackStateProcessor } from './TrackStateProcessor';
+import type { PoleSideSettings } from './radarPoleSideSettings';
 
 interface ProcessorRegistryOptions {
   referenceLapPersistence: ReferenceLapPersistence;
   /** The radar's dev tuning from the current dashboard; defaults without. */
   radarTuning?: () => RadarProcessorTuning;
+  /** The player's own pole side per track; the table's without. */
+  radarPoleSides?: PoleSideSettings;
 }
 
 interface DefaultProcessorHostOptions extends ProcessorRegistryOptions {
@@ -67,6 +70,7 @@ const defineProcessor = <K extends AnyProcessorDefinition['channel']>(
 export const createProcessorDefinitions = ({
   referenceLapPersistence,
   radarTuning,
+  radarPoleSides,
 }: ProcessorRegistryOptions): readonly AnyProcessorDefinition[] => [
   defineProcessor({
     channel: 'blind-spot.snapshot',
@@ -125,7 +129,7 @@ export const createProcessorDefinitions = ({
   defineProcessor({
     channel: 'radar.snapshot',
     metricsPrefix: 'radar',
-    create: () => new RadarProcessor(radarTuning),
+    create: () => new RadarProcessor(radarTuning, radarPoleSides),
   }),
   defineProcessor({
     channel: 'radio.snapshot',

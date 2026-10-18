@@ -149,4 +149,6 @@ export interface RadarScene {
   laneWidth?: number;
   /** Cars in trouble ahead, nearest first. */
   hazards?: readonly RadarDrawHazard[];
+  /** Names the pole side the player just flipped to, for a few seconds. */
+  poleSideNotice?: 'left' | 'right' | null;
 }

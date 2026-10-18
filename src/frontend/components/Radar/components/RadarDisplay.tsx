@@ -35,6 +35,8 @@ export interface RadarFrame {
   quiet?: boolean;
   /** Cars in trouble ahead, nearest first, possibly far past the range. */
   hazards?: readonly RadarHazard[];
+  /** The pole side the player just flipped to, shown for a few seconds. */
+  poleSideNotice?: 'left' | 'right' | null;
 }
 
 export interface RadarDiveOptions {
@@ -269,6 +271,7 @@ export const RadarDisplay = memo(
           dives: diveHints,
           laneWidth,
           hazards,
+          poleSideNotice: snap.poleSideNotice,
         });
         frameMs = performance.now() - started;
         if (active) handle = requestAnimationFrame(paint);

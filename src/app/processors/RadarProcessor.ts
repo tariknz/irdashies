@@ -24,6 +24,10 @@ import {
   type GridOptions,
 } from './radarFormation';
 import { RadarHazardTracker } from './radarHazards';
+import {
+  NO_POLE_SIDE_SETTINGS,
+  type PoleSideSettings,
+} from './radarPoleSideSettings';
 import { wrapDelta } from './radarMath';
 
 /**
@@ -53,6 +57,8 @@ const MAX_FRAME_GAP_S = 0.5;
  */
 const SPEED_SETTLE_S = 1;
 const RADAR_TICK_HZ = 25;
+/** Seconds the radar names the pole side after it was flipped. */
+const POLE_NOTICE_S = 3;
 /**
  * Frame step `speedSmoothing` is the weight for: one tick of `tickRateHz`,
  * which the radar was tuned on. Scaling the weight by the real step keeps
@@ -119,11 +125,19 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   private gridSessionNum = NaN;
 
   private latest: RadarSnapshot = emptySnapshot(0);
+  private trackId: number | undefined;
+  /** The side the table gives, and the side in use (the player's wins). */
+  private tablePoleLeft = false;
+  private poleLeft = false;
+  /** Session time until which the radar says which side it flipped to. */
+  private poleNoticeUntil = -Infinity;
 
   constructor(
     /** The dev view's tuning, read every frame so changes apply at once. */
     private readonly tuning: () => RadarProcessorTuning = () =>
-      DEFAULT_RADAR_TUNING
+      DEFAULT_RADAR_TUNING,
+    /** The player's own pole side per track, read every frame. */
+    private readonly poleSides: PoleSideSettings = NO_POLE_SIDE_SETTINGS
   ) {
     this.lanes = new RadarLaneTracker(tuning);
   }
@@ -134,13 +148,16 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     // TrackType is "road course", "short track", "super speedway", "dirt oval"
     // and so on; anything that is not road racing is an oval
     const trackType = session?.WeekendInfo?.TrackType ?? '';
-    this.lanes.setPacePoleLeft(
-      paceFieldPoleLeft(
-        session?.WeekendInfo?.TrackID,
-        session?.WeekendInfo?.TrackName,
-        trackType !== '' && !/road|rally/i.test(trackType)
-      )
+    this.trackId = session?.WeekendInfo?.TrackID;
+    this.tablePoleLeft = paceFieldPoleLeft(
+      this.trackId,
+      session?.WeekendInfo?.TrackName,
+      trackType !== '' && !/road|rally/i.test(trackType)
     );
+    this.poleSides.setTrack(this.trackId, this.tablePoleLeft);
+    this.poleLeft = this.poleSides.override(this.trackId) ?? this.tablePoleLeft;
+    this.lanes.setPacePoleLeft(this.poleLeft);
+    this.poleNoticeUntil = -Infinity;
     const options = session?.WeekendInfo?.WeekendOptions;
     this.grid = {
       standingStart: options?.StandingStart === 1,
@@ -161,6 +178,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     const pcts = valuesOf(frame, 'CarIdxLapDistPct');
     const time = scalarNumber(frame, 'SessionTime');
     this.updateSpeeds(pcts, time);
+    this.applyPoleSide(time);
 
     const camCarIdx = scalarNumber(frame, 'CamCarIdx');
     const focus =
@@ -289,6 +307,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       follow,
       focusBrake: drivingFocus && brake >= 0 ? brake : null,
       caution: (flags & CAUTION_FLAGS) !== 0,
+      poleSideNotice:
+        time < this.poleNoticeUntil ? (this.poleLeft ? 'left' : 'right') : null,
       cars,
       hazards,
     };
@@ -339,6 +359,18 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       car.laneSource = lane.source;
     }
     return spotter !== null;
+  }
+
+  /**
+   * Follows the player's own pole side for this track, which a keybinding can
+   * change at any time, and says so on the radar for a few seconds.
+   */
+  private applyPoleSide(time: number): void {
+    const side = this.poleSides.override(this.trackId) ?? this.tablePoleLeft;
+    if (side === this.poleLeft) return;
+    this.poleLeft = side;
+    this.lanes.setPacePoleLeft(side);
+    this.poleNoticeUntil = time + POLE_NOTICE_S;
   }
 
   snapshot(): RadarSnapshot {
@@ -393,6 +425,7 @@ const emptySnapshot = (version: number): RadarSnapshot => ({
   follow: null,
   focusBrake: null,
   caution: false,
+  poleSideNotice: null,
   cars: [],
   hazards: [],
   version,
@@ -417,6 +450,7 @@ const sameSnapshot = (
   previous.playerSpeed === next.playerSpeed &&
   previous.focusBrake === next.focusBrake &&
   previous.caution === next.caution &&
+  previous.poleSideNotice === next.poleSideNotice &&
   previous.trackLength === next.trackLength &&
   previous.focusOnPitRoad === next.focusOnPitRoad &&
   previous.focusInPitBox === next.focusInPitBox &&

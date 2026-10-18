@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Session, Telemetry } from '@irdashies/types';
 import { CarLeftRight, GlobalFlags, TrackLocation } from '@irdashies/types';
 import { DEFAULT_RADAR_TUNING } from '../../types/widgetConfigs';
@@ -411,6 +411,50 @@ describe('RadarProcessor', () => {
       .cars.filter((car) => lines[car.carIdx] < mine);
     expect(towardsPole.length).toBeGreaterThan(0);
     expect(towardsPole.every((car) => car.lane > 0)).toBe(true);
+  });
+
+  it('follows the pole side the player set, and says so for a moment', () => {
+    const player: { poleLeft?: boolean } = {};
+    const poleSides = {
+      override: () => player.poleLeft,
+      setTrack: vi.fn(),
+    };
+    const session = structuredClone(rollingSession) as unknown as Session;
+    session.WeekendInfo.TrackID = 353;
+    session.WeekendInfo.TrackName = 'limerock 2019 gp';
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(session);
+    expect(poleSides.setTrack).toHaveBeenCalledWith(353, false);
+
+    const base = rollingTelemetry as unknown as Record<
+      string,
+      { value: unknown[] }
+    >;
+    const lines = base.CarIdxPaceLine.value as number[];
+    const mine = lines[base.PlayerCarIdx.value[0] as number];
+    const sideOfPole = () => {
+      const towards = processor
+        .snapshot()
+        .cars.filter((car) => lines[car.carIdx] < mine);
+      return towards.every((car) => car.lane < 0) ? 'left' : 'right';
+    };
+    const at = (time: number) =>
+      ({
+        ...rollingTelemetry,
+        SessionTime: { value: [time] },
+      }) as unknown as Telemetry;
+
+    processor.onFrame(at(100));
+    expect(sideOfPole()).toBe('right');
+    expect(processor.snapshot().poleSideNotice).toBeNull();
+
+    player.poleLeft = true;
+    processor.onFrame(at(101));
+    expect(sideOfPole()).toBe('left');
+    expect(processor.snapshot().poleSideNotice).toBe('left');
+
+    processor.onFrame(at(105));
+    expect(processor.snapshot().poleSideNotice).toBeNull();
   });
 
   it('puts the pole line on the left on a super speedway', () => {
