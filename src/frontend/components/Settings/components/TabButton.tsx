@@ -15,9 +15,9 @@ export const TabButton = <Tab extends string = SettingsTabType>({
 }: TabButtonProps<Tab>) => (
   <button
     onClick={() => setActiveTab(id)}
-    className={`px-4 py-2 text-md border-b-2 transition-colors ${
+    className={`px-4 py-2 text-md settings-heading font-semibold border-b-2 transition-colors ${
       activeTab === id
-        ? 'text-white border-blue-500'
+        ? 'text-white border-accent-500'
         : 'text-slate-400 border-transparent hover:text-slate-200'
     }`}
   >

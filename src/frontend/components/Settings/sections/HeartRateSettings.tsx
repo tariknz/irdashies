@@ -45,7 +45,7 @@ export const HeartRateSettings = () => {
               onChange={(e) =>
                 handleConfigChange({ deviceId: e.target.value.trim() })
               }
-              className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
+              className="w-full rounded border-slate-600 bg-slate-700 p-2 text-slate-300"
             />
             <p className="text-sm text-slate-500">
               The code at the end of your HypeRate share link (app.hyperate.io/
@@ -65,7 +65,7 @@ export const HeartRateSettings = () => {
               onChange={(e) =>
                 handleConfigChange({ widgetUrl: e.target.value.trim() })
               }
-              className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
+              className="w-full rounded border-slate-600 bg-slate-700 p-2 text-slate-300"
             />
             <p className="text-sm text-slate-500">
               Pick a widget on hyperate.io and paste its link or just the name —

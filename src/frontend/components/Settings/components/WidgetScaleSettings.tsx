@@ -41,7 +41,7 @@ export const WidgetScaleSettings = ({
       <input
         id={id}
         type="range"
-        className="h-1 w-full cursor-pointer accent-blue-400"
+        className="h-1 w-full cursor-pointer accent-accent-400"
         value={scale}
         min={WIDGET_SCALE.min}
         max={WIDGET_SCALE.max}

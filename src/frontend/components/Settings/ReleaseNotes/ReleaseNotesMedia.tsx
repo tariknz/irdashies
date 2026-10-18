@@ -126,7 +126,7 @@ export const ReleaseNotesMedia = ({
           href={safeSrc}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-1 inline-block text-xs text-sky-300 underline"
+          className="mt-1 inline-block text-xs text-accent-300 underline"
         >
           {label}
         </a>

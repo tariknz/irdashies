@@ -224,7 +224,7 @@ export const AboutSettings = () => {
               checked={analyticsEnabled}
               onChange={(e) => handleAnalyticsChange(e.target.checked)}
               disabled={isLoading}
-              className="mt-1 w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500 focus:ring-2 disabled:opacity-50"
+              className="mt-1 w-4 h-4 text-accent-600 bg-slate-700 border-slate-600 rounded focus:ring-accent-500 focus:ring-2 disabled:opacity-50"
             />
             <label
               htmlFor="analytics-enabled"

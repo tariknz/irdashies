@@ -231,7 +231,7 @@ export const BaseSettingsSection = <T,>({
         )}
 
         {showResetConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="fixed inset-0 z-50 [-webkit-app-region:no-drag] flex items-center justify-center bg-black/60">
             <div className="bg-slate-800 rounded-lg border border-slate-600 p-5 w-80 shadow-xl">
               <h3 className="text-base font-semibold text-white mb-2">
                 Reset Position

@@ -28,10 +28,10 @@ export function SettingButtonGroupRow<T extends string>({
             <button
               key={opt.value}
               onClick={() => onChange(opt.value)}
-              className={`px-3 py-1 rounded text-sm transition-colors ${
+              className={`px-3 py-1 rounded text-sm skew-ui settings-heading font-semibold border transition-colors ${
                 isActive
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                  ? 'bg-accent-500 border-accent-500 text-on-accent'
+                  : 'bg-transparent border-slate-600 text-slate-300 hover:border-slate-400'
               }`}
             >
               {opt.label}

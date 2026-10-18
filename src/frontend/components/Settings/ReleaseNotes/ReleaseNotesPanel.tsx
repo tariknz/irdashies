@@ -112,7 +112,7 @@ export const ReleaseNotesPanel = ({
           }
           target="_blank"
           rel="noopener noreferrer"
-          className="flex shrink-0 items-center gap-1 text-sm text-sky-300 hover:underline"
+          className="flex shrink-0 items-center gap-1 text-sm text-accent-300 hover:underline"
         >
           View on GitHub <ArrowSquareOutIcon size={16} />
         </a>
@@ -135,7 +135,7 @@ export const ReleaseNotesPanel = ({
           {onRetry && (
             <button
               onClick={onRetry}
-              className="mt-3 flex items-center gap-2 text-sky-300 hover:underline"
+              className="mt-3 flex items-center gap-2 text-accent-300 hover:underline"
             >
               <ArrowClockwiseIcon size={16} /> Try again
             </button>
@@ -149,7 +149,7 @@ export const ReleaseNotesPanel = ({
       )}
       {release &&
         (release.body.trim() ? (
-          <div className="text-sm leading-relaxed text-slate-300 break-words [&_h1]:mt-5 [&_h1]:mb-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:font-semibold [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1 [&_a]:text-sky-300 [&_a]:underline [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-slate-950 [&_pre]:p-3 [&_code]:font-mono [&_code]:text-xs [&_blockquote]:border-l-2 [&_blockquote]:border-slate-500 [&_blockquote]:pl-3 [&_table]:w-full [&_th]:border [&_th]:border-slate-600 [&_th]:p-2 [&_th]:text-left [&_td]:border [&_td]:border-slate-600 [&_td]:p-2 [&_hr]:my-4 [&_hr]:border-slate-600">
+          <div className="text-sm leading-relaxed text-slate-300 break-words [&_h1]:mt-5 [&_h1]:mb-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:font-semibold [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-1 [&_a]:text-accent-300 [&_a]:underline [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-slate-950 [&_pre]:p-3 [&_code]:font-mono [&_code]:text-xs [&_blockquote]:border-l-2 [&_blockquote]:border-slate-500 [&_blockquote]:pl-3 [&_table]:w-full [&_th]:border [&_th]:border-slate-600 [&_th]:p-2 [&_th]:text-left [&_td]:border [&_td]:border-slate-600 [&_td]:p-2 [&_hr]:my-4 [&_hr]:border-slate-600">
             <Markdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw, [rehypeSanitize, releaseNotesSchema]]}

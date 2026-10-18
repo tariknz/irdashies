@@ -47,7 +47,7 @@ export const ReleaseNotesDialog = ({
           autoFocus
           onClick={onClose}
           aria-label="Close release notes"
-          className="rounded p-1 text-slate-300 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-sky-300"
+          className="rounded p-1 text-slate-300 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-accent-300"
         >
           <XIcon size={24} />
         </button>

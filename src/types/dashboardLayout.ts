@@ -103,6 +103,19 @@ export type FontSize =
   | '8xl'
   | '9xl';
 
+export const SETTINGS_THEMES = ['carbon', 'red'] as const;
+export type SettingsTheme = (typeof SETTINGS_THEMES)[number];
+
+/** Native window-control colours per settings theme: slate-700 / slate-300
+ *  of each .settings-theme-* in theme.css (kept in sync by a spec). */
+export const SETTINGS_TITLE_BAR: Record<
+  SettingsTheme,
+  { color: string; symbolColor: string }
+> = {
+  carbon: { color: '#17181b', symbolColor: '#a7aab0' },
+  red: { color: '#1b1e23', symbolColor: '#9aa1ab' },
+};
+
 export interface GeneralSettingsType {
   fontType?: FontType;
   fontSize?: FontSize;
@@ -130,6 +143,8 @@ export interface GeneralSettingsType {
     | 'rose'
     | 'zinc'
     | 'stone';
+  /** Look of the settings window only; overlays use colorPalette. */
+  settingsTheme?: SettingsTheme;
   showOnlyWhenOnTrack?: boolean;
   highlightColor?: number;
   skipTaskbar?: boolean;
