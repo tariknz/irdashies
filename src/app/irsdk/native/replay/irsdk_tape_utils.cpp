@@ -24,6 +24,8 @@ enum class PlaybackState {
   ReadyToLoop,
   Finished,
   Failed,
+  SeekDisconnect,
+  SeekPending,
 };
 
 std::unique_ptr<replay::TapeReader> tape;
@@ -37,6 +39,66 @@ PlaybackState state = PlaybackState::Stopped;
 std::chrono::steady_clock::time_point playbackStart;
 double playbackSpeed = 1.0;
 bool loopPlayback = false;
+bool paused = false;
+bool seekFrameReady = false;
+double anchorSeconds = 0;
+double durationSeconds = 0;
+
+struct SeekPoint {
+  double seconds;
+  std::streampos frameOffset;
+  std::streampos sessionOffset;
+};
+// One checkpoint per recorded second; frame payloads stay on disk.
+std::vector<SeekPoint> seekPoints;
+
+double playbackPosition() {
+  if (paused || state != PlaybackState::Playing) return anchorSeconds;
+  return std::min(durationSeconds, anchorSeconds +
+      std::chrono::duration<double>(std::chrono::steady_clock::now() -
+          playbackStart).count() * playbackSpeed);
+}
+
+void rebaseClock(double seconds) {
+  anchorSeconds = seconds;
+  playbackStart = std::chrono::steady_clock::now();
+}
+
+bool indexTape(std::string& error) {
+  seekPoints.clear();
+  durationSeconds = 0;
+  std::streampos sessionOffset = -1;
+  replay::TapeRecordHeader record{};
+  std::vector<char> payload;
+  std::uint64_t previousTicks = 0;
+  for (;;) {
+    const auto offset = tape->recordPosition();
+    const auto result = tape->readNext(record, payload, error);
+    if (result == replay::TapeReadResult::EndOfFile) break;
+    if (result == replay::TapeReadResult::Error) return false;
+    if (record.elapsedTicks < previousTicks) {
+      error = "Telemetry tape timestamps run backwards";
+      return false;
+    }
+    previousTicks = record.elapsedTicks;
+    const double seconds = static_cast<double>(record.elapsedTicks) /
+        static_cast<double>(tape->fileHeader().qpcFrequency);
+    durationSeconds = seconds;
+    const auto kind = static_cast<replay::RecordKind>(record.kind);
+    if (kind == replay::RecordKind::SessionInfo) sessionOffset = offset;
+    if (kind == replay::RecordKind::Frame &&
+        (seekPoints.empty() || seconds - seekPoints.back().seconds >= 1.0)) {
+      seekPoints.push_back({seconds, offset, sessionOffset});
+    }
+    if (kind == replay::RecordKind::End ||
+        kind == replay::RecordKind::Disconnect) break;
+  }
+  if (seekPoints.empty()) {
+    error = "Telemetry tape has no frames";
+    return false;
+  }
+  return tape->rewindRecords(error);
+}
 
 bool parsePlaybackOptions(std::string& error) {
   const char* speedText = std::getenv("IRDASHIES_TELEMETRY_REPLAY_SPEED");
@@ -71,6 +133,8 @@ void resetPublishedData() {
   hasPendingRecord = false;
   pendingPayload.clear();
   playbackStart = std::chrono::steady_clock::now();
+  anchorSeconds = 0;
+  seekFrameReady = false;
   state = PlaybackState::Playing;
 }
 
@@ -89,6 +153,8 @@ bool openTape(std::string& error) {
     return false;
   }
   tape = std::move(candidate);
+  paused = false;
+  if (!indexTape(error)) return false;
   resetPublishedData();
   return true;
 }
@@ -102,6 +168,7 @@ bool restartTape(std::string& error) {
 }
 
 void finishPlayback(bool frameWillBePublished) {
+  rebaseClock(durationSeconds);
   header.status = 0;
   if (!loopPlayback) {
     state = PlaybackState::Finished;
@@ -133,11 +200,10 @@ bool loadPendingRecord(bool frameWillBePublished, std::string& error) {
 std::chrono::steady_clock::time_point pendingTargetTime() {
   const double seconds =
       static_cast<double>(pendingRecord.elapsedTicks) /
-      static_cast<double>(tape->fileHeader().qpcFrequency) /
-      playbackSpeed;
+      static_cast<double>(tape->fileHeader().qpcFrequency);
   return playbackStart +
       std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-          std::chrono::duration<double>(seconds));
+          std::chrono::duration<double>((seconds - anchorSeconds) / playbackSpeed));
 }
 
 void applySessionRecord() {
@@ -175,7 +241,57 @@ bool publishFrameRecord(irsdk_capture* capture, std::string& error) {
   return true;
 }
 
+bool seekToAnchor(std::string& error) {
+  const double target = anchorSeconds;
+  const auto next = std::upper_bound(seekPoints.begin(), seekPoints.end(), target,
+      [](double seconds, const SeekPoint& point) { return seconds < point.seconds; });
+  const auto& point = next == seekPoints.begin() ? seekPoints.front() : *(next - 1);
+  resetPublishedData();
+  if (point.sessionOffset != std::streampos(-1)) {
+    if (!tape->seekRecord(point.sessionOffset, error) ||
+        tape->readNext(pendingRecord, pendingPayload, error) !=
+            replay::TapeReadResult::Record) return false;
+    applySessionRecord();
+  }
+  if (!tape->seekRecord(point.frameOffset, error)) return false;
+  bool foundFrame = false;
+  for (;;) {
+    const auto result = tape->readNext(pendingRecord, pendingPayload, error);
+    if (result == replay::TapeReadResult::Error) return false;
+    if (result == replay::TapeReadResult::EndOfFile) break;
+    const double seconds = static_cast<double>(pendingRecord.elapsedTicks) /
+        static_cast<double>(tape->fileHeader().qpcFrequency);
+    const auto kind = static_cast<replay::RecordKind>(pendingRecord.kind);
+    // Keep the next timed record for normal playback, including End.
+    if (foundFrame && (seconds > target || kind == replay::RecordKind::End ||
+        kind == replay::RecordKind::Disconnect)) {
+      hasPendingRecord = true;
+      break;
+    }
+    if (kind == replay::RecordKind::SessionInfo) applySessionRecord();
+    if (kind == replay::RecordKind::Frame) {
+      if (!publishFrameRecord(nullptr, error)) return false;
+      foundFrame = true;
+    }
+  }
+  rebaseClock(target);
+  seekFrameReady = foundFrame;
+  return foundFrame;
+}
+
 bool readTimedFrame(int timeoutMs, irsdk_capture* capture) {
+  if (seekFrameReady) {
+    // Reuse the normal capture path without consuming the next timed record.
+    if (capture) {
+      capture->header = header;
+      capture->data = frame;
+      capture->variables = tape->variables();
+      capture->valid = true;
+    }
+    seekFrameReady = false;
+    return true;
+  }
+  if (paused) return false;
   bool foundFrame = false;
   std::string error;
   const auto deadline = std::chrono::steady_clock::now() +
@@ -232,6 +348,18 @@ bool readTimedFrame(int timeoutMs, irsdk_capture* capture) {
 }  // namespace
 
 bool irsdk_startup() {
+  if (state == PlaybackState::SeekDisconnect) {
+    state = PlaybackState::SeekPending;
+    return false;
+  }
+  if (state == PlaybackState::SeekPending) {
+    std::string error;
+    if (seekToAnchor(error)) return true;
+    state = PlaybackState::Failed;
+    header.status = 0;
+    std::cerr << "Could not seek telemetry tape: " << error << '\n';
+    return false;
+  }
   if (state == PlaybackState::Playing) {
     return true;
   }
@@ -268,6 +396,10 @@ void irsdk_shutdown() {
   hasPendingRecord = false;
   header = {};
   state = PlaybackState::Stopped;
+  seekPoints.clear();
+  durationSeconds = 0;
+  anchorSeconds = 0;
+  seekFrameReady = false;
 }
 
 bool irsdk_getNewData(irsdk_capture* capture) {
@@ -351,4 +483,32 @@ int irsdk_padCarNum(int num, int zero) {
   }
   places += zero;
   return num + 1000 * places;
+}
+
+irsdk_tape_status irsdk_tape_getStatus() {
+  return {playbackPosition(), durationSeconds, playbackSpeed, paused,
+      state == PlaybackState::Finished};
+}
+
+bool irsdk_tape_seek(double seconds) {
+  if (!tape || seekPoints.empty() || !std::isfinite(seconds)) return false;
+  rebaseClock(std::clamp(seconds, 0.0, durationSeconds));
+  state = PlaybackState::SeekDisconnect;
+  header.status = 0;
+  return true;
+}
+
+bool irsdk_tape_setSpeed(double speed) {
+  if (!tape || !std::isfinite(speed) || speed < 0.25 || speed > 100) return false;
+  rebaseClock(playbackPosition());
+  playbackSpeed = speed;
+  return true;
+}
+
+bool irsdk_tape_setPaused(bool value) {
+  if (!tape) return false;
+  rebaseClock(playbackPosition());
+  paused = value;
+  if (!paused && state == PlaybackState::Finished) return irsdk_tape_seek(0);
+  return true;
 }

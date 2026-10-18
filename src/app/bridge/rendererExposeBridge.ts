@@ -40,8 +40,13 @@ import {
   type RendererDataStream,
 } from './rendererDataSubscriptions';
 import { createSubscriptionBridgeClient, defineBridge } from './defineBridge';
+import type { TapeReplayBridge } from '@irdashies/types';
 
 export function exposeBridge() {
+  defineBridge<TapeReplayBridge>('tapeReplayBridge', {
+    getStatus: () => ipcRenderer.invoke('tapeReplay:status'),
+    command: (command) => ipcRenderer.invoke('tapeReplay:command', command),
+  });
   defineBridge<ReleaseNotesBridge>('releaseNotesBridge', {
     getStatus: () => ipcRenderer.invoke('releaseNotes:status'),
     getRelease: (version) => ipcRenderer.invoke('releaseNotes:get', version),

@@ -26,6 +26,7 @@ import {
   useGantryDock,
 } from './components/GantryDock/GantryDockHost';
 import { GantrySessionHoldProvider } from './components/Gantry/hooks/useGantrySessionHold';
+import { TapeReplayOverlay } from './components/TapeReplayControls/TapeReplayControls';
 
 /**
  * Check if this window is the settings window based on URL hash
@@ -112,6 +113,13 @@ const OverlayApp = () => {
 };
 
 const App = () => {
+  if (window.location.hash.startsWith('#/tape-replay')) {
+    return (
+      <ErrorBoundary label="tape replay">
+        <TapeReplayOverlay />
+      </ErrorBoundary>
+    );
+  }
   if (isGantryWindow()) {
     return (
       <ErrorBoundary label="gantry" resetAfterMs={2000}>
