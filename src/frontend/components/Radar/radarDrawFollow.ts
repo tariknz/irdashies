@@ -2,10 +2,10 @@ import type { RadarDrawFollow } from './radarDrawTypes';
 import { MIN_TEXT_PX, pose } from './radarDrawShared';
 import { formatDistance } from './radarStyle';
 
-export const FOLLOW_COLOR = '#22c55e';
+const FOLLOW_COLOR = '#22c55e';
 export const PACE_CAR_FILL = '#e2e8f0';
 
-export const FOLLOW_DASH = [6, 5];
+const FOLLOW_DASH = [6, 5];
 
 /**
  * Ends of the line from our car to the one we follow, each pulled in by half

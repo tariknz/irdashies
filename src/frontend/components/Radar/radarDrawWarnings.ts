@@ -28,7 +28,7 @@ export const drawWarningOutline = (
   ctx.restore();
 };
 
-export interface RimWarning {
+interface RimWarning {
   x: number;
   y: number;
   carLengthPx: number;

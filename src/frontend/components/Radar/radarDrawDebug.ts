@@ -1,9 +1,9 @@
 import type { RadarStyle } from './radarDrawTypes';
 import { MIN_TEXT_PX, pose } from './radarDrawShared';
 
-export const DEBUG_COLOR = '#fbbf24';
+const DEBUG_COLOR = '#fbbf24';
 
-export interface DebugLabel {
+interface DebugLabel {
   x: number;
   y: number;
   text: string;

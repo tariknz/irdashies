@@ -393,12 +393,4 @@ describe('separateInLaneCars', () => {
     separateInLaneCars(cars);
     expect(cars.map((car) => car.dist)).toEqual([1.8, 6, -1]);
   });
-
-  it('leaves a car across the pit wall alongside', () => {
-    const cars = [{ dist: 1.8, lane: 0, laneSource: 'none', onPitRoad: true }];
-    separateInLaneCars(cars, false);
-    expect(cars[0].dist).toBe(1.8);
-    separateInLaneCars(cars, true);
-    expect(cars[0].dist).toBe(5);
-  });
 });

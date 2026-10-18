@@ -5,8 +5,8 @@ import { arcThicknessPx, paintRimArc } from './radarArcs';
 import { drawHintText, drawWarningOutline } from './radarDrawWarnings';
 import { formatDistance, speedIn, speedUnit } from './radarStyle';
 
-export const HAZARD_YELLOW = '#facc15';
-export const HAZARD_LABELS: Record<RadarHazardKind, string> = {
+const HAZARD_YELLOW = '#facc15';
+const HAZARD_LABELS: Record<RadarHazardKind, string> = {
   crash: 'CRASH',
   slow: 'SLOW',
   off: 'OFF',
@@ -17,12 +17,9 @@ export const HAZARD_FLASH_HZ = 2;
 /** A crashed car is drawn turned across the road, as wrecks usually are. */
 export const CRASH_TILT = 1.1;
 /** Furthest from straight ahead a rim marker may sit, so it never points back. */
-export const HAZARD_MAX_BEARING = (100 * Math.PI) / 180;
+const HAZARD_MAX_BEARING = (100 * Math.PI) / 180;
 
-export const hazardColor = (
-  kind: RadarHazardKind,
-  style: RadarStyle
-): string =>
+const hazardColor = (kind: RadarHazardKind, style: RadarStyle): string =>
   kind === 'crash'
     ? style.alongsideColor
     : kind === 'slow'
@@ -53,12 +50,12 @@ export const hazardWanted = (
  * Off the track is steady: the car is out of the way. Everything else
  * flashes once it is near, and a car coming back on flashes at any distance.
  */
-export const hazardFlashes = (hazard: RadarDrawHazard, style: RadarStyle) =>
+const hazardFlashes = (hazard: RadarDrawHazard, style: RadarStyle) =>
   hazard.kind === 'rejoin' ||
   (hazard.kind !== 'off' && hazard.dist < style.hazardBlinkDistance);
 
 /** Warning triangle with an exclamation mark, centred on (x, y). */
-export const drawHazardTriangle = (
+const drawHazardTriangle = (
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,

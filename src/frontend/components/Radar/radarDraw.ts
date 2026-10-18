@@ -356,15 +356,15 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
       }
     }
 
+    const level = warningLevel(
+      car.dist,
+      car.length,
+      style.carLength,
+      style.cautionDistance
+    );
     const dive = scene.dives?.get(car.carIdx);
     let diveArcCar = -1;
     if (dive) {
-      const level = warningLevel(
-        car.dist,
-        car.length,
-        style.carLength,
-        style.cautionDistance
-      );
       const carX = pose.x;
       const carY = pose.y;
       if (dive.level === 'dive') {
@@ -431,7 +431,7 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
             ? `+${closing} ${dive.secondsToSide.toFixed(1)}s`
             : `+${closing}`;
         // On the side away from where it is heading.
-        const away = dive.side < 0 ? 1 : dive.side > 0 ? -1 : 1;
+        const away = dive.side > 0 ? -1 : 1;
         drawHintText(
           ctx,
           text,
@@ -446,12 +446,6 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
     }
 
     if (!style.showWarnings) continue;
-    const level = warningLevel(
-      car.dist,
-      car.length,
-      style.carLength,
-      style.cautionDistance
-    );
     if (level === 'none') continue;
     const color =
       level === 'alongside' ? style.alongsideColor : style.closeColor;
@@ -496,7 +490,6 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
   const { follow } = scene;
   const followBeyondRange = !!follow && Math.abs(follow.dist) > style.range;
   if (follow && !followBeyondRange) {
-    projector.project(follow.dist, 0, pose);
     const car = scene.cars.find((c) => c.carIdx === follow.carIdx);
     if (car) {
       projector.project(car.dist, car.lateral, pose);
@@ -507,6 +500,7 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
         car.width * pixelsPerMetre
       );
     } else {
+      projector.project(follow.dist, 0, pose);
       drawFollowLine(ctx, centre, pose, length, length);
       drawCarBody(
         ctx,

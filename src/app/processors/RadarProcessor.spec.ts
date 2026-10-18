@@ -221,6 +221,24 @@ describe('RadarProcessor', () => {
     ]);
   });
 
+  it('leaves a pit road car alongside, but spaces a track car out', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      frame({
+        time: 1,
+        pcts: [0.5, 0.5 + m(2), 0.5 - m(2)],
+        onPitRoad: [false, true, false],
+        carLeftRight: CarLeftRight.Off,
+      })
+    );
+
+    const byIdx = new Map(
+      processor.snapshot().cars.map((car) => [car.carIdx, car.dist])
+    );
+    expect(byIdx.get(1)).toBeCloseTo(2);
+    expect(byIdx.get(2)).toBeCloseTo(-5);
+  });
+
   it('reports the focus car parked in its pit box', () => {
     const processor = createProcessor();
     processor.onFrame(

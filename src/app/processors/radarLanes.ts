@@ -346,20 +346,12 @@ export class RadarLaneTracker {
  * length when nothing says they are beside it. The spotter is silent about
  * them, so they are not alongside; the overlap is noise in lap distance, and
  * drawing them on top of the focus car is worse than drawing them nose to
- * tail. Cars on the other side of the pit wall are left where they are.
+ * tail. Pass only cars on the focus car's side of the pit wall.
  */
 export const separateInLaneCars = (
-  cars: {
-    dist: number;
-    lane: number;
-    laneSource: string;
-    onPitRoad?: boolean;
-  }[],
-  focusOnPitRoad = false
+  cars: { dist: number; lane: number; laneSource: string }[]
 ): void => {
   for (const car of cars) {
-    // Across the pit wall is beside the track, not in our lane of it.
-    if ((car.onPitRoad ?? focusOnPitRoad) !== focusOnPitRoad) continue;
     if (
       car.laneSource === 'none' &&
       Math.abs(car.lane) < 0.5 &&

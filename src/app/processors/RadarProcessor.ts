@@ -236,8 +236,12 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         });
       }
       cars.sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist));
-      this.assignLanes(frame, time, focus, isOnTrack, cars, formation);
-      separateInLaneCars(cars, onPitRoad[focus] === true);
+      // Cars across the pit wall are beside the track, not in a lane of it.
+      const sameSide = cars.filter(
+        (car) => car.onPitRoad === (onPitRoad[focus] === true)
+      );
+      this.assignLanes(frame, time, focus, isOnTrack, sameSide, formation);
+      separateInLaneCars(sameSide);
     }
 
     // The pedals are the player's, so they say nothing about a camera car.
@@ -313,17 +317,11 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       this.lanes.reset();
       this.laneFocus = focus;
     }
-    const focusOnPitRoad = valuesOf(frame, 'CarIdxOnPitRoad')[focus] === true;
     const spotter =
       isOnTrack && focus === scalarNumber(frame, 'PlayerCarIdx')
         ? scalarNumber(frame, 'CarLeftRight', CarLeftRight.Off)
         : null;
-    const lanes = this.lanes.update(
-      time,
-      cars.filter((car) => car.onPitRoad === focusOnPitRoad),
-      spotter,
-      formation
-    );
+    const lanes = this.lanes.update(time, cars, spotter, formation);
     for (const car of cars) {
       const lane = lanes.get(car.carIdx);
       if (!lane) continue;
