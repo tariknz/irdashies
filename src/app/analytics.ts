@@ -305,6 +305,8 @@ export class Analytics {
       if (this.poleSideEvent?.hash !== report.hash) {
         this.poleSideEvent = { hash: report.hash, uuid: crypto.randomUUID() };
       }
+      // The player may have opted out while the file load was pending.
+      if (getAnalyticsOptOut()) return;
       await this.provider.captureConfirmed({
         distinctId: userId,
         event: 'radar_pole_side',
