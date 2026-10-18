@@ -76,7 +76,7 @@ export const SettingsLayout = () => {
           className="flex flex-row gap-4 items-center justify-between [-webkit-app-region:drag]"
           style={{
             paddingRight:
-              'max(0px, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) - 1rem))',
+              'max(0px, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)))',
           }}
         >
           <div className="flex flex-row gap-4 items-center">

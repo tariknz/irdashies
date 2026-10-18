@@ -526,8 +526,8 @@ html {
    palette the settings UI is written in, so components stay theme-agnostic. */
 @utility settings-heading {
   font-family: var(--font-heading);
-  text-transform: var(--ui-heading-transform, uppercase);
-  letter-spacing: var(--ui-heading-tracking, 0.04em);
+  text-transform: var(--ui-heading-transform, none);
+  letter-spacing: var(--ui-heading-tracking, normal);
 }
 
 @utility skew-ui {
@@ -536,6 +536,8 @@ html {
 
 .settings-theme {
   font-family: var(--font-sans);
+  --ui-heading-transform: uppercase;
+  --ui-heading-tracking: 0.04em;
   --radius-xs: 0;
   --radius-sm: 1px;
   --radius-md: 2px;
@@ -550,8 +552,8 @@ html {
 
 .settings-theme :where(h1, h2, h3) {
   font-family: var(--font-heading);
-  text-transform: var(--ui-heading-transform, uppercase);
-  letter-spacing: var(--ui-heading-tracking, 0.04em);
+  text-transform: var(--ui-heading-transform);
+  letter-spacing: var(--ui-heading-tracking);
 }
 
 /* The default: the stock slate/blue palette with plain headings. Applied
@@ -560,8 +562,6 @@ html {
    is not pixel-identical to the pre-theme window. The two slate tokens repeat
    the defaults only because the title bar colours are checked here. */
 .settings-theme-classic {
-  --ui-heading-transform: none;
-  --ui-heading-tracking: normal;
   --color-slate-300: #cad5e2;
   --color-slate-700: #314158;
 }

@@ -1,3 +1,4 @@
+import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from '@irdashies/context';
@@ -366,7 +367,7 @@ export const ProfileSettings = () => {
             <button
               onClick={handleCreateProfile}
               disabled={isCreating || !newProfileName.trim()}
-              className="bg-accent-600 hover:bg-accent-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-on-accent px-4 py-2 rounded font-medium transition-colors"
+              className="bg-accent-600 hover:bg-accent-700 disabled:bg-slate-600 disabled:text-slate-400 disabled:cursor-not-allowed text-on-accent px-4 py-2 rounded font-medium transition-colors"
             >
               {isCreating ? 'Creating...' : 'Create'}
             </button>
@@ -599,16 +600,11 @@ export const ProfileSettings = () => {
                 from the last profile back to the first (and vice versa).
               </p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={cycleProfiles}
-                onChange={(e) => handleToggleCycleProfiles(e.target.checked)}
-                aria-labelledby="cycle-profiles-label"
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-600"></div>
-            </label>
+            <ToggleSwitch
+              enabled={cycleProfiles}
+              onToggle={(enabled) => handleToggleCycleProfiles(enabled)}
+              ariaLabelledBy="cycle-profiles-label"
+            />
           </div>
 
           <div className="flex items-center justify-between gap-4">
@@ -624,18 +620,11 @@ export const ProfileSettings = () => {
                 profiles.
               </p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showProfileBanner}
-                onChange={(e) =>
-                  handleToggleShowProfileBanner(e.target.checked)
-                }
-                aria-labelledby="show-profile-banner-label"
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent-500 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-600"></div>
-            </label>
+            <ToggleSwitch
+              enabled={showProfileBanner}
+              onToggle={(enabled) => handleToggleShowProfileBanner(enabled)}
+              ariaLabelledBy="show-profile-banner-label"
+            />
           </div>
         </div>
 
