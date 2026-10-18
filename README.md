@@ -218,7 +218,7 @@ Displays standings information for the current session.
 - Option to use live position standings (updates continuously vs only at start/finish line)
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
 
-![Standings with configurable column headers](./docs/assets/standings.png)
+![Standings](./docs/assets/standings-custom-theme-color-black.png)
 
 ### Relative
 
