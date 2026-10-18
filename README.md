@@ -93,7 +93,7 @@ Displays the throttle, clutch, and brake input traces, as well as the current ge
 - Option to show only when on track
 - Session visibility settings (Race, Lone Qualify, Open Qualify, Practice, Offline Testing)
 
-<img src="./docs/assets/input.png" alt="Input Trace" width="444">
+![Input Trace](./docs/assets/input.png)
 
 ### Lap Trace
 
@@ -387,7 +387,7 @@ Displays comprehensive fuel management information including current fuel level,
 - Pit window timing information
 - Endurance strategy display (total pit stops and stint info for long races)
 - Consumption history graphs:
-  - Line chart or histogram
+  - Histogram (default) or line chart
   - Optional lap table showing fuel used per completed lap
   - Configurable history length
 - Configurable safety margin (0-20%) for fuel calculations
@@ -396,7 +396,13 @@ Displays comprehensive fuel management information including current fuel level,
 - Fuel-to-add mode: Toggle between showing total fuel needed or just what's needed at the next stop
 - Target consumption: Shows what fuel saving is required to reach specific lap targets (±1 from current estimate)
 
-<img src="./docs/assets/fuelcalculator.png" alt="Fuel Calculator with strategy and recent lap history" width="340">
+**All sections enabled**, with histogram history, pit planning, fuel-saving targets, and time until empty:
+
+<img src="./docs/assets/fuelcalculator.png" alt="Fuel Calculator with all sections enabled and histogram history" width="324">
+
+**Default layout**, with the header, fuel gauge, and consumption grid:
+
+<img src="./docs/assets/fuelcalculator-default.png" alt="Default Fuel Calculator showing the basic strategy information" width="324">
 
 ### Blind Spot Monitor
 
