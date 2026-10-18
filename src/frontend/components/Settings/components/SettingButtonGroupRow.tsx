@@ -27,6 +27,7 @@ export function SettingButtonGroupRow<T extends string>({
           return (
             <button
               key={opt.value}
+              aria-pressed={isActive}
               onClick={() => onChange(opt.value)}
               className={`px-3 py-1 rounded text-sm skew-ui settings-heading font-semibold border transition-colors ${
                 isActive

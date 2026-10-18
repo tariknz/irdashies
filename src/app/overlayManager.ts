@@ -1321,8 +1321,9 @@ export class OverlayManager {
     // Called on every dashboard publish; only repaint when the theme changes.
     const resolved = resolveSettingsTheme(theme);
     if (this.settingsTitleBarTheme === resolved) return;
-    this.settingsTitleBarTheme = resolved;
     win.setTitleBarOverlay(settingsTitleBarOverlay(theme));
+    // After the repaint: a throw leaves the cache stale so the next update retries.
+    this.settingsTitleBarTheme = resolved;
   }
 
   public createSettingsWindow(

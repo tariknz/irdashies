@@ -291,6 +291,20 @@ describe('settings window title bar theme', () => {
   };
 
   it.skipIf(process.platform === 'darwin')(
+    'retries the repaint after a failed one',
+    () => {
+      const { manager, win } = setup();
+      win.setTitleBarOverlay.mockImplementationOnce(() => {
+        throw new Error('gone');
+      });
+
+      expect(() => manager.setSettingsTitleBarTheme('carbon')).toThrow();
+      manager.setSettingsTitleBarTheme('carbon');
+      expect(win.setTitleBarOverlay).toHaveBeenCalledTimes(2);
+    }
+  );
+
+  it.skipIf(process.platform === 'darwin')(
     'repaints only when the resolved theme changes',
     () => {
       const { manager, win } = setup();
