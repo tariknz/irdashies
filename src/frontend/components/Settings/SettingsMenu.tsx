@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useReleaseNotesStatus } from './ReleaseNotes/ReleaseNotesStatusContext';
 import { Link, useLocation } from 'react-router-dom';
-import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react';
 import {
   useActiveSimulator,
   useDashboard,
@@ -20,11 +19,13 @@ const MenuLink = ({
   showIcon = false,
   isEnabled,
   disabledReason,
+  isNew,
 }: {
   item: MenuItem;
   pathname: string;
   showIcon?: boolean;
   isEnabled?: boolean;
+  isNew?: boolean;
   /** Hover text when the running sim cannot support this widget. */
   disabledReason?: string | null;
 }) => {
@@ -53,6 +54,11 @@ const MenuLink = ({
           />
         )}
         <span className="flex-1">{item.label}</span>
+        {isNew && (
+          <span className="rounded bg-sky-400/15 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300">
+            New
+          </span>
+        )}
         {isEnabled && !disabledReason && (
           <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-emerald-400" />
         )}
@@ -62,35 +68,11 @@ const MenuLink = ({
 };
 
 export const SettingsMenu = () => {
+  const { status: releaseNotesStatus } = useReleaseNotesStatus();
   const { pathname } = useLocation();
   const { currentDashboard } = useDashboard();
   const simulator = useActiveSimulator();
   const supportConfig = useSimWidgetSupport();
-  // Compatible-only by default: the full list is mostly noise when half of it
-  // cannot run in the sim you are using. Persisted in config.json, so the
-  // choice survives a restart.
-  const [showAllWidgets, setShowAllWidgets] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    void window.dashboardBridge
-      ?.getSettingsShowAllWidgets?.()
-      .then((stored) => {
-        if (!cancelled) setShowAllWidgets(stored);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const toggleShowAllWidgets = () => {
-    setShowAllWidgets((previous) => {
-      const next = !previous;
-      void window.dashboardBridge?.setSettingsShowAllWidgets?.(next);
-      return next;
-    });
-  };
-
   const isWidgetEnabled = (widgetType: string) => {
     const widget = currentDashboard?.widgets.find(
       (w) => (w.type ?? w.id) === widgetType
@@ -108,9 +90,9 @@ export const SettingsMenu = () => {
         simulator
       ),
     }));
-  const visibleItems = showAllWidgets
-    ? itemsWithSupport
-    : itemsWithSupport.filter(({ disabledReason }) => !disabledReason);
+  const visibleItems = itemsWithSupport.filter(
+    ({ disabledReason }) => !disabledReason
+  );
   const hiddenCount = itemsWithSupport.length - visibleItems.length;
 
   return (
@@ -122,23 +104,10 @@ export const SettingsMenu = () => {
       </ul>
 
       <div className="flex items-center gap-1 px-2 pt-2 pb-1">
-        <button
-          type="button"
-          onClick={toggleShowAllWidgets}
-          title={
-            showAllWidgets
-              ? 'Showing every widget. Click to show only the ones this simulator supports.'
-              : 'Showing only the widgets this simulator supports. Click to show every widget.'
-          }
-          aria-pressed={showAllWidgets}
-          className="shrink-0 text-slate-500 hover:text-slate-300 transition-colors"
-        >
-          {showAllWidgets ? <EyeIcon size={14} /> : <EyeSlashIcon size={14} />}
-        </button>
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
           Widgets
         </p>
-        {!showAllWidgets && hiddenCount > 0 && (
+        {hiddenCount > 0 && (
           <span className="text-xs text-slate-600">({hiddenCount} hidden)</span>
         )}
       </div>
@@ -160,7 +129,16 @@ export const SettingsMenu = () => {
 
       <ul className="mt-auto pt-2 border-t border-slate-700 flex flex-col">
         {bottomItems.map((item) => (
-          <MenuLink key={item.path} item={item} pathname={pathname} showIcon />
+          <MenuLink
+            key={item.path}
+            item={item}
+            pathname={pathname}
+            showIcon
+            isNew={
+              item.path === '/release-notes' &&
+              !!releaseNotesStatus?.unreadVersion
+            }
+          />
         ))}
       </ul>
     </div>

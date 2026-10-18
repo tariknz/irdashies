@@ -1,7 +1,12 @@
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { DashboardProvider, RunningStateProvider } from '@irdashies/context';
-import type { IrSdkBridge } from '@irdashies/types';
+import type {
+  IrSdkBridge,
+  ReleaseNotesBridge,
+  ReleaseNotesStatus,
+} from '@irdashies/types';
+import { releaseNotesFixture } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
 import { mockDashboardBridge } from '@irdashies/storybook';
 
@@ -75,4 +80,44 @@ export const FlatTrackMapRoute: Story = {
   args: {
     initialPath: '/settings/flatmap',
   },
+};
+
+const withReleaseNotesBadge = () => {
+  const previous = window.releaseNotesBridge;
+  let status: ReleaseNotesStatus = {
+    currentVersion: '2.1.0',
+    unreadVersion: '2.1.0',
+    pendingVersion: null,
+    availableVersion: null,
+    autoShow: false,
+    development: true,
+    simulation: true,
+  };
+  const bridge: ReleaseNotesBridge = {
+    getStatus: async () => ({ ...status }),
+    getRelease: async () => ({
+      status: 'ready',
+      release: releaseNotesFixture(),
+      cached: false,
+    }),
+    dismiss: async () => {
+      status = { ...status, unreadVersion: null, pendingVersion: null };
+    },
+    setAutoShow: async (enabled) => {
+      status = { ...status, autoShow: enabled };
+    },
+  };
+  window.releaseNotesBridge = bridge;
+  return () => {
+    window.releaseNotesBridge = previous;
+  };
+};
+
+export const NewReleaseNotesBadge: Story = {
+  args: { initialPath: '/settings/general' },
+  beforeEach: withReleaseNotesBadge,
+};
+export const ReleaseNotesPage: Story = {
+  args: { initialPath: '/settings/release-notes' },
+  beforeEach: withReleaseNotesBadge,
 };

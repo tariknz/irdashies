@@ -1,3 +1,4 @@
+import { ReleaseNotesSettings } from './ReleaseNotes/ReleaseNotesSettings';
 import type { ComponentType } from 'react';
 import { useParams } from 'react-router-dom';
 import type { WidgetId } from '@irdashies/types';
@@ -100,6 +101,7 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
   if (widgetId === 'advanced') return <AdvancedSettings />;
   if (widgetId === 'car-setup') return <CarSetupSettings />;
   if (widgetId === 'about') return <AboutSettings />;
+  if (widgetId === 'release-notes') return <ReleaseNotesSettings />;
   if (widgetId === 'driver-tags') return <DriverTagsSettings />;
   if (widgetId === 'keybindings') return <KeybindingsSettings />;
 

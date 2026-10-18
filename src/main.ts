@@ -1,3 +1,4 @@
+import { setupReleaseNotesBridge } from './app/bridge/releaseNotesBridge';
 import { app, BrowserWindow, ipcMain } from 'electron';
 import log from './app/logger';
 import {
@@ -141,6 +142,9 @@ analytics.setupLogTransport();
 overlayManager.setupChromiumFlags();
 overlayManager.setupHardwareAcceleration();
 overlayManager.setupSingleInstanceLock();
+const releaseNotes = overlayManager.hasLock()
+  ? setupReleaseNotesBridge()
+  : undefined;
 overlayManager.setupAutoStart();
 
 // Hoisted so the quit handler can tear down the WebHID host window cleanly.
@@ -661,6 +665,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
       flushIncidentsOnShutdown(),
       flushLapHistoryOnShutdown(),
       knownLocalUserIds.flush(),
+      releaseNotes?.flush(),
       flushGarage61SearchSessionOnShutdown(),
     ]);
   },

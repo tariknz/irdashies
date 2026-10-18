@@ -10,6 +10,7 @@
   "main": ".vite/build/main.cjs",
   "scripts": {
     "start": "electron-forge start --enable-logging",
+    "release-notes:preview": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/preview-release-notes.mjs",
     "generate-assets": "npx tsx ./tools/index.ts",
     "generate-track-json": "npx tsx ./tools/generate-track-json.ts",
     "irsdk:build": "node-gyp rebuild",
@@ -119,7 +120,11 @@
     "posthog-node": "^5.55.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.18.4",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
     "update-electron-app": "^3.3.0",
     "ws": "^8.22.0",
     "zustand": "^5.0.15"

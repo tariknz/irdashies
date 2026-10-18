@@ -6,6 +6,7 @@ import {
   KeyboardIcon,
   WrenchIcon,
   InfoIcon,
+  NewspaperIcon,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { WIDGET_MANIFESTS } from '@irdashies/types';
@@ -72,6 +73,12 @@ export const bottomItems: MenuItem[] = [
     path: '/advanced',
     label: 'Advanced',
     icon: WrenchIcon,
+  },
+  {
+    to: '/settings/release-notes',
+    path: '/release-notes',
+    label: 'Release notes',
+    icon: NewspaperIcon,
   },
   { to: '/settings/about', path: '/about', label: 'About', icon: InfoIcon },
 ];
