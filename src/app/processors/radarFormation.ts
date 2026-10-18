@@ -1,9 +1,6 @@
-import {
-  SessionState,
-  TrackLocation,
-  poleLeftForTrack,
-  type Session,
-} from '@irdashies/types';
+import { SessionState, TrackLocation, type Session } from '@irdashies/types';
+// Not from the types barrel: the table is main-process only and large.
+import { poleLeftForTrack } from '../../types/radarPoleSides';
 
 /** iRacing's PaceMode telemetry values. */
 export const PaceMode = {

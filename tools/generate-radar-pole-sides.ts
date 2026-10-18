@@ -105,7 +105,7 @@ const lapPoints = (drawing: Drawing) => {
 };
 
 /** True when the first corner turns left. Drawings are y-down, so a positive heading change is a right turn. */
-export const firstCornerIsLeft = (drawing: Drawing): boolean | null => {
+const firstCornerIsLeft = (drawing: Drawing): boolean | null => {
   const pts = lapPoints(drawing);
   if (!pts) return null;
   const chord = Math.max(1, Math.round(SAMPLES * CHORD));
@@ -140,27 +140,17 @@ const main = () => {
     : { tracks: {}, trackNames: {} };
   const tracks: Record<string, Entry> = {};
   let skipped = 0;
-  for (const id of Object.keys(drawings).sort(
-    (a, b) => Number(a) - Number(b)
-  )) {
-    const kept = previous.tracks?.[id];
-    if (kept?.source === 'verified' || kept?.source === 'reported') {
-      tracks[id] = kept;
-      continue;
-    }
+  for (const [id, drawing] of Object.entries(drawings)) {
     let left: boolean | null;
     try {
-      left = firstCornerIsLeft(drawings[id]);
+      left = firstCornerIsLeft(drawing);
     } catch {
       left = null;
     }
-    if (left === null) {
-      skipped += 1;
-      continue;
-    }
-    tracks[id] = { poleLeft: left, source: 'geometry' };
+    if (left === null) skipped += 1;
+    else tracks[id] = { poleLeft: left, source: 'geometry' };
   }
-  // Verified ids that have no drawing still stay.
+  // What people confirmed or reported wins over geometry, drawing or not.
   for (const [id, kept] of Object.entries<Entry>(previous.tracks ?? {})) {
     if (kept.source === 'verified' || kept.source === 'reported') {
       tracks[id] = kept;
@@ -188,4 +178,4 @@ const main = () => {
   );
 };
 
-if (process.argv[1]?.includes('generate-radar-pole-sides')) main();
+main();

@@ -32,7 +32,6 @@ export * from './simWidgetSupport';
 export * from './displayFallback';
 export * from './lapHistoryBridge';
 export * from './lmuTrackAliases';
-export * from './radarPoleSides';
 export * from './widgets';
 export * from './releaseNotes';
 export * from './releaseNotesFixture';
