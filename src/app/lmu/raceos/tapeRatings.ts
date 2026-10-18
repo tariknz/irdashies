@@ -2,6 +2,7 @@ import type { LmuDriverRating } from '@irdashies/types';
 import logger from '../../logger';
 import type { LmuTapeRestSource } from '../rest/tapeTransport';
 import type { RaceosClient } from './client';
+import { raceosUsername } from './parse';
 
 /**
  * Driver ratings served from a tape, for replays.
@@ -12,11 +13,12 @@ import type { RaceosClient } from './client';
  * meant to be shared. So on a replay there is nothing to authenticate with and
  * no network call worth making.
  *
- * What makes badges possible anyway is that `anonymise` bakes them in: it maps
- * each real Steam id to a synthetic one and writes the ratings it finds in the
- * app's cache under the new ids, as one REST record on a reserved path. The
- * ids in the snapshots match, so the join still works and a replay shows the
- * badges it was recorded with -- without carrying a single real identity.
+ * What makes badges possible anyway is that `anonymise` bakes them in: it
+ * writes the ratings it finds in the app's cache into the tape as one REST
+ * record on a reserved path, keyed by driver name. Those keys go through the
+ * same name substitution as every other recorded body, so on an anonymised
+ * tape they are the pseudonyms the snapshots carry and the join still works --
+ * a replay shows the badges it was recorded with, under the renamed drivers.
  *
  * This implements the same interface as the live client so the bridge only
  * chooses between them. `request` is a no-op because everything a tape will
@@ -41,7 +43,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
  * Shapes are checked rather than trusted. The body was written by the
  * anonymiser out of a cache file on someone else's machine, so a tape from an
  * older build -- or a hand-edited one -- must leave the standings alone rather
- * than put malformed ratings into them.
+ * than put malformed ratings into them. A tape baked when ratings were keyed
+ * by Steam id reads as a map of ids that match no driver, which is harmless:
+ * every lookup simply misses.
  */
 const parse = (body: string): Map<string, LmuDriverRating> => {
   const out = new Map<string, LmuDriverRating>();
@@ -53,8 +57,12 @@ const parse = (body: string): Map<string, LmuDriverRating> => {
     return out;
   }
   if (!isRecord(payload)) return out;
-  for (const [steamId, rating] of Object.entries(payload)) {
-    if (isRecord(rating)) out.set(steamId, rating as LmuDriverRating);
+  for (const [name, rating] of Object.entries(payload)) {
+    // Canonicalised on the way in as well: the keys were rewritten by the
+    // anonymiser's text substitution, which has no reason to preserve the
+    // trimming the lookup applied when they were first stored.
+    const key = raceosUsername(name);
+    if (key && isRecord(rating)) out.set(key, rating as LmuDriverRating);
   }
   return out;
 };
@@ -104,7 +112,7 @@ export function createLmuTapeRatingClient(
   };
 
   return {
-    get: (steamId) => load()?.get(steamId),
+    get: (driverName) => load()?.get(raceosUsername(driverName)),
     // Nothing to ask: a tape holds everything it will ever hold.
     request: () => undefined,
     reset: () => {

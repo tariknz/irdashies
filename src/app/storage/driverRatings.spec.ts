@@ -118,7 +118,24 @@ describe('driver rating cache', () => {
   it('ignores a file written by a future schema', async () => {
     await fsp.writeFile(
       path.join(dir, 'lmu-driver-ratings.json'),
-      JSON.stringify({ version: 2, entries: { a: { rating: gold, at: 1 } } }),
+      JSON.stringify({ version: 3, entries: { a: { rating: gold, at: 1 } } }),
+      'utf8'
+    );
+    const cache = createDriverRatingCache(dir, now);
+    await cache.load();
+    expect(cache.size()).toBe(0);
+  });
+
+  it('discards a file keyed by Steam id', async () => {
+    // Version 1 was keyed by Steam id, which the sim reports as 0 for every
+    // driver -- so such a file holds nothing that could ever match a lookup
+    // again. Dropped rather than migrated: there is no name to migrate it to.
+    await fsp.writeFile(
+      path.join(dir, 'lmu-driver-ratings.json'),
+      JSON.stringify({
+        version: 1,
+        entries: { '76561198000000111': { rating: gold, at: 1 } },
+      }),
       'utf8'
     );
     const cache = createDriverRatingCache(dir, now);

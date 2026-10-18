@@ -316,11 +316,14 @@ export function mapLmuSession(
    */
   rest?: LmuRestSession,
   /**
-   * Ratings already resolved for a Steam id, from the rating service. A
+   * Ratings already resolved for a driver name, from the rating service. A
    * synchronous read: the lookup itself happens off this path, and a driver
    * with no answer yet simply has no rank until a later snapshot.
+   *
+   * By name rather than Steam id because that is what the service is asked
+   * by, and because the sim reports 0 for every id in any case.
    */
-  ratingFor?: (steamId: string) => LmuDriverRating | undefined
+  ratingFor?: (driverName: string) => LmuDriverRating | undefined
 ): Session {
   const trackLengthM = raw.lapDist;
   const shiftLights = deriveLmuShiftLightRpm(raw.engineMaxRPM);
@@ -404,13 +407,14 @@ export function mapLmuSession(
     TeamIncidentCount: 0,
     // Only the country is populated here. Rank and badge come from the
     // rating service and are merged in by the bridge when available, so a
-    // driver can carry a flag with no rating and vice versa.
+    // driver can carry a flag with no rating and vice versa. Both join on the
+    // name the sim reports, from two different sources.
     // Country and rank arrive by different routes -- the sim's own teams
     // endpoint and the rating service -- so a driver can have either, both
     // or neither. Merged rather than one overriding the other.
     LmuRating: mergeRating(
       nationalities?.[d.name],
-      d.steamId ? ratingFor?.(d.steamId) : undefined
+      d.name ? ratingFor?.(d.name) : undefined
     ),
   }));
 

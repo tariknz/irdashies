@@ -23,10 +23,48 @@ key: the lookup is authorised by a credential the sim mints for the signed-in
 user.
 
 1. LMU's local REST API issues a Steam auth session ticket
-   (`/rest/profile/getAuthSessionTicket`).
-2. `client.ts` exchanges that ticket at `raceos.gg` for a bearer token.
-3. The token authorises a batched lookup of the Steam ids on the grid
-   (~50 per call).
+   (`/rest/profile/getAuthSessionTicket`), as
+   `{"authSessionTicket":"<hex>"}`.
+2. `client.ts` exchanges it for an access token:
+
+   ```http
+   POST https://raceos.gg/authenticate
+   Content-Type: application/json
+
+   {"token":"<ticket>","game":"lmu","platform":"steam"}
+   ```
+
+   All three fields are required; without `game` the service answers
+   `Invalid game specified`. The reply is
+   `{"accessToken":"<jwt>","expiresAt":"<RFC 3339>"}` — an absolute instant,
+   not a duration.
+
+3. The token authorises a batched lookup of the **driver names** on the grid
+   (~50 per call):
+
+   ```http
+   POST https://raceos.gg/api/v1/players
+   Content-Type: application/json
+   Game-Authorization: <jwt>
+
+   {"usernames":["Herve Attard","Leonel Gomez"]}
+   ```
+
+   Note the header: `Game-Authorization`, and bare — no `Bearer ` prefix. The
+   reply is a plain array of player records.
+
+### Names, not Steam ids
+
+The join is on driver name, which is not the obvious choice and was not the
+first one tried. The sim reports `mSteamID` as **0 for every driver** — in
+shared memory and in its own `/rest/watch/standings` — so there is no id to key
+on, and the service takes usernames in any case.
+
+Names are sent as the standings spell them: same capitalisation, UTF-8 intact,
+with anything from a `#` onward dropped and surrounding whitespace trimmed.
+`raceosUsername` in `parse.ts` is that rule, and it is applied to both sides of
+the join — outgoing names and the `username` each record comes back with — so a
+name echoed back with different padding still matches its driver.
 
 So the user's Steam identity is relayed to `raceos.gg`, a third party with no
 public API, no published terms and no agreement with this project, and the
@@ -66,13 +104,17 @@ a tape is a fixture meant to be shared, so the recorder never captures that
 path; a replay has nothing to authenticate with, and `createRaceosClient` is
 not even built — `tapeRatings.ts` takes its place.
 
-What makes badges work in a replay is that `anonymise` bakes them in. It maps
-every real Steam id to a synthetic one — a Steam id is a permanent, publicly
-resolvable handle, so leaving it beside a pseudonymised name would defeat the
-pseudonym — and then writes the ratings it finds in `lmu-driver-ratings.json`
-under those new ids, as one REST record on a reserved path. The ids in the
-snapshots match, so the join still works and the replay shows the badges it was
-recorded with, carrying no real identity.
+What makes badges work in a replay is that `anonymise` bakes them in. It writes
+the ratings it finds in `lmu-driver-ratings.json` into the tape as one REST
+record on a reserved path, keyed by driver name — and those keys go through the
+same name substitution as every other recorded body, so on an anonymised tape
+they come out as the pseudonyms the snapshots carry. No second mapping to keep
+in step, and the replay shows the badges it was recorded with under the renamed
+drivers.
+
+`anonymise` also replaces every real `mSteamID` with a synthetic one. Nothing
+reads that field any more, but a Steam id is a permanent, publicly resolvable
+handle, and leaving it beside a pseudonymised name would defeat the pseudonym.
 
 ```
 lmu_replay anonymise --input raw.lmudt --output anon.lmudt --names names.txt     [--ratings <cache.json>] [--no-ratings]
@@ -82,6 +124,10 @@ lmu_replay anonymise --input raw.lmudt --output anon.lmudt --names names.txt    
 file, a grid the cache has nothing for, or `--no-ratings` all mean the same
 thing: the replay shows flags but no badges. A remembered miss is left out
 rather than baked, so a driver the service had nothing for stays that way.
+
+The cache file is keyed by driver name and stores `version: 2`. A version 1
+file was keyed by Steam id, so it holds nothing that could match a lookup
+again and is discarded rather than migrated.
 
 Two lists have to agree for any of this to work, and both are checked by
 `rest/recorderParity.spec.ts` rather than by review: the recorder's REST paths

@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { parseRaceosPlayer, parseRaceosPlayers, steamIdOf } from './parse';
+import {
+  parseRaceosPlayer,
+  parseRaceosPlayers,
+  raceosUsername,
+  usernameOf,
+} from './parse';
 
 const player = (over: Record<string, unknown> = {}) => ({
   id: 'p1',
   name: 'Jean Dupont',
-  username: 'jdupont',
+  username: 'Jean Dupont',
   driverRank: { rank: 'Gold', tier: 3, progress: 0.42 },
   safetyRank: { rank: 'Silver', tier: 1, progress: 0.1 },
   platforms: [{ id: '76561198000000001', platform: 'steam' }],
@@ -12,24 +17,52 @@ const player = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-describe('steamIdOf', () => {
-  it('picks the steam platform out of the list', () => {
-    expect(
-      steamIdOf(
-        player({
-          platforms: [
-            { id: 'epic-123', platform: 'epic' },
-            { id: '765611980000', platform: 'Steam' },
-          ],
-        })
-      )
-    ).toBe('765611980000');
+describe('raceosUsername', () => {
+  it('keeps the name as the standings spell it', () => {
+    // Sent verbatim: same capitalisation, UTF-8 intact. The service matched
+    // "Herve Attard" exactly, so nothing here may lowercase or transliterate.
+    expect(raceosUsername('Herve Attard')).toBe('Herve Attard');
+    expect(raceosUsername('S\u00e9bastien Rival')).toBe('S\u00e9bastien Rival');
   });
 
-  it('returns undefined when no steam platform is present', () => {
-    expect(steamIdOf(player({ platforms: [] }))).toBeUndefined();
-    expect(steamIdOf(player({ platforms: 'nope' }))).toBeUndefined();
-    expect(steamIdOf(null)).toBeUndefined();
+  it('drops anything from a hash onward', () => {
+    expect(raceosUsername('Herve Attard#1234')).toBe('Herve Attard');
+    expect(raceosUsername('Name#a#b')).toBe('Name');
+  });
+
+  it('trims surrounding whitespace', () => {
+    expect(raceosUsername('  Herve Attard  ')).toBe('Herve Attard');
+    // Trimmed after the hash is cut, so padding before it goes too.
+    expect(raceosUsername(' Herve Attard #9')).toBe('Herve Attard');
+  });
+
+  it('returns empty for a name that is only a suffix', () => {
+    expect(raceosUsername('#1234')).toBe('');
+    expect(raceosUsername('   ')).toBe('');
+  });
+});
+
+describe('usernameOf', () => {
+  it('reads the username a record belongs to', () => {
+    expect(usernameOf(player())).toBe('Jean Dupont');
+  });
+
+  it('canonicalises what the service sent back', () => {
+    // Both sides of the join go through the same function, so a name echoed
+    // back with padding still matches the driver it belongs to.
+    expect(usernameOf(player({ username: '  Jean Dupont  ' }))).toBe(
+      'Jean Dupont'
+    );
+  });
+
+  it('falls back to name when username is absent', () => {
+    expect(usernameOf(player({ username: undefined }))).toBe('Jean Dupont');
+  });
+
+  it('returns undefined when neither is usable', () => {
+    expect(usernameOf(player({ username: '', name: '' }))).toBeUndefined();
+    expect(usernameOf(player({ username: 123, name: null }))).toBeUndefined();
+    expect(usernameOf(null)).toBeUndefined();
   });
 });
 
@@ -83,20 +116,24 @@ describe('parseRaceosPlayer', () => {
 });
 
 describe('parseRaceosPlayers', () => {
-  it('keys results by steam id', () => {
+  it('keys results by username', () => {
     const map = parseRaceosPlayers([player()]);
-    expect(map.get('76561198000000001')?.driverRank).toBe('Gold');
+    expect(map.get('Jean Dupont')?.driverRank).toBe('Gold');
   });
 
   it('accepts the wrapped forms as well as a bare array', () => {
-    // The wrapper has been seen both ways; guessing wrong costs every badge.
+    // A live response is a bare array; the wrappers are kept as cheap
+    // tolerance because guessing wrong costs every badge at once.
     expect(parseRaceosPlayers({ players: [player()] }).size).toBe(1);
     expect(parseRaceosPlayers({ data: [player()] }).size).toBe(1);
     expect(parseRaceosPlayers([player()]).size).toBe(1);
   });
 
-  it('skips records with no steam id', () => {
-    expect(parseRaceosPlayers([player({ platforms: [] })]).size).toBe(0);
+  it('skips records with no usable name', () => {
+    // Nothing to key the answer by, so it cannot be matched to a driver.
+    expect(parseRaceosPlayers([player({ username: '', name: '' })]).size).toBe(
+      0
+    );
   });
 
   it('returns an empty map for anything unrecognised', () => {

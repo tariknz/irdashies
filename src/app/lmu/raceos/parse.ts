@@ -11,15 +11,21 @@ import { normaliseNationality } from '../nationality';
  * deployments, and a surprise there must cost one missing badge, not a dead
  * lookup loop.
  *
- * The record shape, as observed:
+ * The record shape, from a live response:
  *
  * ```json
- * { "id": "...", "name": "...", "username": "...",
- *   "driverRank": { "rank": "Gold", "tier": 3, "progress": 0.42 },
- *   "safetyRank": { "rank": "Silver", "tier": 1, "progress": 0.1 },
- *   "platforms": [ { "id": "7656119...", "platform": "steam" } ],
- *   "profile":   { "nationality": "FRA", "badge": "lemans-2024" } }
+ * { "id": "98fab0c2-...", "name": "Herve Attard", "username": "Herve Attard",
+ *   "driverRank": { "elo": 0, "rank": "Bronze", "tier": 3, "progress": 70 },
+ *   "safetyRank": { "rank": "Silver", "tier": 2, "progress": 20 },
+ *   "platforms": [ { "id": "7656119...", "platform": "steam" },
+ *                  { "id": "98fab0c2-...", "platform": "nakama" } ],
+ *   "profile":   { "nationality": "US", "badge": "sr-saint" } }
  * ```
+ *
+ * Records are keyed by `username`, because that is what the lookup asks by --
+ * the service takes a list of names, not ids. `platforms` does carry a Steam
+ * id, but it is of no use here: the sim reports 0 for every driver, which is
+ * what ruled out an id-keyed lookup in the first place.
  */
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
@@ -60,22 +66,36 @@ const readRank = (value: unknown): { rank?: LmuRank; tier?: number } => {
 };
 
 /**
- * The Steam ID a record belongs to, from its platform list.
+ * The name to ask the rating service about, from the name the sim reports.
  *
- * A player can have several platforms; only the Steam one identifies them in
- * an LMU session. Returned so the caller can key the result, because the
- * service does not guarantee response order matches the request.
+ * Sent as the standings spell it -- same capitalisation, UTF-8 -- with two
+ * adjustments: anything from a `#` onward is dropped, and surrounding
+ * whitespace is trimmed.
+ *
+ * Applied to both sides of the join. The request is built from it and the
+ * response's own `username` is put through it again before matching, so a
+ * service that echoes a name back with different padding still lines up with
+ * the driver it belongs to.
  */
-export const steamIdOf = (record: unknown): string | undefined => {
-  const platforms = asRecord(record)?.platforms;
-  if (!Array.isArray(platforms)) return undefined;
-  for (const entry of platforms) {
-    const platform = asRecord(entry);
-    if (asString(platform?.platform)?.toLowerCase() !== 'steam') continue;
-    const id = asString(platform?.id);
-    if (id) return id;
-  }
-  return undefined;
+export const raceosUsername = (name: string): string =>
+  name.split('#')[0].trim();
+
+/**
+ * The username a record belongs to, canonicalised for matching.
+ *
+ * Returned so the caller can key the result: the service does not guarantee
+ * the response order matches the request, and it answers only for the names
+ * it knows, so the two lists are not even the same length.
+ */
+export const usernameOf = (record: unknown): string | undefined => {
+  const player = asRecord(record);
+  if (!player) return undefined;
+  // `name` is the fallback: both were identical in every observed response,
+  // but `username` is the field the lookup is keyed by and so wins.
+  const raw = asString(player.username) ?? asString(player.name);
+  if (!raw) return undefined;
+  const cleaned = raceosUsername(raw);
+  return cleaned.length > 0 ? cleaned : undefined;
 };
 
 /** One player record to the shape the renderer consumes, or undefined. */
@@ -107,8 +127,9 @@ export function parseRaceosPlayer(
 /**
  * A players response to ratings keyed by Steam ID.
  *
- * Accepts either a bare array or `{ players: [...] }` / `{ data: [...] }`:
- * the wrapper has been seen both ways and guessing wrong costs every badge.
+ * A live response is a bare array. `{ players: [...] }` and `{ data: [...] }`
+ * are still accepted because guessing wrong costs every badge at once, and the
+ * tolerance is three lines.
  */
 export function parseRaceosPlayers(
   payload: unknown
@@ -125,10 +146,10 @@ export function parseRaceosPlayers(
   if (!list) return out;
 
   for (const record of list) {
-    const steamId = steamIdOf(record);
-    if (!steamId) continue;
+    const username = usernameOf(record);
+    if (!username) continue;
     const rating = parseRaceosPlayer(record);
-    if (rating) out.set(steamId, rating);
+    if (rating) out.set(username, rating);
   }
   return out;
 }

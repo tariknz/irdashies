@@ -25,7 +25,14 @@ export interface RaceosRequest {
   method?: 'GET' | 'POST';
   /** Serialised as JSON and sent with a matching content-type. */
   body?: unknown;
-  /** Bearer token, when the call needs one. */
+  /**
+   * The access token, when the call needs one.
+   *
+   * Sent as `Game-Authorization`, and bare -- no `Bearer ` prefix. The
+   * service's own client does carry that prefix as a string constant, so it
+   * may well accept both; the bare form is the one observed working against
+   * the live service, so it is the one sent here.
+   */
   token?: string;
 }
 
@@ -65,7 +72,7 @@ export function createRaceosTransport(): RaceosTransport {
         headers['Content-Type'] = 'application/json';
         headers['Content-Length'] = String(Buffer.byteLength(payload));
       }
-      if (token) headers.Authorization = `Bearer ${token}`;
+      if (token) headers['Game-Authorization'] = token;
 
       const request = https.request(
         {

@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import logger from '../../logger';
 import type { OverlayManager } from '../../overlayManager';
 import type { SessionLifecycle } from '../../sessionLifecycle';
 
@@ -15,8 +14,8 @@ const sdkState = vi.hoisted(() => ({
   running: true,
   /** Makes every shared-memory read throw, as a vanished mapping would. */
   readThrows: false,
-  /** The grid a session poll reports, so a spec can choose its Steam ids. */
-  drivers: [] as { steamId: string }[],
+  /** The grid a session poll reports, so a spec can choose its names. */
+  drivers: [] as { name: string }[],
 }));
 
 /**
@@ -482,9 +481,9 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
  * after that snapshot was published still reaches the renderer.
  */
 describe('publishLmuSDKEvents and driver ratings', () => {
-  const driver = (steamId: string) => ({ steamId });
+  const driver = (name: string) => ({ name });
 
-  const idsRequested = () => ratingState.requested.flat();
+  const namesRequested = () => ratingState.requested.flat();
 
   const sessionPublishCount = (overlayManager: OverlayManager) =>
     vi
@@ -501,34 +500,44 @@ describe('publishLmuSDKEvents and driver ratings', () => {
     ratingState.tapeClientBuilt = false;
   });
 
-  it('asks about the Steam ids on the grid', async () => {
-    sdkState.drivers = [
-      driver('76561198000000111'),
-      driver('76561198000000222'),
-    ];
+  it('asks about the driver names on the grid', async () => {
+    sdkState.drivers = [driver('Herve Attard'), driver('Leonel Gomez')];
     const overlayManager = createOverlayManager();
     const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
     const bridge = await publishLmuSDKEvents(overlayManager);
 
-    await vi.waitFor(() => expect(idsRequested().length).toBeGreaterThan(0));
-    expect(new Set(idsRequested())).toEqual(
-      new Set(['76561198000000111', '76561198000000222'])
+    await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
+    expect(new Set(namesRequested())).toEqual(
+      new Set(['Herve Attard', 'Leonel Gomez'])
     );
 
     bridge.stop();
   });
 
-  it('leaves AI entries out of the lookup', async () => {
-    // The sim stringifies a numeric id, so an AI car arrives as "0" rather
-    // than as an absent value. Sent, it would fill a batch with an id that
-    // cannot match anybody and have the miss remembered against it.
-    sdkState.drivers = [driver('0'), driver('76561198000000111'), driver('0')];
+  it('sends the name as the standings spell it', async () => {
+    // Same capitalisation, UTF-8 intact, with any '#' suffix and surrounding
+    // padding removed -- the service matched the plain name exactly.
+    sdkState.drivers = [driver('  Sébastien Rival#77 ')];
     const overlayManager = createOverlayManager();
     const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
     const bridge = await publishLmuSDKEvents(overlayManager);
 
-    await vi.waitFor(() => expect(idsRequested().length).toBeGreaterThan(0));
-    expect(idsRequested()).not.toContain('0');
+    await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
+    expect(namesRequested()).toContain('Sébastien Rival');
+
+    bridge.stop();
+  });
+
+  it('leaves unnamed entries out of the lookup', async () => {
+    // An empty slot is not a person. Asking about "" would fill a batch with
+    // a name that cannot match and have the miss remembered against it.
+    sdkState.drivers = [driver(''), driver('Herve Attard'), driver('   ')];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
+    expect(namesRequested()).toEqual(['Herve Attard']);
 
     bridge.stop();
   });
@@ -546,8 +555,8 @@ describe('publishLmuSDKEvents and driver ratings', () => {
 
     // It must read through the client rather than hold a snapshot of its own,
     // or a rank resolved later would never be picked up.
-    ratingFor('76561198000000111');
-    expect(ratingState.get).toHaveBeenCalledWith('76561198000000111');
+    ratingFor('Herve Attard');
+    expect(ratingState.get).toHaveBeenCalledWith('Herve Attard');
 
     bridge.stop();
   });
@@ -558,7 +567,7 @@ describe('publishLmuSDKEvents and driver ratings', () => {
     // publish here can only come from the client's onResolved dropping it --
     // exactly the silent failure this guards: a rank sitting in the cache,
     // never reaching the renderer.
-    sdkState.drivers = [driver('76561198000000111')];
+    sdkState.drivers = [driver('Herve Attard')];
     const overlayManager = createOverlayManager();
     const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
     const bridge = await publishLmuSDKEvents(overlayManager);
@@ -647,102 +656,6 @@ describe('publishLmuSDKEvents rating source on a tape replay', () => {
 
     await vi.waitFor(() => expect(ratingState.cache.load).toHaveBeenCalled());
     expect(ratingState.tapeClientBuilt).toBe(false);
-
-    bridge.stop();
-  });
-});
-
-/**
- * What the log says when a grid yields no Steam ids.
- *
- * An AI entry and a field the sim never filled are both 0, so the condition
- * cannot be told apart downstream -- and the message that used to cover both
- * ("no human Steam ids on the grid") reads as the first while LMU 14200 was
- * observed doing the second for two human drivers. The raw values are the only
- * thing that settles it, so they go in the log.
- */
-describe('publishLmuSDKEvents when the grid has no usable Steam ids', () => {
-  const warnings = () =>
-    vi
-      .mocked(logger.warn)
-      .mock.calls.map(([message]) => String(message))
-      .filter((message) => message.includes('Steam ids'));
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    sdkState.running = true;
-    sdkState.readThrows = false;
-    sdkState.drivers = [];
-    ratingState.requested = [];
-    ratingState.tapeClientBuilt = false;
-  });
-
-  it('reports the raw values the sim gave', async () => {
-    sdkState.drivers = [{ steamId: '0' }, { steamId: '0' }];
-    const overlayManager = createOverlayManager();
-    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
-    const bridge = await publishLmuSDKEvents(overlayManager);
-
-    await vi.waitFor(() => expect(warnings().length).toBeGreaterThan(0));
-    const message = warnings()[0];
-    expect(message).toContain('No usable Steam ids among 2 drivers');
-    expect(message).toContain('"0", "0"');
-    expect(message).toContain('does not populate mSteamID');
-
-    bridge.stop();
-  });
-
-  it('calls out a non-numeric value as an offset problem instead', async () => {
-    // A misplaced mSteamID reads as rubbish rather than as 0, and that is a
-    // different fix entirely -- hence the two wordings.
-    sdkState.drivers = [{ steamId: 'nonsense' }];
-    const overlayManager = createOverlayManager();
-    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
-    const bridge = await publishLmuSDKEvents(overlayManager);
-
-    await vi.waitFor(() => expect(warnings().length).toBeGreaterThan(0));
-    expect(warnings()[0]).toContain('wrong offset');
-
-    bridge.stop();
-  });
-
-  it('says nothing when the grid is empty', async () => {
-    // No drivers is not a Steam id problem, and saying so on every poll
-    // before a session loads would be noise.
-    const overlayManager = createOverlayManager();
-    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
-    const bridge = await publishLmuSDKEvents(overlayManager);
-
-    await vi.waitFor(() => expect(mapSessionSpy).toHaveBeenCalled());
-    expect(warnings()).toEqual([]);
-
-    bridge.stop();
-  });
-
-  it('says nothing when the ids are usable', async () => {
-    sdkState.drivers = [{ steamId: '76561198000000111' }];
-    const overlayManager = createOverlayManager();
-    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
-    const bridge = await publishLmuSDKEvents(overlayManager);
-
-    await vi.waitFor(() =>
-      expect(ratingState.requested.length).toBeGreaterThan(0)
-    );
-    expect(warnings()).toEqual([]);
-
-    bridge.stop();
-  });
-
-  it('does not repeat itself while the grid is unchanged', async () => {
-    sdkState.drivers = [{ steamId: '0' }];
-    const overlayManager = createOverlayManager();
-    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
-    const bridge = await publishLmuSDKEvents(overlayManager);
-
-    await vi.waitFor(() => expect(warnings().length).toBeGreaterThan(0));
-    // Several session polls, one line.
-    await new Promise((resolve) => setTimeout(resolve, 60));
-    expect(warnings()).toHaveLength(1);
 
     bridge.stop();
   });

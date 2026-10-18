@@ -9,8 +9,8 @@ vi.mock('../../logger', () => ({
  * The replay half of the rating feature.
  *
  * A tape cannot resolve ratings the live way -- the ticket that authorises the
- * lookup is deliberately never recorded -- so `anonymise` bakes them in under
- * synthetic Steam ids instead. This reads that record.
+ * lookup is deliberately never recorded -- so `anonymise` bakes them in, keyed
+ * by driver name. This reads that record.
  *
  * The bodies here are the real shape: whatever buildRatingsBody in
  * lmu_replay_main.cpp writes, which is the app's own cached rating objects
@@ -18,8 +18,8 @@ vi.mock('../../logger', () => ({
  */
 describe('createLmuTapeRatingClient', () => {
   const body = JSON.stringify({
-    '76561190000000001': { driverRank: 'Gold', countryCode: 'FR' },
-    '76561190000000002': { safetyRank: 'Silver' },
+    'Herve Attard': { driverRank: 'Gold', countryCode: 'FR' },
+    'Leonel Gomez': { safetyRank: 'Silver' },
   });
 
   type Reader = (path: string) => string | null;
@@ -32,17 +32,30 @@ describe('createLmuTapeRatingClient', () => {
     );
   });
 
-  it('serves a baked rating for a synthetic Steam id', () => {
+  it('serves a baked rating for a driver name', () => {
     const client = createLmuTapeRatingClient({ readRest });
 
-    expect(client.get('76561190000000001')?.driverRank).toBe('Gold');
-    expect(client.get('76561190000000002')?.safetyRank).toBe('Silver');
+    expect(client.get('Herve Attard')?.driverRank).toBe('Gold');
+    expect(client.get('Leonel Gomez')?.safetyRank).toBe('Silver');
   });
 
-  it('returns undefined for an id the tape has nothing for', () => {
+  it('returns undefined for a name the tape has nothing for', () => {
     const client = createLmuTapeRatingClient({ readRest });
 
-    expect(client.get('76561190000000009')).toBeUndefined();
+    expect(client.get('Nobody Here')).toBeUndefined();
+  });
+
+  it('matches a name whatever padding either side carries', () => {
+    // The keys were rewritten by the anonymiser's text substitution, which has
+    // no reason to preserve the trimming the lookup applied when they were
+    // stored -- so both sides are canonicalised again here.
+    const client = createLmuTapeRatingClient({
+      readRest: vi.fn<Reader>(() =>
+        JSON.stringify({ '  Herve Attard  ': { driverRank: 'Gold' } })
+      ),
+    });
+
+    expect(client.get('Herve Attard#9')?.driverRank).toBe('Gold');
   });
 
   it('reads the tape once rather than per driver', () => {
@@ -51,9 +64,9 @@ describe('createLmuTapeRatingClient', () => {
     // that path for no gain -- a tape's contents cannot change under it.
     const client = createLmuTapeRatingClient({ readRest });
 
-    client.get('76561190000000001');
-    client.get('76561190000000002');
-    client.get('76561190000000001');
+    client.get('Herve Attard');
+    client.get('Leonel Gomez');
+    client.get('Herve Attard');
 
     expect(readRest).toHaveBeenCalledTimes(1);
   });
@@ -67,8 +80,8 @@ describe('createLmuTapeRatingClient', () => {
     const empty = vi.fn<Reader>(() => null);
     const client = createLmuTapeRatingClient({ readRest: empty });
 
-    expect(client.get('76561190000000001')).toBeUndefined();
-    expect(client.get('76561190000000001')).toBeUndefined();
+    expect(client.get('Herve Attard')).toBeUndefined();
+    expect(client.get('Herve Attard')).toBeUndefined();
 
     expect(empty).toHaveBeenCalledTimes(2);
   });
@@ -80,18 +93,18 @@ describe('createLmuTapeRatingClient', () => {
       readRest: vi.fn<Reader>(() => '{not json'),
     });
 
-    expect(client.get('76561190000000001')).toBeUndefined();
+    expect(client.get('Herve Attard')).toBeUndefined();
   });
 
   it('ignores entries that are not rating objects', () => {
     const client = createLmuTapeRatingClient({
       readRest: vi.fn<Reader>(() =>
-        JSON.stringify({ '76561190000000001': 'nope', '2': null })
+        JSON.stringify({ 'Herve Attard': 'nope', 'Other One': null })
       ),
     });
 
-    expect(client.get('76561190000000001')).toBeUndefined();
-    expect(client.get('2')).toBeUndefined();
+    expect(client.get('Herve Attard')).toBeUndefined();
+    expect(client.get('Other One')).toBeUndefined();
   });
 
   it('survives a tape that throws on read', () => {
@@ -101,8 +114,8 @@ describe('createLmuTapeRatingClient', () => {
       }),
     });
 
-    expect(() => client.get('76561190000000001')).not.toThrow();
-    expect(client.get('76561190000000001')).toBeUndefined();
+    expect(() => client.get('Herve Attard')).not.toThrow();
+    expect(client.get('Herve Attard')).toBeUndefined();
   });
 
   it('asks for nothing and forgets on reset', () => {
@@ -110,12 +123,12 @@ describe('createLmuTapeRatingClient', () => {
     // already contains everything it will ever know.
     const client = createLmuTapeRatingClient({ readRest });
 
-    client.request(['76561190000000001']);
+    client.request(['Herve Attard']);
     expect(readRest).not.toHaveBeenCalled();
 
-    client.get('76561190000000001');
+    client.get('Herve Attard');
     client.reset();
-    client.get('76561190000000001');
+    client.get('Herve Attard');
 
     expect(readRest).toHaveBeenCalledTimes(2);
   });

@@ -6,6 +6,11 @@ import logger from '../logger';
 /**
  * Driver ratings already looked up, kept on disk between sessions.
  *
+ * Keyed by driver name as the rating service spells it -- see raceosUsername
+ * in raceos/parse.ts. It was once keyed by Steam id, which is why the stored
+ * version is 2: the sim reports 0 for every id, so a version 1 file holds
+ * nothing that could ever match and is discarded rather than migrated.
+ *
  * The point of persisting is the shape of a race weekend. Practice,
  * qualifying and the race are three separate sessions against the same twenty
  * or sixty drivers, and each one rebuilds the session from scratch -- so
@@ -40,7 +45,7 @@ export const RATING_MISS_TTL_MS = 60 * 60 * 1000;
 
 /**
  * Cap on stored entries, oldest evicted first. A busy public lobby turns over
- * a lot of Steam IDs and this file should not grow without bound.
+ * a lot of drivers and this file should not grow without bound.
  */
 export const MAX_CACHED_RATINGS = 2000;
 
@@ -54,7 +59,7 @@ interface CacheEntry {
 }
 
 interface PersistedRatings {
-  version: 1;
+  version: 2;
   entries: Record<string, CacheEntry>;
 }
 
@@ -74,7 +79,7 @@ const isEntry = (value: unknown): value is CacheEntry => {
 const sanitize = (value: unknown): Record<string, CacheEntry> => {
   if (!value || typeof value !== 'object') return {};
   const persisted = value as Partial<PersistedRatings>;
-  if (persisted.version !== 1 || !persisted.entries) return {};
+  if (persisted.version !== 2 || !persisted.entries) return {};
   if (typeof persisted.entries !== 'object') return {};
   const out: Record<string, CacheEntry> = {};
   for (const [key, entry] of Object.entries(persisted.entries)) {
@@ -91,9 +96,9 @@ export interface DriverRatingCache {
    * undefined, which means "never asked, or expired". The caller must tell
    * them apart or the whole point of the negative cache is lost.
    */
-  get(steamId: string): { rating?: LmuDriverRating } | undefined;
+  get(username: string): { rating?: LmuDriverRating } | undefined;
   /** Records a hit or, with no rating, a miss. Writes are debounced. */
-  set(steamId: string, rating?: LmuDriverRating): void;
+  set(username: string, rating?: LmuDriverRating): void;
   /** Reads the file. Resolves even when it is missing or corrupt. */
   load(): Promise<void>;
   /** Writes any pending change now. */
@@ -128,7 +133,7 @@ export function createDriverRatingCache(
   const write = async () => {
     dirty = false;
     prune();
-    const payload: PersistedRatings = { version: 1, entries };
+    const payload: PersistedRatings = { version: 2, entries };
     // Serialised behind the previous write so two flushes cannot interleave
     // on the same file.
     writing = writing
@@ -155,23 +160,23 @@ export function createDriverRatingCache(
   };
 
   return {
-    get(steamId) {
-      const entry = entries[steamId];
+    get(username) {
+      const entry = entries[username];
       if (!entry) return undefined;
       if (!fresh(entry)) {
         // Rebuilt rather than deleted in place: the lint rule against
         // dynamic delete is there because it deoptimises the object shape,
         // and an expiring read is rare enough that a copy is cheaper overall.
         entries = Object.fromEntries(
-          Object.entries(entries).filter(([key]) => key !== steamId)
+          Object.entries(entries).filter(([key]) => key !== username)
         );
         return undefined;
       }
       return { rating: entry.rating };
     },
 
-    set(steamId, rating) {
-      entries[steamId] = { rating, at: now() };
+    set(username, rating) {
+      entries[username] = { rating, at: now() };
       schedule();
     },
 

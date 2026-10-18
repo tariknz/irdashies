@@ -41,6 +41,7 @@ import {
   tinyPedalTrackMapDirectories,
 } from '../../lmu/trackMap';
 import { createRaceosClient, type RaceosClient } from '../../lmu/raceos/client';
+import { raceosUsername } from '../../lmu/raceos/parse';
 import { createLmuTapeRatingClient } from '../../lmu/raceos/tapeRatings';
 import { createRaceosTransport } from '../../lmu/raceos/httpsJson';
 import { createTicketFetcher } from '../../lmu/raceos/ticket';
@@ -84,55 +85,19 @@ const perfTelemetryDeliveryEnabled =
   !perfRunConfig.enabled || perfRunConfig.telemetryDelivery === 'on';
 
 /**
- * The Steam ids on the grid worth asking the rating service about.
+ * The driver names on the grid to ask the rating service about.
  *
- * The sim reports a numeric Steam id for every entry and stringifies it, so an
- * AI car arrives as the string "0" rather than as an absent value. Those are
- * dropped here instead of being sent: a field of AI would otherwise fill a
- * batch with one id that cannot match anybody and have the miss remembered
- * against it, which is worse than never asking.
+ * Names, not Steam ids. The sim reports 0 for every driver's Steam id -- in
+ * shared memory and over its own REST API alike -- so there was never an id to
+ * key on, and the service takes a list of usernames in any case.
+ *
+ * Canonicalised by raceosUsername, which is also applied to the names coming
+ * back, so both sides of the join agree.
  */
-const gridSteamIds = (drivers: readonly { steamId: string }[]): string[] =>
+const gridUsernames = (drivers: readonly { name: string }[]): string[] =>
   drivers
-    .map((driver) => driver.steamId)
-    .filter((steamId) => /^[1-9][0-9]*$/.test(steamId));
-
-/**
- * Why a grid yielded no Steam ids, in the sim's own words, or null when it did.
- *
- * "No human Steam ids on the grid" is true whenever this happens but reads as
- * "everyone here is AI", and the likelier cause is that the sim did not fill
- * the field at all: LMU 14200 was observed reporting 0 for two human drivers
- * in an online practice session. The two are indistinguishable downstream --
- * an AI entry and an unpopulated field are both 0 -- so the raw values are
- * reported once and the guess is left to the reader.
- *
- * mSteamID sits at offset 536 in LMUVehicleScoring, immediately before
- * mVehFilename, whose offset is pinned in lmu_struct.h for this reason: if
- * CarPath looks right then the read location is right and the zeroes are the
- * sim's own.
- */
-const steamIdDiagnostic = (
-  drivers: readonly { steamId: string }[],
-  usable: number
-): string | null => {
-  if (usable > 0 || drivers.length === 0) return null;
-  // Capped: a full grid would otherwise put a hundred values in one line.
-  const sample = drivers
-    .slice(0, 5)
-    .map((driver) => JSON.stringify(driver.steamId))
-    .join(', ');
-  const allZero = drivers.every((driver) => driver.steamId === '0');
-  return (
-    `No usable Steam ids among ${drivers.length} drivers; the sim reported ` +
-    `${sample}${drivers.length > 5 ? ', ...' : ''}. ` +
-    (allZero
-      ? 'All zero, so either every entry is AI or this LMU build does not ' +
-        'populate mSteamID -- driver ranks cannot be looked up either way.'
-      : 'Some are non-numeric, which would mean the field is being read from ' +
-        'the wrong offset.')
-  );
-};
+    .map((driver) => raceosUsername(driver.name ?? ''))
+    .filter((name) => name.length > 0);
 
 export async function publishLmuSDKEvents(
   overlayManager: OverlayManager,
@@ -201,8 +166,6 @@ export async function publishLmuSDKEvents(
   let activeTrackName = '';
   let trackMap: LmuTrackMap | null = null;
   let lastBlindSpotDataIssue: string | null | undefined;
-  /** Last reported reason the grid yielded no Steam ids, so it is said once. */
-  let lastSteamIdDiagnostic: string | null = null;
   // Lifts the player's lap fraction from LMU's 5 Hz scoring block to the poll
   // rate. Held across frames, and reset only at the two real discontinuities
   // below -- never on the grace-hold path, where re-anchoring mid-lap would
@@ -223,7 +186,8 @@ export async function publishLmuSDKEvents(
   //
   // The credential chain is documented in raceos/client.ts; the short version
   // is that it needs a Steam auth ticket the sim mints, so ratings exist only
-  // while LMU is running and signed in.
+  // while LMU is running and signed in. The join is on driver name, because
+  // the sim reports 0 for every Steam id it publishes.
   //
   // A replay takes the other branch entirely, because the recorder never
   // captures that ticket -- it is a live credential and a tape is a fixture.
@@ -427,16 +391,7 @@ export async function publishLmuSDKEvents(
         // below. A driver joining mid-session is a reason to ask even if
         // nothing else about the grid moved, and an id already resolved,
         // remembered as a miss or in flight costs one set lookup to skip.
-        const gridIds = gridSteamIds(rawSession.drivers);
-        const diagnostic = steamIdDiagnostic(
-          rawSession.drivers,
-          gridIds.length
-        );
-        if (diagnostic && diagnostic !== lastSteamIdDiagnostic) {
-          lastSteamIdDiagnostic = diagnostic;
-          logger.warn(`[lmuSdkBridge] ${diagnostic}`);
-        }
-        ratingClient.request(gridIds);
+        ratingClient.request(gridUsernames(rawSession.drivers));
         const signature = lmuSessionSignature(rawSession);
         if (signature !== lastSessionSignature) {
           lastSessionSignature = signature;
@@ -444,7 +399,7 @@ export async function publishLmuSDKEvents(
             rawSession,
             trackMap,
             restData.session,
-            (steamId) => ratingClient.get(steamId)
+            (driverName) => ratingClient.get(driverName)
           );
         }
       }

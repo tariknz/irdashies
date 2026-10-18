@@ -484,7 +484,7 @@ describeIfBuilt('lmu_replay anonymise', () => {
   /** A driver-rating cache file shaped like the app's own. */
   const ratingsFileFor = (name: string, entries: string) => {
     const file = path.join(path.dirname(tapeFor(name)), `${name}-ratings.json`);
-    fs.writeFileSync(file, `{"version":1,"entries":{${entries}}}`);
+    fs.writeFileSync(file, `{"version":2,"entries":{${entries}}}`);
     return file;
   };
 
@@ -494,6 +494,14 @@ describeIfBuilt('lmu_replay anonymise', () => {
    */
   const PLAYER_ID = '76561198000000111';
   const RIVAL_ID = '76561198000000222';
+
+  /**
+   * The fixture's player name, which is what the rating cache is keyed by.
+   *
+   * Ratings join on driver name rather than Steam id: the sim reports 0 for
+   * every id it publishes, in shared memory and over its own REST API alike.
+   */
+  const PLAYER_NAME = 'Synthetic Player';
 
   it('replaces every Steam id with a synthetic one', () => {
     // A Steam id resolves publicly to an account, so leaving it next to a
@@ -514,15 +522,16 @@ describeIfBuilt('lmu_replay anonymise', () => {
     ids.forEach((id) => expect(id).toMatch(/^[1-9][0-9]{16}$/));
   });
 
-  it('bakes cached ratings in under the synthetic ids', () => {
-    // Without this the id mapping above would be the end of the badges: the
-    // ids are the cache key, so synthetic ones miss the app's cache, and a
-    // replay cannot look anything up because the ticket that would authorise
-    // it is deliberately never recorded.
+  it('bakes cached ratings in under the pseudonymised names', () => {
+    // A replay cannot look anything up for itself -- the ticket that would
+    // authorise it is deliberately never recorded -- so the ratings have to
+    // travel in the tape. They are keyed by name, and the keys go through the
+    // same substitution as every other recorded body, which is what keeps
+    // them matching the snapshots without a second mapping to maintain.
     const { source, names, output } = scenario('bakes');
     const ratings = ratingsFileFor(
       'bakes',
-      `"${PLAYER_ID}":{"rating":{"driverRank":"Gold"},"at":1}`
+      `"${PLAYER_NAME}":{"rating":{"driverRank":"Gold"},"at":1}`
     );
 
     const result = anonymise(source, names, output, ['--ratings', ratings]);
@@ -535,18 +544,18 @@ describeIfBuilt('lmu_replay anonymise', () => {
     const session = replayedSession(output);
     const player = (session.drivers ?? []).find((driver) => driver.isPlayer);
 
-    // The join the replay depends on: the key is the id the snapshots now
+    // The join the replay depends on: the key is the name the snapshots now
     // carry, not the real one the cache was written with.
-    expect(Object.keys(parsed)).toEqual([player?.steamId]);
-    expect(parsed[player?.steamId ?? '']?.driverRank).toBe('Gold');
-    expect(baked).not.toContain(PLAYER_ID);
+    expect(Object.keys(parsed)).toEqual([player?.name]);
+    expect(parsed[player?.name ?? '']?.driverRank).toBe('Gold');
+    expect(baked).not.toContain(PLAYER_NAME);
   });
 
   it('leaves a remembered miss out of the baked ratings', () => {
     // An entry with no "rating" is a driver the service had nothing for.
     // Baking it would turn a known miss into a driver with an empty badge.
     const { source, names, output } = scenario('miss');
-    const ratings = ratingsFileFor('miss', `"${PLAYER_ID}":{"at":1}`);
+    const ratings = ratingsFileFor('miss', `"${PLAYER_NAME}":{"at":1}`);
 
     const result = anonymise(source, names, output, ['--ratings', ratings]);
 
@@ -559,7 +568,7 @@ describeIfBuilt('lmu_replay anonymise', () => {
     const { source, names, output } = scenario('no-ratings');
     const ratings = ratingsFileFor(
       'no-ratings',
-      `"${PLAYER_ID}":{"rating":{"driverRank":"Gold"},"at":1}`
+      `"${PLAYER_NAME}":{"rating":{"driverRank":"Gold"},"at":1}`
     );
 
     const result = anonymise(source, names, output, [

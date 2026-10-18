@@ -2,7 +2,7 @@ import type { LmuDriverRating } from '@irdashies/types';
 import logger from '../../logger';
 import type { DriverRatingCache } from '../../storage/driverRatings';
 import type { RaceosTransport } from './httpsJson';
-import { parseRaceosPlayers } from './parse';
+import { parseRaceosPlayers, raceosUsername } from './parse';
 
 /**
  * Looks up LMU driver ratings from the sim's own ecosystem service.
@@ -12,11 +12,16 @@ import { parseRaceosPlayers } from './parse';
  *  1. LMU's local REST API issues a Steam auth session ticket for the
  *     signed-in user (`/rest/profile/getAuthSessionTicket`).
  *  2. That ticket is exchanged at the rating service for a bearer token.
- *  3. The token authorises a batched lookup of the Steam IDs on the grid.
+ *  3. The token authorises a batched lookup of the driver names on the grid.
  *
  * So ratings exist only while LMU is running and signed in through Steam.
  * There is no API key to configure and nothing for the user to set up --
  * and equally, no way to make this work offline or outside a session.
+ *
+ * Keyed by driver name, not Steam id. The service takes a list of usernames,
+ * and the sim reports 0 for every driver's Steam id anyway -- in shared memory
+ * and over its own REST API alike -- so there is no id to key on even where
+ * one would be preferable.
  *
  * Everything here is best-effort. A failed lookup leaves drivers unrated and
  * the standings render exactly as they do without it; nothing retries hard,
@@ -29,7 +34,7 @@ import { parseRaceosPlayers } from './parse';
 export const RACEOS_AUTH_URL = 'https://raceos.gg/authenticate';
 export const RACEOS_PLAYERS_URL = 'https://raceos.gg/api/v1/players';
 
-/** Steam IDs per lookup; the grid goes up in batches, not one at a time. */
+/** Names per lookup; the grid goes up in batches, not one at a time. */
 export const RACEOS_BATCH_SIZE = 50;
 
 /** Backoff after a failure, doubling to the ceiling. */
@@ -39,8 +44,12 @@ export const RACEOS_MAX_BACKOFF_MS = 15 * 60_000;
 /** Re-exchange the ticket this long before the token is due to expire. */
 const TOKEN_SKEW_MS = 60_000;
 
-/** Assumed token life when the service does not state one. */
+/** Assumed token life when the service does not state a usable expiry. */
 const DEFAULT_TOKEN_TTL_MS = 30 * 60_000;
+
+/** The game and platform the ticket was minted for; both are required. */
+const RACEOS_GAME = 'lmu';
+const RACEOS_PLATFORM = 'steam';
 
 export interface RaceosClientOptions {
   transport: RaceosTransport;
@@ -58,17 +67,18 @@ export interface RaceosClientOptions {
 
 export interface RaceosClient {
   /**
-   * A rating already held for this Steam ID, or undefined.
+   * A rating already held for this driver name, or undefined.
    *
    * Synchronous and allocation-light: the session mapper calls it once per
-   * driver while building a snapshot and must never await.
+   * driver while building a snapshot and must never await. The name is
+   * canonicalised here, so callers pass whatever the sim gave them.
    */
-  get(steamId: string): LmuDriverRating | undefined;
+  get(driverName: string): LmuDriverRating | undefined;
   /**
-   * Queues any of these Steam IDs not already known or in flight. Returns at
-   * once; answers land in the cache and `onResolved` fires.
+   * Queues any of these driver names not already known or in flight. Returns
+   * at once; answers land in the cache and `onResolved` fires.
    */
-  request(steamIds: readonly string[]): void;
+  request(driverNames: readonly string[]): void;
   /** Drops the token and the queue. The persistent cache is left intact. */
   reset(): void;
 }
@@ -140,7 +150,9 @@ export function createRaceosClient({
     const response = await transport({
       url: RACEOS_AUTH_URL,
       method: 'POST',
-      body: { ticket },
+      // `token` carries the ticket, and game and platform are both required:
+      // without them the service answers "Invalid game specified".
+      body: { token: ticket, game: RACEOS_GAME, platform: RACEOS_PLATFORM },
     });
     if (!response.ok) {
       fail(`authentication failed (${response.reason})`);
@@ -159,9 +171,14 @@ export function createRaceosClient({
         fail('authentication returned no token');
         return undefined;
       }
+      // `expiresAt` is an absolute RFC 3339 instant, not a duration. Parsed
+      // rather than trusted: a clock skewed against the service's would
+      // otherwise either expire the token immediately or hold it past the end
+      // of its life, and both read as an authentication that will not stick.
+      const expiresAt = Date.parse(String(payload.expiresAt));
       const ttl =
-        typeof payload.expiresIn === 'number' && payload.expiresIn > 0
-          ? payload.expiresIn * 1000
+        Number.isFinite(expiresAt) && expiresAt > now()
+          ? expiresAt - now()
           : DEFAULT_TOKEN_TTL_MS;
       token = value;
       tokenExpiry = now() + ttl;
@@ -176,9 +193,13 @@ export function createRaceosClient({
     }
   };
 
-  const lookupBatch = async (ids: string[], bearer: string) => {
+  const lookupBatch = async (usernames: string[], bearer: string) => {
     const response = await transport({
-      url: `${RACEOS_PLAYERS_URL}?steamIds=${ids.join(',')}`,
+      url: RACEOS_PLAYERS_URL,
+      // A POST with the names in the body, not a query string: the names are
+      // free text and a grid of fifty would not fit comfortably in a URL.
+      method: 'POST',
+      body: { usernames },
       token: bearer,
     });
     if (!response.ok) {
@@ -199,15 +220,15 @@ export function createRaceosClient({
     }
 
     succeed();
-    for (const id of ids) {
-      // An id the service did not answer for is cached as a miss. That is
+    for (const name of usernames) {
+      // A name the service did not answer for is cached as a miss. That is
       // what stops a grid of AI being re-asked every single session.
-      cache.set(id, found.get(id));
+      cache.set(name, found.get(name));
     }
     // Not deduped: one line per completed batch is the record of what the
     // service actually answered, and a repeat means a new batch.
     logger.info(
-      `[raceos] Resolved ${found.size}/${ids.length} driver ratings (cache ${cache.size()})`
+      `[raceos] Resolved ${found.size}/${usernames.length} driver ratings (cache ${cache.size()})`
     );
     if (found.size > 0) onResolved?.();
   };
@@ -224,9 +245,9 @@ export function createRaceosClient({
 
         const batch = [...pending].slice(0, RACEOS_BATCH_SIZE);
         // Cleared before the request, not after: a failed batch caches
-        // nothing and its ids are re-queued by the next session tick.
+        // nothing and its names are re-queued by the next session tick.
         // Holding them pending across a failure would wedge the queue.
-        for (const id of batch) pending.delete(id);
+        for (const name of batch) pending.delete(name);
         await lookupBatch(batch, bearer);
       }
     } catch (e) {
@@ -237,39 +258,40 @@ export function createRaceosClient({
   };
 
   return {
-    get(steamId) {
-      return cache.get(steamId)?.rating;
+    get(driverName) {
+      return cache.get(raceosUsername(driverName))?.rating;
     },
 
-    request(steamIds) {
+    request(driverNames) {
+      const names = driverNames
+        .map(raceosUsername)
+        .filter((name) => name.length > 0);
       if (now() < notBefore) {
         note(
-          `Holding off on ${steamIds.length} grid Steam ids until the backoff expires`
+          `Holding off on ${names.length} grid drivers until the backoff expires`
         );
         return;
       }
-      if (steamIds.length === 0) {
-        // An all-AI grid, or a sim reporting no ids. Worth saying, because the
-        // standings look identical to a lookup that failed.
-        note('No human Steam ids on the grid; nothing to look up');
+      if (names.length === 0) {
+        note('No named drivers on the grid; nothing to look up');
         return;
       }
       let queued = 0;
-      for (const id of steamIds) {
-        if (!id || pending.has(id)) continue;
+      for (const name of names) {
+        if (pending.has(name)) continue;
         // A remembered miss counts as known: not re-asking is the point.
-        if (cache.get(id) !== undefined) continue;
-        pending.add(id);
+        if (cache.get(name) !== undefined) continue;
+        pending.add(name);
         queued += 1;
       }
       // Distinguishes the three states that all render as a bare standings
       // row: asking now, already answered, and still waiting on a batch.
       note(
         queued > 0
-          ? `Looking up ${queued} of ${steamIds.length} grid Steam ids`
+          ? `Looking up ${queued} of ${names.length} grid drivers`
           : pending.size > 0
-            ? `All ${steamIds.length} grid Steam ids are queued or in flight`
-            : `All ${steamIds.length} grid Steam ids already known from cache`
+            ? `All ${names.length} grid drivers are queued or in flight`
+            : `All ${names.length} grid drivers already known from cache`
       );
       if (queued > 0) void drain();
     },

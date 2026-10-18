@@ -885,9 +885,13 @@ constexpr std::uint64_t kFakeSteamIdBase = 76561190000000000ULL;
  *
  * A Steam id is a permanent, publicly resolvable account handle, so leaving it
  * beside a pseudonymised name defeats the pseudonym entirely -- which is what
- * anonymise is for. Zeroing them would be simpler, but the app keys driver
- * ratings by Steam id, so a zeroed tape loses its badges; mapping instead
- * keeps the join intact and lets the ratings be carried along with it.
+ * anonymise is for.
+ *
+ * Mapped rather than zeroed although nothing now reads it: the sim publishes 0
+ * for every driver on the builds seen so far, so a tape carrying real ids came
+ * from a build that does fill them, and that is the tape where replacing them
+ * matters. Zeroing would also erase the evidence that the field was ever
+ * populated, which is the one thing a future reader would want from it.
  *
  * Assignment is by order of first appearance, like NamePool, so one tape
  * always anonymises to the same output.
@@ -950,25 +954,29 @@ std::size_t jsonObjectEnd(const std::string& text, std::size_t at) {
 }
 
 /**
- * Builds the ratings body for the tape, keyed by synthetic Steam id.
+ * Builds the ratings body for the tape, keyed by driver name.
  *
  * Reads the app's cache file, which stores entries as
- * `{"version":1,"entries":{"<steamId>":{"rating":{...},"at":<ms>}}}`, and
- * keeps the rating objects verbatim under the pseudonymous ids. An entry with
- * no "rating" key is a remembered miss -- a driver the service had nothing
- * for -- and is skipped, so it stays a miss on replay rather than becoming a
- * driver with an empty badge.
+ * `{"version":2,"entries":{"<driverName>":{"rating":{...},"at":<ms>}}}`, and
+ * keeps the rating objects verbatim under the names they were stored against.
+ * An entry with no "rating" key is a remembered miss -- a driver the service
+ * had nothing for -- and is skipped, so it stays a miss on replay rather than
+ * becoming a driver with an empty badge.
+ *
+ * The keys are written as the real names and left for the caller to put
+ * through rewriteNamesInJson, exactly like every other recorded body. That is
+ * what makes an anonymised tape's ratings line up: the keys become the same
+ * pseudonyms the snapshots carry, with no second mapping to keep in step.
  *
  * Returns an empty string when there is nothing worth writing, which the
  * caller treats as "no record", not as a failure.
  */
 std::string buildRatingsBody(
     const std::string& cacheText,
-    const std::vector<std::string>& realIds,
-    SteamIdPool& steamPool) {
+    const std::vector<std::string>& driverNames) {
   std::string body;
-  for (const auto& realId : realIds) {
-    const std::string key = "\"" + realId + "\"";
+  for (const auto& driverName : driverNames) {
+    const std::string key = "\"" + driverName + "\"";
     const auto keyAt = cacheText.find(key);
     if (keyAt == std::string::npos) continue;
     const auto entryAt = cacheText.find('{', keyAt + key.size());
@@ -986,8 +994,7 @@ std::string buildRatingsBody(
     if (objectEnd == std::string::npos) continue;
 
     if (!body.empty()) body += ",";
-    body += "\"" + steamPool.fakeFor(realId) + "\":" +
-        entry.substr(objectAt, objectEnd - objectAt);
+    body += key + ":" + entry.substr(objectAt, objectEnd - objectAt);
   }
   return body.empty() ? std::string() : "{" + body + "}";
 }
@@ -1047,10 +1054,8 @@ void anonymiseSnapshot(
     SteamIdPool& steamPool) {
   for (std::size_t i = 0; i < LMU_MAX_VEHICLES; ++i) {
     auto& vehicle = snapshot.scoring.vehScoringInfo[i];
-    // Replaced rather than zeroed: the app keys driver ratings by Steam id, so
-    // a zeroed tape would lose its badges along with the identity. Done for
-    // every occupied slot, including one whose name is empty -- an id without
-    // a name still identifies the person outright.
+    // Done for every occupied slot, including one whose name is empty: an id
+    // without a name still identifies the person outright.
     if (vehicle.mSteamID != 0) {
       vehicle.mSteamID = std::strtoull(
           steamPool.fakeFor(std::to_string(vehicle.mSteamID)).c_str(),
@@ -1223,10 +1228,8 @@ int runAnonymise(const Options& options) {
   }
 
   // Driver ratings, baked in so a replay still shows the badges it was
-  // recorded with. Without this the id mapping above would be the end of
-  // them: the ids are the cache key, so synthetic ids miss the app's cache,
-  // and a replay cannot look anything up either -- the ticket that would
-  // authorise it is deliberately never recorded.
+  // recorded with. A replay cannot look anything up for itself: the ticket
+  // that would authorise it is deliberately never recorded.
   bool ratingsBaked = false;
   if (options.bakeRatings) {
     std::string cachePath = options.ratingsPath;
@@ -1255,7 +1258,7 @@ int runAnonymise(const Options& options) {
       // Through the same substitutions as every other body, so a name that
       // found its way into a badge string is scrubbed with the rest.
       const std::string body = rewriteNamesInJson(
-          buildRatingsBody(cacheText, realSteamIds, steamPool), rewrites);
+          buildRatingsBody(cacheText, originals), rewrites);
       if (body.empty()) {
         std::cout << "No cached ratings matched this tape's drivers; the "
                      "replay will show no badges.\n";
