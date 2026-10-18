@@ -153,7 +153,7 @@ const SectionView = ({
             {changed.length > 0 && (
               <button
                 type="button"
-                className="text-xs text-blue-400 hover:text-blue-300"
+                className="text-xs text-accent-400 hover:text-accent-300"
                 onClick={() => onReset(changed)}
               >
                 Reset section
@@ -189,7 +189,7 @@ const SectionView = ({
           <span className="text-slate-300">Rim Arc</span>
           <button
             type="button"
-            className="text-blue-400 hover:text-blue-300"
+            className="text-accent-400 hover:text-accent-300"
             onClick={() => onOpen('arcs')}
           >
             {view[section.arc.on]
@@ -224,7 +224,7 @@ const SectionView = ({
                 type="button"
                 title="Changed: click to reset"
                 aria-label={`Reset ${item.title}`}
-                className="absolute -left-3 top-2 w-2 h-2 rounded-full bg-blue-400 hover:bg-blue-300"
+                className="absolute -left-3 top-2 w-2 h-2 rounded-full bg-accent-400 hover:bg-accent-300"
                 onClick={() => onReset([item])}
               />
             )}
@@ -413,7 +413,7 @@ export const RadarSettings = () => {
                       onClick={() => set(presetChange(option))}
                       className={`px-3 py-1 rounded-full text-sm border transition-colors ${
                         preset?.id === option.id
-                          ? 'border-blue-500 bg-blue-600/20 text-white'
+                          ? 'border-accent-500 bg-accent-600/20 text-white'
                           : 'border-transparent bg-slate-700 text-slate-200 hover:border-slate-500'
                       }`}
                     >
@@ -503,7 +503,7 @@ export const RadarSettings = () => {
                             <span className="flex-1">{section.title}</span>
                             {changedIn(section).length > 0 && (
                               <span
-                                className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"
+                                className="w-1.5 h-1.5 rounded-full bg-accent-400 shrink-0"
                                 title="Changed"
                               />
                             )}

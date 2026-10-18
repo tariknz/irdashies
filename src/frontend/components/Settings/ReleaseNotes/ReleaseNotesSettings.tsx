@@ -53,7 +53,7 @@ export const ReleaseNotesSettings = () => {
               checked={status.autoShow}
               disabled={saving}
               onChange={(event) => void toggle(event.target.checked)}
-              className="size-4 accent-sky-500"
+              className="size-4 accent-accent-500"
             />
             Show release notes after updates
           </label>

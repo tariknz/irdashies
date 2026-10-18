@@ -157,7 +157,7 @@ export const TelemetryInspectorSettings = () => {
                         <span
                           className={`text-xs px-1.5 py-0.5 rounded ${
                             prop.source === 'telemetry'
-                              ? 'bg-blue-600 text-blue-100'
+                              ? 'bg-accent-600 text-on-accent'
                               : 'bg-green-600 text-green-100'
                           }`}
                         >
@@ -228,7 +228,7 @@ export const TelemetryInspectorSettings = () => {
                     }
                   }}
                   disabled={!newProperty.path}
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded text-sm transition-colors"
+                  className="px-3 py-1.5 bg-accent-600 hover:bg-accent-500 disabled:bg-slate-600 disabled:text-slate-400 disabled:cursor-not-allowed text-on-accent rounded text-sm transition-colors"
                 >
                   <PlusIcon size={16} />
                 </button>

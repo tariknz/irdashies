@@ -156,7 +156,7 @@ const RecursiveRenderer = ({
   if (node.type === 'box') {
     return (
       <div
-        className="relative flex-1 min-w-0 min-h-0 bg-slate-800 border border-slate-600 rounded p-1 m-1 transition-all flex flex-col gap-1 hover:border-blue-400 group/box"
+        className="relative flex-1 min-w-0 min-h-0 bg-slate-800 border border-slate-600 rounded p-1 m-1 transition-all flex flex-col gap-1 hover:border-accent-400 group/box"
         onDragOver={(e) => onDragOver(e, node)}
         onDragLeave={handleDragLeave}
         onDrop={(e) => onDrop(e, node)}
@@ -203,7 +203,7 @@ const RecursiveRenderer = ({
                 {/* Insertion Ghost Indicator */}
                 {isTargetWidget && isReordering && (
                   <div
-                    className={`absolute ${node.direction === 'row' ? '-left-1 top-0 bottom-0 w-0.5' : '-top-1 left-0 right-0 h-0.5'} bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)] z-20`}
+                    className={`absolute ${node.direction === 'row' ? '-left-1 top-0 bottom-0 w-0.5' : '-top-1 left-0 right-0 h-0.5'} bg-accent-400 shadow-[0_0_8px_var(--color-accent-400)] z-20`}
                   />
                 )}
 
@@ -237,7 +237,7 @@ const RecursiveRenderer = ({
                   }}
                   className={`bg-slate-700 hover:bg-slate-600 border p-1.5 flex items-center gap-2 justify-between group/widget min-w-0 cursor-grab active:cursor-grabbing transition-all ${
                     isTargetWidget && isReordering
-                      ? 'border-blue-400 scale-[1.02] shadow-lg z-10 bg-slate-600'
+                      ? 'border-accent-400 scale-[1.02] shadow-lg z-10 bg-slate-600'
                       : 'border-slate-600'
                   }`}
                 >
@@ -261,7 +261,7 @@ const RecursiveRenderer = ({
                   idx === node.widgets.length - 1 &&
                   dragState.targetWidgetIdx === node.widgets.length && (
                     <div
-                      className={`absolute ${node.direction === 'row' ? '-right-1 top-0 bottom-0 w-0.5' : '-bottom-1 left-0 right-0 h-0.5'} bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)] z-20`}
+                      className={`absolute ${node.direction === 'row' ? '-right-1 top-0 bottom-0 w-0.5' : '-bottom-1 left-0 right-0 h-0.5'} bg-accent-400 shadow-[0_0_8px_var(--color-accent-400)] z-20`}
                     />
                   )}
               </div>
@@ -274,19 +274,19 @@ const RecursiveRenderer = ({
 
         {/* Drop Indicators */}
         {dropZone === 'top' && (
-          <div className="absolute top-0 left-0 right-0 h-1/4 bg-blue-500/30 border-b-2 border-blue-500 animate-pulse pointer-events-none rounded-t" />
+          <div className="absolute top-0 left-0 right-0 h-1/4 bg-accent-500/30 border-b-2 border-accent-500 animate-pulse pointer-events-none rounded-t" />
         )}
         {dropZone === 'bottom' && (
-          <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-blue-500/30 border-t-2 border-blue-500 animate-pulse pointer-events-none rounded-b" />
+          <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-accent-500/30 border-t-2 border-accent-500 animate-pulse pointer-events-none rounded-b" />
         )}
         {dropZone === 'left' && (
-          <div className="absolute top-0 left-0 bottom-0 w-1/4 bg-blue-500/30 border-r-2 border-blue-500 animate-pulse pointer-events-none rounded-l" />
+          <div className="absolute top-0 left-0 bottom-0 w-1/4 bg-accent-500/30 border-r-2 border-accent-500 animate-pulse pointer-events-none rounded-l" />
         )}
         {dropZone === 'right' && (
-          <div className="absolute top-0 right-0 bottom-0 w-1/4 bg-blue-500/30 border-l-2 border-blue-500 animate-pulse pointer-events-none rounded-r" />
+          <div className="absolute top-0 right-0 bottom-0 w-1/4 bg-accent-500/30 border-l-2 border-accent-500 animate-pulse pointer-events-none rounded-r" />
         )}
         {dropZone === 'center' && (
-          <div className="absolute inset-0 bg-blue-500/20 border-2 border-blue-500 animate-pulse pointer-events-none rounded flex items-center justify-center text-blue-200 font-bold text-xs">
+          <div className="absolute inset-0 bg-accent-500/20 border-2 border-accent-500 animate-pulse pointer-events-none rounded flex items-center justify-center text-accent-200 font-bold text-xs">
             ADD TO GROUP
           </div>
         )}

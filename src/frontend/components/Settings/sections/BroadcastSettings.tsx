@@ -326,7 +326,7 @@ export const BroadcastSettings = () => {
                     onChange={(e) =>
                       handleConfigChange({ title: e.target.value })
                     }
-                    className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
+                    className="w-full rounded border-slate-600 bg-slate-700 p-2 text-slate-300"
                   />
                 </div>
               )}

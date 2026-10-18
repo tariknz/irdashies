@@ -37,7 +37,7 @@ export const ReleaseNotesDialog = ({
         event.preventDefault();
         onClose();
       }}
-      className="m-auto w-[min(48rem,90vw)] max-h-[85vh] rounded-lg border border-slate-600 bg-slate-800 p-0 text-white shadow-xl backdrop:bg-black/60"
+      className="m-auto [-webkit-app-region:no-drag] w-[min(48rem,90vw)] max-h-[85vh] rounded-lg border border-slate-600 bg-slate-800 p-0 text-white shadow-xl backdrop:bg-black/60"
     >
       <div className="flex items-center justify-between gap-4 border-b border-slate-600 px-6 py-4">
         <h2 id="release-notes-title" className="text-xl font-bold">
@@ -47,7 +47,7 @@ export const ReleaseNotesDialog = ({
           autoFocus
           onClick={onClose}
           aria-label="Close release notes"
-          className="rounded p-1 text-slate-300 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-sky-300"
+          className="rounded p-1 text-slate-300 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-accent-300"
         >
           <XIcon size={24} />
         </button>

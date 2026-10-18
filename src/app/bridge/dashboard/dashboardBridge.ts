@@ -281,6 +281,14 @@ export async function publishDashboardUpdates(
     const merged = dashboardTransform(
       mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings())
     );
+    // Cosmetic: a failed recolour must not block the dashboard update.
+    try {
+      overlayManager.setSettingsTitleBarTheme(
+        merged.generalSettings?.settingsTheme
+      );
+    } catch (err) {
+      logger.error('Error recolouring the settings title bar:', err);
+    }
     const profileId = getCurrentProfileId();
 
     if (profileId === lastProfileId) {
