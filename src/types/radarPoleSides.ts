@@ -4,13 +4,15 @@ import poleSidesData from './radarPoleSides.json';
  * Which side the pole line of a pace field is on, per track.
  *
  * iRacing does not say and the Sporting Code names no side, so this is data:
- * `radarPoleSides.json`. Pole sits on the inside of the first corner, which
+ * `radarPoleSides.json`, bundled at build time; the app never fetches it.
+ * Pole sits on the inside of the first corner, which
  * `npm run generate-radar-pole-sides` reads from the track drawings
- * (source "geometry"). A side confirmed by driving is "verified" and is kept
- * when the file is regenerated. To correct a track, edit its entry to
- * "verified" with the side you saw, or add a TrackName under `trackNames`.
+ * (source "geometry"). A side confirmed by driving is "verified" and one
+ * gathered from users' own corrections is "reported"; both are kept when the
+ * file is regenerated. To correct a track, edit its entry to "verified" with
+ * the side you saw, or add a TrackName under `trackNames`.
  */
-export type PoleSideSource = 'geometry' | 'verified';
+export type PoleSideSource = 'geometry' | 'verified' | 'reported';
 
 export interface RadarPoleSides {
   /** Bumped when the shape changes, so a newer file is never half-read. */
@@ -38,9 +40,17 @@ export const parseRadarPoleSides = (raw: unknown): RadarPoleSides => {
     if (
       /^\d+$/.test(id) &&
       typeof value?.poleLeft === 'boolean' &&
-      (value.source === 'geometry' || value.source === 'verified')
+      value.source !== undefined
     ) {
-      tracks[id] = { poleLeft: value.poleLeft, source: value.source };
+      // A source a newer file invents is still a usable side: read it as the
+      // weakest known one instead of dropping the entry.
+      tracks[id] = {
+        poleLeft: value.poleLeft,
+        source:
+          value.source === 'verified' || value.source === 'reported'
+            ? value.source
+            : 'geometry',
+      };
     }
   }
   const trackNames: Record<string, boolean> = {};

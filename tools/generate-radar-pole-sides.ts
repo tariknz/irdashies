@@ -7,7 +7,8 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
  *
  * A corner is the first stretch where the heading turns 35 degrees or more
  * within 3% of a lap, so the rule does not need the track length. Entries a
- * person confirmed by driving ("verified") and the `trackNames` exceptions are
+ * person confirmed by driving ("verified"), users' corrections
+ * ("reported") and the `trackNames` exceptions are
  * kept as they are; everything else is recomputed.
  *
  * Regenerate with: npm run generate-radar-pole-sides
@@ -39,7 +40,7 @@ interface Drawing {
 
 interface Entry {
   poleLeft: boolean;
-  source: 'geometry' | 'verified';
+  source: 'geometry' | 'verified' | 'reported';
 }
 
 /** Points along the lap from the start/finish line, in the direction of travel. */
@@ -103,7 +104,7 @@ const main = () => {
     (a, b) => Number(a) - Number(b)
   )) {
     const kept = previous.tracks?.[id];
-    if (kept?.source === 'verified') {
+    if (kept?.source === 'verified' || kept?.source === 'reported') {
       tracks[id] = kept;
       continue;
     }
@@ -121,7 +122,9 @@ const main = () => {
   }
   // Verified ids that have no drawing still stay.
   for (const [id, kept] of Object.entries<Entry>(previous.tracks ?? {})) {
-    if (kept.source === 'verified') tracks[id] = kept;
+    if (kept.source === 'verified' || kept.source === 'reported') {
+      tracks[id] = kept;
+    }
   }
   const sorted = Object.fromEntries(
     Object.entries(tracks).sort(([a], [b]) => Number(a) - Number(b))

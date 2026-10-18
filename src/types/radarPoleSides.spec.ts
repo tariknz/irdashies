@@ -50,7 +50,7 @@ describe('parseRadarPoleSides', () => {
         '1': { poleLeft: true, source: 'geometry' },
         abc: { poleLeft: true, source: 'geometry' },
         '2': { poleLeft: 'yes', source: 'geometry' },
-        '3': { poleLeft: false, source: 'guess' },
+        '3': { poleLeft: false },
         '4': null,
       },
       trackNames: { a: true, b: 'left' },
@@ -59,6 +59,20 @@ describe('parseRadarPoleSides', () => {
       '1': { poleLeft: true, source: 'geometry' },
     });
     expect(parsed.trackNames).toEqual({ a: true });
+  });
+
+  it('reads a source it does not know as geometry, not as a missing entry', () => {
+    const parsed = parseRadarPoleSides({
+      version: 1,
+      tracks: {
+        '5': { poleLeft: true, source: 'crowd' },
+        '6': { poleLeft: false, source: 'reported' },
+      },
+    });
+    expect(parsed.tracks).toEqual({
+      '5': { poleLeft: true, source: 'geometry' },
+      '6': { poleLeft: false, source: 'reported' },
+    });
   });
 });
 
