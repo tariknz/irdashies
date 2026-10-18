@@ -96,6 +96,44 @@ describe('LmuRatingBadge', () => {
     expect(container.textContent).toBe('G3');
   });
 
+  it('draws the sim plates when asked, one per rank', () => {
+    const { container } = render(
+      <LmuRatingBadge
+        rating={{
+          driverRank: 'Bronze',
+          driverTier: 3,
+          safetyRank: 'Silver',
+          safetyTier: 2,
+        }}
+        useArt
+      />
+    );
+
+    const art = [...container.querySelectorAll('img')];
+    expect(art).toHaveLength(2);
+    // No text alongside: the plate carries the rank and the tier itself.
+    expect(container.textContent).toBe('');
+    // Still named, so the pair is identifiable without reading the artwork.
+    expect(art.map((node) => node.getAttribute('alt'))).toEqual([
+      'Driver rating: Bronze 3',
+      'Safety rating: Silver 2',
+    ]);
+  });
+
+  it('falls back to a chip for a rank with no plate', () => {
+    // Pro has no artwork in the bucket, so it reads as PRO even in art mode,
+    // rather than leaving a gap where a rating should be.
+    const { container } = render(
+      <LmuRatingBadge
+        rating={{ driverRank: 'Pro', safetyRank: 'Gold', safetyTier: 1 }}
+        useArt
+      />
+    );
+
+    expect(container.querySelectorAll('img')).toHaveLength(1);
+    expect(container.textContent).toBe('PRO');
+  });
+
   it('renders nothing without a rank', () => {
     // The common case for an AI entry, and for any human the service does not
     // know. An empty cell is correct: a placeholder would imply a rating that

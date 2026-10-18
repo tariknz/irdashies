@@ -156,6 +156,15 @@ export interface StandingsConfig {
   scale?: number;
   iratingChange: { enabled: boolean; estimateInPractice?: boolean };
   positionChange: { enabled: boolean };
+  /**
+   * The LMU achievement badge, as its own column.
+   *
+   * Separate from `badge`, which is the rank pair: this is the single marker
+   * the rating service reports in `profile.badge` (`sr-saint` and the like),
+   * and it is drawn from bundled artwork. Absent on every other sim, so the
+   * column simply renders nothing there.
+   */
+  lmuBadge: { enabled: boolean };
   badge: { enabled: boolean; badgeFormat: StandingsBadgeFormat };
   delta: { enabled: boolean };
   gap: { enabled: boolean; decimalPlaces?: number };
@@ -217,6 +226,15 @@ export interface RelativeConfig {
    * repairs. Drivers driving down pit road (entering or exiting) still show.
    */
   hideDriversInPitStall?: boolean;
+  /**
+   * The LMU achievement badge, as its own column.
+   *
+   * Separate from `badge`, which is the rank pair: this is the single marker
+   * the rating service reports in `profile.badge` (`sr-saint` and the like),
+   * and it is drawn from bundled artwork. Absent on every other sim, so the
+   * column simply renders nothing there.
+   */
+  lmuBadge: { enabled: boolean };
   badge: { enabled: boolean; badgeFormat: RelativeBadgeFormat };
   iratingChange: { enabled: boolean };
   positionChange?: { enabled: boolean };

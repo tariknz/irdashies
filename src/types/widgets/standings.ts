@@ -31,6 +31,9 @@ export default defineWidgetManifest({
     positionChange: {
       enabled: false,
     },
+    lmuBadge: {
+      enabled: true,
+    },
     badge: {
       enabled: true,
       badgeFormat: 'license-color-rating-bw',
@@ -305,6 +308,7 @@ export default defineWidgetManifest({
       'teamName',
       'pitStatus',
       'carManufacturer',
+      'lmuBadge',
       'badge',
       'iratingChange',
       'positionChange',

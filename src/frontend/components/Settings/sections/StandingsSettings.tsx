@@ -63,7 +63,8 @@ const sortableSettings: SortableSetting[] = [
     hasSubSetting: true,
   },
   { id: 'driverTag', label: 'Driver Tag', configKey: 'driverTag' },
-  { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
+  { id: 'lmuBadge', label: 'LMU Badge', configKey: 'lmuBadge' },
+  { id: 'badge', label: 'Rating', configKey: 'badge' },
   {
     id: 'iratingChange',
     label: 'iRating Change',

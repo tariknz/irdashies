@@ -64,3 +64,43 @@ export const AllRanks: Story = {
     </div>
   ),
 };
+
+/** The sim's own rank plates, bundled rather than fetched. */
+export const RankArt: Story = {
+  args: { rating: rating(), useArt: true },
+};
+
+/**
+ * Both renderings side by side, which is the choice the Rating setting offers:
+ * the first badge format draws the plates, every other one the text chips.
+ */
+export const ArtAgainstText: Story = {
+  render: () => (
+    <div className="flex flex-col gap-3 bg-slate-900 p-3 text-xs">
+      {(['Bronze', 'Silver', 'Gold', 'Platinum', 'Pro'] as const).map(
+        (rank) => (
+          <div key={rank} className="flex items-center gap-4">
+            <span className="w-20 text-slate-400">{rank} 3</span>
+            <LmuRatingBadge
+              rating={{
+                driverRank: rank,
+                driverTier: 3,
+                safetyRank: rank,
+                safetyTier: 3,
+              }}
+              useArt
+            />
+            <LmuRatingBadge
+              rating={{
+                driverRank: rank,
+                driverTier: 3,
+                safetyRank: rank,
+                safetyTier: 3,
+              }}
+            />
+          </div>
+        )
+      )}
+    </div>
+  ),
+};

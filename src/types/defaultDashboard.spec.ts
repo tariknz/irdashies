@@ -256,3 +256,51 @@ describe('getWidgetDefaultConfig', () => {
     ).toThrow();
   });
 });
+
+/**
+ * A column added after a user already had a saved layout.
+ *
+ * The enabled flag defaults on its own, but `displayOrder` is persisted: a
+ * saved array has no entry for a column that did not exist when it was
+ * written, and DriverInfoRow hides anything the order does not list. So a new
+ * column is invisible to every existing user unless the merge places it.
+ */
+describe('deepMergeConfig and a newly added column', () => {
+  it('inserts lmuBadge just before badge in a saved order', () => {
+    const merged = deepMergeConfig(
+      {
+        displayOrder: [
+          'position',
+          'carManufacturer',
+          'lmuBadge',
+          'badge',
+          'gap',
+        ],
+        lmuBadge: { enabled: true },
+      },
+      {
+        // As saved before the column existed, with the user's own order.
+        displayOrder: ['carManufacturer', 'position', 'badge', 'gap'],
+      }
+    );
+
+    const order = merged.displayOrder as string[];
+    expect(order).toContain('lmuBadge');
+    expect(order.indexOf('lmuBadge')).toBeLessThan(order.indexOf('badge'));
+    // The user's own ordering is kept: they had carManufacturer first.
+    expect(order.indexOf('carManufacturer')).toBeLessThan(
+      order.indexOf('position')
+    );
+  });
+
+  it('defaults the new column on when the saved config has no flag', () => {
+    const merged = deepMergeConfig(
+      { lmuBadge: { enabled: true }, badge: { enabled: true } },
+      { badge: { enabled: false } }
+    );
+
+    expect(merged.lmuBadge).toEqual({ enabled: true });
+    // And does not disturb what the user did set.
+    expect(merged.badge).toEqual({ enabled: false });
+  });
+});

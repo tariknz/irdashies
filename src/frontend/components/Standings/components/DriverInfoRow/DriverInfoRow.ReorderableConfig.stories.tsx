@@ -360,6 +360,7 @@ const RelativeWithReorderableConfig = () => {
       pitStatus: { enabled: true, pitLapDisplayMode: 'lapsSinceLastPit' },
       pushToPass: { enabled: false },
       carManufacturer: { enabled: true },
+      lmuBadge: { enabled: true },
       badge: { enabled: true, badgeFormat: 'license-color-rating-bw' },
       iratingChange: { enabled: true },
       delta: { enabled: true, precision: 2 },

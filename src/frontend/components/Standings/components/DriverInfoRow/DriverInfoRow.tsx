@@ -12,6 +12,7 @@ import type {
 import { AvgLapTimeCell } from './cells/AvgLapTimeCell';
 import { LapCountCell } from './cells/LapCountCell';
 import { BadgeCell } from './cells/BadgeCell';
+import { LmuBadgeCell } from './cells/LmuBadgeCell';
 import { CarManufacturerCell } from './cells/CarManufacturerCell';
 import { CarNumberCell } from './cells/CarNumberCell';
 import { CompoundCell } from './cells/CompoundCell';
@@ -465,6 +466,19 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <CarManufacturerCell
             key="carManufacturer"
             carId={carId}
+            compactMode={compactMode}
+          />
+        ),
+      },
+      {
+        id: 'lmuBadge',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('lmuBadge') : true) &&
+          (config?.lmuBadge?.enabled ?? true),
+        component: (
+          <LmuBadgeCell
+            key="lmuBadge"
+            badge={lmuRating?.badge}
             compactMode={compactMode}
           />
         ),

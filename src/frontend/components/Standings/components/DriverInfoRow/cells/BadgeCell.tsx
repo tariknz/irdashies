@@ -5,6 +5,7 @@ import {
   type DriverRatingBadgeProps,
 } from '../../../../shared/DriverRatingBadge/DriverRatingBadge';
 import { LmuRatingBadge } from '../../../../shared/DriverRatingBadge/LmuRatingBadge';
+import { lmuUsesRankArt } from '../../../../shared/DriverRatingBadge/lmuUsesRankArt';
 
 interface BadgeCellProps {
   license?: string;
@@ -41,7 +42,13 @@ export const BadgeCell = memo(
         className={`w-auto whitespace-nowrap text-center ${pxClass}`}
       >
         {lmuRating ? (
-          <LmuRatingBadge rating={lmuRating} isMinimal={isMinimal} />
+          // The badge format is an iRacing concept; for LMU it only chooses
+          // between the sim's rank plates and the text chips.
+          <LmuRatingBadge
+            rating={lmuRating}
+            isMinimal={isMinimal}
+            useArt={lmuUsesRankArt(badgeFormat)}
+          />
         ) : (
           <DriverRatingBadge
             license={license}
