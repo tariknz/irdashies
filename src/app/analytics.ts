@@ -79,6 +79,7 @@ export class PostHogProvider implements AnalyticsProvider {
 export class Analytics {
   private provider: AnalyticsProvider | null = null;
   private pitLaneCalibrationAttempted = false;
+  private pitLaneCalibrationTask: Promise<void> | undefined;
 
   constructor(provider?: AnalyticsProvider) {
     if (provider) {
@@ -205,7 +206,18 @@ export class Analytics {
       event: 'app_started',
     });
 
-    await this.capturePitLaneCalibration(userId, version);
+    // Startup must not wait for optional filesystem or network work. Keep the
+    // caught task available to callers that explicitly need it to settle.
+    this.pitLaneCalibrationTask ??= this.capturePitLaneCalibration(
+      userId,
+      version
+    ).catch(() => {
+      logger.warn('[Analytics] Could not publish pit lane calibration');
+    });
+  }
+
+  waitForCalibrationUpload(): Promise<void> {
+    return this.pitLaneCalibrationTask ?? Promise.resolve();
   }
 
   private async capturePitLaneCalibration(

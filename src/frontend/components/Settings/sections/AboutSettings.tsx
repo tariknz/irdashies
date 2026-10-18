@@ -76,7 +76,7 @@ export const AboutSettings = () => {
         <div className="flex flex-col gap-4 mb-2">
           <div>
             <h3 className="text-lg font-semibold">Privacy Policy</h3>
-            <p className="text-sm text-slate-400">Last updated January 2026</p>
+            <p className="text-sm text-slate-400">Last updated October 2026</p>
           </div>
 
           <div className="text-sm text-slate-400">

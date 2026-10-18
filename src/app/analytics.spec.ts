@@ -166,6 +166,14 @@ describe('Analytics startup pit lane calibration', () => {
   const calibrationEvents = () =>
     provider.captureConfirmed.mock.calls.map(([event]) => event);
 
+  const startAndSettle = async (
+    target = analytics,
+    version = '2.0.0'
+  ): Promise<void> => {
+    await target.init(version, dashboard);
+    await target.waitForCalibrationUpload();
+  };
+
   beforeEach(async () => {
     userDataPath.value = await fs.mkdtemp(
       path.join(os.tmpdir(), 'irdashies-calibration-')
@@ -188,7 +196,7 @@ describe('Analytics startup pit lane calibration', () => {
 
   it('publishes the actual validated file contents with the identified installation and version', async () => {
     await writeCalibration(tracks);
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
 
     expect(app.getPath).toHaveBeenCalledWith('userData');
     expect(openSpy).toHaveBeenCalledWith(
@@ -225,7 +233,7 @@ describe('Analytics startup pit lane calibration', () => {
         path: '/Users/private',
       },
     });
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     expect(calibrationEvents()[0]?.properties?.tracks).toEqual({
       '42': tracks['42'],
     });
@@ -234,7 +242,7 @@ describe('Analytics startup pit lane calibration', () => {
 
   it('preserves zero and one boundary values', async () => {
     await writeCalibration({ '42': { pitEntryPct: 0, pitExitPct: 1 } });
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     expect(calibrationEvents()[0]?.properties?.tracks).toEqual({
       '42': { pitEntryPct: 0, pitExitPct: 1 },
     });
@@ -242,7 +250,7 @@ describe('Analytics startup pit lane calibration', () => {
 
   it('publishes an existing empty calibration map', async () => {
     await writeCalibration({});
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     expect(calibrationEvents()[0]?.properties).toEqual({
       version: '2.0.0',
       data_hash: expect.stringMatching(/^[0-9a-f]{64}$/),
@@ -272,14 +280,14 @@ describe('Analytics startup pit lane calibration', () => {
     ['array calibration', '{"42":[]}'],
   ])('skips %s without breaking app_started', async (_name, text) => {
     await fs.writeFile(path.join(userDataPath.value, 'pitLaneData.json'), text);
-    await expect(analytics.init('2.0.0', dashboard)).resolves.toBeUndefined();
+    await expect(startAndSettle()).resolves.toBeUndefined();
     expect(provider.capture).toHaveBeenCalledExactlyOnceWith({
       event: 'app_started',
     });
   });
 
   it('skips a missing file without a warning', async () => {
-    await expect(analytics.init('2.0.0', dashboard)).resolves.toBeUndefined();
+    await expect(startAndSettle()).resolves.toBeUndefined();
     expect(provider.capture).toHaveBeenCalledExactlyOnceWith({
       event: 'app_started',
     });
@@ -290,7 +298,7 @@ describe('Analytics startup pit lane calibration', () => {
     openSpy.mockRejectedValueOnce(
       new Error('/Users/private/pitLaneData.json: permission denied')
     );
-    await expect(analytics.init('2.0.0', dashboard)).resolves.toBeUndefined();
+    await expect(startAndSettle()).resolves.toBeUndefined();
     expect(provider.capture).toHaveBeenCalledExactlyOnceWith({
       event: 'app_started',
     });
@@ -304,7 +312,7 @@ describe('Analytics startup pit lane calibration', () => {
       path.join(userDataPath.value, 'pitLaneData.json'),
       ' '.repeat(2 * 1024 * 1024 + 1)
     );
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     expect(calibrationEvents()).toEqual([]);
     expect(loggerStub.warn).toHaveBeenCalledWith(
       '[Analytics] Skipping oversized pit lane calibration'
@@ -317,7 +325,7 @@ describe('Analytics startup pit lane calibration', () => {
         Array.from({ length: 10_001 }, (_, index) => [index + 1, tracks['42']])
       )
     );
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     expect(calibrationEvents()).toEqual([]);
   });
 
@@ -330,7 +338,7 @@ describe('Analytics startup pit lane calibration', () => {
         ])
       )
     );
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     expect(calibrationEvents()).toEqual([]);
     expect(loggerStub.warn).toHaveBeenCalledWith(
       '[Analytics] Skipping oversized pit lane calibration event'
@@ -339,10 +347,7 @@ describe('Analytics startup pit lane calibration', () => {
 
   it('reads and publishes calibration only once if init is repeated', async () => {
     await writeCalibration(tracks);
-    await Promise.all([
-      analytics.init('2.0.0', dashboard),
-      analytics.init('2.0.0', dashboard),
-    ]);
+    await Promise.all([startAndSettle(), startAndSettle()]);
     expect(
       openSpy.mock.calls.filter(([file]) =>
         String(file).endsWith('pitLaneData.json')
@@ -353,7 +358,7 @@ describe('Analytics startup pit lane calibration', () => {
 
   it('does not read calibration when analytics is opted out', async () => {
     vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     expect(openSpy).not.toHaveBeenCalled();
     expect(app.getPath).not.toHaveBeenCalled();
     expect(calibrationEvents()).toEqual([]);
@@ -363,7 +368,7 @@ describe('Analytics startup pit lane calibration', () => {
     vi.stubGlobal('POSTHOG_KEY', '');
     const disabled = new Analytics();
     expect(disabled.isInitialized()).toBe(false);
-    await disabled.init('2.0.0', dashboard);
+    await startAndSettle(disabled);
     expect(openSpy).not.toHaveBeenCalled();
     expect(app.getPath).not.toHaveBeenCalled();
   });
@@ -373,7 +378,7 @@ describe('Analytics startup pit lane calibration', () => {
     vi.mocked(getAnalyticsOptOut)
       .mockReturnValueOnce(false)
       .mockReturnValueOnce(true);
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     expect(openSpy).toHaveBeenCalledOnce();
     expect(calibrationEvents()).toEqual([]);
   });
@@ -385,11 +390,11 @@ describe('Analytics startup pit lane calibration', () => {
       await fs.readFile(checkpointPath(), 'utf8')
     ) as PitLaneAnalyticsCheckpoint;
   const restart = (version = '2.0.0') =>
-    new Analytics(provider).init(version, dashboard);
+    startAndSettle(new Analytics(provider), version);
 
   it('skips unchanged acknowledged data across fresh Analytics instances and app versions', async () => {
     await writeCalibration(tracks);
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     const acknowledged = await readCheckpoint();
     expect(acknowledged.lastAcknowledgedHash).toBe(
       calibrationEvents()[0]?.properties?.data_hash
@@ -407,7 +412,7 @@ describe('Analytics startup pit lane calibration', () => {
       '9000000001': { pitEntryPct: 0.9, pitExitPct: null },
       '8000000000': { pitEntryPct: null, pitExitPct: 0.1 },
     });
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     await fs.writeFile(
       path.join(userDataPath.value, 'pitLaneData.json'),
       JSON.stringify(
@@ -448,7 +453,7 @@ describe('Analytics startup pit lane calibration', () => {
     ['map emptied', {}],
   ])('reports a changed map when %s', async (_description, changed) => {
     await writeCalibration(tracks);
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     await writeCalibration(changed);
     await restart();
     const events = calibrationEvents();
@@ -463,7 +468,7 @@ describe('Analytics startup pit lane calibration', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
     await writeCalibration(tracks);
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     vi.setSystemTime(new Date('2026-01-02T00:00:00Z'));
     await writeCalibration({ '42': tracks['42'] });
     await restart();
@@ -481,7 +486,7 @@ describe('Analytics startup pit lane calibration', () => {
 
   it('restores A after an uncertain B delivery instead of skipping its older acknowledged hash', async () => {
     await writeCalibration(tracks);
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     await writeCalibration({ '42': tracks['42'] });
     provider.captureConfirmed.mockRejectedValueOnce(
       new Error('Lost acknowledgment')
@@ -509,19 +514,22 @@ describe('Analytics startup pit lane calibration', () => {
     expect((await readCheckpoint()).pending).toBeUndefined();
   });
 
-  it('persists pending identity before delivery and acknowledges only after delivery resolves', async () => {
+  it('resolves init while delivery is blocked and acknowledges only after background delivery settles', async () => {
     await writeCalibration(tracks);
     const delivery = Promise.withResolvers<undefined>();
     provider.captureConfirmed.mockReturnValueOnce(delivery.promise);
-    const startup = analytics.init('2.0.0', dashboard);
+    const initialized = vi.fn();
+    const startup = analytics.init('2.0.0', dashboard).then(initialized);
     await vi.waitFor(() =>
       expect(provider.captureConfirmed).toHaveBeenCalledOnce()
     );
+    expect(initialized).toHaveBeenCalledOnce();
     const pending = await readCheckpoint();
     expect(pending.lastAcknowledgedHash).toBeNull();
     expect(pending.pending?.uuid).toBe(calibrationEvents()[0].uuid);
     delivery.resolve(undefined);
     await startup;
+    await analytics.waitForCalibrationUpload();
     const acknowledged = await readCheckpoint();
     expect(acknowledged.lastAcknowledgedHash).toBe(
       calibrationEvents()[0].properties?.data_hash
@@ -529,10 +537,30 @@ describe('Analytics startup pit lane calibration', () => {
     expect(acknowledged.pending).toBeUndefined();
   });
 
+  it('handles rejected background delivery after init resolves and preserves pending retry identity', async () => {
+    await writeCalibration(tracks);
+    const delivery = Promise.withResolvers<undefined>();
+    provider.captureConfirmed.mockReturnValueOnce(delivery.promise);
+    await expect(analytics.init('2.0.0', dashboard)).resolves.toBeUndefined();
+    await vi.waitFor(() =>
+      expect(provider.captureConfirmed).toHaveBeenCalledOnce()
+    );
+    const pending = await readCheckpoint();
+    delivery.reject(new Error('Background HTTP failed'));
+    await expect(analytics.waitForCalibrationUpload()).resolves.toBeUndefined();
+    expect(provider.capture).toHaveBeenCalledExactlyOnceWith({
+      event: 'app_started',
+    });
+    expect(await readCheckpoint()).toEqual(pending);
+    expect(loggerStub.warn).toHaveBeenCalledWith(
+      '[Analytics] Could not publish pit lane calibration'
+    );
+  });
+
   it('retries failed delivery across restarts with exactly the same UUID and timestamp', async () => {
     await writeCalibration(tracks);
     provider.captureConfirmed.mockRejectedValueOnce(new Error('HTTP failed'));
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     expect((await readCheckpoint()).lastAcknowledgedHash).toBeNull();
     await restart('3.0.0');
     const [first, retry] = calibrationEvents();
@@ -545,7 +573,7 @@ describe('Analytics startup pit lane calibration', () => {
   it('uses a new identity if calibration changes while an earlier delivery is pending', async () => {
     await writeCalibration(tracks);
     provider.captureConfirmed.mockRejectedValueOnce(new Error('HTTP failed'));
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     await writeCalibration({ '42': tracks['42'] });
     await restart();
     expect(calibrationEvents()[1].uuid).not.toBe(calibrationEvents()[0].uuid);
@@ -553,7 +581,7 @@ describe('Analytics startup pit lane calibration', () => {
 
   it('scopes acknowledged hashes to the installation distinct ID', async () => {
     await writeCalibration(tracks);
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     vi.mocked(readData).mockReturnValue('another-installation');
     await restart();
     const events = calibrationEvents();
@@ -574,7 +602,7 @@ describe('Analytics startup pit lane calibration', () => {
     vi.spyOn(fs, 'rename').mockRejectedValueOnce(
       new Error('/Users/private write failed')
     );
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     expect(calibrationEvents()).toEqual([]);
     expect(await fs.readdir(userDataPath.value)).toEqual(['pitLaneData.json']);
     expect(
@@ -596,7 +624,7 @@ describe('Analytics startup pit lane calibration', () => {
     vi.spyOn(fs, 'rename')
       .mockImplementationOnce(rename)
       .mockRejectedValueOnce(new Error('Acknowledged checkpoint write failed'));
-    await analytics.init('2.0.0', dashboard);
+    await startAndSettle();
     const pending = await readCheckpoint();
     expect(pending.lastAcknowledgedHash).toBeNull();
     expect(pending.pending?.uuid).toBe(calibrationEvents()[0].uuid);
@@ -620,7 +648,7 @@ describe('Analytics startup pit lane calibration', () => {
     async (metadata) => {
       await writeCalibration(tracks);
       await fs.writeFile(checkpointPath(), metadata);
-      await analytics.init('2.0.0', dashboard);
+      await startAndSettle();
       expect(calibrationEvents()).toEqual([]);
       expect(await fs.readFile(checkpointPath(), 'utf8')).toBe(metadata);
       expect(loggerStub.warn).toHaveBeenCalledWith(
@@ -632,7 +660,7 @@ describe('Analytics startup pit lane calibration', () => {
   it('does not send when checkpoint metadata cannot be read', async () => {
     await writeCalibration(tracks);
     await fs.mkdir(checkpointPath());
-    await expect(analytics.init('2.0.0', dashboard)).resolves.toBeUndefined();
+    await expect(startAndSettle()).resolves.toBeUndefined();
     expect(calibrationEvents()).toEqual([]);
     expect(loggerStub.warn).toHaveBeenCalledWith(
       '[Analytics] Could not read pit lane delivery checkpoint'
@@ -644,7 +672,7 @@ describe('Analytics startup pit lane calibration', () => {
     provider.captureConfirmed.mockRejectedValueOnce(
       new Error('Provider failed')
     );
-    await expect(analytics.init('2.0.0', dashboard)).resolves.toBeUndefined();
+    await expect(startAndSettle()).resolves.toBeUndefined();
     expect(provider.capture).toHaveBeenCalledWith({ event: 'app_started' });
     expect(loggerStub.warn).toHaveBeenCalledWith(
       '[Analytics] Could not publish pit lane calibration'
