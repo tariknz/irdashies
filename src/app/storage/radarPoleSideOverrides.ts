@@ -13,10 +13,8 @@ import {
  * synchronous read-modify-write, and an async write to it could undo a
  * setting saved in between.
  */
-const FILE_PATH = path.join(
-  app.getPath('userData'),
-  'radar-pole-side-overrides.json'
-);
+const filePath = () =>
+  path.join(app.getPath('userData'), 'radar-pole-side-overrides.json');
 
 const WRITE_DEBOUNCE_MS = 250;
 
@@ -28,12 +26,12 @@ const write = async (): Promise<void> => {
   const overrides = pending;
   pending = undefined;
   if (!overrides) return;
-  const temp = `${FILE_PATH}.${process.pid}.tmp`;
+  const temp = `${filePath()}.${process.pid}.tmp`;
   try {
     await fsp.writeFile(temp, JSON.stringify(overrides));
-    await fsp.rename(temp, FILE_PATH);
+    await fsp.rename(temp, filePath());
   } catch (error) {
-    logger.error('[RadarPoleSide] Failed to write', FILE_PATH, error);
+    logger.error('[RadarPoleSide] Failed to write', filePath(), error);
     // Keep the correction for the next write, unless a newer one came in.
     pending ??= overrides;
     await fsp.unlink(temp).catch(() => undefined);
@@ -61,10 +59,10 @@ export const radarPoleSideOverrides = new RadarPoleSideOverrides({
   // the override lookup ever becomes awaitable.
   read: () => {
     try {
-      return JSON.parse(readFileSync(FILE_PATH, 'utf8')) as unknown;
+      return JSON.parse(readFileSync(filePath(), 'utf8')) as unknown;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logger.warn('[RadarPoleSide] Failed to read', FILE_PATH, error);
+        logger.warn('[RadarPoleSide] Failed to read', filePath(), error);
       }
       return undefined;
     }
