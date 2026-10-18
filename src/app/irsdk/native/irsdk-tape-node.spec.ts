@@ -12,6 +12,7 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest';
 
 import type { NativeSDK } from './index';
@@ -578,9 +579,15 @@ describe('tape-backed native SDK', () => {
       expect(Reflect.apply(sdk.seekTapeReplay, sdk, ['2'])).toBe(false);
       expect(Reflect.apply(sdk.setTapeReplayPaused, sdk, [1])).toBe(false);
       expect(sdk.waitForData(20)).toBe(true);
-      await new Promise((resolve) => setTimeout(resolve, 5));
-      sdk.waitForData(20);
-      expect(sdk.getTapeReplayStatus().ended).toBe(true);
+      // A timed read can stop after the last frame but before its End record.
+      // Poll the actual state instead of relying on sub-tick Windows timers.
+      await vi.waitFor(
+        () => {
+          sdk.waitForData(20);
+          expect(sdk.getTapeReplayStatus().ended).toBe(true);
+        },
+        { timeout: 1000, interval: 10 }
+      );
       expect(sdk.setTapeReplayPaused(false)).toBe(true);
       expect(sdk.waitForData(0)).toBe(false);
       expect(sdk.waitForData(0)).toBe(true);
