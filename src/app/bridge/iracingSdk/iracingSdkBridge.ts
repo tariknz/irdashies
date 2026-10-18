@@ -259,11 +259,13 @@ export async function publishIRacingSDKEvents(
             // A seek remounts widgets after the disconnect. Their processors
             // may activate after the single destination frame was consumed.
             // Seed that new demand once, even when the tape stays paused.
-            if (replayRefreshPending && latestSession) {
+            if (replayRefreshPending) {
               replayRefreshPending = false;
-              perfMetrics.markStart('tapeReplayRefresh');
-              processorHost?.onFrame(sdk.getTelemetry());
-              perfMetrics.markEnd('tapeReplayRefresh');
+              if (latestSession && sdk.getTapeReplayStatus()?.paused) {
+                perfMetrics.markStart('tapeReplayRefresh');
+                processorHost?.onFrame(sdk.getTelemetry());
+                perfMetrics.markEnd('tapeReplayRefresh');
+              }
             }
             const remainingDelay = Math.max(
               0,
@@ -274,6 +276,8 @@ export async function publishIRacingSDKEvents(
           }
           break;
         }
+        // This frame already satisfies pending subscriber demand.
+        replayRefreshPending = false;
         if (!wasRunning) {
           logger.info(`[iracingSdkBridge] ${sourceName} is running`);
           wasRunning = true;
