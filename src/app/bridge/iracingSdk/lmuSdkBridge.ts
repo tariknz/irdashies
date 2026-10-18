@@ -97,6 +97,43 @@ const gridSteamIds = (drivers: readonly { steamId: string }[]): string[] =>
     .map((driver) => driver.steamId)
     .filter((steamId) => /^[1-9][0-9]*$/.test(steamId));
 
+/**
+ * Why a grid yielded no Steam ids, in the sim's own words, or null when it did.
+ *
+ * "No human Steam ids on the grid" is true whenever this happens but reads as
+ * "everyone here is AI", and the likelier cause is that the sim did not fill
+ * the field at all: LMU 14200 was observed reporting 0 for two human drivers
+ * in an online practice session. The two are indistinguishable downstream --
+ * an AI entry and an unpopulated field are both 0 -- so the raw values are
+ * reported once and the guess is left to the reader.
+ *
+ * mSteamID sits at offset 536 in LMUVehicleScoring, immediately before
+ * mVehFilename, whose offset is pinned in lmu_struct.h for this reason: if
+ * CarPath looks right then the read location is right and the zeroes are the
+ * sim's own.
+ */
+const steamIdDiagnostic = (
+  drivers: readonly { steamId: string }[],
+  usable: number
+): string | null => {
+  if (usable > 0 || drivers.length === 0) return null;
+  // Capped: a full grid would otherwise put a hundred values in one line.
+  const sample = drivers
+    .slice(0, 5)
+    .map((driver) => JSON.stringify(driver.steamId))
+    .join(', ');
+  const allZero = drivers.every((driver) => driver.steamId === '0');
+  return (
+    `No usable Steam ids among ${drivers.length} drivers; the sim reported ` +
+    `${sample}${drivers.length > 5 ? ', ...' : ''}. ` +
+    (allZero
+      ? 'All zero, so either every entry is AI or this LMU build does not ' +
+        'populate mSteamID -- driver ranks cannot be looked up either way.'
+      : 'Some are non-numeric, which would mean the field is being read from ' +
+        'the wrong offset.')
+  );
+};
+
 export async function publishLmuSDKEvents(
   overlayManager: OverlayManager,
   lifecycle?: SessionLifecycle,
@@ -164,6 +201,8 @@ export async function publishLmuSDKEvents(
   let activeTrackName = '';
   let trackMap: LmuTrackMap | null = null;
   let lastBlindSpotDataIssue: string | null | undefined;
+  /** Last reported reason the grid yielded no Steam ids, so it is said once. */
+  let lastSteamIdDiagnostic: string | null = null;
   // Lifts the player's lap fraction from LMU's 5 Hz scoring block to the poll
   // rate. Held across frames, and reset only at the two real discontinuities
   // below -- never on the grace-hold path, where re-anchoring mid-lap would
@@ -388,7 +427,16 @@ export async function publishLmuSDKEvents(
         // below. A driver joining mid-session is a reason to ask even if
         // nothing else about the grid moved, and an id already resolved,
         // remembered as a miss or in flight costs one set lookup to skip.
-        ratingClient.request(gridSteamIds(rawSession.drivers));
+        const gridIds = gridSteamIds(rawSession.drivers);
+        const diagnostic = steamIdDiagnostic(
+          rawSession.drivers,
+          gridIds.length
+        );
+        if (diagnostic && diagnostic !== lastSteamIdDiagnostic) {
+          lastSteamIdDiagnostic = diagnostic;
+          logger.warn(`[lmuSdkBridge] ${diagnostic}`);
+        }
+        ratingClient.request(gridIds);
         const signature = lmuSessionSignature(rawSession);
         if (signature !== lastSessionSignature) {
           lastSessionSignature = signature;

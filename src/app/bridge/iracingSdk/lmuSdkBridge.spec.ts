@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import logger from '../../logger';
 import type { OverlayManager } from '../../overlayManager';
 import type { SessionLifecycle } from '../../sessionLifecycle';
 
@@ -646,6 +647,102 @@ describe('publishLmuSDKEvents rating source on a tape replay', () => {
 
     await vi.waitFor(() => expect(ratingState.cache.load).toHaveBeenCalled());
     expect(ratingState.tapeClientBuilt).toBe(false);
+
+    bridge.stop();
+  });
+});
+
+/**
+ * What the log says when a grid yields no Steam ids.
+ *
+ * An AI entry and a field the sim never filled are both 0, so the condition
+ * cannot be told apart downstream -- and the message that used to cover both
+ * ("no human Steam ids on the grid") reads as the first while LMU 14200 was
+ * observed doing the second for two human drivers. The raw values are the only
+ * thing that settles it, so they go in the log.
+ */
+describe('publishLmuSDKEvents when the grid has no usable Steam ids', () => {
+  const warnings = () =>
+    vi
+      .mocked(logger.warn)
+      .mock.calls.map(([message]) => String(message))
+      .filter((message) => message.includes('Steam ids'));
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sdkState.running = true;
+    sdkState.readThrows = false;
+    sdkState.drivers = [];
+    ratingState.requested = [];
+    ratingState.tapeClientBuilt = false;
+  });
+
+  it('reports the raw values the sim gave', async () => {
+    sdkState.drivers = [{ steamId: '0' }, { steamId: '0' }];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(warnings().length).toBeGreaterThan(0));
+    const message = warnings()[0];
+    expect(message).toContain('No usable Steam ids among 2 drivers');
+    expect(message).toContain('"0", "0"');
+    expect(message).toContain('does not populate mSteamID');
+
+    bridge.stop();
+  });
+
+  it('calls out a non-numeric value as an offset problem instead', async () => {
+    // A misplaced mSteamID reads as rubbish rather than as 0, and that is a
+    // different fix entirely -- hence the two wordings.
+    sdkState.drivers = [{ steamId: 'nonsense' }];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(warnings().length).toBeGreaterThan(0));
+    expect(warnings()[0]).toContain('wrong offset');
+
+    bridge.stop();
+  });
+
+  it('says nothing when the grid is empty', async () => {
+    // No drivers is not a Steam id problem, and saying so on every poll
+    // before a session loads would be noise.
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(mapSessionSpy).toHaveBeenCalled());
+    expect(warnings()).toEqual([]);
+
+    bridge.stop();
+  });
+
+  it('says nothing when the ids are usable', async () => {
+    sdkState.drivers = [{ steamId: '76561198000000111' }];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() =>
+      expect(ratingState.requested.length).toBeGreaterThan(0)
+    );
+    expect(warnings()).toEqual([]);
+
+    bridge.stop();
+  });
+
+  it('does not repeat itself while the grid is unchanged', async () => {
+    sdkState.drivers = [{ steamId: '0' }];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(warnings().length).toBeGreaterThan(0));
+    // Several session polls, one line.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(warnings()).toHaveLength(1);
 
     bridge.stop();
   });
