@@ -21,10 +21,13 @@ let pending: PoleSideOverrides | undefined;
 let writeTimer: NodeJS.Timeout | null = null;
 let writeInFlight: Promise<void> = Promise.resolve();
 
+/** The file exists but could not be read: saving would replace good data. */
+let saveBlocked = false;
+
 const write = async (): Promise<void> => {
   const overrides = pending;
   pending = undefined;
-  if (!overrides) return;
+  if (!overrides || saveBlocked) return;
   const temp = `${filePath()}.${process.pid}.tmp`;
   try {
     await fsp.writeFile(temp, JSON.stringify(overrides));
@@ -53,20 +56,50 @@ export const flushRadarPoleSideOverrides = (): Promise<void> => {
 };
 
 let stored: unknown;
+let loaded: Promise<boolean> | undefined;
 
-/**
- * Reads the file ahead of the radar, which looks corrections up synchronously
- * and so must not be created before this resolves.
- */
-export const loadRadarPoleSideOverrides = async (): Promise<void> => {
-  try {
-    stored = JSON.parse(await fsp.readFile(filePath(), 'utf8')) as unknown;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      logger.warn('[RadarPoleSide] Failed to read', filePath(), error);
+const READ_RETRY_MS = 50;
+
+const readFile = async (): Promise<string | undefined> => {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fsp.readFile(filePath(), 'utf8');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+      // A virus scanner can hold the file for a moment on Windows.
+      if (attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, READ_RETRY_MS));
+        continue;
+      }
+      saveBlocked = true;
+      logger.error('[RadarPoleSide] Failed to read', filePath(), error);
+      return undefined;
     }
   }
 };
+
+/**
+ * Reads the file once, ahead of the radar, which looks corrections up
+ * synchronously. Everything that reads corrections awaits this first.
+ * Resolves false when the file exists but could not be used.
+ */
+export const loadRadarPoleSideOverrides = (): Promise<boolean> =>
+  (loaded ??= (async () => {
+    const text = await readFile();
+    if (text === undefined) return !saveBlocked;
+    try {
+      stored = JSON.parse(text) as unknown;
+    } catch (error) {
+      // Not JSON: keep it aside rather than lose it under the next save.
+      logger.error('[RadarPoleSide] Invalid file, moved aside', error);
+      await fsp
+        .rename(filePath(), `${filePath()}.invalid`)
+        .catch(() => {
+          saveBlocked = true;
+        });
+    }
+    return !saveBlocked;
+  })());
 
 /** The player's pole side corrections, kept in a small file of their own. */
 export const radarPoleSideOverrides = new RadarPoleSideOverrides({

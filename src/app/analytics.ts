@@ -14,7 +14,10 @@ import {
   MAX_POLE_SIDE_PROPERTIES_BYTES,
   buildRadarPoleSideReport,
 } from './analytics/radarPoleSideReport';
-import { radarPoleSideOverrides } from './storage/radarPoleSideOverrides';
+import {
+  loadRadarPoleSideOverrides,
+  radarPoleSideOverrides,
+} from './storage/radarPoleSideOverrides';
 import {
   readPitLaneAnalyticsCheckpoint,
   writePitLaneAnalyticsCheckpoint,
@@ -277,6 +280,8 @@ export class Analytics {
   ): Promise<void> {
     try {
       if (!this.provider || getAnalyticsOptOut()) return;
+      // An unreadable file would look like every correction was reverted.
+      if (!(await loadRadarPoleSideOverrides())) return;
       const report = buildRadarPoleSideReport(
         radarPoleSideOverrides.snapshot(),
         version

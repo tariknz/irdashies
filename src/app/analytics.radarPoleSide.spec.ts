@@ -45,6 +45,7 @@ const { corrections, flipped } = vi.hoisted(() => ({
   flipped: { listeners: new Set<() => void>() },
 }));
 vi.mock('./storage/radarPoleSideOverrides', () => ({
+  loadRadarPoleSideOverrides: async () => true,
   radarPoleSideOverrides: {
     snapshot: () => corrections.value,
     onChange: (listener: () => void) => {
