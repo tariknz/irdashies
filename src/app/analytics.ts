@@ -22,6 +22,12 @@ import {
 
 declare const POSTHOG_KEY: string;
 
+/**
+ * How long after the last flip the radar pole side report goes out, so a
+ * burst of key presses is one report and nothing waits for the next launch.
+ */
+const POLE_SIDE_REPORT_DELAY_MS = 60 * 1000;
+
 /** Hash of the last radar pole side report PostHog acknowledged. */
 const POLE_SIDE_HASH_KEY = 'radarPoleSideReportHash';
 
@@ -89,6 +95,8 @@ export class Analytics {
   private pitLaneCalibrationAttempted = false;
   private pitLaneCalibrationTask: Promise<void> | undefined;
   private radarPoleSideTask: Promise<void> | undefined;
+  private radarPoleSideTimer: ReturnType<typeof setTimeout> | undefined;
+  private watchingRadarPoleSides = false;
 
   constructor(provider?: AnalyticsProvider) {
     if (provider) {
@@ -131,6 +139,7 @@ export class Analytics {
   }
 
   shutdown(shutdownTimeoutMs?: number): void {
+    clearTimeout(this.radarPoleSideTimer);
     if (this.provider) {
       this.provider.shutdown(shutdownTimeoutMs);
     }
@@ -227,6 +236,29 @@ export class Analytics {
     this.radarPoleSideTask ??= this.pitLaneCalibrationTask.then(() =>
       this.captureRadarPoleSides(userId, version)
     );
+    this.reportRadarPoleSidesAfterFlips(userId, version);
+  }
+
+  /**
+   * A flip is reported a minute after the last one rather than at the next
+   * launch. If the app closes first, the launch still sends it, since the
+   * acknowledged hash was never recorded.
+   */
+  private reportRadarPoleSidesAfterFlips(
+    userId: string,
+    version: string
+  ): void {
+    if (this.watchingRadarPoleSides) return;
+    this.watchingRadarPoleSides = true;
+    radarPoleSideOverrides.onChange(() => {
+      clearTimeout(this.radarPoleSideTimer);
+      this.radarPoleSideTimer = setTimeout(() => {
+        this.radarPoleSideTask = (
+          this.radarPoleSideTask ?? Promise.resolve()
+        ).then(() => this.captureRadarPoleSides(userId, version));
+      }, POLE_SIDE_REPORT_DELAY_MS);
+      this.radarPoleSideTimer.unref?.();
+    });
   }
 
   waitForRadarPoleSideUpload(): Promise<void> {

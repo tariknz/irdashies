@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EventMessage, IdentifyMessage } from 'posthog-node';
 import type { DashboardLayout } from '@irdashies/types';
 import os from 'node:os';
@@ -40,11 +40,18 @@ vi.mock('./storage/analytics', () => ({
   getAnalyticsOptOut: vi.fn().mockReturnValue(false),
 }));
 
-const { corrections } = vi.hoisted(() => ({
+const { corrections, flipped } = vi.hoisted(() => ({
   corrections: { value: {} as Record<string, unknown> },
+  flipped: { listeners: new Set<() => void>() },
 }));
 vi.mock('./storage/radarPoleSideOverrides', () => ({
-  radarPoleSideOverrides: { snapshot: () => corrections.value },
+  radarPoleSideOverrides: {
+    snapshot: () => corrections.value,
+    onChange: (listener: () => void) => {
+      flipped.listeners.add(listener);
+      return () => flipped.listeners.delete(listener);
+    },
+  },
 }));
 
 import { Analytics } from './analytics';
@@ -78,6 +85,7 @@ describe('Analytics radar pole side report', () => {
     userDataPath.value = mkdtempSync(path.join(os.tmpdir(), 'irdashies-'));
     store.data.clear();
     corrections.value = {};
+    flipped.listeners.clear();
     provider = makeProvider();
     vi.mocked(getAnalyticsOptOut).mockReturnValue(false);
   });
@@ -141,5 +149,51 @@ describe('Analytics radar pole side report', () => {
     store.data.set(HASH_KEY, 'not-a-hash');
     await start();
     expect(reports()).toEqual([]);
+  });
+
+  describe('after a flip', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const flip = () => flipped.listeners.forEach((listener) => listener());
+
+    it('reports a minute after the last flip, not at once and not once per press', async () => {
+      await start();
+      expect(reports()).toEqual([]);
+
+      corrections.value = { '95': { start: false, table: true } };
+      flip();
+      await vi.advanceTimersByTimeAsync(30_000);
+      flip();
+      await vi.advanceTimersByTimeAsync(59_000);
+      expect(reports()).toEqual([]);
+
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(reports()).toHaveLength(1);
+      expect(reports()[0].properties?.track_count).toBe(1);
+      expect(store.data.get(HASH_KEY)).toBeDefined();
+    });
+
+    it('sends nothing when the flips cancelled out and nothing was ever sent', async () => {
+      await start();
+      flip();
+      await vi.advanceTimersByTimeAsync(61_000);
+      expect(reports()).toEqual([]);
+    });
+
+    it('stops its timer when the app shuts down', async () => {
+      const analytics = new Analytics(provider);
+      await analytics.init('2.0.0', {} as DashboardLayout);
+      await analytics.waitForRadarPoleSideUpload();
+      corrections.value = { '95': { start: false, table: true } };
+      flip();
+      analytics.shutdown();
+      await vi.advanceTimersByTimeAsync(120_000);
+      expect(reports()).toEqual([]);
+    });
   });
 });

@@ -61,7 +61,17 @@ export class RadarPoleSideOverrides implements PoleSideSettings {
     situation: PoleSituation;
   };
 
+  private readonly listeners = new Set<() => void>();
+
   constructor(private readonly persistence: PoleSidePersistence) {}
+
+  /** Called after a flip was saved; returns the way to stop listening. */
+  onChange(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
 
   private load(): PoleSideOverrides {
     this.overrides ??= parsePoleSideOverrides(this.persistence.read());
@@ -131,6 +141,7 @@ export class RadarPoleSideOverrides implements PoleSideSettings {
     }
     this.persistence.write(overrides);
     this.overrides = overrides;
+    this.listeners.forEach((listener) => listener());
     return { trackId, situation, poleLeft };
   }
 }

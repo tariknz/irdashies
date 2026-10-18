@@ -117,6 +117,21 @@ describe('RadarPoleSideOverrides', () => {
     expect(overrides.override(95, 'start')).toBe(false);
   });
 
+  it('tells listeners once per saved flip, until they stop listening', () => {
+    const { overrides } = store();
+    const listener = vi.fn();
+    const stop = overrides.onChange(listener);
+    overrides.setTrack(95, true, 'start');
+
+    overrides.flip();
+    overrides.flip();
+    expect(listener).toHaveBeenCalledTimes(2);
+
+    stop();
+    overrides.flip();
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
   it('does nothing before a track is known', () => {
     const { overrides, write } = store();
     expect(overrides.flip()).toBeUndefined();
