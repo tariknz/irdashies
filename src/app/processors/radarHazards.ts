@@ -21,7 +21,7 @@ const SUDDEN_SHARE = 0.4;
  * ...and below this speed in m/s, so braking for a hairpin is not a crash; a
  * car that is really crashed or spun is down to a crawl within moments.
  */
-const SUDDEN_MAX_MS = 12;
+const SUDDEN_MAX_MS = 8;
 /** Below this, in m/s, a car crawls: slow on any part of the track. */
 const CRAWL_MS = 12;
 /**
@@ -49,9 +49,12 @@ const REJOIN_S = 5;
 const QUIET_GRACE_S = 5;
 
 interface CarHazardState {
-  /** The car's own top speed within the last SUDDEN_WINDOW_S, and when. */
+  /** The car's own top speed over the last two to four seconds. */
   peak: number;
-  peakAt: number;
+  /** Top speed in the current and in the previous bucket of SUDDEN_WINDOW_S. */
+  peakNow: number;
+  peakBefore: number;
+  bucketAt: number;
   /** Speed the car had before a sudden drop, or -1 while it has not dropped. */
   droppedFrom: number;
   droppedAt: number;
@@ -71,7 +74,9 @@ interface CarHazardState {
 
 const freshState = (): CarHazardState => ({
   peak: 0,
-  peakAt: -1,
+  peakNow: 0,
+  peakBefore: 0,
+  bucketAt: -1,
   droppedFrom: -1,
   droppedAt: -1,
   stoppedSince: -1,
@@ -198,10 +203,17 @@ export class RadarHazardTracker {
     }
 
     // The car's own pace over the last moments, to tell a drop from a corner.
-    if (speed >= state.peak || time - state.peakAt > SUDDEN_WINDOW_S) {
-      state.peak = speed;
-      state.peakAt = time;
+    // Kept over two buckets of SUDDEN_WINDOW_S, so it looks back two to four
+    // seconds and never falls to the current speed all at once: a steady
+    // slowing stays below its own recent pace instead of resetting to it.
+    if (state.bucketAt < 0 || time - state.bucketAt >= SUDDEN_WINDOW_S) {
+      state.peakBefore = state.peakNow;
+      state.peakNow = speed;
+      state.bucketAt = time;
+    } else {
+      state.peakNow = Math.max(state.peakNow, speed);
     }
+    state.peak = Math.max(state.peakNow, state.peakBefore);
     if (
       state.droppedFrom < 0 &&
       state.peak >= RACING_MS &&

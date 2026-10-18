@@ -95,6 +95,7 @@ export class Analytics {
   private pitLaneCalibrationAttempted = false;
   private pitLaneCalibrationTask: Promise<void> | undefined;
   private radarPoleSideTask: Promise<void> | undefined;
+  private poleSideEvent: { hash: string; uuid: string } | undefined;
   private radarPoleSideTimer: ReturnType<typeof setTimeout> | undefined;
   private watchingRadarPoleSides = false;
 
@@ -294,10 +295,15 @@ export class Analytics {
         logger.warn('[Analytics] Skipping oversized radar pole side report');
         return;
       }
+      // The same report keeps its event id across retries, so a send whose
+      // acknowledgement was lost is not counted twice while the app runs.
+      if (this.poleSideEvent?.hash !== report.hash) {
+        this.poleSideEvent = { hash: report.hash, uuid: crypto.randomUUID() };
+      }
       await this.provider.captureConfirmed({
         distinctId: userId,
         event: 'radar_pole_side',
-        uuid: crypto.randomUUID(),
+        uuid: this.poleSideEvent.uuid,
         properties: report.properties,
       });
       // Recorded only after PostHog acknowledged it, so a failure retries.

@@ -159,7 +159,9 @@ const main = () => {
   const sorted = Object.fromEntries(
     Object.entries(tracks)
       .map(([id, entry]): [string, Entry] => {
-        const { name, iracing } = catalogue.get(id) ?? entry;
+        // Without a catalogue, keep the hints the file already had.
+        const { name, iracing } =
+          catalogue.get(id) ?? previous.tracks?.[id] ?? entry;
         return [
           id,
           { ...entry, ...(name && { name }), ...(iracing && { iracing }) },

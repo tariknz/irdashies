@@ -129,6 +129,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
 
   private latest: RadarSnapshot = emptySnapshot(0);
   private trackId: number | undefined;
+  /** Whether init() has set the pole side up for a track since the last lifecycle end. */
+  private poleTrackKnown = false;
   /** The side the table gives for a pace field, and the side in use. */
   private tablePoleLeft = false;
   private poleLeft = false;
@@ -153,19 +155,25 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     // TrackType is "road course", "short track", "super speedway", "dirt oval"
     // and so on; anything that is not road racing is an oval
     const trackType = session?.WeekendInfo?.TrackType ?? '';
+    const previousTrackId = this.trackId;
     this.trackId = session?.WeekendInfo?.TrackID;
     this.tablePoleLeft = paceFieldPoleLeft(
       this.trackId,
       session?.WeekendInfo?.TrackName,
       trackType !== '' && !/road|rally/i.test(trackType)
     );
-    this.situation = 'start';
-    this.poleSides.setTrack(this.trackId, this.tablePoleLeft, this.situation);
-    this.poleLeft =
-      this.poleSides.override(this.trackId, this.situation) ??
-      this.tablePoleLeft;
-    this.lanes.setPoleLeft(this.poleLeft);
-    this.poleNoticeUntil = -Infinity;
+    // iRacing sends session info again and again; only a new track starts the
+    // pole side over, or a flip would lose its message and its situation.
+    if (!this.poleTrackKnown || this.trackId !== previousTrackId) {
+      this.poleTrackKnown = true;
+      this.situation = 'start';
+      this.poleSides.setTrack(this.trackId, this.tablePoleLeft, this.situation);
+      this.poleLeft =
+        this.poleSides.override(this.trackId, this.situation) ??
+        this.tablePoleLeft;
+      this.lanes.setPoleLeft(this.poleLeft);
+      this.poleNoticeUntil = -Infinity;
+    }
     const options = session?.WeekendInfo?.WeekendOptions;
     this.grid = {
       standingStart: options?.StandingStart === 1,
@@ -320,8 +328,11 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         ? poleSign(this.poleLeft) *
           ((formation.columns - 1) / 2 - formation.ownColumn)
         : 0,
-      poleSideNotice:
-        time < this.poleNoticeUntil ? (this.poleLeft ? 'left' : 'right') : null,
+      poleSideNotice: this.poleNoticeShown(time)
+        ? this.poleLeft
+          ? 'left'
+          : 'right'
+        : null,
       cars,
       hazards,
     };
@@ -338,6 +349,12 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     this.lanes.reset();
     this.hazards.reset();
     this.laneFocus = -1;
+    // Out of the session the flip key has no track to act on. A new session
+    // number keeps the track: iRacing sends the session info again after it.
+    if (event.type === 'disconnect') {
+      this.poleTrackKnown = false;
+      this.poleSides.setTrack(undefined, false, 'start');
+    }
     this.latest = emptySnapshot(this.latest.version + 1);
   }
 
@@ -371,13 +388,20 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       car.lane = lane.lane;
       car.laneSource = lane.source;
     }
-    return spotter !== null;
+    // Off is the spotter saying nothing at all (LMU without positions, say).
+    return spotter !== null && spotter !== CarLeftRight.Off;
   }
 
   /**
    * Follows the player's own pole side for this track, which a keybinding can
    * change at any time, and says so on the radar for a few seconds.
    */
+  /** Within POLE_NOTICE_S of the flip, and not left over from a replay's future. */
+  private poleNoticeShown(time: number): boolean {
+    const left = this.poleNoticeUntil - time;
+    return left > 0 && left <= POLE_NOTICE_S;
+  }
+
   private applyPoleSide(
     time: number,
     formation: Formation | null,

@@ -230,7 +230,7 @@ describe('RadarProcessor', () => {
         time: 1,
         pcts: [0.5, 0.5 + m(2), 0.5 - m(2)],
         onPitRoad: [false, true, false],
-        carLeftRight: CarLeftRight.Off,
+        carLeftRight: CarLeftRight.Clear,
       })
     );
 
@@ -248,7 +248,7 @@ describe('RadarProcessor', () => {
         time: 1,
         pcts: [0.5, 0.5 + m(2), 0.5 - m(2)],
         onPitRoad: [true, true, false],
-        carLeftRight: CarLeftRight.Off,
+        carLeftRight: CarLeftRight.Clear,
       })
     );
 
@@ -361,7 +361,7 @@ describe('RadarProcessor', () => {
         time: 1,
         pcts: [0.1, 0.5, 0.5 + m(2)],
         camCarIdx: 1,
-        carLeftRight: CarLeftRight.Off,
+        carLeftRight: CarLeftRight.Clear,
       })
     );
 
@@ -570,6 +570,89 @@ describe('RadarProcessor', () => {
     expect(lanes()).toEqual(before.map((lane) => (lane === 0 ? 0 : -lane)));
     expect(processor.snapshot().roadLane).toBe(-roadBefore);
     expect(processor.snapshot().poleSideNotice).toBe('right');
+  });
+
+  const limeRock = () => {
+    const session = structuredClone(rollingSession) as unknown as Session;
+    session.WeekendInfo.TrackID = 353;
+    session.WeekendInfo.TrackName = 'limerock 2019 gp';
+    return session;
+  };
+
+  it('does not space cars apart when the spotter says nothing at all', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      frame({
+        time: 1,
+        pcts: [0.5, 0.5 + m(2)],
+        onPitRoad: [false, false],
+        carLeftRight: CarLeftRight.Off,
+      })
+    );
+    expect(processor.snapshot().cars[0].dist).toBeCloseTo(2);
+  });
+
+  it('keeps a flip and its message when session info arrives again', () => {
+    const player: { poleLeft?: boolean } = {};
+    const poleSides = {
+      override: () => player.poleLeft,
+      setTrack: vi.fn(),
+    };
+    const session = limeRock();
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(session);
+    const at = (time: number) =>
+      ({
+        ...rollingTelemetry,
+        SessionTime: { value: [time] },
+      }) as unknown as Telemetry;
+    processor.onFrame(at(100));
+
+    player.poleLeft = true;
+    processor.onFrame(at(101));
+    expect(processor.snapshot().poleSideNotice).toBe('left');
+
+    // The sim sends the session again, as it does all the time in a race.
+    processor.init(session);
+    poleSides.setTrack.mockClear();
+    processor.onFrame(at(101.04));
+    expect(processor.snapshot().poleSideNotice).toBe('left');
+    expect(poleSides.setTrack).not.toHaveBeenCalled();
+  });
+
+  it('forgets the track when the session ends, so the key has nothing to flip', () => {
+    const poleSides = { override: () => undefined, setTrack: vi.fn() };
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(rollingSession as unknown as Session);
+    processor.onLifecycle({ type: 'disconnect' });
+    expect(poleSides.setTrack).toHaveBeenLastCalledWith(
+      undefined,
+      false,
+      'start'
+    );
+  });
+
+  it('shows the message only shortly after the flip, even in a rewound replay', () => {
+    const player: { poleLeft?: boolean } = {};
+    const poleSides = {
+      override: () => player.poleLeft,
+      setTrack: vi.fn(),
+    };
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(limeRock());
+    const at = (time: number) =>
+      ({
+        ...rollingTelemetry,
+        SessionTime: { value: [time] },
+      }) as unknown as Telemetry;
+    processor.onFrame(at(100));
+    player.poleLeft = true;
+    processor.onFrame(at(101));
+    expect(processor.snapshot().poleSideNotice).toBe('left');
+
+    // Scrubbed back a minute: the message belongs to the future.
+    processor.onFrame(at(40));
+    expect(processor.snapshot().poleSideNotice).toBeNull();
   });
 
   it('puts the pole line on the left on a super speedway', () => {

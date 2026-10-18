@@ -161,6 +161,24 @@ describe('RadarHazardTracker', () => {
     ]);
   });
 
+  it('sees a steady slowing, not just a fast one', () => {
+    const field = new Field();
+    field.run(5);
+    // 4 m/s^2 down from our speed: each second is a little slower than the
+    // last few seconds' pace, which must not look like pace every time.
+    for (let speed = 50; speed >= 20; speed -= 2) field.run(0.5, { speed });
+    expect(field.last).toEqual([
+      expect.objectContaining({ carIdx: 2, kind: 'slow' }),
+    ]);
+  });
+
+  it('does not call a hairpin at walking-fast pace a crash', () => {
+    const field = new Field();
+    field.run(5);
+    for (const speed of [40, 28, 18, 11]) field.run(0.4, { speed });
+    expect(field.run(2).map((hazard) => hazard.kind)).not.toContain('crash');
+  });
+
   it('clears once the car is back up to speed', () => {
     const field = new Field();
     field.run(5);
