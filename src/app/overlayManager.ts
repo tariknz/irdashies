@@ -17,7 +17,7 @@ import {
   isLayoutOnDisplay,
   isWidgetDisabledForSim,
   SETTINGS_TITLE_BAR,
-  DEFAULT_SETTINGS_THEME,
+  resolveSettingsTheme,
 } from '@irdashies/types';
 import { getSimWidgetSupport } from './storage/simWidgetSupport';
 import path from 'node:path';
@@ -1499,10 +1499,8 @@ const SETTINGS_TITLE_BAR_HEIGHT = 40;
 function settingsTitleBarOverlay(
   theme: SettingsTheme | undefined
 ): Electron.TitleBarOverlay {
-  // Persisted config is untrusted; unknown values get the default theme.
-  const colors =
-    theme && Object.hasOwn(SETTINGS_TITLE_BAR, theme)
-      ? SETTINGS_TITLE_BAR[theme]
-      : SETTINGS_TITLE_BAR[DEFAULT_SETTINGS_THEME];
-  return { ...colors, height: SETTINGS_TITLE_BAR_HEIGHT };
+  return {
+    ...SETTINGS_TITLE_BAR[resolveSettingsTheme(theme)],
+    height: SETTINGS_TITLE_BAR_HEIGHT,
+  };
 }

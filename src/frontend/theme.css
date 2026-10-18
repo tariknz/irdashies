@@ -560,7 +560,6 @@ html {
 .settings-theme-classic {
   --ui-heading-transform: none;
   --ui-heading-tracking: normal;
-  --ui-skew: 0deg;
   --color-slate-300: #cad5e2;
   --color-slate-700: #314158;
 }
@@ -569,7 +568,6 @@ html {
   --font-sans: 'Barlow', sans-serif;
   --font-heading: 'Barlow Condensed', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
-  --ui-skew: 0deg;
   --color-slate-50: #f4f4f2;
   --color-slate-100: #e6e6e3;
   --color-slate-200: #d6d7d4;

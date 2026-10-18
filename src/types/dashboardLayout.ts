@@ -108,6 +108,12 @@ export type SettingsTheme = (typeof SETTINGS_THEMES)[number];
 /** Classic is the original look of the settings window. */
 export const DEFAULT_SETTINGS_THEME: SettingsTheme = 'classic';
 
+/** Persisted config is untrusted: unknown values get the default theme. */
+export const resolveSettingsTheme = (value: unknown): SettingsTheme =>
+  SETTINGS_THEMES.includes(value as SettingsTheme)
+    ? (value as SettingsTheme)
+    : DEFAULT_SETTINGS_THEME;
+
 /** Native window-control colours per settings theme: slate-700 / slate-300
  *  of each .settings-theme-* in theme.css (kept in sync by a spec). */
 export const SETTINGS_TITLE_BAR: Record<

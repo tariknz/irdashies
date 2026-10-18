@@ -21,7 +21,6 @@ const MenuLink = ({
   showIcon = false,
   isEnabled,
   onToggle,
-  disabledReason,
   isNew,
 }: {
   item: MenuItem;
@@ -31,31 +30,21 @@ const MenuLink = ({
   isNew?: boolean;
   /** Present when the row controls a widget that exists in the dashboard. */
   onToggle?: (enabled: boolean) => void;
-  /** Hover text when the running sim cannot support this widget. */
-  disabledReason?: string | null;
 }) => {
   const isActive = pathname.startsWith(`/settings${item.path}`);
   const isWidget = !!item.widgetType;
-  // Still a link: the settings page stays reachable so the user can see why it
-  // is unavailable and what it would do.
   return (
     <li
       className={[
         'flex items-center gap-2 pr-2 rounded border-l-2 transition-colors',
         isActive
           ? 'border-accent-500 bg-accent-500/10 text-white'
-          : disabledReason
-            ? 'border-transparent text-slate-600 hover:bg-slate-700/50'
-            : 'border-transparent text-slate-400 hover:bg-slate-700/50 hover:text-white',
+          : 'border-transparent text-slate-400 hover:bg-slate-700/50 hover:text-white',
       ].join(' ')}
     >
       <Link
         to={item.to}
-        title={disabledReason ?? undefined}
-        className={[
-          'flex items-center gap-2 flex-1 min-w-0 px-2 cursor-pointer',
-          'py-1',
-        ].join(' ')}
+        className="flex items-center gap-2 flex-1 min-w-0 px-2 py-1 cursor-pointer"
       >
         {showIcon && item.icon && (
           <item.icon
@@ -82,7 +71,7 @@ const MenuLink = ({
           </span>
         )}
       </Link>
-      {isWidget && isEnabled && !disabledReason && (
+      {isWidget && isEnabled && (
         <span className="text-[10px] font-semibold tracking-widest text-emerald-400">
           LIVE
         </span>
@@ -91,8 +80,6 @@ const MenuLink = ({
         <ToggleSwitch
           small
           enabled={!!isEnabled}
-          disabled={!!disabledReason}
-          disabledReason={disabledReason ?? undefined}
           ariaLabel={`Enable ${item.label}`}
           onToggle={onToggle}
         />
@@ -118,9 +105,12 @@ export const SettingsMenu = () => {
   };
 
   // The settings page toggles the widget whose id is the widget type, so the
-  // menu does the same; extra instances keep their own state.
-  const hasWidget = (widgetType: string) =>
-    !!currentDashboard?.widgets.some((w) => w.id === widgetType);
+  // menu does the same; extra instances keep their own state. Grouped items
+  // share a page and have no single widget to switch.
+  const canToggle = (item: MenuItem) =>
+    !!item.widgetType &&
+    !item.groupTypes &&
+    !!currentDashboard?.widgets.some((w) => w.id === item.widgetType);
 
   const setWidgetEnabled = (widgetType: string, enabled: boolean) => {
     if (!currentDashboard || !onDashboardUpdated) return;
@@ -137,25 +127,13 @@ export const SettingsMenu = () => {
     !!item.widgetType &&
     (item.groupTypes ?? [item.widgetType]).some(isWidgetEnabled);
 
-  const itemsWithSupport = widgetItems
-    .filter((item) => !item.hideInMenu)
-    .map((item) => ({
-      item,
-      disabledReason: widgetDisabledMessage(
-        supportConfig,
-        item.widgetType,
-        simulator
-      ),
-    }));
-  const visibleItems = itemsWithSupport.filter(
-    ({ disabledReason }) => !disabledReason
+  const menuItems = widgetItems.filter((item) => !item.hideInMenu);
+  // Widgets the running sim cannot support are left out of the menu.
+  const visibleItems = menuItems.filter(
+    (item) => !widgetDisabledMessage(supportConfig, item.widgetType, simulator)
   );
-  const hiddenCount = itemsWithSupport.length - visibleItems.length;
-  // "On" means running: enabled and supported by the current simulator. The
-  // header and the category counts both count the visible rows this way.
-  const isOn = ({ item, disabledReason }: (typeof itemsWithSupport)[number]) =>
-    !disabledReason && isItemEnabled(item);
-  const enabledCount = visibleItems.filter(isOn).length;
+  const hiddenCount = menuItems.length - visibleItems.length;
+  const enabledCount = visibleItems.filter(isItemEnabled).length;
 
   return (
     <div className="w-1/4 bg-slate-800 p-3 rounded-md border border-slate-600/60 flex flex-col gap-0 overflow-y-auto">
@@ -177,10 +155,10 @@ export const SettingsMenu = () => {
       </div>
       {WIDGET_CATEGORIES.map((category) => {
         const items = visibleItems.filter(
-          ({ item }) => (item.category ?? 'extras') === category.id
+          (item) => (item.category ?? 'extras') === category.id
         );
         if (items.length === 0) return null;
-        const onCount = items.filter(isOn).length;
+        const onCount = items.filter(isItemEnabled).length;
         return (
           <section key={category.id} className="pt-2">
             <h4 className="flex items-center gap-2 px-2 pb-1 text-[11px] font-semibold text-slate-400 settings-heading tracking-widest">
@@ -191,17 +169,14 @@ export const SettingsMenu = () => {
               </span>
             </h4>
             <ul className="flex flex-col">
-              {items.map(({ item, disabledReason }) => (
+              {items.map((item) => (
                 <MenuLink
                   key={item.path}
                   item={item}
                   pathname={pathname}
-                  disabledReason={disabledReason}
                   isEnabled={item.widgetType ? isItemEnabled(item) : undefined}
                   onToggle={
-                    item.widgetType &&
-                    !item.groupTypes &&
-                    hasWidget(item.widgetType)
+                    canToggle(item) && item.widgetType
                       ? setWidgetEnabled.bind(null, item.widgetType)
                       : undefined
                   }
