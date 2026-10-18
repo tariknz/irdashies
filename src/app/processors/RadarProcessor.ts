@@ -237,9 +237,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       }
       cars.sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist));
       // Cars across the pit wall are beside the track, not in a lane of it.
-      const sameSide = cars.filter(
-        (car) => car.onPitRoad === (onPitRoad[focus] === true)
-      );
+      const focusOnPit = onPitRoad[focus] === true;
+      const sameSide = cars.filter((car) => car.onPitRoad === focusOnPit);
       this.assignLanes(frame, time, focus, isOnTrack, sameSide, formation);
       separateInLaneCars(sameSide);
     }
