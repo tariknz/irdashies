@@ -9,6 +9,7 @@ import type {
 import { releaseNotesFixture } from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
 import { mockDashboardBridge } from '@irdashies/storybook';
+import { themeClasses } from './Settings';
 import type { SettingsTheme } from '@irdashies/types';
 
 interface StoryProps {
@@ -32,7 +33,7 @@ const meta: Meta<typeof SettingsLayout> = {
   title: 'components/SettingsLayout',
   decorators: [
     (Story, context) => {
-      const { initialPath = 'standings', theme = 'carbon' } =
+      const { initialPath = 'standings', theme = 'classic' } =
         context.args as StoryProps;
       return (
         <DashboardProvider bridge={mockDashboardBridge}>
@@ -44,7 +45,7 @@ const meta: Meta<typeof SettingsLayout> = {
                   element={
                     <div
                       style={{ height: '100vh' }}
-                      className={`settings-theme settings-theme-${theme}`}
+                      className={themeClasses(theme).join(' ')}
                     >
                       <Story />
                     </div>
@@ -67,6 +68,13 @@ export const Default: Story = {
   args: {
     initialPath: '/settings/standings',
   },
+};
+
+export const ClassicTheme: Story = {
+  args: {
+    initialPath: '/settings/fuel',
+    theme: 'classic',
+  } as StoryProps,
 };
 
 export const CarbonTheme: Story = {

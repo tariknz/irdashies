@@ -103,8 +103,10 @@ export type FontSize =
   | '8xl'
   | '9xl';
 
-export const SETTINGS_THEMES = ['carbon', 'red'] as const;
+export const SETTINGS_THEMES = ['classic', 'carbon', 'red'] as const;
 export type SettingsTheme = (typeof SETTINGS_THEMES)[number];
+/** Classic is the original look of the settings window. */
+export const DEFAULT_SETTINGS_THEME: SettingsTheme = 'classic';
 
 /** Native window-control colours per settings theme: slate-700 / slate-300
  *  of each .settings-theme-* in theme.css (kept in sync by a spec). */
@@ -112,6 +114,7 @@ export const SETTINGS_TITLE_BAR: Record<
   SettingsTheme,
   { color: string; symbolColor: string }
 > = {
+  classic: { color: '#314158', symbolColor: '#cad5e2' },
   carbon: { color: '#17181b', symbolColor: '#a7aab0' },
   red: { color: '#1b1e23', symbolColor: '#9aa1ab' },
 };

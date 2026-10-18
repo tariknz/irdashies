@@ -1,6 +1,10 @@
 import { useEffect } from 'react';
 import { useDashboard } from '@irdashies/context';
-import { SETTINGS_THEMES, type SettingsTheme } from '@irdashies/types';
+import {
+  DEFAULT_SETTINGS_THEME,
+  SETTINGS_THEMES,
+  type SettingsTheme,
+} from '@irdashies/types';
 import { SettingsLayout } from './SettingsLayout';
 
 // Persisted config is untrusted: an unknown value falls back to the default
@@ -8,7 +12,14 @@ import { SettingsLayout } from './SettingsLayout';
 const resolveTheme = (value: unknown): SettingsTheme =>
   SETTINGS_THEMES.includes(value as SettingsTheme)
     ? (value as SettingsTheme)
-    : 'carbon';
+    : DEFAULT_SETTINGS_THEME;
+
+// Classic is the unmodified base look, so it skips the shared .settings-theme
+// overrides (fonts, square corners, uppercase headings).
+export const themeClasses = (theme: SettingsTheme) =>
+  theme === 'classic'
+    ? ['settings-theme-classic']
+    : ['settings-theme', `settings-theme-${theme}`];
 
 export const Settings = () => {
   const { currentDashboard, onDashboardUpdated } = useDashboard();
@@ -20,19 +31,21 @@ export const Settings = () => {
 
   // Portaled popups (e.g. the profile Actions menu) render into <body>,
   // outside the wrapper below, so the theme goes on <body> too.
+  const classes = theme ? themeClasses(theme) : [];
+  const classNames = classes.join(' ');
   useEffect(() => {
-    if (!theme) return;
-    const classes = ['settings-theme', `settings-theme-${theme}`];
-    document.body.classList.add(...classes);
-    return () => document.body.classList.remove(...classes);
-  }, [theme]);
+    if (!classNames) return;
+    const list = classNames.split(' ');
+    document.body.classList.add(...list);
+    return () => document.body.classList.remove(...list);
+  }, [classNames]);
 
   if (!currentDashboard || !onDashboardUpdated) {
     return <>Loading...</>;
   }
 
   return (
-    <div className={`settings-theme settings-theme-${theme} w-full h-full`}>
+    <div className={`${classNames} w-full h-full`}>
       <SettingsLayout />
     </div>
   );

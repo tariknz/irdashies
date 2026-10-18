@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SETTINGS_THEMES, SETTINGS_TITLE_BAR } from '@irdashies/types';
 import { widgetItems } from './menuItems';
+import { themeClasses } from './Settings';
 
 const read = (path: string) => readFileSync(join(__dirname, path), 'utf8');
 const themeCss = read('../../theme.css');
@@ -74,6 +75,16 @@ describe('settings theme', () => {
       color: token('slate-700'),
       symbolColor: token('slate-300'),
     });
+  });
+
+  // Classic is the unmodified base look: the shared .settings-theme overrides
+  // would square its corners and uppercase its headings.
+  it('applies the shared overrides to every theme except classic', () => {
+    expect(themeClasses('classic')).toEqual(['settings-theme-classic']);
+    expect(themeClasses('red')).toEqual([
+      'settings-theme',
+      'settings-theme-red',
+    ]);
   });
 
   // The window uses titleBarStyle 'hidden': without a drag region in the

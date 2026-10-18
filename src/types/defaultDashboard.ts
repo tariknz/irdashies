@@ -1,4 +1,7 @@
-import type { GeneralSettingsType } from './dashboardLayout';
+import {
+  DEFAULT_SETTINGS_THEME,
+  type GeneralSettingsType,
+} from './dashboardLayout';
 import type { TypedDashboardWidget, WidgetConfigMap } from './widgetConfigs';
 import { WIDGET_MANIFESTS, getWidgetManifest } from './widgets';
 
@@ -21,7 +24,7 @@ export const defaultDashboard: {
     fontSize: 'sm',
     fontWeight: 'normal',
     colorPalette: 'black',
-    settingsTheme: 'carbon' as const,
+    settingsTheme: DEFAULT_SETTINGS_THEME,
     showOnlyWhenOnTrack: true,
     highlightColor: 960745,
     skipTaskbar: true,

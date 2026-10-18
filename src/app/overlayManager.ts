@@ -17,6 +17,7 @@ import {
   isLayoutOnDisplay,
   isWidgetDisabledForSim,
   SETTINGS_TITLE_BAR,
+  DEFAULT_SETTINGS_THEME,
 } from '@irdashies/types';
 import { getSimWidgetSupport } from './storage/simWidgetSupport';
 import path from 'node:path';
@@ -1502,6 +1503,6 @@ function settingsTitleBarOverlay(
   const colors =
     theme && Object.hasOwn(SETTINGS_TITLE_BAR, theme)
       ? SETTINGS_TITLE_BAR[theme]
-      : SETTINGS_TITLE_BAR.carbon;
+      : SETTINGS_TITLE_BAR[DEFAULT_SETTINGS_THEME];
   return { ...colors, height: SETTINGS_TITLE_BAR_HEIGHT };
 }
