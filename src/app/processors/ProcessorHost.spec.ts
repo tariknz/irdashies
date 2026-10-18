@@ -368,6 +368,26 @@ describe('ProcessorHost', () => {
     expect(secondRenderer.send).toHaveBeenCalledOnce();
   });
 
+  it('disposes a processor it drops for lack of subscribers', () => {
+    const bus = new ChannelBus();
+    const renderer = target(12);
+    bus.subscribe(renderer, 'reference-laps.snapshot');
+    const processor = fakeProcessor('reference-laps.snapshot', 'event');
+    const dispose = vi.fn();
+    Object.assign(processor, { dispose });
+    const host = new ProcessorHost({
+      bus,
+      metrics: metrics(),
+      definitions: [definition('reference-laps.snapshot', () => processor)],
+    });
+    host.onFrame({} as Telemetry);
+
+    bus.unsubscribe(renderer.id, 'reference-laps.snapshot');
+    host.onFrame({} as Telemetry);
+
+    expect(dispose).toHaveBeenCalledOnce();
+  });
+
   it('owns session and replay lifecycle dispatch and disposes once', () => {
     const bus = new ChannelBus();
     bus.subscribe(target(7), 'standings.snapshot');

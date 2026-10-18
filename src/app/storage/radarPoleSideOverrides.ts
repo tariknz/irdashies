@@ -34,6 +34,8 @@ const write = async (): Promise<void> => {
     await fsp.rename(temp, FILE_PATH);
   } catch (error) {
     logger.error('[RadarPoleSide] Failed to write', FILE_PATH, error);
+    // Keep the correction for the next write, unless a newer one came in.
+    pending ??= overrides;
     await fsp.unlink(temp).catch(() => undefined);
   }
 };
