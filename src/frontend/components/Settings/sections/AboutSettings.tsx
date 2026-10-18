@@ -76,7 +76,7 @@ export const AboutSettings = () => {
         <div className="flex flex-col gap-4 mb-2">
           <div>
             <h3 className="text-lg font-semibold">Privacy Policy</h3>
-            <p className="text-sm text-slate-400">Last updated January 2026</p>
+            <p className="text-sm text-slate-400">Last updated October 2026</p>
           </div>
 
           <div className="text-sm text-slate-400">
@@ -98,6 +98,15 @@ export const AboutSettings = () => {
                   Used to understand which widgets are enabled and how they are
                   configured. This helps improve defaults, testing coverage, and
                   informs feature deprecation decisions.
+                </li>
+                <li>
+                  <strong className="text-slate-300">
+                    Pit-lane calibration
+                  </strong>
+                  <br />
+                  Track IDs and learned pit entry and exit positions are sent at
+                  startup when calibration changes to help improve pit-lane
+                  detection.
                 </li>
                 <li>
                   <strong className="text-slate-300">System information</strong>
