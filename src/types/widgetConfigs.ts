@@ -158,7 +158,11 @@ export interface StandingsConfig {
   positionChange: { enabled: boolean };
   badge: { enabled: boolean; badgeFormat: StandingsBadgeFormat };
   delta: { enabled: boolean };
-  gap: { enabled: boolean; decimalPlaces?: number };
+  gap: {
+    enabled: boolean;
+    decimalPlaces?: number;
+    reference?: 'classLeader' | 'player';
+  };
   interval: { enabled: boolean; decimalPlaces?: number };
   lastTime: { enabled: boolean; timeFormat: TimeFormat };
   fastestTime: { enabled: boolean; timeFormat: TimeFormat };

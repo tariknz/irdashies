@@ -10,6 +10,7 @@ export const PERF_RENDERER_LOG_PREFIX = '[PerfRenderer:JSON] ';
 
 let telemetryCallbackTimes: FixedSampleBuffer | undefined;
 let channelCallbackTimes: FixedSampleBuffer | undefined;
+let standingsPlayerGapTimes: FixedSampleBuffer | undefined;
 let trackMapAnimationFrameTimes: FixedSampleBuffer | undefined;
 
 export function isRendererPerfMetricsEnabled(): boolean {
@@ -28,6 +29,9 @@ export function recordRendererMeasure(
   name: RendererPerfMeasureName,
   durationMs: number
 ): void {
+  if (name === 'standingsPlayerGaps') {
+    standingsPlayerGapTimes?.add(durationMs);
+  }
   if (name === 'trackMapAnimationFrame') {
     trackMapAnimationFrameTimes?.add(durationMs);
   }
@@ -47,6 +51,8 @@ export function startRendererPerfMetrics(): void {
   telemetryCallbackTimes = callbackTimes;
   const channelTimes = new FixedSampleBuffer(4096);
   channelCallbackTimes = channelTimes;
+  const playerGapTimes = new FixedSampleBuffer(4096);
+  standingsPlayerGapTimes = playerGapTimes;
   const trackMapFrameTimes = new FixedSampleBuffer(4096);
   trackMapAnimationFrameTimes = trackMapFrameTimes;
   let intervalStart = performance.now();
@@ -76,6 +82,7 @@ export function startRendererPerfMetrics(): void {
       callbackTimes.reset();
       channelTimes.reset();
       trackMapFrameTimes.reset();
+      playerGapTimes.reset();
       framesOver25Ms = 0;
       framesOver50Ms = 0;
       return;
@@ -94,6 +101,7 @@ export function startRendererPerfMetrics(): void {
       telemetryCallbackMs: callbackTimes.summarize(),
       channelCallbackMs: channelTimes.summarize(),
       trackMapAnimationFrameMs: trackMapFrameTimes.summarize(),
+      standingsPlayerGapsMs: playerGapTimes.summarize(),
       telemetryWakeups: callbackTimes.summarize().count,
       channelWakeups: channelTimes.summarize().count,
       framesOver25Ms,
@@ -111,6 +119,7 @@ export function startRendererPerfMetrics(): void {
     callbackTimes.reset();
     channelTimes.reset();
     trackMapFrameTimes.reset();
+    playerGapTimes.reset();
     framesOver25Ms = 0;
     framesOver50Ms = 0;
   }, reportIntervalMs);

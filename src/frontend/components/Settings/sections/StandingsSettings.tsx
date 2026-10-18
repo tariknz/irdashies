@@ -201,6 +201,18 @@ const DisplaySettingsList = ({
                   variant="compact"
                 />
               )}
+            {setting.configKey === 'gap' && settings.config.gap.enabled && (
+              <>
+                <SettingProp path="gap.reference" variant="compact" />
+                {settings.config.gap.reference === 'player' && (
+                  <p className="pl-8 mt-2 text-sm text-slate-500">
+                    Negative ahead, positive behind, across all classes. Uses
+                    track position in races and best laps in practice and
+                    qualifying. Follows the camera car when spectating.
+                  </p>
+                )}
+              </>
+            )}
             {setting.hasSubSetting &&
               (setting.configKey === 'gap' ||
                 setting.configKey === 'interval') &&
