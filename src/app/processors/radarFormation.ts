@@ -1,4 +1,9 @@
-import { SessionState, TrackLocation, type Session } from '@irdashies/types';
+import {
+  SessionState,
+  TrackLocation,
+  poleLeftForTrack,
+  type Session,
+} from '@irdashies/types';
 
 /** iRacing's PaceMode telemetry values. */
 export const PaceMode = {
@@ -39,22 +44,16 @@ export const parseStartingGrid = (
 };
 
 /**
- * Road courses where the pole line of a pace field is on the left. Everywhere
- * else on road it is on the right, as checked at Fuji, Watkins Glen and Mount
- * Panorama. Found by driving: the Sporting Code names no side. Keys are
- * WeekendInfo.TrackName; add a track here when its pace field shows the wrong
- * way round.
- */
-const POLE_LEFT_TRACKS: ReadonlySet<string> = new Set(['longbeach']);
-
-/**
  * Whether the pole line of a pace field is on the left: on ovals the inside,
- * and on the road courses listed above.
+ * on road courses the side recorded in `radarPoleSides.json` (the inside of
+ * the first corner unless a driver found otherwise), and on the right for a
+ * track with no entry.
  */
 export const paceFieldPoleLeft = (
+  trackId: number | undefined,
   trackName: string | undefined,
   oval: boolean
-): boolean => oval || POLE_LEFT_TRACKS.has(trackName ?? '');
+): boolean => oval || (poleLeftForTrack(trackId, trackName) ?? false);
 
 /**
  * Starting grid positions by car index, 0 for pole: the session's own grid

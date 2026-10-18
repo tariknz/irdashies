@@ -378,7 +378,8 @@ describe('RadarProcessor', () => {
     expect(follow?.dist).toBeGreaterThan(0);
     expect(cars.every((car) => car.laneSource === 'pace')).toBe(true);
 
-    // The pole line runs on the right: cars in it sit right of us.
+    // This is Interlagos, where the pole line is on the left: cars in it sit
+    // left of us.
     const base = rollingTelemetry as unknown as Record<
       string,
       { value: unknown[] }
@@ -386,6 +387,28 @@ describe('RadarProcessor', () => {
     const lines = base.CarIdxPaceLine.value as number[];
     const mine = lines[base.PlayerCarIdx.value[0] as number];
     const towardsPole = cars.filter((car) => lines[car.carIdx] < mine);
+    expect(towardsPole.length).toBeGreaterThan(0);
+    expect(towardsPole.every((car) => car.lane < 0)).toBe(true);
+  });
+
+  it('puts the pole line on the right where the track says so', () => {
+    // The same recording on Lime Rock, whose pole line is on the right.
+    const session = structuredClone(rollingSession) as unknown as Session;
+    session.WeekendInfo.TrackID = 353;
+    session.WeekendInfo.TrackName = 'limerock 2019 gp';
+    const processor = new RadarProcessor();
+    processor.init(session);
+    processor.onFrame(rollingTelemetry as unknown as Telemetry);
+
+    const base = rollingTelemetry as unknown as Record<
+      string,
+      { value: unknown[] }
+    >;
+    const lines = base.CarIdxPaceLine.value as number[];
+    const mine = lines[base.PlayerCarIdx.value[0] as number];
+    const towardsPole = processor
+      .snapshot()
+      .cars.filter((car) => lines[car.carIdx] < mine);
     expect(towardsPole.length).toBeGreaterThan(0);
     expect(towardsPole.every((car) => car.lane > 0)).toBe(true);
   });

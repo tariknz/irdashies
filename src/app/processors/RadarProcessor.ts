@@ -136,6 +136,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     const trackType = session?.WeekendInfo?.TrackType ?? '';
     this.lanes.setPacePoleLeft(
       paceFieldPoleLeft(
+        session?.WeekendInfo?.TrackID,
         session?.WeekendInfo?.TrackName,
         trackType !== '' && !/road|rally/i.test(trackType)
       )

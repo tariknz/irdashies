@@ -1,0 +1,1512 @@
+{
+  "version": 1,
+  "tracks": {
+    "1": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "2": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "3": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "4": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "5": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "6": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "7": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "8": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "9": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "18": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "21": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "22": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "24": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "26": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "28": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "29": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "34": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "37": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "38": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "39": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "41": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "42": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "43": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "44": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "45": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "46": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "47": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "48": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "49": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "50": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "51": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "52": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "95": {
+      "poleLeft": true,
+      "source": "verified"
+    },
+    "96": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "97": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "98": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "99": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "100": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "102": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "105": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "106": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "107": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "108": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "109": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "110": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "111": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "112": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "113": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "114": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "117": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "118": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "119": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "120": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "122": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "126": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "127": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "128": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "129": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "130": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "132": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "134": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "135": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "136": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "137": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "138": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "139": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "140": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "141": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "142": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "144": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "145": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "146": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "147": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "148": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "149": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "150": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "151": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "152": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "153": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "154": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "155": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "156": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "157": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "158": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "159": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "160": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "163": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "164": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "165": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "166": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "167": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "168": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "170": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "171": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "172": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "173": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "174": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "175": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "176": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "179": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "180": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "181": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "182": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "183": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "184": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "185": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "186": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "187": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "189": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "192": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "193": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "194": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "195": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "196": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "197": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "199": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "200": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "202": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "204": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "205": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "206": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "207": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "208": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "209": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "210": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "211": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "212": {
+      "poleLeft": true,
+      "source": "verified"
+    },
+    "213": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "215": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "216": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "217": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "218": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "219": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "220": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "221": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "222": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "223": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "224": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "226": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "227": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "228": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "229": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "230": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "231": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "233": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "234": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "238": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "239": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "240": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "241": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "242": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "244": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "246": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "247": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "248": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "249": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "250": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "252": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "253": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "255": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "257": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "259": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "260": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "261": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "262": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "263": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "264": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "266": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "267": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "268": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "269": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "277": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "290": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "293": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "295": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "296": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "297": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "298": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "299": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "304": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "306": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "312": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "319": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "322": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "323": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "324": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "325": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "326": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "327": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "328": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "329": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "330": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "332": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "333": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "334": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "335": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "336": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "337": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "338": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "340": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "341": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "342": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "343": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "345": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "346": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "347": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "348": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "349": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "350": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "352": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "353": {
+      "poleLeft": false,
+      "source": "verified"
+    },
+    "354": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "355": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "358": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "359": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "360": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "361": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "363": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "364": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "381": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "382": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "383": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "384": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "385": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "386": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "388": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "390": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "391": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "392": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "393": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "394": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "395": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "396": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "397": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "398": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "399": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "403": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "404": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "405": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "407": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "413": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "423": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "424": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "425": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "426": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "427": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "428": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "429": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "430": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "431": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "432": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "433": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "434": {
+      "poleLeft": false,
+      "source": "verified"
+    },
+    "435": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "436": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "437": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "439": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "440": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "443": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "444": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "445": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "448": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "449": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "451": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "452": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "454": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "455": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "456": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "463": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "465": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "466": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "467": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "468": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "469": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "470": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "471": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "472": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "473": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "474": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "475": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "476": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "477": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "478": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "479": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "480": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "481": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "482": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "483": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "485": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "486": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "487": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "488": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "489": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "496": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "497": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "498": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "499": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "501": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "502": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "503": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "504": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "505": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "506": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "508": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "509": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "510": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "511": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "512": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "515": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "516": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "517": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "521": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "523": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "524": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "525": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "526": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "527": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "528": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "529": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "530": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "532": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "533": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "534": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "535": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "536": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "537": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "538": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "539": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "540": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "541": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "542": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "543": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "544": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "545": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "546": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "550": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "551": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "552": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "553": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "554": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "555": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "557": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "558": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "563": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "564": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "565": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "566": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "567": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "568": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "569": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "570": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "571": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "572": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "573": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "574": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "575": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "576": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "577": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "579": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "580": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "582": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "584": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "585": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "586": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "587": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "588": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "589": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "590": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "591": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "592": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "593": {
+      "poleLeft": true,
+      "source": "geometry"
+    },
+    "595": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "596": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "597": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "598": {
+      "poleLeft": false,
+      "source": "geometry"
+    },
+    "599": {
+      "poleLeft": false,
+      "source": "geometry"
+    }
+  },
+  "trackNames": {
+    "longbeach": true
+  }
+}

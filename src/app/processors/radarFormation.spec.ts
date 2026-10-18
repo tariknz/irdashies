@@ -85,17 +85,28 @@ describe('parseStartingGrid', () => {
 });
 
 describe('paceFieldPoleLeft', () => {
-  it('puts the pole line on the left on Long Beach', () => {
-    expect(paceFieldPoleLeft('longbeach', false)).toBe(true);
+  it('puts the pole line on the left on Long Beach, found by name', () => {
+    expect(paceFieldPoleLeft(undefined, 'longbeach', false)).toBe(true);
   });
 
-  it('keeps it on the right on other road courses', () => {
-    expect(paceFieldPoleLeft('interlagos gp', false)).toBe(false);
-    expect(paceFieldPoleLeft(undefined, false)).toBe(false);
+  it('follows the recorded side of a road course by track id', () => {
+    // Sebring and Interlagos turn left first; Lime Rock and Watkins Glen
+    // right. All four were checked by driving.
+    expect(paceFieldPoleLeft(95, 'sebring international', false)).toBe(true);
+    expect(paceFieldPoleLeft(212, 'interlagos gp', false)).toBe(true);
+    expect(paceFieldPoleLeft(353, 'limerock 2019 gp', false)).toBe(false);
+    expect(paceFieldPoleLeft(434, 'watkinsglen 2021 fullcourse', false)).toBe(
+      false
+    );
+  });
+
+  it('keeps it on the right for a track nothing is known about', () => {
+    expect(paceFieldPoleLeft(999999, 'new track', false)).toBe(false);
+    expect(paceFieldPoleLeft(undefined, undefined, false)).toBe(false);
   });
 
   it('puts it on the inside, the left, on ovals', () => {
-    expect(paceFieldPoleLeft('daytona 2011 oval', true)).toBe(true);
+    expect(paceFieldPoleLeft(undefined, 'daytona 2011 oval', true)).toBe(true);
   });
 });
 
