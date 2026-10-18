@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const FLASH_MS = 150;
+const FLASH_MS = 250;
 
 /** Colour for a moment after the gear changes: upColor going up, downColor going down. */
 export const useGearFlash = (
@@ -9,19 +9,21 @@ export const useGearFlash = (
   upColor: string,
   downColor: string
 ) => {
+  // Last forward gear: a shift passing through neutral (3 -> N -> 4) still counts.
   const prev = useRef(gear);
-  const [color, setColor] = useState<string>();
+  const [up, setUp] = useState<boolean>();
 
   useEffect(() => {
+    // Neutral/reverse (<1) are not a shift, so pit entry and launch don't flash.
+    if (gear === undefined || gear < 1) return;
     const was = prev.current;
     prev.current = gear;
-    // Neutral/reverse (<1) are skipped so pit entry and launch don't flash.
-    if (!enabled || gear === undefined || was === undefined) return;
-    if (gear < 1 || was < 1 || gear === was) return;
-    setColor(gear > was ? upColor : downColor);
-    const t = setTimeout(() => setColor(undefined), FLASH_MS);
+    if (!enabled || was === undefined || was < 1 || gear === was) return;
+    setUp(gear > was);
+    const t = setTimeout(() => setUp(undefined), FLASH_MS);
     return () => clearTimeout(t);
-  }, [gear, enabled, upColor, downColor]);
+  }, [gear, enabled]);
 
-  return enabled ? color : undefined;
+  if (!enabled || up === undefined) return undefined;
+  return up ? upColor : downColor;
 };

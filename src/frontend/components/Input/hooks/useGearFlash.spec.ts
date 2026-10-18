@@ -22,7 +22,7 @@ describe('useGearFlash', () => {
     const { result, rerender } = setup(3);
     rerender({ g: 4, e: true });
     expect(result.current).toBe(UP);
-    act(() => vi.advanceTimersByTime(200));
+    act(() => vi.advanceTimersByTime(300));
     expect(result.current).toBeUndefined();
   });
 
@@ -38,6 +38,14 @@ describe('useGearFlash', () => {
     expect(result.current).toBeUndefined();
     rerender({ g: 0, e: true });
     expect(result.current).toBeUndefined();
+  });
+
+  it('flashes a shift that passes through neutral', () => {
+    const { result, rerender } = setup(3);
+    rerender({ g: 0, e: true });
+    expect(result.current).toBeUndefined();
+    rerender({ g: 4, e: true });
+    expect(result.current).toBe(UP);
   });
 
   it('does nothing when disabled', () => {
