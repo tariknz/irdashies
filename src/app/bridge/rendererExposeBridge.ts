@@ -28,6 +28,7 @@ import type {
   SessionRetention,
   TelemetryInspectorBridge,
   RendererPerfBridge,
+  ReleaseNotesBridge,
 } from '@irdashies/types';
 import {
   isRendererPerfMetricsEnabled,
@@ -41,6 +42,13 @@ import {
 import { createSubscriptionBridgeClient, defineBridge } from './defineBridge';
 
 export function exposeBridge() {
+  defineBridge<ReleaseNotesBridge>('releaseNotesBridge', {
+    getStatus: () => ipcRenderer.invoke('releaseNotes:status'),
+    getRelease: (version) => ipcRenderer.invoke('releaseNotes:get', version),
+    dismiss: (version) => ipcRenderer.invoke('releaseNotes:dismiss', version),
+    setAutoShow: (enabled) =>
+      ipcRenderer.invoke('releaseNotes:autoShow', enabled),
+  });
   if (isRendererPerfMetricsEnabled()) {
     defineBridge<RendererPerfBridge>('rendererPerfBridge', {
       recordMeasure: (name, durationMs) => {
@@ -201,12 +209,6 @@ export function exposeBridge() {
     },
     getSimWidgetSupport: () => {
       return ipcRenderer.invoke('getSimWidgetSupport');
-    },
-    getSettingsShowAllWidgets: () => {
-      return ipcRenderer.invoke('getSettingsShowAllWidgets');
-    },
-    setSettingsShowAllWidgets: (showAll: boolean) => {
-      return ipcRenderer.invoke('setSettingsShowAllWidgets', showAll);
     },
     saveGarageCoverImage: (buffer: Uint8Array) => {
       return ipcRenderer.invoke('saveGarageCoverImage', Array.from(buffer));
