@@ -57,6 +57,7 @@
             ],
             "defines": [
                 "NAPI_DISABLE_CPP_EXCEPTIONS",
+                "IRDASHIES_TAPE_CONTROLS",
             ],
             "include_dirs": [
                 "<!(node -p \"require('node-addon-api').include_dir\")",

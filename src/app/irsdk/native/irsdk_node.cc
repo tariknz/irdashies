@@ -1,5 +1,8 @@
 #include "./irsdk_node.h"
 #include "./lib/yaml_parser.h"
+#ifdef IRDASHIES_TAPE_CONTROLS
+#include "./replay/irsdk_tape.h"
+#endif
 
 /*
 Nan::SetPrototypeMethod(tmpl, "getSessionData", GetSessionData);
@@ -25,6 +28,12 @@ Napi::Object iRacingSdkNode::Init(Napi::Env env, Napi::Object exports)
     InstanceMethod("stopSDK", &iRacingSdkNode::StopSdk),
     InstanceMethod("waitForData", &iRacingSdkNode::WaitForData),
     InstanceMethod("broadcast", &iRacingSdkNode::BroadcastMessage),
+#ifdef IRDASHIES_TAPE_CONTROLS
+    InstanceMethod("getTapeReplayStatus", &iRacingSdkNode::GetTapeReplayStatus),
+    InstanceMethod("seekTapeReplay", &iRacingSdkNode::SeekTapeReplay),
+    InstanceMethod("setTapeReplaySpeed", &iRacingSdkNode::SetTapeReplaySpeed),
+    InstanceMethod("setTapeReplayPaused", &iRacingSdkNode::SetTapeReplayPaused),
+#endif
     // Getters
     InstanceMethod("isRunning", &iRacingSdkNode::IsRunning),
     InstanceMethod("getSessionVersionNum", &iRacingSdkNode::GetSessionVersionNum),
@@ -140,6 +149,41 @@ Napi::Value iRacingSdkNode::WaitForData(const Napi::CallbackInfo &info)
   }
   return Napi::Boolean::New(info.Env(), false);
 }
+
+#ifdef IRDASHIES_TAPE_CONTROLS
+Napi::Value iRacingSdkNode::GetTapeReplayStatus(const Napi::CallbackInfo &info)
+{
+  const auto status = irsdk_tape_getStatus();
+  auto result = Napi::Object::New(info.Env());
+  result.Set("position", status.position);
+  result.Set("duration", status.duration);
+  result.Set("speed", status.speed);
+  result.Set("paused", status.paused);
+  result.Set("ended", status.ended);
+  return result;
+}
+
+Napi::Value iRacingSdkNode::SeekTapeReplay(const Napi::CallbackInfo &info)
+{
+  const bool valid = info.Length() > 0 && info[0].IsNumber();
+  return Napi::Boolean::New(info.Env(), valid &&
+      irsdk_tape_seek(info[0].As<Napi::Number>().DoubleValue()));
+}
+
+Napi::Value iRacingSdkNode::SetTapeReplaySpeed(const Napi::CallbackInfo &info)
+{
+  const bool valid = info.Length() > 0 && info[0].IsNumber();
+  return Napi::Boolean::New(info.Env(), valid &&
+      irsdk_tape_setSpeed(info[0].As<Napi::Number>().DoubleValue()));
+}
+
+Napi::Value iRacingSdkNode::SetTapeReplayPaused(const Napi::CallbackInfo &info)
+{
+  const bool valid = info.Length() > 0 && info[0].IsBoolean();
+  return Napi::Boolean::New(info.Env(), valid &&
+      irsdk_tape_setPaused(info[0].As<Napi::Boolean>().Value()));
+}
+#endif
 
 Napi::Value iRacingSdkNode::BroadcastMessage(const Napi::CallbackInfo &info)
 {

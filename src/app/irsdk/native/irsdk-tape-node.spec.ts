@@ -1,8 +1,10 @@
 import { createRequire } from 'node:module';
+import { execFile } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { promisify } from 'node:util';
 
 import {
   afterAll,
@@ -15,6 +17,8 @@ import {
 } from 'vitest';
 
 import type { NativeSDK } from './index';
+
+const execFileAsync = promisify(execFile);
 
 const FILE_HEADER_SIZE = 96;
 const SDK_HEADER_SIZE = 112;
@@ -93,6 +97,7 @@ function createFrame(index: number, length = 36): Buffer {
 }
 
 interface TapeFixtureOptions {
+  includeSessionUpdate?: boolean;
   includeEndRecord?: boolean;
   qpcFrequency?: bigint;
   frameLength?: number;
@@ -100,6 +105,7 @@ interface TapeFixtureOptions {
 }
 
 function createTapeFixture({
+  includeSessionUpdate = false,
   includeEndRecord = true,
   qpcFrequency = 60n,
   frameLength = 36,
@@ -192,6 +198,22 @@ function createTapeFixture({
     createRecord(1, 1n, 101, 0, createFrame(1, frameLength)),
     createRecord(1, 2n, 102, 0, createFrame(2, frameLength)),
   ];
+  if (includeSessionUpdate) {
+    records.splice(
+      3,
+      0,
+      createRecord(
+        2,
+        2n,
+        -1,
+        2,
+        Buffer.from(
+          '---\nWeekendInfo:\n TrackName: Updated Replay Track\n...\n',
+          'ascii'
+        )
+      )
+    );
+  }
   if (includeEndRecord) {
     records.push(createRecord(5, 3n, 102, 0));
   }
@@ -229,9 +251,20 @@ const addonPath = path.resolve(
   'irsdk_tape_node.node'
 );
 
-function loadAddon(): { iRacingSdkNode: new () => NativeSDK } {
+type TapeNativeSDK = NativeSDK &
+  Required<
+    Pick<
+      NativeSDK,
+      | 'getTapeReplayStatus'
+      | 'setTapeReplayPaused'
+      | 'setTapeReplaySpeed'
+      | 'seekTapeReplay'
+    >
+  >;
+
+function loadAddon(): { iRacingSdkNode: new () => TapeNativeSDK } {
   const require = createRequire(import.meta.url);
-  return require(addonPath) as { iRacingSdkNode: new () => NativeSDK };
+  return require(addonPath) as { iRacingSdkNode: new () => TapeNativeSDK };
 }
 
 describe('tape-backed native SDK', () => {
@@ -442,5 +475,138 @@ describe('tape-backed native SDK', () => {
     } finally {
       sdk.stopSDK();
     }
+  });
+
+  it('seeks both directions while paused, restores session YAML, and signals a reset', async () => {
+    await writeFile(
+      tapePath,
+      createTapeFixture({
+        qpcFrequency: 1n,
+        includeSessionUpdate: true,
+      })
+    );
+    process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
+    const sdk = new (loadAddon().iRacingSdkNode)();
+    try {
+      expect(sdk.startSDK()).toBe(true);
+      expect(sdk.waitForData(0)).toBe(true);
+      expect(sdk.setTapeReplayPaused(true)).toBe(true);
+      expect(sdk.getTapeReplayStatus()).toMatchObject({
+        duration: 3,
+        paused: true,
+        speed: 1,
+        ended: false,
+      });
+
+      for (const [seconds, speed, track] of [
+        [2.5, 52, 'Updated Replay Track'],
+        [0, 50, 'Replay Test Track'],
+        [1.5, 51, 'Replay Test Track'],
+        [999, 52, 'Updated Replay Track'],
+      ] as const) {
+        expect(sdk.seekTapeReplay(seconds)).toBe(true);
+        // Every jump exposes a disconnect before publishing the new frame,
+        // allowing processors and renderer histories to clear first.
+        expect(sdk.waitForData(0)).toBe(false);
+        expect(sdk.isRunning()).toBe(false);
+        expect(sdk.getTelemetryData()).toEqual({});
+        expect(sdk.waitForData(0)).toBe(true);
+        expect(sdk.isRunning()).toBe(true);
+        expect(floatValue(sdk.getTelemetryData().Speed.value)).toBe(speed);
+        expect(sdk.getSessionData()).toContain(track);
+        expect(sdk.waitForData(0)).toBe(false);
+        expect(sdk.isRunning()).toBe(true);
+        expect(sdk.getTapeReplayStatus()).toMatchObject({
+          position: Math.min(3, seconds),
+          paused: true,
+        });
+      }
+    } finally {
+      sdk.stopSDK();
+    }
+  });
+
+  it('rebases the playback clock for pause/resume and speed changes', async () => {
+    await writeFile(tapePath, createTapeFixture({ qpcFrequency: 1n }));
+    process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
+    const sdk = new (loadAddon().iRacingSdkNode)();
+    try {
+      expect(sdk.startSDK()).toBe(true);
+      expect(sdk.waitForData(0)).toBe(true);
+      expect(sdk.setTapeReplayPaused(true)).toBe(true);
+      const pausedAt = sdk.getTapeReplayStatus().position;
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      expect(sdk.getTapeReplayStatus().position).toBe(pausedAt);
+      expect(sdk.waitForData(0)).toBe(false);
+      expect(sdk.isRunning()).toBe(true);
+      expect(sdk.setTapeReplaySpeed(10)).toBe(true);
+      expect(sdk.getTapeReplayStatus().position).toBe(pausedAt);
+      expect(sdk.setTapeReplayPaused(false)).toBe(true);
+      const started = performance.now();
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      const elapsed = (performance.now() - started) / 1000;
+      expect(sdk.getTapeReplayStatus().position - pausedAt).toBeCloseTo(
+        elapsed * 10,
+        1
+      );
+      const beforeSpeedChange = sdk.getTapeReplayStatus().position;
+      expect(sdk.setTapeReplaySpeed(0.5)).toBe(true);
+      expect(sdk.getTapeReplayStatus().position).toBeCloseTo(
+        beforeSpeedChange,
+        1
+      );
+      const slowed = performance.now();
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      expect(
+        sdk.getTapeReplayStatus().position - beforeSpeedChange
+      ).toBeCloseTo(((performance.now() - slowed) / 1000) * 0.5, 1);
+    } finally {
+      sdk.stopSDK();
+    }
+  });
+
+  it('rejects malformed native control arguments and can restart after reaching the end', async () => {
+    await writeFile(tapePath, createTapeFixture());
+    // Windows' CRT retains the environment captured on the first addon load.
+    // Earlier tests enable looping, so non-looping playback needs a fresh
+    // process with its options supplied before the addon is loaded.
+    const script = `
+      const assert = require('node:assert/strict');
+      const { iRacingSdkNode } = require(process.argv[1]);
+      const sdk = new iRacingSdkNode();
+      try {
+        assert.equal(sdk.startSDK(), true);
+        for (const speed of [NaN, Infinity, 0, -1, 101]) {
+          assert.equal(sdk.setTapeReplaySpeed(speed), false);
+        }
+        assert.equal(sdk.seekTapeReplay(NaN), false);
+        assert.equal(sdk.seekTapeReplay(Infinity), false);
+        assert.equal(sdk.setTapeReplaySpeed(), false);
+        assert.equal(sdk.seekTapeReplay('2'), false);
+        assert.equal(sdk.setTapeReplayPaused(1), false);
+        assert.equal(sdk.waitForData(20), true);
+        const deadline = Date.now() + 1000;
+        while (!sdk.getTapeReplayStatus().ended && Date.now() < deadline) {
+          sdk.waitForData(20);
+        }
+        assert.equal(sdk.getTapeReplayStatus().ended, true);
+        assert.equal(sdk.setTapeReplayPaused(false), true);
+        assert.equal(sdk.waitForData(0), false);
+        assert.equal(sdk.waitForData(0), true);
+        const speed = new Float32Array(sdk.getTelemetryData().Speed.value)[0];
+        assert.equal(speed, 50);
+      } finally {
+        sdk.stopSDK();
+      }
+    `;
+    await execFileAsync(process.execPath, ['-e', script, addonPath], {
+      env: {
+        ...process.env,
+        IRDASHIES_TELEMETRY_REPLAY: tapePath,
+        IRDASHIES_TELEMETRY_REPLAY_SPEED: '100',
+        IRDASHIES_TELEMETRY_REPLAY_LOOP: '0',
+      },
+      timeout: 5000,
+    });
   });
 });

@@ -35,3 +35,4 @@ export * from './lmuTrackAliases';
 export * from './widgets';
 export * from './releaseNotes';
 export * from './releaseNotesFixture';
+export * from './tapeReplay';

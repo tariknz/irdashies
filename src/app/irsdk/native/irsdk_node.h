@@ -23,6 +23,12 @@ private:
     Napi::Value StopSdk(const Napi::CallbackInfo &info);
     Napi::Value WaitForData(const Napi::CallbackInfo &info);
     Napi::Value BroadcastMessage(const Napi::CallbackInfo &info);
+#ifdef IRDASHIES_TAPE_CONTROLS
+    Napi::Value GetTapeReplayStatus(const Napi::CallbackInfo &info);
+    Napi::Value SeekTapeReplay(const Napi::CallbackInfo &info);
+    Napi::Value SetTapeReplaySpeed(const Napi::CallbackInfo &info);
+    Napi::Value SetTapeReplayPaused(const Napi::CallbackInfo &info);
+#endif
     // Getters
     Napi::Value IsRunning(const Napi::CallbackInfo &info);
     Napi::Value GetSessionVersionNum(const Napi::CallbackInfo &info);
