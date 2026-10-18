@@ -430,6 +430,8 @@ export class ProcessorHost {
   }
 
   private deactivate(state: RuntimeState): void {
+    const processor = state.processor;
+    this.runSafely(state, 'deactivate', () => processor?.dispose?.());
     state.processor = undefined;
     state.tickSchedule = {};
     state.lastPublishedToken = undefined;

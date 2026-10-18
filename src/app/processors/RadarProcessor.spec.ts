@@ -527,6 +527,22 @@ describe('RadarProcessor', () => {
     expect(processor.snapshot().roadLane).toBe(-before);
   });
 
+  it('stops aiming the flip key at its track once the host drops it', () => {
+    const poleSides = { override: () => undefined, setTrack: vi.fn() };
+    const session = structuredClone(rollingSession) as unknown as Session;
+    session.WeekendInfo.TrackID = 353;
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(session);
+
+    processor.dispose();
+
+    expect(poleSides.setTrack).toHaveBeenLastCalledWith(
+      undefined,
+      false,
+      'start'
+    );
+  });
+
   it('has no road offset outside a formation', () => {
     const processor = new RadarProcessor();
     processor.init(rollingSession as unknown as Session);

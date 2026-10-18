@@ -340,6 +340,12 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     this.latest = { ...next, version: this.latest.version + 1 };
   }
 
+  /** A dropped radar must not leave the flip key aimed at its last track. */
+  dispose(): void {
+    this.poleTrackKnown = false;
+    this.poleSides.setTrack(undefined, false, 'start');
+  }
+
   onLifecycle(event: SessionLifecycleEvent): void {
     if (event.type === 'enter') return;
     this.previousPcts = [];
@@ -351,10 +357,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     this.laneFocus = -1;
     // Out of the session the flip key has no track to act on. A new session
     // number keeps the track: iRacing sends the session info again after it.
-    if (event.type === 'disconnect') {
-      this.poleTrackKnown = false;
-      this.poleSides.setTrack(undefined, false, 'start');
-    }
+    if (event.type === 'disconnect') this.dispose();
     this.latest = emptySnapshot(this.latest.version + 1);
   }
 
