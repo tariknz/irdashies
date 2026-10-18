@@ -1,5 +1,6 @@
 import type { RadarHazard, RadarHazardKind } from '@irdashies/types';
 import { TrackLocation } from '@irdashies/types';
+import { wrapDelta } from './radarMath';
 
 /** Metres ahead hazards are reported to the renderer, past any setting. */
 export const RADAR_HAZARD_MAX_M = 1000;
@@ -82,14 +83,6 @@ export interface HazardFrame {
   /** Judge nobody: full-course caution or a formation, when all are slow. */
   quiet: boolean;
 }
-
-/** Shortest signed lap fraction from `from` to `to`, in -0.5..0.5. */
-const wrapDelta = (to: number, from: number): number => {
-  let delta = to - from;
-  if (delta > 0.5) delta -= 1;
-  else if (delta < -0.5) delta += 1;
-  return delta;
-};
 
 /**
  * Finds cars ahead that are crashed, crawling, off the track or rejoining.

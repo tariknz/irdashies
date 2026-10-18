@@ -196,23 +196,15 @@ export const Radar = () => {
     hazardWanted(hazard, style)
   );
   const nearest = hazardShown ? 0 : nearestDistance(frame.cars);
+  // Hysteresis needs the last answer, so it is derived while rendering.
   const [autoVisible, setAutoVisible] = useState(false);
-  useEffect(() => {
-    setAutoVisible((wasVisible) =>
-      nextAutoHideVisible(wasVisible, nearest, {
-        showDistance: settings.showDistance,
-        hideDistance: settings.hideDistance,
-        range: settings.range,
-        carLength: settings.carLength,
-      })
-    );
-  }, [
-    nearest,
-    settings.showDistance,
-    settings.hideDistance,
-    settings.range,
-    settings.carLength,
-  ]);
+  const nextAutoVisible = nextAutoHideVisible(autoVisible, nearest, {
+    showDistance: settings.showDistance,
+    hideDistance: settings.hideDistance,
+    range: settings.range,
+    carLength: settings.carLength,
+  });
+  if (nextAutoVisible !== autoVisible) setAutoVisible(nextAutoVisible);
 
   const onTrackOk = !settings.showOnlyWhenOnTrack || snapshot.isOnTrack;
   const inPitBox = settings.hideInPitBox && snapshot.focusInPitBox;

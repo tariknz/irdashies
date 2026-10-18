@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Session, Telemetry } from '@irdashies/types';
 import { CarLeftRight, GlobalFlags, TrackLocation } from '@irdashies/types';
 import { DEFAULT_RADAR_TUNING } from '../../types/widgetConfigs';
+import radarManifest from '../../types/widgets/radar';
 import rollingTelemetry from '../../../test-data/1752616787255/telemetry.json';
 import rollingSession from '../../../test-data/1752616787255/session.json';
 import {
@@ -151,7 +152,7 @@ describe('RadarProcessor', () => {
 
     const snapshot = processor.snapshot();
     expect(snapshot.playerSpeed).toBeCloseTo(50, 1);
-    expect(snapshot.cars[0].closingSpeed).toBeCloseTo(5, 1);
+    expect(snapshot.cars[0].relativeSpeed).toBeCloseTo(5, 1);
   });
 
   it('smooths speeds the same at any call rate', () => {
@@ -165,7 +166,7 @@ describe('RadarProcessor', () => {
         rival += m((time <= 1 ? 50 : 60) / hz);
         processor.onFrame(frame({ time, pcts: [0.5 + m(50 * time), rival] }));
       }
-      return processor.snapshot().cars[0].closingSpeed;
+      return processor.snapshot().cars[0].relativeSpeed;
     };
 
     expect(closingAfterStep(25)).toBeCloseTo(closingAfterStep(60), 2);
@@ -182,7 +183,7 @@ describe('RadarProcessor', () => {
     }
 
     const { speedSmoothing } = DEFAULT_RADAR_TUNING;
-    expect(Math.abs(processor.snapshot().cars[0].closingSpeed)).toBeCloseTo(
+    expect(Math.abs(processor.snapshot().cars[0].relativeSpeed)).toBeCloseTo(
       10 * speedSmoothing,
       1
     );
@@ -193,7 +194,7 @@ describe('RadarProcessor', () => {
     processor.onFrame(frame({ time: 0, pcts: [0.5, 0.5 - m(5)] }));
     processor.onFrame(frame({ time: 1 / 60, pcts: [0.5, 0.5 + m(5)] }));
 
-    expect(processor.snapshot().cars[0].closingSpeed).toBe(0);
+    expect(processor.snapshot().cars[0].relativeSpeed).toBe(0);
   });
 
   it('reports pit road and off-track state per car', () => {
@@ -396,5 +397,14 @@ describe('RadarProcessor', () => {
       cars: [],
       version: version + 1,
     });
+  });
+});
+
+describe('RADAR_MAX_RANGE_M', () => {
+  it('covers the largest range the settings allow', () => {
+    const range = radarManifest.properties?.range;
+    expect(range && 'max' in range ? range.max : NaN).toBeLessThanOrEqual(
+      RADAR_MAX_RANGE_M
+    );
   });
 });

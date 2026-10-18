@@ -149,7 +149,7 @@ export interface RadarCar {
   /** Metres along the track from the focus car; positive is ahead. */
   dist: number;
   /** Rate of change of `dist` in m/s; positive means pulling away ahead. */
-  closingSpeed: number;
+  relativeSpeed: number;
   /**
    * Lateral lane relative to the focus car, in lanes; 0 is our lane,
    * negative is left. iRacing publishes no lateral position, so this is an

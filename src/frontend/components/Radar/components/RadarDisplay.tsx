@@ -15,7 +15,7 @@ import type { RadarHazard } from '@irdashies/types';
 export interface RadarFrameCar {
   carIdx: number;
   dist: number;
-  closingSpeed: number;
+  relativeSpeed: number;
   lane: number;
   offTrack: boolean;
   onPitRoad?: boolean;
@@ -183,8 +183,8 @@ export const RadarDisplay = memo(
             current.appearance.get(car.carIdx) ?? FALLBACK_APPEARANCE;
           const target = cars[index] ?? ({} as RadarDrawCar);
           target.carIdx = car.carIdx;
-          target.dist = car.dist + car.closingSpeed * elapsed;
-          target.closingSpeed = car.closingSpeed;
+          target.dist = car.dist + car.relativeSpeed * elapsed;
+          target.relativeSpeed = car.relativeSpeed;
           target.lateral = -car.lane * laneWidth;
           target.lane = car.lane;
           target.offTrack = car.offTrack;

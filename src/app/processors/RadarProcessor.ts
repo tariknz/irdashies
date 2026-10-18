@@ -24,6 +24,7 @@ import {
   type GridOptions,
 } from './radarFormation';
 import { RadarHazardTracker } from './radarHazards';
+import { wrapDelta } from './radarMath';
 
 /**
  * Metres either side of the focus car that still reach the renderer. The
@@ -74,14 +75,6 @@ const numberAt = (
 
 const scalarNumber = (frame: Telemetry, key: string, fallback = -1): number =>
   numberAt(valuesOf(frame, key), 0, fallback);
-
-/** Shortest signed lap fraction from `from` to `to`, in -0.5..0.5. */
-const wrapDelta = (to: number, from: number): number => {
-  let delta = to - from;
-  if (delta > 0.5) delta -= 1;
-  else if (delta < -0.5) delta += 1;
-  return delta;
-};
 
 /** WeekendInfo.TrackLength is a string such as "5.51 km" or "3.42 mi". */
 export const parseTrackLength = (raw: string | undefined): number => {
@@ -235,7 +228,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         cars.push({
           carIdx,
           dist,
-          closingSpeed: (this.speeds[carIdx] ?? playerSpeed) - playerSpeed,
+          relativeSpeed: (this.speeds[carIdx] ?? playerSpeed) - playerSpeed,
           lane: 0,
           laneSource: 'none',
           onPitRoad: onPitRoad[carIdx] === true,
@@ -244,7 +237,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       }
       cars.sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist));
       this.assignLanes(frame, time, focus, isOnTrack, cars, formation);
-      separateInLaneCars(cars);
+      separateInLaneCars(cars, onPitRoad[focus] === true);
     }
 
     // The pedals are the player's, so they say nothing about a camera car.
@@ -398,8 +391,9 @@ const emptySnapshot = (version: number): RadarSnapshot => ({
 
 /**
  * Any car in range moves every frame, so only an empty radar can stay
- * unchanged (and a hazard ahead closes in, so it counts as a car). The focus car's progress still counts there: with auto-hide off
- * the map keeps turning under an empty radar.
+ * unchanged (and a hazard ahead closes in, so it counts as a car). The focus
+ * car's progress still counts there: with auto-hide off the map keeps
+ * turning under an empty radar.
  */
 const sameSnapshot = (
   previous: RadarSnapshot,
