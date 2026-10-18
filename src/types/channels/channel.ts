@@ -411,6 +411,15 @@ export interface RadioSnapshot {
   version: number;
 }
 
+/** Retained per-car race timing; indexed by CarIdx, bounded by the SDK grid. */
+export interface RaceFinishTiming {
+  lapsComplete: number;
+  /** Interpolated session time at the observed finishing-line crossing. */
+  crossingTime?: number;
+  /** iRacing's official result delta; compare only cars on the same lap. */
+  resultTime?: number;
+}
+
 export interface StandingsSnapshot {
   focusCarIdx: number | null;
   sessionNum: number | null;
@@ -435,6 +444,7 @@ export interface StandingsSnapshot {
   previousCarTrackSurface: (number | undefined)[];
   /** Current calculated in-class position, indexed by CarIdx. */
   liveClassPosition: (number | undefined)[];
+  finalRaceTiming?: (RaceFinishTiming | null)[];
   version: number;
 }
 

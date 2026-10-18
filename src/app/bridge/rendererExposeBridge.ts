@@ -58,7 +58,11 @@ export function exposeBridge() {
     defineBridge<RendererPerfBridge>('rendererPerfBridge', {
       recordMeasure: (name, durationMs) => {
         if (!isRendererPerfMetricsEnabled()) return;
-        if (name !== 'trackMapAnimationFrame' && name !== 'standingsPlayerGaps')
+        if (
+          name !== 'trackMapAnimationFrame' &&
+          name !== 'standingsPlayerGaps' &&
+          name !== 'standingsFinalTiming'
+        )
           return;
         if (!Number.isFinite(durationMs) || durationMs < 0) return;
         recordRendererMeasure(name, durationMs);
