@@ -2,21 +2,20 @@ import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
 import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { TabButton } from '../components/TabButton';
-import type {
-  PitlaneHelperWidgetSettings,
-  SettingsTabType,
-} from '@irdashies/types';
+import type { PitlaneHelperWidgetSettings } from '@irdashies/types';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { SettingProps, settingPropFor } from '../components/SettingProp';
+import { PitLaneCalibrationSettings } from '../components/PitLaneCalibrationSettings';
 
 const SETTING_ID = 'pitlanehelper';
 const SettingProp = settingPropFor(SETTING_ID);
 
 const defaultConfig = getWidgetDefaultConfig('pitlanehelper');
+type PitlaneSettingsTab = 'options' | 'visibility' | 'calibration';
 
 export const PitlaneHelperSettings = () => {
   const { currentDashboard } = useDashboard();
@@ -32,9 +31,12 @@ export const PitlaneHelperSettings = () => {
   });
 
   // Tab state with persistence
-  const [activeTab, setActiveTab] = useState<SettingsTabType>(
-    () => (localStorage.getItem('pitLaneTab') as SettingsTabType) || 'options'
-  );
+  const [activeTab, setActiveTab] = useState<PitlaneSettingsTab>(() => {
+    const saved = localStorage.getItem('pitLaneTab');
+    return saved === 'visibility' || saved === 'calibration'
+      ? saved
+      : 'options';
+  });
 
   useEffect(() => {
     localStorage.setItem('pitLaneTab', activeTab);
@@ -74,6 +76,13 @@ export const PitlaneHelperSettings = () => {
                 setActiveTab={setActiveTab}
               >
                 Visibility
+              </TabButton>
+              <TabButton
+                id="calibration"
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              >
+                Calibration
               </TabButton>
             </div>
 
@@ -202,6 +211,7 @@ export const PitlaneHelperSettings = () => {
                   />
                 </SettingsSection>
               )}
+              {activeTab === 'calibration' && <PitLaneCalibrationSettings />}
             </div>
           </div>
         </SettingProps>

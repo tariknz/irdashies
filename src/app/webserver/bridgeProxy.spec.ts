@@ -6,6 +6,7 @@ import type {
   DashboardBridge,
   DashboardLayout,
   IrSdkSourceBridge,
+  PitLaneBridge,
   Session,
   Telemetry,
 } from '@irdashies/types';
@@ -435,5 +436,64 @@ describe('browser Inspector serialization demand', () => {
     bus.publish('session.lifecycle', { type: 'disconnect' });
     expect(ordinary.messages('channel')).toHaveLength(1);
     bus.dispose();
+  });
+});
+
+describe('browser pit lane calibration requests', () => {
+  it('uses the shared bridge for source-aware updates and forwards reset errors', async () => {
+    const calibration = {
+      trackId: '47',
+      sourceId: 'source-one',
+      revision: 3,
+      data: null,
+    };
+    const pitLaneBridge: PitLaneBridge = {
+      getPitLaneData: vi.fn(async () => calibration),
+      updatePitLaneData: vi.fn(async () => false),
+      getCurrentTrackPitLaneInfo: vi.fn(async () => null),
+      resetPitLaneData: vi.fn(async () => {
+        throw new Error('Track changed');
+      }),
+    };
+    const { wss } = createBridgeProxy(
+      new Server(),
+      makeSource().bridge,
+      undefined,
+      undefined,
+      pitLaneBridge
+    );
+    const client = new Client();
+    wss.emit('connection', client);
+    const request = (type: string, data: unknown) =>
+      client.emit(
+        'message',
+        Buffer.from(JSON.stringify({ type, requestId: 'request-one', data }))
+      );
+    request('pitLane:getData', { trackId: '47' });
+    await vi.waitFor(() =>
+      expect(client.messages('pitLane:getData')[0]?.data).toEqual(calibration)
+    );
+    request('pitLane:updateData', {
+      trackId: '47',
+      revision: 3,
+      sourceId: 'source-one',
+      update: { pitEntryPct: 0.9 },
+    });
+    await vi.waitFor(() =>
+      expect(pitLaneBridge.updatePitLaneData).toHaveBeenCalledWith(
+        '47',
+        { pitEntryPct: 0.9 },
+        3,
+        'source-one'
+      )
+    );
+    expect(client.messages('pitLane:updateData')[0]?.data).toBe(false);
+    request('pitLane:resetData', { trackId: '47' });
+    await vi.waitFor(() =>
+      expect(client.messages('pitLane:resetData')[0]).toMatchObject({
+        error: 'Track changed',
+      })
+    );
+    client.close();
   });
 });
