@@ -38,6 +38,9 @@ vi.mock('../../storage/referenceLaps', () => ({
   saveReferenceLap: vi.fn(),
 }));
 vi.mock('../../storage/radarTuning', () => ({ getRadarTuning: vi.fn() }));
+vi.mock('../../storage/radarPoleSideOverrides', () => ({
+  radarPoleSideOverrides: {},
+}));
 vi.mock('../../perfMetrics', () => ({
   TelemetryPerfMetrics: class {
     startReporting = vi.fn();
