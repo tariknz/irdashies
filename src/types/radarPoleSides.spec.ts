@@ -24,6 +24,7 @@ describe('radarPoleSides.json', () => {
         ['212', true],
         ['353', false],
         ['434', false],
+        ['444', false],
       ])
     );
     expect(RADAR_POLE_SIDES.trackNames.longbeach).toBe(true);
