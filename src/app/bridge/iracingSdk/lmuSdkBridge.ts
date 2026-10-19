@@ -14,7 +14,11 @@ import type { ChannelBus } from '../channelBridge';
 import { createDefaultProcessorHost } from '../../processors/processorRegistry';
 import { sessionSecondsFrameClock } from '../../processors/ProcessorHost';
 import { mapLmuSession } from '../../lmu/mapSession';
-import { lmuSessionSignature } from '../../lmu/sessionSignature';
+import {
+  lmuRosterSignature,
+  lmuSessionSignature,
+} from '../../lmu/sessionSignature';
+import { createRosterGate } from '../../lmu/rosterSettle';
 import {
   LMU_DISCONNECT_GRACE_MS,
   shouldHoldLmuRunningState,
@@ -165,6 +169,14 @@ export async function publishLmuSDKEvents(
   let lastSessionSignature: string | null = null;
   /** Last reported rating tally, so a settled grid is reported once. */
   let lastRatingTally: string | null = null;
+  /**
+   * Holds a rebuild back while the grid is filling.
+   *
+   * LMU admits drivers one per session poll, so a grid loading in was twenty
+   * full rebuilds and twenty whole-snapshot broadcasts in ten seconds, which
+   * is where the sim hitched. See rosterSettle.ts.
+   */
+  const rosterGate = createRosterGate();
   let activeTrackName = '';
   let trackMap: LmuTrackMap | null = null;
   let lastBlindSpotDataIssue: string | null | undefined;
@@ -312,6 +324,7 @@ export async function publishLmuSDKEvents(
           lastSessionSignature = null;
           resetLmuLapDistanceState(lapDistanceState);
           resetLmuOpponentLapDistanceState(opponentLapDistanceState);
+          rosterGate.reset();
           restPoller.setActive(false);
           // The token was bought with a ticket this sim run minted, and a
           // queue that outlives the session has nothing left to ask with.
@@ -395,14 +408,27 @@ export async function publishLmuSDKEvents(
         // remembered as a miss or in flight costs one set lookup to skip.
         ratingClient.request(gridUsernames(rawSession.drivers));
         const signature = lmuSessionSignature(rawSession);
-        if (signature !== lastSessionSignature) {
+        // Only the roster is gated. Anything else that moves -- a position, a
+        // lap time, the weather -- rebuilds at once as it always did, because
+        // those arrive steadily rather than in bursts.
+        const waitingForRoster = rosterGate.shouldWait(
+          lmuRosterSignature(rawSession),
+          tickTime
+        );
+        if (signature !== lastSessionSignature && !waitingForRoster) {
           lastSessionSignature = signature;
+          // Its own span: a rebuild is the expensive half of a driver
+          // joining, and processTelemetry brackets the whole iteration, so
+          // without this the cost is mixed in with everything else the loop
+          // does and cannot be shown to have changed.
+          perfMetrics.markStart('mapSession');
           session = mapLmuSession(
             rawSession,
             trackMap,
             restData.session,
             (driverName) => ratingClient.get(driverName)
           );
+          perfMetrics.markEnd('mapSession');
 
           // What actually went out, counted on the published snapshot rather
           // than inferred from the lookup.
@@ -500,9 +526,15 @@ export async function publishLmuSDKEvents(
 
       if (session) {
         latestSession = session;
+        // The other half: a whole-snapshot structured clone to every visible
+        // overlay window, plus whatever the lifecycle and the processors do
+        // with it. Measured apart from the build because the two are fixed by
+        // different things.
+        perfMetrics.markStart('publishSession');
         lifecycle?._onSession(session);
         processorHost?.onSession(session);
         overlayManager.publishMessage('sessionData', session);
+        perfMetrics.markEnd('publishSession');
         sessionCallbacks.forEach((callback) => callback(session));
       }
 

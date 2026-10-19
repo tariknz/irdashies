@@ -207,6 +207,10 @@ vi.mock('../../lmu/raceos/tapeRatings', () => ({
 
 vi.mock('../../lmu/sessionSignature', () => ({
   lmuSessionSignature: () => 'signature',
+  // Constant too, so the roster gate sees a grid that never changes and never
+  // holds a rebuild back. The gate has its own specs; here it must only not
+  // be the thing that interferes.
+  lmuRosterSignature: () => 'roster',
 }));
 
 // The poller has its own specs; here only the bridge's use of it matters --

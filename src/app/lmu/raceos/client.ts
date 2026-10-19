@@ -37,6 +37,20 @@ export const RACEOS_PLAYERS_URL = 'https://raceos.gg/api/v1/players';
 /** Names per lookup; the grid goes up in batches, not one at a time. */
 export const RACEOS_BATCH_SIZE = 50;
 
+/**
+ * How long a newly queued name waits for company before it is looked up.
+ *
+ * LMU admits drivers one per session poll, so a grid filling in queued one
+ * name at a time and each went out as its own request -- twenty in ten
+ * seconds where one batch of twenty would have done. Waiting briefly lets a
+ * burst collect into a single call.
+ *
+ * Bounded by RACEOS_QUEUE_MAX_WAIT_MS, or a grid admitting a driver every
+ * half second would reset the wait forever and nothing would ever be asked.
+ */
+export const RACEOS_QUEUE_SETTLE_MS = 750;
+export const RACEOS_QUEUE_MAX_WAIT_MS = 2500;
+
 /** Backoff after a failure, doubling to the ceiling. */
 export const RACEOS_BACKOFF_MS = 30_000;
 export const RACEOS_MAX_BACKOFF_MS = 15 * 60_000;
@@ -107,6 +121,9 @@ export function createRaceosClient({
   let draining = false;
   /** Nothing is attempted before this; set by the backoff on failure. */
   let notBefore = 0;
+  /** The pending settle timer, and when the current burst of queueing began. */
+  let settleTimer: NodeJS.Timeout | undefined;
+  let burstStartedAt: number | null = null;
   let backoff = RACEOS_BACKOFF_MS;
   /**
    * The last thing said, so a state that persists is reported once.
@@ -271,6 +288,36 @@ export function createRaceosClient({
     if (matched > 0) onResolved?.();
   };
 
+  /**
+   * Waits for a burst of queueing to settle, then drains.
+   *
+   * Extended by each new name so joins arriving half a second apart collect
+   * into one request, and capped so a grid that keeps filling is still asked
+   * about rather than waiting indefinitely.
+   */
+  const scheduleDrain = () => {
+    burstStartedAt ??= now();
+    const waited = now() - burstStartedAt;
+    if (waited >= RACEOS_QUEUE_MAX_WAIT_MS) {
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = undefined;
+      burstStartedAt = null;
+      void drain();
+      return;
+    }
+    if (settleTimer) clearTimeout(settleTimer);
+    settleTimer = setTimeout(
+      () => {
+        settleTimer = undefined;
+        burstStartedAt = null;
+        void drain();
+      },
+      Math.min(RACEOS_QUEUE_SETTLE_MS, RACEOS_QUEUE_MAX_WAIT_MS - waited)
+    );
+    // Never hold the process open for a rating lookup.
+    settleTimer.unref?.();
+  };
+
   /** Drains `pending` in batches. Only ever one of these at a time. */
   const drain = async () => {
     if (draining) return;
@@ -340,7 +387,7 @@ export function createRaceosClient({
             ? `All ${names.length} grid drivers are queued or in flight`
             : `All ${names.length} grid drivers already known from cache`
       );
-      if (queued > 0) void drain();
+      if (queued > 0) scheduleDrain();
     },
 
     reset() {
@@ -348,6 +395,9 @@ export function createRaceosClient({
       tokenExpiry = 0;
       pending.clear();
       inflight.clear();
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = undefined;
+      burstStartedAt = null;
       notBefore = 0;
       backoff = RACEOS_BACKOFF_MS;
       // So the next session reports its state afresh rather than staying

@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createRaceosClient,
+  RACEOS_QUEUE_SETTLE_MS,
   RACEOS_AUTH_URL,
   RACEOS_BACKOFF_MS,
   RACEOS_BATCH_SIZE,
@@ -56,6 +57,14 @@ describe('createRaceosClient', () => {
     requests = [];
     cache = fakeCache();
     now = 1_000_000;
+    // Only setTimeout, so setImmediate below stays real and the promise
+    // chain still drains. The client defers a lookup to let a burst of
+    // queueing collect, and these specs drive a logical clock.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   /** A transport that authenticates, then answers with the given players. */
@@ -100,7 +109,18 @@ describe('createRaceosClient', () => {
     });
 
   /** Lets the client's queued drain run to completion. */
-  const settle = () => new Promise((resolve) => setImmediate(resolve));
+  /**
+   * Lets the client's queue settle and its promise chain run.
+   *
+   * The settle delay is real behaviour, not an artefact: a name queued now is
+   * looked up once no more arrive. Advancing the injected clock too, so the
+   * client's own `now()` agrees with the timer that just fired.
+   */
+  const settle = async () => {
+    now += RACEOS_QUEUE_SETTLE_MS;
+    await vi.advanceTimersByTimeAsync(RACEOS_QUEUE_SETTLE_MS);
+    await new Promise((resolve) => setImmediate(resolve));
+  };
 
   it('exchanges a ticket then looks the grid up', async () => {
     const transport = transportFor([player('Herve Attard')]);
@@ -312,6 +332,47 @@ describe('createRaceosClient', () => {
     await settle();
 
     expect(client.get('Sherry Dalton#6487')?.driverRank).toBe('Gold');
+  });
+
+  it('collects a filling grid into one lookup', async () => {
+    // LMU admits drivers one per session poll, so this used to be one request
+    // per join: the log read "Looking up 1 of 12", "1 of 13", "1 of 14" as a
+    // grid loaded in. Twenty requests where one batch of twenty would do.
+    const client = build(transportFor([]));
+
+    for (let joined = 1; joined <= 5; joined += 1) {
+      client.request(Array.from({ length: joined }, (_, i) => `Driver ${i}`));
+      // Half a second apart, which is the real session-poll cadence.
+      now += 500;
+      await vi.advanceTimersByTimeAsync(500);
+    }
+    await settle();
+
+    const lookups = requests.filter((r) => r.url === RACEOS_PLAYERS_URL);
+    expect(lookups).toHaveLength(1);
+    expect((lookups[0]?.body as { usernames: string[] }).usernames).toEqual([
+      'Driver 0',
+      'Driver 1',
+      'Driver 2',
+      'Driver 3',
+      'Driver 4',
+    ]);
+  });
+
+  it('asks eventually even while a grid keeps filling', async () => {
+    // The cap. Without it a join every half second would reset the wait
+    // forever and nothing would ever be looked up.
+    const client = build(transportFor([]));
+
+    for (let joined = 1; joined <= 20; joined += 1) {
+      client.request(Array.from({ length: joined }, (_, i) => `Driver ${i}`));
+      now += 500;
+      await vi.advanceTimersByTimeAsync(500);
+    }
+
+    expect(
+      requests.filter((r) => r.url === RACEOS_PLAYERS_URL).length
+    ).toBeGreaterThan(0);
   });
 
   it('sends each name once while a lookup is outstanding', async () => {
