@@ -14,12 +14,14 @@ vi.mock('../logger', () => ({
 }));
 
 describe('radarPoleSideReportHash storage', () => {
-  beforeEach(() => {
-    userData = fs.mkdtempSync(path.join(os.tmpdir(), 'pole-side-hash-'));
+  beforeEach(async () => {
+    userData = await fs.promises.mkdtemp(
+      path.join(os.tmpdir(), 'pole-side-hash-')
+    );
   });
 
-  afterEach(() => {
-    fs.rmSync(userData, { recursive: true, force: true });
+  afterEach(async () => {
+    await fs.promises.rm(userData, { recursive: true, force: true });
   });
 
   it('has no hash before the first report', async () => {
