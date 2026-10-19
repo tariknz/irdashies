@@ -7,7 +7,6 @@ import {
   lmuRankArt,
 } from './lmuRankArt';
 import { LMU_TIERED_RANKS } from '@irdashies/types';
-import { lmuUsesRankArt, LMU_ART_BADGE_FORMAT } from './lmuUsesRankArt';
 
 /**
  * The bundled LMU artwork, and the lookups into it.
@@ -70,17 +69,6 @@ describe('bundled LMU artwork', () => {
     // A marker the service invents later is simply not drawn.
     expect(lmuBadgeArt('sr-unheard-of')).toBeUndefined();
     expect(lmuBadgeArt(undefined)).toBeUndefined();
-  });
-});
-
-describe('lmuUsesRankArt', () => {
-  it('picks the art for the first badge format only', () => {
-    // The format setting describes an iRacing licence and iRating, which maps
-    // onto nothing in LMU, so it is read here as one question: plates or text.
-    expect(lmuUsesRankArt(LMU_ART_BADGE_FORMAT)).toBe(true);
-    expect(lmuUsesRankArt('license-color-rating-bw')).toBe(false);
-    expect(lmuUsesRankArt('rating-bw-no-license')).toBe(false);
-    expect(lmuUsesRankArt(undefined)).toBe(false);
   });
 });
 
