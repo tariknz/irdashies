@@ -69,7 +69,9 @@ export const migrateLegacyStreamChat = (
   const hasNew = dashboard.widgets.some((w) => w?.id === NEW_ID);
   const widgets = hasNew
     ? dashboard.widgets.filter((w) => w?.id !== LEGACY_ID)
-    : dashboard.widgets.map((w) => (w.id === LEGACY_ID ? migrateWidget(w) : w));
+    : dashboard.widgets.map((w) =>
+        w?.id === LEGACY_ID ? migrateWidget(w) : w
+      );
 
   return { ...dashboard, widgets };
 };
