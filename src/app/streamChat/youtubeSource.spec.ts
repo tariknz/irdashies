@@ -5,6 +5,7 @@ import {
   isValidYoutubeHandle,
   type YtChatAction,
   type YtClient,
+  type YtChatItem,
   type YtLiveChat,
 } from './youtubeSource';
 
@@ -28,6 +29,71 @@ const textAction = (overrides: Record<string, unknown> = {}): YtChatAction => ({
 });
 
 describe('parseYoutubeAction', () => {
+  it('reads roles from a real youtubei.js Author', async () => {
+    const { Misc } =
+      await vi.importActual<typeof import('youtubei.js')>('youtubei.js');
+    const author = new Misc.Author(
+      { simpleText: 'Boss' },
+      [
+        {
+          liveChatAuthorBadgeRenderer: {
+            icon: { iconType: 'OWNER' },
+            tooltip: 'Owner',
+          },
+        },
+        {
+          liveChatAuthorBadgeRenderer: {
+            icon: { iconType: 'MODERATOR' },
+            tooltip: 'Moderator',
+          },
+        },
+        {
+          liveChatAuthorBadgeRenderer: {
+            customThumbnail: {
+              thumbnails: [{ url: 'https://yt3.ggpht.com/b' }],
+            },
+            tooltip: 'Member (2 months)',
+          },
+        },
+      ],
+      undefined,
+      'UC1'
+    );
+
+    const parsed = parseYoutubeAction(
+      textAction({ author: author as unknown as YtChatItem['author'] })
+    );
+
+    expect(parsed?.user).toBe('Boss');
+    expect(parsed?.badges?.map((b) => b.kind)).toEqual([
+      'owner',
+      'moderator',
+      'member',
+    ]);
+  });
+
+  it('reads the author name from a Text node', () => {
+    const node = { text: 'Viewer', toString: () => 'Viewer' };
+    expect(
+      parseYoutubeAction(textAction({ author: { name: node, badges: [] } }))
+        ?.user
+    ).toBe('Viewer');
+  });
+
+  it('falls back to toString() for a Text node without text', () => {
+    const node = { toString: () => 'Viewer' };
+    expect(
+      parseYoutubeAction(textAction({ author: { name: node, badges: [] } }))
+        ?.user
+    ).toBe('Viewer');
+  });
+
+  it('drops a message whose author name is not readable as a string', () => {
+    expect(
+      parseYoutubeAction(textAction({ author: { name: {}, badges: [] } }))
+    ).toBeUndefined();
+  });
+
   it('parses a plain text message', () => {
     expect(parseYoutubeAction(textAction())).toEqual({
       user: 'Viewer',
@@ -112,6 +178,11 @@ describe('isValidYoutubeHandle', () => {
     expect(isValidYoutubeHandle('@a.b_c-d')).toBe(true);
     expect(isValidYoutubeHandle('channel')).toBe(false);
     expect(isValidYoutubeHandle('@ab')).toBe(false);
+    expect(isValidYoutubeHandle('@日本語チャンネル')).toBe(true);
+    expect(isValidYoutubeHandle('@قناة_عربية')).toBe(true);
+    expect(isValidYoutubeHandle('@' + 'あ'.repeat(30))).toBe(true);
+    expect(isValidYoutubeHandle('@' + 'あ'.repeat(31))).toBe(false);
+    expect(isValidYoutubeHandle('@日本/語')).toBe(false);
     expect(isValidYoutubeHandle('@../x')).toBe(false);
     expect(isValidYoutubeHandle('')).toBe(false);
   });

@@ -1,4 +1,8 @@
-import type { DashboardLayout, DashboardWidget } from '@irdashies/types';
+import type {
+  DashboardLayout,
+  DashboardWidget,
+  KeybindingEntry,
+} from '@irdashies/types';
 
 const LEGACY_ID = 'twitchchat';
 const NEW_ID = 'streamchat';
@@ -59,12 +63,42 @@ const migrateWidget = (widget: DashboardWidget): DashboardWidget => ({
 export const migrateLegacyStreamChat = (
   dashboard: DashboardLayout
 ): DashboardLayout => {
-  if (!dashboard.widgets?.some((w) => w.id === LEGACY_ID)) return dashboard;
+  if (!Array.isArray(dashboard.widgets)) return dashboard;
+  if (!dashboard.widgets.some((w) => w?.id === LEGACY_ID)) return dashboard;
 
-  const hasNew = dashboard.widgets.some((w) => w.id === NEW_ID);
+  const hasNew = dashboard.widgets.some((w) => w?.id === NEW_ID);
   const widgets = hasNew
-    ? dashboard.widgets.filter((w) => w.id !== LEGACY_ID)
+    ? dashboard.widgets.filter((w) => w?.id !== LEGACY_ID)
     : dashboard.widgets.map((w) => (w.id === LEGACY_ID ? migrateWidget(w) : w));
 
   return { ...dashboard, widgets };
+};
+
+const LEGACY_TOGGLE = `toggle-widget:${LEGACY_ID}` as const;
+const NEW_TOGGLE = `toggle-widget:${NEW_ID}` as const;
+
+/**
+ * Moves the show/hide binding of the old Twitch Chat widget onto Stream Chat,
+ * keyboard accelerator or gamepad combo alike (both live in `accelerator`).
+ * A binding already on Stream Chat wins and the legacy one is dropped, since
+ * the same input cannot trigger two actions.
+ */
+export const migrateLegacyStreamChatKeybindings = <
+  T extends Partial<Record<string, KeybindingEntry>>,
+>(
+  bindings: T
+): T => {
+  if (!(LEGACY_TOGGLE in bindings)) return bindings;
+
+  const { [LEGACY_TOGGLE]: legacy, ...rest } = bindings;
+  if (NEW_TOGGLE in rest) return rest as unknown as T;
+
+  return {
+    ...rest,
+    [NEW_TOGGLE]: {
+      ...legacy,
+      label: 'Stream Chat',
+      description: 'Show / hide the Stream Chat widget',
+    },
+  } as unknown as T;
 };

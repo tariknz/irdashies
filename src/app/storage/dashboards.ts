@@ -204,8 +204,11 @@ const toStoredWidget = (value: unknown): DashboardWidget | undefined => {
  * dashboard. Doesn't touch storage; callers save.
  */
 export const withDashboardDefaults = (
-  dashboard: DashboardLayout
+  rawDashboard: DashboardLayout
 ): DashboardLayout => {
+  // Renamed widgets must be migrated before missing ones are appended, or the
+  // new id gets a disabled default and the legacy widget is discarded later.
+  const dashboard = migrateLegacyStreamChat(rawDashboard);
   const storedWidgets = Array.isArray(dashboard.widgets)
     ? dashboard.widgets.flatMap((value) => toStoredWidget(value) ?? [])
     : [];
@@ -252,10 +255,9 @@ export const withDashboardDefaults = (
 
 export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
   const savedDashboard = getDashboard(profileId);
-  const dashboard = savedDashboard && migrateLegacyStreamChat(savedDashboard);
 
-  if (dashboard) {
-    const updatedDashboard = withDashboardDefaults(dashboard);
+  if (savedDashboard) {
+    const updatedDashboard = withDashboardDefaults(savedDashboard);
     saveDashboard(profileId, updatedDashboard);
     return updatedDashboard;
   }
