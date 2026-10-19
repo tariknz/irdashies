@@ -59,7 +59,7 @@ const migrateWidget = (widget: DashboardWidget): DashboardWidget => ({
 export const migrateLegacyStreamChat = (
   dashboard: DashboardLayout
 ): DashboardLayout => {
-  if (!dashboard.widgets.some((w) => w.id === LEGACY_ID)) return dashboard;
+  if (!dashboard.widgets?.some((w) => w.id === LEGACY_ID)) return dashboard;
 
   const hasNew = dashboard.widgets.some((w) => w.id === NEW_ID);
   const widgets = hasNew
