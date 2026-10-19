@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  LMU_ART_CLASSES,
-  LMU_ART_HEIGHT,
+  LMU_ART_HEIGHT_EM,
   lmuArtCounts,
   lmuBadgeArt,
   lmuRankArt,
@@ -47,7 +46,9 @@ describe('bundled LMU artwork', () => {
 
   it('treats a missing tier as tier 0', () => {
     // Which is the bucket's own spelling of a rank that carries no tier.
-    expect(lmuRankArt('dr', 'Bronze')).toBe(lmuRankArt('dr', 'Bronze', 0));
+    // toEqual, not toBe: a cell is built per call now rather than being a
+    // URL string looked up from a map.
+    expect(lmuRankArt('dr', 'Bronze')).toEqual(lmuRankArt('dr', 'Bronze', 0));
   });
 
   it('has no plate for Pro', () => {
@@ -72,20 +73,64 @@ describe('bundled LMU artwork', () => {
   });
 });
 
-describe('LMU_ART_CLASSES', () => {
-  it('is one height for every piece of LMU art', () => {
-    // Pinned so a change is deliberate: it sets the standings row height, and
-    // the plates and the badge have to agree or the pair looks wrong.
-    expect(LMU_ART_HEIGHT).toBe('h-[1.8em]');
-    expect(LMU_ART_CLASSES).toContain(LMU_ART_HEIGHT);
+describe('sprite cells', () => {
+  it('draws every piece of art at one height', () => {
+    // The plates and the badge sit side by side; a difference reads as a bug.
+    expect(lmuRankArt('dr', 'Gold', 3)?.heightEm).toBe(LMU_ART_HEIGHT_EM);
+    expect(lmuBadgeArt('sr-saint')?.heightEm).toBe(LMU_ART_HEIGHT_EM);
   });
 
-  it('refuses to let the table shrink the art', () => {
-    // The load-bearing class. The standings table is `w-full table-auto` in an
-    // overflow-hidden box and Tailwind's preflight gives images
-    // `max-width: 100%`, so without this the layout pass compresses the art to
-    // fit the row -- it paints full size and is squashed a frame later, which
-    // reads as the height being ignored rather than as a width constraint.
-    expect(LMU_ART_CLASSES).toContain('max-w-none');
+  it('keeps the plate aspect, so the art is not squashed', () => {
+    // The source plates are 112x52, so a cell is wider than it is tall.
+    const plate = lmuRankArt('dr', 'Gold', 3);
+    expect(plate?.widthEm).toBeCloseTo((LMU_ART_HEIGHT_EM * 112) / 52, 5);
+  });
+
+  it('keeps badges square', () => {
+    const badge = lmuBadgeArt('sr-saint');
+    expect(badge?.widthEm).toBe(badge?.heightEm);
+  });
+
+  it('sizes the background to the whole sheet', () => {
+    // background-size covers the sheet and background-position selects the
+    // cell; getting this wrong shows the wrong rank rather than nothing.
+    const plate = lmuRankArt('dr', 'Bronze', 0);
+    const width = (LMU_ART_HEIGHT_EM * 112) / 52;
+    expect(plate?.backgroundSize).toBe(
+      `${8 * width}em ${4 * LMU_ART_HEIGHT_EM}em`
+    );
+  });
+
+  it('offsets to the right cell', () => {
+    // dr-Bronze0 is the first cell, so no offset at all.
+    expect(lmuRankArt('dr', 'Bronze', 0)?.backgroundPosition).toBe('0em 0em');
+    // Every other cell is a negative offset into the sheet.
+    expect(lmuRankArt('sr', 'Platinum', 3)?.backgroundPosition).not.toBe(
+      '0em 0em'
+    );
+  });
+
+  it('gives each cell of the pair a different offset', () => {
+    // Keyed by kind, so a Silver 2 safety rank is not drawn with the driver
+    // plate -- they are visually distinct in the sim.
+    expect(lmuRankArt('dr', 'Silver', 2)?.backgroundPosition).not.toBe(
+      lmuRankArt('sr', 'Silver', 2)?.backgroundPosition
+    );
+  });
+
+  it('serves the plates and the badges from one sheet each', () => {
+    // The whole point: one decode per sheet rather than thirty-seven.
+    const urls = new Set<string>();
+    for (const kind of ['dr', 'sr'] as const) {
+      for (const rank of LMU_TIERED_RANKS) {
+        urls.add(lmuRankArt(kind, rank, 1)?.url ?? '');
+      }
+    }
+    expect(urls.size).toBe(1);
+
+    const badgeUrls = new Set(
+      ['sr-noob', 'sr-saint', 'sr-clean'].map((b) => lmuBadgeArt(b)?.url ?? '')
+    );
+    expect(badgeUrls.size).toBe(1);
   });
 });

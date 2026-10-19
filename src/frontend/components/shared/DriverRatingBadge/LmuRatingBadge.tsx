@@ -4,7 +4,8 @@ import {
   type LmuDriverRating,
   type LmuRank,
 } from '@irdashies/types';
-import { LMU_ART_CLASSES, lmuRankArt, type LmuRankKind } from './lmuRankArt';
+import { lmuRankArt, type LmuRankKind } from './lmuRankArt';
+import { LmuSprite } from './LmuSprite';
 
 export interface LmuRatingBadgeProps {
   rating?: LmuDriverRating;
@@ -110,9 +111,9 @@ const Chip = ({
 /**
  * One rank, as a plate when there is art for it and as a chip when not.
  *
- * Referenced as an image source rather than inlined: these are third-party
- * files, and an `img` cannot run anything they might contain. Sized by height
- * so a row's line height decides how big it is, with the aspect left alone.
+ * Drawn from a sprite sheet rather than as its own image: see lmuRankArt.ts
+ * for why, and LmuSprite for how. Sized by height so a row's line height
+ * decides how big it is, with the aspect carried by the cell.
  */
 const Plate = ({
   kind,
@@ -130,9 +131,7 @@ const Plate = ({
   const art = lmuRankArt(kind, rank, tier);
   if (!art)
     return <Chip rank={rank} tier={tier} isMinimal={isMinimal} title={title} />;
-  return (
-    <img src={art} alt={title} title={title} className={LMU_ART_CLASSES} />
-  );
+  return <LmuSprite cell={art} title={title} />;
 };
 
 export const LmuRatingBadge = ({

@@ -46,7 +46,8 @@
     "fetch-lovely-track-data": "npx tsx ./tools/fetch-lovely-track-data.ts",
     "generate-garage61-ids": "npx tsx ./tools/generate-garage61-ids.ts",
     "prepare": "husky",
-    "fetch-lmu-rank-art": "npx tsx ./tools/fetch-lmu-rank-art.ts"
+    "fetch-lmu-rank-art": "npx tsx ./tools/fetch-lmu-rank-art.ts",
+    "build-lmu-sprite": "npx tsx ./tools/build-lmu-sprite.ts"
   },
   "devDependencies": {
     "@electron-forge/cli": "^8.0.1",

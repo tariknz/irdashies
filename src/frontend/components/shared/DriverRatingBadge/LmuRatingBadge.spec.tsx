@@ -113,15 +113,24 @@ describe('LmuRatingBadge', () => {
       />
     );
 
-    const art = [...container.querySelectorAll('img')];
+    const art = [...container.querySelectorAll('[role="img"]')];
     expect(art).toHaveLength(2);
     // No text alongside: the plate carries the rank and the tier itself.
     expect(container.textContent).toBe('');
     // Still named, so the pair is identifiable without reading the artwork.
-    expect(art.map((node) => node.getAttribute('alt'))).toEqual([
+    expect(art.map((node) => node.getAttribute('aria-label'))).toEqual([
       'Driver rating: Bronze 3',
       'Safety rating: Silver 2',
     ]);
+    // One sheet behind both, which is the point of the sprite.
+    const sheets = new Set(
+      art.map(
+        (node) => /url\(([^)]*)\)/.exec(node.getAttribute('style') ?? '')?.[1]
+      )
+    );
+    expect(sheets.size).toBe(1);
+    // Named, so the assertion above cannot pass on two undefineds.
+    expect([...sheets][0]).toContain('plates-sprite');
   });
 
   it('falls back to a chip for a rank with no plate', () => {
@@ -134,7 +143,7 @@ describe('LmuRatingBadge', () => {
       />
     );
 
-    expect(container.querySelectorAll('img')).toHaveLength(1);
+    expect(container.querySelectorAll('[role="img"]')).toHaveLength(1);
     expect(container.textContent).toBe('PRO');
   });
 
@@ -199,7 +208,7 @@ describe('LmuRatingBadge', () => {
     for (const chip of container.querySelectorAll('[title]')) {
       expect(chip.className).toContain('border-2');
     }
-    expect(container.querySelectorAll('img')).toHaveLength(0);
+    expect(container.querySelectorAll('[role="img"]')).toHaveLength(0);
   });
 
   it('renders nothing without a rank', () => {

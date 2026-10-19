@@ -1,7 +1,6 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { LmuBadge } from './LmuBadge';
-import { LMU_ART_CLASSES } from './lmuRankArt';
 
 /**
  * The achievement badge column.
@@ -13,10 +12,10 @@ import { LMU_ART_CLASSES } from './lmuRankArt';
 describe('LmuBadge', () => {
   it('draws the badge art', () => {
     const { container } = render(<LmuBadge badge="sr-saint" />);
-    const art = container.querySelector('img');
+    const art = container.querySelector('[role="img"]');
 
     expect(art).toBeTruthy();
-    expect(art?.getAttribute('alt')).toBe('sr-saint');
+    expect(art?.getAttribute('aria-label')).toBe('sr-saint');
     expect(art?.getAttribute('title')).toBe('sr-saint');
   });
 
@@ -27,7 +26,7 @@ describe('LmuBadge', () => {
     // column so hard to diagnose.
     const { container } = render(<LmuBadge badge="sr-unheard-of" />);
 
-    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('[role="img"]')).toBeNull();
     expect(container.textContent).toBe('unheard-of');
     expect(container.querySelector('[title]')?.getAttribute('title')).toBe(
       'sr-unheard-of'
@@ -39,14 +38,18 @@ describe('LmuBadge', () => {
     // for. Also every driver on every sim but LMU. Nothing at all here, since
     // there is no marker to report.
     const { container } = render(<LmuBadge />);
-    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('[role="img"]')).toBeNull();
     expect(container.textContent).toBe('');
   });
 
-  it('draws the art at the shared size, unshrinkable', () => {
-    // The plates and the badge sit side by side; a difference reads as a bug.
-    // max-w-none is what stops the table compressing it to fit the row.
+  it('draws the art as a sprite cell, not an image', () => {
+    // A background cannot be compressed by table layout, where an img carries
+    // preflight's max-width: 100% and the table squashed it to fit the row.
     const { container } = render(<LmuBadge badge="sr-saint" />);
-    expect(container.querySelector('img')?.className).toBe(LMU_ART_CLASSES);
+    const art = container.querySelector('[role="img"]');
+
+    expect(container.querySelector('img')).toBeNull();
+    expect(art?.getAttribute('style')).toContain('background-position');
+    expect(art?.getAttribute('aria-label')).toBe('sr-saint');
   });
 });

@@ -1,104 +1,113 @@
 import type { LmuRank } from '@irdashies/types';
+import badgesSprite from '../../../assets/lmu/badges-sprite.svg';
+import platesSprite from '../../../assets/lmu/plates-sprite.svg';
+import {
+  BADGE_GRID,
+  BADGE_POSITIONS,
+  PLATE_CELL,
+  PLATE_GRID,
+  PLATE_POSITIONS,
+} from './lmuSpritePositions';
 
 /**
- * The bundled LMU rank and badge artwork.
+ * The bundled LMU rank and badge artwork, as two sprite sheets.
  *
- * The sim's own UI, and LMUTraceHUB, fetch these from Studio 397's public
- * bucket at render time. Here they are committed under `assets/lmu/` and
- * bundled, because the alternative is a standings row reaching the network
- * once per driver per session — see `tools/fetch-lmu-rank-art.ts`, which is
- * what downloads them.
+ * The sim's own UI and LMUTraceHUB fetch these from Studio 397's bucket at
+ * render time. Here they are committed and bundled, because the alternative is
+ * a standings row reaching the network once per driver per session --
+ * `tools/fetch-lmu-rank-art.ts` downloads them and
+ * `tools/build-lmu-sprite.ts` composes the sheets.
  *
- * Resolved through `import.meta.glob` rather than thirty-seven import lines,
- * following `WidgetIndex.tsx`. `query: '?url'` keeps them as URLs: referencing
- * an SVG as an image source is what stops anything inside it executing, and
- * these are third-party files.
+ * Sheets rather than the 37 separate files this used to import. A row drew up
+ * to sixty `<img>` elements, and an SVG is re-rasterised whenever its rendered
+ * size changes -- so every size tweak discarded every cached raster, on an
+ * overlay sharing a GPU with the sim. One sheet is decoded once and every row
+ * reads the same texture at the same `background-size`, which is how the
+ * car-manufacturer logos have always worked here.
  *
- * Every lookup can miss. A rank the bucket had no art for, or a badge the
- * service invents after this was last run, returns undefined and the caller
- * falls back to the text chip. That is why nothing here throws.
+ * Positioning a background also ends a subtler problem: an `<img>` carries
+ * Tailwind preflight's `max-width: 100%`, so the standings table was free to
+ * squash the art to fit a row and the height became a suggestion. A background
+ * cell cannot be compressed by table layout.
  */
-
-const RANK_ART = import.meta.glob<string>('../../../assets/lmu/drsr/*.svg', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-});
-
-const BADGE_ART = import.meta.glob<string>('../../../assets/lmu/badges/*.svg', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-});
-
-/** Keyed by basename, so the globs' directory prefixes do not leak out. */
-const byName = (art: Record<string, string>): Map<string, string> => {
-  const out = new Map<string, string>();
-  for (const [filePath, url] of Object.entries(art)) {
-    const name = filePath.slice(filePath.lastIndexOf('/') + 1, -'.svg'.length);
-    out.set(name, url);
-  }
-  return out;
-};
-
-const ranks = byName(RANK_ART);
-const badges = byName(BADGE_ART);
 
 /** `dr` is the driver rating, `sr` the safety rating. */
 export type LmuRankKind = 'dr' | 'sr';
 
 /**
- * The artwork for one rank, or undefined when there is none bundled.
+ * The height every piece of LMU artwork is drawn at.
+ *
+ * One value because the plates and the badge sit side by side in a row, and a
+ * difference between them reads as a mistake. In `em`, so a widget scaled by
+ * font size takes the art with it.
+ */
+export const LMU_ART_HEIGHT_EM = 1.8;
+
+/** Everything a cell needs to be drawn, or undefined when there is no art. */
+export interface LmuSpriteCell {
+  url: string;
+  /** CSS `background-size`, covering the whole sheet. */
+  backgroundSize: string;
+  /** CSS `background-position`, selecting the cell. */
+  backgroundPosition: string;
+  /** The cell's own size, so the element keeps the art's aspect. */
+  widthEm: number;
+  heightEm: number;
+}
+
+const cell = (
+  url: string,
+  position: readonly [number, number] | undefined,
+  grid: { readonly cols: number; readonly rows: number },
+  aspect: number
+): LmuSpriteCell | undefined => {
+  if (!position) return undefined;
+  const heightEm = LMU_ART_HEIGHT_EM;
+  const widthEm = heightEm * aspect;
+  const [col, row] = position;
+  return {
+    url,
+    backgroundSize: `${grid.cols * widthEm}em ${grid.rows * heightEm}em`,
+    backgroundPosition: `${-col * widthEm}em ${-row * heightEm}em`,
+    widthEm,
+    heightEm,
+  };
+};
+
+const PLATE_ASPECT = PLATE_CELL.width / PLATE_CELL.height;
+/** The badges are square, so this needs no constant that could go stale. */
+const BADGE_ASPECT = 1;
+
+/**
+ * The cell for one rank, or undefined when there is none.
  *
  * `Pro` deliberately has none: the bucket carries no plate for it, which is
- * why LMUTraceHUB falls back to a text label there too.
- *
- * A missing tier resolves to tier 0, which is the bucket's own spelling of a
- * rank without one.
+ * why LMUTraceHUB falls back to a text label there too. A missing tier
+ * resolves to tier 0, the bucket's own spelling of a rank without one.
  */
 export const lmuRankArt = (
   kind: LmuRankKind,
   rank: LmuRank,
   tier?: number
-): string | undefined => {
+): LmuSpriteCell | undefined => {
   if (rank === 'Pro') return undefined;
   const slot = tier && tier > 0 ? tier : 0;
-  return ranks.get(`${kind}-${rank}${slot}`);
+  return cell(
+    platesSprite,
+    PLATE_POSITIONS[`${kind}-${rank}${slot}`],
+    PLATE_GRID,
+    PLATE_ASPECT
+  );
 };
 
-/** The artwork for an achievement badge, or undefined when it is unknown. */
-export const lmuBadgeArt = (badge?: string): string | undefined =>
-  badge ? badges.get(badge) : undefined;
+/** The cell for an achievement badge, or undefined when it is unknown. */
+export const lmuBadgeArt = (badge?: string): LmuSpriteCell | undefined =>
+  badge
+    ? cell(badgesSprite, BADGE_POSITIONS[badge], BADGE_GRID, BADGE_ASPECT)
+    : undefined;
 
-/**
- * The height every piece of LMU artwork is drawn at.
- *
- * One constant because the rank plates and the badge sit side by side in a
- * row, and a difference between them reads as a mistake. In `em`, so a widget
- * scaled by font size takes the art with it.
- *
- * The size that actually made these legible was not this number. The standings
- * table is `w-full table-auto` inside an `overflow-hidden` box, and Tailwind's
- * preflight gives every image `max-width: 100%` -- so the table's layout pass
- * compressed the art to fit the row. It painted at full size and was squashed
- * a frame later, which looked like the height being ignored. `LMU_ART_CLASSES`
- * carries the `max-w-none` that stops it.
- *
- * With that fixed, 2em draws larger than 4.5em ever did while leaving the row
- * close to its normal height.
- */
-export const LMU_ART_HEIGHT = 'h-[1.8em]';
-
-/**
- * Every class a piece of LMU artwork needs.
- *
- * `max-w-none` is the load-bearing one: without it the table may compress the
- * image however much it likes, and the height above becomes a suggestion.
- */
-export const LMU_ART_CLASSES = `${LMU_ART_HEIGHT} w-auto max-w-none shrink-0`;
-
-/** For diagnostics and tests: what was actually bundled. */
+/** For diagnostics and tests: what the sheets actually carry. */
 export const lmuArtCounts = () => ({
-  ranks: ranks.size,
-  badges: badges.size,
+  ranks: Object.keys(PLATE_POSITIONS).length,
+  badges: Object.keys(BADGE_POSITIONS).length,
 });

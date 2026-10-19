@@ -1,4 +1,5 @@
-import { LMU_ART_CLASSES, lmuBadgeArt } from './lmuRankArt';
+import { lmuBadgeArt } from './lmuRankArt';
+import { LmuSprite } from './LmuSprite';
 
 export interface LmuBadgeProps {
   /**
@@ -29,11 +30,7 @@ export const LmuBadge = ({ badge }: LmuBadgeProps) => {
   if (!badge) return null;
 
   const art = lmuBadgeArt(badge);
-  if (art) {
-    return (
-      <img src={art} alt={badge} title={badge} className={LMU_ART_CLASSES} />
-    );
-  }
+  if (art) return <LmuSprite cell={art} title={badge} />;
 
   return (
     <span
