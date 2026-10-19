@@ -87,7 +87,7 @@ export const lmuBadgeArt = (badge?: string): string | undefined =>
  * With that fixed, 2em draws larger than 4.5em ever did while leaving the row
  * close to its normal height.
  */
-export const LMU_ART_HEIGHT = 'h-[2em]';
+export const LMU_ART_HEIGHT = 'h-[1.8em]';
 
 /**
  * Every class a piece of LMU artwork needs.

@@ -76,7 +76,7 @@ describe('LMU_ART_CLASSES', () => {
   it('is one height for every piece of LMU art', () => {
     // Pinned so a change is deliberate: it sets the standings row height, and
     // the plates and the badge have to agree or the pair looks wrong.
-    expect(LMU_ART_HEIGHT).toBe('h-[2em]');
+    expect(LMU_ART_HEIGHT).toBe('h-[1.8em]');
     expect(LMU_ART_CLASSES).toContain(LMU_ART_HEIGHT);
   });
 
