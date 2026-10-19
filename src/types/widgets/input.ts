@@ -58,6 +58,11 @@ export default defineWidgetManifest({
       source: 'redline',
       color: '#9333ea',
     },
+    gearFlash: {
+      enabled: false,
+      upColor: '#22c55e',
+      downColor: '#ef4444',
+    },
     sessionVisibility: {
       race: true,
       loneQualify: true,
