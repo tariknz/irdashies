@@ -71,9 +71,9 @@ export const FormatSelect = <T extends string>({
       {open && (
         <div
           role="listbox"
-          // Right-aligned and above the fold where there is room: these rows
-          // sit at the right edge of a settings panel that scrolls.
-          className="absolute right-0 top-full z-50 mt-1 flex flex-col gap-1 rounded border border-slate-600 bg-slate-900 p-1 shadow-lg"
+          // Opens under its own control, which now sits inline with the
+          // other simulator's rather than at the panel's right edge.
+          className="absolute left-0 top-full z-50 mt-1 flex flex-col gap-1 rounded border border-slate-600 bg-slate-900 p-1 shadow-lg"
         >
           {options.map((option) => (
             <button

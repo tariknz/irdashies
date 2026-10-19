@@ -240,7 +240,11 @@ const DisplaySettingsList = ({
               )}
             {setting.configKey === 'badge' &&
               (configValue as { enabled: boolean }).enabled && (
-                <div className="mt-3 flex flex-col items-end gap-2">
+                // One line, indented like the compact sub-settings
+                // above (pl-8), since these belong to Rating rather
+                // than standing on their own. Wraps rather than
+                // overflowing a narrow settings panel.
+                <div className="mt-2 flex flex-wrap items-center gap-4 pl-8">
                   <FormatSelect
                     label="iRacing"
                     value={
@@ -262,7 +266,7 @@ const DisplaySettingsList = ({
                     }}
                   />
                   <FormatSelect
-                    label="Le Mans Ultimate"
+                    label="LMU"
                     value={
                       (configValue as { lmuFormat?: LmuBadgeFormat })
                         .lmuFormat ?? 'plates'
