@@ -193,10 +193,12 @@ const DemoChatMessages = ({
 };
 
 export const StreamChat = ({
-  background = { opacity: 85 },
+  background: backgroundProp,
 }: StreamChatDisplayProps) => {
   const { isDemoMode } = useDashboard();
   const settings = useStreamChatSettings();
+  const background = backgroundProp ??
+    settings?.config.display.background ?? { opacity: 30 };
   const active = !isDemoMode && (settings?.enabled ?? false);
   const snapshot = useStreamChatMessagesSnapshot(active);
   const thirdPartyEmotes = useStreamChatEmotes(active);
