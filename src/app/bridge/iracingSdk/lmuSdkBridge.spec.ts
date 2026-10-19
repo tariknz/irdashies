@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import logger from '../../logger';
 import type { OverlayManager } from '../../overlayManager';
 import type { SessionLifecycle } from '../../sessionLifecycle';
 
@@ -44,7 +45,9 @@ const ratingState = vi.hoisted(() => ({
 
 /** Shared so a spec can read the arguments the session mapper was given. */
 const mapSessionSpy = vi.hoisted(() =>
-  vi.fn<(...args: unknown[]) => { drivers: [] }>(() => ({ drivers: [] }))
+  vi.fn<(...args: unknown[]) => { drivers: []; DriverInfo: { Drivers: [] } }>(
+    () => ({ drivers: [], DriverInfo: { Drivers: [] } })
+  )
 );
 
 /**
@@ -539,6 +542,50 @@ describe('publishLmuSDKEvents and driver ratings', () => {
 
     await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
     expect(namesRequested()).toEqual(['Herve Attard']);
+
+    bridge.stop();
+  });
+
+  it('reports what the published snapshot actually carries', async () => {
+    // "Matched n/n" says the service answered and the answers were filed under
+    // names the grid presents; it does not say they reached a driver. The
+    // country arrives by a different route, so flags-and-no-ranks looks the
+    // same from the renderer and from the lookup's own log. This line is what
+    // distinguishes them, so it reads the snapshot about to be published.
+    sdkState.drivers = [driver('Herve Attard'), driver('Leonel Gomez')];
+    mapSessionSpy.mockReturnValueOnce({
+      DriverInfo: {
+        Drivers: [
+          {
+            LmuRating: {
+              driverRank: 'Bronze',
+              badge: 'sr-saint',
+              countryCode: 'US',
+            },
+          },
+          { LmuRating: { countryCode: 'AR' } },
+        ],
+      },
+    } as unknown as { drivers: []; DriverInfo: { Drivers: [] } });
+
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() =>
+      expect(
+        vi
+          .mocked(logger.info)
+          .mock.calls.map(([m]) => String(m))
+          .some((m) => m.includes('Published ratings'))
+      ).toBe(true)
+    );
+    const line = vi
+      .mocked(logger.info)
+      .mock.calls.map(([m]) => String(m))
+      .find((m) => m.includes('Published ratings'));
+
+    expect(line).toContain('1 ranked, 1 badged, 2 flagged of 2');
 
     bridge.stop();
   });

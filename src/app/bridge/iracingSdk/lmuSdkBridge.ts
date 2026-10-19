@@ -163,6 +163,8 @@ export async function publishLmuSDKEvents(
   let lastRunningState: boolean | undefined = undefined;
   let latestSession: Session | null = null;
   let lastSessionSignature: string | null = null;
+  /** Last reported rating tally, so a settled grid is reported once. */
+  let lastRatingTally: string | null = null;
   let activeTrackName = '';
   let trackMap: LmuTrackMap | null = null;
   let lastBlindSpotDataIssue: string | null | undefined;
@@ -401,6 +403,29 @@ export async function publishLmuSDKEvents(
             restData.session,
             (driverName) => ratingClient.get(driverName)
           );
+
+          // What actually went out, counted on the published snapshot rather
+          // than inferred from the lookup.
+          //
+          // "Matched n/n" says the service answered and the answers were filed
+          // under names the grid presents. It does not say they reached a
+          // driver: the country arrives by a different route, so a snapshot
+          // with flags and no ranks looks identical from the renderer's side
+          // and from the log's. This is the only line that tells the two
+          // apart, and it reads the object that is about to be published.
+          const drivers = session.DriverInfo?.Drivers ?? [];
+          const ranked = drivers.filter(
+            (d) => d.LmuRating?.driverRank || d.LmuRating?.safetyRank
+          ).length;
+          const flagged = drivers.filter(
+            (d) => d.LmuRating?.countryCode
+          ).length;
+          const badged = drivers.filter((d) => d.LmuRating?.badge).length;
+          const tally = `${ranked} ranked, ${badged} badged, ${flagged} flagged of ${drivers.length}`;
+          if (tally !== lastRatingTally) {
+            lastRatingTally = tally;
+            logger.info(`[lmuSdkBridge] Published ratings: ${tally}`);
+          }
         }
       }
 
