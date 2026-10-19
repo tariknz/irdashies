@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +9,12 @@ vi.mock('../logger', () => ({
   default: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
+const exists = (file: string) =>
+  fs.access(file).then(
+    () => true,
+    () => false
+  );
+
 const FILE = 'radar-pole-side-overrides.json';
 
 const loadModule = async () => {
@@ -17,12 +23,12 @@ const loadModule = async () => {
 };
 
 describe('radarPoleSideOverrides storage', () => {
-  beforeEach(() => {
-    userData = fs.mkdtempSync(path.join(os.tmpdir(), 'pole-side-'));
+  beforeEach(async () => {
+    userData = await fs.mkdtemp(path.join(os.tmpdir(), 'pole-side-'));
   });
 
-  afterEach(() => {
-    fs.rmSync(userData, { recursive: true, force: true });
+  afterEach(async () => {
+    await fs.rm(userData, { recursive: true, force: true });
   });
 
   it('starts empty without a file', async () => {
@@ -33,13 +39,13 @@ describe('radarPoleSideOverrides storage', () => {
   });
 
   it('reads the file once, before anything looks a correction up', async () => {
-    fs.writeFileSync(
+    await fs.writeFile(
       path.join(userData, FILE),
       JSON.stringify({ '95': { start: false, table: true } })
     );
     const storage = await loadModule();
     await storage.loadRadarPoleSideOverrides();
-    fs.writeFileSync(path.join(userData, FILE), '{}');
+    await fs.writeFile(path.join(userData, FILE), '{}');
     await storage.loadRadarPoleSideOverrides();
 
     expect(storage.radarPoleSideOverrides.override(95, 'start')).toBe(false);
@@ -54,7 +60,7 @@ describe('radarPoleSideOverrides storage', () => {
     await storage.flushRadarPoleSideOverrides();
 
     expect(
-      JSON.parse(fs.readFileSync(path.join(userData, FILE), 'utf8'))
+      JSON.parse(await fs.readFile(path.join(userData, FILE), 'utf8'))
     ).toEqual({ '95': { start: false, table: true } });
   });
 
@@ -66,18 +72,18 @@ describe('radarPoleSideOverrides storage', () => {
     storage.radarPoleSideOverrides.setTrack(95, true, 'start');
     storage.radarPoleSideOverrides.flip();
     await storage.flushRadarPoleSideOverrides();
-    expect(fs.existsSync(path.join(gone, FILE))).toBe(false);
+    expect(await exists(path.join(gone, FILE))).toBe(false);
 
-    fs.mkdirSync(gone);
+    await fs.mkdir(gone);
     await storage.flushRadarPoleSideOverrides();
 
-    expect(fs.existsSync(path.join(gone, FILE))).toBe(true);
-    fs.rmSync(gone, { recursive: true, force: true });
+    expect(await exists(path.join(gone, FILE))).toBe(true);
+    await fs.rm(gone, { recursive: true, force: true });
   });
 
   it('never replaces a file it could not read', async () => {
     // A directory where the file should be: reading fails with EISDIR.
-    fs.mkdirSync(path.join(userData, FILE));
+    await fs.mkdir(path.join(userData, FILE));
     const storage = await loadModule();
 
     expect(await storage.loadRadarPoleSideOverrides()).toBe(false);
@@ -85,15 +91,15 @@ describe('radarPoleSideOverrides storage', () => {
     storage.radarPoleSideOverrides.flip();
     await storage.flushRadarPoleSideOverrides();
 
-    expect(fs.statSync(path.join(userData, FILE)).isDirectory()).toBe(true);
+    expect((await fs.stat(path.join(userData, FILE))).isDirectory()).toBe(true);
   });
 
   it('moves an invalid file aside and starts empty', async () => {
-    fs.writeFileSync(path.join(userData, FILE), '{oops');
+    await fs.writeFile(path.join(userData, FILE), '{oops');
     const storage = await loadModule();
 
     expect(await storage.loadRadarPoleSideOverrides()).toBe(true);
     expect(storage.radarPoleSideOverrides.snapshot()).toEqual({});
-    expect(fs.existsSync(path.join(userData, `${FILE}.invalid`))).toBe(true);
+    expect(await exists(path.join(userData, `${FILE}.invalid`))).toBe(true);
   });
 });
