@@ -441,6 +441,29 @@ describe('mapLmuSession driver nationality', () => {
     expect(driver?.LmuRating).toBeUndefined();
   });
 
+  it('takes the team from the entry name, not the driver', () => {
+    // It was the driver's own name. Invisible, because LMU reports no team
+    // racing and the column is gated on WeekendInfo.TeamRacing -- but wrong.
+    const raw = fixture();
+    const s = mapLmuSession(raw);
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
+    expect(driver?.TeamName).toBe('Team WRT 2026');
+    expect(driver?.TeamName).not.toBe(nameOf(raw));
+  });
+
+  it('leaves the team empty for an entry named after its car', () => {
+    const raw = fixture();
+    const carNamed = raw.drivers.find((d) => !d.vehicleName.includes('#'));
+    if (!carNamed) throw new Error('fixture needs an entry with no number');
+    const s = mapLmuSession(raw);
+
+    const driver = s.DriverInfo.Drivers.find(
+      (d) => d.UserName === carNamed.name
+    );
+    expect(driver?.TeamName).toBe('');
+  });
+
   it('takes the car number from the entry name, not the slot', () => {
     // The fixture's first entry is "Team WRT 2026 #32:WEC" at slot id 0, so
     // the old slot-index default produced "1" for car 32. Join order decided

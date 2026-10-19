@@ -1,14 +1,14 @@
 /**
- * The car number LMU embeds in an entry's vehicle name.
+ * The parts of an LMU entry name.
  *
- * Shared memory has no car-number field, but it does not need one: LMU names
- * every entry `<Team> #<Number>:<Series>`, and that number is the real race
- * number. Observed on a recorded ELMS grid:
+ * Shared memory has no car-number or team field, but it does not need either:
+ * LMU names every entry `<Team> #<Number>:<Series>`, and both are in there.
+ * Observed on a recorded ELMS grid:
  *
  * ```
- * DKR Engineering #3:ELMS26        -> 3
- * Proton Competition #88:ELMS26    -> 88
- * Team WRT 2026 #32:WEC            -> 32
+ * DKR Engineering #3:ELMS26        -> "DKR Engineering", 3
+ * Proton Competition #88:ELMS26    -> "Proton Competition", 88
+ * Team WRT 2026 #32:WEC            -> "Team WRT 2026", 32
  * ```
  *
  * The alternative source is `/rest/watch/standings`, whose `carNumber` field is
@@ -55,4 +55,21 @@ export const lmuCarNumberRaw = (vehicleName?: string): number | undefined => {
   if (!number || !/^\d+$/.test(number)) return undefined;
   const parsed = Number.parseInt(number, 10);
   return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+/**
+ * The team an entry is run by: whatever precedes the number.
+ *
+ * Undefined when the name carries no number, because then there is nothing to
+ * mark where a team name would end -- an AI entry reads "Ferrari 296 GT3",
+ * which is a car and not a team. The mapper previously used the driver's own
+ * name here, which was never right; it was simply never visible, because LMU
+ * reports no team racing and the column is gated on that.
+ */
+export const lmuTeamName = (vehicleName?: string): string | undefined => {
+  if (!vehicleName) return undefined;
+  const hash = vehicleName.indexOf('#');
+  if (hash <= 0) return undefined;
+  const team = vehicleName.slice(0, hash).trim();
+  return team.length > 0 ? team : undefined;
 };

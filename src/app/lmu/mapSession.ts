@@ -25,7 +25,7 @@ import type { LmuDriverRating, LmuRestSession } from '@irdashies/types';
  */
 export const LMU_PIT_SPEED_LIMIT_KPH = 60;
 import { lapTimeOrAbsent } from './sentinels';
-import { lmuCarNumber, lmuCarNumberRaw } from './carNumber';
+import { lmuCarNumber, lmuCarNumberRaw, lmuTeamName } from './entryName';
 
 type Raw = import('./native').LmuRawSession;
 
@@ -346,7 +346,11 @@ export function mapLmuSession(
     Initials: null,
     UserID: 0,
     TeamID: 0,
-    TeamName: d.name,
+    // The team the entry is run by, from the same name the number comes from.
+    // This was the driver's own name, which was never right -- it was only
+    // never seen, because LMU reports no team racing and the column is gated
+    // on WeekendInfo.TeamRacing.
+    TeamName: lmuTeamName(d.vehicleName) ?? '',
     CarNumber: lmuCarNumber(d.vehicleName) ?? DEFAULT_CAR_NUMBER(d.id),
     CarNumberRaw: lmuCarNumberRaw(d.vehicleName) ?? d.id + 1,
     CarPath: d.vehFilename,
