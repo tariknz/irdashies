@@ -441,6 +441,31 @@ describe('mapLmuSession driver nationality', () => {
     expect(driver?.LmuRating).toBeUndefined();
   });
 
+  it('takes the car number from the entry name, not the slot', () => {
+    // The fixture's first entry is "Team WRT 2026 #32:WEC" at slot id 0, so
+    // the old slot-index default produced "1" for car 32. Join order decided
+    // every number on the grid.
+    const raw = fixture();
+    const s = mapLmuSession(raw);
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
+    expect(driver?.CarNumber).toBe('32');
+    expect(driver?.CarNumberRaw).toBe(32);
+  });
+
+  it('falls back to the slot for an entry with no number in its name', () => {
+    // Real recordings carry these: an AI entry named after its car alone.
+    const raw = fixture();
+    const slotless = raw.drivers.find((d) => !d.vehicleName.includes('#'));
+    if (!slotless) throw new Error('fixture needs an entry with no number');
+    const s = mapLmuSession(raw);
+
+    const driver = s.DriverInfo.Drivers.find(
+      (d) => d.UserName === slotless.name
+    );
+    expect(driver?.CarNumber).toBe(String(slotless.id + 1));
+  });
+
   it('attaches a looked-up rating to the matching driver', () => {
     // The ranks path through the mapper, which nothing covered: every other
     // test here passes nationalities only, so a break between ratingFor and

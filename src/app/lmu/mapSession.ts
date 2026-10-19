@@ -25,12 +25,19 @@ import type { LmuDriverRating, LmuRestSession } from '@irdashies/types';
  */
 export const LMU_PIT_SPEED_LIMIT_KPH = 60;
 import { lapTimeOrAbsent } from './sentinels';
+import { lmuCarNumber, lmuCarNumberRaw } from './carNumber';
 
 type Raw = import('./native').LmuRawSession;
 
-// LMU shared memory has no car numbers or series metadata. Drivers are
-// presented by their slot index; replace CarNumber sourcing if a REST/league
-// datasource is added later.
+/**
+ * The fallback when an entry's name carries no number.
+ *
+ * The real number is embedded in `vehicleName` -- see carNumber.ts -- and this
+ * is only for a name in a shape that parse does not recognise, such as an AI
+ * entry named after its car alone. The slot index is not a car number and
+ * changes with join order, so it is a last resort rather than the default it
+ * used to be.
+ */
 const DEFAULT_CAR_NUMBER = (carIdx: number) => String(carIdx + 1);
 const LMU_TRACK_ID_OFFSET = 1_000_000;
 const DEFAULT_MAX_RPM = 8500;
@@ -340,8 +347,8 @@ export function mapLmuSession(
     UserID: 0,
     TeamID: 0,
     TeamName: d.name,
-    CarNumber: DEFAULT_CAR_NUMBER(d.id),
-    CarNumberRaw: d.id + 1,
+    CarNumber: lmuCarNumber(d.vehicleName) ?? DEFAULT_CAR_NUMBER(d.id),
+    CarNumberRaw: lmuCarNumberRaw(d.vehicleName) ?? d.id + 1,
     CarPath: d.vehFilename,
     CarClassID: d.classId,
     CarID: resolveLmuCarId(d.vehicleModel ?? d.vehicleName),
