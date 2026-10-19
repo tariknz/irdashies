@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { LmuBadge } from './LmuBadge';
-import { LMU_ART_HEIGHT } from './lmuRankArt';
+import { LMU_ART_CLASSES } from './lmuRankArt';
 
 /**
  * The achievement badge column.
@@ -43,9 +43,10 @@ describe('LmuBadge', () => {
     expect(container.textContent).toBe('');
   });
 
-  it('draws the art at the shared size', () => {
+  it('draws the art at the shared size, unshrinkable', () => {
     // The plates and the badge sit side by side; a difference reads as a bug.
+    // max-w-none is what stops the table compressing it to fit the row.
     const { container } = render(<LmuBadge badge="sr-saint" />);
-    expect(container.querySelector('img')?.className).toContain(LMU_ART_HEIGHT);
+    expect(container.querySelector('img')?.className).toBe(LMU_ART_CLASSES);
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  LMU_ART_CLASSES,
   LMU_ART_HEIGHT,
   lmuArtCounts,
   lmuBadgeArt,
@@ -83,10 +84,20 @@ describe('lmuUsesRankArt', () => {
   });
 });
 
-describe('LMU_ART_HEIGHT', () => {
+describe('LMU_ART_CLASSES', () => {
   it('is one height for every piece of LMU art', () => {
     // Pinned so a change is deliberate: it sets the standings row height, and
     // the plates and the badge have to agree or the pair looks wrong.
-    expect(LMU_ART_HEIGHT).toBe('h-[4.5em]');
+    expect(LMU_ART_HEIGHT).toBe('h-[2.25em]');
+    expect(LMU_ART_CLASSES).toContain(LMU_ART_HEIGHT);
+  });
+
+  it('refuses to let the table shrink the art', () => {
+    // The load-bearing class. The standings table is `w-full table-auto` in an
+    // overflow-hidden box and Tailwind's preflight gives images
+    // `max-width: 100%`, so without this the layout pass compresses the art to
+    // fit the row -- it paints full size and is squashed a frame later, which
+    // reads as the height being ignored rather than as a width constraint.
+    expect(LMU_ART_CLASSES).toContain('max-w-none');
   });
 });

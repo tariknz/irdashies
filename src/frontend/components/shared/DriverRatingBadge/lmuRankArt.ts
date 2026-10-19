@@ -77,11 +77,25 @@ export const lmuBadgeArt = (badge?: string): string | undefined =>
  * row, and a difference between them reads as a mistake. In `em`, so a widget
  * scaled by font size takes the art with it.
  *
- * 4.5em is three times the 1.5em this started at: the plates carry a rank
- * letter and a tier number inside them, and at 1.5em neither was legible.
- * It does set the row height on a standings widget, which is the trade.
+ * The size that actually made these legible was not this number. The standings
+ * table is `w-full table-auto` inside an `overflow-hidden` box, and Tailwind's
+ * preflight gives every image `max-width: 100%` -- so the table's layout pass
+ * compressed the art to fit the row. It painted at full size and was squashed
+ * a frame later, which looked like the height being ignored. `LMU_ART_CLASSES`
+ * carries the `max-w-none` that stops it.
+ *
+ * With that fixed, 2.25em draws larger than 4.5em ever did while leaving the
+ * row close to its normal height.
  */
-export const LMU_ART_HEIGHT = 'h-[4.5em]';
+export const LMU_ART_HEIGHT = 'h-[2.25em]';
+
+/**
+ * Every class a piece of LMU artwork needs.
+ *
+ * `max-w-none` is the load-bearing one: without it the table may compress the
+ * image however much it likes, and the height above becomes a suggestion.
+ */
+export const LMU_ART_CLASSES = `${LMU_ART_HEIGHT} w-auto max-w-none shrink-0`;
 
 /** For diagnostics and tests: what was actually bundled. */
 export const lmuArtCounts = () => ({

@@ -1,4 +1,4 @@
-import { LMU_ART_HEIGHT, lmuBadgeArt } from './lmuRankArt';
+import { LMU_ART_CLASSES, lmuBadgeArt } from './lmuRankArt';
 
 export interface LmuBadgeProps {
   /**
@@ -31,12 +31,7 @@ export const LmuBadge = ({ badge }: LmuBadgeProps) => {
   const art = lmuBadgeArt(badge);
   if (art) {
     return (
-      <img
-        src={art}
-        alt={badge}
-        title={badge}
-        className={`${LMU_ART_HEIGHT} w-auto shrink-0`}
-      />
+      <img src={art} alt={badge} title={badge} className={LMU_ART_CLASSES} />
     );
   }
 

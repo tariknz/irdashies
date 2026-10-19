@@ -1,5 +1,5 @@
 import type { LmuDriverRating, LmuRank } from '@irdashies/types';
-import { LMU_ART_HEIGHT, lmuRankArt, type LmuRankKind } from './lmuRankArt';
+import { LMU_ART_CLASSES, lmuRankArt, type LmuRankKind } from './lmuRankArt';
 
 export interface LmuRatingBadgeProps {
   rating?: LmuDriverRating;
@@ -107,12 +107,7 @@ const Plate = ({
   if (!art)
     return <Chip rank={rank} tier={tier} isMinimal={isMinimal} title={title} />;
   return (
-    <img
-      src={art}
-      alt={title}
-      title={title}
-      className={`${LMU_ART_HEIGHT} w-auto shrink-0`}
-    />
+    <img src={art} alt={title} title={title} className={LMU_ART_CLASSES} />
   );
 };
 
