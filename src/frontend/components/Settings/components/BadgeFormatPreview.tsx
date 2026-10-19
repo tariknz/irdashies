@@ -128,7 +128,7 @@ export const BadgeFormatPreview = ({
       onClick={onClick}
       className={`px-3 py-1 rounded border cursor-pointer transition-colors inline-flex items-center justify-center ${
         selected
-          ? 'border-blue-500 bg-blue-500/10'
+          ? 'border-accent-500 bg-accent-500/10'
           : 'border-transparent hover:bg-slate-800'
       }`}
     >

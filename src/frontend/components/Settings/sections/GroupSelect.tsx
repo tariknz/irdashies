@@ -133,7 +133,7 @@ export const GroupSelect = ({
               }}
               className={`w-full px-2 py-2 flex items-center gap-2 text-left text-sm transition-colors ${
                 g.id === value
-                  ? 'bg-sky-600 text-white'
+                  ? 'bg-accent-600 text-on-accent'
                   : 'text-slate-200 hover:bg-slate-600'
               }`}
             >

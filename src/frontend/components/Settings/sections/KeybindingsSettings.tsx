@@ -291,7 +291,7 @@ const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
         className={[
           'px-3 py-1.5 rounded text-sm font-mono min-w-[120px] text-center transition-all cursor-pointer',
           recording
-            ? 'bg-blue-600/30 border border-blue-400 text-blue-300 animate-pulse'
+            ? 'bg-accent-600/30 border border-accent-400 text-accent-300 animate-pulse'
             : 'bg-slate-700 border border-slate-600 text-white hover:bg-slate-600',
         ].join(' ')}
       >
