@@ -90,12 +90,16 @@ const readFile = async (): Promise<string | undefined> => {
 export const loadRadarPoleSideOverrides = (): Promise<boolean> =>
   (loaded ??= (async () => {
     const text = await readFile();
-    if (text === undefined) return !saveBlocked;
+    if (text === undefined) {
+      stored = null;
+      return !saveBlocked;
+    }
     try {
       stored = JSON.parse(text) as unknown;
-    } catch (error) {
+    } catch {
+      stored = null;
       // Not JSON: keep it aside rather than lose it under the next save.
-      logger.error('[RadarPoleSide] Invalid file, moved aside', error);
+      logger.error('[RadarPoleSide] Invalid file, moved aside');
       await fsp.rename(filePath(), `${filePath()}.invalid`).catch(() => {
         saveBlocked = true;
       });

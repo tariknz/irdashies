@@ -259,10 +259,14 @@ export class RadarHazardTracker {
     }
 
     if (off) {
+      state.slowSince = -1;
       return time - state.offSince >= OFF_HOLD_S ? 'off' : null;
     }
     if (state.rejoinedAt >= 0) {
-      if (time - state.rejoinedAt <= REJOIN_S) return 'rejoin';
+      if (time - state.rejoinedAt <= REJOIN_S) {
+        state.slowSince = -1;
+        return 'rejoin';
+      }
       state.rejoinedAt = -1;
     }
 
@@ -271,14 +275,13 @@ export class RadarHazardTracker {
     } else {
       state.stoppedSince = -1;
     }
-    if (state.stoppedSince >= 0 && time - state.stoppedSince >= SLOW_HOLD_S) {
-      return 'crash';
-    }
     if (
-      state.droppedFrom >= 0 &&
-      reachable &&
-      time - state.droppedAt >= SUDDEN_HOLD_S
+      (state.stoppedSince >= 0 && time - state.stoppedSince >= SLOW_HOLD_S) ||
+      (state.droppedFrom >= 0 &&
+        reachable &&
+        time - state.droppedAt >= SUDDEN_HOLD_S)
     ) {
+      state.slowSince = -1;
       return 'crash';
     }
 

@@ -79,8 +79,12 @@ export class RadarPoleSideOverrides implements PoleSideSettings {
   }
 
   private load(): PoleSideOverrides {
-    this.overrides ??= parsePoleSideOverrides(this.persistence.read());
-    return this.overrides;
+    if (this.overrides) return this.overrides;
+    const raw = this.persistence.read();
+    const parsed = parsePoleSideOverrides(raw);
+    // undefined: the file is not read yet, so do not keep an empty answer.
+    if (raw !== undefined) this.overrides = parsed;
+    return parsed;
   }
 
   override(
@@ -126,30 +130,17 @@ export class RadarPoleSideOverrides implements PoleSideSettings {
     const poleLeft = !current;
     // Only a real difference from the table is kept.
     const before = Object.hasOwn(stored, key) ? stored[key] : undefined;
-    const sides = Object.fromEntries(
-      POLE_SITUATIONS.map((which): [PoleSituation, boolean | undefined] => [
-        which,
-        which === situation
-          ? poleLeft === tableLeft
-            ? undefined
-            : poleLeft
-          : before?.[which],
-      ])
-    ) as Record<PoleSituation, boolean | undefined>;
+    const entry: PoleSideCorrection = {
+      ...before,
+      [situation]: poleLeft === tableLeft ? undefined : poleLeft,
+    };
+    // A grid has no table: it keeps the table the start or restart recorded.
+    if (situation !== 'grid') entry.table = tableLeft;
     const overrides: PoleSideOverrides = Object.fromEntries(
       Object.entries(stored).filter(([id]) => id !== key)
     );
-    if (POLE_SITUATIONS.some((which) => sides[which] !== undefined)) {
-      overrides[key] = {
-        ...Object.fromEntries(
-          POLE_SITUATIONS.filter((which) => sides[which] !== undefined).map(
-            (which) => [which, sides[which]]
-          )
-        ),
-        ...(situation !== 'grid'
-          ? { table: tableLeft }
-          : before?.table !== undefined && { table: before.table }),
-      };
+    if (POLE_SITUATIONS.some((which) => entry[which] !== undefined)) {
+      overrides[key] = JSON.parse(JSON.stringify(entry)) as PoleSideCorrection;
     }
     this.persistence.write(overrides);
     this.overrides = overrides;

@@ -93,9 +93,11 @@ export const drawHazardMarker = (
   hazard: RadarDrawHazard,
   others: number,
   style: RadarStyle,
-  flash: number
+  flash: number,
+  /** Where the road is drawn across the disc, as `roadLateral` gives it. */
+  roadLateral = 0
 ) => {
-  projector.project(hazard.dist, 0, pose);
+  projector.project(hazard.dist, roadLateral, pose);
   let bearing = Math.atan2(pose.y - centre, pose.x - centre);
   // Measured from straight up, then kept in front of us.
   let fromUp = bearing + Math.PI / 2;

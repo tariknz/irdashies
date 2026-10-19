@@ -109,6 +109,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
 
   private trackLength = 0;
   private readonly excluded = new Set<number>();
+  /** The cars on the focus car's side of the pit wall, reused every tick. */
+  private readonly sameSide: RadarCar[] = [];
   private previousPcts: number[] = [];
   private speeds: number[] = [];
   private previousTime = -1;
@@ -156,6 +158,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
     // and so on; anything that is not road racing is an oval
     const trackType = session?.WeekendInfo?.TrackType ?? '';
     const previousTrackId = this.trackId;
+    const previousTable = this.tablePoleLeft;
     this.trackId = session?.WeekendInfo?.TrackID;
     this.tablePoleLeft = paceFieldPoleLeft(
       this.trackId,
@@ -163,8 +166,13 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       trackType !== '' && !/road|rally/i.test(trackType)
     );
     // iRacing sends session info again and again; only a new track starts the
-    // pole side over, or a flip would lose its message and its situation.
-    if (!this.poleTrackKnown || this.trackId !== previousTrackId) {
+    // pole side over, or a flip would lose its message and its situation. A
+    // corrected track name that changes the table side starts it over too.
+    if (
+      !this.poleTrackKnown ||
+      this.trackId !== previousTrackId ||
+      this.tablePoleLeft !== previousTable
+    ) {
       this.poleTrackKnown = true;
       this.situation = 'start';
       this.poleSides.setTrack(this.trackId, this.tablePoleLeft, this.situation);
@@ -274,7 +282,11 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       cars.sort((a, b) => Math.abs(a.dist) - Math.abs(b.dist));
       // Cars across the pit wall are beside the track, not in a lane of it.
       const focusOnPit = onPitRoad[focus] === true;
-      const sameSide = cars.filter((car) => car.onPitRoad === focusOnPit);
+      const sameSide = this.sameSide;
+      sameSide.length = 0;
+      for (const car of cars) {
+        if (car.onPitRoad === focusOnPit) sameSide.push(car);
+      }
       const spotterSpeaks = this.assignLanes(
         frame,
         time,

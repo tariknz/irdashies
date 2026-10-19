@@ -582,7 +582,11 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
         hazards[beyond],
         others,
         style,
-        flash
+        flash,
+        roadLateral(
+          scene.roadLane ?? 0,
+          scene.laneWidth ?? style.carWidth + 0.7
+        )
       );
     }
   }
