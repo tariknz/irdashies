@@ -27,7 +27,7 @@ import {
   useFirstObservedLap,
   useActiveSimulator,
 } from '@irdashies/context';
-import { RATING_COLUMN_IDS, simulatorHasDriverRatings } from '@irdashies/types';
+import { hiddenRatingColumns } from '@irdashies/types';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 import { computeStintLap } from './components/DriverInfoRow/cells/lapCountUtils';
 import { lmuRatingFor } from './lmuRatingFor';
@@ -41,6 +41,7 @@ export const COLUMN_LABELS: Record<string, string> = {
   teamName: '',
   pitStatus: 'PIT',
   carManufacturer: '',
+  lmuBadge: '',
   badge: '',
   iratingChange: '',
   positionChange: '',
@@ -57,9 +58,6 @@ export const COLUMN_LABELS: Record<string, string> = {
 };
 
 const COLUMN_ORDER = Object.keys(COLUMN_LABELS);
-
-/** Stable identity, so the iRacing path never invalidates dependent memos. */
-const EMPTY_HIDDEN_COLUMNS: ReadonlySet<string> = new Set<string>();
 
 export interface OrderedColumn {
   id: string;
@@ -204,9 +202,10 @@ export const Standings = () => {
   const simulator = useActiveSimulator();
   const hiddenColumns = useMemo<ReadonlySet<string>>(
     () =>
-      simulatorHasDriverRatings(simulator)
-        ? EMPTY_HIDDEN_COLUMNS
-        : new Set<string>(RATING_COLUMN_IDS),
+      // Per column: both sims fill `badge` -- an iRacing licence or an LMU
+      // rank pair -- while iratingChange is iRacing's alone and lmuBadge is
+      // LMU's. One flag per simulator could not say that, and hid LMU's ranks.
+      hiddenRatingColumns(simulator),
     [simulator]
   );
 

@@ -17,8 +17,15 @@ vi.mock('@irdashies/context', () => ({
  */
 
 // Every column this comparison covers, enabled, so the lists are non-trivial.
+//
+// Each must be named explicitly: getOrderedColumns requires `enabled === true`
+// while the row builder defaults a missing flag to true, so a column left out
+// of this object would appear as a cell with no header and fail the
+// comparison below for the wrong reason. deepMergeConfig fills every flag in a
+// real config, which is why the asymmetry does not bite outside this fixture.
 const config = {
   badge: { enabled: true },
+  lmuBadge: { enabled: true },
   iratingChange: { enabled: true },
   delta: { enabled: true },
   fastestTime: { enabled: true },

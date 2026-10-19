@@ -15,7 +15,7 @@ import {
   usePitLaneStore,
   useActiveSimulator,
 } from '@irdashies/context';
-import { RATING_COLUMN_IDS, simulatorHasDriverRatings } from '@irdashies/types';
+import { hiddenRatingColumns } from '@irdashies/types';
 import {
   useRelativeSettings,
   useDriverRelatives,
@@ -31,9 +31,6 @@ import { getFlag } from '@irdashies/utils/getFlag';
 import { getFlagColor } from '@irdashies/utils/getFlagColor';
 import { lmuRatingFor } from './lmuRatingFor';
 
-/** Stable identity, so the iRacing path never invalidates dependent memos. */
-const EMPTY_HIDDEN_COLUMNS: ReadonlySet<string> = new Set<string>();
-
 export const Relative = () => {
   const settings = useRelativeSettings();
   const generalSettings = useGeneralSettings();
@@ -42,9 +39,10 @@ export const Relative = () => {
   const simulator = useActiveSimulator();
   const hiddenColumns = useMemo<ReadonlySet<string>>(
     () =>
-      simulatorHasDriverRatings(simulator)
-        ? EMPTY_HIDDEN_COLUMNS
-        : new Set<string>(RATING_COLUMN_IDS),
+      // Per column: both sims fill `badge` -- an iRacing licence or an LMU
+      // rank pair -- while iratingChange is iRacing's alone and lmuBadge is
+      // LMU's. One flag per simulator could not say that, and hid LMU's ranks.
+      hiddenRatingColumns(simulator),
     [simulator]
   );
   const buffer = settings?.buffer ?? 3;
