@@ -51,8 +51,13 @@ export interface StreamChatEmotesSnapshot {
 
 export const STREAM_CHAT_MAX_MESSAGES = 100;
 
-/** `@handle` as YouTube shows it; the leading `@` is required. */
-export const YOUTUBE_HANDLE_PATTERN = /^@[A-Za-z0-9._-]{3,30}$/;
+/**
+ * `@handle` as YouTube shows it; the leading `@` is required. Handles are
+ * localized, so any Unicode letter, mark or digit is allowed (3-30 characters
+ * counted as code points) next to `.`, `_` and `-`. Separators such as `/`
+ * stay out, so a handle cannot alter the lookup URL.
+ */
+export const YOUTUBE_HANDLE_PATTERN = /^@[\p{L}\p{M}\p{N}._-]{3,30}$/u;
 
 /** Twitch login names: 4-25 characters, letters, digits and underscore. */
 export const TWITCH_CHANNEL_PATTERN = /^[A-Za-z0-9_]{1,25}$/;

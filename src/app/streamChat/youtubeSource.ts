@@ -27,12 +27,14 @@ interface YtBadge {
   label?: string;
   custom_thumbnail?: YtThumbnail[];
 }
+/** youtubei.js returns Text nodes for names; test doubles use plain strings. */
+type YtText = string | { text?: string; toString?: () => string };
 export interface YtChatItem {
   type?: string;
   id?: string;
-  message?: { text?: string; runs?: YtRun[] };
+  message?: { text?: YtText; runs?: YtRun[] };
   author?: {
-    name?: string;
+    name?: YtText;
     badges?: YtBadge[];
     is_moderator?: boolean;
     is_creator?: boolean;
@@ -114,7 +116,12 @@ const toSegments = (
 
 const toBadges = (author: NonNullable<YtChatItem['author']>) => {
   const badges: StreamChatBadge[] = [];
-  if (author.is_creator) badges.push({ kind: 'owner', label: 'Owner' });
+  // Live chat authors never get is_creator (youtubei.js sets it only for
+  // comment authors) and there is no is_owner: the owner is a badge whose icon
+  // is OWNER, the same way is_moderator is derived from a MODERATOR icon.
+  const isOwner =
+    author.is_creator || author.badges?.some((b) => b.icon_type === 'OWNER');
+  if (isOwner) badges.push({ kind: 'owner', label: 'Owner' });
   if (author.is_moderator)
     badges.push({ kind: 'moderator', label: 'Moderator' });
   if (author.is_verified) badges.push({ kind: 'verified', label: 'Verified' });
@@ -133,6 +140,14 @@ const toBadges = (author: NonNullable<YtChatItem['author']>) => {
   return badges;
 };
 
+const readText = (value: YtText | undefined): string | undefined => {
+  if (typeof value === 'string') return value;
+  if (!value || typeof value !== 'object') return undefined;
+  if (typeof value.text === 'string') return value.text;
+  const str = value.toString?.();
+  return typeof str === 'string' && str !== '[object Object]' ? str : undefined;
+};
+
 /**
  * Turns a YouTube.js chat action into a message, or undefined for everything
  * that is not an ordinary text message (banners, deletions, paid items...).
@@ -141,8 +156,8 @@ export const parseYoutubeAction = (action: YtChatAction) => {
   const item = action.item;
   if (action.type !== 'AddChatItemAction' || !item) return undefined;
   if (item.type !== 'LiveChatTextMessage') return undefined;
-  const user = item.author?.name;
-  const text = item.message?.text;
+  const user = readText(item.author?.name);
+  const text = readText(item.message?.text);
   if (!user || !text) return undefined;
   const segments = toSegments(item.message ?? {});
   return {
@@ -195,7 +210,9 @@ export const createYoutubeSource = (
     yt: YtClient,
     handle: string
   ): Promise<YtVideoInfo | undefined> => {
-    const endpoint = await yt.resolveURL(`https://www.youtube.com/${handle}`);
+    const endpoint = await yt.resolveURL(
+      `https://www.youtube.com/@${encodeURIComponent(handle.slice(1))}`
+    );
     const browseId = endpoint.payload?.browseId;
     if (!browseId) throw new Error('Channel not found');
     const channel = await yt.getChannel(browseId);

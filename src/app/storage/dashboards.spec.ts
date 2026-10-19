@@ -58,6 +58,30 @@ describe('dashboards', () => {
   });
 
   describe('Twitch Chat to Stream Chat migration', () => {
+    it('migrates twitchchat in withDashboardDefaults, as used for inactive profiles and imports', () => {
+      const layout = { x: 5, y: 6, width: 300, height: 200 };
+      const result = withDashboardDefaults({
+        ...defaultDashboard,
+        widgets: [
+          {
+            id: 'twitchchat',
+            enabled: true,
+            layout,
+            config: { channel: 'oldchannel' },
+          },
+        ],
+      });
+
+      expect(result.widgets.some((w) => w.id === 'twitchchat')).toBe(false);
+      const streamChats = result.widgets.filter((w) => w.id === 'streamchat');
+      expect(streamChats).toHaveLength(1);
+      expect(streamChats[0].enabled).toBe(true);
+      expect(streamChats[0].layout).toEqual(layout);
+      expect(streamChats[0].config).toMatchObject({
+        twitch: { channel: 'oldchannel' },
+      });
+    });
+
     it('loads a saved twitchchat widget as streamchat with its settings', () => {
       const layout = { x: 11, y: 22, width: 333, height: 444 };
       const saved = {

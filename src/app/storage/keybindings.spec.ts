@@ -32,6 +32,54 @@ describe('keybindings storage', () => {
       );
     });
 
+    it.each([['Alt+7'], ['gamepad:btn0+gamepad:btn5']])(
+      'moves a legacy toggle-widget:twitchchat binding (%s) to streamchat',
+      (accelerator) => {
+        mockReadData.mockReturnValue({
+          'toggle-widget:twitchchat': {
+            accelerator,
+            label: 'Twitch Chat',
+            description: 'Show / hide the Twitch Chat widget',
+            isDefault: false,
+          },
+        });
+
+        const result = getKeybindings();
+
+        expect(result).not.toHaveProperty('toggle-widget:twitchchat');
+        expect(result['toggle-widget:streamchat']).toMatchObject({
+          accelerator,
+          label: 'Stream Chat',
+        });
+        expect(mockWriteData).toHaveBeenCalledWith(
+          'keybindings',
+          expect.not.objectContaining({
+            'toggle-widget:twitchchat': expect.anything(),
+          })
+        );
+      }
+    );
+
+    it('keeps an existing streamchat binding over the legacy one', () => {
+      mockReadData.mockReturnValue({
+        'toggle-widget:twitchchat': {
+          accelerator: 'Alt+7',
+          label: 'Twitch Chat',
+          description: '',
+        },
+        'toggle-widget:streamchat': {
+          accelerator: 'Alt+8',
+          label: 'Stream Chat',
+          description: '',
+        },
+      });
+
+      const result = getKeybindings();
+
+      expect(result).not.toHaveProperty('toggle-widget:twitchchat');
+      expect(result['toggle-widget:streamchat'].accelerator).toBe('Alt+8');
+    });
+
     it('preserves stored dynamic widget-toggle entries through the merge', () => {
       const stored: Partial<KeybindingsMap> = {
         'toggle-widget:standings': {

@@ -2,6 +2,7 @@ import type { KeybindingActionId, KeybindingsMap } from '@irdashies/types';
 import { DEFAULT_KEYBINDINGS } from '@irdashies/types';
 import { isValidWidgetToggleActionId } from '@irdashies/shared';
 import { readData, writeData } from './storage';
+import { migrateLegacyStreamChatKeybindings } from './streamChatMigration';
 
 const STORAGE_KEY = 'keybindings';
 
@@ -12,10 +13,15 @@ export function getKeybindings(): KeybindingsMap {
     return { ...DEFAULT_KEYBINDINGS };
   }
 
+  // Widgets renamed in a release must move their toggle binding first, or it
+  // keeps targeting an id no widget has.
+  const migrated = migrateLegacyStreamChatKeybindings(stored);
+  if (migrated !== stored) writeData(STORAGE_KEY, migrated);
+
   // Merge with defaults so new actions added in future versions are included
   const merged: KeybindingsMap = { ...DEFAULT_KEYBINDINGS };
-  for (const key of Object.keys(stored) as KeybindingActionId[]) {
-    const entry = stored[key];
+  for (const key of Object.keys(migrated) as KeybindingActionId[]) {
+    const entry = migrated[key];
     if (!entry) continue;
     // Keep stored overrides of known static actions, plus any well-formed
     // dynamic per-widget toggles (which have no factory default to merge
