@@ -84,10 +84,10 @@ export const lmuBadgeArt = (badge?: string): string | undefined =>
  * a frame later, which looked like the height being ignored. `LMU_ART_CLASSES`
  * carries the `max-w-none` that stops it.
  *
- * With that fixed, 2.25em draws larger than 4.5em ever did while leaving the
- * row close to its normal height.
+ * With that fixed, 2em draws larger than 4.5em ever did while leaving the row
+ * close to its normal height.
  */
-export const LMU_ART_HEIGHT = 'h-[2.25em]';
+export const LMU_ART_HEIGHT = 'h-[2em]';
 
 /**
  * Every class a piece of LMU artwork needs.

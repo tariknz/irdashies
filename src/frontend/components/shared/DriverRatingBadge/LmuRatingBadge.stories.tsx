@@ -67,7 +67,7 @@ export const AllRanks: Story = {
 
 /** The sim's own rank plates, bundled rather than fetched. */
 export const RankArt: Story = {
-  args: { rating: rating(), useArt: true },
+  args: { rating: rating(), format: 'plates' },
 };
 
 /**
@@ -88,7 +88,7 @@ export const ArtAgainstText: Story = {
                 safetyRank: rank,
                 safetyTier: 3,
               }}
-              useArt
+              format="plates"
             />
             <LmuRatingBadge
               rating={{

@@ -1,6 +1,7 @@
 import type { DashboardWidget } from './dashboardLayout';
 import type { CornerNameOverlayConfig } from './cornerName';
 import type { LapTraceColors, LapTraceSound, LapTraceSource } from './lapTrace';
+import type { LmuBadgeFormat } from './lmuRating';
 
 // ===========================
 // Shared primitive types
@@ -165,7 +166,12 @@ export interface StandingsConfig {
    * column simply renders nothing there.
    */
   lmuBadge: { enabled: boolean };
-  badge: { enabled: boolean; badgeFormat: StandingsBadgeFormat };
+  badge: {
+    enabled: boolean;
+    badgeFormat: StandingsBadgeFormat;
+    /** How the LMU rank pair is drawn; see LmuBadgeFormat. */
+    lmuFormat?: LmuBadgeFormat;
+  };
   delta: { enabled: boolean };
   gap: { enabled: boolean; decimalPlaces?: number };
   interval: { enabled: boolean; decimalPlaces?: number };
@@ -235,7 +241,12 @@ export interface RelativeConfig {
    * column simply renders nothing there.
    */
   lmuBadge: { enabled: boolean };
-  badge: { enabled: boolean; badgeFormat: RelativeBadgeFormat };
+  badge: {
+    enabled: boolean;
+    badgeFormat: RelativeBadgeFormat;
+    /** How the LMU rank pair is drawn; see LmuBadgeFormat. */
+    lmuFormat?: LmuBadgeFormat;
+  };
   iratingChange: { enabled: boolean };
   positionChange?: { enabled: boolean };
   delta: { enabled: boolean; precision: number };

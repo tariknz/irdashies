@@ -30,18 +30,25 @@ import logger from '../logger';
 const FILE_NAME = 'lmu-driver-ratings.json';
 
 /**
- * How long a rating is trusted. Ratings move after a race, so this is short
- * enough that a driver's standing is not stale for long, and long enough to
- * cover a whole race weekend in one lookup per driver.
+ * How long a rating is trusted.
+ *
+ * Half an hour. A rank and a badge both move as a driver races, and the point
+ * of the cache is to spare the service a lookup per driver per session, not to
+ * show a figure from this morning -- so it expires fast enough that a value
+ * on screen is current, and slowly enough that rejoining the same grid twice
+ * in a row costs nothing.
  */
-export const RATING_TTL_MS = 12 * 60 * 60 * 1000;
+export const RATING_TTL_MS = 30 * 60 * 1000;
 
 /**
- * How long a miss is remembered. Much shorter than a hit: a driver who
- * registers mid-weekend should appear without waiting half a day, but a grid
- * full of AI should not be re-queried every session either.
+ * How long a miss is remembered.
+ *
+ * The same half hour. It used to be shorter than a hit, back when a hit lasted
+ * twelve: a driver who registers mid-weekend should not wait that long. With
+ * both at thirty minutes there is nothing left for the distinction to buy, and
+ * one number is easier to reason about than two.
  */
-export const RATING_MISS_TTL_MS = 60 * 60 * 1000;
+export const RATING_MISS_TTL_MS = 30 * 60 * 1000;
 
 /**
  * Cap on stored entries, oldest evicted first. A busy public lobby turns over

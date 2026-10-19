@@ -495,6 +495,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             rating={rating}
             lmuRating={lmuRating}
             badgeFormat={config?.badge?.badgeFormat}
+            lmuFormat={config?.badge?.lmuFormat}
             isMinimal={badgeMinimal}
             compactMode={compactMode}
           />

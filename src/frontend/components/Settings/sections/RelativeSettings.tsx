@@ -10,6 +10,13 @@ import { TabButton } from '../components/TabButton';
 import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
+import { FormatSelect } from '../components/FormatSelect';
+import { LmuBadgeFormatPreview } from '../components/LmuBadgeFormatPreview';
+import {
+  LMU_BADGE_FORMATS,
+  type LmuBadgeFormat,
+  type RelativeBadgeFormat,
+} from '@irdashies/types';
 import { DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { SessionVisibility } from '../components/SessionVisibility';
 import { DriverNamePreview } from '../components/DriverNamePreview';
@@ -31,6 +38,27 @@ interface SortableSetting {
   configKey: keyof RelativeWidgetSettings['config'];
   hasSubSetting?: boolean;
 }
+
+/**
+ * The iRacing rating formats, in the order the dropdown lists them.
+ *
+ * Named here rather than inline so the list is not duplicated between
+ * the two widgets that offer it.
+ */
+const IRACING_BADGE_FORMATS = [
+  'license-color-fullrating-combo',
+  'fullrating-color-no-license',
+  'rating-color-no-license',
+  'license-color-fullrating-bw',
+  'license-color-rating-bw',
+  'rating-only-color-rating-bw',
+  'license-color-rating-bw-no-license',
+  'license-bw-rating-bw',
+  'rating-only-bw-rating-bw',
+  'license-bw-rating-bw-no-license',
+  'rating-bw-no-license',
+  'fullrating-bw-no-license',
+] as const;
 
 const sortableSettings: SortableSetting[] = [
   { id: 'position', label: 'Position', configKey: 'position' },
@@ -127,48 +155,47 @@ const DisplaySettingsList = ({
           >
             {setting.configKey === 'badge' &&
               (configValue as { enabled: boolean }).enabled && (
-                <div className="mt-3">
-                  <div className="flex flex-wrap gap-3 justify-end">
-                    {(
-                      [
-                        'license-color-fullrating-combo',
-                        'fullrating-color-no-license',
-                        'rating-color-no-license',
-                        'license-color-fullrating-bw',
-                        'license-color-rating-bw',
-                        'rating-only-color-rating-bw',
-                        'license-color-rating-bw-no-license',
-                        'license-bw-rating-bw',
-                        'rating-only-bw-rating-bw',
-                        'license-bw-rating-bw-no-license',
-                        'rating-bw-no-license',
-                        'fullrating-bw-no-license',
-                      ] as const
-                    ).map((format) => (
-                      <BadgeFormatPreview
-                        key={format}
-                        format={format}
-                        selected={
-                          (
-                            configValue as {
-                              enabled: boolean;
-                              badgeFormat: string;
-                            }
-                          ).badgeFormat === format
-                        }
-                        onClick={() => {
-                          const cv = settings.config[setting.configKey] as {
-                            enabled: boolean;
-                            badgeFormat: string;
-                            [key: string]: unknown;
-                          };
-                          handleConfigChange({
-                            [setting.configKey]: { ...cv, badgeFormat: format },
-                          });
-                        }}
-                      />
-                    ))}
-                  </div>
+                <div className="mt-3 flex flex-col items-end gap-2">
+                  <FormatSelect
+                    label="iRacing"
+                    value={
+                      (configValue as { badgeFormat: RelativeBadgeFormat })
+                        .badgeFormat
+                    }
+                    options={IRACING_BADGE_FORMATS}
+                    renderOption={(format) => (
+                      <BadgeFormatPreview format={format} />
+                    )}
+                    onChange={(badgeFormat) => {
+                      const cv = settings.config[setting.configKey] as Record<
+                        string,
+                        unknown
+                      >;
+                      handleConfigChange({
+                        [setting.configKey]: { ...cv, badgeFormat },
+                      });
+                    }}
+                  />
+                  <FormatSelect
+                    label="Le Mans Ultimate"
+                    value={
+                      (configValue as { lmuFormat?: LmuBadgeFormat })
+                        .lmuFormat ?? 'plates'
+                    }
+                    options={LMU_BADGE_FORMATS}
+                    renderOption={(format) => (
+                      <LmuBadgeFormatPreview format={format} />
+                    )}
+                    onChange={(lmuFormat) => {
+                      const cv = settings.config[setting.configKey] as Record<
+                        string,
+                        unknown
+                      >;
+                      handleConfigChange({
+                        [setting.configKey]: { ...cv, lmuFormat },
+                      });
+                    }}
+                  />
                 </div>
               )}
             {setting.configKey === 'driverName' &&

@@ -42,6 +42,7 @@ describe('LmuRatingBadge', () => {
           safetyRank: 'Silver',
           safetyTier: 2,
         }}
+        format="chip-both"
       />
     );
 
@@ -59,6 +60,7 @@ describe('LmuRatingBadge', () => {
           safetyRank: 'Silver',
           safetyTier: 2,
         }}
+        format="chip-both"
       />
     );
 
@@ -77,6 +79,7 @@ describe('LmuRatingBadge', () => {
     const { container } = render(
       <LmuRatingBadge
         rating={{ driverRank: 'Bronze', safetyRank: 'Platinum' }}
+        format="chip-both"
       />
     );
 
@@ -90,6 +93,7 @@ describe('LmuRatingBadge', () => {
       <LmuRatingBadge
         rating={{ driverRank: 'Gold', driverTier: 3, safetyRank: 'Silver' }}
         showSafety={false}
+        format="chip-both"
       />
     );
 
@@ -105,7 +109,7 @@ describe('LmuRatingBadge', () => {
           safetyRank: 'Silver',
           safetyTier: 2,
         }}
-        useArt
+        format="plates"
       />
     );
 
@@ -126,12 +130,76 @@ describe('LmuRatingBadge', () => {
     const { container } = render(
       <LmuRatingBadge
         rating={{ driverRank: 'Pro', safetyRank: 'Gold', safetyTier: 1 }}
-        useArt
+        format="plates"
       />
     );
 
     expect(container.querySelectorAll('img')).toHaveLength(1);
     expect(container.textContent).toBe('PRO');
+  });
+
+  it('drops the chrome from the safety chip only', () => {
+    // chip-dr: the driver rating is the one most people want to pick out, and
+    // the safety rating reads as noise beside it for some.
+    const { container } = render(
+      <LmuRatingBadge
+        rating={{
+          driverRank: 'Gold',
+          driverTier: 3,
+          safetyRank: 'Silver',
+          safetyTier: 2,
+        }}
+        format="chip-dr"
+      />
+    );
+
+    const chips = [...container.querySelectorAll('[title]')];
+    expect(chips[0]?.className).toContain('border-2');
+    expect(chips[1]?.className).not.toContain('border-2');
+    // Without a background the colour has to move to the text, or the rank is
+    // unreadable at a glance.
+    expect(chips[1]?.className).toContain('text-[#A7ACB2]');
+    expect(container.textContent).toBe('G3S2');
+  });
+
+  it('drops the chrome from the driver chip only', () => {
+    const { container } = render(
+      <LmuRatingBadge
+        rating={{ driverRank: 'Gold', safetyRank: 'Silver' }}
+        format="chip-sr"
+      />
+    );
+
+    const chips = [...container.querySelectorAll('[title]')];
+    expect(chips[0]?.className).not.toContain('border-2');
+    expect(chips[1]?.className).toContain('border-2');
+  });
+
+  it('drops the chrome from both', () => {
+    const { container } = render(
+      <LmuRatingBadge
+        rating={{ driverRank: 'Gold', safetyRank: 'Silver' }}
+        format="chip-none"
+      />
+    );
+
+    for (const chip of container.querySelectorAll('[title]')) {
+      expect(chip.className).not.toContain('border-2');
+    }
+  });
+
+  it('keeps the chrome on both for chip-both', () => {
+    const { container } = render(
+      <LmuRatingBadge
+        rating={{ driverRank: 'Gold', safetyRank: 'Silver' }}
+        format="chip-both"
+      />
+    );
+
+    for (const chip of container.querySelectorAll('[title]')) {
+      expect(chip.className).toContain('border-2');
+    }
+    expect(container.querySelectorAll('img')).toHaveLength(0);
   });
 
   it('renders nothing without a rank', () => {

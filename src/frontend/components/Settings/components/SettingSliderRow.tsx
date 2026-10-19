@@ -24,7 +24,9 @@ export function SettingSliderRow({
   disabled = false,
 }: SettingSliderRowProps) {
   return (
-    <div className={`space-y-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+    <div
+      className={`space-y-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
+    >
       <label className="text-md text-slate-300">
         {title}
         <span className="text-md text-slate-400">

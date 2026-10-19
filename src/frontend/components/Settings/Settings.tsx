@@ -7,7 +7,5 @@ export const Settings = () => {
     return <>Loading...</>;
   }
 
-  return (
-    <SettingsLayout />
-  );
+  return <SettingsLayout />;
 };

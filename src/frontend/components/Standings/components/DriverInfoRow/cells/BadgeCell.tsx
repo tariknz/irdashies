@@ -1,3 +1,4 @@
+import type { LmuBadgeFormat } from '@irdashies/types';
 import { memo } from 'react';
 import type { LmuDriverRating } from '@irdashies/types';
 import {
@@ -5,7 +6,6 @@ import {
   type DriverRatingBadgeProps,
 } from '../../../../shared/DriverRatingBadge/DriverRatingBadge';
 import { LmuRatingBadge } from '../../../../shared/DriverRatingBadge/LmuRatingBadge';
-import { lmuUsesRankArt } from '../../../../shared/DriverRatingBadge/lmuUsesRankArt';
 
 interface BadgeCellProps {
   license?: string;
@@ -17,6 +17,8 @@ interface BadgeCellProps {
    */
   lmuRating?: LmuDriverRating;
   badgeFormat?: DriverRatingBadgeProps['format'];
+  /** How to draw the LMU rank pair; ignored on every other sim. */
+  lmuFormat?: LmuBadgeFormat;
   isMinimal?: boolean;
   compactMode?: string;
 }
@@ -27,6 +29,7 @@ export const BadgeCell = memo(
     rating,
     lmuRating,
     badgeFormat,
+    lmuFormat,
     isMinimal,
     compactMode,
   }: BadgeCellProps) => {
@@ -42,12 +45,12 @@ export const BadgeCell = memo(
         className={`w-auto whitespace-nowrap text-center ${pxClass}`}
       >
         {lmuRating ? (
-          // The badge format is an iRacing concept; for LMU it only chooses
-          // between the sim's rank plates and the text chips.
+          // Its own setting: the iRacing formats describe a licence and an
+          // iRating, which maps onto nothing in a named rank with a tier.
           <LmuRatingBadge
             rating={lmuRating}
             isMinimal={isMinimal}
-            useArt={lmuUsesRankArt(badgeFormat)}
+            format={lmuFormat}
           />
         ) : (
           <DriverRatingBadge

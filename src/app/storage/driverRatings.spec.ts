@@ -58,14 +58,20 @@ describe('driver rating cache', () => {
     expect(cache.get('a')).toBeUndefined();
   });
 
-  it('expires a miss sooner than a hit', () => {
-    // A driver who registers mid-weekend should appear without waiting out
-    // the full rating TTL.
+  it('expires a hit and a miss together', () => {
+    // They had different lifetimes while a hit lasted twelve hours and a
+    // driver registering mid-weekend should not have waited that long. At
+    // half an hour each there is nothing left for the distinction to buy.
     const cache = createDriverRatingCache(dir, now);
     cache.set('hit', gold);
     cache.set('miss', undefined);
-    clock += RATING_MISS_TTL_MS + 1;
+
+    clock += RATING_TTL_MS - 1;
     expect(cache.get('hit')).toBeDefined();
+    expect(cache.get('miss')).toBeDefined();
+
+    clock += 2;
+    expect(cache.get('hit')).toBeUndefined();
     expect(cache.get('miss')).toBeUndefined();
   });
 
@@ -158,5 +164,19 @@ describe('driver rating cache', () => {
     expect(reloaded.get(`driver-${MAX_CACHED_RATINGS + 49}`)?.rating).toEqual(
       gold
     );
+  });
+});
+
+describe('cache lifetimes', () => {
+  it('expires a rating after half an hour', () => {
+    // A rank and a badge both move as a driver races, so a value on screen
+    // should be current rather than from this morning.
+    expect(RATING_TTL_MS).toBe(30 * 60 * 1000);
+  });
+
+  it('remembers a miss for the same half hour', () => {
+    // One number rather than two: with hits this short there is nothing left
+    // for a separate, shorter miss lifetime to buy.
+    expect(RATING_MISS_TTL_MS).toBe(RATING_TTL_MS);
   });
 });
