@@ -1,5 +1,6 @@
 import { app } from 'electron';
 import fs from 'node:fs';
+import { promises as fsp } from 'node:fs';
 import path from 'node:path';
 import logger from '../logger';
 
@@ -14,6 +15,20 @@ export const writeData = (
   const contents = parseData(filePath);
   contents[key] = value;
   fs.writeFileSync(filePath, JSON.stringify(contents));
+};
+
+/**
+ * Async counterpart of writeData for writes that are not on a startup path.
+ * The file is read right before the write so only `key` changes.
+ */
+export const writeDataAsync = async (
+  key: string,
+  value: unknown,
+  filePath: string = FILEPATH
+) => {
+  const contents = parseData(filePath);
+  contents[key] = value;
+  await fsp.writeFile(filePath, JSON.stringify(contents), 'utf8');
 };
 
 export const readData = <T>(

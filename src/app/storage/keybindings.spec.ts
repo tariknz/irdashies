@@ -5,20 +5,52 @@ import {
   getKeybindings,
   updateKeybinding,
   resetKeybinding,
+  persistKeybindingMigrations,
 } from './keybindings';
 
 const mockReadData = vi.hoisted(() => vi.fn());
 const mockWriteData = vi.hoisted(() => vi.fn());
+const mockWriteDataAsync = vi.hoisted(() => vi.fn());
 
 vi.mock('./storage', () => ({
   readData: mockReadData,
   writeData: mockWriteData,
+  writeDataAsync: mockWriteDataAsync,
 }));
 
 describe('keybindings storage', () => {
   beforeEach(() => {
     mockReadData.mockReset();
     mockWriteData.mockReset();
+    mockWriteDataAsync.mockReset();
+  });
+
+  describe('persistKeybindingMigrations', () => {
+    it('writes a migrated legacy binding back asynchronously', async () => {
+      mockReadData.mockReturnValue({
+        'toggle-widget:twitchchat': {
+          accelerator: 'Alt+7',
+          label: 'Twitch Chat',
+          description: '',
+        },
+      });
+
+      await persistKeybindingMigrations();
+
+      expect(mockWriteData).not.toHaveBeenCalled();
+      const [key, written] = mockWriteDataAsync.mock.calls[0];
+      expect(key).toBe('keybindings');
+      expect(written).not.toHaveProperty('toggle-widget:twitchchat');
+      expect(written['toggle-widget:streamchat'].accelerator).toBe('Alt+7');
+    });
+
+    it('writes nothing when no legacy binding is stored', async () => {
+      mockReadData.mockReturnValue({});
+
+      await persistKeybindingMigrations();
+
+      expect(mockWriteDataAsync).not.toHaveBeenCalled();
+    });
   });
 
   describe('getKeybindings', () => {
@@ -51,12 +83,7 @@ describe('keybindings storage', () => {
           accelerator,
           label: 'Stream Chat',
         });
-        expect(mockWriteData).toHaveBeenCalledWith(
-          'keybindings',
-          expect.not.objectContaining({
-            'toggle-widget:twitchchat': expect.anything(),
-          })
-        );
+        expect(mockWriteData).not.toHaveBeenCalled();
       }
     );
 
