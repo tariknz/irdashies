@@ -1,5 +1,5 @@
 import type { LmuDriverRating, LmuRank } from '@irdashies/types';
-import { lmuRankArt, type LmuRankKind } from './lmuRankArt';
+import { LMU_ART_HEIGHT, lmuRankArt, type LmuRankKind } from './lmuRankArt';
 
 export interface LmuRatingBadgeProps {
   rating?: LmuDriverRating;
@@ -111,7 +111,7 @@ const Plate = ({
       src={art}
       alt={title}
       title={title}
-      className="h-[1.5em] w-auto shrink-0"
+      className={`${LMU_ART_HEIGHT} w-auto shrink-0`}
     />
   );
 };

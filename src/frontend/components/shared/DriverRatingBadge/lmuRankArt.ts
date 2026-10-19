@@ -70,6 +70,19 @@ export const lmuRankArt = (
 export const lmuBadgeArt = (badge?: string): string | undefined =>
   badge ? badges.get(badge) : undefined;
 
+/**
+ * The height every piece of LMU artwork is drawn at.
+ *
+ * One constant because the rank plates and the badge sit side by side in a
+ * row, and a difference between them reads as a mistake. In `em`, so a widget
+ * scaled by font size takes the art with it.
+ *
+ * 4.5em is three times the 1.5em this started at: the plates carry a rank
+ * letter and a tier number inside them, and at 1.5em neither was legible.
+ * It does set the row height on a standings widget, which is the trade.
+ */
+export const LMU_ART_HEIGHT = 'h-[4.5em]';
+
 /** For diagnostics and tests: what was actually bundled. */
 export const lmuArtCounts = () => ({
   ranks: ranks.size,

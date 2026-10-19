@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { lmuArtCounts, lmuBadgeArt, lmuRankArt } from './lmuRankArt';
+import {
+  LMU_ART_HEIGHT,
+  lmuArtCounts,
+  lmuBadgeArt,
+  lmuRankArt,
+} from './lmuRankArt';
 import { LMU_TIERED_RANKS } from '@irdashies/types';
 import { lmuUsesRankArt, LMU_ART_BADGE_FORMAT } from './lmuUsesRankArt';
 
@@ -75,5 +80,13 @@ describe('lmuUsesRankArt', () => {
     expect(lmuUsesRankArt('license-color-rating-bw')).toBe(false);
     expect(lmuUsesRankArt('rating-bw-no-license')).toBe(false);
     expect(lmuUsesRankArt(undefined)).toBe(false);
+  });
+});
+
+describe('LMU_ART_HEIGHT', () => {
+  it('is one height for every piece of LMU art', () => {
+    // Pinned so a change is deliberate: it sets the standings row height, and
+    // the plates and the badge have to agree or the pair looks wrong.
+    expect(LMU_ART_HEIGHT).toBe('h-[4.5em]');
   });
 });

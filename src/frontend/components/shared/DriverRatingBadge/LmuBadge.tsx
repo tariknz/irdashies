@@ -1,4 +1,4 @@
-import { lmuBadgeArt } from './lmuRankArt';
+import { LMU_ART_HEIGHT, lmuBadgeArt } from './lmuRankArt';
 
 export interface LmuBadgeProps {
   /**
@@ -15,21 +15,37 @@ export interface LmuBadgeProps {
  * different question: the rank pair is where a driver stands, this is a marker
  * they have been given, and either can be wanted without the other.
  *
- * Art only. The badge string is a key, not a label -- `sr-saint` is not
- * something to print in a standings row -- so a badge with no bundled artwork
- * renders nothing rather than its own name. `tools/fetch-lmu-rank-art.ts`
+ * Art where there is art, and a short label where there is not.
+ *
+ * The label is deliberately not nothing. A driver the service gave a marker
+ * for and a driver it gave none are different facts, and an empty cell says
+ * the second while meaning the first -- which is indistinguishable from the
+ * column being broken, and cost a long time to tell apart once already. So a
+ * known badge with no bundled artwork shows its own name, trimmed of the
+ * `sr-` prefix: ugly, but never silent. `tools/fetch-lmu-rank-art.ts`
  * downloads the set; a marker the service adds later needs that run again.
  */
 export const LmuBadge = ({ badge }: LmuBadgeProps) => {
+  if (!badge) return null;
+
   const art = lmuBadgeArt(badge);
-  if (!art) return null;
+  if (art) {
+    return (
+      <img
+        src={art}
+        alt={badge}
+        title={badge}
+        className={`${LMU_ART_HEIGHT} w-auto shrink-0`}
+      />
+    );
+  }
 
   return (
-    <img
-      src={art}
-      alt={badge}
+    <span
       title={badge}
-      className="h-[1.5em] w-auto shrink-0"
-    />
+      className="text-[0.6em] uppercase tracking-wide text-white/70"
+    >
+      {badge.replace(/^sr-/, '')}
+    </span>
   );
 };
