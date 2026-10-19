@@ -15,6 +15,10 @@ import {
 const filePath = () =>
   path.join(app.getPath('userData'), 'radar-pole-side-overrides.json');
 
+/** Error logs reach analytics: a filesystem error carries the user's path. */
+const errorCode = (error: unknown): string =>
+  (error as NodeJS.ErrnoException)?.code ?? 'UNKNOWN';
+
 const WRITE_DEBOUNCE_MS = 250;
 
 let pending: PoleSideOverrides | undefined;
@@ -33,7 +37,7 @@ const write = async (): Promise<void> => {
     await fsp.writeFile(temp, JSON.stringify(overrides));
     await fsp.rename(temp, filePath());
   } catch (error) {
-    logger.error('[RadarPoleSide] Failed to write', filePath(), error);
+    logger.error('[RadarPoleSide] Failed to write', errorCode(error));
     // Keep the correction for the next write, unless a newer one came in.
     pending ??= overrides;
     await fsp.unlink(temp).catch(() => undefined);
@@ -72,7 +76,7 @@ const readFile = async (): Promise<string | undefined> => {
         continue;
       }
       saveBlocked = true;
-      logger.error('[RadarPoleSide] Failed to read', filePath(), error);
+      logger.error('[RadarPoleSide] Failed to read', errorCode(error));
       return undefined;
     }
   }
@@ -92,11 +96,9 @@ export const loadRadarPoleSideOverrides = (): Promise<boolean> =>
     } catch (error) {
       // Not JSON: keep it aside rather than lose it under the next save.
       logger.error('[RadarPoleSide] Invalid file, moved aside', error);
-      await fsp
-        .rename(filePath(), `${filePath()}.invalid`)
-        .catch(() => {
-          saveBlocked = true;
-        });
+      await fsp.rename(filePath(), `${filePath()}.invalid`).catch(() => {
+        saveBlocked = true;
+      });
     }
     return !saveBlocked;
   })());

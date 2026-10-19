@@ -2,7 +2,7 @@ import {
   POLE_SITUATIONS,
   type PoleSideSettings,
   type PoleSituation,
-} from './processors/radarPoleSideSettings';
+} from '@irdashies/types';
 
 /**
  * One track's corrections: the side (true: left) the player chose for a race

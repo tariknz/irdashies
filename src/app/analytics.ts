@@ -5,6 +5,10 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import type { DashboardLayout } from '@irdashies/types';
 import { readData, writeData } from './storage/storage';
+import {
+  readRadarPoleSideReportHash,
+  writeRadarPoleSideReportHash,
+} from './storage/radarPoleSideReportHash';
 import { getAnalyticsOptOut } from './storage/analytics';
 import logger from './logger';
 import type ElectronLog from 'electron-log';
@@ -30,9 +34,6 @@ declare const POSTHOG_KEY: string;
  * burst of key presses is one report and nothing waits for the next launch.
  */
 const POLE_SIDE_REPORT_DELAY_MS = 60 * 1000;
-
-/** Hash of the last radar pole side report PostHog acknowledged. */
-const POLE_SIDE_HASH_KEY = 'radarPoleSideReportHash';
 
 const DEDUP_WINDOW_MS = 60 * 60 * 1000;
 const DEDUP_KEY_LENGTH = 30;
@@ -286,7 +287,7 @@ export class Analytics {
         radarPoleSideOverrides.snapshot(),
         version
       );
-      const stored = readData<unknown>(POLE_SIDE_HASH_KEY);
+      const stored = await readRadarPoleSideReportHash();
       const last =
         typeof stored === 'string' && /^[0-9a-f]{64}$/.test(stored)
           ? stored
@@ -314,7 +315,9 @@ export class Analytics {
         properties: report.properties,
       });
       // Recorded only after PostHog acknowledged it, so a failure retries.
-      if (!getAnalyticsOptOut()) writeData(POLE_SIDE_HASH_KEY, report.hash);
+      if (!getAnalyticsOptOut()) {
+        await writeRadarPoleSideReportHash(report.hash);
+      }
     } catch {
       logger.warn('[Analytics] Could not publish radar pole side report');
     }

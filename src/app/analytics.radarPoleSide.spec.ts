@@ -36,6 +36,14 @@ vi.mock('./storage/storage', () => ({
   writeData: vi.fn((key: string, value: unknown) => store.data.set(key, value)),
 }));
 
+vi.mock('./storage/radarPoleSideReportHash', () => ({
+  readRadarPoleSideReportHash: async () =>
+    store.data.get('radarPoleSideReportHash'),
+  writeRadarPoleSideReportHash: async (hash: string) => {
+    store.data.set('radarPoleSideReportHash', hash);
+  },
+}));
+
 vi.mock('./storage/analytics', () => ({
   getAnalyticsOptOut: vi.fn().mockReturnValue(false),
 }));

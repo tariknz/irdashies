@@ -28,7 +28,7 @@ import {
   NO_POLE_SIDE_SETTINGS,
   type PoleSideSettings,
   type PoleSituation,
-} from './radarPoleSideSettings';
+} from '@irdashies/types';
 import { wrapDelta } from './radarMath';
 
 /**

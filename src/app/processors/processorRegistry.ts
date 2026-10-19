@@ -30,7 +30,7 @@ import { CarSystemsProcessor } from './CarSystemsProcessor';
 import { SessionTimingProcessor } from './SessionTimingProcessor';
 import { StandingsProcessor } from './StandingsProcessor';
 import { TrackStateProcessor } from './TrackStateProcessor';
-import type { PoleSideSettings } from './radarPoleSideSettings';
+import type { PoleSideSettings } from '@irdashies/types';
 
 interface ProcessorRegistryOptions {
   referenceLapPersistence: ReferenceLapPersistence;
