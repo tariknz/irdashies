@@ -17,12 +17,13 @@ interface RendererDataWindow {
 export const refreshSessionDataForVisibleWindow = (
   win: RendererDataWindow,
   subscriptions: RendererDataSubscriptions | undefined,
-  latestSessionData: unknown
+  latestSessionData: unknown,
+  sendWhileHidden = false
 ): boolean => {
   if (
     latestSessionData === undefined ||
     win.isDestroyed() ||
-    !win.isVisible() ||
+    (!sendWhileHidden && !win.isVisible()) ||
     !subscriptions?.has(win.webContents.id, 'sessionData')
   ) {
     return false;
