@@ -84,6 +84,29 @@ const TELEMETRY_POLL_INTERVAL = 8;
 const SESSION_POLL_INTERVAL = 500;
 // How often to re-check the shared-memory map's existence when LMU is closed.
 const RETRY_INTERVAL = 1000;
+/**
+ * How slow a session rebuild has to be before it is worth a line in the log.
+ *
+ * perfMetrics is the proper instrument, but it is opt-in -- every mark returns
+ * early unless PERF_METRICS=1 -- so on an ordinary run its spans measure
+ * nothing. Rebuilding the snapshot and broadcasting it is the one thing in
+ * this loop that happens in bursts and can stall the sim, and finding that out
+ * should not require relaunching the app with an environment variable set.
+ *
+ * 20 ms is two and a half telemetry polls: long enough that the frame budget
+ * has been missed and short enough to catch it before it is visible.
+ */
+const SLOW_SESSION_MS = 20;
+
+/**
+ * The quietest this warning can be while still being useful.
+ *
+ * A grid filling in produces a run of slow rebuilds, and twenty lines saying
+ * so is no more informative than one. Rate limited rather than deduped on the
+ * message, because the number is the point and it differs every time.
+ */
+const SLOW_SESSION_LOG_INTERVAL_MS = 10_000;
+
 const perfRunConfig = getPerfRunConfig();
 const perfTelemetryDeliveryEnabled =
   !perfRunConfig.enabled || perfRunConfig.telemetryDelivery === 'on';
@@ -169,6 +192,10 @@ export async function publishLmuSDKEvents(
   let lastSessionSignature: string | null = null;
   /** Last reported rating tally, so a settled grid is reported once. */
   let lastRatingTally: string | null = null;
+  /** When a slow rebuild was last reported, for the rate limit. */
+  let lastSlowSessionLog = Number.NEGATIVE_INFINITY;
+  /** Set by the rebuild, read by the publish below, so both are timed once. */
+  let mapSessionMs = 0;
   /**
    * Holds a rebuild back while the grid is filling.
    *
@@ -422,12 +449,14 @@ export async function publishLmuSDKEvents(
           // without this the cost is mixed in with everything else the loop
           // does and cannot be shown to have changed.
           perfMetrics.markStart('mapSession');
+          const mapStartedAt = performance.now();
           session = mapLmuSession(
             rawSession,
             trackMap,
             restData.session,
             (driverName) => ratingClient.get(driverName)
           );
+          mapSessionMs = performance.now() - mapStartedAt;
           perfMetrics.markEnd('mapSession');
 
           // What actually went out, counted on the published snapshot rather
@@ -531,10 +560,28 @@ export async function publishLmuSDKEvents(
         // with it. Measured apart from the build because the two are fixed by
         // different things.
         perfMetrics.markStart('publishSession');
+        const publishStartedAt = performance.now();
         lifecycle?._onSession(session);
         processorHost?.onSession(session);
         overlayManager.publishMessage('sessionData', session);
+        const publishMs = performance.now() - publishStartedAt;
         perfMetrics.markEnd('publishSession');
+
+        // Reported without PERF_METRICS, because by the time someone wants
+        // this number the sim has already stuttered and they are reading the
+        // log they have rather than relaunching to collect a better one.
+        const total = mapSessionMs + publishMs;
+        if (
+          total >= SLOW_SESSION_MS &&
+          tickTime - lastSlowSessionLog >= SLOW_SESSION_LOG_INTERVAL_MS
+        ) {
+          lastSlowSessionLog = tickTime;
+          logger.warn(
+            `[lmuSdkBridge] Slow session update: ${total.toFixed(1)}ms ` +
+              `(build ${mapSessionMs.toFixed(1)}ms, publish ${publishMs.toFixed(1)}ms) ` +
+              `for ${session.DriverInfo?.Drivers?.length ?? 0} drivers`
+          );
+        }
         sessionCallbacks.forEach((callback) => callback(session));
       }
 

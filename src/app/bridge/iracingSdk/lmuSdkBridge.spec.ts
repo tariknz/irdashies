@@ -550,6 +550,62 @@ describe('publishLmuSDKEvents and driver ratings', () => {
     bridge.stop();
   });
 
+  it('reports a slow session update without PERF_METRICS', async () => {
+    // perfMetrics is opt-in: every mark returns early unless PERF_METRICS=1,
+    // so on an ordinary run its spans measure nothing. Rebuilding and
+    // broadcasting the snapshot is the one thing here that stalls the sim, and
+    // finding that out should not need the app relaunched with a flag set.
+    const slow = 25;
+    mapSessionSpy.mockImplementation(() => {
+      // Burns real time, since the warning is timed with performance.now().
+      const until = performance.now() + slow;
+      while (performance.now() < until) {
+        /* spin */
+      }
+      return { drivers: [], DriverInfo: { Drivers: [] } };
+    });
+
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() =>
+      expect(
+        vi
+          .mocked(logger.warn)
+          .mock.calls.map(([m]) => String(m))
+          .some((m) => m.includes('Slow session update'))
+      ).toBe(true)
+    );
+
+    bridge.stop();
+    mapSessionSpy.mockReset();
+    mapSessionSpy.mockReturnValue({
+      drivers: [],
+      DriverInfo: { Drivers: [] },
+    } as unknown as { drivers: []; DriverInfo: { Drivers: [] } });
+  });
+
+  it('says nothing when a session update is quick', async () => {
+    // Which is every normal update. A line per rebuild at 2Hz would bury the
+    // log it is meant to help read.
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(mapSessionSpy).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    expect(
+      vi
+        .mocked(logger.warn)
+        .mock.calls.map(([m]) => String(m))
+        .filter((m) => m.includes('Slow session update'))
+    ).toEqual([]);
+
+    bridge.stop();
+  });
+
   it('reports what the published snapshot actually carries', async () => {
     // "Matched n/n" says the service answered and the answers were filed under
     // names the grid presents; it does not say they reached a driver. The
