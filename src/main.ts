@@ -416,7 +416,9 @@ void app.whenReady().then(async () => {
   // for every overlay window.
   await loadSimWidgetSupport();
 
-  setupChannelBridge(channelBus);
+  setupChannelBridge(channelBus, {
+    isAlwaysFed: (sender) => overlayManager.isGantryWebContents(sender),
+  });
   const rendererDataSubscriptions = setupRendererDataSubscriptions({
     onSubscribe: (sender, stream) => {
       if (stream === 'sessionData') overlayManager.seedSessionData(sender);

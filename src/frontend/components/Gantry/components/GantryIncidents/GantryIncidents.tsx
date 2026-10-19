@@ -20,6 +20,7 @@ import type { TrackStateSnapshot } from '@irdashies/types';
 import { IncidentRow } from './IncidentRow';
 import { SessionSeparatorRow } from './SessionSeparatorRow';
 import { Tooltip } from '../Tooltip/Tooltip';
+import { useHeld } from '../../hooks/useGantrySessionHold';
 
 const SETTINGS_HINT =
   'Thresholds live in Settings > Gantry > Incident Detection.';
@@ -28,6 +29,10 @@ const FILTERS_COMBINE_HINT =
   'Combines with the session and driver filters below.';
 
 const NO_SESSIONS: readonly IncidentSessionInfo[] = [];
+
+const isEmptySessionList = (
+  sessions: readonly IncidentSessionInfo[] | undefined
+) => !sessions || sessions.length === 0;
 
 const selectIsReplayPlaying = (snapshot: TrackStateSnapshot) =>
   snapshot.isReplayPlaying;
@@ -93,7 +98,9 @@ export const GantryIncidents = memo(() => {
   const allIncidents = useRaceControlStore((s) => s.incidents);
   const isReplayPlaying = Boolean(useTrackStateSelector(selectIsReplayPlaying));
   const currentSessionNum = useTrackStateSelector(selectSessionNum) ?? null;
-  const sessions = useSessionList() ?? NO_SESSIONS;
+  // Held like the standings: incidents outlive the sim closing, and their
+  // session names have to as well.
+  const sessions = useHeld(useSessionList(), isEmptySessionList) ?? NO_SESSIONS;
   const incidents = useFilteredIncidents(currentSessionNum);
 
   const selectedSessionNum = resolveSessionFilter(

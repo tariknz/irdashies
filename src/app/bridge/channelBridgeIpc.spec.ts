@@ -140,6 +140,36 @@ describe('channel bridge IPC boundary', () => {
     expect(bus.subscriberCount(SNAPSHOT_CHANNEL)).toBe(1);
   });
 
+  it('keeps feeding an always-fed renderer while minimised or hidden', () => {
+    const bus = new ChannelBus();
+    setupChannelBridge(bus, { isAlwaysFed: () => true });
+    const subscribe = handlers.get(CHANNEL_SUBSCRIBE);
+    const sender = new FakeSender();
+    if (!subscribe) throw new Error('subscribe handler not installed');
+
+    subscribe({ sender }, SNAPSHOT_CHANNEL);
+    windowState.visible = false;
+    windowListeners.get('minimize')?.();
+    windowListeners.get('hide')?.();
+    expect(bus.subscriberCount(SNAPSHOT_CHANNEL)).toBe(1);
+
+    bus.publish(SNAPSHOT_CHANNEL, SNAPSHOT_PAYLOAD);
+    expect(sender.send).toHaveBeenCalledOnce();
+  });
+
+  it('subscribes an always-fed renderer as active while it is hidden', () => {
+    const bus = new ChannelBus();
+    setupChannelBridge(bus, { isAlwaysFed: () => true });
+    const subscribe = handlers.get(CHANNEL_SUBSCRIBE);
+    const sender = new FakeSender();
+    if (!subscribe) throw new Error('subscribe handler not installed');
+
+    windowState.visible = false;
+    subscribe({ sender }, SNAPSHOT_CHANNEL);
+
+    expect(bus.subscriberCount(SNAPSHOT_CHANNEL)).toBe(1);
+  });
+
   it('reactivates a subscription that publish() deactivated while minimized', () => {
     const bus = new ChannelBus();
     setupChannelBridge(bus);

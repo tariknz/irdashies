@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { useSyncExternalStore } from 'react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   IncidentType,
@@ -21,6 +22,19 @@ const feed = vi.hoisted(() => ({
     | undefined,
 }));
 
+const sessionStore = vi.hoisted(() => {
+  const listeners = new Set<() => void>();
+  return {
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    notify: () => listeners.forEach((listener) => listener()),
+    // One stable object, as a store snapshot must be.
+    withDrivers: { DriverInfo: { Drivers: [{}] } },
+  };
+});
+
 vi.mock('@irdashies/context', () => ({
   useRaceControlStore: (selector: (state: unknown) => unknown) =>
     selector({
@@ -33,7 +47,16 @@ vi.mock('@irdashies/context', () => ({
       incidents: feed.incidents,
     }),
   useFilteredIncidents: () => feed.filtered,
-  useSessionList: () => feed.sessions,
+  // Subscribed like the real store, so a change re-renders the memoised feed.
+  useSessionList: () =>
+    useSyncExternalStore(sessionStore.subscribe, () => feed.sessions),
+  // Read by the hold provider to tell when a session has drivers.
+  useSessionStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      session: useSyncExternalStore(sessionStore.subscribe, () =>
+        feed.sessions ? sessionStore.withDrivers : null
+      ),
+    }),
   // Mirrors the real selector contract: undefined until a snapshot arrives.
   useTrackStateSelector: (selector: (snapshot: unknown) => unknown) =>
     trackState.snapshot === undefined
@@ -66,6 +89,8 @@ const WEEKEND = [
 ];
 
 const { GantryIncidents } = await import('./GantryIncidents');
+const { GantrySessionHoldProvider } =
+  await import('../../hooks/useGantrySessionHold');
 
 const replayButtons = () =>
   screen.getAllByRole('button', { name: /^-\d+s$/ }) as HTMLButtonElement[];
@@ -177,6 +202,36 @@ describe('GantryIncidents sessions', () => {
     expect(feed.setSessionFilter).toHaveBeenCalledWith(1);
     fireEvent.change(select, { target: { value: 'current' } });
     expect(feed.setSessionFilter).toHaveBeenCalledWith('current');
+  });
+
+  it('keeps the session names after the sim closes', () => {
+    trackState.snapshot = { isReplayPlaying: false, sessionNum: 2 };
+    const { rerender } = render(
+      <GantrySessionHoldProvider running>
+        <GantryIncidents />
+      </GantrySessionHoldProvider>
+    );
+
+    trackState.snapshot = undefined;
+    rerender(
+      <GantrySessionHoldProvider running={false}>
+        <GantryIncidents />
+      </GantrySessionHoldProvider>
+    );
+    // The disconnect reset empties the session store; incidents stay.
+    feed.sessions = undefined;
+    act(() => sessionStore.notify());
+
+    const select = screen.getByLabelText('Filter incidents by session');
+    const labels = within(select)
+      .getAllByRole('option')
+      .map((o) => o.textContent);
+    expect(labels).toEqual([
+      'All sessions',
+      'Current session',
+      'Race (1)',
+      'Qualify (1)',
+    ]);
   });
 
   it('lists only drivers from the selected session', () => {
