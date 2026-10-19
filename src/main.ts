@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, autoUpdater, BrowserWindow, ipcMain } from 'electron';
 import log from './app/logger';
 import {
   iRacingSDKSetup,
@@ -663,6 +663,9 @@ const handleBeforeQuit = createBeforeQuitHandler({
 });
 
 app.on('before-quit', handleBeforeQuit);
+// An update restart closes windows before `before-quit`, so the Gantry has to
+// know it is quitting earlier or it hides instead of closing.
+autoUpdater.on('before-quit-for-update', () => overlayManager.markQuitting());
 
 // Terminal shutdown must use the same cleanup and storage flush as tray quit.
 process.on('SIGINT', () => app.quit());

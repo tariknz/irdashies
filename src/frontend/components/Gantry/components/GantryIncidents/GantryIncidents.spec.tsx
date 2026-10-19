@@ -1,5 +1,11 @@
-import { useSyncExternalStore } from 'react';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { useSyncExternalStore, type ReactElement } from 'react';
+import {
+  act,
+  fireEvent,
+  render as rtlRender,
+  screen,
+  within,
+} from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   IncidentType,
@@ -62,6 +68,28 @@ vi.mock('@irdashies/context', () => ({
     trackState.snapshot === undefined
       ? undefined
       : selector(trackState.snapshot),
+  // Read by GantrySessionDataProvider for the other tabs; unused here.
+  trackStateSelectors: {
+    sessionNum: (snapshot: { sessionNum?: number | null }) =>
+      snapshot.sessionNum,
+  },
+  useLapTimesStoreUpdater: vi.fn(),
+  useLapHistorySnapshot: () => undefined,
+  useReplayContextSnapshot: () => ({
+    mode: 'live',
+    provenance: 'none',
+    subSessionId: '',
+  }),
+  useArchivedLapHistory: () => null,
+}));
+
+vi.mock('@irdashies/domain/standings/useDriverStandings', () => {
+  const none: unknown[] = [];
+  return { useDriverStandings: () => none };
+});
+
+vi.mock('@irdashies/domain/standings/useQualifyingGrid', () => ({
+  useQualifyingResults: () => undefined,
 }));
 
 const makeIncident = (overrides: Partial<Incident> = {}): Incident => ({
@@ -91,6 +119,34 @@ const WEEKEND = [
 const { GantryIncidents } = await import('./GantryIncidents');
 const { GantrySessionHoldProvider } =
   await import('../../hooks/useGantrySessionHold');
+const { GantrySessionDataProvider } =
+  await import('../../hooks/useGantrySessionData');
+
+const render = (ui: ReactElement) =>
+  rtlRender(ui, { wrapper: GantrySessionDataProvider });
+
+// The Gantry's tree: the hold above the data provider, and the feed only
+// mounted while its tab is showing.
+const gantry = (running: boolean, showFeed: boolean) => (
+  <GantrySessionHoldProvider running={running}>
+    <GantrySessionDataProvider>
+      {showFeed && <GantryIncidents />}
+    </GantrySessionDataProvider>
+  </GantrySessionHoldProvider>
+);
+
+const closeSim = (rerender: (ui: ReactElement) => void, showFeed: boolean) => {
+  trackState.snapshot = undefined;
+  rerender(gantry(false, showFeed));
+  // The disconnect reset empties the session store; incidents stay.
+  feed.sessions = undefined;
+  act(() => sessionStore.notify());
+};
+
+const sessionOptions = () =>
+  within(screen.getByLabelText('Filter incidents by session'))
+    .getAllByRole('option')
+    .map((o) => o.textContent);
 
 const replayButtons = () =>
   screen.getAllByRole('button', { name: /^-\d+s$/ }) as HTMLButtonElement[];
@@ -206,27 +262,26 @@ describe('GantryIncidents sessions', () => {
 
   it('keeps the session names after the sim closes', () => {
     trackState.snapshot = { isReplayPlaying: false, sessionNum: 2 };
-    const { rerender } = render(
-      <GantrySessionHoldProvider running>
-        <GantryIncidents />
-      </GantrySessionHoldProvider>
-    );
+    const { rerender } = rtlRender(gantry(true, true));
 
-    trackState.snapshot = undefined;
-    rerender(
-      <GantrySessionHoldProvider running={false}>
-        <GantryIncidents />
-      </GantrySessionHoldProvider>
-    );
-    // The disconnect reset empties the session store; incidents stay.
-    feed.sessions = undefined;
-    act(() => sessionStore.notify());
+    closeSim(rerender, true);
 
-    const select = screen.getByLabelText('Filter incidents by session');
-    const labels = within(select)
-      .getAllByRole('option')
-      .map((o) => o.textContent);
-    expect(labels).toEqual([
+    expect(sessionOptions()).toEqual([
+      'All sessions',
+      'Current session',
+      'Race (1)',
+      'Qualify (1)',
+    ]);
+  });
+
+  it('keeps the session names for a feed opened after the sim closes', () => {
+    trackState.snapshot = { isReplayPlaying: false, sessionNum: 2 };
+    const { rerender } = rtlRender(gantry(true, false));
+
+    closeSim(rerender, false);
+    rerender(gantry(false, true));
+
+    expect(sessionOptions()).toEqual([
       'All sessions',
       'Current session',
       'Race (1)',

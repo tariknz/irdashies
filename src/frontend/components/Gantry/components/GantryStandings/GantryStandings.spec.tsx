@@ -35,6 +35,7 @@ vi.mock('@irdashies/context', () => ({
     subSessionId: '',
   }),
   useArchivedLapHistory: () => null,
+  useSessionList: () => undefined,
   // iRacing by default, so these specs keep exercising the rating badge.
   useActiveSimulator: () => simulatorMock.current,
 }));

@@ -12,6 +12,7 @@ import {
 } from '@irdashies/storybook';
 import { IncidentType, type Incident } from '@irdashies/types';
 import { GantryIncidents } from './GantryIncidents';
+import { GantrySessionDataProvider } from '../../hooks/useGantrySessionData';
 
 /** Named feeds, so the story can be switched without editing code. */
 const FEEDS: Record<string, Incident[]> = {
@@ -64,6 +65,12 @@ const meta: Meta<IncidentsArgs> = {
     },
     isReplayPlaying: gantryArgTypes.isReplayPlaying,
   },
+  // Inside every decorator, so the provider sees the mocked session.
+  render: () => (
+    <GantrySessionDataProvider>
+      <GantryIncidents />
+    </GantrySessionDataProvider>
+  ),
   decorators: [
     (Story) => (
       <div className="h-screen w-130 bg-slate-900 text-white">

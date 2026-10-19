@@ -15,6 +15,7 @@ const sim = vi.hoisted(() => ({
   cursorSessionNum: null as number | null,
   archived: null as unknown,
   qualifying: undefined as unknown,
+  sessions: undefined as unknown,
 }));
 
 vi.mock('@irdashies/context', () => ({
@@ -32,6 +33,7 @@ vi.mock('@irdashies/context', () => ({
   trackStateSelectors: { sessionNum: () => null },
   useTrackStateSelector: () => sim.cursorSessionNum,
   useArchivedLapHistory: () => sim.archived,
+  useSessionList: () => sim.sessions,
 }));
 
 vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({
@@ -60,7 +62,7 @@ const history = (
 });
 
 const Probe = () => {
-  const { standingsByClass, history, qualifyingResults } =
+  const { standingsByClass, history, qualifyingResults, sessions } =
     useGantrySessionData();
   return (
     <div>
@@ -69,6 +71,7 @@ const Probe = () => {
         {qualifyingResults?.length ?? 'none'}
       </span>
       <span data-testid="laps">{history?.count[0] ?? 'none'}</span>
+      <span data-testid="sessions">{sessions?.length ?? 'none'}</span>
     </div>
   );
 };
@@ -89,6 +92,7 @@ const closeSim = (
   sim.live = undefined;
   sim.archived = null;
   sim.qualifying = undefined;
+  sim.sessions = undefined;
   rerender(view(false, showProbe));
   sim.hasDrivers = false;
   rerender(view(false, showProbe));
@@ -103,6 +107,10 @@ describe('GantrySessionDataProvider', () => {
     sim.cursorSessionNum = null;
     sim.archived = null;
     sim.qualifying = undefined;
+    sim.sessions = [
+      { SessionNum: 0, SessionName: 'QUALIFY', SessionType: 'Lone Qualify' },
+      { SessionNum: 1, SessionName: 'RACE', SessionType: 'Race' },
+    ];
   });
 
   it('keeps the finished session for a tab opened after the sim closes', () => {
@@ -114,6 +122,7 @@ describe('GantrySessionDataProvider', () => {
 
     expect(screen.getByTestId('standings').textContent).toBe('1');
     expect(screen.getByTestId('laps').textContent).toBe('5');
+    expect(screen.getByTestId('sessions').textContent).toBe('2');
   });
 
   it('drops replay laps once the cursor moves to a session with none', () => {
