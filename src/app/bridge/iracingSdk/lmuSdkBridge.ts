@@ -19,7 +19,6 @@ import {
   lmuSessionSignature,
 } from '../../lmu/sessionSignature';
 import { createRosterGate } from '../../lmu/rosterSettle';
-import { createRatingMerger } from '../../lmu/ratingIdentity';
 import {
   LMU_DISCONNECT_GRACE_MS,
   shouldHoldLmuRunningState,
@@ -205,13 +204,6 @@ export async function publishLmuSDKEvents(
    * is where the sim hitched. See rosterSettle.ts.
    */
   const rosterGate = createRosterGate();
-  /**
-   * Keeps each driver's rating the same object while its contents are, so the
-   * renderer's own comparison of DriverInfo.Drivers can see that a grid has
-   * not changed. Without it no two snapshots ever compared equal and the
-   * standings pipeline re-ran twice a second. See ratingIdentity.ts.
-   */
-  const ratingMerger = createRatingMerger();
   let activeTrackName = '';
   let trackMap: LmuTrackMap | null = null;
   let lastBlindSpotDataIssue: string | null | undefined;
@@ -360,7 +352,6 @@ export async function publishLmuSDKEvents(
           resetLmuLapDistanceState(lapDistanceState);
           resetLmuOpponentLapDistanceState(opponentLapDistanceState);
           rosterGate.reset();
-          ratingMerger.reset();
           restPoller.setActive(false);
           // The token was bought with a ticket this sim run minted, and a
           // queue that outlives the session has nothing left to ask with.
@@ -463,8 +454,7 @@ export async function publishLmuSDKEvents(
             rawSession,
             trackMap,
             restData.session,
-            (driverName) => ratingClient.get(driverName),
-            ratingMerger
+            (driverName) => ratingClient.get(driverName)
           );
           mapSessionMs = performance.now() - mapStartedAt;
           perfMetrics.markEnd('mapSession');

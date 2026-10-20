@@ -27,7 +27,6 @@ export const LMU_PIT_SPEED_LIMIT_KPH = 60;
 import { lapTimeOrAbsent } from './sentinels';
 import { lmuCarNumber, lmuCarNumberRaw, lmuTeamName } from './entryName';
 import { lmuDriverTires } from './tireCompound';
-import type { LmuRatingMerger } from './ratingIdentity';
 
 type Raw = import('./native').LmuRawSession;
 
@@ -312,14 +311,7 @@ function mergeRating(
   if (!rating) return countryCode ? { countryCode } : undefined;
   // The service also reports a country; the sim's own answer wins, being
   // first-party and present for everyone in the session.
-  if ((countryCode ?? rating.countryCode) === rating.countryCode) {
-    // Nothing to fold in, so the rating client's own object -- already stable
-    // between lookups -- goes through untouched. One allocation fewer per
-    // driver per rebuild, and one fewer reason for the renderer to decide the
-    // grid changed. See ratingIdentity.ts for why that matters.
-    return rating;
-  }
-  return { ...rating, countryCode };
+  return { ...rating, countryCode: countryCode ?? rating.countryCode };
 }
 
 export function mapLmuSession(
@@ -339,17 +331,7 @@ export function mapLmuSession(
    * By name rather than Steam id because that is what the service is asked
    * by, and because the sim reports 0 for every id in any case.
    */
-  ratingFor?: (driverName: string) => LmuDriverRating | undefined,
-  /**
-   * Keeps each driver's LmuRating the same object while its contents are
-   * unchanged, so the published snapshot is referentially stable.
-   *
-   * Optional, and the plain merge above is the fallback: a caller that does not
-   * care about identity -- a test, a one-shot fixture -- gets the same values
-   * either way. The bridge passes one because it publishes twice a second and
-   * the renderer compares drivers by their fields. See ratingIdentity.ts.
-   */
-  ratingMerger?: LmuRatingMerger
+  ratingFor?: (driverName: string) => LmuDriverRating | undefined
 ): Session {
   const trackLengthM = raw.lapDist;
   const shiftLights = deriveLmuShiftLightRpm(raw.engineMaxRPM);
@@ -448,16 +430,10 @@ export function mapLmuSession(
     // Country and rank arrive by different routes -- the sim's own teams
     // endpoint and the rating service -- so a driver can have either, both
     // or neither. Merged rather than one overriding the other.
-    LmuRating: ratingMerger
-      ? ratingMerger.merge(
-          d.name,
-          nationalities?.[d.name],
-          d.name ? ratingFor?.(d.name) : undefined
-        )
-      : mergeRating(
-          nationalities?.[d.name],
-          d.name ? ratingFor?.(d.name) : undefined
-        ),
+    LmuRating: mergeRating(
+      nationalities?.[d.name],
+      d.name ? ratingFor?.(d.name) : undefined
+    ),
   }));
 
   const playerDriver = raw.drivers.find((d) => d.isPlayer);
