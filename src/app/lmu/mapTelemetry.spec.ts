@@ -177,6 +177,23 @@ describe('mapLmuTelemetry', () => {
     expect(t.WindVel.value[0]).toBeCloseTo(Math.hypot(2, 0, -3));
   });
 
+  it('reports track wetness as a level, not as a wetness fraction', () => {
+    // The bug this covers: the 0..1 fraction went through untouched, and
+    // every consumer indexes a 1..7 record -- so 0.05 found no key and the
+    // cell rendered empty all session. The level, not the fraction, is the
+    // contract.
+    const base = fixture();
+    expect(base.avgPathWetness).toBe(0.05);
+    expect(mapLmuTelemetry(base).TrackWetness.value[0]).toBe(2);
+
+    expect(
+      mapLmuTelemetry({ ...base, avgPathWetness: 0 }).TrackWetness.value[0]
+    ).toBe(1);
+    expect(
+      mapLmuTelemetry({ ...base, avgPathWetness: 0.8 }).TrackWetness.value[0]
+    ).toBe(7);
+  });
+
   it('maps LMU race flags', () => {
     const base = fixture();
     expect(

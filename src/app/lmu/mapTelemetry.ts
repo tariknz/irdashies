@@ -11,6 +11,7 @@ import {
   summariseLmuBlindSpot,
 } from './proximity';
 import { lapTimeOrAbsent } from './sentinels';
+import { lmuTrackWetness } from './trackWetness';
 import { estimateLmuLapDistPct, type LmuLapDistanceState } from './lapDistance';
 import {
   refineLmuOpponentLapDistPcts,
@@ -544,7 +545,7 @@ export function mapLmuTelemetry(
   t.TrackTemp = num(raw.trackTemp);
   t.TrackTempCrew = num(raw.trackTemp);
   t.AirTemp = num(raw.ambientTemp);
-  t.TrackWetness = num(raw.avgPathWetness);
+  t.TrackWetness = num(lmuTrackWetness(raw.avgPathWetness));
   t.Skies = num(raw.cloudCoverage);
   t.WindVel = num(
     Math.hypot(raw.wind[0] ?? 0, raw.wind[1] ?? 0, raw.wind[2] ?? 0)
