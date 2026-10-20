@@ -244,6 +244,19 @@ describe('mapLmuTelemetry', () => {
     expect(t.LmuTrackLimitsPointsMax?.value[0]).toBe(0);
   });
 
+  it('carries one budget per car, whichever limits it', () => {
+    // Two quantities that are not comparable, but only one of them limits any
+    // given car -- so one channel can hold both.
+    const t = mapLmuTelemetry(fixture());
+    const value = t.LmuCarIdxEnergyRemaining?.value ?? [];
+    // Car 0 runs on energy, so its full fuel byte is ignored.
+    expect(value[0]).toBe(0.42);
+    // Car 1 has no energy, so its fuel byte is what counts.
+    expect(value[1]).toBeCloseTo(51 / 255, 6);
+    // Car 2 reports neither, which is not an empty tank.
+    expect(value[2]).toBe(-1);
+  });
+
   it('maps LMU race flags', () => {
     const base = fixture();
     expect(

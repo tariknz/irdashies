@@ -17,6 +17,7 @@ import { CarManufacturerCell } from './cells/CarManufacturerCell';
 import { CarNumberCell } from './cells/CarNumberCell';
 import { CompoundCell } from './cells/CompoundCell';
 import { TrackLimitsCell } from './cells/TrackLimitsCell';
+import { VirtualEnergyCell } from './cells/VirtualEnergyCell';
 import { CountryFlagsCell } from './cells/CountryFlagsCell';
 import { DeltaCell } from './cells/DeltaCell';
 import { DriverNameCell } from './cells/DriverNameCell';
@@ -67,6 +68,8 @@ interface DriverRowInfoProps {
   trackLimitsPoints?: number;
   /** Points at which a drive-through is served. */
   trackLimitsMax?: number;
+  /** LMU's virtual energy, or fuel for a car without it. 0..1. */
+  lmuVirtualEnergy?: number;
   carId?: number;
   lapTimeDeltas?: number[];
   numLapDeltasToShow?: number;
@@ -233,6 +236,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     wheelCompounds,
     trackLimitsPoints,
     trackLimitsMax,
+    lmuVirtualEnergy,
     carId,
     lapTimeDeltas,
     numLapDeltasToShow,
@@ -711,6 +715,21 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         ),
       },
       {
+        id: 'lmuVirtualEnergy',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('lmuVirtualEnergy') : false) &&
+          (config && 'lmuVirtualEnergy' in config
+            ? config.lmuVirtualEnergy.enabled
+            : false),
+        component: (
+          <VirtualEnergyCell
+            key="lmuVirtualEnergy"
+            remaining={lmuVirtualEnergy}
+            compactMode={compactMode}
+          />
+        ),
+      },
+      {
         id: 'pushToPass',
         shouldRender:
           (displayOrder ? displayOrder.includes('pushToPass') : false) &&
@@ -787,6 +806,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     wheelCompounds,
     trackLimitsPoints,
     trackLimitsMax,
+    lmuVirtualEnergy,
     lapTimeDeltas,
     emptyLapDeltaPlaceholders,
     avgLapTime,

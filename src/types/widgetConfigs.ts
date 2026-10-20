@@ -198,6 +198,11 @@ export interface StandingsConfig {
   lapCount: { enabled: boolean };
   /** LMU's track-limits penalty points. Absent on sims without them. */
   trackLimits: { enabled: boolean };
+  /**
+   * LMU's remaining virtual energy, or fuel for a car without it.
+   * Absent on sims with neither.
+   */
+  lmuVirtualEnergy: { enabled: boolean };
   titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
   headerBar: SessionBarConfig;
   footerBar: SessionBarConfig;
@@ -263,6 +268,11 @@ export interface RelativeConfig {
   lapTimeDeltas: { enabled: boolean; numLaps: number; decimalPlaces: number };
   /** LMU's track-limits penalty points. Absent on sims without them. */
   trackLimits: { enabled: boolean };
+  /**
+   * LMU's remaining virtual energy, or fuel for a car without it.
+   * Absent on sims with neither.
+   */
+  lmuVirtualEnergy: { enabled: boolean };
   displayOrder: string[];
   useLivePosition?: boolean;
   sessionVisibility: SessionVisibilitySettings;

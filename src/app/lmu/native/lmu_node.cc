@@ -249,6 +249,14 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
   auto trackLimitsSteps = Napi::Int16Array::New(env, cap);
   if (cap > 0)
     std::fill(trackLimitsSteps.Data(), trackLimitsSteps.Data() + cap, -1);
+  // Fuel as the sim quantises it: a byte over 255, not a percentage. From
+  // scoring, so every car in this loop has one and no sentinel is needed.
+  auto fuelFraction = Napi::Uint8Array::New(env, cap);
+  // Virtual energy, already a fraction. From the telemetry block, so -1 where
+  // a car has none this frame -- 0 is an empty battery, not a missing one.
+  auto virtualEnergy = Napi::Float64Array::New(env, cap);
+  if (cap > 0)
+    std::fill(virtualEnergy.Data(), virtualEnergy.Data() + cap, -1.0);
 
   for (int i = 0; i < count; ++i)
   {
@@ -282,6 +290,7 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
     sector[id] = v.mSector;
     flag[id] = v.mFlag;
     underYellow[id] = v.mUnderYellow ? 1 : 0;
+    fuelFraction[id] = v.mFuelFraction;
     bestSector1[id] = v.mBestSector1;
     bestSector2[id] = v.mBestSector2;
     lastSector1[id] = v.mLastSector1;
@@ -306,6 +315,7 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
         wheelCompounds[id * 4 + wheel] =
             telemetryVehicle->mWheels[wheel].mCompoundIndex;
       trackLimitsSteps[id] = telemetryVehicle->mTrackLimitsSteps;
+      virtualEnergy[id] = telemetryVehicle->mVirtualEnergy;
     }
   }
 
@@ -349,6 +359,8 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
   out.Set("vehElapsedTime", elapsedTime);
   out.Set("vehWheelCompounds", wheelCompounds);
   out.Set("vehTrackLimitsSteps", trackLimitsSteps);
+  out.Set("vehFuelFraction", fuelFraction);
+  out.Set("vehVirtualEnergy", virtualEnergy);
 }
 
 Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)

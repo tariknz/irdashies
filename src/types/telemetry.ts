@@ -32,6 +32,15 @@ export type Telemetry = {
    */
   LmuCarIdxTrackLimitsPoints?: TelemetryVar<number[]>;
   /**
+   * What each car has left to run on, 0..1, or -1 where neither budget reads.
+   *
+   * Virtual energy for a car that runs on it, fuel for one that does not --
+   * the two are not comparable quantities, but only one of them limits any
+   * given car, so one column can carry both. -1 is "no reading", which an
+   * empty tank is not.
+   */
+  LmuCarIdxEnergyRemaining?: TelemetryVar<number[]>;
+  /**
    * The points a drive-through is served at, 0 when the session has not said.
    *
    * A session constant, carried beside the per-car figure because neither is

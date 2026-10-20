@@ -143,6 +143,13 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     );
     this.latest.trackLimitsPointsMax =
       numberValue(frame, 'LmuTrackLimitsPointsMax') ?? 0;
+    // LMU only. Already one figure per car -- virtual energy or fuel,
+    // whichever limits that car -- with -1 for no reading.
+    copyNumberArray(
+      frame,
+      'LmuCarIdxEnergyRemaining',
+      this.latest.carIdxEnergyRemaining
+    );
     copyBooleanArray(frame, 'CarIdxP2P_Status', this.latest.carIdxP2PStatus);
     copyNumberArray(frame, 'CarIdxP2P_Count', this.latest.carIdxP2PCount);
     const sessionState = numberValue(frame, 'SessionState') ?? 0;
@@ -229,6 +236,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.latest.carIdxSessionFlags.length = 0;
     this.latest.carIdxWheelCompounds.length = 0;
     this.latest.carIdxTrackLimitsPoints.length = 0;
+    this.latest.carIdxEnergyRemaining.length = 0;
     this.latest.trackLimitsPointsMax = 0;
     this.latest.carIdxP2PStatus.length = 0;
     this.latest.carIdxP2PCount.length = 0;
@@ -259,6 +267,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       carIdxSessionFlags: [],
       carIdxWheelCompounds: [],
       carIdxTrackLimitsPoints: [],
+      carIdxEnergyRemaining: [],
       trackLimitsPointsMax: 0,
       carIdxP2PStatus: [],
       carIdxP2PCount: [],

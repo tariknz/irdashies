@@ -447,6 +447,14 @@ export interface StandingsSnapshot {
    * different scale.
    */
   carIdxTrackLimitsPoints: number[];
+  /**
+   * What each car has left to run on, 0..1, or -1 where neither budget reads.
+   * Virtual energy for a car that runs on it, fuel otherwise.
+   *
+   * Empty under iRacing, which has no virtual energy and reports no per-car
+   * fuel at all.
+   */
+  carIdxEnergyRemaining: number[];
   /** Points at which a drive-through is served. 0 when unknown. */
   trackLimitsPointsMax: number;
   carIdxP2PStatus: boolean[];

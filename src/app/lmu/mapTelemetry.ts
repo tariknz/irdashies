@@ -14,6 +14,7 @@ import { lapTimeOrAbsent } from './sentinels';
 import { lmuTrackWetness } from './trackWetness';
 import { lmuCarCompound, lmuCompoundChannel } from './tireCompound';
 import { lmuTrackLimitsChannel, lmuTrackLimitsMax } from './trackLimits';
+import { lmuEnergyChannel } from './fuelEnergy';
 import { estimateLmuLapDistPct, type LmuLapDistanceState } from './lapDistance';
 import {
   refineLmuOpponentLapDistPcts,
@@ -413,6 +414,12 @@ export function mapLmuTelemetry(
   // sim, and the ceiling has to be comparable with the figure.
   t.LmuCarIdxTrackLimitsPoints = numArr(
     lmuTrackLimitsChannel(raw.vehTrackLimitsSteps, raw.trackLimitsStepsPerPoint)
+  );
+  // One figure per car: virtual energy where the car runs on it, fuel
+  // otherwise. Which budget applies is a property of the car, not the session,
+  // so the choice is made per car here rather than once for the grid.
+  t.LmuCarIdxEnergyRemaining = numArr(
+    lmuEnergyChannel(raw.vehFuelFraction, raw.vehVirtualEnergy)
   );
   t.LmuTrackLimitsPointsMax = num(
     lmuTrackLimitsMax(

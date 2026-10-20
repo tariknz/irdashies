@@ -87,6 +87,9 @@ export default defineWidgetManifest({
     // Off by default: only LMU reports these, so on iRacing the column
     // would be permanently blank.
     trackLimits: { enabled: false },
+    // Off by default: no iRacing car has virtual energy, and iRacing
+    // reports no per-car fuel either, so the column would be blank.
+    lmuVirtualEnergy: { enabled: false },
     displayOrder: [
       'position',
       'carNumber',
@@ -106,6 +109,7 @@ export default defineWidgetManifest({
       'compound',
       'lapTimeDeltas',
       'trackLimits',
+      'lmuVirtualEnergy',
       'pushToPass',
     ],
     driverTag: { enabled: false },

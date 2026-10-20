@@ -96,6 +96,8 @@ export const useDriverStandings = (
     standingsSnapshot?.carIdxWheelCompounds ?? EMPTY_NUMBERS;
   const carIdxTrackLimitsPoints =
     standingsSnapshot?.carIdxTrackLimitsPoints ?? EMPTY_NUMBERS;
+  const carIdxEnergyRemaining =
+    standingsSnapshot?.carIdxEnergyRemaining ?? EMPTY_NUMBERS;
   const carIdxSessionFlags =
     standingsSnapshot?.carIdxSessionFlags ?? EMPTY_NUMBERS;
   const isOfficial = useSessionIsOfficial();
@@ -133,6 +135,7 @@ export const useDriverStandings = (
         carIdxTireCompoundValue: carIdxTireCompound,
         carIdxWheelCompoundsValue: carIdxWheelCompounds,
         carIdxTrackLimitsPointsValue: carIdxTrackLimitsPoints,
+        carIdxEnergyRemainingValue: carIdxEnergyRemaining,
         carIdxSessionFlags: carIdxSessionFlags,
       },
       {
@@ -224,6 +227,7 @@ export const useDriverStandings = (
     carIdxTireCompound,
     carIdxWheelCompounds,
     carIdxTrackLimitsPoints,
+    carIdxEnergyRemaining,
     carIdxSessionFlags,
     positions,
     fastestLaps,

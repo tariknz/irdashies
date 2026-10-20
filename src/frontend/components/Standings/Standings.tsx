@@ -427,6 +427,7 @@ export const Standings = () => {
                           }
                           trackLimitsPoints={result.trackLimitsPoints}
                           trackLimitsMax={trackLimitsMax}
+                          lmuVirtualEnergy={result.energyRemaining}
                           carId={result.carId}
                           lastPitLap={result.lastPitLap}
                           lastLap={result.lastLap}

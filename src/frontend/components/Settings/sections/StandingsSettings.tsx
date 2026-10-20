@@ -133,6 +133,11 @@ const sortableSettings: SortableSetting[] = [
   },
   { id: 'pushToPass', label: 'Push to Pass', configKey: 'pushToPass' },
   { id: 'trackLimits', label: 'Track Limits', configKey: 'trackLimits' },
+  {
+    id: 'lmuVirtualEnergy',
+    label: 'LMU Virtual Energy',
+    configKey: 'lmuVirtualEnergy',
+  },
 ];
 
 const defaultConfig = getWidgetDefaultConfig('standings');

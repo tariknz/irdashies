@@ -132,5 +132,9 @@ export function fixture(): LmuRawTelemetry {
     // car 0 reads 0.25 of three, car 1 is clean, and car 2 is one step from a
     // drive-through.
     vehTrackLimitsSteps: [1, 0, 11],
+    // Car 0 is energy-limited and runs on virtual energy; car 1 has none, so
+    // its fuel byte is what counts; car 2 reports neither.
+    vehFuelFraction: [255, 51, 0],
+    vehVirtualEnergy: [0.42, 0, 0],
   } as unknown as LmuRawTelemetry;
 }

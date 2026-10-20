@@ -56,6 +56,11 @@ export interface Standings {
    * 0 is a clean car; a car with no reading is undefined, not 0.
    */
   trackLimitsPoints?: number;
+  /**
+   * Virtual energy or fuel remaining, 0..1, or undefined where neither reads.
+   * Which of the two it is depends on the car; only one limits it.
+   */
+  energyRemaining?: number;
   onTrack: boolean;
   carClass: {
     id: number;
@@ -110,6 +115,21 @@ const trackLimitsFor = (
   carIdx: number
 ): number | undefined => {
   const value = points?.[carIdx];
+  return typeof value === 'number' && value >= 0 ? value : undefined;
+};
+
+/**
+ * One car's remaining budget, or undefined where there is no reading.
+ *
+ * Undefined rather than 0, because 0 is an empty tank and a car the sim has
+ * not reported is not empty -- it is unknown, and a cell reading 0% for it
+ * would be an assertion nobody made.
+ */
+const energyFor = (
+  energy: number[] | undefined,
+  carIdx: number
+): number | undefined => {
+  const value = energy?.[carIdx];
   return typeof value === 'number' && value >= 0 ? value : undefined;
 };
 
@@ -175,6 +195,8 @@ export const createDriverStandings = (
     carIdxWheelCompoundsValue?: number[];
     /** Points per car. -1 is unknown. Empty under iRacing. */
     carIdxTrackLimitsPointsValue?: number[];
+    /** 0..1 per car, -1 unavailable. Empty under iRacing. */
+    carIdxEnergyRemainingValue?: number[];
     isOnTrack?: boolean;
     carIdxSessionFlags?: number[];
   },
@@ -310,6 +332,10 @@ export const createDriverStandings = (
           telemetry?.carIdxTrackLimitsPointsValue,
           result.CarIdx
         ),
+        energyRemaining: energyFor(
+          telemetry?.carIdxEnergyRemainingValue,
+          result.CarIdx
+        ),
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,
@@ -414,6 +440,10 @@ export const createDriverStandings = (
         ),
         trackLimitsPoints: trackLimitsFor(
           telemetry?.carIdxTrackLimitsPointsValue,
+          driver.CarIdx
+        ),
+        energyRemaining: energyFor(
+          telemetry?.carIdxEnergyRemainingValue,
           driver.CarIdx
         ),
         carClass: {

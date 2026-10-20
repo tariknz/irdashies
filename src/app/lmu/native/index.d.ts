@@ -62,9 +62,13 @@ export interface LmuRawVehicle {
   /**
    * Raw mFuelFraction, straight off a uint8_t, so always a whole number.
    *
-   * The scale is unverified -- the name suggests 0..1, which a byte cannot
-   * hold, so it is far more likely a percentage. Nothing reads it yet.
-   * Confirm against a live session before treating it as either.
+   * The scale is the byte: divide by 255 for a fraction. Neither 0..1 nor a
+   * percentage, which an earlier note here guessed at -- the same quantisation
+   * the sim uses for mLiftAndCoastProgress.
+   *
+   * Per car and on the session snapshot, which only rebuilds when the session
+   * signature moves, so this is not a live reading. The telemetry channel
+   * LmuCarIdxEnergyRemaining is, and is what consumers should use.
    */
   fuelFraction: number;
   pos: LmuVec;
@@ -250,6 +254,18 @@ export interface LmuRawTelemetry {
    * points figure.
    */
   vehTrackLimitsSteps?: ArrayLike<number>;
+  /**
+   * Fuel remaining per car, as the sim quantises it: a byte over 255, not a
+   * percentage. From scoring, so every car on the grid has one.
+   */
+  vehFuelFraction?: ArrayLike<number>;
+  /**
+   * Virtual energy remaining per car, already a fraction.
+   *
+   * From the telemetry block, so -1 where a car reported none this frame. 0 is
+   * an empty battery, not a missing reading, which is why the sentinel is -1.
+   */
+  vehVirtualEnergy?: ArrayLike<number>;
 }
 
 export interface LmuRawSession extends LmuRawTelemetry {

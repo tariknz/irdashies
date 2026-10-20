@@ -134,6 +134,15 @@ const wheelCompoundsFor = (
   return [flat[base], flat[base + 1], flat[base + 2], flat[base + 3]];
 };
 
+/** One car's remaining budget, or undefined where there is no reading. */
+const energyFor = (
+  energy: readonly number[],
+  carIdx: number
+): number | undefined => {
+  const value = energy[carIdx];
+  return typeof value === 'number' && value >= 0 ? value : undefined;
+};
+
 /** One car's track-limits points, or undefined where there is no reading. */
 const trackLimitsFor = (
   points: readonly number[],
@@ -151,6 +160,8 @@ export const useCarState = () => {
   const carIdxWheelCompounds = snapshot?.carIdxWheelCompounds ?? EMPTY_NUMBERS;
   const carIdxTrackLimitsPoints =
     snapshot?.carIdxTrackLimitsPoints ?? EMPTY_NUMBERS;
+  const carIdxEnergyRemaining =
+    snapshot?.carIdxEnergyRemaining ?? EMPTY_NUMBERS;
   const carIdxSessionFlags = snapshot?.carIdxSessionFlags ?? EMPTY_NUMBERS;
 
   return useMemo(() => {
@@ -162,6 +173,7 @@ export const useCarState = () => {
         tireCompound: carIdxTireCompound[index],
         wheelCompounds: wheelCompoundsFor(carIdxWheelCompounds, index),
         trackLimitsPoints: trackLimitsFor(carIdxTrackLimitsPoints, index),
+        energyRemaining: energyFor(carIdxEnergyRemaining, index),
         dnf: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Disqualify),
         repair: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Repair),
         penalty: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Black),
@@ -174,6 +186,7 @@ export const useCarState = () => {
     carIdxTireCompound,
     carIdxWheelCompounds,
     carIdxTrackLimitsPoints,
+    carIdxEnergyRemaining,
     carIdxSessionFlags,
   ]);
 };
@@ -314,6 +327,7 @@ export const useDriverStandings = () => {
         tireCompound: carState?.tireCompound ?? 0,
         wheelCompounds: carState?.wheelCompounds,
         trackLimitsPoints: carState?.trackLimitsPoints,
+        energyRemaining: carState?.energyRemaining,
         carClass: driver.carClass,
         radioActive: radioActiveCarIdxs.includes(driverPos.carIdx),
         carId: driver.carId,
