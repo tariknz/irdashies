@@ -75,11 +75,19 @@ export const readData = <T>(
   return contents[key] as T;
 };
 
+const toContents = (raw: unknown): Contents => {
+  if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
+    return raw as Contents;
+  }
+  logger.warn('Config file does not contain an object');
+  return {};
+};
+
 const parseDataAsync = async (filePath: string): Promise<Contents> => {
   const defaultData: Contents = {};
   try {
     const data = await fsp.readFile(filePath, 'utf8');
-    return JSON.parse(data);
+    return toContents(JSON.parse(data));
   } catch (error) {
     logger.warn('Failed to read config file', error);
     logger.warn('Creating new config file');
@@ -91,7 +99,7 @@ const parseData = (filePath: string): Contents => {
   const defaultData: Contents = {};
   try {
     const data = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(data);
+    return toContents(JSON.parse(data));
   } catch (error) {
     logger.warn('Failed to read config file', error);
     logger.warn('Creating new config file');
