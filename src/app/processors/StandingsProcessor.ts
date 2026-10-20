@@ -134,6 +134,15 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       'LmuCarIdxWheelCompounds',
       this.latest.carIdxWheelCompounds
     );
+    // LMU only. Already in points rather than the sim's infringement steps,
+    // and -1 where a car has no reading -- 0 is a clean car.
+    copyNumberArray(
+      frame,
+      'LmuCarIdxTrackLimitsPoints',
+      this.latest.carIdxTrackLimitsPoints
+    );
+    this.latest.trackLimitsPointsMax =
+      numberValue(frame, 'LmuTrackLimitsPointsMax') ?? 0;
     copyBooleanArray(frame, 'CarIdxP2P_Status', this.latest.carIdxP2PStatus);
     copyNumberArray(frame, 'CarIdxP2P_Count', this.latest.carIdxP2PCount);
     const sessionState = numberValue(frame, 'SessionState') ?? 0;
@@ -219,6 +228,8 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.latest.carIdxTireCompound.length = 0;
     this.latest.carIdxSessionFlags.length = 0;
     this.latest.carIdxWheelCompounds.length = 0;
+    this.latest.carIdxTrackLimitsPoints.length = 0;
+    this.latest.trackLimitsPointsMax = 0;
     this.latest.carIdxP2PStatus.length = 0;
     this.latest.carIdxP2PCount.length = 0;
     this.latest.sessionUniqueId = 0;
@@ -247,6 +258,8 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       carIdxTireCompound: [],
       carIdxSessionFlags: [],
       carIdxWheelCompounds: [],
+      carIdxTrackLimitsPoints: [],
+      trackLimitsPointsMax: 0,
       carIdxP2PStatus: [],
       carIdxP2PCount: [],
       sessionUniqueId: 0,

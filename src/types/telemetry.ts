@@ -24,6 +24,20 @@ export type Telemetry = {
    * a car can be on four different compounds, and the standings say so.
    */
   LmuCarIdxWheelCompounds?: TelemetryVar<number[]>;
+  /**
+   * LMU's track-limits penalty points per car, in points rather than the
+   * sim's own infringement steps. -1 where a car has no reading, or the
+   * session has not stated the scale -- a clean car reads 0, and the two must
+   * not look alike.
+   */
+  LmuCarIdxTrackLimitsPoints?: TelemetryVar<number[]>;
+  /**
+   * The points a drive-through is served at, 0 when the session has not said.
+   *
+   * A session constant, carried beside the per-car figure because neither is
+   * readable without the other: 0.25 means nothing until it is 0.25 of three.
+   */
+  LmuTrackLimitsPointsMax?: TelemetryVar<number[]>;
   /** Fore(+)/aft(-) metres of the nearest car alongside; null when clear. */
   LmuBlindSpotLeftLongitudinal?: TelemetryVar<(number | null)[]>;
   LmuBlindSpotRightLongitudinal?: TelemetryVar<(number | null)[]>;

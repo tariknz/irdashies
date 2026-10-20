@@ -243,6 +243,12 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
   auto wheelCompounds = Napi::Int16Array::New(env, cap * 4);
   if (cap > 0)
     std::fill(wheelCompounds.Data(), wheelCompounds.Data() + cap * 4, -1);
+  // Track-limit infringements, counted in the sim's own steps rather than in
+  // points: the divisor is mTrackLimitsStepsPerPoint on the scoring block.
+  // -1 for a car with no telemetry block, since 0 steps is a clean car.
+  auto trackLimitsSteps = Napi::Int16Array::New(env, cap);
+  if (cap > 0)
+    std::fill(trackLimitsSteps.Data(), trackLimitsSteps.Data() + cap, -1);
 
   for (int i = 0; i < count; ++i)
   {
@@ -299,6 +305,7 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
       for (int wheel = 0; wheel < 4; ++wheel)
         wheelCompounds[id * 4 + wheel] =
             telemetryVehicle->mWheels[wheel].mCompoundIndex;
+      trackLimitsSteps[id] = telemetryVehicle->mTrackLimitsSteps;
     }
   }
 
@@ -341,6 +348,7 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
   out.Set("vehLapNumber", lapNumber);
   out.Set("vehElapsedTime", elapsedTime);
   out.Set("vehWheelCompounds", wheelCompounds);
+  out.Set("vehTrackLimitsSteps", trackLimitsSteps);
 }
 
 Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
@@ -378,6 +386,12 @@ Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
   out.Set("sessionTimeRemaining", scoring.mSessionTimeRemaining);
   out.Set("timeOfDay", scoring.mTimeOfDay);
   out.Set("trackGripLevel", scoring.mTrackGripLevel);
+  // The scale of the track-limits penalty system: how many infringement steps
+  // make one point, and how many make a penalty. Both are needed to read
+  // mTrackLimitsSteps -- the steps alone have no meaning.
+  out.Set("trackLimitsStepsPerPoint", scoring.mTrackLimitsStepsPerPoint);
+  out.Set(
+      "trackLimitsStepsPerPenalty", scoring.mTrackLimitsStepsPerPenalty);
   out.Set("cloudCoverage", scoring.mCloudCoverage);
   out.Set("raining", scoring.mRaining);
   out.Set("darkCloud", scoring.mDarkCloud);

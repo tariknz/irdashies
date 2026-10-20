@@ -18,6 +18,8 @@ export function fixture(): LmuRawSession {
     numVehicles: 3,
     gamePhase: 4,
     cloudCoverage: 10,
+    trackLimitsStepsPerPoint: 4,
+    trackLimitsStepsPerPenalty: 12,
     raining: 0,
     ambientTemp: 23.5,
     trackTemp: 31,

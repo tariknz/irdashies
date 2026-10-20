@@ -84,6 +84,9 @@ export default defineWidgetManifest({
       decimalPlaces: 1,
     },
     pushToPass: { enabled: false },
+    // Off by default: only LMU reports these, so on iRacing the column
+    // would be permanently blank.
+    trackLimits: { enabled: false },
     displayOrder: [
       'position',
       'carNumber',
@@ -102,6 +105,7 @@ export default defineWidgetManifest({
       'lastTime',
       'compound',
       'lapTimeDeltas',
+      'trackLimits',
       'pushToPass',
     ],
     driverTag: { enabled: false },
@@ -193,6 +197,7 @@ export default defineWidgetManifest({
         'topSpeed',
         'manufacturerPosition',
         'classRank',
+        'trackLimits',
       ],
     },
     footerBar: {
@@ -277,6 +282,7 @@ export default defineWidgetManifest({
         'topSpeed',
         'manufacturerPosition',
         'classRank',
+        'trackLimits',
       ],
     },
     showOnlyWhenOnTrack: false,

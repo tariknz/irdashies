@@ -51,6 +51,11 @@ export interface Standings {
    * reports only one per car. -1 for a wheel with no reading.
    */
   wheelCompounds?: number[];
+  /**
+   * LMU's track-limits penalty points, or undefined where the sim has none.
+   * 0 is a clean car; a car with no reading is undefined, not 0.
+   */
+  trackLimitsPoints?: number;
   onTrack: boolean;
   carClass: {
     id: number;
@@ -91,6 +96,21 @@ const wheelCompoundsFor = (
   const base = carIdx * 4;
   if (base + 4 > flat.length) return undefined;
   return [flat[base], flat[base + 1], flat[base + 2], flat[base + 3]];
+};
+
+/**
+ * One car's track-limits points, or undefined where there is no reading.
+ *
+ * Undefined rather than 0, because 0 is a clean car and a car the sim has not
+ * reported is not clean -- it is unknown, and a cell showing 0.00 for it would
+ * be an assertion nobody made.
+ */
+const trackLimitsFor = (
+  points: number[] | undefined,
+  carIdx: number
+): number | undefined => {
+  const value = points?.[carIdx];
+  return typeof value === 'number' && value >= 0 ? value : undefined;
 };
 
 const calculateDelta = (
@@ -153,6 +173,8 @@ export const createDriverStandings = (
     carIdxTireCompoundValue?: number[];
     /** Flat, four per car at carIdx * 4 + wheel. Empty under iRacing. */
     carIdxWheelCompoundsValue?: number[];
+    /** Points per car. -1 is unknown. Empty under iRacing. */
+    carIdxTrackLimitsPointsValue?: number[];
     isOnTrack?: boolean;
     carIdxSessionFlags?: number[];
   },
@@ -284,6 +306,10 @@ export const createDriverStandings = (
           telemetry?.carIdxWheelCompoundsValue,
           result.CarIdx
         ),
+        trackLimitsPoints: trackLimitsFor(
+          telemetry?.carIdxTrackLimitsPointsValue,
+          result.CarIdx
+        ),
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,
@@ -384,6 +410,10 @@ export const createDriverStandings = (
         tireCompound: telemetry?.carIdxTireCompoundValue?.[driver.CarIdx] ?? 0,
         wheelCompounds: wheelCompoundsFor(
           telemetry?.carIdxWheelCompoundsValue,
+          driver.CarIdx
+        ),
+        trackLimitsPoints: trackLimitsFor(
+          telemetry?.carIdxTrackLimitsPointsValue,
           driver.CarIdx
         ),
         carClass: {

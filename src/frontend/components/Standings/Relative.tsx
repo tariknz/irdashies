@@ -25,6 +25,7 @@ import {
 import { SessionBar } from './components/SessionBar/SessionBar';
 import { TitleBar } from './components/TitleBar/TitleBar';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
+import { useTrackLimitsMax } from './hooks/useTrackLimitsMax';
 import { calculateLapDeltas } from './hooks';
 import { FlagContour } from '@irdashies/utils/FlagContour';
 import { getFlag } from '@irdashies/utils/getFlag';
@@ -103,6 +104,7 @@ export const Relative = () => {
 
   // Check if this is a team racing session
   const isTeamRacing = useWeekendInfoTeamRacing();
+  const trackLimitsMax = useTrackLimitsMax();
 
   // Determine table border spacing based on compact mode
   const isCompact =
@@ -281,6 +283,8 @@ export const Relative = () => {
           wheelCompounds={
             settings?.compound?.enabled ? result.wheelCompounds : undefined
           }
+          trackLimitsPoints={result.trackLimitsPoints}
+          trackLimitsMax={trackLimitsMax}
           carId={result.carId}
           lastPitLap={result.lastPitLap}
           lastLap={result.lastLap}
@@ -327,6 +331,7 @@ export const Relative = () => {
     hideCarManufacturer,
     p2pDisplayStates,
     isTeamRacing,
+    trackLimitsMax,
     tagMap,
     hasAnyTag,
     hasAnyCountryFlag,

@@ -13,6 +13,7 @@ import {
 import { lapTimeOrAbsent } from './sentinels';
 import { lmuTrackWetness } from './trackWetness';
 import { lmuCarCompound, lmuCompoundChannel } from './tireCompound';
+import { lmuTrackLimitsChannel, lmuTrackLimitsMax } from './trackLimits';
 import { estimateLmuLapDistPct, type LmuLapDistanceState } from './lapDistance';
 import {
   refineLmuOpponentLapDistPcts,
@@ -408,6 +409,17 @@ export function mapLmuTelemetry(
   // goes out beside it as LmuCarIdxWheelCompounds.
   t.CarIdxTireCompound = numArr(lmuCompoundChannel(raw.vehWheelCompounds));
   t.LmuCarIdxWheelCompounds = numArr(raw.vehWheelCompounds);
+  // Points, not the sim's steps: the step count is an encoding detail of this
+  // sim, and the ceiling has to be comparable with the figure.
+  t.LmuCarIdxTrackLimitsPoints = numArr(
+    lmuTrackLimitsChannel(raw.vehTrackLimitsSteps, raw.trackLimitsStepsPerPoint)
+  );
+  t.LmuTrackLimitsPointsMax = num(
+    lmuTrackLimitsMax(
+      raw.trackLimitsStepsPerPenalty,
+      raw.trackLimitsStepsPerPoint
+    ) ?? 0
+  );
   t.CarIdxSessionFlags = numArr(carSessionFlags(raw));
   t.CarDistAhead = numArr(undefined);
   t.CarDistBehind = numArr(undefined);

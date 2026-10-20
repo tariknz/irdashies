@@ -16,6 +16,7 @@ import { LmuBadgeCell } from './cells/LmuBadgeCell';
 import { CarManufacturerCell } from './cells/CarManufacturerCell';
 import { CarNumberCell } from './cells/CarNumberCell';
 import { CompoundCell } from './cells/CompoundCell';
+import { TrackLimitsCell } from './cells/TrackLimitsCell';
 import { CountryFlagsCell } from './cells/CountryFlagsCell';
 import { DeltaCell } from './cells/DeltaCell';
 import { DriverNameCell } from './cells/DriverNameCell';
@@ -62,6 +63,10 @@ interface DriverRowInfoProps {
   tireCompound?: number;
   /** LMU's four wheels, FL, FR, RL, RR. Undefined where the sim has one. */
   wheelCompounds?: number[];
+  /** LMU's track-limits penalty points. Undefined where unknown. */
+  trackLimitsPoints?: number;
+  /** Points at which a drive-through is served. */
+  trackLimitsMax?: number;
   carId?: number;
   lapTimeDeltas?: number[];
   numLapDeltasToShow?: number;
@@ -226,6 +231,8 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lmuRating,
     tireCompound,
     wheelCompounds,
+    trackLimitsPoints,
+    trackLimitsMax,
     carId,
     lapTimeDeltas,
     numLapDeltasToShow,
@@ -688,6 +695,22 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
         ),
       },
       {
+        id: 'trackLimits',
+        shouldRender:
+          (displayOrder ? displayOrder.includes('trackLimits') : false) &&
+          (config && 'trackLimits' in config
+            ? config.trackLimits.enabled
+            : false),
+        component: (
+          <TrackLimitsCell
+            key="trackLimits"
+            points={trackLimitsPoints}
+            max={trackLimitsMax}
+            compactMode={compactMode}
+          />
+        ),
+      },
+      {
         id: 'pushToPass',
         shouldRender:
           (displayOrder ? displayOrder.includes('pushToPass') : false) &&
@@ -762,6 +785,8 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lastTimeState,
     tireCompound,
     wheelCompounds,
+    trackLimitsPoints,
+    trackLimitsMax,
     lapTimeDeltas,
     emptyLapDeltaPlaceholders,
     avgLapTime,

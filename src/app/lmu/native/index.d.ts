@@ -93,6 +93,16 @@ export interface LmuRawTelemetry {
   sessionTimeRemaining: number;
   timeOfDay: number;
   trackGripLevel: number;
+  /**
+   * The scale of LMU's track-limits penalty system.
+   *
+   * `mTrackLimitsSteps` on a car is counted in steps, not points:
+   * `steps / trackLimitsStepsPerPoint` is the points figure the sim displays,
+   * and `trackLimitsStepsPerPenalty / trackLimitsStepsPerPoint` is the ceiling
+   * a drive-through is served at. Neither number means anything alone.
+   */
+  trackLimitsStepsPerPoint: number;
+  trackLimitsStepsPerPenalty: number;
   cloudCoverage: number;
   raining: number;
   darkCloud: number;
@@ -232,6 +242,14 @@ export interface LmuRawTelemetry {
    * so the sentinel cannot be 0.
    */
   vehWheelCompounds?: ArrayLike<number>;
+  /**
+   * Track-limit infringement steps per car, indexed by slot.
+   *
+   * -1 where the car had no telemetry block that frame. 0 is a clean car, so
+   * the sentinel cannot be 0. Divide by `trackLimitsStepsPerPoint` for the
+   * points figure.
+   */
+  vehTrackLimitsSteps?: ArrayLike<number>;
 }
 
 export interface LmuRawSession extends LmuRawTelemetry {

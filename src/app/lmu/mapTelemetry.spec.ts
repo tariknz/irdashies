@@ -221,6 +221,29 @@ describe('mapLmuTelemetry', () => {
     expect(t.PlayerTireCompound.value[0]).toBe(-1);
   });
 
+  it('maps track-limits points, converted from the sim’s steps', () => {
+    // The fixture is four steps to a point and twelve to a penalty, so car 0
+    // sits at 0.25 of three and car 2 is one step away.
+    const t = mapLmuTelemetry(fixture());
+    expect(t.LmuCarIdxTrackLimitsPoints?.value).toEqual([0.25, 0, 2.75]);
+    expect(t.LmuTrackLimitsPointsMax?.value[0]).toBe(3);
+  });
+
+  it('keeps a car with no reading apart from a clean one', () => {
+    const base = fixture();
+    const t = mapLmuTelemetry({ ...base, vehTrackLimitsSteps: [-1, 0, 4] });
+    expect(t.LmuCarIdxTrackLimitsPoints?.value).toEqual([-1, 0, 1]);
+  });
+
+  it('publishes no points at all when the session states no scale', () => {
+    // Without a divisor there is no points figure, and zeroes would show the
+    // whole grid as clean.
+    const base = fixture();
+    const t = mapLmuTelemetry({ ...base, trackLimitsStepsPerPoint: 0 });
+    expect(t.LmuCarIdxTrackLimitsPoints?.value).toEqual([-1, -1, -1]);
+    expect(t.LmuTrackLimitsPointsMax?.value[0]).toBe(0);
+  });
+
   it('maps LMU race flags', () => {
     const base = fixture();
     expect(

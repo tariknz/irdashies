@@ -299,6 +299,13 @@ export interface SessionBarSnapshot {
   incidentWarningInitialLimit?: number;
   incidentWarningSubsequentLimit?: number;
   trackWetness: number;
+  /**
+   * LMU's track-limits penalty points for the player, and the points a
+   * drive-through is served at. Both undefined on a sim without them, and
+   * the points are undefined rather than 0 when there is no reading.
+   */
+  trackLimitsPoints?: number;
+  trackLimitsPointsMax?: number;
   precipitation?: number;
   relativeHumidity?: number;
   airTemp?: number;
@@ -432,6 +439,16 @@ export interface StandingsSnapshot {
    * reads this first and falls back to carIdxTireCompound.
    */
   carIdxWheelCompounds: number[];
+  /**
+   * LMU's track-limits penalty points per car. -1 where a car has no reading
+   * or the session has not stated the scale; 0 is a clean car.
+   *
+   * Empty under iRacing, whose incident points are a different system on a
+   * different scale.
+   */
+  carIdxTrackLimitsPoints: number[];
+  /** Points at which a drive-through is served. 0 when unknown. */
+  trackLimitsPointsMax: number;
   carIdxP2PStatus: boolean[];
   carIdxP2PCount: number[];
   sessionUniqueId: number;

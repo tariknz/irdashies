@@ -30,6 +30,8 @@ export function fixture(): LmuRawTelemetry {
     sessionTimeRemaining: 2349.5,
     timeOfDay: 0.45,
     trackGripLevel: 1,
+    trackLimitsStepsPerPoint: 4,
+    trackLimitsStepsPerPenalty: 12,
     cloudCoverage: 20,
     raining: 0,
     darkCloud: 0,
@@ -126,5 +128,9 @@ export function fixture(): LmuRawTelemetry {
     // choice, and the case the split rendering exists for -- and car 2 is
     // uniform on 0.
     vehWheelCompounds: [1, 1, 1, 1, 3, 3, 0, 0, 0, 0, 0, 0],
+    // Infringement steps per car. Four to a point and twelve to a penalty, so
+    // car 0 reads 0.25 of three, car 1 is clean, and car 2 is one step from a
+    // drive-through.
+    vehTrackLimitsSteps: [1, 0, 11],
   } as unknown as LmuRawTelemetry;
 }

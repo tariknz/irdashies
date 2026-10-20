@@ -132,6 +132,7 @@ const sortableSettings: SortableSetting[] = [
     configKey: 'lapCount',
   },
   { id: 'pushToPass', label: 'Push to Pass', configKey: 'pushToPass' },
+  { id: 'trackLimits', label: 'Track Limits', configKey: 'trackLimits' },
 ];
 
 const defaultConfig = getWidgetDefaultConfig('standings');

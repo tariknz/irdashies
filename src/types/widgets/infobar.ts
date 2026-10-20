@@ -30,6 +30,7 @@ export default defineWidgetManifest({
     trackTemperature: { enabled: true, unit: 'Metric' },
     wind: { enabled: false, speedPosition: 'right' },
     trackName: { enabled: false },
+    trackLimits: { enabled: false },
     background: { opacity: 80 },
     foreground: { opacity: 70 },
     showOnlyWhenOnTrack: false,
@@ -54,6 +55,7 @@ export default defineWidgetManifest({
       'trackTemperature',
       'wind',
       'trackName',
+      'trackLimits',
     ],
   },
   properties: {

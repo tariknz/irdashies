@@ -29,6 +29,7 @@ import {
 } from '@irdashies/context';
 import { hiddenRatingColumns } from '@irdashies/types';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
+import { useTrackLimitsMax } from './hooks/useTrackLimitsMax';
 import { computeStintLap } from './components/DriverInfoRow/cells/lapCountUtils';
 import { lmuRatingFor } from './lmuRatingFor';
 
@@ -195,6 +196,7 @@ export const Standings = () => {
 
   // Check if this is a team racing session
   const isTeamRacing = useWeekendInfoTeamRacing();
+  const trackLimitsMax = useTrackLimitsMax();
 
   // Resolved here so the header and the rows below filter from one set:
   // they build their column lists independently, and DriverClassHeader sums
@@ -423,6 +425,8 @@ export const Standings = () => {
                               ? result.wheelCompounds
                               : undefined
                           }
+                          trackLimitsPoints={result.trackLimitsPoints}
+                          trackLimitsMax={trackLimitsMax}
                           carId={result.carId}
                           lastPitLap={result.lastPitLap}
                           lastLap={result.lastLap}

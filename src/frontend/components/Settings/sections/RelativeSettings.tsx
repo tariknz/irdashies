@@ -103,6 +103,7 @@ const sortableSettings: SortableSetting[] = [
     hasSubSetting: true,
   },
   { id: 'pushToPass', label: 'Push to Pass', configKey: 'pushToPass' },
+  { id: 'trackLimits', label: 'Track Limits', configKey: 'trackLimits' },
 ];
 
 const defaultConfig = getWidgetDefaultConfig('relative');

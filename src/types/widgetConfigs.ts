@@ -83,6 +83,8 @@ export interface SessionBarConfig {
     hideIfSingleDriver?: boolean;
   };
   classRank?: { enabled: boolean };
+  /** LMU's track-limits penalty points for the player. */
+  trackLimits?: { enabled: boolean };
   displayOrder: string[];
   foreground?: { opacity: number };
 }
@@ -194,6 +196,8 @@ export interface StandingsConfig {
   lapTimeDeltas: { enabled: boolean; numLaps: number; decimalPlaces: number };
   avgLapTime: { enabled: boolean; numLaps: number; timeFormat: TimeFormat };
   lapCount: { enabled: boolean };
+  /** LMU's track-limits penalty points. Absent on sims without them. */
+  trackLimits: { enabled: boolean };
   titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
   headerBar: SessionBarConfig;
   footerBar: SessionBarConfig;
@@ -257,6 +261,8 @@ export interface RelativeConfig {
   pushToPass: { enabled: boolean };
   driverTag: { enabled: boolean; widthPx?: number };
   lapTimeDeltas: { enabled: boolean; numLaps: number; decimalPlaces: number };
+  /** LMU's track-limits penalty points. Absent on sims without them. */
+  trackLimits: { enabled: boolean };
   displayOrder: string[];
   useLivePosition?: boolean;
   sessionVisibility: SessionVisibilitySettings;
