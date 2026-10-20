@@ -19,6 +19,7 @@ import {
   lmuSessionSignature,
 } from '../../lmu/sessionSignature';
 import { createRosterGate } from '../../lmu/rosterSettle';
+import { createLmuSessionIdentity } from '../../lmu/sessionIdentity';
 import {
   LMU_DISCONNECT_GRACE_MS,
   shouldHoldLmuRunningState,
@@ -204,6 +205,15 @@ export async function publishLmuSDKEvents(
    * is where the sim hitched. See rosterSettle.ts.
    */
   const rosterGate = createRosterGate();
+  /**
+   * Which session this is. Observed once per iteration below and read by both
+   * mappers, so the frame and the snapshot cannot disagree about it.
+   *
+   * Stateful because LMU gives no unique id and the only way to tell a server
+   * rolling its practice session from the same session continuing is that the
+   * clock and the lap count go backwards. See sessionIdentity.ts.
+   */
+  const sessionIdentity = createLmuSessionIdentity();
   let activeTrackName = '';
   let trackMap: LmuTrackMap | null = null;
   let lastBlindSpotDataIssue: string | null | undefined;
@@ -352,6 +362,7 @@ export async function publishLmuSDKEvents(
           resetLmuLapDistanceState(lapDistanceState);
           resetLmuOpponentLapDistanceState(opponentLapDistanceState);
           rosterGate.reset();
+          sessionIdentity.reset();
           restPoller.setActive(false);
           // The token was bought with a ticket this sim run minted, and a
           // queue that outlives the session has nothing left to ask with.
@@ -454,7 +465,8 @@ export async function publishLmuSDKEvents(
             rawSession,
             trackMap,
             restData.session,
-            (driverName) => ratingClient.get(driverName)
+            (driverName) => ratingClient.get(driverName),
+            sessionIdentity
           );
           mapSessionMs = performance.now() - mapStartedAt;
           perfMetrics.markEnd('mapSession');
@@ -500,11 +512,38 @@ export async function publishLmuSDKEvents(
         }
       }
 
+      // Before either mapper, so both describe the same session. A change
+      // here is what makes every consumer that compares session ids -- race
+      // control, lap history, the reference lap, the replay context -- reset.
+      sessionIdentity.observe({
+        trackName: raw.trackName,
+        session: raw.session,
+        serverName: raw.serverName,
+        endET: raw.endET,
+        currentET: raw.currentET,
+        playerLaps:
+          raw.playerHasVehicle && raw.playerVehicleIdx >= 0
+            ? raw.vehTotalLaps?.[raw.playerVehicleIdx]
+            : undefined,
+      });
+      const sessionChange = sessionIdentity.lastChange();
+      if (sessionChange && sessionChange !== 'stamp') {
+        // A stamp change is already obvious from the track or session-type
+        // lines around it. These two are not: nothing else in the log would
+        // say why every consumer just reset.
+        logger.info(
+          `[lmuSdkBridge] New session detected from the ${sessionChange} ` +
+            `going backwards; id=${sessionIdentity.current()}`
+        );
+      }
+
       perfMetrics.markStart('lifecycleTelemetry');
       const telemetry = mapLmuTelemetry(
         raw,
         lapDistanceState,
-        opponentLapDistanceState
+        opponentLapDistanceState,
+        undefined,
+        sessionIdentity
       );
       lifecycle?._onTelemetry(telemetry);
       perfMetrics.markEnd('lifecycleTelemetry');

@@ -27,7 +27,7 @@ export const LMU_PIT_SPEED_LIMIT_KPH = 60;
 import { lapTimeOrAbsent } from './sentinels';
 import { lmuCarNumber, lmuCarNumberRaw, lmuTeamName } from './entryName';
 import { lmuDriverTires } from './tireCompound';
-import { lmuSessionUniqueId } from './sessionIdentity';
+import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
 
 type Raw = import('./native').LmuRawSession;
 
@@ -332,7 +332,14 @@ export function mapLmuSession(
    * By name rather than Steam id because that is what the service is asked
    * by, and because the sim reports 0 for every id in any case.
    */
-  ratingFor?: (driverName: string) => LmuDriverRating | undefined
+  ratingFor?: (driverName: string) => LmuDriverRating | undefined,
+  /**
+   * The session's identity, owned by the caller. Must be the same object the
+   * telemetry mapper reads: consumers compare SubSessionID here against
+   * SessionUniqueID on the frame, and a disagreement would read as a session
+   * change on every other tick.
+   */
+  sessionIdentity?: LmuSessionIdentity
 ): Session {
   const trackLengthM = raw.lapDist;
   const shiftLights = deriveLmuShiftLightRpm(raw.engineMaxRPM);
@@ -522,7 +529,7 @@ export function mapLmuSession(
       // this, and publishing the type here meant every practice session in
       // existence shared one id -- so changing track left the standings on the
       // previous grid. See sessionIdentity.ts.
-      SubSessionID: lmuSessionUniqueId(raw),
+      SubSessionID: sessionIdentity?.current() ?? lmuSessionUniqueId(raw),
       LeagueID: 0,
       Official: 0,
       RaceWeek: 0,

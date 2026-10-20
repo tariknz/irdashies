@@ -15,7 +15,7 @@ import { lmuTrackWetness } from './trackWetness';
 import { lmuCarCompound, lmuCompoundChannel } from './tireCompound';
 import { lmuTrackLimitsChannel, lmuTrackLimitsMax } from './trackLimits';
 import { lmuEnergyChannel } from './fuelEnergy';
-import { lmuSessionUniqueId } from './sessionIdentity';
+import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
 import { estimateLmuLapDistPct, type LmuLapDistanceState } from './lapDistance';
 import {
   refineLmuOpponentLapDistPcts,
@@ -225,7 +225,14 @@ export function mapLmuTelemetry(
    * Values from LMU's local REST API, polled outside this path. Omitted -- as
    * every spec does -- the channels it feeds are simply absent.
    */
-  restCells?: LmuRestCells
+  restCells?: LmuRestCells,
+  /**
+   * The session's identity, owned by the caller because telling one session
+   * from the next needs memory of the last. Omitted -- as every spec does --
+   * the id is derived from this snapshot alone, which cannot see a server
+   * rolling a session of the same type on the same track.
+   */
+  sessionIdentity?: LmuSessionIdentity
 ): Telemetry {
   // Boundary note: a handful of generated Telemetry keys (e.g. SessionTime) are
   // typed with an `undefined[]` value shape although the iRacing native layer
@@ -290,7 +297,9 @@ export function mapLmuTelemetry(
   // Derived, because LMU has no unique id and the session type is not one.
   // Must agree with WeekendInfo.SubSessionID: consumers compare the two
   // halves of the same fact. See sessionIdentity.ts.
-  t.SessionUniqueID = num(lmuSessionUniqueId(raw));
+  t.SessionUniqueID = num(
+    sessionIdentity?.current() ?? lmuSessionUniqueId(raw)
+  );
   t.SessionState = num(PHASE_TO_SESSION_STATE[raw.gamePhase] ?? 0);
   t.SessionTime = num(sessionClock);
   t.SessionTimeRemain = num(raw.sessionTimeRemaining);
