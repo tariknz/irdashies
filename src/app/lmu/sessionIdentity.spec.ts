@@ -166,6 +166,14 @@ describe('createLmuSessionIdentity', () => {
     expect(identity.observe({ ...sample, playerLaps: 3 })).toBe(first);
   });
 
+  it('has no id before the first observation', () => {
+    // Which is why the bridge observes before it maps a session: reading
+    // current() first published SubSessionID 0 on the first snapshot of a run,
+    // then a spurious session change on the next one.
+    const identity = createLmuSessionIdentity();
+    expect(identity.current()).toBe(0);
+  });
+
   it('never reports the reserved zero once observed', () => {
     const identity = createLmuSessionIdentity();
     expect(identity.observe({})).toBeGreaterThan(0);

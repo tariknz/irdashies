@@ -438,6 +438,36 @@ export async function publishLmuSDKEvents(
       }
 
       let session: Session | null = null;
+      // Before either mapper, and before the session poll below rather than
+      // next to the frame build: the session snapshot is mapped first, so
+      // observing after it published SubSessionID 0 on the first snapshot of
+      // every run and a spurious session change on the next one.
+      //
+      // Before either mapper, so both describe the same session. A change
+      // here is what makes every consumer that compares session ids -- race
+      // control, lap history, the reference lap, the replay context -- reset.
+      sessionIdentity.observe({
+        trackName: raw.trackName,
+        session: raw.session,
+        serverName: raw.serverName,
+        endET: raw.endET,
+        currentET: raw.currentET,
+        playerLaps:
+          raw.playerHasVehicle && raw.playerVehicleIdx >= 0
+            ? raw.vehTotalLaps?.[raw.playerVehicleIdx]
+            : undefined,
+      });
+      const sessionChange = sessionIdentity.lastChange();
+      if (sessionChange && sessionChange !== 'stamp') {
+        // A stamp change is already obvious from the track or session-type
+        // lines around it. These two are not: nothing else in the log would
+        // say why every consumer just reset.
+        logger.info(
+          `[lmuSdkBridge] New session detected from the ${sessionChange} ` +
+            `going backwards; id=${sessionIdentity.current()}`
+        );
+      }
+
       if (rawSession) {
         lastSessionPollTime = tickTime;
         // Queued on every session poll, not only when the snapshot is rebuilt
@@ -510,31 +540,6 @@ export async function publishLmuSDKEvents(
         } else {
           logger.info('[lmuSdkBridge] Blind spot monitor data available');
         }
-      }
-
-      // Before either mapper, so both describe the same session. A change
-      // here is what makes every consumer that compares session ids -- race
-      // control, lap history, the reference lap, the replay context -- reset.
-      sessionIdentity.observe({
-        trackName: raw.trackName,
-        session: raw.session,
-        serverName: raw.serverName,
-        endET: raw.endET,
-        currentET: raw.currentET,
-        playerLaps:
-          raw.playerHasVehicle && raw.playerVehicleIdx >= 0
-            ? raw.vehTotalLaps?.[raw.playerVehicleIdx]
-            : undefined,
-      });
-      const sessionChange = sessionIdentity.lastChange();
-      if (sessionChange && sessionChange !== 'stamp') {
-        // A stamp change is already obvious from the track or session-type
-        // lines around it. These two are not: nothing else in the log would
-        // say why every consumer just reset.
-        logger.info(
-          `[lmuSdkBridge] New session detected from the ${sessionChange} ` +
-            `going backwards; id=${sessionIdentity.current()}`
-        );
       }
 
       perfMetrics.markStart('lifecycleTelemetry');
