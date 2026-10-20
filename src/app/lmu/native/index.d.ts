@@ -10,6 +10,17 @@ export interface LmuRawVehicle {
   name: string;
   vehicleName: string;
   vehicleModel?: string;
+  /**
+   * The fitted compound's name and index, front and rear.
+   *
+   * Both halves of the same fact, which is why they are together: the index is
+   * what the per-wheel telemetry reports, and the name is the only thing that
+   * says what an index means. Absent for a car with no telemetry block.
+   */
+  frontTireCompoundName?: string;
+  rearTireCompoundName?: string;
+  frontTireCompoundIndex?: number;
+  rearTireCompoundIndex?: number;
   className: string;
   vehFilename: string;
   classId: number;
@@ -213,6 +224,14 @@ export interface LmuRawTelemetry {
   vehLapNumber?: ArrayLike<number>;
   /** 100 Hz per-car telemetry clock, seconds. */
   vehElapsedTime?: ArrayLike<number>;
+  /**
+   * Compound index per wheel, per car: four entries per slot at
+   * `id * 4 + wheel`, in the sim's wheel order (FL, FR, RL, RR).
+   *
+   * -1 where the car had no telemetry block that frame. 0 is a real compound,
+   * so the sentinel cannot be 0.
+   */
+  vehWheelCompounds?: ArrayLike<number>;
 }
 
 export interface LmuRawSession extends LmuRawTelemetry {

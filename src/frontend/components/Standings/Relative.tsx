@@ -278,6 +278,9 @@ export const Relative = () => {
           tireCompound={
             settings?.compound?.enabled ? result.tireCompound : undefined
           }
+          wheelCompounds={
+            settings?.compound?.enabled ? result.wheelCompounds : undefined
+          }
           carId={result.carId}
           lastPitLap={result.lastPitLap}
           lastLap={result.lastLap}

@@ -89,6 +89,32 @@ export const weatherFixture = () => ({
 });
 
 /**
+ * GET /rest/garage/UIScreen/TireManagement.
+ *
+ * Only the part that matters here: `compounds` is a list, and an entry's
+ * position in it is the compound index per-wheel telemetry reports. The
+ * optimal temperature rides along in the real payload and nothing reads it,
+ * so it is kept to prove the parser ignores it rather than trips on it.
+ */
+export const tireManagementFixture = () => ({
+  optimalCompoundConditions: {
+    compounds: [
+      { type: 'Hard', optimalTemperature: 85 },
+      { type: 'Medium', optimalTemperature: 90 },
+      { type: 'Soft', optimalTemperature: 95 },
+      { type: 'Wet', optimalTemperature: 45 },
+    ],
+  },
+  tireInventory: {
+    maxAvailableTires: 20,
+    bestConditionsUsed: [
+      [0, 0],
+      [1, 1],
+    ],
+  },
+});
+
+/**
  * GET /rest/garage/UIScreen/CarSetupOverview, trimmed from a real payload.
  *
  * The real one carries the whole setup -- a hundred-odd garageValues keys. The

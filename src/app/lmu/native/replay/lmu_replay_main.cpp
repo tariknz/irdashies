@@ -205,6 +205,10 @@ const char* kRestPaths[] = {
     // multiplayer, where it answers 404 and simply records nothing -- which
     // is correct, since an offline session has no nationalities either.
     "/rest/multiplayer/teams",
+    // The session's tyre compounds in index order, which is what turns a
+    // per-wheel compound index into a name. Without it a replay shows the
+    // right compounds in the wrong colours.
+    "/rest/garage/UIScreen/TireManagement",
 };
 
 struct PendingRest {

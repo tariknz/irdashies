@@ -245,6 +245,44 @@ const nationalities: LmuRestOutput = {
   },
 };
 
+/**
+ * The session's tyre compounds, in the order the sim indexes them.
+ *
+ * `optimalCompoundConditions.compounds` is a list, and a compound's position
+ * in it is the index per-wheel telemetry reports -- which makes this the
+ * catalogue that turns an index into a name. Each entry also carries an
+ * optimal temperature; only the type is taken, since nothing reads the rest.
+ *
+ * More complete than what the grid states, because it includes compounds
+ * nobody has fitted, and less authoritative for the same reason: what a car is
+ * actually on comes from its own telemetry block. `lmuDriverTires` merges the
+ * grid over this.
+ *
+ * Returns undefined rather than [] when nothing parses, so a payload this
+ * build does not recognise leaves the previous catalogue alone.
+ */
+const compoundCatalogue: LmuRestOutput = {
+  id: 'compoundCatalogue',
+  // Session, not telemetry: the catalogue is fixed for a session, and a
+  // telemetry target would rebuild the session on every poll.
+  target: 'session',
+  parse: (payload) => {
+    const compounds = at(payload, ['optimalCompoundConditions', 'compounds']);
+    if (!Array.isArray(compounds)) return undefined;
+    const names = compounds.map((entry) => {
+      const type = at(entry, ['type']);
+      return typeof type === 'string' ? type : '';
+    });
+    // Holes are kept rather than filtered: position in this array *is* the
+    // compound index, so dropping an unparseable entry would renumber every
+    // compound after it.
+    return names.some((name) => name.length > 0) ? names : undefined;
+  },
+  apply: (data, value) => {
+    data.session.tireCompounds = value as string[];
+  },
+};
+
 export const LMU_REST_TASKS: readonly LmuRestTask[] = [
   {
     id: 'repair-and-refuel',
@@ -398,6 +436,15 @@ export const LMU_REST_TASKS: readonly LmuRestTask[] = [
     mode: 'once',
     baseIntervalMs: 2000,
     outputs: [nationalities],
+  },
+  {
+    id: 'tire-management',
+    path: '/rest/garage/UIScreen/TireManagement',
+    // Once per activation, like the other session-fixed payloads: the
+    // compounds a car can run do not change inside a session.
+    mode: 'once',
+    baseIntervalMs: 2000,
+    outputs: [compoundCatalogue],
   },
   {
     id: 'pitstop-estimate',

@@ -11,6 +11,19 @@ export type Telemetry = {
   LmuCarIdxRelativeLateral?: TelemetryVar<number[]>;
   LmuCarIdxRelativeLongitudinal?: TelemetryVar<number[]>;
   LmuCarIdxRelativeHeading?: TelemetryVar<number[]>;
+  /**
+   * Compound index per wheel, for every car: four entries per slot at
+   * `carIdx * 4 + wheel`, in the sim's wheel order (FL, FR, RL, RR).
+   *
+   * Flat rather than nested because it rides the 60 Hz telemetry path, where
+   * one array costs one allocation and an array of arrays costs one per car.
+   * -1 means the car reported no telemetry that frame; 0 is a real compound.
+   *
+   * CarIdxTireCompound carries the front-left of each car, which is the one
+   * value iRacing's shape has room for. This is here for the rest of it:
+   * a car can be on four different compounds, and the standings say so.
+   */
+  LmuCarIdxWheelCompounds?: TelemetryVar<number[]>;
   /** Fore(+)/aft(-) metres of the nearest car alongside; null when clear. */
   LmuBlindSpotLeftLongitudinal?: TelemetryVar<(number | null)[]>;
   LmuBlindSpotRightLongitudinal?: TelemetryVar<(number | null)[]>;

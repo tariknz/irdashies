@@ -194,6 +194,33 @@ describe('mapLmuTelemetry', () => {
     ).toBe(7);
   });
 
+  it('maps tyre compounds per car and per wheel', () => {
+    // The bug this covers: both channels were numArr(undefined), so every row
+    // fell back to index 0 and rendered whatever sat there -- the player's own
+    // tyre, since DriverTires held one entry at 0.
+    const t = mapLmuTelemetry(fixture());
+    // Front-left per car, which is all the iRacing-shaped channel can hold.
+    expect(t.CarIdxTireCompound.value).toEqual([1, 3, 0]);
+    // The whole set, flat, four per car.
+    expect(t.LmuCarIdxWheelCompounds?.value).toEqual([
+      1, 1, 1, 1, 3, 3, 0, 0, 0, 0, 0, 0,
+    ]);
+  });
+
+  it('reports the player’s own compound', () => {
+    const base = fixture();
+    // The fixture's player is car 1, on a wet front.
+    expect(base.vehIsPlayer?.[1]).toBeTruthy();
+    expect(mapLmuTelemetry(base).PlayerTireCompound.value[0]).toBe(3);
+  });
+
+  it('reports no compound rather than compound 0 when the sim is silent', () => {
+    const base = fixture();
+    const t = mapLmuTelemetry({ ...base, vehWheelCompounds: undefined });
+    expect(t.CarIdxTireCompound.value).toEqual([]);
+    expect(t.PlayerTireCompound.value[0]).toBe(-1);
+  });
+
   it('maps LMU race flags', () => {
     const base = fixture();
     expect(

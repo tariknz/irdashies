@@ -46,6 +46,11 @@ export interface Standings {
   lastTimeState?: LastTimeState;
   onPitRoad: boolean;
   tireCompound: number;
+  /**
+   * LMU's four wheel compounds, FL, FR, RL, RR, or undefined where the sim
+   * reports only one per car. -1 for a wheel with no reading.
+   */
+  wheelCompounds?: number[];
   onTrack: boolean;
   carClass: {
     id: number;
@@ -70,6 +75,23 @@ export interface Standings {
   relativePct: number;
   positionChange?: number;
 }
+
+/**
+ * One car's four wheel compounds, or undefined when the sim reports one.
+ *
+ * Undefined rather than four copies of the single value, so the renderer can
+ * tell "this sim has per-wheel data" from "all four happen to match" -- the
+ * first picks the single-glyph path, the second is a real reading.
+ */
+const wheelCompoundsFor = (
+  flat: number[] | undefined,
+  carIdx: number
+): number[] | undefined => {
+  if (!flat || flat.length === 0) return undefined;
+  const base = carIdx * 4;
+  if (base + 4 > flat.length) return undefined;
+  return [flat[base], flat[base + 1], flat[base + 2], flat[base + 3]];
+};
 
 const calculateDelta = (
   carIdx: number,
@@ -129,6 +151,8 @@ export const createDriverStandings = (
     carIdxTrackSurfaceValue?: TrackLocation[];
     radioTransmitCarIdx?: number[];
     carIdxTireCompoundValue?: number[];
+    /** Flat, four per car at carIdx * 4 + wheel. Empty under iRacing. */
+    carIdxWheelCompoundsValue?: number[];
     isOnTrack?: boolean;
     carIdxSessionFlags?: number[];
   },
@@ -256,6 +280,10 @@ export const createDriverStandings = (
           (telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ??
             TrackLocation.NotInWorld) > TrackLocation.NotInWorld,
         tireCompound: telemetry?.carIdxTireCompoundValue?.[result.CarIdx] ?? 0,
+        wheelCompounds: wheelCompoundsFor(
+          telemetry?.carIdxWheelCompoundsValue,
+          result.CarIdx
+        ),
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,
@@ -354,6 +382,10 @@ export const createDriverStandings = (
           (telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ??
             TrackLocation.NotInWorld) > TrackLocation.NotInWorld,
         tireCompound: telemetry?.carIdxTireCompoundValue?.[driver.CarIdx] ?? 0,
+        wheelCompounds: wheelCompoundsFor(
+          telemetry?.carIdxWheelCompoundsValue,
+          driver.CarIdx
+        ),
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,

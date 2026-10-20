@@ -12,6 +12,7 @@ import {
 } from './proximity';
 import { lapTimeOrAbsent } from './sentinels';
 import { lmuTrackWetness } from './trackWetness';
+import { lmuCarCompound, lmuCompoundChannel } from './tireCompound';
 import { estimateLmuLapDistPct, type LmuLapDistanceState } from './lapDistance';
 import {
   refineLmuOpponentLapDistPcts,
@@ -332,7 +333,7 @@ export function mapLmuTelemetry(
     playerIdx >= 0 &&
       (raw.vehInGarageStall[playerIdx] || raw.vehPitState[playerIdx] === 3)
   );
-  t.PlayerTireCompound = num(0);
+  t.PlayerTireCompound = num(lmuCarCompound(raw.vehWheelCompounds, playerIdx));
   t.PlayerFastRepairsUsed = num(0);
   t.PlayerTrackSurface = num(
     playerIdx >= 0 ? trackLocation(raw, playerIdx) : TRACK_NOT_IN_WORLD
@@ -402,7 +403,11 @@ export function mapLmuTelemetry(
   t.CarIdxLastLapTime = lapTimeArr(raw.vehLastLapTime);
   t.CarIdxBestLapTime = lapTimeArr(raw.vehBestLapTime);
   t.CarIdxGear = numArr(undefined);
-  t.CarIdxTireCompound = numArr(undefined);
+  // The front-left of each car, which is all a one-value-per-car channel can
+  // say about a grid that may be on four different compounds. The whole set
+  // goes out beside it as LmuCarIdxWheelCompounds.
+  t.CarIdxTireCompound = numArr(lmuCompoundChannel(raw.vehWheelCompounds));
+  t.LmuCarIdxWheelCompounds = numArr(raw.vehWheelCompounds);
   t.CarIdxSessionFlags = numArr(carSessionFlags(raw));
   t.CarDistAhead = numArr(undefined);
   t.CarDistBehind = numArr(undefined);

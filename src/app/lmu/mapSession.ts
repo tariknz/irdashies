@@ -26,6 +26,7 @@ import type { LmuDriverRating, LmuRestSession } from '@irdashies/types';
 export const LMU_PIT_SPEED_LIMIT_KPH = 60;
 import { lapTimeOrAbsent } from './sentinels';
 import { lmuCarNumber, lmuCarNumberRaw, lmuTeamName } from './entryName';
+import { lmuDriverTires } from './tireCompound';
 
 type Raw = import('./native').LmuRawSession;
 
@@ -642,12 +643,11 @@ export function mapLmuSession(
       DriverSetupPassedTech: 0,
       DriverIncidentCount: 0,
       DriverBrakeCurvingFactor: 0,
-      DriverTires: [
-        {
-          TireIndex: 0,
-          TireCompoundType: raw.frontTireCompoundName ?? '',
-        },
-      ],
+      // Index/name pairs for every compound the grid is on, merged over the
+      // REST catalogue. This used to be one entry at index 0 holding the
+      // player's compound name -- and since the per-car indices were empty
+      // too, every row looked up index 0 and rendered the player's tyre.
+      DriverTires: lmuDriverTires(raw.drivers, rest?.tireCompounds),
       Drivers: drivers,
     },
     // ponytail: nominal thirds only label the direct LMU timing; replace when LMU exposes boundary distances.

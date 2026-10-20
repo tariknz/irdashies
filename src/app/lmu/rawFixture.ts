@@ -121,5 +121,10 @@ export function fixture(): LmuRawTelemetry {
     vehPosZ: [0, 0, 20],
     vehOriX: [0, 0, 0],
     vehOriZ: [1, 1, 1],
+    // Three cars, four wheels each, at carIdx * 4 + wheel. Car 0 is uniform
+    // on compound 1, car 1 runs a wet front and a dry rear -- a real LMU
+    // choice, and the case the split rendering exists for -- and car 2 is
+    // uniform on 0.
+    vehWheelCompounds: [1, 1, 1, 1, 3, 3, 0, 0, 0, 0, 0, 0],
   } as unknown as LmuRawTelemetry;
 }

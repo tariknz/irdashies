@@ -418,6 +418,11 @@ export const Standings = () => {
                               ? result.tireCompound
                               : undefined
                           }
+                          wheelCompounds={
+                            (settings?.compound?.enabled ?? true)
+                              ? result.wheelCompounds
+                              : undefined
+                          }
                           carId={result.carId}
                           lastPitLap={result.lastPitLap}
                           lastLap={result.lastLap}

@@ -102,6 +102,16 @@ export interface LmuRestSession {
    * and the AI have no nationality to report.
    */
   nationalities?: Record<string, string>;
+  /**
+   * The session's compounds in index order, from
+   * `/rest/garage/UIScreen/TireManagement`.
+   *
+   * Position is the compound index per-wheel telemetry reports, so a hole is
+   * kept as an empty string rather than removed -- filtering one out would
+   * renumber every compound after it. Merged into DriverInfo.DriverTires with
+   * what the grid itself states, which wins where the two disagree.
+   */
+  tireCompounds?: string[];
 }
 
 /**

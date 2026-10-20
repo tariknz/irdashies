@@ -753,3 +753,45 @@ describe('mapLmuSession results positions', () => {
     expect(row?.FastestTime).toBeCloseTo(95.5, 3);
   });
 });
+
+describe('mapLmuSession tyre compounds', () => {
+  it('names every compound the grid is on, not just the player’s', () => {
+    // This held one entry at index 0 carrying the player's compound name, and
+    // the per-car indices were empty -- so every row looked up index 0 and
+    // rendered the player's tyre, whatever it was actually on.
+    const tires = mapLmuSession(fixture()).DriverInfo.DriverTires;
+    expect(tires).toEqual([
+      { TireIndex: 0, TireCompoundType: 'Hard' },
+      { TireIndex: 1, TireCompoundType: 'Medium' },
+      { TireIndex: 3, TireCompoundType: 'Wet' },
+    ]);
+  });
+
+  it('takes the full catalogue from REST when it has been polled', () => {
+    const tires = mapLmuSession(fixture(), null, {
+      tireCompounds: ['Hard', 'Medium', 'Soft', 'Wet'],
+    }).DriverInfo.DriverTires;
+    // Index 2 is in the catalogue and on no car, which is the point of it.
+    expect(tires).toEqual([
+      { TireIndex: 0, TireCompoundType: 'Hard' },
+      { TireIndex: 1, TireCompoundType: 'Medium' },
+      { TireIndex: 2, TireCompoundType: 'Soft' },
+      { TireIndex: 3, TireCompoundType: 'Wet' },
+    ]);
+  });
+
+  it('has nothing to say when the sim reports no compounds', () => {
+    const raw = fixture();
+    const stripped = {
+      ...raw,
+      drivers: raw.drivers.map((driver) => ({
+        ...driver,
+        frontTireCompoundIndex: undefined,
+        frontTireCompoundName: undefined,
+        rearTireCompoundIndex: undefined,
+        rearTireCompoundName: undefined,
+      })),
+    };
+    expect(mapLmuSession(stripped).DriverInfo.DriverTires).toEqual([]);
+  });
+});

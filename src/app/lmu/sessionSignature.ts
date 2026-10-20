@@ -52,6 +52,10 @@ export const lmuRosterSignature = (session: LmuRawSession): string => {
  * Everything else worth republishing for: session settings, conditions, and
  * each driver's state.
  *
+ * The fitted compound indices are here for the same reason again: a pit stop
+ * onto a compound no other car is running adds a name/index pair that
+ * DriverTires has to carry, and nothing else would have changed.
+ *
  * `control` is here because mapLmuSession derives CarIsAI and
  * CarIsAIControlled from it, and an AI takeover on its own used to leave those
  * flags stale until some other tracked field happened to move. `place` is here
@@ -108,6 +112,13 @@ export const lmuStateSignature = (session: LmuRawSession): string => {
     out += driver.totalLaps;
     out += SEP;
     out += driver.estimatedLapTime;
+    // The fitted compound, which DriverInfo.DriverTires is built from. Without
+    // it a pit stop onto a compound nobody else was running left the index
+    // unnamed until some other watched field moved.
+    out += SEP;
+    out += driver.frontTireCompoundIndex ?? -1;
+    out += SEP;
+    out += driver.rearTireCompoundIndex ?? -1;
   }
   return out;
 };

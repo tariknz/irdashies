@@ -236,6 +236,13 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
   auto vehSpeed = Napi::Float64Array::New(env, cap);
   auto lapNumber = Napi::Int32Array::New(env, cap);
   auto elapsedTime = Napi::Float64Array::New(env, cap);
+  // Four entries per slot, at id * 4 + wheel, in the sim's own wheel order
+  // (FL, FR, RL, RR). Pre-filled with -1 rather than 0, because 0 is a real
+  // compound: a car with no telemetry block this frame has to be
+  // distinguishable from one on the first compound in the list.
+  auto wheelCompounds = Napi::Int16Array::New(env, cap * 4);
+  if (cap > 0)
+    std::fill(wheelCompounds.Data(), wheelCompounds.Data() + cap * 4, -1);
 
   for (int i = 0; i < count; ++i)
   {
@@ -289,6 +296,9 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
       vehSpeed[id] = std::sqrt(vx * vx + vy * vy + vz * vz);
       lapNumber[id] = telemetryVehicle->mLapNumber;
       elapsedTime[id] = telemetryVehicle->mElapsedTime;
+      for (int wheel = 0; wheel < 4; ++wheel)
+        wheelCompounds[id * 4 + wheel] =
+            telemetryVehicle->mWheels[wheel].mCompoundIndex;
     }
   }
 
@@ -330,6 +340,7 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
   out.Set("vehSpeed", vehSpeed);
   out.Set("vehLapNumber", lapNumber);
   out.Set("vehElapsedTime", elapsedTime);
+  out.Set("vehWheelCompounds", wheelCompounds);
 }
 
 Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
@@ -524,7 +535,16 @@ Napi::Value LmuSdkNode::ReadSession(const Napi::CallbackInfo &info)
     SetString(d, "vehicleName", v.mVehicleName, sizeof(v.mVehicleName));
     const auto *telemetryVehicle = GetVehicleTelemetryById(v.mID);
     if (telemetryVehicle != NULL)
+    {
       SetString(d, "vehicleModel", telemetryVehicle->mVehicleModel, sizeof(telemetryVehicle->mVehicleModel));
+      // The index and the name of the same compound, together. That pairing is
+      // the only place the sim states what an index means, which is what lets
+      // DriverTires be built without asking the REST API.
+      SetString(d, "frontTireCompoundName", telemetryVehicle->mFrontTireCompoundName, sizeof(telemetryVehicle->mFrontTireCompoundName));
+      SetString(d, "rearTireCompoundName", telemetryVehicle->mRearTireCompoundName, sizeof(telemetryVehicle->mRearTireCompoundName));
+      d.Set("frontTireCompoundIndex", telemetryVehicle->mFrontTireCompoundIndex);
+      d.Set("rearTireCompoundIndex", telemetryVehicle->mRearTireCompoundIndex);
+    }
     SetString(d, "className", v.mVehicleClass, sizeof(v.mVehicleClass));
     SetString(d, "vehFilename", v.mVehFilename, sizeof(v.mVehFilename));
     d.Set("classId", GetClassId(v.mVehicleClass));

@@ -424,6 +424,14 @@ export interface StandingsSnapshot {
   carIdxTrackSurface: number[];
   carIdxTireCompound: number[];
   carIdxSessionFlags: number[];
+  /**
+   * LMU's per-wheel compound indices, flat: four entries per car at
+   * `carIdx * 4 + wheel`, in FL, FR, RL, RR order. -1 is unknown.
+   *
+   * Empty under iRacing, which has one compound per car -- so a consumer
+   * reads this first and falls back to carIdxTireCompound.
+   */
+  carIdxWheelCompounds: number[];
   carIdxP2PStatus: boolean[];
   carIdxP2PCount: number[];
   sessionUniqueId: number;

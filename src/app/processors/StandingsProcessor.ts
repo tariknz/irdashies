@@ -126,6 +126,14 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       'CarIdxSessionFlags',
       this.latest.carIdxSessionFlags
     );
+    // LMU only, and flat: four entries per car. Absent under iRacing, which
+    // reports one compound per car, so the copy leaves it empty there and the
+    // renderer falls back to the single value.
+    copyNumberArray(
+      frame,
+      'LmuCarIdxWheelCompounds',
+      this.latest.carIdxWheelCompounds
+    );
     copyBooleanArray(frame, 'CarIdxP2P_Status', this.latest.carIdxP2PStatus);
     copyNumberArray(frame, 'CarIdxP2P_Count', this.latest.carIdxP2PCount);
     const sessionState = numberValue(frame, 'SessionState') ?? 0;
@@ -210,6 +218,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.latest.carIdxTrackSurface.length = 0;
     this.latest.carIdxTireCompound.length = 0;
     this.latest.carIdxSessionFlags.length = 0;
+    this.latest.carIdxWheelCompounds.length = 0;
     this.latest.carIdxP2PStatus.length = 0;
     this.latest.carIdxP2PCount.length = 0;
     this.latest.sessionUniqueId = 0;
@@ -237,6 +246,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       carIdxTrackSurface: [],
       carIdxTireCompound: [],
       carIdxSessionFlags: [],
+      carIdxWheelCompounds: [],
       carIdxP2PStatus: [],
       carIdxP2PCount: [],
       sessionUniqueId: 0,

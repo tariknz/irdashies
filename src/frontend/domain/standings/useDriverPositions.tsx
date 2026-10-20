@@ -117,11 +117,29 @@ export const useDrivers = () => {
   return drivers;
 };
 
+/**
+ * One car's four wheel compounds, or undefined when the sim reports one.
+ *
+ * Mirrors the helper in createStandings, which the other standings path uses.
+ * Undefined rather than four copies of a single value, so the renderer can
+ * tell "no per-wheel data" from "all four match".
+ */
+const wheelCompoundsFor = (
+  flat: readonly number[],
+  carIdx: number
+): number[] | undefined => {
+  if (flat.length === 0) return undefined;
+  const base = carIdx * 4;
+  if (base + 4 > flat.length) return undefined;
+  return [flat[base], flat[base + 1], flat[base + 2], flat[base + 3]];
+};
+
 export const useCarState = () => {
   const snapshot = useStandingsSnapshot();
   const carIdxTrackSurface = snapshot?.carIdxTrackSurface ?? EMPTY_NUMBERS;
   const carIdxOnPitRoad = snapshot?.carIdxOnPitRoad ?? EMPTY_BOOLEANS;
   const carIdxTireCompound = snapshot?.carIdxTireCompound ?? EMPTY_NUMBERS;
+  const carIdxWheelCompounds = snapshot?.carIdxWheelCompounds ?? EMPTY_NUMBERS;
   const carIdxSessionFlags = snapshot?.carIdxSessionFlags ?? EMPTY_NUMBERS;
 
   return useMemo(() => {
@@ -131,6 +149,7 @@ export const useCarState = () => {
         onTrack: onTrack > -1,
         onPitRoad: carIdxOnPitRoad[index],
         tireCompound: carIdxTireCompound[index],
+        wheelCompounds: wheelCompoundsFor(carIdxWheelCompounds, index),
         dnf: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Disqualify),
         repair: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Repair),
         penalty: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Black),
@@ -141,6 +160,7 @@ export const useCarState = () => {
     carIdxTrackSurface,
     carIdxOnPitRoad,
     carIdxTireCompound,
+    carIdxWheelCompounds,
     carIdxSessionFlags,
   ]);
 };
@@ -279,6 +299,7 @@ export const useDriverStandings = () => {
         onPitRoad: carState?.onPitRoad ?? false,
         onTrack: carState?.onTrack ?? false,
         tireCompound: carState?.tireCompound ?? 0,
+        wheelCompounds: carState?.wheelCompounds,
         carClass: driver.carClass,
         radioActive: radioActiveCarIdxs.includes(driverPos.carIdx),
         carId: driver.carId,

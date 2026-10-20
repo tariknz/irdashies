@@ -60,6 +60,8 @@ interface DriverRowInfoProps {
   /** LMU rank, badge and country. Absent on every other sim. */
   lmuRating?: LmuDriverRating;
   tireCompound?: number;
+  /** LMU's four wheels, FL, FR, RL, RR. Undefined where the sim has one. */
+  wheelCompounds?: number[];
   carId?: number;
   lapTimeDeltas?: number[];
   numLapDeltasToShow?: number;
@@ -223,6 +225,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     flairId,
     lmuRating,
     tireCompound,
+    wheelCompounds,
     carId,
     lapTimeDeltas,
     numLapDeltasToShow,
@@ -622,6 +625,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <CompoundCell
             key="compound"
             tireCompound={tireCompound}
+            wheelCompounds={wheelCompounds}
             carId={carId}
             compactMode={compactMode}
           />
@@ -757,6 +761,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lastTimeString,
     lastTimeState,
     tireCompound,
+    wheelCompounds,
     lapTimeDeltas,
     emptyLapDeltaPlaceholders,
     avgLapTime,

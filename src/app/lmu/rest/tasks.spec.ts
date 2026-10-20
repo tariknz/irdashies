@@ -8,6 +8,7 @@ import {
   carSetupOverviewFixture,
   sessionsFixture,
   weatherFixture,
+  tireManagementFixture,
 } from './restFixture';
 
 const taskById = (id: string) => {
@@ -465,5 +466,56 @@ describe('car-setup-overview fuel slider maximum', () => {
 
     expect(data.session.fuelRatio).toBeCloseTo(0.83, 5);
     expect(data.session.fuelLevelMax).toBeUndefined();
+  });
+});
+
+describe('tire-management task', () => {
+  it('reads the compounds in the order the sim indexes them', () => {
+    const { data } = apply('tire-management', tireManagementFixture());
+    expect(data.session.tireCompounds).toEqual([
+      'Hard',
+      'Medium',
+      'Soft',
+      'Wet',
+    ]);
+  });
+
+  it('keeps a hole as a hole, so position stays the compound index', () => {
+    // Filtering an unparseable entry out would renumber every compound after
+    // it, and mislabel every car on one.
+    const { data } = apply('tire-management', {
+      optimalCompoundConditions: {
+        compounds: [{ type: 'Hard' }, { notAType: 1 }, { type: 'Soft' }],
+      },
+    });
+    expect(data.session.tireCompounds).toEqual(['Hard', '', 'Soft']);
+  });
+
+  it('targets the session, not telemetry', () => {
+    // The catalogue reaches widgets through the session snapshot; a telemetry
+    // target would rebuild the session on every poll.
+    taskById('tire-management').outputs.forEach((output) =>
+      expect(output.target).toBe('session')
+    );
+  });
+
+  it('is fetched once per activation, since a session cannot change it', () => {
+    expect(taskById('tire-management').mode).toBe('once');
+  });
+
+  it('applies nothing for a payload it does not recognise', () => {
+    expect(apply('tire-management', { other: 1 }).applied).toEqual([]);
+    expect(
+      apply('tire-management', {
+        optimalCompoundConditions: { compounds: 'nope' },
+      }).applied
+    ).toEqual([]);
+    // Every entry unparseable is the same as no catalogue: leave the previous
+    // one alone rather than wiping it with a list of empty strings.
+    expect(
+      apply('tire-management', {
+        optimalCompoundConditions: { compounds: [{}, {}] },
+      }).applied
+    ).toEqual([]);
   });
 });
