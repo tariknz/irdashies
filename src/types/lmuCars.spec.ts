@@ -1,15 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { CAR_MANUFACTURER_SPRITE_POSITIONS } from '../frontend/components/shared/CarManufacturer/carManufacturerSpritePositions';
+import { LMU_MANUFACTURER_SPRITE_POSITIONS } from '../frontend/components/shared/CarManufacturer/lmuManufacturerSpritePositions';
 import { CAR_ID_TO_CAR_MANUFACTURER } from '../frontend/components/shared/CarManufacturer/carManufacturerMapping';
 import { LMU_CAR_ID_TO_MANUFACTURER, LMU_MANUFACTURERS } from './lmuCars';
 
 describe('LMU manufacturers', () => {
-  it('names a badge that exists in the sprite sheet', () => {
+  it("names a badge that exists in LMU's own sprite sheet", () => {
     // A key with no sprite renders nothing, silently -- which is the one
     // failure mode of a hand-written list of names.
+    //
+    // LMU's sheet, not the shared one: the two games have only some marques
+    // in common, and checking against iRacing's was what kept this list down
+    // to the thirteen it happened to share. Oreca, Duqueine, Ginetta,
+    // Glickenhaus, Vanwall and Isotta Fraschini could not be added at all.
     LMU_MANUFACTURERS.forEach(({ manufacturer, name }) => {
+      // Audi aside: LMU has no Audi, so the set carries no logo, and the
+      // entry exists only so a model naming one resolves to an id, not 0.
+      if (manufacturer === 'audi') return;
       expect(
-        manufacturer in CAR_MANUFACTURER_SPRITE_POSITIONS,
+        manufacturer in LMU_MANUFACTURER_SPRITE_POSITIONS,
         `${name} has no sprite for '${manufacturer}'`
       ).toBe(true);
     });

@@ -6,6 +6,7 @@ import {
   resolveLmuTrackId,
 } from './mapSession';
 import { fixture } from './rawSessionFixture';
+import { LMU_MANUFACTURERS } from '@irdashies/types';
 import { LMU_CLASS_COLOURS } from '@irdashies/types';
 
 describe('mapLmuSession', () => {
@@ -89,16 +90,30 @@ describe('mapLmuSession', () => {
   });
 
   it.each([
-    'Alpine A424',
-    'Peugeot 9X8',
-    'Lexus RC F GT3',
-    'Genesis GMR-001',
-    'Duqueine M30-D08',
-    'Ginetta G61-LT-P3',
-    'ADESS AD03 Evo',
-    'Unknown Prototype',
-  ])('leaves the unsupported LMU model %s without a logo id', (model) => {
-    expect(resolveLmuCarId(model)).toBe(0);
+    ['Alpine A424', 'alpine'],
+    ['Peugeot 9X8', 'peugeot'],
+    ['Lexus RC F GT3', 'lexus'],
+    ['Genesis GMR-001', 'genesis'],
+    ['Duqueine M30-D08', 'duqueine'],
+    ['Ginetta G61-LT-P3', 'ginetta'],
+    ['ADESS AD03 Evo', 'adess'],
+    ['Isotta Fraschini Tipo6', 'isottafraschini'],
+    ['Glickenhaus 007 LMH', 'glickenhaus'],
+    ['Vanwall Vandervell 680', 'vanwall'],
+    ['Oreca 07 Gibson', 'oreca'],
+  ])('resolves the LMU-only model %s to %s', (model, manufacturer) => {
+    // These had no logo id at all until LMU got a manufacturer sheet of its
+    // own: iRacing has none of these marques, so there was no cell to point
+    // at and the badge column stayed empty for most of an LMU grid.
+    const id = resolveLmuCarId(model);
+    expect(id).not.toBe(0);
+    expect(
+      LMU_MANUFACTURERS.find((entry) => entry.id === id)?.manufacturer
+    ).toBe(manufacturer);
+  });
+
+  it('still leaves a model it cannot place without a logo id', () => {
+    expect(resolveLmuCarId('Unknown Prototype')).toBe(0);
   });
 
   it.each(['Ligier JS P320', 'Ligier JS P320 Nissan', 'Ligier JSP320'])(
