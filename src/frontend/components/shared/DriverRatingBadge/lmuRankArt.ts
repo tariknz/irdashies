@@ -1,6 +1,6 @@
 import type { LmuRank } from '@irdashies/types';
-import badgesSprite from '../../../assets/lmu/badges-sprite.svg';
-import platesSprite from '../../../assets/lmu/plates-sprite.svg';
+import badgesSprite from '../../../assets/lmu/badges-sprite.png';
+import platesSprite from '../../../assets/lmu/plates-sprite.png';
 import {
   BADGE_GRID,
   BADGE_POSITIONS,
@@ -16,14 +16,20 @@ import {
  * render time. Here they are committed and bundled, because the alternative is
  * a standings row reaching the network once per driver per session --
  * `tools/fetch-lmu-rank-art.ts` downloads them and
- * `tools/build-lmu-sprite.ts` composes the sheets.
+ * `tools/build-lmu-sprite.cjs` composes the sheets.
  *
- * Sheets rather than the 37 separate files this used to import. A row drew up
- * to sixty `<img>` elements, and an SVG is re-rasterised whenever its rendered
- * size changes -- so every size tweak discarded every cached raster, on an
- * overlay sharing a GPU with the sim. One sheet is decoded once and every row
- * reads the same texture at the same `background-size`, which is how the
- * car-manufacturer logos have always worked here.
+ * Sheets rather than the 37 separate files this used to import, and PNG rather
+ * than the SVG sheets that replaced them. A row drew up to sixty `<img>`
+ * elements; sheets fixed the count, and the bitmap fixes the rest. An SVG is
+ * re-rasterised whenever its rendered size changes -- ~260 vector paths, on
+ * every font-size, widget-scale or DPI change, on an overlay sharing a GPU
+ * with the sim -- where a bitmap is decoded once and scaling it afterwards is
+ * a resample. It is also smaller: 96 KB and 37 KB against 174 KB of SVG.
+ *
+ * Authored at twice the source size, so being drawn larger than native does
+ * not soften it. This is how the car-manufacturer logos have always worked
+ * here, which I should have followed from the start rather than arriving at
+ * twice over.
  *
  * Positioning a background also ends a subtler problem: an `<img>` carries
  * Tailwind preflight's `max-width: 100%`, so the standings table was free to
