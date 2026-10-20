@@ -50,14 +50,6 @@ export const LMU_MANUFACTURERS: readonly LmuManufacturer[] = [
     manufacturer: 'astonmartin',
     name: 'Aston Martin',
   },
-  {
-    // No logo in the LMU set, because LMU has no Audi. Kept so a model string
-    // naming one still resolves to something rather than to id 0.
-    id: 10002,
-    pattern: /\baudi\b/i,
-    manufacturer: 'audi',
-    name: 'Audi',
-  },
   { id: 10003, pattern: /\bbmw\b/i, manufacturer: 'bmw', name: 'BMW' },
   {
     id: 10004,

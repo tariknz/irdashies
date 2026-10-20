@@ -13,9 +13,6 @@ describe('LMU manufacturers', () => {
     // to the thirteen it happened to share. Oreca, Duqueine, Ginetta,
     // Glickenhaus, Vanwall and Isotta Fraschini could not be added at all.
     LMU_MANUFACTURERS.forEach(({ manufacturer, name }) => {
-      // Audi aside: LMU has no Audi, so the set carries no logo, and the
-      // entry exists only so a model naming one resolves to an id, not 0.
-      if (manufacturer === 'audi') return;
       expect(
         manufacturer in LMU_MANUFACTURER_SPRITE_POSITIONS,
         `${name} has no sprite for '${manufacturer}'`

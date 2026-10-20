@@ -40,15 +40,13 @@ describe('CarManufacturer and the two sheets', () => {
 
   it('has a sprite cell for every LMU marque it claims to know', () => {
     // A manufacturer in the list with no cell renders nothing, which looks
-    // exactly like a car the list does not cover.
+    // exactly like a car the list does not cover -- so the list and the sheet
+    // have to agree exactly, with no exceptions carved out.
     const missing = LMU_MANUFACTURERS.filter(
       (m) => !(m.manufacturer in LMU_MANUFACTURER_SPRITE_POSITIONS)
     ).map((m) => m.manufacturer);
 
-    // Audi is the known exception: LMU has no Audi, so the set carries no
-    // logo, and the entry exists only so a model string naming one still
-    // resolves to an id rather than to 0.
-    expect(missing).toEqual(['audi']);
+    expect(missing).toEqual([]);
   });
 
   it('gives every LMU marque a distinct cell', () => {
@@ -65,9 +63,12 @@ describe('CarManufacturer and the two sheets', () => {
     }
   });
 
-  it('renders nothing for a marque with no cell', () => {
-    const audi = LMU_MANUFACTURERS.find((m) => m.manufacturer === 'audi');
-    const { container } = render(<CarManufacturer carId={audi?.id ?? 0} />);
+  it('renders nothing for an id the list does not cover', () => {
+    // An LMU-range id with no entry, which is what a model string nothing
+    // matches now produces.
+    const { container } = render(
+      <CarManufacturer carId={LMU_CAR_ID_BASE + 9999} />
+    );
     expect(container.querySelector('span')).toBeNull();
   });
 });
