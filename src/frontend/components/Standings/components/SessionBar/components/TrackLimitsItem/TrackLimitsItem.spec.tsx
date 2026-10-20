@@ -22,12 +22,12 @@ describe('TrackLimitsItem', () => {
     // 0.25 says nothing on its own -- the drive-through is at three.
     expect(
       item({ trackLimitsPoints: 0.25, trackLimitsPointsMax: 3 }).textContent
-    ).toBe('0.25/3');
+    ).toBe('0.25 / 3.00');
   });
 
   it('shows a dash for an unstated ceiling, not a zero', () => {
     // "/0" would read as a penalty served at nothing.
-    expect(item({ trackLimitsPoints: 0.5 }).textContent).toBe('0.50/–');
+    expect(item({ trackLimitsPoints: 0.5 }).textContent).toBe('0.50 / –');
   });
 
   it('renders nothing on a sim with no such system', () => {
@@ -39,7 +39,7 @@ describe('TrackLimitsItem', () => {
   it('shows a clean player as 0.00 rather than hiding', () => {
     expect(
       item({ trackLimitsPoints: 0, trackLimitsPointsMax: 3 }).textContent
-    ).toBe('0.00/3');
+    ).toBe('0.00 / 3.00');
   });
 
   it('escalates as the ceiling approaches', () => {
