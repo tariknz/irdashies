@@ -348,9 +348,15 @@ export function mapLmuSession(
     UserID: 0,
     TeamID: 0,
     // The team the entry is run by, from the same name the number comes from.
-    // This was the driver's own name, which was never right -- it was only
-    // never seen, because LMU reports no team racing and the column is gated
-    // on WeekendInfo.TeamRacing.
+    // Shared memory has no team field at all: TinyPedal's LMU adapter returns
+    // the whole entry name here, inherited unchanged from its rF2 adapter and
+    // consumed by nothing, and LMUTraceHUB takes `fullTeamName` from
+    // /rest/watch/standings with no fallback when that is unavailable. Parsing
+    // the prefix is the only route that needs no endpoint.
+    //
+    // This was the driver's own name, which was never right. It went unnoticed
+    // because the column is gated on WeekendInfo.TeamRacing, which was fixed
+    // at 0 -- see there.
     TeamName: lmuTeamName(d.vehicleName) ?? '',
     CarNumber: lmuCarNumber(d.vehicleName) ?? DEFAULT_CAR_NUMBER(d.id),
     CarNumberRaw: lmuCarNumberRaw(d.vehicleName) ?? d.id + 1,
@@ -517,7 +523,17 @@ export function mapLmuSession(
       EventType: currentSessionType,
       Category: 'Sports Car',
       SimMode: 'Le Mans Ultimate',
-      TeamRacing: 0,
+      // Derived from the grid rather than fixed, because this is what gates
+      // the Team Name column and the driver-name subtext in both widgets.
+      // Fixed at 0, the team names parsed out of the entry names were correct
+      // and unreachable; fixed at 1, an AI practice grid named "Ferrari 296
+      // GT3" would offer a column with nothing in it. So it says what is
+      // actually true of this grid: some entry carries a team.
+      //
+      // It also enables the pit-limiter reminder after a stop, which is the
+      // other consumer. That is a fair reading -- an entry with a team name is
+      // a real race entry, and the reminder is as useful there as in iRacing.
+      TeamRacing: raw.drivers.some((d) => lmuTeamName(d.vehicleName)) ? 1 : 0,
       MinDrivers: 0,
       MaxDrivers: raw.maxPlayers,
       DCRuleSet: '',

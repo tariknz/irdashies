@@ -795,3 +795,65 @@ describe('mapLmuSession tyre compounds', () => {
     expect(mapLmuSession(stripped).DriverInfo.DriverTires).toEqual([]);
   });
 });
+
+describe('mapLmuSession team names', () => {
+  const withNames = (...names: string[]) => {
+    const raw = fixture();
+    return {
+      ...raw,
+      drivers: raw.drivers.map((driver, index) => ({
+        ...driver,
+        vehicleName: names[index] ?? driver.vehicleName,
+      })),
+    };
+  };
+
+  it('takes the team from the entry name', () => {
+    const drivers = mapLmuSession(
+      withNames(
+        'DKR Engineering #3:ELMS26',
+        'Proton Competition #88:ELMS26',
+        'Team WRT 2026 #32:WEC'
+      )
+    ).DriverInfo.Drivers;
+
+    expect(drivers.map((d) => d.TeamName)).toEqual([
+      'DKR Engineering',
+      'Proton Competition',
+      'Team WRT 2026',
+    ]);
+  });
+
+  it('declares team racing so the widgets stop hiding the column', () => {
+    // Both widgets gate the Team Name column and the driver-name subtext on
+    // this. Fixed at 0, the names above were correct and unreachable.
+    expect(
+      mapLmuSession(withNames('DKR Engineering #3:ELMS26')).WeekendInfo
+        .TeamRacing
+    ).toBe(1);
+  });
+
+  it('does not declare it for a grid with no teams', () => {
+    // An AI entry reads "Ferrari 296 GT3" -- a car, not a team. Offering the
+    // column there would offer an empty one.
+    const noTeams = mapLmuSession(
+      withNames('Ferrari 296 GT3', 'BMW M4 GT3', 'Porsche 911 RSR')
+    );
+    expect(noTeams.WeekendInfo.TeamRacing).toBe(0);
+    expect(noTeams.DriverInfo.Drivers.map((d) => d.TeamName)).toEqual([
+      '',
+      '',
+      '',
+    ]);
+  });
+
+  it('declares it when any single entry carries a team', () => {
+    // A mixed grid -- one real entry among AI -- still has a column worth
+    // showing, and the AI rows simply stay blank.
+    expect(
+      mapLmuSession(
+        withNames('Ferrari 296 GT3', 'Proton Competition #88:ELMS26')
+      ).WeekendInfo.TeamRacing
+    ).toBe(1);
+  });
+});
