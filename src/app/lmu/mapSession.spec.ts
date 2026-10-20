@@ -6,6 +6,7 @@ import {
   resolveLmuTrackId,
 } from './mapSession';
 import { fixture } from './rawSessionFixture';
+import { lmuSessionUniqueId } from './sessionIdentity';
 import { LMU_MANUFACTURERS } from '@irdashies/types';
 import { LMU_CLASS_COLOURS } from '@irdashies/types';
 
@@ -16,7 +17,10 @@ describe('mapLmuSession', () => {
     expect(s.WeekendInfo.TrackID).toBe(resolveLmuTrackId('Spa Francorchamps'));
     expect(s.WeekendInfo.TrackDisplayName).toBe('Spa Francorchamps');
     expect(s.WeekendInfo.TrackLength).toBe('7004 m');
-    expect(s.WeekendInfo.SubSessionID).toBe(2);
+    // Not the session type, which this used to assert: the type is not an
+    // identifier, and publishing it here made every practice session alike.
+    expect(s.WeekendInfo.SessionID).toBe(2);
+    expect(s.WeekendInfo.SubSessionID).toBe(lmuSessionUniqueId(fixture()));
     expect(s.WeekendInfo.NumCarClasses).toBe(2);
     expect(s.WeekendInfo.NumCarTypes).toBe(3);
   });
@@ -855,5 +859,35 @@ describe('mapLmuSession team names', () => {
         withNames('Ferrari 296 GT3', 'Proton Competition #88:ELMS26')
       ).WeekendInfo.TeamRacing
     ).toBe(1);
+  });
+});
+
+describe('mapLmuSession session identity', () => {
+  it('gives two tracks two session ids', () => {
+    // LMU numbers sessions by type, so both of these are session 1. Publishing
+    // that as SubSessionID meant race control, lap history, the reference lap
+    // and the replay context all compared 1 against 1 on a track change and
+    // kept their state -- which is the standings showing the previous grid.
+    const raw = fixture();
+    const first = mapLmuSession(raw).WeekendInfo.SubSessionID;
+    const second = mapLmuSession({
+      ...raw,
+      trackName: 'Circuit of the Americas',
+    }).WeekendInfo.SubSessionID;
+
+    expect(first).not.toBe(second);
+  });
+
+  it('agrees with the telemetry frame, which consumers compare against', () => {
+    const raw = fixture();
+    expect(mapLmuSession(raw).WeekendInfo.SubSessionID).toBe(
+      lmuSessionUniqueId(raw)
+    );
+  });
+
+  it('keeps the session type on SessionID, where it belongs', () => {
+    expect(mapLmuSession(fixture()).WeekendInfo.SessionID).toBe(
+      fixture().session
+    );
   });
 });

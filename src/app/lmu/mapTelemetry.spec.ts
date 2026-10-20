@@ -257,6 +257,21 @@ describe('mapLmuTelemetry', () => {
     expect(value[2]).toBe(-1);
   });
 
+  it('gives two tracks two session ids', () => {
+    // The frame's id has to move with the session snapshot's, because the
+    // consumers that detect a session change compare the two halves of the
+    // same fact. LMU's own session number is the type and never moves here.
+    const raw = fixture();
+    const first = mapLmuTelemetry(raw).SessionUniqueID.value[0];
+    const second = mapLmuTelemetry({
+      ...raw,
+      trackName: 'Circuit of the Americas',
+    }).SessionUniqueID.value[0];
+
+    expect(first).not.toBe(second);
+    expect(mapLmuTelemetry(raw).SessionNum.value[0]).toBe(raw.session);
+  });
+
   it('maps LMU race flags', () => {
     const base = fixture();
     expect(

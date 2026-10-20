@@ -59,7 +59,14 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
   private readonly activeClassIds: number[] = [];
   private readonly resultClassPosition: number[] = [];
   private readonly resultLapsComplete: number[] = [];
-  private resultsSessionNum: number | null = null;
+  /**
+   * Which session the results snapshot below was taken from.
+   *
+   * The unique id as well as the session number, because a sim can reuse the
+   * number: LMU numbers by session *type*, so a track change kept the same
+   * number and this held the previous event's finishing order.
+   */
+  private resultsSessionKey: string | null = null;
   private readonly effectiveProgress: number[] = [];
   private readonly lastProgress: number[] = [];
   private readonly livePreviousSurface: (number | undefined)[] = [];
@@ -73,7 +80,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
 
   init(session: Session): void {
     this.session = session;
-    this.resultsSessionNum = null;
+    this.resultsSessionKey = null;
     const driverCarIdx = session.DriverInfo?.DriverCarIdx;
     this.driverCarIdx =
       typeof driverCarIdx === 'number' && driverCarIdx >= 0
@@ -217,7 +224,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.checkeredSnapshotActive = false;
     this.p1CarIdx = null;
     this.p1LapAtCheckered = null;
-    this.resultsSessionNum = null;
+    this.resultsSessionKey = null;
     this.resultClassPosition.length = 0;
     this.resultLapsComplete.length = 0;
     this.latest.focusCarIdx = null;
@@ -298,8 +305,9 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     ) {
       return;
     }
-    if (this.resultsSessionNum !== sessionNum) {
-      this.resultsSessionNum = sessionNum;
+    const resultsKey = `${this.latest.sessionUniqueId}:${sessionNum}`;
+    if (this.resultsSessionKey !== resultsKey) {
+      this.resultsSessionKey = resultsKey;
       this.resultClassPosition.length = 0;
       this.resultLapsComplete.length = 0;
       this.p1CarIdx = null;

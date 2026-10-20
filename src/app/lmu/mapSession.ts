@@ -27,6 +27,7 @@ export const LMU_PIT_SPEED_LIMIT_KPH = 60;
 import { lapTimeOrAbsent } from './sentinels';
 import { lmuCarNumber, lmuCarNumberRaw, lmuTeamName } from './entryName';
 import { lmuDriverTires } from './tireCompound';
+import { lmuSessionUniqueId } from './sessionIdentity';
 
 type Raw = import('./native').LmuRawSession;
 
@@ -515,8 +516,13 @@ export function mapLmuSession(
       TrackVersion: `0.0.${raw.gameVersion}`,
       SeriesID: 0,
       SeasonID: 0,
+      // The session type, which is what LMU calls a session.
       SessionID: raw.session,
-      SubSessionID: raw.session,
+      // Not the type. Everything that decides a session has changed compares
+      // this, and publishing the type here meant every practice session in
+      // existence shared one id -- so changing track left the standings on the
+      // previous grid. See sessionIdentity.ts.
+      SubSessionID: lmuSessionUniqueId(raw),
       LeagueID: 0,
       Official: 0,
       RaceWeek: 0,

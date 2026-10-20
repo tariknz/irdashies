@@ -15,6 +15,7 @@ import { lmuTrackWetness } from './trackWetness';
 import { lmuCarCompound, lmuCompoundChannel } from './tireCompound';
 import { lmuTrackLimitsChannel, lmuTrackLimitsMax } from './trackLimits';
 import { lmuEnergyChannel } from './fuelEnergy';
+import { lmuSessionUniqueId } from './sessionIdentity';
 import { estimateLmuLapDistPct, type LmuLapDistanceState } from './lapDistance';
 import {
   refineLmuOpponentLapDistPcts,
@@ -286,7 +287,10 @@ export function mapLmuTelemetry(
       : raw.currentET;
   t.SessionTick = num(sessionClock);
   t.SessionNum = num(raw.session);
-  t.SessionUniqueID = num(raw.session);
+  // Derived, because LMU has no unique id and the session type is not one.
+  // Must agree with WeekendInfo.SubSessionID: consumers compare the two
+  // halves of the same fact. See sessionIdentity.ts.
+  t.SessionUniqueID = num(lmuSessionUniqueId(raw));
   t.SessionState = num(PHASE_TO_SESSION_STATE[raw.gamePhase] ?? 0);
   t.SessionTime = num(sessionClock);
   t.SessionTimeRemain = num(raw.sessionTimeRemaining);
