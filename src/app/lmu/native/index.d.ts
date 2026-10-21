@@ -96,6 +96,18 @@ export interface LmuRawTelemetry {
   maxPlayers: number;
   sessionTimeRemaining: number;
   timeOfDay: number;
+  /**
+   * The sim's session callbacks, as monotonic counters.
+   *
+   * LMU calls EndSession when a session finishes and StartSession when one
+   * begins, and bumps these. An increment is the only unambiguous statement
+   * that a session boundary happened -- the clock freezing or the grid
+   * emptying are both inferences.
+   */
+  sessionStartEvents: number;
+  sessionEndEvents: number;
+  /** Scoring's write counter. Stalls when the session stops being scored. */
+  scoringUpdates: number;
   trackGripLevel: number;
   /**
    * The scale of LMU's track-limits penalty system.

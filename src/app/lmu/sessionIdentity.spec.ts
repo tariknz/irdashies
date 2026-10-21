@@ -84,6 +84,68 @@ describe('createLmuSessionIdentity', () => {
     expect(identity.lastChange()).toBeNull();
   });
 
+  it('declares one when the sim reports a session boundary', () => {
+    // Ending an online practice bumps EndSession and changes nothing else:
+    // the window stays open, the clock stops rather than resets, and the grid
+    // empties one driver at a time. Nothing else here would have noticed.
+    const identity = createLmuSessionIdentity();
+    const before = identity.observe({
+      ...sample,
+      sessionStartEvents: 1,
+      sessionEndEvents: 0,
+    });
+    const after = identity.observe({
+      ...sample,
+      sessionStartEvents: 1,
+      sessionEndEvents: 1,
+    });
+    expect(after).not.toBe(before);
+    expect(identity.lastChange()).toBe('event');
+  });
+
+  it('declares one when the sim reports a session starting', () => {
+    const identity = createLmuSessionIdentity();
+    const before = identity.observe({ ...sample, sessionStartEvents: 1 });
+    const after = identity.observe({ ...sample, sessionStartEvents: 2 });
+    expect(after).not.toBe(before);
+    expect(identity.lastChange()).toBe('event');
+  });
+
+  it('holds steady while the counters do, clock running on', () => {
+    const identity = createLmuSessionIdentity();
+    const first = identity.observe({
+      ...sample,
+      sessionStartEvents: 1,
+      sessionEndEvents: 0,
+    });
+    expect(
+      identity.observe({
+        ...sample,
+        currentET: 2000,
+        sessionStartEvents: 1,
+        sessionEndEvents: 0,
+      })
+    ).toBe(first);
+    expect(identity.lastChange()).toBeNull();
+  });
+
+  it('prefers the sim’s word over the clock heuristic', () => {
+    // Both fire at once on a roll; the log should say which it was, and the
+    // sim stating it is better evidence than this inferring it.
+    const identity = createLmuSessionIdentity();
+    identity.observe({ ...sample, currentET: 3500, sessionEndEvents: 0 });
+    identity.observe({ ...sample, currentET: 1, sessionEndEvents: 1 });
+    expect(identity.lastChange()).toBe('event');
+  });
+
+  it('ignores a sim that reports no counters at all', () => {
+    // A build that does not fill them falls through to the heuristics.
+    const identity = createLmuSessionIdentity();
+    const first = identity.observe(sample);
+    expect(identity.observe({ ...sample, currentET: 200 })).toBe(first);
+    expect(identity.lastChange()).toBeNull();
+  });
+
   it('declares a new session when the clock goes backwards', () => {
     // The case nothing else can see: a server rolling its practice session.
     // Same track, same type, same server, same length -- only the clock says.

@@ -20,6 +20,7 @@ import {
 } from './createStandings';
 import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
+import { measureStandingsRebuild } from './standingsCost';
 import { useRelativeSettings } from './useRelativeSettings';
 import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
 import { useQualifyingResults } from './useQualifyingGrid';
@@ -217,170 +218,179 @@ export const useDriverStandings = () => {
   const fastestLapCarIdx = sessionFastestLaps?.[0]?.CarIdx;
   const isOfficial = useSessionIsOfficial();
 
-  const driverStandings: Standings[] = useMemo(() => {
-    // Create Map lookups for O(1) access instead of O(n) find() calls
-    const driverPositionsByCarIdx = new Map(
-      driverPositions.map((pos) => [pos.carIdx, pos])
-    );
-    const carStatesByCarIdx = new Map(
-      carStates.map((state) => [state.carIdx, state])
-    );
-    const sessionPositionsMap = new Map(
-      sessionPositions?.map((position) => [position.CarIdx, position]) ?? []
-    );
-    const qualifyingPositionsByCarIdx =
-      qualifyingResults && Array.isArray(qualifyingResults)
-        ? new Map(qualifyingResults.map((q) => [q.CarIdx, q]))
-        : new Map();
-
-    const playerLap =
-      playerCarIdx !== undefined
-        ? (driverPositionsByCarIdx.get(playerCarIdx)?.lapNum ?? 0)
-        : 0;
-    const playerLapDistPct =
-      playerCarIdx !== undefined
-        ? (driverPositionsByCarIdx.get(playerCarIdx)?.lapDstPct ?? 0)
-        : 0;
-
-    const standings = drivers.map((driver) => {
-      const driverPos = driverPositionsByCarIdx.get(driver.carIdx);
-
-      if (!driverPos) return undefined;
-
-      const carState = carStatesByCarIdx.get(driver.carIdx);
-
-      let lappedState: 'ahead' | 'behind' | 'same' | undefined = undefined;
-      if (sessionType === 'Race') {
-        const lapDiff = Math.round(
-          driverPos.lapNum +
-            driverPos.lapDstPct -
-            (playerLap + playerLapDistPct)
+  const driverStandings: Standings[] = useMemo(
+    () =>
+      measureStandingsRebuild('relative', drivers.length, () => {
+        // Create Map lookups for O(1) access instead of O(n) find() calls
+        const driverPositionsByCarIdx = new Map(
+          driverPositions.map((pos) => [pos.carIdx, pos])
         );
-        if (lapDiff > 0) lappedState = 'ahead';
-        if (lapDiff < 0) lappedState = 'behind';
-        if (lapDiff === 0) lappedState = 'same';
-      }
+        const carStatesByCarIdx = new Map(
+          carStates.map((state) => [state.carIdx, state])
+        );
+        const sessionPositionsMap = new Map(
+          sessionPositions?.map((position) => [position.CarIdx, position]) ?? []
+        );
+        const qualifyingPositionsByCarIdx =
+          qualifyingResults && Array.isArray(qualifyingResults)
+            ? new Map(qualifyingResults.map((q) => [q.CarIdx, q]))
+            : new Map();
 
-      // If the driver is not in the standings, use the qualifying position
-      let classPosition: number | undefined = driverPos.classPosition;
+        const playerLap =
+          playerCarIdx !== undefined
+            ? (driverPositionsByCarIdx.get(playerCarIdx)?.lapNum ?? 0)
+            : 0;
+        const playerLapDistPct =
+          playerCarIdx !== undefined
+            ? (driverPositionsByCarIdx.get(playerCarIdx)?.lapDstPct ?? 0)
+            : 0;
 
-      if (useLivePositionStandings) {
-        // Override position with live position based on telemetry
-        const livePosition = driverLivePositions[driver.carIdx];
-        if (livePosition !== undefined) classPosition = livePosition;
-      }
+        const standings = drivers.map((driver) => {
+          const driverPos = driverPositionsByCarIdx.get(driver.carIdx);
 
-      if (!classPosition || !isFinite(classPosition) || classPosition <= 0) {
-        // Class position can become 0 or negative in some edge cases
-        // Only fall back to qualifying before race start
-        // During the race class position should be available
-        // After the race we can fallback to session position
-        if (
-          sessionState === SessionState.GetInCar ||
-          sessionState === SessionState.Warmup ||
-          sessionState === SessionState.ParadeLaps
-        ) {
-          const qualifyingPosition = qualifyingPositionsByCarIdx.get(
-            driver.carIdx
-          );
-          classPosition = qualifyingPosition
-            ? qualifyingPosition.ClassPosition + 1
-            : undefined;
-        } else {
-          const sessionPosition = sessionPositionsMap.get(driver.carIdx);
-          classPosition = sessionPosition
-            ? sessionPosition.ClassPosition + 1
-            : undefined;
+          if (!driverPos) return undefined;
+
+          const carState = carStatesByCarIdx.get(driver.carIdx);
+
+          let lappedState: 'ahead' | 'behind' | 'same' | undefined = undefined;
+          if (sessionType === 'Race') {
+            const lapDiff = Math.round(
+              driverPos.lapNum +
+                driverPos.lapDstPct -
+                (playerLap + playerLapDistPct)
+            );
+            if (lapDiff > 0) lappedState = 'ahead';
+            if (lapDiff < 0) lappedState = 'behind';
+            if (lapDiff === 0) lappedState = 'same';
+          }
+
+          // If the driver is not in the standings, use the qualifying position
+          let classPosition: number | undefined = driverPos.classPosition;
+
+          if (useLivePositionStandings) {
+            // Override position with live position based on telemetry
+            const livePosition = driverLivePositions[driver.carIdx];
+            if (livePosition !== undefined) classPosition = livePosition;
+          }
+
+          if (
+            !classPosition ||
+            !isFinite(classPosition) ||
+            classPosition <= 0
+          ) {
+            // Class position can become 0 or negative in some edge cases
+            // Only fall back to qualifying before race start
+            // During the race class position should be available
+            // After the race we can fallback to session position
+            if (
+              sessionState === SessionState.GetInCar ||
+              sessionState === SessionState.Warmup ||
+              sessionState === SessionState.ParadeLaps
+            ) {
+              const qualifyingPosition = qualifyingPositionsByCarIdx.get(
+                driver.carIdx
+              );
+              classPosition = qualifyingPosition
+                ? qualifyingPosition.ClassPosition + 1
+                : undefined;
+            } else {
+              const sessionPosition = sessionPositionsMap.get(driver.carIdx);
+              classPosition = sessionPosition
+                ? sessionPosition.ClassPosition + 1
+                : undefined;
+            }
+          }
+
+          const hasFastestTime =
+            fastestLapCarIdx !== undefined &&
+            driver.carIdx === fastestLapCarIdx;
+
+          return {
+            carIdx: driver.carIdx,
+            position: driverPos.position,
+            lap: driverPos.lapNum,
+            lappedState,
+            classPosition,
+            delta: driverPos.delta,
+            isPlayer: playerCarIdx === driver.carIdx,
+            driver: {
+              name: driver.name,
+              carNum: driver.carNum,
+              license: driver.license,
+              rating: driver.rating,
+              flairId: driver.flairId,
+              lmuRating: driver.lmuRating,
+              teamName: driver.teamName,
+            },
+            fastestTime: driverPos.bestLap,
+            hasFastestTime,
+            lastTime: driverPos.lastLapTime,
+            lastTimeState: getLastTimeState(
+              driverPos.lastLapTime,
+              driverPos.bestLap,
+              hasFastestTime
+            ),
+            onPitRoad: carState?.onPitRoad ?? false,
+            onTrack: carState?.onTrack ?? false,
+            tireCompound: carState?.tireCompound ?? 0,
+            wheelCompounds: carState?.wheelCompounds,
+            trackLimitsPoints: carState?.trackLimitsPoints,
+            energyRemaining: carState?.energyRemaining,
+            carClass: driver.carClass,
+            radioActive: radioActiveCarIdxs.includes(driverPos.carIdx),
+            carId: driver.carId,
+            lastPitLap: driverPos.lastPitLap,
+            lastLap: driverPos.lastLap,
+            prevCarTrackSurface: driverPos.prevCarTrackSurface,
+            carTrackSurface: driverPos.carTrackSurface,
+            currentSessionType: sessionType,
+            dnf: carState?.dnf ?? false,
+            repair: carState?.repair ?? false,
+            penalty: carState?.penalty ?? false,
+            slowdown: carState?.slowdown ?? false,
+            relativePct: 0,
+          };
+        });
+
+        const filteredStandings = standings
+          .filter((s) => !!s)
+          .sort((a, b) => a.position - b.position);
+
+        if (sessionType !== 'Race') {
+          return filteredStandings;
         }
-      }
 
-      const hasFastestTime =
-        fastestLapCarIdx !== undefined && driver.carIdx === fastestLapCarIdx;
+        const positionChangeAugmentedGroupedByClass =
+          augmentStandingsWithPositionChange(
+            groupStandingsByClass(filteredStandings),
+            qualifyingResults
+          );
 
-      return {
-        carIdx: driver.carIdx,
-        position: driverPos.position,
-        lap: driverPos.lapNum,
-        lappedState,
-        classPosition,
-        delta: driverPos.delta,
-        isPlayer: playerCarIdx === driver.carIdx,
-        driver: {
-          name: driver.name,
-          carNum: driver.carNum,
-          license: driver.license,
-          rating: driver.rating,
-          flairId: driver.flairId,
-          lmuRating: driver.lmuRating,
-          teamName: driver.teamName,
-        },
-        fastestTime: driverPos.bestLap,
-        hasFastestTime,
-        lastTime: driverPos.lastLapTime,
-        lastTimeState: getLastTimeState(
-          driverPos.lastLapTime,
-          driverPos.bestLap,
-          hasFastestTime
-        ),
-        onPitRoad: carState?.onPitRoad ?? false,
-        onTrack: carState?.onTrack ?? false,
-        tireCompound: carState?.tireCompound ?? 0,
-        wheelCompounds: carState?.wheelCompounds,
-        trackLimitsPoints: carState?.trackLimitsPoints,
-        energyRemaining: carState?.energyRemaining,
-        carClass: driver.carClass,
-        radioActive: radioActiveCarIdxs.includes(driverPos.carIdx),
-        carId: driver.carId,
-        lastPitLap: driverPos.lastPitLap,
-        lastLap: driverPos.lastLap,
-        prevCarTrackSurface: driverPos.prevCarTrackSurface,
-        carTrackSurface: driverPos.carTrackSurface,
-        currentSessionType: sessionType,
-        dnf: carState?.dnf ?? false,
-        repair: carState?.repair ?? false,
-        penalty: carState?.penalty ?? false,
-        slowdown: carState?.slowdown ?? false,
-        relativePct: 0,
-      };
-    });
+        // Position change applies to any race; iRating change only to official ones.
+        const iratingAugmentedGroupedByClass = isOfficial
+          ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
+          : positionChangeAugmentedGroupedByClass;
 
-    const filteredStandings = standings
-      .filter((s) => !!s)
-      .sort((a, b) => a.position - b.position);
-
-    if (sessionType !== 'Race') {
-      return filteredStandings;
-    }
-
-    const positionChangeAugmentedGroupedByClass =
-      augmentStandingsWithPositionChange(
-        groupStandingsByClass(filteredStandings),
-        qualifyingResults
-      );
-
-    // Position change applies to any race; iRating change only to official ones.
-    const iratingAugmentedGroupedByClass = isOfficial
-      ? augmentStandingsWithIRating(positionChangeAugmentedGroupedByClass)
-      : positionChangeAugmentedGroupedByClass;
-
-    return iratingAugmentedGroupedByClass
-      .flatMap(([, classStandings]) => classStandings)
-      .sort((a, b) => (a?.position ?? 0) - (b?.position ?? 0));
-  }, [
-    sessionPositions,
-    sessionState,
-    driverPositions,
-    carStates,
-    qualifyingResults,
-    playerCarIdx,
-    drivers,
-    sessionType,
-    useLivePositionStandings,
-    radioActiveCarIdxs,
-    driverLivePositions,
-    fastestLapCarIdx,
-    isOfficial,
-  ]);
+        return iratingAugmentedGroupedByClass
+          .flatMap(([, classStandings]) => classStandings)
+          .sort((a, b) => (a?.position ?? 0) - (b?.position ?? 0));
+      }),
+    [
+      sessionPositions,
+      sessionState,
+      driverPositions,
+      carStates,
+      qualifyingResults,
+      playerCarIdx,
+      drivers,
+      sessionType,
+      useLivePositionStandings,
+      radioActiveCarIdxs,
+      driverLivePositions,
+      fastestLapCarIdx,
+      isOfficial,
+    ]
+  );
 
   return driverStandings;
 };

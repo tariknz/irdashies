@@ -121,7 +121,7 @@ export const useDriverStandings = (
 
   const standingsWithGain = useMemo(
     () =>
-      measureStandingsRebuild(sessionDrivers?.length ?? 0, () => {
+      measureStandingsRebuild('standings', sessionDrivers?.length ?? 0, () => {
         const initialStandings = createDriverStandings(
           {
             playerIdx: driverCarIdx,

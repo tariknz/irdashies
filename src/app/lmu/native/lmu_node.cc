@@ -376,6 +376,14 @@ Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
   const auto &scoring = _snapshot.scoring.scoringInfo;
 
   out.Set("gameVersion", _snapshot.generic.gameVersion);
+  // The sim's own session callbacks, as counters it bumps. LMU calls
+  // EndSession when a session finishes -- which is the only unambiguous
+  // statement that it did, and nothing was reading it.
+  out.Set("sessionStartEvents", _snapshot.generic.events.SME_START_SESSION);
+  out.Set("sessionEndEvents", _snapshot.generic.events.SME_END_SESSION);
+  // Scoring's write counter, for telling a session that has stopped being
+  // scored from one that is simply quiet.
+  out.Set("scoringUpdates", _snapshot.generic.events.SME_UPDATE_SCORING);
   SetString(out, "trackName", scoring.mTrackName, sizeof(scoring.mTrackName));
   SetString(out, "playerName", scoring.mPlayerName, sizeof(scoring.mPlayerName));
   SetString(out, "serverName", scoring.mServerName, sizeof(scoring.mServerName));

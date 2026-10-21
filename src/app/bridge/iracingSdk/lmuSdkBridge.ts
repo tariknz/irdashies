@@ -456,15 +456,23 @@ export async function publishLmuSDKEvents(
           raw.playerHasVehicle && raw.playerVehicleIdx >= 0
             ? raw.vehTotalLaps?.[raw.playerVehicleIdx]
             : undefined,
+        sessionStartEvents: raw.sessionStartEvents,
+        sessionEndEvents: raw.sessionEndEvents,
       });
       const sessionChange = sessionIdentity.lastChange();
       if (sessionChange && sessionChange !== 'stamp') {
+        // 'event' is the sim's own StartSession/EndSession callback. The other
+        // two are inferences from the clock or the lap count, and worth
+        // telling apart in the log when one of them fires instead.
         // A stamp change is already obvious from the track or session-type
         // lines around it. These two are not: nothing else in the log would
         // say why every consumer just reset.
         logger.info(
-          `[lmuSdkBridge] New session detected from the ${sessionChange} ` +
-            `going backwards; id=${sessionIdentity.current()}`
+          sessionChange === 'event'
+            ? `[lmuSdkBridge] Session boundary reported by the sim; ` +
+                `id=${sessionIdentity.current()}`
+            : `[lmuSdkBridge] New session detected from the ${sessionChange} ` +
+                `going backwards; id=${sessionIdentity.current()}`
         );
       }
 

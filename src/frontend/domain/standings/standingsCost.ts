@@ -22,9 +22,28 @@ const SLOW_REBUILD_MS = 8;
 
 const LOG_INTERVAL_MS = 10_000;
 
-let lastLoggedAt = -Infinity;
-let since = 0;
-let worst = 0;
+interface PathCost {
+  lastLoggedAt: number;
+  since: number;
+  worst: number;
+}
+
+/**
+ * Per path, because the Standings and Relative widgets rebuild through
+ * different code and share nothing but a name. Instrumenting one and reading
+ * its silence as covering both is how the last attempt went wrong: the
+ * Relative widget was still running with its own uninstrumented rebuild.
+ */
+const costs = new Map<string, PathCost>();
+
+const costFor = (path: string): PathCost => {
+  let cost = costs.get(path);
+  if (!cost) {
+    cost = { lastLoggedAt: -Infinity, since: 0, worst: 0 };
+    costs.set(path, cost);
+  }
+  return cost;
+};
 
 /**
  * Times `build` and reports it if it was slow.
@@ -33,6 +52,7 @@ let worst = 0;
  * expression rather than restructuring around this.
  */
 export const measureStandingsRebuild = <T>(
+  path: 'standings' | 'relative',
   drivers: number,
   build: () => T
 ): T => {
@@ -40,18 +60,22 @@ export const measureStandingsRebuild = <T>(
   const result = build();
   const elapsed = performance.now() - startedAt;
 
-  since += 1;
-  if (elapsed > worst) worst = elapsed;
+  const cost = costFor(path);
+  cost.since += 1;
+  if (elapsed > cost.worst) cost.worst = elapsed;
 
   const now = Date.now();
-  if (worst >= SLOW_REBUILD_MS && now - lastLoggedAt >= LOG_INTERVAL_MS) {
+  if (
+    cost.worst >= SLOW_REBUILD_MS &&
+    now - cost.lastLoggedAt >= LOG_INTERVAL_MS
+  ) {
     logger.warn(
-      `[standings] Slow rebuild: worst ${worst.toFixed(1)}ms over ` +
-        `${since} rebuilds for ${drivers} drivers`
+      `[${path}] Slow rebuild: worst ${cost.worst.toFixed(1)}ms over ` +
+        `${cost.since} rebuilds for ${drivers} drivers`
     );
-    lastLoggedAt = now;
-    since = 0;
-    worst = 0;
+    cost.lastLoggedAt = now;
+    cost.since = 0;
+    cost.worst = 0;
   }
 
   return result;
@@ -59,7 +83,5 @@ export const measureStandingsRebuild = <T>(
 
 /** For tests, which must not inherit another test's throttle. */
 export const resetStandingsCost = () => {
-  lastLoggedAt = -Infinity;
-  since = 0;
-  worst = 0;
+  costs.clear();
 };

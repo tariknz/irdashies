@@ -59,7 +59,7 @@ export const lmuSessionUniqueId = (raw: LmuSessionIdentitySource): number => {
 /**
  * Why the identity advanced, for the caller to log. Null when it did not.
  */
-export type LmuSessionChange = 'stamp' | 'clock' | 'laps';
+export type LmuSessionChange = 'stamp' | 'event' | 'clock' | 'laps';
 
 export interface LmuSessionIdentitySample {
   trackName?: string;
@@ -71,6 +71,18 @@ export interface LmuSessionIdentitySample {
   currentET?: number;
   /** The player's completed laps, or undefined when there is no player car. */
   playerLaps?: number;
+  /**
+   * The sim's own session callbacks, as monotonic counters.
+   *
+   * Checked before the heuristics below and preferred over them, because an
+   * increment here is the sim stating that a session started or ended rather
+   * than this inferring it. Ending an online practice bumps
+   * `sessionEndEvents` and changes nothing else: the window stays open, the
+   * clock stops rather than resets, and the grid empties one driver at a time
+   * -- so nothing else would have noticed.
+   */
+  sessionStartEvents?: number;
+  sessionEndEvents?: number;
 }
 
 export interface LmuSessionIdentity {
@@ -103,6 +115,7 @@ export const createLmuSessionIdentity = (): LmuSessionIdentity => {
   let stamp: string | null = null;
   let elapsed = 0;
   let laps: number | undefined;
+  let events: number | undefined;
   let epoch = 0;
   let id = 0;
   let change: LmuSessionChange | null = null;
@@ -127,6 +140,14 @@ export const createLmuSessionIdentity = (): LmuSessionIdentity => {
           ? sample.playerLaps
           : undefined;
 
+      // One number, because either callback firing is a boundary and both
+      // only ever go up; which of the two it was does not change the answer.
+      const nextEvents =
+        typeof sample.sessionStartEvents === 'number' ||
+        typeof sample.sessionEndEvents === 'number'
+          ? (sample.sessionStartEvents ?? 0) + (sample.sessionEndEvents ?? 0)
+          : undefined;
+
       change = null;
       if (nextStamp !== stamp) {
         // A different event, or the same one at a different length. The epoch
@@ -135,6 +156,16 @@ export const createLmuSessionIdentity = (): LmuSessionIdentity => {
         stamp = nextStamp;
         epoch = 0;
         change = 'stamp';
+      } else if (
+        nextEvents !== undefined &&
+        events !== undefined &&
+        nextEvents !== events
+      ) {
+        // The sim said so. Preferred over the two heuristics below, and the
+        // only thing that catches a session ending without being replaced --
+        // where the clock stops rather than going backwards.
+        epoch += 1;
+        change = 'event';
       } else if (nextElapsed < elapsed - CLOCK_TOLERANCE_SECONDS) {
         // The clock cannot run backwards inside a session, so this is a new
         // one wearing the old one's name -- a server rolling its practice.
@@ -155,6 +186,7 @@ export const createLmuSessionIdentity = (): LmuSessionIdentity => {
       // new baseline instead of re-triggering on every tick.
       elapsed = nextElapsed;
       if (nextLaps !== undefined) laps = nextLaps;
+      if (nextEvents !== undefined) events = nextEvents;
       if (change) recompute();
       return id;
     },
@@ -171,6 +203,7 @@ export const createLmuSessionIdentity = (): LmuSessionIdentity => {
       stamp = null;
       elapsed = 0;
       laps = undefined;
+      events = undefined;
       epoch = 0;
       id = 0;
       change = null;
