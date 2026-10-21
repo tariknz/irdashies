@@ -82,6 +82,8 @@ interface DriverNameCellProps {
   radioActive?: boolean;
   repair?: boolean;
   penalty?: boolean;
+  /** LMU's penalty kind: DT for a drive-through, SG for a stop-go. */
+  penaltyKind?: 'DT' | 'SG';
   slowdown?: boolean;
   showStatusBadges?: boolean;
   isMinimalStatusBadges?: boolean;
@@ -100,6 +102,7 @@ export const DriverNameCell = memo(
     nameFormat,
     radioActive,
     repair,
+    penaltyKind,
     penalty,
     slowdown,
     showStatusBadges = true,
@@ -214,6 +217,7 @@ export const DriverNameCell = memo(
           {showStatusBadges && (
             <DriverStatusBadges
               repair={repair}
+              penaltyKind={penaltyKind}
               penalty={penalty}
               slowdown={slowdown}
               isMinimal={isMinimalStatusBadges}

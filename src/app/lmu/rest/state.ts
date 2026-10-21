@@ -27,6 +27,11 @@ export interface LmuRestCells {
   repairTime?: LmuRestCell<number>;
   refuelTarget?: LmuRestCell<number>;
   refuelTargetIsVirtualEnergy?: LmuRestCell<boolean>;
+  /**
+   * Seconds the next stop spends serving penalties. The only thing that
+   * distinguishes a drive-through from a stop-go. See types/lmuPenalty.ts.
+   */
+  penaltySeconds?: LmuRestCell<number>;
   brakeWear?: LmuRestCell<number>;
   suspensionDamage?: LmuRestCell<number>;
   aeroDamage?: LmuRestCell<number>;

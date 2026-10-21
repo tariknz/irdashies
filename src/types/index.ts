@@ -15,6 +15,7 @@ export * from './defaultDashboard';
 export * from './cornerName';
 export * from './lapTrace';
 export * from './lmuRating';
+export * from './lmuPenalty';
 export * from './logBridge';
 export * from './keybindings';
 export * from './personalBestLapBridge';

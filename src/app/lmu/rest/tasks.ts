@@ -460,6 +460,9 @@ export const LMU_REST_TASKS: readonly LmuRestTask[] = [
       numberCell('repairTime', ['damage'], (data, value) => {
         data.cells.repairTime = value;
       }),
+      numberCell('penaltySeconds', ['penalties'], (data, value) => {
+        data.cells.penaltySeconds = value;
+      }),
     ],
   },
 ];

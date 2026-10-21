@@ -7,6 +7,12 @@ interface StatusBadgeProps {
   animate?: boolean;
   children: ReactNode;
   additionalClasses?: string;
+  /**
+   * An exact background, for a badge whose colour is specified rather than
+   * chosen. Inline because it is a fixed hex, not a palette step: Tailwind's
+   * red-500 is #ef4444 and the penalty badge is specified as #FF0000.
+   */
+  backgroundColor?: string;
 }
 
 const StatusBadge = ({
@@ -15,6 +21,7 @@ const StatusBadge = ({
   animate,
   children,
   additionalClasses = '',
+  backgroundColor,
 }: StatusBadgeProps) => {
   const baseClasses =
     'text-xs border-2 rounded-md text-center text-nowrap px-2 m-0 leading-tight';
@@ -23,6 +30,7 @@ const StatusBadge = ({
   return (
     <span
       className={`${textColor} ${baseClasses} ${borderColorClass} ${animationClass} ${additionalClasses}`}
+      style={backgroundColor ? { backgroundColor } : undefined}
     >
       {children}
     </span>
@@ -33,6 +41,15 @@ const StatusBadge = ({
 const flagBadgeClasses = 'bg-black/80 inline-block min-w-6';
 
 interface DriverStatusBadgesProps {
+  /**
+   * LMU's penalty, where the kind can be told apart: `DT` for a drive-through,
+   * `SG` for a stop-go.
+   *
+   * Its own prop rather than another boolean, because the kind is the point --
+   * a drive-through and a stop-go cost very different amounts of time, and a
+   * single penalty flag would make the driver look up to find out which.
+   */
+  penaltyKind?: 'DT' | 'SG';
   repair?: boolean;
   penalty?: boolean;
   slowdown?: boolean;
@@ -53,6 +70,7 @@ interface DriverStatusBadgesProps {
 
 export const DriverStatusBadges = memo(
   ({
+    penaltyKind,
     repair,
     penalty,
     slowdown,
@@ -72,7 +90,15 @@ export const DriverStatusBadges = memo(
   }: DriverStatusBadgesProps) => {
     const muted = 'border-transparent';
     const hasStatus =
-      penalty || slowdown || repair || dnf || tow || out || pit || lastPit;
+      penaltyKind ||
+      penalty ||
+      slowdown ||
+      repair ||
+      dnf ||
+      tow ||
+      out ||
+      pit ||
+      lastPit;
 
     if (!hasStatus) {
       return null;
@@ -103,6 +129,16 @@ export const DriverStatusBadges = memo(
       <div
         className={`flex flex-row-reverse items-center gap-0.5 ${className}`}
       >
+        {penaltyKind && (
+          <StatusBadge
+            textColor="text-white"
+            borderColorClass="border-transparent"
+            additionalClasses="inline-block min-w-6 font-bold"
+            backgroundColor="#FF0000"
+          >
+            {penaltyKind}
+          </StatusBadge>
+        )}
         {penalty && (
           <StatusBadge
             textColor="text-orange-500"

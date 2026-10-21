@@ -120,3 +120,37 @@ describe('DriverStatusBadges', () => {
     });
   });
 });
+
+describe('DriverStatusBadges penalty kind', () => {
+  const badges = (props: Parameters<typeof DriverStatusBadges>[0]) =>
+    render(<DriverStatusBadges {...props} />).container;
+
+  it('shows DT for a drive-through and SG for a stop-go', () => {
+    expect(badges({ penaltyKind: 'DT' }).textContent).toContain('DT');
+    expect(badges({ penaltyKind: 'SG' }).textContent).toContain('SG');
+  });
+
+  it('draws it as white on red', () => {
+    const span = badges({ penaltyKind: 'DT' }).querySelector(
+      'span'
+    ) as HTMLElement;
+    expect(span.className).toContain('text-white');
+    expect(span.style.backgroundColor).toBe('rgb(255, 0, 0)');
+  });
+
+  it('shows up on its own, without another status to carry it', () => {
+    // hasStatus gates the whole block, so a penalty alone has to open it.
+    expect(badges({ penaltyKind: 'SG' }).firstChild).not.toBeNull();
+  });
+
+  it('renders nothing without a penalty or another status', () => {
+    expect(badges({}).firstChild).toBeNull();
+  });
+
+  it('leaves the existing penalty flag alone', () => {
+    // iRacing's black-flag badge is a separate thing and still renders.
+    const both = badges({ penaltyKind: 'DT', penalty: true });
+    expect(both.textContent).toContain('DT');
+    expect(both.querySelectorAll('span').length).toBeGreaterThan(1);
+  });
+});

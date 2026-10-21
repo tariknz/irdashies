@@ -270,6 +270,14 @@ export interface LmuRawTelemetry {
    * Fuel remaining per car, as the sim quantises it: a byte over 255, not a
    * percentage. From scoring, so every car on the grid has one.
    */
+  /**
+   * Outstanding penalties per car, from scoring's mNumPenalties.
+   *
+   * A count. Scoring carries no field for which penalty it is -- that comes
+   * from the pit-stop estimate's penalty time, and only for the player. See
+   * lmu/penalty.ts.
+   */
+  vehNumPenalties?: ArrayLike<number>;
   vehFuelFraction?: ArrayLike<number>;
   /**
    * Virtual energy remaining per car, already a fraction.

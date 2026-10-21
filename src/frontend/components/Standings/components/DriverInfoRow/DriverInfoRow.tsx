@@ -64,6 +64,8 @@ interface DriverRowInfoProps {
   tireCompound?: number;
   /** LMU's four wheels, FL, FR, RL, RR. Undefined where the sim has one. */
   wheelCompounds?: number[];
+  /** LMU's penalty kind: DT for a drive-through, SG for a stop-go. */
+  penaltyKind?: 'DT' | 'SG';
   /** LMU's track-limits penalty points. Undefined where unknown. */
   trackLimitsPoints?: number;
   /** Points at which a drive-through is served. */
@@ -234,6 +236,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lmuRating,
     tireCompound,
     wheelCompounds,
+    penaltyKind,
     trackLimitsPoints,
     trackLimitsMax,
     lmuVirtualEnergy,
@@ -396,6 +399,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             key="driverName"
             radioActive={radioActive}
             repair={repair}
+            penaltyKind={penaltyKind}
             penalty={penalty}
             slowdown={slowdown}
             showStatusBadges={config?.driverName?.showStatusBadges ?? true}
@@ -804,6 +808,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lastTimeState,
     tireCompound,
     wheelCompounds,
+    penaltyKind,
     trackLimitsPoints,
     trackLimitsMax,
     lmuVirtualEnergy,

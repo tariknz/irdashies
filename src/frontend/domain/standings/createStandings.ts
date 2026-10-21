@@ -1,5 +1,6 @@
 import { SessionResults, Driver, TrackLocation } from '@irdashies/types';
 import type { LmuDriverRating } from '@irdashies/types';
+import { lmuPenaltyKind, type LmuPenaltyKind } from '@irdashies/types';
 import {
   calculateIRatingGain,
   RaceResult,
@@ -61,6 +62,14 @@ export interface Standings {
    * Which of the two it is depends on the car; only one limits it.
    */
   energyRemaining?: number;
+  /**
+   * The penalty this driver is serving, where it can be told apart.
+   *
+   * Only ever set on the player's row: the kind comes from the player's own
+   * pit-stop estimate, so every other car has a count and no more. See
+   * types/lmuPenalty.ts.
+   */
+  penaltyKind?: LmuPenaltyKind;
   onTrack: boolean;
   carClass: {
     id: number;
@@ -197,6 +206,10 @@ export const createDriverStandings = (
     carIdxTrackLimitsPointsValue?: number[];
     /** 0..1 per car, -1 unavailable. Empty under iRacing. */
     carIdxEnergyRemainingValue?: number[];
+    /** Outstanding penalties per car. A count, not a kind. */
+    carIdxPenaltiesValue?: number[];
+    /** Seconds the player's next stop spends serving penalties. */
+    penaltySeconds?: number;
     isOnTrack?: boolean;
     carIdxSessionFlags?: number[];
   },
@@ -336,6 +349,13 @@ export const createDriverStandings = (
           telemetry?.carIdxEnergyRemainingValue,
           result.CarIdx
         ),
+        penaltyKind:
+          result.CarIdx === session?.playerIdx
+            ? lmuPenaltyKind(
+                telemetry?.carIdxPenaltiesValue?.[result.CarIdx],
+                telemetry?.penaltySeconds
+              )
+            : undefined,
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,
@@ -446,6 +466,13 @@ export const createDriverStandings = (
           telemetry?.carIdxEnergyRemainingValue,
           driver.CarIdx
         ),
+        penaltyKind:
+          driver.CarIdx === session?.playerIdx
+            ? lmuPenaltyKind(
+                telemetry?.carIdxPenaltiesValue?.[driver.CarIdx],
+                telemetry?.penaltySeconds
+              )
+            : undefined,
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,

@@ -157,6 +157,9 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       'LmuCarIdxEnergyRemaining',
       this.latest.carIdxEnergyRemaining
     );
+    copyNumberArray(frame, 'LmuCarIdxPenalties', this.latest.carIdxPenalties);
+    this.latest.penaltySeconds =
+      numberValue(frame, 'LmuPenaltySeconds') ?? undefined;
     copyBooleanArray(frame, 'CarIdxP2P_Status', this.latest.carIdxP2PStatus);
     copyNumberArray(frame, 'CarIdxP2P_Count', this.latest.carIdxP2PCount);
     const sessionState = numberValue(frame, 'SessionState') ?? 0;
@@ -244,6 +247,8 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.latest.carIdxWheelCompounds.length = 0;
     this.latest.carIdxTrackLimitsPoints.length = 0;
     this.latest.carIdxEnergyRemaining.length = 0;
+    this.latest.carIdxPenalties.length = 0;
+    this.latest.penaltySeconds = undefined;
     this.latest.trackLimitsPointsMax = 0;
     this.latest.carIdxP2PStatus.length = 0;
     this.latest.carIdxP2PCount.length = 0;
@@ -275,6 +280,8 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       carIdxWheelCompounds: [],
       carIdxTrackLimitsPoints: [],
       carIdxEnergyRemaining: [],
+      carIdxPenalties: [],
+      penaltySeconds: undefined,
       trackLimitsPointsMax: 0,
       carIdxP2PStatus: [],
       carIdxP2PCount: [],

@@ -469,6 +469,43 @@ describe('car-setup-overview fuel slider maximum', () => {
   });
 });
 
+describe('pitstop-estimate penalty seconds', () => {
+  it('reads the penalty time, which is the only thing naming the penalty', () => {
+    // 0 with a drive-through outstanding, 10 with a stop-go. Observed live.
+    const { data } = apply('pitstop-estimate', {
+      ...pitstopEstimateFixture(),
+      penalties: 10,
+    });
+    expect(data.cells.penaltySeconds?.value).toEqual([10]);
+  });
+
+  it('keeps a zero, which is what a drive-through looks like', () => {
+    // Not treated as absent: zero seconds with a penalty outstanding is the
+    // drive-through case, so it has to survive the parser.
+    const { data, applied } = apply('pitstop-estimate', {
+      ...pitstopEstimateFixture(),
+      penalties: 0,
+    });
+    expect(applied).toContain('penaltySeconds');
+    expect(data.cells.penaltySeconds?.value).toEqual([0]);
+  });
+
+  it('stays a telemetry cell, so it cannot force a session republish', () => {
+    // The poller bumps the REST revision on every successful parse of a
+    // session-targeted output, and this endpoint polls at 1 Hz -- which would
+    // rebuild and rebroadcast the whole session snapshot every second.
+    const output = taskById('pitstop-estimate').outputs.find(
+      (o) => o.id === 'penaltySeconds'
+    );
+    expect(output?.target).toBe('telemetry');
+  });
+
+  it('applies nothing when the field is missing', () => {
+    const { applied } = apply('pitstop-estimate', { total: 5 });
+    expect(applied).not.toContain('penaltySeconds');
+  });
+});
+
 describe('tire-management task', () => {
   it('reads the compounds in the order the sim indexes them', () => {
     const { data } = apply('tire-management', tireManagementFixture());

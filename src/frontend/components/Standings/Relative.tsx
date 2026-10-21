@@ -283,6 +283,7 @@ export const Relative = () => {
           wheelCompounds={
             settings?.compound?.enabled ? result.wheelCompounds : undefined
           }
+          penaltyKind={result.penaltyKind}
           trackLimitsPoints={result.trackLimitsPoints}
           trackLimitsMax={trackLimitsMax}
           lmuVirtualEnergy={result.energyRemaining}

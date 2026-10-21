@@ -251,6 +251,10 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
     std::fill(trackLimitsSteps.Data(), trackLimitsSteps.Data() + cap, -1);
   // Fuel as the sim quantises it: a byte over 255, not a percentage. From
   // scoring, so every car in this loop has one and no sentinel is needed.
+  // Outstanding penalties per car. A count, not a kind: scoring has no
+  // field for which penalty it is. See lmu/penalty.ts for where the kind
+  // comes from (see types/lmuPenalty.ts).
+  auto numPenalties = Napi::Int32Array::New(env, cap);
   auto fuelFraction = Napi::Uint8Array::New(env, cap);
   // Virtual energy, already a fraction. From the telemetry block, so -1 where
   // a car has none this frame -- 0 is an empty battery, not a missing one.
@@ -291,6 +295,7 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
     flag[id] = v.mFlag;
     underYellow[id] = v.mUnderYellow ? 1 : 0;
     fuelFraction[id] = v.mFuelFraction;
+    numPenalties[id] = v.mNumPenalties;
     bestSector1[id] = v.mBestSector1;
     bestSector2[id] = v.mBestSector2;
     lastSector1[id] = v.mLastSector1;
@@ -359,6 +364,7 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
   out.Set("vehElapsedTime", elapsedTime);
   out.Set("vehWheelCompounds", wheelCompounds);
   out.Set("vehTrackLimitsSteps", trackLimitsSteps);
+  out.Set("vehNumPenalties", numPenalties);
   out.Set("vehFuelFraction", fuelFraction);
   out.Set("vehVirtualEnergy", virtualEnergy);
 }

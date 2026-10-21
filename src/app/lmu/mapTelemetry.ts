@@ -438,6 +438,9 @@ export function mapLmuTelemetry(
   // One figure per car: virtual energy where the car runs on it, fuel
   // otherwise. Which budget applies is a property of the car, not the session,
   // so the choice is made per car here rather than once for the grid.
+  // Count only. Which penalty it is comes from the pit-stop estimate and is
+  // knowable for the player alone -- see types/lmuPenalty.ts.
+  t.LmuCarIdxPenalties = numArr(raw.vehNumPenalties);
   t.LmuCarIdxEnergyRemaining = numArr(
     lmuEnergyChannel(raw.vehFuelFraction, raw.vehVirtualEnergy)
   );
@@ -485,6 +488,9 @@ export function mapLmuTelemetry(
     t.LmuPitStopTime = staged(restCells.pitStopTime);
   }
   if (restCells?.repairTime) t.LmuRepairTime = staged(restCells.repairTime);
+  if (restCells?.penaltySeconds) {
+    t.LmuPenaltySeconds = staged(restCells.penaltySeconds);
+  }
   if (restCells?.refuelTarget) {
     t.LmuRefuelTarget = staged(restCells.refuelTarget);
   }

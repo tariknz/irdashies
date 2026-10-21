@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import {
+  useStandingsSelector,
   useStandingsSnapshot,
   useSessionTimingSnapshot,
   useSessionDrivers,
@@ -20,6 +21,7 @@ import {
 } from './createStandings';
 import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
+import { lmuPenaltyKind } from '@irdashies/types';
 import { measureStandingsRebuild } from './standingsCost';
 import { useRelativeSettings } from './useRelativeSettings';
 import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
@@ -163,6 +165,7 @@ export const useCarState = () => {
     snapshot?.carIdxTrackLimitsPoints ?? EMPTY_NUMBERS;
   const carIdxEnergyRemaining =
     snapshot?.carIdxEnergyRemaining ?? EMPTY_NUMBERS;
+  const carIdxPenalties = snapshot?.carIdxPenalties ?? EMPTY_NUMBERS;
   const carIdxSessionFlags = snapshot?.carIdxSessionFlags ?? EMPTY_NUMBERS;
 
   return useMemo(() => {
@@ -175,6 +178,7 @@ export const useCarState = () => {
         wheelCompounds: wheelCompoundsFor(carIdxWheelCompounds, index),
         trackLimitsPoints: trackLimitsFor(carIdxTrackLimitsPoints, index),
         energyRemaining: energyFor(carIdxEnergyRemaining, index),
+        penalties: carIdxPenalties[index] ?? 0,
         dnf: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Disqualify),
         repair: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Repair),
         penalty: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Black),
@@ -188,6 +192,7 @@ export const useCarState = () => {
     carIdxWheelCompounds,
     carIdxTrackLimitsPoints,
     carIdxEnergyRemaining,
+    carIdxPenalties,
     carIdxSessionFlags,
   ]);
 };
@@ -206,6 +211,9 @@ export const useDriverStandings = () => {
     (relativeSettings?.radio?.persistenceSeconds ?? 3) * 1000
   );
   const carStates = useCarState();
+  // Its own selector rather than the whole snapshot: this hook already holds
+  // one for the per-car arrays, and a scalar does not need a second.
+  const penaltySeconds = useStandingsSelector((s) => s.penaltySeconds);
   // Use focus car index which handles spectator mode (uses CamCarIdx when spectating)
   const playerCarIdx = useFocusCarIdx();
   const sessionType = useCurrentSessionType();
@@ -336,6 +344,12 @@ export const useDriverStandings = () => {
             wheelCompounds: carState?.wheelCompounds,
             trackLimitsPoints: carState?.trackLimitsPoints,
             energyRemaining: carState?.energyRemaining,
+            // Only the player's, because the kind comes from the player's own
+            // pit-stop estimate. Every other car has a count and no more.
+            penaltyKind:
+              driver.carIdx === playerCarIdx
+                ? lmuPenaltyKind(carState?.penalties, penaltySeconds)
+                : undefined,
             carClass: driver.carClass,
             radioActive: radioActiveCarIdxs.includes(driverPos.carIdx),
             carId: driver.carId,
@@ -380,6 +394,7 @@ export const useDriverStandings = () => {
       sessionState,
       driverPositions,
       carStates,
+      penaltySeconds,
       qualifyingResults,
       playerCarIdx,
       drivers,

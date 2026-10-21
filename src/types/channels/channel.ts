@@ -460,6 +460,14 @@ export interface StandingsSnapshot {
    * fuel at all.
    */
   carIdxEnergyRemaining: number[];
+  /** Outstanding penalties per car. A count, not a kind. */
+  carIdxPenalties: number[];
+  /**
+   * Seconds the player's next stop spends serving penalties. Undefined until
+   * the pit-stop estimate has been polled. Names the player's penalty when
+   * combined with their count -- see types/lmuPenalty.ts.
+   */
+  penaltySeconds?: number;
   /** Points at which a drive-through is served. 0 when unknown. */
   trackLimitsPointsMax: number;
   carIdxP2PStatus: boolean[];

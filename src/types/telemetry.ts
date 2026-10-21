@@ -39,6 +39,17 @@ export type Telemetry = {
    * given car, so one column can carry both. -1 is "no reading", which an
    * empty tank is not.
    */
+  /**
+   * Outstanding penalties per car. A count; scoring has no field for which
+   * penalty it is, and the kind is only derivable for the player.
+   */
+  LmuCarIdxPenalties?: TelemetryVar<number[]>;
+  /**
+   * Seconds the player's next stop spends serving penalties, from the pit-stop
+   * estimate. The only thing that tells a drive-through from a stop-go, since
+   * the first costs no stationary time. See types/lmuPenalty.ts.
+   */
+  LmuPenaltySeconds?: TelemetryVar<number[]>;
   LmuCarIdxEnergyRemaining?: TelemetryVar<number[]>;
   /**
    * True when the sim has stopped writing shared memory, so this frame is the

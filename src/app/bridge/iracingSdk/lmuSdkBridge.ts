@@ -605,7 +605,12 @@ export async function publishLmuSDKEvents(
         raw,
         lapDistanceState,
         opponentLapDistanceState,
-        undefined,
+        // The REST cells, which were never passed: the parameter has existed
+        // since the poller was written and the only call site supplied three
+        // arguments, so LmuPitStopTime, LmuRepairTime, LmuRefuelTarget and the
+        // damage channels have been undefined in every build. Wiring it here
+        // activates those too -- which is what they were built for.
+        restData.cells,
         sessionIdentity,
         frozen
       );
