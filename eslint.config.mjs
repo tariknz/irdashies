@@ -126,7 +126,11 @@ export default defineConfig([
                 'App code cannot import from frontend/. Use IPC bridges and import types from @irdashies/types instead.',
             },
             {
-              group: ['@irdashies/utils/*', '@irdashies/context'],
+              group: [
+                '@irdashies/frontend/*',
+                '@irdashies/utils/*',
+                '@irdashies/context',
+              ],
               message:
                 'App code cannot import frontend aliases. Use IPC bridges and import types from @irdashies/types instead.',
             },

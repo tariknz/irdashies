@@ -7,8 +7,10 @@ import { createProcessorDefinitions } from './processorRegistry';
  * LapHistoryRuntime records lap crossings outside demand gating so an enabled
  * Gantry keeps recording with its window closed; registering it here as well
  * would run a second processor and publish a competing snapshot.
+ * ReplayContextRuntime is read by the incident and lap-history runtimes, so it
+ * must run whether or not a window subscribes.
  */
-const RUNTIME_OWNED_CHANNELS = ['lap-history.snapshot'];
+const RUNTIME_OWNED_CHANNELS = ['lap-history.snapshot', 'replay.context'];
 
 describe('processor registry', () => {
   it('registers every host-owned snapshot channel exactly once', () => {

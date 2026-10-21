@@ -1,8 +1,20 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import {
+  lazy,
+  Suspense,
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+} from 'react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { PreviewSettingsMenu } from './PreviewSettingsMenu';
-import { SettingsLoader } from '../../../src/frontend/components/Settings/SettingsLoader';
 import { GearSix, X } from '@phosphor-icons/react';
+
+const SettingsLoader = lazy(() =>
+  import('@irdashies/frontend/components/Settings/SettingsLoader').then(
+    (module) => ({ default: module.SettingsLoader })
+  )
+);
 
 interface SettingsContentProps {
   onClose: () => void;
@@ -24,6 +36,25 @@ function SettingsContent({
     startPosY: number;
   } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const previousFocus = document.activeElement;
+    panelRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    return () => {
+      if (previousFocus instanceof HTMLElement) previousFocus.focus();
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !event.defaultPrevented) {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -96,6 +127,8 @@ function SettingsContent({
   return (
     <div
       ref={panelRef}
+      role="dialog"
+      aria-label="Preview settings"
       className="fixed z-50 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl flex flex-col"
       style={panelStyle}
     >
@@ -109,6 +142,7 @@ function SettingsContent({
         </h3>
         <button
           onClick={onClose}
+          aria-label="Close settings"
           className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
         >
           <X size={18} />
@@ -122,7 +156,9 @@ function SettingsContent({
           onToggleWidget={onToggleWidget}
         />
         <div className="flex-1 overflow-y-auto min-h-0">
-          <SettingsLoader previewMode />
+          <Suspense fallback={<p role="status">Loading settings...</p>}>
+            <SettingsLoader previewMode />
+          </Suspense>
         </div>
       </div>
     </div>

@@ -9,13 +9,19 @@ import {
 } from 'react';
 import { ResizeIcon, GearIcon, XIcon } from '@phosphor-icons/react';
 import { useDashboard, useGeneralSettings } from '@irdashies/context';
-import { WidgetRuntimeProvider } from '../../../src/frontend/widgetRuntime';
+import { WidgetRuntimeProvider } from '@irdashies/frontend/widgetRuntime';
+import { Gantry } from '@irdashies/frontend/components/Gantry/Gantry';
+import {
+  GantryDockHost,
+  useGantryDock,
+} from '@irdashies/frontend/components/GantryDock/GantryDockHost';
+import { GantrySessionHoldProvider } from '@irdashies/frontend/components/Gantry/hooks/useGantrySessionHold';
 import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import {
   useDragWidget,
   useResizeWidget,
   ResizeHandles,
-} from '../../../src/frontend/components/WidgetContainer';
+} from '@irdashies/frontend/components/WidgetContainer';
 
 export interface WidgetPosition {
   x: number;
@@ -63,6 +69,33 @@ export function useWidgetConfig(widgetId: string): Record<string, unknown> {
   return (widget?.config ?? {}) as Record<string, unknown>;
 }
 
+function PreviewGantry() {
+  const dock = useGantryDock();
+  return (
+    <GantrySessionHoldProvider running>
+      <Gantry
+        dock={dock.panels.length ? <GantryDockHost dock={dock} /> : undefined}
+      />
+    </GantrySessionHoldProvider>
+  );
+}
+
+/** Gantry's dock configuration must be resolved into content by its host. */
+export function PreviewWidgetContent({
+  widgetId,
+  component: Component,
+}: {
+  widgetId: string;
+  component: React.ComponentType<unknown>;
+}) {
+  const config = useWidgetConfig(widgetId);
+  return (
+    <WidgetRuntimeProvider widgetType={widgetId}>
+      {widgetId === 'gantry' ? <PreviewGantry /> : <Component {...config} />}
+    </WidgetRuntimeProvider>
+  );
+}
+
 /**
  * A single draggable/resizable widget in the preview canvas.
  */
@@ -87,7 +120,6 @@ export const PreviewWidgetItem = memo(function PreviewWidgetItem({
   onDisable: (id: string) => void;
   onOpenSettings: (id: string) => void;
 }) {
-  const config = useWidgetConfig(widgetId);
   const [localLayout, setLocalLayout] = useState(position);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
@@ -203,9 +235,7 @@ export const PreviewWidgetItem = memo(function PreviewWidgetItem({
                 useWidgetChannelRate finds no definition and every
                 channelRates/ratePreset override silently degrades to the
                 registry default (e.g. Input's 60Hz trace drops to 25Hz). */}
-            <WidgetRuntimeProvider widgetType={widgetId}>
-              <Component {...config} />
-            </WidgetRuntimeProvider>
+            <PreviewWidgetContent widgetId={widgetId} component={Component} />
           </WidgetErrorBoundary>
         </WidgetFrame>
       </div>

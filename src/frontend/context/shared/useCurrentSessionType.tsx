@@ -1,8 +1,15 @@
 import { useSessionType } from '@irdashies/context';
 import { trackStateSelectors, useTrackStateSelector } from '../ChannelStore';
 
-type SessionType =
-  'Race' | 'Lone Qualify' | 'Open Qualify' | 'Practice' | 'Offline Testing';
+export type SessionType =
+  | 'Race'
+  | 'Lone Qualify'
+  | 'Open Qualify'
+  | 'Practice'
+  | 'Offline Testing'
+  | 'Warmup'
+  // A Time Trial reports as this.
+  | 'Lone Practice';
 
 /**
  * @returns The current session type. Undefined if sessionNum is unknown.

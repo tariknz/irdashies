@@ -13,7 +13,9 @@ import {
   useP2PDisplayStates,
   usePitStopDuration,
   usePitLaneStore,
+  useActiveSimulator,
 } from '@irdashies/context';
+import { RATING_COLUMN_IDS, simulatorHasDriverRatings } from '@irdashies/types';
 import {
   useRelativeSettings,
   useDriverRelatives,
@@ -28,9 +30,22 @@ import { FlagContour } from '@irdashies/utils/FlagContour';
 import { getFlag } from '@irdashies/utils/getFlag';
 import { getFlagColor } from '@irdashies/utils/getFlagColor';
 
+/** Stable identity, so the iRacing path never invalidates dependent memos. */
+const EMPTY_HIDDEN_COLUMNS: ReadonlySet<string> = new Set<string>();
+
 export const Relative = () => {
   const settings = useRelativeSettings();
   const generalSettings = useGeneralSettings();
+  // Resolved here and passed down, so the rows stay driven by props rather
+  // than reaching into context themselves.
+  const simulator = useActiveSimulator();
+  const hiddenColumns = useMemo<ReadonlySet<string>>(
+    () =>
+      simulatorHasDriverRatings(simulator)
+        ? EMPTY_HIDDEN_COLUMNS
+        : new Set<string>(RATING_COLUMN_IDS),
+    [simulator]
+  );
   const buffer = settings?.buffer ?? 3;
   const { isDriving } = useDrivingState();
   const standings = useDriverRelatives({
@@ -117,6 +132,7 @@ export const Relative = () => {
           hidden={true}
           isMultiClass={false}
           displayOrder={settings?.displayOrder}
+          hiddenColumns={hiddenColumns}
           config={settings}
           carNumber={(settings?.carNumber?.enabled ?? true) ? '' : undefined}
           flairId={(settings?.countryFlags?.enabled ?? true) ? 0 : undefined}
@@ -173,6 +189,7 @@ export const Relative = () => {
             hidden={true}
             isMultiClass={false}
             displayOrder={settings?.displayOrder}
+            hiddenColumns={hiddenColumns}
             config={settings}
             carNumber={(settings?.carNumber?.enabled ?? true) ? '' : undefined}
             flairId={(settings?.countryFlags?.enabled ?? true) ? 0 : undefined}
@@ -269,6 +286,7 @@ export const Relative = () => {
           }
           numLapDeltasToShow={lapTimeDeltasEnabled ? numLapDeltas : undefined}
           displayOrder={settings?.displayOrder}
+          hiddenColumns={hiddenColumns}
           config={settings}
           highlightColor={highlightColor}
           dnf={result.dnf}
@@ -289,6 +307,7 @@ export const Relative = () => {
     playerIndex,
     totalRows,
     settings,
+    hiddenColumns,
     isMultiClass,
     highlightColor,
     hideCarManufacturer,

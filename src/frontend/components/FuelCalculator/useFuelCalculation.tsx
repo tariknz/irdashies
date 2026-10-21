@@ -7,6 +7,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFuelProjectionSnapshot } from '@irdashies/context';
+import { TIMED_SESSION_LAPS } from '@irdashies/types';
 import { useFuelStore, selectLapHistorySize } from './FuelStore';
 import type { FuelCalculation, FuelCalculatorSettings } from './types';
 import { useFuelLogger } from './useFuelLogger';
@@ -23,9 +24,6 @@ import logger from '@irdashies/utils/logger';
 /** Enable debug logging (set to true for testing/troubleshooting) */
 const DEBUG_LOGGING = false;
 
-/** Magic value indicating timed race (no lap limit) */
-const TIMED_RACE_LAPS_REMAINING = 32767;
-
 /** Default fuel tank capacity when unable to calculate */
 const DEFAULT_TANK_CAPACITY = 60;
 
@@ -38,9 +36,14 @@ const INTRINSIC_MARGIN_VALUE = 0.25;
 /** Lap distance segments for consistent projection */
 const LAP_DIST_SEGMENTS = [0.1, 0.25, 0.5, 0.75, 1.0];
 
+/**
+ * `embedded` turns off every disk write (lap history, qualify max, logs) so a
+ * second copy, such as the one docked in the Gantry, never saves a lap twice.
+ */
 export function useFuelCalculation(
   safetyMargin = 0.3,
-  settings?: FuelCalculatorSettings
+  settings?: FuelCalculatorSettings,
+  embedded = false
 ): FuelCalculation | null {
   const projection = useFuelProjectionSnapshot();
   const fuelLevel = projection?.fuelLevel;
@@ -110,7 +113,7 @@ export function useFuelCalculation(
   useEffect(() => {
     const enteredCar = isOnTrack && !prevIsOnTrackRef.current;
 
-    if (enteredCar && settings?.enableLogging) {
+    if (enteredCar && settings?.enableLogging && !embedded) {
       logger.info(
         `[FuelCalculator] Log Rotation Triggered: EnteredCar=${enteredCar}`
       );
@@ -118,7 +121,7 @@ export function useFuelCalculation(
     }
 
     prevIsOnTrackRef.current = isOnTrack;
-  }, [isOnTrack, settings?.enableLogging]);
+  }, [isOnTrack, settings?.enableLogging, embedded]);
 
   useEffect(() => {
     const currentCarName = projection?.carName;
@@ -213,6 +216,7 @@ export function useFuelCalculation(
   useEffect(() => {
     const persistence = window.fuelCalculatorBridge;
     if (
+      embedded ||
       !persistence ||
       !(settings?.enableStorage ?? true) ||
       projection?.isReplay ||
@@ -246,6 +250,7 @@ export function useFuelCalculation(
     settings?.enableStorage,
     storedCarName,
     storedTrackId,
+    embedded,
   ]);
 
   // Track Max Qualifying Consumption
@@ -289,7 +294,8 @@ export function useFuelCalculation(
             storedTrackId !== undefined &&
             storedCarName !== undefined &&
             (settings?.enableStorage ?? true) &&
-            !projection?.isReplay
+            !projection?.isReplay &&
+            !embedded
           ) {
             window.fuelCalculatorBridge.saveQualifyMax(
               storedTrackId,
@@ -310,6 +316,7 @@ export function useFuelCalculation(
     settings?.enableStorage,
     projection?.sessionType,
     projection?.isReplay,
+    embedded,
   ]);
 
   // Monitor for Race Finish
@@ -398,7 +405,14 @@ export function useFuelCalculation(
       lapsPerStint: 0,
       targetScenarios: [],
       earliestPitLap: undefined,
-      fuelTankCapacity: 60,
+      // The session's own capacity, when it has one. This is returned before a
+      // valid lap exists -- which is every session until the first lap is
+      // complete -- so hardcoding 60 here reported a 60 L tank for a car that
+      // had already told us it holds 100.
+      fuelTankCapacity:
+        fuelTankCapacityFromSession && fuelTankCapacityFromSession > 0
+          ? fuelTankCapacityFromSession
+          : DEFAULT_TANK_CAPACITY,
       fuelStatus: 'safe',
       maxQualify: qualifyConsumption,
     };
@@ -609,7 +623,7 @@ export function useFuelCalculation(
       totalLaps = Math.ceil(calculatedTotalRaceLaps);
       lapsRemaining = estimatedLapsRemaining;
       lapsRemainingRefuel = lapsRemaining;
-    } else if (sessionLapsRemain === TIMED_RACE_LAPS_REMAINING) {
+    } else if (sessionLapsRemain === TIMED_SESSION_LAPS) {
       // Use centralized useTotalRaceLaps hook for timed race calculations
       if (hasValidRaceEstimate && calculatedTotalRaceLaps > 0) {
         // Use the hook's result directly
@@ -722,7 +736,7 @@ export function useFuelCalculation(
       lapsRemaining < 0 ||
       lapsRemaining > MAX_REASONABLE_LAPS
     ) {
-      if (sessionLapsRemain !== TIMED_RACE_LAPS_REMAINING) {
+      if (sessionLapsRemain !== TIMED_SESSION_LAPS) {
         lapsRemaining = sessionLapsRemain;
         lapsRemainingRefuel = sessionLapsRemain;
       } else {
@@ -1082,7 +1096,7 @@ export function useFuelCalculation(
     ]
   );
 
-  useFuelLogger(isRace && isOnTrack ? debugData : null, settings);
+  useFuelLogger(isRace && isOnTrack && !embedded ? debugData : null, settings);
 
   return calculation;
 }

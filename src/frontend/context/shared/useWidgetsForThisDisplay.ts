@@ -1,23 +1,13 @@
 import { useMemo } from 'react';
-import { isWidgetDisabledForSim, type DashboardWidget } from '@irdashies/types';
+import {
+  fitLayoutToDisplay,
+  isLayoutOnDisplay,
+  isWidgetDisabledForSim,
+  type DashboardWidget,
+} from '@irdashies/types';
 import { useDashboard } from '../DashboardContext/DashboardContext';
 import { useActiveSimulator } from './useActiveSimulator';
 import { useSimWidgetSupport } from './useSimWidgetSupport';
-
-/** Does the widget's centre point fall inside these bounds? */
-const isWidgetOnDisplay = (
-  widget: DashboardWidget,
-  bounds: { x: number; y: number; width: number; height: number }
-) => {
-  const centerX = widget.layout.x + widget.layout.width / 2;
-  const centerY = widget.layout.y + widget.layout.height / 2;
-  return (
-    centerX >= bounds.x &&
-    centerX < bounds.x + bounds.width &&
-    centerY >= bounds.y &&
-    centerY < bounds.y + bounds.height
-  );
-};
 
 /**
  * Widget types that are rendered by a window of their own rather than by the
@@ -26,17 +16,21 @@ const isWidgetOnDisplay = (
  */
 const OWN_WINDOW_WIDGET_TYPES = new Set(['gantry']);
 
+/** Shown only docked in the Gantry, never on an overlay or browser source. */
+export const isGantryOnly = (widget: DashboardWidget): boolean =>
+  widget.placement === 'gantry';
+
 /** Does this widget render in its own window instead of the overlay? */
 export const rendersInOwnWindow = (widget: DashboardWidget): boolean =>
-  OWN_WINDOW_WIDGET_TYPES.has(widget.type || widget.id);
+  OWN_WINDOW_WIDGET_TYPES.has(widget.type || widget.id) || isGantryOnly(widget);
 
 /**
  * The enabled widgets this overlay window is responsible for.
  *
  * With one window per display, a widget belongs to the window whose display
  * contains its centre. A widget that lands on no display at all renders on the
- * primary, so a layout saved against a monitor that has since been unplugged
- * is still reachable rather than invisible.
+ * primary, moved inside it, so a layout saved against a monitor that has
+ * since been unplugged or switched off is still visible.
  *
  * Shared because three callers need the same answer and must agree on it: the
  * container that renders the widgets, the data providers that subscribe on
@@ -65,6 +59,7 @@ export const useWidgetsForThisDisplay = (
       currentDashboard?.widgets.filter(
         (widget) =>
           widget.enabled &&
+          !isGantryOnly(widget) &&
           !isWidgetDisabledForSim(
             simWidgetSupport,
             widget.type ?? widget.id,
@@ -73,15 +68,18 @@ export const useWidgetsForThisDisplay = (
       ) ?? [];
     if (browser || !containerBoundsInfo?.displayId) return enabled;
 
-    return enabled.filter((widget) => {
-      const displayBounds =
-        containerBoundsInfo.displayBounds ?? containerBoundsInfo.expected;
-      const onThisDisplay = isWidgetOnDisplay(widget, displayBounds);
+    const displayBounds =
+      containerBoundsInfo.displayBounds ?? containerBoundsInfo.expected;
+    return enabled.flatMap((widget) => {
+      if (isLayoutOnDisplay(widget.layout, displayBounds)) return [widget];
       const onAnyDisplay =
         containerBoundsInfo.allDisplayBounds?.some((bounds) =>
-          isWidgetOnDisplay(widget, bounds)
-        ) ?? onThisDisplay;
-      return onThisDisplay || (containerBoundsInfo.isPrimary && !onAnyDisplay);
+          isLayoutOnDisplay(widget.layout, bounds)
+        ) ?? false;
+      if (onAnyDisplay || !containerBoundsInfo.isPrimary) return [];
+      return [
+        { ...widget, layout: fitLayoutToDisplay(widget.layout, displayBounds) },
+      ];
     });
   }, [
     browser,

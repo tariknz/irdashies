@@ -2,14 +2,13 @@ import { DiscordLogo } from '@phosphor-icons/react';
 
 export function Community() {
   return (
-    <section className="relative py-24 px-6">
+    <section className="relative py-16 px-6">
       <div className="max-w-3xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight mb-3">
           Join the <span className="text-[#5865F2]">Discord</span>
         </h2>
         <p className="text-slate-400 mb-8 max-w-lg mx-auto">
-          Bug reports, feature requests, and setup help. The Discord server is
-          where irDashies development happens in the open.
+          Setup help, bug reports, and feature requests.
         </p>
 
         <a

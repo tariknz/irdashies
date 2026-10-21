@@ -18,14 +18,18 @@ import {
 
 /** Event channels publish one occurrence at a time, so they have no snapshot. */
 type EventChannelName =
-  'session.lifecycle' | 'raceControl.incidents' | 'raceControl.sessionId';
+  | 'session.lifecycle'
+  | 'raceControl.incidents'
+  | 'raceControl.sessionId'
+  | 'pit-lane.reset';
 /**
  * Channels owned by a standalone runtime rather than the ProcessorHost, so
  * this harness never sees them. `lap-history.snapshot` is recorded by
  * LapHistoryRuntime, which deliberately runs outside demand gating so an
- * enabled Gantry keeps recording with its window closed.
+ * enabled Gantry keeps recording with its window closed. `replay.context` is
+ * owned by ReplayContextRuntime, which the other runtimes read to pause.
  */
-type RuntimeOwnedChannelName = 'lap-history.snapshot';
+type RuntimeOwnedChannelName = 'lap-history.snapshot' | 'replay.context';
 type SnapshotChannelName = Exclude<
   ChannelName,
   EventChannelName | RuntimeOwnedChannelName
@@ -40,6 +44,7 @@ const SNAPSHOT_CHANNELS = [
   'lap-times.snapshot',
   'lap-log.snapshot',
   'reference-laps.snapshot',
+  'radar.snapshot',
   'radio.snapshot',
   'relative-gaps.snapshot',
   'sector-timing.snapshot',
@@ -510,6 +515,11 @@ const summarize = (snapshots: SnapshotRecord) => ({
     sessionNum: snapshots['reference-laps.snapshot'].sessionNum,
     version: snapshots['reference-laps.snapshot'].version,
   },
+  'radar.snapshot': {
+    focusCarIdx: snapshots['radar.snapshot'].focusCarIdx,
+    carIdxs: snapshots['radar.snapshot'].cars.map((car) => car.carIdx),
+    version: snapshots['radar.snapshot'].version,
+  },
   'radio.snapshot': {
     transmittingCarIdxs: snapshots['radio.snapshot'].transmittingCarIdxs,
     version: snapshots['radio.snapshot'].version,
@@ -739,6 +749,11 @@ const FIXED_GOLDEN = {
     persistedLapCount: 0,
     sessionNum: null,
     version: 2,
+  },
+  'radar.snapshot': {
+    focusCarIdx: 0,
+    carIdxs: [1],
+    version: 5,
   },
   'radio.snapshot': {
     transmittingCarIdxs: [0],

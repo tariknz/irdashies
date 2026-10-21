@@ -13,13 +13,17 @@ export interface PerformanceSections {
 export type LapHistoryRestore = (target: LapHistorySnapshot) => boolean;
 
 export interface StoredLapHistory {
-  /** Session number the crossings were recorded in. */
-  sessionNum: number | null;
+  /** Session numbers the event has stored crossings for. */
+  sessionNums: readonly number[];
+  /** Restores the stored crossings for the target's own session. */
   apply: LapHistoryRestore;
 }
 
 export interface LapHistoryPersistence {
+  /** Saves the session being recorded, under its session number. */
   save(sessionId: string, snapshot: LapHistorySnapshot): void;
+  /** Copies a finished session now, before its buffers are reused. */
+  seal(sessionId: string, snapshot: LapHistorySnapshot): void;
   /** Reads stored crossings. The runtime decides when to apply them. */
   load(sessionId: string): Promise<StoredLapHistory | null>;
 }
@@ -32,6 +36,7 @@ const hasCrossings = (snapshot: LapHistorySnapshot): boolean =>
 export class LapHistoryRuntime {
   private readonly processor: LapHistoryProcessor;
   private enabled = true;
+  private replayPaused = false;
   private currentSessionId = '';
   private lastPublishedVersion = -1;
   private subscribers = 0;
@@ -57,9 +62,10 @@ export class LapHistoryRuntime {
       lifecycle.onEnter((event) =>
         this.processor.onLifecycle({ type: 'enter', replay: event.replay })
       ),
-      lifecycle.onSessionNumChange(() =>
-        this.processor.onLifecycle({ type: 'sessionNumChange' })
-      ),
+      lifecycle.onSessionNumChange(() => {
+        this.sealCurrentSession();
+        this.processor.onLifecycle({ type: 'sessionNumChange' });
+      }),
       lifecycle.onDisconnect(() => this.onDisconnect()),
       bus.onSubscriberCountChanged((channel, count) => {
         if (channel !== CHANNEL) return;
@@ -83,7 +89,7 @@ export class LapHistoryRuntime {
   }
 
   onFrame(frame: Telemetry): void {
-    if (!this.enabled) return;
+    if (!this.enabled || this.replayPaused) return;
     this.metrics.markStart('lapHistoryProcessing');
     this.processor.onFrame(frame);
     this.metrics.markEnd('lapHistoryProcessing');
@@ -96,6 +102,16 @@ export class LapHistoryRuntime {
     this.enabled = enabled;
     // Re-baseline: lap counters moved on while recording was off.
     this.processor.onLifecycle({ type: 'enter', replay: false });
+  }
+
+  /**
+   * Pauses recording while an iRacing replay file is loaded, so scrubbing it
+   * never writes laps into the archive. Spectating live is not paused.
+   */
+  updateReplayPaused(paused: boolean): void {
+    if (paused === this.replayPaused) return;
+    this.replayPaused = paused;
+    if (!paused) this.processor.onLifecycle({ type: 'enter', replay: false });
   }
 
   getCurrentSessionId(): string {
@@ -151,7 +167,12 @@ export class LapHistoryRuntime {
     const snapshot = this.processor.snapshot();
     // Laps recorded while the read was in flight win over the file.
     if (hasCrossings(snapshot)) return;
-    if (stored.sessionNum !== snapshot.sessionNum) return;
+    if (
+      snapshot.sessionNum === null ||
+      !stored.sessionNums.includes(snapshot.sessionNum)
+    ) {
+      return;
+    }
 
     const liveSessionNum = snapshot.sessionNum;
     if (!stored.apply(snapshot)) return;
@@ -200,7 +221,19 @@ export class LapHistoryRuntime {
     this.metrics.markEnd('lapHistoryPublication');
   }
 
+  /**
+   * The processor reuses its buffers for the next session, so the finished
+   * one is copied to storage first.
+   */
+  private sealCurrentSession(): void {
+    const snapshot = this.processor.snapshot();
+    if (!this.currentSessionId || this.restorePending) return;
+    if (!hasCrossings(snapshot)) return;
+    this.persistence.seal(this.currentSessionId, snapshot);
+  }
+
   private onDisconnect(): void {
+    this.sealCurrentSession();
     this.processor.onLifecycle({ type: 'disconnect' });
     this.currentSessionId = '';
     this.restoreToken += 1;

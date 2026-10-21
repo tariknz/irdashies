@@ -88,3 +88,74 @@ describe('BlindSpotProcessor', () => {
     });
   });
 });
+
+describe('BlindSpotProcessor relative offsets', () => {
+  /** A sim reporting true metres alongside, as the LMU mapper does. */
+  const offsetFrame = (
+    carLeftRight: number,
+    left: number | null,
+    right: number | null,
+    positions: number[] = [0.5, 0.5004]
+  ) =>
+    ({
+      CarLeftRight: { value: [carLeftRight] },
+      CarIdxLapDistPct: { value: positions },
+      IsOnTrack: { value: [true] },
+      LmuBlindSpotLeftLongitudinal: { value: [left] },
+      LmuBlindSpotRightLongitudinal: { value: [right] },
+    }) as unknown as Telemetry;
+
+  it('passes the offsets straight through', () => {
+    const processor = new BlindSpotProcessor();
+    processor.onFrame(offsetFrame(2, 1.25, null));
+
+    expect(processor.snapshot()).toMatchObject({
+      carLeftRight: 2,
+      leftLongitudinalM: 1.25,
+      rightLongitudinalM: null,
+    });
+  });
+
+  it('omits the lap-fraction array when offsets are supplied', () => {
+    // The array is over a hundred elements and would cross the channel every
+    // tick; a consumer given metres has no use for it.
+    const processor = new BlindSpotProcessor();
+    processor.onFrame(offsetFrame(2, 1.25, null));
+
+    expect(processor.snapshot().carIdxLapDistPct).toEqual([]);
+  });
+
+  it('still carries the array for a sim that reports no offsets', () => {
+    const processor = new BlindSpotProcessor();
+    processor.onFrame(frame(2, [0.5, 0.5004]));
+
+    const snapshot = processor.snapshot();
+    expect(snapshot.carIdxLapDistPct).toEqual([0.5, 0.5004]);
+    expect(snapshot.leftLongitudinalM).toBeNull();
+    expect(snapshot.rightLongitudinalM).toBeNull();
+  });
+
+  it('bumps the version when only an offset moves', () => {
+    // Otherwise a consumer subscribed to the channel never sees the car move.
+    const processor = new BlindSpotProcessor();
+    processor.onFrame(offsetFrame(2, 1.25, null));
+    const first = processor.snapshot().version;
+
+    processor.onFrame(offsetFrame(2, 1.1, null));
+
+    expect(processor.snapshot().version).toBeGreaterThan(first);
+    expect(processor.snapshot().leftLongitudinalM).toBe(1.1);
+  });
+
+  it('clears the offsets when the car moves away', () => {
+    const processor = new BlindSpotProcessor();
+    processor.onFrame(offsetFrame(2, 1.25, null));
+    processor.onFrame(offsetFrame(1, null, null));
+
+    expect(processor.snapshot()).toMatchObject({
+      carLeftRight: 1,
+      leftLongitudinalM: null,
+      rightLongitudinalM: null,
+    });
+  });
+});

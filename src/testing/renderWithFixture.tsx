@@ -43,6 +43,7 @@ const dashboardBridgeStub = (dashboard: DashboardLayout): DashboardBridge => {
     },
     resetDashboard: async () => dashboard,
     getAppVersion: async () => '0.0.0-test',
+    getIsDemoMode: async () => false,
     listProfiles: async () => [],
   };
 

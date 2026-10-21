@@ -7,6 +7,7 @@ import type {
 import { SessionTimingProcessor } from '../../src/app/processors/SessionTimingProcessor';
 import { LapTimesProcessor } from '../../src/app/processors/LapTimesProcessor';
 import type { ReplayProbe, TelemetryFrame } from './validator';
+import { rateLimited } from './rateLimited';
 
 const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
   Object.fromEntries(
@@ -19,8 +20,8 @@ const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
 export const createSessionTimingProbe =
   (): ReplayProbe<SessionTimingSnapshot> => {
     const lapTimesProcessor = new LapTimesProcessor();
-    const processor = new SessionTimingProcessor(
-      () => lapTimesProcessor.snapshot().lapTimes
+    const processor = rateLimited(
+      new SessionTimingProcessor(() => lapTimesProcessor.snapshot().lapTimes)
     );
     let checkpoint: string | undefined;
     let observedLap = false;
@@ -28,6 +29,7 @@ export const createSessionTimingProbe =
       name: 'session-timing-state',
       schemaVersion: 1,
       variables: [
+        'SessionTick',
         'CamCarIdx',
         'CarIdxBestLapTime',
         'CarIdxLap',

@@ -1,0 +1,75 @@
+name: Discord PR notifications
+
+on:
+  # Use trusted workflow code and secrets for PRs from forks. Never check out
+  # or execute PR code in this workflow; all PR content is treated as data.
+  pull_request_target:
+    types: [opened, closed]
+
+permissions: {}
+
+jobs:
+  notify:
+    if: >-
+      github.event.action == 'opened' ||
+      (github.event.action == 'closed' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Send PR notification to github-logs
+        env:
+          DISCORD_GITHUB_LOGS_WEBHOOK_URL: ${{ secrets.DISCORD_GITHUB_LOGS_WEBHOOK_URL }}
+        shell: node {0}
+        run: |
+          const { readFile } = require('node:fs/promises');
+
+          async function notify() {
+            const event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, 'utf8'));
+            const pr = event.pull_request;
+            const merged = event.action === 'closed' && pr.merged === true;
+            if (event.action !== 'opened' && !merged) return;
+
+            const webhook = process.env.DISCORD_GITHUB_LOGS_WEBHOOK_URL;
+            if (!webhook) {
+              throw new Error('Set the DISCORD_GITHUB_LOGS_WEBHOOK_URL repository secret.');
+            }
+
+            const status = merged ? 'Pull request merged' : 'New pull request';
+            const profile = (user) => `[${user.login}](${user.html_url})`;
+            const fields = [{ name: 'Author', value: profile(pr.user), inline: true }];
+            if (merged) {
+              fields.push({ name: 'Merged by', value: profile(pr.merged_by), inline: true });
+            }
+
+            const payload = {
+              allowed_mentions: { parse: [] },
+              embeds: [{
+                title: `${status}: #${pr.number} ${pr.title}`.slice(0, 256),
+                url: pr.html_url,
+                color: merged ? 0x8957e5 : 0x238636,
+                thumbnail: { url: pr.user.avatar_url },
+                fields,
+                footer: { text: `${event.repository.full_name} | ${pr.base.ref}`.slice(0, 2048) },
+                timestamp: merged ? pr.merged_at : pr.created_at,
+              }],
+            };
+
+            // wait=true makes Discord confirm the message was saved.
+            const url = new URL(webhook);
+            url.searchParams.set('wait', 'true');
+            const response = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+              signal: AbortSignal.timeout(15_000),
+            });
+            if (!response.ok) {
+              throw new Error(`Discord returned HTTP ${response.status}.`);
+            }
+          }
+
+          notify().catch(() => {
+            // Avoid logging request errors, which may contain the webhook token.
+            process.stderr.write('Discord notification failed. Check the webhook secret and Discord availability.\n');
+            process.exitCode = 1;
+          });

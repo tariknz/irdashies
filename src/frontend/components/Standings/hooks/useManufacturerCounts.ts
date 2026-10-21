@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useFocusCarIdx, useSessionDrivers } from '@irdashies/context';
 import type { Driver } from '@irdashies/types';
-import { CAR_ID_TO_CAR_MANUFACTURER } from '../components/CarManufacturer/carManufacturerMapping';
+import { CAR_ID_TO_CAR_MANUFACTURER } from '../../shared/CarManufacturer/carManufacturerMapping';
 
 export interface ManufacturerCount {
   carId: number;

@@ -5,6 +5,7 @@ import {
   createPerfDashboard,
   getPerfRunConfig,
   parsePerfVisibilityPhases,
+  perfRunSimulator,
 } from './perfRunConfig';
 
 const dashboard: DashboardLayout = {
@@ -104,5 +105,22 @@ describe('performance run configuration', () => {
       false,
     ]);
     expect(activePerfWidgetTypes(result)).toEqual(['standings']);
+  });
+});
+
+describe('perfRunSimulator', () => {
+  it('pins iRacing for replay runs and reports a different choice', () => {
+    expect(perfRunSimulator(undefined, true)).toEqual({ simulator: 'iracing' });
+    expect(perfRunSimulator('', true)).toEqual({ simulator: 'iracing' });
+    expect(perfRunSimulator('iracing', true)).toEqual({ simulator: 'iracing' });
+    expect(perfRunSimulator('lmu', true)).toEqual({
+      simulator: 'iracing',
+      overridden: 'lmu',
+    });
+  });
+
+  it('passes the caller choice through for live runs', () => {
+    expect(perfRunSimulator('lmu', false)).toEqual({ simulator: 'lmu' });
+    expect(perfRunSimulator(undefined, false)).toEqual({});
   });
 });

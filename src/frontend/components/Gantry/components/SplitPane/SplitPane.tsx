@@ -8,14 +8,20 @@ import {
   type ReactNode,
 } from 'react';
 
+export type SplitPaneOrientation = 'horizontal' | 'vertical';
+
 export interface SplitPaneProps {
+  /** First pane: on the left, or on top when vertical. */
   left: ReactNode;
+  /** Second pane: on the right, or below when vertical. */
   right: ReactNode;
+  /** 'horizontal' puts the panes side by side; 'vertical' stacks them. */
+  orientation?: SplitPaneOrientation;
   /** Accessible name for the divider, e.g. "Standings and incidents split". */
   label: string;
   /** localStorage key the ratio is remembered under. Omit to forget it. */
   storageKey?: string;
-  /** Percentage of the width the left pane starts at. */
+  /** Percentage of the width (or height) the first pane starts at. */
   defaultPercent?: number;
   /** Narrowest either pane is allowed to get, as a percentage. */
   minPercent?: number;
@@ -42,11 +48,13 @@ export const SplitPane = memo(
   ({
     left,
     right,
+    orientation = 'horizontal',
     label,
     storageKey,
     defaultPercent = 50,
     minPercent = 15,
   }: SplitPaneProps) => {
+    const vertical = orientation === 'vertical';
     const containerRef = useRef<HTMLDivElement>(null);
     const [percent, setPercent] = useState(() =>
       clampPercent(readStored(storageKey) ?? defaultPercent, minPercent)
@@ -99,15 +107,16 @@ export const SplitPane = memo(
           return;
         }
         const rect = element.getBoundingClientRect();
-        if (rect.width <= 0) return;
-        const next = clampPercent(
-          ((event.clientX - rect.left) / rect.width) * 100,
-          minPercent
-        );
+        const size = vertical ? rect.height : rect.width;
+        if (size <= 0) return;
+        const offset = vertical
+          ? event.clientY - rect.top
+          : event.clientX - rect.left;
+        const next = clampPercent((offset / size) * 100, minPercent);
         percentRef.current = next;
         setPercent(next);
       },
-      [minPercent, endDrag]
+      [minPercent, endDrag, vertical]
     );
 
     const handlePointerUp = useCallback(
@@ -138,10 +147,12 @@ export const SplitPane = memo(
 
     const handleKeyDown = useCallback(
       (event: ReactKeyboardEvent<HTMLDivElement>) => {
-        if (event.key === 'ArrowLeft') {
+        const back = vertical ? 'ArrowUp' : 'ArrowLeft';
+        const forward = vertical ? 'ArrowDown' : 'ArrowRight';
+        if (event.key === back) {
           event.preventDefault();
           nudge(-KEY_STEP_PERCENT);
-        } else if (event.key === 'ArrowRight') {
+        } else if (event.key === forward) {
           event.preventDefault();
           nudge(KEY_STEP_PERCENT);
         } else if (event.key === 'Home') {
@@ -152,7 +163,7 @@ export const SplitPane = memo(
           remember(reset);
         }
       },
-      [nudge, defaultPercent, minPercent, remember]
+      [nudge, defaultPercent, minPercent, remember, vertical]
     );
 
     const handleDoubleClick = useCallback(() => {
@@ -163,7 +174,13 @@ export const SplitPane = memo(
     }, [defaultPercent, minPercent, remember]);
 
     return (
-      <div ref={containerRef} className="relative flex flex-1 overflow-hidden">
+      <div
+        ref={containerRef}
+        className={[
+          'relative flex flex-1 overflow-hidden',
+          vertical ? 'flex-col h-full min-h-0' : '',
+        ].join(' ')}
+      >
         <div
           className="overflow-hidden shrink-0 grow-0"
           style={{ flexBasis: `${percent}%` }}
@@ -172,7 +189,7 @@ export const SplitPane = memo(
         </div>
         <div
           role="separator"
-          aria-orientation="vertical"
+          aria-orientation={vertical ? 'horizontal' : 'vertical'}
           aria-label={label}
           aria-valuenow={Math.round(percent)}
           aria-valuemin={minPercent}
@@ -188,10 +205,22 @@ export const SplitPane = memo(
           title="Drag to resize. Double-click to reset."
           // Taken out of flex flow so the panes split exactly percent /
           // (100 - percent) of the container, not of container-minus-divider.
-          className="absolute top-0 bottom-0 w-1.5 -translate-x-1/2 z-10 cursor-col-resize touch-none select-none bg-slate-700/50 hover:bg-sky-500/70 focus:outline-none focus:bg-sky-500/70"
-          style={{ left: `${percent}%` }}
+          className={[
+            'absolute z-10 touch-none select-none bg-slate-700/50 hover:bg-sky-500/70 focus:outline-none focus:bg-sky-500/70',
+            vertical
+              ? 'left-0 right-0 h-1.5 -translate-y-1/2 cursor-row-resize'
+              : 'top-0 bottom-0 w-1.5 -translate-x-1/2 cursor-col-resize',
+          ].join(' ')}
+          style={vertical ? { top: `${percent}%` } : { left: `${percent}%` }}
         />
-        <div className="flex-1 min-w-0 overflow-hidden">{right}</div>
+        <div
+          className={[
+            'flex-1 overflow-hidden',
+            vertical ? 'min-h-0' : 'min-w-0',
+          ].join(' ')}
+        >
+          {right}
+        </div>
       </div>
     );
   }

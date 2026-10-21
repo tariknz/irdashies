@@ -3,6 +3,8 @@ import { useEffect, useMemo } from 'react';
 import { useRaceControlStore } from '../src/frontend/context/RaceControlStore/RaceControlStore';
 import { IncidentType } from '../src/types/raceControl';
 import type { Incident } from '../src/types/raceControl';
+import type { Session } from '../src/types/session';
+import sessionFixture from '../src/app/irsdk/node/utils/mock-data/session.json';
 
 export const mockIncidents: Incident[] = [
   {
@@ -11,7 +13,7 @@ export const mockIncidents: Incident[] = [
     driverName: 'R. Grosjean',
     carNumber: '77',
     teamName: 'Alpine Racing',
-    sessionNum: 0,
+    sessionNum: 2,
     sessionTime: 1823.5,
     lapNum: 12,
     replayFrameNum: 109410,
@@ -66,7 +68,7 @@ export const mockIncidents: Incident[] = [
     driverName: 'O. Jarvis',
     carNumber: '60',
     teamName: 'JOTA',
-    sessionNum: 0,
+    sessionNum: 2,
     sessionTime: 1801.2,
     lapNum: 12,
     replayFrameNum: 108072,
@@ -80,7 +82,7 @@ export const mockIncidents: Incident[] = [
     driverName: 'F. Albuquerque',
     carNumber: '22',
     teamName: 'United Autosports',
-    sessionNum: 0,
+    sessionNum: 2,
     sessionTime: 1750.0,
     lapNum: 11,
     replayFrameNum: 105000,
@@ -94,7 +96,7 @@ export const mockIncidents: Incident[] = [
     driverName: 'N. Mueller',
     carNumber: '31',
     teamName: 'WRT',
-    sessionNum: 0,
+    sessionNum: 2,
     sessionTime: 1702.4,
     lapNum: 11,
     replayFrameNum: 102144,
@@ -108,7 +110,7 @@ export const mockIncidents: Incident[] = [
     driverName: 'A. Rossi',
     carNumber: '9',
     teamName: 'Meyer Shank Racing',
-    sessionNum: 0,
+    sessionNum: 2,
     sessionTime: 1688.9,
     lapNum: 11,
     replayFrameNum: 101334,
@@ -118,16 +120,80 @@ export const mockIncidents: Incident[] = [
   },
 ];
 
+// ---------------------------------------------------------------------------
+// Multi-session weekend
+// ---------------------------------------------------------------------------
+
+const fixtureSession = sessionFixture as unknown as Session;
+const fixtureRace = fixtureSession.SessionInfo.Sessions[2];
+
+const WEEKEND_SESSIONS = [
+  { SessionName: 'PRACTICE', SessionType: 'Practice' },
+  { SessionName: 'QUALIFY', SessionType: 'Lone Qualify' },
+  { SessionName: 'HEAT 1', SessionType: 'Race' },
+  { SessionName: 'FEATURE', SessionType: 'Race' },
+];
+
+/** The feature race, which the sim is in during the weekend stories. */
+export const WEEKEND_FEATURE_SESSION_NUM = 3;
+
+/** The mock session, reshaped into practice, qualify, a heat and a feature. */
+export const weekendSession: Session = {
+  ...fixtureSession,
+  SessionInfo: {
+    ...fixtureSession.SessionInfo,
+    Sessions: WEEKEND_SESSIONS.map((session, SessionNum) => ({
+      ...fixtureRace,
+      ...session,
+      SessionNum,
+    })),
+  },
+};
+
+const WEEKEND_TYPES = [
+  IncidentType.OffTrack,
+  IncidentType.Crash,
+  IncidentType.PitEntry,
+  IncidentType.Slowdown,
+  IncidentType.BlackFlag,
+];
+
+/** Incidents per session number: practice, qualify, heat, feature. */
+const WEEKEND_COUNTS = [2, 3, 4, 5];
+
+const WEEKEND_START = Date.UTC(2026, 0, 10, 12);
+
+/** Incidents from every session of the weekend, newest first. */
+export const weekendIncidents: Incident[] = WEEKEND_COUNTS.flatMap(
+  (count, sessionNum) =>
+    Array.from({ length: count }, (_, i) => {
+      const driver = mockIncidents[(sessionNum + i) % mockIncidents.length];
+      const type = WEEKEND_TYPES[(sessionNum * 2 + i) % WEEKEND_TYPES.length];
+      const sessionTime = 240 + i * 137.5;
+      return {
+        ...driver,
+        debug: undefined,
+        id: `${sessionNum}-${driver.carIdx}-${sessionTime}-${type}`,
+        sessionNum,
+        sessionTime,
+        lapNum: 2 + i,
+        type,
+        timestamp: WEEKEND_START + sessionNum * 3_600_000 + sessionTime * 1000,
+      };
+    })
+).reverse();
+
 const RaceControlLoader = ({ incidents }: { incidents: Incident[] }) => {
   const hydrateIncidents = useRaceControlStore((s) => s.hydrateIncidents);
-  const clearIncidents = useRaceControlStore((s) => s.clearIncidents);
+  const resetForSession = useRaceControlStore((s) => s.resetForSession);
   useEffect(() => {
-    // The store is module scoped, so it survives a story switch. Clear first or
+    // The store is module scoped, so it survives a story switch. Reset first or
     // hydration merges the previous story feed into this one, and hydration
     // deduplicates by id so an edited incident would keep the stale object.
-    clearIncidents();
+    // The reset also drops a session filter that points at another feed.
+    resetForSession();
     hydrateIncidents(incidents);
-  }, [clearIncidents, hydrateIncidents, incidents]);
+  }, [resetForSession, hydrateIncidents, incidents]);
   return null;
 };
 

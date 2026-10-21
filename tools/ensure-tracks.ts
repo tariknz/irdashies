@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const tracksPath = path.join(__dirname, '../src/frontend/components/TrackMap/tracks/tracks.json');
+const tracksPath = path.join(__dirname, '../src/frontend/domain/track/tracks/tracks.json');
 
 // This is used to ensure that the tracks.json file exists.
 // If it doesn't exist, it will create an empty one.

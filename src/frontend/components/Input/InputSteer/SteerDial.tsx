@@ -12,6 +12,7 @@ export interface SteerDialProps {
   wheelColor?: 'dark' | 'light';
   /** Gear/speed display config, reused from the standalone Gear section. */
   gearSettings?: InputGearProps['settings'];
+  flashColor?: InputGearProps['flashColor'];
 }
 
 // --- Geometry (SVG user units, viewBox 0 0 100 100) ----------------------
@@ -44,6 +45,7 @@ export function SteerDial({
   unit,
   wheelColor = 'light',
   gearSettings,
+  flashColor,
 }: SteerDialProps) {
   const steerDeg = angleRad * -1 * (180 / Math.PI);
 
@@ -89,6 +91,7 @@ export function SteerDial({
               speedMs={speedMs}
               unit={unit}
               settings={gearSettings}
+              flashColor={flashColor}
             />
           </div>
         )}

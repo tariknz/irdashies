@@ -26,8 +26,12 @@ vi.mock('@irdashies/context', () => {
     useSectorTimingStore: vi.fn(() => 0),
   };
 });
+const canvasProps = vi.hoisted(() => [] as Record<string, unknown>[]);
 vi.mock('./TrackCanvas', () => ({
-  TrackCanvas: () => <div>Track Canvas</div>,
+  TrackCanvas: (props: Record<string, unknown>) => {
+    canvasProps.push(props);
+    return <div>Track Canvas</div>;
+  },
 }));
 
 import { useTrackId } from './hooks/useTrackId';
@@ -261,5 +265,41 @@ describe('TrackMap', () => {
     // TrackCanvas should be called with displayMode prop
     // This is tested implicitly by checking that the component renders without error
     expect(true).toBe(true);
+  });
+
+  describe('canvas props', () => {
+    beforeEach(() => {
+      canvasProps.length = 0;
+      vi.mocked(useTrackMapSettings).mockReturnValue({
+        turnLabels: {
+          enabled: true,
+          labelType: 'both',
+          highContrast: true,
+          labelFontSize: 100,
+        },
+        showOnlyWhenOnTrack: false,
+      } as ReturnType<typeof useTrackMapSettings>);
+    });
+
+    it('keeps turnLabels and sectors stable across position updates', () => {
+      const view = render(<TrackMap />);
+      vi.mocked(useDriverProgress).mockReturnValue({
+        drivers: [],
+        identities: [],
+      });
+      view.rerender(<TrackMap />);
+
+      expect(canvasProps).toHaveLength(2);
+      expect(canvasProps[1].turnLabels).toBe(canvasProps[0].turnLabels);
+      expect(canvasProps[1].sectors).toBe(canvasProps[0].sectors);
+    });
+
+    it('caps redraws only when embedded', () => {
+      render(<TrackMap />);
+      render(<TrackMap embedded />);
+
+      expect(canvasProps[0].maxFps).toBeUndefined();
+      expect(canvasProps[1].maxFps).toBe(30);
+    });
   });
 });

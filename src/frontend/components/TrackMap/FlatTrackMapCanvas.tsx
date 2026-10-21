@@ -1,3 +1,4 @@
+import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TrackDriver, TrackDrawing } from './TrackCanvas';
 import { getColor, getTailwindStyle } from '@irdashies/utils/colors';
@@ -20,6 +21,8 @@ export interface FlatTrackMapCanvasProps {
   invertTrackColors?: boolean;
   driverLivePositions?: Record<number, number>;
   carIdxIsOnPitRoad?: readonly boolean[];
+  /** Caps redraws, e.g. for a map docked in the Gantry. */
+  maxFps?: number;
 }
 
 const HORIZONTAL_PADDING = 40; // Fixed padding on each side
@@ -38,7 +41,9 @@ export const FlatTrackMapCanvas = ({
   invertTrackColors = false,
   driverLivePositions = [0, 0],
   carIdxIsOnPitRoad = [],
+  maxFps,
 }: FlatTrackMapCanvasProps) => {
+  const widgetScale = useWidgetScale();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const driversOffTrack = useCarIdxOffTrack();
@@ -93,17 +98,17 @@ export const FlatTrackMapCanvas = ({
     if (!canvas) return;
 
     const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
+      const dpr = (window.devicePixelRatio || 1) * widgetScale;
+      const { clientWidth: width, clientHeight: height } = canvas;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
 
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.scale(dpr, dpr);
       }
-      setCanvasSize({ width: rect.width, height: rect.height });
+      setCanvasSize({ width, height });
     };
 
     // Initial resize
@@ -133,7 +138,7 @@ export const FlatTrackMapCanvas = ({
         clearTimeout(debounceResizeRef.current);
       }
     };
-  }, []);
+  }, [widgetScale]);
 
   useProgressAnimation(drivers, (progressValues, count) => {
     const canvas = canvasRef.current;
@@ -288,7 +293,7 @@ export const FlatTrackMapCanvas = ({
         }
       }
     }
-  });
+  }, maxFps);
 
   return (
     <div className="w-full h-full">

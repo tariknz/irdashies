@@ -115,10 +115,12 @@ export interface FuelCalculatorSettings {
   showFuelScenarios: boolean;
   /** Show fuel required for min/avg/max consumption */
   showFuelRequired: boolean;
-  /** Show fuel history graph */
+  /** Show fuel history */
   showFuelHistory: boolean;
-  /** Fuel history graph type */
-  fuelHistoryType: 'line' | 'histogram';
+  /** Fuel history display type */
+  fuelHistoryType: 'line' | 'histogram' | 'table';
+  /** Number of completed laps shown in the history table. */
+  fuelHistoryLapCount?: number;
   /** Safety margin percentage (0-1) */
   safetyMargin: number;
   manualTarget?: number;

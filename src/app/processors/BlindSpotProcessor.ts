@@ -29,6 +29,8 @@ export class BlindSpotProcessor implements TelemetryProcessor<BlindSpotSnapshot>
   private readonly latest: BlindSpotSnapshot = {
     carLeftRight: 0,
     carIdxLapDistPct: [],
+    leftLongitudinalM: null,
+    rightLongitudinalM: null,
     isOnTrack: false,
     version: 0,
   };
@@ -46,8 +48,24 @@ export class BlindSpotProcessor implements TelemetryProcessor<BlindSpotSnapshot>
     changed =
       this.set('isOnTrack', isOnTrack === true || isOnTrack === 1) || changed;
 
+    // A sim that reports true relative positions gives metres directly. That
+    // is both a better signal and a cheaper one: the lap-fraction array below
+    // is over a hundred elements and would cross the channel every tick, and
+    // the consumer would then have to search it to find the car alongside.
+    const left = scalar(frame, 'LmuBlindSpotLeftLongitudinal');
+    const right = scalar(frame, 'LmuBlindSpotRightLongitudinal');
+    const hasOffsets = typeof left === 'number' || typeof right === 'number';
+    changed =
+      this.set('leftLongitudinalM', typeof left === 'number' ? left : null) ||
+      changed;
+    changed =
+      this.set(
+        'rightLongitudinalM',
+        typeof right === 'number' ? right : null
+      ) || changed;
+
     const positions = this.latest.carIdxLapDistPct as number[];
-    if (carLeftRight > CarLeftRight.Clear) {
+    if (!hasOffsets && carLeftRight > CarLeftRight.Clear) {
       changed = copyPositions(positions, frame) || changed;
     } else if (positions.length > 0) {
       positions.length = 0;
@@ -60,6 +78,8 @@ export class BlindSpotProcessor implements TelemetryProcessor<BlindSpotSnapshot>
   onLifecycle(event: SessionLifecycleEvent): void {
     if (event.type === 'enter') return;
     (this.latest.carIdxLapDistPct as number[]).length = 0;
+    this.latest.leftLongitudinalM = null;
+    this.latest.rightLongitudinalM = null;
     this.latest.carLeftRight = 0;
     this.latest.isOnTrack = false;
     this.latest.version += 1;
@@ -69,10 +89,10 @@ export class BlindSpotProcessor implements TelemetryProcessor<BlindSpotSnapshot>
     return this.latest;
   }
 
-  private set<K extends 'carLeftRight' | 'isOnTrack'>(
-    key: K,
-    value: BlindSpotSnapshot[K]
-  ): boolean {
+  private set<
+    K extends
+      'carLeftRight' | 'isOnTrack' | 'leftLongitudinalM' | 'rightLongitudinalM',
+  >(key: K, value: BlindSpotSnapshot[K]): boolean {
     if (this.latest[key] === value) return false;
     this.latest[key] = value;
     return true;

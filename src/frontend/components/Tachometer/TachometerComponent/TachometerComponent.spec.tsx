@@ -311,4 +311,39 @@ describe('Tachometer', () => {
     // Check that SHIFT text is not shown
     expect(screen.queryByText('SHIFT')).not.toBeInTheDocument();
   });
+  it('uses the canonical car ID for custom shift points', () => {
+    render(
+      <Tachometer
+        rpm={7100}
+        maxRpm={8000}
+        gear={1}
+        carData={mockCarData}
+        carPath="Ferrari 296 GT3"
+        shiftPointSettings={mockShiftSettings}
+      />
+    );
+    expect(screen.getByText('SHIFT')).toBeInTheDocument();
+  });
+
+  it('respects the per-car custom shift point enable switch', () => {
+    render(
+      <Tachometer
+        rpm={7100}
+        maxRpm={8000}
+        gear={1}
+        carData={mockCarData}
+        carPath="ferrari296gt3"
+        shiftPointSettings={{
+          ...mockShiftSettings,
+          carConfigs: {
+            ferrari296gt3: {
+              ...mockShiftSettings.carConfigs.ferrari296gt3,
+              enabled: false,
+            },
+          },
+        }}
+      />
+    );
+    expect(screen.queryByText('SHIFT')).not.toBeInTheDocument();
+  });
 });

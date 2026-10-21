@@ -1,0 +1,27 @@
+{
+  "description": "Four-minute Le Mans Ultimate AI race at Laguna Seca, captured from the LMU_Data shared-memory block and the local REST API",
+  "captureDate": "2026-10-07",
+  "track": "WeatherTech Raceway Laguna Seca",
+  "durationSeconds": 239.991,
+  "formatVersion": 2,
+  "pollMillis": 10,
+  "snapshotBytes": 324820,
+  "keyframeInterval": 100,
+  "recordCount": 18262,
+  "keyframeCount": 153,
+  "deltaCount": 15282,
+  "disconnectCount": 0,
+  "restRecordCount": 2826,
+  "restPaths": [
+    "/rest/garage/UIScreen/CarSetupOverview",
+    "/rest/garage/UIScreen/RepairAndRefuel",
+    "/rest/sessions",
+    "/rest/sessions/weather",
+    "/rest/strategy/pitstop-estimate"
+  ],
+  "driverCount": 38,
+  "fileBytes": 239044676,
+  "sha256": "7B3D5EA3C8ED7A43D618AF9F97B14F432D1CA23709C2E38D0F2E024CB6C3DC2E",
+  "anonymised": true,
+  "anonymisationNotes": "Driver names, the player name, the server name and the .PLR filename were replaced by lmu_replay anonymise; the scoring stream was zeroed. Replacement covers the full name in four JSON encodings and the initial-and-surname spelling LMU's pit menu uses. No Steam IDs are present."
+}

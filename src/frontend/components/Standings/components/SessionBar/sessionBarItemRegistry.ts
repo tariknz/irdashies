@@ -9,6 +9,7 @@ import { LocalTimeItem } from './components/LocalTimeItem/LocalTimeItem';
 import { SessionClockTimeItem } from './components/SessionClockTimeItem/SessionClockTimeItem';
 import { TrackWetnessItem } from './components/TrackWetnessItem/TrackWetnessItem';
 import { PrecipitationItem } from './components/PrecipitationItem/PrecipitationItem';
+import { HumidityItem } from './components/HumidityItem/HumidityItem';
 import { AirTemperatureItem } from './components/AirTemperatureItem/AirTemperatureItem';
 import { TrackTemperatureItem } from './components/TrackTemperatureItem/TrackTemperatureItem';
 import { TrackNameItem } from './components/TrackNameItem/TrackNameItem';
@@ -19,6 +20,7 @@ import { BestLapItem } from './components/BestLapItem/BestLapItem';
 import { ManufacturerPositionItem } from './components/ManufacturerPositionItem/ManufacturerPositionItem';
 import { ClassRankItem } from './components/ClassRankItem/ClassRankItem';
 import { TopSpeedItem } from './components/TopSpeedItem/TopSpeedItem';
+import { isSessionBarItemKey } from './sessionBarItemTypes';
 import type {
   SessionBarItemKey,
   SessionBarItemProps,
@@ -37,6 +39,7 @@ export const SESSION_BAR_ITEM_COMPONENTS: Record<
   sessionClockTime: SessionClockTimeItem,
   trackWetness: TrackWetnessItem,
   precipitation: PrecipitationItem,
+  humidity: HumidityItem,
   airTemperature: AirTemperatureItem,
   trackTemperature: TrackTemperatureItem,
   trackName: TrackNameItem,
@@ -64,6 +67,7 @@ const DEFAULT_ENABLED: Record<
   sessionClockTime: () => false,
   trackWetness: (position) => position !== 'header',
   precipitation: () => false,
+  humidity: () => false,
   airTemperature: (position) => position !== 'header',
   trackTemperature: (position) => position !== 'header',
   trackName: () => false,
@@ -77,14 +81,17 @@ const DEFAULT_ENABLED: Record<
 };
 
 export const isSessionBarItemEnabled = (
-  key: SessionBarItemKey,
+  key: unknown,
   settings: SessionBarConfig | undefined,
   position: 'header' | 'footer'
 ): boolean => {
-  const slice = (
-    settings as Record<string, { enabled?: boolean }> | undefined
-  )?.[key];
-  return slice?.enabled ?? DEFAULT_ENABLED[key](position);
+  if (!isSessionBarItemKey(key) || !Object.hasOwn(DEFAULT_ENABLED, key)) {
+    return false;
+  }
+  const slice = settings?.[key];
+  return typeof slice?.enabled === 'boolean'
+    ? slice.enabled
+    : DEFAULT_ENABLED[key](position);
 };
 
 export const DEFAULT_DISPLAY_ORDER: Record<

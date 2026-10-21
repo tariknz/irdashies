@@ -1,6 +1,5 @@
 import { memo, useCallback, useMemo, useState } from 'react';
-import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
-import { useQualifyingGrid } from '@irdashies/domain/standings/useQualifyingGrid';
+import { qualifyingGridSlots } from '@irdashies/domain/standings/useQualifyingGrid';
 import {
   classReferenceLap,
   gapToClassLeader,
@@ -12,10 +11,7 @@ import {
   type LapGraphMode,
   type LapPoint,
 } from '@irdashies/domain';
-import {
-  useCurrentSessionType,
-  useLapHistorySnapshot,
-} from '@irdashies/context';
+import { useCurrentSessionType } from '@irdashies/context';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import type { NameFormat } from '@irdashies/types';
 import {
@@ -28,11 +24,15 @@ import { LapGraphDriverList } from './components/LapGraphDriverList/LapGraphDriv
 import type { DriverListEntry } from './components/LapGraphDriverList/LapGraphDriverList';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { useGantrySettings } from '../../hooks/useGantrySettings';
+import {
+  useGantrySessionData,
+  type GantrySessionData,
+} from '../../hooks/useGantrySessionData';
 import { autoPinCarIdxs } from './lapGraphAutoPin';
 import { identityForGridSlot } from './lapGraphPalette';
 
 /**
- * Fallback grid slot for a carIdx `useQualifyingGrid` somehow has no entry
+ * Fallback grid slot for a carIdx `qualifyingGridSlots` somehow has no entry
  * for. Unreachable in practice: the map is built from this exact class's
  * carIdx list, which always covers every member below.
  */
@@ -93,8 +93,10 @@ interface ClassMember {
   isPlayer: boolean;
 }
 
+type ClassDrivers = GantrySessionData['standingsByClass'][number][1];
+
 const buildMembers = (
-  drivers: ReturnType<typeof useDriverStandings>[number][1],
+  drivers: ClassDrivers,
   nameFormat: NameFormat
 ): ClassMember[] =>
   drivers.map((driver) => ({
@@ -113,9 +115,7 @@ const membersSignature = (members: readonly ClassMember[]): string =>
     .join(',');
 
 /** Live class positions, as a primitive the side list can memoise on. */
-const positionsSignature = (
-  drivers: ReturnType<typeof useDriverStandings>[number][1]
-): string =>
+const positionsSignature = (drivers: ClassDrivers): string =>
   drivers
     .map((d) => `${d.carIdx}:${d.classPosition ?? d.position ?? ''}`)
     .join(',');
@@ -145,8 +145,14 @@ export const LapGraphView = memo(
     chosenPins,
     onPinsChange,
   }: Props) => {
-    const standingsByClass = useDriverStandings(undefined, { showAll: true });
-    const snapshot = useLapHistorySnapshot();
+    const {
+      standingsByClass,
+      qualifyingResults,
+      history,
+      isReplayFile,
+      isArchivedReplay,
+      hasArchivedHistory,
+    } = useGantrySessionData();
     const sessionType = useCurrentSessionType();
     const settings = useGantrySettings();
     const nameFormat = settings?.driverNameFormat ?? 'surname';
@@ -270,17 +276,9 @@ export const LapGraphView = memo(
       () => members.map((member) => member.carIdx),
       [members]
     );
-    const qualifyingGrid = useQualifyingGrid(classCarIdxs);
-
-    // Hold the snapshot at an identity that only moves when `version` moves. A
-    // resend, or resubscribing after a tab switch, delivers an equal snapshot as
-    // a fresh object, which would otherwise rebuild 60 series for nothing.
-    const historyVersion = snapshot?.version ?? -1;
-    const history = useMemo(
-      () => snapshot,
-      // Deliberately keyed on the version, not the snapshot identity.
-      // eslint-disable-next-line @eslint-react/exhaustive-deps
-      [historyVersion]
+    const qualifyingGrid = useMemo(
+      () => qualifyingGridSlots(qualifyingResults, classCarIdxs),
+      [qualifyingResults, classCarIdxs]
     );
 
     const built = useMemo(() => {
@@ -396,12 +394,27 @@ export const LapGraphView = memo(
       if (sessionType && sessionType !== 'Race') {
         return 'The lap graph is available during a race.';
       }
+      if (isReplayFile && !isArchivedReplay) {
+        return 'No lap history was recorded on this PC for this replay.';
+      }
+      if (isArchivedReplay && !hasArchivedHistory) {
+        return 'No laps were recorded on this PC for this session.';
+      }
       if (!activeClass || leaderCarIdx === null) return 'Waiting for the grid.';
       if (mode === 'trace' && !built.reference) {
         return 'Waiting for the class leader to set a reference pace.';
       }
       return 'Waiting for the first completed lap.';
-    }, [sessionType, activeClass, leaderCarIdx, mode, built.reference]);
+    }, [
+      sessionType,
+      isReplayFile,
+      isArchivedReplay,
+      hasArchivedHistory,
+      activeClass,
+      leaderCarIdx,
+      mode,
+      built.reference,
+    ]);
 
     return (
       <div className="flex flex-col h-full overflow-hidden">

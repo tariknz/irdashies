@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, render, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { ActiveSimulator } from '@irdashies/types';
 import {
@@ -96,5 +96,40 @@ describe('useAvailableSimulators', () => {
 
     await waitFor(() => expect(result.current).toContain('iracing'));
     expect(result.current).toContain('lmu');
+  });
+});
+
+describe('useActiveSimulator sharing', () => {
+  it('opens one bridge subscription for many components', async () => {
+    // The standings render one row per driver. Before the shared store each
+    // of those opened its own IPC listener and its own seeding request.
+    let subscriptions = 0;
+    let requests = 0;
+    setBridge({
+      getActiveSimulator: () => {
+        requests += 1;
+        return Promise.resolve('iracing');
+      },
+      onSimulatorChanged: () => {
+        subscriptions += 1;
+        return () => undefined;
+      },
+    });
+
+    const Row = () => <span>{useActiveSimulator() ?? 'none'}</span>;
+    const { container } = render(
+      <>
+        <Row />
+        <Row />
+        <Row />
+        <Row />
+      </>
+    );
+
+    await waitFor(() =>
+      expect(container.textContent).toBe('iracingiracingiracingiracing')
+    );
+    expect(subscriptions).toBe(1);
+    expect(requests).toBe(1);
   });
 });

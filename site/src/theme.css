@@ -1,4 +1,4 @@
-@import '../../src/frontend/theme.css';
+@import '@irdashies/frontend/theme.css';
 
 /* Tell Tailwind v4 to scan the parent project's component files for classes */
 @source "../../src/frontend/components";
@@ -73,4 +73,10 @@
 /* Smooth scroll */
 html {
   scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }

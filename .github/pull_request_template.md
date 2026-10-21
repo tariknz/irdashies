@@ -35,4 +35,4 @@
 - [ ] I have performed a self-review of my own code
 - [ ] I have added/updated Storybook stories for visual changes
 - [ ] I have updated the README.md (if applicable)
-- [ ] I have updated defaultDashboard.ts if introducing new widgets or configurations (if applicable)
+- [ ] I have updated the widget manifest (`src/types/widgets/<id>.ts`) if introducing new widgets or configurations (if applicable)

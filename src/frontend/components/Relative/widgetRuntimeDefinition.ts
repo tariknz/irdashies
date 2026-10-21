@@ -3,6 +3,7 @@ import type { WidgetRuntimeDefinition } from '../../widgetRuntime';
 export default {
   id: 'relative',
   sessionData: true,
+  pitLaneData: true,
   channels: [
     'lap-times.snapshot',
     'radio.snapshot',

@@ -61,9 +61,22 @@ interface TrackDataBundle {
 
 const GITHUB_RAW_BASE =
   'https://raw.githubusercontent.com/Lovely-Sim-Racing/lovely-track-data/main/data';
-const TARGET_GAME = 'iracing';
 const DATA_DIR = path.join(process.cwd(), 'src', 'frontend', 'assets', 'data');
-const OUTPUT_FILE = path.join(DATA_DIR, 'tracks-bundle.json');
+
+/**
+ * The games to bundle, and where each one lands.
+ *
+ * One bundle per game rather than one merged file. The ids overlap in meaning
+ * across games -- Sebring is "sebring international" for iRacing and "sebring
+ * international raceway" for LMU -- and the lookup rule differs: an iRacing
+ * TrackName is already an id, while LMU's is its display name lowercased. Two
+ * files keep each sim's data unable to answer for the other, which is the
+ * fault that had LMU showing Daytona's corners at Road Atlanta.
+ */
+const GAMES: readonly { game: string; output: string }[] = [
+  { game: 'iracing', output: 'tracks-bundle.json' },
+  { game: 'lmu', output: 'lmu-tracks-bundle.json' },
+];
 
 // Check if force flag is passed
 const FORCE_FETCH = process.argv.includes('--force');
@@ -77,18 +90,18 @@ const REQUEST_TIMEOUT_MS = 15_000;
 /**
  * Check if the bundle file exists and is recent enough
  */
-function shouldSkipFetch(): boolean {
+function shouldSkipFetch(outputFile: string): boolean {
   if (FORCE_FETCH) {
     console.log('Force flag detected, fetching fresh data...\n');
     return false;
   }
 
-  if (!fs.existsSync(OUTPUT_FILE)) {
+  if (!fs.existsSync(outputFile)) {
     console.log('No existing bundle found, fetching...\n');
     return false;
   }
 
-  const stats = fs.statSync(OUTPUT_FILE);
+  const stats = fs.statSync(outputFile);
   const age = Date.now() - stats.mtimeMs;
 
   if (age > MAX_AGE_MS) {
@@ -143,17 +156,17 @@ function fetchJson<T>(url: string): Promise<T> {
 /**
  * Fetch the manifest to get list of all tracks
  */
-async function fetchManifest(): Promise<TrackManifestEntry[]> {
-  console.log(`Fetching manifest for ${TARGET_GAME}...`);
+async function fetchManifest(game: string): Promise<TrackManifestEntry[]> {
+  console.log(`Fetching manifest for ${game}...`);
   const url = `${GITHUB_RAW_BASE}/manifest.json`;
   const manifest = await fetchJson<TrackDataManifest>(url);
-  const tracks = manifest.tracks?.[TARGET_GAME] ?? [];
+  const tracks = manifest.tracks?.[game] ?? [];
 
   if (!tracks.length) {
-    throw new Error(`No tracks found for ${TARGET_GAME} in manifest`);
+    throw new Error(`No tracks found for ${game} in manifest`);
   }
 
-  console.log(`Found ${tracks.length} tracks for ${TARGET_GAME}`);
+  console.log(`Found ${tracks.length} tracks for ${game}`);
   return tracks;
 }
 
@@ -249,12 +262,12 @@ function ensureDataDir(): void {
 /**
  * Save bundle to file
  */
-function saveBundle(bundle: TrackDataBundle): void {
+function saveBundle(bundle: TrackDataBundle, outputFile: string): void {
   ensureDataDir();
-  fs.writeFileSync(OUTPUT_FILE, JSON.stringify(bundle, null, 2));
-  const fileSize = fs.statSync(OUTPUT_FILE).size;
+  fs.writeFileSync(outputFile, JSON.stringify(bundle, null, 2));
+  const fileSize = fs.statSync(outputFile).size;
   const fileSizeKb = (fileSize / 1024).toFixed(2);
-  console.log(`\nSaved bundle to: ${OUTPUT_FILE}`);
+  console.log(`\nSaved bundle to: ${outputFile}`);
   console.log(`   File size: ${fileSizeKb} KB`);
 }
 
@@ -263,19 +276,21 @@ function saveBundle(bundle: TrackDataBundle): void {
  */
 async function main(): Promise<void> {
   try {
-    // Skip if bundle exists and is recent
-    if (shouldSkipFetch()) {
-      return;
-    }
-
     console.log('Fetching track data from lovely-track-data repository...\n');
 
-    const manifest = await fetchManifest();
-    const tracks = await fetchAllTrackData(manifest);
-    const bundle = createBundle(tracks);
-    saveBundle(bundle);
+    for (const { game, output } of GAMES) {
+      const outputFile = path.join(DATA_DIR, output);
+      // Each bundle ages on its own, so adding a game does not force the
+      // others to be re-fetched.
+      if (shouldSkipFetch(outputFile)) continue;
 
-    console.log(`\nTrack data bundle successfully created!`);
+      const manifest = await fetchManifest(game);
+      const tracks = await fetchAllTrackData(manifest);
+      const bundle = createBundle(tracks);
+      saveBundle(bundle, outputFile);
+    }
+
+    console.log(`\nTrack data bundles successfully created!`);
   } catch (error) {
     console.error('Error fetching track data:', error);
     process.exit(1);

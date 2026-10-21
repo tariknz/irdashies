@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { useDashboard } from '@irdashies/context';
 import { TrashIcon, PlusIcon } from '@phosphor-icons/react';
 
@@ -50,6 +51,20 @@ const commonTelemetryProperties = [
   { path: 'AirTemp', label: 'Air Temperature' },
   { path: 'TrackTemp', label: 'Track Temperature' },
   { path: 'TrackTempCrew', label: 'Track Temp (Crew)' },
+  // LMU only. Absent under iRacing, where they read N/A.
+  { path: 'LmuPitStopTime', label: 'LMU Pit Stop Time' },
+  { path: 'LmuRepairTime', label: 'LMU Repair Time' },
+  { path: 'LmuRefuelTarget', label: 'LMU Refuel Target' },
+  {
+    path: 'LmuRefuelTargetIsVirtualEnergy',
+    label: 'LMU Refuel Is Virtual Energy',
+  },
+  { path: 'LmuVirtualEnergy', label: 'LMU Virtual Energy' },
+  { path: 'LmuStateOfCharge', label: 'LMU State Of Charge' },
+  { path: 'LmuRegen', label: 'LMU Regen' },
+  { path: 'LmuBrakeWear', label: 'LMU Brake Wear' },
+  { path: 'LmuSuspensionDamage', label: 'LMU Suspension Damage' },
+  { path: 'LmuAeroDamage', label: 'LMU Aero Damage' },
 ];
 
 // Common session properties for quick add
@@ -61,6 +76,13 @@ const commonSessionProperties = [
   { path: 'WeekendInfo.EventType', label: 'Event Type' },
   { path: 'DriverInfo.DriverCarIdx', label: 'Driver Car Index' },
   { path: 'DriverInfo.DriverPitTrkPct', label: 'Pit Track %' },
+  // LMU only, from its REST API.
+  { path: 'DriverInfo.DriverCarFuelMaxLtr', label: 'Fuel Capacity (L)' },
+  { path: 'LmuRest.timeScale', label: 'LMU Time Scale' },
+  { path: 'LmuRest.maxVirtualEnergy', label: 'LMU Max Virtual Energy' },
+  { path: 'LmuRest.privateQualifying', label: 'LMU Private Qualifying' },
+  { path: 'LmuRest.fuelRatio', label: 'LMU Fuel Ratio (L per % VE)' },
+  { path: 'LmuRest.fuelLevelMax', label: 'LMU Fuel Slider Max (L)' },
 ];
 
 export const TelemetryInspectorSettings = () => {
@@ -114,6 +136,7 @@ export const TelemetryInspectorSettings = () => {
 
         return (
           <div className="space-y-4">
+            <WidgetScaleSettings widgetId={SETTING_ID} />
             {/* Current Properties */}
             <div className="space-y-2">
               <h3 className="text-lg font-medium text-slate-200">
@@ -134,7 +157,7 @@ export const TelemetryInspectorSettings = () => {
                         <span
                           className={`text-xs px-1.5 py-0.5 rounded ${
                             prop.source === 'telemetry'
-                              ? 'bg-blue-600 text-blue-100'
+                              ? 'bg-accent-600 text-on-accent'
                               : 'bg-green-600 text-green-100'
                           }`}
                         >
@@ -205,7 +228,7 @@ export const TelemetryInspectorSettings = () => {
                     }
                   }}
                   disabled={!newProperty.path}
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded text-sm transition-colors"
+                  className="px-3 py-1.5 bg-accent-600 hover:bg-accent-500 disabled:bg-slate-600 disabled:text-slate-400 disabled:cursor-not-allowed text-on-accent rounded text-sm transition-colors"
                 >
                   <PlusIcon size={16} />
                 </button>

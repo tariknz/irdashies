@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "timestamp": 1783203962714,
+  "timestamp": 1791419133812,
   "tracks": {
     "adelaide": {
       "name": "Adelaide Street Circuit",
@@ -5211,6 +5211,238 @@
           "name": "3"
         }
       ]
+    },
+    "roadamerica 2026 bend": {
+      "name": "Road America 2026 Bend",
+      "trackId": "roadamerica 2026 bend",
+      "country": "US",
+      "length": 6480,
+      "pitentry": 0.926,
+      "pitexit": 0.055,
+      "turn": [
+        {
+          "start": 0.079,
+          "end": 0.117,
+          "name": "Turn 1"
+        },
+        {
+          "start": 0.153,
+          "end": 0.188,
+          "name": "Turn 3"
+        },
+        {
+          "start": 0.252,
+          "end": 0.297,
+          "name": "Moraine Sweep"
+        },
+        {
+          "start": 0.331,
+          "end": 0.366,
+          "name": "Turn 5"
+        },
+        {
+          "start": 0.386,
+          "end": 0.411,
+          "name": "Turn 6"
+        },
+        {
+          "start": 0.425,
+          "end": 0.445,
+          "name": "Turn 7"
+        },
+        {
+          "start": 0.479,
+          "end": 0.509,
+          "name": "Turn 8"
+        },
+        {
+          "start": 0.524,
+          "end": 0.608,
+          "name": "The Carousel"
+        },
+        {
+          "start": 0.624,
+          "end": 0.652,
+          "name": "The Bend"
+        },
+        {
+          "start": 0.713,
+          "end": 0.763,
+          "name": "Kettle Bottoms"
+        },
+        {
+          "start": 0.777,
+          "end": 0.808,
+          "name": "Canada Corner"
+        },
+        {
+          "start": 0.826,
+          "end": 0.857,
+          "name": "Bill Mitchell Bend"
+        },
+        {
+          "start": 0.872,
+          "end": 0.911,
+          "name": "Turn 14"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.446,
+          "marker": 0.46,
+          "end": 0.475,
+          "name": "Hurry Downs"
+        },
+        {
+          "start": 0.809,
+          "marker": 0.817,
+          "end": 0.825,
+          "name": "Thunder Valley"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.141,
+          "name": "1"
+        },
+        {
+          "marker": 0.323,
+          "name": "2"
+        },
+        {
+          "marker": 0.473,
+          "name": "3"
+        },
+        {
+          "marker": 0.763,
+          "name": "4"
+        },
+        {
+          "marker": 0.867,
+          "name": "5"
+        },
+        {
+          "marker": 1,
+          "name": "6"
+        }
+      ],
+      "year": 2026
+    },
+    "roadamerica 2026 full": {
+      "name": "Road America 2026 Full Course",
+      "trackId": "roadamerica 2026 full",
+      "country": "US",
+      "length": 6410,
+      "pitentry": 0.925,
+      "pitexit": 0.056,
+      "turn": [
+        {
+          "start": 0.08,
+          "end": 0.118,
+          "name": "Turn 1"
+        },
+        {
+          "start": 0.155,
+          "end": 0.19,
+          "name": "Turn 3"
+        },
+        {
+          "start": 0.255,
+          "end": 0.3,
+          "name": "Moraine Sweep"
+        },
+        {
+          "start": 0.335,
+          "end": 0.37,
+          "name": "Turn 5"
+        },
+        {
+          "start": 0.39,
+          "end": 0.415,
+          "name": "Turn 6"
+        },
+        {
+          "start": 0.43,
+          "end": 0.45,
+          "name": "Turn 7"
+        },
+        {
+          "start": 0.484,
+          "end": 0.515,
+          "name": "Turn 8"
+        },
+        {
+          "start": 0.53,
+          "end": 0.615,
+          "name": "The Carousel"
+        },
+        {
+          "start": 0.64,
+          "end": 0.68,
+          "name": "The Kink"
+        },
+        {
+          "start": 0.71,
+          "end": 0.76,
+          "name": "Kettle Bottoms"
+        },
+        {
+          "start": 0.775,
+          "end": 0.806,
+          "name": "Canada Corner"
+        },
+        {
+          "start": 0.824,
+          "end": 0.855,
+          "name": "Bill Mitchell Bend"
+        },
+        {
+          "start": 0.871,
+          "end": 0.91,
+          "name": "Turn 14"
+        }
+      ],
+      "straight": [
+        {
+          "start": 0.451,
+          "marker": 0.465,
+          "end": 0.48,
+          "name": "Hurry Downs"
+        },
+        {
+          "start": 0.807,
+          "marker": 0.815,
+          "end": 0.823,
+          "name": "Thunder Valley"
+        }
+      ],
+      "sector": [
+        {
+          "marker": 0.143,
+          "name": "1"
+        },
+        {
+          "marker": 0.327,
+          "name": "2"
+        },
+        {
+          "marker": 0.478,
+          "name": "3"
+        },
+        {
+          "marker": 0.76,
+          "name": "4"
+        },
+        {
+          "marker": 0.866,
+          "name": "5"
+        },
+        {
+          "marker": 1,
+          "name": "6"
+        }
+      ],
+      "year": 2026
     },
     "roadamerica bend": {
       "name": "Road America Bend",

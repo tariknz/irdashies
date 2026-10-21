@@ -83,8 +83,18 @@ const mapTurn = (
   if (raw.start === undefined || raw.end === undefined) return null;
   let name = raw.name;
   if (!name) {
-    unnamedIdx.count += 1;
-    name = `Turn ${unnamedIdx.count}`;
+    // LMU's entries carry the turn's own number and often no name, so it is
+    // used where it exists. A running count would have renamed them: Fuji's
+    // unnamed turn 2 is the first unnamed one, and came out "Turn 1".
+    //
+    // iRacing's entries have no number field at all -- all 994 of its turns
+    // -- so the counter stays for them.
+    if (raw.number !== undefined) {
+      name = `Turn ${raw.number}`;
+    } else {
+      unnamedIdx.count += 1;
+      name = `Turn ${unnamedIdx.count}`;
+    }
   }
   const cornerMatch = CORNER_NUM_RE.exec(name.trim());
   return {

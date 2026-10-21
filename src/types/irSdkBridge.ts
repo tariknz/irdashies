@@ -1,4 +1,5 @@
 import type { Session, Telemetry } from '@irdashies/types';
+import type { TapeReplayCommand, TapeReplayStatus } from './tapeReplay';
 
 export enum ReplayPositionCommand {
   /** Beginning of the replay */
@@ -18,6 +19,15 @@ export interface IrSdkBridge {
   onRunningState: (
     callback: (value: boolean) => void
   ) => (() => void) | undefined;
+  /**
+   * The running state as it stands now, for a subscriber that arrived late.
+   *
+   * `onRunningState` only reports changes, so a window opened mid-session hears
+   * nothing until the sim next starts or stops. Optional because not every
+   * transport can answer — a subscriber that gets no answer simply waits for
+   * the next change, as it did before.
+   */
+  getRunningState?: () => Promise<boolean>;
   stop: () => void;
 }
 
@@ -27,6 +37,8 @@ export interface IrSdkBridge {
  * `raceControlBridge`.
  */
 export interface IrSdkSourceBridge extends IrSdkBridge {
+  getTapeReplayStatus?: () => TapeReplayStatus | null;
+  controlTapeReplay?: (command: TapeReplayCommand) => TapeReplayStatus;
   onTelemetry: (
     callback: (value: Telemetry) => void
   ) => (() => void) | undefined;

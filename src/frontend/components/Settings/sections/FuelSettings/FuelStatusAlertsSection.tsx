@@ -1,6 +1,8 @@
 import { FuelWidgetSettings, getWidgetDefaultConfig } from '@irdashies/types';
 import { SettingsSection } from '../../components/SettingSection';
-import { SettingToggleRow } from '../../components/SettingToggleRow';
+import { settingPropFor } from '../../components/SettingProp';
+
+const SettingProp = settingPropFor('fuel');
 
 const defaultConfig = getWidgetDefaultConfig('fuel');
 
@@ -16,12 +18,7 @@ export const FuelStatusAlertsSection = ({
   return (
     <SettingsSection title="Fuel Status Alerts">
       {/* Border Color Toggle */}
-      <SettingToggleRow
-        title="Show Border Color"
-        description="Green (safe), Orange (caution), Red (danger)"
-        enabled={settings.config.showFuelStatusBorder ?? true}
-        onToggle={(enabled) => onChange({ showFuelStatusBorder: enabled })}
-      />
+      <SettingProp path="showFuelStatusBorder" />
 
       <div className="space-y-3">
         {/* Green Threshold */}

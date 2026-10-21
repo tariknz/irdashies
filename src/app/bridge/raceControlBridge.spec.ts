@@ -136,6 +136,21 @@ describe('setupRaceControlBridge', () => {
     expect(runtime.updateEnabled).toHaveBeenCalledWith(true);
   });
 
+  it('runs detection for the broadcast events overlay without the Gantry', () => {
+    const { runtime } = createRuntime();
+    const dashboard = dashboardWith(savedThresholds);
+
+    setupRaceControlBridge(runtime, {
+      ...dashboard,
+      widgets: [
+        { ...dashboard.widgets[0], enabled: false },
+        { id: 'broadcastevents', enabled: true, config: {} },
+      ],
+    } as unknown as DashboardLayout);
+
+    expect(runtime.updateEnabled).toHaveBeenCalledWith(true);
+  });
+
   it('applies the saved retention at startup', async () => {
     const { runtime } = createRuntime();
 
@@ -249,6 +264,26 @@ describe('setupRaceControlBridge', () => {
     expect(handlers.get('raceControl:clearIncidents')?.({})).toBeUndefined();
     expect(loadIncidents).not.toHaveBeenCalled();
     expect(clearIncidents).not.toHaveBeenCalled();
+  });
+
+  it('hides and protects the archive while a replay irDashies did not record is loaded', async () => {
+    const { runtime } = createRuntime();
+    let readable = false;
+    setupRaceControlBridge(runtime, undefined, {
+      canReadArchive: () => readable,
+    });
+
+    expect(handlers.get('raceControl:getIncidents')?.({})).toEqual({
+      sessionId: '1',
+      incidents: [],
+    });
+    expect(handlers.get('raceControl:clearIncidents')?.({})).toBeUndefined();
+    expect(loadIncidents).not.toHaveBeenCalled();
+    expect(clearIncidents).not.toHaveBeenCalled();
+
+    readable = true;
+    await handlers.get('raceControl:getIncidents')?.({});
+    expect(loadIncidents).toHaveBeenCalledWith('1');
   });
 });
 

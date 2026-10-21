@@ -156,14 +156,18 @@ export class ProgressInterpolator {
   }
 }
 
+/** `maxFps` caps redraws, for maps that do not need the full refresh rate. */
 export const useProgressAnimation = (
   drivers: ProgressSource,
-  draw: DrawProgress
+  draw: DrawProgress,
+  maxFps?: number
 ) => {
   const interpolatorRef = useRef<ProgressInterpolator | null>(null);
   const drawRef = useRef(draw);
   const frameRef = useRef(0);
+  const lastDrawRef = useRef(0);
   const previousDriversRef = useRef<ProgressSource | null>(null);
+  const minFrameMs = maxFps && maxFps > 0 ? 1000 / maxFps : 0;
 
   if (!interpolatorRef.current) {
     interpolatorRef.current = new ProgressInterpolator();
@@ -193,7 +197,12 @@ export const useProgressAnimation = (
       return active;
     };
     const frame = (now: number) => {
+      if (minFrameMs > 0 && now - lastDrawRef.current < minFrameMs) {
+        frameRef.current = requestAnimationFrame(frame);
+        return;
+      }
       frameTime = now;
+      lastDrawRef.current = now;
       const active = perfMetrics.measure(
         'trackMapAnimationFrame',
         measuredFrame
@@ -201,7 +210,11 @@ export const useProgressAnimation = (
       frameRef.current = active ? requestAnimationFrame(frame) : 0;
     };
 
-    const active = interpolator.setTargets(drivers, performance.now());
+    // Always paint in this commit: other layout effects may have just cleared
+    // the canvas. The cap only limits the frames in between.
+    const now = performance.now();
+    const active = interpolator.setTargets(drivers, now);
+    lastDrawRef.current = now;
     const drawSnapshot = () =>
       drawRef.current(interpolator.getValues(), interpolator.getCount());
     perfMetrics.measure('trackMapAnimationFrame', drawSnapshot);
@@ -215,5 +228,5 @@ export const useProgressAnimation = (
         frameRef.current = 0;
       }
     };
-  }, [drivers]);
+  }, [drivers, minFrameMs]);
 };

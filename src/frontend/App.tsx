@@ -1,4 +1,5 @@
 // App.tsx
+import { useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import {
@@ -7,7 +8,9 @@ import {
   SessionProvider,
   useRunningState,
   useResetOnDisconnect,
+  useDashboard,
 } from '@irdashies/context';
+import { WidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import { Settings } from './components/Settings/Settings';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
 import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
@@ -18,6 +21,12 @@ import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 import { RendererDataProviders } from './components/RendererDataProviders/RendererDataProviders';
 import { WidgetRuntimeProvider } from './widgetRuntime';
 import { Gantry } from './components/Gantry/Gantry';
+import {
+  GantryDockHost,
+  useGantryDock,
+} from './components/GantryDock/GantryDockHost';
+import { GantrySessionHoldProvider } from './components/Gantry/hooks/useGantrySessionHold';
+import { TapeReplayOverlay } from './components/TapeReplayControls/TapeReplayControls';
 
 /**
  * Check if this window is the settings window based on URL hash
@@ -56,14 +65,27 @@ const SettingsApp = () => {
  */
 const GantryApp = () => {
   const { running } = useRunningState();
+  const { currentDashboard } = useDashboard();
+  const gantry = currentDashboard?.widgets.find(
+    (widget) => (widget.type || widget.id) === 'gantry'
+  );
   useResetOnDisconnect(running);
+  const dock = useGantryDock();
+  const dockHost = useMemo(
+    () => (dock.panels.length > 0 ? <GantryDockHost dock={dock} /> : undefined),
+    [dock]
+  );
   return (
     // The runtime provider supplies Gantry's declared channel rates; without
     // it every channel hook here would fall back to the unthrottled default.
     <WidgetRuntimeProvider widgetType="gantry">
       <ThemeManager>
         <div className="w-full h-full bg-slate-900 text-white">
-          <Gantry />
+          <GantrySessionHoldProvider running={running}>
+            <WidgetScale scale={gantry?.scale}>
+              <Gantry dock={dockHost} />
+            </WidgetScale>
+          </GantrySessionHoldProvider>
         </div>
       </ThemeManager>
     </WidgetRuntimeProvider>
@@ -91,6 +113,13 @@ const OverlayApp = () => {
 };
 
 const App = () => {
+  if (window.location.hash.startsWith('#/tape-replay')) {
+    return (
+      <ErrorBoundary label="tape replay">
+        <TapeReplayOverlay />
+      </ErrorBoundary>
+    );
+  }
   if (isGantryWindow()) {
     return (
       <ErrorBoundary label="gantry" resetAfterMs={2000}>
@@ -112,7 +141,11 @@ const App = () => {
     return (
       <ErrorBoundary label="settings" resetAfterMs={2000}>
         <DashboardProvider bridge={window.dashboardBridge}>
-          <SettingsApp />
+          {/* The header names the running simulator, so it needs to know
+              whether one is actually feeding telemetry. */}
+          <RunningStateProvider bridge={window.irsdkBridge}>
+            <SettingsApp />
+          </RunningStateProvider>
         </DashboardProvider>
       </ErrorBoundary>
     );

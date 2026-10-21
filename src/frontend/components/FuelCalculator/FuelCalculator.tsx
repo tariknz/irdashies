@@ -23,6 +23,8 @@ import {
 type FuelCalculatorProps = Partial<FuelCalculatorSettings> & {
   /** Deterministic data for Storybook previews. Not persisted in widget settings. */
   previewData?: FuelCalculation;
+  /** A second copy shown inside another window. Never writes to disk. */
+  embedded?: boolean;
 };
 
 const EMPTY_DATA: FuelCalculation = {
@@ -161,7 +163,11 @@ export const FuelCalculator = (props: FuelCalculatorProps) => {
 
   const isOnTrack = projection?.isOnTrack ?? false;
 
-  const calculatedFuelData = useFuelCalculation(safetyMargin, settings);
+  const calculatedFuelData = useFuelCalculation(
+    safetyMargin,
+    settings,
+    props.embedded
+  );
   const fuelData = props.previewData ?? calculatedFuelData;
 
   const currentFuelLevel = projection?.fuelLevel;

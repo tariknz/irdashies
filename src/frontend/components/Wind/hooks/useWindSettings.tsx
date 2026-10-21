@@ -1,42 +1,28 @@
 import { useMemo } from 'react';
 import { useDashboard } from '@irdashies/context';
 import {
+  deepMergeConfig,
   getWidgetDefaultConfig,
+  getWidgetManifest,
+  isConfigValid,
   type WindWidgetSettings,
 } from '@irdashies/types';
 
 const defaultConfig = getWidgetDefaultConfig('wind');
 
-const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
+// Fill values a saved config predates from the defaults first, so adding a
+// property to the manifest doesn't invalidate every saved wind config.
+const withDefaults = (config: unknown) =>
+  deepMergeConfig(
+    defaultConfig as unknown as Record<string, unknown>,
+    config
+  ) as unknown as WindWidgetSettings['config'];
 
-const isSessionVisibility = (value: unknown) => {
-  if (!isObjectRecord(value)) return false;
-
-  return (
-    typeof value.race === 'boolean' &&
-    typeof value.loneQualify === 'boolean' &&
-    typeof value.openQualify === 'boolean' &&
-    typeof value.practice === 'boolean' &&
-    typeof value.offlineTesting === 'boolean'
+const isWindConfig = (config: unknown) =>
+  isConfigValid(
+    getWidgetManifest('wind')?.properties ?? {},
+    withDefaults(config)
   );
-};
-
-const isWindConfig = (
-  config: object | undefined
-): config is WindWidgetSettings['config'] => {
-  if (!isObjectRecord(config)) return false;
-
-  const { background, units, showOnlyWhenOnTrack, sessionVisibility } = config;
-
-  return (
-    isObjectRecord(background) &&
-    typeof background.opacity === 'number' &&
-    (units === 'auto' || units === 'Metric' || units === 'Imperial') &&
-    typeof showOnlyWhenOnTrack === 'boolean' &&
-    isSessionVisibility(sessionVisibility)
-  );
-};
 
 export const useWindSettings = (): WindWidgetSettings['config'] => {
   const { currentDashboard } = useDashboard();
@@ -46,6 +32,6 @@ export const useWindSettings = (): WindWidgetSettings['config'] => {
       (w) => w.id === 'wind'
     )?.config;
 
-    return isWindConfig(config) ? config : defaultConfig;
+    return isWindConfig(config) ? withDefaults(config) : defaultConfig;
   }, [currentDashboard]);
 };

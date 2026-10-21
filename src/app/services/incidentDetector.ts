@@ -411,7 +411,7 @@ export class IncidentDetector {
   ): Omit<Incident, 'debug'> {
     const driver = this.sessionDrivers.get(carIdx);
     return {
-      id: `${carIdx}-${telemetry.sessionTime}-${type}`,
+      id: `${telemetry.sessionNum}-${carIdx}-${telemetry.sessionTime}-${type}`,
       carIdx,
       driverName: driver?.name ?? 'Unknown',
       carNumber: driver?.carNumber ?? '?',

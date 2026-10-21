@@ -90,6 +90,7 @@ describe('PitlaneHelper', () => {
   const defaultSpeedResult = {
     limitKph: 72,
     limitMph: 45,
+    hasLimit: true,
     speedKph: 67,
     speedMph: 41.6,
     deltaKph: -5.0,
@@ -380,6 +381,20 @@ describe('PitlaneHelper', () => {
   });
 
   describe('Speed Display', () => {
+    it('hides limit-dependent displays when the limit is unknown', () => {
+      vi.mocked(usePitSpeed).mockReturnValue({
+        ...defaultSpeedResult,
+        hasLimit: false,
+        limitKph: 0,
+        limitMph: 0,
+        deltaKph: 0,
+        deltaMph: 0,
+      });
+      const { queryByText } = render(<PitlaneHelper />);
+      expect(queryByText('0.0')).not.toBeInTheDocument();
+      expect(queryByText('Speed')).not.toBeInTheDocument();
+    });
+
     it('displays speed delta in km/h when speedUnit is km/h', () => {
       vi.mocked(usePitlaneHelperSettings).mockReturnValue({
         ...defaultConfig,
@@ -388,6 +403,7 @@ describe('PitlaneHelper', () => {
       vi.mocked(usePitSpeed).mockReturnValue({
         limitKph: 72,
         limitMph: 45,
+        hasLimit: true,
         speedKph: 67,
         speedMph: 41.6,
         deltaKph: -5.0,
@@ -414,6 +430,7 @@ describe('PitlaneHelper', () => {
       vi.mocked(usePitSpeed).mockReturnValue({
         limitKph: 45,
         limitMph: 72,
+        hasLimit: true,
         speedKph: 41.6,
         speedMph: 67,
         deltaKph: -3.1,
@@ -444,6 +461,7 @@ describe('PitlaneHelper', () => {
       vi.mocked(usePitSpeed).mockReturnValue({
         limitKph: 72,
         limitMph: 45,
+        hasLimit: true,
         speedKph: 67,
         speedMph: 41.6,
         deltaKph: -5.0,
@@ -472,6 +490,7 @@ describe('PitlaneHelper', () => {
       vi.mocked(usePitSpeed).mockReturnValue({
         limitKph: 72,
         limitMph: 45,
+        hasLimit: true,
         speedKph: 67,
         speedMph: 41.6,
         deltaKph: -5.0,

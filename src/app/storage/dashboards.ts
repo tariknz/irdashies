@@ -4,7 +4,12 @@ import type {
   DashboardProfile,
 } from '@irdashies/types';
 import { emitDashboardUpdated } from './dashboardEvents';
-import { defaultDashboard, deepMergeConfig } from '@irdashies/types';
+import {
+  defaultDashboard,
+  deepMergeConfig,
+  normalizeWidgetScale,
+  WIDGET_SCALE,
+} from '@irdashies/types';
 import { readData, writeData } from './storage';
 import { writeFile, mkdir, readFile, readdir, unlink } from 'node:fs/promises';
 import { resolve, basename, sep } from 'node:path';
@@ -60,6 +65,24 @@ const migrateGantryThresholds = (
   return reset;
 };
 
+/** Radar tuning the pole-side learning used; the pole side is fixed now. */
+const REMOVED_RADAR_TUNING_KEYS = ['poleLearnAfterS', 'poleFlipFrames'];
+
+const dropRemovedRadarTuning = (
+  merged: Record<string, unknown>
+): Record<string, unknown> => {
+  const tuning = merged.tuning;
+  if (!tuning || typeof tuning !== 'object' || Array.isArray(tuning)) {
+    return merged;
+  }
+  const kept = Object.fromEntries(
+    Object.entries(tuning).filter(
+      ([key]) => !REMOVED_RADAR_TUNING_KEYS.includes(key)
+    )
+  );
+  return { ...merged, tuning: kept };
+};
+
 const isDashboardChanged = (
   oldDashboard: DashboardLayout | undefined,
   newDashboard: DashboardLayout
@@ -74,8 +97,13 @@ const isDashboardChanged = (
     return true;
   }
 
-  // Compare widgets length
-  if (oldDashboard.widgets.length !== newDashboard.widgets.length) return true;
+  // Compare widgets length (stored data may lack widgets, R8.3)
+  if (
+    !Array.isArray(oldDashboard.widgets) ||
+    oldDashboard.widgets.length !== newDashboard.widgets.length
+  ) {
+    return true;
+  }
 
   // Compare each widget
   return oldDashboard.widgets.some((oldWidget, index) => {
@@ -89,47 +117,142 @@ export const getOrCreateDefaultDashboard = () => {
   return getOrCreateDefaultDashboardForProfile(currentProfileId);
 };
 
+const isWidgetLayout = (value: unknown): value is DashboardWidget['layout'] => {
+  if (typeof value !== 'object' || value === null) return false;
+  const { x, y, width, height } = value as Record<string, unknown>;
+  return (
+    Number.isFinite(x) &&
+    Number.isFinite(y) &&
+    [width, height].every((size) => Number.isFinite(size) && Number(size) > 0)
+  );
+};
+
+/**
+ * A stored widget the overlays can lay out. An invalid layout comes from the
+ * default widget of its type and the rest of the user's widget is kept; a
+ * missing `enabled` stays off, as it was read before. Entries with no layout
+ * to fall back on are dropped.
+ */
+const toStoredWidget = (value: unknown): DashboardWidget | undefined => {
+  const widget =
+    typeof value === 'object' && value !== null
+      ? (value as Partial<Record<keyof DashboardWidget, unknown>>)
+      : undefined;
+  if (typeof widget?.id !== 'string') {
+    logger.warn(
+      '[toStoredWidget] Dropped a stored entry without an id:',
+      value
+    );
+    return undefined;
+  }
+  const typeId = typeof widget.type === 'string' ? widget.type : widget.id;
+  const storedLayout = isWidgetLayout(widget.layout)
+    ? widget.layout
+    : undefined;
+  const layout =
+    storedLayout ??
+    defaultDashboard.widgets.find((w) => w.id === typeId)?.layout;
+  if (!layout) {
+    logger.warn(
+      '[toStoredWidget] Dropped widget with no usable layout:',
+      widget.id,
+      widget.layout
+    );
+    return undefined;
+  }
+  if (!storedLayout) {
+    logger.warn(
+      '[toStoredWidget] Replaced an invalid layout with the default for:',
+      widget.id,
+      widget.layout
+    );
+  }
+  // Spread in place so key order, and the change check, stay the same.
+  const repaired: DashboardWidget = {
+    ...(value as DashboardWidget),
+    enabled: widget.enabled === true,
+    layout: { ...layout },
+  };
+  if (typeof repaired.type !== 'string') delete repaired.type;
+  // Standings originally stored its content scale in its own config. Move it
+  // before merging defaults, including for custom instances of that type.
+  if (
+    typeId === 'standings' &&
+    typeof repaired.config === 'object' &&
+    repaired.config !== null &&
+    !Array.isArray(repaired.config) &&
+    Object.hasOwn(repaired.config, 'scale')
+  ) {
+    if (repaired.scale === undefined) {
+      repaired.scale = normalizeWidgetScale(repaired.config.scale);
+    }
+    repaired.config = { ...repaired.config };
+    delete repaired.config.scale;
+  }
+  if (repaired.scale !== undefined) {
+    repaired.scale = normalizeWidgetScale(repaired.scale);
+  }
+  return repaired;
+};
+
+/**
+ * A stored dashboard with what it predates filled in: widgets added since,
+ * general settings and config values from the defaults, and the config
+ * migrations. Stored data is untrusted (R8.3): widgets are repaired or
+ * dropped (see toStoredWidget, which logs both) instead of failing the whole
+ * dashboard. Doesn't touch storage; callers save.
+ */
+export const withDashboardDefaults = (
+  dashboard: DashboardLayout
+): DashboardLayout => {
+  const storedWidgets = Array.isArray(dashboard.widgets)
+    ? dashboard.widgets.flatMap((value) => toStoredWidget(value) ?? [])
+    : [];
+
+  // check missing widgets
+  const missingWidgets = defaultDashboard.widgets.filter(
+    (defaultWidget) =>
+      !storedWidgets.find((widget) => widget.id === defaultWidget.id)
+  );
+
+  return {
+    ...dashboard,
+    generalSettings: {
+      ...defaultDashboard.generalSettings,
+      ...dashboard.generalSettings,
+    },
+    widgets: [...storedWidgets, ...missingWidgets].map((widget) => {
+      const defaultWidget = defaultDashboard.widgets.find(
+        (w) => w.id === widget.id
+      );
+      if (!defaultWidget?.config) return widget;
+      const defaults = defaultWidget.config as Record<string, unknown>;
+      const merged = deepMergeConfig(defaults, widget.config) as Record<
+        string,
+        unknown
+      >;
+      return {
+        ...widget,
+        config:
+          widget.id === 'gantry'
+            ? migrateGantryThresholds(
+                widget.config as Record<string, unknown> | undefined,
+                defaults,
+                merged
+              )
+            : widget.id === 'radar'
+              ? dropRemovedRadarTuning(merged)
+              : merged,
+      };
+    }),
+  };
+};
+
 export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
   const dashboard = getDashboard(profileId);
 
   if (dashboard) {
-    // check missing widgets
-    const missingWidgets = defaultDashboard.widgets.filter(
-      (defaultWidget) =>
-        !dashboard.widgets.find((widget) => widget.id === defaultWidget.id)
-    );
-
-    // add missing widgets and save
-    const updatedDashboard = {
-      ...dashboard,
-      generalSettings: {
-        ...defaultDashboard.generalSettings,
-        ...dashboard.generalSettings,
-      },
-      widgets: [...dashboard.widgets, ...missingWidgets].map((widget) => {
-        const defaultWidget = defaultDashboard.widgets.find(
-          (w) => w.id === widget.id
-        );
-        if (!defaultWidget?.config) return widget;
-        const defaults = defaultWidget.config as Record<string, unknown>;
-        const merged = deepMergeConfig(defaults, widget.config) as Record<
-          string,
-          unknown
-        >;
-        return {
-          ...widget,
-          config:
-            widget.id === 'gantry'
-              ? migrateGantryThresholds(
-                  widget.config as Record<string, unknown> | undefined,
-                  defaults,
-                  merged
-                )
-              : merged,
-        };
-      }),
-    };
-
+    const updatedDashboard = withDashboardDefaults(dashboard);
     saveDashboard(profileId, updatedDashboard);
     return updatedDashboard;
   }
@@ -137,6 +260,46 @@ export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
   saveDashboard(profileId, defaultDashboard);
 
   return defaultDashboard;
+};
+
+/**
+ * Fills in what stored dashboards predate (see withDashboardDefaults) for
+ * every inactive profile, so a profile saved by an older version doesn't hand
+ * its widgets and settings pages missing values. The active profile is filled
+ * in as it loads (getOrCreateDefaultDashboard), and a profile as it becomes
+ * active (setCurrentProfile). Runs in memory and writes once; it never stops
+ * startup over bad stored data.
+ */
+export const applyDefaultsToAllProfiles = () => {
+  try {
+    const dashboards = listDashboards();
+    const currentProfileId = getCurrentProfileId();
+    const updated = { ...dashboards };
+    let changed = false;
+    for (const profile of listProfiles()) {
+      const id: unknown = profile?.id;
+      if (typeof id !== 'string' || id === currentProfileId) continue;
+      const dashboard = dashboards[id];
+      if (typeof dashboard !== 'object' || dashboard === null) continue;
+      try {
+        const next = withDashboardDefaults(dashboard);
+        if (JSON.stringify(next) !== JSON.stringify(dashboard)) {
+          updated[id] = next;
+          changed = true;
+        }
+      } catch (error) {
+        logger.warn(
+          '[applyDefaultsToAllProfiles] Could not fill in defaults for profile:',
+          id,
+          error
+        );
+      }
+    }
+    // Inactive profiles only, so there is nothing to emit.
+    if (changed) writeData(DASHBOARDS_KEY, updated);
+  } catch (error) {
+    logger.warn('[applyDefaultsToAllProfiles] Skipped:', error);
+  }
 };
 
 export const listDashboards = () => {
@@ -238,6 +401,7 @@ export const resetDashboard = (
         );
         return {
           ...widget,
+          scale: WIDGET_SCALE.default,
           config: defaultWidget?.config || widget.config,
         };
       }),
@@ -717,12 +881,29 @@ export const setCurrentProfile = (profileId: string, silent = false): void => {
     throw new Error(`Profile ${profileId} not found`);
   }
 
+  // Fill in what the stored dashboard predates (e.g. it was imported or saved
+  // by an older version). Saved while the profile is still inactive, so the
+  // save doesn't emit; the emit below then carries the filled-in dashboard.
+  let dashboard = getDashboard(profileId) || defaultDashboard;
+  if (!silent && dashboard !== defaultDashboard) {
+    try {
+      const filled = withDashboardDefaults(dashboard);
+      saveDashboard(profileId, filled);
+      dashboard = filled;
+    } catch (error) {
+      logger.warn(
+        '[setCurrentProfile] Could not fill in defaults for profile:',
+        profileId,
+        error
+      );
+    }
+  }
+
   writeData(CURRENT_PROFILE_KEY, profileId);
 
   // Reload the dashboard for this profile
   // Only emit update if not in silent mode
   if (!silent) {
-    const dashboard = getDashboard(profileId) || defaultDashboard;
     emitDashboardUpdated(dashboard);
   }
 };

@@ -281,6 +281,40 @@ export const StrategyWithHistory: Story = {
   },
 };
 
+/** Text history within the complete strategy overlay. */
+export const StrategyWithTableHistory: Story = {
+  decorators: [
+    ChannelSnapshotDecorator({
+      'fuel.projection': {
+        ...previewProjection,
+        currentLap: 6,
+        completedLaps: [2.28, 2.4, 2.3, 2.32, 2.4].map((fuelUsed, index) => ({
+          lapNumber: index + 1,
+          sessionNum: 0,
+          fuelUsed,
+          lapTime: 90,
+          isGreenFlag: true,
+          isValidForCalc: true,
+          isOutLap: false,
+          timestamp: Date.UTC(2026, 0, 1) + index * 90000,
+        })),
+      },
+    }),
+  ],
+  args: {
+    ...baselineArgs,
+    layoutTree: strategyWithHistoryLayout,
+    fuelHistoryType: 'table',
+    fuelHistoryLapCount: 5,
+    previewData: { ...previewFuelData, currentLap: 6, lastFinishedLap: 5 },
+  },
+};
+
+export const StrategyWithThreeLapHistory: Story = {
+  ...StrategyWithTableHistory,
+  args: { ...StrategyWithTableHistory.args, fuelHistoryLapCount: 3 },
+};
+
 /** Planning tools deliberately sit below the core strategy, rather than competing with it. */
 export const StrategyWithPitPlanning: Story = {
   decorators: [

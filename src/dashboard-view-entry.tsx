@@ -15,6 +15,9 @@ const urlParams = new URLSearchParams(window.location.search);
 const profileId = urlParams.get('profile') || undefined;
 logger.info('[DashboardView] URL profile parameter:', profileId);
 const wsUrl = urlParams.get('wsUrl') || 'http://localhost:3000';
+// Set by /widget/<id>: draw that one widget filling the window instead of the
+// whole dashboard, so one page can be pointed at one VR overlay tab.
+const soloWidgetId = urlParams.get('widget') || undefined;
 const debugMode = urlParams.get('debug') === 'true';
 
 if (debugMode) {
@@ -28,7 +31,14 @@ async function initializeDashboardView() {
   await bridge.connect(wsUrl);
   window.irsdkBridge = bridge;
   window.channelBridge = bridge;
+  window.pitLaneBridge = bridge;
   window.telemetryInspectorBridge = bridge;
+  // Only the per-widget toggles reach the browser view; the global hide
+  // (Alt+H) is for the overlay on the streamer's own screen.
+  window.globalKey = {
+    onToggle: () => () => undefined,
+    onWidgetToggle: (cb) => bridge.onWidgetToggle(cb),
+  };
   window.fuelCalculatorBridge = {
     getHistoricalLaps: async () => [],
     saveLap: async () => undefined,
@@ -54,14 +64,14 @@ async function initializeDashboardView() {
         profileId={profileId}
       >
         <RunningStateProvider bridge={bridge}>
-          <RendererDataProviders browser />
+          <RendererDataProviders browser widgetId={soloWidgetId} />
           {/* The lap trace widget draws nothing without its recorder: the
               recorder is what allocates the active lap and feeds it from
               telemetry. DashboardView renders the widget but mounts no
               updaters of its own. */}
           <LapTraceUpdater browser />
           <ThemeManager>
-            <DashboardView />
+            <DashboardView soloWidgetId={soloWidgetId} />
           </ThemeManager>
         </RunningStateProvider>
       </DashboardProvider>

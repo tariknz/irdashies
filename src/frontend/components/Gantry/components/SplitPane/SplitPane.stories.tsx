@@ -31,6 +31,11 @@ const meta: Meta<typeof SplitPane> = {
       control: 'text',
       description: 'Accessible name for the divider.',
     },
+    orientation: {
+      control: 'inline-radio',
+      options: ['horizontal', 'vertical'],
+      description: 'Side by side, or stacked top and bottom.',
+    },
     storageKey: {
       control: 'text',
       description: 'localStorage key the ratio is remembered under.',
@@ -61,5 +66,15 @@ export const LeftHeavy: Story = {
   args: {
     ...Even.args,
     defaultPercent: 70,
+  },
+};
+
+export const Vertical: Story = {
+  args: {
+    label: 'Example vertical split',
+    orientation: 'vertical',
+    defaultPercent: 65,
+    left: <Panel title="Top" tone="bg-slate-800/60" />,
+    right: <Panel title="Bottom" tone="bg-slate-900/60" />,
   },
 };

@@ -13,6 +13,8 @@ export interface Driver {
   CarID: number;
   CarIsPaceCar: number;
   CarIsAI: number;
+  /** Set only by sims that report AI control per driver; iRacing leaves it unset. */
+  CarIsAIControlled?: boolean;
   CarIsElectric: number;
   CarScreenName: string;
   CarScreenNameShort: string;

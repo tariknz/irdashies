@@ -11,6 +11,7 @@ import {
   useHighlightColor,
   useDriverTagMap,
   useManufacturerCounts,
+  useClassLapEstimates,
 } from './hooks';
 import {
   useGeneralSettings,
@@ -24,11 +25,13 @@ import {
   usePitStopDuration,
   usePitLaneStore,
   useFirstObservedLap,
+  useActiveSimulator,
 } from '@irdashies/context';
+import { RATING_COLUMN_IDS, simulatorHasDriverRatings } from '@irdashies/types';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 import { computeStintLap } from './components/DriverInfoRow/cells/lapCountUtils';
 
-const COLUMN_LABELS: Record<string, string> = {
+export const COLUMN_LABELS: Record<string, string> = {
   position: '',
   carNumber: '',
   driverTag: 'TAG',
@@ -54,6 +57,9 @@ const COLUMN_LABELS: Record<string, string> = {
 
 const COLUMN_ORDER = Object.keys(COLUMN_LABELS);
 
+/** Stable identity, so the iRacing path never invalidates dependent memos. */
+const EMPTY_HIDDEN_COLUMNS: ReadonlySet<string> = new Set<string>();
+
 export interface OrderedColumn {
   id: string;
   label: string;
@@ -64,12 +70,13 @@ export interface OrderedColumn {
 // Ordered list of every enabled data column, matching the exact column
 // structure (id order + colSpan) that DriverInfoRow renders as <td>s, so
 // a header row built from this list lines up with the data cells below.
-const getOrderedColumns = (
+export const getOrderedColumns = (
   config: NonNullable<ReturnType<typeof useStandingsSettings>>,
   hasAnyDriverTag: boolean,
   hasAnyCountryFlag: boolean,
   isTeamRacing: boolean,
-  hideCarManufacturer: boolean
+  hideCarManufacturer: boolean,
+  hiddenColumns: ReadonlySet<string>
 ): OrderedColumn[] => {
   const isEnabled = (value: unknown): boolean =>
     typeof value === 'object' &&
@@ -78,6 +85,9 @@ const getOrderedColumns = (
     value.enabled === true;
   const enabledColumns = new Set(
     COLUMN_ORDER.filter((id) => {
+      // Dropped before anything else: the row builder filters the same ids
+      // from the same set, so the header stays aligned with the cells.
+      if (hiddenColumns.has(id)) return false;
       const column = config?.[id as keyof typeof config];
       if (id === 'driverTag') return isEnabled(column) && hasAnyDriverTag;
       if (id === 'countryFlags') {
@@ -121,8 +131,15 @@ export const Standings = () => {
   const { isDriving } = useDrivingState();
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
 
+  const estimatedLapsEnabled =
+    !!settings?.classHeaderStyle?.estimatedLaps?.enabled;
+
   useLapTimesStoreUpdater(
-    !!(settings?.lapTimeDeltas?.enabled || settings?.avgLapTime?.enabled)
+    !!(
+      settings?.lapTimeDeltas?.enabled ||
+      settings?.avgLapTime?.enabled ||
+      estimatedLapsEnabled
+    )
   );
 
   const p2pDisplayStates = useP2PDisplayStates();
@@ -148,6 +165,12 @@ export const Standings = () => {
     settings?.avgLapTime?.numLaps ?? 5
   );
 
+  const estimatedLapsByClass = useClassLapEstimates(
+    standings,
+    estimatedLapsEnabled,
+    settings?.classHeaderStyle?.estimatedLaps?.numLaps
+  );
+
   const pitStopDurations = usePitStopDuration();
   const firstObservedLaps = useFirstObservedLap();
   const pitExitPct = usePitLaneStore((s) => s.pitExitPct);
@@ -168,6 +191,18 @@ export const Standings = () => {
   // Check if this is a team racing session
   const isTeamRacing = useWeekendInfoTeamRacing();
 
+  // Resolved here so the header and the rows below filter from one set:
+  // they build their column lists independently, and DriverClassHeader sums
+  // colSpan across the header list.
+  const simulator = useActiveSimulator();
+  const hiddenColumns = useMemo<ReadonlySet<string>>(
+    () =>
+      simulatorHasDriverRatings(simulator)
+        ? EMPTY_HIDDEN_COLUMNS
+        : new Set<string>(RATING_COLUMN_IDS),
+    [simulator]
+  );
+
   const orderedColumns = useMemo(
     () =>
       settings && settings.stylingOptions?.columnHeaders?.enabled
@@ -176,10 +211,18 @@ export const Standings = () => {
             hasAnyTag,
             !!hasAnyCountryFlag,
             !!isTeamRacing,
-            hideCarManufacturer
+            hideCarManufacturer,
+            hiddenColumns
           )
         : undefined,
-    [settings, hasAnyTag, hasAnyCountryFlag, isTeamRacing, hideCarManufacturer]
+    [
+      settings,
+      hasAnyTag,
+      hasAnyCountryFlag,
+      isTeamRacing,
+      hideCarManufacturer,
+      hiddenColumns,
+    ]
   );
 
   // Determine table border spacing based on compact mode
@@ -189,7 +232,6 @@ export const Standings = () => {
   const tableBorderSpacing = isCompact
     ? 'border-spacing-y-0'
     : 'border-spacing-y-0.5';
-  const scale = Math.min(200, Math.max(50, settings?.scale ?? 100)) / 100;
 
   if (!isSessionVisible) return <></>;
 
@@ -204,9 +246,6 @@ export const Standings = () => {
         className={`bg-slate-800/(--bg-opacity) rounded-sm text-white ${!isCompact ? 'p-2' : ''}`}
         style={{
           ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
-          width: `${100 / scale}%`,
-          transform: `scale(${scale})`,
-          transformOrigin: 'top left',
         }}
       >
         <TitleBar titleBarSettings={settings?.titleBar} />
@@ -253,6 +292,7 @@ export const Standings = () => {
                     }
                     totalDrivers={classStats?.[classId]?.total}
                     sof={classStats?.[classId]?.sof}
+                    estimatedLaps={estimatedLapsByClass[classId]}
                     highlightColor={highlightColor}
                     isMultiClass={isMultiClass}
                     colSpan={100}
@@ -314,7 +354,9 @@ export const Standings = () => {
                           }
                           name={result.driver?.name || ''}
                           teamName={
-                            settings?.teamName?.enabled && isTeamRacing
+                            isTeamRacing &&
+                            (settings?.teamName?.enabled ||
+                              settings?.driverName?.subtext === 'teamName')
                               ? result.driver?.teamName || ''
                               : undefined
                           }
@@ -385,6 +427,7 @@ export const Standings = () => {
                               : undefined
                           }
                           displayOrder={settings?.displayOrder}
+                          hiddenColumns={hiddenColumns}
                           currentSessionType={result.currentSessionType}
                           config={settings}
                           highlightColor={highlightColor}

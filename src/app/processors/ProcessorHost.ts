@@ -98,7 +98,7 @@ interface RuntimeState {
     ChannelPayloads[ProcessorChannel],
     ProcessorChannel
   >;
-  lastProcessedAt?: number;
+  tickSchedule: TickSchedule;
   lastPublishedToken?: unknown;
 }
 
@@ -108,6 +108,7 @@ interface ProcessorHostOptions {
   metrics: ProcessorMetrics;
   definitions: readonly AnyProcessorDefinition[];
   aggregateReplay?: boolean;
+  /** Frame time in seconds; tickRateHz intervals are measured against it. */
   frameClock?: (frame: Telemetry) => number | undefined;
   /**
    * Where processor failures are reported. Defaults to discarding them so this
@@ -117,11 +118,87 @@ interface ProcessorHostOptions {
   logError?: (message: string, error: unknown) => void;
 }
 
-const defaultFrameClock = (frame: Telemetry): number | undefined => {
+/** iRacing's SessionTick counts simulation ticks, 60 per second. */
+const IRACING_TICKS_PER_SECOND = 60;
+
+const sessionTickOf = (frame: Telemetry): number | undefined => {
   const sessionTick = frame.SessionTick?.value?.[0];
   return typeof sessionTick === 'number' && Number.isFinite(sessionTick)
     ? sessionTick
     : undefined;
+};
+
+/**
+ * The default frame clock: iRacing's SessionTick in seconds. SessionTick keeps
+ * advancing in a paused replay, where SessionTime stops (#706). Read as raw
+ * ticks, consecutive frames are 1 apart, longer than any 1 / tickRateHz
+ * interval, so nothing would be rate limited.
+ */
+export const iracingFrameClock = (frame: Telemetry): number | undefined => {
+  const ticks = sessionTickOf(frame);
+  return ticks === undefined ? undefined : ticks / IRACING_TICKS_PER_SECOND;
+};
+
+/** Frame clock for the LMU mapping, which fills SessionTick with seconds. */
+export const sessionSecondsFrameClock = sessionTickOf;
+
+/** When a rate-limited processor last saw a frame and is next due. */
+export interface TickSchedule {
+  lastFrameTime?: number;
+  lastRunAt?: number;
+  nextDueAt?: number;
+}
+
+/**
+ * Whether a processor declared at tickRateHz should run on a frame at
+ * frameTime (seconds), advancing its schedule when it does. Runs are spaced
+ * 1 / tickRateHz from the previous due time rather than from the frame that
+ * ran, so a poll rate that doesn't divide the tick rate still averages the
+ * declared rate instead of rounding down to whole frames (25 Hz on 60 Hz
+ * frames would otherwise run every third frame, 20 Hz). Event processors,
+ * frames without a clock and frames on a frozen clock (a paused replay whose
+ * camera still changes) always run. A seek back or a gap of more than one
+ * interval behind the due time restarts the schedule instead of bursting to
+ * catch up; a lag of less than one interval keeps the carried deadline, or a
+ * poll that alternates 33 and 50 ms would run a 25 Hz processor at 12 Hz.
+ */
+export const takeTick = (
+  schedule: TickSchedule,
+  tickRateHz: number | 'event',
+  frameTime: number | undefined
+): boolean => {
+  if (tickRateHz === 'event' || frameTime === undefined) return true;
+  // A repeated frame time means the clock is frozen (a paused session whose
+  // camera can still change), even when the first frame at that time was
+  // skipped. Frozen frames always run, as RelativeGap's paused camera
+  // change needs.
+  if (
+    frameTime === schedule.lastRunAt ||
+    frameTime === schedule.lastFrameTime
+  ) {
+    return true;
+  }
+  const previous = schedule.lastFrameTime;
+  schedule.lastFrameTime = frameTime;
+  const seekBack = previous !== undefined && frameTime < previous;
+  if (
+    !seekBack &&
+    schedule.nextDueAt !== undefined &&
+    frameTime < schedule.nextDueAt - 1e-6
+  ) {
+    return false;
+  }
+  const interval = 1 / tickRateHz;
+  const next =
+    schedule.nextDueAt === undefined
+      ? undefined
+      : schedule.nextDueAt + interval;
+  schedule.nextDueAt =
+    seekBack || next === undefined || next + interval <= frameTime
+      ? frameTime + interval
+      : next;
+  schedule.lastRunAt = frameTime;
+  return true;
 };
 
 const snapshotToken = (snapshot: unknown): unknown => {
@@ -163,11 +240,14 @@ export class ProcessorHost {
     this.bus = options.bus;
     this.metrics = options.metrics;
     this.aggregateReplay = options.aggregateReplay ?? false;
-    this.frameClock = options.frameClock ?? defaultFrameClock;
+    this.frameClock = options.frameClock ?? iracingFrameClock;
     this.logError = options.logError ?? (() => undefined);
 
     const definitions = this.sortDefinitions(options.definitions);
-    this.states = definitions.map((definition) => ({ definition }));
+    this.states = definitions.map((definition) => ({
+      definition,
+      tickSchedule: {},
+    }));
     for (const state of this.states) {
       const channel = state.definition.channel;
       this.statesByChannel.set(channel, state);
@@ -249,7 +329,7 @@ export class ProcessorHost {
       if (
         !processor ||
         !this.activeDemand.has(state.definition.channel) ||
-        !this.isDue(state, processor.tickRateHz, frameTime)
+        !takeTick(state.tickSchedule, processor.tickRateHz, frameTime)
       ) {
         continue;
       }
@@ -346,12 +426,12 @@ export class ProcessorHost {
       state.lastPublishedToken = snapshotToken(processor.snapshot());
     });
     if (!succeeded) state.processor = undefined;
-    state.lastProcessedAt = undefined;
+    state.tickSchedule = {};
   }
 
   private deactivate(state: RuntimeState): void {
     state.processor = undefined;
-    state.lastProcessedAt = undefined;
+    state.tickSchedule = {};
     state.lastPublishedToken = undefined;
     // Log the first publishes again after a reconnect, so a mid-run rejoin is
     // as traceable as the first startup.
@@ -364,7 +444,7 @@ export class ProcessorHost {
     const pausable = state.processor as
       (TelemetryProcessor<unknown> & { pause?: () => void }) | undefined;
     this.runSafely(state, 'suspend', () => pausable?.pause?.());
-    state.lastProcessedAt = undefined;
+    state.tickSchedule = {};
     state.lastPublishedToken = undefined;
     this.bus.clearSnapshot(state.definition.channel);
   }
@@ -383,7 +463,7 @@ export class ProcessorHost {
       const succeeded = this.runSafely(state, 'lifecycle', () =>
         processor.onLifecycle(event)
       );
-      state.lastProcessedAt = undefined;
+      state.tickSchedule = {};
       if (succeeded) this.publishIfChanged(state);
     }
   }
@@ -445,25 +525,6 @@ export class ProcessorHost {
         `[ProcessorHost] first populated publish on ${channel}: ${shape.description}`
       );
     }
-  }
-
-  private isDue(
-    state: RuntimeState,
-    tickRateHz: number | 'event',
-    frameTime: number | undefined
-  ): boolean {
-    if (tickRateHz === 'event' || frameTime === undefined) return true;
-    const previous = state.lastProcessedAt;
-    const interval = 1 / tickRateHz;
-    if (
-      previous !== undefined &&
-      frameTime > previous &&
-      frameTime - previous < interval - 1e-6
-    ) {
-      return false;
-    }
-    state.lastProcessedAt = frameTime;
-    return true;
   }
 
   private runSafely(

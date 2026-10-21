@@ -23,13 +23,13 @@ So one hidden, always-alive window host the HID reader and forward presses to th
 
 ## Button & d-pad combos (chords)
 
-A binding can be two or more controls held together — buttons, d-pad directions, or a mix, e.g. `gamepad:btn0+gamepad:hat0_up`. `GamepadManager` tracks every currently-held control token in a `Set`; on each press it canonicalizes the held set (sorted, joined by `+` — see `gamepadComboToken` in `gamepadToken.ts`) and looks that up directly. So a combo fires the instant its exact set of controls is held, and pressing one more unrelated control breaks the match — it is not "any superset", deliberately, to avoid one combo accidentally swallowing another that shares controls.
+A binding can be two or more controls held together — buttons, d-pad directions, or a mix, e.g. `gamepad:btn0+gamepad:hat0_up`. `GamepadManager` tracks currently-held control tokens that participate in configured bindings in a `Set`; on each press it canonicalizes the held set (sorted, joined by `+` — see `gamepadComboToken` in `gamepadToken.ts`) and looks that up directly. So a combo fires the instant its exact set of controls is held, and pressing one more control used by another configured binding breaks the match — it is not "any superset", deliberately, to avoid one combo accidentally swallowing another that shares controls.
 
 To record one: hold the controls together, then release any one of them — that release commits whatever was held as the new binding. A single press+release still binds a plain single-control accelerator (the one-control case of the same canonical-join logic), so existing single bindings are unaffected.
 
 This needs a release edge per control to know what's still held: `buttonChanges` in `hidReport.ts` reports both press and release for buttons; `hatChanges` does the same for hat directions — rolling from one direction straight to another emits a release of the old direction and a press of the new one in the same report, and centering emits a release with no matching press.
 
-One consequence worth knowing: **no subset firing.** Holding A+B+C when only A+B is bound does not fire A+B. This keeps a 2-control and a 3-control combo that share controls unambiguous, at the cost of needing an exact match.
+One consequence worth knowing: **no subset firing.** Holding A+B+C does not fire A+B when C also participates in a configured binding. Unbound controls are ignored so always-on vendor status bits and idle hats cannot block saved bindings after restart. This keeps a 2-control and a 3-control combo that share controls unambiguous, at the cost of needing an exact match.
 
 ## Hat switch (d-pad)
 

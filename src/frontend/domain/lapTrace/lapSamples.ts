@@ -264,6 +264,33 @@ export function minOver(
 }
 
 /**
+ * Maximum of `field` over the closed range [fromM, toM], the mirror of
+ * `minOver`: interior samples plus the interpolated value at each boundary, so a
+ * range starting mid-application sees the pedal at its own start rather than at
+ * the sample before it. NaN when either end is outside the driven range.
+ */
+export function maxOver(
+  samples: LapTraceSamples,
+  field: Float32Array,
+  fromM: number,
+  toM: number
+): number {
+  if (!(fromM <= toM)) return Number.NaN;
+  let max = valueAtDistance(samples, field, fromM);
+  const atEnd = valueAtDistance(samples, field, toM);
+  if (Number.isNaN(max) || Number.isNaN(atEnd)) return Number.NaN;
+  if (atEnd > max) max = atEnd;
+
+  const { distanceM } = samples;
+  const n = samples.length;
+  for (let i = indexAtOrBefore(samples, fromM) + 1; i < n; i++) {
+    if (distanceM[i] >= toM) break;
+    if (field[i] > max) max = field[i];
+  }
+  return max;
+}
+
+/**
  * Whether the lap covers [fromM, toM] continuously: both ends are inside the
  * driven range and no two consecutive samples across it are further apart
  * than `maxGapM`. A lap that skipped part of a corner must not be timed

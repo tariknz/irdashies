@@ -1,0 +1,4723 @@
+{
+  "version": "1.0",
+  "timestamp": 1791419136420,
+  "tracks": {
+    "algarve international circuit": {
+      "name": "Autódromo Internacional do Algarve",
+      "trackId": "algarve international circuit",
+      "country": "PT",
+      "length": 4635,
+      "pitentry": 0.93,
+      "pitexit": 0.03,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.07,
+          "marker": 0.09,
+          "end": 0.1,
+          "direction": 1,
+          "scale": 4,
+          "name": "Primeira"
+        },
+        {
+          "number": 2,
+          "start": 0.11,
+          "marker": 0.12,
+          "end": 0.13,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 3,
+          "start": 0.15,
+          "marker": 0.16,
+          "end": 0.17,
+          "direction": 1,
+          "scale": 1,
+          "name": "Lagos"
+        },
+        {
+          "number": 4,
+          "start": 0.18,
+          "marker": 0.19,
+          "end": 0.21,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 5,
+          "start": 0.3,
+          "marker": 0.31,
+          "end": 0.32,
+          "direction": 0,
+          "scale": 1,
+          "name": "Torre Vip"
+        },
+        {
+          "number": 6,
+          "start": 0.35,
+          "marker": 0.37,
+          "end": 0.38,
+          "direction": 0,
+          "scale": 6
+        },
+        {
+          "number": 7,
+          "start": 0.4,
+          "marker": 0.42,
+          "end": 0.43,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 8,
+          "start": 0.44,
+          "marker": 0.45,
+          "end": 0.46,
+          "direction": 1,
+          "scale": 2,
+          "name": "Samsung"
+        },
+        {
+          "number": 9,
+          "start": 0.51,
+          "marker": 0.53,
+          "end": 0.54,
+          "direction": 0,
+          "scale": 5,
+          "name": "Craig Jones"
+        },
+        {
+          "number": 10,
+          "start": 0.57,
+          "marker": 0.58,
+          "end": 0.59,
+          "direction": 1,
+          "scale": 6,
+          "name": "Portimão"
+        },
+        {
+          "number": 11,
+          "start": 0.59,
+          "marker": 0.6,
+          "end": 0.61,
+          "direction": 1,
+          "scale": 3
+        },
+        {
+          "number": 12,
+          "start": 0.62,
+          "marker": 0.65,
+          "end": 0.66,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 13,
+          "start": 0.68,
+          "marker": 0.69,
+          "end": 0.7,
+          "direction": 0,
+          "scale": 1
+        },
+        {
+          "number": 14,
+          "start": 0.72,
+          "marker": 0.74,
+          "end": 0.77,
+          "direction": 1,
+          "scale": 2,
+          "name": "Sagres"
+        },
+        {
+          "number": 15,
+          "start": 0.8,
+          "marker": 0.83,
+          "end": 0.88,
+          "direction": 1,
+          "scale": 5,
+          "name": "Galp"
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.88,
+          "end": 0.07
+        },
+        {
+          "name": "Back Straight",
+          "start": 0.2,
+          "end": 0.3
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.21
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.56
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 28
+            },
+            {
+              "name": "sng10",
+              "time": 40
+            },
+            {
+              "name": "pit",
+              "time": 82
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 28
+            },
+            {
+              "name": "sng10",
+              "time": 40
+            },
+            {
+              "name": "pit",
+              "time": 76
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 28
+            },
+            {
+              "name": "sng10",
+              "time": 40
+            },
+            {
+              "name": "pit",
+              "time": 86
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 28
+            },
+            {
+              "name": "sng10",
+              "time": 40
+            },
+            {
+              "name": "pit",
+              "time": 83
+            }
+          ]
+        }
+      ]
+    },
+    "autodromo enzo e dino ferrari": {
+      "name": "Autodromo Internazionale Enzo e Dino Ferrari",
+      "trackId": "autodromo enzo e dino ferrari",
+      "country": "IT",
+      "length": 4900,
+      "pitentry": 0.93,
+      "pitexit": 0.04,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.99,
+          "marker": 0.01,
+          "end": 0.1,
+          "direction": 1,
+          "scale": 6,
+          "name": "Variante Bassa"
+        },
+        {
+          "number": 2,
+          "start": 0.13,
+          "marker": 0.14,
+          "end": 0.15,
+          "direction": 0,
+          "scale": 4,
+          "name": "Variante Tamburello"
+        },
+        {
+          "number": 3,
+          "start": 0.15,
+          "marker": 0.15,
+          "end": 0.16,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 4,
+          "start": 0.17,
+          "marker": 0.18,
+          "end": 0.19,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 5,
+          "start": 0.26,
+          "marker": 0.27,
+          "end": 0.28,
+          "direction": 0,
+          "scale": 5,
+          "name": "Variante Villeneuve"
+        },
+        {
+          "number": 6,
+          "start": 0.28,
+          "marker": 0.29,
+          "end": 0.3,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 7,
+          "start": 0.33,
+          "marker": 0.34,
+          "end": 0.35,
+          "direction": 0,
+          "scale": 1,
+          "name": "Tosa"
+        },
+        {
+          "number": 8,
+          "start": 0.42,
+          "marker": 0.43,
+          "end": 0.44,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 9,
+          "start": 0.45,
+          "marker": 0.47,
+          "end": 0.49,
+          "direction": 0,
+          "scale": 4,
+          "name": "Piratella"
+        },
+        {
+          "number": 10,
+          "start": 0.5,
+          "marker": 0.51,
+          "end": 0.52,
+          "direction": 0,
+          "scale": 6
+        },
+        {
+          "number": 11,
+          "start": 0.54,
+          "marker": 0.55,
+          "end": 0.57,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 12,
+          "start": 0.57,
+          "marker": 0.58,
+          "end": 0.59,
+          "direction": 1,
+          "scale": 4,
+          "name": "Acque Minerali"
+        },
+        {
+          "number": 13,
+          "start": 0.59,
+          "marker": 0.59,
+          "end": 0.61,
+          "direction": 0,
+          "scale": 6
+        },
+        {
+          "number": 14,
+          "start": 0.67,
+          "marker": 0.68,
+          "end": 0.69,
+          "direction": 1,
+          "scale": 4,
+          "name": "Variante Alta"
+        },
+        {
+          "number": 15,
+          "start": 0.69,
+          "marker": 0.69,
+          "end": 0.7,
+          "direction": 0,
+          "scale": 3
+        },
+        {
+          "number": 16,
+          "start": 0.78,
+          "marker": 0.81,
+          "end": 0.82,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 17,
+          "start": 0.83,
+          "marker": 0.84,
+          "end": 0.85,
+          "direction": 0,
+          "scale": 3,
+          "name": "Rivazza"
+        },
+        {
+          "number": 18,
+          "start": 0.86,
+          "marker": 0.87,
+          "end": 0.88,
+          "direction": 0,
+          "scale": 3
+        },
+        {
+          "number": 19,
+          "start": 0.92,
+          "marker": 0.94,
+          "end": 0.96,
+          "direction": 1,
+          "scale": 6
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.96,
+          "end": 0.12
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.33
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.65
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 33
+            },
+            {
+              "name": "sng10",
+              "time": 45
+            },
+            {
+              "name": "pit",
+              "time": 87
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 33
+            },
+            {
+              "name": "sng10",
+              "time": 45
+            },
+            {
+              "name": "pit",
+              "time": 79
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 33
+            },
+            {
+              "name": "sng10",
+              "time": 45
+            },
+            {
+              "name": "pit",
+              "time": 91
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 33
+            },
+            {
+              "name": "sng10",
+              "time": 45
+            },
+            {
+              "name": "pit",
+              "time": 88
+            }
+          ]
+        }
+      ]
+    },
+    "autódromo josé carlos pace": {
+      "name": "Autódromo José Carlos Pace",
+      "trackId": "autódromo josé carlos pace",
+      "country": "BR",
+      "length": 4273,
+      "pitentry": 0.98,
+      "pitexit": 0.07,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.07,
+          "marker": 0.09,
+          "end": 0.1,
+          "direction": 0,
+          "scale": 3,
+          "name": "Senna 'S'"
+        },
+        {
+          "number": 2,
+          "start": 0.11,
+          "marker": 0.11,
+          "end": 0.12,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 3,
+          "start": 0.13,
+          "marker": 0.15,
+          "end": 0.18,
+          "direction": 0,
+          "scale": 4,
+          "name": "Curva do Sol"
+        },
+        {
+          "number": 4,
+          "start": 0.31,
+          "marker": 0.33,
+          "end": 0.35,
+          "direction": 0,
+          "scale": 4,
+          "name": "Descida do Lago"
+        },
+        {
+          "number": 5,
+          "start": 0.36,
+          "marker": 0.37,
+          "end": 0.4,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 6,
+          "start": 0.46,
+          "marker": 0.48,
+          "end": 0.49,
+          "direction": 1,
+          "scale": 5,
+          "name": "Ferradura"
+        },
+        {
+          "number": 7,
+          "start": 0.5,
+          "marker": 0.51,
+          "end": 0.52,
+          "direction": 1,
+          "scale": 5,
+          "name": "Laranjinha"
+        },
+        {
+          "number": 8,
+          "start": 0.54,
+          "marker": 0.55,
+          "end": 0.56,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 9,
+          "start": 0.56,
+          "marker": 0.58,
+          "end": 0.6,
+          "direction": 0,
+          "scale": 6,
+          "name": "Pinheirinho"
+        },
+        {
+          "number": 10,
+          "start": 0.63,
+          "marker": 0.64,
+          "end": 0.66,
+          "direction": 1,
+          "scale": 6,
+          "name": "Bico de Pato"
+        },
+        {
+          "number": 11,
+          "start": 0.68,
+          "marker": 0.69,
+          "end": 0.72,
+          "direction": 9,
+          "scale": 5,
+          "name": "Mergulho"
+        },
+        {
+          "number": 12,
+          "start": 0.75,
+          "marker": 0.76,
+          "end": 0.77,
+          "direction": 0,
+          "scale": 3,
+          "name": "Junção"
+        },
+        {
+          "number": 13,
+          "start": 0.78,
+          "marker": 0.79,
+          "end": 0.82,
+          "direction": 0,
+          "scale": 6
+        },
+        {
+          "number": 14,
+          "start": 0.84,
+          "marker": 0.86,
+          "end": 0.88,
+          "direction": 0,
+          "scale": 6,
+          "name": "Subida dos Boxes"
+        },
+        {
+          "number": 15,
+          "start": 0.92,
+          "marker": 0.94,
+          "end": 0.9,
+          "direction": 0,
+          "scale": 6,
+          "name": "Arquibancadas"
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.96,
+          "end": 0.06
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.3
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.74
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 23
+            },
+            {
+              "name": "sng10",
+              "time": 35
+            },
+            {
+              "name": "pit",
+              "time": 77
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 23
+            },
+            {
+              "name": "sng10",
+              "time": 35
+            },
+            {
+              "name": "pit",
+              "time": 69
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 23
+            },
+            {
+              "name": "sng10",
+              "time": 35
+            },
+            {
+              "name": "pit",
+              "time": 81
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 23
+            },
+            {
+              "name": "sng10",
+              "time": 35
+            },
+            {
+              "name": "pit",
+              "time": 78
+            }
+          ]
+        }
+      ]
+    },
+    "autodromo nazionale monza": {
+      "name": "Autodromo Nazionale Monza",
+      "trackId": "autodromo nazionale monza",
+      "country": "IT",
+      "length": 5780,
+      "pitentry": 0.98,
+      "pitexit": 0.05,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.5,
+          "marker": 0.16,
+          "end": 0.16,
+          "direction": 1,
+          "scale": 4,
+          "name": "Variante del Rettifilo"
+        },
+        {
+          "number": 2,
+          "start": 0.16,
+          "marker": 0.17,
+          "end": 0.17,
+          "direction": 0,
+          "scale": 3
+        },
+        {
+          "number": 3,
+          "start": 0.21,
+          "marker": 0.24,
+          "end": 0.29,
+          "direction": 1,
+          "scale": 5,
+          "name": "Curva Grande"
+        },
+        {
+          "number": 4,
+          "start": 0.36,
+          "marker": 0.37,
+          "end": 0.37,
+          "direction": 0,
+          "scale": 4,
+          "name": "Variante della Roggia"
+        },
+        {
+          "number": 5,
+          "start": 0.37,
+          "marker": 0.38,
+          "end": 0.38,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 6,
+          "start": 0.42,
+          "marker": 0.44,
+          "end": 0.45,
+          "direction": 1,
+          "scale": 3,
+          "name": "Curve di Lesmo"
+        },
+        {
+          "number": 7,
+          "start": 0.49,
+          "marker": 0.49,
+          "end": 0.5,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 8,
+          "start": 0.68,
+          "marker": 0.68,
+          "end": 0.69,
+          "direction": 0,
+          "scale": 5,
+          "name": "Variante Ascari"
+        },
+        {
+          "number": 9,
+          "start": 0.69,
+          "marker": 0.69,
+          "end": 0.7,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 10,
+          "start": 0.71,
+          "marker": 0.71,
+          "end": 0.72,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 11,
+          "start": 0.88,
+          "marker": 0.9,
+          "end": 0.95,
+          "direction": 1,
+          "scale": 3,
+          "name": "Curva Parabolica"
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.96,
+          "end": 0.15
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.35
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.65
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 79
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 71
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 83
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 80
+            }
+          ]
+        }
+      ]
+    },
+    "bahrain endurance circuit": {
+      "name": "Bahrain International Circuit (Endurance)",
+      "trackId": "bahrain endurance circuit",
+      "country": "BH",
+      "length": 6256,
+      "pitentry": 0.99,
+      "pitexit": 0.07,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.11,
+          "marker": 0.12,
+          "end": 0.12,
+          "direction": 1,
+          "scale": 1
+        },
+        {
+          "number": 2,
+          "start": 0.12,
+          "marker": 0.13,
+          "end": 0.14,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 3,
+          "start": 0.14,
+          "marker": 0.15,
+          "end": 0.17,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 4,
+          "start": 0.23,
+          "marker": 0.24,
+          "end": 0.25,
+          "direction": 1,
+          "scale": 2
+        },
+        {
+          "number": 5,
+          "start": 0.25,
+          "marker": 0.27,
+          "end": 0.28,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 6,
+          "start": 0.29,
+          "marker": 0.31,
+          "end": 0.32,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 7,
+          "start": 0.32,
+          "marker": 0.32,
+          "end": 0.33,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 8,
+          "start": 0.33,
+          "marker": 0.33,
+          "end": 0.34,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 9,
+          "start": 0.34,
+          "marker": 0.24,
+          "end": 0.35,
+          "direction": 1,
+          "scale": 1
+        },
+        {
+          "number": 10,
+          "start": 0.35,
+          "marker": 0.35,
+          "end": 0.36,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 11,
+          "start": 0.37,
+          "marker": 0.37,
+          "end": 0.38,
+          "direction": 1,
+          "scale": 3
+        },
+        {
+          "number": 12,
+          "start": 0.38,
+          "marker": 0.39,
+          "end": 0.39,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 13,
+          "start": 0.39,
+          "marker": 0.4,
+          "end": 0.4,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 14,
+          "start": 0.41,
+          "marker": 0.42,
+          "end": 0.43,
+          "direction": 0,
+          "scale": 2
+        },
+        {
+          "number": 15,
+          "start": 0.43,
+          "marker": 0.44,
+          "end": 0.45,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 16,
+          "start": 0.45,
+          "marker": 0.46,
+          "end": 0.47,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 17,
+          "start": 0.49,
+          "marker": 0.5,
+          "end": 0.51,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 18,
+          "start": 0.55,
+          "marker": 0.56,
+          "end": 0.57,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 19,
+          "start": 0.57,
+          "marker": 0.58,
+          "end": 0.58,
+          "direction": 0,
+          "scale": 1
+        },
+        {
+          "number": 20,
+          "start": 0.68,
+          "marker": 0.69,
+          "end": 0.7,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 21,
+          "start": 0.73,
+          "marker": 0.75,
+          "end": 0.77,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 22,
+          "start": 0.78,
+          "marker": 0.79,
+          "end": 0.81,
+          "direction": 1,
+          "scale": 3
+        },
+        {
+          "number": 23,
+          "start": 0.91,
+          "marker": 0.92,
+          "end": 0.93,
+          "direction": 1,
+          "scale": 3
+        },
+        {
+          "number": 24,
+          "start": 0.93,
+          "marker": 0.94,
+          "end": 0.95,
+          "direction": 1,
+          "scale": 6
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.95,
+          "end": 0.11
+        },
+        {
+          "name": "Back Straight",
+          "start": 0.58,
+          "end": 0.68
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.36
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.53
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 79
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 71
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 83
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 80
+            }
+          ]
+        }
+      ]
+    },
+    "bahrain international circuit": {
+      "name": "Bahrain International Circuit",
+      "trackId": "bahrain international circuit",
+      "country": "BH",
+      "length": 5386,
+      "pitentry": 0.99,
+      "pitexit": 0.07,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.13,
+          "marker": 0.14,
+          "end": 0.14,
+          "direction": 1,
+          "scale": 1
+        },
+        {
+          "number": 2,
+          "start": 0.15,
+          "marker": 0.16,
+          "end": 0.16,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 3,
+          "start": 0.16,
+          "marker": 0.17,
+          "end": 0.19,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 4,
+          "start": 0.27,
+          "marker": 0.28,
+          "end": 0.29,
+          "direction": 1,
+          "scale": 2
+        },
+        {
+          "number": 5,
+          "start": 0.32,
+          "marker": 0.33,
+          "end": 0.34,
+          "direction": 0,
+          "scale": 6
+        },
+        {
+          "number": 6,
+          "start": 0.35,
+          "marker": 0.36,
+          "end": 0.37,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 7,
+          "start": 0.37,
+          "marker": 0.38,
+          "end": 0.39,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 8,
+          "start": 0.41,
+          "marker": 0.42,
+          "end": 0.43,
+          "direction": 1,
+          "scale": 1
+        },
+        {
+          "number": 9,
+          "start": 0.48,
+          "marker": 0.49,
+          "end": 0.5,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 10,
+          "start": 0.5,
+          "marker": 0.51,
+          "end": 0.52,
+          "direction": 0,
+          "scale": 1
+        },
+        {
+          "number": 11,
+          "start": 0.63,
+          "marker": 0.64,
+          "end": 0.66,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 12,
+          "start": 0.68,
+          "marker": 0.7,
+          "end": 0.73,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 13,
+          "start": 0.74,
+          "marker": 0.76,
+          "end": 0.77,
+          "direction": 1,
+          "scale": 3
+        },
+        {
+          "number": 14,
+          "start": 0.9,
+          "marker": 0.91,
+          "end": 0.92,
+          "direction": 1,
+          "scale": 3
+        },
+        {
+          "number": 15,
+          "start": 0.92,
+          "marker": 0.93,
+          "end": 0.94,
+          "direction": 1,
+          "scale": 6
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.94,
+          "end": 0.11
+        },
+        {
+          "name": "Back Straight",
+          "start": 0.52,
+          "end": 0.63
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.32
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.73
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 79
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 71
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 83
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 80
+            }
+          ]
+        }
+      ]
+    },
+    "bahrain outer circuit": {
+      "name": "Bahrain International Circuit (Outer)",
+      "trackId": "bahrain outer circuit",
+      "country": "BH",
+      "length": 3511,
+      "pitentry": 0.99,
+      "pitexit": 0.11,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.19,
+          "marker": 0.2,
+          "end": 0.22,
+          "direction": 1,
+          "scale": 1
+        },
+        {
+          "number": 2,
+          "start": 0.22,
+          "marker": 0.23,
+          "end": 0.25,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 3,
+          "start": 0.25,
+          "marker": 0.27,
+          "end": 0.28,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 4,
+          "start": 0.41,
+          "marker": 0.43,
+          "end": 0.45,
+          "direction": 1,
+          "scale": 2
+        },
+        {
+          "number": 5,
+          "start": 0.45,
+          "marker": 0.46,
+          "end": 0.48,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 6,
+          "start": 0.52,
+          "marker": 0.54,
+          "end": 0.56,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 7,
+          "start": 0.56,
+          "marker": 0.57,
+          "end": 0.58,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 8,
+          "start": 0.58,
+          "marker": 0.59,
+          "end": 0.6,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 9,
+          "start": 0.63,
+          "marker": 0.65,
+          "end": 0.67,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 10,
+          "start": 0.84,
+          "marker": 0.86,
+          "end": 0.87,
+          "direction": 1,
+          "scale": 3
+        },
+        {
+          "number": 11,
+          "start": 0.87,
+          "marker": 0.88,
+          "end": 0.9,
+          "direction": 1,
+          "scale": 6
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.9,
+          "end": 0.18
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.48
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.67
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 79
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 71
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 83
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 80
+            }
+          ]
+        }
+      ]
+    },
+    "bahrain paddock circuit": {
+      "name": "Bahrain International Circuit (Paddock)",
+      "trackId": "bahrain paddock circuit",
+      "country": "BH",
+      "length": 3511,
+      "pitentry": 0.98,
+      "pitexit": 0.1,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.18,
+          "marker": 0.19,
+          "end": 0.21,
+          "direction": 1,
+          "scale": 1
+        },
+        {
+          "number": 2,
+          "start": 0.21,
+          "marker": 0.22,
+          "end": 0.23,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 3,
+          "start": 0.23,
+          "marker": 0.24,
+          "end": 0.25,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 4,
+          "start": 0.25,
+          "marker": 0.26,
+          "end": 0.27,
+          "direction": 1,
+          "scale": 2
+        },
+        {
+          "number": 5,
+          "start": 0.28,
+          "marker": 0.29,
+          "end": 0.31,
+          "direction": 0,
+          "scale": 6
+        },
+        {
+          "number": 6,
+          "start": 0.48,
+          "marker": 0.49,
+          "end": 0.51,
+          "direction": 0,
+          "scale": 3
+        },
+        {
+          "number": 7,
+          "start": 0.56,
+          "marker": 0.59,
+          "end": 0.62,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 8,
+          "start": 0.64,
+          "marker": 0.67,
+          "end": 0.6,
+          "direction": 1,
+          "scale": 2
+        },
+        {
+          "number": 9,
+          "start": 0.86,
+          "marker": 0.87,
+          "end": 0.88,
+          "direction": 1,
+          "scale": 3
+        },
+        {
+          "number": 10,
+          "start": 0.88,
+          "marker": 0.89,
+          "end": 0.91,
+          "direction": 1,
+          "scale": 6
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.91,
+          "end": 0.18
+        },
+        {
+          "name": "Main Straight",
+          "start": 0.31,
+          "end": 0.47
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.33
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.63
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 79
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 71
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 83
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 80
+            }
+          ]
+        }
+      ]
+    },
+    "circuit de la sarthe mulsanne": {
+      "name": "Circuit de la Sarthe (Mulsanne)",
+      "trackId": "circuit de la sarthe mulsanne",
+      "country": "FR",
+      "length": 1360,
+      "pitentry": 0.99,
+      "pitexit": 0.03,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.03,
+          "marker": 0.04,
+          "end": 0.05,
+          "direction": 1,
+          "scale": 5,
+          "name": "Courbe Dunlop"
+        },
+        {
+          "number": 2,
+          "start": 0.06,
+          "marker": 0.06,
+          "end": 0.06,
+          "direction": 0,
+          "scale": 4,
+          "name": "Chicane Dunlop"
+        },
+        {
+          "number": 3,
+          "start": 0.06,
+          "marker": 0.06,
+          "end": 0.07,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 4,
+          "start": 0.1,
+          "marker": 0.11,
+          "end": 0.11,
+          "direction": 0,
+          "scale": 4,
+          "name": "Esses de la Foret"
+        },
+        {
+          "number": 5,
+          "start": 0.11,
+          "marker": 0.12,
+          "end": 0.12,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 6,
+          "start": 0.14,
+          "marker": 0.14,
+          "end": 0.15,
+          "direction": 1,
+          "scale": 4,
+          "name": "Virage du Tertre Rouge"
+        },
+        {
+          "number": 7,
+          "start": 0.56,
+          "marker": 0.56,
+          "end": 0.57,
+          "direction": 1,
+          "scale": 2,
+          "name": "Virage de Mulsanne"
+        },
+        {
+          "number": 8,
+          "start": 0.7,
+          "marker": 0.7,
+          "end": 0.71,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 9,
+          "start": 0.72,
+          "marker": 0.72,
+          "end": 0.73,
+          "direction": 0,
+          "scale": 4,
+          "name": "Virage d'Indianapolis"
+        },
+        {
+          "number": 10,
+          "start": 0.74,
+          "marker": 0.74,
+          "end": 0.75,
+          "direction": 1,
+          "scale": 3,
+          "name": "Virage d'Arange"
+        },
+        {
+          "number": 11,
+          "start": 0.81,
+          "marker": 0.82,
+          "end": 0.83,
+          "direction": 0,
+          "scale": 6
+        },
+        {
+          "number": 12,
+          "start": 0.83,
+          "marker": 0.84,
+          "end": 0.85,
+          "direction": 1,
+          "scale": 5,
+          "name": "Virage Porsche"
+        },
+        {
+          "number": 13,
+          "start": 0.86,
+          "marker": 0.87,
+          "end": 0.88,
+          "direction": 0,
+          "scale": 5,
+          "name": "Virage du Pont"
+        },
+        {
+          "number": 14,
+          "start": 0.89,
+          "marker": 0.89,
+          "end": 0.9,
+          "direction": 1,
+          "scale": 5,
+          "name": "Virage du Karting"
+        },
+        {
+          "number": 15,
+          "start": 0.91,
+          "marker": 0.91,
+          "end": 0.92,
+          "direction": 0,
+          "scale": 5,
+          "name": "Virage du Corvette"
+        },
+        {
+          "number": 16,
+          "start": 0.97,
+          "marker": 0.97,
+          "end": 0.97,
+          "direction": 0,
+          "scale": 4,
+          "name": "Chicane Ford"
+        },
+        {
+          "number": 17,
+          "start": 0.97,
+          "marker": 0.98,
+          "end": 0.98,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 18,
+          "start": 0.98,
+          "marker": 0.98,
+          "end": 0.98,
+          "direction": 0,
+          "scale": 4,
+          "name": "Chicane du Raccordement"
+        },
+        {
+          "number": 19,
+          "start": 0.98,
+          "marker": 0.99,
+          "end": 0.99,
+          "direction": 1,
+          "scale": 4
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.99,
+          "end": 0.02
+        },
+        {
+          "name": "Hunaudières",
+          "start": 0.16,
+          "end": 0.055
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.14
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.56
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 32
+            },
+            {
+              "name": "sng10",
+              "time": 44
+            },
+            {
+              "name": "pit",
+              "time": 86
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 32
+            },
+            {
+              "name": "sng10",
+              "time": 44
+            },
+            {
+              "name": "pit",
+              "time": 78
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 32
+            },
+            {
+              "name": "sng10",
+              "time": 44
+            },
+            {
+              "name": "pit",
+              "time": 97
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 32
+            },
+            {
+              "name": "sng10",
+              "time": 44
+            },
+            {
+              "name": "pit",
+              "time": 87
+            }
+          ]
+        }
+      ]
+    },
+    "circuit de la sarthe": {
+      "name": "Circuit de la Sarthe",
+      "trackId": "circuit de la sarthe",
+      "country": "FR",
+      "length": 13623,
+      "pitentry": 0.99,
+      "pitexit": 0.03,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.02,
+          "marker": 0.05,
+          "end": 0.06,
+          "direction": 1,
+          "scale": 5,
+          "name": "Courbe Dunlop"
+        },
+        {
+          "number": 2,
+          "start": 0.06,
+          "marker": 0.06,
+          "end": 0.06,
+          "direction": 0,
+          "scale": 4,
+          "name": "Chicane Dunlop"
+        },
+        {
+          "number": 3,
+          "start": 0.06,
+          "marker": 0.07,
+          "end": 0.07,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 4,
+          "start": 0.1,
+          "marker": 0.11,
+          "end": 0.11,
+          "direction": 0,
+          "scale": 4,
+          "name": "Esses de la Foret"
+        },
+        {
+          "number": 5,
+          "start": 0.11,
+          "marker": 0.12,
+          "end": 0.12,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 6,
+          "start": 0.14,
+          "marker": 0.14,
+          "end": 0.15,
+          "direction": 1,
+          "scale": 4,
+          "name": "Virage du Tertre Rouge"
+        },
+        {
+          "number": 7,
+          "start": 0.29,
+          "marker": 0.3,
+          "end": 0.32,
+          "direction": 1,
+          "scale": 2,
+          "name": "Chicane Daytona"
+        },
+        {
+          "number": 8,
+          "start": 0.44,
+          "marker": 0.45,
+          "end": 0.46,
+          "direction": 0,
+          "scale": 2,
+          "name": "Chicane Michelin"
+        },
+        {
+          "number": 9,
+          "start": 0.56,
+          "marker": 0.57,
+          "end": 0.57,
+          "direction": 1,
+          "scale": 2,
+          "name": "Virage de Mulsanne"
+        },
+        {
+          "number": 10,
+          "start": 0.7,
+          "marker": 0.7,
+          "end": 0.71,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 11,
+          "start": 0.72,
+          "marker": 0.72,
+          "end": 0.73,
+          "direction": 0,
+          "scale": 4,
+          "name": "Virage d'Indianapolis"
+        },
+        {
+          "number": 12,
+          "start": 0.74,
+          "marker": 0.74,
+          "end": 0.75,
+          "direction": 1,
+          "scale": 3,
+          "name": "Virage d'Arange"
+        },
+        {
+          "number": 13,
+          "start": 0.82,
+          "marker": 0.82,
+          "end": 0.83,
+          "direction": 0,
+          "scale": 6
+        },
+        {
+          "number": 14,
+          "start": 0.84,
+          "marker": 0.85,
+          "end": 0.85,
+          "direction": 1,
+          "scale": 5,
+          "name": "Virage Porsche"
+        },
+        {
+          "number": 15,
+          "start": 0.86,
+          "marker": 0.87,
+          "end": 0.88,
+          "direction": 0,
+          "scale": 5,
+          "name": "Virage du Pont"
+        },
+        {
+          "number": 16,
+          "start": 0.88,
+          "marker": 0.89,
+          "end": 0.9,
+          "direction": 1,
+          "scale": 5,
+          "name": "Virage du Karting"
+        },
+        {
+          "number": 17,
+          "start": 0.91,
+          "marker": 0.91,
+          "end": 0.92,
+          "direction": 0,
+          "scale": 5,
+          "name": "Virage du Corvette"
+        },
+        {
+          "number": 18,
+          "start": 0.97,
+          "marker": 0.97,
+          "end": 0.97,
+          "direction": 0,
+          "scale": 4,
+          "name": "Chicane Ford"
+        },
+        {
+          "number": 19,
+          "start": 0.97,
+          "marker": 0.98,
+          "end": 0.98,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 20,
+          "start": 0.98,
+          "marker": 0.98,
+          "end": 0.98,
+          "direction": 0,
+          "scale": 4,
+          "name": "Chicane du Raccordement"
+        },
+        {
+          "number": 21,
+          "start": 0.98,
+          "marker": 0.99,
+          "end": 0.99,
+          "direction": 1,
+          "scale": 4
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.99,
+          "end": 0.02
+        },
+        {
+          "name": "Hunaudières",
+          "start": 0.16,
+          "end": 0.029
+        },
+        {
+          "name": "Hunaudières",
+          "start": 0.32,
+          "end": 0.043
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.14
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.57
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 32
+            },
+            {
+              "name": "sng10",
+              "time": 44
+            },
+            {
+              "name": "pit",
+              "time": 86
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 32
+            },
+            {
+              "name": "sng10",
+              "time": 44
+            },
+            {
+              "name": "pit",
+              "time": 78
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 32
+            },
+            {
+              "name": "sng10",
+              "time": 44
+            },
+            {
+              "name": "pit",
+              "time": 97
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 32
+            },
+            {
+              "name": "sng10",
+              "time": 44
+            },
+            {
+              "name": "pit",
+              "time": 87
+            }
+          ]
+        }
+      ]
+    },
+    "circuit de spa-francorchamps endurance": {
+      "name": "Circuit de Spa-Francorchamps (Endurance)",
+      "trackId": "circuit de spa-francorchamps endurance",
+      "country": "BE",
+      "length": 6981,
+      "pitentry": 0.97,
+      "pitexit": 0.11,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.03,
+          "marker": 0.04,
+          "end": 0.05,
+          "direction": 1,
+          "scale": 1,
+          "name": "La Source"
+        },
+        {
+          "number": 2,
+          "start": 0.06,
+          "marker": 0.08,
+          "end": 0.1,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 3,
+          "start": 0.13,
+          "marker": 0.13,
+          "end": 0.14,
+          "direction": 0,
+          "scale": 5,
+          "name": "Eau Rouge"
+        },
+        {
+          "number": 4,
+          "start": 0.14,
+          "marker": 0.15,
+          "end": 0.16,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 5,
+          "start": 0.16,
+          "marker": 0.17,
+          "end": 0.18,
+          "direction": 0,
+          "scale": 5,
+          "name": "Raidillon"
+        },
+        {
+          "number": 6,
+          "start": 0.2,
+          "marker": 0.21,
+          "end": 0.22,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 7,
+          "start": 0.32,
+          "marker": 0.33,
+          "end": 0.33,
+          "direction": 1,
+          "scale": 4,
+          "name": "Les Combes"
+        },
+        {
+          "number": 8,
+          "start": 0.33,
+          "marker": 0.34,
+          "end": 0.35,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 9,
+          "start": 0.35,
+          "marker": 0.36,
+          "end": 0.37,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 10,
+          "start": 0.4,
+          "marker": 0.42,
+          "end": 0.44,
+          "direction": 1,
+          "scale": 1,
+          "name": "Bruxelles"
+        },
+        {
+          "number": 11,
+          "start": 0.44,
+          "marker": 0.45,
+          "end": 0.46,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 12,
+          "start": 0.52,
+          "marker": 0.54,
+          "end": 0.58,
+          "direction": 0,
+          "scale": 4,
+          "name": "Pouhon"
+        },
+        {
+          "number": 13,
+          "start": 0.62,
+          "marker": 0.63,
+          "end": 0.64,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 14,
+          "start": 0.64,
+          "marker": 0.65,
+          "end": 0.66,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 15,
+          "start": 0.68,
+          "marker": 0.69,
+          "end": 0.7,
+          "direction": 1,
+          "scale": 3,
+          "name": "Campus"
+        },
+        {
+          "number": 16,
+          "start": 0.71,
+          "marker": 0.72,
+          "end": 0.73,
+          "direction": 1,
+          "scale": 4,
+          "name": "Stavelot"
+        },
+        {
+          "number": 17,
+          "start": 0.8,
+          "marker": 0.82,
+          "end": 0.84,
+          "direction": 0,
+          "scale": 1
+        },
+        {
+          "number": 18,
+          "start": 0.85,
+          "marker": 0.86,
+          "end": 0.88,
+          "direction": 0,
+          "scale": 5,
+          "name": "Blanchimont"
+        },
+        {
+          "number": 19,
+          "start": 0.94,
+          "marker": 0.95,
+          "end": 0.95,
+          "direction": 1,
+          "scale": 1,
+          "name": "Chicane"
+        },
+        {
+          "number": 20,
+          "start": 0.95,
+          "marker": 0.96,
+          "end": 0.96,
+          "direction": 0,
+          "scale": 1
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.96,
+          "end": 0.03
+        },
+        {
+          "name": "Kemmel Straight",
+          "start": 0.22,
+          "end": 0.32
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.31
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.71
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 60
+            },
+            {
+              "name": "sng10",
+              "time": 72
+            },
+            {
+              "name": "pit",
+              "time": 114
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 60
+            },
+            {
+              "name": "sng10",
+              "time": 72
+            },
+            {
+              "name": "pit",
+              "time": 106
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 60
+            },
+            {
+              "name": "sng10",
+              "time": 72
+            },
+            {
+              "name": "pit",
+              "time": 118
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 60
+            },
+            {
+              "name": "sng10",
+              "time": 72
+            },
+            {
+              "name": "pit",
+              "time": 115
+            }
+          ]
+        }
+      ]
+    },
+    "circuit de spa-francorchamps": {
+      "name": "Circuit de Spa-Francorchamps",
+      "trackId": "circuit de spa-francorchamps",
+      "country": "BE",
+      "length": 6981,
+      "pitentry": 0.97,
+      "pitexit": 0.03,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.03,
+          "marker": 0.04,
+          "end": 0.05,
+          "direction": 1,
+          "scale": 1,
+          "name": "La Source"
+        },
+        {
+          "number": 2,
+          "start": 0.06,
+          "marker": 0.08,
+          "end": 0.1,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 3,
+          "start": 0.13,
+          "marker": 0.13,
+          "end": 0.14,
+          "direction": 0,
+          "scale": 5,
+          "name": "Eau Rouge"
+        },
+        {
+          "number": 4,
+          "start": 0.14,
+          "marker": 0.15,
+          "end": 0.16,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 5,
+          "start": 0.16,
+          "marker": 0.17,
+          "end": 0.18,
+          "direction": 0,
+          "scale": 5,
+          "name": "Raidillon"
+        },
+        {
+          "number": 6,
+          "start": 0.2,
+          "marker": 0.21,
+          "end": 0.22,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 7,
+          "start": 0.32,
+          "marker": 0.33,
+          "end": 0.33,
+          "direction": 1,
+          "scale": 4,
+          "name": "Les Combes"
+        },
+        {
+          "number": 8,
+          "start": 0.33,
+          "marker": 0.34,
+          "end": 0.35,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 9,
+          "start": 0.35,
+          "marker": 0.36,
+          "end": 0.37,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 10,
+          "start": 0.4,
+          "marker": 0.42,
+          "end": 0.44,
+          "direction": 1,
+          "scale": 1,
+          "name": "Bruxelles"
+        },
+        {
+          "number": 11,
+          "start": 0.44,
+          "marker": 0.45,
+          "end": 0.46,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 12,
+          "start": 0.52,
+          "marker": 0.54,
+          "end": 0.58,
+          "direction": 0,
+          "scale": 4,
+          "name": "Pouhon"
+        },
+        {
+          "number": 13,
+          "start": 0.62,
+          "marker": 0.63,
+          "end": 0.64,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 14,
+          "start": 0.64,
+          "marker": 0.65,
+          "end": 0.66,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 15,
+          "start": 0.68,
+          "marker": 0.69,
+          "end": 0.7,
+          "direction": 1,
+          "scale": 3,
+          "name": "Campus"
+        },
+        {
+          "number": 16,
+          "start": 0.71,
+          "marker": 0.72,
+          "end": 0.73,
+          "direction": 1,
+          "scale": 4,
+          "name": "Stavelot"
+        },
+        {
+          "number": 17,
+          "start": 0.8,
+          "marker": 0.82,
+          "end": 0.84,
+          "direction": 0,
+          "scale": 1
+        },
+        {
+          "number": 18,
+          "start": 0.85,
+          "marker": 0.86,
+          "end": 0.88,
+          "direction": 0,
+          "scale": 5,
+          "name": "Blanchimont"
+        },
+        {
+          "number": 19,
+          "start": 0.94,
+          "marker": 0.95,
+          "end": 0.95,
+          "direction": 1,
+          "scale": 1,
+          "name": "Chicane"
+        },
+        {
+          "number": 20,
+          "start": 0.95,
+          "marker": 0.96,
+          "end": 0.96,
+          "direction": 0,
+          "scale": 1
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.96,
+          "end": 0.03
+        },
+        {
+          "name": "Kemmel Straight",
+          "start": 0.22,
+          "end": 0.32
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.31
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.71
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 23
+            },
+            {
+              "name": "sng10",
+              "time": 35
+            },
+            {
+              "name": "pit",
+              "time": 77
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 23
+            },
+            {
+              "name": "sng10",
+              "time": 35
+            },
+            {
+              "name": "pit",
+              "time": 69
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 23
+            },
+            {
+              "name": "sng10",
+              "time": 35
+            },
+            {
+              "name": "pit",
+              "time": 81
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 23
+            },
+            {
+              "name": "sng10",
+              "time": 35
+            },
+            {
+              "name": "pit",
+              "time": 78
+            }
+          ]
+        }
+      ]
+    },
+    "circuit of the americas": {
+      "name": "Circuit of the Americas",
+      "trackId": "circuit of the americas",
+      "country": "US",
+      "length": 5497,
+      "pitentry": 0.99,
+      "pitexit": 0.07,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.1,
+          "marker": 0.12,
+          "end": 0.13,
+          "direction": 0,
+          "scale": 1
+        },
+        {
+          "number": 2,
+          "start": 0.14,
+          "marker": 0.16,
+          "end": 0.18,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 3,
+          "start": 0.2,
+          "marker": 0.21,
+          "end": 0.22,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 4,
+          "start": 0.22,
+          "marker": 0.23,
+          "end": 0.24,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 5,
+          "start": 0.24,
+          "marker": 0.25,
+          "end": 0.26,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 6,
+          "start": 0.26,
+          "marker": 0.27,
+          "end": 0.29,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 7,
+          "start": 0.3,
+          "marker": 0.31,
+          "end": 0.32,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 8,
+          "start": 0.33,
+          "marker": 0.34,
+          "end": 0.35,
+          "direction": 1,
+          "scale": 2
+        },
+        {
+          "number": 9,
+          "start": 0.35,
+          "marker": 0.36,
+          "end": 0.37,
+          "direction": 0,
+          "scale": 3
+        },
+        {
+          "number": 10,
+          "start": 0.38,
+          "marker": 0.39,
+          "end": 0.4,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 11,
+          "start": 0.45,
+          "marker": 0.47,
+          "end": 0.48,
+          "direction": 0,
+          "scale": 1
+        },
+        {
+          "number": 12,
+          "start": 0.68,
+          "marker": 0.69,
+          "end": 0.7,
+          "direction": 0,
+          "scale": 1
+        },
+        {
+          "number": 13,
+          "start": 0.71,
+          "marker": 0.72,
+          "end": 0.73,
+          "direction": 1,
+          "scale": 2
+        },
+        {
+          "number": 14,
+          "start": 0.73,
+          "marker": 0.74,
+          "end": 0.75,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 15,
+          "start": 0.75,
+          "marker": 0.76,
+          "end": 0.77,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 16,
+          "start": 0.77,
+          "marker": 0.78,
+          "end": 0.79,
+          "direction": 0,
+          "scale": 2
+        },
+        {
+          "number": 17,
+          "start": 0.8,
+          "marker": 0.81,
+          "end": 0.83,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 18,
+          "start": 0.85,
+          "marker": 0.86,
+          "end": 0.88,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 19,
+          "start": 0.9,
+          "marker": 0.91,
+          "end": 0.92,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 20,
+          "start": 0.95,
+          "marker": 0.96,
+          "end": 0.98,
+          "direction": 0,
+          "scale": 2
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.98,
+          "end": 0.1
+        },
+        {
+          "name": "Back Straight",
+          "start": 0.48,
+          "end": 0.67
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.3
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.7
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 79
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 71
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 83
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 80
+            }
+          ]
+        }
+      ]
+    },
+    "cota national circuit": {
+      "name": "Circuit of the Americas (National)",
+      "trackId": "cota national circuit",
+      "country": "US",
+      "length": 3706,
+      "pitentry": 0.99,
+      "pitexit": 0.11,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.15,
+          "marker": 0.17,
+          "end": 0.19,
+          "direction": 0,
+          "scale": 1
+        },
+        {
+          "number": 2,
+          "start": 0.21,
+          "marker": 0.24,
+          "end": 0.27,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 3,
+          "start": 0.29,
+          "marker": 0.31,
+          "end": 0.32,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 4,
+          "start": 0.33,
+          "marker": 0.34,
+          "end": 0.35,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 5,
+          "start": 0.35,
+          "marker": 0.36,
+          "end": 0.37,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 6,
+          "start": 0.37,
+          "marker": 0.39,
+          "end": 0.4,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 7,
+          "start": 0.4,
+          "marker": 0.41,
+          "end": 0.42,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 8,
+          "start": 0.43,
+          "marker": 0.44,
+          "end": 0.45,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 9,
+          "start": 0.45,
+          "marker": 0.45,
+          "end": 0.45,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 10,
+          "start": 0.45,
+          "marker": 0.46,
+          "end": 0.47,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 11,
+          "start": 0.52,
+          "marker": 0.53,
+          "end": 0.54,
+          "direction": 0,
+          "scale": 1
+        },
+        {
+          "number": 12,
+          "start": 0.58,
+          "marker": 0.59,
+          "end": 0.6,
+          "direction": 1,
+          "scale": 1
+        },
+        {
+          "number": 13,
+          "start": 0.61,
+          "marker": 0.62,
+          "end": 0.63,
+          "direction": 1,
+          "scale": 3
+        },
+        {
+          "number": 14,
+          "start": 0.64,
+          "marker": 0.65,
+          "end": 0.66,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 15,
+          "start": 0.66,
+          "marker": 0.68,
+          "end": 0.69,
+          "direction": 0,
+          "scale": 2
+        },
+        {
+          "number": 16,
+          "start": 0.72,
+          "marker": 0.73,
+          "end": 0.74,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 17,
+          "start": 0.74,
+          "marker": 0.75,
+          "end": 0.76,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 18,
+          "start": 0.77,
+          "marker": 0.79,
+          "end": 0.82,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 19,
+          "start": 0.86,
+          "marker": 0.87,
+          "end": 0.89,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 20,
+          "start": 0.94,
+          "marker": 0.95,
+          "end": 0.97,
+          "direction": 0,
+          "scale": 2
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.97,
+          "end": 0.14
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.35
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.56
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 79
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 71
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 83
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 80
+            }
+          ]
+        }
+      ]
+    },
+    "fuji speedway classic": {
+      "name": "Fuji International Speedway (Classic)",
+      "trackId": "fuji speedway classic",
+      "country": "JP",
+      "length": 4501,
+      "pitentry": 0.99,
+      "pitexit": 0.1,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.15,
+          "marker": 0.17,
+          "end": 0.18,
+          "direction": 1,
+          "scale": 1,
+          "name": "1st"
+        },
+        {
+          "number": 2,
+          "start": 0.19,
+          "marker": 0.2,
+          "end": 0.22,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 3,
+          "start": 0.28,
+          "marker": 0.29,
+          "end": 0.3,
+          "direction": 0,
+          "scale": 5,
+          "name": "Coca Cola"
+        },
+        {
+          "number": 4,
+          "start": 0.31,
+          "marker": 0.34,
+          "end": 0.37,
+          "direction": 1,
+          "scale": 4,
+          "name": "100 R"
+        },
+        {
+          "number": 5,
+          "start": 0.37,
+          "marker": 0.39,
+          "end": 0.41,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 6,
+          "start": 0.43,
+          "marker": 0.44,
+          "end": 0.46,
+          "direction": 0,
+          "scale": 1,
+          "name": "Hairpin"
+        },
+        {
+          "number": 7,
+          "start": 0.46,
+          "marker": 0.47,
+          "end": 0.49,
+          "direction": 0,
+          "scale": 6
+        },
+        {
+          "number": 8,
+          "start": 0.5,
+          "marker": 0.52,
+          "end": 0.54,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 9,
+          "start": 0.54,
+          "marker": 0.56,
+          "end": 0.58,
+          "direction": 1,
+          "scale": 6,
+          "name": "300 R"
+        },
+        {
+          "number": 10,
+          "start": 0.62,
+          "marker": 0.63,
+          "end": 0.64,
+          "direction": 1,
+          "scale": 4,
+          "name": "Dunlop"
+        },
+        {
+          "number": 11,
+          "start": 0.68,
+          "marker": 0.69,
+          "end": 0.7,
+          "direction": 1,
+          "scale": 3
+        },
+        {
+          "number": 12,
+          "start": 0.71,
+          "marker": 0.72,
+          "end": 0.74,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 13,
+          "start": 0.74,
+          "marker": 0.75,
+          "end": 0.76,
+          "direction": 0,
+          "scale": 1,
+          "name": "Netz"
+        },
+        {
+          "number": 14,
+          "start": 0.79,
+          "marker": 0.82,
+          "end": 0.83,
+          "direction": 1,
+          "scale": 1,
+          "name": "Panasonic"
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.83,
+          "end": 0.15
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.41
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.66
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 29
+            },
+            {
+              "name": "sng10",
+              "time": 41
+            },
+            {
+              "name": "pit",
+              "time": 83
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 29
+            },
+            {
+              "name": "sng10",
+              "time": 41
+            },
+            {
+              "name": "pit",
+              "time": 75
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 29
+            },
+            {
+              "name": "sng10",
+              "time": 41
+            },
+            {
+              "name": "pit",
+              "time": 87
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 29
+            },
+            {
+              "name": "sng10",
+              "time": 41
+            },
+            {
+              "name": "pit",
+              "time": 84
+            }
+          ]
+        }
+      ]
+    },
+    "fuji speedway": {
+      "name": "Fuji International Speedway",
+      "trackId": "fuji speedway",
+      "country": "JP",
+      "length": 4535,
+      "pitentry": 0.99,
+      "pitexit": 0.1,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.15,
+          "marker": 0.17,
+          "end": 0.18,
+          "direction": 1,
+          "scale": 1,
+          "name": "1st"
+        },
+        {
+          "number": 2,
+          "start": 0.19,
+          "marker": 0.2,
+          "end": 0.22,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 3,
+          "start": 0.28,
+          "marker": 0.29,
+          "end": 0.3,
+          "direction": 0,
+          "scale": 5,
+          "name": "Coca Cola"
+        },
+        {
+          "number": 4,
+          "start": 0.31,
+          "marker": 0.34,
+          "end": 0.37,
+          "direction": 1,
+          "scale": 4,
+          "name": "100 R"
+        },
+        {
+          "number": 5,
+          "start": 0.37,
+          "marker": 0.39,
+          "end": 0.41,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 6,
+          "start": 0.43,
+          "marker": 0.44,
+          "end": 0.46,
+          "direction": 0,
+          "scale": 1,
+          "name": "Hairpin"
+        },
+        {
+          "number": 7,
+          "start": 0.46,
+          "marker": 0.47,
+          "end": 0.49,
+          "direction": 0,
+          "scale": 6
+        },
+        {
+          "number": 8,
+          "start": 0.5,
+          "marker": 0.52,
+          "end": 0.54,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 9,
+          "start": 0.54,
+          "marker": 0.56,
+          "end": 0.58,
+          "direction": 1,
+          "scale": 6,
+          "name": "300 R"
+        },
+        {
+          "number": 10,
+          "start": 0.62,
+          "marker": 0.63,
+          "end": 0.63,
+          "direction": 1,
+          "scale": 1,
+          "name": "Dunlop"
+        },
+        {
+          "number": 11,
+          "start": 0.63,
+          "marker": 0.64,
+          "end": 0.65,
+          "direction": 0,
+          "scale": 2
+        },
+        {
+          "number": 12,
+          "start": 0.65,
+          "marker": 0.66,
+          "end": 0.67,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 13,
+          "start": 0.68,
+          "marker": 0.7,
+          "end": 0.71,
+          "direction": 1,
+          "scale": 3,
+          "name": "13th"
+        },
+        {
+          "number": 14,
+          "start": 0.71,
+          "marker": 0.72,
+          "end": 0.74,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 15,
+          "start": 0.74,
+          "marker": 0.75,
+          "end": 0.76,
+          "direction": 0,
+          "scale": 1,
+          "name": "Netz"
+        },
+        {
+          "number": 16,
+          "start": 0.79,
+          "marker": 0.82,
+          "end": 0.83,
+          "direction": 1,
+          "scale": 1,
+          "name": "Panasonic"
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.83,
+          "end": 0.15
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.41
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.66
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 29
+            },
+            {
+              "name": "sng10",
+              "time": 41
+            },
+            {
+              "name": "pit",
+              "time": 83
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 29
+            },
+            {
+              "name": "sng10",
+              "time": 41
+            },
+            {
+              "name": "pit",
+              "time": 75
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 29
+            },
+            {
+              "name": "sng10",
+              "time": 41
+            },
+            {
+              "name": "pit",
+              "time": 87
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 29
+            },
+            {
+              "name": "sng10",
+              "time": 41
+            },
+            {
+              "name": "pit",
+              "time": 84
+            }
+          ]
+        }
+      ]
+    },
+    "lusail international circuit": {
+      "name": "Lusail International Circuit",
+      "trackId": "lusail international circuit",
+      "country": "QA",
+      "length": 5405,
+      "pitentry": 0.98,
+      "pitexit": 0.08,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.13,
+          "marker": 0.15,
+          "end": 0.17,
+          "direction": 1,
+          "scale": 1
+        },
+        {
+          "number": 2,
+          "start": 0.19,
+          "marker": 0.21,
+          "end": 0.22,
+          "direction": 0,
+          "scale": 2
+        },
+        {
+          "number": 3,
+          "start": 0.24,
+          "marker": 0.25,
+          "end": 0.26,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 4,
+          "start": 0.31,
+          "marker": 0.32,
+          "end": 0.33,
+          "direction": 1,
+          "scale": 3
+        },
+        {
+          "number": 5,
+          "start": 0.34,
+          "marker": 0.35,
+          "end": 0.37,
+          "direction": 1,
+          "scale": 3
+        },
+        {
+          "number": 6,
+          "start": 0.39,
+          "marker": 0.41,
+          "end": 0.42,
+          "direction": 0,
+          "scale": 1
+        },
+        {
+          "number": 7,
+          "start": 0.47,
+          "marker": 0.49,
+          "end": 0.5,
+          "direction": 1,
+          "scale": 2
+        },
+        {
+          "number": 8,
+          "start": 0.5,
+          "marker": 0.52,
+          "end": 0.53,
+          "direction": 0,
+          "scale": 6
+        },
+        {
+          "number": 9,
+          "start": 0.54,
+          "marker": 0.55,
+          "end": 0.56,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 10,
+          "start": 0.58,
+          "marker": 0.59,
+          "end": 0.6,
+          "direction": 0,
+          "scale": 2
+        },
+        {
+          "number": 11,
+          "start": 0.6,
+          "marker": 0.63,
+          "end": 0.66,
+          "direction": 0,
+          "scale": 6
+        },
+        {
+          "number": 12,
+          "start": 0.69,
+          "marker": 0.7,
+          "end": 0.72,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 13,
+          "start": 0.73,
+          "marker": 0.74,
+          "end": 0.75,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 14,
+          "start": 0.77,
+          "marker": 0.78,
+          "end": 0.79,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 15,
+          "start": 0.82,
+          "marker": 0.84,
+          "end": 0.86,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 16,
+          "start": 0.9,
+          "marker": 0.92,
+          "end": 0.94,
+          "direction": 1,
+          "scale": 2
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.95,
+          "end": 0.12
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.3
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.66
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 30
+            },
+            {
+              "name": "sng10",
+              "time": 42
+            },
+            {
+              "name": "pit",
+              "time": 84
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 30
+            },
+            {
+              "name": "sng10",
+              "time": 42
+            },
+            {
+              "name": "pit",
+              "time": 76
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 30
+            },
+            {
+              "name": "sng10",
+              "time": 42
+            },
+            {
+              "name": "pit",
+              "time": 88
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 30
+            },
+            {
+              "name": "sng10",
+              "time": 42
+            },
+            {
+              "name": "pit",
+              "time": 85
+            }
+          ]
+        }
+      ]
+    },
+    "lusail short circuit": {
+      "name": "Lusail Short Circuit",
+      "trackId": "lusail short circuit",
+      "country": "QA",
+      "length": 3676,
+      "pitentry": 0.97,
+      "pitexit": 0.11,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.19,
+          "marker": 0.22,
+          "end": 0.25,
+          "direction": 1,
+          "scale": 1
+        },
+        {
+          "number": 2,
+          "start": 0.26,
+          "marker": 0.28,
+          "end": 0.3,
+          "direction": 0,
+          "scale": 6
+        },
+        {
+          "number": 3,
+          "start": 0.32,
+          "marker": 0.33,
+          "end": 0.34,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 4,
+          "start": 0.34,
+          "marker": 0.35,
+          "end": 0.36,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 5,
+          "start": 0.36,
+          "marker": 0.38,
+          "end": 0.4,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 6,
+          "start": 0.4,
+          "marker": 0.43,
+          "end": 0.46,
+          "direction": 0,
+          "scale": 6
+        },
+        {
+          "number": 7,
+          "start": 0.54,
+          "marker": 0.57,
+          "end": 0.59,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 8,
+          "start": 0.6,
+          "marker": 0.62,
+          "end": 0.64,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 9,
+          "start": 0.65,
+          "marker": 0.68,
+          "end": 0.7,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 10,
+          "start": 0.74,
+          "marker": 0.76,
+          "end": 0.78,
+          "direction": 0,
+          "scale": 4
+        },
+        {
+          "number": 11,
+          "start": 0.86,
+          "marker": 0.69,
+          "end": 0.91,
+          "direction": 1,
+          "scale": 2
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.92,
+          "end": 0.18
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.37
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.75
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 30
+            },
+            {
+              "name": "sng10",
+              "time": 42
+            },
+            {
+              "name": "pit",
+              "time": 84
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 30
+            },
+            {
+              "name": "sng10",
+              "time": 42
+            },
+            {
+              "name": "pit",
+              "time": 76
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 30
+            },
+            {
+              "name": "sng10",
+              "time": 42
+            },
+            {
+              "name": "pit",
+              "time": 88
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 30
+            },
+            {
+              "name": "sng10",
+              "time": 42
+            },
+            {
+              "name": "pit",
+              "time": 85
+            }
+          ]
+        }
+      ]
+    },
+    "monza curva grande circuit": {
+      "name": "Autodromo Nazionale Monza (Curva Grande)",
+      "trackId": "monza curva grande circuit",
+      "country": "IT",
+      "length": 5745,
+      "pitentry": 0.98,
+      "pitexit": 0.05,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.21,
+          "marker": 0.24,
+          "end": 0.29,
+          "direction": 1,
+          "scale": 5,
+          "name": "Curva Grande"
+        },
+        {
+          "number": 2,
+          "start": 0.36,
+          "marker": 0.37,
+          "end": 0.38,
+          "direction": 0,
+          "scale": 4,
+          "name": "Variante della Roggia"
+        },
+        {
+          "number": 3,
+          "start": 0.37,
+          "marker": 0.38,
+          "end": 0.38,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 4,
+          "start": 0.42,
+          "marker": 0.44,
+          "end": 0.45,
+          "direction": 1,
+          "scale": 3,
+          "name": "Curve di Lesmo"
+        },
+        {
+          "number": 5,
+          "start": 0.49,
+          "marker": 0.49,
+          "end": 0.5,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 6,
+          "start": 0.68,
+          "marker": 0.68,
+          "end": 0.69,
+          "direction": 0,
+          "scale": 5,
+          "name": "Variante Ascari"
+        },
+        {
+          "number": 7,
+          "start": 0.69,
+          "marker": 0.69,
+          "end": 0.7,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 8,
+          "start": 0.71,
+          "marker": 0.71,
+          "end": 0.72,
+          "direction": 0,
+          "scale": 5
+        },
+        {
+          "number": 9,
+          "start": 0.88,
+          "marker": 0.9,
+          "end": 0.95,
+          "direction": 1,
+          "scale": 3,
+          "name": "Curva Parabolica"
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.96,
+          "end": 0.21
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.35
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.65
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 79
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 71
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 83
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 25
+            },
+            {
+              "name": "sng10",
+              "time": 37
+            },
+            {
+              "name": "pit",
+              "time": 80
+            }
+          ]
+        }
+      ]
+    },
+    "sebring international raceway": {
+      "name": "Sebring International Raceway",
+      "trackId": "sebring international raceway",
+      "country": "US",
+      "length": 5820,
+      "pitentry": 0.72,
+      "pitexit": 0.82,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.06,
+          "marker": 0.09,
+          "end": 0.11,
+          "direction": 0,
+          "scale": 3
+        },
+        {
+          "number": 2,
+          "start": 0.13,
+          "marker": 0.14,
+          "end": 0.15,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 3,
+          "start": 0.15,
+          "marker": 0.16,
+          "end": 0.17,
+          "direction": 0,
+          "scale": 3
+        },
+        {
+          "number": 4,
+          "start": 0.17,
+          "marker": 0.17,
+          "end": 0.18,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 5,
+          "start": 0.18,
+          "marker": 0.19,
+          "end": 0.2,
+          "direction": 0,
+          "scale": 3
+        },
+        {
+          "number": 6,
+          "start": 0.22,
+          "marker": 0.26,
+          "end": 0.28,
+          "direction": 1,
+          "scale": 5,
+          "name": "Big Bend"
+        },
+        {
+          "number": 7,
+          "start": 0.33,
+          "marker": 0.34,
+          "end": 0.35,
+          "direction": 1,
+          "scale": 1,
+          "name": "Hairpin"
+        },
+        {
+          "number": 8,
+          "start": 0.37,
+          "marker": 0.39,
+          "end": 0.4,
+          "direction": 1,
+          "scale": 6
+        },
+        {
+          "number": 9,
+          "start": 0.4,
+          "marker": 0.42,
+          "end": 0.44,
+          "direction": 0,
+          "scale": 6,
+          "name": "Fangio"
+        },
+        {
+          "number": 10,
+          "start": 0.46,
+          "marker": 0.47,
+          "end": 0.48,
+          "direction": 1,
+          "scale": 3
+        },
+        {
+          "number": 11,
+          "start": 0.48,
+          "marker": 0.51,
+          "end": 0.52,
+          "direction": 0,
+          "scale": 4,
+          "name": "Collier"
+        },
+        {
+          "number": 12,
+          "start": 0.52,
+          "marker": 0.53,
+          "end": 0.54,
+          "direction": 1,
+          "scale": 5
+        },
+        {
+          "number": 13,
+          "start": 0.55,
+          "marker": 0.56,
+          "end": 0.57,
+          "direction": 1,
+          "scale": 4,
+          "name": "Tower"
+        },
+        {
+          "number": 14,
+          "start": 0.62,
+          "marker": 0.63,
+          "end": 0.64,
+          "direction": 0,
+          "scale": 5,
+          "name": "Bishop"
+        },
+        {
+          "number": 15,
+          "start": 0.67,
+          "marker": 0.69,
+          "end": 0.71,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 16,
+          "start": 0.72,
+          "marker": 0.73,
+          "end": 0.74,
+          "direction": 1,
+          "scale": 4,
+          "name": "Le Mans"
+        },
+        {
+          "number": 17,
+          "start": 0.89,
+          "marker": 0.93,
+          "end": 0.95,
+          "direction": 1,
+          "scale": 4,
+          "name": "Sunset Bend"
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.96,
+          "end": 0.05
+        },
+        {
+          "name": "Ullman Straight",
+          "start": 0.75,
+          "end": 0.88
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.36
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.61
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 33
+            },
+            {
+              "name": "sng10",
+              "time": 45
+            },
+            {
+              "name": "pit",
+              "time": 87
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 33
+            },
+            {
+              "name": "sng10",
+              "time": 45
+            },
+            {
+              "name": "pit",
+              "time": 79
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 33
+            },
+            {
+              "name": "sng10",
+              "time": 45
+            },
+            {
+              "name": "pit",
+              "time": 91
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 33
+            },
+            {
+              "name": "sng10",
+              "time": 45
+            },
+            {
+              "name": "pit",
+              "time": 88
+            }
+          ]
+        }
+      ]
+    },
+    "sebring school circuit": {
+      "name": "Sebring International Raceway (School)",
+      "trackId": "sebring school circuit",
+      "country": "US",
+      "length": 3083,
+      "pitentry": 0.47,
+      "pitexit": 0.65,
+      "turn": [
+        {
+          "number": 1,
+          "start": 0.11,
+          "marker": 0.17,
+          "end": 0.21,
+          "direction": 0,
+          "scale": 3
+        },
+        {
+          "number": 2,
+          "start": 0.25,
+          "marker": 0.26,
+          "end": 0.27,
+          "direction": 1,
+          "scale": 3
+        },
+        {
+          "number": 3,
+          "start": 0.27,
+          "marker": 0.29,
+          "end": 0.3,
+          "direction": 1,
+          "scale": 3,
+          "name": "Bishop"
+        },
+        {
+          "number": 4,
+          "start": 0.38,
+          "marker": 0.41,
+          "end": 0.43,
+          "direction": 1,
+          "scale": 4
+        },
+        {
+          "number": 5,
+          "start": 0.47,
+          "marker": 0.49,
+          "end": 0.51,
+          "direction": 1,
+          "scale": 4,
+          "name": "Le Mans"
+        },
+        {
+          "number": 6,
+          "start": 0.78,
+          "marker": 0.86,
+          "end": 0.92,
+          "direction": 1,
+          "scale": 4,
+          "name": "Sunset Bend"
+        }
+      ],
+      "straight": [
+        {
+          "name": "Main Straight",
+          "start": 0.92,
+          "end": 0.1
+        },
+        {
+          "name": "Ullman Straight",
+          "start": 0.51,
+          "end": 0.78
+        }
+      ],
+      "sector": [
+        {
+          "name": "Sector 1",
+          "marker": 0.34
+        },
+        {
+          "name": "Sector 2",
+          "marker": 0.51
+        },
+        {
+          "name": "Sector 3",
+          "marker": 1
+        }
+      ],
+      "time": [
+        {
+          "gt3": [
+            {
+              "name": "dt",
+              "time": 33
+            },
+            {
+              "name": "sng10",
+              "time": 45
+            },
+            {
+              "name": "pit",
+              "time": 87
+            }
+          ],
+          "gte": [
+            {
+              "name": "dt",
+              "time": 33
+            },
+            {
+              "name": "sng10",
+              "time": 45
+            },
+            {
+              "name": "pit",
+              "time": 79
+            }
+          ],
+          "lmp2": [
+            {
+              "name": "dt",
+              "time": 33
+            },
+            {
+              "name": "sng10",
+              "time": 45
+            },
+            {
+              "name": "pit",
+              "time": 91
+            }
+          ],
+          "hyper": [
+            {
+              "name": "dt",
+              "time": 33
+            },
+            {
+              "name": "sng10",
+              "time": 45
+            },
+            {
+              "name": "pit",
+              "time": 88
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

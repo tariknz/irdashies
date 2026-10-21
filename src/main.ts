@@ -1,12 +1,15 @@
+import { setupReleaseNotesBridge } from './app/bridge/releaseNotesBridge';
 import { app, BrowserWindow, ipcMain } from 'electron';
 import log from './app/logger';
 import {
   iRacingSDKSetup,
   getCurrentBridge,
+  getIsDemoMode,
   getSessionLifecycle,
   onBridgeChanged,
 } from './app/bridge/iracingSdk/setup';
 import {
+  applyDefaultsToAllProfiles,
   getOrCreateDefaultDashboard,
   getCurrentProfileId,
   getProfile,
@@ -43,15 +46,18 @@ import {
   flushReferenceLapsOnShutdown,
 } from './app/storage/referenceLaps';
 import { flushLapTracesOnShutdown } from './app/storage/lapTraces';
+import { flushPitLaneDataOnShutdown } from './app/storage/pitLaneData';
 import {
   flushGarage61SearchSessionOnShutdown,
   saveGarage61SearchSession,
 } from './app/storage/garage61SearchSession';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
+import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
 import {
   flushIncidentsOnShutdown,
   appendIncident,
+  listArchivedIncidentSessions,
 } from './app/storage/incidentStorage';
 import {
   IncidentRuntime,
@@ -64,11 +70,20 @@ import {
 } from './app/processors/lapHistoryRuntime';
 import {
   flushLapHistoryOnShutdown,
+  listArchivedLapHistorySessions,
+  loadArchivedLapHistory,
   loadLapHistory,
   pruneOldSessions as pruneOldLapHistorySessions,
   rehydrateLapHistory,
   saveLapHistory,
+  sealLapHistorySession,
 } from './app/storage/lapHistoryStorage';
+import { ReplayContextRuntime } from './app/processors/replayContextRuntime';
+import { setupTapeReplayBridge } from './app/bridge/tapeReplayBridge';
+import { createTapeReplayWindow } from './app/tapeReplayWindow';
+import type { ArchiveIndex } from './app/processors/ReplayContextProcessor';
+import { createKnownLocalUserIdStore } from './app/storage/knownLocalUserIds';
+import { setupLapHistoryBridge } from './app/bridge/lapHistoryBridge';
 import { onDashboardUpdated } from './app/storage/dashboardEvents';
 import { loadSimWidgetSupport } from './app/storage/simWidgetSupport';
 import type { DashboardLayout, Session } from '@irdashies/types';
@@ -85,6 +100,7 @@ import { connectSessionLifecycleChannel } from './app/bridge/sessionLifecycleCha
 import { setupRendererDataSubscriptions } from './app/bridge/rendererDataSubscriptions';
 import { PerfHeapProfiler } from './app/perfHeapProfiler';
 import { createBeforeQuitHandler } from './app/shutdownCoordinator';
+import { monitorDevParent } from './app/devParentMonitor';
 
 const safeErrorDetails = (error: unknown) => {
   const code =
@@ -128,6 +144,9 @@ analytics.setupLogTransport();
 overlayManager.setupChromiumFlags();
 overlayManager.setupHardwareAcceleration();
 overlayManager.setupSingleInstanceLock();
+const releaseNotes = overlayManager.hasLock()
+  ? setupReleaseNotesBridge()
+  : undefined;
 overlayManager.setupAutoStart();
 
 // Hoisted so the quit handler can tear down the WebHID host window cleanly.
@@ -139,6 +158,8 @@ let disconnectLifecycleChannel: (() => void) | undefined;
 let sessionProfileSwitcher: SessionProfileSwitcher | undefined;
 let incidentRuntime: IncidentRuntime | undefined;
 let disposeLapHistoryRuntime: (() => void) | undefined;
+let disposeReplayContextRuntime: (() => void) | undefined;
+const knownLocalUserIds = createKnownLocalUserIdStore();
 let disposeGarage61SearchSession: (() => void) | undefined;
 // Resolved per call: a runtime outlives any single SDK bridge, so it must
 // not hold a reference to a metrics instance that has stopped reporting.
@@ -159,13 +180,28 @@ const lapHistoryPersistence: LapHistoryPersistence = {
       log.error('[LapHistory] Failed to persist lap history:', err)
     );
   },
+  seal: (sessionId, snapshot) => {
+    sealLapHistorySession(sessionId, snapshot).catch((err) =>
+      log.error('[LapHistory] Failed to persist lap history:', err)
+    );
+  },
   load: async (sessionId) => {
     const stored = await loadLapHistory(sessionId);
     if (!stored) return null;
     return {
-      sessionNum: stored.history.sessionNum,
+      sessionNums: Object.keys(stored.sessions).map(Number),
       apply: (target) => rehydrateLapHistory(stored, target),
     };
+  },
+};
+/** Session numbers this PC archived for an event: incidents or lap history. */
+const replayArchiveIndex: ArchiveIndex = {
+  has: async (subSessionId) => {
+    const [incidentSessions, lapSessions] = await Promise.all([
+      listArchivedIncidentSessions(subSessionId),
+      listArchivedLapHistorySessions(subSessionId),
+    ]);
+    return [...incidentSessions, ...lapSessions];
   },
 };
 let disposeRendererDataSubscriptions: (() => void) | undefined;
@@ -176,13 +212,26 @@ let disposeRendererDataSubscriptions: (() => void) | undefined;
  * closed. Gated on the Gantry widget, so a user who never enables it pays no
  * frame cost.
  */
-function setupLapHistoryRuntime(initialDashboard: DashboardLayout): void {
+function setupLapHistoryRuntime(
+  initialDashboard: DashboardLayout,
+  replayContext: ReplayContextRuntime
+): void {
   const runtime = new LapHistoryRuntime(
     channelBus,
     getSessionLifecycle(),
     runtimePerfMetrics,
     lapHistoryPersistence
   );
+  runtime.updateReplayPaused(replayContext.isReplayFile());
+  const unsubscribeReplayContext = replayContext.onChange((context) =>
+    runtime.updateReplayPaused(context.mode === 'replayFile')
+  );
+  setupLapHistoryBridge({
+    getCurrentSessionId: () => runtime.getCurrentSessionId(),
+    canReadArchive: () => replayContext.canReadArchive(),
+    load: (sessionId, sessionNum) =>
+      loadArchivedLapHistory(sessionId, sessionNum),
+  });
 
   const applyDashboard = (layout: DashboardLayout | undefined) => {
     const widget = layout?.widgets.find((w) => w.id === 'gantry');
@@ -210,7 +259,9 @@ function setupLapHistoryRuntime(initialDashboard: DashboardLayout): void {
 
   // Retention: the current race plus one previous race.
   const unsubscribeSessionId = runtime.onSessionIdChanged((sessionId) => {
-    if (!sessionId) return;
+    // A replay's event is not the newest race, so pruning around it would
+    // delete a newer archive.
+    if (!sessionId || replayContext.isReplayFile()) return;
     pruneOldLapHistorySessions(sessionId).catch((err) =>
       log.error('[LapHistory] Failed to prune old sessions:', err)
     );
@@ -226,8 +277,72 @@ function setupLapHistoryRuntime(initialDashboard: DashboardLayout): void {
     unsubscribeBridgeChanged?.();
     unsubscribeDashboard?.();
     unsubscribeSessionId?.();
+    unsubscribeReplayContext();
     runtime.dispose();
   };
+}
+
+/**
+ * Hosts the replay context outside the ProcessorHost. It is created before the
+ * incident and lap-history runtimes and wired to the bridge first, so a
+ * replay file is recognised before they see its session. Frames are only read
+ * while the Gantry is enabled; sessions are always read so this PC's user ids
+ * are remembered.
+ */
+function setupReplayContextRuntime(
+  initialDashboard: DashboardLayout
+): ReplayContextRuntime {
+  const runtime = new ReplayContextRuntime(
+    channelBus,
+    getSessionLifecycle(),
+    runtimePerfMetrics,
+    replayArchiveIndex,
+    knownLocalUserIds,
+    {
+      isLiveSource: () =>
+        !getIsDemoMode() &&
+        !process.env.IRDASHIES_TELEMETRY_REPLAY &&
+        !process.env.IRDASHIES_LMU_REPLAY &&
+        process.env.IRDASHIES_IRSDK_REPLAY !== '1',
+    }
+  );
+
+  let gantryEnabled = false;
+  const applyDashboard = (layout: DashboardLayout | undefined) => {
+    gantryEnabled =
+      layout?.widgets.find((w) => w.id === 'gantry')?.enabled ?? false;
+  };
+  applyDashboard(initialDashboard);
+  const unsubscribeDashboard = onDashboardUpdated(applyDashboard);
+
+  let unsubscribeSession: (() => void) | undefined;
+  let unsubscribeTelemetry: (() => void) | undefined;
+  const wireToTelemetryBridge = () => {
+    unsubscribeSession?.();
+    unsubscribeTelemetry?.();
+    const bridge = getCurrentBridge();
+    if (!bridge) return;
+    unsubscribeSession =
+      bridge.onSessionData((session) => runtime.onSession(session)) ??
+      undefined;
+    unsubscribeTelemetry =
+      bridge.onTelemetry((telemetry) => {
+        if (gantryEnabled) runtime.onFrame(telemetry);
+      }) ?? undefined;
+  };
+  wireToTelemetryBridge();
+  const unsubscribeBridgeChanged = onBridgeChanged(wireToTelemetryBridge);
+
+  disposeReplayContextRuntime = () => {
+    unsubscribeSession?.();
+    unsubscribeTelemetry?.();
+    unsubscribeSession = undefined;
+    unsubscribeTelemetry = undefined;
+    unsubscribeBridgeChanged?.();
+    unsubscribeDashboard?.();
+    runtime.dispose();
+  };
+  return runtime;
 }
 
 /**
@@ -280,7 +395,9 @@ function setupGarage61SearchSession(initialDashboard: DashboardLayout): void {
   };
 }
 
-app.on('ready', async () => {
+// Native startup calls can let Electron become ready before we reach this
+// registration. The promise also runs initialization when ready already fired.
+void app.whenReady().then(async () => {
   // Don't start services if we don't have the single instance lock
   // (this instance should be quitting)
   if (!overlayManager.hasLock()) {
@@ -291,6 +408,9 @@ app.on('ready', async () => {
     log.info('[PerfRun] Configuration', perfRun);
   }
 
+  // Every profile, not only the active one: switching profiles reads them as
+  // stored.
+  applyDefaultsToAllProfiles();
   // Resolve benchmark metadata before metrics reporting starts so every
   // interval carries the same active-widget workload description.
   const dashboard = getOrCreateDefaultDashboard();
@@ -321,6 +441,8 @@ app.on('ready', async () => {
     channelBus
   );
   await iRacingSDKSetup(overlayManager, channelBus);
+  setupTapeReplayBridge(getCurrentBridge);
+  if (process.env.IRDASHIES_TELEMETRY_REPLAY) createTapeReplayWindow();
 
   // Perform one-time cleanup of old reference laps
   validateReferenceLapFile();
@@ -330,20 +452,27 @@ app.on('ready', async () => {
   // Setup IPC bridges
   setupLogBridge();
   setupFuelCalculatorBridge();
-  setupPitLaneBridge();
+  const pitLaneBridge = setupPitLaneBridge(overlayManager, channelBus);
   setupPersonalBestLapTimesBridge();
   setupLapTraceBridge(overlayManager);
   setupGarage61SearchSession(dashboard);
   setupChromiumFlagsBridge();
-  incidentRuntime = new IncidentRuntime(
+  ipcMain.handle('widgetVisibility:getHidden', () => getHiddenWidgets());
+  const replayContextRuntime = setupReplayContextRuntime(dashboard);
+  const incidents = new IncidentRuntime(
     channelBus,
     getSessionLifecycle(),
     runtimePerfMetrics,
     incidentPersistence,
     { isDev: !app.isPackaged }
   );
-  setupRaceControlBridge(incidentRuntime, dashboard);
-  setupLapHistoryRuntime(dashboard);
+  incidentRuntime = incidents;
+  incidents.updateReplayPaused(replayContextRuntime.isReplayFile());
+  replayContextRuntime.onChange((context) =>
+    incidents.updateReplayPaused(context.mode === 'replayFile')
+  );
+  setupRaceControlBridge(incidents, dashboard, replayContextRuntime);
+  setupLapHistoryRuntime(dashboard, replayContextRuntime);
   // Returns false when the Gantry widget is disabled, so Settings can explain
   // why the button did nothing instead of appearing to be broken.
   ipcMain.handle('raceControl:showGantryWindow', () =>
@@ -368,7 +497,12 @@ app.on('ready', async () => {
   }
 
   // Start component server for browser components
-  await startComponentServer(bridge, dashboardBridge, channelBus);
+  await startComponentServer(
+    bridge,
+    dashboardBridge,
+    channelBus,
+    pitLaneBridge
+  );
 
   ipcMain.handle('getComponentServerPort', () => getComponentServerPort());
 
@@ -523,15 +657,19 @@ const handleBeforeQuit = createBeforeQuitHandler({
     disposeRendererDataSubscriptions?.();
     incidentRuntime?.dispose();
     disposeLapHistoryRuntime?.();
+    disposeReplayContextRuntime?.();
     disposeGarage61SearchSession?.();
     channelBus.dispose();
     // Storage writes are debounced, so drain all pending queues within the
     // coordinator deadline before the process exits.
     await Promise.all([
       flushLapTracesOnShutdown(),
+      flushPitLaneDataOnShutdown(),
       flushReferenceLapsOnShutdown(),
       flushIncidentsOnShutdown(),
       flushLapHistoryOnShutdown(),
+      knownLocalUserIds.flush(),
+      releaseNotes?.flush(),
       flushGarage61SearchSessionOnShutdown(),
     ]);
   },
@@ -541,3 +679,11 @@ const handleBeforeQuit = createBeforeQuitHandler({
 });
 
 app.on('before-quit', handleBeforeQuit);
+
+// Terminal shutdown must use the same cleanup and storage flush as tray quit.
+process.on('SIGINT', () => app.quit());
+process.on('SIGTERM', () => app.quit());
+
+if (!app.isPackaged) {
+  monitorDevParent(process.ppid, () => app.quit());
+}

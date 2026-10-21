@@ -30,13 +30,10 @@ import {
   getProfile,
   updateProfileTheme,
   getOrCreateDefaultDashboardForProfile,
+  withDashboardDefaults,
 } from '../../storage/dashboards';
 import { writeData } from '../../storage/storage';
 import { OverlayManager } from '../../overlayManager';
-import {
-  getSettingsShowAllWidgets,
-  setSettingsShowAllWidgets,
-} from '../../storage/settingsPreferences';
 import { loadSimWidgetSupport } from '../../storage/simWidgetSupport';
 import {
   getAnalyticsOptOut as getAnalyticsOptOutStorage,
@@ -79,6 +76,14 @@ const sanitiseSessionProfileMap = (input: unknown): SessionProfileMap => {
   }
   return map;
 };
+
+/** Checks the export envelope before withDashboardDefaults repairs its widgets. */
+const isDashboardExport = (value: unknown): value is DashboardLayout =>
+  typeof value === 'object' &&
+  value !== null &&
+  !Array.isArray(value) &&
+  'widgets' in value &&
+  Array.isArray(value.widgets);
 
 /**
  * Injects global driver tag settings into a dashboard layout before broadcasting.
@@ -276,6 +281,14 @@ export async function publishDashboardUpdates(
     const merged = dashboardTransform(
       mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings())
     );
+    // Cosmetic: a failed recolour must not block the dashboard update.
+    try {
+      overlayManager.setSettingsTitleBarTheme(
+        merged.generalSettings?.settingsTheme
+      );
+    } catch (err) {
+      logger.error('Error recolouring the settings title bar:', err);
+    }
     const profileId = getCurrentProfileId();
 
     if (profileId === lastProfileId) {
@@ -311,27 +324,38 @@ export async function publishDashboardUpdates(
       }, SETTLE_MS);
     }, HIDE_MS);
   });
-  ipcMain.on('saveDashboard', (_, dashboard, options) => {
-    // For layout-only changes (drag/resize), skip the window refresh
-    if (options?.skipWindowRefresh) {
-      // Save without emitting event to avoid window recreation
-      const currentProfileId = getCurrentProfileId();
-      const existingDashboards = listDashboards();
-      existingDashboards[currentProfileId] = dashboard;
-      writeData('dashboards', existingDashboards);
-      // Create windows for any new displays the widget may have been dragged to
-      overlayManager.ensureDisplayWindows(dashboard);
-      // Still notify renderer of the update
-      overlayManager.publishMessage('dashboardUpdated', dashboard);
-      return;
-    }
+  ipcMain.on(
+    'saveDashboard',
+    (_, savedDashboard: DashboardLayout, options?: SaveDashboardOptions) => {
+      // Advanced settings can replace a dashboard with JSON from an older export.
+      if (options?.forceReload && !isDashboardExport(savedDashboard)) {
+        logger.warn('[saveDashboard] Imported JSON is not a dashboard export');
+        return;
+      }
+      const dashboard = options?.forceReload
+        ? withDashboardDefaults(savedDashboard)
+        : savedDashboard;
+      // For layout-only changes (drag/resize), skip the window refresh
+      if (options?.skipWindowRefresh) {
+        // Save without emitting event to avoid window recreation
+        const currentProfileId = getCurrentProfileId();
+        const existingDashboards = listDashboards();
+        existingDashboards[currentProfileId] = dashboard;
+        writeData('dashboards', existingDashboards);
+        // Create windows for any new displays the widget may have been dragged to
+        overlayManager.ensureDisplayWindows(dashboard);
+        // Still notify renderer of the update
+        overlayManager.publishMessage('dashboardUpdated', dashboard);
+        return;
+      }
 
-    const currentProfileId = getCurrentProfileId();
-    saveDashboard(currentProfileId, dashboard);
-    if (options?.forceReload) {
-      overlayManager.forceRefreshOverlays(dashboard);
+      const currentProfileId = getCurrentProfileId();
+      saveDashboard(currentProfileId, dashboard);
+      if (options?.forceReload) {
+        overlayManager.forceRefreshOverlays(dashboard);
+      }
     }
-  });
+  );
   ipcMain.on('reloadDashboard', () => {
     const currentProfileId = getCurrentProfileId();
     const dashboard = getDashboard(currentProfileId);
@@ -406,14 +430,6 @@ export async function publishDashboardUpdates(
     }
   );
   ipcMain.handle('getSimWidgetSupport', () => loadSimWidgetSupport());
-
-  ipcMain.handle('getSettingsShowAllWidgets', () =>
-    getSettingsShowAllWidgets()
-  );
-
-  ipcMain.handle('setSettingsShowAllWidgets', (_, showAll: boolean) => {
-    setSettingsShowAllWidgets(showAll);
-  });
 
   ipcMain.handle('getAnalyticsOptOut', () => {
     return getAnalyticsOptOutStorage();
@@ -563,7 +579,12 @@ export async function publishDashboardUpdates(
     if (canceled || !filePaths[0]) return null;
     const { readFile } = await import('node:fs/promises');
     const content = await readFile(filePaths[0], 'utf-8');
-    return JSON.parse(content) as DashboardLayout;
+    const parsed: unknown = JSON.parse(content);
+    if (!isDashboardExport(parsed)) {
+      logger.warn('[importDashboardFromFile] File is not a dashboard export');
+      return null;
+    }
+    return withDashboardDefaults(parsed);
   });
 
   ipcMain.handle('autostart:set', (_event, enabled: boolean) => {
