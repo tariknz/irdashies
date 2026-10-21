@@ -106,8 +106,36 @@ describe('mapLmuTelemetry while frozen', () => {
       true
     );
     expect(frozen.IsOnTrack.value[0]).toBe(false);
-    expect(frozen.IsInGarage.value[0]).toBe(false);
-    expect(frozen.IsGarageVisible.value[0]).toBe(false);
+    expect(frozen.LmuDataStale?.value[0]).toBe(true);
+  });
+
+  it('publishes the stale flag, which is what consumers gate on', () => {
+    // Gating the individual state fields was not enough: isDriving ORs
+    // IsOnTrack with the pit flags, so a session that ended in the pits stayed
+    // "driving". The flag says the whole frame is untrustworthy.
+    const raw = fixture();
+    expect(mapLmuTelemetry(raw).LmuDataStale?.value[0]).toBe(false);
+    expect(
+      mapLmuTelemetry(raw, undefined, undefined, undefined, undefined, true)
+        .LmuDataStale?.value[0]
+    ).toBe(true);
+  });
+
+  it('reports the garage as the snapshot has it, frozen or not', () => {
+    // Falsifying this while frozen was a mistake: isDriving reads it as
+    // `!isInGarage`, so clearing it removed the one term that would have
+    // excluded a parked player.
+    const raw = { ...fixture() };
+    const garaged = raw.vehInGarageStall?.[raw.playerVehicleIdx] ? true : false;
+    const frozen = mapLmuTelemetry(
+      raw,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true
+    );
+    expect(frozen.IsInGarage.value[0]).toBe(garaged);
   });
 
   it('counts the ignition as being in the car before realtime begins', () => {

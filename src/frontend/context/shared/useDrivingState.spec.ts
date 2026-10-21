@@ -18,6 +18,7 @@ vi.mock('../ChannelStore', () => ({
       isInGarage: useTelemetryValue('IsInGarage'),
       isGarageVisible: useTelemetryValue('IsGarageVisible'),
       isReplayPlaying: useTelemetryValue('IsReplayPlaying'),
+      dataStale: useTelemetryValue('LmuDataStale'),
     })
   ),
 }));
@@ -309,7 +310,44 @@ describe('useDrivingState', () => {
       expect(useTelemetryValue).toHaveBeenCalledWith('IsInGarage');
       expect(useTelemetryValue).toHaveBeenCalledWith('IsGarageVisible');
       expect(useTelemetryValue).toHaveBeenCalledWith('IsReplayPlaying');
-      expect(useTelemetryValue).toHaveBeenCalledTimes(6);
+      // Seven, not six: the frame now also carries whether the sim has
+      // stopped writing it, which the selector checks before anything else.
+      expect(useTelemetryValue).toHaveBeenCalledWith('LmuDataStale');
+      expect(useTelemetryValue).toHaveBeenCalledTimes(7);
     });
+  });
+});
+
+describe('useDrivingState with a frame the sim has stopped writing', () => {
+  const frame = (overrides: Record<string, boolean>) => {
+    vi.mocked(useTelemetryValue).mockImplementation(
+      (key: string) => overrides[key] ?? false
+    );
+    return renderHook(() => useDrivingState()).result.current.isDriving;
+  };
+
+  it('is not driving once the data is stale, whatever the frame holds', () => {
+    // The live case: a practice session ends with the player in the pits. The
+    // last frame the sim wrote has CarIdxOnPitRoad true, and the three terms
+    // are ORed -- so that alone kept every widget gated on this on screen
+    // after the session was over, even with IsOnTrack already false.
+    expect(frame({ CarIdxOnPitRoad: true, LmuDataStale: true })).toBe(false);
+    expect(frame({ PlayerCarInPitStall: true, LmuDataStale: true })).toBe(
+      false
+    );
+    expect(frame({ IsOnTrack: true, LmuDataStale: true })).toBe(false);
+  });
+
+  it('is driving on the same frame while the data is live', () => {
+    // So the stale flag is doing the work, not the rest of the condition.
+    expect(frame({ CarIdxOnPitRoad: true })).toBe(true);
+    expect(frame({ IsOnTrack: true })).toBe(true);
+  });
+
+  it('is not driving in the garage, stale or not', () => {
+    expect(frame({ IsOnTrack: true, IsInGarage: true })).toBe(false);
+    expect(
+      frame({ IsOnTrack: true, IsInGarage: true, LmuDataStale: true })
+    ).toBe(false);
   });
 });

@@ -46,6 +46,11 @@ export interface TrackStateSnapshot {
   carIdxClassPosition: readonly number[];
   carLeftRight: number;
   isOnTrack: boolean;
+  /**
+   * True when the frame is the last one the sim wrote rather than a current
+   * reading. Nothing about where the player is can be trusted while it is set.
+   */
+  dataStale: boolean;
   playerCarInPitStall: boolean;
   playerTrackSurface: number;
   onPitRoad: boolean;

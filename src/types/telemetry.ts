@@ -41,6 +41,17 @@ export type Telemetry = {
    */
   LmuCarIdxEnergyRemaining?: TelemetryVar<number[]>;
   /**
+   * True when the sim has stopped writing shared memory, so this frame is the
+   * last one it wrote rather than a current reading.
+   *
+   * Its own channel rather than being folded into the state fields it affects.
+   * Gating those one at a time was wrong twice over: IsOnTrack went false but
+   * the pit flags did not, and isDriving ORs the three together -- so a player
+   * whose session ended in the pits stayed "driving". Falsifying IsInGarage
+   * made it worse, because that is the term isDriving negates.
+   */
+  LmuDataStale?: TelemetryVar<boolean[]>;
+  /**
    * The points a drive-through is served at, 0 when the session has not said.
    *
    * A session constant, carried beside the per-car figure because neither is

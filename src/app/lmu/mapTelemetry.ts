@@ -698,14 +698,13 @@ export function mapLmuTelemetry(
     playerIdx >= 0 &&
     (raw.inRealtime || (raw.ignitionStarter ?? 0) > 0);
   t.IsOnTrack = bool(inCar);
-  // Frozen data cannot say where the player is either, and a garage flag
-  // left true after a session ended reads as a claim about now.
-  t.IsInGarage = bool(
-    !dataFrozen && playerIdx >= 0 && raw.vehInGarageStall[playerIdx]
-  );
-  t.IsGarageVisible = bool(
-    !dataFrozen && playerIdx >= 0 && raw.vehInGarageStall[playerIdx]
-  );
+  t.LmuDataStale = bool(dataFrozen ?? false);
+  // Reported as the snapshot has them, frozen or not. Falsifying these while
+  // frozen was a mistake: isDriving reads them as `!isInGarage`, so clearing
+  // them removed the one term that would have excluded a parked player.
+  // LmuDataStale above is what consumers should gate on.
+  t.IsInGarage = bool(playerIdx >= 0 && raw.vehInGarageStall[playerIdx]);
+  t.IsGarageVisible = bool(playerIdx >= 0 && raw.vehInGarageStall[playerIdx]);
 
   // Defaults for everything not meaningful in LMU (pit service, radios, FFB,
   // tyre models, dash controls...). Kept long but explicit so the shape stays
