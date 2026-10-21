@@ -108,6 +108,20 @@ const SLOW_SESSION_MS = 20;
  */
 const SLOW_SESSION_LOG_INTERVAL_MS = 10_000;
 
+/**
+ * When a whole loop iteration is worth reporting.
+ *
+ * The loop aims for an 8 ms period, so an iteration that takes longer than
+ * this has eaten the next one and is holding the main process. Everything
+ * else in this file is measured behind PERF_METRICS, which is off in the
+ * builds anybody actually runs -- so the native reads, the per-car array
+ * building and the telemetry publish have never been measured in the field at
+ * all. The session build and broadcast were, and have never once exceeded
+ * their own threshold, which is exactly why the rest needs covering before
+ * anyone concludes anything about where a stutter comes from.
+ */
+const SLOW_ITERATION_MS = 12;
+
 const perfRunConfig = getPerfRunConfig();
 const perfTelemetryDeliveryEnabled =
   !perfRunConfig.enabled || perfRunConfig.telemetryDelivery === 'on';
@@ -316,6 +330,10 @@ export async function publishLmuSDKEvents(
     let lastSessionPollTime = Number.NEGATIVE_INFINITY;
     let wasRunning = false;
     let unavailableSince: number | null = null;
+    let lastSlowIterationLog = Number.NEGATIVE_INFINITY;
+    let worstIteration = 0;
+    let worstRead = 0;
+    let iterations = 0;
 
     while (!shouldStop) {
       const pollStartedAt = performance.now();
@@ -325,8 +343,10 @@ export async function publishLmuSDKEvents(
       perfMetrics.markStart(
         shouldPollSession ? 'sdkSessionRead' : 'sdkTelemetryRead'
       );
+      const readStartedAt = performance.now();
       const rawSession = shouldPollSession ? sdk.readSession() : null;
       const raw = rawSession ?? sdk.read();
+      const readMs = performance.now() - readStartedAt;
       perfMetrics.markEnd(
         shouldPollSession ? 'sdkSessionRead' : 'sdkTelemetryRead'
       );
@@ -638,6 +658,30 @@ export async function publishLmuSDKEvents(
       }
 
       perfMetrics.markEnd('processTelemetry');
+
+      // The whole iteration, including the shared-memory copy, the per-car
+      // array building and the publish to every window -- the parts no
+      // always-on measurement covered. Worst of the window rather than the
+      // latest, since one overrun in a hundred is what a stutter is.
+      const iterationMs = performance.now() - pollStartedAt;
+      iterations += 1;
+      if (iterationMs > worstIteration) worstIteration = iterationMs;
+      if (readMs > worstRead) worstRead = readMs;
+      if (
+        worstIteration >= SLOW_ITERATION_MS &&
+        pollStartedAt - lastSlowIterationLog >= SLOW_SESSION_LOG_INTERVAL_MS
+      ) {
+        lastSlowIterationLog = pollStartedAt;
+        logger.warn(
+          `[lmuSdkBridge] Slow loop: worst ${worstIteration.toFixed(1)}ms ` +
+            `(read ${worstRead.toFixed(1)}ms) over ${iterations} iterations ` +
+            `for ${raw.numVehicles ?? 0} vehicles`
+        );
+        worstIteration = 0;
+        worstRead = 0;
+        iterations = 0;
+      }
+
       const remainingDelay = Math.max(
         0,
         TELEMETRY_POLL_INTERVAL - (performance.now() - pollStartedAt)
