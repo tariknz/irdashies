@@ -1,6 +1,7 @@
 import React from 'react';
-import 'flag-icons/css/flag-icons.min.css';
 import { IRacingFlag } from './IRacingFlag';
+import flagSprite from '../../../assets/img/country_flags.png';
+import { FLAG_CELL, FLAG_GRID, FLAG_POSITIONS } from './flagSpritePositions';
 
 interface CountryFlagProps {
   /** iRacing's flair id. Ignored when `countryCode` is given. */
@@ -262,6 +263,49 @@ const getCountryCodeFromFlairId = (flairId: number): string => {
   return FLAIR_ID_TO_COUNTRY_CODE[flairId];
 };
 
+/**
+ * The sheet's cell geometry, in em, so a widget scaled by font size takes the
+ * flags with it. 4:3 like the source set, and the same 1.333em-wide box the
+ * stylesheet this replaces used.
+ */
+const HEIGHT_EM = 1;
+const WIDTH_EM = HEIGHT_EM * (FLAG_CELL.width / FLAG_CELL.height);
+
+/**
+ * One flag, as a cell of the bundled sprite sheet.
+ *
+ * `flag-icons` ships 271 SVGs and a rule per country pointing a
+ * `background-image` at one of them. A background image loads lazily, so the
+ * first driver from a country not already on screen cost a fetch, a parse and
+ * a rasterise -- at the moment they joined, which is when the sim is busiest.
+ * One sheet is decoded once and every row reads the same texture.
+ *
+ * `translateZ(0)` for the reason it is on the other sprites here: it promotes
+ * the element so repainting a row does not re-composite the art underneath,
+ * which is what an overlay sharing a GPU with the sim cares about.
+ */
+const FlagSprite = ({ code }: { code: string }) => {
+  const position = FLAG_POSITIONS[code];
+  if (!position) return <IRacingFlag />;
+
+  const [col, row] = position;
+  return (
+    <span
+      role="img"
+      aria-label={code}
+      className="inline-block shrink-0 bg-no-repeat align-middle"
+      style={{
+        backgroundImage: `url(${flagSprite})`,
+        backgroundSize: `${FLAG_GRID.cols * WIDTH_EM}em ${FLAG_GRID.rows * HEIGHT_EM}em`,
+        backgroundPosition: `${-col * WIDTH_EM}em ${-row * HEIGHT_EM}em`,
+        width: `${WIDTH_EM}em`,
+        height: `${HEIGHT_EM}em`,
+        transform: 'translateZ(0)',
+      }}
+    />
+  );
+};
+
 export const CountryFlag: React.FC<CountryFlagProps> = ({
   flairId,
   countryCode,
@@ -272,5 +316,5 @@ export const CountryFlag: React.FC<CountryFlagProps> = ({
     return <IRacingFlag />;
   }
 
-  return <span className={`fi fi-${resolved.toLowerCase()}`} />;
+  return <FlagSprite code={resolved.toLowerCase()} />;
 };

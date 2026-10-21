@@ -20,6 +20,7 @@ import {
 } from '../../lmu/sessionSignature';
 import { createRosterGate } from '../../lmu/rosterSettle';
 import { createLmuSessionIdentity } from '../../lmu/sessionIdentity';
+import { createLmuDataFreeze } from '../../lmu/dataFreeze';
 import {
   LMU_DISCONNECT_GRACE_MS,
   shouldHoldLmuRunningState,
@@ -121,6 +122,14 @@ const SLOW_SESSION_LOG_INTERVAL_MS = 10_000;
  * anyone concludes anything about where a stutter comes from.
  */
 const SLOW_ITERATION_MS = 12;
+
+/**
+ * How often to look while the data is frozen.
+ *
+ * Slow enough to cost nothing, quick enough that coming back from the menus
+ * feels immediate. TinyPedal uses 500 ms for the same state.
+ */
+const FROZEN_POLL_INTERVAL = 250;
 
 const perfRunConfig = getPerfRunConfig();
 const perfTelemetryDeliveryEnabled =
@@ -228,6 +237,13 @@ export async function publishLmuSDKEvents(
    * clock and the lap count go backwards. See sessionIdentity.ts.
    */
   const sessionIdentity = createLmuSessionIdentity();
+  /**
+   * Whether the sim has stopped writing shared memory.
+   *
+   * Ending a session leaves the block readable and stale, so without this the
+   * last snapshot was taken at face value forever. See dataFreeze.ts.
+   */
+  const dataFreeze = createLmuDataFreeze();
   let activeTrackName = '';
   let trackMap: LmuTrackMap | null = null;
   let lastBlindSpotDataIssue: string | null | undefined;
@@ -383,6 +399,7 @@ export async function publishLmuSDKEvents(
           resetLmuOpponentLapDistanceState(opponentLapDistanceState);
           rosterGate.reset();
           sessionIdentity.reset();
+          dataFreeze.reset();
           restPoller.setActive(false);
           // The token was bought with a ticket this sim run minted, and a
           // queue that outlives the session has nothing left to ask with.
@@ -479,6 +496,19 @@ export async function publishLmuSDKEvents(
         sessionStartEvents: raw.sessionStartEvents,
         sessionEndEvents: raw.sessionEndEvents,
       });
+      const frozen = dataFreeze.observe(
+        { scoringUpdates: raw.scoringUpdates, currentET: raw.currentET },
+        tickTime
+      );
+      if (dataFreeze.justChanged()) {
+        logger.info(
+          frozen
+            ? '[lmuSdkBridge] Shared memory stopped updating; treating the ' +
+                'player as out of the car'
+            : '[lmuSdkBridge] Shared memory updating again'
+        );
+      }
+
       const sessionChange = sessionIdentity.lastChange();
       if (sessionChange && sessionChange !== 'stamp') {
         // 'event' is the sim's own StartSession/EndSession callback. The other
@@ -576,7 +606,8 @@ export async function publishLmuSDKEvents(
         lapDistanceState,
         opponentLapDistanceState,
         undefined,
-        sessionIdentity
+        sessionIdentity,
+        frozen
       );
       lifecycle?._onTelemetry(telemetry);
       perfMetrics.markEnd('lifecycleTelemetry');
@@ -682,9 +713,16 @@ export async function publishLmuSDKEvents(
         iterations = 0;
       }
 
+      // Frozen data cannot change, so there is nothing to read at the poll
+      // rate: a 325 KB copy and every processor, 125 times a second, over a
+      // snapshot the sim has stopped writing. Backing off is what TinyPedal
+      // does too, and it is the only part of this that the sim notices.
+      const pollInterval = frozen
+        ? FROZEN_POLL_INTERVAL
+        : TELEMETRY_POLL_INTERVAL;
       const remainingDelay = Math.max(
         0,
-        TELEMETRY_POLL_INTERVAL - (performance.now() - pollStartedAt)
+        pollInterval - (performance.now() - pollStartedAt)
       );
       await new Promise((resolve) => setTimeout(resolve, remainingDelay));
     }

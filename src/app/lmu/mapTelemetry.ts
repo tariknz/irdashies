@@ -232,7 +232,14 @@ export function mapLmuTelemetry(
    * the id is derived from this snapshot alone, which cannot see a server
    * rolling a session of the same type on the same track.
    */
-  sessionIdentity?: LmuSessionIdentity
+  sessionIdentity?: LmuSessionIdentity,
+  /**
+   * True when the sim has stopped writing shared memory, so the snapshot is
+   * the last one it wrote rather than a current reading. Omitted -- as every
+   * spec does -- the snapshot is taken at face value, which is what it was
+   * before anything watched for this. See dataFreeze.ts.
+   */
+  dataFrozen?: boolean
 ): Telemetry {
   // Boundary note: a handful of generated Telemetry keys (e.g. SessionTime) are
   // typed with an `undefined[]` value shape although the iRacing native layer
@@ -679,9 +686,26 @@ export function mapLmuTelemetry(
   t.dcPitSpeedLimiterToggle = bool(raw.speedLimiter);
   t.PitstopActive = bool(false);
   t.OnPitRoad = bool(playerIdx >= 0 ? raw.vehInPits[playerIdx] === 1 : false);
-  t.IsOnTrack = bool(playerIdx >= 0 && raw.inRealtime);
-  t.IsInGarage = bool(playerIdx >= 0 && raw.vehInGarageStall[playerIdx]);
-  t.IsGarageVisible = bool(playerIdx >= 0 && raw.vehInGarageStall[playerIdx]);
+  // Three conditions, matching TinyPedal's own test for LMU: the data is
+  // flowing, the player has a slot, and either the sim says realtime or the
+  // ignition is on. The first is the one that was missing -- a frozen snapshot
+  // keeps reporting realtime forever, which is why ending a session left every
+  // widget gated on this one on screen. Ignition is the second half of
+  // TinyPedal's OR: a driver sitting in the car before realtime begins is
+  // still in the car.
+  const inCar =
+    !dataFrozen &&
+    playerIdx >= 0 &&
+    (raw.inRealtime || (raw.ignitionStarter ?? 0) > 0);
+  t.IsOnTrack = bool(inCar);
+  // Frozen data cannot say where the player is either, and a garage flag
+  // left true after a session ended reads as a claim about now.
+  t.IsInGarage = bool(
+    !dataFrozen && playerIdx >= 0 && raw.vehInGarageStall[playerIdx]
+  );
+  t.IsGarageVisible = bool(
+    !dataFrozen && playerIdx >= 0 && raw.vehInGarageStall[playerIdx]
+  );
 
   // Defaults for everything not meaningful in LMU (pit service, radios, FFB,
   // tyre models, dash controls...). Kept long but explicit so the shape stays
