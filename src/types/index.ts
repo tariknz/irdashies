@@ -41,3 +41,4 @@ export * from './tapeReplay';
 export * from './radarPoleSideSettings';
 export * from './streamChat';
 export * from './storageStatus';
+export * from './racePlan';

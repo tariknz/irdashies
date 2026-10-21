@@ -20,6 +20,7 @@ export * from './SectorTimingStore/SectorTimingStore';
 export * from './SectorTimingStore/SectorTimingUpdater';
 export * from './RaceControlStore';
 export * from './ReplayContextStore';
+export * from './RacePlanStore';
 export * from './LapHistoryArchive';
 export * from './PushToPassStore/PushToPassStore';
 export * from './PushToPassStore/PushToPassStoreUpdater';
