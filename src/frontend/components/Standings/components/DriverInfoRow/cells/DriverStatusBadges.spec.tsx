@@ -153,4 +153,34 @@ describe('DriverStatusBadges penalty kind', () => {
     expect(both.textContent).toContain('DT');
     expect(both.querySelectorAll('span').length).toBeGreaterThan(1);
   });
+
+  it('shows a time penalty as its magnitude', () => {
+    // A time penalty is not served -- the seconds go onto the car's race
+    // time -- so how much is the only thing worth the badge's width.
+    expect(
+      badges({ penaltyKind: 'TIME', penaltySeconds: 10 }).textContent
+    ).toContain('+10');
+  });
+
+  it('names a time penalty whose magnitude has not arrived', () => {
+    expect(badges({ penaltyKind: 'TIME' }).textContent).toContain('TIME');
+  });
+
+  it('ignores the seconds for the kinds that are served on track', () => {
+    expect(
+      badges({ penaltyKind: 'SG', penaltySeconds: 30 }).textContent
+    ).toContain('SG');
+    expect(
+      badges({ penaltyKind: 'SG', penaltySeconds: 30 }).textContent
+    ).not.toContain('+30');
+  });
+
+  it('draws a time penalty in the same white on red', () => {
+    const span = badges({
+      penaltyKind: 'TIME',
+      penaltySeconds: 10,
+    }).querySelector('span') as HTMLElement;
+    expect(span.className).toContain('text-white');
+    expect(span.style.backgroundColor).toBe('rgb(255, 0, 0)');
+  });
 });

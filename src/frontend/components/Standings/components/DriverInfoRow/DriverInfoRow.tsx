@@ -1,4 +1,5 @@
 import { memo, useMemo } from 'react';
+import type { LmuPenaltyKind } from '@irdashies/types';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
 import { useDashboard, type P2PDisplayState } from '@irdashies/context';
@@ -65,7 +66,8 @@ interface DriverRowInfoProps {
   /** LMU's four wheels, FL, FR, RL, RR. Undefined where the sim has one. */
   wheelCompounds?: number[];
   /** LMU's penalty kind: DT for a drive-through, SG for a stop-go. */
-  penaltyKind?: 'DT' | 'SG';
+  penaltyKind?: LmuPenaltyKind;
+  penaltySeconds?: number;
   /** LMU's track-limits penalty points. Undefined where unknown. */
   trackLimitsPoints?: number;
   /** Points at which a drive-through is served. */
@@ -237,6 +239,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     tireCompound,
     wheelCompounds,
     penaltyKind,
+    penaltySeconds,
     trackLimitsPoints,
     trackLimitsMax,
     lmuVirtualEnergy,
@@ -400,6 +403,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             radioActive={radioActive}
             repair={repair}
             penaltyKind={penaltyKind}
+            penaltySeconds={penaltySeconds}
             penalty={penalty}
             slowdown={slowdown}
             showStatusBadges={config?.driverName?.showStatusBadges ?? true}
@@ -809,6 +813,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     tireCompound,
     wheelCompounds,
     penaltyKind,
+    penaltySeconds,
     trackLimitsPoints,
     trackLimitsMax,
     lmuVirtualEnergy,

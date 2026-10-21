@@ -100,6 +100,10 @@ export const useDriverStandings = (
   const carIdxEnergyRemaining =
     standingsSnapshot?.carIdxEnergyRemaining ?? EMPTY_NUMBERS;
   const carIdxPenalties = standingsSnapshot?.carIdxPenalties ?? EMPTY_NUMBERS;
+  const carIdxPenaltyKind =
+    standingsSnapshot?.carIdxPenaltyKind ?? EMPTY_NUMBERS;
+  const carIdxPenaltySeconds =
+    standingsSnapshot?.carIdxPenaltySeconds ?? EMPTY_NUMBERS;
   const penaltySeconds = standingsSnapshot?.penaltySeconds;
   const carIdxSessionFlags =
     standingsSnapshot?.carIdxSessionFlags ?? EMPTY_NUMBERS;
@@ -142,6 +146,8 @@ export const useDriverStandings = (
             carIdxTrackLimitsPointsValue: carIdxTrackLimitsPoints,
             carIdxEnergyRemainingValue: carIdxEnergyRemaining,
             carIdxPenaltiesValue: carIdxPenalties,
+            carIdxPenaltyKindValue: carIdxPenaltyKind,
+            carIdxPenaltySecondsValue: carIdxPenaltySeconds,
             penaltySeconds,
             carIdxSessionFlags: carIdxSessionFlags,
           },
@@ -247,6 +253,8 @@ export const useDriverStandings = (
       carIdxTrackLimitsPoints,
       carIdxEnergyRemaining,
       carIdxPenalties,
+      carIdxPenaltyKind,
+      carIdxPenaltySeconds,
       penaltySeconds,
       carIdxSessionFlags,
       positions,

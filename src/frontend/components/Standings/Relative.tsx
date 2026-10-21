@@ -284,6 +284,7 @@ export const Relative = () => {
             settings?.compound?.enabled ? result.wheelCompounds : undefined
           }
           penaltyKind={result.penaltyKind}
+          penaltySeconds={result.penaltySeconds}
           trackLimitsPoints={result.trackLimitsPoints}
           trackLimitsMax={trackLimitsMax}
           lmuVirtualEnergy={result.energyRemaining}

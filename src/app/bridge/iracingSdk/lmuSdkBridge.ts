@@ -40,6 +40,10 @@ import { createLmuRestTransport } from '../../lmu/rest/httpJson';
 import { createLmuRestPoller } from '../../lmu/rest/poller';
 import { createLmuRestData } from '../../lmu/rest/state';
 import { createLmuTapeRestTransport } from '../../lmu/rest/tapeTransport';
+import { createLmuLiveStandings } from '../../lmu/liveStandings/client';
+import { lmuLivePenaltyChannels } from '../../lmu/liveStandings/penalties';
+import { createLmuWebSocket } from '../../lmu/liveStandings/socket';
+import type { LmuLivePenaltyChannels } from '../../lmu/liveStandings/penalties';
 import {
   loadLmuTrackMap,
   LmuTrackMapRecorder,
@@ -187,6 +191,31 @@ export async function publishLmuSDKEvents(
     },
   });
   let lastRestRevision = restData.revision;
+
+  // Which penalty each car is serving, from LMU's UI websocket -- the only
+  // source that names a kind, and the only one that names it for a car other
+  // than the player. Not created for a tape replay: a tape records shared
+  // memory and REST, so there is no recorded socket to replay and the badges
+  // fall back to the player-only estimate exactly as they did before.
+  const liveStandings = isTapeReplay
+    ? undefined
+    : createLmuLiveStandings({
+        connect: createLmuWebSocket,
+        logger: {
+          info: (message) => logger.info(message),
+          warn: (message) => logger.warn(message),
+        },
+      });
+  /**
+   * Per-car penalty cells, rebuilt only when the feed or the grid changes.
+   *
+   * Cells rather than arrays so the frame build assigns a reference: the loop
+   * runs every 8 ms and these change a handful of times a session.
+   */
+  let penaltyChannels: LmuLivePenaltyChannels | undefined;
+  let penaltyRoster: readonly { id: number; name: string }[] = [];
+  let lastPenaltyRosterSignature: string | null = null;
+  let lastPenaltyRevision = -1;
 
   const perfMetrics = new TelemetryPerfMetrics(undefined, channelBus);
   perfMetrics.startReporting();
@@ -401,6 +430,7 @@ export async function publishLmuSDKEvents(
           sessionIdentity.reset();
           dataFreeze.reset();
           restPoller.setActive(false);
+          liveStandings?.setActive(false);
           // The token was bought with a ticket this sim run minted, and a
           // queue that outlives the session has nothing left to ask with.
           // What was already resolved stays: that lives in the cache.
@@ -459,6 +489,7 @@ export async function publishLmuSDKEvents(
         );
         wasRunning = true;
         restPoller.setActive(true);
+        liveStandings?.setActive(true);
         publishRunningState(true);
         lifecycle?._onEnter({ replay: false });
       }
@@ -537,8 +568,23 @@ export async function publishLmuSDKEvents(
         // Only the roster is gated. Anything else that moves -- a position, a
         // lap time, the weather -- rebuilds at once as it always did, because
         // those arrive steadily rather than in bursts.
+        const rosterSignature = lmuRosterSignature(rawSession);
+        // The grid the penalty feed is keyed to. Driver name is the only field
+        // the websocket and shared memory share, so the join needs the names,
+        // and only the session snapshot carries them -- which is why this sits
+        // here rather than beside the frame build below.
+        if (rosterSignature !== lastPenaltyRosterSignature) {
+          lastPenaltyRosterSignature = rosterSignature;
+          penaltyRoster = rawSession.drivers.map((driver) => ({
+            id: driver.id,
+            name: driver.name,
+          }));
+          // Forces the rebuild below even if the feed has sent nothing since:
+          // a driver who joined needs their code looked up once.
+          lastPenaltyRevision = -1;
+        }
         const waitingForRoster = rosterGate.shouldWait(
-          lmuRosterSignature(rawSession),
+          rosterSignature,
           tickTime
         );
         if (signature !== lastSessionSignature && !waitingForRoster) {
@@ -600,6 +646,18 @@ export async function publishLmuSDKEvents(
         }
       }
 
+      // Cheap on every iteration and real work only when something changed:
+      // `state()` ages the feed and reports a revision, and a grid of 60 name
+      // lookups runs on the handful of iterations where that revision moved.
+      const livePenalties = liveStandings?.state();
+      if (livePenalties && livePenalties.revision !== lastPenaltyRevision) {
+        lastPenaltyRevision = livePenalties.revision;
+        penaltyChannels = lmuLivePenaltyChannels(
+          penaltyRoster,
+          livePenalties.entries
+        );
+      }
+
       perfMetrics.markStart('lifecycleTelemetry');
       const telemetry = mapLmuTelemetry(
         raw,
@@ -612,7 +670,8 @@ export async function publishLmuSDKEvents(
         // activates those too -- which is what they were built for.
         restData.cells,
         sessionIdentity,
-        frozen
+        frozen,
+        penaltyChannels
       );
       lifecycle?._onTelemetry(telemetry);
       perfMetrics.markEnd('lifecycleTelemetry');
@@ -744,6 +803,7 @@ export async function publishLmuSDKEvents(
       lifecycle?._onDisconnect();
     }
     restPoller.setActive(false);
+    liveStandings?.stop();
     ratingClient.reset();
     publishRunningState(false);
   });

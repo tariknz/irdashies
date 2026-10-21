@@ -1,4 +1,5 @@
 import { memo, type ReactNode } from 'react';
+import { lmuPenaltyBadgeText, type LmuPenaltyKind } from '@irdashies/types';
 import { formatTime } from '@irdashies/utils/time';
 
 interface StatusBadgeProps {
@@ -42,14 +43,20 @@ const flagBadgeClasses = 'bg-black/80 inline-block min-w-6';
 
 interface DriverStatusBadgesProps {
   /**
-   * LMU's penalty, where the kind can be told apart: `DT` for a drive-through,
-   * `SG` for a stop-go.
+   * LMU's penalty, by kind: `DT` for a drive-through, `SG` for a stop-go,
+   * `TIME` for seconds added at the next stop.
    *
    * Its own prop rather than another boolean, because the kind is the point --
-   * a drive-through and a stop-go cost very different amounts of time, and a
-   * single penalty flag would make the driver look up to find out which.
+   * the three cost very different amounts of time and only two of them are
+   * served on track, so a single penalty flag would make the driver look up to
+   * find out which.
    */
-  penaltyKind?: 'DT' | 'SG';
+  penaltyKind?: LmuPenaltyKind;
+  /**
+   * Seconds a time penalty will add, for the `TIME` kind. Ignored for the
+   * other two, which are served on track rather than paid in time.
+   */
+  penaltySeconds?: number;
   repair?: boolean;
   penalty?: boolean;
   slowdown?: boolean;
@@ -71,6 +78,7 @@ interface DriverStatusBadgesProps {
 export const DriverStatusBadges = memo(
   ({
     penaltyKind,
+    penaltySeconds,
     repair,
     penalty,
     slowdown,
@@ -136,7 +144,7 @@ export const DriverStatusBadges = memo(
             additionalClasses="inline-block min-w-6 font-bold"
             backgroundColor="#FF0000"
           >
-            {penaltyKind}
+            {lmuPenaltyBadgeText(penaltyKind, penaltySeconds)}
           </StatusBadge>
         )}
         {penalty && (

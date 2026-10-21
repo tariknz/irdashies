@@ -21,7 +21,7 @@ import {
 } from './createStandings';
 import { GlobalFlags, SessionState } from '@irdashies/types';
 import { useDriverLivePositions } from './useDriverLivePositions';
-import { lmuPenaltyKind } from '@irdashies/types';
+import { lmuPenaltyBadge, lmuPenaltyKindFromCode } from '@irdashies/types';
 import { measureStandingsRebuild } from './standingsCost';
 import { useRelativeSettings } from './useRelativeSettings';
 import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
@@ -166,6 +166,8 @@ export const useCarState = () => {
   const carIdxEnergyRemaining =
     snapshot?.carIdxEnergyRemaining ?? EMPTY_NUMBERS;
   const carIdxPenalties = snapshot?.carIdxPenalties ?? EMPTY_NUMBERS;
+  const carIdxPenaltyKind = snapshot?.carIdxPenaltyKind ?? EMPTY_NUMBERS;
+  const carIdxPenaltySeconds = snapshot?.carIdxPenaltySeconds ?? EMPTY_NUMBERS;
   const carIdxSessionFlags = snapshot?.carIdxSessionFlags ?? EMPTY_NUMBERS;
 
   return useMemo(() => {
@@ -179,6 +181,8 @@ export const useCarState = () => {
         trackLimitsPoints: trackLimitsFor(carIdxTrackLimitsPoints, index),
         energyRemaining: energyFor(carIdxEnergyRemaining, index),
         penalties: carIdxPenalties[index] ?? 0,
+        penaltyKind: lmuPenaltyKindFromCode(carIdxPenaltyKind[index]),
+        penaltySeconds: carIdxPenaltySeconds[index],
         dnf: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Disqualify),
         repair: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Repair),
         penalty: !!((carIdxSessionFlags[index] ?? 0) & GlobalFlags.Black),
@@ -193,6 +197,8 @@ export const useCarState = () => {
     carIdxTrackLimitsPoints,
     carIdxEnergyRemaining,
     carIdxPenalties,
+    carIdxPenaltyKind,
+    carIdxPenaltySeconds,
     carIdxSessionFlags,
   ]);
 };
@@ -344,12 +350,17 @@ export const useDriverStandings = () => {
             wheelCompounds: carState?.wheelCompounds,
             trackLimitsPoints: carState?.trackLimitsPoints,
             energyRemaining: carState?.energyRemaining,
-            // Only the player's, because the kind comes from the player's own
-            // pit-stop estimate. Every other car has a count and no more.
+            // Decoded upstream in useCarState, so the code is already a
+            // kind here; the fallback rule is in lmuPenaltyBadge.
             penaltyKind:
-              driver.carIdx === playerCarIdx
-                ? lmuPenaltyKind(carState?.penalties, penaltySeconds)
-                : undefined,
+              carState?.penaltyKind ??
+              lmuPenaltyBadge(
+                undefined,
+                driver.carIdx === playerCarIdx,
+                carState?.penalties,
+                penaltySeconds
+              ),
+            penaltySeconds: carState?.penaltySeconds,
             carClass: driver.carClass,
             radioActive: radioActiveCarIdxs.includes(driverPos.carIdx),
             carId: driver.carId,

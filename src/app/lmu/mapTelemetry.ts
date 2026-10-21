@@ -22,6 +22,7 @@ import {
   type LmuOpponentLapDistanceState,
 } from './opponentLapDistance';
 import type { LmuRestCell, LmuRestCells } from './rest/state';
+import type { LmuLivePenaltyChannels } from './liveStandings/penalties';
 import { isLmuRaceSession } from './mapSession';
 import {
   createLmuClassPositionState,
@@ -239,7 +240,17 @@ export function mapLmuTelemetry(
    * spec does -- the snapshot is taken at face value, which is what it was
    * before anything watched for this. See dataFreeze.ts.
    */
-  dataFrozen?: boolean
+  dataFrozen?: boolean,
+  /**
+   * Which penalty each car is serving, and what a time penalty will cost.
+   *
+   * Built by the caller, because the only source is LMU's UI websocket and the
+   * join is by driver name -- which this snapshot does not carry. The session
+   * snapshot does, so the bridge keys the feed to the grid there and hands the
+   * finished cells down. Omitted -- as every spec does -- the channels are
+   * absent and the player's badge falls back to the stop estimate.
+   */
+  livePenalties?: LmuLivePenaltyChannels
 ): Telemetry {
   // Boundary note: a handful of generated Telemetry keys (e.g. SessionTime) are
   // typed with an `undefined[]` value shape although the iRacing native layer
@@ -438,8 +449,7 @@ export function mapLmuTelemetry(
   // One figure per car: virtual energy where the car runs on it, fuel
   // otherwise. Which budget applies is a property of the car, not the session,
   // so the choice is made per car here rather than once for the grid.
-  // Count only. Which penalty it is comes from the pit-stop estimate and is
-  // knowable for the player alone -- see types/lmuPenalty.ts.
+  // Count only: scoring has no field for which penalty it is.
   t.LmuCarIdxPenalties = numArr(raw.vehNumPenalties);
   t.LmuCarIdxEnergyRemaining = numArr(
     lmuEnergyChannel(raw.vehFuelFraction, raw.vehVirtualEnergy)
@@ -490,6 +500,16 @@ export function mapLmuTelemetry(
   if (restCells?.repairTime) t.LmuRepairTime = staged(restCells.repairTime);
   if (restCells?.penaltySeconds) {
     t.LmuPenaltySeconds = staged(restCells.penaltySeconds);
+  }
+  // The penalty kind, and a time penalty's magnitude, from the sim's UI
+  // websocket by way of the bridge -- the one source that states either, and
+  // states them per car. Reference assignments like the REST cells above and
+  // for the same reason. Absent when that socket is not answering, which is
+  // what sends the player's badge back to the estimate-derived fallback and
+  // leaves every other car without one. See liveStandings/.
+  if (livePenalties) {
+    t.LmuCarIdxPenaltyKind = staged(livePenalties.kind);
+    t.LmuCarIdxPenaltySeconds = staged(livePenalties.penaltySeconds);
   }
   if (restCells?.refuelTarget) {
     t.LmuRefuelTarget = staged(restCells.refuelTarget);

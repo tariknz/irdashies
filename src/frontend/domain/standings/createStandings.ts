@@ -1,6 +1,6 @@
 import { SessionResults, Driver, TrackLocation } from '@irdashies/types';
 import type { LmuDriverRating } from '@irdashies/types';
-import { lmuPenaltyKind, type LmuPenaltyKind } from '@irdashies/types';
+import { lmuPenaltyBadge, type LmuPenaltyKind } from '@irdashies/types';
 import {
   calculateIRatingGain,
   RaceResult,
@@ -70,6 +70,8 @@ export interface Standings {
    * types/lmuPenalty.ts.
    */
   penaltyKind?: LmuPenaltyKind;
+  /** Seconds a time penalty will add, for the `TIME` kind. */
+  penaltySeconds?: number;
   onTrack: boolean;
   carClass: {
     id: number;
@@ -208,6 +210,13 @@ export const createDriverStandings = (
     carIdxEnergyRemainingValue?: number[];
     /** Outstanding penalties per car. A count, not a kind. */
     carIdxPenaltiesValue?: number[];
+    /**
+     * Which penalty each car is serving, as an LMU_PENALTY_CODE. Empty under
+     * iRacing, and under LMU when the sim's UI websocket is not answering.
+     */
+    carIdxPenaltyKindValue?: number[];
+    /** Seconds a time penalty will add, per car. Same source as the kind. */
+    carIdxPenaltySecondsValue?: number[];
     /** Seconds the player's next stop spends serving penalties. */
     penaltySeconds?: number;
     isOnTrack?: boolean;
@@ -349,13 +358,13 @@ export const createDriverStandings = (
           telemetry?.carIdxEnergyRemainingValue,
           result.CarIdx
         ),
-        penaltyKind:
-          result.CarIdx === session?.playerIdx
-            ? lmuPenaltyKind(
-                telemetry?.carIdxPenaltiesValue?.[result.CarIdx],
-                telemetry?.penaltySeconds
-              )
-            : undefined,
+        penaltyKind: lmuPenaltyBadge(
+          telemetry?.carIdxPenaltyKindValue?.[result.CarIdx],
+          result.CarIdx === session?.playerIdx,
+          telemetry?.carIdxPenaltiesValue?.[result.CarIdx],
+          telemetry?.penaltySeconds
+        ),
+        penaltySeconds: telemetry?.carIdxPenaltySecondsValue?.[result.CarIdx],
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,
@@ -466,13 +475,13 @@ export const createDriverStandings = (
           telemetry?.carIdxEnergyRemainingValue,
           driver.CarIdx
         ),
-        penaltyKind:
-          driver.CarIdx === session?.playerIdx
-            ? lmuPenaltyKind(
-                telemetry?.carIdxPenaltiesValue?.[driver.CarIdx],
-                telemetry?.penaltySeconds
-              )
-            : undefined,
+        penaltyKind: lmuPenaltyBadge(
+          telemetry?.carIdxPenaltyKindValue?.[driver.CarIdx],
+          driver.CarIdx === session?.playerIdx,
+          telemetry?.carIdxPenaltiesValue?.[driver.CarIdx],
+          telemetry?.penaltySeconds
+        ),
+        penaltySeconds: telemetry?.carIdxPenaltySecondsValue?.[driver.CarIdx],
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,

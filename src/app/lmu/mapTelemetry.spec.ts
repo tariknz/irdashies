@@ -888,3 +888,48 @@ describe('mapLmuTelemetry adjustable dials', () => {
     expect(dial(t, 'dcTractionControl2')).toBeUndefined();
   });
 });
+
+describe('mapLmuTelemetry penalty kinds', () => {
+  const channels = {
+    kind: { value: [0, 1, 2, 3] },
+    penaltySeconds: { value: [0, 0, 0, 30] },
+  };
+
+  const mapped = () =>
+    mapLmuTelemetry(
+      fixture(),
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      channels
+    );
+
+  it('publishes the per-car cells the caller built', () => {
+    const t = mapped();
+    expect(t.LmuCarIdxPenaltyKind?.value).toEqual([0, 1, 2, 3]);
+    expect(t.LmuCarIdxPenaltySeconds?.value).toEqual([0, 0, 0, 30]);
+  });
+
+  it('hands the cells over by reference rather than copying them', () => {
+    // The loop runs every 8 ms. A copy per frame is an allocation per frame,
+    // for a value that changes a handful of times a session.
+    expect(mapped().LmuCarIdxPenaltyKind?.value).toBe(channels.kind.value);
+  });
+
+  it('leaves both channels absent when nothing is known', () => {
+    // The websocket is the only source of a kind, so a build or a moment
+    // without it publishes nothing rather than a grid of zeroes -- which
+    // every consumer would read as "known clean".
+    const t = mapLmuTelemetry(fixture());
+    expect(t.LmuCarIdxPenaltyKind).toBeUndefined();
+    expect(t.LmuCarIdxPenaltySeconds).toBeUndefined();
+  });
+
+  it('still publishes the count, which comes from scoring', () => {
+    expect(
+      Array.isArray(mapLmuTelemetry(fixture()).LmuCarIdxPenalties?.value)
+    ).toBe(true);
+  });
+});

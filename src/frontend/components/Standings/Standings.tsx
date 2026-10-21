@@ -426,6 +426,7 @@ export const Standings = () => {
                               : undefined
                           }
                           penaltyKind={result.penaltyKind}
+                          penaltySeconds={result.penaltySeconds}
                           trackLimitsPoints={result.trackLimitsPoints}
                           trackLimitsMax={trackLimitsMax}
                           lmuVirtualEnergy={result.energyRemaining}

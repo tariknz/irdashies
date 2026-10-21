@@ -41,9 +41,25 @@ export type Telemetry = {
    */
   /**
    * Outstanding penalties per car. A count; scoring has no field for which
-   * penalty it is, and the kind is only derivable for the player.
+   * penalty it is.
    */
   LmuCarIdxPenalties?: TelemetryVar<number[]>;
+  /**
+   * Which penalty each car is serving, as an LMU_PENALTY_CODE.
+   *
+   * From LMU's UI websocket rather than shared memory or REST -- the only
+   * source that names a kind, and the only one that names it for a car other
+   * than the player. Empty when that socket is not answering, which is what
+   * sends the player's badge back to the estimate-derived fallback and leaves
+   * every other car without one. See app/lmu/liveStandings/.
+   */
+  LmuCarIdxPenaltyKind?: TelemetryVar<number[]>;
+  /**
+   * Seconds a time penalty will add to each car's race time. 0 for a clean
+   * car and for the two kinds that are served on track rather than paid in
+   * time. From the same websocket as the kind above.
+   */
+  LmuCarIdxPenaltySeconds?: TelemetryVar<number[]>;
   /**
    * Seconds the player's next stop spends serving penalties, from the pit-stop
    * estimate. The only thing that tells a drive-through from a stop-go, since

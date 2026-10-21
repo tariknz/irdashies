@@ -158,6 +158,18 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       this.latest.carIdxEnergyRemaining
     );
     copyNumberArray(frame, 'LmuCarIdxPenalties', this.latest.carIdxPenalties);
+    // LMU only, and only while its UI websocket is answering. The kind, as a
+    // code; the count above says nothing about which penalty it is.
+    copyNumberArray(
+      frame,
+      'LmuCarIdxPenaltyKind',
+      this.latest.carIdxPenaltyKind
+    );
+    copyNumberArray(
+      frame,
+      'LmuCarIdxPenaltySeconds',
+      this.latest.carIdxPenaltySeconds
+    );
     this.latest.penaltySeconds =
       numberValue(frame, 'LmuPenaltySeconds') ?? undefined;
     copyBooleanArray(frame, 'CarIdxP2P_Status', this.latest.carIdxP2PStatus);
@@ -248,6 +260,8 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
     this.latest.carIdxTrackLimitsPoints.length = 0;
     this.latest.carIdxEnergyRemaining.length = 0;
     this.latest.carIdxPenalties.length = 0;
+    this.latest.carIdxPenaltyKind.length = 0;
+    this.latest.carIdxPenaltySeconds.length = 0;
     this.latest.penaltySeconds = undefined;
     this.latest.trackLimitsPointsMax = 0;
     this.latest.carIdxP2PStatus.length = 0;
@@ -281,6 +295,8 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       carIdxTrackLimitsPoints: [],
       carIdxEnergyRemaining: [],
       carIdxPenalties: [],
+      carIdxPenaltyKind: [],
+      carIdxPenaltySeconds: [],
       penaltySeconds: undefined,
       trackLimitsPointsMax: 0,
       carIdxP2PStatus: [],

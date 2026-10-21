@@ -463,6 +463,22 @@ export interface StandingsSnapshot {
   /** Outstanding penalties per car. A count, not a kind. */
   carIdxPenalties: number[];
   /**
+   * Which penalty each car is serving, as an LMU_PENALTY_CODE.
+   *
+   * Empty under iRacing, and empty under LMU whenever the sim's UI websocket
+   * is not answering -- it is the only source that names a kind per car.
+   * `lmuPenaltyKindFromCode` turns an entry into something to draw.
+   */
+  carIdxPenaltyKind: number[];
+  /**
+   * Seconds a time penalty will add, per car. 0 for a clean car and for the
+   * two kinds served on track. Empty wherever `carIdxPenaltyKind` is.
+   *
+   * Not to be confused with `penaltySeconds` below, which is the player's own
+   * pit-stop estimate and a different fact from a different source.
+   */
+  carIdxPenaltySeconds: number[];
+  /**
    * Seconds the player's next stop spends serving penalties. Undefined until
    * the pit-stop estimate has been polled. Names the player's penalty when
    * combined with their count -- see types/lmuPenalty.ts.
