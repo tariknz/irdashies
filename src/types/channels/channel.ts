@@ -7,6 +7,7 @@ import type {
   StreamChatMessagesSnapshot,
 } from '../streamChat';
 import type { ReplayContextSnapshot } from './replayContext';
+import type { RacePlanProgressSnapshot } from './racePlanProgress';
 import type { PitLaneCalibration } from '../pitLane';
 
 export type SessionLifecycleEvent =
@@ -44,6 +45,7 @@ export interface ChannelPayloads {
   'replay.context': ReplayContextSnapshot;
   'streamchat.messages': StreamChatMessagesSnapshot;
   'streamchat.emotes': StreamChatEmotesSnapshot;
+  'race-plan.progress': RacePlanProgressSnapshot;
 }
 
 export interface TrackStateSnapshot {
@@ -788,6 +790,12 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 1,
     maxRateHz: 2,
+  },
+  // Stints are minutes long; once a second is plenty for a lap count.
+  'race-plan.progress': {
+    kind: 'snapshot',
+    defaultRateHz: 1,
+    maxRateHz: 1,
   },
 } as const satisfies ChannelRegistry;
 

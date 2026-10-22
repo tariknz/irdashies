@@ -119,6 +119,10 @@ export const useTrackDisplayName = () =>
 export const useDriverCarIdx = () =>
   useStore(useSessionStore, (state) => state.session?.DriverInfo?.DriverCarIdx);
 
+/** iRacing customer id of the user running this client. */
+export const useDriverUserId = () =>
+  useStore(useSessionStore, (state) => state.session?.DriverInfo?.DriverUserID);
+
 export const useSessionPositions = (sessionNum: number | undefined) =>
   useStoreWithEqualityFn(
     useSessionStore,

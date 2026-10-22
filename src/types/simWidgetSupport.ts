@@ -86,6 +86,9 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'radar',
   'rejoin',
   'slowcarahead',
+  // Race plans name drivers by iRacing customer id.
+  'stintplan',
+  'strategytimeline',
   'tachometer',
   'streamchat',
   // LMU simulates no wind: its wind vector is always zero.

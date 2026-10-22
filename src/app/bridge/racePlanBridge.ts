@@ -9,6 +9,7 @@ import {
   type ApiKeyCrypto,
   type RacePlanService,
 } from '../services/racePlanService';
+import { setRacePlanSource } from '../services/racePlanSource';
 
 export const RACE_PLAN_STATE_EVENT = 'racePlan:state';
 
@@ -87,6 +88,7 @@ export function setupRacePlanBridge() {
     client: createIracePlanClient(),
     crypto: safeStorageCrypto,
   });
+  setRacePlanSource(service);
   const watchedWindows = new Set<number>();
   const subscriptions = defineRendererSubscriptionBridge({
     name: 'racePlan',
@@ -109,6 +111,7 @@ export function setupRacePlanBridge() {
   return {
     service,
     dispose: () => {
+      setRacePlanSource(null);
       unsubscribe();
       subscriptions.dispose();
       service.dispose();

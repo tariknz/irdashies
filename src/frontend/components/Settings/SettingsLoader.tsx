@@ -43,6 +43,8 @@ import { BroadcastSettingsPage } from './sections/BroadcastGroupSettings';
 import { GantrySettings } from './sections/GantrySettings';
 import { SettingsPreviewContext } from '@irdashies/domain/widgetPreview/settingsPreviewContext';
 import { widgetSettingsType } from './widgetSettingsType';
+import { StintPlanSettings } from './sections/StintPlanSettings';
+import { StrategyTimelineSettings } from './sections/StrategyTimelineSettings';
 
 /**
  * Settings page per widget type. Telemetry Inspector has none of its own: its
@@ -87,6 +89,8 @@ export const WIDGET_SETTINGS: Record<
   broadcastweather: BroadcastSettingsPage,
   broadcastpodium: BroadcastSettingsPage,
   gantry: GantrySettings,
+  stintplan: StintPlanSettings,
+  strategytimeline: StrategyTimelineSettings,
 };
 
 interface SettingsLoaderProps {
