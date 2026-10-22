@@ -26,10 +26,12 @@ declare global {
     keybindingsBridge: KeybindingsBridge;
     /** Present only in the hidden WebHID host renderer (src/hidHost.ts). */
     gamepadHost?: GamepadHostBridge;
+    releaseNotesBridge?: import('./types/releaseNotes').ReleaseNotesBridge;
     chromiumFlagsBridge: ChromiumFlagsBridge;
     raceControlBridge: RaceControlBridge;
     /** Absent outside the Electron preload, e.g. the browser server. */
     lapHistoryBridge?: LapHistoryBridge;
     rendererPerfBridge?: RendererPerfBridge;
+    tapeReplayBridge?: import('./types/tapeReplay').TapeReplayBridge;
   }
 }

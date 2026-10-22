@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   TachometerWidgetSettings,
   getWidgetDefaultConfig,
@@ -213,11 +214,11 @@ const CustomShiftPointsSection = ({
       {customShiftPoints.enabled && (
         <div className="space-y-4 border-slate-700 pl-4">
           {/* Demo Mode Info */}
-          <div className="bg-blue-900/30 border border-blue-700/50 rounded p-3 text-xs">
+          <div className="bg-accent-900/30 border border-accent-700/50 rounded p-3 text-xs">
             <div className="flex items-start gap-2">
               <div className="flex-1">
-                <p className="text-blue-200 mb-1">Demo Mode Car</p>
-                <p className="text-blue-300">
+                <p className="text-accent-200 mb-1">Demo Mode Car</p>
+                <p className="text-accent-300">
                   Demo mode uses the <strong>BMW M4 GT4</strong> (bmwm4gt4).
                   Configure custom shift points for this car to test in demo
                   mode.
@@ -276,7 +277,7 @@ const CustomShiftPointsSection = ({
               <button
                 onClick={addCar}
                 disabled={!selectedCarId || loading}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded text-sm transition-colors"
+                className="px-4 py-2 bg-accent-600 hover:bg-accent-700 disabled:bg-slate-600 disabled:text-slate-400 disabled:cursor-not-allowed text-on-accent rounded text-sm transition-colors"
               >
                 Add
               </button>
@@ -472,136 +473,139 @@ export const TachometerSettings = () => {
 
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
-                <SettingsSection title="Display">
-                  <SettingProp path="background.opacity" />
+                <>
+                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
+                  <SettingsSection title="Display">
+                    <SettingProp path="background.opacity" />
 
-                  <SettingProp path="showRpmText" />
+                    <SettingProp path="showRpmText" />
 
-                  {config.showRpmText && (
-                    <SettingsSection>
-                      <SettingProp path="rpmOrientation" />
-                    </SettingsSection>
-                  )}
-                  <SettingDivider />
+                    {config.showRpmText && (
+                      <SettingsSection>
+                        <SettingProp path="rpmOrientation" />
+                      </SettingsSection>
+                    )}
+                    <SettingDivider />
 
-                  <SettingToggleRow
-                    title="Show Oil Temperature"
-                    enabled={oilTempEnabled}
-                    onToggle={(newValue) =>
-                      handleConfigChange({
-                        oilTemp: {
-                          enabled: newValue,
-                          position: oilTempPosition,
-                          edgeOffset: oilTempEdgeOffset,
-                        },
-                      })
-                    }
-                  />
-
-                  {oilTempEnabled && (
-                    <SettingsSection>
-                      <SettingButtonGroupRow<'top' | 'bottom'>
-                        title="Oil Position"
-                        value={oilTempPosition}
-                        options={[
-                          { label: 'Top', value: 'top' },
-                          { label: 'Bottom', value: 'bottom' },
-                        ]}
-                        onChange={(v) =>
-                          handleConfigChange({
-                            oilTemp: {
-                              enabled: oilTempEnabled,
-                              position: v,
-                              edgeOffset: oilTempEdgeOffset,
-                            },
-                          })
-                        }
-                      />
-                      <SettingSliderRow
-                        title="Oil Edge Offset"
-                        value={oilTempEdgeOffset}
-                        units="%"
-                        min={0}
-                        max={100}
-                        step={1}
-                        onChange={(v) =>
-                          handleConfigChange({
-                            oilTemp: {
-                              enabled: oilTempEnabled,
-                              position: oilTempPosition,
-                              edgeOffset: v,
-                            },
-                          })
-                        }
-                      />
-                    </SettingsSection>
-                  )}
-
-                  <SettingToggleRow
-                    title="Show Water Temperature"
-                    enabled={waterTempEnabled}
-                    onToggle={(newValue) =>
-                      handleConfigChange({
-                        waterTemp: {
-                          enabled: newValue,
-                          position: waterTempPosition,
-                          edgeOffset: waterTempEdgeOffset,
-                        },
-                      })
-                    }
-                  />
-
-                  {waterTempEnabled && (
-                    <SettingsSection>
-                      <SettingButtonGroupRow<'top' | 'bottom'>
-                        title="Water Position"
-                        value={waterTempPosition}
-                        options={[
-                          { label: 'Top', value: 'top' },
-                          { label: 'Bottom', value: 'bottom' },
-                        ]}
-                        onChange={(v) =>
-                          handleConfigChange({
-                            waterTemp: {
-                              enabled: waterTempEnabled,
-                              position: v,
-                              edgeOffset: waterTempEdgeOffset,
-                            },
-                          })
-                        }
-                      />
-                      <SettingSliderRow
-                        title="Water Edge Offset"
-                        value={waterTempEdgeOffset}
-                        units="%"
-                        min={0}
-                        max={100}
-                        step={1}
-                        onChange={(v) =>
-                          handleConfigChange({
-                            waterTemp: {
-                              enabled: waterTempEnabled,
-                              position: waterTempPosition,
-                              edgeOffset: v,
-                            },
-                          })
-                        }
-                      />
-                    </SettingsSection>
-                  )}
-
-                  {anyTempEnabled && (
                     <SettingToggleRow
-                      title="Swap Oil/Water Sides"
-                      enabled={tempSwapSides}
+                      title="Show Oil Temperature"
+                      enabled={oilTempEnabled}
                       onToggle={(newValue) =>
                         handleConfigChange({
-                          tempLayout: { swapSides: newValue },
+                          oilTemp: {
+                            enabled: newValue,
+                            position: oilTempPosition,
+                            edgeOffset: oilTempEdgeOffset,
+                          },
                         })
                       }
                     />
-                  )}
-                </SettingsSection>
+
+                    {oilTempEnabled && (
+                      <SettingsSection>
+                        <SettingButtonGroupRow<'top' | 'bottom'>
+                          title="Oil Position"
+                          value={oilTempPosition}
+                          options={[
+                            { label: 'Top', value: 'top' },
+                            { label: 'Bottom', value: 'bottom' },
+                          ]}
+                          onChange={(v) =>
+                            handleConfigChange({
+                              oilTemp: {
+                                enabled: oilTempEnabled,
+                                position: v,
+                                edgeOffset: oilTempEdgeOffset,
+                              },
+                            })
+                          }
+                        />
+                        <SettingSliderRow
+                          title="Oil Edge Offset"
+                          value={oilTempEdgeOffset}
+                          units="%"
+                          min={0}
+                          max={100}
+                          step={1}
+                          onChange={(v) =>
+                            handleConfigChange({
+                              oilTemp: {
+                                enabled: oilTempEnabled,
+                                position: oilTempPosition,
+                                edgeOffset: v,
+                              },
+                            })
+                          }
+                        />
+                      </SettingsSection>
+                    )}
+
+                    <SettingToggleRow
+                      title="Show Water Temperature"
+                      enabled={waterTempEnabled}
+                      onToggle={(newValue) =>
+                        handleConfigChange({
+                          waterTemp: {
+                            enabled: newValue,
+                            position: waterTempPosition,
+                            edgeOffset: waterTempEdgeOffset,
+                          },
+                        })
+                      }
+                    />
+
+                    {waterTempEnabled && (
+                      <SettingsSection>
+                        <SettingButtonGroupRow<'top' | 'bottom'>
+                          title="Water Position"
+                          value={waterTempPosition}
+                          options={[
+                            { label: 'Top', value: 'top' },
+                            { label: 'Bottom', value: 'bottom' },
+                          ]}
+                          onChange={(v) =>
+                            handleConfigChange({
+                              waterTemp: {
+                                enabled: waterTempEnabled,
+                                position: v,
+                                edgeOffset: waterTempEdgeOffset,
+                              },
+                            })
+                          }
+                        />
+                        <SettingSliderRow
+                          title="Water Edge Offset"
+                          value={waterTempEdgeOffset}
+                          units="%"
+                          min={0}
+                          max={100}
+                          step={1}
+                          onChange={(v) =>
+                            handleConfigChange({
+                              waterTemp: {
+                                enabled: waterTempEnabled,
+                                position: waterTempPosition,
+                                edgeOffset: v,
+                              },
+                            })
+                          }
+                        />
+                      </SettingsSection>
+                    )}
+
+                    {anyTempEnabled && (
+                      <SettingToggleRow
+                        title="Swap Oil/Water Sides"
+                        enabled={tempSwapSides}
+                        onToggle={(newValue) =>
+                          handleConfigChange({
+                            tempLayout: { swapSides: newValue },
+                          })
+                        }
+                      />
+                    )}
+                  </SettingsSection>
+                </>
               )}
 
               {/* OPTIONS TAB */}

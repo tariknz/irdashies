@@ -69,6 +69,7 @@ export interface SessionBarConfig {
   sessionClockTime: { enabled: boolean };
   trackWetness: { enabled: boolean };
   precipitation?: { enabled: boolean };
+  humidity?: { enabled: boolean };
   airTemperature: { enabled: boolean; unit: TemperatureUnit };
   trackTemperature: { enabled: boolean; unit: TemperatureUnit };
   wind?: { enabled: boolean; speedPosition?: 'left' | 'right' };
@@ -156,7 +157,6 @@ export type RelativeBadgeFormat =
 
 export interface StandingsConfig {
   customClassOrdering: boolean;
-  scale?: number;
   iratingChange: { enabled: boolean; estimateInPractice?: boolean };
   positionChange: { enabled: boolean };
   /**
@@ -175,7 +175,11 @@ export interface StandingsConfig {
     lmuFormat?: LmuBadgeFormat;
   };
   delta: { enabled: boolean };
-  gap: { enabled: boolean; decimalPlaces?: number };
+  gap: {
+    enabled: boolean;
+    decimalPlaces?: number;
+    reference?: 'classLeader' | 'player';
+  };
   interval: { enabled: boolean; decimalPlaces?: number };
   lastTime: { enabled: boolean; timeFormat: TimeFormat };
   fastestTime: { enabled: boolean; timeFormat: TimeFormat };
@@ -388,6 +392,12 @@ export interface InputConfig {
   displayOrder: string[];
   /** When set, decides which elements show and where. Supersedes the enabled flags and displayOrder. */
   layoutTree?: LayoutNode;
+  /** Briefly flash the gear number on an upshift or downshift. */
+  gearFlash?: {
+    enabled: boolean;
+    upColor: string;
+    downColor: string;
+  };
   /** Flash the whole layout at the redline or at the Tachometer custom shift points. */
   shiftFlash?: {
     enabled: boolean;

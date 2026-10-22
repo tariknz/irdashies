@@ -1,8 +1,10 @@
 import { createRequire } from 'node:module';
+import { execFile } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { promisify } from 'node:util';
 
 import {
   afterAll,
@@ -14,7 +16,9 @@ import {
   it,
 } from 'vitest';
 
-import type { INativeSDK } from './index';
+import type { NativeSDK } from './index';
+
+const execFileAsync = promisify(execFile);
 
 const FILE_HEADER_SIZE = 96;
 const SDK_HEADER_SIZE = 112;
@@ -79,8 +83,8 @@ function createRecord(
   return Buffer.concat([header, payload]);
 }
 
-function createFrame(index: number): Buffer {
-  const frame = Buffer.alloc(36);
+function createFrame(index: number, length = 36): Buffer {
+  const frame = Buffer.alloc(length);
   frame.writeDoubleLE(10 + index / 60, 0);
   frame.writeInt32LE(100 + index, 8);
   frame.writeInt8(index === 0 ? 0 : 1, 12);
@@ -93,13 +97,19 @@ function createFrame(index: number): Buffer {
 }
 
 interface TapeFixtureOptions {
+  includeSessionUpdate?: boolean;
   includeEndRecord?: boolean;
   qpcFrequency?: bigint;
+  frameLength?: number;
+  transformVariables?: (variables: Buffer[]) => void;
 }
 
 function createTapeFixture({
+  includeSessionUpdate = false,
   includeEndRecord = true,
   qpcFrequency = 60n,
+  frameLength = 36,
+  transformVariables,
 }: TapeFixtureOptions = {}): Buffer {
   const variables = [
     createVariableHeader({
@@ -151,11 +161,12 @@ function createTapeFixture({
       unit: '%',
     }),
   ];
+  transformVariables?.(variables);
   const variableBytes = Buffer.concat(variables);
   const sessionOffset = SDK_HEADER_SIZE + variableBytes.length;
   const sessionCapacity = 1024;
   const firstBufferOffset = sessionOffset + sessionCapacity;
-  const mappingSize = firstBufferOffset + 3 * 36;
+  const mappingSize = firstBufferOffset + 3 * frameLength;
 
   const sdkHeader = Buffer.alloc(SDK_HEADER_SIZE);
   sdkHeader.writeInt32LE(2, 0);
@@ -167,12 +178,12 @@ function createTapeFixture({
   sdkHeader.writeInt32LE(variables.length, 24);
   sdkHeader.writeInt32LE(SDK_HEADER_SIZE, 28);
   sdkHeader.writeInt32LE(3, 32);
-  sdkHeader.writeInt32LE(36, 36);
+  sdkHeader.writeInt32LE(frameLength, 36);
   for (let index = 0; index < 3; index++) {
     const bufferHeaderOffset = 48 + index * 16;
     sdkHeader.writeInt32LE(-1, bufferHeaderOffset);
     sdkHeader.writeInt32LE(
-      firstBufferOffset + index * 36,
+      firstBufferOffset + index * frameLength,
       bufferHeaderOffset + 4
     );
   }
@@ -183,10 +194,26 @@ function createTapeFixture({
   );
   const records = [
     createRecord(2, 0n, -1, 1, session),
-    createRecord(1, 0n, 100, 0, createFrame(0)),
-    createRecord(1, 1n, 101, 0, createFrame(1)),
-    createRecord(1, 2n, 102, 0, createFrame(2)),
+    createRecord(1, 0n, 100, 0, createFrame(0, frameLength)),
+    createRecord(1, 1n, 101, 0, createFrame(1, frameLength)),
+    createRecord(1, 2n, 102, 0, createFrame(2, frameLength)),
   ];
+  if (includeSessionUpdate) {
+    records.splice(
+      3,
+      0,
+      createRecord(
+        2,
+        2n,
+        -1,
+        2,
+        Buffer.from(
+          '---\nWeekendInfo:\n TrackName: Updated Replay Track\n...\n',
+          'ascii'
+        )
+      )
+    );
+  }
   if (includeEndRecord) {
     records.push(createRecord(5, 3n, 102, 0));
   }
@@ -224,9 +251,20 @@ const addonPath = path.resolve(
   'irsdk_tape_node.node'
 );
 
-function loadAddon(): { iRacingSdkNode: new () => INativeSDK } {
+type TapeNativeSDK = NativeSDK &
+  Required<
+    Pick<
+      NativeSDK,
+      | 'getTapeReplayStatus'
+      | 'setTapeReplayPaused'
+      | 'setTapeReplaySpeed'
+      | 'seekTapeReplay'
+    >
+  >;
+
+function loadAddon(): { iRacingSdkNode: new () => TapeNativeSDK } {
   const require = createRequire(import.meta.url);
-  return require(addonPath) as { iRacingSdkNode: new () => INativeSDK };
+  return require(addonPath) as { iRacingSdkNode: new () => TapeNativeSDK };
 }
 
 describe('tape-backed native SDK', () => {
@@ -323,6 +361,103 @@ describe('tape-backed native SDK', () => {
     }
   });
 
+  it('invalidates captured telemetry on stop and captures a new frame size on restart', async () => {
+    const addon = loadAddon();
+    const sdk = new addon.iRacingSdkNode();
+    process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
+    try {
+      expect(sdk.getTelemetryData()).toEqual({});
+      expect(sdk.getTelemetryVariable(0)).toEqual({});
+      expect(sdk.__getTelemetryTypes()).toEqual({});
+      for (const frameLength of [36, 1024, 36]) {
+        await writeFile(tapePath, createTapeFixture({ frameLength }));
+        expect(sdk.startSDK()).toBe(true);
+        expect(sdk.waitForData(20)).toBe(true);
+        expect(
+          floatValue(sdk.getTelemetryData().Speed.value)
+        ).toBeGreaterThanOrEqual(50);
+        expect(sdk.getTelemetryVariable(-1)).toEqual({});
+        expect(sdk.getTelemetryVariable(6)).toEqual({});
+        expect(sdk.getTelemetryVariable('missing')).toEqual({});
+        expect(sdk.__getTelemetryTypes()).toHaveProperty('Speed', 4);
+        expect(sdk.getSessionData()).toContain('Replay Test Track');
+        expect(sdk.currDataVersion).toBe(1);
+        sdk.stopSDK();
+        expect(sdk.currDataVersion).toBe(-1);
+        expect(sdk.getTelemetryData()).toEqual({});
+        expect(sdk.getTelemetryVariable(0)).toEqual({});
+        expect(sdk.__getTelemetryTypes()).toEqual({});
+        expect(sdk.getSessionData()).toBe('');
+      }
+    } finally {
+      sdk.stopSDK();
+    }
+  });
+
+  it('bounds fixed-size metadata strings and drops invalid bool metadata', async () => {
+    await writeFile(
+      tapePath,
+      createTapeFixture({
+        transformVariables: (variables) => {
+          variables[0].fill(0x41, 16, 48);
+          variables[0].fill(0x42, 48, 112);
+          variables[0].fill(0x43, 112, 144);
+          variables[1].writeUInt8(2, 12); // Invalid C++ bool representation.
+        },
+      })
+    );
+    process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
+    const sdk = new (loadAddon().iRacingSdkNode)();
+    try {
+      expect(sdk.startSDK()).toBe(true);
+      expect(sdk.waitForData(20)).toBe(true);
+      const variable = sdk.getTelemetryVariable(0);
+      expect(variable).toMatchObject({
+        name: 'A'.repeat(32),
+        description: 'B'.repeat(64),
+        unit: 'C'.repeat(32),
+      });
+      expect(doubleValue(variable.value)).toBeGreaterThanOrEqual(10);
+      expect(sdk.getTelemetryVariable(1)).toEqual({});
+      expect(sdk.getTelemetryData()).not.toHaveProperty('SessionTick');
+      expect(sdk.__getTelemetryTypes()).not.toHaveProperty('SessionTick');
+    } finally {
+      sdk.stopSDK();
+    }
+  });
+
+  it.each([
+    ['negative count', 8, -1],
+    ['zero count', 8, 0],
+    ['overflowing count', 8, 0x7fffffff],
+    ['negative offset', 4, -1],
+    ['past-end offset', 4, 36],
+    ['overflowing offset', 4, 0x7fffffff],
+    ['invalid type', 0, 6],
+  ] as const)(
+    'fails safely with %s in a tape descriptor',
+    async (_, field, value) => {
+      await writeFile(
+        tapePath,
+        createTapeFixture({
+          transformVariables: (variables) =>
+            variables[0].writeInt32LE(value, field),
+        })
+      );
+      process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
+      const sdk = new (loadAddon().iRacingSdkNode)();
+      try {
+        expect(sdk.startSDK()).toBe(false);
+        expect(sdk.waitForData(0)).toBe(false);
+        expect(sdk.getTelemetryData()).toEqual({});
+        expect(sdk.getTelemetryVariable(0)).toEqual({});
+        expect(sdk.__getTelemetryTypes()).toEqual({});
+      } finally {
+        sdk.stopSDK();
+      }
+    }
+  );
+
   it('returns when the requested wait timeout expires', async () => {
     await writeFile(tapePath, createTapeFixture({ qpcFrequency: 1n }));
 
@@ -340,5 +475,138 @@ describe('tape-backed native SDK', () => {
     } finally {
       sdk.stopSDK();
     }
+  });
+
+  it('seeks both directions while paused, restores session YAML, and signals a reset', async () => {
+    await writeFile(
+      tapePath,
+      createTapeFixture({
+        qpcFrequency: 1n,
+        includeSessionUpdate: true,
+      })
+    );
+    process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
+    const sdk = new (loadAddon().iRacingSdkNode)();
+    try {
+      expect(sdk.startSDK()).toBe(true);
+      expect(sdk.waitForData(0)).toBe(true);
+      expect(sdk.setTapeReplayPaused(true)).toBe(true);
+      expect(sdk.getTapeReplayStatus()).toMatchObject({
+        duration: 3,
+        paused: true,
+        speed: 1,
+        ended: false,
+      });
+
+      for (const [seconds, speed, track] of [
+        [2.5, 52, 'Updated Replay Track'],
+        [0, 50, 'Replay Test Track'],
+        [1.5, 51, 'Replay Test Track'],
+        [999, 52, 'Updated Replay Track'],
+      ] as const) {
+        expect(sdk.seekTapeReplay(seconds)).toBe(true);
+        // Every jump exposes a disconnect before publishing the new frame,
+        // allowing processors and renderer histories to clear first.
+        expect(sdk.waitForData(0)).toBe(false);
+        expect(sdk.isRunning()).toBe(false);
+        expect(sdk.getTelemetryData()).toEqual({});
+        expect(sdk.waitForData(0)).toBe(true);
+        expect(sdk.isRunning()).toBe(true);
+        expect(floatValue(sdk.getTelemetryData().Speed.value)).toBe(speed);
+        expect(sdk.getSessionData()).toContain(track);
+        expect(sdk.waitForData(0)).toBe(false);
+        expect(sdk.isRunning()).toBe(true);
+        expect(sdk.getTapeReplayStatus()).toMatchObject({
+          position: Math.min(3, seconds),
+          paused: true,
+        });
+      }
+    } finally {
+      sdk.stopSDK();
+    }
+  });
+
+  it('rebases the playback clock for pause/resume and speed changes', async () => {
+    await writeFile(tapePath, createTapeFixture({ qpcFrequency: 1n }));
+    process.env.IRDASHIES_TELEMETRY_REPLAY = tapePath;
+    const sdk = new (loadAddon().iRacingSdkNode)();
+    try {
+      expect(sdk.startSDK()).toBe(true);
+      expect(sdk.waitForData(0)).toBe(true);
+      expect(sdk.setTapeReplayPaused(true)).toBe(true);
+      const pausedAt = sdk.getTapeReplayStatus().position;
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      expect(sdk.getTapeReplayStatus().position).toBe(pausedAt);
+      expect(sdk.waitForData(0)).toBe(false);
+      expect(sdk.isRunning()).toBe(true);
+      expect(sdk.setTapeReplaySpeed(10)).toBe(true);
+      expect(sdk.getTapeReplayStatus().position).toBe(pausedAt);
+      expect(sdk.setTapeReplayPaused(false)).toBe(true);
+      const started = performance.now();
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      const elapsed = (performance.now() - started) / 1000;
+      expect(sdk.getTapeReplayStatus().position - pausedAt).toBeCloseTo(
+        elapsed * 10,
+        1
+      );
+      const beforeSpeedChange = sdk.getTapeReplayStatus().position;
+      expect(sdk.setTapeReplaySpeed(0.5)).toBe(true);
+      expect(sdk.getTapeReplayStatus().position).toBeCloseTo(
+        beforeSpeedChange,
+        1
+      );
+      const slowed = performance.now();
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      expect(
+        sdk.getTapeReplayStatus().position - beforeSpeedChange
+      ).toBeCloseTo(((performance.now() - slowed) / 1000) * 0.5, 1);
+    } finally {
+      sdk.stopSDK();
+    }
+  });
+
+  it('rejects malformed native control arguments and can restart after reaching the end', async () => {
+    await writeFile(tapePath, createTapeFixture());
+    // Windows' CRT retains the environment captured on the first addon load.
+    // Earlier tests enable looping, so non-looping playback needs a fresh
+    // process with its options supplied before the addon is loaded.
+    const script = `
+      const assert = require('node:assert/strict');
+      const { iRacingSdkNode } = require(process.argv[1]);
+      const sdk = new iRacingSdkNode();
+      try {
+        assert.equal(sdk.startSDK(), true);
+        for (const speed of [NaN, Infinity, 0, -1, 101]) {
+          assert.equal(sdk.setTapeReplaySpeed(speed), false);
+        }
+        assert.equal(sdk.seekTapeReplay(NaN), false);
+        assert.equal(sdk.seekTapeReplay(Infinity), false);
+        assert.equal(sdk.setTapeReplaySpeed(), false);
+        assert.equal(sdk.seekTapeReplay('2'), false);
+        assert.equal(sdk.setTapeReplayPaused(1), false);
+        assert.equal(sdk.waitForData(20), true);
+        const deadline = Date.now() + 1000;
+        while (!sdk.getTapeReplayStatus().ended && Date.now() < deadline) {
+          sdk.waitForData(20);
+        }
+        assert.equal(sdk.getTapeReplayStatus().ended, true);
+        assert.equal(sdk.setTapeReplayPaused(false), true);
+        assert.equal(sdk.waitForData(0), false);
+        assert.equal(sdk.waitForData(0), true);
+        const speed = new Float32Array(sdk.getTelemetryData().Speed.value)[0];
+        assert.equal(speed, 50);
+      } finally {
+        sdk.stopSDK();
+      }
+    `;
+    await execFileAsync(process.execPath, ['-e', script, addonPath], {
+      env: {
+        ...process.env,
+        IRDASHIES_TELEMETRY_REPLAY: tapePath,
+        IRDASHIES_TELEMETRY_REPLAY_SPEED: '100',
+        IRDASHIES_TELEMETRY_REPLAY_LOOP: '0',
+      },
+      timeout: 5000,
+    });
   });
 });

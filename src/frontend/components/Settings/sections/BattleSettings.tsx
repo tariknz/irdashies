@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   BattleWidgetSettings,
   SettingsTabType,
@@ -190,18 +191,22 @@ export const BattleSettings = () => {
             <div>
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
-                <SettingsSection title="Columns">
-                  <DisplaySettingsList
-                    itemsOrder={
-                      settings.config.displayOrder ?? defaultConfig.displayOrder
-                    }
-                    onReorder={(newOrder) =>
-                      handleConfigChange({ displayOrder: newOrder })
-                    }
-                    settings={settings}
-                    handleConfigChange={handleConfigChange}
-                  />
-                </SettingsSection>
+                <>
+                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
+                  <SettingsSection title="Columns">
+                    <DisplaySettingsList
+                      itemsOrder={
+                        settings.config.displayOrder ??
+                        defaultConfig.displayOrder
+                      }
+                      onReorder={(newOrder) =>
+                        handleConfigChange({ displayOrder: newOrder })
+                      }
+                      settings={settings}
+                      handleConfigChange={handleConfigChange}
+                    />
+                  </SettingsSection>
+                </>
               )}
 
               {/* OPTIONS TAB */}

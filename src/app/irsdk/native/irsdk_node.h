@@ -3,7 +3,7 @@
 
 #include <napi.h>
 #include "./lib/irsdk_defines.h"
-#include "./lib/irsdk_client.h"
+#include "./lib/irsdk_capture.h"
 
 class iRacingSdkNode : public Napi::ObjectWrap<iRacingSdkNode>
 {
@@ -23,6 +23,12 @@ private:
     Napi::Value StopSdk(const Napi::CallbackInfo &info);
     Napi::Value WaitForData(const Napi::CallbackInfo &info);
     Napi::Value BroadcastMessage(const Napi::CallbackInfo &info);
+#ifdef IRDASHIES_TAPE_CONTROLS
+    Napi::Value GetTapeReplayStatus(const Napi::CallbackInfo &info);
+    Napi::Value SeekTapeReplay(const Napi::CallbackInfo &info);
+    Napi::Value SetTapeReplaySpeed(const Napi::CallbackInfo &info);
+    Napi::Value SetTapeReplayPaused(const Napi::CallbackInfo &info);
+#endif
     // Getters
     Napi::Value IsRunning(const Napi::CallbackInfo &info);
     Napi::Value GetSessionVersionNum(const Napi::CallbackInfo &info);
@@ -36,8 +42,7 @@ private:
     Napi::Object GetTelemetryVar(const Napi::Env env, const char *varName);
 
     bool _loggingEnabled;
-    char* _data;
-    int _bufLineLen;
+    irsdk_capture _capture;
     int _sessionStatusID;
     int _lastSessionCt;
     const char* _sessionData;

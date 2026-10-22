@@ -27,6 +27,7 @@ import type { INativeSDK } from '../native';
 import { getSimStatus } from './utils';
 import { getSdkOrMock } from './get-sdk';
 import logger from '../../logger';
+import type { TapeReplayCommand, TapeReplayStatus } from '@irdashies/types';
 
 /**
  * Encodes a car number string for irsdk_BroadcastCamSwitchNum, mirroring the
@@ -279,6 +280,28 @@ export class IRacingSDK {
       this._sessionData = null;
     }
     return result;
+  }
+
+  public getTapeReplayStatus(): TapeReplayStatus | null {
+    return this._sdk?.getTapeReplayStatus?.() ?? null;
+  }
+
+  public controlTapeReplay(command: TapeReplayCommand): TapeReplayStatus {
+    let accepted = false;
+    switch (command.type) {
+      case 'seek':
+        accepted = this._sdk?.seekTapeReplay?.(command.seconds) ?? false;
+        break;
+      case 'speed':
+        accepted = this._sdk?.setTapeReplaySpeed?.(command.speed) ?? false;
+        break;
+      case 'pause':
+        accepted = this._sdk?.setTapeReplayPaused?.(command.paused) ?? false;
+        break;
+    }
+    const status = this.getTapeReplayStatus();
+    if (!accepted || !status) throw new Error('Tape replay control failed');
+    return status;
   }
 
   /**

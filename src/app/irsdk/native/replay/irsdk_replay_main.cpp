@@ -104,7 +104,8 @@ bool parsePositiveDouble(
 bool sameLayout(
     const irsdk_header& expected,
     const irsdk_header& current) {
-  if (expected.ver != current.ver ||
+  if (expected.numBuf <= 0 || expected.numBuf > IRSDK_MAX_BUFS ||
+      expected.ver != current.ver ||
       expected.tickRate != current.tickRate ||
       expected.numVars != current.numVars ||
       expected.varHeaderOffset != current.varHeaderOffset ||
@@ -497,9 +498,13 @@ int recordTelemetry(const std::vector<std::wstring>& arguments) {
         continue;
       }
 
-      const auto& buffer = sharedHeader->varBuf[candidate.index];
       bool copied = false;
       for (int attempt = 0; attempt < 3; ++attempt) {
+        irsdk_header before{};
+        std::memcpy(&before, sharedHeader, sizeof(before));
+        if (!sameLayout(header, before) ||
+            !(before.status & irsdk_stConnected)) break;
+        const auto buffer = before.varBuf[candidate.index];
         const int beforeTick = buffer.tickCount;
         if (beforeTick != candidate.tick ||
             buffer.bufOffset < 0 ||
@@ -514,7 +519,10 @@ int recordTelemetry(const std::vector<std::wstring>& arguments) {
             reader.mapping + buffer.bufOffset,
             frame.size());
         MemoryBarrier();
-        if (beforeTick == buffer.tickCount) {
+        irsdk_header after{};
+        std::memcpy(&after, sharedHeader, sizeof(after));
+        if ((after.status & irsdk_stConnected) && sameLayout(before, after) &&
+            beforeTick == after.varBuf[candidate.index].tickCount) {
           copied = true;
           break;
         }

@@ -22,7 +22,6 @@ export default defineWidgetManifest({
   },
   config: {
     customClassOrdering: false,
-    scale: 100,
     useLivePosition: false,
     iratingChange: {
       enabled: true,
@@ -43,6 +42,7 @@ export default defineWidgetManifest({
       enabled: true,
     },
     gap: {
+      reference: 'classLeader',
       enabled: false,
       decimalPlaces: 1,
     },
@@ -160,6 +160,9 @@ export default defineWidgetManifest({
       precipitation: {
         enabled: false,
       },
+      humidity: {
+        enabled: false,
+      },
       airTemperature: {
         enabled: false,
         unit: 'Metric',
@@ -202,6 +205,7 @@ export default defineWidgetManifest({
         'sessionClockTime',
         'trackWetness',
         'precipitation',
+        'humidity',
         'airTemperature',
         'trackTemperature',
         'wind',
@@ -245,6 +249,9 @@ export default defineWidgetManifest({
       precipitation: {
         enabled: false,
       },
+      humidity: {
+        enabled: false,
+      },
       airTemperature: {
         enabled: true,
         unit: 'Metric',
@@ -287,6 +294,7 @@ export default defineWidgetManifest({
         'sessionClockTime',
         'trackWetness',
         'precipitation',
+        'humidity',
         'airTemperature',
         'trackTemperature',
         'wind',
@@ -422,15 +430,6 @@ export default defineWidgetManifest({
     },
     'headerBar.enabled': { type: 'boolean', label: 'Show Header Bar' },
     'footerBar.enabled': { type: 'boolean', label: 'Show Footer Bar' },
-    scale: {
-      type: 'number',
-      label: 'Widget Scale',
-      description: 'Scale the entire standings widget',
-      min: 50,
-      max: 200,
-      step: 5,
-      units: '%',
-    },
     'classHeaderStyle.estimatedLaps.enabled': {
       type: 'boolean',
       label: 'Show Estimated Laps',
@@ -486,6 +485,16 @@ export default defineWidgetManifest({
     'carManufacturer.hideIfSingleMake': {
       type: 'boolean',
       label: 'Hide If Single Make',
+    },
+    'gap.reference': {
+      type: 'enum',
+      label: 'Gap Reference',
+      description:
+        'Player gaps are negative ahead and positive behind, across all classes. Uses the camera car when spectating; practice and qualifying compare best laps.',
+      options: [
+        { value: 'classLeader', label: 'Class Leader' },
+        { value: 'player', label: 'Player' },
+      ],
     },
     'gap.decimalPlaces': {
       type: 'enum',

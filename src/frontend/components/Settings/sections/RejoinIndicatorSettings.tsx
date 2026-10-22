@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   RejoinIndicatorWidgetSettings,
   SettingsTabType,
@@ -77,11 +78,14 @@ export const RejoinIndicatorSettings = () => {
             <div>
               {/* DISPLAY TAB */}
               {activeTab === 'options' && (
-                <SettingsSection title="Options">
-                  <SettingProp path="showAtSpeed" />
-                  <SettingProp path="careGap" />
-                  <SettingProp path="stopGap" />
-                </SettingsSection>
+                <>
+                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
+                  <SettingsSection title="Options">
+                    <SettingProp path="showAtSpeed" />
+                    <SettingProp path="careGap" />
+                    <SettingProp path="stopGap" />
+                  </SettingsSection>
+                </>
               )}
 
               {/* VISIBILITY TAB */}

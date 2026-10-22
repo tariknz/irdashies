@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowSquareOutIcon, UploadSimpleIcon } from '@phosphor-icons/react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   LapTraceWidgetSettings,
   SettingsTabType,
@@ -964,124 +965,67 @@ export const LapTraceSettings = () => {
               )}
 
               {activeTab === 'styling' && (
-                <SettingsSection title="Styling">
-                  <SettingProp path="strokeWidth" />
+                <>
+                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
+                  <SettingsSection title="Styling">
+                    <SettingProp path="strokeWidth" />
 
-                  <SettingSliderRow
-                    title="Reference Opacity"
-                    description="How prominent the saved reference lap is (lines and bars)"
-                    value={Math.round(
-                      (settings.config.ghostOpacity ?? 1) * 100
-                    )}
-                    units="%"
-                    min={10}
-                    max={100}
-                    step={5}
-                    onChange={(v) =>
-                      handleConfigChange({ ghostOpacity: v / 100 })
-                    }
-                  />
+                    <SettingSliderRow
+                      title="Reference Opacity"
+                      description="How prominent the saved reference lap is (lines and bars)"
+                      value={Math.round(
+                        (settings.config.ghostOpacity ?? 1) * 100
+                      )}
+                      units="%"
+                      min={10}
+                      max={100}
+                      step={5}
+                      onChange={(v) =>
+                        handleConfigChange({ ghostOpacity: v / 100 })
+                      }
+                    />
 
-                  <SettingSliderRow
-                    title="Driver Input Opacity"
-                    description="How prominent the live driver input trace is"
-                    value={Math.round(
-                      (settings.config.driverOpacity ?? 1) * 100
-                    )}
-                    units="%"
-                    min={10}
-                    max={100}
-                    step={5}
-                    onChange={(v) =>
-                      handleConfigChange({ driverOpacity: v / 100 })
-                    }
-                  />
+                    <SettingSliderRow
+                      title="Driver Input Opacity"
+                      description="How prominent the live driver input trace is"
+                      value={Math.round(
+                        (settings.config.driverOpacity ?? 1) * 100
+                      )}
+                      units="%"
+                      min={10}
+                      max={100}
+                      step={5}
+                      onChange={(v) =>
+                        handleConfigChange({ driverOpacity: v / 100 })
+                      }
+                    />
 
-                  <SettingSliderRow
-                    title="Background Opacity"
-                    description="Background opacity of the overlay"
-                    value={Math.round(settings.config.background.opacity * 100)}
-                    units="%"
-                    min={0}
-                    max={100}
-                    step={5}
-                    onChange={(v) =>
-                      handleConfigChange({ background: { opacity: v / 100 } })
-                    }
-                  />
+                    <SettingSliderRow
+                      title="Background Opacity"
+                      description="Background opacity of the overlay"
+                      value={Math.round(
+                        settings.config.background.opacity * 100
+                      )}
+                      units="%"
+                      min={0}
+                      max={100}
+                      step={5}
+                      onChange={(v) =>
+                        handleConfigChange({ background: { opacity: v / 100 } })
+                      }
+                    />
 
-                  <div className="space-y-2 border-t border-slate-700/50 pt-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-md font-semibold text-slate-300">
-                        Plot Colors
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleConfigChange({
-                            colors: DEFAULT_LAP_TRACE_COLORS,
-                            carLineColor: '#ffffff',
-                          })
-                        }
-                        className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
-                      >
-                        Restore defaults
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-                      {COLOR_FIELDS.map((field) => {
-                        if (field.kind === 'carLine') {
-                          return (
-                            <ColorField
-                              key="carLine"
-                              label={field.label}
-                              value={settings.config.carLineColor ?? '#ffffff'}
-                              onChange={(v) =>
-                                handleConfigChange({ carLineColor: v })
-                              }
-                            />
-                          );
-                        }
-                        const current =
-                          settings.config.colors ?? DEFAULT_LAP_TRACE_COLORS;
-                        return (
-                          <ColorField
-                            key={field.key}
-                            label={field.label}
-                            value={current[field.key]}
-                            onChange={(v) =>
-                              handleConfigChange({
-                                colors: { ...current, [field.key]: v },
-                              })
-                            }
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {settings.config.brakeCueBars && (
                     <div className="space-y-2 border-t border-slate-700/50 pt-3">
                       <div className="flex items-center justify-between">
                         <span className="text-md font-semibold text-slate-300">
-                          Countdown Colors
+                          Plot Colors
                         </span>
                         <button
                           type="button"
                           onClick={() =>
                             handleConfigChange({
-                              colors: {
-                                ...(settings.config.colors ??
-                                  DEFAULT_LAP_TRACE_COLORS),
-                                brakeCueGreen:
-                                  DEFAULT_LAP_TRACE_COLORS.brakeCueGreen,
-                                brakeCueAmber:
-                                  DEFAULT_LAP_TRACE_COLORS.brakeCueAmber,
-                                brakeCueOrange:
-                                  DEFAULT_LAP_TRACE_COLORS.brakeCueOrange,
-                                brakeCueRed:
-                                  DEFAULT_LAP_TRACE_COLORS.brakeCueRed,
-                              },
+                              colors: DEFAULT_LAP_TRACE_COLORS,
+                              carLineColor: '#ffffff',
                             })
                           }
                           className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
@@ -1090,74 +1034,139 @@ export const LapTraceSettings = () => {
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-                        {(() => {
-                          const cueColors =
+                        {COLOR_FIELDS.map((field) => {
+                          if (field.kind === 'carLine') {
+                            return (
+                              <ColorField
+                                key="carLine"
+                                label={field.label}
+                                value={
+                                  settings.config.carLineColor ?? '#ffffff'
+                                }
+                                onChange={(v) =>
+                                  handleConfigChange({ carLineColor: v })
+                                }
+                              />
+                            );
+                          }
+                          const current =
                             settings.config.colors ?? DEFAULT_LAP_TRACE_COLORS;
                           return (
-                            <>
-                              <ColorField
-                                label="Armed (green)"
-                                value={cueColors.brakeCueGreen}
-                                onChange={(v) =>
-                                  handleConfigChange({
-                                    colors: {
-                                      ...cueColors,
-                                      brakeCueGreen: v,
-                                    },
-                                  })
-                                }
-                              />
-                              <ColorField
-                                label="2 seconds (amber)"
-                                value={cueColors.brakeCueAmber}
-                                onChange={(v) =>
-                                  handleConfigChange({
-                                    colors: {
-                                      ...cueColors,
-                                      brakeCueAmber: v,
-                                    },
-                                  })
-                                }
-                              />
-                              <ColorField
-                                label="1 second (orange)"
-                                value={cueColors.brakeCueOrange}
-                                onChange={(v) =>
-                                  handleConfigChange({
-                                    colors: {
-                                      ...cueColors,
-                                      brakeCueOrange: v,
-                                    },
-                                  })
-                                }
-                              />
-                              <ColorField
-                                label="Brake point (red)"
-                                value={cueColors.brakeCueRed}
-                                onChange={(v) =>
-                                  handleConfigChange({
-                                    colors: {
-                                      ...cueColors,
-                                      brakeCueRed: v,
-                                    },
-                                  })
-                                }
-                              />
-                            </>
+                            <ColorField
+                              key={field.key}
+                              label={field.label}
+                              value={current[field.key]}
+                              onChange={(v) =>
+                                handleConfigChange({
+                                  colors: { ...current, [field.key]: v },
+                                })
+                              }
+                            />
                           );
-                        })()}
+                        })}
                       </div>
                     </div>
-                  )}
 
-                  {settings.config.showLastCorner && (
-                    <>
-                      <SettingProp path="lastCornerFontSize" />
+                    {settings.config.brakeCueBars && (
+                      <div className="space-y-2 border-t border-slate-700/50 pt-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-md font-semibold text-slate-300">
+                            Countdown Colors
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleConfigChange({
+                                colors: {
+                                  ...(settings.config.colors ??
+                                    DEFAULT_LAP_TRACE_COLORS),
+                                  brakeCueGreen:
+                                    DEFAULT_LAP_TRACE_COLORS.brakeCueGreen,
+                                  brakeCueAmber:
+                                    DEFAULT_LAP_TRACE_COLORS.brakeCueAmber,
+                                  brakeCueOrange:
+                                    DEFAULT_LAP_TRACE_COLORS.brakeCueOrange,
+                                  brakeCueRed:
+                                    DEFAULT_LAP_TRACE_COLORS.brakeCueRed,
+                                },
+                              })
+                            }
+                            className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
+                          >
+                            Restore defaults
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+                          {(() => {
+                            const cueColors =
+                              settings.config.colors ??
+                              DEFAULT_LAP_TRACE_COLORS;
+                            return (
+                              <>
+                                <ColorField
+                                  label="Armed (green)"
+                                  value={cueColors.brakeCueGreen}
+                                  onChange={(v) =>
+                                    handleConfigChange({
+                                      colors: {
+                                        ...cueColors,
+                                        brakeCueGreen: v,
+                                      },
+                                    })
+                                  }
+                                />
+                                <ColorField
+                                  label="2 seconds (amber)"
+                                  value={cueColors.brakeCueAmber}
+                                  onChange={(v) =>
+                                    handleConfigChange({
+                                      colors: {
+                                        ...cueColors,
+                                        brakeCueAmber: v,
+                                      },
+                                    })
+                                  }
+                                />
+                                <ColorField
+                                  label="1 second (orange)"
+                                  value={cueColors.brakeCueOrange}
+                                  onChange={(v) =>
+                                    handleConfigChange({
+                                      colors: {
+                                        ...cueColors,
+                                        brakeCueOrange: v,
+                                      },
+                                    })
+                                  }
+                                />
+                                <ColorField
+                                  label="Brake point (red)"
+                                  value={cueColors.brakeCueRed}
+                                  onChange={(v) =>
+                                    handleConfigChange({
+                                      colors: {
+                                        ...cueColors,
+                                        brakeCueRed: v,
+                                      },
+                                    })
+                                  }
+                                />
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    )}
 
-                      <SettingProp path="lastCornerLatestScale" />
-                    </>
-                  )}
-                </SettingsSection>
+                    {settings.config.showLastCorner && (
+                      <>
+                        <SettingProp path="lastCornerFontSize" />
+
+                        <SettingProp path="lastCornerLatestScale" />
+                      </>
+                    )}
+                  </SettingsSection>
+                </>
               )}
 
               {/* VISIBILITY TAB */}

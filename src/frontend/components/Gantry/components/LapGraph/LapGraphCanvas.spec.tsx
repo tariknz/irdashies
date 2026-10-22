@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LapGraphCanvas } from './LapGraphCanvas';
 import type { LapGraphSeries } from './LapGraphCanvas';
 import { identityForGridSlot } from './lapGraphPalette';
+import { WidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 
 interface FakeContext {
   strokes: number;
@@ -84,7 +85,7 @@ beforeEach(() => {
     'ResizeObserver',
     class {
       observe() {
-        /* sizes come from the stubbed bounding box */
+        /* sizes come from the stubbed layout dimensions */
       }
       unobserve() {
         /* no-op */
@@ -93,6 +94,13 @@ beforeEach(() => {
         /* no-op */
       }
     }
+  );
+
+  vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
+    PLOT_WIDTH
+  );
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(
+    PLOT_HEIGHT
   );
 
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
@@ -137,7 +145,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const renderChart = (props?: Partial<Parameters<typeof LapGraphCanvas>[0]>) =>
+const renderChart = (
+  props?: Partial<Parameters<typeof LapGraphCanvas>[0]>,
+  scale = 100
+) =>
   render(
     <LapGraphCanvas
       series={field}
@@ -147,10 +158,50 @@ const renderChart = (props?: Partial<Parameters<typeof LapGraphCanvas>[0]>) =>
       focusedCarIdx={null}
       onTogglePin={vi.fn()}
       {...props}
-    />
+    />,
+    {
+      wrapper: ({ children }) => (
+        <WidgetScale scale={scale}>{children}</WidgetScale>
+      ),
+    }
   );
 
 describe('LapGraphCanvas', () => {
+  it('keeps canvas backing buffers sharp at the widget scale', async () => {
+    renderChart(undefined, 200);
+    await waitFor(() => expect(contextFor('lap-graph-base').strokes).toBe(60));
+    const canvas = screen.getByTestId('lap-graph-base') as HTMLCanvasElement;
+    expect(canvas.width).toBe(PLOT_WIDTH * (window.devicePixelRatio || 1) * 2);
+    expect(canvas.height).toBe(
+      PLOT_HEIGHT * (window.devicePixelRatio || 1) * 2
+    );
+  });
+
+  it('keeps hover coordinates in logical pixels when the widget is scaled', async () => {
+    renderChart();
+    await waitFor(() => expect(contextFor('lap-graph-base').strokes).toBe(60));
+    const plot = screen.getByLabelText('Lap graph plot');
+    const overlay = screen.getByTestId(
+      'lap-graph-overlay'
+    ) as HTMLCanvasElement;
+    const context = overlay.getContext('2d');
+    if (!context) throw new Error('Missing overlay context');
+    const moveTo = vi.mocked(context.moveTo);
+    fireEvent.pointerMove(plot, { clientX: 400, clientY: 200 });
+    const unscaledMoves = [...moveTo.mock.calls];
+    expect(unscaledMoves.length).toBeGreaterThan(0);
+    moveTo.mockClear();
+    vi.spyOn(plot, 'getBoundingClientRect').mockReturnValue({
+      left: 100,
+      top: 50,
+      width: 1600,
+      height: 800,
+    } as DOMRect);
+    fireEvent.pointerMove(plot, { clientX: 900, clientY: 450 });
+    expect(moveTo.mock.calls).toEqual(unscaledMoves);
+    expect(overlay.width).toBe(PLOT_WIDTH * (window.devicePixelRatio || 1));
+  });
+
   it('draws the whole field on the base canvas', async () => {
     renderChart();
 

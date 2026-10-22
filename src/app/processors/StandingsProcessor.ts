@@ -6,6 +6,7 @@ import type {
 } from '@irdashies/types';
 import { SessionState, TrackLocation } from '../irsdk/types/enums';
 import type { TelemetryProcessor } from './TelemetryProcessor';
+import { RaceFinishTracker } from './RaceFinishTracker';
 
 const numberValue = (frame: Telemetry, key: keyof Telemetry): number | null => {
   const value = frame[key]?.value?.[0];
@@ -76,6 +77,7 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
   private p1LapAtCheckered: number | null = null;
   private sortLaps: unknown[] = [];
   private sortSessionState = 0;
+  private readonly raceFinish = new RaceFinishTracker();
   private latest: StandingsSnapshot = this.emptySnapshot();
 
   init(session: Session): void {
@@ -98,11 +100,26 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
         ? cameraCarIdx
         : this.driverCarIdx;
     const sessionNum = numberValue(frame, 'SessionNum');
+    const sessionState = numberValue(frame, 'SessionState') ?? 0;
+    const sessionUniqueId = numberValue(frame, 'SessionUniqueID') ?? 0;
     const lifecycleChanged =
       this.latest.sessionNum !== null && sessionNum !== this.latest.sessionNum;
     const timeWentBackwards =
       this.lastUpdateTime !== null && sessionTime < this.lastUpdateTime;
-    if (lifecycleChanged || timeWentBackwards) this.reset(sessionNum);
+    const raceRestarted =
+      this.latest.sessionState >= SessionState.Checkered &&
+      sessionState < SessionState.Checkered;
+    const identityChanged =
+      this.latest.sessionUniqueId !== 0 &&
+      sessionUniqueId !== 0 &&
+      sessionUniqueId !== this.latest.sessionUniqueId;
+    if (
+      lifecycleChanged ||
+      timeWentBackwards ||
+      raceRestarted ||
+      identityChanged
+    )
+      this.reset(sessionNum);
     this.lastUpdateTime = sessionTime;
 
     copyBooleanArray(frame, 'CarIdxOnPitRoad', this.latest.carIdxOnPitRoad);
@@ -174,10 +191,17 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
       numberValue(frame, 'LmuPenaltySeconds') ?? undefined;
     copyBooleanArray(frame, 'CarIdxP2P_Status', this.latest.carIdxP2PStatus);
     copyNumberArray(frame, 'CarIdxP2P_Count', this.latest.carIdxP2PCount);
-    const sessionState = numberValue(frame, 'SessionState') ?? 0;
-    this.latest.sessionUniqueId = numberValue(frame, 'SessionUniqueID') ?? 0;
+    this.latest.sessionUniqueId = sessionUniqueId;
     this.latest.sessionTime = sessionTime;
     this.latest.sessionState = sessionState;
+    this.latest.sessionNum = sessionNum;
+    this.raceFinish.update(
+      this.latest,
+      frame.CarIdxLapCompleted?.value,
+      this.session
+    );
+    if (this.raceFinish.timings.length > 0)
+      this.latest.finalRaceTiming = this.raceFinish.timings;
     this.updateLiveClassPositions(frame, sessionNum, sessionState);
     const carIdxOnPitRoad = this.latest.carIdxOnPitRoad;
     const carIdxLap = this.latest.carIdxLap;
@@ -225,6 +249,8 @@ export class StandingsProcessor implements TelemetryProcessor<StandingsSnapshot>
   }
 
   private reset(sessionNum: number | null): void {
+    this.raceFinish.reset();
+    delete this.latest.finalRaceTiming;
     const version = this.latest.version + 1;
     this.lastUpdateTime = null;
     this.actualTrackSurface.length = 0;

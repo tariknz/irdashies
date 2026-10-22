@@ -143,7 +143,7 @@ export const BroadcastGroupSettings = ({
             type="button"
             title="Changed: click to reset"
             aria-label="Reset transition"
-            className="absolute left-1 top-2 h-2 w-2 rounded-full bg-blue-400 hover:bg-blue-300"
+            className="absolute left-1 top-2 h-2 w-2 rounded-full bg-accent-400 hover:bg-accent-300"
             onClick={() => setTransition('random')}
           />
         )}
@@ -189,7 +189,7 @@ export const BroadcastGroupSettings = ({
               {isChanged(type) && (
                 <span
                   title="Changed"
-                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400"
+                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-400"
                 />
               )}
             </Link>
@@ -200,7 +200,7 @@ export const BroadcastGroupSettings = ({
             <div className="flex flex-none justify-end pb-2">
               <button
                 type="button"
-                className="text-xs text-blue-400 hover:text-blue-300"
+                className="text-xs text-accent-400 hover:text-accent-300"
                 onClick={resetModule}
               >
                 Reset section

@@ -19,6 +19,8 @@ import {
 import { simulatorDisplayName } from '@irdashies/types';
 import { SettingsLoader } from './SettingsLoader';
 import { SettingsMenu } from './SettingsMenu';
+import { ReleaseNotesStatusProvider } from './ReleaseNotes/ReleaseNotesStatusContext';
+import { ReleaseNotesAnnouncement } from './ReleaseNotes/ReleaseNotesAnnouncement';
 
 export const SettingsLayout = () => {
   const {
@@ -63,70 +65,83 @@ export const SettingsLayout = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 bg-slate-700 p-4 rounded-md w-full h-full">
-      <div className="flex flex-row gap-4 items-center justify-between">
-        <div className="flex flex-row gap-4 items-center">
-          <GearIcon size={32} weight="bold" />
-          <div>
-            <div className="flex flex-row gap-6 items-baseline">
-              <h1 className="text-2xl font-bold">Overlay Settings</h1>
-              {simulatorName && (
-                <span className="text-lg font-medium text-slate-300">
-                  {simulatorName}
-                </span>
+    <ReleaseNotesStatusProvider>
+      <div className="flex flex-col gap-4 bg-slate-700 p-4 w-full h-full">
+        <ReleaseNotesAnnouncement />
+        {/* The window has no native title bar: this row is the drag handle, and
+          the right padding keeps clear of the OS min/max/close buttons. Their
+          width comes from the window-controls-overlay env() values, so it
+          follows DPI scaling; without an overlay it resolves to 0. */}
+        <div
+          className="flex flex-row gap-4 items-center justify-between [-webkit-app-region:drag]"
+          style={{
+            paddingRight:
+              'max(0px, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)))',
+          }}
+        >
+          <div className="flex flex-row gap-4 items-center">
+            <GearIcon size={32} weight="bold" />
+            <div>
+              <div className="flex flex-row gap-6 items-baseline">
+                <h1 className="text-2xl font-bold">Overlay Settings</h1>
+                {simulatorName && (
+                  <span className="text-lg font-medium text-slate-300">
+                    {simulatorName}
+                  </span>
+                )}
+              </div>
+              {currentProfile && (
+                <p className="text-sm text-slate-300">
+                  {currentProfile.name} Profile
+                </p>
               )}
             </div>
-            {currentProfile && (
-              <p className="text-sm text-slate-300">
-                {currentProfile.name} Profile
-              </p>
-            )}
+          </div>
+          <div className="flex flex-row gap-2 [-webkit-app-region:no-drag]">
+            <button
+              onClick={toggleDemoMode}
+              className="flex flex-row gap-1.5 items-center px-3 py-2 rounded skew-ui settings-heading font-semibold border border-slate-600 bg-slate-800 hover:border-accent-500 transition-colors"
+            >
+              {isDemoMode ? (
+                <>
+                  <PresentationChartIcon size={20} weight="bold" />
+                  <span>Exit Demo</span>
+                </>
+              ) : (
+                <>
+                  <PresentationChartIcon size={20} weight="bold" />
+                  <span>Demo Mode</span>
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleToggleLock}
+              className="flex flex-row gap-1.5 items-center px-3 py-2 rounded skew-ui settings-heading font-semibold border border-slate-600 bg-slate-800 hover:border-accent-500 transition-colors"
+            >
+              <LockIcon size={20} weight="bold" />
+              <span>Edit Layout</span>
+              <kbd className="ml-1 text-xs bg-black/20 px-1 rounded">
+                {editModeAccelerator}
+              </kbd>
+            </button>
           </div>
         </div>
-        <div className="flex flex-row gap-2">
-          <button
-            onClick={toggleDemoMode}
-            className="flex flex-row gap-1.5 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
-          >
-            {isDemoMode ? (
-              <>
-                <PresentationChartIcon size={20} weight="bold" />
-                <span>Exit Demo</span>
-              </>
-            ) : (
-              <>
-                <PresentationChartIcon size={20} weight="bold" />
-                <span>Demo Mode</span>
-              </>
-            )}
-          </button>
-          <button
-            onClick={handleToggleLock}
-            className="flex flex-row gap-1.5 items-center px-3 py-2 rounded bg-slate-800 hover:bg-slate-600 transition-colors"
-          >
-            <LockIcon size={20} weight="bold" />
-            <span>Edit Layout</span>
-            <kbd className="ml-1 text-xs bg-black/20 px-1 rounded">
-              {editModeAccelerator}
-            </kbd>
-          </button>
-        </div>
-      </div>
-      <div className="flex flex-row gap-4 flex-1 min-h-0 text-sm">
-        {/* Left Column - Widget Menu */}
-        <SettingsMenu />
+        <div className="flex flex-row gap-4 flex-1 min-h-0 text-sm">
+          {/* Left Column - Widget Menu */}
+          <SettingsMenu />
 
-        {/* Right Column - Widget Settings */}
-        <div className="w-3/4 bg-slate-800 p-4 rounded-md flex flex-col overflow-hidden">
-          <Routes>
-            <Route
-              path="/"
-              element={<Navigate to="/settings/general" replace />}
-            />
-            <Route path="/:widgetId" element={<SettingsLoader />} />
-          </Routes>
+          {/* Right Column - Widget Settings */}
+          <div className="w-3/4 bg-slate-800 p-4 rounded-md border border-slate-600/60 flex flex-col overflow-hidden">
+            <Routes>
+              <Route
+                path="/"
+                element={<Navigate to="/settings/general" replace />}
+              />
+              <Route path="/:widgetId" element={<SettingsLoader />} />
+            </Routes>
+          </div>
         </div>
       </div>
-    </div>
+    </ReleaseNotesStatusProvider>
   );
 };

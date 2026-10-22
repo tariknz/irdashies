@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import type { TwitchChatWidgetSettings } from '@irdashies/types';
 import { getWidgetDefaultConfig } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
@@ -43,6 +44,7 @@ export const TwitchChatSettings = () => {
         >
           <>
             <SettingsSection title="Display">
+              <WidgetScaleSettings widgetId={SETTING_ID} />
               {/* Background Opacity */}
               <SettingProp path="background.opacity" />
 
@@ -69,7 +71,7 @@ export const TwitchChatSettings = () => {
                   onChange={(e) =>
                     handleConfigChange({ channel: e.target.value })
                   }
-                  className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
+                  className="w-full rounded border-slate-600 bg-slate-700 p-2 text-slate-300"
                 />
                 <p className="text-sm text-slate-500">
                   Name of Twitch channel to display chat from

@@ -10,6 +10,7 @@ import {
   type IrSdkSourceBridge,
   type Session,
   type Telemetry,
+  type TapeReplayCommand,
 } from '@irdashies/types';
 import logger from '../../logger';
 import type { SessionLifecycle } from '../../sessionLifecycle';
@@ -173,6 +174,12 @@ export async function publishIRacingSDKEvents(
   let shouldStop = false;
   let lastRunningState: boolean | undefined = undefined;
   let latestSession: Session | null = null;
+  let replayRefreshPending = false;
+  const offReplayDemand = isTapeReplay
+    ? channelBus?.onSubscriberCountChanged((_channel, activeCount) => {
+        if (activeCount > 0) replayRefreshPending = true;
+      })
+    : undefined;
 
   const telemetryCallbacks = new Set<(value: Telemetry) => void>();
   const sessionCallbacks = new Set<(value: Session) => void>();
@@ -249,6 +256,17 @@ export async function publishIRacingSDKEvents(
           // telemetry buffer. Keep the current session and channel snapshots
           // until either playback resumes or the SDK actually disconnects.
           if (sdk.sessionStatusOK) {
+            // A seek remounts widgets after the disconnect. Their processors
+            // may activate after the single destination frame was consumed.
+            // Seed that new demand once, even when the tape stays paused.
+            if (replayRefreshPending) {
+              replayRefreshPending = false;
+              if (latestSession && sdk.getTapeReplayStatus()?.paused) {
+                perfMetrics.markStart('tapeReplayRefresh');
+                processorHost?.onFrame(sdk.getTelemetry());
+                perfMetrics.markEnd('tapeReplayRefresh');
+              }
+            }
             const remainingDelay = Math.max(
               0,
               1000 / 25 - (performance.now() - pollStartedAt)
@@ -258,6 +276,8 @@ export async function publishIRacingSDKEvents(
           }
           break;
         }
+        // This frame already satisfies pending subscriber demand.
+        replayRefreshPending = false;
         if (!wasRunning) {
           logger.info(`[iracingSdkBridge] ${sourceName} is running`);
           wasRunning = true;
@@ -279,6 +299,19 @@ export async function publishIRacingSDKEvents(
           perfMetrics.markStart('sdkSessionRead');
           session = sdk.getSessionData();
           perfMetrics.markEnd('sdkSessionRead');
+        }
+
+        // Initialise processors before the frame: a paused seek may only
+        // publish this one frame until the user resumes playback.
+        if (session && sdk.currDataVersion !== lastSessionVersion) {
+          perfMetrics.markStart('sessionPublish');
+          lastSessionVersion = sdk.currDataVersion;
+          latestSession = session;
+          lifecycle?._onSession(session);
+          processorHost?.onSession(session);
+          overlayManager.publishMessage('sessionData', session);
+          sessionCallbacks.forEach((callback) => callback(session));
+          perfMetrics.markEnd('sessionPublish');
         }
 
         if (telemetry) {
@@ -308,20 +341,6 @@ export async function publishIRacingSDKEvents(
           perfMetrics.markEnd('telemetryCallbacks');
         }
 
-        if (session) {
-          // Session YAML is large. Publish it only when the SDK revision changes;
-          // late subscribers are seeded from latestSession below.
-          if (sdk.currDataVersion !== lastSessionVersion) {
-            perfMetrics.markStart('sessionPublish');
-            lastSessionVersion = sdk.currDataVersion;
-            latestSession = session;
-            lifecycle?._onSession(session);
-            processorHost?.onSession(session);
-            overlayManager.publishMessage('sessionData', session);
-            sessionCallbacks.forEach((callback) => callback(session));
-            perfMetrics.markEnd('sessionPublish');
-          }
-        }
         perfMetrics.markEnd('processTelemetry');
         perfMetrics.tick(telemetry);
 
@@ -344,6 +363,7 @@ export async function publishIRacingSDKEvents(
       }
 
       if (wasRunning) {
+        publishRunningState(false);
         logger.info(
           `[iracingSdkBridge] ${sourceName} is no longer publishing telemetry`
         );
@@ -356,11 +376,20 @@ export async function publishIRacingSDKEvents(
         lifecycle?._onDisconnect();
       }
 
-      await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL));
+      await new Promise((resolve) =>
+        setTimeout(resolve, isTapeReplay ? 75 : RETRY_INTERVAL)
+      );
     }
   })();
 
   return {
+    ...(isTapeReplay
+      ? {
+          getTapeReplayStatus: () => sdk.getTapeReplayStatus(),
+          controlTapeReplay: (command: TapeReplayCommand) =>
+            sdk.controlTapeReplay(command),
+        }
+      : {}),
     onTelemetry: (callback: (value: Telemetry) => void) => {
       telemetryCallbacks.add(callback);
       return () => {
@@ -389,6 +418,7 @@ export async function publishIRacingSDKEvents(
     },
     stop: () => {
       shouldStop = true;
+      offReplayDemand?.();
       offOverlayReady();
       overlayManager.clearLatestSessionData?.();
       sdk.stopSDK();

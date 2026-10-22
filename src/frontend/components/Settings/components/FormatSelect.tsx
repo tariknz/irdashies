@@ -87,7 +87,7 @@ export const FormatSelect = <T extends string>({
               }}
               className={`flex items-center justify-start rounded border px-2 py-1 cursor-pointer ${
                 option === value
-                  ? 'border-blue-500 bg-blue-500/10'
+                  ? 'border-accent-500 bg-accent-500/10'
                   : 'border-transparent hover:bg-slate-800'
               }`}
             >

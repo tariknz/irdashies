@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import {
   LapTimeLogWidgetSettings,
   SettingsTabType,
@@ -86,6 +87,7 @@ export const LapTimeLogSettings = () => {
               {/* DISPLAY TAB */}
               {activeTab === 'display' && (
                 <>
+                  <WidgetScaleSettings widgetId={SETTING_ID} className="px-4" />
                   <SettingsSection title="Display">
                     <SettingProp path="showCurrentLap" />
 

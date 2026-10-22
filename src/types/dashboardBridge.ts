@@ -71,8 +71,6 @@ export interface DashboardBridge {
   ) => (() => void) | undefined;
   /** The per-simulator disabled-widget list, read from simWidgetSupport.json. */
   getSimWidgetSupport?: () => Promise<SimWidgetSupportConfig>;
-  getSettingsShowAllWidgets?: () => Promise<boolean>;
-  setSettingsShowAllWidgets?: (showAll: boolean) => Promise<void>;
   getCurrentDashboard: () => DashboardLayout | null;
   saveGarageCoverImage: (buffer: Uint8Array) => Promise<string>;
   getGarageCoverImageAsDataUrl: (imagePath: string) => Promise<string | null>;

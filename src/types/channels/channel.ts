@@ -3,6 +3,7 @@ import type { Incident } from '../raceControl';
 import type { ReferenceLap } from '../referenceLaps';
 import type { Sector } from '../session';
 import type { ReplayContextSnapshot } from './replayContext';
+import type { PitLaneCalibration } from '../pitLane';
 
 export type SessionLifecycleEvent =
   | { type: 'enter'; replay: boolean }
@@ -10,6 +11,7 @@ export type SessionLifecycleEvent =
   | { type: 'disconnect' };
 
 export interface ChannelPayloads {
+  'pit-lane.reset': PitLaneCalibration;
   'blind-spot.snapshot': BlindSpotSnapshot;
   'car-speeds.snapshot': CarSpeedsSnapshot;
   'car-systems.snapshot': CarSystemsSnapshot;
@@ -421,6 +423,15 @@ export interface RadioSnapshot {
   version: number;
 }
 
+/** Retained per-car race timing; indexed by CarIdx, bounded by the SDK grid. */
+export interface RaceFinishTiming {
+  lapsComplete: number;
+  /** Interpolated session time at the observed finishing-line crossing. */
+  crossingTime?: number;
+  /** iRacing's official result delta; compare only cars on the same lap. */
+  resultTime?: number;
+}
+
 export interface StandingsSnapshot {
   focusCarIdx: number | null;
   sessionNum: number | null;
@@ -495,6 +506,7 @@ export interface StandingsSnapshot {
   previousCarTrackSurface: (number | undefined)[];
   /** Current calculated in-class position, indexed by CarIdx. */
   liveClassPosition: (number | undefined)[];
+  finalRaceTiming?: (RaceFinishTiming | null)[];
   version: number;
 }
 
@@ -610,6 +622,7 @@ export type ChannelDefinition =
 export type ChannelRegistry = Readonly<Record<ChannelName, ChannelDefinition>>;
 
 export const channelRegistry = {
+  'pit-lane.reset': { kind: 'event' },
   'blind-spot.snapshot': {
     kind: 'snapshot',
     defaultRateHz: 25,

@@ -130,6 +130,36 @@ describe('RadarSettings', () => {
     expect(screen.queryByText('Moving Centre Line')).not.toBeInTheDocument();
   });
 
+  it.each(['scale', 'sca', 'widget sca', ' WIDGET SCALE '])(
+    'finds the scale control for %j without an empty-section message',
+    (query) => {
+      render(<RadarSettings />);
+      fireEvent.change(screen.getByRole('searchbox'), {
+        target: { value: query },
+      });
+      const look = screen.getByRole('region', { name: 'Look' });
+      expect(
+        within(look).getByRole('slider', { name: 'Widget Scale' })
+      ).toBeInTheDocument();
+      expect(
+        within(look).queryByText(/Nothing here at this level/)
+      ).not.toBeInTheDocument();
+    }
+  );
+
+  it.each(['e', 'a', 'get', 'ale'])(
+    'does not show the scale control for the substring %j',
+    (query) => {
+      render(<RadarSettings />);
+      fireEvent.change(screen.getByRole('searchbox'), {
+        target: { value: query },
+      });
+      expect(
+        screen.queryByRole('slider', { name: 'Widget Scale' })
+      ).not.toBeInTheDocument();
+    }
+  );
+
   it('turns a module off from its header and hides its settings', () => {
     render(<RadarSettings />);
     openSection('Hazards Ahead');

@@ -582,8 +582,15 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
           <DeltaCell
             key="gap"
             delta={gap}
+            showSign={
+              config && 'gap' in config && config.gap.reference === 'player'
+            }
             showForUndefined={
-              position === 1 && !hideLeaderGapIntervalLabels ? 'gap' : undefined
+              position === 1 &&
+              !hideLeaderGapIntervalLabels &&
+              !(config && 'gap' in config && config.gap.reference === 'player')
+                ? 'gap'
+                : undefined
             }
             decimalPlaces={
               config && 'gap' in config

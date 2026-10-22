@@ -118,6 +118,8 @@ export const createProcessorDefinitions = ({
   defineProcessor({
     channel: 'standings.snapshot',
     metricsPrefix: 'standings',
+    // Retain finish crossings when subscribed overlays are temporarily hidden.
+    processWhileHidden: true,
     create: () => new StandingsProcessor(),
   }),
   defineProcessor({

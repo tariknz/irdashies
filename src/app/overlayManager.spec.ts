@@ -50,6 +50,7 @@ class FakeBrowserWindow {
   setPosition = vi.fn();
   setSize = vi.fn();
   setIgnoreMouseEvents = vi.fn();
+  setTitleBarOverlay = vi.fn();
   setVisibleOnAllWorkspaces = vi.fn();
   getBounds = vi.fn(() => ({ x: 0, y: 0, width: 1920, height: 1080 }));
   loadFile = vi.fn();
@@ -276,6 +277,59 @@ describe('OverlayManager display windows', () => {
     closedHandler();
 
     expect(manager.getOverlays().map((o) => o.window)).toEqual([newWindow]);
+  });
+});
+
+describe('settings window title bar theme', () => {
+  const setup = () => {
+    const manager = new OverlayManager();
+    const win = new FakeBrowserWindow({});
+    (
+      manager as unknown as { currentSettingsWindow: FakeBrowserWindow }
+    ).currentSettingsWindow = win;
+    return { manager, win };
+  };
+
+  it.skipIf(process.platform === 'darwin')(
+    'retries the repaint after a failed one',
+    () => {
+      const { manager, win } = setup();
+      win.setTitleBarOverlay.mockImplementationOnce(() => {
+        throw new Error('gone');
+      });
+
+      expect(() => manager.setSettingsTitleBarTheme('carbon')).toThrow();
+      manager.setSettingsTitleBarTheme('carbon');
+      expect(win.setTitleBarOverlay).toHaveBeenCalledTimes(2);
+    }
+  );
+
+  it.skipIf(process.platform === 'darwin')(
+    'repaints only when the resolved theme changes',
+    () => {
+      const { manager, win } = setup();
+
+      manager.setSettingsTitleBarTheme('carbon');
+      manager.setSettingsTitleBarTheme('carbon');
+      expect(win.setTitleBarOverlay).toHaveBeenCalledTimes(1);
+      expect(win.setTitleBarOverlay).toHaveBeenLastCalledWith(
+        expect.objectContaining({ color: '#17181b' })
+      );
+
+      // An unknown stored value resolves to Classic, once.
+      manager.setSettingsTitleBarTheme('nonsense' as never);
+      manager.setSettingsTitleBarTheme(undefined);
+      expect(win.setTitleBarOverlay).toHaveBeenCalledTimes(2);
+      expect(win.setTitleBarOverlay).toHaveBeenLastCalledWith(
+        expect.objectContaining({ color: '#314158' })
+      );
+    }
+  );
+
+  it('does nothing without a settings window', () => {
+    expect(() =>
+      new OverlayManager().setSettingsTitleBarTheme('red')
+    ).not.toThrow();
   });
 });
 

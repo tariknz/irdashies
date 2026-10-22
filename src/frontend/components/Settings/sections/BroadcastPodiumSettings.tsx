@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { changeMarker } from '../components/ChangedMark';
 import { SettingsSection } from '../components/SettingSection';
 import { SettingSliderRow } from '../components/SettingSliderRow';
@@ -51,6 +52,7 @@ export const BroadcastPodiumSettings = () => {
         );
         return (
           <SettingsSection title="Options">
+            <WidgetScaleSettings widgetId={SETTING_ID} />
             {mark(
               ['style'],
               <SettingButtonGroupRow<BroadcastPodiumStyle>
