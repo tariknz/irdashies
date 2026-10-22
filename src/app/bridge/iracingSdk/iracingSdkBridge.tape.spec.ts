@@ -38,6 +38,14 @@ vi.mock('../../storage/referenceLaps', () => ({
   saveReferenceLap: vi.fn(),
 }));
 vi.mock('../../storage/radarTuning', () => ({ getRadarTuning: vi.fn() }));
+vi.mock('../../storage/racePlanHistory', () => ({
+  getRacePlanHistoryStore: () => ({
+    load: vi.fn(async () => undefined),
+    get: vi.fn(() => null),
+    save: vi.fn(),
+    flush: vi.fn(async () => undefined),
+  }),
+}));
 vi.mock('../../perfMetrics', () => ({
   TelemetryPerfMetrics: class {
     startReporting = vi.fn();

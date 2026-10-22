@@ -8,6 +8,7 @@ import {
   type ApiKeyCrypto,
   type RacePlanService,
 } from '../services/racePlanService';
+import { setRacePlanSource } from '../services/racePlanSource';
 
 export const RACE_PLAN_STATE_EVENT = 'racePlan:state';
 
@@ -48,6 +49,7 @@ export function setupRacePlanBridge() {
     client: createIracePlanClient(),
     crypto: safeStorageCrypto,
   });
+  setRacePlanSource(service);
   const unsubscribe = registerRacePlanHandlers(service, (state) => {
     for (const contents of webContents.getAllWebContents()) {
       if (!contents.isDestroyed()) contents.send(RACE_PLAN_STATE_EVENT, state);
@@ -56,6 +58,7 @@ export function setupRacePlanBridge() {
   return {
     service,
     dispose: () => {
+      setRacePlanSource(null);
       unsubscribe();
       service.dispose();
     },

@@ -6,6 +6,7 @@ import type {
   RacePlanListResult,
   RacePlanning,
   RacePlanState,
+  RacePlanStrategy,
 } from '@irdashies/types';
 import type {
   RacePlanStore,
@@ -74,6 +75,12 @@ export function parseConfigPatch(value: unknown): RacePlanConfigPatch {
   return patch;
 }
 
+/** The planning and the strategy in use. */
+export interface ActiveRacePlan {
+  planning: RacePlanning;
+  strategy: RacePlanStrategy;
+}
+
 export interface RacePlanService {
   ready: Promise<void>;
   getState(): Promise<RacePlanState>;
@@ -86,6 +93,8 @@ export interface RacePlanService {
   refreshNow(): Promise<RacePlanState>;
   /** The last good planning, for main-process consumers. */
   getPlanning(): RacePlanning | null;
+  /** The last good planning with its configured (or first) strategy. */
+  getActivePlan(): ActiveRacePlan | null;
   onChange(listener: (state: RacePlanState) => void): () => void;
   dispose(): void;
 }
@@ -313,6 +322,11 @@ export function createRacePlanService(options: {
       return snapshot();
     },
     getPlanning: () => planning,
+    getActivePlan() {
+      const id = effectiveStrategyId();
+      const strategy = planning?.strategies.find((s) => s.id === id);
+      return planning && strategy ? { planning, strategy } : null;
+    },
     onChange(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);

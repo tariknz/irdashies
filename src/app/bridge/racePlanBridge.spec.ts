@@ -31,6 +31,7 @@ const fakeService = () => {
     listPlannings: vi.fn(async () => ({ status: 'unauthorized' as const })),
     refreshNow: vi.fn(async () => state),
     getPlanning: vi.fn(() => null),
+    getActivePlan: vi.fn(() => null),
     onChange: vi.fn((listener: (s: RacePlanState) => void) => {
       listeners.add(listener);
       return () => listeners.delete(listener);

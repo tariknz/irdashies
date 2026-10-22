@@ -55,6 +55,7 @@ import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
 import { setupRacePlanBridge } from './app/bridge/racePlanBridge';
+import { flushRacePlanHistoryOnShutdown } from './app/storage/racePlanHistory';
 import {
   flushIncidentsOnShutdown,
   appendIncident,
@@ -675,6 +676,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
       knownLocalUserIds.flush(),
       releaseNotes?.flush(),
       racePlan?.flush(),
+      flushRacePlanHistoryOnShutdown(),
       flushGarage61SearchSessionOnShutdown(),
     ]);
   },

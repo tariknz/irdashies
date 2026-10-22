@@ -3,6 +3,7 @@ import type { Incident } from '../raceControl';
 import type { ReferenceLap } from '../referenceLaps';
 import type { Sector } from '../session';
 import type { ReplayContextSnapshot } from './replayContext';
+import type { RacePlanProgressSnapshot } from './racePlanProgress';
 import type { PitLaneCalibration } from '../pitLane';
 
 export type SessionLifecycleEvent =
@@ -38,6 +39,7 @@ export interface ChannelPayloads {
    */
   'raceControl.sessionId': string;
   'replay.context': ReplayContextSnapshot;
+  'race-plan.progress': RacePlanProgressSnapshot;
 }
 
 export interface TrackStateSnapshot {
@@ -660,6 +662,12 @@ export const channelRegistry = {
   'raceControl.sessionId': { kind: 'event' },
   // Publishes on change only: a replay is loaded, or its provenance resolves.
   'replay.context': {
+    kind: 'snapshot',
+    defaultRateHz: 1,
+    maxRateHz: 1,
+  },
+  // Stints are minutes long; once a second is plenty for a lap count.
+  'race-plan.progress': {
     kind: 'snapshot',
     defaultRateHz: 1,
     maxRateHz: 1,

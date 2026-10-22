@@ -16,6 +16,7 @@ import logger from '../../logger';
 import type { SessionLifecycle } from '../../sessionLifecycle';
 import type { ChannelBus } from '../channelBridge';
 import { createDefaultProcessorHost } from '../../processors/processorRegistry';
+import { getActiveRacePlan } from '../../services/racePlanSource';
 
 // Keys consumed by the renderer. Anything outside this set is dropped before
 // the telemetry object crosses the IPC boundary — reducing structured-clone
@@ -155,6 +156,10 @@ export async function publishIRacingSDKEvents(
   const radarTuningStorage = channelBus
     ? await import('../../storage/radarTuning')
     : undefined;
+  const racePlanHistory = channelBus
+    ? (await import('../../storage/racePlanHistory')).getRacePlanHistoryStore()
+    : undefined;
+  await racePlanHistory?.load();
   const processorHost =
     channelBus && referenceLapStorage
       ? createDefaultProcessorHost({
@@ -168,6 +173,13 @@ export async function publishIRacingSDKEvents(
             save: referenceLapStorage.saveReferenceLap,
           },
           radarTuning: radarTuningStorage?.getRadarTuning,
+          racePlan: racePlanHistory && {
+            getPlan: getActiveRacePlan,
+            persistence: {
+              load: (subSessionId) => racePlanHistory.get(subSessionId),
+              save: (record) => racePlanHistory.save(record),
+            },
+          },
         })
       : undefined;
 
