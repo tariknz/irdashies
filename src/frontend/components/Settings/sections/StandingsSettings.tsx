@@ -213,6 +213,10 @@ const DisplaySettingsList = ({
                 )}
               </>
             )}
+            {setting.configKey === 'interval' &&
+              settings.config.interval.enabled && (
+                <SettingProp path="interval.displayMode" variant="compact" />
+              )}
             {setting.hasSubSetting &&
               (setting.configKey === 'gap' ||
                 setting.configKey === 'interval') &&

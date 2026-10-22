@@ -56,7 +56,10 @@ export const useDriverStandings = (
       numTopDrivers,
     } = {},
     gap: { enabled: gapEnabled, reference: gapReference } = { enabled: false },
-    interval: { enabled: intervalEnabled } = { enabled: false },
+    interval: {
+      enabled: intervalEnabled,
+      displayMode: intervalDisplayMode = 'time',
+    } = { enabled: false },
     lapTimeDeltas: { enabled: lapTimeDeltasEnabled, numLaps: numLapDeltas } = {
       enabled: false,
       numLaps: 3,
@@ -203,7 +206,8 @@ export const useDriverStandings = (
       ? augmentStandingsWithInterval(
           gapAugmentedGroupedByClass,
           carIdxLap,
-          carIdxLapDistPct
+          carIdxLapDistPct,
+          intervalDisplayMode === 'laps'
         )
       : gapAugmentedGroupedByClass;
 
@@ -233,6 +237,7 @@ export const useDriverStandings = (
               {
                 gap: gapEnabled ?? false,
                 interval: intervalEnabled ?? false,
+                showLapDifferences: intervalDisplayMode === 'laps',
                 playerReference: gapReference === 'player',
               }
             )
@@ -276,6 +281,7 @@ export const useDriverStandings = (
     gapEnabled,
     gapReference,
     intervalEnabled,
+    intervalDisplayMode,
     carIdxLap,
     carIdxLapDistPct,
     carIdxEstTime,

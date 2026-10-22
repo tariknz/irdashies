@@ -134,7 +134,7 @@ describe('class standings over a real multiclass field', () => {
         useDriverStandings(
           config({
             gap: { enabled: false },
-            interval: { enabled: true },
+            interval: { enabled: true, displayMode: 'laps' },
           }),
           { showAll: true }
         ),
@@ -167,6 +167,39 @@ describe('class standings over a real multiclass field', () => {
         expect(driver.interval).toBeLessThanOrEqual(driver.gap.value + 0.001);
       }
     }
+  });
+
+  it('switches interval display modes without changing the gap', () => {
+    const initialProps: { displayMode?: 'time' | 'laps' } = {};
+    const { result, rerender } = renderHook(
+      ({ displayMode }: { displayMode?: 'time' | 'laps' }) =>
+        useDriverStandings(
+          config({
+            gap: { enabled: true },
+            interval: { enabled: true, displayMode },
+          }),
+          { showAll: true }
+        ),
+      { wrapper: harness.wrapper, initialProps }
+    );
+    const legacy = flatten(result.current);
+    expect(legacy.every((driver) => typeof driver.interval !== 'object')).toBe(
+      true
+    );
+
+    rerender({ displayMode: 'laps' });
+    const lapped = flatten(result.current);
+    expect(lapped.some((driver) => typeof driver.interval === 'object')).toBe(
+      true
+    );
+    expect(lapped.map((driver) => driver.gap)).toEqual(
+      legacy.map((driver) => driver.gap)
+    );
+
+    rerender({ displayMode: 'time' });
+    expect(flatten(result.current).map((driver) => driver.interval)).toEqual(
+      legacy.map((driver) => driver.interval)
+    );
   });
 
   it('changes only displayed gaps when switching to player reference', () => {

@@ -91,7 +91,18 @@ export const LappedInterval: Story = {
     config: {
       ...Primary.args?.config,
       gap: { enabled: true, decimalPlaces: 1 },
-      interval: { enabled: true, decimalPlaces: 1 },
+      interval: { enabled: true, decimalPlaces: 1, displayMode: 'laps' },
+    } as StandingsWidgetSettings['config'],
+  },
+};
+
+export const TimeInterval: Story = {
+  args: {
+    ...LappedInterval.args,
+    interval: 125,
+    config: {
+      ...LappedInterval.args?.config,
+      interval: { enabled: true, decimalPlaces: 1, displayMode: 'time' },
     } as StandingsWidgetSettings['config'],
   },
 };

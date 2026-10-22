@@ -45,6 +45,7 @@ export default defineWidgetManifest({
     interval: {
       enabled: false,
       decimalPlaces: 1,
+      displayMode: 'time',
     },
     lastTime: {
       enabled: true,
@@ -497,6 +498,17 @@ export default defineWidgetManifest({
       type: 'enum',
       label: 'Decimal Places',
       options: numberOptions(1, 3),
+    },
+    'interval.displayMode': {
+      type: 'enum',
+      control: 'select',
+      label: 'Interval Display',
+      description:
+        'Choose how intervals are displayed when cars are a lap or more apart.',
+      options: [
+        { value: 'time', label: 'Time' },
+        { value: 'laps', label: 'Laps When Lapped' },
+      ],
     },
     'interval.decimalPlaces': {
       type: 'enum',

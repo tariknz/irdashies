@@ -710,7 +710,8 @@ describe('createStandings', () => {
         const result = augmentStandingsWithInterval(
           grouped,
           [5, 5 - laps],
-          [0.6, 0.4]
+          [0.6, 0.4],
+          true
         );
         expect(result[0][1][0].interval).toBeUndefined();
         expect(result[0][1][1].interval).toEqual({
@@ -734,7 +735,8 @@ describe('createStandings', () => {
       const result = augmentStandingsWithInterval(
         grouped,
         [5, 4, 4],
-        [0.6, 0.4, 0.3]
+        [0.6, 0.4, 0.3],
+        true
       );
       expect(result[0][1][1].interval).toEqual({ value: undefined, laps: -1 });
       expect(result[0][1][2].interval).toBe(3);
@@ -753,7 +755,8 @@ describe('createStandings', () => {
       const result = augmentStandingsWithInterval(
         grouped,
         [5, 4],
-        [0.01, 0.99]
+        [0.01, 0.99],
+        true
       );
       expect(result[0][1][1].interval).toBe(2);
     });
@@ -768,7 +771,12 @@ describe('createStandings', () => {
           ],
         ],
       ];
-      const result = augmentStandingsWithInterval(grouped, [5, 3], [0.6, 0.4]);
+      const result = augmentStandingsWithInterval(
+        grouped,
+        [5, 3],
+        [0.6, 0.4],
+        true
+      );
       expect(result[0][1][1].interval).toBeUndefined();
     });
 
@@ -776,9 +784,36 @@ describe('createStandings', () => {
       const grouped: [string, Standings[]][] = [
         ['1', [makeStanding(0, undefined, false), makeStanding(1, 1.5, false)]],
       ];
-      const result = augmentStandingsWithInterval(grouped, [5, 3], [0.6, 0.4]);
+      const result = augmentStandingsWithInterval(
+        grouped,
+        [5, 3],
+        [0.6, 0.4],
+        true
+      );
       expect(result[0][1][1].interval).toBe(1.5);
     });
+
+    it.each([undefined, false])(
+      'race: preserves time intervals when lap display is %s',
+      (showLapDifferences) => {
+        const grouped: [string, Standings[]][] = [
+          [
+            '1',
+            [
+              makeStanding(0, undefined, true, 'Race'),
+              makeStanding(1, 125, true, 'Race'),
+            ],
+          ],
+        ];
+        const result = augmentStandingsWithInterval(
+          grouped,
+          [5, 3],
+          [0.6, 0.4],
+          showLapDifferences
+        );
+        expect(result[0][1][1].interval).toBe(125);
+      }
+    );
   });
 
   describe('augmentStandingsWithPositionChange', () => {

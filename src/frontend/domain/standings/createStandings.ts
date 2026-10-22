@@ -759,13 +759,14 @@ export const augmentStandingsWithPlayerGap = (
 
 /**
  * Interval shows the gap to the preceding car in the same class.
- * Whole lap differences use the same signed lap convention as class-leader gap.
+ * When enabled, whole lap differences use the signed class-leader gap convention.
  * The class leader has no interval.
  */
 export const augmentStandingsWithInterval = (
   groupedStandings: [string, Standings[]][],
   carIdxLap: number[] = [],
-  carIdxLapDistPct: number[] = []
+  carIdxLapDistPct: number[] = [],
+  showLapDifferences = false
 ): [string, Standings[]][] => {
   return groupedStandings.map(([classId, classStandings]) => {
     const augmentedClassStandings = classStandings.map(
@@ -783,6 +784,7 @@ export const augmentStandingsWithInterval = (
         const lapsBehind =
           driverAhead &&
           isRace &&
+          showLapDifferences &&
           aheadPct !== undefined &&
           aheadPct >= 0 &&
           driverPct >= 0
