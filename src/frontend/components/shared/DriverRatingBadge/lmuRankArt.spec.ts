@@ -22,8 +22,17 @@ describe('bundled LMU artwork', () => {
     expect(lmuArtCounts().ranks).toBe(32);
   });
 
-  it('has all five achievement badges', () => {
-    expect(lmuArtCounts().badges).toBe(5);
+  it('has all six achievement markers', () => {
+    // Six markers, five cells: `sr-danger` deliberately shares the warning
+    // cell, so this counts entries in the table rather than distinct art.
+    expect(lmuArtCounts().badges).toBe(6);
+  });
+
+  it('draws danger as the warning art, on purpose', () => {
+    // The service reports the two separately and they mean the same thing to
+    // a driver, so a missing `sr-danger` would silently draw no badge at all
+    // for a marker that should look like a warning.
+    expect(lmuBadgeArt('sr-danger')).toEqual(lmuBadgeArt('sr-warning'));
   });
 
   it('resolves every tiered rank for both kinds', () => {
@@ -63,6 +72,7 @@ describe('bundled LMU artwork', () => {
       'sr-saint',
       'sr-clean',
       'sr-warning',
+      'sr-danger',
       'sr-probation',
     ]) {
       expect(lmuBadgeArt(badge)).toBeTruthy();

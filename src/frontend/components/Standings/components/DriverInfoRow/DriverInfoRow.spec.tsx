@@ -90,6 +90,12 @@ describe('DriverInfoRow badge contents', () => {
     expect(screen.getByText('AI')).toBeTruthy();
   });
 
+  it('names an AI entry on a sim without ratings', () => {
+    // The row's half of the contract for the other half of the decision.
+    renderRow({ license: '', rating: 0, hasDriverRatings: false, isAI: true });
+    expect(screen.getByText('AI')).toBeTruthy();
+  });
+
   it('draws no badge at all for a sim without ratings', () => {
     // The row's half of the contract, which nothing else covers: BadgeCell
     // has its own specs for the decision, but only this proves the answer
@@ -100,6 +106,7 @@ describe('DriverInfoRow badge contents', () => {
       license: '',
       rating: 0,
       hasDriverRatings: false,
+      isAI: false,
     });
 
     expect(screen.queryByText('AI')).toBeNull();

@@ -108,6 +108,7 @@ export const useDrivers = () => {
       flairId: driver.FlairID,
       lmuRating: driver.LmuRating,
       teamName: driver.TeamName,
+      isAI: driver.CarIsAIControlled,
       carClass: {
         id: driver.CarClassID,
         color: driver.CarClassColor,
@@ -335,6 +336,7 @@ export const useDriverStandings = () => {
               flairId: driver.flairId,
               lmuRating: driver.lmuRating,
               teamName: driver.teamName,
+              isAI: driver.isAI,
             },
             fastestTime: driverPos.bestLap,
             hasFastestTime,

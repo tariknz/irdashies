@@ -54,5 +54,9 @@ export const BADGE_POSITIONS: Record<string, readonly [number, number]> = {
   'sr-saint': [1, 0],
   'sr-clean': [2, 0],
   'sr-warning': [3, 0],
+  // The same cell as the warning, deliberately: the service reports the two
+  // markers separately and they mean the same thing to a driver. Without the
+  // entry, a driver carrying it would get no badge at all.
+  'sr-danger': [3, 0],
   'sr-probation': [4, 0],
 };

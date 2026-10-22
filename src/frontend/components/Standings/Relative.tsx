@@ -151,6 +151,7 @@ export const Relative = () => {
           displayOrder={settings?.displayOrder}
           hiddenColumns={hiddenColumns}
           hasDriverRatings={hasDriverRatings}
+          isAI={false}
           config={settings}
           carNumber={(settings?.carNumber?.enabled ?? true) ? '' : undefined}
           flairId={(settings?.countryFlags?.enabled ?? true) ? 0 : undefined}
@@ -208,6 +209,8 @@ export const Relative = () => {
             isMultiClass={false}
             displayOrder={settings?.displayOrder}
             hiddenColumns={hiddenColumns}
+            hasDriverRatings={hasDriverRatings}
+            isAI={false}
             config={settings}
             carNumber={(settings?.carNumber?.enabled ?? true) ? '' : undefined}
             flairId={(settings?.countryFlags?.enabled ?? true) ? 0 : undefined}
@@ -317,6 +320,8 @@ export const Relative = () => {
           numLapDeltasToShow={lapTimeDeltasEnabled ? numLapDeltas : undefined}
           displayOrder={settings?.displayOrder}
           hiddenColumns={hiddenColumns}
+          hasDriverRatings={hasDriverRatings}
+          isAI={result.driver?.isAI}
           config={settings}
           highlightColor={highlightColor}
           dnf={result.dnf}

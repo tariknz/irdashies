@@ -134,6 +134,19 @@ const Plate = ({
   return <LmuSprite cell={art} title={title} />;
 };
 
+/**
+ * Whether there is a rank to draw.
+ *
+ * Exported because the badge's caller has to make the same test: an LMU entry
+ * can carry a country with no rank at all -- the sim reports nationalities for
+ * drivers whose rank the rating service never answered for, and AI entries are
+ * given a country but deliberately no rank. So the presence of an LmuRating
+ * says nothing about whether this badge will draw anything, and a caller
+ * choosing between this and a placeholder needs to know which.
+ */
+export const lmuHasRanks = (rating?: LmuDriverRating): boolean =>
+  Boolean(rating?.driverRank || rating?.safetyRank);
+
 export const LmuRatingBadge = ({
   rating,
   isMinimal,
@@ -144,8 +157,9 @@ export const LmuRatingBadge = ({
   const safetyRank = showSafety ? rating?.safetyRank : undefined;
 
   // No rank at all is the common case for an AI entry, and for any human the
-  // rating service does not know. An empty cell is correct -- a placeholder
-  // would imply a rating that does not exist.
+  // rating service does not know. An empty cell is correct here -- a
+  // placeholder would imply a rating that does not exist. Naming an AI as one
+  // is the caller's job, since only it knows the entry is an AI.
   if (!driverRank && !safetyRank) return null;
 
   const driverTitle = `Driver rating: ${driverRank}${

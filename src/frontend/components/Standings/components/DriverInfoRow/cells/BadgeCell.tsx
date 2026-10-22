@@ -5,7 +5,10 @@ import {
   DriverRatingBadge,
   type DriverRatingBadgeProps,
 } from '../../../../shared/DriverRatingBadge/DriverRatingBadge';
-import { LmuRatingBadge } from '../../../../shared/DriverRatingBadge/LmuRatingBadge';
+import {
+  LmuRatingBadge,
+  lmuHasRanks,
+} from '../../../../shared/DriverRatingBadge/LmuRatingBadge';
 
 interface BadgeCellProps {
   license?: string;
@@ -29,6 +32,15 @@ interface BadgeCellProps {
    * with no sim detected, hiding would be a guess.
    */
   hasDriverRatings?: boolean;
+  /**
+   * Whether the sim drives this entry rather than a person.
+   *
+   * Names an AI as one on a sim that has no ratings, where there is no licence
+   * or iRating to infer it from. Distinct from `hasDriverRatings`, which is a
+   * property of the sim: together they separate "an AI, say so" from "a human
+   * whose rank has not arrived, say nothing".
+   */
+  isAI?: boolean;
   isMinimal?: boolean;
   compactMode?: string;
 }
@@ -41,6 +53,7 @@ export const BadgeCell = memo(
     badgeFormat,
     lmuFormat,
     hasDriverRatings = true,
+    isAI,
     isMinimal,
     compactMode,
   }: BadgeCellProps) => {
@@ -55,21 +68,27 @@ export const BadgeCell = memo(
         data-column="badge"
         className={`w-auto whitespace-nowrap text-center ${pxClass}`}
       >
-        {lmuRating ? (
+        {lmuHasRanks(lmuRating) ? (
           // Its own setting: the iRacing formats describe a licence and an
           // iRating, which maps onto nothing in a named rank with a tier.
+          //
+          // Keyed on there being a rank, not on the LmuRating existing: an
+          // entry can carry a country with no rank, and that badge draws
+          // nothing for it -- which would swallow the AI placeholder below.
           <LmuRatingBadge
             rating={lmuRating}
             isMinimal={isMinimal}
             format={lmuFormat}
           />
-        ) : hasDriverRatings ? (
-          // Which sim is running, not what this driver happens to carry. The
-          // iRacing badge reads a missing licence and iRating as an AI entry,
-          // which is right for iRacing and wrong for every other sim -- under
-          // LMU nobody has either, so it labelled the whole grid "AI", and a
-          // human whose rank had not arrived yet was called an AI until it
-          // did.
+        ) : hasDriverRatings || isAI ? (
+          // Two different reasons to reach the iRacing badge.
+          //
+          // Under iRacing it is simply the badge, and it reads a missing
+          // licence and iRating as an AI entry. Under a sim with no ratings
+          // that inference is wrong -- nobody has either, so it labelled the
+          // whole grid "AI" and called a human an AI until their rank arrived
+          // -- but the placeholder itself is still what an AI should show, so
+          // it is reached only for an entry the sim says it drives.
           <DriverRatingBadge
             license={license}
             rating={rating}

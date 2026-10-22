@@ -90,6 +90,8 @@ interface DriverRowInfoProps {
   hiddenColumns?: ReadonlySet<string>;
   /** Whether the running sim has an iRacing-style licence and rating. */
   hasDriverRatings?: boolean;
+  /** Whether the sim drives this entry rather than a person. */
+  isAI?: boolean;
   config?: RelativeWidgetSettings['config'] | StandingsWidgetSettings['config'];
   lastPitLap?: number;
   lastLap?: number;
@@ -253,6 +255,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     displayOrder,
     hiddenColumns,
     hasDriverRatings,
+    isAI,
     config,
     lastPitLap,
     lastLap,
@@ -522,6 +525,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             badgeFormat={config?.badge?.badgeFormat}
             lmuFormat={config?.badge?.lmuFormat}
             hasDriverRatings={hasDriverRatings}
+            isAI={isAI}
             isMinimal={badgeMinimal}
             compactMode={compactMode}
           />
@@ -778,6 +782,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     displayOrder,
     hiddenColumns,
     hasDriverRatings,
+    isAI,
     config,
     position,
     lap,

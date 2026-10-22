@@ -40,6 +40,13 @@ export interface Standings {
     /** Set only when the running sim is LMU; see Driver.LmuRating. */
     lmuRating?: LmuDriverRating;
     teamName?: string;
+    /**
+     * Whether the sim drives this entry rather than a person.
+     *
+     * Undefined where the sim does not say, which is not the same as false:
+     * the badge only names an AI when the sim has stated it is one.
+     */
+    isAI?: boolean;
   };
   fastestTime: number;
   hasFastestTime: boolean;
@@ -332,6 +339,7 @@ export const createDriverStandings = (
           flairId: driver.FlairID,
           lmuRating: driver.LmuRating,
           teamName: driver.TeamName,
+          isAI: driver.CarIsAIControlled,
         },
         fastestTime: computedBestTime,
         hasFastestTime: isClassFastest,
@@ -453,6 +461,7 @@ export const createDriverStandings = (
           flairId: driver.FlairID,
           lmuRating: driver.LmuRating,
           teamName: driver.TeamName,
+          isAI: driver.CarIsAIControlled,
         },
         fastestTime: -1,
         hasFastestTime: false,

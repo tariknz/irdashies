@@ -463,6 +463,7 @@ export const Standings = () => {
                           displayOrder={settings?.displayOrder}
                           hiddenColumns={hiddenColumns}
                           hasDriverRatings={hasDriverRatings}
+                          isAI={result.driver?.isAI}
                           currentSessionType={result.currentSessionType}
                           config={settings}
                           highlightColor={highlightColor}
