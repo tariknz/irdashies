@@ -289,6 +289,63 @@ export function hatChanges(
   return changes;
 }
 
+/**
+ * Generic Desktop usages of top-level collections that belong to the system's
+ * own keyboard / mouse stack: Pointer, Mouse, Keyboard, Keypad.
+ */
+const SYSTEM_INPUT_USAGES: ReadonlySet<number> = new Set([
+  0x01, 0x02, 0x06, 0x07,
+]);
+
+/**
+ * Generic Desktop usages of top-level collections that mark a game controller:
+ * Joystick, Gamepad. Multi-axis (0x08) is deliberately not one of them.
+ */
+const CONTROLLER_USAGES: ReadonlySet<number> = new Set([0x04, 0x05]);
+
+/** Simulation Controls page: steering, throttle, brake and similar. */
+const SIMULATION_CONTROLS_PAGE = 0x02;
+
+/**
+ * True when the device is a keyboard, keypad, mouse or pointer that is not
+ * also a game controller. Such interfaces must never be opened: Windows owns
+ * them (kbdhid / mouhid), and a long-lived user-mode handle on a keyboard
+ * interface breaks the local keyboard when the session moves between Remote
+ * Desktop and the console (it stops sending keys until the receiver is
+ * replugged).
+ *
+ * Exception: a device that also declares a Joystick or Gamepad collection, or
+ * anything on the Simulation Controls page, is a controller and still opens.
+ * Button boxes built on one interface (for example Arduino Joystick +
+ * Keyboard) look like that. Their keyboard part keeps the RDP risk, but
+ * skipping them would lose the controller.
+ *
+ * Multi-axis does not count as a controller: 2.4 GHz keyboard receivers often
+ * put a multi-axis collection next to the keyboard and mouse on one interface,
+ * and those must still be skipped.
+ *
+ * This is a device-level check, separate from `parseButtons` deliberately not
+ * filtering by usage page: wheel bases with vendor-page buttons declare no
+ * keyboard or mouse collection, so they pass.
+ */
+export function isKeyboardOrMouse(
+  collections: readonly HIDCollectionInfo[] | undefined
+): boolean {
+  const tops = collections ?? [];
+  const hasSystemInput = tops.some(
+    (c) =>
+      c.usagePage === HID_USAGE.GENERIC_DESKTOP_PAGE &&
+      SYSTEM_INPUT_USAGES.has(c.usage ?? -1)
+  );
+  const hasController = tops.some(
+    (c) =>
+      c.usagePage === SIMULATION_CONTROLS_PAGE ||
+      (c.usagePage === HID_USAGE.GENERIC_DESKTOP_PAGE &&
+        CONTROLLER_USAGES.has(c.usage ?? -1))
+  );
+  return hasSystemInput && !hasController;
+}
+
 /** Human-readable dump of a device's input-report layout, for diagnostics. */
 export function describeCollections(
   collections: readonly HIDCollectionInfo[]

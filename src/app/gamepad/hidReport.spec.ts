@@ -6,6 +6,7 @@ import {
   buttonChanges,
   hatChanges,
   itemUsagePage,
+  isKeyboardOrMouse,
 } from './hidReport';
 
 /** Build a collections tree from input-report item lists (one report each). */
@@ -388,5 +389,61 @@ describe('buttonChanges', () => {
       { reportId: 0, byteOffset: 4, bitMask: 0b1, index: 0 },
     ];
     expect(buttonChanges(view(0b1), wide, 0, state)).toEqual([]);
+  });
+});
+
+describe('isKeyboardOrMouse', () => {
+  const top = (usagePage: number, usage: number) =>
+    ({ usagePage, usage, inputReports: [] }) as unknown as HIDCollectionInfo;
+
+  it('flags keyboard, keypad, mouse and pointer collections', () => {
+    expect(isKeyboardOrMouse([top(0x01, 0x06)])).toBe(true);
+    expect(isKeyboardOrMouse([top(0x01, 0x07)])).toBe(true);
+    expect(isKeyboardOrMouse([top(0x01, 0x02)])).toBe(true);
+    expect(isKeyboardOrMouse([top(0x01, 0x01)])).toBe(true);
+  });
+
+  it('flags a 2.4 GHz receiver interface that also carries a multi-axis collection', () => {
+    // Royal Kludge dongle (258A:0150) MI_01: vendor, system, consumer,
+    // keyboard, mouse and multi-axis collections on one interface.
+    expect(
+      isKeyboardOrMouse([
+        top(0xff00, 0x01),
+        top(0x01, 0x80),
+        top(0x0c, 0x01),
+        top(0x01, 0x06),
+        top(0x01, 0x02),
+        top(0x01, 0x08),
+      ])
+    ).toBe(true);
+  });
+
+  it('passes joysticks, gamepads, multi-axis and vendor-page wheel bases', () => {
+    expect(isKeyboardOrMouse([top(0x01, 0x04)])).toBe(false);
+    expect(isKeyboardOrMouse([top(0x01, 0x05)])).toBe(false);
+    expect(isKeyboardOrMouse([top(0x01, 0x08)])).toBe(false);
+    expect(isKeyboardOrMouse([top(0xff00, 0x01)])).toBe(false);
+    expect(isKeyboardOrMouse([top(0x02, 0x01)])).toBe(false);
+  });
+
+  it('passes keyboards and mice that also declare a game controller', () => {
+    expect(isKeyboardOrMouse([top(0x01, 0x05), top(0x01, 0x06)])).toBe(false);
+    expect(
+      isKeyboardOrMouse([top(0x01, 0x06), top(0x01, 0x02), top(0x01, 0x04)])
+    ).toBe(false);
+    expect(isKeyboardOrMouse([top(0x01, 0x06), top(0x02, 0x01)])).toBe(false);
+  });
+
+  it('does not count multi-axis or vendor collections as a controller', () => {
+    expect(isKeyboardOrMouse([top(0x01, 0x06), top(0x01, 0x08)])).toBe(true);
+    expect(isKeyboardOrMouse([top(0x01, 0x06), top(0xff00, 0x01)])).toBe(true);
+  });
+
+  it('passes devices with missing collection metadata', () => {
+    expect(isKeyboardOrMouse(undefined)).toBe(false);
+    expect(isKeyboardOrMouse([])).toBe(false);
+    expect(
+      isKeyboardOrMouse([{ inputReports: [] } as unknown as HIDCollectionInfo])
+    ).toBe(false);
   });
 });
