@@ -47,7 +47,7 @@ export type LmuRankKind = 'dr' | 'sr';
  * difference between them reads as a mistake. In `em`, so a widget scaled by
  * font size takes the art with it.
  */
-export const LMU_ART_HEIGHT_EM = 1.8;
+export const LMU_ART_HEIGHT_EM = 1.6;
 
 /** Everything a cell needs to be drawn, or undefined when there is no art. */
 export interface LmuSpriteCell {

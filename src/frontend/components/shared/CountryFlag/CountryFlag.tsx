@@ -1,5 +1,4 @@
 import React from 'react';
-import { IRacingFlag } from './IRacingFlag';
 import flagSprite from '../../../assets/img/country_flags.png';
 import { FLAG_CELL, FLAG_GRID, FLAG_POSITIONS } from './flagSpritePositions';
 
@@ -286,7 +285,11 @@ const WIDTH_EM = HEIGHT_EM * (FLAG_CELL.width / FLAG_CELL.height);
  */
 const FlagSprite = ({ code }: { code: string }) => {
   const position = FLAG_POSITIONS[code];
-  if (!position) return <IRacingFlag />;
+  // A code the sheet has no cell for draws nothing. The fallback used to be
+  // the iRacing logo, which claimed a country the sim never reported -- and
+  // under LMU, where nobody has a flair id and an AI has no nationality at
+  // all, that was most of the grid.
+  if (!position) return null;
 
   const [col, row] = position;
   return (
@@ -306,15 +309,23 @@ const FlagSprite = ({ code }: { code: string }) => {
   );
 };
 
+/**
+ * One driver's flag, or nothing.
+ *
+ * Nothing is the right answer in more cases than it looks: an LMU AI has no
+ * nationality, a human's country arrives over REST and is absent until it
+ * does, and either sim can report a country this sheet has no cell for. The
+ * only place that knows a flag cannot be drawn is here, so this is where the
+ * decision lives -- a caller guarding on its own inputs cannot tell an
+ * unresolvable code from a missing one, and one that tried rendered the digit
+ * 0 into the row for every AI.
+ */
 export const CountryFlag: React.FC<CountryFlagProps> = ({
   flairId,
   countryCode,
 }) => {
   const resolved = countryCode ?? getCountryCodeFromFlairId(flairId);
-
-  if (!resolved) {
-    return <IRacingFlag />;
-  }
+  if (!resolved) return null;
 
   return <FlagSprite code={resolved.toLowerCase()} />;
 };

@@ -63,16 +63,37 @@ describe('CountryFlag', () => {
     expect(at('FR')).not.toBe(at('DE'));
   });
 
-  it('falls back to the generic flag for an unknown flair id', () => {
+  it('draws nothing for an unknown flair id', () => {
+    // The fallback used to be the iRacing logo, which claims a country the sim
+    // never reported. Under LMU nobody has a flair id at all, so that was the
+    // whole grid.
     const container = flag({ flairId: 99999 });
     expect(container.querySelector('[role="img"]')).toBeNull();
-    expect(container.querySelector('svg')).not.toBeNull();
+    expect(container.querySelector('svg')).toBeNull();
+    expect(container.textContent).toBe('');
   });
 
-  it('falls back for a country the sheet does not carry', () => {
-    // A sim naming something outside ISO 3166-1 should not render a blank box.
+  it('draws nothing for a country the sheet does not carry', () => {
+    // A sim naming something outside ISO 3166-1 renders nothing rather than a
+    // blank box or a stand-in flag.
     const container = flag({ flairId: 0, countryCode: 'ZZ' });
     expect(container.querySelector('[role="img"]')).toBeNull();
-    expect(container.querySelector('svg')).not.toBeNull();
+    expect(container.querySelector('svg')).toBeNull();
+    expect(container.textContent).toBe('');
+  });
+
+  it('draws nothing for a driver with no country at all', () => {
+    // An LMU AI: no nationality, and no flair id either.
+    const container = flag({ flairId: 0 });
+    expect(container.textContent).toBe('');
+    expect(container.querySelector('svg')).toBeNull();
+  });
+
+  it('never renders a digit for a missing country', () => {
+    // The symptom this was reported as: a falsy flair id reaching the DOM as
+    // text. Guarded at the only place that knows a flag cannot be drawn.
+    for (const flairId of [0, -1, 99999]) {
+      expect(flag({ flairId }).textContent).toBe('');
+    }
   });
 });

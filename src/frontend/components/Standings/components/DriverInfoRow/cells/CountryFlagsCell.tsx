@@ -21,9 +21,17 @@ export const CountryFlagsCell = memo(
         data-column="countryFlags"
         className={`w-auto whitespace-nowrap ${pxClass}`}
       >
-        {(countryCode || flairId) && (
-          <CountryFlag flairId={flairId ?? 0} countryCode={countryCode} />
-        )}
+        {/*
+          Unguarded on purpose. `(countryCode || flairId) && ...` rendered the
+          *number* 0 into the cell whenever a driver had neither -- which is
+          every AI under LMU, since it has no nationality and no flair id. A
+          falsy non-boolean left of `&&` reaches the DOM as text.
+
+          CountryFlag returns null when it cannot draw a flag, so the decision
+          belongs there: it is the only place that knows whether the sheet has
+          a cell for the code.
+        */}
+        <CountryFlag flairId={flairId ?? 0} countryCode={countryCode} />
       </td>
     );
   }

@@ -41,7 +41,12 @@ export const CarManufacturer = memo(({ carId }: CarManufacturerProps) => {
     ? LMU_MANUFACTURER_SPRITE_POSITIONS
     : CAR_MANUFACTURER_SPRITE_POSITIONS;
 
-  if (carId < 0 || !(carManufacturer in positions)) {
+  // 0 is not a car, it is the absence of one: resolveLmuCarId returns it when
+  // no marque matches the vehicle name, and iRacing's own ids start at 1.
+  // Letting it through drew the iRacing sheet's `unknown` cell -- `isLmu` is
+  // false at 0, so an LMU car with an unrecognised marque got a logo from the
+  // wrong game entirely.
+  if (carId <= 0 || !(carManufacturer in positions)) {
     return null;
   }
 
