@@ -933,3 +933,43 @@ describe('mapLmuTelemetry penalty kinds', () => {
     ).toBe(true);
   });
 });
+
+describe('mapLmuTelemetry spectator focus', () => {
+  const cells = (focus?: number) =>
+    focus === undefined ? {} : { focusCarIdx: { value: [focus] } };
+
+  const camCarIdx = (focus?: number, raw = fixture()) =>
+    mapLmuTelemetry(raw, undefined, undefined, cells(focus)).CamCarIdx
+      ?.value[0];
+
+  it('follows the spectator camera', () => {
+    // Every processor derives its focus from CamCarIdx, so this one channel
+    // is the whole of following the camera.
+    expect(camCarIdx(2)).toBe(2);
+  });
+
+  it('focuses slot 0 when the camera is on the first car', () => {
+    expect(camCarIdx(0)).toBe(0);
+  });
+
+  it('falls back to the player when nothing is focused', () => {
+    const playerIdx = mapLmuTelemetry(fixture()).PlayerCarIdx?.value[0];
+    expect(camCarIdx(-1)).toBe(playerIdx);
+    expect(camCarIdx(undefined)).toBe(playerIdx);
+  });
+
+  it('leaves the player index alone, which is a different fact', () => {
+    // iRacing keeps DriverCarIdx and CamCarIdx apart; so do we. Fuel, inputs
+    // and sector times stay the player's.
+    const t = mapLmuTelemetry(fixture(), undefined, undefined, cells(2));
+    expect(t.PlayerCarIdx?.value[0]).not.toBe(2);
+  });
+
+  it('focuses the watched car even with no player car at all', () => {
+    // The case this exists for: while spectating, playerHasVehicle is false,
+    // so the player index is -1 and there is nothing to fall back to.
+    const spectating = { ...fixture(), playerHasVehicle: false };
+    expect(camCarIdx(2, spectating as never)).toBe(2);
+    expect(camCarIdx(undefined, spectating as never)).toBe(-1);
+  });
+});

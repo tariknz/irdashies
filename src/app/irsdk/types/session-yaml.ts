@@ -103,6 +103,22 @@ export interface LmuRestSession {
    */
   nationalities?: Record<string, string>;
   /**
+   * The entrant each car is run by, keyed by CarIdx, from `fullTeamName` on
+   * `/rest/watch/standings`.
+   *
+   * The authoritative answer, and the reason this endpoint is polled at all.
+   * Shared memory has no team field; the fallback parses the prefix of the
+   * entry name, which carries the season with it -- "Proton Competition 2026
+   * #77:LM" yields "Proton Competition 2026" where this endpoint states
+   * "Proton Competition".
+   *
+   * Keyed by the payload's `slotID`, which is the scoring slot id and so this
+   * app's CarIdx. By slot rather than by driver name, unlike `nationalities`:
+   * a team runs a car, and the driver in it changes at every stop of an
+   * endurance race.
+   */
+  teamNames?: Record<number, string>;
+  /**
    * The session's compounds in index order, from
    * `/rest/garage/UIScreen/TireManagement`.
    *

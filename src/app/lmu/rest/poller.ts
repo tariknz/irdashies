@@ -89,8 +89,16 @@ interface TaskState {
   intervalMs: number;
   hash: number | undefined;
   failures: number;
-  /** Latched off until the next activation. */
+  /** Latched off until the next activation. Never set for an optional task. */
   missing: boolean;
+  /**
+   * Whether an optional task's absence has been reported.
+   *
+   * One line when it stops answering and one when it starts, so a log says
+   * whether the spectator camera was ever readable without saying it 3000
+   * times a session.
+   */
+  reportedAbsent: boolean;
   /** A one-shot task that has already landed. */
   satisfied: boolean;
   inFlight: boolean;
@@ -111,6 +119,7 @@ export function createLmuRestPoller({
         hash: undefined,
         failures: 0,
         missing: false,
+        reportedAbsent: false,
         satisfied: false,
         inFlight: false,
         timer: undefined,
@@ -196,12 +205,25 @@ export function createLmuRestPoller({
     for (const output of task.outputs) {
       const value = output.parse(payload);
       if (value === undefined) continue;
+      // An output may recognise a value as the one it already holds. Only a
+      // session target really cares: those bump `revision`, which costs a
+      // full snapshot rebuild and a whole-object broadcast, and a payload
+      // that moves every poll for reasons this output does not read would
+      // force one each time. An output without the predicate is unaffected.
+      if (output.unchanged?.(data, value)) continue;
       output.apply(data, value);
       if (output.target === 'session') sessionChanged = true;
     }
     if (sessionChanged) data.revision += 1;
     return true;
   };
+
+  /** The next interval after a poll that learned nothing, per task ceiling. */
+  const backedOff = (task: LmuRestTask, intervalMs: number): number =>
+    Math.min(
+      intervalMs * REST_BACKOFF_FACTOR,
+      task.maxIntervalMs ?? REST_MAX_INTERVAL_MS
+    );
 
   const run = async (task: LmuRestTask) => {
     const state = stateOf(task);
@@ -258,6 +280,25 @@ export function createLmuRestPoller({
         return;
       }
 
+      // An optional path is one LMU serves only in some states -- the
+      // spectator camera is not readable from the main menu -- so an error
+      // here is a state, not a fault. It costs no retry and never latches the
+      // task off, or the feature would be dead for the whole session by the
+      // time anyone used it. Backed off like an unchanged body, so an absence
+      // that lasts all session is one cheap probe per ceiling.
+      if (task.optional) {
+        if (!state.reportedAbsent) {
+          state.reportedAbsent = true;
+          logger?.info(
+            `[lmuRest] ${task.path} is not answering (${response.reason}); ` +
+              'probing while the session runs'
+          );
+        }
+        state.intervalMs = backedOff(task, state.intervalMs);
+        schedule(task, state.intervalMs);
+        return;
+      }
+
       state.failures += 1;
       if (state.failures >= REST_RETRY_LIMIT) {
         state.missing = true;
@@ -271,6 +312,10 @@ export function createLmuRestPoller({
     }
 
     state.failures = 0;
+    if (state.reportedAbsent) {
+      state.reportedAbsent = false;
+      logger?.info(`[lmuRest] ${task.path} is answering`);
+    }
     const changed = applyBody(task, response.body);
 
     if (task.mode === 'once') {
@@ -280,7 +325,7 @@ export function createLmuRestPoller({
 
     state.intervalMs = changed
       ? task.baseIntervalMs
-      : Math.min(state.intervalMs * REST_BACKOFF_FACTOR, REST_MAX_INTERVAL_MS);
+      : backedOff(task, state.intervalMs);
     schedule(task, state.intervalMs);
   };
 

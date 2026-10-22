@@ -14,6 +14,7 @@ import type { ChannelBus } from '../channelBridge';
 import { createDefaultProcessorHost } from '../../processors/processorRegistry';
 import { sessionSecondsFrameClock } from '../../processors/ProcessorHost';
 import { mapLmuSession } from '../../lmu/mapSession';
+import { isLmuAiControlled } from '../../lmu/aiControl';
 import {
   lmuRosterSignature,
   lmuSessionSignature,
@@ -149,8 +150,21 @@ const perfTelemetryDeliveryEnabled =
  * Canonicalised by raceosUsername, which is also applied to the names coming
  * back, so both sides of the join agree.
  */
-const gridUsernames = (drivers: readonly { name: string }[]): string[] =>
+const gridUsernames = (
+  drivers: readonly { name: string; control?: number }[]
+): string[] =>
   drivers
+    // AI entries are left out, and not as an optimisation. RaceOS is asked by
+    // name, the sim names its AI after real people, and the service has no way
+    // to know the difference -- so an AI called "Herve Attard" is handed that
+    // person's rank and badge. The lookup is the first of two places this is
+    // blocked; mapSession declines to merge one too, because a cached answer
+    // for a human of the same name needs no lookup to reach an AI's row.
+    //
+    // `control === 1` only. isLmuAiControlled returns undefined when the sim
+    // did not report control at all, and `!undefined` keeps the entry: a
+    // missing field must not quietly cost a human their rank.
+    .filter((driver) => !isLmuAiControlled(driver.control))
     .map((driver) => raceosUsername(driver.name ?? ''))
     .filter((name) => name.length > 0);
 

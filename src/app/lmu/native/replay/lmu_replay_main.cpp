@@ -209,6 +209,14 @@ const char* kRestPaths[] = {
     // per-wheel compound index into a name. Without it a replay shows the
     // right compounds in the wrong colours.
     "/rest/garage/UIScreen/TireManagement",
+    // The entrant each driver races for, which shared memory has no field
+    // for. Without it a replay shows the season-suffixed name parsed out of
+    // the entry name rather than the team's own.
+    "/rest/watch/standings",
+    // Which car the spectator camera is on. Shared memory has no camera
+    // field, so without this a replay of a spectated session shows the
+    // viewer's own empty slot rather than the car being watched.
+    "/rest/watch/focus",
 };
 
 struct PendingRest {

@@ -88,6 +88,8 @@ interface DriverRowInfoProps {
    * guaranteed to be filtering from the very same set.
    */
   hiddenColumns?: ReadonlySet<string>;
+  /** Whether the running sim has an iRacing-style licence and rating. */
+  hasDriverRatings?: boolean;
   config?: RelativeWidgetSettings['config'] | StandingsWidgetSettings['config'];
   lastPitLap?: number;
   lastLap?: number;
@@ -250,6 +252,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     isMultiClass,
     displayOrder,
     hiddenColumns,
+    hasDriverRatings,
     config,
     lastPitLap,
     lastLap,
@@ -518,6 +521,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
             lmuRating={lmuRating}
             badgeFormat={config?.badge?.badgeFormat}
             lmuFormat={config?.badge?.lmuFormat}
+            hasDriverRatings={hasDriverRatings}
             isMinimal={badgeMinimal}
             compactMode={compactMode}
           />
@@ -773,6 +777,7 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
   }, [
     displayOrder,
     hiddenColumns,
+    hasDriverRatings,
     config,
     position,
     lap,

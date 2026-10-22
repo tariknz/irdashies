@@ -209,6 +209,22 @@ function trackLocation(raw: Raw, carIdx: number): number {
  * Values without an LMU source default to 0/[]/false so downstream stores and
  * processors behave the same as when an iRacing telemetry var is absent.
  */
+/**
+ * The slot to focus on: the spectator camera's, or the player's own.
+ *
+ * Falls back exactly as the processors do, and for the same reason -- a camera
+ * reading of -1 means nothing is focused, not that slot -1 is. The REST task
+ * only ever lands an integer in range here, so there is no validation left to
+ * do; what this adds is the fallback and one place to read it from.
+ */
+const focusCarIdx = (
+  restCells: LmuRestCells | undefined,
+  playerIdx: number
+): number => {
+  const focus = restCells?.focusCarIdx?.value?.[0];
+  return typeof focus === 'number' && focus >= 0 ? focus : playerIdx;
+};
+
 export function mapLmuTelemetry(
   raw: Raw,
   /**
@@ -373,7 +389,20 @@ export function mapLmuTelemetry(
   );
   t.PlayerCarPosition = num(raw.vehPlaces[playerIdx] ?? 0);
   t.PlayerCarClass = num(raw.vehClass[playerIdx] ?? 0);
-  t.CamCarIdx = num(playerIdx);
+  // The car the overlays are about, which is not the player's while
+  // spectating -- and while spectating `playerHasVehicle` is false, so
+  // `playerIdx` is -1 and there would be nothing to focus on at all.
+  //
+  // Every processor derives its focus from this one channel with the same
+  // `CamCarIdx >= 0 ? CamCarIdx : driverCarIdx` fallback (StandingsProcessor,
+  // RelativeGapProcessor, RadarProcessor, SessionTimingProcessor,
+  // FuelProjectionProcessor, TrackStateProcessor), so publishing the watched
+  // slot here is the whole of following the camera: there is no change to
+  // detect and nothing to subscribe to, because it is re-read every frame.
+  //
+  // This used to be hardcoded to `playerIdx`, which made every widget show
+  // the viewer's own car -- or no car -- whoever the camera was on.
+  t.CamCarIdx = num(focusCarIdx(restCells, playerIdx));
   t.PlayerCarPitSvStatus = num(0);
   t.CarLeftRight = num(blindSpot?.state ?? CarLeftRight.Off);
 

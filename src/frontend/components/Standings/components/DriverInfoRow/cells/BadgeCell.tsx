@@ -11,14 +11,24 @@ interface BadgeCellProps {
   license?: string;
   rating?: number;
   /**
-   * Present only when the running sim is LMU. Takes over the cell entirely:
-   * LMU has no iRating or licence, so the iRacing badge would draw its "AI"
-   * placeholder for every driver on the grid.
+   * Present only when the running sim is LMU, and only once that driver's rank
+   * has been resolved. Absent for an AI entry, for a human the rating service
+   * does not know, and for every human in the seconds before the lookup
+   * answers -- so its absence cannot be read as "this is not an LMU driver".
    */
   lmuRating?: LmuDriverRating;
   badgeFormat?: DriverRatingBadgeProps['format'];
   /** How to draw the LMU rank pair; ignored on every other sim. */
   lmuFormat?: LmuBadgeFormat;
+  /**
+   * Whether the running sim reports an iRacing-style licence and rating.
+   *
+   * Resolved by the widget from the active simulator and passed down, like
+   * `hiddenColumns`, so a row stays driven by props and a spec rendering one
+   * needs no context. True by default, matching simulatorHasDriverRatings:
+   * with no sim detected, hiding would be a guess.
+   */
+  hasDriverRatings?: boolean;
   isMinimal?: boolean;
   compactMode?: string;
 }
@@ -30,6 +40,7 @@ export const BadgeCell = memo(
     lmuRating,
     badgeFormat,
     lmuFormat,
+    hasDriverRatings = true,
     isMinimal,
     compactMode,
   }: BadgeCellProps) => {
@@ -52,14 +63,20 @@ export const BadgeCell = memo(
             isMinimal={isMinimal}
             format={lmuFormat}
           />
-        ) : (
+        ) : hasDriverRatings ? (
+          // Which sim is running, not what this driver happens to carry. The
+          // iRacing badge reads a missing licence and iRating as an AI entry,
+          // which is right for iRacing and wrong for every other sim -- under
+          // LMU nobody has either, so it labelled the whole grid "AI", and a
+          // human whose rank had not arrived yet was called an AI until it
+          // did.
           <DriverRatingBadge
             license={license}
             rating={rating}
             format={badgeFormat}
             isMinimal={isMinimal}
           />
-        )}
+        ) : null}
       </td>
     );
   }

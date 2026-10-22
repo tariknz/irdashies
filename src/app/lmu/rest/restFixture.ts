@@ -149,3 +149,38 @@ export const carSetupOverviewFixture = () => ({
     },
   },
 });
+
+/**
+ * GET /rest/watch/standings, two entries trimmed to the keys the task reads.
+ *
+ * Values are from a captured payload, including the detail that matters: the
+ * entry name carries the season ("Proton Competition 2026 #77:LM") where
+ * `fullTeamName` does not. The live fields are kept on one entry as a reminder
+ * that this body changes on every poll, which is why the task is slow.
+ */
+export const watchStandingsFixture = () => [
+  {
+    slotID: 5,
+    driverName: 'jun lira',
+    fullTeamName: 'Proton Competition',
+    vehicleName: 'Proton Competition 2026 #77:LM',
+    carNumber: '77',
+    position: 3,
+    focus: true,
+    hasFocus: true,
+    penalties: 0,
+    carVelocity: { velocity: 33.6552619934082, x: 0.685, y: -0.136, z: -33.6 },
+    timeIntoLap: 74.75196075439453,
+  },
+  {
+    slotID: 8,
+    driverName: 'Herve Attard',
+    fullTeamName: 'Vista AF Corse',
+    vehicleName: 'Vista AF Corse 2026 #21:LM',
+    carNumber: '21',
+    position: 4,
+    focus: false,
+    hasFocus: false,
+    penalties: 1,
+  },
+];

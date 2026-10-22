@@ -10,6 +10,7 @@ import {
   LMU_CLASS_COLOURS,
   LMU_MANUFACTURERS,
 } from '@irdashies/types';
+import { isLmuAiControlled } from './aiControl';
 import { fnv1a32 } from './hash';
 import { compareLmuOrder, lmuOrderingKey } from './classPosition';
 import type { LmuDriverRating, LmuRestSession } from '@irdashies/types';
@@ -67,12 +68,6 @@ export function resolveLmuCarId(vehicleModel: string): number {
   return (
     LMU_MANUFACTURERS.find(({ pattern }) => pattern.test(vehicleModel))?.id ?? 0
   );
-}
-
-const LMU_CONTROL_AI = 1;
-
-export function isLmuAiControlled(control?: number): boolean | undefined {
-  return control === undefined ? undefined : control === LMU_CONTROL_AI;
 }
 
 /**
@@ -347,6 +342,9 @@ export function mapLmuSession(
   // Keyed by the name the sim reports, which is the only handle
   // /rest/multiplayer/teams gives us. Absent outside multiplayer.
   const nationalities = rest?.nationalities;
+  // Keyed by CarIdx, from /rest/watch/standings. Absent until that endpoint
+  // has answered, which is what the entry-name parse below covers.
+  const teamNames = rest?.teamNames;
 
   const drivers: Driver[] = raw.drivers.map((d) => ({
     CarIdx: d.id,
@@ -365,7 +363,13 @@ export function mapLmuSession(
     // This was the driver's own name, which was never right. It went unnoticed
     // because the column is gated on WeekendInfo.TeamRacing, which was fixed
     // at 0 -- see there.
-    TeamName: lmuTeamName(d.vehicleName) ?? '',
+    // `fullTeamName` where the standings have answered, the entry name's
+    // prefix otherwise. The endpoint wins because the prefix carries the
+    // season: "Proton Competition 2026 #77:LM" parses as "Proton Competition
+    // 2026" where the endpoint states "Proton Competition". The parse stays
+    // as the fallback because it needs no endpoint and works in single player
+    // and in a tape replay.
+    TeamName: teamNames?.[d.id] ?? lmuTeamName(d.vehicleName) ?? '',
     CarNumber: lmuCarNumber(d.vehicleName) ?? DEFAULT_CAR_NUMBER(d.id),
     CarNumberRaw: lmuCarNumberRaw(d.vehicleName) ?? d.id + 1,
     CarPath: d.vehFilename,
@@ -438,9 +442,19 @@ export function mapLmuSession(
     // Country and rank arrive by different routes -- the sim's own teams
     // endpoint and the rating service -- so a driver can have either, both
     // or neither. Merged rather than one overriding the other.
+    // The rank is withheld from an AI entry; the country is not. The country
+    // is the sim's own statement about the entry, while the rank comes from a
+    // service that is asked by name and cannot tell an AI named after a real
+    // driver from that driver -- so merging one here would show a stranger's
+    // rank on an AI's row. The bridge already keeps AI names out of the
+    // lookup; this is the half that also covers an answer already cached for
+    // a human of the same name, which needs no lookup to arrive.
+    //
+    // `control === 1` only: an entry whose control the sim did not report
+    // stays eligible rather than silently losing its rank.
     LmuRating: mergeRating(
       nationalities?.[d.name],
-      d.name ? ratingFor?.(d.name) : undefined
+      d.name && !isLmuAiControlled(d.control) ? ratingFor?.(d.name) : undefined
     ),
   }));
 

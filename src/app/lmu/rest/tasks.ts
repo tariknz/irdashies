@@ -28,6 +28,20 @@ export interface LmuRestOutput {
   readonly parse: (payload: unknown) => unknown;
   /** Writes a parsed value into the data object. */
   readonly apply: (data: LmuRestData, value: unknown) => void;
+  /**
+   * True when the parsed value is already what the data holds, so neither the
+   * write nor the republish is needed.
+   *
+   * Only matters for a `session` target: those bump `revision`, which costs a
+   * full snapshot rebuild and a whole-object IPC broadcast. An output whose
+   * *body* changes on every poll -- `/rest/watch/standings` carries live
+   * positions -- would otherwise force one every poll however static the
+   * field it actually reads.
+   *
+   * Absent for every other output, which means the same as "always changed"
+   * and is exactly how they behaved before this existed.
+   */
+  readonly unchanged?: (data: LmuRestData, value: unknown) => boolean;
 }
 
 export interface LmuRestTask {
@@ -40,6 +54,30 @@ export interface LmuRestTask {
    */
   readonly mode: 'once' | 'repeat';
   readonly baseIntervalMs: number;
+  /**
+   * The ceiling this task's interval backs off to, if not REST_MAX_INTERVAL_MS.
+   *
+   * For a task where noticing a change promptly *is* the feature, rather than
+   * one reading a value that sits still for a stint.
+   */
+  readonly maxIntervalMs?: number;
+  /**
+   * True when an error response is an ordinary state rather than a fault.
+   *
+   * Every other path here is one LMU serves whenever the sim is up, so three
+   * failures in a row mean something is wrong and the task latches off for the
+   * activation. That is exactly wrong for a path whose availability depends on
+   * what the viewer is *doing*: the app activates the moment LMU is running,
+   * which is usually the main menu, and an endpoint that only answers from the
+   * spectator view would be given up on seconds after launch and never
+   * retried -- so the feature would appear to do nothing at all.
+   *
+   * An optional task therefore never latches off. A failure costs no retry and
+   * is rescheduled on the same backing-off interval an unchanged body gets, so
+   * a path that is absent all session is one cheap loopback probe per ceiling
+   * and one log line.
+   */
+  readonly optional?: boolean;
   readonly outputs: readonly LmuRestOutput[];
 }
 
@@ -52,6 +90,9 @@ export const at = (payload: unknown, keys: readonly string[]): unknown => {
   }
   return current;
 };
+
+/** LMU's scoring array length, which bounds a slot id. See lmu_struct.h. */
+const LMU_MAX_VEHICLES = 104;
 
 /** A finite number, or undefined. Rejects NaN, Infinity, and numeric strings. */
 export const finiteNumber = (value: unknown): number | undefined =>
@@ -283,6 +324,112 @@ const compoundCatalogue: LmuRestOutput = {
   },
 };
 
+/**
+ * The slot the spectator camera is on, or -1 for none.
+ *
+ * LMU's shared memory has no camera field at all -- `LMUTelemetryData` carries
+ * `playerVehicleIdx` and nothing else, and while spectating `playerHasVehicle`
+ * is false, so the player index is -1 and there is nothing for the focus to
+ * fall back to. This endpoint is the only route to the watched car.
+ *
+ * Found in LMUTraceHUB, which reads `/rest/watch/focus` alongside
+ * `focusForward` and `focusBackward` and keeps the result in a `CameraInfo`
+ * carrying a `FocusSlot`. The literal `mID` sits next to the path in its
+ * string table, which matters: `mID` is the scoring slot id, and that is this
+ * app's CarIdx (lmu_node.cc indexes every per-vehicle array by `v.mID`). So
+ * the answer needs no join -- it drops straight into CamCarIdx.
+ *
+ * doX reaches the same fact the long way round, from the `focus` flag on each
+ * `/rest/watch/standings` entry, then matching driver names. That works and is
+ * confirmed by two implementations, but it pays for the whole field to learn
+ * one integer.
+ *
+ * Several spellings are accepted because the response shape is known from a
+ * string table rather than a schema, and a bare number is accepted too.
+ *
+ * -1 is a value, not a failure: it means nothing is focused, and the mapper
+ * falls back to the player. Anything unrecognised returns undefined so the
+ * previous value stands, which is the contract every parser here follows --
+ * a hiccup must not drop the camera back to the player's empty slot mid-lap.
+ */
+const FOCUS_KEYS = ['mID', 'mid', 'id', 'slot', 'focusSlot', 'carIdx', 'index'];
+
+const focusSlot = (payload: unknown): number | undefined => {
+  let found: unknown = typeof payload === 'number' ? payload : undefined;
+  if (found === undefined && payload !== null && typeof payload === 'object') {
+    const node = payload as Record<string, unknown>;
+    const keys = Object.keys(node);
+    for (const name of FOCUS_KEYS) {
+      const key = keys.find(
+        (candidate) => candidate.toLowerCase() === name.toLowerCase()
+      );
+      if (key !== undefined) {
+        found = node[key];
+        break;
+      }
+    }
+  }
+
+  const slot = typeof found === 'string' ? Number(found) : found;
+  if (typeof slot !== 'number' || !Number.isInteger(slot)) return undefined;
+  return slot >= -1 && slot < LMU_MAX_VEHICLES ? slot : undefined;
+};
+
+/**
+ * The entrant each car is run by, from `/rest/watch/standings`.
+ *
+ * `fullTeamName` is the only authoritative source. Shared memory has no team
+ * field at all, and the fallback -- parsing the prefix of the entry name --
+ * carries the season with it: an entry named "Proton Competition 2026 #77:LM"
+ * parses as "Proton Competition 2026" where this endpoint states "Proton
+ * Competition".
+ *
+ * Keyed by `slotID`, which is the scoring slot id and so this app's CarIdx --
+ * confirmed by the spectator camera, whose `/rest/watch/focus` answer is a
+ * slotID and lands on the right car when published as CamCarIdx.
+ *
+ * By slot rather than by driver name, unlike `nationalities` next door, and
+ * the difference is not arbitrary: a team runs a *car*, while the driver in it
+ * changes at every stop of an endurance race. A name key would go stale on
+ * each swap until the next poll, and would collide between two AI given the
+ * same name. The slot is the thing the team belongs to.
+ *
+ * Returns undefined rather than an empty map when nothing parses, so a build
+ * whose payload this does not recognise keeps the previous answer instead of
+ * clearing every team name.
+ */
+const teamNames = (payload: unknown): Record<number, string> | undefined => {
+  if (!Array.isArray(payload)) return undefined;
+
+  const found: Record<number, string> = {};
+  for (const entry of payload) {
+    const slot = at(entry, ['slotID']);
+    const team = at(entry, ['fullTeamName']);
+    if (typeof team !== 'string') continue;
+    // Bounded like the focus slot, and for the same reason: anything outside
+    // the scoring array cannot be a car, and would key an entry nothing reads.
+    if (typeof slot !== 'number' || !Number.isInteger(slot)) continue;
+    if (slot < 0 || slot >= LMU_MAX_VEHICLES) continue;
+    const value = team.trim();
+    if (value.length === 0) continue;
+    found[slot] = value;
+  }
+  return Object.keys(found).length > 0 ? found : undefined;
+};
+
+/** Whether two slot->team maps say the same thing. */
+const sameTeams = (
+  a: Record<number, string> | undefined,
+  b: Record<number, string>
+): boolean => {
+  if (!a) return false;
+  const keys = Object.keys(a);
+  // The count as well as the values: every slot already held still matches
+  // when a car joins, so only the count says one has appeared.
+  if (keys.length !== Object.keys(b).length) return false;
+  return keys.every((key) => a[Number(key)] === b[Number(key)]);
+};
+
 export const LMU_REST_TASKS: readonly LmuRestTask[] = [
   {
     id: 'repair-and-refuel',
@@ -445,6 +592,72 @@ export const LMU_REST_TASKS: readonly LmuRestTask[] = [
     mode: 'once',
     baseIntervalMs: 2000,
     outputs: [compoundCatalogue],
+  },
+  {
+    id: 'watch-standings',
+    path: '/rest/watch/standings',
+    mode: 'repeat',
+    // Ten seconds, which is far slower than anything else here, and
+    // deliberately so. This payload is the whole field with live positions,
+    // velocities and lap fractions in it, so its body differs on every poll
+    // however static the team names are -- the hash compare that makes the
+    // other repeating tasks nearly free can never match, and the backoff can
+    // never climb. Every poll therefore pays for a JSON.parse of tens of
+    // kilobytes, and the only lever left is how often.
+    //
+    // Ten seconds is also enough to pick up a driver swap, which is the one
+    // thing a `once` task would miss: the team is fixed per entry, but which
+    // driver is in the car is not.
+    baseIntervalMs: 10_000,
+    // LMU serves this only once a session is live.
+    optional: true,
+    outputs: [
+      {
+        id: 'teamNames',
+        target: 'session',
+        parse: teamNames,
+        // Almost always true: the teams are static for a session while the
+        // body around them moves constantly. Without this, a session target
+        // on such a body would rebuild the whole snapshot and broadcast it
+        // every ten seconds, which is the hitch this endpoint is known for.
+        unchanged: (data, value) =>
+          sameTeams(data.session.teamNames, value as Record<number, string>),
+        apply: (data, value) => {
+          data.session.teamNames = value as Record<number, string>;
+        },
+      },
+    ],
+  },
+  {
+    id: 'watch-focus',
+    path: '/rest/watch/focus',
+    mode: 'repeat',
+    // Fast, because this is the only channel that says which car the overlays
+    // are about and it changes the instant the viewer presses a key. Cheap
+    // enough to afford: the payload is one integer and the hash compare
+    // rejects an unchanged body before any parsing.
+    baseIntervalMs: 250,
+    // A second, not the usual five. The backoff exists to stop re-reading a
+    // pit menu nobody is touching; here, noticing the change promptly is the
+    // whole feature, and taking five seconds to follow the camera would read
+    // as not following it.
+    maxIntervalMs: 1000,
+    // LMU answers this only from the spectator view. Without this the task
+    // would latch off three seconds after launch -- at the main menu, long
+    // before anyone starts watching -- and never poll again.
+    optional: true,
+    outputs: [
+      {
+        id: 'focusCarIdx',
+        // Telemetry, not session: the camera moves during a session, and a
+        // session target would rebuild the whole snapshot on every change.
+        target: 'telemetry',
+        parse: focusSlot,
+        apply: (data, value) => {
+          data.cells.focusCarIdx = { value: [value as number] };
+        },
+      },
+    ],
   },
   {
     id: 'pitstop-estimate',

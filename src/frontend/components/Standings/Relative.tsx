@@ -15,7 +15,10 @@ import {
   usePitLaneStore,
   useActiveSimulator,
 } from '@irdashies/context';
-import { hiddenRatingColumns } from '@irdashies/types';
+import {
+  hiddenRatingColumns,
+  simulatorHasDriverRatings,
+} from '@irdashies/types';
 import {
   useRelativeSettings,
   useDriverRelatives,
@@ -38,6 +41,11 @@ export const Relative = () => {
   // Resolved here and passed down, so the rows stay driven by props rather
   // than reaching into context themselves.
   const simulator = useActiveSimulator();
+  // Resolved once per widget and passed down, so the rows stay driven by
+  // props. Decides whether a driver with no rating gets the iRacing badge's
+  // "AI" placeholder -- which is right for iRacing and wrong for LMU, where
+  // nobody has a licence or an iRating and a human's rank arrives late.
+  const hasDriverRatings = simulatorHasDriverRatings(simulator);
   const hiddenColumns = useMemo<ReadonlySet<string>>(
     () =>
       // Per column: both sims fill `badge` -- an iRacing licence or an LMU
@@ -142,6 +150,7 @@ export const Relative = () => {
           isMultiClass={false}
           displayOrder={settings?.displayOrder}
           hiddenColumns={hiddenColumns}
+          hasDriverRatings={hasDriverRatings}
           config={settings}
           carNumber={(settings?.carNumber?.enabled ?? true) ? '' : undefined}
           flairId={(settings?.countryFlags?.enabled ?? true) ? 0 : undefined}
@@ -329,6 +338,7 @@ export const Relative = () => {
     totalRows,
     settings,
     hiddenColumns,
+    hasDriverRatings,
     isMultiClass,
     highlightColor,
     hideCarManufacturer,

@@ -28,10 +28,17 @@ export interface LmuRestCells {
   refuelTarget?: LmuRestCell<number>;
   refuelTargetIsVirtualEnergy?: LmuRestCell<boolean>;
   /**
-   * Seconds the next stop spends serving penalties. The only thing that
-   * distinguishes a drive-through from a stop-go. See types/lmuPenalty.ts.
+   * Seconds the next stop spends serving penalties. See types/lmuPenalty.ts.
    */
   penaltySeconds?: LmuRestCell<number>;
+  /**
+   * The slot the spectator camera is on, or -1 for none.
+   *
+   * Becomes CamCarIdx, which is what every processor derives its focus car
+   * from. The only source: shared memory has no camera field. See the
+   * `watch-focus` task.
+   */
+  focusCarIdx?: LmuRestCell<number>;
   brakeWear?: LmuRestCell<number>;
   suspensionDamage?: LmuRestCell<number>;
   aeroDamage?: LmuRestCell<number>;

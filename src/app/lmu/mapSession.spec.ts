@@ -5,6 +5,7 @@ import {
   resolveLmuCarId,
   resolveLmuTrackId,
 } from './mapSession';
+import { lmuTeamName } from './entryName';
 import { fixture } from './rawSessionFixture';
 import { lmuSessionUniqueId } from './sessionIdentity';
 import { LMU_MANUFACTURERS } from '@irdashies/types';
@@ -531,6 +532,126 @@ describe('mapLmuSession driver nationality', () => {
     expect(driver?.LmuRating?.safetyRank).toBe('Silver');
     expect(driver?.LmuRating?.safetyTier).toBe(2);
     expect(driver?.LmuRating?.badge).toBe('sr-saint');
+  });
+
+  it('prefers the team name the standings endpoint states', () => {
+    // The entry name carries the season, so parsing its prefix names the
+    // team "Proton Competition 2026". fullTeamName is the team.
+    const raw = fixture();
+    const entry = {
+      ...raw.drivers[0],
+      vehicleName: 'Proton Competition 2026 #77:LM',
+    };
+    const withEntry = { ...raw, drivers: [entry, ...raw.drivers.slice(1)] };
+
+    const s = mapLmuSession(withEntry, null, {
+      teamNames: { [entry.id]: 'Proton Competition' },
+    });
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === entry.name);
+    expect(driver?.TeamName).toBe('Proton Competition');
+  });
+
+  it('parses the entry name when the standings have not answered', () => {
+    // Single player, a tape replay, or the first seconds of a session. The
+    // season suffix comes with it, which is the known cost of the fallback.
+    const raw = fixture();
+    const entry = {
+      ...raw.drivers[0],
+      vehicleName: 'Proton Competition 2026 #77:LM',
+    };
+    const withEntry = { ...raw, drivers: [entry, ...raw.drivers.slice(1)] };
+
+    const s = mapLmuSession(withEntry, null, undefined);
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === entry.name);
+    expect(driver?.TeamName).toBe('Proton Competition 2026');
+  });
+
+  it('falls back per car, not for the whole grid', () => {
+    // A mid-session joiner is in scoring before the standings mention them.
+    const raw = fixture();
+    const known = raw.drivers[0];
+    const joiner = raw.drivers[1];
+
+    const s = mapLmuSession(raw, null, {
+      teamNames: { [known.id]: 'Proton Competition' },
+    });
+
+    const drivers = s.DriverInfo.Drivers;
+    expect(drivers.find((d) => d.UserName === known.name)?.TeamName).toBe(
+      'Proton Competition'
+    );
+    expect(drivers.find((d) => d.UserName === joiner.name)?.TeamName).toBe(
+      lmuTeamName(joiner.vehicleName) ?? ''
+    );
+  });
+
+  it('withholds a rating from an AI entry', () => {
+    // The service is asked by name, the sim names its AI after real drivers,
+    // and nothing in that chain can tell the two apart. The bridge already
+    // keeps AI names out of the lookup; this covers the other way in -- an
+    // answer already cached for a human of the same name, which reaches the
+    // mapper without any lookup at all.
+    const raw = fixture();
+    const ai = { ...raw.drivers[0], control: 1 };
+    const withAi = { ...raw, drivers: [ai, ...raw.drivers.slice(1)] };
+
+    const s = mapLmuSession(withAi, null, undefined, () => ({
+      driverRank: 'Platinum',
+      badge: 'sr-saint',
+    }));
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === ai.name);
+    expect(driver?.LmuRating?.driverRank).toBeUndefined();
+    expect(driver?.LmuRating?.badge).toBeUndefined();
+  });
+
+  it('still gives an AI entry the country the sim itself reports', () => {
+    // The country is first-party -- the sim's own statement about the entry --
+    // while the rank comes from a service that cannot tell an AI from the
+    // person it is named after. Only the second is withheld.
+    const raw = fixture();
+    const ai = { ...raw.drivers[0], control: 1 };
+    const withAi = { ...raw, drivers: [ai, ...raw.drivers.slice(1)] };
+
+    const s = mapLmuSession(
+      withAi,
+      null,
+      { nationalities: { [ai.name]: 'FR' } },
+      () => ({ driverRank: 'Platinum' })
+    );
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === ai.name);
+    expect(driver?.LmuRating?.countryCode).toBe('FR');
+    expect(driver?.LmuRating?.driverRank).toBeUndefined();
+  });
+
+  it('keeps the rating of an entry whose control the sim did not report', () => {
+    // `control === 1` only. The fixture reports no control for these, and a
+    // human must not lose their rank to a missing field.
+    const raw = fixture();
+    expect(raw.drivers[0].control).toBeUndefined();
+
+    const s = mapLmuSession(raw, null, undefined, () => ({
+      driverRank: 'Gold',
+    }));
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === nameOf(raw));
+    expect(driver?.LmuRating?.driverRank).toBe('Gold');
+  });
+
+  it('keeps the rating of a remote human', () => {
+    const raw = fixture();
+    const human = { ...raw.drivers[0], control: 2 };
+    const withHuman = { ...raw, drivers: [human, ...raw.drivers.slice(1)] };
+
+    const s = mapLmuSession(withHuman, null, undefined, () => ({
+      driverRank: 'Gold',
+    }));
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === human.name);
+    expect(driver?.LmuRating?.driverRank).toBe('Gold');
   });
 
   it('asks for the rating by the name the sim reports', () => {

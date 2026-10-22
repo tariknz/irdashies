@@ -16,7 +16,7 @@ const sdkState = vi.hoisted(() => ({
   /** Makes every shared-memory read throw, as a vanished mapping would. */
   readThrows: false,
   /** The grid a session poll reports, so a spec can choose its names. */
-  drivers: [] as { name: string }[],
+  drivers: [] as { name: string; control?: number }[],
 }));
 
 /**
@@ -540,6 +540,38 @@ describe('publishLmuSDKEvents and driver ratings', () => {
     // An empty slot is not a person. Asking about "" would fill a batch with
     // a name that cannot match and have the miss remembered against it.
     sdkState.drivers = [driver(''), driver('Herve Attard'), driver('   ')];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
+    expect(namesRequested()).toEqual(['Herve Attard']);
+
+    bridge.stop();
+  });
+
+  it('leaves AI entries out of the lookup', async () => {
+    // RaceOS is asked by name, the sim names its AI after real people, and
+    // the service cannot tell the difference -- so an AI called "Herve
+    // Attard" would be handed that person's rank and badge.
+    sdkState.drivers = [
+      { name: 'Herve Attard', control: 2 },
+      { name: 'Leonel Gomez', control: 1 },
+    ];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
+    expect(namesRequested()).toEqual(['Herve Attard']);
+
+    bridge.stop();
+  });
+
+  it('keeps an entry whose control the sim did not report', async () => {
+    // `control === 1` only. A missing field must not quietly cost a human
+    // their rank, which is the failure nobody would notice.
+    sdkState.drivers = [{ name: 'Herve Attard' }];
     const overlayManager = createOverlayManager();
     const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
     const bridge = await publishLmuSDKEvents(overlayManager);
