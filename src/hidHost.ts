@@ -74,6 +74,10 @@ async function openDevice(device: HIDDevice): Promise<void> {
   device.addEventListener('inputreport', (event) => {
     // Devices may send their first report only on a real press. Forward all
     // edges; GamepadManager excludes unbound status bits from chord matching.
+    // An edge for a control with no known prior state is marked initial: it
+    // may be a real press, or a control already held when the device was
+    // opened (a shifter in gear, a status bit). Recording ignores those.
+    const knownButtons = new Set(state.pressed.keys());
     for (const change of buttonChanges(
       event.data,
       state.buttons,
@@ -82,10 +86,12 @@ async function openDevice(device: HIDDevice): Promise<void> {
     )) {
       window.gamepadHost?.sendButton(
         gamepadTokenFromIndex(change.index, device.productName),
-        change.down
+        change.down,
+        !knownButtons.has(change.index)
       );
     }
 
+    const knownHats = new Set(state.hatState.keys());
     for (const change of hatChanges(
       event.data,
       state.hats,
@@ -94,7 +100,8 @@ async function openDevice(device: HIDDevice): Promise<void> {
     )) {
       window.gamepadHost?.sendButton(
         gamepadTokenFromHat(change.index, change.direction, device.productName),
-        change.down
+        change.down,
+        !knownHats.has(change.index)
       );
     }
   });

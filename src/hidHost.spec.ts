@@ -2,14 +2,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_KEYBINDINGS } from '@irdashies/types';
 import { GamepadManager } from './app/gamepad/gamepadManager';
 
+type OnButton = (token: string, down: boolean, initial: boolean) => void;
+
 const host = vi.hoisted(() => ({
-  onButton: undefined as ((token: string, down: boolean) => void) | undefined,
+  onButton: undefined as OnButton | undefined,
 }));
 
 vi.mock('./app/gamepad/gamepadHost', () => ({
   GamepadHost: class {
-    start(onButton: (token: string, down: boolean) => void) {
+    start(onButton: OnButton) {
       host.onButton = onButton;
+    }
+    stop() {
+      host.onButton = undefined;
     }
   },
 }));
@@ -76,8 +81,8 @@ function device(name: string, ...tops: [number, number][]) {
 
 describe('HID host startup', () => {
   const trigger = vi.fn();
-  const sendButton = vi.fn((token: string, down: boolean) =>
-    host.onButton?.(token, down)
+  const sendButton = vi.fn((token: string, down: boolean, initial: boolean) =>
+    host.onButton?.(token, down, initial)
   );
 
   beforeEach(() => {
@@ -88,10 +93,14 @@ describe('HID host startup', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  /** Start the host with persisted bindings and route its edges to the manager. */
+  /**
+   * Start the host with persisted bindings and route its edges to the manager.
+   * With `onCapture`, the manager is recording a binding from the start.
+   */
   async function start(
     devices = [wheel()],
-    accelerator = 'gamepad:Wheel:btn0'
+    accelerator = 'gamepad:Wheel:btn0',
+    onCapture?: (token: string) => void
   ) {
     const manager = new GamepadManager(trigger);
     manager.syncBindings({
@@ -102,6 +111,7 @@ describe('HID host startup', () => {
       },
     });
     manager.start();
+    if (onCapture) manager.startCapture(onCapture);
     vi.stubGlobal('navigator', {
       hid: Object.assign(new EventTarget(), {
         getDevices: vi.fn().mockResolvedValue(devices),
@@ -206,6 +216,21 @@ describe('HID host startup', () => {
 
     await start([empty]);
     expect(empty.open).not.toHaveBeenCalled();
+  });
+
+  it('records a press but not a control already held when recording started', async () => {
+    const captured: string[] = [];
+    // Nothing bound: the host starts for the recording itself.
+    const [device] = await start([wheel()], '', (token) =>
+      captured.push(token)
+    );
+
+    report(device, 0b10000000); // first report: bit 7 already held (a gear)
+    report(device, 0b10000001); // press button 0
+    report(device, 0b10000000); // release it
+
+    expect(captured).toEqual(['gamepad:Wheel:btn0']);
+    expect(trigger).not.toHaveBeenCalled();
   });
 
   it('still matches button and hat chords after initialization', async () => {
