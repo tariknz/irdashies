@@ -178,12 +178,6 @@ describe('createRaceosClient', () => {
     await settle();
 
     expect(transport).not.toHaveBeenCalled();
-    expect(
-      vi
-        .mocked(logger.info)
-        .mock.calls.map(([m]) => String(m))
-        .join(' ')
-    ).toContain('No Steam auth ticket');
   });
 
   it('backs off when authentication fails', async () => {
@@ -441,20 +435,20 @@ describe('createRaceosClient', () => {
     expect(client.get('Herve Attard')?.driverRank).toBe('Gold');
   });
 
-  it('counts what matched, not what came back', async () => {
-    // The old line reported the service's answer count, so a join that failed
-    // for every name on the grid still read as a complete success.
-    const client = build(transportFor([player('Someone Else')]));
+  it('does not treat an answer that matched nobody as a result', async () => {
+    // A join failing for every name on the grid must not republish: the
+    // snapshot would be rebuilt twice a second with nothing new in it.
+    const onResolved = vi.fn();
+    const client = build(
+      transportFor([player('Someone Else')]),
+      undefined,
+      onResolved
+    );
 
     client.request(['Herve Attard']);
     await settle();
 
-    const notes = vi
-      .mocked(logger.info)
-      .mock.calls.map(([m]) => String(m))
-      .join('\n');
-    expect(notes).toContain('Matched 0/1 driver ratings');
-    expect(notes).toContain('service answered for 1');
+    expect(onResolved).not.toHaveBeenCalled();
   });
 
   it('warns when answers came back that match nobody', async () => {
@@ -490,36 +484,28 @@ describe('createRaceosClient', () => {
     expect(onResolved).not.toHaveBeenCalled();
   });
 
-  it('says what it decided about the grid', async () => {
-    // The three states below all render as a bare standings row, so the log is
-    // the only way to tell them apart.
-    const client = build(transportFor([player('Herve Attard')]));
+  it('asks the service once for a grid that does not change', async () => {
+    // What the removed log was really describing: an empty grid is not asked
+    // about, a known name is not re-asked, and only a name nobody has yet
+    // reaches the network.
+    const transport = transportFor([player('Herve Attard')]);
+    const client = build(transport);
 
     client.request([]);
-    client.request(['Herve Attard']);
     await settle();
-    client.request(['Herve Attard']);
-
-    const notes = vi
-      .mocked(logger.info)
-      .mock.calls.map(([m]) => String(m))
-      .join('\n');
-    expect(notes).toContain('No named drivers on the grid');
-    expect(notes).toContain('Looking up 1 of 1');
-    expect(notes).toContain('already known from cache');
-  });
-
-  it('does not repeat itself while the grid is unchanged', async () => {
-    const client = build(transportFor([player('Herve Attard')]));
+    const afterEmpty = transport.mock.calls.length;
 
     client.request(['Herve Attard']);
     await settle();
-    const before = vi.mocked(logger.info).mock.calls.length;
-    client.request(['Herve Attard']);
-    client.request(['Herve Attard']);
-    client.request(['Herve Attard']);
+    const afterFirst = transport.mock.calls.length;
 
-    expect(vi.mocked(logger.info).mock.calls).toHaveLength(before + 1);
+    client.request(['Herve Attard']);
+    client.request(['Herve Attard']);
+    await settle();
+
+    expect(afterEmpty).toBe(0);
+    expect(afterFirst).toBeGreaterThan(0);
+    expect(transport.mock.calls).toHaveLength(afterFirst);
   });
 
   it('survives a lookup body that is not readable JSON', async () => {

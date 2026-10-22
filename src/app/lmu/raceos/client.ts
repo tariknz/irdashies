@@ -125,22 +125,6 @@ export function createRaceosClient({
   let settleTimer: NodeJS.Timeout | undefined;
   let burstStartedAt: number | null = null;
   let backoff = RACEOS_BACKOFF_MS;
-  /**
-   * The last thing said, so a state that persists is reported once.
-   *
-   * Everything here is driven off the session poll, so a plain log call would
-   * repeat twice a second for as long as the condition held. Most of these
-   * conditions are steady by nature -- no ticket, nothing left to ask for --
-   * and the useful signal is the transition, not the repetition.
-   */
-  let lastNote: string | undefined;
-
-  const note = (message: string) => {
-    if (lastNote === message) return;
-    lastNote = message;
-    logger.info(`[raceos] ${message}`);
-  };
-
   const fail = (what: string) => {
     notBefore = now() + backoff;
     // Not deduped: each failure moves the backoff, so each one is new news.
@@ -159,20 +143,11 @@ export function createRaceosClient({
     const ticket = await fetchTicket();
     if (!ticket) {
       // Not running, or not signed in. No backoff: the service has not
-      // misbehaved, there is simply nothing to ask with.
-      //
-      // Said out loud because this is the likeliest reason for no badges and
-      // it used to be the one state that logged nothing at all -- leaving "the
-      // sim serves no ticket endpoint" and "everything worked, nobody is
-      // rated" indistinguishable from the outside.
-      note(
-        'No Steam auth ticket from LMU, so no ratings can be looked up. ' +
-          'The sim must be running and signed in to Steam; see ticket.ts for ' +
-          'why a replay never has one.'
-      );
+      // misbehaved, there is simply nothing to ask with -- and no log either,
+      // because it is the steady state of every session without LMU signed in
+      // to Steam. See ticket.ts for why a replay never has one.
       return undefined;
     }
-    note('Got a Steam auth ticket from LMU; exchanging it for a token');
 
     const response = await transport({
       url: RACEOS_AUTH_URL,
@@ -210,9 +185,6 @@ export function createRaceosClient({
       token = value;
       tokenExpiry = now() + ttl;
       succeed();
-      note(
-        `Authenticated with the rating service; token valid for ${Math.round(ttl / 1000)}s`
-      );
       return token;
     } catch {
       fail('authentication returned unreadable JSON');
@@ -265,13 +237,6 @@ export function createRaceosClient({
       cache.set(name, rating);
     }
 
-    // Matched, not returned. Reporting what the service answered says nothing
-    // about whether any of it reached a driver, and conflating the two hid a
-    // join that was failing for every name on the grid.
-    logger.info(
-      `[raceos] Matched ${matched}/${usernames.length} driver ratings ` +
-        `(service answered for ${found.size}; cache ${cache.size()})`
-    );
     if (matched === 0 && found.size > 0) {
       // The one combination that cannot be anything but a bug: answers came
       // back and none of them belong to anybody. Named on both sides, because
@@ -360,16 +325,11 @@ export function createRaceosClient({
       const names = driverNames
         .map(raceosUsername)
         .filter((name) => name.length > 0);
-      if (now() < notBefore) {
-        note(
-          `Holding off on ${names.length} grid drivers until the backoff expires`
-        );
-        return;
-      }
-      if (names.length === 0) {
-        note('No named drivers on the grid; nothing to look up');
-        return;
-      }
+      // Held off until the backoff expires, and nothing to ask about with no
+      // named drivers. Both are steady states of a session rather than
+      // events, which is why neither is reported.
+      if (now() < notBefore) return;
+      if (names.length === 0) return;
       let queued = 0;
       for (const name of names) {
         if (pending.has(name) || inflight.has(name)) continue;
@@ -378,15 +338,6 @@ export function createRaceosClient({
         pending.add(name);
         queued += 1;
       }
-      // Distinguishes the three states that all render as a bare standings
-      // row: asking now, already answered, and still waiting on a batch.
-      note(
-        queued > 0
-          ? `Looking up ${queued} of ${names.length} grid drivers`
-          : pending.size > 0 || inflight.size > 0
-            ? `All ${names.length} grid drivers are queued or in flight`
-            : `All ${names.length} grid drivers already known from cache`
-      );
       if (queued > 0) scheduleDrain();
     },
 
@@ -400,9 +351,6 @@ export function createRaceosClient({
       burstStartedAt = null;
       notBefore = 0;
       backoff = RACEOS_BACKOFF_MS;
-      // So the next session reports its state afresh rather than staying
-      // quiet because the last one had already said the same thing.
-      lastNote = undefined;
     },
   };
 }

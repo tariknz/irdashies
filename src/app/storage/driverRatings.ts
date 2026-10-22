@@ -192,9 +192,6 @@ export function createDriverRatingCache(
         const text = await fsp.readFile(filePath(), 'utf8');
         entries = sanitize(JSON.parse(text));
         prune();
-        logger.info(
-          `[raceos] Loaded ${Object.keys(entries).length} cached driver ratings`
-        );
       } catch {
         // No file yet, or unreadable. Either way there is nothing to recover
         // and an empty cache is correct.
