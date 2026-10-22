@@ -10,7 +10,7 @@ import {
   LMU_CLASS_COLOURS,
   LMU_MANUFACTURERS,
 } from '@irdashies/types';
-import { isLmuAiControlled } from './aiControl';
+import { isLmuAiEntry, lmuPlayerSlot } from './aiControl';
 import { fnv1a32 } from './hash';
 import { compareLmuOrder, lmuOrderingKey } from './classPosition';
 import type { LmuDriverRating, LmuRestSession } from '@irdashies/types';
@@ -346,6 +346,16 @@ export function mapLmuSession(
   // has answered, which is what the entry-name parse below covers.
   const teamNames = rest?.teamNames;
 
+  // Your own slot, from the telemetry block as well as from the entry's own
+  // flag: either identifies you, and in the garage the sim describes your
+  // entry least like the rest of the session. See aiControl.ts.
+  const ownSlot = lmuPlayerSlot(raw);
+  const isAiEntry = (d: { control?: number; isPlayer?: boolean; id: number }) =>
+    isLmuAiEntry({
+      control: d.control,
+      isPlayer: d.isPlayer || d.id === ownSlot,
+    });
+
   const drivers: Driver[] = raw.drivers.map((d) => ({
     CarIdx: d.id,
     UserName: d.name,
@@ -376,8 +386,8 @@ export function mapLmuSession(
     CarClassID: d.classId,
     CarID: resolveLmuCarId(d.vehicleModel ?? d.vehicleName),
     CarIsPaceCar: 0,
-    CarIsAI: isLmuAiControlled(d.control) ? 1 : 0,
-    CarIsAIControlled: isLmuAiControlled(d.control),
+    CarIsAI: isAiEntry(d) ? 1 : 0,
+    CarIsAIControlled: isAiEntry(d),
     CarIsElectric: 0,
     CarScreenName: d.vehicleName,
     CarScreenNameShort: d.vehicleName.split(' ')[0] ?? '',
@@ -454,7 +464,7 @@ export function mapLmuSession(
     // stays eligible rather than silently losing its rank.
     LmuRating: mergeRating(
       nationalities?.[d.name],
-      d.name && !isLmuAiControlled(d.control) ? ratingFor?.(d.name) : undefined
+      d.name && !isAiEntry(d) ? ratingFor?.(d.name) : undefined
     ),
   }));
 

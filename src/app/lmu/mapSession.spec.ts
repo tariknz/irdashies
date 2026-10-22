@@ -67,9 +67,22 @@ describe('mapLmuSession', () => {
   });
 
   it('leaves AI state unknown when the addon does not report control', () => {
-    const drivers = mapLmuSession(fixture()).DriverInfo.Drivers;
+    const raw = fixture();
+    const drivers = mapLmuSession(raw).DriverInfo.Drivers;
+    const ownName = raw.drivers.find((d) => d.isPlayer)?.name;
 
-    expect(drivers.every((d) => d.CarIsAIControlled === undefined)).toBe(true);
+    // Unknown for everyone the sim said nothing about...
+    expect(
+      drivers
+        .filter((d) => d.UserName !== ownName)
+        .every((d) => d.CarIsAIControlled === undefined)
+    ).toBe(true);
+    // ...but not for the player, who is known not to be an AI whatever
+    // control says. That is the point of isLmuAiEntry: in the garage LMU
+    // reports your own car as AI-controlled.
+    expect(drivers.find((d) => d.UserName === ownName)?.CarIsAIControlled).toBe(
+      false
+    );
     expect(drivers.every((d) => d.CarIsAI === 0)).toBe(true);
   });
 
@@ -585,6 +598,47 @@ describe('mapLmuSession driver nationality', () => {
     expect(drivers.find((d) => d.UserName === joiner.name)?.TeamName).toBe(
       lmuTeamName(joiner.vehicleName) ?? ''
     );
+  });
+
+  it('keeps the rank of a player sitting in the garage', () => {
+    // LMU holds your car under AI control until you take it, so your own
+    // entry reads control 1 in the garage. That withheld your own rank while
+    // ranking everyone else, until you jumped in.
+    const raw = fixture();
+    const own = { ...raw.drivers[0], control: 1, isPlayer: true };
+    const inGarage = { ...raw, drivers: [own, ...raw.drivers.slice(1)] };
+
+    const s = mapLmuSession(inGarage, null, undefined, () => ({
+      driverRank: 'Gold',
+      badge: 'sr-saint',
+    }));
+
+    const driver = s.DriverInfo.Drivers.find((d) => d.UserName === own.name);
+    expect(driver?.LmuRating?.driverRank).toBe('Gold');
+    expect(driver?.CarIsAIControlled).toBe(false);
+    expect(driver?.CarIsAI).toBe(0);
+  });
+
+  it('knows its own entry from the telemetry block alone', () => {
+    // The second signal. If the entry's own flag were not set in the garage,
+    // the slot the telemetry block names still identifies the car.
+    const raw = fixture();
+    const own = { ...raw.drivers[0], control: 1, isPlayer: false };
+    const inGarage = {
+      ...raw,
+      drivers: [own, ...raw.drivers.slice(1)],
+      playerHasVehicle: true,
+      playerVehicleIdx: own.id,
+    };
+
+    const s = mapLmuSession(inGarage, null, undefined, () => ({
+      driverRank: 'Gold',
+    }));
+
+    expect(
+      s.DriverInfo.Drivers.find((d) => d.UserName === own.name)?.LmuRating
+        ?.driverRank
+    ).toBe('Gold');
   });
 
   it('withholds a rating from an AI entry', () => {

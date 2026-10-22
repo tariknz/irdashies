@@ -14,7 +14,7 @@ import type { ChannelBus } from '../channelBridge';
 import { createDefaultProcessorHost } from '../../processors/processorRegistry';
 import { sessionSecondsFrameClock } from '../../processors/ProcessorHost';
 import { mapLmuSession } from '../../lmu/mapSession';
-import { isLmuAiControlled } from '../../lmu/aiControl';
+import { isLmuAiEntry, lmuPlayerSlot } from '../../lmu/aiControl';
 import {
   lmuRosterSignature,
   lmuSessionSignature,
@@ -150,23 +150,45 @@ const perfTelemetryDeliveryEnabled =
  * Canonicalised by raceosUsername, which is also applied to the names coming
  * back, so both sides of the join agree.
  */
-const gridUsernames = (
-  drivers: readonly { name: string; control?: number }[]
-): string[] =>
-  drivers
-    // AI entries are left out, and not as an optimisation. RaceOS is asked by
-    // name, the sim names its AI after real people, and the service has no way
-    // to know the difference -- so an AI called "Herve Attard" is handed that
-    // person's rank and badge. The lookup is the first of two places this is
-    // blocked; mapSession declines to merge one too, because a cached answer
-    // for a human of the same name needs no lookup to reach an AI's row.
-    //
-    // `control === 1` only. isLmuAiControlled returns undefined when the sim
-    // did not report control at all, and `!undefined` keeps the entry: a
-    // missing field must not quietly cost a human their rank.
-    .filter((driver) => !isLmuAiControlled(driver.control))
-    .map((driver) => raceosUsername(driver.name ?? ''))
-    .filter((name) => name.length > 0);
+const gridUsernames = (raw: {
+  readonly drivers: readonly {
+    id: number;
+    name: string;
+    control?: number;
+    isPlayer?: boolean;
+  }[];
+  readonly playerHasVehicle?: boolean;
+  readonly playerVehicleIdx?: number;
+}): string[] => {
+  const ownSlot = lmuPlayerSlot(raw);
+  return (
+    raw.drivers
+      // AI entries are left out, and not as an optimisation. RaceOS is asked by
+      // name, the sim names its AI after real people, and the service has no way
+      // to know the difference -- so an AI called "Herve Attard" is handed that
+      // person's rank and badge. The lookup is the first of two places this is
+      // blocked; mapSession declines to merge one too, because a cached answer
+      // for a human of the same name needs no lookup to reach an AI's row.
+      //
+      // The player is never an AI, whatever control says: LMU holds your car
+      // under AI control until you take it, so this skipped your own name for as
+      // long as you sat in the garage, and your row showed the AI badge while
+      // every other driver was ranked. See aiControl.ts.
+      //
+      // `control === 1` only otherwise. isLmuAiEntry returns undefined when the
+      // sim did not report control at all, and `!undefined` keeps the entry: a
+      // missing field must not quietly cost a human their rank.
+      .filter(
+        (driver) =>
+          !isLmuAiEntry({
+            control: driver.control,
+            isPlayer: driver.isPlayer || driver.id === ownSlot,
+          })
+      )
+      .map((driver) => raceosUsername(driver.name ?? ''))
+      .filter((name) => name.length > 0)
+  );
+};
 
 export async function publishLmuSDKEvents(
   overlayManager: OverlayManager,
@@ -577,7 +599,7 @@ export async function publishLmuSDKEvents(
         // below. A driver joining mid-session is a reason to ask even if
         // nothing else about the grid moved, and an id already resolved,
         // remembered as a miss or in flight costs one set lookup to skip.
-        ratingClient.request(gridUsernames(rawSession.drivers));
+        ratingClient.request(gridUsernames(rawSession));
         const signature = lmuSessionSignature(rawSession);
         // Only the roster is gated. Anything else that moves -- a position, a
         // lap time, the weather -- rebuilds at once as it always did, because

@@ -16,7 +16,12 @@ const sdkState = vi.hoisted(() => ({
   /** Makes every shared-memory read throw, as a vanished mapping would. */
   readThrows: false,
   /** The grid a session poll reports, so a spec can choose its names. */
-  drivers: [] as { name: string; control?: number }[],
+  drivers: [] as {
+    id: number;
+    name: string;
+    control?: number;
+    isPlayer?: boolean;
+  }[],
 }));
 
 /**
@@ -77,6 +82,7 @@ const rawFrame = () => {
     numVehicles: 2,
     activeVehicles: 2,
     playerVehicleIdx: 0,
+    playerHasVehicle: true,
     lapDist: 5000,
     speed: 0,
     speedLimiter: 0,
@@ -488,7 +494,7 @@ describe('publishLmuSDKEvents and REST-sourced session values', () => {
  * after that snapshot was published still reaches the renderer.
  */
 describe('publishLmuSDKEvents and driver ratings', () => {
-  const driver = (name: string) => ({ name });
+  const driver = (name: string) => ({ name, id: 1 });
 
   const namesRequested = () => ratingState.requested.flat();
 
@@ -550,13 +556,46 @@ describe('publishLmuSDKEvents and driver ratings', () => {
     bridge.stop();
   });
 
+  it('asks about the player even while their car is AI-controlled', async () => {
+    // LMU holds your car under AI control until you take it, so in the garage
+    // your own entry reads control 1. Skipping it meant your rank was the one
+    // rank missing from the grid until you jumped in.
+    sdkState.drivers = [
+      { id: 0, name: 'Herve Attard', control: 1, isPlayer: true },
+      { id: 1, name: 'Leonel Gomez', control: 2 },
+    ];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
+    expect(new Set(namesRequested())).toEqual(
+      new Set(['Herve Attard', 'Leonel Gomez'])
+    );
+
+    bridge.stop();
+  });
+
+  it('asks about the player found by slot rather than by flag', async () => {
+    // The second signal: playerVehicleIdx is 0 in this snapshot.
+    sdkState.drivers = [{ id: 0, name: 'Herve Attard', control: 1 }];
+    const overlayManager = createOverlayManager();
+    const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
+    const bridge = await publishLmuSDKEvents(overlayManager);
+
+    await vi.waitFor(() => expect(namesRequested().length).toBeGreaterThan(0));
+    expect(namesRequested()).toEqual(['Herve Attard']);
+
+    bridge.stop();
+  });
+
   it('leaves AI entries out of the lookup', async () => {
     // RaceOS is asked by name, the sim names its AI after real people, and
     // the service cannot tell the difference -- so an AI called "Herve
     // Attard" would be handed that person's rank and badge.
     sdkState.drivers = [
-      { name: 'Herve Attard', control: 2 },
-      { name: 'Leonel Gomez', control: 1 },
+      { id: 3, name: 'Herve Attard', control: 2 },
+      { id: 4, name: 'Leonel Gomez', control: 1 },
     ];
     const overlayManager = createOverlayManager();
     const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
@@ -571,7 +610,7 @@ describe('publishLmuSDKEvents and driver ratings', () => {
   it('keeps an entry whose control the sim did not report', async () => {
     // `control === 1` only. A missing field must not quietly cost a human
     // their rank, which is the failure nobody would notice.
-    sdkState.drivers = [{ name: 'Herve Attard' }];
+    sdkState.drivers = [{ id: 3, name: 'Herve Attard' }];
     const overlayManager = createOverlayManager();
     const { publishLmuSDKEvents } = await import('./lmuSdkBridge');
     const bridge = await publishLmuSDKEvents(overlayManager);
