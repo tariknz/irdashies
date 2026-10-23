@@ -36,3 +36,4 @@ export * from './widgets';
 export * from './releaseNotes';
 export * from './releaseNotesFixture';
 export * from './tapeReplay';
+export * from './racePlan';

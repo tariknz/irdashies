@@ -80,6 +80,9 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'sectordelta',
   'shiftlight',
   'slowcarahead',
+  // Race plans name drivers by iRacing customer id.
+  'stintplan',
+  'strategytimeline',
   'tachometer',
   'twitchchat',
   'weather',

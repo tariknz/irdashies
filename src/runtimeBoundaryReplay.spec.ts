@@ -53,6 +53,7 @@ const SNAPSHOT_CHANNELS = [
   'standings.snapshot',
   'track-state.snapshot',
   'lap-trace.sample',
+  'race-plan.progress',
 ] as const satisfies readonly SnapshotChannelName[];
 
 type SnapshotChannel = (typeof SNAPSHOT_CHANNELS)[number];
@@ -571,6 +572,13 @@ const summarize = (snapshots: SnapshotRecord) => ({
     sessionNum: snapshots['lap-trace.sample'].sessionNum,
     version: snapshots['lap-trace.sample'].version,
   },
+  'race-plan.progress': {
+    status: snapshots['race-plan.progress'].status,
+    raceStartMs: snapshots['race-plan.progress'].raceStartMs,
+    teamLaps: snapshots['race-plan.progress'].teamLaps,
+    stopCount: snapshots['race-plan.progress'].stops.length,
+    version: snapshots['race-plan.progress'].version,
+  },
 });
 
 describe('runtime boundary replay', () => {
@@ -806,5 +814,12 @@ const FIXED_GOLDEN = {
     brake: 0.11,
     sessionNum: 1,
     version: 5,
+  },
+  'race-plan.progress': {
+    status: 'no-plan',
+    raceStartMs: null,
+    teamLaps: 0,
+    stopCount: 0,
+    version: 6,
   },
 } satisfies ReturnType<typeof summarize>;

@@ -33,6 +33,21 @@ describe('sanitizeGantryDock', () => {
     expect(sanitizeGantryDock(dock)).toEqual(dock);
   });
 
+  it('accepts a strategy timeline panel once', () => {
+    const result = sanitizeGantryDock({
+      enabled: true,
+      panels: [
+        { id: 'a', type: 'strategytimeline', widgetId: 'fuel' },
+        { id: 'b', type: 'strategytimeline' },
+        { id: 'c', type: 'map' },
+      ],
+    });
+    expect(result.panels).toEqual([
+      { id: 'a', type: 'strategytimeline' },
+      { id: 'c', type: 'map' },
+    ]);
+  });
+
   it('drops panel types that are not on the allowlist', () => {
     const result = sanitizeGantryDock({
       enabled: true,
@@ -206,6 +221,21 @@ describe('resolveDockPanels', () => {
       [map]
     );
     expect(resolveDockPanels(dashboard).panels[0].status).toBe('ready');
+  });
+
+  it('links a strategy timeline panel to the widget by type', () => {
+    const timeline: DashboardWidget = {
+      id: 'strategytimeline',
+      enabled: false,
+      layout,
+    };
+    const dashboard = dashboardWith(
+      { enabled: true, panels: [{ id: 'a', type: 'strategytimeline' }] },
+      [map, timeline]
+    );
+    const [panel] = resolveDockPanels(dashboard).panels;
+    expect(panel.status).toBe('ready');
+    expect(panel.status === 'ready' && panel.widget).toBe(timeline);
   });
 
   it('reports a fuel panel with no source as unlinked', () => {
