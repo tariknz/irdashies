@@ -48,6 +48,11 @@ export interface TrackStateSnapshot {
   carIdxClassPosition: readonly number[];
   carLeftRight: number;
   isOnTrack: boolean;
+  /**
+   * True when the frame is the last one the sim wrote rather than a current
+   * reading. Nothing about where the player is can be trusted while it is set.
+   */
+  dataStale: boolean;
   playerCarInPitStall: boolean;
   playerTrackSurface: number;
   onPitRoad: boolean;
@@ -301,6 +306,13 @@ export interface SessionBarSnapshot {
   incidentWarningInitialLimit?: number;
   incidentWarningSubsequentLimit?: number;
   trackWetness: number;
+  /**
+   * LMU's track-limits penalty points for the player, and the points a
+   * drive-through is served at. Both undefined on a sim without them, and
+   * the points are undefined rather than 0 when there is no reading.
+   */
+  trackLimitsPoints?: number;
+  trackLimitsPointsMax?: number;
   precipitation?: number;
   relativeHumidity?: number;
   airTemp?: number;
@@ -435,6 +447,56 @@ export interface StandingsSnapshot {
   carIdxTrackSurface: number[];
   carIdxTireCompound: number[];
   carIdxSessionFlags: number[];
+  /**
+   * LMU's per-wheel compound indices, flat: four entries per car at
+   * `carIdx * 4 + wheel`, in FL, FR, RL, RR order. -1 is unknown.
+   *
+   * Empty under iRacing, which has one compound per car -- so a consumer
+   * reads this first and falls back to carIdxTireCompound.
+   */
+  carIdxWheelCompounds: number[];
+  /**
+   * LMU's track-limits penalty points per car. -1 where a car has no reading
+   * or the session has not stated the scale; 0 is a clean car.
+   *
+   * Empty under iRacing, whose incident points are a different system on a
+   * different scale.
+   */
+  carIdxTrackLimitsPoints: number[];
+  /**
+   * What each car has left to run on, 0..1, or -1 where neither budget reads.
+   * Virtual energy for a car that runs on it, fuel otherwise.
+   *
+   * Empty under iRacing, which has no virtual energy and reports no per-car
+   * fuel at all.
+   */
+  carIdxEnergyRemaining: number[];
+  /** Outstanding penalties per car. A count, not a kind. */
+  carIdxPenalties: number[];
+  /**
+   * Which penalty each car is serving, as an LMU_PENALTY_CODE.
+   *
+   * Empty under iRacing, and empty under LMU whenever the sim's UI websocket
+   * is not answering -- it is the only source that names a kind per car.
+   * `lmuPenaltyKindFromCode` turns an entry into something to draw.
+   */
+  carIdxPenaltyKind: number[];
+  /**
+   * Seconds a time penalty will add, per car. 0 for a clean car and for the
+   * two kinds served on track. Empty wherever `carIdxPenaltyKind` is.
+   *
+   * Not to be confused with `penaltySeconds` below, which is the player's own
+   * pit-stop estimate and a different fact from a different source.
+   */
+  carIdxPenaltySeconds: number[];
+  /**
+   * Seconds the player's next stop spends serving penalties. Undefined until
+   * the pit-stop estimate has been polled. Names the player's penalty when
+   * combined with their count -- see types/lmuPenalty.ts.
+   */
+  penaltySeconds?: number;
+  /** Points at which a drive-through is served. 0 when unknown. */
+  trackLimitsPointsMax: number;
   carIdxP2PStatus: boolean[];
   carIdxP2PCount: number[];
   sessionUniqueId: number;

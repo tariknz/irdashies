@@ -60,7 +60,7 @@ const sessionTask: LmuRestTask = {
 };
 
 const ok = (body: string): LmuRestResponse => ({ ok: true, body });
-const fail = (reason: 'refused' | 'timeout'): LmuRestResponse => ({
+const fail = (reason: 'refused' | 'timeout' | 'status'): LmuRestResponse => ({
   ok: false,
   reason,
 });
@@ -627,5 +627,250 @@ describe('createLmuRestPoller with a pending source', () => {
     await advance(BASE_MS);
 
     expect(data.cells.pitStopTime?.value[0]).toBe(41);
+  });
+});
+
+/**
+ * A path LMU answers only in some states -- the spectator camera, which is
+ * not readable from the main menu.
+ */
+const OPTIONAL_MAX_MS = 2000;
+const optionalTask: LmuRestTask = {
+  id: 'optional',
+  path: '/rest/watch/focus',
+  mode: 'repeat',
+  baseIntervalMs: BASE_MS,
+  maxIntervalMs: OPTIONAL_MAX_MS,
+  optional: true,
+  outputs: [
+    {
+      id: 'focusCarIdx',
+      target: 'telemetry',
+      parse: (payload) => (typeof payload === 'number' ? payload : undefined),
+      apply: (data, value) => {
+        data.cells.focusCarIdx = { value: [value as number] };
+      },
+    },
+  ],
+};
+
+describe('createLmuRestPoller with an optional task', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('never gives up on it, however long it has been failing', async () => {
+    // The bug this exists for: the app activates the moment LMU is running,
+    // which is the main menu, so three failures latched the spectator camera
+    // off seconds after launch and it never polled again -- the feature was
+    // dead by the time anyone opened the spectator view.
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const { transport, calls } = makeTransport(() => fail('status'));
+    const poller = createLmuRestPoller({
+      data: createLmuRestData(),
+      transport,
+      logger,
+      tasks: [optionalTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    await advance(600_000);
+
+    expect(calls.length).toBeGreaterThan(REST_RETRY_LIMIT);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it('says so once, not once per probe', async () => {
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const { transport } = makeTransport(() => fail('status'));
+    const poller = createLmuRestPoller({
+      data: createLmuRestData(),
+      transport,
+      logger,
+      tasks: [optionalTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    await advance(600_000);
+
+    expect(logger.info).toHaveBeenCalledTimes(1);
+  });
+
+  it('picks it up the moment it starts answering', async () => {
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const data = createLmuRestData();
+    let serving = false;
+    const { transport } = makeTransport(() =>
+      serving ? ok('8') : fail('status')
+    );
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      logger,
+      tasks: [optionalTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    await advance(600_000);
+    expect(data.cells.focusCarIdx).toBeUndefined();
+
+    // The viewer opens the spectator view.
+    serving = true;
+    await advance(OPTIONAL_MAX_MS * 2);
+
+    expect(data.cells.focusCarIdx?.value[0]).toBe(8);
+    // One line for the absence, one for the recovery.
+    expect(logger.info).toHaveBeenCalledTimes(2);
+  });
+
+  it('backs off to its own ceiling, not the shared one', async () => {
+    // Taking five seconds to follow the camera would read as not following
+    // it, so this task's backoff stops sooner.
+    const { transport, calls } = makeTransport(() => ok('8'));
+    const poller = createLmuRestPoller({
+      data: createLmuRestData(),
+      transport,
+      tasks: [optionalTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    // Long enough for an unchanged body to have backed off as far as it goes.
+    await advance(REST_MAX_INTERVAL_MS * 10);
+    const settled = calls.length;
+
+    await advance(OPTIONAL_MAX_MS);
+    expect(calls.length).toBeGreaterThan(settled);
+  });
+
+  it('still follows the camera after a spell of failures', async () => {
+    const data = createLmuRestData();
+    let slot: number | null = null;
+    const { transport } = makeTransport(() =>
+      slot === null ? fail('status') : ok(String(slot))
+    );
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      tasks: [optionalTask],
+    });
+
+    poller.setActive(true);
+    await advance(600_000);
+
+    for (const watched of [8, 10, 13]) {
+      slot = watched;
+      await advance(OPTIONAL_MAX_MS * 2);
+      expect(data.cells.focusCarIdx?.value[0]).toBe(watched);
+    }
+  });
+});
+
+/**
+ * A session-targeted task whose body differs on every poll, as
+ * `/rest/watch/standings` does -- it carries live positions.
+ */
+const movingBodyTask: LmuRestTask = {
+  id: 'moving',
+  path: '/rest/watch/standings',
+  mode: 'repeat',
+  baseIntervalMs: BASE_MS,
+  outputs: [
+    {
+      id: 'teamNames',
+      target: 'session',
+      parse: (payload) =>
+        typeof payload === 'object' && payload !== null
+          ? (payload as { team?: string }).team
+          : undefined,
+      unchanged: (data, value) => data.session.teamNames?.[0] === value,
+      apply: (data, value) => {
+        data.session.teamNames = { 0: value as string };
+      },
+    },
+  ],
+};
+
+describe('createLmuRestPoller and an output that reports no change', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('does not bump the revision when the value is unchanged', async () => {
+    // The revision forces a full snapshot rebuild and a whole-object
+    // broadcast. A body that moves every poll for reasons this output does
+    // not read must not cost one each time.
+    const data = createLmuRestData();
+    let tick = 0;
+    const { transport } = makeTransport(() =>
+      // Same team, different body each time -- a position moving.
+      ok(JSON.stringify({ team: 'Proton', position: (tick += 1) }))
+    );
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      tasks: [movingBodyTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    const afterFirst = data.revision;
+    expect(data.session.teamNames).toEqual({ 0: 'Proton' });
+
+    await advance(BASE_MS * 10);
+    expect(data.revision).toBe(afterFirst);
+  });
+
+  it('still bumps it when the value does change', async () => {
+    const data = createLmuRestData();
+    let team = 'Proton';
+    const { transport } = makeTransport(() => ok(JSON.stringify({ team })));
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      tasks: [movingBodyTask],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    const afterFirst = data.revision;
+
+    team = 'Vista AF Corse';
+    await advance(BASE_MS * 2);
+
+    expect(data.revision).toBeGreaterThan(afterFirst);
+    expect(data.session.teamNames).toEqual({ 0: 'Vista AF Corse' });
+  });
+
+  it('leaves an output with no predicate counting as a change', async () => {
+    // Every existing output has none, and must behave exactly as before.
+    const data = createLmuRestData();
+    let scale = 1;
+    const { transport } = makeTransport(() =>
+      ok(JSON.stringify({ scale: (scale += 1) }))
+    );
+    const poller = createLmuRestPoller({
+      data,
+      transport,
+      tasks: [{ ...sessionTask, mode: 'repeat' }],
+    });
+
+    poller.setActive(true);
+    await advance(0);
+    const afterFirst = data.revision;
+
+    await advance(BASE_MS * 2);
+    expect(data.revision).toBeGreaterThan(afterFirst);
   });
 });

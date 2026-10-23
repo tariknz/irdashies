@@ -188,6 +188,101 @@ describe('mapLmuTelemetry', () => {
     expect(t.WindVel.value[0]).toBeCloseTo(Math.hypot(2, 0, -3));
   });
 
+  it('reports track wetness as a level, not as a wetness fraction', () => {
+    // The bug this covers: the 0..1 fraction went through untouched, and
+    // every consumer indexes a 1..7 record -- so 0.05 found no key and the
+    // cell rendered empty all session. The level, not the fraction, is the
+    // contract.
+    const base = fixture();
+    expect(base.avgPathWetness).toBe(0.05);
+    expect(mapLmuTelemetry(base).TrackWetness.value[0]).toBe(2);
+
+    expect(
+      mapLmuTelemetry({ ...base, avgPathWetness: 0 }).TrackWetness.value[0]
+    ).toBe(1);
+    expect(
+      mapLmuTelemetry({ ...base, avgPathWetness: 0.8 }).TrackWetness.value[0]
+    ).toBe(7);
+  });
+
+  it('maps tyre compounds per car and per wheel', () => {
+    // The bug this covers: both channels were numArr(undefined), so every row
+    // fell back to index 0 and rendered whatever sat there -- the player's own
+    // tyre, since DriverTires held one entry at 0.
+    const t = mapLmuTelemetry(fixture());
+    // Front-left per car, which is all the iRacing-shaped channel can hold.
+    expect(t.CarIdxTireCompound.value).toEqual([1, 3, 0]);
+    // The whole set, flat, four per car.
+    expect(t.LmuCarIdxWheelCompounds?.value).toEqual([
+      1, 1, 1, 1, 3, 3, 0, 0, 0, 0, 0, 0,
+    ]);
+  });
+
+  it('reports the player’s own compound', () => {
+    const base = fixture();
+    // The fixture's player is car 1, on a wet front.
+    expect(base.vehIsPlayer?.[1]).toBeTruthy();
+    expect(mapLmuTelemetry(base).PlayerTireCompound.value[0]).toBe(3);
+  });
+
+  it('reports no compound rather than compound 0 when the sim is silent', () => {
+    const base = fixture();
+    const t = mapLmuTelemetry({ ...base, vehWheelCompounds: undefined });
+    expect(t.CarIdxTireCompound.value).toEqual([]);
+    expect(t.PlayerTireCompound.value[0]).toBe(-1);
+  });
+
+  it('maps track-limits points, converted from the sim’s steps', () => {
+    // The fixture is four steps to a point and twelve to a penalty, so car 0
+    // sits at 0.25 of three and car 2 is one step away.
+    const t = mapLmuTelemetry(fixture());
+    expect(t.LmuCarIdxTrackLimitsPoints?.value).toEqual([0.25, 0, 2.75]);
+    expect(t.LmuTrackLimitsPointsMax?.value[0]).toBe(3);
+  });
+
+  it('keeps a car with no reading apart from a clean one', () => {
+    const base = fixture();
+    const t = mapLmuTelemetry({ ...base, vehTrackLimitsSteps: [-1, 0, 4] });
+    expect(t.LmuCarIdxTrackLimitsPoints?.value).toEqual([-1, 0, 1]);
+  });
+
+  it('publishes no points at all when the session states no scale', () => {
+    // Without a divisor there is no points figure, and zeroes would show the
+    // whole grid as clean.
+    const base = fixture();
+    const t = mapLmuTelemetry({ ...base, trackLimitsStepsPerPoint: 0 });
+    expect(t.LmuCarIdxTrackLimitsPoints?.value).toEqual([-1, -1, -1]);
+    expect(t.LmuTrackLimitsPointsMax?.value[0]).toBe(0);
+  });
+
+  it('carries one budget per car, whichever limits it', () => {
+    // Two quantities that are not comparable, but only one of them limits any
+    // given car -- so one channel can hold both.
+    const t = mapLmuTelemetry(fixture());
+    const value = t.LmuCarIdxEnergyRemaining?.value ?? [];
+    // Car 0 runs on energy, so its full fuel byte is ignored.
+    expect(value[0]).toBe(0.42);
+    // Car 1 has no energy, so its fuel byte is what counts.
+    expect(value[1]).toBeCloseTo(51 / 255, 6);
+    // Car 2 reports neither, which is not an empty tank.
+    expect(value[2]).toBe(-1);
+  });
+
+  it('gives two tracks two session ids', () => {
+    // The frame's id has to move with the session snapshot's, because the
+    // consumers that detect a session change compare the two halves of the
+    // same fact. LMU's own session number is the type and never moves here.
+    const raw = fixture();
+    const first = mapLmuTelemetry(raw).SessionUniqueID.value[0];
+    const second = mapLmuTelemetry({
+      ...raw,
+      trackName: 'Circuit of the Americas',
+    }).SessionUniqueID.value[0];
+
+    expect(first).not.toBe(second);
+    expect(mapLmuTelemetry(raw).SessionNum.value[0]).toBe(raw.session);
+  });
+
   it('maps LMU race flags', () => {
     const base = fixture();
     expect(
@@ -802,5 +897,90 @@ describe('mapLmuTelemetry adjustable dials', () => {
 
     expect(dial(t, 'dcTractionControl')).toBeUndefined();
     expect(dial(t, 'dcTractionControl2')).toBeUndefined();
+  });
+});
+
+describe('mapLmuTelemetry penalty kinds', () => {
+  const channels = {
+    kind: { value: [0, 1, 2, 3] },
+    penaltySeconds: { value: [0, 0, 0, 30] },
+  };
+
+  const mapped = () =>
+    mapLmuTelemetry(
+      fixture(),
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      channels
+    );
+
+  it('publishes the per-car cells the caller built', () => {
+    const t = mapped();
+    expect(t.LmuCarIdxPenaltyKind?.value).toEqual([0, 1, 2, 3]);
+    expect(t.LmuCarIdxPenaltySeconds?.value).toEqual([0, 0, 0, 30]);
+  });
+
+  it('hands the cells over by reference rather than copying them', () => {
+    // The loop runs every 8 ms. A copy per frame is an allocation per frame,
+    // for a value that changes a handful of times a session.
+    expect(mapped().LmuCarIdxPenaltyKind?.value).toBe(channels.kind.value);
+  });
+
+  it('leaves both channels absent when nothing is known', () => {
+    // The websocket is the only source of a kind, so a build or a moment
+    // without it publishes nothing rather than a grid of zeroes -- which
+    // every consumer would read as "known clean".
+    const t = mapLmuTelemetry(fixture());
+    expect(t.LmuCarIdxPenaltyKind).toBeUndefined();
+    expect(t.LmuCarIdxPenaltySeconds).toBeUndefined();
+  });
+
+  it('still publishes the count, which comes from scoring', () => {
+    expect(
+      Array.isArray(mapLmuTelemetry(fixture()).LmuCarIdxPenalties?.value)
+    ).toBe(true);
+  });
+});
+
+describe('mapLmuTelemetry spectator focus', () => {
+  const cells = (focus?: number) =>
+    focus === undefined ? {} : { focusCarIdx: { value: [focus] } };
+
+  const camCarIdx = (focus?: number, raw = fixture()) =>
+    mapLmuTelemetry(raw, undefined, undefined, cells(focus)).CamCarIdx
+      ?.value[0];
+
+  it('follows the spectator camera', () => {
+    // Every processor derives its focus from CamCarIdx, so this one channel
+    // is the whole of following the camera.
+    expect(camCarIdx(2)).toBe(2);
+  });
+
+  it('focuses slot 0 when the camera is on the first car', () => {
+    expect(camCarIdx(0)).toBe(0);
+  });
+
+  it('falls back to the player when nothing is focused', () => {
+    const playerIdx = mapLmuTelemetry(fixture()).PlayerCarIdx?.value[0];
+    expect(camCarIdx(-1)).toBe(playerIdx);
+    expect(camCarIdx(undefined)).toBe(playerIdx);
+  });
+
+  it('leaves the player index alone, which is a different fact', () => {
+    // iRacing keeps DriverCarIdx and CamCarIdx apart; so do we. Fuel, inputs
+    // and sector times stay the player's.
+    const t = mapLmuTelemetry(fixture(), undefined, undefined, cells(2));
+    expect(t.PlayerCarIdx?.value[0]).not.toBe(2);
+  });
+
+  it('focuses the watched car even with no player car at all', () => {
+    // The case this exists for: while spectating, playerHasVehicle is false,
+    // so the player index is -1 and there is nothing to fall back to.
+    const spectating = { ...fixture(), playerHasVehicle: false };
+    expect(camCarIdx(2, spectating as never)).toBe(2);
+    expect(camCarIdx(undefined, spectating as never)).toBe(-1);
   });
 });

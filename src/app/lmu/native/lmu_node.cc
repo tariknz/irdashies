@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <string>
 
 namespace
 {
@@ -235,6 +236,31 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
   auto vehSpeed = Napi::Float64Array::New(env, cap);
   auto lapNumber = Napi::Int32Array::New(env, cap);
   auto elapsedTime = Napi::Float64Array::New(env, cap);
+  // Four entries per slot, at id * 4 + wheel, in the sim's own wheel order
+  // (FL, FR, RL, RR). Pre-filled with -1 rather than 0, because 0 is a real
+  // compound: a car with no telemetry block this frame has to be
+  // distinguishable from one on the first compound in the list.
+  auto wheelCompounds = Napi::Int16Array::New(env, cap * 4);
+  if (cap > 0)
+    std::fill(wheelCompounds.Data(), wheelCompounds.Data() + cap * 4, -1);
+  // Track-limit infringements, counted in the sim's own steps rather than in
+  // points: the divisor is mTrackLimitsStepsPerPoint on the scoring block.
+  // -1 for a car with no telemetry block, since 0 steps is a clean car.
+  auto trackLimitsSteps = Napi::Int16Array::New(env, cap);
+  if (cap > 0)
+    std::fill(trackLimitsSteps.Data(), trackLimitsSteps.Data() + cap, -1);
+  // Fuel as the sim quantises it: a byte over 255, not a percentage. From
+  // scoring, so every car in this loop has one and no sentinel is needed.
+  // Outstanding penalties per car. A count, not a kind: scoring has no
+  // field for which penalty it is. See lmu/penalty.ts for where the kind
+  // comes from (see types/lmuPenalty.ts).
+  auto numPenalties = Napi::Int32Array::New(env, cap);
+  auto fuelFraction = Napi::Uint8Array::New(env, cap);
+  // Virtual energy, already a fraction. From the telemetry block, so -1 where
+  // a car has none this frame -- 0 is an empty battery, not a missing one.
+  auto virtualEnergy = Napi::Float64Array::New(env, cap);
+  if (cap > 0)
+    std::fill(virtualEnergy.Data(), virtualEnergy.Data() + cap, -1.0);
 
   for (int i = 0; i < count; ++i)
   {
@@ -268,6 +294,8 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
     sector[id] = v.mSector;
     flag[id] = v.mFlag;
     underYellow[id] = v.mUnderYellow ? 1 : 0;
+    fuelFraction[id] = v.mFuelFraction;
+    numPenalties[id] = v.mNumPenalties;
     bestSector1[id] = v.mBestSector1;
     bestSector2[id] = v.mBestSector2;
     lastSector1[id] = v.mLastSector1;
@@ -288,6 +316,11 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
       vehSpeed[id] = std::sqrt(vx * vx + vy * vy + vz * vz);
       lapNumber[id] = telemetryVehicle->mLapNumber;
       elapsedTime[id] = telemetryVehicle->mElapsedTime;
+      for (int wheel = 0; wheel < 4; ++wheel)
+        wheelCompounds[id * 4 + wheel] =
+            telemetryVehicle->mWheels[wheel].mCompoundIndex;
+      trackLimitsSteps[id] = telemetryVehicle->mTrackLimitsSteps;
+      virtualEnergy[id] = telemetryVehicle->mVirtualEnergy;
     }
   }
 
@@ -329,6 +362,11 @@ void LmuSdkNode::FillVehicleArrays(Napi::Object &out) const
   out.Set("vehSpeed", vehSpeed);
   out.Set("vehLapNumber", lapNumber);
   out.Set("vehElapsedTime", elapsedTime);
+  out.Set("vehWheelCompounds", wheelCompounds);
+  out.Set("vehTrackLimitsSteps", trackLimitsSteps);
+  out.Set("vehNumPenalties", numPenalties);
+  out.Set("vehFuelFraction", fuelFraction);
+  out.Set("vehVirtualEnergy", virtualEnergy);
 }
 
 Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
@@ -344,6 +382,14 @@ Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
   const auto &scoring = _snapshot.scoring.scoringInfo;
 
   out.Set("gameVersion", _snapshot.generic.gameVersion);
+  // The sim's own session callbacks, as counters it bumps. LMU calls
+  // EndSession when a session finishes -- which is the only unambiguous
+  // statement that it did, and nothing was reading it.
+  out.Set("sessionStartEvents", _snapshot.generic.events.SME_START_SESSION);
+  out.Set("sessionEndEvents", _snapshot.generic.events.SME_END_SESSION);
+  // Scoring's write counter, for telling a session that has stopped being
+  // scored from one that is simply quiet.
+  out.Set("scoringUpdates", _snapshot.generic.events.SME_UPDATE_SCORING);
   SetString(out, "trackName", scoring.mTrackName, sizeof(scoring.mTrackName));
   SetString(out, "playerName", scoring.mPlayerName, sizeof(scoring.mPlayerName));
   SetString(out, "serverName", scoring.mServerName, sizeof(scoring.mServerName));
@@ -366,6 +412,12 @@ Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
   out.Set("sessionTimeRemaining", scoring.mSessionTimeRemaining);
   out.Set("timeOfDay", scoring.mTimeOfDay);
   out.Set("trackGripLevel", scoring.mTrackGripLevel);
+  // The scale of the track-limits penalty system: how many infringement steps
+  // make one point, and how many make a penalty. Both are needed to read
+  // mTrackLimitsSteps -- the steps alone have no meaning.
+  out.Set("trackLimitsStepsPerPoint", scoring.mTrackLimitsStepsPerPoint);
+  out.Set(
+      "trackLimitsStepsPerPenalty", scoring.mTrackLimitsStepsPerPenalty);
   out.Set("cloudCoverage", scoring.mCloudCoverage);
   out.Set("raining", scoring.mRaining);
   out.Set("darkCloud", scoring.mDarkCloud);
@@ -523,7 +575,16 @@ Napi::Value LmuSdkNode::ReadSession(const Napi::CallbackInfo &info)
     SetString(d, "vehicleName", v.mVehicleName, sizeof(v.mVehicleName));
     const auto *telemetryVehicle = GetVehicleTelemetryById(v.mID);
     if (telemetryVehicle != NULL)
+    {
       SetString(d, "vehicleModel", telemetryVehicle->mVehicleModel, sizeof(telemetryVehicle->mVehicleModel));
+      // The index and the name of the same compound, together. That pairing is
+      // the only place the sim states what an index means, which is what lets
+      // DriverTires be built without asking the REST API.
+      SetString(d, "frontTireCompoundName", telemetryVehicle->mFrontTireCompoundName, sizeof(telemetryVehicle->mFrontTireCompoundName));
+      SetString(d, "rearTireCompoundName", telemetryVehicle->mRearTireCompoundName, sizeof(telemetryVehicle->mRearTireCompoundName));
+      d.Set("frontTireCompoundIndex", telemetryVehicle->mFrontTireCompoundIndex);
+      d.Set("rearTireCompoundIndex", telemetryVehicle->mRearTireCompoundIndex);
+    }
     SetString(d, "className", v.mVehicleClass, sizeof(v.mVehicleClass));
     SetString(d, "vehFilename", v.mVehFilename, sizeof(v.mVehFilename));
     d.Set("classId", GetClassId(v.mVehicleClass));
@@ -554,7 +615,10 @@ Napi::Value LmuSdkNode::ReadSession(const Napi::CallbackInfo &info)
     d.Set("countLapFlag", v.mCountLapFlag);
     d.Set("inGarageStall", v.mInGarageStall);
     d.Set("pitLapDist", v.mPitLapDist);
-    d.Set("steamId", static_cast<double>(v.mSteamID));
+    // As a string: a Steam64 id is up to ~7.7e16 and a JS number holds
+    // integers exactly only to 2^53, so a double silently corrupts the last
+    // few digits -- which is fatal for an id used as a lookup key.
+    d.Set("steamId", std::to_string(v.mSteamID));
     d.Set("fuelFraction", v.mFuelFraction);
     SetVect3(d, "pos", v.mPos);
     SetVect3(d, "localVel", v.mLocalVel);

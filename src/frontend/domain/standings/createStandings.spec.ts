@@ -1248,3 +1248,77 @@ function createStandings(
   const grouped = groupStandingsByClass(standings);
   return sliceRelevantDrivers(grouped, driverClass, options);
 }
+
+/**
+ * The LMU rating's trip from a session driver to a standings row.
+ *
+ * Nothing covered this, so a break here would have looked exactly like the
+ * lookup failing: standings that render perfectly with no badges in them. It
+ * is the renderer half of the join whose other half is mapLmuSession.
+ */
+describe('createDriverStandings and the LMU rating', () => {
+  const lmuDriver = (carIdx: number) => ({
+    CarIdx: carIdx,
+    UserName: `Driver ${carIdx}`,
+    CarNumber: String(carIdx),
+    CarClassID: 1,
+    CarClassShortName: 'Hypercar',
+    CarClassRelSpeed: 1.0,
+    IRating: 0,
+    LicString: '',
+    CarIsPaceCar: 0,
+    IsSpectator: 0,
+    LmuRating: {
+      driverRank: 'Bronze' as const,
+      driverTier: 3,
+      safetyRank: 'Silver' as const,
+      safetyTier: 2,
+      badge: 'sr-saint',
+      countryCode: 'US',
+    },
+  });
+
+  const build = (drivers: unknown[]) =>
+    createDriverStandings(
+      { playerIdx: 0, drivers: drivers as unknown as Driver[] },
+      {},
+      { resultsPositions: [], resultsFastestLap: [], sessionType: 'Race' },
+      [],
+      [],
+      []
+    );
+
+  it('carries the whole rating onto the row', () => {
+    const [row] = build([lmuDriver(0)]);
+
+    expect(row.driver?.lmuRating).toEqual({
+      driverRank: 'Bronze',
+      driverTier: 3,
+      safetyRank: 'Silver',
+      safetyTier: 2,
+      badge: 'sr-saint',
+      countryCode: 'US',
+    });
+  });
+
+  it('carries the badge, which is its own column', () => {
+    // Read by LmuBadgeCell rather than by the rank badge, so it has to survive
+    // even for a driver the service gave no ranks.
+    const driver = lmuDriver(0);
+    const [row] = build([
+      { ...driver, LmuRating: { badge: 'sr-clean', countryCode: 'AR' } },
+    ]);
+
+    expect(row.driver?.lmuRating?.badge).toBe('sr-clean');
+  });
+
+  it('leaves lmuRating undefined on a sim that has none', () => {
+    const withoutRating: Record<string, unknown> = { ...lmuDriver(0) };
+    delete withoutRating.LmuRating;
+    const [row] = build([withoutRating]);
+
+    expect(row.driver?.lmuRating).toBeUndefined();
+    // And the iRacing fields are untouched, so BadgeCell falls through.
+    expect(row.driver?.name).toBe('Driver 0');
+  });
+});

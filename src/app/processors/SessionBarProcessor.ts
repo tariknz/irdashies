@@ -23,6 +23,16 @@ const a = (f: Telemetry, k: keyof Telemetry): readonly unknown[] => {
   return Array.isArray(value) ? value : [];
 };
 
+/** The player's own points, or undefined when there is no reading. */
+const trackLimits = (
+  points: readonly unknown[],
+  playerCarIdx: number | null | undefined
+): number | undefined => {
+  if (typeof playerCarIdx !== 'number' || playerCarIdx < 0) return undefined;
+  const value = points[playerCarIdx];
+  return typeof value === 'number' && value >= 0 ? value : undefined;
+};
+
 export class SessionBarProcessor implements TelemetryProcessor<SessionBarSnapshot> {
   readonly channel = 'session-bar.snapshot';
   // Sample every source frame so the per-lap top speed remains accurate. The
@@ -112,6 +122,14 @@ export class SessionBarProcessor implements TelemetryProcessor<SessionBarSnapsho
         this.session?.WeekendInfo?.WeekendOptions
           ?.IncidentWarningSubsequentLimit,
       trackWetness: n(frame, 'TrackWetness') ?? 0,
+      // LMU's track-limits penalty points for the player, and the ceiling a
+      // drive-through is served at. Undefined on a sim without them, and
+      // undefined rather than 0 for a car with no reading -- 0 is clean.
+      trackLimitsPoints: trackLimits(
+        a(frame, 'LmuCarIdxTrackLimitsPoints'),
+        playerCarIdx
+      ),
+      trackLimitsPointsMax: n(frame, 'LmuTrackLimitsPointsMax') || undefined,
       precipitation: n(frame, 'Precipitation'),
       relativeHumidity: n(frame, 'RelativeHumidity'),
       airTemp: n(frame, 'AirTemp'),
@@ -177,6 +195,8 @@ export class SessionBarProcessor implements TelemetryProcessor<SessionBarSnapsho
       incidentWarningInitialLimit: undefined,
       incidentWarningSubsequentLimit: undefined,
       trackWetness: 0,
+      trackLimitsPoints: undefined,
+      trackLimitsPointsMax: undefined,
       precipitation: undefined,
       relativeHumidity: undefined,
       airTemp: undefined,
