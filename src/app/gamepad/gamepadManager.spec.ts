@@ -12,9 +12,16 @@ vi.mock('../logger', () => ({
   },
 }));
 
+const hostSpies = vi.hoisted(() => ({ start: vi.fn(), stop: vi.fn() }));
+
 // Keep electron (pulled in transitively by gamepadHost) out of the test graph;
-// these tests drive the manager's logic, never the host window.
-vi.mock('./gamepadHost', () => ({ GamepadHost: vi.fn() }));
+// these tests drive the manager's logic, never the host window. A `function`
+// so `new` works; returning the spies makes every instance share them.
+vi.mock('./gamepadHost', () => ({
+  GamepadHost: function () {
+    return hostSpies;
+  },
+}));
 
 import { GamepadManager } from './gamepadManager';
 
@@ -29,13 +36,19 @@ const gamepadBinding = (): KeybindingsMap =>
   }) as unknown as KeybindingsMap;
 
 // handleButton is private; the WebHID host callback is its only caller,
-// passing a ready-made gamepad token and its press/release state.
-const fireButton = (manager: GamepadManager, token: string, down = true) =>
+// passing a ready-made gamepad token, its press/release state and whether it
+// is the control's first edge since its device was opened.
+const fireButton = (
+  manager: GamepadManager,
+  token: string,
+  down = true,
+  initial = false
+) =>
   (
     manager as unknown as {
-      handleButton: (token: string, down: boolean) => void;
+      handleButton: (token: string, down: boolean, initial: boolean) => void;
     }
-  ).handleButton(token, down);
+  ).handleButton(token, down, initial);
 
 const press = (manager: GamepadManager, token: string) =>
   fireButton(manager, token, true);
@@ -45,6 +58,92 @@ const release = (manager: GamepadManager, token: string) =>
 describe('GamepadManager', () => {
   beforeEach(() => {
     mockLoggerError.mockReset();
+    hostSpies.start.mockReset();
+    hostSpies.stop.mockReset();
+  });
+
+  describe('WebHID host lifecycle', () => {
+    const keyboardBinding = (): KeybindingsMap =>
+      ({
+        'toggle-edit-mode': {
+          ...gamepadBinding()['toggle-edit-mode'],
+          accelerator: 'Ctrl+Shift+E',
+        },
+      }) as unknown as KeybindingsMap;
+
+    it('does not start the host without gamepad bindings', () => {
+      const manager = new GamepadManager(vi.fn());
+      manager.syncBindings(keyboardBinding());
+      manager.start();
+
+      expect(hostSpies.start).not.toHaveBeenCalled();
+    });
+
+    it('starts the host once when a pad binding is added', () => {
+      const manager = new GamepadManager(vi.fn());
+      manager.syncBindings(keyboardBinding());
+      manager.start();
+
+      manager.syncBindings(gamepadBinding());
+      expect(hostSpies.start).toHaveBeenCalledOnce();
+
+      manager.syncBindings(gamepadBinding());
+      expect(hostSpies.start).toHaveBeenCalledOnce();
+      expect(hostSpies.stop).not.toHaveBeenCalled();
+    });
+
+    it('stops the host when the last pad binding is removed', () => {
+      const manager = new GamepadManager(vi.fn());
+      manager.syncBindings(gamepadBinding());
+      manager.start();
+
+      manager.syncBindings(keyboardBinding());
+      expect(hostSpies.stop).toHaveBeenCalledOnce();
+    });
+
+    it('runs the host only while recording when there are no pad bindings', () => {
+      const manager = new GamepadManager(vi.fn());
+      manager.start();
+
+      manager.startCapture(vi.fn());
+      expect(hostSpies.start).toHaveBeenCalledOnce();
+      expect(hostSpies.stop).not.toHaveBeenCalled();
+
+      manager.stopCapture();
+      expect(hostSpies.stop).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the host running through a recording when pad bindings exist', () => {
+      const manager = new GamepadManager(vi.fn());
+      manager.syncBindings(gamepadBinding());
+      manager.start();
+
+      manager.startCapture(vi.fn());
+      manager.stopCapture();
+      expect(hostSpies.start).toHaveBeenCalledOnce();
+      expect(hostSpies.stop).not.toHaveBeenCalled();
+    });
+
+    it('starts nothing before start()', () => {
+      const manager = new GamepadManager(vi.fn());
+      manager.syncBindings(gamepadBinding());
+      manager.startCapture(vi.fn());
+      manager.stopCapture();
+
+      expect(hostSpies.start).not.toHaveBeenCalled();
+    });
+
+    it('tears the host down on stop()', () => {
+      const manager = new GamepadManager(vi.fn());
+      manager.syncBindings(gamepadBinding());
+      manager.start();
+
+      manager.stop();
+      expect(hostSpies.stop).toHaveBeenCalledOnce();
+
+      manager.syncBindings(gamepadBinding());
+      expect(hostSpies.start).toHaveBeenCalledOnce();
+    });
   });
 
   it('triggers the mapped action when its bound pad button is pressed', () => {
@@ -213,6 +312,29 @@ describe('GamepadManager', () => {
       release(manager, 'gamepad:btn1');
 
       expect(captured).toEqual(['gamepad:btn0+gamepad:btn1']);
+    });
+
+    it('does not record controls that were already held when recording started', () => {
+      const manager = new GamepadManager(vi.fn());
+
+      const captured: string[] = [];
+      manager.startCapture((token) => captured.push(token));
+      // A shifter in gear reports its held button in the first report.
+      fireButton(manager, 'gamepad:Gear:btn1', true, true);
+      press(manager, 'gamepad:Wheel:btn4');
+      release(manager, 'gamepad:Wheel:btn4');
+
+      expect(captured).toEqual(['gamepad:Wheel:btn4']);
+    });
+
+    it('still triggers a bound action from an initial edge outside recording', () => {
+      const trigger = vi.fn();
+      const manager = new GamepadManager(trigger);
+      manager.syncBindings(gamepadBinding());
+
+      fireButton(manager, 'gamepad:btn0', true, true);
+
+      expect(trigger).toHaveBeenCalledExactlyOnceWith('toggle-edit-mode');
     });
 
     it('fires a button + hat-direction combo once both are held', () => {
