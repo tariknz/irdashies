@@ -18,11 +18,17 @@ const timings: RaceFinishTiming[] = [
   { lapsComplete: 29, crossingTime: 110, resultTime: 9.5 },
   { lapsComplete: 29, crossingTime: 113, resultTime: 12.75 },
 ];
-const apply = (data = timings, playerReference = false, drivers = rows) =>
+const apply = (
+  data = timings,
+  playerReference = false,
+  drivers = rows,
+  showLapDifferences = false
+) =>
   augmentStandingsWithFinalTiming([['1', drivers]], data, {
     gap: true,
     interval: true,
     playerReference,
+    showLapDifferences,
   })[0][1];
 
 describe('final race gap and interval selectors', () => {
@@ -58,16 +64,25 @@ describe('final race gap and interval selectors', () => {
     expect(switched.map((r) => r.gap?.value)).toEqual([-12.75, -3.25, 0]);
     expect(switched[2].interval).toBe(3.25);
   });
-  it('retains lap deficits and does not invent intervals across different laps', () => {
+  it.each([1, 2])('retains a %i lap interval after the race', (laps) => {
     const lapped = [
       ...timings.slice(0, 2),
-      { lapsComplete: 28, crossingTime: 105, resultTime: 40 },
+      { lapsComplete: 29 - laps, crossingTime: 105, resultTime: 40 },
     ];
-    expect(apply(lapped)[2]).toMatchObject({
-      gap: { laps: -1, value: undefined },
-      interval: undefined,
+    expect(apply(lapped, false, rows, true)[2]).toMatchObject({
+      gap: { laps: -laps, value: undefined },
+      interval: { laps: -laps, value: undefined },
     });
-    expect(apply(lapped, true)[2].gap).toEqual({ laps: 1, value: undefined });
+    expect(apply(lapped, true, rows, true)[2].gap).toEqual({
+      laps,
+      value: undefined,
+    });
+    expect(apply(lapped, true, rows, true)[2].interval).toEqual({
+      laps: -laps,
+      value: undefined,
+    });
+    // Legacy time mode leaves the interval blank across different lap counts.
+    expect(apply(lapped)[2].interval).toBeUndefined();
   });
   it('does not mix timing sources when only one official delta is available', () => {
     const incomplete = [

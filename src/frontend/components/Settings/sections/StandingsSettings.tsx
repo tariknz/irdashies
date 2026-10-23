@@ -213,6 +213,10 @@ const DisplaySettingsList = ({
                 )}
               </>
             )}
+            {setting.configKey === 'interval' &&
+              settings.config.interval.enabled && (
+                <SettingProp path="interval.displayMode" variant="compact" />
+              )}
             {setting.hasSubSetting &&
               (setting.configKey === 'gap' ||
                 setting.configKey === 'interval') &&
@@ -553,6 +557,7 @@ export const StandingsSettings = () => {
                     <SettingsSection title="Background">
                       <SettingProp path="background.opacity" />
                       <SettingProp path="foreground.opacity" />
+                      <SettingProp path="driverRow.opacity" />
                     </SettingsSection>
                   </>
                 )}

@@ -163,11 +163,16 @@ export interface StandingsConfig {
     decimalPlaces?: number;
     reference?: 'classLeader' | 'player';
   };
-  interval: { enabled: boolean; decimalPlaces?: number };
+  interval: {
+    enabled: boolean;
+    decimalPlaces?: number;
+    displayMode?: 'time' | 'laps';
+  };
   lastTime: { enabled: boolean; timeFormat: TimeFormat };
   fastestTime: { enabled: boolean; timeFormat: TimeFormat };
   background: { opacity: number };
   foreground?: { opacity: number };
+  driverRow?: { opacity: number };
   countryFlags: { enabled: boolean };
   carNumber: { enabled: boolean };
   driverStandings: {
