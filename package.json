@@ -89,7 +89,7 @@
     "node-addon-api": "^8.9.2",
     "postcss": "^8.5.29",
     "prettier": "^3.9.9",
-    "storybook": "^10.6.1",
+    "storybook": "^10.6.3",
     "svg-path-properties": "^2.1.0",
     "tailwindcss": "^4.3.3",
     "terser": "^5.51.2",
