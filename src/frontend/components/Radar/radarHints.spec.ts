@@ -50,7 +50,7 @@ const ctx = (change: Partial<DiveContext> = {}): DiveContext => ({
 const car = (change: Partial<DiveInput> = {}): DiveInput => ({
   carIdx: 1,
   dist: -15,
-  closingSpeed: 7,
+  relativeSpeed: 7,
   lane: 0,
   length: 4.5,
   ...change,
@@ -70,10 +70,10 @@ describe('DiveTracker', () => {
     const tracker = new DiveTracker();
     const hints = tracker.update(
       [
-        car({ carIdx: 1, closingSpeed: 3 }),
+        car({ carIdx: 1, relativeSpeed: 3 }),
         car({ carIdx: 2, dist: -60 }),
         car({ carIdx: 3, dist: -3 }),
-        car({ carIdx: 4, dist: 10, closingSpeed: -9 }),
+        car({ carIdx: 4, dist: 10, relativeSpeed: -9 }),
       ],
       ctx()
     );

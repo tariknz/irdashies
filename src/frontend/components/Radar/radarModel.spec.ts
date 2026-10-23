@@ -9,7 +9,7 @@ import {
 const car = (carIdx: number, dist: number, onPitRoad = false): RadarCar => ({
   carIdx,
   dist,
-  closingSpeed: 0,
+  relativeSpeed: 0,
   lane: 0,
   laneSource: 'none',
   onPitRoad,

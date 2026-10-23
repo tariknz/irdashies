@@ -1,9 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Session, Telemetry } from '@irdashies/types';
 import { CarLeftRight, GlobalFlags, TrackLocation } from '@irdashies/types';
 import { DEFAULT_RADAR_TUNING } from '../../types/widgetConfigs';
+import radarManifest from '../../types/widgets/radar';
 import rollingTelemetry from '../../../test-data/1752616787255/telemetry.json';
 import rollingSession from '../../../test-data/1752616787255/session.json';
+import standingTelemetry from '../../../test-data/1731663749009/telemetry.json';
+import standingSession from '../../../test-data/1731663749009/session.json';
 import {
   parseTrackLength,
   RADAR_MAX_RANGE_M,
@@ -151,7 +154,7 @@ describe('RadarProcessor', () => {
 
     const snapshot = processor.snapshot();
     expect(snapshot.playerSpeed).toBeCloseTo(50, 1);
-    expect(snapshot.cars[0].closingSpeed).toBeCloseTo(5, 1);
+    expect(snapshot.cars[0].relativeSpeed).toBeCloseTo(5, 1);
   });
 
   it('smooths speeds the same at any call rate', () => {
@@ -165,7 +168,7 @@ describe('RadarProcessor', () => {
         rival += m((time <= 1 ? 50 : 60) / hz);
         processor.onFrame(frame({ time, pcts: [0.5 + m(50 * time), rival] }));
       }
-      return processor.snapshot().cars[0].closingSpeed;
+      return processor.snapshot().cars[0].relativeSpeed;
     };
 
     expect(closingAfterStep(25)).toBeCloseTo(closingAfterStep(60), 2);
@@ -182,7 +185,7 @@ describe('RadarProcessor', () => {
     }
 
     const { speedSmoothing } = DEFAULT_RADAR_TUNING;
-    expect(Math.abs(processor.snapshot().cars[0].closingSpeed)).toBeCloseTo(
+    expect(Math.abs(processor.snapshot().cars[0].relativeSpeed)).toBeCloseTo(
       10 * speedSmoothing,
       1
     );
@@ -193,7 +196,7 @@ describe('RadarProcessor', () => {
     processor.onFrame(frame({ time: 0, pcts: [0.5, 0.5 - m(5)] }));
     processor.onFrame(frame({ time: 1 / 60, pcts: [0.5, 0.5 + m(5)] }));
 
-    expect(processor.snapshot().cars[0].closingSpeed).toBe(0);
+    expect(processor.snapshot().cars[0].relativeSpeed).toBe(0);
   });
 
   it('reports pit road and off-track state per car', () => {
@@ -218,6 +221,42 @@ describe('RadarProcessor', () => {
       { carIdx: 1, onPitRoad: true, offTrack: false },
       { carIdx: 2, onPitRoad: false, offTrack: true },
     ]);
+  });
+
+  it('leaves a pit road car alongside, but spaces a track car out', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      frame({
+        time: 1,
+        pcts: [0.5, 0.5 + m(2), 0.5 - m(2)],
+        onPitRoad: [false, true, false],
+        carLeftRight: CarLeftRight.Clear,
+      })
+    );
+
+    const byIdx = new Map(
+      processor.snapshot().cars.map((car) => [car.carIdx, car.dist])
+    );
+    expect(byIdx.get(1)).toBeCloseTo(2);
+    expect(byIdx.get(2)).toBeCloseTo(-5);
+  });
+
+  it('spaces out pit road cars, not track cars, for a focus car in the pits', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      frame({
+        time: 1,
+        pcts: [0.5, 0.5 + m(2), 0.5 - m(2)],
+        onPitRoad: [true, true, false],
+        carLeftRight: CarLeftRight.Clear,
+      })
+    );
+
+    const byIdx = new Map(
+      processor.snapshot().cars.map((car) => [car.carIdx, car.dist])
+    );
+    expect(byIdx.get(1)).toBeCloseTo(5);
+    expect(byIdx.get(2)).toBeCloseTo(-2);
   });
 
   it('reports the focus car parked in its pit box', () => {
@@ -315,6 +354,21 @@ describe('RadarProcessor', () => {
     ]);
   });
 
+  it('does not space cars out while watching another car', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      frame({
+        time: 1,
+        pcts: [0.1, 0.5, 0.5 + m(2)],
+        camCarIdx: 1,
+        carLeftRight: CarLeftRight.Clear,
+      })
+    );
+
+    // No spotter for a camera car: side by side stays side by side.
+    expect(processor.snapshot().cars[0].dist).toBeCloseTo(2);
+  });
+
   it('reads the pace formation from a recorded rolling start', () => {
     const processor = new RadarProcessor();
     processor.init(rollingSession as unknown as Session);
@@ -326,7 +380,8 @@ describe('RadarProcessor', () => {
     expect(follow?.dist).toBeGreaterThan(0);
     expect(cars.every((car) => car.laneSource === 'pace')).toBe(true);
 
-    // The pole line runs on the right: cars in it sit right of us.
+    // This is Interlagos, where the pole line is on the left: cars in it sit
+    // left of us.
     const base = rollingTelemetry as unknown as Record<
       string,
       { value: unknown[] }
@@ -335,7 +390,285 @@ describe('RadarProcessor', () => {
     const mine = lines[base.PlayerCarIdx.value[0] as number];
     const towardsPole = cars.filter((car) => lines[car.carIdx] < mine);
     expect(towardsPole.length).toBeGreaterThan(0);
+    expect(towardsPole.every((car) => car.lane < 0)).toBe(true);
+  });
+
+  it('puts the pole line on the right where the track says so', () => {
+    // The same recording on Lime Rock, whose pole line is on the right.
+    const session = structuredClone(rollingSession) as unknown as Session;
+    session.WeekendInfo.TrackID = 353;
+    session.WeekendInfo.TrackName = 'limerock 2019 gp';
+    const processor = new RadarProcessor();
+    processor.init(session);
+    processor.onFrame(rollingTelemetry as unknown as Telemetry);
+
+    const base = rollingTelemetry as unknown as Record<
+      string,
+      { value: unknown[] }
+    >;
+    const lines = base.CarIdxPaceLine.value as number[];
+    const mine = lines[base.PlayerCarIdx.value[0] as number];
+    const towardsPole = processor
+      .snapshot()
+      .cars.filter((car) => lines[car.carIdx] < mine);
+    expect(towardsPole.length).toBeGreaterThan(0);
     expect(towardsPole.every((car) => car.lane > 0)).toBe(true);
+  });
+
+  it('follows the pole side the player set, and says so for a moment', () => {
+    const player: { poleLeft?: boolean } = {};
+    const poleSides = {
+      override: (_trackId: number | undefined, situation: string) =>
+        situation === 'start' ? player.poleLeft : undefined,
+      setTrack: vi.fn(),
+    };
+    const session = structuredClone(rollingSession) as unknown as Session;
+    session.WeekendInfo.TrackID = 353;
+    session.WeekendInfo.TrackName = 'limerock 2019 gp';
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(session);
+    expect(poleSides.setTrack).toHaveBeenCalledWith(353, false, 'start');
+
+    const base = rollingTelemetry as unknown as Record<
+      string,
+      { value: unknown[] }
+    >;
+    const lines = base.CarIdxPaceLine.value as number[];
+    const mine = lines[base.PlayerCarIdx.value[0] as number];
+    const sideOfPole = () => {
+      const towards = processor
+        .snapshot()
+        .cars.filter((car) => lines[car.carIdx] < mine);
+      return towards.every((car) => car.lane < 0) ? 'left' : 'right';
+    };
+    const at = (time: number) =>
+      ({
+        ...rollingTelemetry,
+        SessionTime: { value: [time] },
+      }) as unknown as Telemetry;
+
+    processor.onFrame(at(100));
+    expect(sideOfPole()).toBe('right');
+    expect(processor.snapshot().poleSideNotice).toBeNull();
+
+    player.poleLeft = true;
+    processor.onFrame(at(101));
+    expect(sideOfPole()).toBe('left');
+    expect(processor.snapshot().poleSideNotice).toBe('left');
+
+    processor.onFrame(at(105));
+    expect(processor.snapshot().poleSideNotice).toBeNull();
+  });
+
+  it('keeps the start and the restart apart, saying nothing when only the situation changes', () => {
+    const player: { restartLeft?: boolean } = { restartLeft: true };
+    const poleSides = {
+      override: (_trackId: number | undefined, situation: string) =>
+        situation === 'restart' ? player.restartLeft : undefined,
+      setTrack: vi.fn(),
+    };
+    const session = structuredClone(rollingSession) as unknown as Session;
+    session.WeekendInfo.TrackID = 353;
+    session.WeekendInfo.TrackName = 'limerock 2019 gp';
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(session);
+
+    const frame = (time: number, paceMode: number) =>
+      ({
+        ...rollingTelemetry,
+        SessionTime: { value: [time] },
+        PaceMode: { value: [paceMode] },
+      }) as unknown as Telemetry;
+
+    // A rolling start: no correction, the table's right-hand pole.
+    processor.onFrame(frame(100, 1));
+    expect(poleSides.setTrack).toHaveBeenLastCalledWith(353, false, 'start');
+
+    // The restart has its own correction; nobody pressed anything.
+    processor.onFrame(frame(101, 3));
+    expect(poleSides.setTrack).toHaveBeenLastCalledWith(353, false, 'restart');
+    expect(processor.snapshot().poleSideNotice).toBeNull();
+    expect(
+      processor.snapshot().cars.some((car) => car.laneSource === 'pace')
+    ).toBe(true);
+  });
+
+  it('puts the middle of the road half a lane over, on the other side after a flip', () => {
+    const player: { poleLeft?: boolean } = {};
+    const poleSides = {
+      override: () => player.poleLeft,
+      setTrack: vi.fn(),
+    };
+    const session = structuredClone(rollingSession) as unknown as Session;
+    session.WeekendInfo.TrackID = 353;
+    session.WeekendInfo.TrackName = 'limerock 2019 gp';
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(session);
+    const base = rollingTelemetry as unknown as Record<
+      string,
+      { value: unknown[] }
+    >;
+    const lines = base.CarIdxPaceLine.value as number[];
+    const myLine = lines[base.PlayerCarIdx.value[0] as number];
+    const at = (time: number) =>
+      ({
+        ...rollingTelemetry,
+        SessionTime: { value: [time] },
+      }) as unknown as Telemetry;
+
+    // Pole line on the right (the table's side here): in the pole line we sit
+    // right of the middle, so the road lies to our left; in the other, right.
+    processor.onFrame(at(100));
+    const before = processor.snapshot().roadLane;
+    expect(before).toBe(myLine === 0 ? -0.5 : 0.5);
+
+    player.poleLeft = true;
+    processor.onFrame(at(101));
+    expect(processor.snapshot().roadLane).toBe(-before);
+  });
+
+  it('stops aiming the flip key at its track once the host drops it', () => {
+    const poleSides = { override: () => undefined, setTrack: vi.fn() };
+    const session = structuredClone(rollingSession) as unknown as Session;
+    session.WeekendInfo.TrackID = 353;
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(session);
+
+    processor.dispose();
+
+    expect(poleSides.setTrack).toHaveBeenLastCalledWith(
+      undefined,
+      false,
+      'start'
+    );
+  });
+
+  it('has no road offset outside a formation', () => {
+    const processor = new RadarProcessor();
+    processor.init(rollingSession as unknown as Session);
+    expect(processor.snapshot().roadLane).toBe(0);
+  });
+
+  it('puts the pole column of a standing grid on the left, and a flip moves it', () => {
+    const player: { poleLeft?: boolean } = {};
+    const poleSides = {
+      override: (_trackId: number | undefined, situation: string) =>
+        situation === 'grid' ? player.poleLeft : undefined,
+      setTrack: vi.fn(),
+    };
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(standingSession as unknown as Session);
+    const at = (time: number) =>
+      ({
+        ...standingTelemetry,
+        SessionTime: { value: [time] },
+      }) as unknown as Telemetry;
+
+    processor.onFrame(at(100));
+    expect(processor.snapshot().formation).toBe('grid');
+    expect(poleSides.setTrack).toHaveBeenLastCalledWith(
+      expect.anything(),
+      true,
+      'grid'
+    );
+    const lanes = () =>
+      processor
+        .snapshot()
+        .cars.filter((car) => car.laneSource === 'grid')
+        .map((car) => car.lane);
+    const before = lanes();
+    expect(before.length).toBeGreaterThan(0);
+    const roadBefore = processor.snapshot().roadLane;
+
+    player.poleLeft = false;
+    processor.onFrame(at(101));
+    // Everything mirrors: the cars beside us, and the road under the grid.
+    expect(lanes()).toEqual(before.map((lane) => (lane === 0 ? 0 : -lane)));
+    expect(processor.snapshot().roadLane).toBe(-roadBefore);
+    expect(processor.snapshot().poleSideNotice).toBe('right');
+  });
+
+  const limeRock = () => {
+    const session = structuredClone(rollingSession) as unknown as Session;
+    session.WeekendInfo.TrackID = 353;
+    session.WeekendInfo.TrackName = 'limerock 2019 gp';
+    return session;
+  };
+
+  it('does not space cars apart when the spotter says nothing at all', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      frame({
+        time: 1,
+        pcts: [0.5, 0.5 + m(2)],
+        onPitRoad: [false, false],
+        carLeftRight: CarLeftRight.Off,
+      })
+    );
+    expect(processor.snapshot().cars[0].dist).toBeCloseTo(2);
+  });
+
+  it('keeps a flip and its message when session info arrives again', () => {
+    const player: { poleLeft?: boolean } = {};
+    const poleSides = {
+      override: () => player.poleLeft,
+      setTrack: vi.fn(),
+    };
+    const session = limeRock();
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(session);
+    const at = (time: number) =>
+      ({
+        ...rollingTelemetry,
+        SessionTime: { value: [time] },
+      }) as unknown as Telemetry;
+    processor.onFrame(at(100));
+
+    player.poleLeft = true;
+    processor.onFrame(at(101));
+    expect(processor.snapshot().poleSideNotice).toBe('left');
+
+    // The sim sends the session again, as it does all the time in a race.
+    processor.init(session);
+    poleSides.setTrack.mockClear();
+    processor.onFrame(at(101.04));
+    expect(processor.snapshot().poleSideNotice).toBe('left');
+    expect(poleSides.setTrack).not.toHaveBeenCalled();
+  });
+
+  it('forgets the track when the session ends, so the key has nothing to flip', () => {
+    const poleSides = { override: () => undefined, setTrack: vi.fn() };
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(rollingSession as unknown as Session);
+    processor.onLifecycle({ type: 'disconnect' });
+    expect(poleSides.setTrack).toHaveBeenLastCalledWith(
+      undefined,
+      false,
+      'start'
+    );
+  });
+
+  it('shows the message only shortly after the flip, even in a rewound replay', () => {
+    const player: { poleLeft?: boolean } = {};
+    const poleSides = {
+      override: () => player.poleLeft,
+      setTrack: vi.fn(),
+    };
+    const processor = new RadarProcessor(undefined, poleSides);
+    processor.init(limeRock());
+    const at = (time: number) =>
+      ({
+        ...rollingTelemetry,
+        SessionTime: { value: [time] },
+      }) as unknown as Telemetry;
+    processor.onFrame(at(100));
+    player.poleLeft = true;
+    processor.onFrame(at(101));
+    expect(processor.snapshot().poleSideNotice).toBe('left');
+
+    // Scrubbed back a minute: the message belongs to the future.
+    processor.onFrame(at(40));
+    expect(processor.snapshot().poleSideNotice).toBeNull();
   });
 
   it('puts the pole line on the left on a super speedway', () => {
@@ -344,6 +677,31 @@ describe('RadarProcessor', () => {
     processor.init({
       ...session,
       WeekendInfo: { ...session.WeekendInfo, TrackType: 'super speedway' },
+    });
+    processor.onFrame(rollingTelemetry as unknown as Telemetry);
+
+    const { cars } = processor.snapshot();
+    const base = rollingTelemetry as unknown as Record<
+      string,
+      { value: unknown[] }
+    >;
+    const lines = base.CarIdxPaceLine.value as number[];
+    const mine = lines[base.PlayerCarIdx.value[0] as number];
+    const towardsPole = cars.filter((car) => lines[car.carIdx] < mine);
+    expect(towardsPole.length).toBeGreaterThan(0);
+    expect(towardsPole.every((car) => car.lane < 0)).toBe(true);
+  });
+
+  it('puts the pole line on the left on Long Beach', () => {
+    const processor = new RadarProcessor();
+    const session = rollingSession as unknown as Session;
+    processor.init({
+      ...session,
+      WeekendInfo: {
+        ...session.WeekendInfo,
+        TrackName: 'longbeach',
+        TrackType: 'road course',
+      },
     });
     processor.onFrame(rollingTelemetry as unknown as Telemetry);
 
@@ -371,5 +729,14 @@ describe('RadarProcessor', () => {
       cars: [],
       version: version + 1,
     });
+  });
+});
+
+describe('RADAR_MAX_RANGE_M', () => {
+  it('covers the largest range the settings allow', () => {
+    const range = radarManifest.properties?.range;
+    expect(range && 'max' in range ? range.max : NaN).toBeLessThanOrEqual(
+      RADAR_MAX_RANGE_M
+    );
   });
 });

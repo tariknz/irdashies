@@ -54,6 +54,10 @@ export class KeybindingManager {
     this.actionHandlers.set('next-profile', () => {
       this.cycleProfile(1);
     });
+
+    this.actionHandlers.set('radar-flip-pole-side', () => {
+      void this.flipRadarPoleSide();
+    });
   }
 
   // ponytail: dynamic import keeps storage/dashboards out of the constructor's
@@ -88,6 +92,23 @@ export class KeybindingManager {
       setCurrentProfile(target.id);
     } catch (error) {
       logger.error('Error switching profile via keybind:', error);
+    }
+  }
+
+  // Dynamic import for the same reason as cycleProfile: storage stays out of
+  // the constructor's module graph.
+  private async flipRadarPoleSide(): Promise<void> {
+    try {
+      const { radarPoleSideOverrides } =
+        await import('./storage/radarPoleSideOverrides');
+      const flipped = radarPoleSideOverrides.flip();
+      if (flipped) {
+        logger.info(
+          `Radar pole side for track ${flipped.trackId} is now ${flipped.poleLeft ? 'left' : 'right'}`
+        );
+      }
+    } catch (error) {
+      logger.error('Error flipping the radar pole side via keybind:', error);
     }
   }
 
@@ -190,7 +211,8 @@ export class KeybindingManager {
 
   public unregisterAll(): void {
     for (const entry of Object.values(this.bindings)) {
-      if (isGamepadBinding(entry.accelerator)) continue;
+      // Unbound entries (empty accelerator) were never registered.
+      if (!entry.accelerator || isGamepadBinding(entry.accelerator)) continue;
       try {
         if (globalShortcut.isRegistered(entry.accelerator)) {
           globalShortcut.unregister(entry.accelerator);

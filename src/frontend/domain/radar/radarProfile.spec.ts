@@ -13,7 +13,11 @@ describe('isOvalTrack', () => {
   it('recognises every kind of oval', () => {
     expect(isOvalTrack('oval')).toBe(true);
     expect(isOvalTrack('dirt oval')).toBe(true);
+    expect(isOvalTrack('super speedway')).toBe(true);
+    expect(isOvalTrack('short track')).toBe(true);
     expect(isOvalTrack('road course')).toBe(false);
+    expect(isOvalTrack('dirt road')).toBe(false);
+    expect(isOvalTrack('')).toBe(false);
     expect(isOvalTrack(undefined)).toBe(false);
   });
 });
