@@ -188,10 +188,15 @@ export function parseHats(
   return hats;
 }
 
-/** A button that transitioned this report: `down: true` on press, `false` on release. */
+/**
+ * A button that transitioned this report: `down: true` on press, `false` on
+ * release. `initial` is true when the button had no prior state, i.e. this is
+ * the first report that carried it since its device was opened.
+ */
 export interface ButtonChange {
   index: number;
   down: boolean;
+  initial: boolean;
 }
 
 /**
@@ -199,7 +204,8 @@ export interface ButtonChange {
  * transitioned (pressed or released) this report. Combo (chord) bindings need
  * both edges to know which buttons are still held alongside a newly-pressed
  * one. `state` is mutated in place to hold the latest pressed/released value
- * for each button index.
+ * for each button index. `initial` is read from `state` before it is updated,
+ * so callers need no snapshot of their own on this per-report path.
  */
 export function buttonChanges(
   data: DataView,
@@ -214,9 +220,13 @@ export function buttonChanges(
     if (button.byteOffset >= data.byteLength) continue;
 
     const isDown = (data.getUint8(button.byteOffset) & button.bitMask) !== 0;
-    const wasDown = state.get(button.index) ?? false;
-    if (isDown !== wasDown) {
-      changes.push({ index: button.index, down: isDown });
+    const wasDown = state.get(button.index);
+    if (isDown !== (wasDown ?? false)) {
+      changes.push({
+        index: button.index,
+        down: isDown,
+        initial: wasDown === undefined,
+      });
     }
     state.set(button.index, isDown);
   }
@@ -240,9 +250,14 @@ function readBits(
   return value;
 }
 
-/** A hat direction that transitioned this report: released, pressed, or both (rolling to a new direction). */
+/**
+ * A hat direction that transitioned this report: released, pressed, or both
+ * (rolling to a new direction). `initial` is true when the hat had no prior
+ * state, as for {@link ButtonChange}.
+ */
 export interface HatChange extends HatPress {
   down: boolean;
+  initial: boolean;
 }
 
 /**
@@ -276,12 +291,19 @@ export function hatChanges(
       offset < HAT_DIRECTIONS.length
         ? HAT_DIRECTIONS[offset]
         : null;
+    const initial = !state.has(hat.index);
     const previous = state.get(hat.index) ?? null;
 
     if (direction !== previous) {
       if (previous)
-        changes.push({ index: hat.index, direction: previous, down: false });
-      if (direction) changes.push({ index: hat.index, direction, down: true });
+        changes.push({
+          index: hat.index,
+          direction: previous,
+          down: false,
+          initial,
+        });
+      if (direction)
+        changes.push({ index: hat.index, direction, down: true, initial });
     }
     state.set(hat.index, direction);
   }

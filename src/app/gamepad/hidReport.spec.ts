@@ -268,7 +268,7 @@ describe('hatChanges', () => {
 
     expect(hatChanges(view(0x0f), hats, 0, state)).toEqual([]); // 15 = centered
     expect(hatChanges(view(0x00), hats, 0, state)).toEqual([
-      { index: 0, direction: 'up', down: true }, // 0 = up
+      { index: 0, direction: 'up', down: true, initial: false }, // 0 = up
     ]);
     expect(hatChanges(view(0x00), hats, 0, state)).toEqual([]); // held
   });
@@ -278,8 +278,8 @@ describe('hatChanges', () => {
 
     hatChanges(view(0x00), hats, 0, state); // press up
     expect(hatChanges(view(0x02), hats, 0, state)).toEqual([
-      { index: 0, direction: 'up', down: false },
-      { index: 0, direction: 'right', down: true },
+      { index: 0, direction: 'up', down: false, initial: false },
+      { index: 0, direction: 'right', down: true, initial: false },
     ]);
   });
 
@@ -288,11 +288,11 @@ describe('hatChanges', () => {
 
     hatChanges(view(0x00), hats, 0, state); // press up
     expect(hatChanges(view(0x0f), hats, 0, state)).toEqual([
-      { index: 0, direction: 'up', down: false },
+      { index: 0, direction: 'up', down: false, initial: false },
     ]);
     // press again after centering
     expect(hatChanges(view(0x00), hats, 0, state)).toEqual([
-      { index: 0, direction: 'up', down: true },
+      { index: 0, direction: 'up', down: true, initial: false },
     ]);
   });
 
@@ -304,15 +304,15 @@ describe('hatChanges', () => {
 
     expect(hatChanges(view(0x00), oneBased, 0, state)).toEqual([]); // 0 = centered
     expect(hatChanges(view(0x01), oneBased, 0, state)).toEqual([
-      { index: 0, direction: 'up', down: true }, // 1 = up
+      { index: 0, direction: 'up', down: true, initial: false }, // 1 = up
     ]);
     expect(hatChanges(view(0x07), oneBased, 0, state)).toEqual([
-      { index: 0, direction: 'up', down: false },
-      { index: 0, direction: 'left', down: true }, // 7 = left
+      { index: 0, direction: 'up', down: false, initial: false },
+      { index: 0, direction: 'left', down: true, initial: false }, // 7 = left
     ]);
     expect(hatChanges(view(0x08), oneBased, 0, state)).toEqual([
-      { index: 0, direction: 'left', down: false },
-      { index: 0, direction: 'upleft', down: true }, // 8 = upleft
+      { index: 0, direction: 'left', down: false, initial: false },
+      { index: 0, direction: 'upleft', down: true, initial: false }, // 8 = upleft
     ]);
   });
 
@@ -321,7 +321,19 @@ describe('hatChanges', () => {
     const hi: HatField[] = [hat({ bitOffset: 4 })];
     // high nibble of 0x40 is 4 -> down
     expect(hatChanges(view(0x40), hi, 0, state)).toEqual([
-      { index: 0, direction: 'down', down: true },
+      { index: 0, direction: 'down', down: true, initial: true },
+    ]);
+  });
+
+  it('marks a direction as initial only when the hat had no prior state', () => {
+    const state = new Map<number, HatDirection | null>();
+
+    expect(hatChanges(view(0x00), hats, 0, state)).toEqual([
+      { index: 0, direction: 'up', down: true, initial: true },
+    ]);
+    expect(hatChanges(view(0x02), hats, 0, state)).toEqual([
+      { index: 0, direction: 'up', down: false, initial: false },
+      { index: 0, direction: 'right', down: true, initial: false },
     ]);
   });
 
@@ -337,7 +349,7 @@ describe('hatChanges', () => {
 
     expect(hatChanges(view(0x00), idHats, 1, state)).toEqual([]); // wrong report
     expect(hatChanges(view(0x00), idHats, 2, state)).toEqual([
-      { index: 0, direction: 'up', down: true },
+      { index: 0, direction: 'up', down: true, initial: true },
     ]);
   });
 });
@@ -354,18 +366,18 @@ describe('buttonChanges', () => {
 
     expect(buttonChanges(view(0b000), buttons, 0, state)).toEqual([]);
     expect(buttonChanges(view(0b101), buttons, 0, state)).toEqual([
-      { index: 0, down: true },
-      { index: 2, down: true },
+      { index: 0, down: true, initial: false },
+      { index: 2, down: true, initial: false },
     ]);
     // Held: no new edges.
     expect(buttonChanges(view(0b101), buttons, 0, state)).toEqual([]);
     // Release then press again -> new edges both ways.
     expect(buttonChanges(view(0b000), buttons, 0, state)).toEqual([
-      { index: 0, down: false },
-      { index: 2, down: false },
+      { index: 0, down: false, initial: false },
+      { index: 2, down: false, initial: false },
     ]);
     expect(buttonChanges(view(0b001), buttons, 0, state)).toEqual([
-      { index: 0, down: true },
+      { index: 0, down: true, initial: false },
     ]);
   });
 
@@ -378,9 +390,22 @@ describe('buttonChanges', () => {
 
     // A report with id 2 must not read the id-1 button's bits.
     expect(buttonChanges(view(0b1), idBtns, 2, state)).toEqual([
-      { index: 1, down: true },
+      { index: 1, down: true, initial: true },
     ]);
     expect(state.has(0)).toBe(false);
+  });
+
+  it('marks an edge as initial only when the button had no prior state', () => {
+    const state = new Map<number, boolean>();
+
+    // First report: button 0 already held (e.g. a shifter in gear).
+    expect(buttonChanges(view(0b001), buttons, 0, state)).toEqual([
+      { index: 0, down: true, initial: true },
+    ]);
+    // Button 1 was seen released in that report, so its press is real.
+    expect(buttonChanges(view(0b011), buttons, 0, state)).toEqual([
+      { index: 1, down: true, initial: false },
+    ]);
   });
 
   it('guards against a byte offset past the end of the report', () => {
