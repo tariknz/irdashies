@@ -1,5 +1,6 @@
 import {
   CarLeftRight,
+  EngineWarnings,
   GlobalFlags,
   SessionState,
   TIMED_SESSION_LAPS,
@@ -8,6 +9,7 @@ import {
 import {
   createLmuRelativePositionsBuffer,
   deriveLmuRelativePositions,
+  LMU_RADAR_RADIUS_M,
   summariseLmuBlindSpot,
 } from './proximity';
 import { lapTimeOrAbsent } from './sentinels';
@@ -260,7 +262,8 @@ export function mapLmuTelemetry(
   const steeringMaxRad = ((raw.visualSteeringWheelRange ?? 0) * Math.PI) / 360;
   const relativePositions = deriveLmuRelativePositions(
     raw,
-    relativePositionsBuffer
+    relativePositionsBuffer,
+    LMU_RADAR_RADIUS_M
   );
   const blindSpot = summariseLmuBlindSpot(relativePositions);
 
@@ -505,7 +508,6 @@ export function mapLmuTelemetry(
   t.LmuSectorIdx = num(sectorIdx(raw.vehSector?.[playerIdx]));
   t.Speed = num(raw.speed);
   t.Yaw = num(0);
-  t.YawNorth = num(0);
   t.Pitch = num(0);
   t.Roll = num(0);
   t.SteeringWheelAngleMax = num(steeringMaxRad);
@@ -544,11 +546,24 @@ export function mapLmuTelemetry(
   t.AirTemp = num(raw.ambientTemp);
   t.TrackWetness = num(raw.avgPathWetness);
   t.Skies = num(raw.cloudCoverage);
-  t.WindVel = num(
-    Math.hypot(raw.wind[0] ?? 0, raw.wind[1] ?? 0, raw.wind[2] ?? 0)
+  const windX = raw.wind[0] ?? 0;
+  const windZ = raw.wind[2] ?? 0;
+  t.WindVel = num(Math.hypot(windX, raw.wind[1] ?? 0, windZ));
+  // TinyPedal's oriyaw: atan2(x, z) is the heading of a world vector. The
+  // wind widget subtracts YawNorth, so both have to share that convention.
+  t.WindDir = num(Math.atan2(windX, windZ));
+  const oriX = playerIdx >= 0 ? raw.vehOriX?.[playerIdx] : undefined;
+  const oriZ = playerIdx >= 0 ? raw.vehOriZ?.[playerIdx] : undefined;
+  t.YawNorth = num(
+    typeof oriX === 'number' &&
+      typeof oriZ === 'number' &&
+      Number.isFinite(oriX) &&
+      Number.isFinite(oriZ)
+      ? Math.atan2(oriX, oriZ)
+      : 0
   );
-  t.WindDir = num(0);
-  t.RelativeHumidity = num(0);
+  // LMU does not publish humidity. Leaving the channel off shows as unknown
+  // rather than a fabricated 0%.
   t.FogLevel = num(0);
   t.Precipitation = num(raw.raining);
   t.WeatherDeclaredWet = bool(raw.raining > 0);
@@ -570,7 +585,15 @@ export function mapLmuTelemetry(
   t.FuelLevelPct = num(
     raw.fuelCapacity && raw.fuel !== undefined ? raw.fuel / raw.fuelCapacity : 0
   );
-  t.EngineWarnings = num(0);
+  // iRacing publishes PitSpeedLimiter on EngineWarnings when the limiter is
+  // engaged; LMU splits that into a switch (speedLimiter) and an active cut
+  // (speedLimiterActive). Either means "limiter on" for overlays that key off
+  // the iRacing bit (tach blink, pitlane helper).
+  t.EngineWarnings = num(
+    raw.speedLimiterActive || raw.speedLimiter
+      ? EngineWarnings.PitSpeedLimiter
+      : 0
+  );
   t.ShiftGrindRPM = num(raw.engineMaxRPM ?? 0);
   t.ThrottleRaw = num(raw.unfilteredThrottle);
   t.BrakeRaw = num(raw.unfilteredBrake);

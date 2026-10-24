@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { Tachometer } from '../TachometerComponent/TachometerComponent';
-import type { ShiftPointSettings } from '@irdashies/types';
+import { EngineWarnings, type ShiftPointSettings } from '@irdashies/types';
 
 // Mock telemetry store
 vi.mock('../../../context/TelemetryStore/TelemetryStore', () => ({
@@ -148,6 +148,36 @@ describe('Tachometer', () => {
     expect(ledElements.length).toBe(10);
     const firstLedColor = (ledElements[0] as HTMLElement).style.backgroundColor;
     expect(firstLedColor).toBeTruthy();
+  });
+
+  it('blinks every LED when the pit speed limiter is on, even at idle RPM', () => {
+    vi.useFakeTimers();
+    const { container } = render(
+      <Tachometer
+        rpm={0}
+        maxRpm={8500}
+        blinkRpm={8200}
+        engineWarnings={EngineWarnings.PitSpeedLimiter}
+      />
+    );
+
+    const ledElements = container.querySelectorAll('.rounded-full.border');
+    expect(ledElements.length).toBe(10);
+    ledElements.forEach((led) => {
+      expect((led as HTMLElement).style.backgroundColor).toBe(
+        'rgb(147, 51, 234)'
+      );
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+
+    ledElements.forEach((led) => {
+      expect((led as HTMLElement).style.backgroundColor).toBe(
+        'rgb(255, 255, 255)'
+      );
+    });
   });
 
   it('keeps the blink interval running while RPM changes above the threshold', () => {

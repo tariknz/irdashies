@@ -83,7 +83,9 @@ export const Tachometer = ({
   const effectiveBlinkRpm = gearRpmThresholds
     ? gearRpmThresholds[0]
     : blinkRpm || maxRpm * 0.97; // Use redline from car data
-  const shouldBlink = clampedRpm >= effectiveBlinkRpm;
+  const pitLimiterOn = !!(engineWarnings & EngineWarnings.PitSpeedLimiter);
+  // Pit limiter must light the whole bar — idle RPM would leave every LED dark.
+  const shouldBlink = clampedRpm >= effectiveBlinkRpm || pitLimiterOn;
 
   // Use car-specific LED count if available
   const effectiveNumLights =
@@ -168,6 +170,8 @@ export const Tachometer = ({
 
   // Determine if a specific LED should be active (handles center-out pattern)
   const isLedActive = (ledIndex: number): boolean => {
+    if (pitLimiterOn) return true;
+
     if (!gearRpmThresholds || gearRpmThresholds.length <= 1) {
       // Fallback: simple left-to-right
       return ledIndex < activeLights;

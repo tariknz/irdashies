@@ -244,6 +244,30 @@ describe('RadarProcessor', () => {
     expect(processor.snapshot().cars).toEqual([]);
   });
 
+  it('places an LMU rival from its relative position', () => {
+    const processor = createProcessor();
+    processor.onFrame(
+      frame({
+        time: 1,
+        pcts: [0.5, 0.9],
+        surfaces: [TrackLocation.OnTrack, TrackLocation.OnTrack],
+      })
+    );
+    processor.onFrame({
+      ...frame({
+        time: 1.1,
+        pcts: [0.5, 0.9],
+      }),
+      LmuCarIdxRelativeAvailable: { value: [false, true] },
+      LmuCarIdxRelativeLateral: { value: [0, -4] },
+      LmuCarIdxRelativeLongitudinal: { value: [0, 12] },
+    } as unknown as Telemetry);
+
+    expect(processor.snapshot().cars).toEqual([
+      expect.objectContaining({ carIdx: 1, dist: 12, lateralM: 4 }),
+    ]);
+  });
+
   it('puts a car the spotter calls alongside in its lane', () => {
     const processor = createProcessor();
     for (let tick = 0; tick <= 60; tick += 1) {

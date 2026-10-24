@@ -28,34 +28,54 @@ export interface SimWidgetSupportConfig {
 }
 
 /**
- * The widgets verified to work under Le Mans Ultimate.
+ * The widgets that work under Le Mans Ultimate.
  *
- * LMU's data comes from a shared-memory block and a local REST API that carry
- * a fraction of what iRacing publishes, so support is per widget and has to be
- * established one at a time. This is the list that has been, and it is the
- * reason for the one below rather than a second opinion about it: a spec
- * asserts the two are exact complements over WIDGET_MAP, so a widget added to
- * the app cannot quietly appear under LMU without someone deciding which list
- * it belongs in.
+ * LMU's shared memory and REST API are mapped onto the same channels iRacing
+ * publishes, with the gaps TinyPedal fills the same way: relative positions
+ * from world coordinates, wind from the wind vector, grip from mTrackGripLevel.
+ * A spec asserts this list and the one below are exact complements over
+ * WIDGET_MAP, so a widget added to the app cannot quietly appear under LMU
+ * without someone deciding which list it belongs in.
  */
 export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'accelerationtimer',
   'battle',
+  'blindspotmonitor',
   'brakepressure',
+  'broadcast',
+  'broadcastevents',
+  'broadcastpodium',
+  'broadcastticker',
+  'broadcastweather',
+  'carsystems',
   'cornername',
   'cruiseodometer',
+  'deltaspeed',
+  'fastercarsfrombehind',
   'flag',
+  'flatmap',
   'frictioncircle',
+  'fuel',
+  'gantry',
+  'garagecover',
+  'heartrate',
   'infobar',
   'input',
+  'laptimelog',
   'laptrace',
   'map',
   'pitlanehelper',
+  'radar',
+  'rejoin',
   'relative',
+  'sectordelta',
+  'shiftlight',
+  'slowcarahead',
   'standings',
   'steeringmeter',
   'stinthistory',
   'suspensionposition',
+  'tachometer',
   // Not a sim-specific widget: it reports whatever channels the running sim
   // publishes, which is how LMU's own mapping gets checked. It is also the
   // one widget absent from the settings menu, so there would be no toggle to
@@ -63,38 +83,19 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'telemetryinspector',
   'trackclock',
   'tracknotes',
-  'tyrepanel',
-];
-
-/** Everything else, hidden while LMU is the running sim. */
-export const LMU_DISABLED_WIDGETS: readonly string[] = [
-  'blindspotmonitor',
-  // Broadcast reads iRacing's standings, timing and race control; not yet
-  // checked against LMU's data.
-  'broadcast',
-  'broadcastevents',
-  'broadcastpodium',
-  'broadcastticker',
-  'broadcastweather',
-  'carsystems',
-  'deltaspeed',
-  'fastercarsfrombehind',
-  'flatmap',
-  'fuel',
-  'gantry',
-  'garagecover',
-  'heartrate',
-  'laptimelog',
-  'radar',
-  'rejoin',
-  'sectordelta',
-  'shiftlight',
-  'slowcarahead',
-  'tachometer',
   'twitchchat',
+  'tyrepanel',
   'weather',
   'wind',
 ];
+
+/**
+ * Hidden while LMU is the running sim.
+ *
+ * Empty on purpose. Every widget in this build has a path. A widget that
+ * cannot be fed from LMU goes here, not into the supported list.
+ */
+export const LMU_DISABLED_WIDGETS: readonly string[] = [];
 
 /**
  * Seeds the JSON on first run, and the fallback if it cannot be read.
@@ -124,7 +125,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 6;
+export const SIM_WIDGET_SUPPORT_VERSION = 7;
 
 /**
  * Whether a widget is unavailable under the running sim.

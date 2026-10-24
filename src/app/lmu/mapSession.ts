@@ -24,6 +24,21 @@ import type { LmuRestSession } from '@irdashies/types';
  * and read wrongly until it did.
  */
 export const LMU_PIT_SPEED_LIMIT_KPH = 60;
+
+/**
+ * LMU's mTrackGripLevel as the words the rubber readout already prints.
+ *
+ * TinyPedal maps the same four steps onto 0.25 / 0.5 / 0.75 / 0.9. The
+ * weather widget only has a string, so the steps are named instead.
+ * 0 is "not reported" and stays blank.
+ */
+export const lmuGripRubber = (grip: number): string => {
+  if (grip === 1) return 'low';
+  if (grip === 2) return 'moderate';
+  if (grip === 3) return 'high';
+  if (grip === 4) return 'maximum';
+  return '';
+};
 import { lapTimeOrAbsent } from './sentinels';
 
 type Raw = import('./native').LmuRawSession;
@@ -322,7 +337,9 @@ export function mapLmuSession(
     CarScreenName: d.vehicleName,
     CarScreenNameShort: d.vehicleName.split(' ')[0] ?? '',
     CarCfg: 0,
-    CarCfgName: null,
+    // vehicleModel is the chassis name when vehicleName is a team livery;
+    // tachometer / shift-light car LED lookup uses it as an alias.
+    CarCfgName: d.vehicleModel ?? null,
     CarCfgCustomPaintExt: null,
     // The canonical class, so the standings group by "LMP2" rather than the
     // championship-qualified "LMP2_ELMS" the sim reports. An unrecognised
@@ -519,7 +536,7 @@ export function mapLmuSession(
           SessionTime: '',
           SessionNumLapsToAvg: 0,
           SessionType: currentSessionType,
-          SessionTrackRubberState: '',
+          SessionTrackRubberState: lmuGripRubber(raw.trackGripLevel),
           SessionName: currentSessionType,
           SessionSubType: null,
           SessionSkipped: 0,

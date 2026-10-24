@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CarLeftRight } from '@irdashies/types';
+import { CarLeftRight, EngineWarnings } from '@irdashies/types';
 import { BlindSpotProcessor } from '../../processors/BlindSpotProcessor';
 import type { LmuRawTelemetry } from '../native/lmu';
 import { mapLmuSectorTimes, mapLmuTelemetry } from './mapTelemetry';
@@ -196,6 +196,9 @@ describe('mapLmuTelemetry', () => {
     });
 
     expect(t.dcPitSpeedLimiterToggle.value[0]).toBe(true);
+    expect(t.EngineWarnings.value[0] & EngineWarnings.PitSpeedLimiter).toBe(
+      EngineWarnings.PitSpeedLimiter
+    );
   });
 
   it('handles the no-player case', () => {

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useActiveSimulator } from '@irdashies/context';
 import { loadCarData, type CarData } from '@irdashies/utils/carData';
 import type { ShiftPointSettings } from '@irdashies/types';
 
@@ -10,11 +11,14 @@ export const useCustomShiftPoints = (
   rpm: number,
   carData?: CarData | null
 ) => {
+  const gameId = useActiveSimulator();
   const carId = useMemo(
     () =>
       carData?.carId ??
-      (carPath ? (loadCarData(carPath)?.carId ?? carPath) : undefined),
-    [carData?.carId, carPath]
+      (carPath
+        ? (loadCarData(carPath, gameId)?.carId ?? carPath)
+        : undefined),
+    [carData?.carId, carPath, gameId]
   );
   const carConfig = carId ? settings?.carConfigs[carId] : undefined;
   const currentShiftPoint = carConfig?.enabled

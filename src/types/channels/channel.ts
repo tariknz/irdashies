@@ -161,6 +161,13 @@ export interface RadarCar {
    */
   lane: number;
   /**
+   * Metres left of the focus car, from a true relative position.
+   *
+   * Set when the sim publishes one (LMU). The display uses it instead of
+   * turning `lane` into a guess. Positive is left, matching the projector.
+   */
+  lateralM?: number;
+  /**
    * Where `lane` came from: the standing-start grid or the pace line (both
    * known from the sim), the spotter calling this car alongside, a side
    * remembered after the overlap ended, a guess that two rivals level with

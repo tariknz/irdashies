@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CarLeftRight, TIMED_SESSION_LAPS } from '@irdashies/types';
+import {
+  CarLeftRight,
+  EngineWarnings,
+  TIMED_SESSION_LAPS,
+} from '@irdashies/types';
 import type { LmuRawTelemetry } from './native';
 import { mapLmuSectorTimes, mapLmuTelemetry } from './mapTelemetry';
 import { fixture } from './rawFixture';
@@ -85,6 +89,32 @@ describe('mapLmuTelemetry', () => {
     });
 
     expect(t.dcPitSpeedLimiterToggle.value[0]).toBe(true);
+    expect(t.EngineWarnings.value[0] & EngineWarnings.PitSpeedLimiter).toBe(
+      EngineWarnings.PitSpeedLimiter
+    );
+  });
+
+  it('sets PitSpeedLimiter on EngineWarnings when the cut is active', () => {
+    const t = mapLmuTelemetry({
+      ...fixture(),
+      speedLimiter: 0,
+      speedLimiterActive: true,
+    });
+
+    expect(t.dcPitSpeedLimiterToggle.value[0]).toBe(false);
+    expect(t.EngineWarnings.value[0] & EngineWarnings.PitSpeedLimiter).toBe(
+      EngineWarnings.PitSpeedLimiter
+    );
+  });
+
+  it('clears PitSpeedLimiter when the limiter is off', () => {
+    const t = mapLmuTelemetry({
+      ...fixture(),
+      speedLimiter: 0,
+      speedLimiterActive: false,
+    });
+
+    expect(t.EngineWarnings.value[0] & EngineWarnings.PitSpeedLimiter).toBe(0);
   });
 
   it('handles the no-player case', () => {
@@ -172,9 +202,22 @@ describe('mapLmuTelemetry', () => {
     expect(t.CarLeftRight.value[0]).toBe(CarLeftRight.Off);
   });
 
-  it('computes wind magnitude', () => {
+  it('computes wind magnitude and heading from the wind vector', () => {
     const t = mapLmuTelemetry(fixture());
     expect(t.WindVel.value[0]).toBeCloseTo(Math.hypot(2, 0, -3));
+    expect(t.WindDir.value[0]).toBeCloseTo(Math.atan2(2, -3));
+    expect(t.RelativeHumidity).toBeUndefined();
+  });
+
+  it('uses the player heading as YawNorth so relative wind is zero in a tailwind', () => {
+    const t = mapLmuTelemetry({
+      ...fixture(),
+      wind: [1, 0, 0],
+      vehOriX: new Float64Array([0, 1, 0]),
+      vehOriZ: new Float64Array([1, 0, 1]),
+    });
+    expect(t.WindDir.value[0]).toBeCloseTo(Math.PI / 2);
+    expect(t.YawNorth.value[0]).toBeCloseTo(Math.PI / 2);
   });
 
   it('maps LMU race flags', () => {

@@ -1,5 +1,6 @@
 import {
   CarLeftRight,
+  EngineWarnings,
   GlobalFlags,
   SessionState,
   type Telemetry,
@@ -299,7 +300,11 @@ export function mapLmuTelemetry(raw: Raw): Telemetry {
   t.FuelLevelPct = num(
     raw.fuelCapacity && raw.fuel !== undefined ? raw.fuel / raw.fuelCapacity : 0
   );
-  t.EngineWarnings = num(0);
+  t.EngineWarnings = num(
+    raw.speedLimiterActive || raw.speedLimiter
+      ? EngineWarnings.PitSpeedLimiter
+      : 0
+  );
   t.ShiftGrindRPM = num(raw.engineMaxRPM ?? 0);
   t.ThrottleRaw = num(raw.unfilteredThrottle);
   t.BrakeRaw = num(raw.unfilteredBrake);

@@ -110,7 +110,7 @@ export function mapLmuSession(
     CarScreenName: d.vehicleName,
     CarScreenNameShort: d.vehicleName.split(' ')[0] ?? '',
     CarCfg: 0,
-    CarCfgName: null,
+    CarCfgName: d.vehicleModel ?? null,
     CarCfgCustomPaintExt: null,
     CarClassShortName: d.className,
     CarClassRelSpeed: 0,

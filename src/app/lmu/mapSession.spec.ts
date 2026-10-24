@@ -1,12 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import {
   deriveLmuShiftLightRpm,
+  lmuGripRubber,
   mapLmuSession,
   resolveLmuCarId,
   resolveLmuTrackId,
 } from './mapSession';
 import { fixture } from './rawSessionFixture';
 import { LMU_CLASS_COLOURS } from '@irdashies/types';
+
+describe('lmuGripRubber', () => {
+  it('names TinyPedal grip steps and leaves an unreported level blank', () => {
+    expect(lmuGripRubber(0)).toBe('');
+    expect(lmuGripRubber(1)).toBe('low');
+    expect(lmuGripRubber(2)).toBe('moderate');
+    expect(lmuGripRubber(3)).toBe('high');
+    expect(lmuGripRubber(4)).toBe('maximum');
+  });
+});
 
 describe('mapLmuSession', () => {
   it('maps weekend info', () => {
@@ -37,6 +48,8 @@ describe('mapLmuSession', () => {
     expect(player.CarIdx).toBe(1);
     expect(player.UserName).toBe('Driver B');
     expect(player.CarScreenName).toBe('Ferrari 296 GT3');
+    expect(player.CarCfgName).toBe('Ferrari 296 GT3');
+    expect(player.CarPath).toBe('ferrari_296_gt3');
     expect(player.CarID).toBe(10006);
     expect(s.DriverInfo.Drivers[0].CarID).toBe(10003);
     expect(player.CarClassShortName).toBe('LMGT3');
