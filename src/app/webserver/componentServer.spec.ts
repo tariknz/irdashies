@@ -201,6 +201,21 @@ describe('single-widget routes', () => {
     expect(res.headers['location']).toBe('/widget/carsystems?profile=race');
   });
 
+  it('redirects the renamed /widget/twitchchat link, keeping its query', async () => {
+    const res = await request('/widget/twitchchat?profile=race&debug=true');
+
+    expect(res.statusCode).toBe(302);
+    expect(res.headers['location']).toBe(
+      '/widget/streamchat?profile=race&debug=true'
+    );
+  });
+
+  it('points the retired /component/twitchchat route at the new id directly', async () => {
+    const res = await request('/component/twitchchat');
+
+    expect(res.headers['location']).toBe('/widget/streamchat');
+  });
+
   it('lists widgets from the live dashboard, not a hardcoded table', async () => {
     const res = await request('/components');
     const payload = JSON.parse(res.body);

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { TwitchEmote } from '../types';
-import type { ThirdPartyEmoteMap } from '../hooks/useThirdPartyEmotes';
+import type { StreamChatEmote as TwitchEmote } from '@irdashies/types';
+import type { ThirdPartyEmoteMap } from '../types';
 
 function getTwitchEmoteUrl(emoteId: string): string {
   return `https://static-cdn.jtvnw.net/emoticons/v2/${emoteId}/default/dark/1.0`;

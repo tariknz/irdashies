@@ -57,6 +57,86 @@ describe('dashboards', () => {
     });
   });
 
+  describe('Twitch Chat to Stream Chat migration', () => {
+    it('migrates twitchchat next to a null entry instead of throwing', () => {
+      const result = withDashboardDefaults({
+        ...defaultDashboard,
+        widgets: [
+          null,
+          { id: 'twitchchat', enabled: true, config: { channel: 'old' } },
+        ] as unknown as typeof defaultDashboard.widgets,
+      });
+
+      expect(result.widgets.some((w) => w.id === 'twitchchat')).toBe(false);
+      const streamChats = result.widgets.filter((w) => w.id === 'streamchat');
+      expect(streamChats).toHaveLength(1);
+      expect(streamChats[0].enabled).toBe(true);
+      expect(streamChats[0].config).toMatchObject({
+        twitch: { channel: 'old' },
+      });
+    });
+
+    it('migrates twitchchat in withDashboardDefaults, as used for inactive profiles and imports', () => {
+      const layout = { x: 5, y: 6, width: 300, height: 200 };
+      const result = withDashboardDefaults({
+        ...defaultDashboard,
+        widgets: [
+          {
+            id: 'twitchchat',
+            enabled: true,
+            layout,
+            config: { channel: 'oldchannel' },
+          },
+        ],
+      });
+
+      expect(result.widgets.some((w) => w.id === 'twitchchat')).toBe(false);
+      const streamChats = result.widgets.filter((w) => w.id === 'streamchat');
+      expect(streamChats).toHaveLength(1);
+      expect(streamChats[0].enabled).toBe(true);
+      expect(streamChats[0].layout).toEqual(layout);
+      expect(streamChats[0].config).toMatchObject({
+        twitch: { channel: 'oldchannel' },
+      });
+    });
+
+    it('loads a saved twitchchat widget as streamchat with its settings', () => {
+      const layout = { x: 11, y: 22, width: 333, height: 444 };
+      const saved = {
+        ...defaultDashboard,
+        widgets: [
+          ...defaultDashboard.widgets.filter((w) => w.id !== 'streamchat'),
+          {
+            id: 'twitchchat',
+            enabled: true,
+            layout,
+            config: { fontSize: 24, channel: 'oldchannel' },
+          },
+        ],
+      };
+      mockReadData.mockImplementation((key: string) => {
+        if (key === 'currentProfile') return 'default';
+        if (key === 'profiles')
+          return { default: { id: 'default', name: 'Default' } };
+        if (key === 'dashboards') return { default: saved };
+        return null;
+      });
+
+      const result = getOrCreateDefaultDashboard();
+
+      expect(result.widgets.some((w) => w.id === 'twitchchat')).toBe(false);
+      const streamChats = result.widgets.filter((w) => w.id === 'streamchat');
+      expect(streamChats).toHaveLength(1);
+      expect(streamChats[0].enabled).toBe(true);
+      expect(streamChats[0].layout).toEqual(layout);
+      expect(streamChats[0].config).toMatchObject({
+        display: { fontSize: 24, showPlatformIcons: true },
+        twitch: { channel: 'oldchannel' },
+        youtube: { channel: '' },
+      });
+    });
+  });
+
   describe('createDefaultDashboardIfNotExists', () => {
     it('should create default dashboard if none exists', () => {
       // Mock readData to return null for dashboards, but 'default' for currentProfile
