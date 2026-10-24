@@ -54,6 +54,7 @@ import {
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
+import { setupRacePlanBridge } from './app/bridge/racePlanBridge';
 import {
   flushIncidentsOnShutdown,
   appendIncident,
@@ -161,6 +162,7 @@ let disposeLapHistoryRuntime: (() => void) | undefined;
 let disposeReplayContextRuntime: (() => void) | undefined;
 const knownLocalUserIds = createKnownLocalUserIdStore();
 let disposeGarage61SearchSession: (() => void) | undefined;
+let racePlan: ReturnType<typeof setupRacePlanBridge> | undefined;
 // Resolved per call: a runtime outlives any single SDK bridge, so it must
 // not hold a reference to a metrics instance that has stopped reporting.
 const runtimePerfMetrics: PerformanceSections = {
@@ -457,6 +459,7 @@ void app.whenReady().then(async () => {
   setupLapTraceBridge(overlayManager);
   setupGarage61SearchSession(dashboard);
   setupChromiumFlagsBridge();
+  racePlan = setupRacePlanBridge();
   ipcMain.handle('widgetVisibility:getHidden', () => getHiddenWidgets());
   const replayContextRuntime = setupReplayContextRuntime(dashboard);
   const incidents = new IncidentRuntime(
@@ -659,6 +662,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
     disposeLapHistoryRuntime?.();
     disposeReplayContextRuntime?.();
     disposeGarage61SearchSession?.();
+    racePlan?.dispose();
     channelBus.dispose();
     // Storage writes are debounced, so drain all pending queues within the
     // coordinator deadline before the process exits.
@@ -670,6 +674,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
       flushLapHistoryOnShutdown(),
       knownLocalUserIds.flush(),
       releaseNotes?.flush(),
+      racePlan?.flush(),
       flushGarage61SearchSessionOnShutdown(),
     ]);
   },

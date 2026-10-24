@@ -7,6 +7,7 @@ import {
   WrenchIcon,
   InfoIcon,
   NewspaperIcon,
+  FlagCheckeredIcon,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { WIDGET_MANIFESTS, type WidgetId } from '@irdashies/types';
@@ -60,6 +61,12 @@ export const generalItems: MenuItem[] = [
     path: '/driver-tags',
     label: 'Driver Tags',
     icon: TagIcon,
+  },
+  {
+    to: '/settings/race-plan',
+    path: '/race-plan',
+    label: 'Race Plan',
+    icon: FlagCheckeredIcon,
   },
   {
     to: '/settings/car-setup',

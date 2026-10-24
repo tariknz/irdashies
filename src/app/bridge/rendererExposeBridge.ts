@@ -29,6 +29,8 @@ import type {
   TelemetryInspectorBridge,
   RendererPerfBridge,
   ReleaseNotesBridge,
+  RacePlanBridge,
+  RacePlanState,
 } from '@irdashies/types';
 import {
   isRendererPerfMetricsEnabled,
@@ -53,6 +55,22 @@ export function exposeBridge() {
     dismiss: (version) => ipcRenderer.invoke('releaseNotes:dismiss', version),
     setAutoShow: (enabled) =>
       ipcRenderer.invoke('releaseNotes:autoShow', enabled),
+  });
+  defineBridge<RacePlanBridge>('racePlanBridge', {
+    getState: () => ipcRenderer.invoke('racePlan:getState'),
+    choosePlanning: (planningId) =>
+      ipcRenderer.invoke('racePlan:choosePlanning', planningId),
+    setConfig: (config) => ipcRenderer.invoke('racePlan:setConfig', config),
+    setApiKey: (apiKey) => ipcRenderer.invoke('racePlan:setApiKey', apiKey),
+    clearApiKey: () => ipcRenderer.invoke('racePlan:clearApiKey'),
+    listPlannings: () => ipcRenderer.invoke('racePlan:listPlannings'),
+    refreshNow: () => ipcRenderer.invoke('racePlan:refreshNow'),
+    onStateChanged: (callback) => {
+      const handler = (_: Electron.IpcRendererEvent, state: RacePlanState) =>
+        callback(state);
+      ipcRenderer.on('racePlan:state', handler);
+      return () => ipcRenderer.removeListener('racePlan:state', handler);
+    },
   });
   if (isRendererPerfMetricsEnabled()) {
     defineBridge<RendererPerfBridge>('rendererPerfBridge', {
