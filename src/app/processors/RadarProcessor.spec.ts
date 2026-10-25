@@ -458,6 +458,11 @@ describe('RadarProcessor', () => {
 
     processor.onFrame(at(105));
     expect(processor.snapshot().poleSideNotice).toBeNull();
+
+    // Scrubbing back to the flip must not bring the old notice back.
+    processor.onFrame(at(99));
+    processor.onFrame(at(101));
+    expect(processor.snapshot().poleSideNotice).toBeNull();
   });
 
   it('keeps the start and the restart apart, saying nothing when only the situation changes', () => {

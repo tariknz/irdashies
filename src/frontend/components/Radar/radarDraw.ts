@@ -254,13 +254,12 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
   resetRimWarnings();
   resetDebugLabels();
 
+  const roadX = roadLateral(
+    scene.roadLane ?? 0,
+    scene.laneWidth ?? style.carWidth + 0.7
+  );
   if (style.showTrackMap) {
-    drawRoad(
-      ctx,
-      style,
-      pixelsPerMetre,
-      roadLateral(scene.roadLane ?? 0, scene.laneWidth ?? style.carWidth + 0.7)
-    );
+    drawRoad(ctx, style, pixelsPerMetre, roadX);
   }
   if (style.showCrosshair) {
     drawCrosshair(ctx, centre, radius, style, pixelsPerMetre, scene.travelled);
@@ -517,7 +516,7 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
         car.width * pixelsPerMetre
       );
     } else {
-      projector.project(follow.dist, 0, pose);
+      projector.project(follow.dist, roadX, pose);
       drawFollowLine(ctx, centre, pose, length, length);
       drawCarBody(
         ctx,
@@ -561,7 +560,7 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
   }
   ctx.globalAlpha = 1;
   if (follow && followBeyondRange) {
-    projector.project(follow.dist, 0, pose);
+    projector.project(follow.dist, roadX, pose);
     drawFollowPointer(ctx, centre, radius, follow, style.metric);
   }
   const hazards = scene.hazards;
@@ -583,10 +582,7 @@ export const drawRadar = (ctx: CanvasRenderingContext2D, scene: RadarScene) => {
         others,
         style,
         flash,
-        roadLateral(
-          scene.roadLane ?? 0,
-          scene.laneWidth ?? style.carWidth + 0.7
-        )
+        roadX
       );
     }
   }

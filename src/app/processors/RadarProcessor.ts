@@ -458,6 +458,8 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       dt > MAX_FRAME_GAP_S ||
       this.trackLength <= 0;
     this.previousTime = time;
+    // A scrubbed-back replay must not replay the old notice.
+    if (dt < 0) this.poleNoticeUntil = -Infinity;
     if (restart) this.speedsSettleUntil = time + SPEED_SETTLE_S;
     // Weight of the newest sample, scaled so the average responds the same
     // at any call rate.
