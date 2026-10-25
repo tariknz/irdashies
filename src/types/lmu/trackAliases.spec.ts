@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { LMU_TRACK_DATA_IDS, lmuTrackDataId } from './lmuTrackAliases';
+import { LMU_TRACK_DATA_IDS, lmuTrackDataId } from './trackAliases';
 
 interface LovelyTurn {
   name?: string;

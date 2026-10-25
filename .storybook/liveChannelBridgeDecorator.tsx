@@ -98,6 +98,7 @@ export const LiveChannelBridgeDecorator = (): Decorator => {
             speed: t.Speed?.value?.[0] ?? 0,
             onPitRoad: t.OnPitRoad?.value?.[0] ?? false,
             isOnTrack: t.IsOnTrack?.value?.[0] ?? true,
+            dataStale: t.LmuDataStale?.value?.[0] ?? false,
             sessionNum: t.SessionNum?.value?.[0] ?? 0,
             version: latestTrackState.current.version + 1,
           } satisfies TrackStateSnapshot;

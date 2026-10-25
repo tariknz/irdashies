@@ -1,20 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { CAR_MANUFACTURER_SPRITE_POSITIONS } from '../frontend/components/shared/CarManufacturer/carManufacturerSpritePositions';
-import { CAR_ID_TO_CAR_MANUFACTURER } from '../frontend/components/shared/CarManufacturer/carManufacturerMapping';
-import { LMU_CAR_ID_TO_MANUFACTURER, LMU_MANUFACTURERS } from './lmuCars';
+import { CAR_ID_TO_CAR_MANUFACTURER } from '../../frontend/components/shared/CarManufacturer/carManufacturerMapping';
+import { LMU_CAR_ID_TO_MANUFACTURER, LMU_MANUFACTURERS } from './cars';
 
+// That every manufacturer has a cell in LMU's sprite sheet is asserted next to
+// the sheet, in CarManufacturer.lmu.spec.tsx.
 describe('LMU manufacturers', () => {
-  it('names a badge that exists in the sprite sheet', () => {
-    // A key with no sprite renders nothing, silently -- which is the one
-    // failure mode of a hand-written list of names.
-    LMU_MANUFACTURERS.forEach(({ manufacturer, name }) => {
-      expect(
-        manufacturer in CAR_MANUFACTURER_SPRITE_POSITIONS,
-        `${name} has no sprite for '${manufacturer}'`
-      ).toBe(true);
-    });
-  });
-
   it('is reachable from the id lookup the renderer uses', () => {
     // The ids were defined for the mapper and the lookup for the renderer,
     // with nothing joining them, so the renderer knew none of them: no badge
