@@ -395,8 +395,8 @@ export function exposeBridge() {
   // Used only by the hidden WebHID host renderer (src/hidHost.ts) to forward
   // controller button presses to the main process.
   contextBridge.exposeInMainWorld('gamepadHost', {
-    sendButton: (token: string, down: boolean) =>
-      ipcRenderer.send('gamepad:button', token, down),
+    sendButton: (token: string, down: boolean, initial: boolean) =>
+      ipcRenderer.send('gamepad:button', token, down, initial),
   } satisfies GamepadHostBridge);
 
   contextBridge.exposeInMainWorld('personalBestBridge', {

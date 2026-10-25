@@ -25,8 +25,12 @@ export class GamepadManager {
   private boundTokens = new Set<string>();
   /** Configured controls (buttons and hat directions) currently held down. */
   private held = new Set<string>();
-  /** Lazily-created WebHID host window manager (see start). */
+  /** Lazily-created WebHID host window manager (see updateHost). */
   private host?: GamepadHost;
+  /** Set by start(), cleared by stop(): whether the host may run at all. */
+  private enabled = false;
+  /** Whether the host window is currently started. */
+  private hostRunning = false;
   /** When set, captured pad presses are reported here instead of triggering actions (rebinding). */
   private onCapture?: (token: string) => void;
   /** Tokens pressed since capture started, committed as a combo on first release. */
@@ -48,15 +52,21 @@ export class GamepadManager {
     // Rebinding invalidates whatever was held under the old map — start the
     // new map's held-set tracking from a clean slate.
     this.held.clear();
+    this.updateHost();
   }
 
   /**
    * Route a gamepad control transition (a token from the WebHID host, `down`
    * true on press / false on release) to capture (rebinding) or to its bound
-   * action.
+   * action. `initial` marks the first edge seen for a control since its device
+   * was opened.
    */
-  private handleButton(token: string, down: boolean): void {
+  private handleButton(token: string, down: boolean, initial = false): void {
     if (this.onCapture) {
+      // The host may have started for this recording, so an initial edge can
+      // be a control that was already held (a shifter in gear, a status bit)
+      // rather than a press. Recording it would bind an unintended combo.
+      if (initial) return;
       if (down) {
         this.captureHeld.add(token);
       } else if (this.captureHeld.size > 0) {
@@ -81,30 +91,56 @@ export class GamepadManager {
   }
 
   /**
-   * Start reading game controllers via the hidden WebHID host window. Failures
-   * are logged and leave keyboard bindings working.
+   * Allow reading game controllers via the hidden WebHID host window. The host
+   * only runs while it is needed (see {@link GamepadManager.updateHost}).
    */
   public start(): void {
-    try {
-      if (!this.host) this.host = new GamepadHost();
-      this.host.start((token, down) => this.handleButton(token, down));
-    } catch (err) {
-      logger.error(
-        '[Gamepad] host unavailable, controller bindings disabled',
-        err
-      );
-    }
+    this.enabled = true;
+    this.updateHost();
   }
 
   /** Tear down the WebHID host window (call on shutdown). */
   public stop(): void {
-    this.host?.stop();
+    this.enabled = false;
+    this.updateHost();
+  }
+
+  /**
+   * Run the WebHID host only while enabled and there is something to read: a
+   * gamepad binding, or a binding being recorded. With neither, no HID device
+   * is held open. Failures are logged and leave keyboard bindings working.
+   */
+  private updateHost(): void {
+    const wanted =
+      this.enabled &&
+      (this.boundTokens.size > 0 || this.onCapture !== undefined);
+
+    if (wanted && !this.hostRunning) {
+      try {
+        // Reuse one host: it can restart after stop() without re-registering
+        // its session permission handlers.
+        if (!this.host) this.host = new GamepadHost();
+        this.host.start((token, down, initial) =>
+          this.handleButton(token, down, initial)
+        );
+        this.hostRunning = true;
+      } catch (err) {
+        logger.error(
+          '[Gamepad] host unavailable, controller bindings disabled',
+          err
+        );
+      }
+    } else if (!wanted && this.hostRunning) {
+      this.host?.stop();
+      this.hostRunning = false;
+    }
   }
 
   /** Enter capture mode: the next pad presses are reported to `onCapture` for rebinding. */
   public startCapture(onCapture: (token: string) => void): void {
     this.captureHeld.clear();
     this.onCapture = onCapture;
+    this.updateHost();
   }
 
   /** Leave capture mode; pad presses resume triggering actions. */
@@ -114,5 +150,6 @@ export class GamepadManager {
     // Buttons held while recording may never have reached a release edge
     // here (focus, timing) — start the next non-capture run from a clean slate.
     this.held.clear();
+    this.updateHost();
   }
 }

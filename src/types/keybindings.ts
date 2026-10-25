@@ -70,10 +70,11 @@ export interface KeybindingsBridge {
  * button transition (already encoded as a `gamepad:btn<N>` token) to the main
  * process: `down: true` on press, `false` on release. Releases let the main
  * process track which buttons and hat directions are held together for
- * combo (chord) bindings.
+ * combo (chord) bindings. `initial` marks the first edge seen for a control
+ * since its device was opened, when its prior state was unknown.
  */
 export interface GamepadHostBridge {
-  sendButton: (token: string, down: boolean) => void;
+  sendButton: (token: string, down: boolean, initial: boolean) => void;
 }
 
 export const DEFAULT_KEYBINDINGS: KeybindingsMap = {

@@ -188,10 +188,15 @@ export function parseHats(
   return hats;
 }
 
-/** A button that transitioned this report: `down: true` on press, `false` on release. */
+/**
+ * A button that transitioned this report: `down: true` on press, `false` on
+ * release. `initial` is true when the button had no prior state, i.e. this is
+ * the first report that carried it since its device was opened.
+ */
 export interface ButtonChange {
   index: number;
   down: boolean;
+  initial: boolean;
 }
 
 /**
@@ -199,7 +204,8 @@ export interface ButtonChange {
  * transitioned (pressed or released) this report. Combo (chord) bindings need
  * both edges to know which buttons are still held alongside a newly-pressed
  * one. `state` is mutated in place to hold the latest pressed/released value
- * for each button index.
+ * for each button index. `initial` is read from `state` before it is updated,
+ * so callers need no snapshot of their own on this per-report path.
  */
 export function buttonChanges(
   data: DataView,
@@ -214,9 +220,13 @@ export function buttonChanges(
     if (button.byteOffset >= data.byteLength) continue;
 
     const isDown = (data.getUint8(button.byteOffset) & button.bitMask) !== 0;
-    const wasDown = state.get(button.index) ?? false;
-    if (isDown !== wasDown) {
-      changes.push({ index: button.index, down: isDown });
+    const wasDown = state.get(button.index);
+    if (isDown !== (wasDown ?? false)) {
+      changes.push({
+        index: button.index,
+        down: isDown,
+        initial: wasDown === undefined,
+      });
     }
     state.set(button.index, isDown);
   }
@@ -240,9 +250,14 @@ function readBits(
   return value;
 }
 
-/** A hat direction that transitioned this report: released, pressed, or both (rolling to a new direction). */
+/**
+ * A hat direction that transitioned this report: released, pressed, or both
+ * (rolling to a new direction). `initial` is true when the hat had no prior
+ * state, as for {@link ButtonChange}.
+ */
 export interface HatChange extends HatPress {
   down: boolean;
+  initial: boolean;
 }
 
 /**
@@ -276,17 +291,81 @@ export function hatChanges(
       offset < HAT_DIRECTIONS.length
         ? HAT_DIRECTIONS[offset]
         : null;
+    const initial = !state.has(hat.index);
     const previous = state.get(hat.index) ?? null;
 
     if (direction !== previous) {
       if (previous)
-        changes.push({ index: hat.index, direction: previous, down: false });
-      if (direction) changes.push({ index: hat.index, direction, down: true });
+        changes.push({
+          index: hat.index,
+          direction: previous,
+          down: false,
+          initial,
+        });
+      if (direction)
+        changes.push({ index: hat.index, direction, down: true, initial });
     }
     state.set(hat.index, direction);
   }
 
   return changes;
+}
+
+/**
+ * Generic Desktop usages of top-level collections that belong to the system's
+ * own keyboard / mouse stack: Pointer, Mouse, Keyboard, Keypad.
+ */
+const SYSTEM_INPUT_USAGES: ReadonlySet<number> = new Set([
+  0x01, 0x02, 0x06, 0x07,
+]);
+
+/**
+ * Generic Desktop usages of top-level collections that mark a game controller:
+ * Joystick, Gamepad. Multi-axis (0x08) is deliberately not one of them.
+ */
+const CONTROLLER_USAGES: ReadonlySet<number> = new Set([0x04, 0x05]);
+
+/** Simulation Controls page: steering, throttle, brake and similar. */
+const SIMULATION_CONTROLS_PAGE = 0x02;
+
+/**
+ * True when the device is a keyboard, keypad, mouse or pointer that is not
+ * also a game controller. Such interfaces must never be opened: Windows owns
+ * them (kbdhid / mouhid), and a long-lived user-mode handle on a keyboard
+ * interface breaks the local keyboard when the session moves between Remote
+ * Desktop and the console (it stops sending keys until the receiver is
+ * replugged).
+ *
+ * Exception: a device that also declares a Joystick or Gamepad collection, or
+ * anything on the Simulation Controls page, is a controller and still opens.
+ * Button boxes built on one interface (for example Arduino Joystick +
+ * Keyboard) look like that. Their keyboard part keeps the RDP risk, but
+ * skipping them would lose the controller.
+ *
+ * Multi-axis does not count as a controller: 2.4 GHz keyboard receivers often
+ * put a multi-axis collection next to the keyboard and mouse on one interface,
+ * and those must still be skipped.
+ *
+ * This is a device-level check, separate from `parseButtons` deliberately not
+ * filtering by usage page: wheel bases with vendor-page buttons declare no
+ * keyboard or mouse collection, so they pass.
+ */
+export function isKeyboardOrMouse(
+  collections: readonly HIDCollectionInfo[] | undefined
+): boolean {
+  const tops = collections ?? [];
+  const hasSystemInput = tops.some(
+    (c) =>
+      c.usagePage === HID_USAGE.GENERIC_DESKTOP_PAGE &&
+      SYSTEM_INPUT_USAGES.has(c.usage ?? -1)
+  );
+  const hasController = tops.some(
+    (c) =>
+      c.usagePage === SIMULATION_CONTROLS_PAGE ||
+      (c.usagePage === HID_USAGE.GENERIC_DESKTOP_PAGE &&
+        CONTROLLER_USAGES.has(c.usage ?? -1))
+  );
+  return hasSystemInput && !hasController;
 }
 
 /** Human-readable dump of a device's input-report layout, for diagnostics. */
