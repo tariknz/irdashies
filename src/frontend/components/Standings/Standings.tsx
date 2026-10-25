@@ -31,8 +31,9 @@ import {
   useHeld,
   useSessionHold,
 } from '@irdashies/domain/sessionHold/useSessionHold';
-import { RATING_COLUMN_IDS, simulatorHasDriverRatings } from '@irdashies/types';
+import { hiddenRatingColumns, simulatorHasDriverRatings } from '@irdashies/types';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
+import { useTrackLimitsMax } from './hooks/useTrackLimitsMax';
 import { computeStintLap } from './components/DriverInfoRow/cells/lapCountUtils';
 
 export const COLUMN_LABELS: Record<string, string> = {
@@ -44,6 +45,7 @@ export const COLUMN_LABELS: Record<string, string> = {
   teamName: '',
   pitStatus: 'PIT',
   carManufacturer: '',
+  lmuBadge: '',
   badge: '',
   iratingChange: '',
   positionChange: '',
@@ -56,13 +58,12 @@ export const COLUMN_LABELS: Record<string, string> = {
   lapTimeDeltas: 'DELTA',
   avgLapTime: 'AVG',
   lapCount: 'LAPS',
+  trackLimits: 'TL',
+  lmuVirtualEnergy: 'VE',
   pushToPass: 'P2P',
 };
 
 const COLUMN_ORDER = Object.keys(COLUMN_LABELS);
-
-/** Stable identity, so the iRacing path never invalidates dependent memos. */
-const EMPTY_HIDDEN_COLUMNS: ReadonlySet<string> = new Set<string>();
 
 export interface OrderedColumn {
   id: string;
@@ -162,10 +163,16 @@ export const Standings = () => {
     }),
     isEmptyList
   );
+  // See the same gate in Relative.tsx: LMU has no flair id, and its country
+  // comes through lmuRating.
   const hasAnyCountryFlag = useMemo(
     () =>
       standings.some(([, classStandings]) =>
-        classStandings.some((result) => (result.driver?.flairId ?? 0) > 0)
+        classStandings.some(
+          (result) =>
+            (result.driver?.flairId ?? 0) > 0 ||
+            !!result.driver?.lmuRating?.countryCode
+        )
       ),
     [standings]
   );
@@ -220,16 +227,23 @@ export const Standings = () => {
 
   // Check if this is a team racing session
   const isTeamRacing = useHeld(useWeekendInfoTeamRacing(), isUnset);
+  const trackLimitsMax = useTrackLimitsMax();
 
   // Resolved here so the header and the rows below filter from one set:
   // they build their column lists independently, and DriverClassHeader sums
   // colSpan across the header list.
   const simulator = useActiveSimulator();
+  // Resolved once per widget and passed down, so the rows stay driven by
+  // props. Decides whether a driver with no rating gets the iRacing badge's
+  // "AI" placeholder -- which is right for iRacing and wrong for LMU, where
+  // nobody has a licence or an iRating and a human's rank arrives late.
+  const hasDriverRatings = simulatorHasDriverRatings(simulator);
   const hiddenColumns = useMemo<ReadonlySet<string>>(
     () =>
-      simulatorHasDriverRatings(simulator)
-        ? EMPTY_HIDDEN_COLUMNS
-        : new Set<string>(RATING_COLUMN_IDS),
+      // Per column: both sims fill `badge` -- an iRacing licence or an LMU
+      // rank pair -- while iratingChange is iRacing's alone and lmuBadge is
+      // LMU's. One flag per simulator could not say that, and hid LMU's ranks.
+      hiddenRatingColumns(simulator),
     [simulator]
   );
 
@@ -431,11 +445,22 @@ export const Standings = () => {
                               ? result.driver?.flairId
                               : undefined
                           }
+                          lmuRating={result.driver?.lmuRating}
                           tireCompound={
                             (settings?.compound?.enabled ?? true)
                               ? result.tireCompound
                               : undefined
                           }
+                          wheelCompounds={
+                            (settings?.compound?.enabled ?? true)
+                              ? result.wheelCompounds
+                              : undefined
+                          }
+                          penaltyKind={result.penaltyKind}
+                          penaltySeconds={result.penaltySeconds}
+                          trackLimitsPoints={result.trackLimitsPoints}
+                          trackLimitsMax={trackLimitsMax}
+                          lmuVirtualEnergy={result.energyRemaining}
                           carId={result.carId}
                           lastPitLap={result.lastPitLap}
                           lastLap={result.lastLap}
@@ -460,6 +485,8 @@ export const Standings = () => {
                           }
                           displayOrder={settings?.displayOrder}
                           hiddenColumns={hiddenColumns}
+                          hasDriverRatings={hasDriverRatings}
+                          isAI={result.driver?.isAI}
                           currentSessionType={result.currentSessionType}
                           config={settings}
                           highlightColor={highlightColor}
