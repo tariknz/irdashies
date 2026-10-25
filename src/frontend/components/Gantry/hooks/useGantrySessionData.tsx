@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import type { LapHistorySnapshot, SessionResults } from '@irdashies/types';
+import type { IncidentSessionInfo } from '@irdashies/domain';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import { useQualifyingResults } from '@irdashies/domain/standings/useQualifyingGrid';
 import {
@@ -8,6 +9,7 @@ import {
   useLapHistorySnapshot,
   useLapTimesStoreUpdater,
   useReplayContextSnapshot,
+  useSessionList,
   useTrackStateSelector,
 } from '@irdashies/context';
 import { useHeld } from './useGantrySessionHold';
@@ -17,6 +19,8 @@ type StandingsByClass = ReturnType<typeof useDriverStandings>;
 export interface GantrySessionData {
   standingsByClass: StandingsByClass;
   qualifyingResults: SessionResults[] | undefined;
+  /** Every session in the event, for the incident feed's names and filter. */
+  sessions: readonly IncidentSessionInfo[] | undefined;
   /** Live lap history, or the archived session under the replay cursor. */
   history: LapHistorySnapshot | undefined;
   isReplayFile: boolean;
@@ -27,6 +31,7 @@ export interface GantrySessionData {
 const EMPTY_SESSION_DATA: GantrySessionData = {
   standingsByClass: [],
   qualifyingResults: undefined,
+  sessions: undefined,
   history: undefined,
   isReplayFile: false,
   isArchivedReplay: false,
@@ -49,6 +54,9 @@ const isEmptyStandings = (standings: readonly unknown[]) =>
   standings.length === 0;
 const isEmptyResults = (results: SessionResults[] | undefined) =>
   !results || results.length === 0;
+const isEmptySessionList = (
+  sessions: readonly IncidentSessionInfo[] | undefined
+) => !sessions || sessions.length === 0;
 const isEmptyHistory = (history: LapHistorySnapshot | undefined) =>
   !history || !history.count.some((count) => count > 0);
 
@@ -80,6 +88,8 @@ export const GantrySessionDataProvider = ({
     isEmptyResults,
     cursorSessionNum
   );
+  // Incidents outlive the sim closing, so their session names have to as well.
+  const sessions = useHeld(useSessionList(), isEmptySessionList);
   const isReplayFile = replayContext.mode === 'replayFile';
   const isArchivedReplay =
     isReplayFile && replayContext.provenance === 'archived';
@@ -121,6 +131,7 @@ export const GantrySessionDataProvider = ({
     () => ({
       standingsByClass,
       qualifyingResults,
+      sessions,
       history,
       isReplayFile,
       isArchivedReplay,
@@ -129,6 +140,7 @@ export const GantrySessionDataProvider = ({
     [
       standingsByClass,
       qualifyingResults,
+      sessions,
       history,
       isReplayFile,
       isArchivedReplay,
