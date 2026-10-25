@@ -35,7 +35,7 @@ jobs:
             const profile = (user) => `[${user.login}](${user.html_url})`;
             const fields = [
               { name: 'Author', value: profile(pr.user), inline: true },
-              { name: 'Merged by', value: profile(pr.merged_by), inline: true },
+              { name: 'Merged by', value: pr.merged_by ? profile(pr.merged_by) : 'Unknown', inline: true },
             ];
 
             const payload = {
