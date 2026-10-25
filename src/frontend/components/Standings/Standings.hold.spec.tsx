@@ -41,6 +41,9 @@ vi.mock('./hooks', () => ({
 }));
 
 vi.mock('./hooks/useIsSingleMake', () => ({ useIsSingleMake: () => false }));
+vi.mock('./hooks/useTrackLimitsMax', () => ({
+  useTrackLimitsMax: () => undefined,
+}));
 vi.mock('./components/TitleBar/TitleBar', () => ({
   TitleBar: () => <div data-testid="title-bar" />,
 }));

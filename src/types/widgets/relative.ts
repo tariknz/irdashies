@@ -49,9 +49,13 @@ export default defineWidgetManifest({
     radio: {
       persistenceSeconds: 3,
     },
+    lmuBadge: {
+      enabled: true,
+    },
     badge: {
       enabled: true,
       badgeFormat: 'license-color-rating-bw',
+      lmuFormat: 'plates',
     },
     iratingChange: {
       enabled: false,
@@ -80,6 +84,12 @@ export default defineWidgetManifest({
       decimalPlaces: 1,
     },
     pushToPass: { enabled: false },
+    // Off by default: only LMU reports these, so on iRacing the column
+    // would be permanently blank.
+    trackLimits: { enabled: false },
+    // Off by default: no iRacing car has virtual energy, and iRacing
+    // reports no per-car fuel either, so the column would be blank.
+    lmuVirtualEnergy: { enabled: false },
     displayOrder: [
       'position',
       'carNumber',
@@ -89,6 +99,7 @@ export default defineWidgetManifest({
       'teamName',
       'pitStatus',
       'carManufacturer',
+      'lmuBadge',
       'badge',
       'iratingChange',
       'positionChange',
@@ -97,6 +108,8 @@ export default defineWidgetManifest({
       'lastTime',
       'compound',
       'lapTimeDeltas',
+      'trackLimits',
+      'lmuVirtualEnergy',
       'pushToPass',
     ],
     driverTag: { enabled: false },
@@ -192,6 +205,7 @@ export default defineWidgetManifest({
         'topSpeed',
         'manufacturerPosition',
         'classRank',
+        'trackLimits',
       ],
     },
     footerBar: {
@@ -280,6 +294,7 @@ export default defineWidgetManifest({
         'topSpeed',
         'manufacturerPosition',
         'classRank',
+        'trackLimits',
       ],
     },
     showOnlyWhenOnTrack: false,
