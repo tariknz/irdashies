@@ -2,6 +2,7 @@ import type {
   LapTimesSnapshot,
   RadarProcessorTuning,
   ReferenceLapsSnapshot,
+  Telemetry,
 } from '@irdashies/types';
 import type { ReferenceLapPersistence } from './ReferenceLapProcessor';
 import { CarSpeedsProcessor } from './CarSpeedsProcessor';
@@ -19,10 +20,7 @@ import type {
 import { ProcessorHost } from './ProcessorHost';
 import type { ChannelBus } from '../bridge/channelBus';
 import type { SessionLifecycle } from '../sessionLifecycle';
-import {
-  RadarProcessor,
-  type RadarPoleSidePersistence,
-} from './RadarProcessor';
+import { RadarProcessor } from './RadarProcessor';
 import { RadioProcessor } from './RadioProcessor';
 import { ReferenceLapProcessor } from './ReferenceLapProcessor';
 import { RelativeGapProcessor } from './RelativeGapProcessor';
@@ -35,8 +33,6 @@ import { TrackStateProcessor } from './TrackStateProcessor';
 
 interface ProcessorRegistryOptions {
   referenceLapPersistence: ReferenceLapPersistence;
-  /** Where the radar keeps pole sides it learns; nothing is kept without. */
-  radarPoleSidePersistence?: RadarPoleSidePersistence;
   /** The radar's dev tuning from the current dashboard; defaults without. */
   radarTuning?: () => RadarProcessorTuning;
 }
@@ -46,6 +42,7 @@ interface DefaultProcessorHostOptions extends ProcessorRegistryOptions {
   lifecycle?: SessionLifecycle;
   metrics: ProcessorMetrics;
   aggregateReplay?: boolean;
+  frameClock?: (frame: Telemetry) => number | undefined;
   logError?: (message: string, error: unknown) => void;
 }
 
@@ -69,7 +66,6 @@ const defineProcessor = <K extends AnyProcessorDefinition['channel']>(
 
 export const createProcessorDefinitions = ({
   referenceLapPersistence,
-  radarPoleSidePersistence,
   radarTuning,
 }: ProcessorRegistryOptions): readonly AnyProcessorDefinition[] => [
   defineProcessor({
@@ -122,17 +118,14 @@ export const createProcessorDefinitions = ({
   defineProcessor({
     channel: 'standings.snapshot',
     metricsPrefix: 'standings',
+    // Retain finish crossings when subscribed overlays are temporarily hidden.
+    processWhileHidden: true,
     create: () => new StandingsProcessor(),
   }),
   defineProcessor({
     channel: 'radar.snapshot',
     metricsPrefix: 'radar',
-    // A replayed tape must not teach live sessions which side the pole is on.
-    create: ({ aggregateReplay }) =>
-      new RadarProcessor(
-        aggregateReplay ? undefined : radarPoleSidePersistence,
-        radarTuning
-      ),
+    create: () => new RadarProcessor(radarTuning),
   }),
   defineProcessor({
     channel: 'radio.snapshot',
@@ -188,6 +181,7 @@ export const createDefaultProcessorHost = (
     lifecycle: options.lifecycle,
     metrics: options.metrics,
     aggregateReplay: options.aggregateReplay,
+    frameClock: options.frameClock,
     logError: options.logError,
     definitions: createProcessorDefinitions(options),
   });

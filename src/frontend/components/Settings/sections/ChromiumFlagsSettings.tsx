@@ -112,7 +112,7 @@ export const ChromiumFlagsSettings = () => {
               <code className="text-slate-400">--disable-features</code>.
             </p>
             <textarea
-              className="w-full bg-slate-800 border border-slate-600 rounded p-2 font-mono text-sm focus:outline-none focus:border-blue-500 resize-y min-h-[3rem]"
+              className="w-full bg-slate-800 border border-slate-600 rounded p-2 font-mono text-sm focus:outline-none focus:border-accent-500 resize-y min-h-[3rem]"
               rows={2}
               value={(flags.disableFeatures ?? []).join(', ')}
               onChange={(e) =>
@@ -131,7 +131,7 @@ export const ChromiumFlagsSettings = () => {
               <code className="text-slate-400">--enable-features</code>.
             </p>
             <textarea
-              className="w-full bg-slate-800 border border-slate-600 rounded p-2 font-mono text-sm focus:outline-none focus:border-blue-500 resize-y min-h-[3rem]"
+              className="w-full bg-slate-800 border border-slate-600 rounded p-2 font-mono text-sm focus:outline-none focus:border-accent-500 resize-y min-h-[3rem]"
               rows={2}
               value={(flags.enableFeatures ?? []).join(', ')}
               onChange={(e) =>
@@ -151,7 +151,7 @@ export const ChromiumFlagsSettings = () => {
             with <code className="text-slate-400">#</code> are ignored.
           </p>
           <textarea
-            className="w-full bg-slate-800 border border-slate-600 rounded p-2 font-mono text-sm focus:outline-none focus:border-blue-500 resize-y min-h-[8rem]"
+            className="w-full bg-slate-800 border border-slate-600 rounded p-2 font-mono text-sm focus:outline-none focus:border-accent-500 resize-y min-h-[8rem]"
             rows={6}
             value={flags.customSwitches ?? ''}
             onChange={(e) => update('customSwitches', e.target.value)}

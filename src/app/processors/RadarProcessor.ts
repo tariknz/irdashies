@@ -13,14 +13,11 @@ import {
   type RadarProcessorTuning,
 } from '@irdashies/types';
 import type { TelemetryProcessor } from './TelemetryProcessor';
-import {
-  RadarLaneTracker,
-  type FormationKind,
-  type PoleSide,
-} from './radarLanes';
+import { RadarLaneTracker } from './radarLanes';
 import {
   computeFormation,
   PaceMode,
+  parseGridPositions,
   parseStartingGrid,
   type Formation,
   type GridOptions,
@@ -53,6 +50,13 @@ const MAX_FRAME_GAP_S = 0.5;
  * reads slower than it is and none may be judged a hazard.
  */
 const SPEED_SETTLE_S = 1;
+const RADAR_TICK_HZ = 25;
+/**
+ * Frame step `speedSmoothing` is the weight for: one tick of `tickRateHz`,
+ * which the radar was tuned on. Scaling the weight by the real step keeps
+ * that response at any call rate.
+ */
+const SMOOTHING_STEP_S = 1 / RADAR_TICK_HZ;
 
 const valuesOf = (frame: Telemetry, key: string): readonly unknown[] =>
   (frame as unknown as Record<string, { value?: unknown[] } | undefined>)[key]
@@ -88,17 +92,6 @@ export const parseTrackLength = (raw: string | undefined): number => {
   return parsed;
 };
 
-/** Pole sides learnt per track, keyed by WeekendInfo.TrackName. */
-export interface RadarPoleSidePersistence {
-  load(track: string): Partial<Record<FormationKind, PoleSide>>;
-  save(track: string, kind: FormationKind, side: PoleSide): void;
-}
-
-const noPoleSidePersistence: RadarPoleSidePersistence = {
-  load: () => ({}),
-  save: () => undefined,
-};
-
 /**
  * Publishes the rivals around the focus car in metres.
  *
@@ -109,7 +102,7 @@ const noPoleSidePersistence: RadarPoleSidePersistence = {
  */
 export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   readonly channel = 'radar.snapshot';
-  readonly tickRateHz = 25;
+  readonly tickRateHz = RADAR_TICK_HZ;
 
   private trackLength = 0;
   private readonly excluded = new Set<number>();
@@ -124,16 +117,16 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   private grid: GridOptions = {
     standingStart: false,
     columns: 2,
-    poleSide: 'left',
   };
   private paceCarIdx = -1;
-  private track = '';
-  private poleKey = '';
+  private session: Session | null = null;
+  /** Grid positions for the session they were read for. */
+  private gridPositions = new Map<number, number>();
+  private gridSessionNum = NaN;
 
   private latest: RadarSnapshot = emptySnapshot(0);
 
   constructor(
-    private readonly poleSides: RadarPoleSidePersistence = noPoleSidePersistence,
     /** The dev view's tuning, read every frame so changes apply at once. */
     private readonly tuning: () => RadarProcessorTuning = () =>
       DEFAULT_RADAR_TUNING
@@ -144,30 +137,18 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
   init(session: Session): void {
     this.trackLength = parseTrackLength(session?.WeekendInfo?.TrackLength);
     this.hazards.setTrackLength(this.trackLength);
+    // TrackType is "road course", "short track", "super speedway", "dirt oval"
+    // and so on; anything that is not road racing is an oval
+    const trackType = session?.WeekendInfo?.TrackType ?? '';
+    this.lanes.setOval(trackType !== '' && !/road|rally/i.test(trackType));
     const options = session?.WeekendInfo?.WeekendOptions;
     this.grid = {
       standingStart: options?.StandingStart === 1,
       ...parseStartingGrid(options?.StartingGrid),
     };
-    // Session revisions arrive throughout a session; only a new track or
-    // grid description may reset what the spotter is part way to learning.
-    const track = session?.WeekendInfo?.TrackName ?? '';
-    const poleKey = `${track}|${this.grid.poleSide}`;
-    if (poleKey !== this.poleKey) {
-      this.poleKey = poleKey;
-      this.track = track;
-      this.lanes.setPoleSide(this.grid.poleSide);
-      // Which side the pole is on is the track's, and the sim does not say;
-      // what the spotter showed here before beats the grid description.
-      if (track) {
-        const learnt = this.poleSides.load(track);
-        for (const kind of ['grid', 'pace'] as const) {
-          const side = learnt[kind];
-          if (side) this.lanes.setPoleSide(side, kind);
-        }
-      }
-    }
     this.paceCarIdx = session?.DriverInfo?.PaceCarIdx ?? -1;
+    this.session = session;
+    this.gridSessionNum = NaN;
     this.excluded.clear();
     for (const driver of session?.DriverInfo?.Drivers ?? []) {
       if (driver.CarIsPaceCar === 1 || driver.IsSpectator === 1) {
@@ -203,6 +184,11 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
             ? NaN
             : wrapDelta(pct, playerPct) * this.trackLength;
       }
+      const sessionNum = scalarNumber(frame, 'SessionNum', -1);
+      if (sessionNum !== this.gridSessionNum) {
+        this.gridSessionNum = sessionNum;
+        this.gridPositions = parseGridPositions(this.session, sessionNum);
+      }
       formation = computeFormation({
         focus,
         dists,
@@ -222,6 +208,7 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         ) as readonly number[],
         paceCarIdx: this.paceCarIdx,
         grid: this.grid,
+        gridPositions: this.gridPositions,
       });
       const followCarIdx = formation?.followCarIdx ?? null;
       if (followCarIdx !== null && Number.isFinite(dists[followCarIdx])) {
@@ -343,9 +330,6 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       car.lane = lane.lane;
       car.laneSource = lane.source;
     }
-    for (const { kind, side } of this.lanes.takeLearntPoleSides()) {
-      if (this.track) this.poleSides.save(this.track, kind, side);
-    }
   }
 
   snapshot(): RadarSnapshot {
@@ -354,7 +338,6 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
 
   private updateSpeeds(pcts: readonly unknown[], time: number): void {
     const dt = time - this.previousTime;
-    const smoothing = this.tuning().speedSmoothing;
     // A paused sim or replay repeats SessionTime; keep the last speeds.
     if (this.previousTime >= 0 && dt === 0) return;
     const restart =
@@ -364,6 +347,11 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
       this.trackLength <= 0;
     this.previousTime = time;
     if (restart) this.speedsSettleUntil = time + SPEED_SETTLE_S;
+    // Weight of the newest sample, scaled so the average responds the same
+    // at any call rate.
+    const smoothing = restart
+      ? 0
+      : 1 - (1 - this.tuning().speedSmoothing) ** (dt / SMOOTHING_STEP_S);
 
     for (let carIdx = 0; carIdx < pcts.length; carIdx += 1) {
       const pct = numberAt(pcts, carIdx);
@@ -379,7 +367,6 @@ export class RadarProcessor implements TelemetryProcessor<RadarSnapshot> {
         continue;
       }
       const current = this.speeds[carIdx] ?? 0;
-      // Weight of the newest sample in the per-car speed average.
       this.speeds[carIdx] = current + smoothing * (sample - current);
     }
   }

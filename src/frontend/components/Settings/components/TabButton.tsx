@@ -1,23 +1,23 @@
 import { SettingsTabType } from '@irdashies/types';
 
-interface TabButtonProps {
-  id: SettingsTabType;
-  activeTab: SettingsTabType;
-  setActiveTab: (tab: SettingsTabType) => void;
+interface TabButtonProps<Tab extends string = SettingsTabType> {
+  id: Tab;
+  activeTab: Tab;
+  setActiveTab: (tab: Tab) => void;
   children: React.ReactNode;
 }
 
-export const TabButton = ({
+export const TabButton = <Tab extends string = SettingsTabType>({
   id,
   activeTab,
   setActiveTab,
   children,
-}: TabButtonProps) => (
+}: TabButtonProps<Tab>) => (
   <button
     onClick={() => setActiveTab(id)}
-    className={`px-4 py-2 text-md border-b-2 transition-colors ${
+    className={`px-4 py-2 text-md settings-heading font-semibold border-b-2 transition-colors ${
       activeTab === id
-        ? 'text-white border-blue-500'
+        ? 'text-white border-accent-500'
         : 'text-slate-400 border-transparent hover:text-slate-200'
     }`}
   >

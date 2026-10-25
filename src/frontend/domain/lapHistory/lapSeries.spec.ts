@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   traceAnchor,
   gapToClassLeader,
+  lastLineGap,
   positionsByLap,
   raceTrace,
   traceOrigin,
 } from './lapSeries';
+import type { LapHistorySnapshot } from '@irdashies/types';
 import type { LapCrossing } from './types';
 
 const crossing = (
@@ -375,5 +377,84 @@ describe('traceAnchor', () => {
   it('returns nothing without crossings or a usable reference', () => {
     expect(traceAnchor([], 81.3)).toBeUndefined();
     expect(traceAnchor(leader, 0)).toBeUndefined();
+  });
+});
+
+describe('lastLineGap', () => {
+  /** Snapshot where car `i` crossed the line at `times[i][lap - 1]`. */
+  const snapshotOf = (times: number[][]): LapHistorySnapshot => {
+    const capacity = 4;
+    const size = times.length * capacity;
+    const lap = new Array<number>(size).fill(0);
+    const sessionTime = new Array<number>(size).fill(0);
+    times.forEach((carTimes, carIdx) =>
+      carTimes.forEach((time, i) => {
+        lap[carIdx * capacity + i] = i + 1;
+        sessionTime[carIdx * capacity + i] = time;
+      })
+    );
+    return {
+      carCount: times.length,
+      capacity,
+      count: times.map((carTimes) => carTimes.length),
+      start: times.map(() => 0),
+      lap,
+      sessionTime,
+      classPosition: new Array<number>(size).fill(0),
+      flags: new Array<number>(size).fill(0),
+      sessionNum: 1,
+      version: 1,
+    };
+  };
+
+  // Issue #794 screenshot: #111 crossed 1.81s ahead, #160 2.66s behind.
+  const ahead = [500, 971.0];
+  const player = [501, 972.81];
+  const behind = [502, 975.47];
+
+  it('measures the gap over the line on the latest shared lap', () => {
+    const snapshot = snapshotOf([ahead, player, behind]);
+
+    expect(lastLineGap(snapshot, 1, 0)).toBeCloseTo(1.81, 10);
+    expect(lastLineGap(snapshot, 2, 1)).toBeCloseTo(2.66, 10);
+  });
+
+  it('falls back to the previous lap until the car behind crosses', () => {
+    // Player has crossed lap 2; the car behind has only crossed lap 1.
+    const snapshot = snapshotOf([ahead, player, behind.slice(0, 1)]);
+
+    expect(lastLineGap(snapshot, 2, 1)).toBeCloseTo(1, 10);
+  });
+
+  it('measures the on-track gap to a car a lap up, not a whole lap', () => {
+    // The car ahead is a lap up but crossed 8s before the player.
+    const lapUp = [420, 880, 964.81];
+
+    expect(lastLineGap(snapshotOf([lapUp, player]), 1, 0)).toBeCloseTo(8, 10);
+  });
+
+  it('is null when the pair is stale or more than half a lap apart', () => {
+    // Behind car towed after lap 1 while the player kept crossing.
+    const playerOn = [501, 972.81, 1444];
+    expect(lastLineGap(snapshotOf([[502], playerOn]), 0, 1)).toBeNull();
+
+    // Ahead car stopped well before the player's latest crossing.
+    expect(lastLineGap(snapshotOf([[500, 700], player]), 1, 0)).toBeNull();
+  });
+
+  it('pairs by time when a reset repeats a lap number', () => {
+    // The car ahead was reset and recorded lap 1 twice; crossings are still
+    // matched by time, so the duplicate lap number cannot skew the gap.
+    const base = snapshotOf([ahead, player]);
+    const lap = [...base.lap];
+    lap[1] = 1;
+    const snapshot = { ...base, lap };
+
+    expect(lastLineGap(snapshot, 1, 0)).toBeCloseTo(1.81, 10);
+  });
+
+  it('is null without a shared lap or snapshot', () => {
+    expect(lastLineGap(snapshotOf([ahead, []]), 1, 0)).toBeNull();
+    expect(lastLineGap(undefined, 1, 0)).toBeNull();
   });
 });

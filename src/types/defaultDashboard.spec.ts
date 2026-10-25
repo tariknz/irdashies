@@ -256,3 +256,33 @@ describe('getWidgetDefaultConfig', () => {
     ).toThrow();
   });
 });
+
+describe('humidity defaults for existing dashboards', () => {
+  it('adds the disabled humidity option to all session bar orders', () => {
+    const defaults = [
+      getWidgetDefaultConfig('standings').headerBar,
+      getWidgetDefaultConfig('standings').footerBar,
+      getWidgetDefaultConfig('relative').headerBar,
+      getWidgetDefaultConfig('relative').footerBar,
+      getWidgetDefaultConfig('infobar'),
+    ];
+    for (const config of defaults) {
+      const merged = deepMergeConfig(
+        config as unknown as Record<string, unknown>,
+        {
+          displayOrder: ['trackTemperature', 'airTemperature'],
+        }
+      );
+      expect(merged.humidity).toEqual({ enabled: false });
+      expect(merged.displayOrder).toContain('humidity');
+      expect(
+        (merged.displayOrder as string[]).filter((key) => key !== 'humidity')
+      ).toEqual(expect.arrayContaining(['trackTemperature', 'airTemperature']));
+      expect(
+        (merged.displayOrder as string[]).indexOf('trackTemperature')
+      ).toBeLessThan(
+        (merged.displayOrder as string[]).indexOf('airTemperature')
+      );
+    }
+  });
+});

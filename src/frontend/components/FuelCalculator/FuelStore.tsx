@@ -6,11 +6,13 @@ import { create } from 'zustand';
 import { FuelLapData } from '@irdashies/types';
 
 /** Maximum number of laps to retain in history */
-const MAX_LAP_HISTORY = 50;
+export const MAX_LAP_HISTORY = 50;
 
 interface FuelStoreState {
   /** Map of lap number to fuel data */
   lapHistory: Map<number, FuelLapData>;
+  /** Processor history preserves repeated lap numbers across sessions; capped at MAX_LAP_HISTORY. */
+  projectionLaps: readonly FuelLapData[];
   /** Cached sorted array of lap history (most recent first) - invalidated on changes */
   _sortedLapHistoryCache: FuelLapData[] | null;
   /** Track the oldest lap number for efficient pruning */
@@ -122,6 +124,7 @@ function sortLapsDescending(laps: FuelLapData[]): FuelLapData[] {
 export const useFuelStore = create<FuelStore>()((set, get) => ({
   // Initial state
   lapHistory: new Map(),
+  projectionLaps: [],
   _sortedLapHistoryCache: null,
   _oldestLapNumber: Infinity,
   lastLap: 0,
@@ -194,6 +197,7 @@ export const useFuelStore = create<FuelStore>()((set, get) => ({
   clearAllData: () => {
     set({
       lapHistory: new Map(),
+      projectionLaps: [],
       _sortedLapHistoryCache: null,
       _oldestLapNumber: Infinity,
       lastLap: 0,
@@ -294,6 +298,7 @@ export const useFuelStore = create<FuelStore>()((set, get) => ({
       const lapNumbers = Array.from(newHistory.keys());
       return {
         lapHistory: newHistory,
+        projectionLaps: laps.slice(0, MAX_LAP_HISTORY),
         _sortedLapHistoryCache: null,
         _oldestLapNumber:
           lapNumbers.length > 0 ? Math.min(...lapNumbers) : Infinity,

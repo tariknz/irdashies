@@ -1,80 +1,65 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
 } from 'react';
-
-// Frontend widget registry — the preview list is derived from this so it
-// can't silently drift out of sync when widgets are added to the app.
-import { WIDGET_MAP, type WidgetId } from '../../../src/frontend/WidgetIndex';
-import { WIDGET_NAMES } from '../../../src/frontend/constants/widgetNames';
-import { SectorTimingUpdater } from '../../../src/frontend/context/SectorTimingStore/SectorTimingUpdater';
-import { WidgetRuntimeProvider } from '../../../src/frontend/widgetRuntime';
-import { defaultDashboard } from '@irdashies/types';
-
-// Site-local components and utilities
+import {
+  ArrowCounterClockwise,
+  ArrowsIn,
+  ArrowsOut,
+  CaretDown,
+  Check,
+} from '@phosphor-icons/react';
+import { WIDGET_MAP } from '@irdashies/frontend/WidgetIndex';
+import { WIDGET_NAMES } from '@irdashies/frontend/constants/widgetNames';
+import { SectorTimingUpdater } from '@irdashies/frontend/context/SectorTimingStore/SectorTimingUpdater';
+import { LapTraceUpdater } from '@irdashies/frontend/components/OverlayContainer/LapTraceUpdater';
+import { ReferenceStoreProvider } from '@irdashies/context';
+import { defaultDashboard, type WidgetId } from '@irdashies/types';
+import { EXCLUDED_WIDGETS } from '../utils/previewWidgets';
 import { DashboardReady } from '../components/DashboardReady';
 import { PreviewSettingsButton } from '../components/PreviewSettingsPanel';
 import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import { LivePreviewProvider } from '../utils/mockSetup';
-
-// Sibling sections
 import { ActiveWidgetSync } from './ActiveWidgetSync';
-import { CoachMarks } from './CoachMarks';
 import {
+  PreviewWidgetContent,
   PreviewWidgetItem,
   WidgetFrame,
-  useWidgetConfig,
   type WidgetPosition,
 } from './PreviewWidgetItem';
 
-const MOBILE_QUERY = '(max-width: 639px)';
-const mobileMedia =
-  typeof window !== 'undefined' ? window.matchMedia(MOBILE_QUERY) : null;
+const compactMedia = window.matchMedia('(max-width: 1023px)');
+const subscribeCompact = (cb: () => void) => {
+  compactMedia.addEventListener('change', cb);
+  return () => compactMedia.removeEventListener('change', cb);
+};
+const getCompactSnapshot = () => compactMedia.matches;
 
-function subscribeMobile(cb: () => void) {
-  mobileMedia?.addEventListener('change', cb);
-  return () => mobileMedia?.removeEventListener('change', cb);
-}
-function getSnapshotMobile() {
-  return mobileMedia?.matches ?? false;
-}
+const DEFAULT_WIDGETS = new Set<WidgetId>(['relative', 'input', 'map']);
+const FEATURED_WIDGETS = [
+  'relative',
+  'input',
+  'map',
+  'fuel',
+  'radar',
+  'laptrace',
+];
+const PAD = 20;
 
-function useIsMobile() {
-  return useSyncExternalStore(subscribeMobile, getSnapshotMobile);
-}
+const AVAILABLE_WIDGETS = (Object.keys(WIDGET_MAP) as WidgetId[])
+  .filter((id) => !EXCLUDED_WIDGETS.has(id))
+  .map((id) => ({
+    id,
+    label: WIDGET_NAMES[id],
+    component: WIDGET_MAP[id] as React.ComponentType<unknown>,
+  }));
 
-/**
- * Static widget rendering used by the mobile path — needs a real component so
- * `useWidgetConfig` (a hook) can run.
- */
-function MobileWidget({
-  widgetId,
-  label,
-  component: Component,
-}: {
-  widgetId: string;
-  label: string;
-  component: React.ComponentType<unknown>;
-}) {
-  const config = useWidgetConfig(widgetId);
-  return (
-    <div className="relative w-full h-full">
-      <WidgetFrame>
-        <WidgetErrorBoundary widgetName={label}>
-          <WidgetRuntimeProvider widgetType={widgetId}>
-            <Component {...config} />
-          </WidgetRuntimeProvider>
-        </WidgetErrorBoundary>
-      </WidgetFrame>
-    </div>
-  );
-}
-
-/** Look up a widget's default layout size from the project's defaultDashboard. */
-function getDefaultSize(widgetId: string): { width: number; height: number } {
+function getDefaultSize(widgetId: string) {
+  if (widgetId === 'gantry') return { width: 1000, height: 560 };
   const widget = defaultDashboard.widgets.find((w) => w.id === widgetId);
   return {
     width: widget?.layout?.width ?? 300,
@@ -82,209 +67,216 @@ function getDefaultSize(widgetId: string): { width: number; height: number } {
   };
 }
 
-/**
- * Component is typed as `ComponentType<unknown>` so widgets that take config
- * as direct props (e.g. SectorDelta) fit alongside widgets that take none.
- * Config is read from the dashboard at render time and spread onto the
- * component, mirroring OverlayContainer in the real app.
- */
-interface AvailableWidget {
-  id: string;
-  label: string;
-  component: React.ComponentType<unknown>;
-  defaultOn: boolean;
-}
-
-/**
- * Widgets registered in the app but deliberately kept out of the live
- * preview: they need external input or real-app state that the mock bridge
- * can't provide, so they'd render empty or broken. Remove an id here to
- * surface that widget in the preview toolbar.
- */
-const EXCLUDED_WIDGETS = new Set<WidgetId>([
-  'garagecover', // only renders while in the garage
-  'telemetryinspector', // debug tool, not a showcase overlay
-  'twitchchat', // needs a real Twitch channel to display anything
-  'heartrate', // embeds HypeRate, needs a session id
-]);
-
-/** Widgets enabled by default when the preview first loads. */
-const DEFAULT_ON_WIDGETS = new Set<WidgetId>(['relative', 'input', 'map']);
-
-const AVAILABLE_WIDGETS: readonly AvailableWidget[] = (
-  Object.keys(WIDGET_MAP) as WidgetId[]
-)
-  .filter((id) => !EXCLUDED_WIDGETS.has(id))
-  .map((id) => ({
-    id,
-    label: WIDGET_NAMES[id],
-    component: WIDGET_MAP[id] as React.ComponentType<unknown>,
-    defaultOn: DEFAULT_ON_WIDGETS.has(id),
-  }));
-
-/**
- * Initial dashboard for the preview: every widget from defaultDashboard, but
- * with `enabled` reconciled to DEFAULT_ON_WIDGETS. defaultDashboard enables
- * extras (standings, weather) that the toolbar starts with off; without this
- * the dashboard context and toolbar disagree, and saving any widget's
- * settings re-enables those extras via onDashboardSaved.
- */
-const PREVIEW_WIDGETS = defaultDashboard.widgets.map((w) => ({
-  ...w,
-  enabled: DEFAULT_ON_WIDGETS.has((w.type ?? w.id) as WidgetId),
-}));
-
-// Default-on widgets: relative (top-left), track map (top-right),
-// input (bottom-center). Positions are computed once the canvas is measured.
-
-const PAD = 20;
-
-function buildDefaultPositions(
-  canvasW: number,
-  canvasH: number
-): Record<string, WidgetPosition> {
+function buildDefaultPositions(canvasW: number, canvasH: number) {
   const positions: Record<string, WidgetPosition> = Object.fromEntries(
-    AVAILABLE_WIDGETS.map((w) => {
-      const size = getDefaultSize(w.id);
-      return [w.id, { x: PAD, y: PAD, ...size }];
+    AVAILABLE_WIDGETS.map((widget) => {
+      const size = getDefaultSize(widget.id);
+      return [
+        widget.id,
+        {
+          x: PAD,
+          y: PAD,
+          width: Math.min(size.width, canvasW - PAD * 2),
+          height: Math.min(size.height, canvasH - PAD * 2),
+        },
+      ];
     })
   );
-
-  const relativeSize = getDefaultSize('relative');
-  const mapSize = getDefaultSize('map');
-  const inputSize = getDefaultSize('input');
-
-  positions['relative'] = { x: PAD, y: PAD, ...relativeSize };
-  positions['map'] = {
-    x: canvasW - mapSize.width - PAD,
-    y: PAD,
-    ...mapSize,
-  };
-  positions['input'] = {
-    x: Math.round((canvasW - inputSize.width) / 2),
-    y: canvasH - inputSize.height - PAD,
-    ...inputSize,
-  };
-
+  positions.map.x = canvasW - positions.map.width - PAD;
+  positions.input.x = (canvasW - positions.input.width) / 2;
+  positions.input.y = canvasH - positions.input.height - PAD;
   return positions;
 }
 
 export function LivePreview() {
-  const isMobile = useIsMobile();
-  const [activeWidgets, setActiveWidgets] = useState<Set<string>>(
-    () => new Set(AVAILABLE_WIDGETS.filter((w) => w.defaultOn).map((w) => w.id))
+  const [expanded, setExpanded] = useState(false);
+  const compact = useSyncExternalStore(subscribeCompact, getCompactSnapshot);
+  const [desktopWidgets, setDesktopWidgets] = useState<Set<string>>(
+    () => new Set(DEFAULT_WIDGETS)
   );
-  const [positions, setPositions] = useState<Record<string, WidgetPosition>>(
-    () => buildDefaultPositions(1200, 700)
+  const [compactWidget, setCompactWidget] = useState('relative');
+  const activeWidgets = useMemo(
+    () => (compact ? new Set([compactWidget]) : desktopWidgets),
+    [compact, compactWidget, desktopWidgets]
+  );
+  const [initialWidgets] = useState(() =>
+    defaultDashboard.widgets.map((w) => ({
+      ...w,
+      enabled: activeWidgets.has(w.type ?? w.id),
+    }))
+  );
+  const [canvasSize, setCanvasSize] = useState({ width: 1200, height: 620 });
+  const [positions, setPositions] = useState(() =>
+    buildDefaultPositions(1200, 620)
   );
   const [selectedWidget, setSelectedWidget] = useState<string | null>(null);
   const [settingsOpenWidget, setSettingsOpenWidget] = useState<string | null>(
     null
   );
-  const [showCoachMarks, setShowCoachMarks] = useState(true);
   const canvasRef = useRef<HTMLDivElement>(null);
-  const hasLaidOut = useRef(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const menuRef = useRef<HTMLDetailsElement>(null);
+  const measured = useRef(false);
+  const desktopCanvasSize = useRef({ width: 1200, height: 620 });
 
-  // Measure the canvas once it's rendered and recompute default positions
   useEffect(() => {
-    const el = canvasRef.current;
-    if (!el) return;
+    if (!expanded) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !event.defaultPrevented) setExpanded(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [expanded]);
 
-    const observer = new ResizeObserver((entries) => {
-      if (hasLaidOut.current) return;
-      const { width, height } = entries[0].contentRect;
-      if (width > 0 && height > 0) {
-        hasLaidOut.current = true;
-        setPositions(buildDefaultPositions(width, height));
-        observer.disconnect();
-      }
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (width <= 0 || height <= 0) return;
+      setCanvasSize({ width, height });
+      if (compact) return;
+      desktopCanvasSize.current = { width, height };
+      setPositions((previous) => {
+        if (!measured.current) {
+          measured.current = true;
+          return buildDefaultPositions(width, height);
+        }
+        return Object.fromEntries(
+          Object.entries(previous).map(([id, pos]) => {
+            const nextWidth = Math.min(pos.width, width - PAD * 2);
+            const nextHeight = Math.min(pos.height, height - PAD * 2);
+            return [
+              id,
+              {
+                ...pos,
+                width: nextWidth,
+                height: nextHeight,
+                x: Math.max(0, Math.min(pos.x, width - nextWidth)),
+                y: Math.max(0, Math.min(pos.y, height - nextHeight)),
+              },
+            ];
+          })
+        );
+      });
     });
-    observer.observe(el);
+    observer.observe(canvas);
     return () => observer.disconnect();
+  }, [compact]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = () => {
+      if (media.matches) videoRef.current?.pause();
+      else void videoRef.current?.play().catch(() => undefined);
+    };
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
+
+  useEffect(() => {
+    const close = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        !menuRef.current?.contains(event.target)
+      ) {
+        if (menuRef.current) menuRef.current.open = false;
+      }
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
   }, []);
 
   const toggleWidget = (id: string) => {
-    setActiveWidgets((prev) => {
-      if (isMobile) {
-        // Radio behaviour: one widget at a time
-        return prev.has(id) ? new Set<string>() : new Set([id]);
-      }
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-        if (selectedWidget === id) setSelectedWidget(null);
-      } else {
-        next.add(id);
-      }
+    if (compact) {
+      setCompactWidget(id);
+      return;
+    }
+    setDesktopWidgets((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
+    setSelectedWidget(null);
+  };
+
+  const reset = () => {
+    setDesktopWidgets(new Set(DEFAULT_WIDGETS));
+    setCompactWidget('relative');
+    setPositions(
+      buildDefaultPositions(
+        desktopCanvasSize.current.width,
+        desktopCanvasSize.current.height
+      )
+    );
+    setSelectedWidget(null);
+    setSettingsOpenWidget(null);
   };
 
   const handlePositionChange = useCallback(
-    (widgetId: string, position: WidgetPosition) => {
-      setPositions((prev) => ({ ...prev, [widgetId]: position }));
+    (id: string, position: WidgetPosition) => {
+      setPositions((previous) => ({ ...previous, [id]: position }));
     },
     []
   );
-
-  const handleSelect = useCallback((widgetId: string) => {
-    setSelectedWidget(widgetId);
-  }, []);
-
-  const handleDisable = useCallback((widgetId: string) => {
-    setActiveWidgets((prev) => {
-      const next = new Set(prev);
-      next.delete(widgetId);
+  const handleSelect = useCallback((id: string) => setSelectedWidget(id), []);
+  const handleDisable = useCallback((id: string) => {
+    setDesktopWidgets((previous) => {
+      const next = new Set(previous);
+      next.delete(id);
       return next;
     });
-    setSelectedWidget((prev) => (prev === widgetId ? null : prev));
+    setSelectedWidget(null);
   }, []);
+  const handleOpenSettings = useCallback(
+    (id: string) => setSettingsOpenWidget(id),
+    []
+  );
 
-  const handleOpenSettings = useCallback((widgetId: string) => {
-    setSettingsOpenWidget(widgetId);
-  }, []);
+  const singleWidget = AVAILABLE_WIDGETS.find((w) => w.id === compactWidget);
+  const singleSize = getDefaultSize(compactWidget);
+  const singleScale = Math.min(
+    1,
+    (canvasSize.width - 24) / singleSize.width,
+    (canvasSize.height - 24) / singleSize.height
+  );
 
   return (
-    <section
-      id="preview"
-      className="relative min-h-screen flex flex-col py-8 px-6"
-    >
-      {/* Compact section header */}
-      <div className="mx-auto w-full max-w-450 mb-4">
+    <section className="relative py-8 px-4 sm:px-6">
+      <div className="mx-auto w-full max-w-7xl mb-4">
         <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight">
           See It In <span className="text-red-600">Action</span>
         </h2>
         <p className="text-sm text-slate-400 mt-1">
-          {isMobile
-            ? 'Tap the toolbar to preview different widgets. Try the full interactive experience on desktop.'
-            : 'Toggle widgets in the toolbar to enable them. Click a widget to select it, drag to reposition, resize from edges, or use the gear icon for settings.'}
+          {compact
+            ? 'Sample data. Choose a widget to preview.'
+            : 'Sample data. Choose widgets, drag to move, and resize from the edges.'}
         </p>
       </div>
-
       <LivePreviewProvider
-        widgets={PREVIEW_WIDGETS}
+        widgets={initialWidgets}
         onDashboardSaved={(dashboard) => {
-          setActiveWidgets((prev) => {
-            const next = new Set(prev);
-            const widgetIds = new Set<string>(
-              AVAILABLE_WIDGETS.map((w) => w.id)
-            );
-            for (const widget of dashboard.widgets) {
-              const id = widget.type ?? widget.id;
-              if (!widgetIds.has(id)) continue;
-              if (widget.enabled) {
-                next.add(id);
-              } else {
-                next.delete(id);
-                if (selectedWidget === id) setSelectedWidget(null);
-              }
-            }
-            return next;
-          });
+          if (compact) return;
+          setDesktopWidgets(
+            new Set(
+              dashboard.widgets
+                .filter(
+                  (w) =>
+                    w.enabled &&
+                    !EXCLUDED_WIDGETS.has((w.type ?? w.id) as WidgetId)
+                )
+                .map((w) => w.type ?? w.id)
+            )
+          );
         }}
       >
-        {/* Headless: these subscribe to channels but render nothing, so a
-            fault here must not be allowed to unmount the whole page. */}
         <WidgetErrorBoundary
           widgetName="Widget sync"
           fallback={null}
@@ -293,127 +285,188 @@ export function LivePreview() {
           <ActiveWidgetSync activeWidgets={activeWidgets} />
         </WidgetErrorBoundary>
         <WidgetErrorBoundary
-          widgetName="Sector timing"
+          widgetName="Preview telemetry"
           fallback={null}
           resetAfterMs={2000}
         >
           <SectorTimingUpdater />
+          <ReferenceStoreProvider bridge={window.channelBridge} />
+          <LapTraceUpdater browser />
         </WidgetErrorBoundary>
-        {/* Preview frame */}
-        <div className="mx-auto w-full max-w-450 flex-1 flex flex-col min-h-0">
-          <div className="relative rounded-sm border border-slate-700/50 overflow-hidden carbon-fiber flex-1 flex flex-col">
-            {/* Frame toolbar */}
-            <div className="flex-none flex items-center gap-3 px-4 py-2 bg-slate-900/80 border-b border-slate-700/50">
-              {/* Traffic lights — desktop only */}
-              {!isMobile && (
-                <>
-                  <div className="flex gap-1.5 flex-none">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+        <div
+          className={
+            expanded
+              ? 'fixed inset-0 z-60 flex h-dvh w-full flex-col bg-slate-900'
+              : 'mx-auto w-full max-w-7xl border border-slate-700/50 rounded-sm'
+          }
+        >
+          <div className="relative z-30 flex shrink-0 flex-wrap items-center gap-3 p-3 bg-slate-900 rounded-t-sm border-b border-slate-700/50">
+            {compact ? (
+              <label className="flex-1 flex items-center gap-3 text-sm text-slate-300">
+                Widget
+                <select
+                  value={compactWidget}
+                  onChange={(event) => setCompactWidget(event.target.value)}
+                  className="min-w-0 flex-1 rounded-sm bg-slate-800 border border-slate-600 px-3 py-2 text-white"
+                >
+                  {AVAILABLE_WIDGETS.map((widget) => (
+                    <option key={widget.id} value={widget.id}>
+                      {widget.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <>
+                <div
+                  role="group"
+                  aria-label="Featured widgets"
+                  className="flex flex-wrap flex-1 gap-2"
+                >
+                  {AVAILABLE_WIDGETS.filter((widget) =>
+                    FEATURED_WIDGETS.includes(widget.id)
+                  ).map((widget) => (
+                    <button
+                      key={widget.id}
+                      aria-pressed={activeWidgets.has(widget.id)}
+                      onClick={() => toggleWidget(widget.id)}
+                      className={[
+                        'rounded-sm border px-3 py-1.5 text-xs font-bold transition-colors',
+                        activeWidgets.has(widget.id)
+                          ? 'border-red-600/60 bg-red-600/15 text-white'
+                          : 'border-slate-700 text-slate-300 hover:bg-slate-800',
+                      ].join(' ')}
+                    >
+                      {widget.label}
+                    </button>
+                  ))}
+                </div>
+                <details
+                  ref={menuRef}
+                  className="relative"
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') {
+                      event.preventDefault();
+                      event.currentTarget.open = false;
+                      event.currentTarget.querySelector('summary')?.focus();
+                    }
+                  }}
+                >
+                  <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-bold text-slate-300 hover:text-white px-2 py-2">
+                    All widgets <CaretDown size={14} />
+                  </summary>
+                  <div className="absolute right-0 top-full mt-2 w-72 max-h-96 overflow-y-auto rounded-sm border border-slate-600 bg-slate-900 p-2 shadow-xl">
+                    {AVAILABLE_WIDGETS.map((widget) => (
+                      <button
+                        key={widget.id}
+                        aria-pressed={activeWidgets.has(widget.id)}
+                        onClick={() => toggleWidget(widget.id)}
+                        className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-800 hover:text-white"
+                      >
+                        <Check
+                          size={14}
+                          className={
+                            activeWidgets.has(widget.id)
+                              ? 'text-red-500'
+                              : 'invisible'
+                          }
+                        />
+                        {widget.label}
+                      </button>
+                    ))}
                   </div>
-                  <div className="w-px h-4 bg-slate-700/60 flex-none" />
-                </>
-              )}
-
-              {/* Widget toggles — scrollable */}
-              <div className="flex items-center gap-2 flex-1 min-w-0 overflow-x-auto scrollbar-hide">
-                {AVAILABLE_WIDGETS.map((widget) => (
-                  <button
-                    key={widget.id}
-                    onClick={() => toggleWidget(widget.id)}
-                    className={[
-                      'font-bold uppercase tracking-wide rounded-sm transition-all border whitespace-nowrap flex-none',
-                      isMobile
-                        ? 'px-2.5 py-1 text-[11px]'
-                        : 'px-2 py-0.5 text-[10px]',
-                      activeWidgets.has(widget.id)
-                        ? 'border-red-600/50 bg-red-600/10 text-slate-200'
-                        : 'border-slate-700/50 text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 hover:border-slate-600/50',
-                    ].join(' ')}
-                  >
-                    {widget.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Settings — desktop only */}
-              {!isMobile && (
-                <>
-                  <div className="w-px h-4 bg-slate-700/60 flex-none" />
-                  <div className="flex-none">
-                    <PreviewSettingsButton
-                      activeWidgets={activeWidgets}
-                      onToggleWidget={toggleWidget}
-                      openToWidget={settingsOpenWidget}
-                      onClose={() => setSettingsOpenWidget(null)}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Coach marks overlay — desktop only */}
-            {!isMobile && showCoachMarks && (
-              <CoachMarks onDismiss={() => setShowCoachMarks(false)} />
+                </details>
+                <PreviewSettingsButton
+                  activeWidgets={activeWidgets}
+                  onToggleWidget={toggleWidget}
+                  openToWidget={settingsOpenWidget}
+                  onClose={() => setSettingsOpenWidget(null)}
+                />
+              </>
             )}
-
-            {/* Widget canvas */}
-            <div
-              ref={canvasRef}
-              className="relative flex-1 overflow-hidden"
-              onClick={isMobile ? undefined : () => setSelectedWidget(null)}
+            <button
+              onClick={reset}
+              aria-label="Reset preview layout"
+              title="Reset preview layout"
+              className="p-2 text-slate-400 hover:text-white"
             >
-              {/* Background video */}
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="absolute inset-0 w-full h-full object-cover"
-              >
-                <source src="/preview-bg.mp4" type="video/mp4" />
-              </video>
-
-              <DashboardReady>
-                {isMobile
-                  ? // Mobile: single static widget, no interactions
-                    (() => {
-                      const active = AVAILABLE_WIDGETS.find((w) =>
-                        activeWidgets.has(w.id)
-                      );
-                      if (!active) return null;
-                      return (
-                        <MobileWidget
-                          widgetId={active.id}
-                          label={active.label}
-                          component={active.component}
-                        />
-                      );
-                    })()
-                  : // Desktop: draggable/resizable widgets
-                    AVAILABLE_WIDGETS.filter((w) =>
-                      activeWidgets.has(w.id)
-                    ).map((widget) => {
-                      const pos = positions[widget.id];
-                      if (!pos) return null;
-                      return (
-                        <PreviewWidgetItem
-                          key={widget.id}
-                          widgetId={widget.id}
-                          label={widget.label}
-                          component={widget.component}
-                          position={pos}
-                          isSelected={selectedWidget === widget.id}
-                          onPositionChange={handlePositionChange}
-                          onSelect={handleSelect}
-                          onDisable={handleDisable}
-                          onOpenSettings={handleOpenSettings}
-                        />
-                      );
-                    })}
-              </DashboardReady>
-            </div>
+              <ArrowCounterClockwise size={18} />
+            </button>
+            <button
+              onClick={() => setExpanded((previous) => !previous)}
+              aria-label={
+                expanded ? 'Exit fullscreen preview' : 'Expand preview'
+              }
+              aria-pressed={expanded}
+              title={
+                expanded ? 'Exit fullscreen preview (Esc)' : 'Expand preview'
+              }
+              className="p-2 text-slate-400 hover:text-white"
+            >
+              {expanded ? <ArrowsIn size={18} /> : <ArrowsOut size={18} />}
+            </button>
+          </div>
+          <div
+            ref={canvasRef}
+            className={[
+              'relative overflow-hidden rounded-b-sm bg-slate-900',
+              expanded ? 'min-h-0 flex-1' : 'h-90 sm:h-120 lg:h-155',
+            ].join(' ')}
+            onClick={compact ? undefined : () => setSelectedWidget(null)}
+          >
+            <video
+              ref={videoRef}
+              loop
+              muted
+              playsInline
+              preload="none"
+              className="absolute inset-0 w-full h-full object-cover"
+            >
+              <source src="/preview-bg.mp4" type="video/mp4" />
+            </video>
+            <DashboardReady>
+              {compact
+                ? singleWidget && (
+                    <div
+                      data-preview-widget={singleWidget.id}
+                      className="absolute origin-top-left"
+                      style={{
+                        width: singleSize.width,
+                        height: singleSize.height,
+                        left:
+                          (canvasSize.width - singleSize.width * singleScale) /
+                          2,
+                        top: 12,
+                        transform: `scale(${singleScale})`,
+                      }}
+                    >
+                      <WidgetFrame>
+                        <WidgetErrorBoundary widgetName={singleWidget.label}>
+                          <PreviewWidgetContent
+                            widgetId={singleWidget.id}
+                            component={singleWidget.component}
+                          />
+                        </WidgetErrorBoundary>
+                      </WidgetFrame>
+                    </div>
+                  )
+                : AVAILABLE_WIDGETS.filter((widget) =>
+                    activeWidgets.has(widget.id)
+                  ).map((widget) => (
+                    <PreviewWidgetItem
+                      key={widget.id}
+                      widgetId={widget.id}
+                      label={widget.label}
+                      component={widget.component}
+                      position={positions[widget.id]}
+                      isSelected={selectedWidget === widget.id}
+                      onPositionChange={handlePositionChange}
+                      onSelect={handleSelect}
+                      onDisable={handleDisable}
+                      onOpenSettings={handleOpenSettings}
+                    />
+                  ))}
+            </DashboardReady>
           </div>
         </div>
       </LivePreviewProvider>

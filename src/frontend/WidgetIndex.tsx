@@ -1,102 +1,27 @@
-import { Standings } from './components/Standings/Standings';
-import { Input } from './components/Input';
-import { Relative } from './components/Standings/Relative';
-import { TrackMap } from './components/TrackMap/TrackMap';
-import { FlatTrackMap } from './components/TrackMap/FlatTrackMap';
-import { Weather } from './components/Weather';
-import { Wind } from './components/Wind';
-import { FasterCarsFromBehind } from './components/FasterCarsFromBehind/FasterCarsFromBehind';
-import { FuelCalculator } from './components/FuelCalculator';
-import { BlindSpotMonitor } from './components/BlindSpotMonitor/BlindSpotMonitor';
-import { Radar } from './components/Radar/Radar';
-import { GarageCover } from './components/GarageCover/GarageCover';
-import { RejoinIndicator } from './components/RejoinIndicator/RejoinIndicator';
-import { TelemetryInspector } from './components/TelemetryInspector/TelemetryInspector';
-import { PitlaneHelper } from './components/PitlaneHelper/PitlaneHelper';
-import { Tachometer } from './components/Tachometer/Tachometer';
-import { ShiftLight } from './components/ShiftLight/ShiftLight';
-import { Flag } from './components/Flag';
-import { TwitchChat } from './components/TwitchChat/TwitchChat';
-import { LapTimeLog } from './components/LapTimeLog/LapTimeLog';
-import { InformationBar } from './components/InformationBar/InformationBar';
-import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
-import { SectorDelta } from './components/SectorDelta/SectorDelta';
-import { DeltaSpeed } from './components/DeltaSpeed/DeltaSpeed';
-import { CarSystems } from './components/CarSystems/CarSystems';
-import { HeartRate } from './components/HeartRate/HeartRate';
-import { CornerNameOverlay } from './components/CornerNameOverlay';
-import { LapTrace } from './components/LapTrace';
-import { Battle } from './components/Battle/Battle';
-import { Gantry } from './components/Gantry/Gantry';
-import type { WidgetConfigMap } from '@irdashies/types';
 import type { ElementType } from 'react';
+import type { WidgetModule } from '@irdashies/domain';
+import { WIDGET_MANIFESTS, type WidgetId } from '@irdashies/types';
 
-export {
-  Standings,
-  Input,
-  Relative,
-  TrackMap,
-  FlatTrackMap,
-  Weather,
-  Wind,
-  FasterCarsFromBehind,
-  FuelCalculator,
-  BlindSpotMonitor,
-  Radar,
-  GarageCover,
-  RejoinIndicator,
-  TelemetryInspector,
-  PitlaneHelper,
-  Tachometer,
-  ShiftLight,
-  Flag,
-  TwitchChat,
-  LapTimeLog,
-  InformationBar,
-  SlowCarAhead,
-  SectorDelta,
-  DeltaSpeed,
-  HeartRate,
-  CornerNameOverlay,
-  LapTrace,
-  Battle,
-  Gantry,
-};
+export type { WidgetId };
 
-export const WIDGET_MAP: Record<keyof WidgetConfigMap, ElementType> = {
-  standings: Standings,
-  input: Input,
-  relative: Relative,
-  map: TrackMap,
-  flatmap: FlatTrackMap,
-  weather: Weather,
-  wind: Wind,
-  fastercarsfrombehind: FasterCarsFromBehind,
-  fuel: FuelCalculator,
-  blindspotmonitor: BlindSpotMonitor,
-  radar: Radar,
-  garagecover: GarageCover,
-  rejoin: RejoinIndicator,
-  telemetryinspector: TelemetryInspector,
-  pitlanehelper: PitlaneHelper,
-  tachometer: Tachometer,
-  shiftlight: ShiftLight,
-  flag: Flag,
-  twitchchat: TwitchChat,
-  laptimelog: LapTimeLog,
-  infobar: InformationBar,
-  slowcarahead: SlowCarAhead,
-  sectordelta: SectorDelta,
-  deltaspeed: DeltaSpeed,
-  carsystems: CarSystems,
-  heartrate: HeartRate,
-  cornername: CornerNameOverlay,
-  laptrace: LapTrace,
-  battle: Battle,
-  gantry: Gantry,
-};
+const discoveredWidgets = import.meta.glob<{
+  default: WidgetModule | readonly WidgetModule[];
+}>('./components/*/widget.ts', { eager: true });
 
-export type WidgetId = keyof WidgetConfigMap;
+const order = new Map(WIDGET_MANIFESTS.map((m, index) => [m.id, index]));
+
+// Completeness (every WidgetId has a component) is checked by
+// widgetRegistry.spec.ts, not by the type: the map is built from a glob.
+// Keys follow the manifest order, which lists such as the site preview use.
+export const WIDGET_MAP = Object.fromEntries(
+  Object.values(discoveredWidgets)
+    .flatMap(({ default: m }) => (Array.isArray(m) ? m : [m]))
+    .sort(
+      (a, b) =>
+        (order.get(a.id) ?? order.size) - (order.get(b.id) ?? order.size)
+    )
+    .map((m: WidgetModule) => [m.id, m.component])
+) as Record<WidgetId, ElementType>;
 
 /**
  * Looks up a widget component by id. Accepts a raw string because dashboard

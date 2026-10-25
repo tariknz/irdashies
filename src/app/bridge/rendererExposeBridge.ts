@@ -28,6 +28,7 @@ import type {
   SessionRetention,
   TelemetryInspectorBridge,
   RendererPerfBridge,
+  ReleaseNotesBridge,
 } from '@irdashies/types';
 import {
   isRendererPerfMetricsEnabled,
@@ -39,13 +40,30 @@ import {
   type RendererDataStream,
 } from './rendererDataSubscriptions';
 import { createSubscriptionBridgeClient, defineBridge } from './defineBridge';
+import type { TapeReplayBridge } from '@irdashies/types';
 
 export function exposeBridge() {
+  defineBridge<TapeReplayBridge>('tapeReplayBridge', {
+    getStatus: () => ipcRenderer.invoke('tapeReplay:status'),
+    command: (command) => ipcRenderer.invoke('tapeReplay:command', command),
+  });
+  defineBridge<ReleaseNotesBridge>('releaseNotesBridge', {
+    getStatus: () => ipcRenderer.invoke('releaseNotes:status'),
+    getRelease: (version) => ipcRenderer.invoke('releaseNotes:get', version),
+    dismiss: (version) => ipcRenderer.invoke('releaseNotes:dismiss', version),
+    setAutoShow: (enabled) =>
+      ipcRenderer.invoke('releaseNotes:autoShow', enabled),
+  });
   if (isRendererPerfMetricsEnabled()) {
     defineBridge<RendererPerfBridge>('rendererPerfBridge', {
       recordMeasure: (name, durationMs) => {
         if (!isRendererPerfMetricsEnabled()) return;
-        if (name !== 'trackMapAnimationFrame') return;
+        if (
+          name !== 'trackMapAnimationFrame' &&
+          name !== 'standingsPlayerGaps' &&
+          name !== 'standingsFinalTiming'
+        )
+          return;
         if (!Number.isFinite(durationMs) || durationMs < 0) return;
         recordRendererMeasure(name, durationMs);
       },
@@ -180,9 +198,6 @@ export function exposeBridge() {
     getIsDemoMode: () => {
       return ipcRenderer.invoke('getIsDemoMode');
     },
-    getRadarPoleSides: () => ipcRenderer.invoke('radar:getPoleSides'),
-    setRadarPoleSide: (track, kind, side) =>
-      ipcRenderer.invoke('radar:setPoleSide', track, kind, side),
     notifySimulatorPreferenceChanged: () => {
       ipcRenderer.send('simulatorPreferenceChanged');
     },
@@ -204,12 +219,6 @@ export function exposeBridge() {
     },
     getSimWidgetSupport: () => {
       return ipcRenderer.invoke('getSimWidgetSupport');
-    },
-    getSettingsShowAllWidgets: () => {
-      return ipcRenderer.invoke('getSettingsShowAllWidgets');
-    },
-    setSettingsShowAllWidgets: (showAll: boolean) => {
-      return ipcRenderer.invoke('setSettingsShowAllWidgets', showAll);
     },
     saveGarageCoverImage: (buffer: Uint8Array) => {
       return ipcRenderer.invoke('saveGarageCoverImage', Array.from(buffer));
@@ -386,8 +395,8 @@ export function exposeBridge() {
   // Used only by the hidden WebHID host renderer (src/hidHost.ts) to forward
   // controller button presses to the main process.
   contextBridge.exposeInMainWorld('gamepadHost', {
-    sendButton: (token: string, down: boolean) =>
-      ipcRenderer.send('gamepad:button', token, down),
+    sendButton: (token: string, down: boolean, initial: boolean) =>
+      ipcRenderer.send('gamepad:button', token, down, initial),
   } satisfies GamepadHostBridge);
 
   contextBridge.exposeInMainWorld('personalBestBridge', {

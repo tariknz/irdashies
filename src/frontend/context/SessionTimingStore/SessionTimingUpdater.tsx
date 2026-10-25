@@ -5,6 +5,8 @@ const SESSION_TIMING_WIDGET_TYPES = new Set([
   'standings',
   'relative',
   'infobar',
+  'broadcast',
+  'broadcastpodium',
 ]);
 
 interface SessionTimingUpdaterProps {

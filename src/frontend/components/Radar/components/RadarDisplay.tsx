@@ -1,4 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import type { TrackGeometry } from '@irdashies/domain/track';
 import {
   drawRadar,
@@ -101,6 +102,7 @@ export const RadarDisplay = memo(
     laneGapM = 0.7,
     dive = NO_DIVES,
   }: RadarDisplayProps) => {
+    const widgetScale = useWidgetScale();
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [size, setSize] = useState(0);
@@ -143,7 +145,7 @@ export const RadarDisplay = memo(
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
       if (!canvas || !ctx || size <= 0) return;
-      const ratio = window.devicePixelRatio || 1;
+      const ratio = (window.devicePixelRatio || 1) * widgetScale;
       canvas.width = Math.round(size * ratio);
       canvas.height = Math.round(size * ratio);
 
@@ -273,7 +275,7 @@ export const RadarDisplay = memo(
       };
       paint();
       return () => cancelAnimationFrame(handle);
-    }, [size, active]);
+    }, [size, active, widgetScale]);
 
     return (
       <div

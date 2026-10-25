@@ -13,16 +13,29 @@ const frame = (lapDistPct: number[], sessionTime: number, sessionNum = 1) =>
   }) as unknown as Telemetry;
 
 describe('CarSpeedsProcessor', () => {
-  it('derives smoothed km/h speeds at 10 Hz', () => {
+  // The 10 Hz rate is the processor host's job (tickRateHz); the processor
+  // derives speed from whatever interval separates the frames it is given.
+  it('derives smoothed km/h speeds from the frames it is given', () => {
     const processor = new CarSpeedsProcessor();
     processor.init(session());
     processor.onFrame(frame([0.1], 1));
-    processor.onFrame(frame([0.11], 1.05));
     expect(processor.snapshot().carSpeeds).toEqual([0]);
     processor.onFrame(frame([0.11], 1.1));
     expect(processor.snapshot().carSpeeds[0]).toBe(360);
     processor.onFrame(frame([0.125], 1.2));
     expect(processor.snapshot().carSpeeds[0]).toBe(450);
+  });
+
+  it('ignores frames on a frozen or nearly frozen clock', () => {
+    const processor = new CarSpeedsProcessor();
+    processor.init(session());
+    processor.onFrame(frame([0.1], 1));
+    processor.onFrame(frame([0.11], 1.1));
+    const { version } = processor.snapshot();
+    processor.onFrame(frame([0.11], 1.1));
+    processor.onFrame(frame([0.111], 1.12));
+    expect(processor.snapshot().version).toBe(version);
+    expect(processor.snapshot().carSpeeds[0]).toBe(360);
   });
 
   it('handles start-finish wrap-around', () => {

@@ -7,13 +7,21 @@ import { DashboardView } from './DashboardView';
 const dashboard = {
   widgets: [
     { id: 'carsystems', enabled: true, config: { fontSize: 14 } },
-    { id: 'standings', enabled: true, config: {} },
+    { id: 'standings', enabled: true, scale: 125, config: {} },
     // Disabled for the desktop overlays, but still addressable by URL.
     { id: 'weather', enabled: false, config: {} },
     // A second instance: its own id, with the component named by `type`.
-    { id: 'standings-2', type: 'standings', enabled: false, config: {} },
+    {
+      id: 'standings-2',
+      type: 'standings',
+      enabled: false,
+      scale: 75,
+      config: {},
+    },
   ],
 } as unknown as DashboardLayout;
+
+const hidden = vi.hoisted(() => ({ ids: new Set<string>() }));
 
 vi.mock('@irdashies/context', () => ({
   useDashboard: () => ({
@@ -22,6 +30,7 @@ vi.mock('@irdashies/context', () => ({
     bridge: { saveDashboard: vi.fn() },
   }),
   SessionTimingUpdater: () => null,
+  useHiddenWidgetIds: () => hidden.ids,
   // No simulator detected, so no widget is dropped as unsupported.
   useActiveSimulator: () => null,
   useSimWidgetSupport: () => DEFAULT_SIM_WIDGET_SUPPORT,
@@ -76,11 +85,35 @@ describe('DashboardView solo widget mode', () => {
     render(<DashboardView soloWidgetId="standings-2" />);
 
     expect(screen.getByText('standings widget')).toBeInTheDocument();
+    expect(
+      screen.getByText('standings widget').closest('[data-widget-scale]')
+    ).toHaveAttribute('data-widget-scale', '75');
+  });
+
+  it('uses the same saved scale in the full browser dashboard', () => {
+    render(<DashboardView />);
+    expect(
+      screen.getByText('standings widget').closest('[data-widget-scale]')
+    ).toHaveAttribute('data-widget-scale', '125');
   });
 
   it('says so when the profile has no such widget', () => {
     render(<DashboardView soloWidgetId="nosuchwidget" />);
 
     expect(screen.getByText('Unknown widget')).toBeInTheDocument();
+  });
+
+  it('hides the named widget while its hotkey has it hidden', () => {
+    hidden.ids = new Set(['carsystems']);
+    try {
+      const { container } = render(<DashboardView soloWidgetId="carsystems" />);
+
+      expect(screen.queryByText('car systems widget')).not.toBeInTheDocument();
+      expect(
+        container.querySelector('[data-widget-id="carsystems"]')
+      ).not.toBeNull();
+    } finally {
+      hidden.ids = new Set();
+    }
   });
 });

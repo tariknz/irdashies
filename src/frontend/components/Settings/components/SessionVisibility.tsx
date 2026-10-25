@@ -1,27 +1,12 @@
 import {
   BaseWidgetSettings,
+  DEFAULT_SESSION_KEYS,
+  SESSION_VISIBILITY_LABELS,
   SessionVisibilitySettings,
 } from '@irdashies/types';
 import { SettingToggleRow } from '../components/SettingToggleRow';
 
 type SessionKey = keyof SessionVisibilitySettings;
-
-const TITLES: Record<SessionKey, string> = {
-  race: 'Race',
-  loneQualify: 'Lone Qualify',
-  openQualify: 'Open Qualify',
-  practice: 'Practice',
-  offlineTesting: 'Offline Testing',
-  warmup: 'Warmup',
-};
-
-const DEFAULT_SESSIONS: readonly SessionKey[] = [
-  'race',
-  'loneQualify',
-  'openQualify',
-  'practice',
-  'offlineTesting',
-];
 
 interface SessionVisibilityProps {
   sessionVisibility: SessionVisibilitySettings;
@@ -33,14 +18,14 @@ interface SessionVisibilityProps {
 export const SessionVisibility = ({
   sessionVisibility,
   handleConfigChange,
-  sessions = DEFAULT_SESSIONS,
+  sessions = DEFAULT_SESSION_KEYS,
 }: SessionVisibilityProps) => {
   return (
     <div className="space-y-4">
       {sessions.map((key) => (
         <SettingToggleRow
           key={key}
-          title={TITLES[key]}
+          title={SESSION_VISIBILITY_LABELS[key]}
           enabled={sessionVisibility[key] ?? true}
           onToggle={(enabled) =>
             handleConfigChange({

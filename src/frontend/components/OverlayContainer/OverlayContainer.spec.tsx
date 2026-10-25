@@ -13,6 +13,7 @@ vi.mock('@irdashies/context', () => ({
   useResetOnDisconnect: vi.fn(),
   usePitLapStoreUpdater: vi.fn(),
   useWidgetsForThisDisplay: vi.fn(() => []),
+  useHiddenWidgetIds: vi.fn(() => new Set()),
   rendersInOwnWindow: (widget: { id: string; type?: string }) =>
     (widget.type || widget.id) === 'gantry',
   TopSpeedStoreUpdater: vi.fn(),

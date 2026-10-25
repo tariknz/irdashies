@@ -19,11 +19,15 @@ const profiles = [
  * Holds the mapping in memory so selections stick while the story is open,
  * the way they do against real storage.
  */
-const bridgeWithProfiles = (initial: SessionProfileMap): DashboardBridge => {
+const bridgeWithProfiles = (
+  initial: SessionProfileMap,
+  serverPort: number
+): DashboardBridge => {
   let map: SessionProfileMap = { ...initial };
   return {
     ...mockDashboardBridge,
     listProfiles: () => Promise.resolve(profiles),
+    getComponentServerPort: () => Promise.resolve(serverPort),
     getSessionProfileMap: () => Promise.resolve(map),
     setSessionProfileMap: (next: SessionProfileMap) => {
       map = next;
@@ -46,10 +50,13 @@ type Story = StoryObj<typeof ProfileSettings>;
 // shadow this one — leaving the story with the mock's single profile and no
 // session mapping. This section reads dashboard context only, so its provider
 // is all it needs.
-const withBridge = (map: SessionProfileMap): Story['decorators'] => [
+const withBridge = (
+  map: SessionProfileMap,
+  serverPort = 3000
+): Story['decorators'] => [
   (Story) => (
-    <DashboardProvider bridge={bridgeWithProfiles(map)}>
-      <div style={{ height: '100vh', width: '700px', overflowY: 'auto' }}>
+    <DashboardProvider bridge={bridgeWithProfiles(map, serverPort)}>
+      <div className="h-screen w-full max-w-3xl overflow-y-auto text-white">
         <Story />
       </div>
     </DashboardProvider>
@@ -69,4 +76,9 @@ export const SessionMappingConfigured: Story = {
     race: 'race-full',
     spotting: 'spotter-view',
   }),
+};
+
+/** A non-default server port, with browser actions for each saved profile. */
+export const BrowserLayoutSetup: Story = {
+  decorators: withBridge({}, 4321),
 };

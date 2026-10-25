@@ -8,7 +8,9 @@ import {
   SessionProvider,
   useRunningState,
   useResetOnDisconnect,
+  useDashboard,
 } from '@irdashies/context';
+import { WidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import { Settings } from './components/Settings/Settings';
 import { ThemeManager } from './components/ThemeManager/ThemeManager';
 import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
@@ -24,6 +26,7 @@ import {
   useGantryDock,
 } from './components/GantryDock/GantryDockHost';
 import { GantrySessionHoldProvider } from './components/Gantry/hooks/useGantrySessionHold';
+import { TapeReplayOverlay } from './components/TapeReplayControls/TapeReplayControls';
 
 /**
  * Check if this window is the settings window based on URL hash
@@ -62,6 +65,10 @@ const SettingsApp = () => {
  */
 const GantryApp = () => {
   const { running } = useRunningState();
+  const { currentDashboard } = useDashboard();
+  const gantry = currentDashboard?.widgets.find(
+    (widget) => (widget.type || widget.id) === 'gantry'
+  );
   useResetOnDisconnect(running);
   const dock = useGantryDock();
   const dockHost = useMemo(
@@ -75,7 +82,9 @@ const GantryApp = () => {
       <ThemeManager>
         <div className="w-full h-full bg-slate-900 text-white">
           <GantrySessionHoldProvider running={running}>
-            <Gantry dock={dockHost} />
+            <WidgetScale scale={gantry?.scale}>
+              <Gantry dock={dockHost} />
+            </WidgetScale>
           </GantrySessionHoldProvider>
         </div>
       </ThemeManager>
@@ -104,6 +113,13 @@ const OverlayApp = () => {
 };
 
 const App = () => {
+  if (window.location.hash.startsWith('#/tape-replay')) {
+    return (
+      <ErrorBoundary label="tape replay">
+        <TapeReplayOverlay />
+      </ErrorBoundary>
+    );
+  }
   if (isGantryWindow()) {
     return (
       <ErrorBoundary label="gantry" resetAfterMs={2000}>

@@ -10,21 +10,14 @@ vi.mock('@irdashies/context', () => ({
 
 describe('ThemeManager', () => {
   const mockChildren = <div>Test Content</div>;
-  const originalLocation = window.location;
+  const originalHash = window.location.hash;
 
   beforeEach(() => {
-    // Mock window.location.hash
-    Object.defineProperty(window, 'location', {
-      value: { ...originalLocation, hash: '' },
-      writable: true,
-    });
+    window.location.hash = '';
   });
 
   afterEach(() => {
-    Object.defineProperty(window, 'location', {
-      value: originalLocation,
-      writable: true,
-    });
+    window.location.hash = originalHash;
   });
 
   it('renders children without theme wrapper when hash starts with #/settings', () => {
@@ -74,5 +67,4 @@ describe('ThemeManager', () => {
     expect(wrapper).toBeInTheDocument();
     expect(wrapper).toHaveClass('overlay-theme-sm');
   });
-
 });

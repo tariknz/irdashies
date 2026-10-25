@@ -11,6 +11,7 @@ import {
   useActiveSimulator,
   useDashboard,
   useSimWidgetSupport,
+  useHiddenWidgetIds,
   SessionTimingUpdater,
   isGantryOnly,
 } from '@irdashies/context';
@@ -23,6 +24,7 @@ import { useDragWidget, useResizeWidget } from '../WidgetContainer';
 import { ResizeHandles } from '../WidgetContainer/ResizeHandle';
 import logger from '@irdashies/utils/logger';
 import { WidgetRuntimeProvider } from '../../widgetRuntime';
+import { WidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 
 interface WidgetPosition {
   x: number;
@@ -173,7 +175,9 @@ const DashboardWidgetItem = memo(
             `}</style>
             <div className="widget-content w-full h-full">
               <WidgetRuntimeProvider widgetType={widget.type || widget.id}>
-                <WidgetComponent {...widget.config} />
+                <WidgetScale scale={widget.scale}>
+                  <WidgetComponent {...widget.config} />
+                </WidgetScale>
               </WidgetRuntimeProvider>
             </div>
           </div>
@@ -209,6 +213,7 @@ const SoloWidgetView = ({ widgetId, widgets }: SoloWidgetViewProps) => {
   const WidgetComponent = widget
     ? getWidget(widget.type || widget.id)
     : undefined;
+  const hiddenWidgetIds = useHiddenWidgetIds();
 
   if (!widget || !WidgetComponent) {
     return (
@@ -231,9 +236,14 @@ const SoloWidgetView = ({ widgetId, widgets }: SoloWidgetViewProps) => {
     >
       <SessionTimingUpdater soloWidgetType={widget.type || widget.id} />
       <div className="w-full h-full overflow-hidden text-white">
-        <WidgetRuntimeProvider widgetType={widget.type || widget.id}>
-          <WidgetComponent {...widget.config} />
-        </WidgetRuntimeProvider>
+        {/* Hidden by its hotkey; the page stays up so the source keeps its slot. */}
+        {!hiddenWidgetIds.has(widget.id) && (
+          <WidgetRuntimeProvider widgetType={widget.type || widget.id}>
+            <WidgetScale scale={widget.scale}>
+              <WidgetComponent {...widget.config} />
+            </WidgetScale>
+          </WidgetRuntimeProvider>
+        )}
       </div>
     </div>
   );
@@ -257,6 +267,8 @@ export const DashboardView = ({ soloWidgetId }: DashboardViewProps = {}) => {
   const { currentDashboard, bridge, currentProfile } = useDashboard();
   const simulator = useActiveSimulator();
   const simWidgetSupport = useSimWidgetSupport();
+  // Per-widget hotkeys, so a commentator can switch widgets on the stream.
+  const hiddenWidgetIds = useHiddenWidgetIds();
   const [widgetPositions, setWidgetPositions] = useState<
     Record<string, WidgetPosition>
   >({});
@@ -446,6 +458,9 @@ export const DashboardView = ({ soloWidgetId }: DashboardViewProps = {}) => {
     >
       <SessionTimingUpdater />
       {enabledWidgets.map((widget) => {
+        // Hidden by its hotkey; skipped here so the cascade of unsaved
+        // positions does not shift.
+        if (hiddenWidgetIds.has(widget.id)) return null;
         const position =
           widgetPositions[widget.id] ?? initialPositions[widget.id];
         if (!position) return null;

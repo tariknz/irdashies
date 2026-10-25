@@ -6,6 +6,7 @@ import type {
 } from '@irdashies/types';
 import { DriverControlsProcessor } from '../../src/app/processors/DriverControlsProcessor';
 import type { ReplayProbe, TelemetryFrame } from './validator';
+import { rateLimited } from './rateLimited';
 
 const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
   Object.fromEntries(
@@ -17,11 +18,12 @@ const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
 
 export const createDriverControlsProbe =
   (): ReplayProbe<DriverControlsSnapshot> => {
-    const processor = new DriverControlsProcessor();
+    const processor = rateLimited(new DriverControlsProcessor());
     return {
       name: 'driver-controls-state',
       schemaVersion: 1,
       variables: [
+        'SessionTick',
         'Brake',
         'BrakeRaw',
         'Throttle',

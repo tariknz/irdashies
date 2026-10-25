@@ -136,6 +136,21 @@ describe('setupRaceControlBridge', () => {
     expect(runtime.updateEnabled).toHaveBeenCalledWith(true);
   });
 
+  it('runs detection for the broadcast events overlay without the Gantry', () => {
+    const { runtime } = createRuntime();
+    const dashboard = dashboardWith(savedThresholds);
+
+    setupRaceControlBridge(runtime, {
+      ...dashboard,
+      widgets: [
+        { ...dashboard.widgets[0], enabled: false },
+        { id: 'broadcastevents', enabled: true, config: {} },
+      ],
+    } as unknown as DashboardLayout);
+
+    expect(runtime.updateEnabled).toHaveBeenCalledWith(true);
+  });
+
   it('applies the saved retention at startup', async () => {
     const { runtime } = createRuntime();
 

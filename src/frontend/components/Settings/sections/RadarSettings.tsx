@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { useDashboard, useSessionStore } from '@irdashies/context';
 import type {
   RadarConfig,
@@ -126,6 +127,7 @@ const SectionView = ({
   changed,
   onReset,
   onOpen,
+  showScale,
 }: {
   section: RadarSettingSection;
   items: RadarSettingItem[];
@@ -135,6 +137,7 @@ const SectionView = ({
   changed: RadarSettingItem[];
   onReset: (items: RadarSettingItem[]) => void;
   onOpen: (sectionId: string) => void;
+  showScale: boolean;
 }) => {
   const master = section.master;
   const off = master !== undefined && !view[master];
@@ -150,7 +153,7 @@ const SectionView = ({
             {changed.length > 0 && (
               <button
                 type="button"
-                className="text-xs text-blue-400 hover:text-blue-300"
+                className="text-xs text-accent-400 hover:text-accent-300"
                 onClick={() => onReset(changed)}
               >
                 Reset section
@@ -169,6 +172,7 @@ const SectionView = ({
           <p className="text-sm text-slate-500">{section.summary}</p>
         )}
       </div>
+      {showScale && <WidgetScaleSettings widgetId={SETTING_ID} />}
       {section.dev && level === 2 && section.id === 'processing' && (
         <p className="text-sm rounded-md border border-amber-500/40 bg-amber-500/10 text-amber-200 px-3 py-2">
           Internals the radar was tuned on. Odd values break lanes and warnings;
@@ -185,7 +189,7 @@ const SectionView = ({
           <span className="text-slate-300">Rim Arc</span>
           <button
             type="button"
-            className="text-blue-400 hover:text-blue-300"
+            className="text-accent-400 hover:text-accent-300"
             onClick={() => onOpen('arcs')}
           >
             {view[section.arc.on]
@@ -200,7 +204,7 @@ const SectionView = ({
           </button>
         </div>
       )}
-      {!off && !section.arc && items.length === 0 && (
+      {!off && !section.arc && items.length === 0 && !showScale && (
         <p className="text-sm text-slate-400">
           Nothing here at this level. Advanced shows more.
         </p>
@@ -220,7 +224,7 @@ const SectionView = ({
                 type="button"
                 title="Changed: click to reset"
                 aria-label={`Reset ${item.title}`}
-                className="absolute -left-3 top-2 w-2 h-2 rounded-full bg-blue-400 hover:bg-blue-300"
+                className="absolute -left-3 top-2 w-2 h-2 rounded-full bg-accent-400 hover:bg-accent-300"
                 onClick={() => onReset([item])}
               />
             )}
@@ -294,6 +298,13 @@ export const RadarSettings = () => {
   }
 
   const search = query.trim().toLowerCase();
+  const scaleMatches =
+    search.length > 0 &&
+    search
+      .split(/\s+/)
+      .every((word) =>
+        ['widget', 'scale'].some((keyword) => keyword.startsWith(word))
+      );
   const preset = matchingPreset(view);
 
   return (
@@ -322,7 +333,10 @@ export const RadarSettings = () => {
           items: section.items.filter((item) =>
             matchesQuery(item, section, search)
           ),
-        })).filter(({ items }) => items.length > 0);
+        })).filter(
+          ({ section, items }) =>
+            items.length > 0 || (section.id === 'look' && scaleMatches)
+        );
         // A module that is off shows only its switch.
         const itemsOf = (section: RadarSettingSection) =>
           section.master && !view[section.master]
@@ -399,7 +413,7 @@ export const RadarSettings = () => {
                       onClick={() => set(presetChange(option))}
                       className={`px-3 py-1 rounded-full text-sm border transition-colors ${
                         preset?.id === option.id
-                          ? 'border-blue-500 bg-blue-600/20 text-white'
+                          ? 'border-accent-500 bg-accent-600/20 text-white'
                           : 'border-transparent bg-slate-700 text-slate-200 hover:border-slate-500'
                       }`}
                     >
@@ -489,7 +503,7 @@ export const RadarSettings = () => {
                             <span className="flex-1">{section.title}</span>
                             {changedIn(section).length > 0 && (
                               <span
-                                className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"
+                                className="w-1.5 h-1.5 rounded-full bg-accent-400 shrink-0"
                                 title="Changed"
                               />
                             )}
@@ -516,6 +530,9 @@ export const RadarSettings = () => {
                     view={view}
                     ctx={ctx}
                     level={level}
+                    showScale={
+                      section.id === 'look' && (!search || scaleMatches)
+                    }
                     changed={changedIn(section)}
                     onReset={(changed) => set(resetChange(changed, view))}
                     onOpen={(id) => {

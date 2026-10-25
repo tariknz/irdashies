@@ -12,6 +12,11 @@ on:
         required: true
         type: boolean
         default: false
+      signing_smoke_test:
+        description: Build and sign Windows artifacts without creating a release
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -71,6 +76,11 @@ jobs:
       - name: Run ${{ matrix.check.name }}
         run: ${{ matrix.check.command }}
 
+      - name: Test Squirrel signing package updates
+        if: matrix.check.name == 'Tests'
+        shell: pwsh
+        run: ./tools/signing/rebuild-squirrel.spec.ps1
+
       - name: Upload coverage report
         if: matrix.check.name == 'Tests'
         uses: actions/upload-artifact@v7
@@ -96,7 +106,7 @@ jobs:
 
   release-gate:
     name: Determine release eligibility
-    if: github.event_name == 'push' || inputs.should_release
+    if: github.event_name == 'push' || inputs.should_release || inputs.signing_smoke_test
     runs-on: ubuntu-latest
     outputs:
       should_release: ${{ steps.gate.outputs.should_release }}
@@ -112,11 +122,16 @@ jobs:
         shell: bash
         env:
           DISPATCH_SHOULD_RELEASE: ${{ inputs.should_release }}
+          DISPATCH_SIGNING_SMOKE_TEST: ${{ inputs.signing_smoke_test }}
         run: |
           set -euo pipefail
 
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            echo "should_release=$DISPATCH_SHOULD_RELEASE" >> "$GITHUB_OUTPUT"
+            if [[ "$DISPATCH_SHOULD_RELEASE" == "true" || "$DISPATCH_SIGNING_SMOKE_TEST" == "true" ]]; then
+              echo "should_release=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "should_release=false" >> "$GITHUB_OUTPUT"
+            fi
             exit 0
           fi
 
@@ -137,7 +152,7 @@ jobs:
           fi
 
   release:
-    name: Build and publish signed release
+    name: Build and sign Windows artifacts
     needs: [build, release-gate]
     if: needs.release-gate.outputs.should_release == 'true'
     runs-on: windows-latest
@@ -164,15 +179,17 @@ jobs:
 
       # --- Signed release ----------------------------------------------------
       # Pushes release only when the version changes. Manual runs release only
-      # when the should_release workflow-dispatch input is enabled. Pull
-      # requests never enter this flow.
-      # Flow: package once -> sign the packaged application via SignPath -> make
-      # Squirrel artifacts once while saving make results -> sign Setup.exe
-      # via SignPath -> release from the saved make results.
+      # when should_release is enabled. signing_smoke_test runs the same signing
+      # flow but uploads CI artifacts instead of creating a GitHub release.
+      # Pull requests never enter this flow.
+      # Flow: package once -> make Squirrel artifacts and save make results ->
+      # sign the app and generated launcher together inside the full package ->
+      # rebuild RELEASES and Setup.exe -> sign Setup.exe -> release using the
+      # saved make results. This uses two SignPath requests.
       # The make manifest stores paths to out/make/... (no content hashing), so
-      # replacing Setup.exe is picked up by --from-make. Making all Squirrel
-      # artifacts together keeps RELEASES and the .nupkg checksums consistent for
-      # auto-updates.
+      # replacing the artifacts is picked up by --from-make. Rebuilding from
+      # the signed full package keeps the embedded installer payload and the
+      # RELEASES checksum consistent for fresh installs and auto-updates.
 
       - name: Package unsigned Windows application
         run: npx electron-forge package
@@ -204,108 +221,50 @@ jobs:
             throw "Packaged native addon does not match the freshly built addon. Built: $builtHash; packaged: $packagedHash"
           }
 
-      - name: Archive packaged Windows application
+      - name: Build unsigned Squirrel artifacts
+        run: npx electron-forge make --from-package
+
+      - name: Prepare Squirrel package for signing
         shell: pwsh
         run: |
-          $packageDirectory = 'out/irdashies-win32-x64'
-          if (-not (Test-Path -LiteralPath $packageDirectory -PathType Container)) {
-            throw "Packaged application not found: $packageDirectory"
+          if (-not (Test-Path -LiteralPath out/make-results -PathType Container)) {
+            throw 'Electron Forge make results were not generated.'
           }
-          Compress-Archive `
-            -Path "$packageDirectory/*" `
-            -DestinationPath packaged-windows-app.zip `
-            -CompressionLevel Optimal
+          $packages = @(Get-ChildItem `
+            -LiteralPath out/make/squirrel.windows/x64 -Filter '*.nupkg' -File)
+          if ($packages.Count -ne 1 -or $packages[0].Name -notlike '*-full.nupkg') {
+            throw 'Expected one full Squirrel package and no delta packages.'
+          }
+          # A nupkg is a ZIP. Give it a fixed name for the signing configuration;
+          # GitHub wraps this file in a second ZIP when uploading the artifact.
+          Copy-Item -LiteralPath $packages[0].FullName -Destination squirrel-package.zip
 
-      - name: Upload packaged application for signing
-        id: upload-packaged-app
+      - name: Upload Squirrel package for signing
+        id: upload-squirrel-package
         uses: actions/upload-artifact@v7
         with:
-          name: unsigned-packaged-windows-app
+          name: unsigned-squirrel-package
           if-no-files-found: error
-          path: packaged-windows-app.zip
+          path: squirrel-package.zip
 
-      - name: Sign packaged application
+      - name: Sign application and Squirrel launcher
         uses: signpath/github-action-submit-signing-request@v2
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
           project-slug: irdashies
           signing-policy-slug: release-signing
-          artifact-configuration-slug: packaged-app
-          github-artifact-id: ${{ steps.upload-packaged-app.outputs.artifact-id }}
+          artifact-configuration-slug: squirrel-package
+          github-artifact-id: ${{ steps.upload-squirrel-package.outputs.artifact-id }}
           wait-for-completion: true
-          output-artifact-directory: signed-packaged-app
+          output-artifact-directory: signed-squirrel-package
 
-      - name: Restore and verify signed packaged application
+      - name: Rebuild Squirrel installer from signed package
         shell: pwsh
         run: |
-          $signedArchive = Get-ChildItem `
-            -LiteralPath signed-packaged-app `
-            -Filter '*.zip' `
-            -File `
-            -Recurse |
-            Select-Object -First 1
-          if (-not $signedArchive) {
-            throw 'SignPath did not return the signed packaged application ZIP.'
-          }
-
-          Expand-Archive `
-            -LiteralPath $signedArchive.FullName `
-            -DestinationPath out/irdashies-win32-x64 `
-            -Force
-
-          $appExecutable = 'out/irdashies-win32-x64/irdashies.exe'
-          $signature = Get-AuthenticodeSignature -LiteralPath $appExecutable
-          if ($signature.Status -ne 'Valid') {
-            throw "Packaged application signature is $($signature.Status): $($signature.StatusMessage)"
-          }
-          Write-Output "Verified signed packaged application: $($signature.SignerCertificate.Subject)"
-
-      - name: Build Squirrel artifacts from signed application
-        run: npx electron-forge make --from-package
-
-      - name: Verify signed application in Squirrel package
-        shell: pwsh
-        run: |
-          if (-not (Test-Path -LiteralPath out/make-results -PathType Container)) {
-            throw 'Electron Forge make results were not generated.'
-          }
-
-          $package = Get-ChildItem `
-            -Path out/make/squirrel.windows/x64 `
-            -Filter '*.nupkg' `
-            -File |
-            Where-Object { $_.Name -notlike '*-delta.nupkg' } |
-            Select-Object -First 1
-          if (-not $package) {
-            throw 'Squirrel full package was not generated.'
-          }
-
-          $extractDirectory = Join-Path $env:RUNNER_TEMP 'irdashies-nupkg'
-          New-Item -ItemType Directory -Path $extractDirectory -Force | Out-Null
-          $packageArchive = Join-Path $env:RUNNER_TEMP 'irdashies-nupkg.zip'
-          Copy-Item -LiteralPath $package.FullName -Destination $packageArchive -Force
-          Expand-Archive `
-            -LiteralPath $packageArchive `
-            -DestinationPath $extractDirectory `
-            -Force
-
-          $packagedExecutable = Get-ChildItem `
-            -LiteralPath $extractDirectory `
-            -Recurse `
-            -Filter 'irdashies.exe' `
-            -File |
-            Select-Object -First 1
-          if (-not $packagedExecutable) {
-            throw 'irdashies.exe was not found in the Squirrel package.'
-          }
-
-          $signature = Get-AuthenticodeSignature `
-            -LiteralPath $packagedExecutable.FullName
-          if ($signature.Status -ne 'Valid') {
-            throw "Squirrel package contains an application with signature status $($signature.Status)."
-          }
-          Write-Output "Verified signed application in $($package.Name)."
+          ./tools/signing/rebuild-squirrel.ps1 `
+            -PackageDirectory out/make/squirrel.windows/x64 `
+            -SignedPackagePath signed-squirrel-package/squirrel-package.zip
 
       - name: Upload unsigned installer for signing
         id: upload-unsigned
@@ -342,7 +301,16 @@ jobs:
           }
           Write-Output "Verified signed installer: $($signature.SignerCertificate.Subject)"
 
+      - name: Upload signed Windows test artifacts
+        if: inputs.signing_smoke_test
+        uses: actions/upload-artifact@v7
+        with:
+          name: signed-windows-test-artifacts
+          if-no-files-found: error
+          path: out/make/squirrel.windows/x64/*
+
       - name: Publish signed release
+        if: inputs.signing_smoke_test != true
         run: npx electron-forge release --from-make
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

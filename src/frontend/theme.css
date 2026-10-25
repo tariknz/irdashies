@@ -4,6 +4,7 @@ layer(base);
 @import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,100..900;1,100..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&family=Saira:wght@400;500;600&family=Saira+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap');
 
 @import 'tailwindcss';
 
@@ -33,6 +34,17 @@ layer(base);
 
 @theme {
   --font-sans: 'Lato', sans-serif;
+  /* Settings-window theme tokens; real values come from .settings-theme-* */
+  --font-heading: var(--font-sans);
+  --color-accent-100: var(--color-blue-100);
+  --color-accent-200: var(--color-blue-200);
+  --color-accent-300: var(--color-blue-300);
+  --color-accent-400: var(--color-blue-400);
+  --color-accent-500: var(--color-blue-500);
+  --color-accent-600: var(--color-blue-600);
+  --color-accent-700: var(--color-blue-700);
+  --color-accent-900: var(--color-blue-900);
+  --color-on-accent: #fff;
   --animate-pulse-border: pulse-border 1s infinite;
   --animate-blink: blink 1s infinite;
   --text-xs: 10px;
@@ -72,6 +84,30 @@ layer(base);
       opacity: 1;
     }
     50% {
+      opacity: 0;
+    }
+  }
+
+  --animate-broadcast-enter: broadcast-enter 400ms ease-out;
+  --animate-broadcast-fade: broadcast-fade 5s ease-in forwards;
+
+  @keyframes broadcast-enter {
+    from {
+      transform: translateX(-24px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes broadcast-fade {
+    0%,
+    80% {
+      opacity: 1;
+    }
+    100% {
       opacity: 0;
     }
   }
@@ -484,4 +520,173 @@ html {
   --color-slate-800: var(--color-stone-800);
   --color-slate-900: var(--color-stone-900);
   --color-slate-950: var(--color-stone-950);
+}
+
+/* Settings window themes. Same trick as overlay-theme-color-*: remap the
+   palette the settings UI is written in, so components stay theme-agnostic. */
+@utility settings-heading {
+  font-family: var(--font-heading);
+  text-transform: var(--ui-heading-transform, none);
+  letter-spacing: var(--ui-heading-tracking, normal);
+}
+
+@utility skew-ui {
+  transform: skewX(var(--ui-skew, 0deg));
+}
+
+.settings-theme {
+  font-family: var(--font-sans);
+  --ui-heading-transform: uppercase;
+  --ui-heading-tracking: 0.04em;
+  --radius-xs: 0;
+  --radius-sm: 1px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 3px;
+}
+
+/* Bare `rounded` is a fixed 0.25rem in Tailwind 4, not a radius token. */
+.settings-theme .rounded {
+  border-radius: var(--radius-sm);
+}
+
+.settings-theme :where(h1, h2, h3) {
+  font-family: var(--font-heading);
+  text-transform: var(--ui-heading-transform);
+  letter-spacing: var(--ui-heading-tracking);
+}
+
+/* The default: the stock slate/blue palette with plain headings. Applied
+   without .settings-theme, so no square corners or theme fonts. Shared
+   components (switches, buttons, menu) are restyled for every theme, so this
+   is not pixel-identical to the pre-theme window. The two slate tokens repeat
+   the defaults only because the title bar colours are checked here. */
+.settings-theme-classic {
+  --color-slate-300: #cad5e2;
+  --color-slate-700: #314158;
+}
+
+.settings-theme-carbon {
+  --font-sans: 'Barlow', sans-serif;
+  --font-heading: 'Barlow Condensed', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --color-slate-50: #f4f4f2;
+  --color-slate-100: #e6e6e3;
+  --color-slate-200: #d6d7d4;
+  --color-slate-300: #a7aab0;
+  --color-slate-400: #7c8087;
+  --color-slate-500: #5a5e65;
+  --color-slate-600: #2c2f34;
+  --color-slate-700: #17181b;
+  --color-slate-800: #0f1012;
+  --color-slate-900: #0a0b0c;
+  --color-slate-950: #060607;
+  --color-accent-100: #fff1d1;
+  --color-accent-200: #ffe0a3;
+  --color-accent-300: #ffcc66;
+  --color-accent-400: #ffbe3d;
+  --color-accent-500: #ffb020;
+  --color-accent-600: #e09a10;
+  --color-accent-700: #b67a06;
+  --color-accent-900: #4d3204;
+  --color-on-accent: #111;
+}
+
+.settings-theme-red {
+  --font-sans: 'Saira', sans-serif;
+  --font-heading: 'Saira Condensed', sans-serif;
+  --font-mono: 'Saira', sans-serif;
+  --ui-skew: -12deg;
+  --color-slate-50: #f4f5f7;
+  --color-slate-100: #e9ebee;
+  --color-slate-200: #c3c8cf;
+  --color-slate-300: #9aa1ab;
+  --color-slate-400: #7d848f;
+  --color-slate-500: #4a505a;
+  --color-slate-600: #2f343c;
+  --color-slate-700: #1b1e23;
+  --color-slate-800: #15171b;
+  --color-slate-900: #121418;
+  --color-slate-950: #0c0d10;
+  --color-accent-100: #ffe1df;
+  --color-accent-200: #ffbdb8;
+  --color-accent-300: #ff8c84;
+  --color-accent-400: #ff5a4f;
+  --color-accent-500: #e8322b;
+  --color-accent-600: #d42a23;
+  --color-accent-700: #b0221c;
+  --color-accent-900: #4a0f0c;
+  --color-on-accent: #fff;
+}
+
+/* Broadcast transitions, chosen on the Broadcast settings page. */
+@keyframes broadcast-slide-left {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes broadcast-slide-right {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes broadcast-slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+@keyframes broadcast-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes broadcast-flip {
+  from {
+    transform: perspective(400px) rotateX(-90deg);
+    opacity: 0;
+  }
+}
+@keyframes broadcast-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes broadcast-zoom {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+@keyframes broadcast-checker {
+  to {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+@keyframes broadcast-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes broadcast-rain {
+  from {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+}
+@keyframes broadcast-wave {
+  from {
+    transform: rotate(-8deg) skewY(-4deg);
+  }
+  to {
+    transform: rotate(6deg) skewY(4deg);
+  }
 }

@@ -12,6 +12,7 @@ import logger from '../../logger';
 import type { SessionLifecycle } from '../../sessionLifecycle';
 import type { ChannelBus } from '../channelBridge';
 import { createDefaultProcessorHost } from '../../processors/processorRegistry';
+import { sessionSecondsFrameClock } from '../../processors/ProcessorHost';
 import { mapLmuSession } from '../../lmu/mapSession';
 import { lmuSessionSignature } from '../../lmu/sessionSignature';
 import {
@@ -123,6 +124,8 @@ export async function publishLmuSDKEvents(
           lifecycle,
           metrics: perfMetrics,
           aggregateReplay: false,
+          // The LMU mapping puts session seconds into SessionTick.
+          frameClock: sessionSecondsFrameClock,
           logError: (message, error) => logger.error(message, error),
           referenceLapPersistence: {
             load: referenceLapStorage.getReferenceLap,

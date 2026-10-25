@@ -10,11 +10,14 @@ import type {
   DashboardWidget,
   ContainerBoundsInfo,
   GantryConfig,
+  SettingsTheme,
 } from '@irdashies/types';
 import {
   fitLayoutToDisplay,
   isLayoutOnDisplay,
   isWidgetDisabledForSim,
+  SETTINGS_TITLE_BAR,
+  resolveSettingsTheme,
 } from '@irdashies/types';
 import { getSimWidgetSupport } from './storage/simWidgetSupport';
 import path from 'node:path';
@@ -93,6 +96,8 @@ export class OverlayManager {
   private displayBoundsInfo = new Map<number, ContainerBoundsInfo>();
   private displayFullBounds = new Map<number, Electron.Rectangle>();
   private currentSettingsWindow: BrowserWindow | undefined;
+  /** Theme the settings window's native controls were last painted with. */
+  private settingsTitleBarTheme: SettingsTheme | undefined;
   private gantryWindow: BrowserWindow | undefined;
   /** Last-applied enabled state, so syncGantryWindow only acts on changes. */
   private gantryEnabled = false;
@@ -1333,6 +1338,18 @@ export class OverlayManager {
     }
   }
 
+  /** Recolour the settings window's native controls after a theme change. */
+  public setSettingsTitleBarTheme(theme: SettingsTheme | undefined): void {
+    const win = this.currentSettingsWindow;
+    if (!win || win.isDestroyed() || process.platform === 'darwin') return;
+    // Called on every dashboard publish; only repaint when the theme changes.
+    const resolved = resolveSettingsTheme(theme);
+    if (this.settingsTitleBarTheme === resolved) return;
+    win.setTitleBarOverlay(settingsTitleBarOverlay(theme));
+    // After the repaint: a throw leaves the cache stale so the next update retries.
+    this.settingsTitleBarTheme = resolved;
+  }
+
   public createSettingsWindow(
     widgetType?: string,
     options?: { startHidden?: boolean }
@@ -1353,6 +1370,16 @@ export class OverlayManager {
     const defaultOptions: BrowserWindowConstructorOptions = {
       title: `irDashies - Settings`,
       frame: true,
+      // Windows/Linux: the renderer draws its own header (and drag region);
+      // the OS keeps drawing min/max/close, recoloured to match the theme.
+      // macOS keeps its native title bar so the traffic lights don't cover
+      // the header.
+      ...(process.platform !== 'darwin' && {
+        titleBarStyle: 'hidden' as const,
+        titleBarOverlay: settingsTitleBarOverlay(
+          this.currentDashboard?.generalSettings?.settingsTheme
+        ),
+      }),
       width: 800,
       height: 700,
       autoHideMenuBar: true,
@@ -1375,6 +1402,9 @@ export class OverlayManager {
     );
 
     this.currentSettingsWindow = browserWindow;
+    this.settingsTitleBarTheme = resolveSettingsTheme(
+      this.currentDashboard?.generalSettings?.settingsTheme
+    );
     applyBaselineSecurity(browserWindow, 'Settings');
 
     // Reveal the window once its content is ready, unless it should start
@@ -1489,4 +1519,15 @@ function loadWindowBounds(): Electron.Rectangle | undefined {
   }
 
   return bounds;
+}
+
+const SETTINGS_TITLE_BAR_HEIGHT = 40;
+
+function settingsTitleBarOverlay(
+  theme: SettingsTheme | undefined
+): Electron.TitleBarOverlay {
+  return {
+    ...SETTINGS_TITLE_BAR[resolveSettingsTheme(theme)],
+    height: SETTINGS_TITLE_BAR_HEIGHT,
+  };
 }

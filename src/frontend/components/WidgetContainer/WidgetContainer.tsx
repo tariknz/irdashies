@@ -8,6 +8,7 @@ import {
   CSSProperties,
 } from 'react';
 import type { DashboardWidget, WidgetLayout } from '@irdashies/types';
+import { WidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import { useDragWidget } from './useDragWidget';
 import { useResizeWidget } from './useResizeWidget';
 import { ResizeHandles } from './ResizeHandle';
@@ -179,7 +180,9 @@ export const WidgetContainer = memo(
     return (
       <div style={containerStyle} data-widget-id={id}>
         {/* Widget content */}
-        <div className={`w-full h-full pointer-events-none`}>{children}</div>
+        <div className="w-full h-full pointer-events-none">
+          <WidgetScale scale={widget.scale}>{children}</WidgetScale>
+        </div>
 
         {/* Edit mode overlay */}
         {editMode && (

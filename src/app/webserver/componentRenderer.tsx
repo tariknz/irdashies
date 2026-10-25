@@ -7,6 +7,10 @@ import {
   type ChannelName,
   type ChannelPayloads,
   type IrSdkBridge,
+  type PitLaneBridge,
+  type PitLaneCalibration,
+  type PitLaneTrackData,
+  type CurrentTrackPitLaneInfo,
   type SimWidgetSupportConfig,
   type TelemetryInspectorBridge,
   type Session,
@@ -28,7 +32,7 @@ const debugLog = (...args: any[]) => {
  * Web-based bridge that connects to the WebSocket server
  */
 export class WebSocketBridge
-  implements IrSdkBridge, TelemetryInspectorBridge, ChannelBridge
+  implements IrSdkBridge, TelemetryInspectorBridge, ChannelBridge, PitLaneBridge
 {
   private socket: WebSocket | null;
   private telemetryCallbacks: Set<(data: Telemetry) => void>;
@@ -65,6 +69,11 @@ export class WebSocketBridge
    * waiting would leave the widget filtering off for the whole run.
    */
   private currentSimulator: ActiveSimulator | null = null;
+  /** Widgets hidden by their hotkey, so a late subscriber is told at once. */
+  private hiddenWidgets = new Set<string>();
+  private widgetToggleCallbacks = new Set<
+    (widgetId: string, hide: boolean) => void
+  >();
 
   constructor() {
     this.telemetryCallbacks = new Set();
@@ -83,6 +92,65 @@ export class WebSocketBridge
     this.maxReconnectAttempts = Infinity;
     this.reconnectDelay = 1000;
     this.reconnectDelayMax = 5000;
+  }
+
+  private pitLaneRequest<Result>(
+    type: string,
+    data?: unknown
+  ): Promise<Result> {
+    return new Promise((resolve, reject) => {
+      const socket = this.socket;
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        reject(
+          new Error('Pit lane calibration is unavailable while disconnected')
+        );
+        return;
+      }
+      const requestId = Math.random().toString(36).slice(2);
+      const cleanup = () => {
+        clearTimeout(timeout);
+        socket.removeEventListener('message', handler);
+      };
+      const handler = (event: MessageEvent) => {
+        const response = JSON.parse(event.data);
+        if (response.type !== type || response.requestId !== requestId) return;
+        cleanup();
+        if (response.error) reject(new Error(response.error));
+        else resolve(response.data as Result);
+      };
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error('Pit lane calibration request timed out'));
+      }, 5000);
+      socket.addEventListener('message', handler);
+      socket.send(JSON.stringify({ type, requestId, data }));
+    });
+  }
+
+  getPitLaneData(trackId: string): Promise<PitLaneCalibration> {
+    return this.pitLaneRequest('pitLane:getData', { trackId });
+  }
+
+  updatePitLaneData(
+    trackId: string,
+    update: Partial<PitLaneTrackData>,
+    revision: number,
+    sourceId: string
+  ): Promise<boolean> {
+    return this.pitLaneRequest('pitLane:updateData', {
+      trackId,
+      update,
+      revision,
+      sourceId,
+    });
+  }
+
+  getCurrentTrackPitLaneInfo(): Promise<CurrentTrackPitLaneInfo | null> {
+    return this.pitLaneRequest('pitLane:getCurrentTrack');
+  }
+
+  async resetPitLaneData(trackId: string): Promise<void> {
+    await this.pitLaneRequest('pitLane:resetData', { trackId });
   }
 
   private handleMessage(event: MessageEvent) {
@@ -144,6 +212,13 @@ export class WebSocketBridge
           }
           if (state.simulator !== undefined) {
             this.publishSimulator(state.simulator);
+          }
+          if (Array.isArray(state.hiddenWidgets)) {
+            // A reconnect may follow a toggle we missed; resync both ways.
+            const next = new Set<string>(state.hiddenWidgets);
+            new Set([...this.hiddenWidgets, ...next]).forEach((id) =>
+              this.publishWidgetToggle(id, next.has(id))
+            );
           }
           break;
         }
@@ -212,6 +287,11 @@ export class WebSocketBridge
           break;
         case 'simulatorChanged':
           this.publishSimulator(data ?? null);
+          break;
+        case 'widgetToggleHide':
+          if (typeof data?.widgetId === 'string') {
+            this.publishWidgetToggle(data.widgetId, !!data.hide);
+          }
           break;
         case 'dashboard':
           this.lastDashboard = data;
@@ -293,6 +373,26 @@ export class WebSocketBridge
           }
           if (this.sessionCallbacks.size > 0) {
             this.sendTelemetryInspectorSubscription('sessionData', true);
+          }
+          if (this.channelCallbacks.has('pit-lane.reset')) {
+            // A reset can happen while this browser is disconnected. Events
+            // cannot be replayed, so seed the current calibration on reconnect.
+            void this.getCurrentTrackPitLaneInfo()
+              .then((track) =>
+                track ? this.getPitLaneData(track.trackId) : null
+              )
+              .then((calibration) => {
+                if (!calibration || this.socket !== ws) return;
+                this.channelCallbacks
+                  .get('pit-lane.reset')
+                  ?.forEach((consumer) => consumer.callback(calibration));
+              })
+              .catch((error) =>
+                logger.warn(
+                  'Failed to refresh pit lane calibration after connecting',
+                  error
+                )
+              );
           }
           resolve();
         };
@@ -752,6 +852,27 @@ export class WebSocketBridge
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify({ type: 'toggleDemoMode', data: value }));
     }
+  }
+
+  private publishWidgetToggle(widgetId: string, hide: boolean) {
+    if (hide) this.hiddenWidgets.add(widgetId);
+    else this.hiddenWidgets.delete(widgetId);
+    this.widgetToggleCallbacks.forEach((cb) => {
+      try {
+        cb(widgetId, hide);
+      } catch (e) {
+        logger.error('Error in widget toggle callback:', e);
+      }
+    });
+  }
+
+  /** Per-widget hotkey hide/show, mirroring the overlay windows. */
+  onWidgetToggle(callback: (widgetId: string, hide: boolean) => void) {
+    this.widgetToggleCallbacks.add(callback);
+    this.hiddenWidgets.forEach((id) => callback(id, true));
+    return () => {
+      this.widgetToggleCallbacks.delete(callback);
+    };
   }
 
   onDemoModeChanged(

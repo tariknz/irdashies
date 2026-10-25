@@ -23,8 +23,6 @@ export * from './ReplayContextStore';
 export * from './LapHistoryArchive';
 export * from './PushToPassStore/PushToPassStore';
 export * from './PushToPassStore/PushToPassStoreUpdater';
-export * from './BattleGapStore/BattleGapStore';
-export * from './BattleGapStore/BattleGapStoreUpdater';
 export * from './shared';
 export * from './PersonalBestStore/PersonalBestStore';
 export * from './LapTraceStore/LapTraceStore';

@@ -266,7 +266,7 @@ export enum ReplaySearchCommand {
   Last,
 }
 
-export { ReplayPositionCommand } from '@irdashies/types';
+export { ReplayPositionCommand } from '../../../types/irSdkBridge';
 
 export enum FFBCommand {
   /** Set the maximum force when mapping steering torque force to direct input units (float in Nm) */

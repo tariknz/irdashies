@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BaseSettingsSection } from '../components/BaseSettingsSection';
+import { WidgetScaleSettings } from '../components/WidgetScaleSettings';
 import { SettingsSection } from '../components/SettingSection';
 import { useDashboard } from '@irdashies/context';
 import { getWidgetDefaultConfig } from '@irdashies/types';
@@ -34,6 +35,7 @@ export const HeartRateSettings = () => {
     >
       {(handleConfigChange) => (
         <SettingsSection title="HypeRate">
+          <WidgetScaleSettings widgetId={SETTING_ID} />
           <div className="space-y-2">
             <label className="text-md text-slate-300">Session ID</label>
             <input
@@ -43,12 +45,12 @@ export const HeartRateSettings = () => {
               onChange={(e) =>
                 handleConfigChange({ deviceId: e.target.value.trim() })
               }
-              className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
+              className="w-full rounded border-slate-600 bg-slate-700 p-2 text-slate-300"
             />
             <p className="text-sm text-slate-500">
-              The code at the end of your HypeRate share link
-              (app.hyperate.io/<span className="text-slate-300">KiY</span>). No
-              account or API key required.
+              The code at the end of your HypeRate share link (app.hyperate.io/
+              <span className="text-slate-300">KiY</span>). No account or API
+              key required.
             </p>
           </div>
 
@@ -63,12 +65,12 @@ export const HeartRateSettings = () => {
               onChange={(e) =>
                 handleConfigChange({ widgetUrl: e.target.value.trim() })
               }
-              className="w-full rounded border-gray-600 bg-gray-700 p-2 text-slate-300"
+              className="w-full rounded border-slate-600 bg-slate-700 p-2 text-slate-300"
             />
             <p className="text-sm text-slate-500">
               Pick a widget on hyperate.io and paste its link or just the name —
-              e.g.{' '}
-              <span className="text-slate-300">Bouncing_Heart_Widget</span> or{' '}
+              e.g. <span className="text-slate-300">Bouncing_Heart_Widget</span>{' '}
+              or{' '}
               <span className="text-slate-300">
                 app.hyperate.io/animation/59/YOUR-ID-HERE
               </span>

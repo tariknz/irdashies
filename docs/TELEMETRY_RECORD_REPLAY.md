@@ -94,6 +94,21 @@ The curated fixture has a convenience command:
 npm run irsdk:replay:app:curated
 ```
 
+An interactive **Telemetry replay** overlay opens automatically for in-process
+iRacing tapes, including the curated command. Drag its header to move it. The
+controls stay interactive while the dashboard overlays are locked:
+
+- Drag the timeline or use its arrow keys to seek to a position in the tape.
+- Play/pause, restart, or jump backward/forward by 10 seconds.
+- Select 0.25x, 0.5x, 1x, 2x, 5x, or 10x playback speed.
+
+Seeking preserves pause and speed, restores the recorded session YAML at the
+destination, and signals a disconnect/reconnect to clear accumulated lap,
+fuel, and processor history. History then builds from the destination onward.
+The timeline measures elapsed tape time, independently of recorded SessionTime.
+These controls are specific to in-process tape playback; they do not appear for
+live iRacing, demo mode, or the Windows shared-memory replay tool.
+
 The launcher sets these out-of-band development variables:
 
 - `IRDASHIES_TELEMETRY_REPLAY` — resolved tape path

@@ -11,14 +11,13 @@ import {
 import { getKeybindings } from './storage/keybindings';
 import { OverlayManager } from './overlayManager';
 import logger from './logger';
+import { toggleWidgetHidden } from './widgetVisibility';
 import { GamepadManager } from './gamepad/gamepadManager';
 
 export class KeybindingManager {
   private bindings: KeybindingsMap;
   private actionHandlers: Map<KeybindingActionId, () => void>;
   private hideState = false;
-  /** Widget instance ids currently hidden via a per-widget toggle (session only). */
-  private hiddenWidgets = new Set<string>();
 
   /** Owns the gamepad token -> action map, capture mode, and WebHID host. */
   private gamepad: GamepadManager;
@@ -145,12 +144,7 @@ export class KeybindingManager {
 
   /** Toggle the session-only hidden state of a single widget and broadcast it. */
   private toggleWidgetHide(widgetId: string): void {
-    const hide = !this.hiddenWidgets.has(widgetId);
-    if (hide) {
-      this.hiddenWidgets.add(widgetId);
-    } else {
-      this.hiddenWidgets.delete(widgetId);
-    }
+    const hide = toggleWidgetHidden(widgetId);
     this.overlayManager.getOverlays().forEach(({ window }) => {
       window.webContents.send('widget-toggle-hide', widgetId, hide);
     });

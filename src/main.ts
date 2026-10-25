@@ -1,4 +1,5 @@
 import { app, autoUpdater, BrowserWindow, ipcMain } from 'electron';
+import { setupReleaseNotesBridge } from './app/bridge/releaseNotesBridge';
 import log from './app/logger';
 import {
   iRacingSDKSetup,
@@ -8,6 +9,7 @@ import {
   onBridgeChanged,
 } from './app/bridge/iracingSdk/setup';
 import {
+  applyDefaultsToAllProfiles,
   getOrCreateDefaultDashboard,
   getCurrentProfileId,
   getProfile,
@@ -39,18 +41,18 @@ import {
   getGarage61SearchInfoFromSession,
   setupLapTraceBridge,
 } from './app/bridge/lapTraceBridge';
-import { setupRadarBridge } from './app/bridge/radarBridge';
-import { flushRadarPoleSidesOnShutdown } from './app/storage/radarPoleSides';
 import {
   validateReferenceLapFile,
   flushReferenceLapsOnShutdown,
 } from './app/storage/referenceLaps';
 import { flushLapTracesOnShutdown } from './app/storage/lapTraces';
+import { flushPitLaneDataOnShutdown } from './app/storage/pitLaneData';
 import {
   flushGarage61SearchSessionOnShutdown,
   saveGarage61SearchSession,
 } from './app/storage/garage61SearchSession';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
+import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
 import {
   flushIncidentsOnShutdown,
@@ -77,6 +79,8 @@ import {
   sealLapHistorySession,
 } from './app/storage/lapHistoryStorage';
 import { ReplayContextRuntime } from './app/processors/replayContextRuntime';
+import { setupTapeReplayBridge } from './app/bridge/tapeReplayBridge';
+import { createTapeReplayWindow } from './app/tapeReplayWindow';
 import type { ArchiveIndex } from './app/processors/ReplayContextProcessor';
 import { createKnownLocalUserIdStore } from './app/storage/knownLocalUserIds';
 import { setupLapHistoryBridge } from './app/bridge/lapHistoryBridge';
@@ -140,6 +144,9 @@ analytics.setupLogTransport();
 overlayManager.setupChromiumFlags();
 overlayManager.setupHardwareAcceleration();
 overlayManager.setupSingleInstanceLock();
+const releaseNotes = overlayManager.hasLock()
+  ? setupReleaseNotesBridge()
+  : undefined;
 overlayManager.setupAutoStart();
 
 // Hoisted so the quit handler can tear down the WebHID host window cleanly.
@@ -401,6 +408,9 @@ void app.whenReady().then(async () => {
     log.info('[PerfRun] Configuration', perfRun);
   }
 
+  // Every profile, not only the active one: switching profiles reads them as
+  // stored.
+  applyDefaultsToAllProfiles();
   // Resolve benchmark metadata before metrics reporting starts so every
   // interval carries the same active-widget workload description.
   const dashboard = getOrCreateDefaultDashboard();
@@ -433,6 +443,8 @@ void app.whenReady().then(async () => {
     channelBus
   );
   await iRacingSDKSetup(overlayManager, channelBus);
+  setupTapeReplayBridge(getCurrentBridge);
+  if (process.env.IRDASHIES_TELEMETRY_REPLAY) createTapeReplayWindow();
 
   // Perform one-time cleanup of old reference laps
   validateReferenceLapFile();
@@ -442,12 +454,12 @@ void app.whenReady().then(async () => {
   // Setup IPC bridges
   setupLogBridge();
   setupFuelCalculatorBridge();
-  setupPitLaneBridge();
+  const pitLaneBridge = setupPitLaneBridge(overlayManager, channelBus);
   setupPersonalBestLapTimesBridge();
   setupLapTraceBridge(overlayManager);
-  setupRadarBridge();
   setupGarage61SearchSession(dashboard);
   setupChromiumFlagsBridge();
+  ipcMain.handle('widgetVisibility:getHidden', () => getHiddenWidgets());
   const replayContextRuntime = setupReplayContextRuntime(dashboard);
   const incidents = new IncidentRuntime(
     channelBus,
@@ -487,7 +499,12 @@ void app.whenReady().then(async () => {
   }
 
   // Start component server for browser components
-  await startComponentServer(bridge, dashboardBridge, channelBus);
+  await startComponentServer(
+    bridge,
+    dashboardBridge,
+    channelBus,
+    pitLaneBridge
+  );
 
   ipcMain.handle('getComponentServerPort', () => getComponentServerPort());
 
@@ -649,11 +666,12 @@ const handleBeforeQuit = createBeforeQuitHandler({
     // coordinator deadline before the process exits.
     await Promise.all([
       flushLapTracesOnShutdown(),
+      flushPitLaneDataOnShutdown(),
       flushReferenceLapsOnShutdown(),
-      flushRadarPoleSidesOnShutdown(),
       flushIncidentsOnShutdown(),
       flushLapHistoryOnShutdown(),
       knownLocalUserIds.flush(),
+      releaseNotes?.flush(),
       flushGarage61SearchSessionOnShutdown(),
     ]);
   },

@@ -172,6 +172,17 @@ describe('mapLmuTelemetry', () => {
     expect(t.CarLeftRight.value[0]).toBe(CarLeftRight.Off);
   });
 
+  it('leaves unsupported humidity absent instead of synthesizing a zero reading', () => {
+    const raw = fixture();
+    const first = mapLmuTelemetry(raw);
+    expect(first).not.toHaveProperty('RelativeHumidity');
+
+    // Each mapping builds a fresh record; a previous source's reading cannot
+    // leak into later LMU frames.
+    first.RelativeHumidity = { value: [0.45] };
+    expect(mapLmuTelemetry(raw)).not.toHaveProperty('RelativeHumidity');
+  });
+
   it('computes wind magnitude', () => {
     const t = mapLmuTelemetry(fixture());
     expect(t.WindVel.value[0]).toBeCloseTo(Math.hypot(2, 0, -3));

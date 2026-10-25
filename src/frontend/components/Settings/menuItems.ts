@@ -6,15 +6,34 @@ import {
   KeyboardIcon,
   WrenchIcon,
   InfoIcon,
+  NewspaperIcon,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
+import { WIDGET_MANIFESTS, type WidgetId } from '@irdashies/types';
+
+/** Menu groups, in display order. */
+export const WIDGET_CATEGORIES = [
+  { id: 'race', label: 'Timing & Race' },
+  { id: 'car', label: 'Car & Driver' },
+  { id: 'awareness', label: 'Awareness' },
+  { id: 'track', label: 'Track & Conditions' },
+  { id: 'extras', label: 'Extras' },
+] as const;
+export type WidgetCategory = (typeof WIDGET_CATEGORIES)[number]['id'];
 
 export interface MenuItem {
   to: string;
   path: string;
   label: string;
   widgetType?: string;
+  /** Widgets that share this item's page; it shows On while any of them is. */
+  groupTypes?: string[];
+  category?: WidgetCategory;
+  /** One line under the label in the settings menu. */
+  description?: string;
   icon?: Icon;
+  /** Reached through a tab on another item's page rather than the menu. */
+  hideInMenu?: boolean;
 }
 
 export const generalItems: MenuItem[] = [
@@ -50,172 +69,92 @@ export const generalItems: MenuItem[] = [
   },
 ];
 
-export const widgetItems: MenuItem[] = [
-  {
-    to: '/settings/battle',
-    path: '/battle',
-    label: 'Battle',
-    widgetType: 'battle',
+/** Menu group and one-line summary per widget; the manifests carry neither. */
+const WIDGET_MENU_META: Partial<
+  Record<WidgetId, { category: WidgetCategory; description: string }>
+> = {
+  broadcast: {
+    category: 'extras',
+    description: 'TV-style overlay for streams',
   },
-  {
-    to: '/settings/blindspotmonitor',
-    path: '/blindspotmonitor',
-    label: 'Blind Spot Monitor',
-    widgetType: 'blindspotmonitor',
+  battle: { category: 'race', description: 'Gaps to cars ahead and behind' },
+  blindspotmonitor: {
+    category: 'awareness',
+    description: 'Cars alongside, left and right',
   },
-  {
-    to: '/settings/cornername',
-    path: '/cornername',
-    label: 'Corner Names',
-    widgetType: 'cornername',
+  cornername: { category: 'track', description: 'Current corner and section' },
+  carsystems: {
+    category: 'car',
+    description: 'Brake bias, ABS, traction control',
   },
-  {
-    to: '/settings/carsystems',
-    path: '/carsystems',
-    label: 'Car Systems',
-    widgetType: 'carsystems',
+  deltaspeed: { category: 'race', description: 'Speed versus your best lap' },
+  fastercarsfrombehind: {
+    category: 'awareness',
+    description: 'Faster classes closing in',
   },
-  {
-    to: '/settings/deltaspeed',
-    path: '/deltaspeed',
-    label: 'Delta Speed',
-    widgetType: 'deltaspeed',
+  flag: { category: 'awareness', description: 'Track flags' },
+  flatmap: { category: 'track', description: 'Straight-line track map' },
+  fuel: { category: 'car', description: 'Burn rate, laps left, pit fuel' },
+  gantry: { category: 'race', description: 'Race control window' },
+  garagecover: {
+    category: 'extras',
+    description: 'Covers the screen in the garage',
   },
-  {
-    to: '/settings/fastercarsfrombehind',
-    path: '/fastercarsfrombehind',
-    label: 'Faster Cars Behind',
-    widgetType: 'fastercarsfrombehind',
+  heartrate: { category: 'car', description: 'Live heart rate via HypeRate' },
+  infobar: { category: 'race', description: 'Session and timing bar' },
+  input: { category: 'car', description: 'Throttle, brake and clutch traces' },
+  laptimelog: { category: 'race', description: 'Lap time history' },
+  laptrace: {
+    category: 'car',
+    description: 'Saved lap inputs along the track',
   },
-  { to: '/settings/flag', path: '/flag', label: 'Flag', widgetType: 'flag' },
-  {
-    to: '/settings/flatmap',
-    path: '/flatmap',
-    label: 'Flat Track Map',
-    widgetType: 'flatmap',
+  pitlanehelper: {
+    category: 'awareness',
+    description: 'Pit entry speed and pitbox',
   },
-  {
-    to: '/settings/fuel',
-    path: '/fuel',
-    label: 'Fuel Calculator',
-    widgetType: 'fuel',
+  radar: { category: 'awareness', description: 'Top-down view of nearby cars' },
+  rejoin: { category: 'awareness', description: 'Safe-to-rejoin indicator' },
+  relative: { category: 'race', description: 'Cars ahead and behind' },
+  sectordelta: { category: 'race', description: 'Per-sector time deltas' },
+  shiftlight: { category: 'car', description: 'Shift point lights' },
+  slowcarahead: {
+    category: 'awareness',
+    description: 'Slow cars ahead warning',
   },
-  {
-    to: '/settings/gantry',
-    path: '/gantry',
-    label: 'Gantry',
-    widgetType: 'gantry',
-  },
-  {
-    to: '/settings/garagecover',
-    path: '/garagecover',
-    label: 'Garage Cover',
-    widgetType: 'garagecover',
-  },
-  {
-    to: '/settings/heartrate',
-    path: '/heartrate',
-    label: 'Heart Rate',
-    widgetType: 'heartrate',
-  },
-  {
-    to: '/settings/infobar',
-    path: '/infobar',
-    label: 'Information Bar',
-    widgetType: 'infobar',
-  },
-  {
-    to: '/settings/input',
-    path: '/input',
-    label: 'Input',
-    widgetType: 'input',
-  },
-  {
-    to: '/settings/laptimelog',
-    path: '/laptimelog',
-    label: 'Lap Timer',
-    widgetType: 'laptimelog',
-  },
-  {
-    to: '/settings/laptrace',
-    path: '/laptrace',
-    label: 'Lap Trace',
-    widgetType: 'laptrace',
-  },
-  {
-    to: '/settings/pitlanehelper',
-    path: '/pitlanehelper',
-    label: 'Pitlane Helper',
-    widgetType: 'pitlanehelper',
-  },
-  {
-    to: '/settings/radar',
-    path: '/radar',
-    label: 'Radar',
-    widgetType: 'radar',
-  },
-  {
-    to: '/settings/rejoin',
-    path: '/rejoin',
-    label: 'Rejoin Indicator',
-    widgetType: 'rejoin',
-  },
-  {
-    to: '/settings/relative',
-    path: '/relative',
-    label: 'Relative',
-    widgetType: 'relative',
-  },
-  {
-    to: '/settings/sectordelta',
-    path: '/sectordelta',
-    label: 'Sector Delta',
-    widgetType: 'sectordelta',
-  },
-  {
-    to: '/settings/shiftlight',
-    path: '/shiftlight',
-    label: 'Shift Light',
-    widgetType: 'shiftlight',
-  },
-  {
-    to: '/settings/slowcarahead',
-    path: '/slowcarahead',
-    label: 'Slow Car Ahead',
-    widgetType: 'slowcarahead',
-  },
-  {
-    to: '/settings/standings',
-    path: '/standings',
-    label: 'Standings',
-    widgetType: 'standings',
-  },
-  {
-    to: '/settings/tachometer',
-    path: '/tachometer',
-    label: 'Tachometer',
-    widgetType: 'tachometer',
-  },
-  { to: '/settings/map', path: '/map', label: 'Track Map', widgetType: 'map' },
-  {
-    to: '/settings/twitchchat',
-    path: '/twitchchat',
-    label: 'Twitch Chat',
-    widgetType: 'twitchchat',
-  },
-  {
-    to: '/settings/weather',
-    path: '/weather',
-    label: 'Weather',
-    widgetType: 'weather',
-  },
-  {
-    to: '/settings/wind',
-    path: '/wind',
-    label: 'Wind',
-    widgetType: 'wind',
-  },
-];
+  standings: { category: 'race', description: 'Class positions' },
+  tachometer: { category: 'car', description: 'RPM and shift lights' },
+  map: { category: 'track', description: 'Circuit map with cars' },
+  twitchchat: { category: 'extras', description: 'Twitch chat feed' },
+  weather: { category: 'track', description: 'Temperatures, wind, wetness' },
+  wind: { category: 'track', description: 'Wind direction and speed' },
+};
+
+export const widgetItems: MenuItem[] = WIDGET_MANIFESTS.map(
+  ({ id, name, menuLabel, hideInMenu, groupTypes }) => ({
+    to: `/settings/${id}`,
+    path: `/${id}`,
+    label: menuLabel ?? name,
+    widgetType: id,
+    ...WIDGET_MENU_META[id],
+    ...(groupTypes && { groupTypes }),
+    ...(hideInMenu && { hideInMenu }),
+  })
+).sort((a, b) => a.label.localeCompare(b.label));
+
+/**
+ * Whether the settings menu offers a switch for this widget: it is listed
+ * there on its own and exists in the dashboard. The widget's page leaves its
+ * own switch out then, so there is one place to flip it.
+ */
+export const menuHasToggle = (
+  widgetType: string,
+  dashboardWidgetIds: readonly string[]
+): boolean =>
+  dashboardWidgetIds.includes(widgetType) &&
+  widgetItems.some(
+    (item) =>
+      item.widgetType === widgetType && !item.hideInMenu && !item.groupTypes
+  );
 
 export const bottomItems: MenuItem[] = [
   {
@@ -223,6 +162,12 @@ export const bottomItems: MenuItem[] = [
     path: '/advanced',
     label: 'Advanced',
     icon: WrenchIcon,
+  },
+  {
+    to: '/settings/release-notes',
+    path: '/release-notes',
+    label: 'Release notes',
+    icon: NewspaperIcon,
   },
   { to: '/settings/about', path: '/about', label: 'About', icon: InfoIcon },
 ];

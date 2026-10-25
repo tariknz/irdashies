@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { perfMetrics } from '@irdashies/utils/perfMetrics';
 import {
   useSessionDrivers,
   useSessionFastestLaps,
@@ -17,6 +18,7 @@ import {
   augmentStandingsWithIRating,
   augmentStandingsWithGap,
   augmentStandingsWithInterval,
+  augmentStandingsWithPlayerGap,
   augmentStandingsWithPositionChange,
 } from './createStandings';
 import type { StandingsWidgetSettings } from '@irdashies/types';
@@ -24,7 +26,8 @@ import { useDriverLivePositions } from './useDriverLivePositions';
 import { useStandingsSettings } from './useStandingsSettings';
 import { useRadioActiveCarIdxs } from './useRadioActiveCarIdxs';
 import { useQualifyingResults } from './useQualifyingGrid';
-import { TrackLocation } from '@irdashies/types';
+import { SessionState, TrackLocation } from '@irdashies/types';
+import { augmentStandingsWithFinalTiming } from './finalRaceTiming';
 
 const EMPTY_NUMBERS: number[] = [];
 const EMPTY_BOOLEANS: boolean[] = [];
@@ -43,7 +46,7 @@ export const shouldCalculateIRatingChange = (
 
 export const useDriverStandings = (
   settings?: StandingsWidgetSettings['config'],
-  options?: { showAll?: boolean }
+  options?: { showAll?: boolean; livePositions?: boolean }
 ) => {
   const {
     driverStandings: {
@@ -52,7 +55,7 @@ export const useDriverStandings = (
       minPlayerClassDrivers,
       numTopDrivers,
     } = {},
-    gap: { enabled: gapEnabled } = { enabled: false },
+    gap: { enabled: gapEnabled, reference: gapReference } = { enabled: false },
     interval: { enabled: intervalEnabled } = { enabled: false },
     lapTimeDeltas: { enabled: lapTimeDeltasEnabled, numLaps: numLapDeltas } = {
       enabled: false,
@@ -65,18 +68,23 @@ export const useDriverStandings = (
   const standingsSnapshot = useStandingsSnapshot();
   const driverCarIdx = standingsSnapshot?.focusCarIdx ?? undefined;
   const sessionNum = standingsSnapshot?.sessionNum ?? undefined;
+  const finalRaceTiming = standingsSnapshot?.finalRaceTiming;
+  const sessionState = standingsSnapshot?.sessionState ?? 0;
   const sessionType = useSessionType(sessionNum);
   const positions = useSessionPositions(sessionNum);
   const qualifyingResults = useQualifyingResults();
   const standingsSettings = useStandingsSettings();
-  const useLivePositionStandings = standingsSettings?.useLivePosition ?? false;
+  const useLivePositionStandings =
+    options?.livePositions ?? standingsSettings?.useLivePosition ?? false;
   const customClassOrdering = standingsSettings?.customClassOrdering ?? false;
   const driverLivePositions = useDriverLivePositions({
     enabled: useLivePositionStandings,
   });
   const fastestLaps = useSessionFastestLaps(sessionNum);
-  const carIdxLastLapTime = standingsSnapshot?.carIdxLastLapTime ?? EMPTY_NUMBERS;
-  const carIdxBestLapTime = standingsSnapshot?.carIdxBestLapTime ?? EMPTY_NUMBERS;
+  const carIdxLastLapTime =
+    standingsSnapshot?.carIdxLastLapTime ?? EMPTY_NUMBERS;
+  const carIdxBestLapTime =
+    standingsSnapshot?.carIdxBestLapTime ?? EMPTY_NUMBERS;
   const carIdxF2Time = standingsSnapshot?.carIdxF2Time ?? EMPTY_NUMBERS;
   const carIdxEstTime = standingsSnapshot?.carIdxEstTime ?? EMPTY_NUMBERS;
   const carIdxOnPitRoad = standingsSnapshot?.carIdxOnPitRoad ?? EMPTY_BOOLEANS;
@@ -190,13 +198,45 @@ export const useDriverStandings = (
           )
         : iratingAugmentedGroupedByClass;
 
-    // Calculate interval to player when enabled
+    // Intervals always use class-leader gaps, regardless of displayed reference.
     const intervalAugmentedGroupedByClass = intervalEnabled
       ? augmentStandingsWithInterval(gapAugmentedGroupedByClass)
       : gapAugmentedGroupedByClass;
 
-    if (options?.showAll) return intervalAugmentedGroupedByClass;
-    return sliceRelevantDrivers(intervalAugmentedGroupedByClass, driverClass, {
+    const displayedStandings =
+      gapEnabled && gapReference === 'player'
+        ? perfMetrics.measure('standingsPlayerGaps', () =>
+            augmentStandingsWithPlayerGap(
+              intervalAugmentedGroupedByClass,
+              carIdxLap,
+              carIdxLapDistPct,
+              carIdxOnPitRoad,
+              carIdxEstTime,
+              sessionType
+            )
+          )
+        : intervalAugmentedGroupedByClass;
+
+    const finalStandings =
+      sessionType === 'Race' &&
+      sessionState >= SessionState.Checkered &&
+      finalRaceTiming?.length &&
+      (gapEnabled || intervalEnabled)
+        ? perfMetrics.measure('standingsFinalTiming', () =>
+            augmentStandingsWithFinalTiming(
+              displayedStandings,
+              finalRaceTiming,
+              {
+                gap: gapEnabled ?? false,
+                interval: intervalEnabled ?? false,
+                playerReference: gapReference === 'player',
+              }
+            )
+          )
+        : displayedStandings;
+
+    if (options?.showAll) return finalStandings;
+    return sliceRelevantDrivers(finalStandings, driverClass, {
       buffer,
       numNonClassDrivers,
       minPlayerClassDrivers,
@@ -217,6 +257,8 @@ export const useDriverStandings = (
     positions,
     fastestLaps,
     sessionType,
+    sessionState,
+    finalRaceTiming,
     lastPitLap,
     lastLap,
     prevCarTrackSurface,
@@ -228,6 +270,7 @@ export const useDriverStandings = (
     eventType,
     settings?.iratingChange?.estimateInPractice,
     gapEnabled,
+    gapReference,
     intervalEnabled,
     carIdxLap,
     carIdxLapDistPct,

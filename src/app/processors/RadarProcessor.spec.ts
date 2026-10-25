@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Session, Telemetry } from '@irdashies/types';
 import { CarLeftRight, GlobalFlags, TrackLocation } from '@irdashies/types';
+import { DEFAULT_RADAR_TUNING } from '../../types/widgetConfigs';
 import rollingTelemetry from '../../../test-data/1752616787255/telemetry.json';
 import rollingSession from '../../../test-data/1752616787255/session.json';
 import {
@@ -153,6 +154,40 @@ describe('RadarProcessor', () => {
     expect(snapshot.cars[0].closingSpeed).toBeCloseTo(5, 1);
   });
 
+  it('smooths speeds the same at any call rate', () => {
+    // A rival jumps from 50 to 60 m/s; read how far the average has moved
+    // 0.2 s later when called at 25 and at 60 frames a second.
+    const closingAfterStep = (hz: number) => {
+      const processor = createProcessor();
+      let rival = 0.5 - m(20);
+      for (let tick = 0; tick <= hz * 1.2; tick += 1) {
+        const time = tick / hz;
+        rival += m((time <= 1 ? 50 : 60) / hz);
+        processor.onFrame(frame({ time, pcts: [0.5 + m(50 * time), rival] }));
+      }
+      return processor.snapshot().cars[0].closingSpeed;
+    };
+
+    expect(closingAfterStep(25)).toBeCloseTo(closingAfterStep(60), 2);
+  });
+
+  it('weights the newest speed sample by speedSmoothing at 25 Hz', () => {
+    const processor = createProcessor();
+    // Rival at 10 m/s, focus parked: the first frame only seeds positions.
+    for (let tick = 0; tick <= 1; tick += 1) {
+      const time = tick / 25;
+      processor.onFrame(
+        frame({ time, pcts: [0.5, 0.5 - m(20) + m(10 * time)] })
+      );
+    }
+
+    const { speedSmoothing } = DEFAULT_RADAR_TUNING;
+    expect(Math.abs(processor.snapshot().cars[0].closingSpeed)).toBeCloseTo(
+      10 * speedSmoothing,
+      1
+    );
+  });
+
   it('ignores a teleport instead of reporting a huge speed', () => {
     const processor = createProcessor();
     processor.onFrame(frame({ time: 0, pcts: [0.5, 0.5 - m(5)] }));
@@ -290,95 +325,38 @@ describe('RadarProcessor', () => {
     expect(follow).toMatchObject({ isPaceCar: false });
     expect(follow?.dist).toBeGreaterThan(0);
     expect(cars.every((car) => car.laneSource === 'pace')).toBe(true);
-  });
 
-  it('starts from the pole side learnt at this track before', () => {
-    const lanesWith = (learnt: Record<string, string>) => {
-      const loaded: string[] = [];
-      const processor = new RadarProcessor({
-        load: (track) => {
-          loaded.push(track);
-          return learnt;
-        },
-        save: () => undefined,
-      });
-      processor.init(rollingSession as unknown as Session);
-      processor.onFrame(rollingTelemetry as unknown as Telemetry);
-      return {
-        loaded,
-        lanes: new Map(
-          processor.snapshot().cars.map((car) => [car.carIdx, car.lane])
-        ),
-      };
-    };
-    const asDescribed = lanesWith({});
-    const learnt = lanesWith({ pace: 'right' });
-
-    expect(learnt.loaded).toEqual(['interlagos gp']);
-    expect(learnt.lanes.size).toBeGreaterThan(0);
-    for (const [carIdx, lane] of learnt.lanes) {
-      expect(lane).toBeCloseTo(-(asDescribed.lanes.get(carIdx) ?? NaN));
-    }
-    expect([...learnt.lanes.values()].some((lane) => lane !== 0)).toBe(true);
-  });
-
-  it('saves a pole side the spotter settles', () => {
-    const saved: unknown[] = [];
-    const processor = new RadarProcessor({
-      load: () => ({}),
-      save: (...args) => saved.push(args),
-    });
-    processor.init(rollingSession as unknown as Session);
+    // The pole line runs on the right: cars in it sit right of us.
     const base = rollingTelemetry as unknown as Record<
       string,
       { value: unknown[] }
     >;
-    const player = base.PlayerCarIdx.value[0] as number;
     const lines = base.CarIdxPaceLine.value as number[];
-    const pcts = [...(base.CarIdxLapDistPct.value as number[])];
-    // Car 35 runs in the other line, level with us.
-    const rival = 35;
-    expect(Math.abs(lines[rival] - lines[player])).toBe(1);
-    pcts[rival] = pcts[player];
-    for (let tick = 0; tick <= 60; tick += 1) {
-      processor.onFrame({
-        ...base,
-        SessionTime: { value: [1000 + tick / 60] },
-        CarIdxLapDistPct: { value: pcts },
-        CarLeftRight: { value: [CarLeftRight.CarLeft] },
-      } as unknown as Telemetry);
-    }
-
-    // The player is in line 1, the rival in line 0 on our left: pole left.
-    expect(saved).toEqual([['interlagos gp', 'pace', 'left']]);
+    const mine = lines[base.PlayerCarIdx.value[0] as number];
+    const towardsPole = cars.filter((car) => lines[car.carIdx] < mine);
+    expect(towardsPole.length).toBeGreaterThan(0);
+    expect(towardsPole.every((car) => car.lane > 0)).toBe(true);
   });
 
-  it('keeps learning the pole side across session revisions', () => {
-    const saved: unknown[] = [];
-    const processor = new RadarProcessor({
-      load: () => ({}),
-      save: (...args) => saved.push(args),
+  it('puts the pole line on the left on a super speedway', () => {
+    const processor = new RadarProcessor();
+    const session = rollingSession as unknown as Session;
+    processor.init({
+      ...session,
+      WeekendInfo: { ...session.WeekendInfo, TrackType: 'super speedway' },
     });
-    processor.init(rollingSession as unknown as Session);
+    processor.onFrame(rollingTelemetry as unknown as Telemetry);
+
+    const { cars } = processor.snapshot();
     const base = rollingTelemetry as unknown as Record<
       string,
       { value: unknown[] }
     >;
-    const player = base.PlayerCarIdx.value[0] as number;
-    const pcts = [...(base.CarIdxLapDistPct.value as number[])];
-    pcts[35] = pcts[player];
-    // 40 agreeing frames, split by a new revision of the same session.
-    for (let tick = 0; tick < 40; tick += 1) {
-      if (tick === 20) processor.init(rollingSession as unknown as Session);
-      processor.onFrame({
-        ...base,
-        SessionTime: { value: [1000 + tick / 60] },
-        CarIdxLapDistPct: { value: pcts },
-        CarLeftRight: { value: [CarLeftRight.CarLeft] },
-      } as unknown as Telemetry);
-    }
-
-    expect(saved).toEqual([['interlagos gp', 'pace', 'left']]);
+    const lines = base.CarIdxPaceLine.value as number[];
+    const mine = lines[base.PlayerCarIdx.value[0] as number];
+    const towardsPole = cars.filter((car) => lines[car.carIdx] < mine);
+    expect(towardsPole.length).toBeGreaterThan(0);
+    expect(towardsPole.every((car) => car.lane < 0)).toBe(true);
   });
 
   it('clears everything on disconnect and session change', () => {

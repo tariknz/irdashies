@@ -1,3 +1,4 @@
+import { useWidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Driver } from '@irdashies/types';
 import tracks from '@irdashies/domain/track/tracks/tracks.json';
@@ -136,6 +137,7 @@ export const TrackCanvas = ({
     () => validateImageDataUrl(rawPlayerIconDataUrl),
     [rawPlayerIconDataUrl]
   );
+  const widgetScale = useWidgetScale();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const debounceResizeRef = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -245,12 +247,12 @@ export const TrackCanvas = ({
       if (!canvas) return;
 
       // Get device pixel ratio for high-DPI displays
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
+      const dpr = (window.devicePixelRatio || 1) * widgetScale;
+      const { clientWidth: width, clientHeight: height } = canvas;
 
       // Set the actual canvas size in memory (scaled up for high-DPI)
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
 
       // Apply device pixel ratio scaling to the context
       const ctx = canvas.getContext('2d');
@@ -259,7 +261,7 @@ export const TrackCanvas = ({
         ctx.scale(dpr, dpr); // Apply DPR scaling
       }
       // Update state to trigger redraw
-      setCanvasSize({ width: rect.width, height: rect.height });
+      setCanvasSize({ width, height });
     };
 
     // Initial resize
@@ -301,7 +303,7 @@ export const TrackCanvas = ({
       }
       cacheCanvasRef.current = null;
     };
-  }, [trackId]);
+  }, [trackId, widgetScale]);
 
   // Static layer — redraws only when track settings, size, or appearance change
   useLayoutEffect(() => {
@@ -327,7 +329,7 @@ export const TrackCanvas = ({
     const offsetX = (canvasSize.width - TRACK_DRAWING_WIDTH * scale) / 2;
     const offsetY = (canvasSize.height - TRACK_DRAWING_HEIGHT * scale) / 2;
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = (window.devicePixelRatio || 1) * widgetScale;
     cacheCtx.setTransform(1, 0, 0, 1, 0, 0);
     cacheCtx.scale(dpr, dpr);
 
@@ -391,6 +393,7 @@ export const TrackCanvas = ({
     trackDrawing?.turns,
     turnLabels,
     canvasSize,
+    widgetScale,
     invertTrackColors,
     trackLineWidth,
     trackOutlineWidth,

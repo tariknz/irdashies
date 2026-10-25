@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { StandingsWidgetSettings } from '@irdashies/types';
 import { getWidgetDefaultConfig } from '@irdashies/types';
@@ -6,6 +6,7 @@ import { mountFixture } from '../../../testing/renderWithFixture';
 import type { ReplayFixture } from '../../../testing/replayFixture';
 import roadAmerica from '../../../../test-data/fixtures/multiclass-road-america.json';
 import { useDriverStandings } from './useDriverStandings';
+import { useDriverLivePositions } from './useDriverLivePositions';
 
 const fixture = roadAmerica as unknown as ReplayFixture;
 
@@ -53,6 +54,29 @@ describe('class standings over a real multiclass field', () => {
     const carIdxs = all.map((d) => d.carIdx);
     expect(new Set(carIdxs).size).toBe(carIdxs.length);
     expect(all.length).toBeGreaterThan(50);
+  });
+
+  it('uses live class positions when a caller asks for them', () => {
+    // Broadcast asks for live positions whatever the Standings widget is set
+    // to, so mid-lap overtakes show at once.
+    const { result } = renderHook(
+      () => ({
+        standings: useDriverStandings(config({ useLivePosition: false }), {
+          showAll: true,
+          livePositions: true,
+        }),
+        live: useDriverLivePositions({ enabled: true }),
+      }),
+      { wrapper: harness.wrapper }
+    );
+
+    const drivers = flatten(result.current.standings).filter(
+      (d) => result.current.live[d.carIdx] > 0
+    );
+    expect(drivers.length).toBeGreaterThan(0);
+    for (const d of drivers) {
+      expect(d.classPosition).toBe(result.current.live[d.carIdx]);
+    }
   });
 
   it('orders each class by class position', () => {
@@ -132,6 +156,78 @@ describe('class standings over a real multiclass field', () => {
         expect(driver.interval).toBeLessThanOrEqual(driver.gap.value + 0.001);
       }
     }
+  });
+
+  it('changes only displayed gaps when switching to player reference', () => {
+    const { result } = renderHook(
+      () => ({
+        leader: useDriverStandings(
+          config({ gap: { enabled: true }, interval: { enabled: true } }),
+          { showAll: true }
+        ),
+        player: useDriverStandings(
+          config({
+            gap: { enabled: true, reference: 'player' },
+            interval: { enabled: true },
+          }),
+          { showAll: true }
+        ),
+      }),
+      { wrapper: harness.wrapper }
+    );
+    const leader = flatten(result.current.leader);
+    const player = flatten(result.current.player);
+    expect(player.map((driver) => ({ ...driver, gap: undefined }))).toEqual(
+      leader.map((driver) => ({ ...driver, gap: undefined }))
+    );
+    expect(player.find((d) => d.isPlayer)?.gap).toEqual({ value: 0, laps: 0 });
+    expect(player.some((d) => (d.gap?.value ?? 0) < 0)).toBe(true);
+    expect(player.some((d) => (d.gap?.value ?? 0) > 0)).toBe(true);
+  });
+
+  it('records player gap work through the existing performance bridge', () => {
+    const previous = window.rendererPerfBridge;
+    const recordMeasure = vi.fn();
+    window.rendererPerfBridge = { recordMeasure };
+    try {
+      renderHook(
+        () =>
+          useDriverStandings(
+            config({ gap: { enabled: true, reference: 'player' } }),
+            { showAll: true }
+          ),
+        { wrapper: harness.wrapper }
+      );
+      expect(recordMeasure).toHaveBeenCalledWith(
+        'standingsPlayerGaps',
+        expect.any(Number)
+      );
+    } finally {
+      window.rendererPerfBridge = previous;
+    }
+  });
+
+  it('uses the spectator camera car as the zero reference', () => {
+    const cameraCarIdx = 5;
+    const spectating = mountFixture({
+      ...fixture,
+      frames: fixture.frames.map((frame) => ({
+        ...frame,
+        CamCarIdx: cameraCarIdx,
+      })),
+    });
+    expect(cameraCarIdx).not.toBe(harness.focusCarIdx);
+    const { result } = renderHook(
+      () =>
+        useDriverStandings(
+          config({ gap: { enabled: true, reference: 'player' } }),
+          { showAll: true }
+        ),
+      { wrapper: spectating.wrapper }
+    );
+    const focused = flatten(result.current).find((driver) => driver.isPlayer);
+    expect(focused?.carIdx).toBe(cameraCarIdx);
+    expect(focused?.gap).toEqual({ value: 0, laps: 0 });
   });
 
   it('works out position change against the qualifying grid', () => {

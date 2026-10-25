@@ -2,10 +2,13 @@ import { spawn } from 'node:child_process';
 import { execFileSync } from 'node:child_process';
 import { createWriteStream, promises as fs } from 'node:fs';
 import path from 'node:path';
-import { readWidgetInputRequirements } from './widgetInputMetadata';
-import { parsePerfVisibilityPhases } from '../../src/app/perfRunConfig';
+import { readWidgetInputRequirements } from './widgetInputMetadata.ts';
+import {
+  PERF_REPLAY_READY_LOG_MARKER,
+  parsePerfVisibilityPhases,
+  perfRunSimulator,
+} from '../../src/app/perfRunConfig.ts';
 
-const PERF_REPLAY_READY_LOG_MARKER = '[PerfRun] Ready for replay publisher';
 const REPLAY_STARTUP_TIMEOUT_MS = 30_000;
 
 type OverlayMode = 'full' | 'empty' | 'observer';
@@ -190,6 +193,16 @@ process.stdout.write(
     .join('\n') + '\n'
 );
 
+const simulator = perfRunSimulator(
+  process.env.IRDASHIES_SIM,
+  Boolean(replayInputPath)
+);
+if (simulator.overridden) {
+  process.stdout.write(
+    `IRDASHIES_SIM=${simulator.overridden} ignored: replay runs need the iRacing bridge\n`
+  );
+}
+
 const child = spawn(childCommand, childArguments, {
   cwd: process.cwd(),
   env: {
@@ -223,6 +236,7 @@ const child = spawn(childCommand, childArguments, {
     IRDASHIES_IRSDK_REPLAY: replayInputPath
       ? '1'
       : process.env.IRDASHIES_IRSDK_REPLAY,
+    IRDASHIES_SIM: simulator.simulator,
     ELECTRON_ENABLE_LOGGING: '1',
   },
   stdio: ['inherit', 'pipe', 'pipe'],

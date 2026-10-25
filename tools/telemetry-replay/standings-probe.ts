@@ -2,6 +2,7 @@ import * as yaml from 'js-yaml';
 import type { Session, StandingsSnapshot, Telemetry } from '@irdashies/types';
 import { StandingsProcessor } from '../../src/app/processors/StandingsProcessor';
 import type { ReplayProbe, TelemetryFrame } from './validator';
+import { rateLimited } from './rateLimited';
 
 const telemetryFrom = (frame: TelemetryFrame): Telemetry =>
   Object.fromEntries(
@@ -33,7 +34,7 @@ const copySnapshot = (snapshot: StandingsSnapshot): StandingsSnapshot => ({
 });
 
 export const createStandingsProbe = (): ReplayProbe<StandingsSnapshot> => {
-  const processor = new StandingsProcessor();
+  const processor = rateLimited(new StandingsProcessor());
   let checkpoint: string | undefined;
   let firstLapObserved = false;
 
@@ -41,6 +42,7 @@ export const createStandingsProbe = (): ReplayProbe<StandingsSnapshot> => {
     name: 'standings-state',
     schemaVersion: 1,
     variables: [
+      'SessionTick',
       'CamCarIdx',
       'CarIdxEstTime',
       'CarIdxF2Time',
