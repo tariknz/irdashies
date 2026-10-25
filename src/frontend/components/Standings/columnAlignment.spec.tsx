@@ -17,20 +17,29 @@ vi.mock('@irdashies/context', () => ({
  */
 
 // Every column this comparison covers, enabled, so the lists are non-trivial.
+//
+// Each must be named explicitly: getOrderedColumns requires `enabled === true`
+// while the row builder defaults a missing flag to true, so a column left out
+// of this object would appear as a cell with no header and fail the
+// comparison below for the wrong reason. deepMergeConfig fills every flag in a
+// real config, which is why the asymmetry does not bite outside this fixture.
 const config = {
   badge: { enabled: true },
+  lmuBadge: { enabled: true },
   iratingChange: { enabled: true },
   delta: { enabled: true },
   fastestTime: { enabled: true },
   lastTime: { enabled: true },
   lapCount: { enabled: true },
+  trackLimits: { enabled: true },
+  lmuVirtualEnergy: { enabled: true },
   stylingOptions: { columnHeaders: { enabled: true } },
 } as unknown as Parameters<typeof getOrderedColumns>[0];
 
-const headerIds = (hidden: ReadonlySet<string>) =>
-  getOrderedColumns(config, false, false, false, true, hidden).map((c) => c.id);
+const headerIds = (hidden: ReadonlySet<string>, cfg = config) =>
+  getOrderedColumns(cfg, false, false, false, true, hidden).map((c) => c.id);
 
-const rowIds = (hidden: ReadonlySet<string>) => {
+const rowIds = (hidden: ReadonlySet<string>, cfg = config) => {
   const { container } = render(
     <table>
       <tbody>
@@ -45,7 +54,8 @@ const rowIds = (hidden: ReadonlySet<string>) => {
             license: 'A 4.99',
             rating: 4999,
             iratingChangeValue: 5,
-            config,
+            config: cfg,
+            displayOrder: cfg.displayOrder,
             hiddenColumns: hidden,
           } as unknown as Parameters<typeof DriverInfoRow>[0])}
         />
@@ -58,6 +68,28 @@ const rowIds = (hidden: ReadonlySet<string>) => {
 };
 
 describe('header and cell column lists', () => {
+  it('agree on every column, in order', () => {
+    // A cell with no header -- track limits and virtual energy were -- shifts
+    // every header after it out of line with its data. An explicit order
+    // naming every enabled column, as a real config's does, because the row
+    // builder only draws these columns when the order names them.
+    const ordered = {
+      ...config,
+      displayOrder: [
+        'lmuBadge',
+        'badge',
+        'iratingChange',
+        'delta',
+        'fastestTime',
+        'lastTime',
+        'lapCount',
+        'trackLimits',
+        'lmuVirtualEnergy',
+      ],
+    } as typeof config;
+    expect(rowIds(new Set(), ordered)).toEqual(headerIds(new Set(), ordered));
+  });
+
   it('agree on which rating columns are present', () => {
     const shown = new Set<string>();
     for (const id of RATING_COLUMN_IDS) {

@@ -20,3 +20,4 @@ export * from './useClassLapEstimates';
 export * from './useTrackMapSettings';
 export * from './useDriverTagMap';
 export * from './useManufacturerCounts';
+export * from './useTrackLimitsMax';
