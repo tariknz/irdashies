@@ -2,7 +2,7 @@ import type { LmuDriverRating } from '@irdashies/types';
 import logger from '../../logger';
 import type { LmuTapeRestSource } from '../rest/tapeTransport';
 import type { RaceosClient } from './client';
-import { raceosUsername } from './parse';
+import { parseStoredRating, raceosUsername } from './parse';
 
 /**
  * Driver ratings served from a tape, for replays.
@@ -62,7 +62,10 @@ const parse = (body: string): Map<string, LmuDriverRating> => {
     // anonymiser's text substitution, which has no reason to preserve the
     // trimming the lookup applied when they were first stored.
     const key = raceosUsername(name);
-    if (key && isRecord(rating)) out.set(key, rating as LmuDriverRating);
+    // Each field is validated as a fresh record would be, so an unknown rank
+    // or a mistyped tier cannot reach the renderer from a tape either.
+    const parsed = parseStoredRating(rating);
+    if (key && parsed) out.set(key, parsed);
   }
   return out;
 };

@@ -14,7 +14,7 @@ vi.mock('../../logger', () => ({
  *
  * The bodies here are the real shape: whatever buildRatingsBody in
  * lmu_replay_main.cpp writes, which is the app's own cached rating objects
- * keyed by the ids the anonymised snapshots carry.
+ * keyed by the names the anonymised snapshots carry.
  */
 describe('createLmuTapeRatingClient', () => {
   const body = JSON.stringify({
@@ -118,6 +118,29 @@ describe('createLmuTapeRatingClient', () => {
 
     expect(client.get('Herve Attard')).toBeUndefined();
     expect(client.get('Other One')).toBeUndefined();
+  });
+
+  it('drops fields a fresh record would not be allowed to carry', () => {
+    // A tape from an older build, or one edited by hand. An unknown rank would
+    // be drawn as an unstyled chip, so it goes the way the live parser sends it.
+    const client = createLmuTapeRatingClient({
+      readRest: vi.fn<Reader>(() =>
+        JSON.stringify({
+          'Herve Attard': {
+            driverRank: 'Diamond',
+            driverTier: 3,
+            safetyRank: 'Silver',
+            safetyTier: '2',
+            countryCode: 42,
+          },
+          'Leonel Gomez': { driverRank: 'Diamond', countryCode: 42 },
+        })
+      ),
+    });
+
+    expect(client.get('Herve Attard')).toEqual({ safetyRank: 'Silver' });
+    // Nothing usable left at all: a miss, not an empty rating.
+    expect(client.get('Leonel Gomez')).toBeUndefined();
   });
 
   it('survives a tape that throws on read', () => {

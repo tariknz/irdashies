@@ -128,6 +128,39 @@ export function parseRaceosPlayer(
 }
 
 /**
+ * A rating already in the renderer's shape, read back from storage that
+ * someone else wrote -- a tape's baked ratings -- or undefined.
+ *
+ * Held to the same rules as a fresh record: an unknown rank is dropped rather
+ * than drawn as an unstyled chip, a tier only counts with its rank, and an
+ * entry left with nothing usable is a miss.
+ */
+export function parseStoredRating(value: unknown): LmuDriverRating | undefined {
+  const stored = asRecord(value);
+  if (!stored) return undefined;
+
+  const driverRank = asRank(stored.driverRank);
+  const safetyRank = asRank(stored.safetyRank);
+  const rating: LmuDriverRating = {
+    driverRank,
+    driverTier:
+      driverRank && driverRank !== 'Pro'
+        ? asTier(stored.driverTier)
+        : undefined,
+    safetyRank,
+    safetyTier:
+      safetyRank && safetyRank !== 'Pro'
+        ? asTier(stored.safetyTier)
+        : undefined,
+    badge: asString(stored.badge),
+    countryCode: normaliseNationality(stored.countryCode),
+  };
+
+  const populated = Object.values(rating).some((v) => v !== undefined);
+  return populated ? rating : undefined;
+}
+
+/**
  * A players response to ratings keyed by Steam ID.
  *
  * A live response is a bare array. `{ players: [...] }` and `{ data: [...] }`

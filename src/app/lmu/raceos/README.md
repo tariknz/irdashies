@@ -96,9 +96,9 @@ Two consequences fall out of the chain and are not bugs:
 ## How it is wired
 
 `bridge/iracingSdk/lmuSdkBridge.ts` owns the join. On each session poll it
-hands `client.request()` the grid's Steam ids from `raw.drivers[].steamId`
-(dropping the `"0"` that AI entries report), and passes `client.get` to
-`mapLmuSession` as the synchronous lookup that fills `Driver.LmuRating`.
+hands `client.request()` the grid's driver names (AI entries left out, the
+player always kept), and passes `client.get` to `mapLmuSession` as the
+synchronous lookup by driver name that fills `Driver.LmuRating`.
 Answers arrive long after the snapshot that asked for them, so the client's
 `onResolved` drops the bridge's session signature to force a republish.
 

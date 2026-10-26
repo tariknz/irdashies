@@ -324,7 +324,7 @@ export async function publishLmuSDKEvents(
   // Driver ranks and badges, from the rating service LMU's own ecosystem uses.
   //
   // Deliberately the loosest coupling in this bridge. The loop hands the
-  // client a list of Steam ids and reads back only what it has already
+  // client the grid's driver names and reads back only what it has already
   // resolved, synchronously -- every request, token exchange, retry and cache
   // write happens on the client's own timers. So the service being slow, down
   // or unreachable costs the telemetry loop nothing and leaves the standings
@@ -337,8 +337,8 @@ export async function publishLmuSDKEvents(
   //
   // A replay takes the other branch entirely, because the recorder never
   // captures that ticket -- it is a live credential and a tape is a fixture.
-  // `anonymise` bakes the ratings into the tape instead, under synthetic Steam
-  // ids matching the ones in its snapshots, so a replay shows the badges it
+  // `anonymise` bakes the ratings into the tape instead, keyed by the same
+  // pseudonymised names its snapshots carry, so a replay shows the badges it
   // was recorded with and carries no real identity.
   let ratingCache: DriverRatingCache | undefined;
   let ratingClient: RaceosClient;

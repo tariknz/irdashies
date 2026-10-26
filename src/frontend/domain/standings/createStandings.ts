@@ -72,9 +72,9 @@ export interface Standings {
   /**
    * The penalty this driver is serving, where it can be told apart.
    *
-   * Only ever set on the player's row: the kind comes from the player's own
-   * pit-stop estimate, so every other car has a count and no more. See
-   * types/lmu/penalty.ts.
+   * From LMU's UI websocket for any car while it answers. Without it, only the
+   * player's own car gets a kind, derived from its pit-stop estimate; every
+   * other car has a count and no more. See types/lmu/penalty.ts.
    */
   penaltyKind?: LmuPenaltyKind;
   /** Seconds a time penalty will add, for the `TIME` kind. */
