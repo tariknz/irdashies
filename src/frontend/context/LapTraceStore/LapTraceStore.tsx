@@ -648,6 +648,16 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
     const simInvalidationRose = simLapInvalidated && !lap.prevSimLapInvalidated;
     let simInvalidationConsumed = false;
 
+    // A lap waiting for its official time is told about the flag on every
+    // kind of frame, before the branches below. Inside them, a tow or reset
+    // just after the line took the position-jump branch, the rise was
+    // remembered as the previous value, and the lap could still be promoted.
+    // Remembered rather than tested on the finalising frame alone: the flag
+    // can come on a few frames before the official time arrives.
+    if (state.pendingBest && simInvalidationRose) {
+      state.pendingBest.simInvalidatedLate = true;
+    }
+
     if (lap.lastTrackedPct < 0) {
       // First frame after initialize: only start timing the lap if we happen
       // to be at the line, otherwise this is a partial lap we cannot time.
@@ -714,9 +724,6 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
       // is left pending and dropped at the next crossing rather than
       // mis-timed.
       const pending = state.pendingBest;
-      // Remembered rather than tested on the finalising frame alone: the flag
-      // can come on a few frames before the official time arrives.
-      if (pending && simInvalidationRose) pending.simInvalidatedLate = true;
       // A pending lap survives only until the next lap finishes. Its own time
       // never arrived — if LapLastLapTime had not moved by now it is not going
       // to — and the next value to appear belongs to the lap crossing now.

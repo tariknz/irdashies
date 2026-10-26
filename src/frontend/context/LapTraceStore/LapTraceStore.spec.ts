@@ -1099,6 +1099,29 @@ describe('LapTraceStore best-lap promotion', () => {
     expect(activeLap()?.invalidReason).toBe('sim-invalidated');
   });
 
+  it('does not promote a lap the sim voids on a reset just after the line', async () => {
+    const bridge = makeBridge(null);
+    await initWith(bridge);
+
+    driveToTheLine(90);
+    feed({ pct: 0.01, time: clock, lapCompleted: 1 });
+    expect(useLapTraceStore.getState().pendingBest).not.toBeNull();
+    // A tow or Active Reset lands with the flag coming on. That frame takes
+    // the position-jump path, which must still tell the pending lap.
+    feed({ pct: 0.7, time: clock + 0.05, simInvalid: true, lapCompleted: 1 });
+    feed({
+      pct: 0.7,
+      time: clock + 0.1,
+      simInvalid: true,
+      lastLapTime: 90,
+      lapCompleted: 1,
+    });
+
+    expect(useLapTraceStore.getState().bestLapTimeSec).toBe(
+      Number.POSITIVE_INFINITY
+    );
+  });
+
   it('does not charge the next lap with a flag still showing the last one', async () => {
     const bridge = makeBridge(null);
     await initWith(bridge);
