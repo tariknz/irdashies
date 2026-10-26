@@ -168,6 +168,14 @@ export interface ActiveLap {
   prevLastLapTime: number;
   prevLapCompleted: number;
   /**
+   * The sim's lap-void flag as it stood on the previous frame. Frame memory
+   * like the two above, and for a related reason: the flag is acted on when it
+   * comes on, not for as long as it stays on. Nothing says LMU clears it on
+   * the very frame the line is crossed, and a flag still showing the lap just
+   * finished would otherwise write off the clean lap that follows.
+   */
+  prevSimLapInvalidated: boolean;
+  /**
    * Running speed range for this lap. Tracked incrementally so the plot has a
    * stable vertical scale before any reference lap exists, without rescanning
    * every sample each frame.
@@ -199,6 +207,13 @@ interface PendingBest {
    * trusting isCleanLap alone.
    */
   incidentCountAtBoundary: number;
+  /**
+   * Set when the sim's void flag comes on after the crossing, before the lap
+   * is finalised. The same late-report allowance as the incident count: the
+   * flag can describe the lap just finished a tick or two after the line, so
+   * a pending lap is not promoted past it.
+   */
+  simInvalidatedLate: boolean;
   /**
    * LapCompleted as seen at the crossing, which is this lap's identity. The
    * counter can lag the line by a tick, so the lap that just finished is
@@ -351,6 +366,7 @@ function createActiveLap(): ActiveLap {
     incidentCountAtStart: 0,
     prevLastLapTime: -1,
     prevLapCompleted: -1,
+    prevSimLapInvalidated: false,
     speedMinMs: Number.POSITIVE_INFINITY,
     speedMaxMs: Number.NEGATIVE_INFINITY,
     lastNotifiedM: Number.NEGATIVE_INFINITY,
@@ -626,6 +642,12 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
     // exists for would otherwise never reach the widget.
     const reasonBefore = lap.invalidReason;
 
+    // The void flag coming on, as opposed to still being on. Which lap it
+    // belongs to is decided below: on a crossing frame it is the lap
+    // finishing, and the crossing consumes it so the new lap is not charged.
+    const simInvalidationRose = simLapInvalidated && !lap.prevSimLapInvalidated;
+    let simInvalidationConsumed = false;
+
     if (lap.lastTrackedPct < 0) {
       // First frame after initialize: only start timing the lap if we happen
       // to be at the line, otherwise this is a partial lap we cannot time.
@@ -692,6 +714,9 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
       // is left pending and dropped at the next crossing rather than
       // mis-timed.
       const pending = state.pendingBest;
+      // Remembered rather than tested on the finalising frame alone: the flag
+      // can come on a few frames before the official time arrives.
+      if (pending && simInvalidationRose) pending.simInvalidatedLate = true;
       // A pending lap survives only until the next lap finishes. Its own time
       // never arrived — if LapLastLapTime had not moved by now it is not going
       // to — and the next value to appear belongs to the lap crossing now.
@@ -711,7 +736,9 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
         // after the lap was already snapshotted as clean and the next one
         // started — so this is re-checked here rather than trusting the
         // snapshot's isCleanLap alone.
-        const invalidatedLate = incidentCount > pending.incidentCountAtBoundary;
+        const invalidatedLate =
+          incidentCount > pending.incidentCountAtBoundary ||
+          pending.simInvalidatedLate;
         if (
           !invalidatedLate &&
           state.bestLapLoaded &&
@@ -756,8 +783,15 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
         // reset a few lines down moves the baseline on to this frame's count,
         // putting it out of reach. Compare it here, against the baseline of
         // the lap that is finishing.
+        //
+        // The sim's void flag coming on at the line is the same case: it is
+        // the finishing lap's, so it stops that lap here and is consumed, and
+        // the lap starting on this frame is not charged with it.
         const finishedClean =
-          lap.isCleanLap && incidentCount <= lap.incidentCountAtStart;
+          lap.isCleanLap &&
+          incidentCount <= lap.incidentCountAtStart &&
+          !simInvalidationRose;
+        simInvalidationConsumed = simInvalidationRose;
         if (finishedClean) {
           const record = snapshotActiveLap(lap, state, -1);
           set({
@@ -769,6 +803,7 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
               // would hide the very change being waited for.
               lastLapTimeAtBoundary: lap.prevLastLapTime,
               incidentCountAtBoundary: incidentCount,
+              simInvalidatedLate: false,
               lapCompletedAtBoundary: lapCompleted,
             },
           });
@@ -796,10 +831,15 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
       // other's: iRacing counts incidents and publishes no void flag, LMU
       // publishes the flag and counts nothing. Both are read here, and
       // whichever the running sim supplies is the one that fires.
+      //
+      // The flag counts when it comes on. Still being on from the lap before
+      // says nothing about this one. Coming on just after the line charges
+      // this lap and the pending one alike, as a late incident does, because
+      // nothing tells the two apart.
       const reason: LapInvalidReason | null =
         incidentCount > lap.incidentCountAtStart
           ? 'incident'
-          : simLapInvalidated
+          : simInvalidationRose && !simInvalidationConsumed
             ? 'sim-invalidated'
             : onPitRoad
               ? 'pitted'
@@ -860,6 +900,7 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
     lap.lastTrackedTime = sessionTime;
     lap.prevLastLapTime = lastLapTime;
     lap.prevLapCompleted = lapCompleted;
+    lap.prevSimLapInvalidated = simLapInvalidated;
   },
 
   setReferenceFromSource: async (bridge, kind) => {

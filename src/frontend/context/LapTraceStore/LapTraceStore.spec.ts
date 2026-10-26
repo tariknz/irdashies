@@ -1050,6 +1050,91 @@ describe('LapTraceStore best-lap promotion', () => {
     );
   });
 
+  it('does not promote a lap the sim voids on the crossing frame', async () => {
+    const bridge = makeBridge(null);
+    await initWith(bridge);
+
+    driveToTheLine(90);
+    // LMU's flag comes on at the line: it is the finishing lap's verdict.
+    feed({ pct: 0.01, time: clock, simInvalid: true, lapCompleted: 1 });
+    expect(useLapTraceStore.getState().pendingBest).toBeNull();
+    // And the lap starting on that frame is not charged with it.
+    expect(activeLap()?.invalidReason).toBeNull();
+
+    feed({
+      pct: 0.02,
+      time: clock + 0.1,
+      simInvalid: true,
+      lastLapTime: 90,
+      lapCompleted: 1,
+    });
+    expect(useLapTraceStore.getState().bestLapTimeSec).toBe(
+      Number.POSITIVE_INFINITY
+    );
+    expect(activeLap()?.invalidReason).toBeNull();
+  });
+
+  it('does not promote a lap the sim voids just after the line', async () => {
+    const bridge = makeBridge(null);
+    await initWith(bridge);
+
+    driveToTheLine(90);
+    feed({ pct: 0.01, time: clock, lapCompleted: 1 });
+    expect(useLapTraceStore.getState().pendingBest).not.toBeNull();
+    // The flag arrives a tick after the line, before the official time. It
+    // may describe either lap, so neither is allowed to stand -- the same
+    // allowance a late incident gets.
+    feed({ pct: 0.015, time: clock + 0.05, simInvalid: true, lapCompleted: 1 });
+    feed({
+      pct: 0.02,
+      time: clock + 0.1,
+      simInvalid: true,
+      lastLapTime: 90,
+      lapCompleted: 1,
+    });
+
+    expect(useLapTraceStore.getState().bestLapTimeSec).toBe(
+      Number.POSITIVE_INFINITY
+    );
+    expect(activeLap()?.invalidReason).toBe('sim-invalidated');
+  });
+
+  it('does not charge the next lap with a flag still showing the last one', async () => {
+    const bridge = makeBridge(null);
+    await initWith(bridge);
+
+    // Lap 1 is voided early, and the flag stays on through the line and the
+    // first frames of lap 2 before LMU clears it.
+    feed({ pct: 0, time: clock });
+    const step = 90 / (STEPS + 1);
+    for (let i = 0; i < STEPS; i++) {
+      feed({
+        pct: 0.01 + i * 0.05,
+        time: clock + step * (i + 1),
+        simInvalid: i >= 2,
+      });
+    }
+    clock += 90;
+    feed({ pct: 0.01, time: clock, simInvalid: true, lapCompleted: 1 });
+    feed({
+      pct: 0.02,
+      time: clock + 0.1,
+      simInvalid: true,
+      lastLapTime: 90,
+      lapCompleted: 1,
+    });
+    feed({ pct: 0.02, time: clock + 0.15, lastLapTime: 90, lapCompleted: 1 });
+    expect(activeLap()?.invalidReason).toBeNull();
+    clock += 0.2;
+
+    // Lap 2 is clean, and is recorded.
+    driveToTheLine(88, 0, 1, 90);
+    feed({ pct: 0.01, time: clock, lastLapTime: 90, lapCompleted: 2 });
+    feed({ pct: 0.02, time: clock + 0.1, lastLapTime: 88, lapCompleted: 2 });
+
+    expect(useLapTraceStore.getState().bestLapTimeSec).toBe(88);
+  });
+
   it('never gives a pending lap the next lap time to arrive', async () => {
     const bridge = makeBridge(null);
     await initWith(bridge);

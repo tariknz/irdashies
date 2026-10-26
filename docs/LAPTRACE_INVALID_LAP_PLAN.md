@@ -347,7 +347,15 @@ no-reference story does.
   release. `invalidate()`'s first-cause-wins rule makes a pulse safe, but a
   flag that clears at the line and sets again immediately would flicker. The
   LMU replay harness ([`docs/LMU_RECORD_REPLAY.md`](./LMU_RECORD_REPLAY.md))
-  is the cheap way to confirm.
+  is the cheap way to confirm. The bundled `lmu-session.lmudt` cannot: its
+  flag never changes. So the store acts when the flag comes on rather than
+  for as long as it stays on, which holds either way. A flag still showing
+  the previous lap after the line does not write off the next one. A flag
+  that comes on at the line counts against the lap finishing. One that comes
+  on just after the line, while that lap waits for its official time, voids
+  both, the same allowance a late incident gets. What this gives up is a
+  second void while the flag is still on from the lap before, which needs a
+  new offence in the moments before LMU clears it.
 
 ## 8. Pre-PR checklist
 
