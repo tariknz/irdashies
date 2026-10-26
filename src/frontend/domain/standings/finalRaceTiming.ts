@@ -29,7 +29,12 @@ const finalGap = (
 export const augmentStandingsWithFinalTiming = (
   grouped: [string, Standings[]][],
   timings: readonly (RaceFinishTiming | null)[],
-  options: { gap: boolean; interval: boolean; playerReference: boolean }
+  options: {
+    gap: boolean;
+    interval: boolean;
+    playerReference: boolean;
+    showLapDifferences?: boolean;
+  }
 ): [string, Standings[]][] => {
   const player = options.playerReference
     ? grouped.flatMap(([, rows]) => rows).find((row) => row.isPlayer)
@@ -57,7 +62,13 @@ export const augmentStandingsWithFinalTiming = (
       }
       if (options.interval) {
         if (index === 0) interval = undefined;
-        else if (aheadTiming) interval = finalGap(timing, aheadTiming).value;
+        else if (aheadTiming) {
+          const retained = finalGap(timing, aheadTiming);
+          interval =
+            options.showLapDifferences && retained.laps
+              ? { value: undefined, laps: -retained.laps }
+              : retained.value;
+        }
       }
       return { ...row, gap, interval };
     }),

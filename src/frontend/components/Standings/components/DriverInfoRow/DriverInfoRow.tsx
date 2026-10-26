@@ -38,7 +38,7 @@ interface DriverRowInfoProps {
   hasFastestTime: boolean;
   delta?: number;
   gap?: Gap;
-  interval?: number;
+  interval?: number | Gap;
   position?: number;
   lap?: number;
   license?: string;
@@ -763,15 +763,23 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
     lapCountUnknown,
   ]);
 
+  const rowOpacity =
+    config && 'driverRow' in config ? (config.driverRow?.opacity ?? 70) : 70;
+
   return (
     <tr
       key={carIdx}
+      style={{
+        ['--row-opacity' as string]: `${rowOpacity}%`,
+        // Keep the player's existing 20% highlight at the default row opacity.
+        ['--player-row-opacity' as string]: `${(rowOpacity * 20) / 70}%`,
+      }}
       className={[
         !onTrack || onPitRoad ? 'text-white/60' : '',
         isPlayer ? 'text-amber-300' : '',
         isPlayer
-          ? 'bg-yellow-500/20'
-          : 'odd:bg-slate-800/70 even:bg-slate-900/70 text-sm',
+          ? 'bg-yellow-500/(--player-row-opacity)'
+          : 'odd:bg-slate-800/(--row-opacity) even:bg-slate-900/(--row-opacity) text-sm',
         !isPlayer && isLapped ? 'text-blue-400' : '',
         !isPlayer && isLappingAhead ? 'text-red-400' : '',
         hidden ? 'invisible' : '',

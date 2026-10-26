@@ -60,14 +60,16 @@ export const findBattle = (
   maxGap: number
 ): [Standings, Standings] | undefined => {
   let best: [Standings, Standings] | undefined;
+  let bestInterval = Infinity;
   for (let i = 1; i < Math.min(drivers.length, perClass); i++) {
     const behind = drivers[i];
     const interval = behind.interval;
-    if (interval === undefined || interval > maxGap || behind.onPitRoad) {
+    if (typeof interval !== 'number' || interval > maxGap || behind.onPitRoad) {
       continue;
     }
-    if (!best || interval < (best[1].interval ?? Infinity)) {
+    if (!best || interval < bestInterval) {
       best = [drivers[i - 1], behind];
+      bestInterval = interval;
     }
   }
   return best;
