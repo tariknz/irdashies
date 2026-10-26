@@ -7,6 +7,7 @@ import {
   WrenchIcon,
   InfoIcon,
   NewspaperIcon,
+  FlagCheckeredIcon,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { WIDGET_MANIFESTS, type WidgetId } from '@irdashies/types';
@@ -60,6 +61,12 @@ export const generalItems: MenuItem[] = [
     path: '/driver-tags',
     label: 'Driver Tags',
     icon: TagIcon,
+  },
+  {
+    to: '/settings/race-plan',
+    path: '/race-plan',
+    label: 'Race Plan',
+    icon: FlagCheckeredIcon,
   },
   {
     to: '/settings/car-setup',
@@ -122,6 +129,14 @@ const WIDGET_MENU_META: Partial<
     description: 'Slow cars ahead warning',
   },
   standings: { category: 'race', description: 'Class positions' },
+  stintplan: {
+    category: 'race',
+    description: 'Your stint against the race plan',
+  },
+  strategytimeline: {
+    category: 'race',
+    description: 'Who drives when in an endurance race',
+  },
   tachometer: { category: 'car', description: 'RPM and shift lights' },
   map: { category: 'track', description: 'Circuit map with cars' },
   twitchchat: { category: 'extras', description: 'Twitch chat feed' },
