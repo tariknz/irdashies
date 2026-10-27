@@ -17,6 +17,10 @@ import type { Incident } from '@irdashies/types';
 import { Gantry, type GantryProps } from './Gantry';
 import { useEffect, useState } from 'react';
 import { GantrySessionHoldProvider } from './hooks/useGantrySessionHold';
+import {
+  GantryStandingsHost,
+  useGantryStandings,
+} from './components/GantryStandingsHost/GantryStandingsHost';
 
 interface GantrySetup extends GantryDecoratorOptions {
   channels?: Partial<GantryChannels>;
@@ -125,5 +129,40 @@ export const WithDock: Story = {
 
 /** The sim has closed: the final results and lap graph stay up for review. */
 export const SessionEnded: Story = {
+  decorators: [SimClosesDecorator, ...gantrySetup()],
+};
+
+/** Wires the saved standings choice in the way GantryApp does. */
+const GantryWithStandings = (props: GantryProps) => {
+  const standings = useGantryStandings();
+  return (
+    <Gantry
+      {...props}
+      standings={
+        standings.status === 'ready'
+          ? (followedCarIdx) => (
+              <GantryStandingsHost
+                widget={standings.widget}
+                source={standings.source}
+                followedCarIdx={followedCarIdx}
+              />
+            )
+          : undefined
+      }
+    />
+  );
+};
+
+/** The overlay Standings widget in the left pane, with click and follow. */
+export const OverlayStandings: Story = {
+  args: { standingsSource: 'overlay' },
+  render: (args) => <GantryWithStandings {...args} />,
+  decorators: gantrySetup(),
+};
+
+/** The overlay-style standings after the sim closes keep the final results. */
+export const OverlayStandingsSessionEnded: Story = {
+  args: { standingsSource: 'overlay' },
+  render: (args) => <GantryWithStandings {...args} />,
   decorators: [SimClosesDecorator, ...gantrySetup()],
 };

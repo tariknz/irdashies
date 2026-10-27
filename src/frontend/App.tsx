@@ -25,6 +25,10 @@ import {
   GantryDockHost,
   useGantryDock,
 } from './components/GantryDock/GantryDockHost';
+import {
+  GantryStandingsHost,
+  useGantryStandings,
+} from './components/Gantry/components/GantryStandingsHost/GantryStandingsHost';
 import { GantrySessionHoldProvider } from './components/Gantry/hooks/useGantrySessionHold';
 import { TapeReplayOverlay } from './components/TapeReplayControls/TapeReplayControls';
 
@@ -75,6 +79,20 @@ const GantryApp = () => {
     () => (dock.panels.length > 0 ? <GantryDockHost dock={dock} /> : undefined),
     [dock]
   );
+  const standings = useGantryStandings();
+  const renderStandings = useMemo(
+    () =>
+      standings.status === 'ready'
+        ? (followedCarIdx: number | null) => (
+            <GantryStandingsHost
+              widget={standings.widget}
+              source={standings.source}
+              followedCarIdx={followedCarIdx}
+            />
+          )
+        : undefined,
+    [standings]
+  );
   return (
     // The runtime provider supplies Gantry's declared channel rates; without
     // it every channel hook here would fall back to the unthrottled default.
@@ -83,7 +101,7 @@ const GantryApp = () => {
         <div className="w-full h-full bg-slate-900 text-white">
           <GantrySessionHoldProvider running={running}>
             <WidgetScale scale={gantry?.scale}>
-              <Gantry dock={dockHost} />
+              <Gantry dock={dockHost} standings={renderStandings} />
             </WidgetScale>
           </GantrySessionHoldProvider>
         </div>

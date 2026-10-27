@@ -1,6 +1,5 @@
-import { memo, useCallback, useEffect, useRef, useMemo } from 'react';
+import { memo, useEffect, useRef, useMemo } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
-import logger from '@irdashies/utils/logger';
 import { formatTime } from '@irdashies/utils/time';
 import { Compound } from '../../../shared/Compound/Compound';
 import { DriverRatingBadge } from '../../../shared/DriverRatingBadge/DriverRatingBadge';
@@ -13,6 +12,7 @@ import { useActiveSimulator } from '@irdashies/context';
 import { simulatorHasDriverRatings } from '@irdashies/types';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { useGantrySettings } from '../../hooks/useGantrySettings';
+import { useFocusDriver } from '../../hooks/useFocusDriver';
 import {
   useGantrySessionData,
   type GantrySessionData,
@@ -169,13 +169,8 @@ export const GantryStandings = memo(({ followedCarIdx }: Props) => {
   const { standingsByClass } = useGantrySessionData();
   const followedRef = useRef<HTMLDivElement | null>(null);
 
-  // Clicking a row points the sim's camera at that car. Only meaningful in a
-  // replay or when spectating; iRacing ignores it while you are driving.
-  const handleFocusDriver = useCallback((carNumber: string) => {
-    window.raceControlBridge
-      ?.focusDriver(carNumber)
-      .catch((err) => logger.warn('[Gantry] focusDriver failed:', err));
-  }, []);
+  // Clicking a row points the sim's camera at that car.
+  const handleFocusDriver = useFocusDriver();
   const highlightColor = useHighlightColor();
   const highlightColorHex = `#${highlightColor.toString(16).padStart(6, '0')}`;
 

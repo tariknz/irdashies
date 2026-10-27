@@ -27,6 +27,10 @@ import {
   useFirstObservedLap,
   useActiveSimulator,
 } from '@irdashies/context';
+import {
+  useHeld,
+  useSessionHold,
+} from '@irdashies/domain/sessionHold/useSessionHold';
 import { RATING_COLUMN_IDS, simulatorHasDriverRatings } from '@irdashies/types';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 import { computeStintLap } from './components/DriverInfoRow/cells/lapCountUtils';
@@ -125,8 +129,16 @@ export const getOrderedColumns = (
   });
 };
 
+const isEmptyList = (value: readonly unknown[]) => value.length === 0;
+const isEmptyRecord = (value: object | undefined) =>
+  !value || Object.keys(value).length === 0;
+const isEmptyMap = (value: ReadonlyMap<unknown, unknown>) => value.size === 0;
+const isUnset = (value: unknown) => value == null;
+const isFalse = (value: boolean | undefined) => !value;
+
 export const Standings = () => {
   const settings = useStandingsSettings();
+  const { holding } = useSessionHold();
   const generalSettings = useGeneralSettings();
   const { isDriving } = useDrivingState();
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
@@ -142,9 +154,14 @@ export const Standings = () => {
     )
   );
 
-  const p2pDisplayStates = useP2PDisplayStates();
+  const p2pDisplayStates = useHeld(useP2PDisplayStates(), isEmptyList);
 
-  const standings = useDriverStandings(settings);
+  const standings = useHeld(
+    useDriverStandings(settings, {
+      showAll: settings?.driverStandings?.showAll,
+    }),
+    isEmptyList
+  );
   const hasAnyCountryFlag = useMemo(
     () =>
       standings.some(([, classStandings]) =>
@@ -152,33 +169,46 @@ export const Standings = () => {
       ),
     [standings]
   );
-  const manufacturerCountsByClass = useManufacturerCounts(
-    !!settings?.classHeaderStyle?.manufacturerStats?.enabled
+  const manufacturerCountsByClass = useHeld(
+    useManufacturerCounts(
+      !!settings?.classHeaderStyle?.manufacturerStats?.enabled
+    ),
+    isEmptyRecord
   );
-  const classStats = useCarClassStats();
-  const { tagMap, hasAnyTag } = useDriverTagMap(settings?.driverTag?.enabled);
-  const numCarClasses = useWeekendInfoNumCarClasses();
+  const classStats = useHeld(useCarClassStats(), isEmptyRecord);
+  const liveTags = useDriverTagMap(settings?.driverTag?.enabled);
+  const tagMap = useHeld(liveTags.tagMap, isEmptyMap);
+  const hasAnyTag = useHeld(liveTags.hasAnyTag, isFalse);
+  const numCarClasses = useHeld(useWeekendInfoNumCarClasses(), isUnset);
   const isMultiClass = (numCarClasses ?? 0) > 1;
   const highlightColor = useHighlightColor();
 
-  const avgLapTimes = useCarIdxRollingAvgLapTime(
-    settings?.avgLapTime?.numLaps ?? 5
+  const avgLapTimes = useHeld(
+    useCarIdxRollingAvgLapTime(settings?.avgLapTime?.numLaps ?? 5),
+    isEmptyList
   );
 
-  const estimatedLapsByClass = useClassLapEstimates(
-    standings,
-    estimatedLapsEnabled,
-    settings?.classHeaderStyle?.estimatedLaps?.numLaps
+  const estimatedLapsByClass = useHeld(
+    useClassLapEstimates(
+      standings,
+      estimatedLapsEnabled,
+      settings?.classHeaderStyle?.estimatedLaps?.numLaps
+    ),
+    isEmptyRecord
   );
 
-  const pitStopDurations = usePitStopDuration();
-  const firstObservedLaps = useFirstObservedLap();
-  const pitExitPct = usePitLaneStore((s) => s.pitExitPct);
+  const pitStopDurations = useHeld(usePitStopDuration(), isEmptyList);
+  const firstObservedLaps = useHeld(useFirstObservedLap(), isEmptyList);
+  const pitExitPct = useHeld(
+    usePitLaneStore((s) => s.pitExitPct),
+    isUnset
+  );
   const pitExitAfterSF = pitExitPct !== null && pitExitPct > 0.85;
 
   // Determine whether we should hide the car manufacturer column
-  const isSingleMake = useIsSingleMake(
-    !!settings?.carManufacturer?.hideIfSingleMake
+  const isSingleMake = useHeld(
+    useIsSingleMake(!!settings?.carManufacturer?.hideIfSingleMake),
+    isFalse
   );
   const hideCarManufacturer = !!(
     settings?.carManufacturer?.hideIfSingleMake && isSingleMake
@@ -189,7 +219,7 @@ export const Standings = () => {
   const numTopDrivers = settings?.driverStandings?.numTopDrivers ?? 0;
 
   // Check if this is a team racing session
-  const isTeamRacing = useWeekendInfoTeamRacing();
+  const isTeamRacing = useHeld(useWeekendInfoTeamRacing(), isUnset);
 
   // Resolved here so the header and the rows below filter from one set:
   // they build their column lists independently, and DriverClassHeader sums
@@ -248,14 +278,16 @@ export const Standings = () => {
           ['--bg-opacity' as string]: `${settings?.background?.opacity ?? 0}%`,
         }}
       >
-        <TitleBar titleBarSettings={settings?.titleBar} />
-        {settings?.headerBar && (settings.headerBar.enabled ?? true) && (
-          <SessionBar
-            settings={settings.headerBar}
-            opacity={settings?.foreground?.opacity}
-            position="header"
-          />
-        )}
+        {!holding && <TitleBar titleBarSettings={settings?.titleBar} />}
+        {!holding &&
+          settings?.headerBar &&
+          (settings.headerBar.enabled ?? true) && (
+            <SessionBar
+              settings={settings.headerBar}
+              opacity={settings?.foreground?.opacity}
+              position="header"
+            />
+          )}
         <table
           className={`w-full table-auto text-sm border-separate ${tableBorderSpacing}`}
         >
@@ -463,13 +495,15 @@ export const Standings = () => {
             })}
           </tbody>
         </table>
-        {settings?.footerBar && (settings.footerBar.enabled ?? true) && (
-          <SessionBar
-            settings={settings.footerBar}
-            opacity={settings?.foreground?.opacity}
-            position="footer"
-          />
-        )}
+        {!holding &&
+          settings?.footerBar &&
+          (settings.footerBar.enabled ?? true) && (
+            <SessionBar
+              settings={settings.footerBar}
+              opacity={settings?.foreground?.opacity}
+              position="footer"
+            />
+          )}
       </div>
     </div>
   );

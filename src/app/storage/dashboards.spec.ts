@@ -732,6 +732,32 @@ describe('dashboards', () => {
     });
   });
 
+  describe('custom instance defaults', () => {
+    const layout = { x: 20, y: 40, width: 400, height: 300 };
+
+    it('fills a second instance from the defaults of its type', () => {
+      const migrated = withDashboardDefaults({
+        widgets: [
+          {
+            id: 'standings-g1',
+            type: 'standings',
+            enabled: true,
+            placement: 'gantry',
+            layout,
+            config: { background: { opacity: 40 } },
+          },
+        ],
+      });
+      const instance = migrated.widgets.find((w) => w.id === 'standings-g1');
+      const defaults = defaultDashboard.widgets.find(
+        (w) => w.id === 'standings'
+      )?.config as Record<string, unknown>;
+      expect(instance?.config?.background).toEqual({ opacity: 40 });
+      expect(instance?.config?.displayOrder).toEqual(defaults.displayOrder);
+      expect(instance?.placement).toBe('gantry');
+    });
+  });
+
   describe('Radar tuning migration', () => {
     it('drops the pole-side learning tuning and keeps the rest', () => {
       const radarDefaults = defaultDashboard.widgets.find(

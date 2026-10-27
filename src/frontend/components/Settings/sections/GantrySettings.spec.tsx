@@ -89,8 +89,14 @@ const dashboardWith = (sessionRetention: 'all' | 5 | 10 | 20) =>
 // other switch on the Options tab.
 const autoPinSwitch = () => screen.getAllByRole('switch').at(-1) as HTMLElement;
 
-const lapWindowInput = () =>
-  screen.getByRole('spinbutton', { name: '' }) as HTMLInputElement;
+const numberInputWithMax = (max: string) =>
+  (screen.getAllByRole('spinbutton') as HTMLInputElement[]).find(
+    (input) => input.max === max
+  ) as HTMLInputElement;
+
+const lapWindowInput = () => numberInputWithMax('300');
+
+const gapMaxInput = () => numberInputWithMax('600');
 
 const savedLapGraph = (): LapGraphConfig => {
   const dashboard = mocks.onDashboardUpdated.mock.calls.at(-1)?.[0] as
@@ -224,7 +230,13 @@ describe('GantrySettings lap graph', () => {
     mocks.setDashboard(
       dashboardFor(
         gantryConfig({
-          lapGraph: { yAxisMode: 'trace', lapWindow: 40, autoPin: false },
+          lapGraph: {
+            yAxisMode: 'trace',
+            lapWindow: 40,
+            autoPin: false,
+            axisFit: 'shown',
+            gapMaxSeconds: 0,
+          },
         })
       )
     );
@@ -236,6 +248,8 @@ describe('GantrySettings lap graph', () => {
       yAxisMode: 'gap',
       lapWindow: 40,
       autoPin: false,
+      axisFit: 'shown',
+      gapMaxSeconds: 0,
     });
   });
 
@@ -243,7 +257,13 @@ describe('GantrySettings lap graph', () => {
     mocks.setDashboard(
       dashboardFor(
         gantryConfig({
-          lapGraph: { yAxisMode: 'position', lapWindow: 75, autoPin: true },
+          lapGraph: {
+            yAxisMode: 'position',
+            lapWindow: 75,
+            autoPin: true,
+            axisFit: 'shown',
+            gapMaxSeconds: 0,
+          },
         })
       )
     );
@@ -254,10 +274,28 @@ describe('GantrySettings lap graph', () => {
       yAxisMode: 'position',
       lapWindow: 120,
       autoPin: true,
+      axisFit: 'shown',
+      gapMaxSeconds: 0,
     });
 
     fireEvent.click(autoPinSwitch());
     expect(savedLapGraph().autoPin).toBe(false);
+  });
+
+  it('writes the y-axis range and the gap cap', () => {
+    mocks.setDashboard(dashboardWith('all'));
+    render(<GantrySettings />);
+
+    expect(
+      screen.getByRole('button', { name: 'Shown drivers' })
+    ).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'All drivers' }));
+    expect(savedLapGraph().axisFit).toBe('all');
+
+    fireEvent.change(gapMaxInput(), { target: { value: '30' } });
+    expect(savedLapGraph().gapMaxSeconds).toBe(30);
+    expect(savedLapGraph().axisFit).toBe('all');
   });
 
   it('keeps the lap window inside the supported range', () => {
@@ -326,6 +364,8 @@ describe('Gantry config defaults', () => {
       yAxisMode: 'trace',
       lapWindow: 75,
       autoPin: true,
+      axisFit: 'shown',
+      gapMaxSeconds: 0,
     });
     expect(merged.sessionRetention).toBe(10);
     expect(merged.slowSpeedThreshold).toBe(21);

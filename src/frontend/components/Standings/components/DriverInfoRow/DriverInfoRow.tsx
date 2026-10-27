@@ -1,8 +1,9 @@
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { getTailwindStyle } from '@irdashies/utils/colors';
 import { formatTime, type TimeFormat } from '@irdashies/utils/time';
 import { useDashboard, type P2PDisplayState } from '@irdashies/context';
 import type { ResolvedDriverTag } from '../../hooks';
+import { useStandingsInteraction } from '@irdashies/domain';
 import type { Gap, LastTimeState } from '@irdashies/domain';
 import type {
   RelativeWidgetSettings,
@@ -251,6 +252,18 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
   } = displayProps;
 
   const { currentDashboard } = useDashboard();
+  const { onSelectCar, highlightedCarIdx } = useStandingsInteraction();
+  const isHighlighted =
+    highlightedCarIdx != null && highlightedCarIdx === carIdx;
+  const rowRef = useRef<HTMLTableRowElement>(null);
+  useEffect(() => {
+    if (isHighlighted) {
+      rowRef.current?.scrollIntoView?.({
+        block: 'nearest',
+        behavior: 'smooth',
+      });
+    }
+  }, [isHighlighted]);
   const tagSettings = currentDashboard?.generalSettings?.driverTagSettings;
 
   const lastTimeString = useMemo(() => {
@@ -769,12 +782,32 @@ export const DriverInfoRow = memo((props: DriverRowInfoProps) => {
   return (
     <tr
       key={carIdx}
+      ref={rowRef}
+      {...(onSelectCar && {
+        role: 'button',
+        tabIndex: 0,
+        onClick: () => onSelectCar(carIdx),
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelectCar(carIdx);
+          }
+        },
+      })}
       style={{
         ['--row-opacity' as string]: `${rowOpacity}%`,
         // Keep the player's existing 20% highlight at the default row opacity.
         ['--player-row-opacity' as string]: `${(rowOpacity * 20) / 70}%`,
+        ...(isHighlighted && {
+          outlineColor: `#${highlightColor.toString(16).padStart(6, '0')}`,
+        }),
       }}
       className={[
+        onSelectCar
+          ? 'cursor-pointer hover:bg-sky-500/20 focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-400'
+          : '',
+        isHighlighted ? 'outline outline-1 -outline-offset-1 relative' : '',
+        highlightedCarIdx != null && !isHighlighted ? 'opacity-40' : '',
         !onTrack || onPitRoad ? 'text-white/60' : '',
         isPlayer ? 'text-amber-300' : '',
         isPlayer

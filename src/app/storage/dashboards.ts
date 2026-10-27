@@ -222,8 +222,9 @@ export const withDashboardDefaults = (
       ...dashboard.generalSettings,
     },
     widgets: [...storedWidgets, ...missingWidgets].map((widget) => {
+      // A second instance (id `fuel-2`, type `fuel`) takes its type's defaults.
       const defaultWidget = defaultDashboard.widgets.find(
-        (w) => w.id === widget.id
+        (w) => w.id === (widget.type || widget.id)
       );
       if (!defaultWidget?.config) return widget;
       const defaults = defaultWidget.config as Record<string, unknown>;

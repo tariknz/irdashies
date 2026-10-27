@@ -15,6 +15,7 @@ import {
   useSessionDrivers,
 } from '@irdashies/context';
 import type { LapGraphMode } from '@irdashies/domain';
+import type { LapGraphAxisFit } from '@irdashies/types';
 
 type GantryView = 'standings-incidents' | 'lap-graph';
 
@@ -28,9 +29,14 @@ const isEmptyRoster = (drivers: readonly unknown[] | undefined) =>
 export interface GantryProps {
   /** Panels shown under the incident feed. The host renders them. */
   dock?: ReactNode;
+  /**
+   * Replaces the built-in standings table. The host renders it, given the
+   * driver the Follow dropdown is on.
+   */
+  standings?: (followedCarIdx: number | null) => ReactNode;
 }
 
-const GantryInner = memo(({ dock }: GantryProps) => {
+const GantryInner = memo(({ dock, standings }: GantryProps) => {
   const [activeView, setActiveView] = useState<GantryView>(
     'standings-incidents'
   );
@@ -41,6 +47,8 @@ const GantryInner = memo(({ dock }: GantryProps) => {
   // here. null means "follow the saved setting"; the view decides what that is.
   const [lapGraphClassId, setLapGraphClassId] = useState<string | null>(null);
   const [lapGraphMode, setLapGraphMode] = useState<LapGraphMode | null>(null);
+  const [lapGraphAxisFit, setLapGraphAxisFit] =
+    useState<LapGraphAxisFit | null>(null);
   const [lapGraphPins, setLapGraphPins] = useState<readonly number[] | null>(
     null
   );
@@ -86,7 +94,13 @@ const GantryInner = memo(({ dock }: GantryProps) => {
           <SplitPane
             label="Standings and incidents split"
             storageKey={SPLIT_STORAGE_KEY}
-            left={<GantryStandings followedCarIdx={followedCarIdx} />}
+            left={
+              standings ? (
+                standings(followedCarIdx)
+              ) : (
+                <GantryStandings followedCarIdx={followedCarIdx} />
+              )
+            }
             right={
               dock ? (
                 <SplitPane
@@ -111,6 +125,8 @@ const GantryInner = memo(({ dock }: GantryProps) => {
               onClassChange={setLapGraphClassId}
               chosenMode={lapGraphMode}
               onModeChange={setLapGraphMode}
+              chosenAxisFit={lapGraphAxisFit}
+              onAxisFitChange={setLapGraphAxisFit}
               chosenPins={lapGraphPins}
               onPinsChange={setLapGraphPins}
             />
@@ -123,7 +139,10 @@ const GantryInner = memo(({ dock }: GantryProps) => {
 GantryInner.displayName = 'Gantry';
 
 // Also mounted from the widget registry, where it receives the saved config
-// as props. Only `dock` is read.
-export function Gantry({ dock }: GantryProps = {}): React.JSX.Element {
-  return <GantryInner dock={dock} />;
+// as props. Only `dock` and `standings` are read.
+export function Gantry({
+  dock,
+  standings,
+}: GantryProps = {}): React.JSX.Element {
+  return <GantryInner dock={dock} standings={standings} />;
 }
