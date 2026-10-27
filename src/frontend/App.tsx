@@ -28,7 +28,7 @@ import {
 import {
   GantryStandingsHost,
   useGantryStandings,
-} from './components/Gantry/components/GantryStandingsHost/GantryStandingsHost';
+} from './components/GantryStandingsHost/GantryStandingsHost';
 import { GantrySessionHoldProvider } from './components/Gantry/hooks/useGantrySessionHold';
 import { TapeReplayOverlay } from './components/TapeReplayControls/TapeReplayControls';
 

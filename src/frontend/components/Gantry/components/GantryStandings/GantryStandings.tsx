@@ -7,12 +7,11 @@ import {
   DriverName as formatDriverName,
   extractDriverName,
 } from '../../../shared/DriverName/DriverName';
-import { type Gap, useHighlightColor } from '@irdashies/domain';
+import { type Gap, useFocusDriver, useHighlightColor } from '@irdashies/domain';
 import { useActiveSimulator } from '@irdashies/context';
 import { simulatorHasDriverRatings } from '@irdashies/types';
 import { Tooltip } from '../Tooltip/Tooltip';
 import { useGantrySettings } from '../../hooks/useGantrySettings';
-import { useFocusDriver } from '../../hooks/useFocusDriver';
 import {
   useGantrySessionData,
   type GantrySessionData,

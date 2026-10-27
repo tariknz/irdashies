@@ -11,6 +11,7 @@ import {
 import {
   StandingsInteractionProvider,
   StandingsSettingsProvider,
+  useFocusDriver,
 } from '@irdashies/domain';
 import { WidgetScale } from '@irdashies/domain/widgetPresentation/WidgetScale';
 import {
@@ -20,12 +21,11 @@ import {
   type ResolvedGantryStandings,
   type StandingsWidgetSettings,
 } from '@irdashies/types';
-import { getWidget } from '../../../../WidgetIndex';
-import { WidgetRuntimeProvider } from '../../../../widgetRuntime';
-import { ErrorBoundary } from '../../../ErrorBoundary/ErrorBoundary';
-import { RendererDataProviders } from '../../../RendererDataProviders/RendererDataProviders';
-import { useFocusDriver } from '../../hooks/useFocusDriver';
-import { useGantrySessionHold } from '../../hooks/useGantrySessionHold';
+import { getWidget } from '../../WidgetIndex';
+import { WidgetRuntimeProvider } from '../../widgetRuntime';
+import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
+import { RendererDataProviders } from '../RendererDataProviders/RendererDataProviders';
+import { useSessionHold } from '@irdashies/domain/sessionHold/useSessionHold';
 
 type StandingsConfig = StandingsWidgetSettings['config'];
 
@@ -92,7 +92,7 @@ interface GantryStandingsHostProps {
 export const GantryStandingsHost = memo(
   ({ widget, source, followedCarIdx }: GantryStandingsHostProps) => {
     const { running } = useRunningState();
-    const { holding } = useGantrySessionHold();
+    const { holding } = useSessionHold();
     const drivers = useSessionDrivers();
     const focusDriver = useFocusDriver();
     const widgets = useMemo(() => [widget], [widget]);

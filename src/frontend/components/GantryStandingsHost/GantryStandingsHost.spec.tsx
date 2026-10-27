@@ -21,15 +21,15 @@ vi.mock('@irdashies/context', () => ({
   SessionTimingUpdater: () => null,
 }));
 
-vi.mock('../../hooks/useGantrySessionHold', () => ({
-  useGantrySessionHold: () => ({ holding: mocks.holding, epoch: 0 }),
+vi.mock('@irdashies/domain/sessionHold/useSessionHold', () => ({
+  useSessionHold: () => ({ holding: mocks.holding, epoch: 0 }),
 }));
 
-vi.mock('../../../RendererDataProviders/RendererDataProviders', () => ({
+vi.mock('../RendererDataProviders/RendererDataProviders', () => ({
   RendererDataProviders: () => null,
 }));
 
-vi.mock('../../../../WidgetIndex', async () => {
+vi.mock('../../WidgetIndex', async () => {
   const { useStandingsInteraction, useStandingsSettings } =
     await import('@irdashies/domain');
   const FakeStandings = () => {

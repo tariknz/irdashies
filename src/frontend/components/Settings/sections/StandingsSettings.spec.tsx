@@ -82,4 +82,21 @@ describe('StandingsSettings', () => {
       next?.widgets.find((w) => w.id === 'standings-g1')?.config
     ).toMatchObject({ background: { opacity: 80 } });
   });
+
+  it('has no enabled switch on a Gantry-only layout', () => {
+    const headerSwitch = () =>
+      screen
+        .getByRole('heading', { level: 2 })
+        .parentElement?.querySelector('[role="switch"]') ?? null;
+    mocks.dashboard = {
+      widgets: [overlay, { ...gantryLayout, placement: undefined }],
+    };
+    const { unmount } = render(<StandingsSettings widgetId="standings-g1" />);
+    expect(headerSwitch()).not.toBeNull();
+    unmount();
+
+    mocks.dashboard = { widgets: [overlay, gantryLayout] };
+    render(<StandingsSettings widgetId="standings-g1" />);
+    expect(headerSwitch()).toBeNull();
+  });
 });

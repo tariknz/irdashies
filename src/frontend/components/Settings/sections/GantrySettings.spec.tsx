@@ -346,6 +346,42 @@ describe('GantrySettings keep on top', () => {
   });
 });
 
+describe('GantrySettings driver name', () => {
+  beforeEach(() => {
+    mocks.onDashboardUpdated.mockClear();
+    localStorage.clear();
+  });
+
+  it('is offered while the built-in table stands in for a removed layout', () => {
+    mocks.setDashboard(
+      dashboardFor(
+        gantryConfig({
+          standings: { source: 'gantry', widgetId: 'standings-gone' },
+        })
+      )
+    );
+    render(<GantrySettings />);
+
+    expect(screen.queryByText('Driver Name')).not.toBeNull();
+  });
+
+  it('is hidden when the overlay standings replace the built-in table', () => {
+    const dashboard = dashboardFor(
+      gantryConfig({ standings: { source: 'overlay' } })
+    );
+    dashboard.widgets.push({
+      id: 'standings',
+      enabled: true,
+      layout: { x: 0, y: 0, width: 100, height: 100 },
+      config: {},
+    });
+    mocks.setDashboard(dashboard);
+    render(<GantrySettings />);
+
+    expect(screen.queryByText('Driver Name')).toBeNull();
+  });
+});
+
 // The settings pane reads whatever storage hands it. The Gantry has no config
 // migrator, so deepMergeConfig is what fills in a block a saved config predates.
 describe('Gantry config defaults', () => {

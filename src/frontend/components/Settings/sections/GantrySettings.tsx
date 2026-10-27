@@ -13,6 +13,7 @@ import {
   LAP_GRAPH_LAP_WINDOW_BOUNDS,
   DEFAULT_INCIDENT_CAMERA_GROUP,
   getWidgetDefaultConfig,
+  resolveGantryStandings,
 } from '@irdashies/types';
 import {
   useDashboard,
@@ -382,7 +383,8 @@ export const GantrySettings = memo(() => {
 
                     <SettingDivider />
 
-                    {(config.standings?.source ?? 'builtin') === 'builtin' && (
+                    {resolveGantryStandings(currentDashboard).status !==
+                      'ready' && (
                       <div className="py-2">
                         <div className="text-sm text-slate-300">
                           Driver Name
