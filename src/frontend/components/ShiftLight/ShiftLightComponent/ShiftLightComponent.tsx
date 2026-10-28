@@ -3,6 +3,10 @@ import type { CarData } from '@irdashies/utils/carData';
 import type { ShiftPointSettings } from '@irdashies/types';
 import { useCustomShiftPoints } from '../hooks/useCustomShiftPoints';
 
+/** Pedal travel that counts as accelerating, and as braking. */
+const UPSHIFT_MIN_THROTTLE = 0.05;
+const UPSHIFT_MAX_BRAKE = 0.05;
+
 export interface ShiftLightProps {
   rpm: number;
   maxRpm: number;
@@ -10,6 +14,12 @@ export interface ShiftLightProps {
   shiftRpm?: number;
   /** Current gear */
   gear?: number;
+  /** Forward gears; no cue in the last one. 0 when unknown. */
+  gearCount?: number;
+  /** Throttle pedal, 0..1. */
+  throttle?: number;
+  /** Brake pedal, 0..1. */
+  brake?: number;
   /** Whether to show RPM text display (default: true) */
   showRpmText?: boolean;
   /** Canonical car data for custom shift point lookup */
@@ -27,6 +37,9 @@ export const ShiftLight = ({
   maxRpm,
   shiftRpm = 0,
   gear = 0,
+  gearCount = 0,
+  throttle = 1,
+  brake = 0,
   showRpmText = true,
   carData = null,
   carPath = undefined,
@@ -51,10 +64,22 @@ export const ShiftLight = ({
     carData
   );
 
+  // A cue only means "upshift now" when there is a gear to go up to and the
+  // driver is accelerating. Otherwise it fires uselessly at the limiter in top
+  // gear, and on a downshift, where the revs jump past the shift point as the
+  // lower gear engages -- the brake test covers a heel-and-toe blip, which is
+  // throttle under braking.
+  const canUpshift =
+    (gearCount <= 0 || gear < gearCount) &&
+    throttle >= UPSHIFT_MIN_THROTTLE &&
+    brake <= UPSHIFT_MAX_BRAKE;
+
   const automaticShiftRpm = shiftRpm > 0 ? shiftRpm : maxRpm * 0.9;
-  const shouldShowShift = shiftPointSettings?.enabled
-    ? shouldShowCustomShift
-    : gear > 0 && automaticShiftRpm > 0 && rpm >= automaticShiftRpm;
+  const shouldShowShift =
+    canUpshift &&
+    (shiftPointSettings?.enabled
+      ? shouldShowCustomShift
+      : gear > 0 && automaticShiftRpm > 0 && rpm >= automaticShiftRpm);
 
   // Get custom shift indicator style for RPM text box
   const getRpmBoxStyle = () => {
