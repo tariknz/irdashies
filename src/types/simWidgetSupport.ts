@@ -41,9 +41,12 @@ export interface SimWidgetSupportConfig {
 export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'battle',
   'cornername',
+  'deltaspeed',
   'flag',
+  'garagecover',
   'infobar',
   'input',
+  'laptimelog',
   'laptrace',
   'pitlanehelper',
   'relative',
@@ -53,6 +56,8 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   // one widget absent from the settings menu, so there would be no toggle to
   // grey out if it were listed as unsupported.
   'telemetryinspector',
+  // Without its wind cell, which the widget drops under LMU.
+  'weather',
 ];
 
 /** Everything else, hidden while LMU is the running sim. */
@@ -66,14 +71,11 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'broadcastticker',
   'broadcastweather',
   'carsystems',
-  'deltaspeed',
   'fastercarsfrombehind',
   'flatmap',
   'fuel',
   'gantry',
-  'garagecover',
   'heartrate',
-  'laptimelog',
   'map',
   'radar',
   'rejoin',
@@ -82,7 +84,7 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'slowcarahead',
   'tachometer',
   'twitchchat',
-  'weather',
+  // LMU simulates no wind: its wind vector is always zero.
   'wind',
 ];
 
@@ -114,7 +116,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 5;
+export const SIM_WIDGET_SUPPORT_VERSION = 6;
 
 /**
  * Whether a widget is unavailable under the running sim.
