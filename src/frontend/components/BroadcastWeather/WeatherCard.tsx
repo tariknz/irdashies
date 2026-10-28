@@ -6,15 +6,15 @@ import {
   SunIcon,
   WindIcon,
 } from '@phosphor-icons/react';
-import { useSessionBarSelector, useSessionStore } from '@irdashies/context';
+import { useSessionBarSelector } from '@irdashies/context';
 import type { SessionBarSnapshot } from '@irdashies/types';
-import { useStore } from 'zustand';
 import {
   describeWeatherChange,
   RAIN_STOP,
   type WeatherSample,
 } from './weatherChange';
 import { BroadcastEnter } from '../shared/Broadcast/BroadcastEnter';
+import { useTrackRubberedState } from '../../domain/weather/useTrackRubberedState';
 
 const WETNESS_LABELS = [
   '-',
@@ -62,15 +62,6 @@ const useWeatherSample = () => {
   );
   return { sample, metric: units !== 0 };
 };
-
-const useTrackRubber = () =>
-  useStore(
-    useSessionStore,
-    (state) =>
-      state.session?.SessionInfo?.Sessions?.findLast(
-        (session) => session.SessionTrackRubberState !== 'carry over'
-      )?.SessionTrackRubberState
-  );
 
 interface Popup {
   headline: string;
@@ -188,7 +179,7 @@ export const WeatherCard = ({
   showSeconds: number;
 }) => {
   const { sample, metric } = useWeatherSample();
-  const rubber = useTrackRubber();
+  const rubber = useTrackRubberedState();
   const popup = useWeatherPopup(sample, intervalMinutes, showSeconds);
   if (!popup || !sample) return null;
 
