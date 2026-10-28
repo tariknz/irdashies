@@ -18,7 +18,9 @@ export const WindItem = memo(
         ? Math.round(speedFromMs(windVelocity, speedUnit))
         : '-';
     const speedEl = <span>{speed}</span>;
-    const arrowEl = (
+    // No arrow without a direction (LMU publishes none): defaulted to 0 it
+    // would point at a headwind that is not there.
+    const arrowEl = windDirection !== undefined && (
       <WindArrow direction={relativeWindDirection} className="mx-1 w-3.5 h-4" />
     );
 

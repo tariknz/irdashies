@@ -646,10 +646,9 @@ export function mapLmuTelemetry(
   t.AirTemp = num(raw.ambientTemp);
   t.TrackWetness = num(lmuTrackWetness(raw.avgPathWetness));
   t.Skies = num(raw.cloudCoverage);
-  t.WindVel = num(
-    Math.hypot(raw.wind[0] ?? 0, raw.wind[1] ?? 0, raw.wind[2] ?? 0)
-  );
-  t.WindDir = num(0);
+  // No WindVel or WindDir: LMU simulates no wind, and its wind vector is
+  // always zero. Published, that read as a dead calm with the arrow fixed on a
+  // headwind in every widget showing wind; absent, they show no reading.
   // LMU does not expose humidity; leave it absent rather than report dry air.
   t.FogLevel = num(0);
   t.Precipitation = num(raw.raining);
