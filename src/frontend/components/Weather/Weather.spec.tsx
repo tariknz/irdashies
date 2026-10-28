@@ -25,7 +25,7 @@ vi.mock('@irdashies/context', () => ({
   useActiveSimulator: () => mocks.simulator,
 }));
 
-vi.mock('./hooks/useTrackRubberedState', () => ({
+vi.mock('../../domain/weather/useTrackRubberedState', () => ({
   useTrackRubberedState: () => undefined,
 }));
 
