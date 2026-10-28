@@ -1,6 +1,7 @@
 import type { DashboardWidget } from './dashboardLayout';
 import type { CornerNameOverlayConfig } from './cornerName';
 import type { LapTraceColors, LapTraceSound, LapTraceSource } from './lapTrace';
+import type { LmuBadgeFormat } from './lmu';
 
 // ===========================
 // Shared primitive types
@@ -83,6 +84,8 @@ export interface SessionBarConfig {
     hideIfSingleDriver?: boolean;
   };
   classRank?: { enabled: boolean };
+  /** LMU's track-limits penalty points for the player. */
+  trackLimits?: { enabled: boolean };
   displayOrder: string[];
   foreground?: { opacity: number };
 }
@@ -156,7 +159,21 @@ export interface StandingsConfig {
   customClassOrdering: boolean;
   iratingChange: { enabled: boolean; estimateInPractice?: boolean };
   positionChange: { enabled: boolean };
-  badge: { enabled: boolean; badgeFormat: StandingsBadgeFormat };
+  /**
+   * The LMU achievement badge, as its own column.
+   *
+   * Separate from `badge`, which is the rank pair: this is the single marker
+   * the rating service reports in `profile.badge` (`sr-saint` and the like),
+   * and it is drawn from bundled artwork. Absent on every other sim, so the
+   * column simply renders nothing there.
+   */
+  lmuBadge: { enabled: boolean };
+  badge: {
+    enabled: boolean;
+    badgeFormat: StandingsBadgeFormat;
+    /** How the LMU rank pair is drawn; see LmuBadgeFormat. */
+    lmuFormat?: LmuBadgeFormat;
+  };
   delta: { enabled: boolean };
   gap: {
     enabled: boolean;
@@ -188,6 +205,13 @@ export interface StandingsConfig {
   lapTimeDeltas: { enabled: boolean; numLaps: number; decimalPlaces: number };
   avgLapTime: { enabled: boolean; numLaps: number; timeFormat: TimeFormat };
   lapCount: { enabled: boolean };
+  /** LMU's track-limits penalty points. Absent on sims without them. */
+  trackLimits: { enabled: boolean };
+  /**
+   * LMU's remaining virtual energy, or fuel for a car without it.
+   * Absent on sims with neither.
+   */
+  lmuVirtualEnergy: { enabled: boolean };
   titleBar: { enabled: boolean; progressBar: { enabled: boolean } };
   headerBar: SessionBarConfig;
   footerBar: SessionBarConfig;
@@ -226,7 +250,21 @@ export interface RelativeConfig {
    * repairs. Drivers driving down pit road (entering or exiting) still show.
    */
   hideDriversInPitStall?: boolean;
-  badge: { enabled: boolean; badgeFormat: RelativeBadgeFormat };
+  /**
+   * The LMU achievement badge, as its own column.
+   *
+   * Separate from `badge`, which is the rank pair: this is the single marker
+   * the rating service reports in `profile.badge` (`sr-saint` and the like),
+   * and it is drawn from bundled artwork. Absent on every other sim, so the
+   * column simply renders nothing there.
+   */
+  lmuBadge: { enabled: boolean };
+  badge: {
+    enabled: boolean;
+    badgeFormat: RelativeBadgeFormat;
+    /** How the LMU rank pair is drawn; see LmuBadgeFormat. */
+    lmuFormat?: LmuBadgeFormat;
+  };
   iratingChange: { enabled: boolean };
   positionChange?: { enabled: boolean };
   delta: { enabled: boolean; precision: number };
@@ -237,6 +275,13 @@ export interface RelativeConfig {
   pushToPass: { enabled: boolean };
   driverTag: { enabled: boolean; widthPx?: number };
   lapTimeDeltas: { enabled: boolean; numLaps: number; decimalPlaces: number };
+  /** LMU's track-limits penalty points. Absent on sims without them. */
+  trackLimits: { enabled: boolean };
+  /**
+   * LMU's remaining virtual energy, or fuel for a car without it.
+   * Absent on sims with neither.
+   */
+  lmuVirtualEnergy: { enabled: boolean };
   displayOrder: string[];
   useLivePosition?: boolean;
   sessionVisibility: SessionVisibilitySettings;

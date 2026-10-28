@@ -406,6 +406,15 @@ static_assert(offsetof(LMUVehicleScoring, mPos) == 264, "LMUVehicleScoring.mPos 
 static_assert(offsetof(LMUVehicleScoring, mOri) == 336, "LMUVehicleScoring.mOri offset");
 static_assert(offsetof(LMUVehicleScoring, mBestLapTime) == 144, "LMUVehicleScoring.mBestLapTime offset");
 static_assert(offsetof(LMUVehicleScoring, mTimeBehindLeader) == 244, "LMUVehicleScoring.mTimeBehindLeader offset");
+// The tail of this struct is LMU's own: rF2 ends it with mExpansion[48] at
+// 536, and LMU carves that into mSteamID(8) + mVehFilename(32) +
+// mAttackMode(2) + mFuelFraction(1) + mDRSState(1) + mExpansion(4). The size
+// assert alone cannot catch a field moving inside that region, which matters
+// because a wrongly placed mSteamID reads as 0 and simply looks like a grid
+// of AI. mVehFilename is pinned beside it as the witness: it carries a
+// visible string, so a correct read of it confirms the boundary they share.
+static_assert(offsetof(LMUVehicleScoring, mSteamID) == 536, "LMUVehicleScoring.mSteamID offset");
+static_assert(offsetof(LMUVehicleScoring, mVehFilename) == 544, "LMUVehicleScoring.mVehFilename offset");
 static_assert(offsetof(LMUScoringInfo, mNumVehicles) == 104, "LMUScoringInfo.mNumVehicles offset");
 static_assert(offsetof(LMUScoringInfo, mLapDist) == 88, "LMUScoringInfo.mLapDist offset");
 static_assert(offsetof(LMUScoringData, vehScoringInfo) == 560, "LMUScoringData.vehScoringInfo offset");

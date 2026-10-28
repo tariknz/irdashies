@@ -30,6 +30,11 @@ export function fixture(): LmuRawTelemetry {
     sessionTimeRemaining: 2349.5,
     timeOfDay: 0.45,
     trackGripLevel: 1,
+    sessionStartEvents: 1,
+    sessionEndEvents: 0,
+    scoringUpdates: 1200,
+    trackLimitsStepsPerPoint: 4,
+    trackLimitsStepsPerPenalty: 12,
     cloudCoverage: 20,
     raining: 0,
     darkCloud: 0,
@@ -121,5 +126,18 @@ export function fixture(): LmuRawTelemetry {
     vehPosZ: [0, 0, 20],
     vehOriX: [0, 0, 0],
     vehOriZ: [1, 1, 1],
+    // Three cars, four wheels each, at carIdx * 4 + wheel. Car 0 is uniform
+    // on compound 1, car 1 runs a wet front and a dry rear -- a real LMU
+    // choice, and the case the split rendering exists for -- and car 2 is
+    // uniform on 0.
+    vehWheelCompounds: [1, 1, 1, 1, 3, 3, 0, 0, 0, 0, 0, 0],
+    // Infringement steps per car. Four to a point and twelve to a penalty, so
+    // car 0 reads 0.25 of three, car 1 is clean, and car 2 is one step from a
+    // drive-through.
+    vehTrackLimitsSteps: [1, 0, 11],
+    // Car 0 is energy-limited and runs on virtual energy; car 1 has none, so
+    // its fuel byte is what counts; car 2 reports neither.
+    vehFuelFraction: [255, 51, 0],
+    vehVirtualEnergy: [0.42, 0, 0],
   } as unknown as LmuRawTelemetry;
 }

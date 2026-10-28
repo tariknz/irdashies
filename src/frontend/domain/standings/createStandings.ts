@@ -1,4 +1,6 @@
 import { SessionResults, Driver, TrackLocation } from '@irdashies/types';
+import type { LmuDriverRating } from '@irdashies/types';
+import { lmuPenaltyBadge, type LmuPenaltyKind } from '@irdashies/types';
 import {
   calculateIRatingGain,
   RaceResult,
@@ -35,7 +37,16 @@ export interface Standings {
     license: string;
     rating: number;
     flairId?: number;
+    /** Set only when the running sim is LMU; see Driver.LmuRating. */
+    lmuRating?: LmuDriverRating;
     teamName?: string;
+    /**
+     * Whether the sim drives this entry rather than a person.
+     *
+     * Undefined where the sim does not say, which is not the same as false:
+     * the badge only names an AI when the sim has stated it is one.
+     */
+    isAI?: boolean;
   };
   fastestTime: number;
   hasFastestTime: boolean;
@@ -43,6 +54,31 @@ export interface Standings {
   lastTimeState?: LastTimeState;
   onPitRoad: boolean;
   tireCompound: number;
+  /**
+   * LMU's four wheel compounds, FL, FR, RL, RR, or undefined where the sim
+   * reports only one per car. -1 for a wheel with no reading.
+   */
+  wheelCompounds?: number[];
+  /**
+   * LMU's track-limits penalty points, or undefined where the sim has none.
+   * 0 is a clean car; a car with no reading is undefined, not 0.
+   */
+  trackLimitsPoints?: number;
+  /**
+   * Virtual energy or fuel remaining, 0..1, or undefined where neither reads.
+   * Which of the two it is depends on the car; only one limits it.
+   */
+  energyRemaining?: number;
+  /**
+   * The penalty this driver is serving, where it can be told apart.
+   *
+   * From LMU's UI websocket for any car while it answers. Without it, only the
+   * player's own car gets a kind, derived from its pit-stop estimate; every
+   * other car has a count and no more. See types/lmu/penalty.ts.
+   */
+  penaltyKind?: LmuPenaltyKind;
+  /** Seconds a time penalty will add, for the `TIME` kind. */
+  penaltySeconds?: number;
   onTrack: boolean;
   carClass: {
     id: number;
@@ -67,6 +103,53 @@ export interface Standings {
   relativePct: number;
   positionChange?: number;
 }
+
+/**
+ * One car's four wheel compounds, or undefined when the sim reports one.
+ *
+ * Undefined rather than four copies of the single value, so the renderer can
+ * tell "this sim has per-wheel data" from "all four happen to match" -- the
+ * first picks the single-glyph path, the second is a real reading.
+ */
+const wheelCompoundsFor = (
+  flat: number[] | undefined,
+  carIdx: number
+): number[] | undefined => {
+  if (!flat || flat.length === 0) return undefined;
+  const base = carIdx * 4;
+  if (base + 4 > flat.length) return undefined;
+  return [flat[base], flat[base + 1], flat[base + 2], flat[base + 3]];
+};
+
+/**
+ * One car's track-limits points, or undefined where there is no reading.
+ *
+ * Undefined rather than 0, because 0 is a clean car and a car the sim has not
+ * reported is not clean -- it is unknown, and a cell showing 0.00 for it would
+ * be an assertion nobody made.
+ */
+const trackLimitsFor = (
+  points: number[] | undefined,
+  carIdx: number
+): number | undefined => {
+  const value = points?.[carIdx];
+  return typeof value === 'number' && value >= 0 ? value : undefined;
+};
+
+/**
+ * One car's remaining budget, or undefined where there is no reading.
+ *
+ * Undefined rather than 0, because 0 is an empty tank and a car the sim has
+ * not reported is not empty -- it is unknown, and a cell reading 0% for it
+ * would be an assertion nobody made.
+ */
+const energyFor = (
+  energy: number[] | undefined,
+  carIdx: number
+): number | undefined => {
+  const value = energy?.[carIdx];
+  return typeof value === 'number' && value >= 0 ? value : undefined;
+};
 
 const calculateDelta = (
   carIdx: number,
@@ -115,6 +198,14 @@ const getLastTimeState = (
 export const createDriverStandings = (
   session: {
     playerIdx?: number;
+    /**
+     * The local player's own car, which `penaltySeconds` describes.
+     *
+     * Not `playerIdx`: that is the focused car, and while spectating it is
+     * someone else's, whose penalty the player's pit estimate says nothing
+     * about.
+     */
+    ownCarIdx?: number;
     drivers?: Driver[];
     qualifyingResults?: SessionResults[];
   },
@@ -126,6 +217,23 @@ export const createDriverStandings = (
     carIdxTrackSurfaceValue?: TrackLocation[];
     radioTransmitCarIdx?: number[];
     carIdxTireCompoundValue?: number[];
+    /** Flat, four per car at carIdx * 4 + wheel. Empty under iRacing. */
+    carIdxWheelCompoundsValue?: number[];
+    /** Points per car. -1 is unknown. Empty under iRacing. */
+    carIdxTrackLimitsPointsValue?: number[];
+    /** 0..1 per car, -1 unavailable. Empty under iRacing. */
+    carIdxEnergyRemainingValue?: number[];
+    /** Outstanding penalties per car. A count, not a kind. */
+    carIdxPenaltiesValue?: number[];
+    /**
+     * Which penalty each car is serving, as an LMU_PENALTY_CODE. Empty under
+     * iRacing, and under LMU when the sim's UI websocket is not answering.
+     */
+    carIdxPenaltyKindValue?: number[];
+    /** Seconds a time penalty will add, per car. Same source as the kind. */
+    carIdxPenaltySecondsValue?: number[];
+    /** Seconds the player's next stop spends serving penalties. */
+    penaltySeconds?: number;
     isOnTrack?: boolean;
     carIdxSessionFlags?: number[];
   },
@@ -237,7 +345,9 @@ export const createDriverStandings = (
           license: driver.LicString,
           rating: driver.IRating,
           flairId: driver.FlairID,
+          lmuRating: driver.LmuRating,
           teamName: driver.TeamName,
+          isAI: driver.CarIsAIControlled,
         },
         fastestTime: computedBestTime,
         hasFastestTime: isClassFastest,
@@ -252,6 +362,25 @@ export const createDriverStandings = (
           (telemetry?.carIdxTrackSurfaceValue?.[result.CarIdx] ??
             TrackLocation.NotInWorld) > TrackLocation.NotInWorld,
         tireCompound: telemetry?.carIdxTireCompoundValue?.[result.CarIdx] ?? 0,
+        wheelCompounds: wheelCompoundsFor(
+          telemetry?.carIdxWheelCompoundsValue,
+          result.CarIdx
+        ),
+        trackLimitsPoints: trackLimitsFor(
+          telemetry?.carIdxTrackLimitsPointsValue,
+          result.CarIdx
+        ),
+        energyRemaining: energyFor(
+          telemetry?.carIdxEnergyRemainingValue,
+          result.CarIdx
+        ),
+        penaltyKind: lmuPenaltyBadge(
+          telemetry?.carIdxPenaltyKindValue?.[result.CarIdx],
+          result.CarIdx === session?.ownCarIdx,
+          telemetry?.carIdxPenaltiesValue?.[result.CarIdx],
+          telemetry?.penaltySeconds
+        ),
+        penaltySeconds: telemetry?.carIdxPenaltySecondsValue?.[result.CarIdx],
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,
@@ -338,7 +467,9 @@ export const createDriverStandings = (
           license: driver.LicString,
           rating: driver.IRating,
           flairId: driver.FlairID,
+          lmuRating: driver.LmuRating,
           teamName: driver.TeamName,
+          isAI: driver.CarIsAIControlled,
         },
         fastestTime: -1,
         hasFastestTime: false,
@@ -349,6 +480,25 @@ export const createDriverStandings = (
           (telemetry?.carIdxTrackSurfaceValue?.[driver.CarIdx] ??
             TrackLocation.NotInWorld) > TrackLocation.NotInWorld,
         tireCompound: telemetry?.carIdxTireCompoundValue?.[driver.CarIdx] ?? 0,
+        wheelCompounds: wheelCompoundsFor(
+          telemetry?.carIdxWheelCompoundsValue,
+          driver.CarIdx
+        ),
+        trackLimitsPoints: trackLimitsFor(
+          telemetry?.carIdxTrackLimitsPointsValue,
+          driver.CarIdx
+        ),
+        energyRemaining: energyFor(
+          telemetry?.carIdxEnergyRemainingValue,
+          driver.CarIdx
+        ),
+        penaltyKind: lmuPenaltyBadge(
+          telemetry?.carIdxPenaltyKindValue?.[driver.CarIdx],
+          driver.CarIdx === session?.ownCarIdx,
+          telemetry?.carIdxPenaltiesValue?.[driver.CarIdx],
+          telemetry?.penaltySeconds
+        ),
+        penaltySeconds: telemetry?.carIdxPenaltySecondsValue?.[driver.CarIdx],
         carClass: {
           id: driver.CarClassID,
           color: driver.CarClassColor,

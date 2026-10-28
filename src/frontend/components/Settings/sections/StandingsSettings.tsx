@@ -11,6 +11,13 @@ import { TabButton } from '../components/TabButton';
 import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
 import { BadgeFormatPreview } from '../components/BadgeFormatPreview';
+import { FormatSelect } from '../components/FormatSelect';
+import { LmuBadgeFormatPreview } from '../components/LmuBadgeFormatPreview';
+import {
+  LMU_BADGE_FORMATS,
+  type LmuBadgeFormat,
+  type StandingsBadgeFormat,
+} from '@irdashies/types';
 import { DriverNamePreview } from '../components/DriverNamePreview';
 import { DEFAULT_SESSION_BAR_DISPLAY_ORDER } from '../sessionBarConstants';
 import { SessionVisibility } from '../components/SessionVisibility';
@@ -34,6 +41,27 @@ interface SortableSetting {
   configKey: keyof StandingsWidgetSettings['config'];
   hasSubSetting?: boolean;
 }
+
+/**
+ * The iRacing rating formats, in the order the dropdown lists them.
+ *
+ * Named here rather than inline so the list is not duplicated between
+ * the two widgets that offer it.
+ */
+const IRACING_BADGE_FORMATS = [
+  'license-color-fullrating-combo',
+  'fullrating-color-no-license',
+  'rating-color-no-license',
+  'license-color-fullrating-bw',
+  'license-color-rating-bw',
+  'rating-only-color-rating-bw',
+  'license-color-rating-bw-no-license',
+  'license-bw-rating-bw',
+  'rating-only-bw-rating-bw',
+  'license-bw-rating-bw-no-license',
+  'rating-bw-no-license',
+  'fullrating-bw-no-license',
+] as const;
 
 const sortableSettings: SortableSetting[] = [
   { id: 'position', label: 'Position', configKey: 'position' },
@@ -64,7 +92,8 @@ const sortableSettings: SortableSetting[] = [
     hasSubSetting: true,
   },
   { id: 'driverTag', label: 'Driver Tag', configKey: 'driverTag' },
-  { id: 'badge', label: 'Driver Badge', configKey: 'badge' },
+  { id: 'lmuBadge', label: 'LMU Badge', configKey: 'lmuBadge' },
+  { id: 'badge', label: 'Rating', configKey: 'badge' },
   {
     id: 'iratingChange',
     label: 'iRating Change',
@@ -104,6 +133,12 @@ const sortableSettings: SortableSetting[] = [
     configKey: 'lapCount',
   },
   { id: 'pushToPass', label: 'Push to Pass', configKey: 'pushToPass' },
+  { id: 'trackLimits', label: 'Track Limits', configKey: 'trackLimits' },
+  {
+    id: 'lmuVirtualEnergy',
+    label: 'LMU Virtual Energy',
+    configKey: 'lmuVirtualEnergy',
+  },
 ];
 
 const defaultConfig = getWidgetDefaultConfig('standings');
@@ -228,48 +263,51 @@ const DisplaySettingsList = ({
               )}
             {setting.configKey === 'badge' &&
               (configValue as { enabled: boolean }).enabled && (
-                <div className="mt-3">
-                  <div className="flex flex-wrap gap-3 justify-end">
-                    {(
-                      [
-                        'license-color-fullrating-combo',
-                        'fullrating-color-no-license',
-                        'rating-color-no-license',
-                        'license-color-fullrating-bw',
-                        'license-color-rating-bw',
-                        'rating-only-color-rating-bw',
-                        'license-color-rating-bw-no-license',
-                        'license-bw-rating-bw',
-                        'rating-only-bw-rating-bw',
-                        'license-bw-rating-bw-no-license',
-                        'rating-bw-no-license',
-                        'fullrating-bw-no-license',
-                      ] as const
-                    ).map((format) => (
-                      <BadgeFormatPreview
-                        key={format}
-                        format={format}
-                        selected={
-                          (
-                            configValue as {
-                              enabled: boolean;
-                              badgeFormat: string;
-                            }
-                          ).badgeFormat === format
-                        }
-                        onClick={() => {
-                          const cv = settings.config[setting.configKey] as {
-                            enabled: boolean;
-                            badgeFormat: string;
-                            [key: string]: unknown;
-                          };
-                          handleConfigChange({
-                            [setting.configKey]: { ...cv, badgeFormat: format },
-                          });
-                        }}
-                      />
-                    ))}
-                  </div>
+                // One line, indented like the compact sub-settings
+                // above (pl-8), since these belong to Rating rather
+                // than standing on their own. Wraps rather than
+                // overflowing a narrow settings panel.
+                <div className="mt-2 flex flex-wrap items-center gap-4 pl-8">
+                  <FormatSelect
+                    label="iRacing"
+                    value={
+                      (configValue as { badgeFormat: StandingsBadgeFormat })
+                        .badgeFormat
+                    }
+                    options={IRACING_BADGE_FORMATS}
+                    renderOption={(format) => (
+                      <BadgeFormatPreview format={format} />
+                    )}
+                    onChange={(badgeFormat) => {
+                      const cv = settings.config[setting.configKey] as Record<
+                        string,
+                        unknown
+                      >;
+                      handleConfigChange({
+                        [setting.configKey]: { ...cv, badgeFormat },
+                      });
+                    }}
+                  />
+                  <FormatSelect
+                    label="LMU"
+                    value={
+                      (configValue as { lmuFormat?: LmuBadgeFormat })
+                        .lmuFormat ?? 'plates'
+                    }
+                    options={LMU_BADGE_FORMATS}
+                    renderOption={(format) => (
+                      <LmuBadgeFormatPreview format={format} />
+                    )}
+                    onChange={(lmuFormat) => {
+                      const cv = settings.config[setting.configKey] as Record<
+                        string,
+                        unknown
+                      >;
+                      handleConfigChange({
+                        [setting.configKey]: { ...cv, lmuFormat },
+                      });
+                    }}
+                  />
                 </div>
               )}
             {setting.configKey === 'driverName' &&

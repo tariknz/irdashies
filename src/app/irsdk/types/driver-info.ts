@@ -1,3 +1,5 @@
+import type { LmuDriverRating } from '../../../types/lmu';
+
 export interface Driver {
   CarIdx: number;
   UserName: string;
@@ -53,6 +55,15 @@ export interface Driver {
   DivisionID: number;
   CurDriverIncidentCount: number;
   TeamIncidentCount: number;
+  /**
+   * Le Mans Ultimate rank, badge and country.
+   *
+   * Set only by sims that report it -- iRacing leaves it unset, the same way
+   * it leaves CarIsAIControlled unset. LMU keeps no iRating or licence, so
+   * none of this can be folded into IRating/LicString without inventing
+   * numbers; renderers branch on its presence instead.
+   */
+  LmuRating?: LmuDriverRating;
 }
 
 export interface Tire {

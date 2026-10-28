@@ -11,12 +11,18 @@ import {
   summariseLmuBlindSpot,
 } from './proximity';
 import { lapTimeOrAbsent } from './sentinels';
+import { lmuTrackWetness } from './trackWetness';
+import { lmuCarCompound, lmuCompoundChannel } from './tireCompound';
+import { lmuTrackLimitsChannel, lmuTrackLimitsMax } from './trackLimits';
+import { lmuEnergyChannel } from './fuelEnergy';
+import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
 import { estimateLmuLapDistPct, type LmuLapDistanceState } from './lapDistance';
 import {
   refineLmuOpponentLapDistPcts,
   type LmuOpponentLapDistanceState,
 } from './opponentLapDistance';
 import type { LmuRestCell, LmuRestCells } from './rest/state';
+import type { LmuLivePenaltyChannels } from './liveStandings/penalties';
 import { isLmuRaceSession } from './mapSession';
 import {
   createLmuClassPositionState,
@@ -203,6 +209,22 @@ function trackLocation(raw: Raw, carIdx: number): number {
  * Values without an LMU source default to 0/[]/false so downstream stores and
  * processors behave the same as when an iRacing telemetry var is absent.
  */
+/**
+ * The slot to focus on: the spectator camera's, or the player's own.
+ *
+ * Falls back exactly as the processors do, and for the same reason -- a camera
+ * reading of -1 means nothing is focused, not that slot -1 is. The REST task
+ * only ever lands an integer in range here, so there is no validation left to
+ * do; what this adds is the fallback and one place to read it from.
+ */
+const focusCarIdx = (
+  restCells: LmuRestCells | undefined,
+  playerIdx: number
+): number => {
+  const focus = restCells?.focusCarIdx?.value?.[0];
+  return typeof focus === 'number' && focus >= 0 ? focus : playerIdx;
+};
+
 export function mapLmuTelemetry(
   raw: Raw,
   /**
@@ -220,7 +242,31 @@ export function mapLmuTelemetry(
    * Values from LMU's local REST API, polled outside this path. Omitted -- as
    * every spec does -- the channels it feeds are simply absent.
    */
-  restCells?: LmuRestCells
+  restCells?: LmuRestCells,
+  /**
+   * The session's identity, owned by the caller because telling one session
+   * from the next needs memory of the last. Omitted -- as every spec does --
+   * the id is derived from this snapshot alone, which cannot see a server
+   * rolling a session of the same type on the same track.
+   */
+  sessionIdentity?: LmuSessionIdentity,
+  /**
+   * True when the sim has stopped writing shared memory, so the snapshot is
+   * the last one it wrote rather than a current reading. Omitted -- as every
+   * spec does -- the snapshot is taken at face value, which is what it was
+   * before anything watched for this. See dataFreeze.ts.
+   */
+  dataFrozen?: boolean,
+  /**
+   * Which penalty each car is serving, and what a time penalty will cost.
+   *
+   * Built by the caller, because the only source is LMU's UI websocket and the
+   * join is by driver name -- which this snapshot does not carry. The session
+   * snapshot does, so the bridge keys the feed to the grid there and hands the
+   * finished cells down. Omitted -- as every spec does -- the channels are
+   * absent and the player's badge falls back to the stop estimate.
+   */
+  livePenalties?: LmuLivePenaltyChannels
 ): Telemetry {
   // Boundary note: a handful of generated Telemetry keys (e.g. SessionTime) are
   // typed with an `undefined[]` value shape although the iRacing native layer
@@ -282,7 +328,12 @@ export function mapLmuTelemetry(
       : raw.currentET;
   t.SessionTick = num(sessionClock);
   t.SessionNum = num(raw.session);
-  t.SessionUniqueID = num(raw.session);
+  // Derived, because LMU has no unique id and the session type is not one.
+  // Must agree with WeekendInfo.SubSessionID: consumers compare the two
+  // halves of the same fact. See sessionIdentity.ts.
+  t.SessionUniqueID = num(
+    sessionIdentity?.current() ?? lmuSessionUniqueId(raw)
+  );
   t.SessionState = num(PHASE_TO_SESSION_STATE[raw.gamePhase] ?? 0);
   t.SessionTime = num(sessionClock);
   t.SessionTimeRemain = num(raw.sessionTimeRemaining);
@@ -331,14 +382,27 @@ export function mapLmuTelemetry(
     playerIdx >= 0 &&
       (raw.vehInGarageStall[playerIdx] || raw.vehPitState[playerIdx] === 3)
   );
-  t.PlayerTireCompound = num(0);
+  t.PlayerTireCompound = num(lmuCarCompound(raw.vehWheelCompounds, playerIdx));
   t.PlayerFastRepairsUsed = num(0);
   t.PlayerTrackSurface = num(
     playerIdx >= 0 ? trackLocation(raw, playerIdx) : TRACK_NOT_IN_WORLD
   );
   t.PlayerCarPosition = num(raw.vehPlaces[playerIdx] ?? 0);
   t.PlayerCarClass = num(raw.vehClass[playerIdx] ?? 0);
-  t.CamCarIdx = num(playerIdx);
+  // The car the overlays are about, which is not the player's while
+  // spectating -- and while spectating `playerHasVehicle` is false, so
+  // `playerIdx` is -1 and there would be nothing to focus on at all.
+  //
+  // Every processor derives its focus from this one channel with the same
+  // `CamCarIdx >= 0 ? CamCarIdx : driverCarIdx` fallback (StandingsProcessor,
+  // RelativeGapProcessor, RadarProcessor, SessionTimingProcessor,
+  // FuelProjectionProcessor, TrackStateProcessor), so publishing the watched
+  // slot here is the whole of following the camera: there is no change to
+  // detect and nothing to subscribe to, because it is re-read every frame.
+  //
+  // This used to be hardcoded to `playerIdx`, which made every widget show
+  // the viewer's own car -- or no car -- whoever the camera was on.
+  t.CamCarIdx = num(focusCarIdx(restCells, playerIdx));
   t.PlayerCarPitSvStatus = num(0);
   t.CarLeftRight = num(blindSpot?.state ?? CarLeftRight.Off);
 
@@ -401,7 +465,30 @@ export function mapLmuTelemetry(
   t.CarIdxLastLapTime = lapTimeArr(raw.vehLastLapTime);
   t.CarIdxBestLapTime = lapTimeArr(raw.vehBestLapTime);
   t.CarIdxGear = numArr(undefined);
-  t.CarIdxTireCompound = numArr(undefined);
+  // The front-left of each car, which is all a one-value-per-car channel can
+  // say about a grid that may be on four different compounds. The whole set
+  // goes out beside it as LmuCarIdxWheelCompounds.
+  t.CarIdxTireCompound = numArr(lmuCompoundChannel(raw.vehWheelCompounds));
+  t.LmuCarIdxWheelCompounds = numArr(raw.vehWheelCompounds);
+  // Points, not the sim's steps: the step count is an encoding detail of this
+  // sim, and the ceiling has to be comparable with the figure.
+  t.LmuCarIdxTrackLimitsPoints = numArr(
+    lmuTrackLimitsChannel(raw.vehTrackLimitsSteps, raw.trackLimitsStepsPerPoint)
+  );
+  // One figure per car: virtual energy where the car runs on it, fuel
+  // otherwise. Which budget applies is a property of the car, not the session,
+  // so the choice is made per car here rather than once for the grid.
+  // Count only: scoring has no field for which penalty it is.
+  t.LmuCarIdxPenalties = numArr(raw.vehNumPenalties);
+  t.LmuCarIdxEnergyRemaining = numArr(
+    lmuEnergyChannel(raw.vehFuelFraction, raw.vehVirtualEnergy)
+  );
+  t.LmuTrackLimitsPointsMax = num(
+    lmuTrackLimitsMax(
+      raw.trackLimitsStepsPerPenalty,
+      raw.trackLimitsStepsPerPoint
+    ) ?? 0
+  );
   t.CarIdxSessionFlags = numArr(carSessionFlags(raw));
   t.CarDistAhead = numArr(undefined);
   t.CarDistBehind = numArr(undefined);
@@ -440,6 +527,19 @@ export function mapLmuTelemetry(
     t.LmuPitStopTime = staged(restCells.pitStopTime);
   }
   if (restCells?.repairTime) t.LmuRepairTime = staged(restCells.repairTime);
+  if (restCells?.penaltySeconds) {
+    t.LmuPenaltySeconds = staged(restCells.penaltySeconds);
+  }
+  // The penalty kind, and a time penalty's magnitude, from the sim's UI
+  // websocket by way of the bridge -- the one source that states either, and
+  // states them per car. Reference assignments like the REST cells above and
+  // for the same reason. Absent when that socket is not answering, which is
+  // what sends the player's badge back to the estimate-derived fallback and
+  // leaves every other car without one. See liveStandings/.
+  if (livePenalties) {
+    t.LmuCarIdxPenaltyKind = staged(livePenalties.kind);
+    t.LmuCarIdxPenaltySeconds = staged(livePenalties.penaltySeconds);
+  }
   if (restCells?.refuelTarget) {
     t.LmuRefuelTarget = staged(restCells.refuelTarget);
   }
@@ -544,7 +644,7 @@ export function mapLmuTelemetry(
   t.TrackTemp = num(raw.trackTemp);
   t.TrackTempCrew = num(raw.trackTemp);
   t.AirTemp = num(raw.ambientTemp);
-  t.TrackWetness = num(raw.avgPathWetness);
+  t.TrackWetness = num(lmuTrackWetness(raw.avgPathWetness));
   t.Skies = num(raw.cloudCoverage);
   t.WindVel = num(
     Math.hypot(raw.wind[0] ?? 0, raw.wind[1] ?? 0, raw.wind[2] ?? 0)
@@ -641,7 +741,23 @@ export function mapLmuTelemetry(
   t.dcPitSpeedLimiterToggle = bool(raw.speedLimiter);
   t.PitstopActive = bool(false);
   t.OnPitRoad = bool(playerIdx >= 0 ? raw.vehInPits[playerIdx] === 1 : false);
-  t.IsOnTrack = bool(playerIdx >= 0 && raw.inRealtime);
+  // Three conditions, matching TinyPedal's own test for LMU: the data is
+  // flowing, the player has a slot, and either the sim says realtime or the
+  // ignition is on. The first is the one that was missing -- a frozen snapshot
+  // keeps reporting realtime forever, which is why ending a session left every
+  // widget gated on this one on screen. Ignition is the second half of
+  // TinyPedal's OR: a driver sitting in the car before realtime begins is
+  // still in the car.
+  const inCar =
+    !dataFrozen &&
+    playerIdx >= 0 &&
+    (raw.inRealtime || (raw.ignitionStarter ?? 0) > 0);
+  t.IsOnTrack = bool(inCar);
+  t.LmuDataStale = bool(dataFrozen ?? false);
+  // Reported as the snapshot has them, frozen or not. Falsifying these while
+  // frozen was a mistake: isDriving reads them as `!isInGarage`, so clearing
+  // them removed the one term that would have excluded a parked player.
+  // LmuDataStale above is what consumers should gate on.
   t.IsInGarage = bool(playerIdx >= 0 && raw.vehInGarageStall[playerIdx]);
   t.IsGarageVisible = bool(playerIdx >= 0 && raw.vehInGarageStall[playerIdx]);
 

@@ -10,9 +10,10 @@ import {
   LMU_CLASS_COLOURS,
   LMU_MANUFACTURERS,
 } from '@irdashies/types';
+import { isLmuAiEntry, lmuPlayerSlot } from './aiControl';
 import { fnv1a32 } from './hash';
 import { compareLmuOrder, lmuOrderingKey } from './classPosition';
-import type { LmuRestSession } from '@irdashies/types';
+import type { LmuDriverRating, LmuRestSession } from '@irdashies/types';
 
 /**
  * LMU's pit and rolling-start speed limit, km/h.
@@ -25,12 +26,21 @@ import type { LmuRestSession } from '@irdashies/types';
  */
 export const LMU_PIT_SPEED_LIMIT_KPH = 60;
 import { lapTimeOrAbsent } from './sentinels';
+import { lmuCarNumber, lmuCarNumberRaw, lmuTeamName } from './entryName';
+import { lmuDriverTires } from './tireCompound';
+import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
 
 type Raw = import('./native').LmuRawSession;
 
-// LMU shared memory has no car numbers or series metadata. Drivers are
-// presented by their slot index; replace CarNumber sourcing if a REST/league
-// datasource is added later.
+/**
+ * The fallback when an entry's name carries no number.
+ *
+ * The real number is embedded in `vehicleName` -- see carNumber.ts -- and this
+ * is only for a name in a shape that parse does not recognise, such as an AI
+ * entry named after its car alone. The slot index is not a car number and
+ * changes with join order, so it is a last resort rather than the default it
+ * used to be.
+ */
 const DEFAULT_CAR_NUMBER = (carIdx: number) => String(carIdx + 1);
 const LMU_TRACK_ID_OFFSET = 1_000_000;
 const DEFAULT_MAX_RPM = 8500;
@@ -58,12 +68,6 @@ export function resolveLmuCarId(vehicleModel: string): number {
   return (
     LMU_MANUFACTURERS.find(({ pattern }) => pattern.test(vehicleModel))?.id ?? 0
   );
-}
-
-const LMU_CONTROL_AI = 1;
-
-export function isLmuAiControlled(control?: number): boolean | undefined {
-  return control === undefined ? undefined : control === LMU_CONTROL_AI;
 }
 
 /**
@@ -289,6 +293,23 @@ function buildLmuResults(raw: Raw, isRace: boolean): SessionResults[] {
   });
 }
 
+/**
+ * Combines the two sources of per-driver identity into one optional value.
+ *
+ * Returns undefined when neither answered, so LmuRating stays absent rather
+ * than present-and-empty -- the renderer branches on its presence to decide
+ * whether this is an LMU driver at all.
+ */
+function mergeRating(
+  countryCode: string | undefined,
+  rating: LmuDriverRating | undefined
+): LmuDriverRating | undefined {
+  if (!rating) return countryCode ? { countryCode } : undefined;
+  // The service also reports a country; the sim's own answer wins, being
+  // first-party and present for everyone in the session.
+  return { ...rating, countryCode: countryCode ?? rating.countryCode };
+}
+
 export function mapLmuSession(
   raw: Raw,
   trackMap?: LmuTrackMap | null,
@@ -297,10 +318,43 @@ export function mapLmuSession(
    * absent rather than present and empty, so a consumer can tell "not polled"
    * from "polled and found nothing".
    */
-  rest?: LmuRestSession
+  rest?: LmuRestSession,
+  /**
+   * Ratings already resolved for a driver name, from the rating service. A
+   * synchronous read: the lookup itself happens off this path, and a driver
+   * with no answer yet simply has no rank until a later snapshot.
+   *
+   * By name rather than Steam id because that is what the service is asked
+   * by, and because the sim reports 0 for every id in any case.
+   */
+  ratingFor?: (driverName: string) => LmuDriverRating | undefined,
+  /**
+   * The session's identity, owned by the caller. Must be the same object the
+   * telemetry mapper reads: consumers compare SubSessionID here against
+   * SessionUniqueID on the frame, and a disagreement would read as a session
+   * change on every other tick.
+   */
+  sessionIdentity?: LmuSessionIdentity
 ): Session {
   const trackLengthM = raw.lapDist;
   const shiftLights = deriveLmuShiftLightRpm(raw.engineMaxRPM);
+
+  // Keyed by the name the sim reports, which is the only handle
+  // /rest/multiplayer/teams gives us. Absent outside multiplayer.
+  const nationalities = rest?.nationalities;
+  // Keyed by CarIdx, from /rest/watch/standings. Absent until that endpoint
+  // has answered, which is what the entry-name parse below covers.
+  const teamNames = rest?.teamNames;
+
+  // Your own slot, from the telemetry block as well as from the entry's own
+  // flag: either identifies you, and in the garage the sim describes your
+  // entry least like the rest of the session. See aiControl.ts.
+  const ownSlot = lmuPlayerSlot(raw);
+  const isAiEntry = (d: { control?: number; isPlayer?: boolean; id: number }) =>
+    isLmuAiEntry({
+      control: d.control,
+      isPlayer: d.isPlayer || d.id === ownSlot,
+    });
 
   const drivers: Driver[] = raw.drivers.map((d) => ({
     CarIdx: d.id,
@@ -309,15 +363,31 @@ export function mapLmuSession(
     Initials: null,
     UserID: 0,
     TeamID: 0,
-    TeamName: d.name,
-    CarNumber: DEFAULT_CAR_NUMBER(d.id),
-    CarNumberRaw: d.id + 1,
+    // The team the entry is run by, from the same name the number comes from.
+    // Shared memory has no team field at all: TinyPedal's LMU adapter returns
+    // the whole entry name here, inherited unchanged from its rF2 adapter and
+    // consumed by nothing, and LMUTraceHUB takes `fullTeamName` from
+    // /rest/watch/standings with no fallback when that is unavailable. Parsing
+    // the prefix is the only route that needs no endpoint.
+    //
+    // This was the driver's own name, which was never right. It went unnoticed
+    // because the column is gated on WeekendInfo.TeamRacing, which was fixed
+    // at 0 -- see there.
+    // `fullTeamName` where the standings have answered, the entry name's
+    // prefix otherwise. The endpoint wins because the prefix carries the
+    // season: "Proton Competition 2026 #77:LM" parses as "Proton Competition
+    // 2026" where the endpoint states "Proton Competition". The parse stays
+    // as the fallback because it needs no endpoint and works in single player
+    // and in a tape replay.
+    TeamName: teamNames?.[d.id] ?? lmuTeamName(d.vehicleName) ?? '',
+    CarNumber: lmuCarNumber(d.vehicleName) ?? DEFAULT_CAR_NUMBER(d.id),
+    CarNumberRaw: lmuCarNumberRaw(d.vehicleName) ?? d.id + 1,
     CarPath: d.vehFilename,
     CarClassID: d.classId,
     CarID: resolveLmuCarId(d.vehicleModel ?? d.vehicleName),
     CarIsPaceCar: 0,
-    CarIsAI: isLmuAiControlled(d.control) ? 1 : 0,
-    CarIsAIControlled: isLmuAiControlled(d.control),
+    CarIsAI: isAiEntry(d) ? 1 : 0,
+    CarIsAIControlled: isAiEntry(d),
     CarIsElectric: 0,
     CarScreenName: d.vehicleName,
     CarScreenNameShort: d.vehicleName.split(' ')[0] ?? '',
@@ -367,11 +437,35 @@ export function mapLmuSession(
     ClubName: '',
     ClubID: 0,
     FlairName: '',
+    // iRacing's flair id, which LMU has no equivalent of. The flag comes from
+    // LmuRating.countryCode instead; leaving this 0 keeps the iRacing path
+    // inert rather than pointing it at an unrelated country.
     FlairID: 0,
     DivisionName: '',
     DivisionID: 0,
     CurDriverIncidentCount: 0,
     TeamIncidentCount: 0,
+    // Only the country is populated here. Rank and badge come from the
+    // rating service and are merged in by the bridge when available, so a
+    // driver can carry a flag with no rating and vice versa. Both join on the
+    // name the sim reports, from two different sources.
+    // Country and rank arrive by different routes -- the sim's own teams
+    // endpoint and the rating service -- so a driver can have either, both
+    // or neither. Merged rather than one overriding the other.
+    // The rank is withheld from an AI entry; the country is not. The country
+    // is the sim's own statement about the entry, while the rank comes from a
+    // service that is asked by name and cannot tell an AI named after a real
+    // driver from that driver -- so merging one here would show a stranger's
+    // rank on an AI's row. The bridge already keeps AI names out of the
+    // lookup; this is the half that also covers an answer already cached for
+    // a human of the same name, which needs no lookup to arrive.
+    //
+    // `control === 1` only: an entry whose control the sim did not report
+    // stays eligible rather than silently losing its rank.
+    LmuRating: mergeRating(
+      nationalities?.[d.name],
+      d.name && !isAiEntry(d) ? ratingFor?.(d.name) : undefined
+    ),
   }));
 
   const playerDriver = raw.drivers.find((d) => d.isPlayer);
@@ -453,15 +547,30 @@ export function mapLmuSession(
       TrackVersion: `0.0.${raw.gameVersion}`,
       SeriesID: 0,
       SeasonID: 0,
+      // The session type, which is what LMU calls a session.
       SessionID: raw.session,
-      SubSessionID: raw.session,
+      // Not the type. Everything that decides a session has changed compares
+      // this, and publishing the type here meant every practice session in
+      // existence shared one id -- so changing track left the standings on the
+      // previous grid. See sessionIdentity.ts.
+      SubSessionID: sessionIdentity?.current() ?? lmuSessionUniqueId(raw),
       LeagueID: 0,
       Official: 0,
       RaceWeek: 0,
       EventType: currentSessionType,
       Category: 'Sports Car',
       SimMode: 'Le Mans Ultimate',
-      TeamRacing: 0,
+      // Derived from the grid rather than fixed, because this is what gates
+      // the Team Name column and the driver-name subtext in both widgets.
+      // Fixed at 0, the team names parsed out of the entry names were correct
+      // and unreachable; fixed at 1, an AI practice grid named "Ferrari 296
+      // GT3" would offer a column with nothing in it. So it says what is
+      // actually true of this grid: some entry carries a team.
+      //
+      // It also enables the pit-limiter reminder after a stop, which is the
+      // other consumer. That is a fair reading -- an entry with a team name is
+      // a real race entry, and the reminder is as useful there as in iRacing.
+      TeamRacing: raw.drivers.some((d) => lmuTeamName(d.vehicleName)) ? 1 : 0,
       MinDrivers: 0,
       MaxDrivers: raw.maxPlayers,
       DCRuleSet: '',
@@ -587,12 +696,11 @@ export function mapLmuSession(
       DriverSetupPassedTech: 0,
       DriverIncidentCount: 0,
       DriverBrakeCurvingFactor: 0,
-      DriverTires: [
-        {
-          TireIndex: 0,
-          TireCompoundType: raw.frontTireCompoundName ?? '',
-        },
-      ],
+      // Index/name pairs for every compound the grid is on, merged over the
+      // REST catalogue. This used to be one entry at index 0 holding the
+      // player's compound name -- and since the per-car indices were empty
+      // too, every row looked up index 0 and rendered the player's tyre.
+      DriverTires: lmuDriverTires(raw.drivers, rest?.tireCompounds),
       Drivers: drivers,
     },
     // ponytail: nominal thirds only label the direct LMU timing; replace when LMU exposes boundary distances.
