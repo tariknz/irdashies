@@ -15,8 +15,9 @@ interface TelemetryInspectorConfig {
   }[];
 }
 
+/** `Drivers[1].CarPath` and `Drivers.1.CarPath` name the same value. */
 const getNestedValue = (obj: unknown, path: string): unknown => {
-  const parts = path.split('.');
+  const parts = path.split(/[.[\]]/).filter((part) => part.length > 0);
   let current: unknown = obj;
   for (const part of parts) {
     if (current === null || current === undefined) return undefined;
