@@ -29,6 +29,7 @@ import { lapTimeOrAbsent } from './sentinels';
 import { lmuCarNumber, lmuCarNumberRaw, lmuTeamName } from './entryName';
 import { lmuDriverTires } from './tireCompound';
 import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
+import { lmuShiftPointRpm } from './shiftPoints';
 
 type Raw = import('./native').LmuRawSession;
 
@@ -45,18 +46,31 @@ const DEFAULT_CAR_NUMBER = (carIdx: number) => String(carIdx + 1);
 const LMU_TRACK_ID_OFFSET = 1_000_000;
 const DEFAULT_MAX_RPM = 8500;
 
-export function deriveLmuShiftLightRpm(engineMaxRpm?: number) {
+/**
+ * Shift-light thresholds for the player's car.
+ *
+ * `shiftRpm` is the car's known shift point (see shiftPoints.ts). Without one
+ * the shift point is guessed at 95% of the rev limit. The other thresholds
+ * stay fractions of the limit, widened only as far as needed to keep them in
+ * order around a known shift point.
+ */
+export function deriveLmuShiftLightRpm(
+  engineMaxRpm?: number,
+  shiftRpm?: number
+) {
   const maxRpm =
     engineMaxRpm !== undefined &&
     Number.isFinite(engineMaxRpm) &&
     engineMaxRpm > 0
       ? engineMaxRpm
       : DEFAULT_MAX_RPM;
+  const shift = shiftRpm ?? Math.round(maxRpm * 0.95);
+  const last = Math.max(Math.round(maxRpm * 0.97), shift);
   return {
-    first: Math.round(maxRpm * 0.91),
-    shift: Math.round(maxRpm * 0.95),
-    last: Math.round(maxRpm * 0.97),
-    blink: Math.round(maxRpm * 0.97),
+    first: Math.min(Math.round(maxRpm * 0.91), shift),
+    shift,
+    last,
+    blink: last,
   };
 }
 
@@ -337,7 +351,14 @@ export function mapLmuSession(
   sessionIdentity?: LmuSessionIdentity
 ): Session {
   const trackLengthM = raw.lapDist;
-  const shiftLights = deriveLmuShiftLightRpm(raw.engineMaxRPM);
+  const playerEntry = raw.drivers.find((d) => d.isPlayer);
+  const shiftLights = deriveLmuShiftLightRpm(
+    raw.engineMaxRPM,
+    lmuShiftPointRpm(
+      lmuCanonicalClass(playerEntry?.className),
+      playerEntry?.vehicleModel ?? playerEntry?.vehicleName
+    )
+  );
 
   // Keyed by the name the sim reports, which is the only handle
   // /rest/multiplayer/teams gives us. Absent outside multiplayer.
@@ -383,6 +404,7 @@ export function mapLmuSession(
     CarNumber: lmuCarNumber(d.vehicleName) ?? DEFAULT_CAR_NUMBER(d.id),
     CarNumberRaw: lmuCarNumberRaw(d.vehicleName) ?? d.id + 1,
     CarPath: d.vehFilename,
+    CarModel: d.vehicleModel,
     CarClassID: d.classId,
     CarID: resolveLmuCarId(d.vehicleModel ?? d.vehicleName),
     CarIsPaceCar: 0,

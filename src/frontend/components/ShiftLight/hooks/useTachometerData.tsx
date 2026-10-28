@@ -22,11 +22,13 @@ export const useTachometerData = () => {
   const driverCarIdx = useSessionStore(
     (state) => state.session?.DriverInfo?.DriverCarIdx
   );
+  // The key custom shift points are saved under. LMU's CarPath names the
+  // livery rather than the car, so there the model name stands in for it.
   const carPath = useSessionStore((state) => {
     const drivers = state.session?.DriverInfo?.Drivers;
     if (!drivers || driverCarIdx === undefined) return undefined;
     const driver = drivers.find((d) => d.CarIdx === driverCarIdx);
-    return driver?.CarPath;
+    return driver?.CarModel || driver?.CarPath;
   });
 
   // Use car-specific maximum RPM from multiple sources in order of preference
