@@ -50,6 +50,12 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'laptrace',
   'pitlanehelper',
   'relative',
+  // Timed over nominal thirds of the lap, not LMU's own sector lines: LMU
+  // publishes no boundary distances (see SplitTimeInfo in mapSession.ts).
+  'sectordelta',
+  // Shift point from shiftPoints.ts for GT3 and LMP2, else 95% of the rev
+  // limit. LMU publishes no shift point of its own.
+  'shiftlight',
   'standings',
   // Not a sim-specific widget: it reports whatever channels the running sim
   // publishes, which is how LMU's own mapping gets checked. It is also the
@@ -79,8 +85,6 @@ export const LMU_DISABLED_WIDGETS: readonly string[] = [
   'map',
   'radar',
   'rejoin',
-  'sectordelta',
-  'shiftlight',
   'slowcarahead',
   'tachometer',
   'twitchchat',
@@ -116,7 +120,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 6;
+export const SIM_WIDGET_SUPPORT_VERSION = 7;
 
 /**
  * Whether a widget is unavailable under the running sim.
