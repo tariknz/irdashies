@@ -37,6 +37,8 @@ export const ShiftNow: Story = {
         gear: 4,
         rpm: 7100,
         shiftRpm: 6900,
+        // The cue waits for the driver to be accelerating.
+        throttleRaw: 1,
         version: 1,
       },
     }),

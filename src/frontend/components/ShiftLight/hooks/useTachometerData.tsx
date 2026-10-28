@@ -13,11 +13,18 @@ export const useTachometerData = () => {
   const oilTemp = snapshot?.oilTemp ?? 0;
   const waterTemp = snapshot?.waterTemp ?? 0;
   const engineWarnings = snapshot?.engineWarnings ?? 0;
+  // Pedal positions, not the sim's processed values: an automatic blip on a
+  // downshift moves the processed throttle without the driver touching it.
+  const throttle = snapshot?.throttleRaw ?? snapshot?.throttle ?? 0;
+  const brake = snapshot?.brakeRaw ?? snapshot?.brake ?? 0;
   const { carData, gearRpmThresholds, hasCarData } = useCarTachometerData(gear);
 
   // Get car-specific redline from session data
   const driverCarRedLine = useSessionStore(
     (state) => state.session?.DriverInfo?.DriverCarRedLine
+  );
+  const gearCount = useSessionStore(
+    (state) => state.session?.DriverInfo?.DriverCarGearNumForward ?? 0
   );
   const driverCarIdx = useSessionStore(
     (state) => state.session?.DriverInfo?.DriverCarIdx
@@ -44,6 +51,9 @@ export const useTachometerData = () => {
   return {
     rpm,
     gear,
+    gearCount,
+    throttle,
+    brake,
     maxRpm,
     shiftRpm,
     blinkRpm,
