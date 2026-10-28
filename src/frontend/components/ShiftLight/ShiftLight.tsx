@@ -29,6 +29,7 @@ export const ShiftLight = () => {
       showRpmText={settings?.showRpmText ?? true}
       carData={tachometerData.carData}
       carPath={tachometerData.carPath}
+      carModel={tachometerData.carModel}
       shiftPointSettings={settings?.shiftPointSettings}
       opacity={settings?.background.opacity}
     />

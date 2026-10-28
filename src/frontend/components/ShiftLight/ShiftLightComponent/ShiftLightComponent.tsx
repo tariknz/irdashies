@@ -26,6 +26,8 @@ export interface ShiftLightProps {
   carData?: CarData | null;
   /** CarPath from iRacing session (for custom shift points) */
   carPath?: string;
+  /** CarModel, where the sim sets one: the custom shift points key as-is. */
+  carModel?: string;
   /** Custom shift point settings */
   shiftPointSettings?: ShiftPointSettings;
   /** Background opacity */
@@ -43,6 +45,7 @@ export const ShiftLight = ({
   showRpmText = true,
   carData = null,
   carPath = undefined,
+  carModel = undefined,
   shiftPointSettings = undefined,
   opacity = 100,
 }: ShiftLightProps) => {
@@ -61,7 +64,8 @@ export const ShiftLight = ({
     carPath,
     gear,
     clampedRpm,
-    carData
+    carData,
+    carModel
   );
 
   // A cue only means "upshift now" when there is a gear to go up to and the

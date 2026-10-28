@@ -88,12 +88,14 @@ describe('mapLmuSession', () => {
 
   it('derives LMU shift lights from the engine limit', () => {
     expect(deriveLmuShiftLightRpm(9000)).toEqual({
+      redline: 9000,
       first: 8190,
       shift: 8550,
       last: 8730,
       blink: 8730,
     });
     expect(deriveLmuShiftLightRpm(0)).toEqual({
+      redline: 8500,
       first: 7735,
       shift: 8075,
       last: 8245,
@@ -115,17 +117,32 @@ describe('mapLmuSession', () => {
 
   it("uses the player's car's known shift point", () => {
     expect(deriveLmuShiftLightRpm(9000, 7300)).toEqual({
-      first: 7300,
+      redline: 9000,
+      // Keeps the 4%-of-limit lead on the shift point.
+      first: 6940,
       shift: 7300,
       last: 8730,
       blink: 8730,
     });
     // Above the 97% mark, the later thresholds move up with it.
     expect(deriveLmuShiftLightRpm(9000, 8800)).toEqual({
+      redline: 9000,
       first: 8190,
       shift: 8800,
       last: 8800,
       blink: 8800,
+    });
+
+    // Capped at the rev limit LMU reports.
+    expect(deriveLmuShiftLightRpm(8600, 8800)).toMatchObject({
+      redline: 8600,
+      shift: 8600,
+    });
+    // Before LMU reports one, the placeholder rises to the shift point, so
+    // the widget's RPM clamp cannot hold the cue below it.
+    expect(deriveLmuShiftLightRpm(undefined, 8800)).toMatchObject({
+      redline: 8800,
+      shift: 8800,
     });
 
     // The fixture's player drives the Ferrari 296 GT3.
