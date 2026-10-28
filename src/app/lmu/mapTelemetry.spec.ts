@@ -183,9 +183,10 @@ describe('mapLmuTelemetry', () => {
     expect(mapLmuTelemetry(raw)).not.toHaveProperty('RelativeHumidity');
   });
 
-  it('computes wind magnitude', () => {
+  it('publishes no wind, which LMU does not simulate', () => {
     const t = mapLmuTelemetry(fixture());
-    expect(t.WindVel.value[0]).toBeCloseTo(Math.hypot(2, 0, -3));
+    expect(t).not.toHaveProperty('WindVel');
+    expect(t).not.toHaveProperty('WindDir');
   });
 
   it('reports track wetness as a level, not as a wetness fraction', () => {
