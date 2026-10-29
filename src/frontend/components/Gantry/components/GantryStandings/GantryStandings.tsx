@@ -151,11 +151,12 @@ const formatGap = (
 };
 
 const formatInterval = (
-  interval: number | undefined,
+  interval: number | Gap | undefined,
   position: number | undefined
 ): string => {
   if (position === 1) return 'int';
   if (interval === undefined) return '-';
+  if (typeof interval === 'object') return formatGap(interval, position);
   return interval.toFixed(1);
 };
 

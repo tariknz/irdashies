@@ -61,6 +61,52 @@ export const Primary: Story = {
   },
 };
 
+export const RowOpacity: Story = {
+  args: {
+    ...Primary.args,
+    config: {
+      ...Primary.args?.config,
+      driverRow: { opacity: 35 },
+    } as StandingsWidgetSettings['config'],
+  },
+};
+
+export const TransparentPlayerRow: Story = {
+  args: {
+    ...RowOpacity.args,
+    isPlayer: true,
+    config: {
+      ...RowOpacity.args?.config,
+      driverRow: { opacity: 0 },
+    } as StandingsWidgetSettings['config'],
+  },
+};
+
+export const LappedInterval: Story = {
+  args: {
+    ...Primary.args,
+    position: 2,
+    gap: { value: undefined, laps: -2 },
+    interval: { value: undefined, laps: -1 },
+    config: {
+      ...Primary.args?.config,
+      gap: { enabled: true, decimalPlaces: 1 },
+      interval: { enabled: true, decimalPlaces: 1, displayMode: 'laps' },
+    } as StandingsWidgetSettings['config'],
+  },
+};
+
+export const TimeInterval: Story = {
+  args: {
+    ...LappedInterval.args,
+    interval: 125,
+    config: {
+      ...LappedInterval.args?.config,
+      interval: { enabled: true, decimalPlaces: 1, displayMode: 'time' },
+    } as StandingsWidgetSettings['config'],
+  },
+};
+
 export const CarNumberWidthNormal: Story = {
   name: 'Car Number Width - Normal',
   args: {

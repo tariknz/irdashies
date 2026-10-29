@@ -29,7 +29,7 @@ export interface Standings {
   lappedState?: 'ahead' | 'behind' | 'same';
   delta?: number;
   gap?: Gap;
-  interval?: number;
+  interval?: number | Gap;
   isPlayer: boolean;
   driver: {
     name: string;
@@ -908,32 +908,57 @@ export const augmentStandingsWithPlayerGap = (
 };
 
 /**
- * This method will augment the standings with interval calculations to player
- * Interval shows time gaps between consecutive cars, calculated by subtracting gaps
- * For each driver, interval = gap_of_driver_behind - gap_of_current_driver
- * Player shows as undefined (no interval)
+ * Interval shows the gap to the preceding car in the same class.
+ * When enabled, whole lap differences use the signed class-leader gap convention.
+ * The class leader has no interval.
  */
 export const augmentStandingsWithInterval = (
-  groupedStandings: [string, Standings[]][]
+  groupedStandings: [string, Standings[]][],
+  carIdxLap: number[] = [],
+  carIdxLapDistPct: number[] = [],
+  showLapDifferences = false
 ): [string, Standings[]][] => {
   return groupedStandings.map(([classId, classStandings]) => {
-    // Sort drivers by their gap values (ascending - smallest gaps first = closest to leader)
     const augmentedClassStandings = classStandings.map(
       (driverStanding, index) => {
         // The driver physically in front of this one in the standings
         const driverAhead = classStandings[index - 1];
 
-        let interval: number | undefined = undefined;
+        let interval: number | Gap | undefined = undefined;
+
+        const isRace = driverStanding.currentSessionType === 'Race';
+        const aheadPct = driverAhead
+          ? carIdxLapDistPct[driverAhead.carIdx]
+          : undefined;
+        const driverPct = carIdxLapDistPct[driverStanding.carIdx];
+        const lapsBehind =
+          driverAhead &&
+          isRace &&
+          showLapDifferences &&
+          aheadPct !== undefined &&
+          aheadPct >= 0 &&
+          driverPct >= 0
+            ? Math.floor(
+                (carIdxLap[driverAhead.carIdx] || 1) +
+                  aheadPct -
+                  ((carIdxLap[driverStanding.carIdx] || 1) + driverPct)
+              )
+            : 0;
 
         // If there's no one ahead (P1 in class), the interval is typically undefined or 0
         if (!driverAhead) {
           interval = undefined;
+        } else if (
+          lapsBehind > 0 &&
+          driverStanding.onTrack &&
+          driverAhead.onTrack
+        ) {
+          interval = { value: undefined, laps: -lapsBehind };
         }
         // If the car ahead is the leader (who has no gap value),
         // the interval for P2 is simply their own gap to the leader.
         // For race sessions, onTrack is still required.
         else if (driverAhead.gap?.value === undefined) {
-          const isRace = driverStanding.currentSessionType === 'Race';
           if (!isRace || driverStanding.onTrack) {
             interval = driverStanding.gap?.value;
           }

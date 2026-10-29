@@ -45,6 +45,7 @@ export default defineWidgetManifest({
     interval: {
       enabled: false,
       decimalPlaces: 1,
+      displayMode: 'time',
     },
     lastTime: {
       enabled: true,
@@ -58,6 +59,9 @@ export default defineWidgetManifest({
       opacity: 80,
     },
     foreground: {
+      opacity: 70,
+    },
+    driverRow: {
       opacity: 70,
     },
     countryFlags: {
@@ -413,6 +417,15 @@ export default defineWidgetManifest({
       step: 1,
       units: '%',
     },
+    'driverRow.opacity': {
+      type: 'number',
+      label: 'Driver Row Opacity',
+      description: 'Adjust driver row backgrounds and the player highlight',
+      min: 0,
+      max: 100,
+      step: 1,
+      units: '%',
+    },
     'headerBar.enabled': { type: 'boolean', label: 'Show Header Bar' },
     'footerBar.enabled': { type: 'boolean', label: 'Show Footer Bar' },
     'classHeaderStyle.estimatedLaps.enabled': {
@@ -485,6 +498,17 @@ export default defineWidgetManifest({
       type: 'enum',
       label: 'Decimal Places',
       options: numberOptions(1, 3),
+    },
+    'interval.displayMode': {
+      type: 'enum',
+      control: 'select',
+      label: 'Interval Display',
+      description:
+        'Choose how intervals are displayed when cars are a lap or more apart.',
+      options: [
+        { value: 'time', label: 'Time' },
+        { value: 'laps', label: 'Laps When Lapped' },
+      ],
     },
     'interval.decimalPlaces': {
       type: 'enum',
