@@ -29,8 +29,6 @@ export interface MenuItem {
   /** Widgets that share this item's page; it shows On while any of them is. */
   groupTypes?: string[];
   category?: WidgetCategory;
-  /** One line under the label in the settings menu. */
-  description?: string;
   icon?: Icon;
   /** Reached through a tab on another item's page rather than the menu. */
   hideInMenu?: boolean;
@@ -69,64 +67,56 @@ export const generalItems: MenuItem[] = [
   },
 ];
 
-/** Menu group and one-line summary per widget; the manifests carry neither. */
+/** Menu group per widget; the manifests do not carry one. */
 const WIDGET_MENU_META: Partial<
-  Record<WidgetId, { category: WidgetCategory; description: string }>
+  Record<WidgetId, { category: WidgetCategory }>
 > = {
   broadcast: {
     category: 'extras',
-    description: 'TV-style overlay for streams',
   },
-  battle: { category: 'race', description: 'Gaps to cars ahead and behind' },
+  battle: { category: 'race' },
   blindspotmonitor: {
     category: 'awareness',
-    description: 'Cars alongside, left and right',
   },
-  cornername: { category: 'track', description: 'Current corner and section' },
+  cornername: { category: 'track' },
   carsystems: {
     category: 'car',
-    description: 'Brake bias, ABS, traction control',
   },
-  deltaspeed: { category: 'race', description: 'Speed versus your best lap' },
+  deltaspeed: { category: 'race' },
   fastercarsfrombehind: {
     category: 'awareness',
-    description: 'Faster classes closing in',
   },
-  flag: { category: 'awareness', description: 'Track flags' },
-  flatmap: { category: 'track', description: 'Straight-line track map' },
-  fuel: { category: 'car', description: 'Burn rate, laps left, pit fuel' },
-  gantry: { category: 'race', description: 'Race control window' },
+  flag: { category: 'awareness' },
+  flatmap: { category: 'track' },
+  fuel: { category: 'car' },
+  gantry: { category: 'race' },
   garagecover: {
     category: 'extras',
-    description: 'Covers the screen in the garage',
   },
-  heartrate: { category: 'car', description: 'Live heart rate via HypeRate' },
-  infobar: { category: 'race', description: 'Session and timing bar' },
-  input: { category: 'car', description: 'Throttle, brake and clutch traces' },
-  laptimelog: { category: 'race', description: 'Lap time history' },
+  heartrate: { category: 'car' },
+  infobar: { category: 'race' },
+  input: { category: 'car' },
+  laptimelog: { category: 'race' },
   laptrace: {
     category: 'car',
-    description: 'Saved lap inputs along the track',
   },
   pitlanehelper: {
     category: 'awareness',
-    description: 'Pit entry speed and pitbox',
   },
-  radar: { category: 'awareness', description: 'Top-down view of nearby cars' },
-  rejoin: { category: 'awareness', description: 'Safe-to-rejoin indicator' },
-  relative: { category: 'race', description: 'Cars ahead and behind' },
-  sectordelta: { category: 'race', description: 'Per-sector time deltas' },
-  shiftlight: { category: 'car', description: 'Shift point lights' },
+  radar: { category: 'awareness' },
+  rejoin: { category: 'awareness' },
+  relative: { category: 'race' },
+  sectordelta: { category: 'race' },
+  shiftlight: { category: 'car' },
   slowcarahead: {
     category: 'awareness',
-    description: 'Slow cars ahead warning',
   },
-  standings: { category: 'race', description: 'Class positions' },
-  tachometer: { category: 'car', description: 'RPM and shift lights' },
-  map: { category: 'track', description: 'Circuit map with cars' },
-  twitchchat: { category: 'extras', description: 'Twitch chat feed' },
-  weather: { category: 'track', description: 'Temperatures, wind, wetness' },
-  wind: { category: 'track', description: 'Wind direction and speed' },
+  standings: { category: 'race' },
+  tachometer: { category: 'car' },
+  map: { category: 'track' },
+  twitchchat: { category: 'extras' },
+  weather: { category: 'track' },
+  wind: { category: 'track' },
 };
 
 export const widgetItems: MenuItem[] = WIDGET_MANIFESTS.map(

@@ -73,10 +73,10 @@ export const SettingsLayout = () => {
           width comes from the window-controls-overlay env() values, so it
           follows DPI scaling; without an overlay it resolves to 0. */}
         <div
-          className="flex flex-row gap-4 items-center justify-between [-webkit-app-region:drag]"
+          className="-mx-4 -mt-4 -mb-4 px-4 pt-4 pb-4 flex flex-row gap-4 items-center justify-between [-webkit-app-region:drag]"
           style={{
             paddingRight:
-              'max(0px, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)))',
+              'max(1rem, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)))',
           }}
         >
           <div className="flex flex-row gap-4 items-center">

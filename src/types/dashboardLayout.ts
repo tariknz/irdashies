@@ -125,6 +125,15 @@ export const SETTINGS_TITLE_BAR: Record<
   red: { color: '#1b1e23', symbolColor: '#9aa1ab' },
 };
 
+/** How the settings menu groups widgets: user groups, moves and collapsed sections. */
+export interface MenuLayout {
+  groups?: { id: string; label: string }[];
+  /** Widget type -> group id (built-in category or custom group) overriding its default. */
+  assign?: Record<string, string>;
+  /** Ids of collapsed groups. */
+  collapsed?: string[];
+}
+
 export interface GeneralSettingsType {
   fontType?: FontType;
   fontSize?: FontSize;
@@ -154,6 +163,7 @@ export interface GeneralSettingsType {
     | 'stone';
   /** Look of the settings window only; overlays use colorPalette. */
   settingsTheme?: SettingsTheme;
+  menuLayout?: MenuLayout;
   showOnlyWhenOnTrack?: boolean;
   highlightColor?: number;
   skipTaskbar?: boolean;
