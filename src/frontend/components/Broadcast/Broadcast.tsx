@@ -216,7 +216,7 @@ export const TowerView = ({
                 }}
               >
                 <div
-                  key={tick}
+                  key={`page-${tick}`}
                   className="relative h-full"
                   style={rowAnimation(effect, index)}
                 >
@@ -233,7 +233,7 @@ export const TowerView = ({
                   )}
                 </div>
                 {change && (
-                  <PositionArrow key={change.seq} delta={change.delta} />
+                  <PositionArrow key={`arrow-${change.seq}`} delta={change.delta} />
                 )}
               </div>
             );
