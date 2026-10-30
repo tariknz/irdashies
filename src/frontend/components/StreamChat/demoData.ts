@@ -1,7 +1,10 @@
 import type { ChatMessage } from './types';
 
+/** Demo messages are shown unfiltered, so they name no channel. */
+export type DemoMessage = Omit<ChatMessage, 'channel'>;
+
 // Twitch global emote IDs: Kappa=25, PogChamp=305954156, LUL=425618
-export const DEMO_MESSAGES: ChatMessage[] = [
+export const DEMO_MESSAGES: DemoMessage[] = [
   {
     id: '1',
     platform: 'twitch',
@@ -245,7 +248,7 @@ export interface DemoPlatforms {
 export const getDemoMessages = ({
   twitch,
   youtube,
-}: DemoPlatforms): ChatMessage[] => {
+}: DemoPlatforms): DemoMessage[] => {
   const twitchMessages = twitch
     ? DEMO_MESSAGES.filter((m) => m.platform === 'twitch')
     : [];
@@ -256,7 +259,7 @@ export const getDemoMessages = ({
     return [...twitchMessages, ...youtubeMessages];
   }
 
-  const mixed: ChatMessage[] = [];
+  const mixed: DemoMessage[] = [];
   const total = twitchMessages.length + youtubeMessages.length;
   let t = 0;
   let y = 0;

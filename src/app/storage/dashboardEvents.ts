@@ -15,3 +15,15 @@ export const onDashboardUpdated = (
 export const emitDashboardUpdated = (dashboard: DashboardLayout) => {
   dashboardEvents.emit('dashboardUpdated', dashboard);
 };
+
+/** Fires on every persisted dashboard change, whichever profile it belongs to. */
+export const onDashboardsSaved = (listener: () => void) => {
+  dashboardEvents.on('dashboardsSaved', listener);
+  return () => {
+    dashboardEvents.removeListener('dashboardsSaved', listener);
+  };
+};
+
+export const emitDashboardsSaved = () => {
+  dashboardEvents.emit('dashboardsSaved');
+};

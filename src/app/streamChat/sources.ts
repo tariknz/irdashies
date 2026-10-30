@@ -6,7 +6,7 @@ import type {
 /** A message as a source produces it; the service stamps id and time. */
 export type RawStreamChatMessage = Omit<
   StreamChatMessage,
-  'id' | 'timestamp' | 'platform'
+  'id' | 'timestamp' | 'platform' | 'channel'
 >;
 
 export interface StreamChatSourceEvents {

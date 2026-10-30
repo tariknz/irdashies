@@ -23,6 +23,12 @@ export type StreamChatSegment =
 export interface StreamChatMessage {
   id: string;
   platform: StreamChatPlatform;
+  /**
+   * The channel it came from: the lowercased Twitch login or the YouTube
+   * `@handle`. The service follows the channels of every profile, so a widget
+   * keeps only the messages of its own profile's channels.
+   */
+  channel: string;
   /** Epoch ms the message was received by the app; the display order. */
   timestamp: number;
   user: string;
@@ -45,8 +51,10 @@ export interface StreamChatMessagesSnapshot {
 }
 
 export interface StreamChatEmotesSnapshot {
-  /** Third-party (BTTV/7TV) emote code to image URL. */
+  /** Global third-party (BTTV/7TV) emote code to image URL. */
   emotes: Record<string, string>;
+  /** Emotes of one Twitch channel's own sets, keyed by lowercased login. */
+  channels: Record<string, Record<string, string>>;
 }
 
 export const STREAM_CHAT_MAX_MESSAGES = 100;
@@ -61,3 +69,34 @@ export const YOUTUBE_HANDLE_PATTERN = /^@[\p{L}\p{M}\p{N}._-]{3,30}$/u;
 
 /** Twitch login names: 4-25 characters, letters, digits and underscore. */
 export const TWITCH_CHANNEL_PATTERN = /^[A-Za-z0-9_]{1,25}$/;
+
+export interface StreamChatChannels {
+  twitch: string;
+  youtube: string;
+}
+
+const cleanChannel = (value: unknown, pattern: RegExp): string => {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  return pattern.test(trimmed) ? trimmed : '';
+};
+
+/**
+ * The channels a widget config asks for. Persisted settings are untrusted, so
+ * a channel that does not look like a channel name counts as empty. Shared by
+ * the service and the widget so both agree on what a channel is called.
+ */
+export const normalizeStreamChatChannels = (
+  config: unknown
+): StreamChatChannels => {
+  const c = config as
+    | { twitch?: { channel?: unknown }; youtube?: { channel?: unknown } }
+    | undefined;
+  return {
+    twitch: cleanChannel(
+      c?.twitch?.channel,
+      TWITCH_CHANNEL_PATTERN
+    ).toLowerCase(),
+    youtube: cleanChannel(c?.youtube?.channel, YOUTUBE_HANDLE_PATTERN),
+  };
+};

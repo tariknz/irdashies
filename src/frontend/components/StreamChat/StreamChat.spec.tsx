@@ -6,6 +6,7 @@ import { ChatMessageList } from './StreamChat';
 const message = (overrides: Partial<StreamChatMessage>): StreamChatMessage => ({
   id: 'm',
   platform: 'twitch',
+  channel: 'streamer',
   timestamp: 1,
   user: 'Viewer',
   text: 'hello',

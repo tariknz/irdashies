@@ -36,6 +36,7 @@ const mockEmitDashboardUpdated = vi.hoisted(() => vi.fn());
 
 vi.mock('./dashboardEvents', () => ({
   emitDashboardUpdated: mockEmitDashboardUpdated,
+  emitDashboardsSaved: vi.fn(),
 }));
 
 describe('dashboards', () => {

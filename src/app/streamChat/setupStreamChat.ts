@@ -1,5 +1,8 @@
 import type { DashboardLayout } from '@irdashies/types';
-import { onDashboardUpdated } from '../storage/dashboardEvents';
+import {
+  onDashboardUpdated,
+  onDashboardsSaved,
+} from '../storage/dashboardEvents';
 import {
   StreamChatService,
   type StreamChatPublisher,
@@ -7,20 +10,22 @@ import {
 
 /**
  * Hosts the Stream Chat connections for as long as the app runs and follows
- * the dashboard: nothing connects until the widget is enabled and a channel
- * is set. Returns the function that tears everything down.
+ * the dashboards of every profile: nothing connects until some profile has the
+ * widget enabled and a channel set. Returns the function that tears everything
+ * down.
  */
 export const setupStreamChat = (
   bus: StreamChatPublisher,
-  initialDashboard: DashboardLayout | undefined
+  listDashboards: () => Record<string, DashboardLayout>
 ): (() => void) => {
   const service = new StreamChatService(bus);
-  service.applyDashboard(initialDashboard);
-  const unsubscribe = onDashboardUpdated((dashboard) =>
-    service.applyDashboard(dashboard)
-  );
+  const apply = () => service.applyDashboards(Object.values(listDashboards()));
+  apply();
+  // A save to an inactive profile never reaches onDashboardUpdated, yet a
+  // browser source can be pinned to that profile.
+  const unsubscribers = [onDashboardUpdated(apply), onDashboardsSaved(apply)];
   return () => {
-    unsubscribe();
+    unsubscribers.forEach((unsubscribe) => unsubscribe());
     service.dispose();
   };
 };

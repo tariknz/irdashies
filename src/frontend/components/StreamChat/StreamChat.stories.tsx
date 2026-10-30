@@ -21,7 +21,12 @@ const DisappearingChatDemo = ({
       const template = DEMO_MESSAGES[indexRef.current % DEMO_MESSAGES.length];
       setMessages((prev) => [
         ...prev.slice(-(MAX_VISIBLE_MESSAGES - 1)),
-        { ...template, id: crypto.randomUUID(), timestamp: Date.now() },
+        {
+          ...template,
+          id: crypto.randomUUID(),
+          channel: '',
+          timestamp: Date.now(),
+        },
       ]);
       indexRef.current++;
     }, DEMO_MESSAGE_INTERVAL_MS);
@@ -56,7 +61,12 @@ const LiveChatDemo = ({
       const template = DEMO_MESSAGES[indexRef.current % DEMO_MESSAGES.length];
       setMessages((prev) => [
         ...prev.slice(-19),
-        { ...template, id: crypto.randomUUID(), timestamp: Date.now() },
+        {
+          ...template,
+          id: crypto.randomUUID(),
+          channel: '',
+          timestamp: Date.now(),
+        },
       ]);
       indexRef.current++;
     }, DEMO_MESSAGE_INTERVAL_MS);
@@ -87,11 +97,13 @@ export default {
   ],
 } as Meta<typeof ChatMessageList>;
 
+const DEMO_STORY_MESSAGES = DEMO_MESSAGES.map((m) => ({ ...m, channel: '' }));
+
 type Story = StoryObj<typeof ChatMessageList>;
 
 export const Default: Story = {
   args: {
-    messages: DEMO_MESSAGES,
+    messages: DEMO_STORY_MESSAGES,
     fontSize: 16,
     background: { opacity: 85 },
   },
@@ -103,7 +115,7 @@ export const Live: Story = {
 
 export const LowOpacity: Story = {
   args: {
-    messages: DEMO_MESSAGES,
+    messages: DEMO_STORY_MESSAGES,
     fontSize: 16,
     background: { opacity: 30 },
   },
@@ -111,7 +123,7 @@ export const LowOpacity: Story = {
 
 export const LargeFont: Story = {
   args: {
-    messages: DEMO_MESSAGES,
+    messages: DEMO_STORY_MESSAGES,
     fontSize: 24,
     background: { opacity: 85 },
   },
@@ -125,7 +137,7 @@ export const DisappearingMessages: Story = {
 
 export const WithPlatformIcons: Story = {
   args: {
-    messages: DEMO_MESSAGES,
+    messages: DEMO_STORY_MESSAGES,
     fontSize: 16,
     background: { opacity: 85 },
     showPlatformIcons: true,
@@ -134,7 +146,7 @@ export const WithPlatformIcons: Story = {
 
 export const YoutubeOnly: Story = {
   args: {
-    messages: DEMO_MESSAGES.filter((m) => m.platform === 'youtube'),
+    messages: DEMO_STORY_MESSAGES.filter((m) => m.platform === 'youtube'),
     fontSize: 16,
     background: { opacity: 85 },
     showPlatformIcons: true,

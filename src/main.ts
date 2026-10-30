@@ -13,6 +13,7 @@ import {
   getOrCreateDefaultDashboard,
   getCurrentProfileId,
   getProfile,
+  listDashboards,
   setCurrentProfile,
 } from './app/storage/dashboards';
 import { getSessionProfileMap } from './app/storage/appSettings';
@@ -479,7 +480,7 @@ void app.whenReady().then(async () => {
   );
   setupRaceControlBridge(incidents, dashboard, replayContextRuntime);
   setupLapHistoryRuntime(dashboard, replayContextRuntime);
-  disposeStreamChat = setupStreamChat(channelBus, dashboard);
+  disposeStreamChat = setupStreamChat(channelBus, listDashboards);
   // Returns false when the Gantry widget is disabled, so Settings can explain
   // why the button did nothing instead of appearing to be broken.
   ipcMain.handle('raceControl:showGantryWindow', () =>

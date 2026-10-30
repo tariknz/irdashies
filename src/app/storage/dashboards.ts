@@ -3,7 +3,7 @@ import type {
   DashboardWidget,
   DashboardProfile,
 } from '@irdashies/types';
-import { emitDashboardUpdated } from './dashboardEvents';
+import { emitDashboardUpdated, emitDashboardsSaved } from './dashboardEvents';
 import {
   defaultDashboard,
   deepMergeConfig,
@@ -363,6 +363,7 @@ export const saveDashboard = (
     logger.info('[saveDashboard] Writing to storage for profile:', id);
     writeData(DASHBOARDS_KEY, dashboards);
     logger.info('[saveDashboard] Saved successfully to storage');
+    emitDashboardsSaved();
 
     // Only emit dashboard updated event if this is the currently active profile
     // This prevents overlay refreshes when creating/modifying non-active profiles
@@ -745,6 +746,7 @@ export const deleteProfile = (profileId: string): void => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { [profileId]: removed, ...remainingDashboards } = dashboards;
     writeData(DASHBOARDS_KEY, remainingDashboards);
+    emitDashboardsSaved();
   }
 
   // If this was the current profile, switch to default

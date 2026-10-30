@@ -13,6 +13,7 @@ import {
   getDemoMessages,
   type DemoPlatforms,
 } from './demoData';
+import { normalizeStreamChatChannels } from '@irdashies/types';
 import type { ChatMessage, ThirdPartyEmoteMap } from './types';
 
 export interface StreamChatDisplayProps {
@@ -179,7 +180,12 @@ const DemoChatMessages = ({
       const template = demoMessages[indexRef.current % demoMessages.length];
       setMessages((prev) => [
         ...prev.slice(-19),
-        { ...template, id: crypto.randomUUID(), timestamp: Date.now() },
+        {
+          ...template,
+          id: crypto.randomUUID(),
+          channel: '',
+          timestamp: Date.now(),
+        },
       ]);
       indexRef.current++;
     }, DEMO_MESSAGE_INTERVAL_MS);
@@ -207,8 +213,32 @@ export const StreamChat = ({
     settings?.config.display.background ?? { opacity: 30 };
   const active = !isDemoMode && (settings?.enabled ?? false);
   const snapshot = useStreamChatMessagesSnapshot(active);
-  const thirdPartyEmotes = useStreamChatEmotes(active);
-  const messages = useMemo(() => snapshot?.messages ?? [], [snapshot]);
+  const emoteSets = useStreamChatEmotes(active);
+  // The service follows every profile's channels, so this widget keeps only
+  // what its own profile asks for.
+  const channels = useMemo(
+    () => normalizeStreamChatChannels(settings?.config),
+    [settings?.config]
+  );
+  const messages = useMemo(
+    () =>
+      (snapshot?.messages ?? []).filter(
+        (m) =>
+          m.channel ===
+          (m.platform === 'twitch' ? channels.twitch : channels.youtube)
+      ),
+    [snapshot, channels]
+  );
+  const thirdPartyEmotes = useMemo(
+    () =>
+      new Map([
+        ...emoteSets.global,
+        ...(channels.twitch
+          ? (emoteSets.channels.get(channels.twitch) ?? [])
+          : []),
+      ]),
+    [emoteSets, channels.twitch]
+  );
 
   if (isDemoMode) {
     return (

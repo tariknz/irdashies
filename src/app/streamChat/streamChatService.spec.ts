@@ -33,25 +33,38 @@ const dashboard = (
     generalSettings: {},
   }) as unknown as DashboardLayout;
 
+interface FakeSource {
+  setChannel: ReturnType<typeof vi.fn>;
+  dispose: ReturnType<typeof vi.fn>;
+}
+
 const setup = (
   overrides: {
     channelEmotes?: (id: string) => Promise<Record<string, string>>;
   } = {}
 ) => {
-  const twitchEvents: { current?: TwitchEvents } = {};
-  const youtubeEvents: { current?: StreamChatSourceEvents } = {};
-  const twitch = { setChannel: vi.fn(), dispose: vi.fn() };
-  const youtube = { setChannel: vi.fn(), dispose: vi.fn() };
+  // One source is created per channel, so tests look them up by channel.
+  const twitchSources: { source: FakeSource; events: TwitchEvents }[] = [];
+  const youtubeSources: {
+    source: FakeSource;
+    events: StreamChatSourceEvents;
+  }[] = [];
   const sources: StreamChatSources = {
     twitch: (events) => {
-      twitchEvents.current = events;
-      return twitch;
+      const source = { setChannel: vi.fn(), dispose: vi.fn() };
+      twitchSources.push({ source, events });
+      return source;
     },
     youtube: (events) => {
-      youtubeEvents.current = events;
-      return youtube;
+      const source = { setChannel: vi.fn(), dispose: vi.fn() };
+      youtubeSources.push({ source, events });
+      return source;
     },
   };
+  const named = <T extends { source: FakeSource }>(
+    list: T[],
+    channel: string
+  ) => list.find((s) => s.source.setChannel.mock.calls[0]?.[0] === channel);
   const publish = vi.fn();
   let clock = 1000;
   const loadGlobal = vi.fn().mockResolvedValue({ Kappa: 'g' });
@@ -74,10 +87,18 @@ const setup = (
   return {
     service,
     publish,
-    twitch,
-    youtube,
-    twitchEvents,
-    youtubeEvents,
+    twitchSources,
+    youtubeSources,
+    twitch: (channel = 'streamer') => {
+      const found = named(twitchSources, channel);
+      if (!found) throw new Error(`No Twitch source for ${channel}`);
+      return found;
+    },
+    youtube: (channel = '@yt_chan') => {
+      const found = named(youtubeSources, channel);
+      if (!found) throw new Error(`No YouTube source for ${channel}`);
+      return found;
+    },
     lastMessages,
     loadGlobal,
   };
@@ -121,45 +142,84 @@ describe('readStreamChatChannels', () => {
 
 describe('StreamChatService', () => {
   let ctx: ReturnType<typeof setup>;
+  const msg = (text: string) => ({ user: 'a', text, emotes: [] });
   beforeEach(() => {
     ctx = setup();
   });
 
   it('connects the sources named by the dashboard', () => {
-    ctx.service.applyDashboard(dashboard(both));
-    expect(ctx.twitch.setChannel).toHaveBeenCalledWith('streamer');
-    expect(ctx.youtube.setChannel).toHaveBeenCalledWith('@yt_chan');
+    ctx.service.applyDashboards([dashboard(both)]);
+    expect(ctx.twitch().source.setChannel).toHaveBeenCalledWith('streamer');
+    expect(ctx.youtube().source.setChannel).toHaveBeenCalledWith('@yt_chan');
   });
 
   it('leaves a source idle when its channel is empty', () => {
-    ctx.service.applyDashboard(
-      dashboard({ ...both, youtube: { channel: '' } })
-    );
-    expect(ctx.twitch.setChannel).toHaveBeenCalledWith('streamer');
-    expect(ctx.youtube.setChannel).not.toHaveBeenCalled();
+    ctx.service.applyDashboards([
+      dashboard({ ...both, youtube: { channel: '' } }),
+    ]);
+    expect(ctx.twitchSources).toHaveLength(1);
+    expect(ctx.youtubeSources).toHaveLength(0);
   });
 
   it('does not reconnect when unrelated settings change', () => {
-    ctx.service.applyDashboard(dashboard(both));
-    ctx.service.applyDashboard(
-      dashboard({ ...both, display: { fontSize: 30 } })
-    );
-    expect(ctx.twitch.setChannel).toHaveBeenCalledTimes(1);
-    expect(ctx.youtube.setChannel).toHaveBeenCalledTimes(1);
+    ctx.service.applyDashboards([dashboard(both)]);
+    ctx.service.applyDashboards([
+      dashboard({ ...both, display: { fontSize: 30 } }),
+    ]);
+    expect(ctx.twitchSources).toHaveLength(1);
+    expect(ctx.youtubeSources).toHaveLength(1);
+    expect(ctx.twitch().source.dispose).not.toHaveBeenCalled();
   });
 
   it('disconnects everything when the widget is disabled', () => {
-    ctx.service.applyDashboard(dashboard(both));
-    ctx.service.applyDashboard(dashboard(both, false));
-    expect(ctx.twitch.setChannel).toHaveBeenLastCalledWith('');
-    expect(ctx.youtube.setChannel).toHaveBeenLastCalledWith('');
+    ctx.service.applyDashboards([dashboard(both)]);
+    const twitch = ctx.twitch();
+    const youtube = ctx.youtube();
+    ctx.service.applyDashboards([dashboard(both, false)]);
+    expect(twitch.source.dispose).toHaveBeenCalled();
+    expect(youtube.source.dispose).toHaveBeenCalled();
+  });
+
+  it('follows the channels of every profile, not just one', () => {
+    const other = { twitch: { channel: 'Pinned' }, youtube: { channel: '' } };
+    ctx.service.applyDashboards([dashboard(both), dashboard(other)]);
+    expect(ctx.twitch('streamer')).toBeDefined();
+    expect(ctx.twitch('pinned')).toBeDefined();
+    expect(ctx.youtubeSources).toHaveLength(1);
+  });
+
+  it('shares one connection between profiles with the same channel', () => {
+    ctx.service.applyDashboards([dashboard(both), dashboard(both)]);
+    expect(ctx.twitchSources).toHaveLength(1);
+    expect(ctx.youtubeSources).toHaveLength(1);
+  });
+
+  it('keeps a channel connected while another profile still wants it', () => {
+    ctx.service.applyDashboards([dashboard(both), dashboard(both)]);
+    ctx.service.applyDashboards([dashboard(both)]);
+    expect(ctx.twitch().source.dispose).not.toHaveBeenCalled();
+  });
+
+  it('tags each message with its channel', () => {
+    const other = { twitch: { channel: 'pinned' }, youtube: { channel: '' } };
+    ctx.service.applyDashboards([dashboard(both), dashboard(other)]);
+    ctx.twitch('streamer').events.onMessage(msg('1'));
+    ctx.twitch('pinned').events.onMessage(msg('2'));
+    ctx.youtube().events.onMessage(msg('3'));
+    expect(
+      ctx.lastMessages().messages.map((m) => [m.platform, m.channel, m.text])
+    ).toEqual([
+      ['twitch', 'streamer', '1'],
+      ['twitch', 'pinned', '2'],
+      ['youtube', '@yt_chan', '3'],
+    ]);
   });
 
   it('merges both platforms in arrival order', () => {
-    ctx.service.applyDashboard(dashboard(both));
-    ctx.twitchEvents.current?.onMessage({ user: 'a', text: '1', emotes: [] });
-    ctx.youtubeEvents.current?.onMessage({ user: 'b', text: '2', emotes: [] });
-    ctx.twitchEvents.current?.onMessage({ user: 'c', text: '3', emotes: [] });
+    ctx.service.applyDashboards([dashboard(both)]);
+    ctx.twitch().events.onMessage(msg('1'));
+    ctx.youtube().events.onMessage(msg('2'));
+    ctx.twitch().events.onMessage(msg('3'));
 
     const { messages } = ctx.lastMessages();
     expect(messages.map((m) => [m.platform, m.text])).toEqual([
@@ -173,13 +233,9 @@ describe('StreamChatService', () => {
   });
 
   it('keeps only the newest messages', () => {
-    ctx.service.applyDashboard(dashboard(both));
+    ctx.service.applyDashboards([dashboard(both)]);
     for (let i = 0; i < STREAM_CHAT_MAX_MESSAGES + 5; i++) {
-      ctx.twitchEvents.current?.onMessage({
-        user: 'u',
-        text: String(i),
-        emotes: [],
-      });
+      ctx.twitch().events.onMessage(msg(String(i)));
     }
     const { messages } = ctx.lastMessages();
     expect(messages).toHaveLength(STREAM_CHAT_MAX_MESSAGES);
@@ -187,22 +243,32 @@ describe('StreamChatService', () => {
     expect(messages[0].text).toBe('5');
   });
 
-  it("drops a platform's messages when its channel changes", () => {
-    ctx.service.applyDashboard(dashboard(both));
-    ctx.twitchEvents.current?.onMessage({ user: 'a', text: 't', emotes: [] });
-    ctx.youtubeEvents.current?.onMessage({ user: 'b', text: 'y', emotes: [] });
+  it("drops a channel's messages when no profile follows it any more", () => {
+    ctx.service.applyDashboards([dashboard(both)]);
+    ctx.twitch().events.onMessage(msg('t'));
+    ctx.youtube().events.onMessage(msg('y'));
 
-    ctx.service.applyDashboard(
-      dashboard({ ...both, twitch: { channel: 'other' } })
-    );
+    ctx.service.applyDashboards([
+      dashboard({ ...both, twitch: { channel: 'other' } }),
+    ]);
     expect(ctx.lastMessages().messages.map((m) => m.platform)).toEqual([
       'youtube',
     ]);
   });
 
-  it('publishes source status changes', () => {
-    ctx.service.applyDashboard(dashboard(both));
-    ctx.youtubeEvents.current?.onStatus('waiting');
+  it('ignores messages from a source that was disconnected', () => {
+    ctx.service.applyDashboards([dashboard(both)]);
+    const old = ctx.twitch();
+    ctx.service.applyDashboards([
+      dashboard({ ...both, twitch: { channel: 'other' } }),
+    ]);
+    old.events.onMessage(msg('late'));
+    expect(ctx.lastMessages().messages).toEqual([]);
+  });
+
+  it('publishes source status changes, best state per platform', () => {
+    ctx.service.applyDashboards([dashboard(both)]);
+    ctx.youtube().events.onStatus('waiting');
     expect(ctx.lastMessages().status).toEqual({
       twitch: 'off',
       youtube: 'waiting',
@@ -210,29 +276,32 @@ describe('StreamChatService', () => {
   });
 
   it('publishes global emotes once a Twitch channel is set', async () => {
-    ctx.service.applyDashboard(dashboard(both));
+    ctx.service.applyDashboards([dashboard(both)]);
     await vi.waitFor(() =>
       expect(ctx.publish).toHaveBeenCalledWith('streamchat.emotes', {
         emotes: { Kappa: 'g' },
+        channels: {},
       })
     );
-    ctx.service.applyDashboard(
-      dashboard({ ...both, twitch: { channel: 'other' } })
-    );
+    ctx.service.applyDashboards([
+      dashboard({ ...both, twitch: { channel: 'other' } }),
+    ]);
     expect(ctx.loadGlobal).toHaveBeenCalledTimes(1);
   });
 
-  it('adds channel emotes for the room id and clears them on disconnect', async () => {
-    ctx.service.applyDashboard(dashboard(both));
-    ctx.twitchEvents.current?.onRoomId('123');
+  it('keeps channel emotes per channel and clears them on disconnect', async () => {
+    ctx.service.applyDashboards([dashboard(both)]);
+    ctx.twitch().events.onRoomId('123');
     await vi.waitFor(() =>
       expect(ctx.publish).toHaveBeenCalledWith('streamchat.emotes', {
-        emotes: { Kappa: 'g', Chan: 'c' },
+        emotes: { Kappa: 'g' },
+        channels: { streamer: { Chan: 'c' } },
       })
     );
-    ctx.twitchEvents.current?.onRoomId(undefined);
+    ctx.twitch().events.onRoomId(undefined);
     expect(ctx.publish).toHaveBeenLastCalledWith('streamchat.emotes', {
       emotes: { Kappa: 'g' },
+      channels: {},
     });
   });
 
@@ -244,9 +313,9 @@ describe('StreamChatService', () => {
           resolve = r;
         }),
     });
-    slow.service.applyDashboard(dashboard(both));
-    slow.twitchEvents.current?.onRoomId('1');
-    slow.twitchEvents.current?.onRoomId(undefined);
+    slow.service.applyDashboards([dashboard(both)]);
+    slow.twitch().events.onRoomId('1');
+    slow.twitch().events.onRoomId(undefined);
     resolve({ Late: 'x' });
     await Promise.resolve();
     await Promise.resolve();
@@ -257,13 +326,15 @@ describe('StreamChatService', () => {
   });
 
   it('stops everything on dispose and ignores later input', () => {
-    ctx.service.applyDashboard(dashboard(both));
+    ctx.service.applyDashboards([dashboard(both)]);
+    const twitch = ctx.twitch();
+    const youtube = ctx.youtube();
     ctx.service.dispose();
-    expect(ctx.twitch.dispose).toHaveBeenCalled();
-    expect(ctx.youtube.dispose).toHaveBeenCalled();
+    expect(twitch.source.dispose).toHaveBeenCalled();
+    expect(youtube.source.dispose).toHaveBeenCalled();
     ctx.publish.mockClear();
-    ctx.twitchEvents.current?.onMessage({ user: 'a', text: 'x', emotes: [] });
-    ctx.service.applyDashboard(dashboard(both));
+    twitch.events.onMessage(msg('x'));
+    ctx.service.applyDashboards([dashboard(both)]);
     expect(ctx.publish).not.toHaveBeenCalled();
   });
 });
