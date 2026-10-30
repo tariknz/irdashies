@@ -70,6 +70,7 @@ const TELEMETRY_UNITS: Readonly<Record<string, string>> = {
   LmuBrakeWear: 'fraction',
   LmuSuspensionDamage: 'fraction',
   LmuAeroDamage: 'fraction',
+  LmuLastImpactET: 's',
 };
 
 const formatValue = (value: unknown): string => {

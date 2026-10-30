@@ -23,6 +23,7 @@ export default defineWidgetManifest({
     delta: {
       enabled: true,
       method: 'bestlap',
+      showOnCurrentLap: false,
     },
     history: {
       enabled: true,
@@ -77,7 +78,7 @@ export default defineWidgetManifest({
       type: 'boolean',
       label: 'Display Lap Delta',
       description:
-        "Choose which lap to base the delta calculation on. This can be the driver's last lap, best lap, or the overall session best lap.",
+        "Show live and history deltas against the driver's last or best lap.",
     },
     'delta.method': {
       type: 'enum',
@@ -86,6 +87,12 @@ export default defineWidgetManifest({
         { value: 'lastlap', label: 'Last Lap' },
         { value: 'bestlap', label: 'Best Lap' },
       ],
+    },
+    'delta.showOnCurrentLap': {
+      type: 'boolean',
+      label: 'Show Delta On Current Lap',
+      description:
+        'Show the live +/- vs the reference lap next to the current lap time.',
     },
     'history.enabled': {
       type: 'boolean',

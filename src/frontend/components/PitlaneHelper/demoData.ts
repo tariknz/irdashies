@@ -1,12 +1,9 @@
 // Demo data for Pitlane Helper component
 
-// Re-exported rather than redeclared. This file used to carry its own copy of
-// the shape, and the component imports the copy from here -- so a field added
-// to the hook's result was missing on the type the component was checked
-// against, and the component could not see it at all.
 export type { PitSpeedResult } from './hooks/usePitSpeed';
 
 import type { PitSpeedResult } from './hooks/usePitSpeed';
+import { speedFromKph } from '@irdashies/utils/units';
 
 export interface PitboxPositionResult {
   distanceToPit: number;
@@ -64,43 +61,75 @@ export interface PitlaneHelperDemoData {
   surface: number;
 }
 
-// Demo data for pitlane helper
-export const getDemoPitlaneData = (): PitlaneHelperDemoData => {
+const LIMIT_KPH = 60;
+const PIT_RUN_S = 12;
+
+const speedFromDemoKph = (speedKph: number): PitSpeedResult => {
+  const limitMph = speedFromKph(LIMIT_KPH, 'mph');
+  const speedMph = speedFromKph(speedKph, 'mph');
+  const deltaKph = speedKph - LIMIT_KPH;
+  const deltaMph = speedMph - limitMph;
+  let colorClass = 'text-green-500';
+  let isPulsing = false;
+  if (deltaKph >= 2) {
+    colorClass = 'text-red-500';
+    isPulsing = true;
+  } else if (deltaKph > 0) {
+    colorClass = 'text-red-500';
+  } else if (deltaKph > -5) {
+    colorClass = 'text-amber-500';
+  }
   return {
-    speed: {
-      deltaKph: 2.5,
-      deltaMph: 1.6,
-      limitKph: 60,
-      limitMph: 37.3,
-      hasLimit: true,
-      speedKph: 62.5,
-      speedMph: 38.8,
-      colorClass: 'text-red-500',
-      isPulsing: false,
-      isSpeeding: true,
-      isSeverelyOver: false,
-    },
+    deltaKph,
+    deltaMph,
+    limitKph: LIMIT_KPH,
+    limitMph,
+    hasLimit: true,
+    speedKph,
+    speedMph,
+    colorClass,
+    isPulsing,
+    isSpeeding: deltaKph > 0,
+    isSeverelyOver: deltaKph > 1.5,
+  };
+};
+
+/**
+ * Demo snapshot at `elapsedSec`. Progress runs the pit lane; speed hunts
+ * around the limit so the delta / limiter warning visibly change.
+ */
+export const getDemoPitlaneData = (
+  elapsedSec = 0
+): PitlaneHelperDemoData => {
+  const progress = ((elapsedSec % PIT_RUN_S) / PIT_RUN_S) * 100;
+  const speedKph = LIMIT_KPH + Math.sin(elapsedSec * 1.2) * 4;
+  const speed = speedFromDemoKph(speedKph);
+  const carsAhead = 1 + Math.floor((Math.sin(elapsedSec * 0.35) + 1) * 1.5);
+  const carsBehind = Math.floor((Math.sin(elapsedSec * 0.5 + 1) + 1) * 1.5);
+
+  return {
+    speed,
     position: {
-      distanceToPit: 45,
+      distanceToPit: Math.max(0, 120 * (1 - progress / 100)),
       distanceToPitEntry: 0,
-      distanceToPitExit: 85,
-      progressPercent: 75,
-      isApproaching: true,
+      distanceToPitExit: Math.max(0, 150 * (1 - progress / 100) + 30),
+      progressPercent: progress,
+      isApproaching: progress < 95,
       pitboxPct: 0.85,
-      playerPct: 0.8,
-      isEarlyPitbox: false,
+      playerPct: 0.85 * (progress / 100),
+      isEarlyPitbox: progress > 20 && progress < 35,
     },
     isVisible: true,
     limiterWarning: {
-      showWarning: true,
+      showWarning: speed.isSpeeding,
       warningText: 'ENGAGE PIT LIMITER',
       isTeamRaceWarning: false,
     },
     traffic: {
-      carsAhead: 2,
-      carsBehind: 1,
-      totalCars: 3,
+      carsAhead,
+      carsBehind,
+      totalCars: carsAhead + carsBehind,
     },
-    surface: 2, // On pit road
+    surface: 2,
   };
 };

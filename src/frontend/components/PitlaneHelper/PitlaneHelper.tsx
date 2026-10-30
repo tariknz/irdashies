@@ -21,6 +21,7 @@ import type {
   TrackStateSnapshot,
 } from '@irdashies/types';
 import { shallow } from 'zustand/shallow';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 import { PitCountdownBar } from './components/PitCountdownBar';
 import { PitExitInputs } from './components/PitExitInputs';
 import { PitSpeedBar } from './components/PitSpeedBar';
@@ -49,6 +50,7 @@ const getCountdownColor = (distance: number, maxDistance: number): string => {
 export const PitlaneHelper = () => {
   const { isDemoMode } = useDashboard();
   const config = usePitlaneHelperSettings();
+  const demoData = useDemoFrame(isDemoMode, getDemoPitlaneData);
 
   const isSessionVisible = useSessionVisibility(config?.sessionVisibility);
 
@@ -66,9 +68,7 @@ export const PitlaneHelper = () => {
   const limiterWarning = usePitLimiterWarning(config.enablePitLimiterWarning);
   const traffic = usePitlaneTraffic(config.showPitlaneTraffic);
 
-  // Generate demo data when in demo mode
-  if (isDemoMode) {
-    const demoData = getDemoPitlaneData();
+  if (isDemoMode && demoData) {
     return <PitlaneHelperDisplay {...demoData} config={config} />;
   }
 

@@ -40,6 +40,7 @@ import { BattleSettings } from './sections/BattleSettings';
 import { BroadcastSettingsPage } from './sections/BroadcastGroupSettings';
 import { GantrySettings } from './sections/GantrySettings';
 import { drivingMetricSettingsPages } from './sections/DrivingMetricSettings';
+import { DamageSettings } from './sections/DamageSettings';
 
 /**
  * Settings page per widget type. Telemetry Inspector has none of its own: its
@@ -84,6 +85,7 @@ export const WIDGET_SETTINGS: Record<
   broadcastweather: BroadcastSettingsPage,
   broadcastpodium: BroadcastSettingsPage,
   gantry: GantrySettings,
+  damage: DamageSettings,
   ...drivingMetricSettingsPages,
 };
 

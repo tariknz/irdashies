@@ -50,6 +50,7 @@ export const LMU_SUPPORTED_WIDGETS: readonly string[] = [
   'carsystems',
   'cornername',
   'cruiseodometer',
+  'damage',
   'deltaspeed',
   'fastercarsfrombehind',
   'flag',
@@ -125,7 +126,7 @@ export const DEFAULT_SIM_WIDGET_SUPPORT: SimWidgetSupportConfig = {
  * it did, which costs a user their hand edits once per change and is why the
  * number is bumped only for a real one.
  */
-export const SIM_WIDGET_SUPPORT_VERSION = 7;
+export const SIM_WIDGET_SUPPORT_VERSION = 9;
 
 /**
  * Whether a widget is unavailable under the running sim.

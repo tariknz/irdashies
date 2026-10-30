@@ -5,7 +5,11 @@ import {
   TIMED_SESSION_LAPS,
 } from '@irdashies/types';
 import type { LmuRawTelemetry } from './native';
-import { mapLmuSectorTimes, mapLmuTelemetry } from './mapTelemetry';
+import {
+  mapLmuSectorTimes,
+  mapLmuTelemetry,
+  remapLmuDentSeverity,
+} from './mapTelemetry';
 import { fixture } from './rawFixture';
 import { createLmuLapDistanceState } from './lapDistance';
 
@@ -60,6 +64,10 @@ describe('mapLmuTelemetry', () => {
     expect(t.Gear.value[0]).toBe(5);
     expect(t.RPM.value[0]).toBe(8200);
     expect(t.LapCurrentLapTime.value[0]).toBeCloseTo(50.4);
+    expect(t.LapDeltaToSessionBestLap.value[0]).toBeCloseTo(0.2);
+    expect(t.LapDeltaToSessionBestLap_OK.value[0]).toBe(true);
+    expect(t.LapDeltaToBestLap.value[0]).toBeCloseTo(0.2);
+    expect(t.LapDeltaToBestLap_OK.value[0]).toBe(true);
     expect(t.Throttle.value[0]).toBeCloseTo(0.79);
     expect(t.Brake.value[0]).toBe(0);
     expect(t.Clutch.value[0]).toBe(1);
@@ -79,6 +87,17 @@ describe('mapLmuTelemetry', () => {
     expect(t.LRwearM.value[0]).toBe(0.7);
     expect(t.RFbrakeLinePress.value[0]).toBe(0.5);
     expect(t.RRshockDefl.value[0]).toBe(0.07);
+  });
+
+  it('clears best-lap delta when the player has no best lap', () => {
+    const t = mapLmuTelemetry({
+      ...fixture(),
+      deltaBest: 0.5,
+      vehBestLapTime: new Float64Array([134.5, 0, 137.1]),
+    });
+    expect(t.LapDeltaToSessionBestLap.value[0]).toBe(0);
+    expect(t.LapDeltaToSessionBestLap_OK.value[0]).toBe(false);
+    expect(t.LapDeltaToBestLap_OK.value[0]).toBe(false);
   });
 
   it('maps the LMU pit limiter switch, not only active intervention', () => {
@@ -834,5 +853,29 @@ describe('mapLmuTelemetry adjustable dials', () => {
 
     expect(dial(t, 'dcTractionControl')).toBeUndefined();
     expect(dial(t, 'dcTractionControl2')).toBeUndefined();
+  });
+});
+
+describe('remapLmuDentSeverity', () => {
+  it('maps SHM order into FL,FC,FR,CL,CR,RL,RC,RR display order', () => {
+    // Indices: 0 FC, 1 FL, 2 CL, 3 RL, 4 RC, 5 RR, 6 CR, 7 FR (TinyPedal LMU).
+    const dent = [10, 11, 12, 13, 14, 15, 16, 17];
+    expect(remapLmuDentSeverity(dent, false)).toEqual([
+      11, 10, 17, 12, 16, 13, 14, 15,
+    ]);
+  });
+
+  it('forces rear-center to detached when the body is detached', () => {
+    const dent = [0, 0, 0, 0, 1, 0, 0, 0];
+    expect(remapLmuDentSeverity(dent, true)[6]).toBe(3);
+  });
+
+  it('publishes remapped dents and wheel flags from the fixture', () => {
+    const t = mapLmuTelemetry(fixture());
+    expect(t.LmuDentSeverity?.value).toEqual([1, 0, 0, 0, 2, 0, 0, 0]);
+    expect(t.LmuWheelDetached?.value).toEqual([false, false, false, false]);
+    expect(t.LmuBodyDetached?.value[0]).toBe(false);
+    expect(t.LmuLastImpactET?.value[0]).toBe(240.1);
+    expect(t.LmuLastImpactPos?.value).toEqual([0.4, 0, -1.2]);
   });
 });

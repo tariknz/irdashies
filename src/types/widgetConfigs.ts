@@ -865,6 +865,12 @@ export interface LapTimeLogConfig {
   delta: {
     enabled: boolean;
     method: 'lastlap' | 'bestlap';
+    /**
+     * LMU-style live delta bar under the current lap: green hatch from the
+     * left when faster, red from the right when slower, on a 1s full scale.
+     * Independent of the predicted-lap delta.
+     */
+    showOnCurrentLap?: boolean;
   };
   history: {
     enabled: boolean;
@@ -1423,6 +1429,16 @@ export interface CruiseOdometerConfig extends CompactTelemetryWidgetConfig {
   distanceUnit: 'km' | 'mi';
 }
 
+/** Top-down LMU body/suspension damage overlay (TinyPedal-style). */
+export interface DamageConfig {
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  showOnlyWhenDamaged: boolean;
+  showIntegrity: boolean;
+  showStats: boolean;
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 export interface WidgetConfigMap {
   standings: StandingsConfig;
   relative: RelativeConfig;
@@ -1469,6 +1485,7 @@ export interface WidgetConfigMap {
   trackclock: CompactTelemetryWidgetConfig;
   steeringmeter: CompactTelemetryWidgetConfig;
   cruiseodometer: CruiseOdometerConfig;
+  damage: DamageConfig;
 }
 
 export type TypedDashboardWidget<
@@ -1582,3 +1599,4 @@ export type CornerNameWidgetSettings =
   BaseWidgetSettings<CornerNameOverlayConfig>;
 export type BattleWidgetSettings = BaseWidgetSettings<BattleConfig>;
 export type LapTraceWidgetSettings = BaseWidgetSettings<LapTraceConfig>;
+export type DamageWidgetSettings = BaseWidgetSettings<DamageConfig>;

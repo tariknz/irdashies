@@ -113,6 +113,20 @@ const lapDistPctArr = (v: ArrayLike<number> | undefined) => ({
 });
 
 /**
+ * Remap LMU mDentSeverity into TinyPedal display order: FL, FC, FR, CL, CR,
+ * RL, RC, RR. When the body is detached LMU only loses the rear wing, so the
+ * rear-center cell is forced to the detached tier (3).
+ */
+export const remapLmuDentSeverity = (
+  dent: ArrayLike<number>,
+  bodyDetached: boolean
+): number[] => {
+  const d = (i: number) => dent[i] ?? 0;
+  const rearCenter = bodyDetached ? 3 : d(4);
+  return [d(1), d(0), d(7), d(2), d(6), d(3), rearCenter, d(5)];
+};
+
+/**
  * Reused across frames. This runs at the poll rate, so the four arrays it
  * fills were ~250 allocations a second; and the derivation used to run three
  * times per frame -- here, again for CarLeftRight, and once more in the bridge
@@ -455,6 +469,24 @@ export function mapLmuTelemetry(
   }
   if (restCells?.aeroDamage) t.LmuAeroDamage = staged(restCells.aeroDamage);
 
+  if (raw.dentSeverity) {
+    t.LmuDentSeverity = {
+      value: remapLmuDentSeverity(raw.dentSeverity, !!raw.bodyDetached),
+    };
+  }
+  if (raw.wheelDetached) {
+    t.LmuWheelDetached = boolArr(raw.wheelDetached, (n) => n !== 0);
+  }
+  if (raw.bodyDetached !== undefined) {
+    t.LmuBodyDetached = bool(raw.bodyDetached);
+  }
+  if (raw.lastImpactET !== undefined) {
+    t.LmuLastImpactET = num(raw.lastImpactET);
+  }
+  if (raw.lastImpactPos) {
+    t.LmuLastImpactPos = numArr(raw.lastImpactPos);
+  }
+
   // Shared memory, unlike the cells above. The addon always writes these when
   // LMU is running, so the guard is only for a tape or a build predating the
   // export -- not for a car without a hybrid system, which reports 0. A
@@ -485,6 +517,16 @@ export function mapLmuTelemetry(
   t.LapCurrentLapTime = num(
     Math.max(0, (raw.elapsedTime ?? 0) - (raw.lapStartET ?? 0))
   );
+  // mDeltaBest is the live +/- at the current track position vs the player's
+  // best lap — the same figure the LMU HUD shows. Mapped onto the iRacing
+  // session-best / best channels so Lap Timer and anything else reading those
+  // vars works under LMU without a separate path. OK only when a best lap
+  // exists; without one the delta is meaningless and consumers must not paint it.
+  const hasBestLap = (raw.vehBestLapTime[playerIdx] ?? 0) > 0;
+  t.LapDeltaToSessionBestLap = num(hasBestLap ? (raw.deltaBest ?? 0) : 0);
+  t.LapDeltaToSessionBestLap_OK = bool(hasBestLap);
+  t.LapDeltaToBestLap = num(hasBestLap ? (raw.deltaBest ?? 0) : 0);
+  t.LapDeltaToBestLap_OK = bool(hasBestLap);
   t.LmuCurrentSectorTimes = {
     value: mapLmuSectorTimes(
       raw.vehCurSector1?.[playerIdx],

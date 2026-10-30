@@ -64,6 +64,11 @@ const commonTelemetryProperties = [
   { path: 'LmuBrakeWear', label: 'LMU Brake Wear' },
   { path: 'LmuSuspensionDamage', label: 'LMU Suspension Damage' },
   { path: 'LmuAeroDamage', label: 'LMU Aero Damage' },
+  { path: 'LmuDentSeverity', label: 'LMU Dent Severity' },
+  { path: 'LmuWheelDetached', label: 'LMU Wheel Detached' },
+  { path: 'LmuBodyDetached', label: 'LMU Body Detached' },
+  { path: 'LmuLastImpactET', label: 'LMU Last Impact ET' },
+  { path: 'LmuLastImpactPos', label: 'LMU Last Impact Pos' },
 ];
 
 // Common session properties for quick add

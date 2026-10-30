@@ -164,6 +164,17 @@ export interface LmuRawTelemetry {
   tyreWear?: Float64Array;
   brakePressure?: Float64Array;
   suspensionDeflection?: Float64Array;
+  /** Per-wheel mDetached, LF/RF/LR/RR, 0 or 1. */
+  wheelDetached?: Uint8Array;
+  /**
+   * Raw mDentSeverity[8] in SHM order. mapTelemetry remaps to display order
+   * FL,FC,FR,CL,CR,RL,RC,RR (TinyPedal LMU order).
+   */
+  dentSeverity?: Uint8Array;
+  /** mDetached on the vehicle — rear wing on LMU. */
+  bodyDetached?: boolean;
+  lastImpactET?: number;
+  lastImpactPos?: LmuVec;
   // Per-vehicle arrays, indexed by CarIdx (vehicle slot id)
   vehIds: Int32Array;
   vehIsPlayer: Uint8Array;

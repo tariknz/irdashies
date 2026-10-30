@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import {
   useSessionVisibility,
   useDashboard,
@@ -6,6 +7,7 @@ import {
 import { useCarBehind } from './hooks/useCarBehind';
 import { useFasterCarsSettings } from './hooks/useFasterCarsSettings';
 import { getTailwindStyle } from '@irdashies/utils/colors';
+import { useDemoFrame } from '@irdashies/utils/useDemoFrame';
 import { DriverRatingBadge } from '../shared/DriverRatingBadge/DriverRatingBadge';
 import { getDemoCarsBehind } from './demoData';
 
@@ -28,13 +30,16 @@ export const FasterCarsFromBehind = () => {
   const carsBehind = useCarBehind({
     distanceThreshold: settings?.distanceThreshold,
   });
+  const driverCount = settings?.numberDriversBehind || 1;
+  const demoAt = useCallback(
+    (t: number) => getDemoCarsBehind(driverCount, t),
+    [driverCount]
+  );
+  const demoCars = useDemoFrame(isDemoMode, demoAt);
 
   if (!useSessionVisibility(settings?.sessionVisibility)) return <></>;
 
-  // Generate demo data when in demo mode
-  const demoCarsBehind = isDemoMode
-    ? getDemoCarsBehind(settings?.numberDriversBehind || 1)
-    : carsBehind;
+  const demoCarsBehind = isDemoMode ? (demoCars ?? []) : carsBehind;
 
   if (demoCarsBehind.length === 0) return null;
 

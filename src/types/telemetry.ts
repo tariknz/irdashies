@@ -31,12 +31,32 @@ export type Telemetry = {
   LmuSuspensionDamage?: TelemetryVar<number[]>;
   LmuAeroDamage?: TelemetryVar<number[]>;
   /**
+   * Body dent severity in display order FL,FC,FR,CL,CR,RL,RC,RR.
+   * Values: 0 none, 1 light, 2 heavy, ≥3 detached (LMU forces rear-center to 3
+   * when the body/rear wing is detached).
+   */
+  LmuDentSeverity?: TelemetryVar<number[]>;
+  /** Per-wheel detached flags, LF, RF, LR, RR. */
+  LmuWheelDetached?: TelemetryVar<boolean[]>;
+  /** Any detachable body part off (LMU: rear wing). */
+  LmuBodyDetached?: TelemetryVar<boolean[]>;
+  /** Session time of the last impact, seconds. */
+  LmuLastImpactET?: TelemetryVar<number[]>;
+  /** Last impact position [x, y, z] in vehicle space. */
+  LmuLastImpactPos?: TelemetryVar<number[]>;
+  /**
    * From shared memory, not REST. Virtual energy remaining; the budget it
    * counts down from is LmuRest.maxVirtualEnergy on the session.
    */
   LmuVirtualEnergy?: TelemetryVar<number[]>;
   LmuStateOfCharge?: TelemetryVar<number[]>;
   LmuRegen?: TelemetryVar<number[]>;
+  /**
+   * iRacing Season 3+ — true when the car needs mandatory / optional repairs.
+   * Not in every generated snapshot yet; optional so older builds still typecheck.
+   */
+  PitRepairNeeded?: TelemetryVar<boolean[]>;
+  PitOptRepairNeeded?: TelemetryVar<boolean[]>;
 };
 /**
  * What SessionLapsRemain and SessionLapsTotal carry when the session has no

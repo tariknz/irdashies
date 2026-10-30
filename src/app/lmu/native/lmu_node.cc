@@ -458,6 +458,7 @@ Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
     auto tyreWear = Napi::Float64Array::New(env, 4);
     auto brakePressure = Napi::Float64Array::New(env, 4);
     auto suspensionDeflection = Napi::Float64Array::New(env, 4);
+    auto wheelDetached = Napi::Uint8Array::New(env, 4);
     for (size_t i = 0; i < 4; ++i)
     {
       const auto &wheel = player->mWheels[i];
@@ -467,12 +468,25 @@ Napi::Value LmuSdkNode::Read(const Napi::CallbackInfo &info)
       tyreWear[i] = wheel.mWear;
       brakePressure[i] = wheel.mBrakePressure;
       suspensionDeflection[i] = wheel.mSuspensionDeflection;
+      wheelDetached[i] = wheel.mDetached ? 1 : 0;
     }
     out.Set("tyreTemperature", tyreTemperature);
     out.Set("tyrePressure", tyrePressure);
     out.Set("tyreWear", tyreWear);
     out.Set("brakePressure", brakePressure);
     out.Set("suspensionDeflection", suspensionDeflection);
+    out.Set("wheelDetached", wheelDetached);
+
+    // Body damage: eight dent cells plus whether any body part (LMU: rear wing)
+    // has come off. Impact fields feed an optional last-hit cone in the damage
+    // overlay; TinyPedal reads the same SHM members.
+    auto dentSeverity = Napi::Uint8Array::New(env, 8);
+    for (size_t i = 0; i < 8; ++i)
+      dentSeverity[i] = player->mDentSeverity[i];
+    out.Set("dentSeverity", dentSeverity);
+    out.Set("bodyDetached", player->mDetached);
+    out.Set("lastImpactET", player->mLastImpactET);
+    SetVect3(out, "lastImpactPos", player->mLastImpactPos);
 
     double vx = player->mLocalVel.x;
     double vy = player->mLocalVel.y;
