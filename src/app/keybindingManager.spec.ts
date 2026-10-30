@@ -73,6 +73,12 @@ const bindingsWithBadAccelerator = (): KeybindingsMap => ({
     description: '',
     isDefault: true,
   },
+  'radar-flip-pole-side': {
+    accelerator: '',
+    label: 'Radar: Flip Pole Side',
+    description: '',
+    isDefault: true,
+  },
 });
 
 describe('KeybindingManager', () => {

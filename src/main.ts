@@ -82,6 +82,7 @@ import { ReplayContextRuntime } from './app/processors/replayContextRuntime';
 import { setupTapeReplayBridge } from './app/bridge/tapeReplayBridge';
 import { createTapeReplayWindow } from './app/tapeReplayWindow';
 import type { ArchiveIndex } from './app/processors/ReplayContextProcessor';
+import { flushRadarPoleSideOverrides } from './app/storage/radarPoleSideOverrides';
 import { createKnownLocalUserIdStore } from './app/storage/knownLocalUserIds';
 import { setupLapHistoryBridge } from './app/bridge/lapHistoryBridge';
 import { onDashboardUpdated } from './app/storage/dashboardEvents';
@@ -671,6 +672,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
       flushIncidentsOnShutdown(),
       flushLapHistoryOnShutdown(),
       knownLocalUserIds.flush(),
+      flushRadarPoleSideOverrides(),
       releaseNotes?.flush(),
       flushGarage61SearchSessionOnShutdown(),
     ]);

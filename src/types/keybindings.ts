@@ -4,7 +4,8 @@ export type StaticKeybindingActionId =
   | 'toggle-edit-mode'
   | 'save-telemetry'
   | 'prev-profile'
-  | 'next-profile';
+  | 'next-profile'
+  | 'radar-flip-pole-side';
 
 /**
  * Dynamic per-widget show/hide action, keyed by the widget instance id, e.g.
@@ -106,6 +107,13 @@ export const DEFAULT_KEYBINDINGS: KeybindingsMap = {
     accelerator: 'Alt+PageDown',
     label: 'Next Profile',
     description: 'Switch to the next configuration profile',
+    isDefault: true,
+  },
+  'radar-flip-pole-side': {
+    accelerator: '',
+    label: 'Radar: Flip Pole Side',
+    description:
+      'Swap the pole line side on the radar for the current track and remember it',
     isDefault: true,
   },
 };

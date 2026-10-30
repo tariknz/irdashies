@@ -149,7 +149,7 @@ export interface RadarCar {
   /** Metres along the track from the focus car; positive is ahead. */
   dist: number;
   /** Rate of change of `dist` in m/s; positive means pulling away ahead. */
-  closingSpeed: number;
+  relativeSpeed: number;
   /**
    * Lateral lane relative to the focus car, in lanes; 0 is our lane,
    * negative is left. iRacing publishes no lateral position, so this is an
@@ -213,6 +213,17 @@ export interface RadarSnapshot {
   focusBrake: number | null;
   /** A yellow or caution is out, so position fights are off. */
   caution: boolean;
+  /**
+   * Set for a few seconds after the player flipped the pole side, naming the
+   * side now in use, so the radar can confirm the key press.
+   */
+  poleSideNotice: 'left' | 'right' | null;
+  /**
+   * Where the middle of the road lies from the focus car, in lanes, positive
+   * to the right: in a two-wide formation we sit in one column, so the road
+   * is half a lane over. 0 outside formations.
+   */
+  roadLane: number;
   /** Only cars within the processor's range, nearest first. */
   cars: readonly RadarCar[];
   /**

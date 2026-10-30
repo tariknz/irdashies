@@ -87,6 +87,12 @@ const sampleBindings = (): KeybindingsMap => ({
     description: '',
     isDefault: true,
   },
+  'radar-flip-pole-side': {
+    accelerator: '',
+    label: '',
+    description: '',
+    isDefault: true,
+  },
 });
 
 const invokeUpdate = (

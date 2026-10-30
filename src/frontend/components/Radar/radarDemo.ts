@@ -39,7 +39,7 @@ export const demoRadarFrame = (seconds: number): RadarFrame => {
   const wreck = {
     carIdx: 5,
     dist: wreckDist,
-    closingSpeed: -DEMO_SPEED_MS,
+    relativeSpeed: -DEMO_SPEED_MS,
     lane: 2,
     offTrack: false,
   };
@@ -54,28 +54,28 @@ export const demoRadarFrame = (seconds: number): RadarFrame => {
       {
         carIdx: 1,
         dist: dive.dist,
-        closingSpeed: dive.closing,
+        relativeSpeed: dive.closing,
         lane: diverLane,
         offTrack: false,
       },
       {
         carIdx: 2,
         dist: 3 - wave * 12,
-        closingSpeed: 0,
+        relativeSpeed: 0,
         lane: 1,
         offTrack: false,
       },
       {
         carIdx: 3,
         dist: 16 + wave * 2,
-        closingSpeed: 0,
+        relativeSpeed: 0,
         lane: 0,
         offTrack: false,
       },
       {
         carIdx: 4,
         dist: 23 + wave * 2,
-        closingSpeed: 0,
+        relativeSpeed: 0,
         lane: 0,
         offTrack: false,
       },
