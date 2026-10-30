@@ -40,14 +40,14 @@ export const ToggleSwitch = ({
         disabled={disabled}
         title={disabled ? disabledReason : undefined}
         onClick={() => onToggle(!enabled)}
-        className={`relative inline-flex ${small ? 'h-4 w-8' : 'h-6 w-11'} items-center rounded-sm skew-ui transition-colors focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 ${
+        className={`relative inline-flex ${small ? 'h-4 w-8' : 'h-6 w-11'} items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 ${
           disabled
             ? 'cursor-not-allowed bg-slate-700 opacity-50'
             : `cursor-pointer ${enabled ? 'bg-accent-500' : 'bg-slate-600'}`
         }`}
       >
         <span
-          className={`inline-block ${small ? 'h-3 w-3' : 'h-4 w-4'} transform rounded-sm transition-transform ${
+          className={`inline-block ${small ? 'h-3 w-3' : 'h-4 w-4'} transform rounded-full transition-transform ${
             disabled ? 'bg-slate-400' : 'bg-white'
           } ${enabled ? (small ? 'translate-x-4.5' : 'translate-x-6') : small ? 'translate-x-0.5' : 'translate-x-1'}`}
         />

@@ -60,7 +60,6 @@ vi.mock('./menuItems', () => ({
       label: 'Standings',
       widgetType: 'standings',
       category: 'race',
-      description: 'Live race order',
     },
     {
       to: '/settings/wind',
@@ -68,7 +67,6 @@ vi.mock('./menuItems', () => ({
       label: 'Wind',
       widgetType: 'wind',
       category: 'track',
-      description: 'Wind direction and speed',
     },
     {
       to: '/settings/twitchchat',
@@ -144,7 +142,6 @@ describe('SettingsMenu', () => {
     expect(screen.getByText('(1 hidden)')).toBeInTheDocument();
     // The header counts what the categories count: visible, supported and on.
     expect(screen.getByText('1 on')).toBeInTheDocument();
-    expect(screen.getByText('Live race order')).toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: /Wind/ })
     ).not.toBeInTheDocument();
@@ -152,7 +149,7 @@ describe('SettingsMenu', () => {
     expect(screen.getByRole('link', { name: 'About' })).toBeInTheDocument();
   });
 
-  it('toggles only the canonical widget and preserves other instances and settings', () => {
+  it('switches every copy of the widget off and preserves other widgets and settings', () => {
     renderMenu();
     const original = structuredClone(state.dashboard);
     assert(original);
@@ -160,7 +157,9 @@ describe('SettingsMenu', () => {
     expect(state.onDashboardUpdated).toHaveBeenCalledExactlyOnceWith({
       ...original,
       widgets: original.widgets.map((widget) =>
-        widget.id === 'standings' ? { ...widget, enabled: false } : widget
+        widget.id.startsWith('standings')
+          ? { ...widget, enabled: false }
+          : widget
       ),
     });
     expect(state.dashboard).toEqual(original);
@@ -200,9 +199,7 @@ describe('SettingsMenu', () => {
     state.dashboard = undefined;
     state.simulator = null;
     renderMenu();
-    expect(
-      screen.getByRole('link', { name: /Wind direction and speed/ })
-    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Wind/ })).toBeInTheDocument();
     expect(screen.getByText('0 on')).toBeInTheDocument();
     expect(screen.queryByRole('switch')).not.toBeInTheDocument();
   });
@@ -226,5 +223,87 @@ describe('SettingsMenu', () => {
         wind,
       ],
     });
+  });
+
+  it('shows the menu entry on while only a custom layout is on, and the switch turns it off', () => {
+    assert(state.dashboard);
+    const [primary, extra, wind] = state.dashboard.widgets;
+    state.dashboard = {
+      ...state.dashboard,
+      widgets: [{ ...primary, enabled: false }, extra, wind],
+    };
+    renderMenu();
+    const toggle = screen.getByRole('switch', { name: 'Enable Standings' });
+    expect(toggle).toBeChecked();
+    fireEvent.click(toggle);
+    expect(state.onDashboardUpdated).toHaveBeenCalledExactlyOnceWith({
+      ...state.dashboard,
+      widgets: [
+        { ...primary, enabled: false },
+        { ...extra, enabled: false },
+        wind,
+      ],
+    });
+  });
+
+  it('lists widgets the sim cannot run on request, without a switch', () => {
+    renderMenu();
+    fireEvent.click(screen.getByText('(1 hidden)'));
+    expect(screen.getByRole('link', { name: /Wind/ })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('switch', { name: 'Enable Wind' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('collapses a group and saves it', () => {
+    renderMenu();
+    fireEvent.click(screen.getByRole('button', { name: /Timing & Race/ }));
+    expect(state.onDashboardUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        generalSettings: expect.objectContaining({
+          menuLayout: { collapsed: ['race'] },
+        }),
+      })
+    );
+  });
+
+  it('creates a group and moves a dragged widget into it', () => {
+    assert(state.dashboard);
+    state.dashboard.generalSettings = {
+      menuLayout: { groups: [{ id: 'mine', label: 'Mine' }] },
+    };
+    renderMenu();
+    fireEvent.dragStart(
+      screen.getByRole('link', { name: /Standings/ }).closest('li') as Element,
+      { dataTransfer: { setData: vi.fn() } }
+    );
+    const group = screen
+      .getByRole('button', { name: 'Mine' })
+      .closest('section');
+    fireEvent.drop(group as Element);
+    expect(state.onDashboardUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        generalSettings: expect.objectContaining({
+          menuLayout: expect.objectContaining({
+            assign: { standings: 'mine' },
+          }),
+        }),
+      })
+    );
+  });
+
+  it('adds a group on Enter and nothing on Escape', () => {
+    renderMenu();
+    fireEvent.click(screen.getByRole('button', { name: '+ New group' }));
+    const input = screen.getByRole('textbox', { name: 'New group name' });
+    fireEvent.change(input, { target: { value: 'Cancelled' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(state.onDashboardUpdated).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: '+ New group' }));
+    const next = screen.getByRole('textbox', { name: 'New group name' });
+    fireEvent.change(next, { target: { value: 'Mine' } });
+    fireEvent.keyDown(next, { key: 'Enter' });
+    expect(state.onDashboardUpdated).toHaveBeenCalledTimes(1);
   });
 });
