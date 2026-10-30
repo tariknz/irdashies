@@ -31,7 +31,10 @@ import {
   useHeld,
   useSessionHold,
 } from '@irdashies/domain/sessionHold/useSessionHold';
-import { hiddenRatingColumns, simulatorHasDriverRatings } from '@irdashies/types';
+import {
+  hiddenRatingColumns,
+  simulatorHasDriverRatings,
+} from '@irdashies/types';
 import { useIsSingleMake } from './hooks/useIsSingleMake';
 import { useTrackLimitsMax } from './hooks/useTrackLimitsMax';
 import { computeStintLap } from './components/DriverInfoRow/cells/lapCountUtils';
