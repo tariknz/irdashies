@@ -3,7 +3,7 @@ import type {
   DashboardWidget,
   DashboardProfile,
 } from '@irdashies/types';
-import { emitDashboardUpdated } from './dashboardEvents';
+import { emitDashboardUpdated, emitDashboardsSaved } from './dashboardEvents';
 import {
   defaultDashboard,
   deepMergeConfig,
@@ -16,6 +16,7 @@ import { resolve, basename, sep } from 'node:path';
 import { app } from 'electron';
 import { randomUUID, createHash } from 'node:crypto';
 import logger from '../logger';
+import { migrateLegacyStreamChat } from './streamChatMigration';
 
 const DASHBOARDS_KEY = 'dashboards';
 const PROFILES_KEY = 'profiles';
@@ -203,8 +204,11 @@ const toStoredWidget = (value: unknown): DashboardWidget | undefined => {
  * dashboard. Doesn't touch storage; callers save.
  */
 export const withDashboardDefaults = (
-  dashboard: DashboardLayout
+  rawDashboard: DashboardLayout
 ): DashboardLayout => {
+  // Renamed widgets must be migrated before missing ones are appended, or the
+  // new id gets a disabled default and the legacy widget is discarded later.
+  const dashboard = migrateLegacyStreamChat(rawDashboard);
   const storedWidgets = Array.isArray(dashboard.widgets)
     ? dashboard.widgets.flatMap((value) => toStoredWidget(value) ?? [])
     : [];
@@ -250,10 +254,10 @@ export const withDashboardDefaults = (
 };
 
 export const getOrCreateDefaultDashboardForProfile = (profileId: string) => {
-  const dashboard = getDashboard(profileId);
+  const savedDashboard = getDashboard(profileId);
 
-  if (dashboard) {
-    const updatedDashboard = withDashboardDefaults(dashboard);
+  if (savedDashboard) {
+    const updatedDashboard = withDashboardDefaults(savedDashboard);
     saveDashboard(profileId, updatedDashboard);
     return updatedDashboard;
   }
@@ -359,6 +363,7 @@ export const saveDashboard = (
     logger.info('[saveDashboard] Writing to storage for profile:', id);
     writeData(DASHBOARDS_KEY, dashboards);
     logger.info('[saveDashboard] Saved successfully to storage');
+    emitDashboardsSaved();
 
     // Only emit dashboard updated event if this is the currently active profile
     // This prevents overlay refreshes when creating/modifying non-active profiles
@@ -741,6 +746,7 @@ export const deleteProfile = (profileId: string): void => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { [profileId]: removed, ...remainingDashboards } = dashboards;
     writeData(DASHBOARDS_KEY, remainingDashboards);
+    emitDashboardsSaved();
   }
 
   // If this was the current profile, switch to default

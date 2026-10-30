@@ -1,16 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
-import { useDashboard } from '@irdashies/context';
-import { useTwitchChatSettings } from './hooks/useTwitchChatSettings';
-import { useTwitchChat } from './hooks/useTwitchChat';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  useThirdPartyEmotes,
-  type ThirdPartyEmoteMap,
-} from './hooks/useThirdPartyEmotes';
+  useDashboard,
+  useStreamChatEmotes,
+  useStreamChatMessagesSnapshot,
+} from '@irdashies/context';
+import { useStreamChatSettings } from './hooks/useStreamChatSettings';
 import { MessageWithEmotes } from './components/MessageWithEmotes';
-import { DEMO_MESSAGES, DEMO_MESSAGE_INTERVAL_MS } from './demoData';
-import type { ChatMessage } from './types';
+import { MessageHeader } from './components/MessageHeader';
+import { YoutubeMessage } from './components/YoutubeMessage';
+import {
+  DEMO_MESSAGE_INTERVAL_MS,
+  getDemoMessages,
+  type DemoPlatforms,
+} from './demoData';
+import { normalizeStreamChatChannels } from '@irdashies/types';
+import type { ChatMessage, ThirdPartyEmoteMap } from './types';
 
-export interface TwitchChatDisplayProps {
+export interface StreamChatDisplayProps {
   background?: { opacity: number };
 }
 
@@ -20,6 +26,7 @@ export interface ChatMessageListProps {
   background: { opacity: number };
   autoHide?: { enabled: boolean; intervalSeconds: number };
   thirdPartyEmotes?: ThirdPartyEmoteMap;
+  showPlatformIcons?: boolean;
 }
 
 const FADE_DURATION_MS = 1000;
@@ -30,6 +37,7 @@ export const ChatMessageList = ({
   background,
   autoHide,
   thirdPartyEmotes,
+  showPlatformIcons = false,
 }: ChatMessageListProps) => {
   const [fadingIds, setFadingIds] = useState<Set<string>>(() => new Set());
   const [removedIds, setRemovedIds] = useState<Set<string>>(() => new Set());
@@ -51,6 +59,12 @@ export const ChatMessageList = ({
 
     messages.forEach((m) => {
       if (!timeoutsRef.current.has(m.id)) {
+        // Count from when the message arrived, so a replayed snapshot does not
+        // restart the interval for messages that already expired.
+        const remainingMs = Math.max(
+          0,
+          autoHide.intervalSeconds * 1000 - (Date.now() - m.timestamp)
+        );
         const t = setTimeout(() => {
           setFadingIds((prev) => new Set([...prev, m.id]));
           // Both timeout maps are cleared by the unmount effect below; this
@@ -59,7 +73,7 @@ export const ChatMessageList = ({
             setRemovedIds((prev) => new Set([...prev, m.id]));
           }, FADE_DURATION_MS);
           removeTimeoutsRef.current.set(m.id, rt);
-        }, autoHide.intervalSeconds * 1000);
+        }, remainingMs);
         timeoutsRef.current.set(m.id, t);
       }
     });
@@ -107,13 +121,32 @@ export const ChatMessageList = ({
                   : undefined,
               }}
             >
-              <strong style={{ color: m.color ?? '#a970ff' }}>{m.user}</strong>:{' '}
-              <MessageWithEmotes
-                text={m.text}
-                emotes={m.emotes}
+              <MessageHeader
+                platform={m.platform}
+                badges={m.badges}
+                showPlatformIcon={showPlatformIcons}
                 fontSize={fontSize}
-                thirdPartyEmotes={thirdPartyEmotes}
               />
+              <strong
+                style={{
+                  color:
+                    m.color ??
+                    (m.platform === 'twitch' ? '#a970ff' : '#ffffff'),
+                }}
+              >
+                {m.user}
+              </strong>
+              :{' '}
+              {m.segments ? (
+                <YoutubeMessage segments={m.segments} fontSize={fontSize} />
+              ) : (
+                <MessageWithEmotes
+                  text={m.text}
+                  emotes={m.emotes}
+                  fontSize={fontSize}
+                  thirdPartyEmotes={thirdPartyEmotes}
+                />
+              )}
             </div>
           );
         })}
@@ -124,27 +157,41 @@ export const ChatMessageList = ({
 const DemoChatMessages = ({
   background,
   autoHide,
-  thirdPartyEmotes,
+  showPlatformIcons,
+  twitch,
+  youtube,
 }: {
   background: { opacity: number };
   autoHide?: { enabled: boolean; intervalSeconds: number };
-  thirdPartyEmotes?: ThirdPartyEmoteMap;
-}) => {
+  showPlatformIcons: boolean;
+} & DemoPlatforms) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const indexRef = useRef(0);
+  const demoMessages = useMemo(
+    () => getDemoMessages({ twitch, youtube }),
+    [twitch, youtube]
+  );
 
   useEffect(() => {
+    setMessages([]);
+    indexRef.current = 0;
+    if (!demoMessages.length) return;
     const interval = setInterval(() => {
-      const template = DEMO_MESSAGES[indexRef.current % DEMO_MESSAGES.length];
+      const template = demoMessages[indexRef.current % demoMessages.length];
       setMessages((prev) => [
         ...prev.slice(-19),
-        { ...template, id: crypto.randomUUID() },
+        {
+          ...template,
+          id: crypto.randomUUID(),
+          channel: '',
+          timestamp: Date.now(),
+        },
       ]);
       indexRef.current++;
     }, DEMO_MESSAGE_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [demoMessages]);
 
   return (
     <ChatMessageList
@@ -152,27 +199,55 @@ const DemoChatMessages = ({
       fontSize={16}
       background={background}
       autoHide={autoHide}
-      thirdPartyEmotes={thirdPartyEmotes}
+      showPlatformIcons={showPlatformIcons}
     />
   );
 };
 
-export const TwitchChat = ({
-  background = { opacity: 85 },
-}: TwitchChatDisplayProps) => {
+export const StreamChat = ({
+  background: backgroundProp,
+}: StreamChatDisplayProps) => {
   const { isDemoMode } = useDashboard();
-  const settings = useTwitchChatSettings();
-  const { messages, roomId } = useTwitchChat(
-    isDemoMode ? undefined : settings?.config.channel
+  const settings = useStreamChatSettings();
+  const background = backgroundProp ??
+    settings?.config.display.background ?? { opacity: 30 };
+  const active = !isDemoMode && (settings?.enabled ?? false);
+  const snapshot = useStreamChatMessagesSnapshot(active);
+  const emoteSets = useStreamChatEmotes(active);
+  // The service follows every profile's channels, so this widget keeps only
+  // what its own profile asks for.
+  const channels = useMemo(
+    () => normalizeStreamChatChannels(settings?.config),
+    [settings?.config]
   );
-  const thirdPartyEmotes = useThirdPartyEmotes(isDemoMode ? undefined : roomId);
+  const messages = useMemo(
+    () =>
+      (snapshot?.messages ?? []).filter(
+        (m) =>
+          m.channel ===
+          (m.platform === 'twitch' ? channels.twitch : channels.youtube)
+      ),
+    [snapshot, channels]
+  );
+  const thirdPartyEmotes = useMemo(
+    () =>
+      new Map([
+        ...emoteSets.global,
+        ...(channels.twitch
+          ? (emoteSets.channels.get(channels.twitch) ?? [])
+          : []),
+      ]),
+    [emoteSets, channels.twitch]
+  );
 
   if (isDemoMode) {
     return (
       <DemoChatMessages
         background={background}
-        autoHide={settings?.config.autoHide}
-        thirdPartyEmotes={thirdPartyEmotes}
+        autoHide={settings?.config.display.autoHide}
+        showPlatformIcons={settings?.config.display.showPlatformIcons ?? true}
+        twitch={!!settings?.config.twitch?.channel?.trim()}
+        youtube={!!settings?.config.youtube?.channel?.trim()}
       />
     );
   }
@@ -183,10 +258,11 @@ export const TwitchChat = ({
   return (
     <ChatMessageList
       messages={messages}
-      fontSize={settings.config.fontSize}
+      fontSize={settings.config.display.fontSize}
       background={background}
-      autoHide={settings.config.autoHide}
+      autoHide={settings.config.display.autoHide}
       thirdPartyEmotes={thirdPartyEmotes}
+      showPlatformIcons={settings.config.display.showPlatformIcons}
     />
   );
 };
