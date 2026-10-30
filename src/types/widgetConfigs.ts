@@ -181,6 +181,8 @@ export interface StandingsConfig {
     minPlayerClassDrivers: number;
     numTopDrivers: number;
     topDriverDivider?: 'none' | 'theme' | 'highlight';
+    /** Lists every driver instead of the slice around the player. */
+    showAll?: boolean;
   };
   compound: { enabled: boolean };
   carManufacturer: { enabled: boolean; hideIfSingleMake?: boolean };
@@ -1182,6 +1184,9 @@ export type SessionRetention = 'all' | 5 | 10 | 20;
 /** Which quantity the lap graph's y axis measures. */
 export type LapGraphYAxisMode = 'trace' | 'position' | 'gap';
 
+/** Whether the trace and gap y axis fits the bold lines or every car. */
+export type LapGraphAxisFit = 'shown' | 'all';
+
 export interface LapGraphConfig {
   /** Which y axis the graph opens on. */
   yAxisMode: LapGraphYAxisMode;
@@ -1189,10 +1194,16 @@ export interface LapGraphConfig {
   lapWindow: number;
   /** Auto-pin the player, the class leader, and the cars around the player. */
   autoPin: boolean;
+  /** Which cars the trace and gap y axis is sized to. */
+  axisFit: LapGraphAxisFit;
+  /** Gap mode ceiling in seconds. 0 means no cap. */
+  gapMaxSeconds: number;
 }
 
 /** The recorder keeps 300 laps per car, so a wider window has nothing to show. */
 export const LAP_GRAPH_LAP_WINDOW_BOUNDS = { min: 5, max: 300 } as const;
+
+export const LAP_GRAPH_GAP_MAX_BOUNDS = { min: 0, max: 600 } as const;
 
 /** Overlay widgets that can be docked under the Gantry incident feed. */
 export const GANTRY_DOCK_WIDGET_TYPES = ['fuel', 'map', 'flatmap'] as const;
@@ -1213,6 +1224,22 @@ export interface GantryDockConfig {
   arrangement: 'row' | 'tabs';
   /** At most GANTRY_DOCK_MAX_PANELS. */
   panels: GantryDockPanel[];
+}
+
+export const GANTRY_STANDINGS_SOURCES = [
+  'builtin',
+  'overlay',
+  'gantry',
+] as const;
+export type GantryStandingsSource = (typeof GANTRY_STANDINGS_SOURCES)[number];
+
+export interface GantryStandingsConfig {
+  /**
+   * builtin: the Gantry's own table. overlay: the Standings widget's settings.
+   * gantry: a Gantry-only Standings layout, named by `widgetId`.
+   */
+  source: GantryStandingsSource;
+  widgetId?: string;
 }
 
 export interface GantryConfig {
@@ -1246,6 +1273,8 @@ export interface GantryConfig {
   window: GantryWindowConfig;
   /** Panels shown under the incident feed. Sanitise with sanitizeGantryDock. */
   dock: GantryDockConfig;
+  /** Which standings the left pane shows. Sanitise with sanitizeGantryStandings. */
+  standings: GantryStandingsConfig;
 }
 
 export interface GantryWindowConfig {
@@ -1472,7 +1501,8 @@ export type SettingsTabType =
   | 'corner'
   | 'braking'
   | 'help'
-  | 'dock';
+  | 'dock'
+  | 'standings';
 
 /** Available widgets for the Fuel Calculator */
 export type FuelWidgetType =

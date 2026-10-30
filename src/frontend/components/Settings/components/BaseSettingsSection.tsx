@@ -55,6 +55,10 @@ export const BaseSettingsSection = <T,>({
     !simDisabledReason &&
     !!widgetId &&
     menuHasToggle(widgetId, currentDashboard?.widgets.map((w) => w.id) ?? []);
+  // The Gantry renders its own layouts whatever their enabled flag says.
+  const isGantryOnly =
+    currentDashboard?.widgets.find((w) => w.id === widgetId)?.placement ===
+    'gantry';
   const simIncompatibleLabel = simDisabledReason
     ? widgetIncompatibleLabel(simulator)
     : null;
@@ -192,7 +196,7 @@ export const BaseSettingsSection = <T,>({
           <div className="flex justify-between items-center mb-1">
             <h2 className="text-xl">{title}</h2>
             <div className="flex flex-col items-end gap-0.5">
-              {!menuToggles && (
+              {!menuToggles && !isGantryOnly && (
                 <ToggleSwitch
                   enabled={localSettings.enabled}
                   disabled={!!simDisabledReason}

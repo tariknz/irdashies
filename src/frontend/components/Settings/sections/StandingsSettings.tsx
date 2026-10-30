@@ -7,6 +7,7 @@ import {
   getWidgetDefaultConfig,
 } from '@irdashies/types';
 import { useDashboard } from '@irdashies/context';
+import { copyOverlayToGantryStandings } from './gantryStandingsEdits';
 import { TabButton } from '../components/TabButton';
 import { SortableList } from '../../SortableList';
 import { DraggableSettingItem } from '../components/DraggableSettingItem';
@@ -385,27 +386,44 @@ const DisplaySettingsList = ({
   );
 };
 
-export const StandingsSettings = () => {
-  const { currentDashboard } = useDashboard();
-  const savedSettings = currentDashboard?.widgets.find(
-    (w) => w.id === SETTING_ID
-  ) as StandingsWidgetSettings | undefined;
+const buildItemsOrder = (saved: string[] | undefined) => {
+  const validIds = new Set(sortableSettings.map((s) => s.id));
+  const filtered = (saved ?? []).filter((id) => validIds.has(id));
+  const present = new Set(filtered);
+  const missing = sortableSettings
+    .filter((s) => !present.has(s.id))
+    .map((s) => s.id);
+  return [...filtered, ...missing];
+};
+
+const StandingsSettingsPage = ({ widgetId }: { widgetId: string }) => {
+  const { currentDashboard, onDashboardUpdated } = useDashboard();
+  const savedWidget = currentDashboard?.widgets.find((w) => w.id === widgetId);
+  const savedSettings = savedWidget as StandingsWidgetSettings | undefined;
+  const isGantryOnly = savedWidget?.placement === 'gantry';
   const [settings, setSettings] = useState<StandingsWidgetSettings>({
     enabled: savedSettings?.enabled ?? false,
     config:
       (savedSettings?.config as StandingsWidgetSettings['config']) ??
       defaultConfig,
   });
-  const [itemsOrder, setItemsOrder] = useState(() => {
-    const validIds = new Set(sortableSettings.map((s) => s.id));
-    const saved = settings.config.displayOrder ?? [];
-    const filtered = saved.filter((id) => validIds.has(id));
-    const present = new Set(filtered);
-    const missing = sortableSettings
-      .filter((s) => !present.has(s.id))
-      .map((s) => s.id);
-    return [...filtered, ...missing];
-  });
+  const [itemsOrder, setItemsOrder] = useState(() =>
+    buildItemsOrder(settings.config.displayOrder)
+  );
+
+  // Re-seed when the saved widget changes under us, such as after copying the
+  // overlay's settings in.
+  const [prevSaved, setPrevSaved] = useState(savedSettings);
+  if (JSON.stringify(savedSettings) !== JSON.stringify(prevSaved)) {
+    setPrevSaved(savedSettings);
+    if (savedSettings) {
+      setSettings({
+        enabled: savedSettings.enabled ?? false,
+        config: savedSettings.config,
+      });
+      setItemsOrder(buildItemsOrder(savedSettings.config?.displayOrder));
+    }
+  }
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<SettingsTabType>(
@@ -416,17 +434,21 @@ export const StandingsSettings = () => {
     localStorage.setItem('standingsTab', activeTab);
   }, [activeTab]);
 
+  const shownTab: SettingsTabType =
+    isGantryOnly && activeTab === 'visibility' ? 'display' : activeTab;
+
   if (!currentDashboard) {
     return <>Loading...</>;
   }
 
   return (
     <BaseSettingsSection
-      title="Standings"
+      title={isGantryOnly ? `Standings - ${widgetId}` : 'Standings'}
       description="Configure how the standings widget appears and behaves."
       settings={settings}
       onSettingsChange={setSettings}
-      widgetId={SETTING_ID}
+      widgetId={widgetId}
+      hidePositionReset={isGantryOnly}
     >
       {(handleConfigChange) => {
         const handleDisplayOrderChange = (newOrder: string[]) => {
@@ -441,6 +463,29 @@ export const StandingsSettings = () => {
             onChange={handleConfigChange}
           >
             <div className="space-y-4">
+              {isGantryOnly && (
+                <div className="flex flex-wrap items-center gap-3">
+                  <span
+                    className="px-1.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                    title="Only shown in the Gantry, never on the overlay."
+                  >
+                    Gantry
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      currentDashboard &&
+                      onDashboardUpdated?.(
+                        copyOverlayToGantryStandings(currentDashboard, widgetId)
+                      )
+                    }
+                    title="Replace this layout with the overlay Standings settings"
+                    className="px-3 py-1 text-xs rounded border transition-colors bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600"
+                  >
+                    Copy settings from overlay
+                  </button>
+                </div>
+              )}
               {/* Tabs */}
               <div className="flex border-b border-slate-700/50">
                 <TabButton
@@ -478,23 +523,22 @@ export const StandingsSettings = () => {
                 >
                   Styling
                 </TabButton>
-                <TabButton
-                  id="visibility"
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                >
-                  Visibility
-                </TabButton>
+                {!isGantryOnly && (
+                  <TabButton
+                    id="visibility"
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                  >
+                    Visibility
+                  </TabButton>
+                )}
               </div>
 
               <div>
                 {/* DISPLAY TAB */}
-                {activeTab === 'display' && (
+                {shownTab === 'display' && (
                   <>
-                    <WidgetScaleSettings
-                      widgetId={SETTING_ID}
-                      className="px-4"
-                    />
+                    <WidgetScaleSettings widgetId={widgetId} className="px-4" />
                     <SettingsSection title="Display Order">
                       <DisplaySettingsList
                         itemsOrder={itemsOrder}
@@ -518,7 +562,7 @@ export const StandingsSettings = () => {
                 )}
 
                 {/* OPTIONS TAB */}
-                {activeTab === 'options' && (
+                {shownTab === 'options' && (
                   <>
                     <SettingsSection title="Multiclass Standings">
                       <SettingProp path="customClassOrdering" />
@@ -536,6 +580,9 @@ export const StandingsSettings = () => {
                         <SettingProp path="driverStandings.topDriverDivider" />
                       )}
 
+                      {isGantryOnly && (
+                        <SettingProp path="driverStandings.showAll" />
+                      )}
                       <SettingProp path="useLivePosition" />
                       <SettingProp path="radio.persistenceSeconds" />
                     </SettingsSection>
@@ -563,7 +610,7 @@ export const StandingsSettings = () => {
                 )}
 
                 {/* HEADER TAB */}
-                {activeTab === 'header' && (
+                {shownTab === 'header' && (
                   <SettingsSection title="Header Bar">
                     <SettingProp path="headerBar.enabled" />
 
@@ -635,7 +682,7 @@ export const StandingsSettings = () => {
                 )}
 
                 {/* FOOTER TAB */}
-                {activeTab === 'footer' && (
+                {shownTab === 'footer' && (
                   <SettingsSection title="Footer Bar">
                     <SettingProp path="footerBar.enabled" />
 
@@ -707,7 +754,7 @@ export const StandingsSettings = () => {
                 )}
 
                 {/* STYLING TAB */}
-                {activeTab === 'styling' && (
+                {shownTab === 'styling' && (
                   <>
                     <SettingsSection title="Class Header">
                       <SettingToggleRow
@@ -1005,7 +1052,7 @@ export const StandingsSettings = () => {
                 )}
 
                 {/* VISIBILITY TAB */}
-                {activeTab === 'visibility' && (
+                {shownTab === 'visibility' && (
                   <SettingsSection title="Session Visibility">
                     <SessionVisibility
                       sessionVisibility={settings.config.sessionVisibility}
@@ -1025,3 +1072,9 @@ export const StandingsSettings = () => {
     </BaseSettingsSection>
   );
 };
+
+export const StandingsSettings = ({
+  widgetId = SETTING_ID,
+}: {
+  widgetId?: string;
+}) => <StandingsSettingsPage key={widgetId} widgetId={widgetId} />;

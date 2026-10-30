@@ -455,3 +455,171 @@ describe('prepareLapGraph', () => {
     expect(geometry.axis.min).toBeLessThanOrEqual(-590);
   });
 });
+
+describe('axis fit and gap cap', () => {
+  const flat = (value: number) =>
+    Array.from({ length: 20 }, (_, i) => ({ lap: i + 1, value }));
+  const base = {
+    mode: 'gap' as const,
+    window: { start: 1, end: 20 },
+    plotWidth: 400,
+    pinnedCarIdxs: [1] as number[],
+    focusedCarIdx: null,
+  };
+  const outlierField = [
+    makeSeries(0, flat(0)),
+    makeSeries(1, flat(6), { isPlayer: true }),
+    makeSeries(2, flat(9)),
+    makeSeries(3, flat(130)),
+  ];
+
+  it('sizes the axis to every car by default', () => {
+    expect(
+      prepareLapGraph({ ...base, series: outlierField }).axis.max
+    ).toBeGreaterThanOrEqual(130);
+  });
+
+  it('ignores an unpinned outlier when fitting shown drivers', () => {
+    const geometry = prepareLapGraph({
+      ...base,
+      series: outlierField,
+      axisFit: 'shown',
+    });
+
+    expect(geometry.axis.max).toBeLessThan(20);
+    expect(geometry.axis.max).toBeGreaterThanOrEqual(6);
+  });
+
+  it('does not let focus change the fitted axis', () => {
+    const geometry = prepareLapGraph({
+      ...base,
+      series: outlierField,
+      axisFit: 'shown',
+      focusedCarIdx: 3,
+    });
+
+    expect(geometry.axis.max).toBeLessThan(20);
+  });
+
+  it('fits shown drivers in trace mode too', () => {
+    const geometry = prepareLapGraph({
+      ...base,
+      mode: 'trace',
+      series: [
+        makeSeries(1, flat(2), { isPlayer: true }),
+        makeSeries(3, flat(-90)),
+      ],
+      axisFit: 'shown',
+    });
+
+    expect(geometry.axis.min).toBeGreaterThan(-10);
+  });
+
+  it('falls back to every car when nothing is pinned or the player', () => {
+    const geometry = prepareLapGraph({
+      ...base,
+      series: outlierField.map((entry) => ({ ...entry, isPlayer: false })),
+      pinnedCarIdxs: [],
+      axisFit: 'shown',
+    });
+
+    expect(geometry.axis.max).toBeGreaterThanOrEqual(130);
+  });
+
+  it('ignores the fit in position mode', () => {
+    const positions = [
+      makeSeries(1, flat(2), { isPlayer: true }),
+      makeSeries(3, flat(18)),
+    ];
+    const all = prepareLapGraph({
+      ...base,
+      mode: 'position',
+      series: positions,
+    });
+    const shown = prepareLapGraph({
+      ...base,
+      mode: 'position',
+      series: positions,
+      axisFit: 'shown',
+    });
+
+    expect(shown.axis).toEqual(all.axis);
+    expect(shown.axis.max).toBe(18);
+  });
+
+  it('caps the gap axis at the maximum', () => {
+    const geometry = prepareLapGraph({
+      ...base,
+      series: outlierField,
+      gapMaxSeconds: 30,
+    });
+
+    expect(geometry.axis.max).toBe(30);
+    expect(Math.max(...geometry.axis.values)).toBeLessThanOrEqual(30);
+  });
+
+  it('keeps a cap that is not a gridline multiple as the axis top', () => {
+    const geometry = prepareLapGraph({
+      ...base,
+      series: outlierField,
+      gapMaxSeconds: 130,
+    });
+
+    expect(geometry.axis.max).toBe(130);
+  });
+
+  it('shrinks below the cap when the data is tighter', () => {
+    const geometry = prepareLapGraph({
+      ...base,
+      series: outlierField,
+      axisFit: 'shown',
+      gapMaxSeconds: 100,
+    });
+
+    expect(geometry.axis.max).toBeLessThan(20);
+  });
+
+  it.each([0, -5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'treats a gap cap of %s as off',
+    (gapMaxSeconds) => {
+      const geometry = prepareLapGraph({
+        ...base,
+        series: outlierField,
+        gapMaxSeconds,
+      });
+
+      expect(geometry.axis.max).toBeGreaterThanOrEqual(130);
+    }
+  );
+
+  it('ignores the gap cap in trace mode', () => {
+    const geometry = prepareLapGraph({
+      ...base,
+      mode: 'trace',
+      series: outlierField,
+      gapMaxSeconds: 30,
+    });
+
+    expect(geometry.axis.max).toBeGreaterThanOrEqual(130);
+  });
+
+  it('counts the drawn cars that sit beyond the axis', () => {
+    const shown = prepareLapGraph({
+      ...base,
+      series: outlierField,
+      axisFit: 'shown',
+    });
+    const all = prepareLapGraph({ ...base, series: outlierField });
+
+    expect(shown.offScaleCount).toBe(2);
+    expect(all.offScaleCount).toBe(0);
+  });
+
+  it('clamps values beyond the axis to its edges', () => {
+    const axis = buildLinearAxis(0, 10);
+
+    expect(valueToY(500, axis, 100, false)).toBe(0);
+    expect(valueToY(-500, axis, 100, false)).toBe(100);
+    expect(valueToY(500, axis, 100, true)).toBe(100);
+  });
+});

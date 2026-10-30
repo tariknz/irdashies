@@ -13,6 +13,7 @@ import {
   gantryStoryArgs,
 } from '@irdashies/storybook';
 import type { LapGraphMode } from '@irdashies/domain';
+import type { LapGraphAxisFit } from '@irdashies/types';
 import { LapGraphView } from './LapGraphView';
 import { GantrySessionDataProvider } from '../../hooks/useGantrySessionData';
 
@@ -28,6 +29,8 @@ interface LapGraphArgs {
   yAxisMode: (typeof gantryStoryArgs)['yAxisMode'];
   lapWindow: number;
   autoPin: boolean;
+  axisFit: (typeof gantryStoryArgs)['axisFit'];
+  gapMaxSeconds: number;
   driverNameFormat: (typeof gantryStoryArgs)['driverNameFormat'];
 }
 
@@ -39,6 +42,7 @@ interface LapGraphArgs {
 const Harness = (args: LapGraphArgs) => {
   const [classId, setClassId] = useState(args.selectedClassId);
   const [mode, setMode] = useState(args.chosenMode);
+  const [axisFit, setAxisFit] = useState<LapGraphAxisFit | null>(null);
   const [pins, setPins] = useState<readonly number[] | null>(args.chosenPins);
 
   return (
@@ -50,6 +54,8 @@ const Harness = (args: LapGraphArgs) => {
           onClassChange={setClassId}
           chosenMode={mode}
           onModeChange={setMode}
+          chosenAxisFit={axisFit ?? args.axisFit}
+          onAxisFitChange={setAxisFit}
           chosenPins={pins}
           onPinsChange={setPins}
         />
@@ -70,6 +76,8 @@ const meta: Meta = {
     yAxisMode: gantryStoryArgs.yAxisMode,
     lapWindow: gantryStoryArgs.lapWindow,
     autoPin: gantryStoryArgs.autoPin,
+    axisFit: gantryStoryArgs.axisFit,
+    gapMaxSeconds: gantryStoryArgs.gapMaxSeconds,
     driverNameFormat: gantryStoryArgs.driverNameFormat,
   },
   argTypes: {
@@ -99,6 +107,8 @@ const meta: Meta = {
     yAxisMode: gantryArgTypes.yAxisMode,
     lapWindow: gantryArgTypes.lapWindow,
     autoPin: gantryArgTypes.autoPin,
+    axisFit: gantryArgTypes.axisFit,
+    gapMaxSeconds: gantryArgTypes.gapMaxSeconds,
     driverNameFormat: gantryArgTypes.driverNameFormat,
   },
   render: (args) => (
@@ -120,6 +130,23 @@ export const MidRacePitStop: Story = {
     GantryChannelDecorator({
       'lap-history.snapshot': buildLapHistory(
         fixturePlans({ laps: 28, pitCarIdx: 4, pitLap: 12 })
+      ),
+    }),
+  ],
+};
+
+/** One car loses 130 seconds on lap 8. Gap mode shows the range setting at work. */
+export const LappedCar: Story = {
+  args: { chosenMode: 'gap' },
+  decorators: [
+    GantryDecorator(),
+    GantryChannelDecorator({
+      'lap-history.snapshot': buildLapHistory(
+        fixturePlans({ laps: 28 }).map((plan) =>
+          plan.carIdx === 4
+            ? { ...plan, repair: { lap: 8, seconds: 130 } }
+            : plan
+        )
       ),
     }),
   ],

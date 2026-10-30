@@ -9,6 +9,7 @@ import type { NameFormat } from '@irdashies/types';
 
 vi.mock('@irdashies/domain', () => ({
   useHighlightColor: () => 0xffffff,
+  useFocusDriver: () => () => undefined,
 }));
 
 vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({

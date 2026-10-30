@@ -12,6 +12,7 @@ export * from './referenceLaps';
 export * from './raceControl';
 export * from './widgetConfigs';
 export * from './gantryDock';
+export * from './gantryStandings';
 export * from './defaultDashboard';
 export * from './cornerName';
 export * from './lapTrace';

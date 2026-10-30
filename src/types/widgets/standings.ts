@@ -123,6 +123,7 @@ export default defineWidgetManifest({
       minPlayerClassDrivers: 10,
       numTopDrivers: 3,
       topDriverDivider: 'theme',
+      showAll: false,
     },
     titleBar: {
       enabled: false,
@@ -379,6 +380,12 @@ export default defineWidgetManifest({
         { value: 'theme', label: 'Theme Color' },
         { value: 'highlight', label: 'Highlight Color' },
       ],
+    },
+    'driverStandings.showAll': {
+      type: 'boolean',
+      label: 'Show every driver',
+      description:
+        'Lists the whole field instead of the drivers around you. Meant for the tall Gantry panel.',
     },
     useLivePosition: {
       type: 'boolean',
