@@ -454,7 +454,7 @@ describeIfBuilt('lmu_replay anonymise', () => {
       running?: boolean;
       playerName?: string;
       serverName?: string;
-      drivers?: { name: string; isPlayer: boolean }[];
+      drivers?: { name: string; isPlayer: boolean; steamId: string }[];
     };
   };
 
@@ -480,6 +480,107 @@ describeIfBuilt('lmu_replay anonymise', () => {
       },
     });
   };
+
+  /** A driver-rating cache file shaped like the app's own. */
+  const ratingsFileFor = (name: string, entries: string) => {
+    const file = path.join(path.dirname(tapeFor(name)), `${name}-ratings.json`);
+    fs.writeFileSync(file, `{"version":2,"entries":{${entries}}}`);
+    return file;
+  };
+
+  /**
+   * The fixture's two Steam ids. Real-shaped, and the whole point of the
+   * tests below is that neither survives into an anonymised tape.
+   */
+  const PLAYER_ID = '76561198000000111';
+  const RIVAL_ID = '76561198000000222';
+
+  /**
+   * The fixture's player name, which is what the rating cache is keyed by.
+   *
+   * Ratings join on driver name rather than Steam id: the sim reports 0 for
+   * every id it publishes, in shared memory and over its own REST API alike.
+   */
+  const PLAYER_NAME = 'Synthetic Player';
+
+  it('replaces every Steam id with a synthetic one', () => {
+    // A Steam id resolves publicly to an account, so leaving it next to a
+    // pseudonym makes the pseudonym decorative. Mapped rather than zeroed
+    // because the app keys driver ratings by it, and a zeroed tape would lose
+    // its badges along with the identity.
+    const { source, names, output } = scenario('steam-ids');
+
+    expect(anonymise(source, names, output).status).toBe(0);
+
+    const session = replayedSession(output);
+    const ids = (session.drivers ?? []).map((driver) => driver.steamId);
+    expect(ids).not.toContain(PLAYER_ID);
+    expect(ids).not.toContain(RIVAL_ID);
+    // Distinct, so two drivers do not collapse into one identity, and
+    // well-formed, because the app drops an id that cannot be real.
+    expect(new Set(ids).size).toBe(ids.length);
+    ids.forEach((id) => expect(id).toMatch(/^[1-9][0-9]{16}$/));
+  });
+
+  it('bakes cached ratings in under the pseudonymised names', () => {
+    // A replay cannot look anything up for itself -- the ticket that would
+    // authorise it is deliberately never recorded -- so the ratings have to
+    // travel in the tape. They are keyed by name, and the keys go through the
+    // same substitution as every other recorded body, which is what keeps
+    // them matching the snapshots without a second mapping to maintain.
+    const { source, names, output } = scenario('bakes');
+    const ratings = ratingsFileFor(
+      'bakes',
+      `"${PLAYER_NAME}":{"rating":{"driverRank":"Gold"},"at":1}`
+    );
+
+    const result = anonymise(source, names, output, ['--ratings', ratings]);
+
+    expect(result.status).toBe(0);
+    expect(result.output).toMatch(/ratings baked in/);
+
+    const baked = replayedRest(output, '/irdashies/replay/driver-ratings');
+    const parsed = JSON.parse(baked) as Record<string, { driverRank: string }>;
+    const session = replayedSession(output);
+    const player = (session.drivers ?? []).find((driver) => driver.isPlayer);
+
+    // The join the replay depends on: the key is the name the snapshots now
+    // carry, not the real one the cache was written with.
+    expect(Object.keys(parsed)).toEqual([player?.name]);
+    expect(parsed[player?.name ?? '']?.driverRank).toBe('Gold');
+    expect(baked).not.toContain(PLAYER_NAME);
+  });
+
+  it('leaves a remembered miss out of the baked ratings', () => {
+    // An entry with no "rating" is a driver the service had nothing for.
+    // Baking it would turn a known miss into a driver with an empty badge.
+    const { source, names, output } = scenario('miss');
+    const ratings = ratingsFileFor('miss', `"${PLAYER_NAME}":{"at":1}`);
+
+    const result = anonymise(source, names, output, ['--ratings', ratings]);
+
+    expect(result.status).toBe(0);
+    expect(result.output).toMatch(/no badges/);
+    expect(replayedRest(output, '/irdashies/replay/driver-ratings')).toBe('');
+  });
+
+  it('bakes nothing when told not to', () => {
+    const { source, names, output } = scenario('no-ratings');
+    const ratings = ratingsFileFor(
+      'no-ratings',
+      `"${PLAYER_NAME}":{"rating":{"driverRank":"Gold"},"at":1}`
+    );
+
+    const result = anonymise(source, names, output, [
+      '--ratings',
+      ratings,
+      '--no-ratings',
+    ]);
+
+    expect(result.status).toBe(0);
+    expect(result.output).toMatch(/\(no ratings\)/);
+    expect(replayedRest(output, '/irdashies/replay/driver-ratings')).toBe('');
+  });
 
   it('replaces every driver name with one from the file', () => {
     const { source, names, output } = scenario('replaces');

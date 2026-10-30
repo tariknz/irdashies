@@ -10,6 +10,17 @@ export interface LmuRawVehicle {
   name: string;
   vehicleName: string;
   vehicleModel?: string;
+  /**
+   * The fitted compound's name and index, front and rear.
+   *
+   * Both halves of the same fact, which is why they are together: the index is
+   * what the per-wheel telemetry reports, and the name is the only thing that
+   * says what an index means. Absent for a car with no telemetry block.
+   */
+  frontTireCompoundName?: string;
+  rearTireCompoundName?: string;
+  frontTireCompoundIndex?: number;
+  rearTireCompoundIndex?: number;
   className: string;
   vehFilename: string;
   classId: number;
@@ -40,13 +51,24 @@ export interface LmuRawVehicle {
   countLapFlag: number;
   inGarageStall: boolean;
   pitLapDist: number;
-  steamId: number;
+  /**
+   * Steam64 id as a decimal string.
+   *
+   * Not a number: the value exceeds the 2^53 range JS integers are exact
+   * in, so a numeric form loses its last digits and no longer identifies
+   * the player.
+   */
+  steamId: string;
   /**
    * Raw mFuelFraction, straight off a uint8_t, so always a whole number.
    *
-   * The scale is unverified -- the name suggests 0..1, which a byte cannot
-   * hold, so it is far more likely a percentage. Nothing reads it yet.
-   * Confirm against a live session before treating it as either.
+   * The scale is the byte: divide by 255 for a fraction. Neither 0..1 nor a
+   * percentage, which an earlier note here guessed at -- the same quantisation
+   * the sim uses for mLiftAndCoastProgress.
+   *
+   * Per car and on the session snapshot, which only rebuilds when the session
+   * signature moves, so this is not a live reading. The telemetry channel
+   * LmuCarIdxEnergyRemaining is, and is what consumers should use.
    */
   fuelFraction: number;
   pos: LmuVec;
@@ -74,7 +96,29 @@ export interface LmuRawTelemetry {
   maxPlayers: number;
   sessionTimeRemaining: number;
   timeOfDay: number;
+  /**
+   * The sim's session callbacks, as monotonic counters.
+   *
+   * LMU calls EndSession when a session finishes and StartSession when one
+   * begins, and bumps these. An increment is the only unambiguous statement
+   * that a session boundary happened -- the clock freezing or the grid
+   * emptying are both inferences.
+   */
+  sessionStartEvents: number;
+  sessionEndEvents: number;
+  /** Scoring's write counter. Stalls when the session stops being scored. */
+  scoringUpdates: number;
   trackGripLevel: number;
+  /**
+   * The scale of LMU's track-limits penalty system.
+   *
+   * `mTrackLimitsSteps` on a car is counted in steps, not points:
+   * `steps / trackLimitsStepsPerPoint` is the points figure the sim displays,
+   * and `trackLimitsStepsPerPenalty / trackLimitsStepsPerPoint` is the ceiling
+   * a drive-through is served at. Neither number means anything alone.
+   */
+  trackLimitsStepsPerPoint: number;
+  trackLimitsStepsPerPenalty: number;
   cloudCoverage: number;
   raining: number;
   darkCloud: number;
@@ -206,6 +250,42 @@ export interface LmuRawTelemetry {
   vehLapNumber?: ArrayLike<number>;
   /** 100 Hz per-car telemetry clock, seconds. */
   vehElapsedTime?: ArrayLike<number>;
+  /**
+   * Compound index per wheel, per car: four entries per slot at
+   * `id * 4 + wheel`, in the sim's wheel order (FL, FR, RL, RR).
+   *
+   * -1 where the car had no telemetry block that frame. 0 is a real compound,
+   * so the sentinel cannot be 0.
+   */
+  vehWheelCompounds?: ArrayLike<number>;
+  /**
+   * Track-limit infringement steps per car, indexed by slot.
+   *
+   * -1 where the car had no telemetry block that frame. 0 is a clean car, so
+   * the sentinel cannot be 0. Divide by `trackLimitsStepsPerPoint` for the
+   * points figure.
+   */
+  vehTrackLimitsSteps?: ArrayLike<number>;
+  /**
+   * Fuel remaining per car, as the sim quantises it: a byte over 255, not a
+   * percentage. From scoring, so every car on the grid has one.
+   */
+  /**
+   * Outstanding penalties per car, from scoring's mNumPenalties.
+   *
+   * A count. Scoring carries no field for which penalty it is -- that comes
+   * from the pit-stop estimate's penalty time, and only for the player. See
+   * lmu/penalty.ts.
+   */
+  vehNumPenalties?: ArrayLike<number>;
+  vehFuelFraction?: ArrayLike<number>;
+  /**
+   * Virtual energy remaining per car, already a fraction.
+   *
+   * From the telemetry block, so -1 where a car reported none this frame. 0 is
+   * an empty battery, not a missing reading, which is why the sentinel is -1.
+   */
+  vehVirtualEnergy?: ArrayLike<number>;
 }
 
 export interface LmuRawSession extends LmuRawTelemetry {
