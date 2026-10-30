@@ -171,6 +171,7 @@ const sampleAt = (
   lastLapTime: 0,
   lapCompleted: 0,
   incidentCount: 0,
+  simLapInvalidated: false,
   version: ++sampleVersion,
   ...overrides,
 });

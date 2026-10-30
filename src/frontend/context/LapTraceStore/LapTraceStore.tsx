@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type {
+  LapInvalidReason,
   LapTraceBridge,
   LapTraceRecord,
   LapTraceSampleSnapshot,
@@ -140,6 +141,16 @@ export interface ActiveLap {
   lastTrackedTime: number;
   isCleanLap: boolean;
   /**
+   * Why this lap stopped being a candidate, or null while it still is. Always
+   * the mirror of `isCleanLap` — one is never set without the other — and
+   * always the *first* cause recorded for the lap (see `invalidate`).
+   *
+   * Exists to be shown: the widget reports it while no reference lap is
+   * stored, so a progress bar does not keep filling for a lap that was
+   * written off at turn 2.
+   */
+  invalidReason: LapInvalidReason | null;
+  /**
    * PlayerCarMyIncidentCount as it stood when this lap began. Compared against
    * the live count every frame — a rise means this lap picked up an incident
    * (off track, contact, etc.) and can never be promoted, however fast.
@@ -156,6 +167,14 @@ export interface ActiveLap {
    */
   prevLastLapTime: number;
   prevLapCompleted: number;
+  /**
+   * The sim's lap-void flag as it stood on the previous frame. Frame memory
+   * like the two above, and for a related reason: the flag is acted on when it
+   * comes on, not for as long as it stays on. Nothing says LMU clears it on
+   * the very frame the line is crossed, and a flag still showing the lap just
+   * finished would otherwise write off the clean lap that follows.
+   */
+  prevSimLapInvalidated: boolean;
   /**
    * Running speed range for this lap. Tracked incrementally so the plot has a
    * stable vertical scale before any reference lap exists, without rescanning
@@ -188,6 +207,13 @@ interface PendingBest {
    * trusting isCleanLap alone.
    */
   incidentCountAtBoundary: number;
+  /**
+   * Set when the sim's void flag comes on after the crossing, before the lap
+   * is finalised. The same late-report allowance as the incident count: the
+   * flag can describe the lap just finished a tick or two after the line, so
+   * a pending lap is not promoted past it.
+   */
+  simInvalidatedLate: boolean;
   /**
    * LapCompleted as seen at the crossing, which is this lap's identity. The
    * counter can lag the line by a tick, so the lap that just finished is
@@ -334,9 +360,13 @@ function createActiveLap(): ActiveLap {
     lastTrackedPct: -1,
     lastTrackedTime: -1,
     isCleanLap: false,
+    // Nothing has been driven yet, so there is nothing to report a cause for.
+    // The first frame classifies the lap properly (out-lap, partial, clean).
+    invalidReason: null,
     incidentCountAtStart: 0,
     prevLastLapTime: -1,
     prevLapCompleted: -1,
+    prevSimLapInvalidated: false,
     speedMinMs: Number.POSITIVE_INFINITY,
     speedMaxMs: Number.NEGATIVE_INFINITY,
     lastNotifiedM: Number.NEGATIVE_INFINITY,
@@ -352,12 +382,18 @@ function createActiveLap(): ActiveLap {
  * the new lap's start, and is kept so the plot can draw it; anywhere else
  * (a session starting mid-lap, a reset, a tow) it is not, and the carry-over
  * is dropped rather than drawn somewhere the car never went.
+ *
+ * `startReason` is why the lap is doomed before it has been driven — an
+ * out-lap, a partial lap, a reset — or null when it starts as a candidate.
+ * Taking the reason rather than a boolean is what keeps `isCleanLap` and
+ * `invalidReason` from ever disagreeing: both are derived from this one
+ * argument.
  */
 function resetActiveLap(
   lap: ActiveLap,
   startTime: number,
   startPct: number,
-  isClean: boolean,
+  startReason: LapInvalidReason | null,
   incidentCountAtStart: number,
   carryTail = false
 ): void {
@@ -372,12 +408,50 @@ function resetActiveLap(
   // the jump detector's clock with it would read the next frame as time going
   // backwards. Every caller sets it from the live SessionTime instead.
   lap.lastTrackedTime = -1;
-  lap.isCleanLap = isClean;
+  lap.isCleanLap = startReason === null;
+  lap.invalidReason = startReason;
   lap.incidentCountAtStart = incidentCountAtStart;
   lap.speedMinMs = Number.POSITIVE_INFINITY;
   lap.speedMaxMs = Number.NEGATIVE_INFINITY;
   lap.lastNotifiedM = Number.NEGATIVE_INFINITY;
   lap.lapSerial += 1;
+}
+
+/**
+ * Write the lap off, naming the cause.
+ *
+ * The first cause wins. A driver who picks up an incident at turn 2 and then
+ * comes into the pits should be told about the incident — that is the thing
+ * they can do something about — not about the pit entry that followed from
+ * it.
+ */
+function invalidate(lap: ActiveLap, reason: LapInvalidReason): void {
+  if (lap.invalidReason !== null) return;
+  lap.isCleanLap = false;
+  lap.invalidReason = reason;
+}
+
+/**
+ * Classify a lap at the moment it starts: null if it begins as a candidate,
+ * otherwise why it cannot be one.
+ *
+ * Pit road and the garage are reported ahead of the partial-lap case. A
+ * session almost always begins stopped in the box, and the useful thing to
+ * say about that is "out-lap", not "joined mid-lap" — both are true, only one
+ * tells the driver what to do next.
+ *
+ * Note this is the same `onPitRoad` bit that invalidates a lap mid-way
+ * through, read at a different moment and reported differently: at the start
+ * of a lap it means leaving the pits, part-way through it means entering
+ * them.
+ */
+function lapStartReason(
+  atLine: boolean,
+  isOnTrack: boolean,
+  onPitRoad: boolean
+): LapInvalidReason | null {
+  if (onPitRoad || !isOnTrack) return 'out-lap';
+  return atLine ? null : 'partial-lap';
 }
 
 /** Copy the active lap's samples out so its buffer can keep being reused. */
@@ -555,10 +629,34 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
       lastLapTime,
       lapCompleted,
       incidentCount,
+      simLapInvalidated,
     } = sample;
     if (lapDistPct < 0 || sessionTime < 0) return;
 
     const pct = normalisePct(lapDistPct);
+
+    // Watched across the whole frame so the store can be republished the
+    // moment the cause changes. The regular notify below only fires every
+    // NOTIFY_INTERVAL_M metres, and a car sitting in the garage or stopped in
+    // its pit box covers no distance at all — exactly the cases this reporting
+    // exists for would otherwise never reach the widget.
+    const reasonBefore = lap.invalidReason;
+
+    // The void flag coming on, as opposed to still being on. Which lap it
+    // belongs to is decided below: on a crossing frame it is the lap
+    // finishing, and the crossing consumes it so the new lap is not charged.
+    const simInvalidationRose = simLapInvalidated && !lap.prevSimLapInvalidated;
+    let simInvalidationConsumed = false;
+
+    // A lap waiting for its official time is told about the flag on every
+    // kind of frame, before the branches below. Inside them, a tow or reset
+    // just after the line took the position-jump branch, the rise was
+    // remembered as the previous value, and the lap could still be promoted.
+    // Remembered rather than tested on the finalising frame alone: the flag
+    // can come on a few frames before the official time arrives.
+    if (state.pendingBest && simInvalidationRose) {
+      state.pendingBest.simInvalidatedLate = true;
+    }
 
     if (lap.lastTrackedPct < 0) {
       // First frame after initialize: only start timing the lap if we happen
@@ -568,7 +666,7 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
         lap,
         atLine ? sessionTime : Number.MAX_SAFE_INTEGER,
         pct,
-        atLine && isOnTrack && !onPitRoad,
+        lapStartReason(atLine, isOnTrack, onPitRoad),
         incidentCount
       );
     } else if (
@@ -597,7 +695,16 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
       // pendingBest is left alone: it is an already-completed lap whose
       // official LapLastLapTime lands a few ticks after the line, long before
       // any realistic reset.
-      resetActiveLap(lap, Number.MAX_SAFE_INTEGER, pct, false, incidentCount);
+      resetActiveLap(
+        lap,
+        Number.MAX_SAFE_INTEGER,
+        pct,
+        // A reset or a tow that lands the car in the pits is reported as the
+        // out-lap it leaves the driver on, which says more about what happens
+        // next than "a reset happened" does.
+        onPitRoad || !isOnTrack ? 'out-lap' : 'reset',
+        incidentCount
+      );
       logger.info(
         `[LapTrace] Position jump to ${(pct * 100).toFixed(1)}% — restarting the lap in progress`
       );
@@ -636,7 +743,9 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
         // after the lap was already snapshotted as clean and the next one
         // started — so this is re-checked here rather than trusting the
         // snapshot's isCleanLap alone.
-        const invalidatedLate = incidentCount > pending.incidentCountAtBoundary;
+        const invalidatedLate =
+          incidentCount > pending.incidentCountAtBoundary ||
+          pending.simInvalidatedLate;
         if (
           !invalidatedLate &&
           state.bestLapLoaded &&
@@ -681,8 +790,15 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
         // reset a few lines down moves the baseline on to this frame's count,
         // putting it out of reach. Compare it here, against the baseline of
         // the lap that is finishing.
+        //
+        // The sim's void flag coming on at the line is the same case: it is
+        // the finishing lap's, so it stops that lap here and is consumed, and
+        // the lap starting on this frame is not charged with it.
         const finishedClean =
-          lap.isCleanLap && incidentCount <= lap.incidentCountAtStart;
+          lap.isCleanLap &&
+          incidentCount <= lap.incidentCountAtStart &&
+          !simInvalidationRose;
+        simInvalidationConsumed = simInvalidationRose;
         if (finishedClean) {
           const record = snapshotActiveLap(lap, state, -1);
           set({
@@ -694,6 +810,7 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
               // would hide the very change being waited for.
               lastLapTimeAtBoundary: lap.prevLastLapTime,
               incidentCountAtBoundary: incidentCount,
+              simInvalidatedLate: false,
               lapCompletedAtBoundary: lapCompleted,
             },
           });
@@ -705,18 +822,38 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
           lap,
           sessionTime,
           pct,
-          isOnTrack && !onPitRoad,
+          lapStartReason(true, isOnTrack, onPitRoad),
           incidentCount,
           true
         );
       }
     }
 
-    if (
-      lap.isCleanLap &&
-      (onPitRoad || !isOnTrack || incidentCount > lap.incidentCountAtStart)
-    ) {
-      lap.isCleanLap = false;
+    if (lap.isCleanLap) {
+      // Ordered by what the driver can act on. An incident is tested first
+      // because an incident is often what sends the car down the pit lane a
+      // moment later, and the incident is the cause worth reporting.
+      //
+      // The two sims report through different channels and neither has the
+      // other's: iRacing counts incidents and publishes no void flag, LMU
+      // publishes the flag and counts nothing. Both are read here, and
+      // whichever the running sim supplies is the one that fires.
+      //
+      // The flag counts when it comes on. Still being on from the lap before
+      // says nothing about this one. Coming on just after the line charges
+      // this lap and the pending one alike, as a late incident does, because
+      // nothing tells the two apart.
+      const reason: LapInvalidReason | null =
+        incidentCount > lap.incidentCountAtStart
+          ? 'incident'
+          : simInvalidationRose && !simInvalidationConsumed
+            ? 'sim-invalidated'
+            : onPitRoad
+              ? 'pitted'
+              : !isOnTrack
+                ? 'off-world'
+                : null;
+      if (reason) invalidate(lap, reason);
     }
 
     const distanceM = pct * state.trackLengthM;
@@ -734,11 +871,11 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
     if (pushed === 'backward' || pushed === 'full') {
       // A spin, a reset, or a lap too long to hold — none of them a lap that
       // can stand as a reference.
-      lap.isCleanLap = false;
+      invalidate(lap, pushed === 'backward' ? 'spin' : 'too-long');
     } else if (pushed !== 'dropped') {
       // A teleport is stored (the trace shows where the car reappeared) but
       // continuity is gone: every metre must be driven for the lap to count.
-      if (pushed === 'gap') lap.isCleanLap = false;
+      if (pushed === 'gap') invalidate(lap, 'discontinuity');
 
       // Feed the tracker the value the buffer stored, not the raw double, so
       // the live events and deriveEvents() over the saved lap are identical.
@@ -758,10 +895,19 @@ export const useLapTraceStore = create<LapTraceState>((set, get) => ({
       }
     }
 
+    // Republish the moment the cause changes, in either direction — a lap
+    // being written off, or a new lap starting clean. The distance-gated
+    // notify above cannot carry this: a car stopped in the garage or sitting
+    // in its pit box covers no distance, so the out-lap this reporting exists
+    // for would never reach the widget. At most twice per lap against sixty
+    // frames a second, so it costs nothing worth measuring.
+    if (lap.invalidReason !== reasonBefore) set({ activeLap: lap });
+
     lap.lastTrackedPct = pct;
     lap.lastTrackedTime = sessionTime;
     lap.prevLastLapTime = lastLapTime;
     lap.prevLapCompleted = lapCompleted;
+    lap.prevSimLapInvalidated = simLapInvalidated;
   },
 
   setReferenceFromSource: async (bridge, kind) => {
@@ -1065,3 +1211,15 @@ export const useLapTraceRecordingProgress = (): number =>
         )
       : 0
   );
+
+/**
+ * Why the lap in progress can no longer become the reference, or null while
+ * it still can.
+ *
+ * Returns a primitive on purpose. `activeLap` is mutated in place and
+ * republished under the same object identity, so a selector returning the lap
+ * itself would never re-render — the same reason
+ * `useLapTraceRecordingProgress` returns a number.
+ */
+export const useLapTraceInvalidReason = (): LapInvalidReason | null =>
+  useLapTraceStore((s) => s.activeLap?.invalidReason ?? null);

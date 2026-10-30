@@ -33,6 +33,7 @@ const defaultLapTraceSample: LapTraceSampleSnapshot = {
   lastLapTime: 0,
   lapCompleted: 0,
   incidentCount: 0,
+  simLapInvalidated: false,
   version: 0,
 };
 
@@ -135,6 +136,7 @@ export const LiveChannelBridgeDecorator = (): Decorator => {
             lastLapTime: t.LapLastLapTime?.value?.[0] ?? 0,
             lapCompleted: t.LapCompleted?.value?.[0] ?? 0,
             incidentCount: t.PlayerCarMyIncidentCount?.value?.[0] ?? 0,
+            simLapInvalidated: t.LmuLapInvalidated?.value?.[0] ?? false,
             version: latestLapTraceSample.current.version + 1,
           } satisfies LapTraceSampleSnapshot;
           for (const cb of listeners.current['lap-trace.sample']) {

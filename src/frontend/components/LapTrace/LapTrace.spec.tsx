@@ -1,6 +1,10 @@
 import { render, screen, cleanup } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { ChannelBridge, TrackStateSnapshot } from '@irdashies/types';
+import type {
+  ChannelBridge,
+  LapTraceSampleSnapshot,
+  TrackStateSnapshot,
+} from '@irdashies/types';
 import { useLapTraceStore, useSessionStore } from '@irdashies/context';
 import { hydrateLapTrace } from '../../domain/lapTrace/hydrateLapTrace';
 import { LapTrace } from './LapTrace';
@@ -66,6 +70,38 @@ const seedReference = () => {
   });
 };
 
+/**
+ * Drive the real recorder far enough to produce a reason, so these tests
+ * exercise the same path the overlay does rather than a hand-built lap.
+ */
+const seedLap = async (
+  frames: Partial<LapTraceSampleSnapshot>[]
+): Promise<void> => {
+  const store = useLapTraceStore.getState();
+  await store.initialize(undefined, 1, 'Grand Prix', 'testcar', TRACK_LENGTH_M);
+  let version = 0;
+  for (const frame of frames) {
+    useLapTraceStore.getState().collectPlayerFrame(undefined, {
+      sessionTime: 0,
+      lapDistPct: 0,
+      throttle: 0,
+      brake: 0,
+      speed: 40,
+      gear: 3,
+      brakeAbsActive: false,
+      onPitRoad: false,
+      isOnTrack: true,
+      sessionNum: 0,
+      lastLapTime: 0,
+      lapCompleted: 0,
+      incidentCount: 0,
+      simLapInvalidated: false,
+      ...frame,
+      version: ++version,
+    });
+  }
+};
+
 const baseProps = {
   metersBehind: 200,
   metersAhead: 200,
@@ -126,6 +162,70 @@ describe('LapTrace', () => {
     expect(
       screen.getByText(/Drive a clean lap to record a reference/i)
     ).toBeTruthy();
+  });
+
+  it('replaces the recording bar with the reason the lap cannot count', async () => {
+    // Out of the garage: the lap was never going to be recorded, and a bar
+    // filling towards a reference that will never be saved says the opposite.
+    await seedLap([{ lapDistPct: 0, onPitRoad: true }]);
+
+    render(<LapTrace {...baseProps} />);
+
+    expect(screen.getByText(/Out-lap/i)).toBeTruthy();
+    expect(screen.queryByText(/Recording \d+%/)).toBeNull();
+  });
+
+  it('names an incident as the cause', async () => {
+    await seedLap([
+      { lapDistPct: 0, sessionTime: 0, incidentCount: 0 },
+      { lapDistPct: 0.005, sessionTime: 1, incidentCount: 1 },
+    ]);
+
+    render(<LapTrace {...baseProps} />);
+
+    expect(screen.getByText(/Incident/i)).toBeTruthy();
+  });
+
+  it("reports LMU's bare void flag without inventing a cause", async () => {
+    // No incident count anywhere -- the LMU shape.
+    await seedLap([
+      { lapDistPct: 0, sessionTime: 0 },
+      { lapDistPct: 0.005, sessionTime: 1, simLapInvalidated: true },
+    ]);
+
+    render(<LapTrace {...baseProps} />);
+
+    expect(screen.getByText('Lap invalidated by the sim')).toBeTruthy();
+  });
+
+  it('shows the recording bar while the lap is still a candidate', async () => {
+    await seedLap([
+      { lapDistPct: 0, sessionTime: 0 },
+      { lapDistPct: 0.005, sessionTime: 1 },
+    ]);
+
+    render(<LapTrace {...baseProps} />);
+
+    expect(screen.getByText(/Recording \d+%/)).toBeTruthy();
+  });
+
+  it('keeps a failed reference load ahead of a scruffy lap', async () => {
+    await seedLap([{ lapDistPct: 0, onPitRoad: true }]);
+    useLapTraceStore.setState({ referenceError: 'No lap imported' });
+
+    render(<LapTrace {...baseProps} />);
+
+    expect(screen.getByText('No lap imported')).toBeTruthy();
+    expect(screen.queryByText(/Out-lap/i)).toBeNull();
+  });
+
+  it('says nothing about the lap in progress once a reference is loaded', async () => {
+    await seedLap([{ lapDistPct: 0, onPitRoad: true }]);
+    seedReference();
+
+    render(<LapTrace {...baseProps} />);
+
+    expect(screen.queryByText(/Out-lap/i)).toBeNull();
   });
 
   it('places the brake countdown bars beside the trace, not over it', () => {

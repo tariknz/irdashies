@@ -4,6 +4,7 @@ import {
   LiveChannelBridgeDecorator,
   TelemetryDecorator,
 } from '@irdashies/storybook';
+import type { LapTraceSampleSnapshot } from '@irdashies/types';
 import { useLapTraceStore } from '@irdashies/context';
 import { hydrateLapTrace } from '../../domain/lapTrace/hydrateLapTrace';
 import { parseGarage61Csv } from '../../domain/lapTrace/garage61CsvImport';
@@ -53,6 +54,41 @@ const clearReference = (referenceError: string | null = null) => {
     referenceLap: null,
     referenceError,
   });
+};
+
+/**
+ * No reference lap, and the lap being driven has already been written off.
+ *
+ * Drives the real recorder rather than poking `invalidReason` in directly, so
+ * these stories show what the sims actually produce — and stay honest if the
+ * classification rules change.
+ */
+const seedInvalidLap = async (frames: Partial<LapTraceSampleSnapshot>[]) => {
+  useLapTraceStore.getState().reset();
+  await useLapTraceStore
+    .getState()
+    .initialize(undefined, 1, 'Grand Prix', 'testcar', TRACK_LENGTH_M);
+  let version = 0;
+  for (const frame of frames) {
+    useLapTraceStore.getState().collectPlayerFrame(undefined, {
+      sessionTime: 0,
+      lapDistPct: 0,
+      throttle: 0,
+      brake: 0,
+      speed: 40,
+      gear: 3,
+      brakeAbsActive: false,
+      onPitRoad: false,
+      isOnTrack: true,
+      sessionNum: 0,
+      lastLapTime: 0,
+      lapCompleted: 0,
+      incidentCount: 0,
+      simLapInvalidated: false,
+      ...frame,
+      version: ++version,
+    });
+  }
 };
 
 export default {
@@ -309,6 +345,7 @@ const DrivingGhostDemo = (props: LapTraceProps) => {
         lastLapTime: 0,
         lapCompleted: 0,
         incidentCount: 0,
+        simLapInvalidated: false,
         version: ++version,
       });
 
@@ -463,6 +500,45 @@ export const Garage61Import: Story = {
 /** Before a clean lap has been recorded. */
 export const NoReferenceLap: Story = {
   loaders: [async () => (clearReference(), {})],
+};
+
+/**
+ * Out of the garage or the pit box. The commonest of these by far — every
+ * session opens on one — so it has to read as status, not as a failure.
+ */
+export const InvalidLapOutLap: Story = {
+  loaders: [
+    async () => (
+      await seedInvalidLap([{ lapDistPct: 0, onPitRoad: true }]),
+      {}
+    ),
+  ],
+};
+
+/** iRacing's incident count rose: the lap is gone however fast the rest of it is. */
+export const InvalidLapIncident: Story = {
+  loaders: [
+    async () => (
+      await seedInvalidLap([
+        { lapDistPct: 0, sessionTime: 0 },
+        { lapDistPct: 0.005, sessionTime: 1, incidentCount: 1 },
+      ]),
+      {}
+    ),
+  ],
+};
+
+/** LMU's own void flag, which arrives with no reason attached. */
+export const InvalidLapSimInvalidated: Story = {
+  loaders: [
+    async () => (
+      await seedInvalidLap([
+        { lapDistPct: 0, sessionTime: 0 },
+        { lapDistPct: 0.005, sessionTime: 1, simLapInvalidated: true },
+      ]),
+      {}
+    ),
+  ],
 };
 
 /** A source that is not implemented yet reports itself instead of blanking. */

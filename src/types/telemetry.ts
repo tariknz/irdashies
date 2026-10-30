@@ -7,6 +7,12 @@ export type Telemetry = {
   LmuLastSectorTimes?: TelemetryVar<(number | null)[]>;
   LmuBestSectorTimes?: TelemetryVar<(number | null)[]>;
   LmuSectorIdx?: TelemetryVar<number[]>;
+  /**
+   * mLapInvalidated — the sim has voided the lap in progress. A bare flag:
+   * LMU gives no reason with it, so nothing downstream should infer one.
+   * Stands in for PlayerCarMyIncidentCount, which LMU does not publish.
+   */
+  LmuLapInvalidated?: TelemetryVar<boolean[]>;
   LmuCarIdxRelativeAvailable?: TelemetryVar<boolean[]>;
   LmuCarIdxRelativeLateral?: TelemetryVar<number[]>;
   LmuCarIdxRelativeLongitudinal?: TelemetryVar<number[]>;

@@ -84,6 +84,7 @@ const publishSample = (overrides: Partial<LapTraceSampleSnapshot> = {}) => {
     lastLapTime: 0,
     lapCompleted: 0,
     incidentCount: 0,
+    simLapInvalidated: false,
     version: ++version,
     ...overrides,
   } satisfies LapTraceSampleSnapshot);
