@@ -58,6 +58,12 @@ export const ChatMessageList = ({
 
     messages.forEach((m) => {
       if (!timeoutsRef.current.has(m.id)) {
+        // Count from when the message arrived, so a replayed snapshot does not
+        // restart the interval for messages that already expired.
+        const remainingMs = Math.max(
+          0,
+          autoHide.intervalSeconds * 1000 - (Date.now() - m.timestamp)
+        );
         const t = setTimeout(() => {
           setFadingIds((prev) => new Set([...prev, m.id]));
           // Both timeout maps are cleared by the unmount effect below; this
@@ -66,7 +72,7 @@ export const ChatMessageList = ({
             setRemovedIds((prev) => new Set([...prev, m.id]));
           }, FADE_DURATION_MS);
           removeTimeoutsRef.current.set(m.id, rt);
-        }, autoHide.intervalSeconds * 1000);
+        }, remainingMs);
         timeoutsRef.current.set(m.id, t);
       }
     });

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
 import type { StreamChatMessage } from '@irdashies/types';
 import { ChatMessageList } from './StreamChat';
 
@@ -96,5 +96,47 @@ describe('ChatMessageList', () => {
     expect(screen.getByAltText('Member').getAttribute('src')).toBe(
       'https://example.test/b.png'
     );
+  });
+
+  describe('auto-hide', () => {
+    afterEach(() => vi.useRealTimers());
+
+    const renderAutoHide = (messages: StreamChatMessage[]) =>
+      render(
+        <ChatMessageList
+          messages={messages}
+          fontSize={16}
+          background={{ opacity: 50 }}
+          autoHide={{ enabled: true, intervalSeconds: 10 }}
+        />
+      );
+
+    it('removes a replayed message that already expired without waiting a new interval', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(1_000_000);
+      renderAutoHide([
+        message({ id: 'old', text: 'stale', timestamp: 1_000_000 - 600_000 }),
+      ]);
+      act(() => {
+        vi.advanceTimersByTime(1_000);
+      });
+      expect(screen.queryByText('stale')).toBeNull();
+    });
+
+    it('hides a message only for the time left of its interval', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(1_000_000);
+      renderAutoHide([
+        message({ id: 'new', text: 'fresh', timestamp: 1_000_000 - 7_000 }),
+      ]);
+      act(() => {
+        vi.advanceTimersByTime(2_000);
+      });
+      expect(screen.getByText(/fresh/)).toBeTruthy();
+      act(() => {
+        vi.advanceTimersByTime(1_000 + 1_000);
+      });
+      expect(screen.queryByText(/fresh/)).toBeNull();
+    });
   });
 });

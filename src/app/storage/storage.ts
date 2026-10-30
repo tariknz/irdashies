@@ -13,6 +13,9 @@ type Contents = Record<string, unknown>;
 // newer value written by another writer. Writes are serialized per file.
 const cache = new Map<string, Contents>();
 const writeQueue = new Map<string, Promise<void>>();
+// writeDataAsync calls that have not finished yet, including ones still
+// reading the file and so not yet in writeQueue.
+const pendingAsyncWrites = new Set<Promise<void>>();
 
 const persist = (filePath: string): Promise<void> => {
   const previous = writeQueue.get(filePath) ?? Promise.resolve();
@@ -52,11 +55,34 @@ export const writeData = (
  * Writes to the same file are serialized and always persist the latest
  * contents, so only `key` changes.
  */
-export const writeDataAsync = async (
+export const writeDataAsync = (
   key: string,
   value: unknown,
   filePath: string = FILEPATH
-) => {
+): Promise<void> => {
+  const pending = writeDataAsyncInner(key, value, filePath);
+  const tracked = pending.catch(() => undefined);
+  pendingAsyncWrites.add(tracked);
+  void tracked.then(() => pendingAsyncWrites.delete(tracked));
+  return pending;
+};
+
+/**
+ * Resolves once every writeDataAsync started so far has reached disk. Call on
+ * shutdown so the process cannot exit while config.json is mid-write.
+ */
+export const flushStorageWritesOnShutdown = async (): Promise<void> => {
+  while (pendingAsyncWrites.size > 0) {
+    await Promise.all([...pendingAsyncWrites]);
+  }
+  await Promise.all([...writeQueue.values()]);
+};
+
+const writeDataAsyncInner = async (
+  key: string,
+  value: unknown,
+  filePath: string
+): Promise<void> => {
   const loaded = cache.has(filePath)
     ? undefined
     : await parseDataAsync(filePath);

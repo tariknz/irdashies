@@ -51,6 +51,7 @@ import {
   flushGarage61SearchSessionOnShutdown,
   saveGarage61SearchSession,
 } from './app/storage/garage61SearchSession';
+import { flushStorageWritesOnShutdown } from './app/storage/storage';
 import { setupChromiumFlagsBridge } from './app/bridge/chromiumFlagsBridge';
 import { getHiddenWidgets } from './app/widgetVisibility';
 import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
@@ -679,6 +680,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
       flushRadarPoleSideOverrides(),
       releaseNotes?.flush(),
       flushGarage61SearchSessionOnShutdown(),
+      flushStorageWritesOnShutdown(),
     ]);
   },
   quit: () => app.quit(),

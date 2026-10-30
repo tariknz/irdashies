@@ -313,6 +313,34 @@ describe('createYoutubeSource', () => {
     expect(client.resolveURL).toHaveBeenCalledTimes(3);
   });
 
+  it('ignores callbacks from a stopped chat after a reconnect', async () => {
+    const { client } = fakeClient('vid1vid1vid');
+    const first = fakeChat();
+    const second = fakeChat();
+    const chats = [first, second];
+    client.getInfo = vi.fn(async () => ({
+      basic_info: { is_live: true },
+      getLiveChat: () => (chats.shift() as ReturnType<typeof fakeChat>).chat,
+    }));
+    const { source, events } = make(client);
+    source.setChannel('@chan');
+    await vi.advanceTimersByTimeAsync(0);
+
+    first.emit('error', new Error('boom'));
+    await vi.advanceTimersByTimeAsync(2000);
+    second.emit('start');
+    expect(events.onStatus).toHaveBeenLastCalledWith('connected');
+
+    first.emit('chat-update', textAction());
+    first.emit('end');
+    first.emit('error', new Error('late'));
+    expect(events.onMessage).not.toHaveBeenCalled();
+    expect(second.chat.stop).not.toHaveBeenCalled();
+
+    second.emit('chat-update', textAction());
+    expect(events.onMessage).toHaveBeenCalledTimes(1);
+  });
+
   it('goes back to waiting when the stream ends', async () => {
     const { client, live } = fakeClient('vid1vid1vid');
     const { source, events } = make(client);

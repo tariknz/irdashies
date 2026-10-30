@@ -255,23 +255,27 @@ export const createYoutubeSource = (
 
       const liveChat = info.getLiveChat();
       chat = liveChat;
+      // The channel generation does not change across retries, so a stopped
+      // chat is told apart by identity: youtubei.js can still emit from it
+      // after stop().
+      const current = () => alive() && chat === liveChat;
 
       liveChat.on('start', (() => {
-        if (alive()) events.onStatus('connected');
+        if (current()) events.onStatus('connected');
       }) as never);
       liveChat.on('chat-update', ((action: YtChatAction) => {
-        if (!alive()) return;
+        if (!current()) return;
         const message = parseYoutubeAction(action);
         if (message) events.onMessage(message);
       }) as never);
       liveChat.on('error', ((error: unknown) => {
-        if (!alive()) return;
+        if (!current()) return;
         logger.warn('[StreamChat] YouTube chat error', String(error));
         stopChat();
         retry('error', failures + 1);
       }) as never);
       liveChat.on('end', (() => {
-        if (!alive()) return;
+        if (!current()) return;
         stopChat();
         retry('waiting', 0);
       }) as never);
