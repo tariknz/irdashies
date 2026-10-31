@@ -1,0 +1,253 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-01",
+  "timezone": "Pacific/Auckland",
+  "referenceStatus": "development replay workload reference; not release acceptance",
+  "baseCommit": "a5200766d2d47b5088e6c73436baa4e62cc79faf",
+  "uncommittedChanges": true,
+  "sourceManifestSha256": "80c612df1426bf60c0768c37d9a5bd1e5ee799fc8ac2d3dae0c4fa0200c3bfce",
+  "target": "dev",
+  "source": "actual iRacing replay through the live SDK",
+  "captureOrder": ["display", "widget", "widget", "display"],
+  "durationSeconds": 420,
+  "warmupSeconds": 60,
+  "widgetInstances": {
+    "input": 1,
+    "fuel": 2,
+    "radar": 1,
+    "flag": 1,
+    "blindspotmonitor": 1
+  },
+  "desktop": {
+    "displayCount": 3,
+    "displayPixels": [2560, 1440],
+    "occupiedDisplayCount": 2
+  },
+  "replay": {
+    "track": "Gesamtstrecke VLN",
+    "fieldCount": 59,
+    "classCount": 2,
+    "sessionNum": 2,
+    "startFrame": 129269,
+    "startSessionTimeSeconds": 59.880000305175784,
+    "cameraGroup": 9,
+    "cameraNumber": 1
+  },
+  "visibilityOverrides": {
+    "showOnlyWhenOnTrack": false,
+    "radarAutoHide": false,
+    "radarHideInPit": false,
+    "radarHideInPitBox": false,
+    "showNoFlagState": true
+  },
+  "runs": [
+    {
+      "id": "live-visible-display-a1",
+      "mode": "display",
+      "fps": 73.69471764472047,
+      "sampledFpsP1Mean": 71.10033752535885,
+      "cpu": 2.0706719512897878,
+      "gpuProcessCpu": 0.8308120356034521,
+      "rendererCpu": 0.9105187778215327,
+      "mainCpu": 0.32905047078994953,
+      "peakPrivateMiB": 1143.08984375,
+      "privateGrowthMiBPerMinute": 9.657458331865682,
+      "renderers": 2,
+      "rendererP99Ms": 16.80208275417082,
+      "framesOver50MsPercent": 0,
+      "fuelProjectionMeanMs": 0.017942064372106124,
+      "fuelProjectionP99MeanMs": 0.029133333332538314,
+      "evidence": {
+        "runOriginAvailable": true,
+        "privateMemoryAvailable": true,
+        "privateMemorySampleCount": 72,
+        "privateMemorySpanSeconds": 355.365,
+        "privateMemoryMaxGapSeconds": 5.015,
+        "privateMemorySamplingAdequate": true,
+        "scenarioMetadataConsistent": true,
+        "inputCoverageAvailable": true,
+        "inputCoverageComplete": false,
+        "durationSufficient": true,
+        "conclusive": false,
+        "inconclusiveReasons": [
+          "one or more visibility phases violated workload expectations"
+        ]
+      },
+      "replayIntegrity": true,
+      "replaySamples": 72,
+      "exitCode": 0,
+      "metadataVisibilityOverride": true,
+      "uncoveredWidgetInputs": ["blindspotmonitor:blind-spot.snapshot"],
+      "rawLogSha256": "01914cd2b1e0b1aeee134511c05689dc4071718318012f6b047adca86ced5aac",
+      "replaySamplesSha256": "508933546cb9bc5ffd76276ee3cc42051f8ed0f78c134f6b5cf79aa782f1aff0"
+    },
+    {
+      "id": "live-visible-widget-b1",
+      "mode": "widget",
+      "fps": 73.3186798114062,
+      "sampledFpsP1Mean": 70.6432500296993,
+      "cpu": 4.811216995836188,
+      "gpuProcessCpu": 3.1460079351976713,
+      "rendererCpu": 1.2975244331412266,
+      "mainCpu": 0.36724924967780087,
+      "peakPrivateMiB": 1478.64453125,
+      "privateGrowthMiBPerMinute": 19.6799602005288,
+      "renderers": 6,
+      "rendererP99Ms": 16.83956778969774,
+      "framesOver50MsPercent": 0,
+      "fuelProjectionMeanMs": 0.01763928967798604,
+      "fuelProjectionP99MeanMs": 0.030850000002424674,
+      "evidence": {
+        "runOriginAvailable": true,
+        "privateMemoryAvailable": true,
+        "privateMemorySampleCount": 72,
+        "privateMemorySpanSeconds": 355.423,
+        "privateMemoryMaxGapSeconds": 5.015,
+        "privateMemorySamplingAdequate": true,
+        "scenarioMetadataConsistent": true,
+        "inputCoverageAvailable": true,
+        "inputCoverageComplete": false,
+        "durationSufficient": true,
+        "conclusive": false,
+        "inconclusiveReasons": [
+          "one or more visibility phases violated workload expectations"
+        ]
+      },
+      "replayIntegrity": true,
+      "replaySamples": 72,
+      "exitCode": 0,
+      "metadataVisibilityOverride": true,
+      "uncoveredWidgetInputs": ["blindspotmonitor:blind-spot.snapshot"],
+      "rawLogSha256": "45a4b44d0857113652a6b1fbc40c761cf37db4e3ee6e2c97ea43e9b3a09281fb",
+      "replaySamplesSha256": "44f9863ded37a453385f9b96603738df4d7b7ca6d10d71899518c91cd90745d1"
+    },
+    {
+      "id": "live-visible-widget-b2",
+      "mode": "widget",
+      "fps": 73.15739063934281,
+      "sampledFpsP1Mean": 70.51679373211302,
+      "cpu": 4.586837649139904,
+      "gpuProcessCpu": 3.0717426803642507,
+      "rendererCpu": 1.221756079839527,
+      "mainCpu": 0.29293139074557994,
+      "peakPrivateMiB": 1473.78515625,
+      "privateGrowthMiBPerMinute": 20.761955173342606,
+      "renderers": 6,
+      "rendererP99Ms": 16.952539374818848,
+      "framesOver50MsPercent": 0.0007724333969303497,
+      "fuelProjectionMeanMs": 0.018035405105687505,
+      "fuelProjectionP99MeanMs": 0.028625000000526295,
+      "evidence": {
+        "runOriginAvailable": true,
+        "privateMemoryAvailable": true,
+        "privateMemorySampleCount": 72,
+        "privateMemorySpanSeconds": 355.4,
+        "privateMemoryMaxGapSeconds": 5.015,
+        "privateMemorySamplingAdequate": true,
+        "scenarioMetadataConsistent": true,
+        "inputCoverageAvailable": true,
+        "inputCoverageComplete": false,
+        "durationSufficient": true,
+        "conclusive": false,
+        "inconclusiveReasons": [
+          "one or more visibility phases violated workload expectations"
+        ]
+      },
+      "replayIntegrity": true,
+      "replaySamples": 72,
+      "exitCode": 0,
+      "metadataVisibilityOverride": true,
+      "uncoveredWidgetInputs": ["blindspotmonitor:blind-spot.snapshot"],
+      "rawLogSha256": "297af60551c570a512d64b95cbdb864ffb46d12f85a2310b5057ed4cb7980afc",
+      "replaySamplesSha256": "f7b8084910fdb3dc768c6eec0587aee2d302a04cadc2e9b5ace8d8893a2700f4"
+    },
+    {
+      "id": "live-visible-display-a2",
+      "mode": "display",
+      "fps": 73.70669519915943,
+      "sampledFpsP1Mean": 71.22038587516738,
+      "cpu": 1.9493071556218768,
+      "gpuProcessCpu": 0.8254696877836121,
+      "rendererCpu": 0.8537375750962314,
+      "mainCpu": 0.26981663901466935,
+      "peakPrivateMiB": 1151.63671875,
+      "privateGrowthMiBPerMinute": 10.04807145581945,
+      "renderers": 2,
+      "rendererP99Ms": 16.800692706911455,
+      "framesOver50MsPercent": 0,
+      "fuelProjectionMeanMs": 0.017717369590146647,
+      "fuelProjectionP99MeanMs": 0.027923611109650262,
+      "evidence": {
+        "runOriginAvailable": true,
+        "privateMemoryAvailable": true,
+        "privateMemorySampleCount": 72,
+        "privateMemorySpanSeconds": 355.413,
+        "privateMemoryMaxGapSeconds": 5.016,
+        "privateMemorySamplingAdequate": true,
+        "scenarioMetadataConsistent": true,
+        "inputCoverageAvailable": true,
+        "inputCoverageComplete": false,
+        "durationSufficient": true,
+        "conclusive": false,
+        "inconclusiveReasons": [
+          "one or more visibility phases violated workload expectations"
+        ]
+      },
+      "replayIntegrity": true,
+      "replaySamples": 72,
+      "exitCode": 0,
+      "metadataVisibilityOverride": true,
+      "uncoveredWidgetInputs": ["blindspotmonitor:blind-spot.snapshot"],
+      "rawLogSha256": "c1f605676364612ed5eff56de683e33a83b89703d041f005cceadf42b8cf3446",
+      "replaySamplesSha256": "a7f784a80b5820eb98ee44d7e29766c9044a3d68a79b3ba3cd05742ce651c587"
+    }
+  ],
+  "averages": {
+    "display": {
+      "fps": 73.70070642193994,
+      "cpu": 2.0099895534558323,
+      "gpuProcessCpu": 0.8281408616935321,
+      "rendererCpu": 0.882128176458882,
+      "mainCpu": 0.29943355490230944,
+      "peakPrivateMiB": 1147.36328125,
+      "privateGrowthMiBPerMinute": 9.852764893842565,
+      "rendererP99Ms": 16.801387730541137,
+      "fuelProjectionMeanMs": 0.017829716981126384,
+      "fuelProjectionP99MeanMs": 0.028528472221094288
+    },
+    "widget": {
+      "fps": 73.2380352253745,
+      "cpu": 4.699027322488046,
+      "gpuProcessCpu": 3.108875307780961,
+      "rendererCpu": 1.2596402564903768,
+      "mainCpu": 0.3300903202116904,
+      "peakPrivateMiB": 1476.21484375,
+      "privateGrowthMiBPerMinute": 20.220957686935705,
+      "rendererP99Ms": 16.896053582258293,
+      "fuelProjectionMeanMs": 0.017837347391836775,
+      "fuelProjectionP99MeanMs": 0.029737500001475486
+    }
+  },
+  "fuel": [
+    {
+      "id": "live-visible-widget-b1",
+      "rendererCpu": 0.44335420137535597,
+      "averagePrivateMiB": 251.38666449652777,
+      "privateGrowthMiBPerMinute": -0.32963837157584525
+    },
+    {
+      "id": "live-visible-widget-b2",
+      "rendererCpu": 0.38237569554115525,
+      "averagePrivateMiB": 253.36170789930554,
+      "privateGrowthMiBPerMinute": -0.3442992940705182
+    }
+  ],
+  "sourceFilesChangedDuringCaptures": [],
+  "excludedCaptures": ["live-windows-display-a1", "live-windows-widget-b1"],
+  "limitations": [
+    "Development and packaged measurements are not interchangeable.",
+    "The blind-spot input was idle, preventing full-workload gate acceptance.",
+    "Fuel history and a live stint were not exercised.",
+    "No matched current-main versus historical release capture exists."
+  ]
+}

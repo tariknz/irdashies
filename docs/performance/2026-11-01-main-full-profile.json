@@ -1,0 +1,1197 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-01",
+  "timezone": "Pacific/Auckland",
+  "referenceStatus": "Pinned local-main full saved-profile development reference; formal workload gates inconclusive; private-memory target unmet",
+  "sourceRevision": "a5200766d2d47b5088e6c73436baa4e62cc79faf",
+  "sourceLabel": "local main at task creation; predates upstream Input optimization #857",
+  "newerRemoteMainReportedByUser": "ddf3f69e",
+  "newerRootFeatureReportedByUser": "3172180e",
+  "runtimeSourceUnmodified": true,
+  "sourceManifestSha256": "25269fe90ed75692f2f5347dc1b98a62271375be0d94e6b1a74b8c1a03df4353",
+  "sourceManifestFileCount": 1599,
+  "sourceManifestScope": "Tracked src files, package.json/lock, binding.gyp, Forge config and Vite main/renderer/preload configs; SHA-256 of JSON file-to-hash map",
+  "sourceFilesChangedDuringCaptures": [],
+  "target": "development Electron/Forge/Vite",
+  "simulatorSource": "actual running iRacing replay through normal live SDK; not an .irdt publisher",
+  "durationSeconds": 420,
+  "warmupSeconds": 60,
+  "analysisWindowSeconds": [60, 420],
+  "host": {
+    "cpu": "AMD Ryzen 7 9800X3D",
+    "physicalCores": 8,
+    "logicalProcessors": 16,
+    "graphics": ["NVIDIA GeForce RTX 2070 SUPER", "AMD Radeon(TM) Graphics"]
+  },
+  "displays": [
+    {
+      "x": -2560,
+      "y": 0,
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "x": 2560,
+      "y": 0,
+      "width": 2560,
+      "height": 1440
+    }
+  ],
+  "simulatorGraphics": {
+    "windowed": true,
+    "borderless": true,
+    "width": 7680,
+    "height": 1440,
+    "configuredFpsCap": 84,
+    "syncMode": "driver-level behavior not independently verified",
+    "configurationSha256": "1f8c44edd8f43466787204e86f9b7bc8198391d03ba1da14bca5652b15d712ce"
+  },
+  "replay": {
+    "track": "Gesamtstrecke VLN",
+    "trackConfig": "",
+    "trackLength": "24.1544 km",
+    "nonPaceCars": 59,
+    "classes": 2,
+    "allEntries": 60,
+    "sessions": [
+      {
+        "num": 0,
+        "type": "Practice"
+      },
+      {
+        "num": 1,
+        "type": "Lone Qualify"
+      },
+      {
+        "num": 2,
+        "type": "Race"
+      }
+    ],
+    "startFrame": 129269,
+    "startSessionTimeSeconds": 59.880000305175784,
+    "sessionNum": 2,
+    "playSpeed": 1,
+    "focusCarIdx": 37,
+    "cameraGroup": 9,
+    "cameraNumber": 1,
+    "camera": "Cockpit"
+  },
+  "profile": {
+    "profile": "default",
+    "originalConfigSha256": "5971765c5b474bbc61ea5187a68d8ab69f04b78d1967615dca427ff15b5d6909",
+    "overrides": [
+      "fastercarsfrombehind:showOnlyWhenOnTrack=false",
+      "fuel:showOnlyWhenOnTrack=false",
+      "blindspotmonitor:showOnlyWhenOnTrack=false",
+      "flag:showNoFlagState=true",
+      "tachometer:showOnlyWhenOnTrack=false",
+      "laptimelog:showOnlyWhenOnTrack=false",
+      "slowcarahead:showOnlyWhenOnTrack=false",
+      "sectordelta:showOnlyWhenOnTrack=false",
+      "laptrace:showOnlyWhenOnTrack=false",
+      "radar:showOnlyWhenOnTrack=false",
+      "radar:autoHide/hideInPit/hideInPitBox=false"
+    ],
+    "enabled": [
+      {
+        "id": "standings",
+        "type": "standings",
+        "layout": {
+          "x": -884,
+          "y": 25,
+          "width": 863,
+          "height": 888
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "input",
+        "type": "input",
+        "layout": {
+          "x": 1065,
+          "y": 850,
+          "width": 444,
+          "height": 102
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "relative",
+        "type": "relative",
+        "layout": {
+          "x": 2025,
+          "y": 968,
+          "width": 505,
+          "height": 321
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "map",
+        "type": "map",
+        "layout": {
+          "x": 2599,
+          "y": 48,
+          "width": 683,
+          "height": 678
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "weather",
+        "type": "weather",
+        "layout": {
+          "x": -199,
+          "y": 1023,
+          "width": 184,
+          "height": 410
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "fastercarsfrombehind",
+        "type": "fastercarsfrombehind",
+        "layout": {
+          "x": 918,
+          "y": 34,
+          "width": 778,
+          "height": 47
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "fuel",
+        "type": "fuel",
+        "layout": {
+          "x": -1283,
+          "y": 26,
+          "width": 285,
+          "height": 682
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "blindspotmonitor",
+        "type": "blindspotmonitor",
+        "layout": {
+          "x": 749,
+          "y": 67,
+          "width": 1098,
+          "height": 499
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "rejoin",
+        "type": "rejoin",
+        "layout": {
+          "x": 889,
+          "y": 41,
+          "width": 800,
+          "height": 500
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "pitlanehelper",
+        "type": "pitlanehelper",
+        "layout": {
+          "x": 1204,
+          "y": 279,
+          "width": 138,
+          "height": 324
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "flag",
+        "type": "flag",
+        "layout": {
+          "x": 2125,
+          "y": 135,
+          "width": 231,
+          "height": 274
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "tachometer",
+        "type": "tachometer",
+        "layout": {
+          "x": 1143,
+          "y": 993,
+          "width": 184,
+          "height": 50
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "laptimelog",
+        "type": "laptimelog",
+        "layout": {
+          "x": 20,
+          "y": 559,
+          "width": 250,
+          "height": 250
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "slowcarahead",
+        "type": "slowcarahead",
+        "layout": {
+          "x": 852,
+          "y": 246,
+          "width": 860,
+          "height": 67
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "sectordelta",
+        "type": "sectordelta",
+        "layout": {
+          "x": 356,
+          "y": 1074,
+          "width": 570,
+          "height": 50
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "cornername",
+        "type": "cornername",
+        "layout": {
+          "x": 2748,
+          "y": 610,
+          "width": 350,
+          "height": 80
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "battle",
+        "type": "battle",
+        "layout": {
+          "x": 124,
+          "y": 150,
+          "width": 460,
+          "height": 100
+        },
+        "raceVisible": true
+      },
+      {
+        "id": "gantry",
+        "type": "gantry",
+        "layout": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        }
+      },
+      {
+        "id": "laptrace",
+        "type": "laptrace",
+        "layout": {
+          "x": 1095,
+          "y": 1065,
+          "width": 396,
+          "height": 120
+        },
+        "raceVisible": false
+      },
+      {
+        "id": "radar",
+        "type": "radar",
+        "layout": {
+          "x": 1107,
+          "y": 112,
+          "width": 300,
+          "height": 300
+        },
+        "raceVisible": true
+      }
+    ],
+    "isolatedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+    "seedStateFileCount": 50,
+    "seedStateManifestSha256": "794e45e3cf3a96e64b39c844b104d664065f3440319d205a1572f6d72b803c85"
+  },
+  "visibility": {
+    "preflight": "a520-full-preflight4",
+    "fuel": "Visible header/gauge/grid/pit-window/finish/time-empty; replay values zero/unavailable; no populated live history",
+    "radar": "Visible rings, player and nearby-car markers",
+    "displayRenderers": 3,
+    "gantry": "Separate unpinned renderer behind foreground simulator; standings render, event log unavailable",
+    "laptrace": "Hidden by saved Race-session policy",
+    "measuredRunsFuelAndRadarVerifiedDuringWarmup": true
+  },
+  "runs": [
+    {
+      "id": "a520-full-r1",
+      "captureOriginUtc": "2026-10-31T20:24:22.439Z",
+      "captureEndedUtc": "2026-10-31T20:31:22.999Z",
+      "sourceRevision": "a5200766d2d47b5088e6c73436baa4e62cc79faf",
+      "buildManifestSha256": "d2141c7bd641f27232aadeca4530cdca2212097750c2c34b0eb65c93619a705f",
+      "nativeAddonSha256": "2c46454a6d0377a81d6779650bf58331c0fef0d863fcbf68ea38cff2254de124",
+      "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+      "resultingProfileConfigSha256": "3f8cfbc47daf7f92a14aee14e8f5238479858e9e467e71dd331be865865bf274",
+      "versions": {
+        "node": "v24.16.0",
+        "electron": "45.2.0",
+        "react": "19.3.1"
+      },
+      "sampleCount": 72,
+      "analysisWindow": {
+        "startSeconds": 60,
+        "endSeconds": 420
+      },
+      "scenarioMetadata": {
+        "target": "dev",
+        "simulatorMode": "replay",
+        "fieldCount": 59,
+        "classCount": 2,
+        "displayGeometry": "7680x1440",
+        "fpsCap": 84,
+        "requestedWidgetTypes": [],
+        "channelDelivery": "on",
+        "telemetryDelivery": "on",
+        "telemetryPayload": "allowlisted",
+        "activeWidgetTypes": [
+          "battle",
+          "blindspotmonitor",
+          "cornername",
+          "fastercarsfrombehind",
+          "flag",
+          "fuel",
+          "gantry",
+          "input",
+          "laptimelog",
+          "laptrace",
+          "map",
+          "pitlanehelper",
+          "radar",
+          "rejoin",
+          "relative",
+          "sectordelta",
+          "slowcarahead",
+          "standings",
+          "tachometer",
+          "weather"
+        ]
+      },
+      "app": {
+        "averageCpuPercent": 4.483305284716919,
+        "averageRendererCpuPercent": 2.380732839106857,
+        "averageMainCpuPercent": 0.40482494833801586,
+        "averageGpuCpuPercent": 1.6970904855961222,
+        "peakMemoryMB": 5428.90625,
+        "averageRendererMemoryMB": 4025.7332356770835,
+        "averageMainMemoryMB": 345.4231770833333,
+        "averageGpuMemoryMB": 352.82280815972223,
+        "peakPrivateMemoryMB": 3974.08203125,
+        "averageRendererPrivateMemoryMB": 3104.6310221354165,
+        "averageMainPrivateMemoryMB": 122.62879774305556,
+        "averageGpuPrivateMemoryMB": 274.73101128472223,
+        "peakRendererMemoryMB": 4474.81640625,
+        "peakMainMemoryMB": 366.87890625,
+        "peakGpuMemoryMB": 377.82421875,
+        "rendererProcessCount": 4,
+        "memorySlopeMBPerMinute": 39.587519313578376,
+        "privateMemorySlopeMBPerMinute": 43.6829280161736
+      },
+      "iracing": {
+        "averageFps": 72.87182789733595,
+        "meanOnePercentLowFps": 70.27112773749545,
+        "worstFps": 50.63018035888672,
+        "averageCpuForeground": 26.131733615678133,
+        "averageGpuUsage": 76.69337734844316
+      },
+      "telemetry": {
+        "averageTickRateHz": 40.67484119909292,
+        "minimumTickRateHz": 38.74242101388907,
+        "processTelemetryP99MeanMs": 1.3049958333371654,
+        "processTelemetryP99WorstMs": 1.6805999999924097,
+        "broadcastP99MeanMs": 0
+      },
+      "renderer": {
+        "sampleCount": 216,
+        "frameTimeP99MeanMs": 16.80416705281534,
+        "worstFrameMs": 16.900000000023283,
+        "telemetryCallbackRateHz": 0,
+        "channelCallbackRateHz": 77.86470666938888,
+        "totalWakeupRateHz": 77.86470666938888,
+        "telemetryCallbackP99MeanMs": 0,
+        "telemetryCallbackP99WorstMs": 0,
+        "trackMapAnimationFrameRateHz": 24.89811356743486,
+        "trackMapAnimationFrameP99MeanMs": 0.16824098188338635,
+        "trackMapAnimationFrameP99WorstMs": 0.20000000018626451,
+        "framesOver25MsPercent": 0,
+        "framesOver50MsPercent": 0
+      },
+      "frameTimingRendererCount": 3,
+      "eventLoop": {
+        "p99MeanMs": 32.466943,
+        "p99WorstMs": 34.897919,
+        "worstStallMs": 36.700159
+      },
+      "fuelProjection": {
+        "sampleCount": 72,
+        "operationCount": 1802,
+        "averageMeanMs": 0.018358102108585232,
+        "p99MeanMs": 0.028577777776162192,
+        "p99WorstMs": 0.0801999999966938
+      },
+      "inputCoverage": {
+        "battle": {
+          "covered": false,
+          "missing": ["lap-history.snapshot"]
+        },
+        "blindspotmonitor": {
+          "covered": false,
+          "missing": ["blind-spot.snapshot"]
+        },
+        "cornername": {
+          "covered": true,
+          "missing": []
+        },
+        "fastercarsfrombehind": {
+          "covered": true,
+          "missing": []
+        },
+        "flag": {
+          "covered": true,
+          "missing": []
+        },
+        "fuel": {
+          "covered": true,
+          "missing": []
+        },
+        "gantry": {
+          "covered": false,
+          "missing": [
+            "lap-times.snapshot",
+            "lap-history.snapshot",
+            "radio.snapshot",
+            "replay.context"
+          ]
+        },
+        "input": {
+          "covered": true,
+          "missing": []
+        },
+        "laptimelog": {
+          "covered": true,
+          "missing": []
+        },
+        "laptrace": {
+          "covered": true,
+          "missing": []
+        },
+        "map": {
+          "covered": false,
+          "missing": ["reference-laps.snapshot", "sector-timing.snapshot"]
+        },
+        "pitlanehelper": {
+          "covered": true,
+          "missing": []
+        },
+        "radar": {
+          "covered": true,
+          "missing": []
+        },
+        "rejoin": {
+          "covered": true,
+          "missing": []
+        },
+        "relative": {
+          "covered": false,
+          "missing": ["lap-times.snapshot", "radio.snapshot"]
+        },
+        "sectordelta": {
+          "covered": false,
+          "missing": ["reference-laps.snapshot", "sector-timing.snapshot"]
+        },
+        "slowcarahead": {
+          "covered": true,
+          "missing": []
+        },
+        "standings": {
+          "covered": false,
+          "missing": [
+            "lap-times.snapshot",
+            "reference-laps.snapshot",
+            "radio.snapshot"
+          ]
+        },
+        "tachometer": {
+          "covered": true,
+          "missing": []
+        },
+        "weather": {
+          "covered": true,
+          "missing": []
+        }
+      },
+      "evidence": {
+        "runOriginAvailable": true,
+        "privateMemoryAvailable": true,
+        "privateMemorySampleCount": 72,
+        "privateMemorySpanSeconds": 355.415,
+        "privateMemoryMaxGapSeconds": 5.015,
+        "privateMemorySamplingAdequate": true,
+        "scenarioMetadataConsistent": true,
+        "inputCoverageAvailable": true,
+        "inputCoverageComplete": false,
+        "durationSufficient": true,
+        "conclusive": false,
+        "inconclusiveReasons": [
+          "one or more visibility phases violated workload expectations"
+        ]
+      },
+      "replayIntegrity": {
+        "verified": true,
+        "analysisSamples": 72,
+        "firstFrame": 132875,
+        "lastFrame": 154201,
+        "firstSessionTimeSeconds": 119.95999603271484,
+        "lastSessionTimeSeconds": 475.416660563151,
+        "maximumGapSeconds": 5.014
+      },
+      "privateMemorySeries": {
+        "columns": ["secondsFromOrigin", "privateMiB"],
+        "samples": [
+          [64.434, 3164.0859375],
+          [69.44, 3223.65234375],
+          [74.446, 3281.078125],
+          [79.458, 3356.28125],
+          [84.459, 3376.078125],
+          [89.47, 3322.0234375],
+          [94.483, 3317.484375],
+          [99.488, 3373.5390625],
+          [104.487, 3434.86328125],
+          [109.491, 3517.6015625],
+          [114.506, 3422.86328125],
+          [119.519, 3427.765625],
+          [124.534, 3226.30078125],
+          [129.539, 3258.3984375],
+          [134.545, 3323.46875],
+          [139.553, 3358.8046875],
+          [144.562, 3387.40625],
+          [149.568, 3295.69140625],
+          [154.571, 3352.26171875],
+          [159.578, 3412.23828125],
+          [164.581, 3455.17578125],
+          [169.587, 3548.76171875],
+          [174.593, 3549.48828125],
+          [179.599, 3601.73046875],
+          [184.607, 3704.6953125],
+          [189.617, 3748.91796875],
+          [194.621, 3823.3515625],
+          [199.628, 3912.23828125],
+          [204.629, 3974.08203125],
+          [209.633, 3948.10546875],
+          [214.637, 3745.91015625],
+          [219.639, 3724.875],
+          [224.64, 3522.53125],
+          [229.644, 3528.94921875],
+          [234.657, 3510.234375],
+          [239.658, 3500.140625],
+          [244.662, 3497.07421875],
+          [249.669, 3489.140625],
+          [254.676, 3503.25390625],
+          [259.68, 3515.96484375],
+          [264.688, 3581.76171875],
+          [269.689, 3592.08984375],
+          [274.699, 3556.2421875],
+          [279.706, 3562.66796875],
+          [284.709, 3490.94921875],
+          [289.716, 3471.9765625],
+          [294.722, 3450.8515625],
+          [299.73, 3458.0234375],
+          [304.736, 3515.0703125],
+          [309.743, 3565.1875],
+          [314.752, 3618.6953125],
+          [319.755, 3556.21875],
+          [324.762, 3544.29296875],
+          [329.763, 3573.2109375],
+          [334.763, 3599.12109375],
+          [339.777, 3643.73046875],
+          [344.781, 3567.91796875],
+          [349.781, 3555.62890625],
+          [354.785, 3579.49609375],
+          [359.789, 3540.80078125],
+          [364.792, 3589.61328125],
+          [369.796, 3637.33984375],
+          [374.802, 3646.2734375],
+          [379.805, 3570.31640625],
+          [384.813, 3555.3984375],
+          [389.819, 3567.8203125],
+          [394.828, 3492.5625],
+          [399.832, 3567.49609375],
+          [404.838, 3599.203125],
+          [409.842, 3678.1640625],
+          [414.846, 3668.9140625],
+          [419.849, 3565.95703125]
+        ]
+      },
+      "processes": [
+        {
+          "type": "GPU",
+          "name": "GPU",
+          "averageCpuPercent": 1.6970904855961222,
+          "averageMemoryMB": 352.82280815972223,
+          "peakMemoryMB": 377.82421875,
+          "memorySlopeMBPerMinute": 2.5853375199977435,
+          "averagePrivateMemoryMB": 274.73101128472223,
+          "peakPrivateMemoryMB": 304.2421875,
+          "privateMemorySlopeMBPerMinute": 7.652383914412615
+        },
+        {
+          "type": "Tab",
+          "name": "irDashies - 1823928493 (Primary))",
+          "averageCpuPercent": 1.1065696022246518,
+          "averageMemoryMB": 1213.8653971354167,
+          "peakMemoryMB": 1672.00390625,
+          "memorySlopeMBPerMinute": 18.57324106313299,
+          "averagePrivateMemoryMB": 983.4108615451389,
+          "peakPrivateMemoryMB": 1441.71875,
+          "privateMemorySlopeMBPerMinute": 18.34331561200029
+        },
+        {
+          "type": "Tab",
+          "name": "irDashies - 72106225)",
+          "averageCpuPercent": 0.7140251951360269,
+          "averageMemoryMB": 968.6740451388889,
+          "peakMemoryMB": 981.90234375,
+          "memorySlopeMBPerMinute": 6.953696483320853,
+          "averagePrivateMemoryMB": 737.90673828125,
+          "peakPrivateMemoryMB": 750.62109375,
+          "privateMemorySlopeMBPerMinute": 6.548744126417058
+        },
+        {
+          "type": "Browser",
+          "name": "Browser",
+          "averageCpuPercent": 0.40482494833801586,
+          "averageMemoryMB": 345.4231770833333,
+          "peakMemoryMB": 366.87890625,
+          "memorySlopeMBPerMinute": -1.5177543807986942,
+          "averagePrivateMemoryMB": 122.62879774305556,
+          "peakPrivateMemoryMB": 144.6953125,
+          "privateMemorySlopeMBPerMinute": -1.6007696609467352
+        },
+        {
+          "type": "Tab",
+          "name": "irDashies - 2341271778)",
+          "averageCpuPercent": 0.3263832478901017,
+          "averageMemoryMB": 913.8582899305555,
+          "peakMemoryMB": 945.6171875,
+          "memorySlopeMBPerMinute": 3.696542142842138,
+          "averagePrivateMemoryMB": 683.3992513020834,
+          "peakPrivateMemoryMB": 717.02734375,
+          "privateMemorySlopeMBPerMinute": 3.5476997852713414
+        },
+        {
+          "type": "Tab",
+          "name": "gantry",
+          "averageCpuPercent": 0.23375479385607711,
+          "averageMemoryMB": 929.3355034722222,
+          "peakMemoryMB": 965.44921875,
+          "memorySlopeMBPerMinute": 9.329901793788473,
+          "averagePrivateMemoryMB": 699.9141710069445,
+          "peakPrivateMemoryMB": 736.66015625,
+          "privateMemorySlopeMBPerMinute": 9.265277192823234
+        },
+        {
+          "type": "Utility",
+          "name": "Network Service",
+          "averageCpuPercent": 0.0006570116759242799,
+          "averageMemoryMB": 262.3932834201389,
+          "peakMemoryMB": 263.8515625,
+          "memorySlopeMBPerMinute": -0.03344530870512781,
+          "averagePrivateMemoryMB": 23.00222439236111,
+          "peakPrivateMemoryMB": 24.640625,
+          "privateMemorySlopeMBPerMinute": -0.07372295380419819
+        }
+      ],
+      "artifacts": {
+        "rawLogSha256": "fc1555231cdf87de81d5447430ea03ba7a37c96250cbebeb800c511c7c653b29",
+        "replaySamplesSha256": "f10f3bc333d00b2be491984b4d0967bbdc9382256622f13f39a8d564305d6327",
+        "summarySha256": "d14dd8b0ecf894d0f53c7ce817a7823a3e62b2209913c982631d46d37f3b7e10"
+      }
+    },
+    {
+      "id": "a520-full-r2",
+      "captureOriginUtc": "2026-10-31T20:32:12.275Z",
+      "captureEndedUtc": "2026-10-31T20:39:12.866Z",
+      "sourceRevision": "a5200766d2d47b5088e6c73436baa4e62cc79faf",
+      "buildManifestSha256": "0ef93a228d42eee932969737e69e186bd02d539a8c4ebb8bb1b93c9e15367dd4",
+      "nativeAddonSha256": "9420634137b9faaf6ee15ea507ec0a7d0ef08daaefa4498ec5d4f8decea04cae",
+      "seedConfigSha256": "53cfe4ec5cf2f1160ed81cc2a83bfc4723c46abf4bfeb2f8c7cac27c6c382c8c",
+      "resultingProfileConfigSha256": "3f8cfbc47daf7f92a14aee14e8f5238479858e9e467e71dd331be865865bf274",
+      "versions": {
+        "node": "v24.16.0",
+        "electron": "45.2.0",
+        "react": "19.3.1"
+      },
+      "sampleCount": 72,
+      "analysisWindow": {
+        "startSeconds": 60,
+        "endSeconds": 420
+      },
+      "scenarioMetadata": {
+        "target": "dev",
+        "simulatorMode": "replay",
+        "fieldCount": 59,
+        "classCount": 2,
+        "displayGeometry": "7680x1440",
+        "fpsCap": 84,
+        "requestedWidgetTypes": [],
+        "channelDelivery": "on",
+        "telemetryDelivery": "on",
+        "telemetryPayload": "allowlisted",
+        "activeWidgetTypes": [
+          "battle",
+          "blindspotmonitor",
+          "cornername",
+          "fastercarsfrombehind",
+          "flag",
+          "fuel",
+          "gantry",
+          "input",
+          "laptimelog",
+          "laptrace",
+          "map",
+          "pitlanehelper",
+          "radar",
+          "rejoin",
+          "relative",
+          "sectordelta",
+          "slowcarahead",
+          "standings",
+          "tachometer",
+          "weather"
+        ]
+      },
+      "app": {
+        "averageCpuPercent": 4.603950393079952,
+        "averageRendererCpuPercent": 2.4765594705552605,
+        "averageMainCpuPercent": 0.40357768234980523,
+        "averageGpuCpuPercent": 1.7232993189445411,
+        "peakMemoryMB": 5055.3046875,
+        "averageRendererMemoryMB": 3931.1612413194443,
+        "averageMainMemoryMB": 345.22650824652777,
+        "averageGpuMemoryMB": 352.77159288194446,
+        "peakPrivateMemoryMB": 3594.3203125,
+        "averageRendererPrivateMemoryMB": 3009.7884114583335,
+        "averageMainPrivateMemoryMB": 123.24473741319444,
+        "averageGpuPrivateMemoryMB": 266.46766493055554,
+        "peakRendererMemoryMB": 4090.47265625,
+        "peakMainMemoryMB": 368.33203125,
+        "peakGpuMemoryMB": 359.57421875,
+        "rendererProcessCount": 4,
+        "memorySlopeMBPerMinute": 17.559120765634308,
+        "privateMemorySlopeMBPerMinute": 20.319902279360793
+      },
+      "iracing": {
+        "averageFps": 72.76005587085922,
+        "meanOnePercentLowFps": 70.0970656032096,
+        "worstFps": 50.55344772338867,
+        "averageCpuForeground": 26.59034295660732,
+        "averageGpuUsage": 76.61111050355383
+      },
+      "telemetry": {
+        "averageTickRateHz": 39.620794232296504,
+        "minimumTickRateHz": 37.00177830546561,
+        "processTelemetryP99MeanMs": 1.3500944444434329,
+        "processTelemetryP99WorstMs": 1.792699999990873,
+        "broadcastP99MeanMs": 0
+      },
+      "renderer": {
+        "sampleCount": 216,
+        "frameTimeP99MeanMs": 16.80787242260534,
+        "worstFrameMs": 33.5,
+        "telemetryCallbackRateHz": 0,
+        "channelCallbackRateHz": 77.27302357209638,
+        "totalWakeupRateHz": 77.27302357209638,
+        "telemetryCallbackP99MeanMs": 0,
+        "telemetryCallbackP99WorstMs": 0,
+        "trackMapAnimationFrameRateHz": 24.905813838069456,
+        "trackMapAnimationFrameP99MeanMs": 0.1778273478770349,
+        "trackMapAnimationFrameP99WorstMs": 0.20000000018626451,
+        "framesOver25MsPercent": 0.0015445208124179473,
+        "framesOver50MsPercent": 0
+      },
+      "frameTimingRendererCount": 3,
+      "eventLoop": {
+        "p99MeanMs": 32.43804344444445,
+        "p99WorstMs": 34.471935,
+        "worstStallMs": 45.121535
+      },
+      "fuelProjection": {
+        "sampleCount": 72,
+        "operationCount": 1802,
+        "averageMeanMs": 0.017830022197569097,
+        "p99MeanMs": 0.028804166666810085,
+        "p99WorstMs": 0.0859000000054948
+      },
+      "inputCoverage": {
+        "battle": {
+          "covered": false,
+          "missing": ["lap-history.snapshot"]
+        },
+        "blindspotmonitor": {
+          "covered": false,
+          "missing": ["blind-spot.snapshot"]
+        },
+        "cornername": {
+          "covered": true,
+          "missing": []
+        },
+        "fastercarsfrombehind": {
+          "covered": true,
+          "missing": []
+        },
+        "flag": {
+          "covered": true,
+          "missing": []
+        },
+        "fuel": {
+          "covered": true,
+          "missing": []
+        },
+        "gantry": {
+          "covered": false,
+          "missing": [
+            "lap-times.snapshot",
+            "lap-history.snapshot",
+            "radio.snapshot",
+            "replay.context"
+          ]
+        },
+        "input": {
+          "covered": true,
+          "missing": []
+        },
+        "laptimelog": {
+          "covered": true,
+          "missing": []
+        },
+        "laptrace": {
+          "covered": true,
+          "missing": []
+        },
+        "map": {
+          "covered": false,
+          "missing": ["reference-laps.snapshot", "sector-timing.snapshot"]
+        },
+        "pitlanehelper": {
+          "covered": true,
+          "missing": []
+        },
+        "radar": {
+          "covered": true,
+          "missing": []
+        },
+        "rejoin": {
+          "covered": true,
+          "missing": []
+        },
+        "relative": {
+          "covered": false,
+          "missing": ["lap-times.snapshot", "radio.snapshot"]
+        },
+        "sectordelta": {
+          "covered": false,
+          "missing": ["reference-laps.snapshot", "sector-timing.snapshot"]
+        },
+        "slowcarahead": {
+          "covered": true,
+          "missing": []
+        },
+        "standings": {
+          "covered": false,
+          "missing": [
+            "lap-times.snapshot",
+            "reference-laps.snapshot",
+            "radio.snapshot"
+          ]
+        },
+        "tachometer": {
+          "covered": true,
+          "missing": []
+        },
+        "weather": {
+          "covered": true,
+          "missing": []
+        }
+      },
+      "evidence": {
+        "runOriginAvailable": true,
+        "privateMemoryAvailable": true,
+        "privateMemorySampleCount": 72,
+        "privateMemorySpanSeconds": 355.388,
+        "privateMemoryMaxGapSeconds": 5.015,
+        "privateMemorySamplingAdequate": true,
+        "scenarioMetadataConsistent": true,
+        "inputCoverageAvailable": true,
+        "inputCoverageComplete": false,
+        "durationSufficient": true,
+        "conclusive": false,
+        "inconclusiveReasons": [
+          "one or more visibility phases violated workload expectations"
+        ]
+      },
+      "replayIntegrity": {
+        "verified": true,
+        "analysisSamples": 72,
+        "firstFrame": 132873,
+        "lastFrame": 154200,
+        "firstSessionTimeSeconds": 119.92666269938151,
+        "lastSessionTimeSeconds": 475.3933125813801,
+        "maximumGapSeconds": 5.016
+      },
+      "privateMemorySeries": {
+        "columns": ["secondsFromOrigin", "privateMiB"],
+        "samples": [
+          [63.744, 3210.9296875],
+          [68.747, 3247.8984375],
+          [73.754, 3268.17578125],
+          [78.755, 3351.64453125],
+          [83.769, 3362.23828125],
+          [88.769, 3359.8125],
+          [93.769, 3436.234375],
+          [98.774, 3405.93359375],
+          [103.783, 3412.984375],
+          [108.783, 3430.6171875],
+          [113.796, 3434.9140625],
+          [118.797, 3420.41796875],
+          [123.807, 3436.69140625],
+          [128.822, 3385.94140625],
+          [133.824, 3415.2578125],
+          [138.838, 3400.08984375],
+          [143.84, 3413.6796875],
+          [148.84, 3420.68359375],
+          [153.839, 3453.77734375],
+          [158.851, 3513.11328125],
+          [163.855, 3566.46875],
+          [168.858, 3549.53515625],
+          [173.859, 3305.6328125],
+          [178.865, 3308.15234375],
+          [183.87, 3355.6640625],
+          [188.874, 3325.7578125],
+          [193.877, 3341.94921875],
+          [198.879, 3346.45703125],
+          [203.894, 3345.0703125],
+          [208.9, 3382.28515625],
+          [213.912, 3383.87109375],
+          [218.915, 3404.34765625],
+          [223.929, 3388.453125],
+          [228.932, 3426.46875],
+          [233.939, 3497.3203125],
+          [238.94, 3559.921875],
+          [243.949, 3535.4375],
+          [248.96, 3468.42578125],
+          [253.959, 3463.03515625],
+          [258.971, 3411.765625],
+          [263.971, 3421.74609375],
+          [268.974, 3407.83203125],
+          [273.989, 3385.4765625],
+          [278.989, 3409.67578125],
+          [283.994, 3460.71484375],
+          [288.994, 3433.06640625],
+          [293.999, 3410.1640625],
+          [299.004, 3453.28515625],
+          [304.013, 3452.1953125],
+          [309.019, 3399.55859375],
+          [314.025, 3445.9375],
+          [319.032, 3339.45703125],
+          [324.039, 3360.23828125],
+          [329.042, 3369.56640625],
+          [334.048, 3374.4765625],
+          [339.053, 3421.48046875],
+          [344.058, 3401.734375],
+          [349.067, 3372.171875],
+          [354.069, 3424.90625],
+          [359.073, 3502.609375],
+          [364.077, 3527.5703125],
+          [369.082, 3446.16015625],
+          [374.084, 3445.40625],
+          [379.085, 3488.296875],
+          [384.089, 3527.68359375],
+          [389.091, 3521.125],
+          [394.098, 3465.2890625],
+          [399.102, 3489.1796875],
+          [404.115, 3486.7265625],
+          [409.118, 3534.203125],
+          [414.119, 3594.3203125],
+          [419.132, 3474]
+        ]
+      },
+      "processes": [
+        {
+          "type": "GPU",
+          "name": "GPU",
+          "averageCpuPercent": 1.7232993189445411,
+          "averageMemoryMB": 352.77159288194446,
+          "peakMemoryMB": 359.57421875,
+          "memorySlopeMBPerMinute": 1.9156236758168395,
+          "averagePrivateMemoryMB": 266.46766493055554,
+          "peakPrivateMemoryMB": 294.875,
+          "privateMemorySlopeMBPerMinute": 5.679676537333688
+        },
+        {
+          "type": "Tab",
+          "name": "irDashies - 1823928493 (Primary))",
+          "averageCpuPercent": 1.141542192107097,
+          "averageMemoryMB": 1134.831271701389,
+          "peakMemoryMB": 1296.1875,
+          "memorySlopeMBPerMinute": 0.9616884237454587,
+          "averagePrivateMemoryMB": 903.6443684895834,
+          "peakPrivateMemoryMB": 1064.5390625,
+          "privateMemorySlopeMBPerMinute": 0.6469676304741117
+        },
+        {
+          "type": "Tab",
+          "name": "irDashies - 72106225)",
+          "averageCpuPercent": 0.7191357358426389,
+          "averageMemoryMB": 973.5406901041666,
+          "peakMemoryMB": 984.921875,
+          "memorySlopeMBPerMinute": 4.266188803978588,
+          "averagePrivateMemoryMB": 742.5451388888889,
+          "peakPrivateMemoryMB": 753.06640625,
+          "privateMemorySlopeMBPerMinute": 3.9545787883830883
+        },
+        {
+          "type": "Browser",
+          "name": "Browser",
+          "averageCpuPercent": 0.40357768234980523,
+          "averageMemoryMB": 345.22650824652777,
+          "peakMemoryMB": 368.33203125,
+          "memorySlopeMBPerMinute": -1.4597829300269596,
+          "averagePrivateMemoryMB": 123.24473741319444,
+          "peakPrivateMemoryMB": 147.54296875,
+          "privateMemorySlopeMBPerMinute": -1.5608001350717067
+        },
+        {
+          "type": "Tab",
+          "name": "irDashies - 2341271778)",
+          "averageCpuPercent": 0.32857824767304755,
+          "averageMemoryMB": 913.5573459201389,
+          "peakMemoryMB": 925.640625,
+          "memorySlopeMBPerMinute": 6.86074071446371,
+          "averagePrivateMemoryMB": 683.7256944444445,
+          "peakPrivateMemoryMB": 696.046875,
+          "privateMemorySlopeMBPerMinute": 6.695307833832027
+        },
+        {
+          "type": "Tab",
+          "name": "gantry",
+          "averageCpuPercent": 0.28730329493247736,
+          "averageMemoryMB": 909.23193359375,
+          "peakMemoryMB": 924.37890625,
+          "memorySlopeMBPerMinute": 5.0848933542551285,
+          "averagePrivateMemoryMB": 679.8732096354166,
+          "peakPrivateMemoryMB": 695.44921875,
+          "privateMemorySlopeMBPerMinute": 5.010474139963174
+        },
+        {
+          "type": "Utility",
+          "name": "Network Service",
+          "averageCpuPercent": 0.0005139212303451782,
+          "averageMemoryMB": 262.0900607638889,
+          "peakMemoryMB": 263.55078125,
+          "memorySlopeMBPerMinute": -0.07023127659846079,
+          "averagePrivateMemoryMB": 22.62847222222222,
+          "peakPrivateMemoryMB": 24.29296875,
+          "privateMemorySlopeMBPerMinute": -0.10630251555358551
+        }
+      ],
+      "artifacts": {
+        "rawLogSha256": "d45e4eaf49a26672b4fb29c06f2cf3748b71146661b92d7071142b9190523483",
+        "replaySamplesSha256": "022f56fb08778efca0060f1221ff6b749ef3a5bf79d89b5f8247aaa08bf199b8",
+        "summarySha256": "c457f9aa203fb8c01c8e684f250b754f21d909cc1951367f2ed06922bac71e6d"
+      }
+    }
+  ],
+  "averages": {
+    "appCpuPercent": 4.543627838898436,
+    "simulatorFps": 72.81594188409758,
+    "privatePeakMiBMean": 3784.201171875,
+    "privateGrowthMiBPerMinute": 32.0014151477672,
+    "rendererP99MeanMs": 16.80601973771034
+  },
+  "memoryTarget": {
+    "privateGrowthMiBPerMinuteBelow": 5,
+    "changed": false,
+    "observedBelowTarget": false
+  },
+  "drift": {
+    "currentRemoteMain": "unmeasured",
+    "historicalRelease": "unmeasured",
+    "reason": "No matched old/current-source capture on the same target; packaged launch unavailable under existing Application Control policy; not retried or bypassed"
+  },
+  "exclusions": [
+    "main-full-preflight",
+    "main-full-preflight2",
+    "main-full-preflight3"
+  ],
+  "limitations": [
+    "Development evidence is not release acceptance.",
+    "The saved profile retains session and conditional visibility policies; enabled count is not visible-content/input coverage.",
+    "Gantry has no recorded event log for this actual replay.",
+    "Missing event-driven channels remain missing; no coverage waiver.",
+    "Six-minute private-byte slopes are observations, not proof of a long-running leak.",
+    "Simulator FPS telemetry is not PresentMon."
+  ],
+  "restoration": {
+    "originalFrame": 3331,
+    "originalSession": 0,
+    "finalFrame": 3331,
+    "finalSession": 0,
+    "finalPlaySpeed": 0,
+    "cameraRestored": true,
+    "savedConfigSha256": "5971765c5b474bbc61ea5187a68d8ab69f04b78d1967615dca427ff15b5d6909",
+    "savedConfigUnchanged": true
+  },
+  "capturedHarnessSha256": {
+    "tools/perf/run.ts": "5d4ec111899ddbec89c6cc4e1bdd7e4a73a2035fbda63dc55f7c9bb722b8c50e",
+    "tools/perf/live-full-profile.cjs": "c39902c6d1c4e628c0f6f71e42a5ac188be3ccbb1e3dc2ecbf2a1ebfbb35e327"
+  },
+  "finalHarnessSha256": {
+    "tools/perf/run.ts": "5d4ec111899ddbec89c6cc4e1bdd7e4a73a2035fbda63dc55f7c9bb722b8c50e",
+    "tools/perf/live-full-profile.cjs": "7aadc355cc87d070820d3591e1b3b7800d7ea9c0c4b2d9aca7c7441b060269f2"
+  },
+  "harnessFinalization": "After capture: documented standalone CommonJS imports for lint and replaced environment-key deletion loop with equivalent literal deletes. For publication, future scenario labels derive from the checked-out source revision. Captured helper copies retained locally.",
+  "validation": {
+    "typeScript": true,
+    "targetedTests": {
+      "files": 3,
+      "passed": 23
+    },
+    "targetedEslint": true,
+    "controllerNodeSyntax": true,
+    "privateMemorySlopesIndependentlyRecomputed": true,
+    "runtimeSourceManifestUnchanged": true
+  },
+  "publicationValidation": {
+    "baseRevision": "ddf3f69e",
+    "fullTests": {
+      "passed": 5557,
+      "skipped": 4,
+      "exitCode": 0
+    },
+    "lint": {
+      "typeScript": true,
+      "eslint": true,
+      "ignoredPrivateCaptureArtifacts": true
+    },
+    "performanceRecaptured": false
+  }
+}
