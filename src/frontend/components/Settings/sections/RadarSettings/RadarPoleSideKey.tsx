@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { KeybindingsMap } from '@irdashies/types';
 import logger from '@irdashies/utils/logger';
-import { BindingRow } from '../KeybindingsSettings';
+import {
+  BindingRow,
+  useKeybindingRegistrationStatuses,
+} from '../KeybindingsSettings';
 
 const ACTION_ID = 'radar-flip-pole-side';
 
@@ -12,6 +15,15 @@ const ACTION_ID = 'radar-flip-pole-side';
  */
 export const RadarPoleSideKey = () => {
   const [bindings, setBindings] = useState<KeybindingsMap | null>(null);
+
+  const { statuses, refreshStatuses } = useKeybindingRegistrationStatuses();
+  const handleUpdated = useCallback(
+    (next: KeybindingsMap) => {
+      setBindings(next);
+      refreshStatuses();
+    },
+    [refreshStatuses]
+  );
 
   useEffect(() => {
     window.keybindingsBridge
@@ -39,7 +51,9 @@ export const RadarPoleSideKey = () => {
         <BindingRow
           actionId={ACTION_ID}
           entry={entry}
-          onUpdated={setBindings}
+          onUpdated={handleUpdated}
+          registrationStatus={statuses[ACTION_ID]}
+          onRecordingStopped={refreshStatuses}
         />
       )}
     </div>
