@@ -186,6 +186,10 @@ export class KeybindingManager {
     return this.registrationStatuses;
   }
 
+  /**
+   * Register saved inputs and refresh runtime outcomes without replacing the
+   * first action owning a keyboard shortcut or aborting on a failed binding.
+   */
   public registerAll(): void {
     const statuses: KeybindingRegistrationStatuses = {};
     const owners = new Map<string, string>();
@@ -286,6 +290,7 @@ export class KeybindingManager {
     this.gamepad.stopCapture();
   }
 
+  /** Only Electron's accelerator conversion failure is an invalid syntax result. */
   private static isAcceleratorSyntaxError(error: unknown): boolean {
     return (
       error instanceof TypeError && /conversion failure/.test(error.message)

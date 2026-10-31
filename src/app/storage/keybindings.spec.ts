@@ -217,6 +217,23 @@ describe('keybindings storage', () => {
       expect(mockWriteData).not.toHaveBeenCalled();
     });
 
+    it.each(['Super', 'Meta'])(
+      'rejects %s as an alias of an existing Command binding without saving',
+      (alias) => {
+        mockReadData.mockReturnValue({
+          ...DEFAULT_KEYBINDINGS,
+          'toggle-hide-ui': {
+            ...DEFAULT_KEYBINDINGS['toggle-hide-ui'],
+            accelerator: 'Command+H',
+          },
+        });
+        expect(() =>
+          updateKeybinding('toggle-edit-mode', `${alias}+H`)
+        ).toThrow('already bound to "Hide / Show UI"');
+        expect(mockWriteData).not.toHaveBeenCalled();
+      }
+    );
+
     it('throws when binding a key already in use', () => {
       mockReadData.mockReturnValue({ ...DEFAULT_KEYBINDINGS });
       expect(() =>

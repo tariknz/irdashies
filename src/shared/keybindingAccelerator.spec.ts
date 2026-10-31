@@ -8,6 +8,8 @@ describe('keyboard accelerator comparison', () => {
     ['Super+H', 'Command+H', true],
     ['Meta+H', 'Command+H', true],
     ['Super+H', 'Meta+H', false],
+    ['Super+H', 'Command+H', false],
+    ['Meta+H', 'Cmd+H', false],
     ['Alt+Return', 'Option+Enter', true],
     ['Esc', 'Escape', false],
   ])('compares %s and %s on macOS=%s', (a, b, isMac) => {

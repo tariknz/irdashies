@@ -9,8 +9,9 @@ export function normalizeKeyboardAccelerator(
     cmd: 'command',
     ctrl: 'control',
     option: 'alt',
-    super: isMac ? 'command' : 'meta',
-    meta: isMac ? 'command' : 'meta',
+    // Electron parses these as VKEY_COMMAND on every platform.
+    super: 'command',
+    meta: 'command',
     esc: 'escape',
     return: 'enter',
   };

@@ -202,6 +202,36 @@ describe('KeybindingManager', () => {
     ).toHaveLength(1);
   });
 
+  it.each(['Super', 'Meta'])(
+    'reports a persisted %s alias as an app duplicate without registering a second callback',
+    (alias) => {
+      const bindings = bindingsWithBadAccelerator();
+      bindings['toggle-hide-ui'].accelerator = 'Command+H';
+      bindings['toggle-edit-mode'].accelerator = `${alias}+H`;
+      mockGetKeybindings.mockReturnValue(bindings);
+      mockRegister.mockReturnValue(true);
+      const manager = new KeybindingManager(fakeOverlayManager);
+      manager.registerAll();
+      expect(manager.getRegistrationStatuses()['toggle-hide-ui']).toEqual({
+        status: 'registered',
+      });
+      expect(
+        manager.getRegistrationStatuses()['toggle-edit-mode']
+      ).toMatchObject({
+        status: 'duplicate',
+        message: expect.stringContaining('Hide / Show UI'),
+      });
+      expect(mockRegister).toHaveBeenCalledWith(
+        'Command+H',
+        expect.any(Function)
+      );
+      expect(mockRegister).not.toHaveBeenCalledWith(
+        `${alias}+H`,
+        expect.any(Function)
+      );
+    }
+  );
+
   it('refreshes failures after recording and drops stale statuses after a reload', () => {
     const bindings = bindingsWithBadAccelerator();
     mockGetKeybindings.mockReturnValue(bindings);
