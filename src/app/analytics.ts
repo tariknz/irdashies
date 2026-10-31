@@ -10,7 +10,7 @@ import {
   writeRadarPoleSideReportHash,
 } from './storage/radarPoleSideReportHash';
 import { getAnalyticsOptOut } from './storage/analytics';
-import { serializeLogArgs, MAX_LOG_JSON_LENGTH } from '@irdashies/shared';
+import { serializeLogArgs, MAX_LOG_JSON_LENGTH } from '@irdashies/types';
 import { createLogPathScrubber } from './analytics/logMessage';
 import logger from './logger';
 import type ElectronLog from 'electron-log';
@@ -99,6 +99,7 @@ export class PostHogProvider implements AnalyticsProvider {
 export class Analytics {
   private provider: AnalyticsProvider | null = null;
   private userId: string | undefined;
+  private pendingUserId: string | undefined;
   private pitLaneCalibrationAttempted = false;
   private pitLaneCalibrationTask: Promise<void> | undefined;
   private radarPoleSideTask: Promise<void> | undefined;
@@ -159,11 +160,14 @@ export class Analytics {
 
   private getOrCreateUserId(): string {
     if (this.userId) return this.userId;
-    let userId = readData<string>('userId');
-    if (!userId) {
-      userId = crypto.randomUUID();
-      this.userId = userId;
+    let userId = this.pendingUserId ?? readData<string>('userId');
+    if (this.pendingUserId || !userId) {
+      userId ||= crypto.randomUUID();
+      // writeData updates its memory cache before writing to disk. Retain a
+      // failed candidate only for a persistence retry, never for identify/logs.
+      this.pendingUserId = userId;
       writeData('userId', userId);
+      this.pendingUserId = undefined;
     }
     this.userId = userId;
     return userId;

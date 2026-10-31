@@ -18,6 +18,7 @@ export * from './cornerName';
 export * from './lapTrace';
 export * from './lmu';
 export * from './logBridge';
+export * from './logSerialization';
 export * from './keybindings';
 export * from './personalBestLapBridge';
 export * from './chromiumFlags';

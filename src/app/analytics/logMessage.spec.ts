@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createLogPathScrubber } from './logMessage';
+import { pathToFileURL } from 'node:url';
 
 describe('analytics log path redaction', () => {
   it('redacts userData before home, including URL-encoded paths and regexp characters', () => {
@@ -37,4 +38,26 @@ describe('analytics log path redaction', () => {
       '/module/file.ts'
     );
   });
+
+  it.each([
+    ['/Users/Alice#?@+% ü', false],
+    ['C:/Users/Alice#?@+% ü', true],
+    ['//server/Alice#?@+% ü', true],
+  ] as const)(
+    'redacts reserved characters in real file URLs: %s',
+    (home, windows) => {
+      const userData = `${home}/irDashies [beta]`;
+      const scrub = createLogPathScrubber(userData, home);
+      const userDataUrl = pathToFileURL(`${userData}/sdk.node`, {
+        windows,
+      }).href;
+      const homeUrl = pathToFileURL(`${home}/src/main.js`, { windows }).href;
+      const result = scrub(`Cannot load ${userDataUrl} at ${homeUrl}`);
+      expect(result).toContain('<userData>/sdk.node');
+      expect(result).toContain('<home>/src/main.js');
+      expect(result).not.toContain('Alice');
+      expect(result).not.toContain('server');
+      expect(result).not.toContain('irDashies');
+    }
+  );
 });

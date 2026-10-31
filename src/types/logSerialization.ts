@@ -1,4 +1,4 @@
-import type { LogValue } from '../types/logBridge';
+import type { LogValue } from './logBridge';
 
 export const MAX_LOG_JSON_LENGTH = 16 * 1024;
 const MAX_STRING_LENGTH = 2048;

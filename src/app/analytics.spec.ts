@@ -212,6 +212,55 @@ describe('Analytics.setupLogTransport', () => {
     expect(app.getPath).not.toHaveBeenCalled();
   });
 
+  it('retries a failed identity write before identifying, even if storage cached the failed value', async () => {
+    delete logger.transports.posthog;
+    let cachedId: string | undefined;
+    let persistedId: string | undefined;
+    vi.mocked(readData).mockImplementation(() => cachedId);
+    vi.mocked(writeData).mockImplementation((_key, value) => {
+      cachedId = value as string;
+      if (vi.mocked(writeData).mock.calls.length === 1)
+        throw new Error('temporary disk failure');
+      persistedId = cachedId;
+    });
+    const firstRun = new Analytics(provider);
+    firstRun.setupLogTransport('2.0.0');
+    expect(logger.transports.posthog).toBeUndefined();
+    expect(persistedId).toBeUndefined();
+    expect(provider.identify).not.toHaveBeenCalled();
+    await firstRun.init('2.0.0', { widgets: [] });
+    expect(writeData).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(writeData).mock.calls[1]).toEqual(['userId', cachedId]);
+    expect(persistedId).toBe(cachedId);
+    expect(provider.identify.mock.calls[0][0].distinctId).toBe(persistedId);
+    await firstRun.waitForCalibrationUpload();
+    await firstRun.waitForRadarPoleSideUpload();
+    firstRun.shutdown();
+
+    new Analytics(provider).setupLogTransport('2.0.0');
+    emit('error', 'next launch');
+    expect(provider.capture.mock.lastCall?.[0].distinctId).toBe(persistedId);
+    expect(writeData).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not identify with an unpersisted identity if retrying also fails', async () => {
+    delete logger.transports.posthog;
+    let cachedId: unknown;
+    vi.mocked(readData).mockImplementation(() => cachedId);
+    vi.mocked(writeData).mockImplementation((_key, value) => {
+      cachedId = value;
+      throw new Error('disk unavailable');
+    });
+    const firstRun = new Analytics(provider);
+    firstRun.setupLogTransport('2.0.0');
+    await expect(firstRun.init('2.0.0', { widgets: [] })).rejects.toThrow(
+      'disk unavailable'
+    );
+    expect(writeData).toHaveBeenCalledTimes(2);
+    expect(provider.identify).not.toHaveBeenCalled();
+    expect(provider.capture).not.toHaveBeenCalled();
+  });
+
   it('honours opt-out after setup without consuming the dedup key', () => {
     vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
     emit('warn', 'private diagnostic');

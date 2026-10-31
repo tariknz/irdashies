@@ -1,5 +1,4 @@
-import type { LogLevel } from '@irdashies/types';
-import { serializeLogArgs } from '@irdashies/shared';
+import { serializeLogArgs, type LogLevel } from '@irdashies/types';
 
 /**
  * Frontend logger.
