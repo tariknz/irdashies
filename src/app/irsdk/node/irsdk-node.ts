@@ -205,6 +205,35 @@ export class IRacingSDK {
     );
   }
 
+  /** Preserve complete flow values, including their nested/multiline contents. */
+  private static flowCollectionEnd(
+    lines: string[],
+    start: number,
+    value: string,
+    keyIndent: number
+  ): number | null {
+    let end = start + 1;
+    while (end < lines.length) {
+      const line = lines[end];
+      if (
+        /^---|^\.\.\./.test(line) ||
+        (line.search(/\S/) <= keyIndent && /^[ \t]*(?:-[ \t]+)?\w+:/.test(line))
+      )
+        break;
+      end++;
+    }
+    try {
+      const parsed: unknown = yaml.load(
+        [value, ...lines.slice(start + 1, end)].join('\n'),
+        { json: true }
+      );
+      if (parsed !== null && typeof parsed === 'object') return end - 1;
+    } catch {
+      // A bracketed/braced name followed by text is not a YAML collection.
+    }
+    return null;
+  }
+
   /**
    * Extend the existing indicator/comma repairs only for known text fields.
    * Track block/quoted scalars so their contents cannot become mapping entries
@@ -249,7 +278,26 @@ export class IRacingSDK {
         /^(?:TeamName|UserName|AbbrevName|Initials|DriverSetupName)$/.test(key);
       const legacyIndicator = /^[?-](?:[ \t]|$)/.test(value);
       if (!knownTextField && !legacyIndicator && !/^,/.test(value)) continue;
-      if (/^[[{&*!]/.test(value)) continue;
+      if (/^#/.test(value)) continue;
+      if (/^[[{]/.test(value)) {
+        const flowEnd = IRacingSDK.flowCollectionEnd(
+          lines,
+          i,
+          value,
+          keyPart.search(/\w/)
+        );
+        if (flowEnd !== null) {
+          i = flowEnd;
+          continue;
+        }
+      }
+      const leadingIndicator = /^[[{&*!]/.test(value);
+      const commentStart = value.search(/[ \t]+#/);
+      const comment = commentStart < 0 ? '' : value.slice(commentStart);
+      value = (commentStart < 0 ? value : value.slice(0, commentStart)).replace(
+        /[ \t]+$/,
+        ''
+      );
 
       let merged = false;
       if (key === 'DriverSetupName' && value && !/^#/.test(value)) {
@@ -271,18 +319,19 @@ export class IRacingSDK {
       }
       // Ignore colons inside valid YAML comments. Empty values, numbers,
       // booleans, flow collections, and ordinary scalars retain their types.
-      const plainValue = value.split(/[ \t]+#/)[0];
       if (value.trim() === ',') {
-        lines[i] = `${keyPart}${crlf}`;
+        lines[i] = `${keyPart}${comment}${crlf}`;
       } else if (
         merged ||
         /^[@,]/.test(value) ||
         legacyIndicator ||
-        /:[ \t]/.test(plainValue) ||
+        leadingIndicator ||
+        /:(?:[ \t]|$)/.test(value) ||
         // eslint-disable-next-line no-control-regex -- native text can contain literal controls
         /[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/.test(value)
       ) {
-        lines[i] = `${keyPart}${IRacingSDK.quoteTextValue(value)}${crlf}`;
+        lines[i] =
+          `${keyPart}${IRacingSDK.quoteTextValue(value)}${comment}${crlf}`;
       }
     }
     return lines.join('\n');

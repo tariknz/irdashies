@@ -313,6 +313,13 @@ DriverInfo:
   it.each([
     ['TeamName', '@Example Racing'],
     ['Initials', 'Example: Name, E'],
+    ['UserName', 'Bob:'],
+    ['UserName', 'Bob:\tName'],
+    ['TeamName', '[ABC] Racing'],
+    ['TeamName', '{ABC} Racing'],
+    ['UserName', '&Rapid'],
+    ['UserName', '*Rapid'],
+    ['UserName', '!Rapid'],
   ])(
     'should preserve unquoted %s text containing YAML syntax',
     (field, value) => {
@@ -325,6 +332,71 @@ DriverInfo:
       });
     }
   );
+
+  it.each(['\n', '\r\n'])(
+    'should keep YAML comments outside repaired text values with %j endings',
+    (newline) => {
+      const input = `DriverInfo:
+  DriverSetupName: Garage\\C\u001c40_RACE.sto # setup note
+  Drivers:
+    - Initials: Example: Name # note
+      TeamName: @Example Racing\t# team note
+      UserName: Bob: # name note
+      AbbrevName: ,Example # abbreviation note
+    - Initials: ? # anonymous
+      TeamName: - Example # indicator note
+      UserName: Valid # comment: only
+      AbbrevName: , # empty
+    - UserName: Example#Name
+      TeamName: "@Example # Racing" # quoted note
+      Initials: # comment: only
+`;
+      vi.mocked(mockSdk.getSessionData).mockReturnValue(
+        input.replace(/\n/g, newline)
+      );
+      expect(sdk.getSessionData()?.DriverInfo).toEqual({
+        DriverSetupName: 'Garage\\C\u001c40_RACE.sto',
+        Drivers: [
+          {
+            Initials: 'Example: Name',
+            TeamName: '@Example Racing',
+            UserName: 'Bob:',
+            AbbrevName: ',Example',
+          },
+          {
+            Initials: '?',
+            TeamName: '- Example',
+            UserName: 'Valid',
+            AbbrevName: null,
+          },
+          {
+            UserName: 'Example#Name',
+            TeamName: '@Example # Racing',
+            Initials: null,
+          },
+        ],
+      });
+    }
+  );
+
+  it('should preserve complete flow collections including multiline and nested values', () => {
+    const input = `DriverInfo:
+  Drivers:
+    - Initials: [one, two] # list note
+      AbbrevName: {name: "Example # Name"} # mapping note
+      TeamName: [
+        {name: "[Example] Racing", count: 2},
+        [true, null]
+        ]
+      UserName: {
+        TeamName: "@Example Racing",
+        Initials: "Example: Name"
+        }
+`;
+    const expected = yaml.load(input);
+    vi.mocked(mockSdk.getSessionData).mockReturnValue(input);
+    expect(sdk.getSessionData()).toEqual(expected);
+  });
 
   it.each([
     'Garage\\Track\\C\u001c40_RACE.sto',
@@ -551,7 +623,7 @@ CarSetup:
           case 'native reset':
             setVersion(-1);
             sdk.waitForData();
-            setVersion(0);
+            setVersion(5);
             break;
           case 'version rollback':
             setVersion(0);
