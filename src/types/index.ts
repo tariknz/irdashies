@@ -39,3 +39,4 @@ export * from './releaseNotesFixture';
 export * from './tapeReplay';
 export * from './radarPoleSideSettings';
 export * from './streamChat';
+export * from './storageStatus';

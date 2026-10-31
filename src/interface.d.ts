@@ -16,6 +16,7 @@ import type { ChannelBridge } from '@irdashies/types';
 
 declare global {
   interface Window {
+    storageStatusBridge?: import('./types/storageStatus').StorageStatusBridge;
     channelBridge: ChannelBridge;
     irsdkBridge: IrSdkBridge;
     telemetryInspectorBridge: TelemetryInspectorBridge;

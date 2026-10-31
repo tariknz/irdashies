@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { DashboardProvider, RunningStateProvider } from '@irdashies/context';
@@ -148,4 +149,27 @@ export const NewReleaseNotesBadge: Story = {
 export const ReleaseNotesPage: Story = {
   args: { initialPath: '/settings/release-notes' },
   beforeEach: withReleaseNotesBadge,
+};
+
+// Controlled disk-full bridge response; no disk space is consumed.
+export const StorageFull: Story = {
+  args: { initialPath: '/settings/fuel' },
+  decorators: [
+    (Story) => {
+      const previous = window.storageStatusBridge;
+      window.storageStatusBridge = {
+        onStatus: (callback) => {
+          callback({ diskFull: true });
+          return () => undefined;
+        },
+      };
+      useEffect(
+        () => () => {
+          window.storageStatusBridge = previous;
+        },
+        [previous]
+      );
+      return <Story />;
+    },
+  ],
 };
