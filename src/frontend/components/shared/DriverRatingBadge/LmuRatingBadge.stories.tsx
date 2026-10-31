@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { LMU_BADGE_FORMATS, type LmuDriverRating } from '@irdashies/types';
+import type { LmuDriverRating } from '@irdashies/types';
 import { LmuRatingBadge } from './LmuRatingBadge';
 
 const meta: Meta<typeof LmuRatingBadge> = {
@@ -29,7 +29,7 @@ export const DriverRankOnly: Story = {
   args: { rating: { driverRank: 'Platinum', driverTier: 2 } },
 };
 
-/** Pro carries no tier, so it reads as a word. */
+/** Pro carries no tier and no rank plate, so it reads as a word. */
 export const Pro: Story = {
   args: {
     rating: { driverRank: 'Pro', safetyRank: 'Platinum', safetyTier: 4 },
@@ -65,16 +65,42 @@ export const AllRanks: Story = {
   ),
 };
 
-/** The four formats the Rating setting offers, one per row. */
-export const AllFormats: Story = {
+/** The sim's own rank plates, bundled rather than fetched. */
+export const RankArt: Story = {
+  args: { rating: rating(), format: 'plates' },
+};
+
+/**
+ * Both renderings side by side, which is the choice the Rating setting offers:
+ * the first badge format draws the plates, every other one the text chips.
+ */
+export const ArtAgainstText: Story = {
   render: () => (
     <div className="flex flex-col gap-3 bg-slate-900 p-3 text-xs">
-      {LMU_BADGE_FORMATS.map((format) => (
-        <div key={format} className="flex items-center gap-4">
-          <span className="w-20 text-slate-400">{format}</span>
-          <LmuRatingBadge rating={rating()} format={format} />
-        </div>
-      ))}
+      {(['Bronze', 'Silver', 'Gold', 'Platinum', 'Pro'] as const).map(
+        (rank) => (
+          <div key={rank} className="flex items-center gap-4">
+            <span className="w-20 text-slate-400">{rank} 3</span>
+            <LmuRatingBadge
+              rating={{
+                driverRank: rank,
+                driverTier: 3,
+                safetyRank: rank,
+                safetyTier: 3,
+              }}
+              format="plates"
+            />
+            <LmuRatingBadge
+              rating={{
+                driverRank: rank,
+                driverTier: 3,
+                safetyRank: rank,
+                safetyTier: 3,
+              }}
+            />
+          </div>
+        )
+      )}
     </div>
   ),
 };

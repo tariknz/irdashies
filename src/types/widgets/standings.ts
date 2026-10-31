@@ -36,7 +36,7 @@ export default defineWidgetManifest({
     badge: {
       enabled: true,
       badgeFormat: 'license-color-rating-bw',
-      lmuFormat: 'chip-both',
+      lmuFormat: 'plates',
     },
     delta: {
       enabled: true,

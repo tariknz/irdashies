@@ -4,6 +4,8 @@ import {
   type LmuDriverRating,
   type LmuRank,
 } from '@irdashies/types';
+import { lmuRankArt, type LmuRankKind } from './lmuRankArt';
+import { LmuSprite } from './LmuSprite';
 
 export interface LmuRatingBadgeProps {
   rating?: LmuDriverRating;
@@ -12,8 +14,12 @@ export interface LmuRatingBadgeProps {
   /** Show the safety rank beside the driver rank. */
   showSafety?: boolean;
   /**
-   * Which of the pair's chips keep their background and border. See
-   * LmuBadgeFormat.
+   * How to draw the pair: the sim's plates, or chips with the background and
+   * border on either, both or neither. See LmuBadgeFormat.
+   *
+   * Plates fall back per rank, not per row: `Pro` has no plate in the bucket,
+   * so it reads as a chip even here, and a rank whose art is missing does the
+   * same rather than leaving a gap where a rating should be.
    */
   format?: LmuBadgeFormat;
 }
@@ -27,9 +33,11 @@ export interface LmuRatingBadgeProps {
  * inside it and no number at all. Threading LMU through DriverRatingBadge
  * would mean every one of its twelve formats growing a second meaning.
  *
- * Drawn as text chips: a rank initial and its tier, coloured from the sim's
- * own palette, in HTML/CSS like the rest of the app rather than with the
- * sim's artwork. `format` picks which of the pair keeps its chrome.
+ * Two ways to draw it, chosen by `format`. The text chips are cheap and
+ * cost nothing: a rank initial and its tier, coloured from the sim's own
+ * palette. The plates are the sim's real artwork, bundled under `assets/lmu/`
+ * rather than fetched -- a standings row reaching a CDN per driver per session
+ * is not a trade an overlay should make. See lmuRankArt.ts.
  */
 
 /** Rank colours, matching the sim's own. */
@@ -101,6 +109,32 @@ const Chip = ({
 );
 
 /**
+ * One rank, as a plate when there is art for it and as a chip when not.
+ *
+ * Drawn from a sprite sheet rather than as its own image: see lmuRankArt.ts
+ * for why, and LmuSprite for how. Sized by height so a row's line height
+ * decides how big it is, with the aspect carried by the cell.
+ */
+const Plate = ({
+  kind,
+  rank,
+  tier,
+  isMinimal,
+  title,
+}: {
+  kind: LmuRankKind;
+  rank: LmuRank;
+  tier?: number;
+  isMinimal?: boolean;
+  title: string;
+}) => {
+  const art = lmuRankArt(kind, rank, tier);
+  if (!art)
+    return <Chip rank={rank} tier={tier} isMinimal={isMinimal} title={title} />;
+  return <LmuSprite cell={art} title={title} />;
+};
+
+/**
  * Whether there is a rank to draw.
  *
  * Exported because the badge's caller has to make the same test: an LMU entry
@@ -117,7 +151,7 @@ export const LmuRatingBadge = ({
   rating,
   isMinimal,
   showSafety = true,
-  format = 'chip-both',
+  format = 'plates',
 }: LmuRatingBadgeProps) => {
   const driverRank = rating?.driverRank;
   const safetyRank = showSafety ? rating?.safetyRank : undefined;
@@ -135,28 +169,47 @@ export const LmuRatingBadge = ({
     rating?.safetyTier ? ` ${rating.safetyTier}` : ''
   }`;
 
+  const useArt = format === 'plates';
   const chrome = lmuChipChrome(format);
 
   return (
     <div className="flex gap-1 items-center justify-center mx-2">
-      {driverRank && (
-        <Chip
-          rank={driverRank}
-          tier={rating?.driverTier}
-          isMinimal={isMinimal}
-          title={driverTitle}
-          chrome={chrome.driver}
-        />
-      )}
-      {safetyRank && (
-        <Chip
-          rank={safetyRank}
-          tier={rating?.safetyTier}
-          isMinimal={isMinimal}
-          title={safetyTitle}
-          chrome={chrome.safety}
-        />
-      )}
+      {driverRank &&
+        (useArt ? (
+          <Plate
+            kind="dr"
+            rank={driverRank}
+            tier={rating?.driverTier}
+            isMinimal={isMinimal}
+            title={driverTitle}
+          />
+        ) : (
+          <Chip
+            rank={driverRank}
+            tier={rating?.driverTier}
+            isMinimal={isMinimal}
+            title={driverTitle}
+            chrome={chrome.driver}
+          />
+        ))}
+      {safetyRank &&
+        (useArt ? (
+          <Plate
+            kind="sr"
+            rank={safetyRank}
+            tier={rating?.safetyTier}
+            isMinimal={isMinimal}
+            title={safetyTitle}
+          />
+        ) : (
+          <Chip
+            rank={safetyRank}
+            tier={rating?.safetyTier}
+            isMinimal={isMinimal}
+            title={safetyTitle}
+            chrome={chrome.safety}
+          />
+        ))}
     </div>
   );
 };

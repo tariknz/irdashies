@@ -192,7 +192,7 @@ const DisplaySettingsList = ({
                     label="LMU"
                     value={
                       (configValue as { lmuFormat?: LmuBadgeFormat })
-                        .lmuFormat ?? 'chip-both'
+                        .lmuFormat ?? 'plates'
                     }
                     options={LMU_BADGE_FORMATS}
                     renderOption={(format) => (

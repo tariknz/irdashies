@@ -48,6 +48,8 @@
     "generate-garage61-ids": "npx tsx ./tools/generate-garage61-ids.ts",
     "generate-radar-pole-sides": "npx tsx ./tools/generate-radar-pole-sides.ts",
     "prepare": "husky",
+    "fetch-lmu-rank-art": "npx tsx ./tools/fetch-lmu-rank-art.ts",
+    "build-lmu-sprite": "npm run fetch-lmu-rank-art && electron ./tools/build-lmu-sprite.cjs",
     "build-lmu-manufacturer-sprite": "electron ./tools/build-lmu-manufacturer-sprite.cjs"
   },
   "devDependencies": {

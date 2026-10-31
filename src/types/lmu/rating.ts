@@ -15,8 +15,8 @@
 /**
  * The rank names the service issues.
  *
- * `Pro` is deliberately outside the tiered set: it has no tier, so it is
- * rendered as a plain label.
+ * `Pro` is deliberately outside the tiered set: it has no tier and no rank
+ * artwork, so it is rendered as a plain label.
  */
 export const LMU_TIERED_RANKS = [
   'Bronze',
@@ -39,13 +39,13 @@ export const isLmuTieredRank = (value: string): value is LmuTieredRank =>
  * of them maps onto a named rank with a tier. The two sims get a dropdown
  * each.
  *
- * All four are the text chips, differing only in which of the pair keeps its
- * background and border -- a driver rating is the one most people want to
- * pick out at a glance, and a safety rating reads as noise beside it for
- * some. Drawn in HTML/CSS rather than with the sim's own artwork, so they
- * follow the app's design language.
+ * `plates` is the sim's own artwork. The rest are the text chips, differing
+ * only in which of the pair keeps its background and border -- a driver
+ * rating is the one most people want to pick out at a glance, and a safety
+ * rating reads as noise beside it for some.
  */
 export const LMU_BADGE_FORMATS = [
+  'plates',
   'chip-both',
   'chip-dr',
   'chip-sr',
@@ -65,10 +65,9 @@ export const lmuChipChrome = (
       return { driver: false, safety: true };
     case 'chip-none':
       return { driver: false, safety: false };
-    // chip-both, and anything unrecognised -- including the retired `plates`
-    // a config saved by an earlier build may hold: the fuller rendering is the
-    // safer default, since a chip without chrome on an unexpected background
-    // could be unreadable.
+    // chip-both, and anything unrecognised: the fuller rendering is the safer
+    // default, since a chip without chrome on an unexpected background could
+    // be unreadable.
     default:
       return { driver: true, safety: true };
   }
