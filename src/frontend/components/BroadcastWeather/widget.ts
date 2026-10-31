@@ -1,7 +1,11 @@
-import { BroadcastWeather } from './BroadcastWeather';
+import { lazyWidget } from '@irdashies/domain/lazyWidget';
 import type { WidgetModule } from '@irdashies/domain';
 
 export default {
   id: 'broadcastweather',
-  component: BroadcastWeather,
+  component: lazyWidget(() =>
+    import('./BroadcastWeather').then((module) => ({
+      default: module.BroadcastWeather,
+    }))
+  ),
 } satisfies WidgetModule;

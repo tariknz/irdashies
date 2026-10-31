@@ -691,13 +691,16 @@
   <body>
     <header class="hero">
       <div class="shell">
-        <p class="eyebrow">Controlled replay investigation · July 2026</p>
+        <p class="eyebrow">
+          July 2026 investigation · baseline update 1 November 2026
+        </p>
         <h1>Telemetry is cheap. <span class="accent">Fan-out is not.</span></h1>
         <p class="lede">
           A layer-by-layer benchmark of the irDashies native SDK read,
           projection, Electron IPC, renderer store delivery, widget computation,
           and Chromium rendering path using one deterministic 10-minute iRacing
-          replay.
+          replay. The latest scoped references and drift qualifications are
+          recorded first; the July investigation is preserved below.
         </p>
         <div class="stamp-row">
           <span class="stamp">36,000 frames</span>
@@ -711,6 +714,7 @@
 
     <nav aria-label="Report sections">
       <div class="shell">
+        <a href="#latest-baselines">Latest baselines</a>
         <a href="#verdict">Verdict</a>
         <a href="#ladder">Cost ladder</a>
         <a href="#pipeline">Pipeline</a>
@@ -723,6 +727,150 @@
     </nav>
 
     <main class="shell">
+      <section id="latest-baselines">
+        <div class="section-head">
+          <h2>Current references and drift status</h2>
+          <p>
+            Updated 1 November 2026. References are specific to their build
+            target and workload. Current-main release drift is unmeasured:
+            November's development replay subset cannot replace August's
+            packaged full-dashboard reference.
+          </p>
+        </div>
+        <h3>Latest located packaged comparison — 9 August 2026</h3>
+        <p>
+          The archived comparison of <code>28cbf61e</code> and
+          <code>f189c2ee</code> used the same recorded 40-car tape, 17 widget
+          types, three display renderers, and 60-second analysis warmup. It was
+          saved locally but not previously attached to the test log.
+        </p>
+        <div class="table-wrap">
+          <table aria-label="Archived packaged reference comparison">
+            <thead>
+              <tr>
+                <th scope="col">Metric</th>
+                <th scope="col">28cbf61e</th>
+                <th scope="col">f189c2ee reference</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">App CPU</th>
+                <td>3.709%</td>
+                <td>3.679%</td>
+              </tr>
+              <tr>
+                <th scope="row">Peak private memory</th>
+                <td>1058.52 MiB</td>
+                <td>1061.82 MiB</td>
+              </tr>
+              <tr>
+                <th scope="row">Private-memory slope</th>
+                <td>+16.574 MiB/min</td>
+                <td>+9.273 MiB/min</td>
+              </tr>
+              <tr>
+                <th scope="row">Main private-memory slope</th>
+                <td>+5.595 MiB/min</td>
+                <td>+0.815 MiB/min</td>
+              </tr>
+              <tr>
+                <th scope="row">Telemetry processing p99 mean</th>
+                <td>1.943 ms</td>
+                <td>1.952 ms</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note">
+          One historical pair: little observed CPU/latency movement and lower
+          memory-growth slopes, with the app still above the 5 MiB/min target.
+          Missing event-driven lap-times/radio input coverage makes formal gates
+          inconclusive. Tape FPS is historical. This does not establish whether
+          current main has drifted since August.
+          <a href="performance/2026-08-09-packaged-reference.json"
+            >Attached evidence</a
+          >.
+        </p>
+        <h3>Current development replay reference — 1 November 2026</h3>
+        <p>
+          Four 420-second captures, with 60-second analysis warmup, in shared →
+          individual → individual → shared order. Same source based on
+          <code>a5200766</code> plus uncommitted experiment, actual 59-car
+          replay, cockpit camera and six widget instances including Fuel twice.
+          Both Fuel panels and Radar were verified visible with benchmark-only
+          visibility overrides; the initial hidden-content captures are
+          excluded. These measurements predate upstream Input optimization #857;
+          the feature was later rebased onto ddf3f69e and has not been
+          reprofiled.
+        </p>
+        <div class="table-wrap">
+          <table aria-label="November development window-mode reference">
+            <thead>
+              <tr>
+                <th scope="col">Metric, mean of two runs</th>
+                <th scope="col">Shared default</th>
+                <th scope="col">Individual experiment</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Renderer windows</th>
+                <td>2</td>
+                <td>6</td>
+              </tr>
+              <tr>
+                <th scope="row">Actual simulator FPS</th>
+                <td>73.701</td>
+                <td>73.238</td>
+              </tr>
+              <tr>
+                <th scope="row">App CPU</th>
+                <td>2.010%</td>
+                <td>4.699%</td>
+              </tr>
+              <tr>
+                <th scope="row">GPU-process CPU</th>
+                <td>0.828%</td>
+                <td>3.109%</td>
+              </tr>
+              <tr>
+                <th scope="row">Mean per-run peak private memory</th>
+                <td>1147.36 MiB</td>
+                <td>1476.21 MiB</td>
+              </tr>
+              <tr>
+                <th scope="row">Private-memory slope</th>
+                <td>+9.853 MiB/min</td>
+                <td>+20.221 MiB/min</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note">
+          The observed game-FPS difference is small; CPU and memory costs rise
+          with individual windows. Most extra CPU is recorded in Electron's GPU
+          process, not a GPU utilization measurement. The two Fuel renderers
+          together average about 0.413% CPU and stable memory; Input has the
+          largest renderer growth at about 9.75 MiB/min. This does not exercise
+          a live fuel stint or populated history graph. Blind-spot input is
+          idle, so full-workload acceptance remains inconclusive. Both modes
+          exceed the memory-growth target. Shared windows remain the default.
+        </p>
+        <p>
+          <a href="performance/2026-11-01-window-mode.md"
+            >Full attached report</a
+          >
+          ·
+          <a href="performance/2026-11-01-window-mode.json">Per-run evidence</a>
+          ·
+          <a href="PERFORMANCE_TEST_LOG.md#current-baseline-register"
+            >Baseline register</a
+          >
+          · <a href="PERFORMANCE_BENCHMARKS.md">Repeatable protocol</a>
+        </p>
+      </section>
+
       <section id="verdict">
         <div class="section-head">
           <h2>The short answer</h2>
@@ -1499,7 +1647,8 @@ npm run perf:analyze -- `
     <footer>
       <div class="shell">
         irDashies telemetry performance investigation · controlled replay
-        benchmark · generated 26 July 2026
+        benchmark · original investigation generated 26 July 2026 · baseline
+        register and window-mode evidence updated 1 November 2026
       </div>
     </footer>
   </body>

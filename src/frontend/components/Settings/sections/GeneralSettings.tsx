@@ -110,6 +110,10 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
     compactMode: currentDashboard?.generalSettings?.compactMode ?? 'off',
     overlayAlwaysOnTop:
       currentDashboard?.generalSettings?.overlayAlwaysOnTop ?? true,
+    overlayWindowMode:
+      currentDashboard?.generalSettings?.overlayWindowMode === 'widget'
+        ? 'widget'
+        : 'display',
     enableNetworkAccess:
       currentDashboard?.generalSettings?.enableNetworkAccess ?? false,
     enableWebServer: currentDashboard?.generalSettings?.enableWebServer ?? true,
@@ -301,6 +305,15 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
 
   const handleOverlayAlwaysOnTopChange = (enabled: boolean) => {
     const newSettings = { ...settings, overlayAlwaysOnTop: enabled };
+    setSettings(newSettings);
+    updateDashboard(newSettings);
+  };
+
+  const handleIndividualWindowsChange = (enabled: boolean) => {
+    const newSettings: GeneralSettingsType = {
+      ...settings,
+      overlayWindowMode: enabled ? 'widget' : 'display',
+    };
     setSettings(newSettings);
     updateDashboard(newSettings);
   };
@@ -600,6 +613,31 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
 
         {!previewMode && (
           <>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h3
+                    id="individual-overlay-windows-label"
+                    className="text-lg font-medium text-slate-200"
+                  >
+                    Individual Overlay Windows (Experimental)
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    Give each widget its own window, allowing it to span
+                    monitors. Applies immediately. Edit Layout temporarily uses
+                    shared screen windows and restarts local chart history and
+                    any in-progress Lap Trace recording. Performance varies by
+                    layout.
+                  </p>
+                </div>
+                <ToggleSwitch
+                  enabled={settings.overlayWindowMode === 'widget'}
+                  onToggle={handleIndividualWindowsChange}
+                  ariaLabelledBy="individual-overlay-windows-label"
+                />
+              </div>
+            </div>
+
             {/* Hide from Taskbar Setting */}
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">

@@ -1,5 +1,18 @@
 # irDashies Performance — Empirical Test Summary
 
+> **Current reference update — 1 November 2026:** Baselines are now indexed by
+> build target and workload in the
+> [baseline register](./PERFORMANCE_TEST_LOG.md#current-baseline-register).
+> The latest located packaged comparison (`28cbf61e` → `f189c2ee`, August)
+> shows little CPU change and lower observed private-memory growth, still
+> above target. The new [actual-replay window-mode report](./performance/2026-11-01-window-mode.md)
+> records four development captures, with both Fuel panels visible. It is a
+> separate workload reference and cannot establish current-main release drift.
+> Full-workload acceptance remains inconclusive; the memory target is unchanged.
+>
+> Sections below preserve the historical May investigation and later notes;
+> their headline numbers are not the current baseline.
+>
 > **August 2026 Phase 3 Fuel update:** A deterministic 420-second A/B of
 > `0d74f276` against `e3dd77aa` validated the first channel-only widget path.
 > The candidate Fuel renderer measured approximately 4.87 Hz
@@ -8,7 +21,7 @@
 > App-wide renderer wake-ups fell 42.4% with no visible Fuel or frame-pacing
 > regression. CPU and memory metrics also moved favorably, but their exact
 > changes remain inconclusive from one pair, and both builds failed the
-> `<5 MB/min` memory-slope gate. See the newest entry in
+> `<5 MB/min` memory-slope gate. See the 6 August Fuel entry in
 > [`PERFORMANCE_TEST_LOG.md`](./PERFORMANCE_TEST_LOG.md).
 >
 > **July 2026 controlled-replay update:** This historical live-session summary is
