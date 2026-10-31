@@ -529,6 +529,32 @@ const playerIconErrorDetails = (error: unknown) => ({
     .replaceAll(homedir(), '<home>'),
 });
 
+/**
+ * Icon saves in flight, by destination path.
+ *
+ * Identical uploads share one content-named destination. Two renames replacing
+ * the same file at once can fail on Windows with EPERM, so a save whose path is
+ * already being published waits for that one instead of racing it: the name is
+ * the content hash, so it publishes the same bytes.
+ */
+const playerIconWrites = new Map<string, Promise<void>>();
+
+const publishPlayerIcon = async (
+  assetsPath: string,
+  imagePath: string,
+  buffer: Uint8Array
+): Promise<void> => {
+  // A failed replacement (even re-uploading identical contents) must not
+  // truncate an existing image. Publish the completed file atomically.
+  const temporaryPath = resolve(assetsPath, `.player-icon-${randomUUID()}.tmp`);
+  try {
+    await writeFile(temporaryPath, buffer);
+    await rename(temporaryPath, imagePath);
+  } finally {
+    await unlink(temporaryPath).catch(() => undefined);
+  }
+};
+
 // Profiles and in-flight settings updates can share an uploaded image. Keep
 // image files when replacing/removing icons; unused uploads remain on disk.
 export const savePlayerIconImage = async (
@@ -586,18 +612,14 @@ export const savePlayerIconImage = async (
     const hash = createHash('sha1').update(buffer).digest('hex').slice(0, 10);
     const imagePath = resolve(assetsPath, `player-icon-${hash}.${extension}`);
 
-    // A failed replacement (even re-uploading identical contents) must not
-    // truncate an existing image. Publish the completed file atomically.
-    const temporaryPath = resolve(
-      assetsPath,
-      `.player-icon-${randomUUID()}.tmp`
-    );
-    try {
-      await writeFile(temporaryPath, buffer);
-      await rename(temporaryPath, imagePath);
-    } finally {
-      await unlink(temporaryPath).catch(() => undefined);
+    let write = playerIconWrites.get(imagePath);
+    if (!write) {
+      write = publishPlayerIcon(assetsPath, imagePath, buffer).finally(() =>
+        playerIconWrites.delete(imagePath)
+      );
+      playerIconWrites.set(imagePath, write);
     }
+    await write;
     logger.info('[PlayerIcon] File written successfully');
 
     return imagePath;

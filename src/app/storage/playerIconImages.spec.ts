@@ -36,6 +36,7 @@ vi.mock('node:fs/promises', async (importOriginal) => {
     rename: vi.fn(original.rename),
     readFile: vi.fn(original.readFile),
     unlink: vi.fn(original.unlink),
+    mkdir: vi.fn(original.mkdir),
   };
 });
 
@@ -71,6 +72,42 @@ const put = async (name: string, buffer = png(0)) => {
 };
 const files = () => disk.readdir(assetsPath);
 
+/**
+ * Holds the first icon publication open until two saves have both joined it,
+ * so a test of overlapping saves does not depend on timing.
+ *
+ * Each save awaits mkdir, then reaches the in-flight map synchronously. So
+ * once the second mkdir has settled, one macrotask later both saves are past
+ * the map, and only then may the first rename run -- failing with `failure`
+ * if given, once.
+ */
+const overlapTwoSaves = (failure?: Error) => {
+  let arrivals = 0;
+  let bothArrived!: () => void;
+  const arrived = new Promise<void>((resolve) => {
+    bothArrived = resolve;
+  });
+  vi.mocked(io.mkdir).mockImplementation((async (
+    ...args: Parameters<typeof disk.mkdir>
+  ) => {
+    const made = await disk.mkdir(...args);
+    arrivals += 1;
+    if (arrivals === 2) bothArrived();
+    return made;
+  }) as typeof io.mkdir);
+  let pendingFailure = failure;
+  vi.mocked(io.rename).mockImplementation(async (from, to) => {
+    await arrived;
+    await new Promise((resolve) => setImmediate(resolve));
+    if (pendingFailure) {
+      const error = pendingFailure;
+      pendingFailure = undefined;
+      throw error;
+    }
+    return disk.rename(from, to);
+  });
+};
+
 beforeEach(async () => {
   vi.resetModules();
   vi.clearAllMocks();
@@ -79,6 +116,7 @@ beforeEach(async () => {
   vi.mocked(io.rename).mockImplementation(disk.rename);
   vi.mocked(io.readFile).mockImplementation(disk.readFile);
   vi.mocked(io.unlink).mockImplementation(disk.unlink);
+  vi.mocked(io.mkdir).mockImplementation(disk.mkdir);
   mocks.userData = await disk.mkdtemp(join(tmpdir(), 'irdashies-icons-'));
   assetsPath = join(mocks.userData, 'frontend', 'assets', 'img');
   await disk.mkdir(assetsPath, { recursive: true });
@@ -234,6 +272,35 @@ describe('player icon upload retention', () => {
         Buffer.from(png([1, 2, 1, 3][index]))
       );
     }
+  });
+
+  it('publishes identical concurrent uploads once rather than racing two renames', async () => {
+    // Two renames replacing one file at once fail on Windows with EPERM.
+    overlapTwoSaves();
+    const [first, second] = await Promise.all([
+      storage.savePlayerIconImage(png(1)),
+      storage.savePlayerIconImage(png(1)),
+    ]);
+    expect(second).toBe(first);
+    expect(vi.mocked(io.rename)).toHaveBeenCalledTimes(1);
+    expect(await disk.readFile(first)).toEqual(Buffer.from(png(1)));
+  });
+
+  it('lets a later upload retry after a shared publication fails', async () => {
+    overlapTwoSaves(
+      Object.assign(new Error('rename denied'), { code: 'EPERM' })
+    );
+    const results = await Promise.allSettled([
+      storage.savePlayerIconImage(png(1)),
+      storage.savePlayerIconImage(png(1)),
+    ]);
+    expect(results.map((result) => result.status)).toEqual([
+      'rejected',
+      'rejected',
+    ]);
+    expect(await storage.savePlayerIconImage(png(1))).toContain(
+      iconName(png(1))
+    );
   });
 
   it('retains saved and unused uploads across restart', async () => {
