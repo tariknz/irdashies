@@ -11,8 +11,16 @@ import {
   WIDGET_SCALE,
 } from '@irdashies/types';
 import { readData, writeData } from './storage';
-import { writeFile, mkdir, readFile, readdir, unlink } from 'node:fs/promises';
+import {
+  writeFile,
+  mkdir,
+  readFile,
+  readdir,
+  unlink,
+  rename,
+} from 'node:fs/promises';
 import { resolve, basename, sep } from 'node:path';
+import { homedir } from 'node:os';
 import { app } from 'electron';
 import { randomUUID, createHash } from 'node:crypto';
 import logger from '../logger';
@@ -521,7 +529,104 @@ export const getGarageCoverImageAsDataUrl = async (
   }
 };
 
-export const savePlayerIconImage = async (
+// Uploads return before settings persist. Keep uncommitted assets until a
+// later upload observes their reference on disk, or until the process exits.
+// Abandoned uploads from previous runs are pruned on the next successful upload.
+const pendingPlayerIcons = new Set<string>();
+let playerIconSaveQueue: Promise<unknown> = Promise.resolve();
+
+const playerIconErrorDetails = (error: unknown) => ({
+  code: (error as NodeJS.ErrnoException | null)?.code,
+  message: (error instanceof Error ? error.message : String(error))
+    .replaceAll(app.getPath('userData'), '<userData>')
+    .replaceAll(homedir(), '<home>'),
+});
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const playerIconReferences = (dashboards: unknown): Set<string> => {
+  if (!isRecord(dashboards)) throw new Error('Invalid saved dashboards');
+  const references = new Set<string>();
+  for (const dashboard of Object.values(dashboards)) {
+    // Fail closed: an unreadable dashboard cannot establish unreferenced assets.
+    if (!isRecord(dashboard) || !Array.isArray(dashboard.widgets)) {
+      throw new Error('Invalid saved dashboard widgets');
+    }
+    for (const widget of dashboard.widgets) {
+      if (!isRecord(widget)) throw new Error('Invalid saved widget');
+      const config = widget.config;
+      const icon = isRecord(config) ? config.playerIcon : undefined;
+      if (isRecord(icon) && typeof icon.fileName === 'string') {
+        // Legacy configs can contain an absolute path, including Windows paths.
+        references.add(icon.fileName.split(/[\\/]/).pop() || '');
+      }
+    }
+  }
+  return references;
+};
+
+const cleanupPlayerIcons = async (assetsPath: string): Promise<void> => {
+  try {
+    const files = await readdir(assetsPath);
+    // readData's cache is updated before writeData reaches disk. Protect both
+    // views so a failed settings save cannot orphan the previous saved icon.
+    const raw: unknown = JSON.parse(
+      await readFile(resolve(app.getPath('userData'), 'config.json'), 'utf8')
+    );
+    if (!isRecord(raw)) throw new Error('Invalid saved config');
+    const savedReferences = playerIconReferences(raw.dashboards);
+    const currentProfileId = getCurrentProfileId();
+    const currentDashboard = getDashboard(currentProfileId);
+    const references = playerIconReferences({
+      ...listDashboards(),
+      ...(currentDashboard ? { [currentProfileId]: currentDashboard } : {}),
+    });
+    for (const name of savedReferences) {
+      references.add(name);
+      pendingPlayerIcons.delete(name);
+    }
+    await Promise.all(
+      files
+        // Only filenames produced by uploads, including the legacy fixed name.
+        .filter(
+          (name) =>
+            /^player-icon(?:-[a-f0-9]{10})?\.(?:png|jpe?g|gif|webp|svg)$/i.test(
+              name
+            ) &&
+            !references.has(name) &&
+            !pendingPlayerIcons.has(name)
+        )
+        .map((name) =>
+          unlink(resolve(assetsPath, name)).catch((error) => {
+            logger.warn(
+              '[PlayerIcon] Failed to remove old icon:',
+              name,
+              playerIconErrorDetails(error)
+            );
+          })
+        )
+    );
+  } catch (error) {
+    // Missing/corrupt config or a directory failure must never fail an upload.
+    logger.warn(
+      '[PlayerIcon] Skipped icon cleanup:',
+      playerIconErrorDetails(error)
+    );
+  }
+};
+
+export const savePlayerIconImage = (buffer: Uint8Array): Promise<string> => {
+  // Serialize uploads and cleanup so another upload cannot remove an asset
+  // between its write and registration as pending.
+  const saved = playerIconSaveQueue.then(() =>
+    savePlayerIconImageInternal(buffer)
+  );
+  playerIconSaveQueue = saved.catch(() => undefined);
+  return saved;
+};
+
+const savePlayerIconImageInternal = async (
   buffer: Uint8Array
 ): Promise<string> => {
   try {
@@ -578,42 +683,36 @@ export const savePlayerIconImage = async (
     const hash = createHash('sha1').update(buffer).digest('hex').slice(0, 10);
     const imagePath = resolve(assetsPath, `player-icon-${hash}.${extension}`);
 
-    // Remove any previous player-icon-*.* files so we don't accumulate stale
-    // assets when the user replaces the icon.
-    try {
-      const existing = await readdir(assetsPath);
-      await Promise.all(
-        existing
-          .filter(
-            (name) =>
-              name.startsWith('player-icon-') &&
-              name !== `player-icon-${hash}.${extension}`
-          )
-          .map((name) =>
-            unlink(resolve(assetsPath, name)).catch((err) => {
-              logger.warn('[PlayerIcon] Failed to remove old icon:', name, err);
-            })
-          )
-      );
-    } catch (cleanupErr) {
-      logger.warn('[PlayerIcon] Failed to clean up old icons:', cleanupErr);
-    }
-
-    logger.info(
-      '[PlayerIcon] Writing to:',
-      imagePath,
-      'Extension detected:',
-      extension
+    // A failed replacement (even re-uploading identical contents) must not
+    // truncate an existing image. Publish the completed file atomically.
+    const temporaryPath = resolve(
+      assetsPath,
+      `.player-icon-${randomUUID()}.tmp`
     );
-    await writeFile(imagePath, buffer);
+    try {
+      await writeFile(temporaryPath, buffer);
+      await rename(temporaryPath, imagePath);
+    } finally {
+      await unlink(temporaryPath).catch(() => undefined);
+    }
+    pendingPlayerIcons.add(basename(imagePath));
     logger.info('[PlayerIcon] File written successfully');
+    await cleanupPlayerIcons(assetsPath);
 
     return imagePath;
   } catch (err) {
-    logger.error('[PlayerIcon] Error saving image:', err);
+    logger.error(
+      '[PlayerIcon] Error saving image:',
+      playerIconErrorDetails(err)
+    );
     throw err;
   }
 };
+
+// Bound missing-file diagnostics to 100 unique names per process. Successful
+// reads reset that name so a later deletion can be diagnosed again.
+const missingPlayerIcons = new Set<string>();
+const MAX_MISSING_ICON_WARNINGS = 100;
 
 export const getPlayerIconImageAsDataUrl = async (
   imageFilenameOrPath: string
@@ -625,7 +724,7 @@ export const getPlayerIconImageAsDataUrl = async (
     if (!imagePath.startsWith(allowedBase + sep)) {
       logger.warn(
         'Blocked path traversal attempt in getPlayerIconImageAsDataUrl:',
-        imageFilenameOrPath
+        basename(imageFilenameOrPath)
       );
       return null;
     }
@@ -642,10 +741,27 @@ export const getPlayerIconImageAsDataUrl = async (
     };
     const mimeType = mimeTypeMap[extension] || 'image/png';
     const base64 = Buffer.from(buffer).toString('base64');
+    missingPlayerIcons.delete(basename(imagePath));
 
     return `data:${mimeType};base64,${base64}`;
   } catch (err) {
-    logger.error('Error reading player icon image:', err);
+    const name = basename(imageFilenameOrPath);
+    const details = playerIconErrorDetails(err);
+    if (details.code === 'ENOENT') {
+      if (
+        !missingPlayerIcons.has(name) &&
+        missingPlayerIcons.size < MAX_MISSING_ICON_WARNINGS
+      ) {
+        missingPlayerIcons.add(name);
+        logger.warn(
+          '[PlayerIcon] Custom image missing; using default marker:',
+          name,
+          details
+        );
+      }
+    } else {
+      logger.warn('Error reading player icon image:', name, details);
+    }
     return null;
   }
 };
