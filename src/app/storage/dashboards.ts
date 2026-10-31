@@ -529,8 +529,6 @@ const playerIconErrorDetails = (error: unknown) => ({
     .replaceAll(homedir(), '<home>'),
 });
 
-// Profiles and in-flight settings updates can share an uploaded image. Keep
-// image files when replacing/removing icons; unused uploads remain on disk.
 /**
  * Icon saves in flight, by destination path.
  *
@@ -557,6 +555,8 @@ const publishPlayerIcon = async (
   }
 };
 
+// Profiles and in-flight settings updates can share an uploaded image. Keep
+// image files when replacing/removing icons; unused uploads remain on disk.
 export const savePlayerIconImage = async (
   buffer: Uint8Array
 ): Promise<string> => {
