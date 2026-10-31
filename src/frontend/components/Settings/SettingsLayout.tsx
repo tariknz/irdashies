@@ -100,7 +100,7 @@ export const SettingsLayout = () => {
           <div className="flex flex-row gap-2 [-webkit-app-region:no-drag]">
             <button
               onClick={toggleDemoMode}
-              className="flex flex-row gap-1.5 items-center px-3 py-2 rounded skew-ui settings-heading font-semibold border border-slate-600 bg-slate-800 hover:border-accent-500 transition-colors"
+              className="flex flex-row gap-1.5 items-center px-3 py-2 rounded font-semibold border border-slate-600 bg-slate-800 hover:border-accent-500 transition-colors"
             >
               {isDemoMode ? (
                 <>
@@ -116,7 +116,7 @@ export const SettingsLayout = () => {
             </button>
             <button
               onClick={handleToggleLock}
-              className="flex flex-row gap-1.5 items-center px-3 py-2 rounded skew-ui settings-heading font-semibold border border-slate-600 bg-slate-800 hover:border-accent-500 transition-colors"
+              className="flex flex-row gap-1.5 items-center px-3 py-2 rounded font-semibold border border-slate-600 bg-slate-800 hover:border-accent-500 transition-colors"
             >
               <LockIcon size={20} weight="bold" />
               <span>Edit Layout</span>

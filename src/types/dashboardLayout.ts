@@ -103,48 +103,12 @@ export type FontSize =
   | '8xl'
   | '9xl';
 
-/** Legacy settings style retained when loading older dashboards. */
-export type SettingsTheme = 'classic' | 'carbon' | 'red';
-
-/** Legacy menu layout retained when loading older dashboards. */
-export interface MenuLayout {
-  groups?: { id: string; label: string }[];
-  /** Widget type -> group id (built-in category or custom group) overriding its default. */
-  assign?: Record<string, string>;
-  /** Ids of collapsed groups. */
-  collapsed?: string[];
-}
-
 export interface GeneralSettingsType {
   fontType?: FontType;
   fontSize?: FontSize;
   fontWeight?:
     'light' | 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold';
-  colorPalette?:
-    | 'default'
-    | 'black'
-    | 'red'
-    | 'orange'
-    | 'amber'
-    | 'yellow'
-    | 'lime'
-    | 'green'
-    | 'emerald'
-    | 'teal'
-    | 'cyan'
-    | 'sky'
-    | 'blue'
-    | 'indigo'
-    | 'violet'
-    | 'purple'
-    | 'fuchsia'
-    | 'pink'
-    | 'rose'
-    | 'zinc'
-    | 'stone';
-  /** Legacy settings window style; ignored by the current UI. */
-  settingsTheme?: SettingsTheme;
-  menuLayout?: MenuLayout;
+  colorPalette?: 'default' | 'black';
   showOnlyWhenOnTrack?: boolean;
   highlightColor?: number;
   skipTaskbar?: boolean;

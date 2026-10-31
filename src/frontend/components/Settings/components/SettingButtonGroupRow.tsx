@@ -29,7 +29,7 @@ export function SettingButtonGroupRow<T extends string>({
               key={opt.value}
               aria-pressed={isActive}
               onClick={() => onChange(opt.value)}
-              className={`px-3 py-1 rounded text-sm skew-ui settings-heading font-semibold border transition-colors ${
+              className={`px-3 py-1 rounded text-sm font-semibold border transition-colors ${
                 isActive
                   ? 'bg-accent-500 border-accent-500 text-on-accent'
                   : 'bg-transparent border-slate-600 text-slate-300 hover:border-slate-400'

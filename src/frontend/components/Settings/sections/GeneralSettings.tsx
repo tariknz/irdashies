@@ -491,14 +491,6 @@ export const GeneralSettings = ({ previewMode }: GeneralSettingsProps = {}) => {
               <span className="text-sm text-slate-300">
                 {COLOR_THEME_PRESETS[settings.colorPalette ?? 'default']}
               </span>
-              {settings.colorPalette &&
-                settings.colorPalette !== 'default' &&
-                settings.colorPalette !== 'black' && (
-                  <span
-                    className={`bg-${settings.colorPalette}-800 rounded border-2 border-${settings.colorPalette}-500`}
-                    style={{ width: '20px', height: '20px' }}
-                  ></span>
-                )}
             </div>
           </div>
 

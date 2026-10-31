@@ -136,7 +136,7 @@ export const SettingsMenu = () => {
       </ul>
 
       <div className="flex items-center gap-1 px-2 pt-2 pb-1">
-        <p className="text-xs font-semibold text-slate-400 settings-heading tracking-widest">
+        <p className="text-xs font-semibold text-slate-400 tracking-widest">
           Widgets
         </p>
         {hiddenCount > 0 && (

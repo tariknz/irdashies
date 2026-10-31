@@ -108,7 +108,7 @@ describe('SettingsMenu', () => {
           layout: { x: 0, y: 100, width: 100, height: 100 },
         },
       ],
-      generalSettings: { settingsTheme: 'red' },
+      generalSettings: {},
     };
     Object.defineProperty(window, 'dashboardBridge', {
       configurable: true,
@@ -123,13 +123,7 @@ describe('SettingsMenu', () => {
 
   it('lists supported widgets without groups or redundant live labels', () => {
     assert(state.dashboard);
-    state.dashboard.generalSettings = {
-      menuLayout: {
-        collapsed: ['race'],
-        groups: [{ id: 'mine', label: 'Mine' }],
-        assign: { standings: 'mine' },
-      },
-    };
+    state.dashboard.generalSettings = {};
     renderMenu();
     expect(screen.getByRole('link', { name: 'Standings' })).toBeInTheDocument();
     expect(

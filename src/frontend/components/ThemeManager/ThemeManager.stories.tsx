@@ -186,25 +186,6 @@ const FONT_WEIGHTS: NonNullable<GeneralSettingsType['fontWeight']>[] = [
 const COLOR_PALETTES: NonNullable<GeneralSettingsType['colorPalette']>[] = [
   'default',
   'black',
-  'red',
-  'orange',
-  'amber',
-  'yellow',
-  'lime',
-  'green',
-  'emerald',
-  'teal',
-  'cyan',
-  'sky',
-  'blue',
-  'indigo',
-  'violet',
-  'purple',
-  'fuchsia',
-  'pink',
-  'rose',
-  'zinc',
-  'stone',
 ];
 
 const createThemeControls = (
