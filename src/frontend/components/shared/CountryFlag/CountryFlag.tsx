@@ -255,6 +255,7 @@ export const FLAIR_ID_TO_COUNTRY_CODE: Record<number, string> = {
   240: 'BQ', // Bonaire, Sint Eustatius and Saba
   241: 'CW', // Curaçao
   242: 'SX', // Sint Maarten (Dutch part)
+  243: 'SY', // Syria
 };
 
 // Map FlairID to country code
