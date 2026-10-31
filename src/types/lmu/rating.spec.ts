@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { LMU_BADGE_FORMATS, lmuChipChrome } from './rating';
+import {
+  LMU_BADGE_FORMATS,
+  lmuChipChrome,
+  type LmuBadgeFormat,
+} from './rating';
 
 /**
  * How an LMU rank pair is drawn.
@@ -33,14 +37,17 @@ describe('lmuChipChrome', () => {
     // The fuller rendering is the safer default: a chip with no background on
     // an unexpected one could be unreadable, where an extra border cannot.
     expect(lmuChipChrome(undefined)).toEqual({ driver: true, safety: true });
-    expect(lmuChipChrome('plates')).toEqual({ driver: true, safety: true });
+    // `plates`, retired, is what a config saved by an earlier build may hold.
+    expect(lmuChipChrome('plates' as LmuBadgeFormat)).toEqual({
+      driver: true,
+      safety: true,
+    });
   });
 });
 
 describe('LMU_BADGE_FORMATS', () => {
-  it('offers the plates and the four chip arrangements', () => {
+  it('offers the four chip arrangements', () => {
     expect(LMU_BADGE_FORMATS).toEqual([
-      'plates',
       'chip-both',
       'chip-dr',
       'chip-sr',

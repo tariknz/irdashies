@@ -11,9 +11,9 @@ import { FormatSelect } from './FormatSelect';
  * panel cannot be opened, or will not close, there is no way to tell what is
  * selected or to change it.
  */
-const OPTIONS = ['plates', 'chip-both', 'chip-none'] as const;
+const OPTIONS = ['chip-dr', 'chip-both', 'chip-none'] as const;
 
-const setup = (value: (typeof OPTIONS)[number] = 'plates') => {
+const setup = (value: (typeof OPTIONS)[number] = 'chip-dr') => {
   const onChange = vi.fn();
   render(
     <FormatSelect

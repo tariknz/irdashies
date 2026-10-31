@@ -55,7 +55,7 @@ export default defineWidgetManifest({
     badge: {
       enabled: true,
       badgeFormat: 'license-color-rating-bw',
-      lmuFormat: 'plates',
+      lmuFormat: 'chip-both',
     },
     iratingChange: {
       enabled: false,

@@ -41,10 +41,12 @@ interface SortableSetting {
 }
 
 /**
- * The iRacing rating formats, in the order the dropdown lists them.
+ * The iRacing rating formats Relative supports, in the order the dropdown
+ * lists them.
  *
- * Named here rather than inline so the list is not duplicated between
- * the two widgets that offer it.
+ * Checked against RelativeBadgeFormat, which leaves out
+ * `rating-only-color-rating-bw`: Standings offers that one, Relative cannot
+ * draw it, and a stored value outside the type is not normalised away.
  */
 const IRACING_BADGE_FORMATS = [
   'license-color-fullrating-combo',
@@ -52,14 +54,13 @@ const IRACING_BADGE_FORMATS = [
   'rating-color-no-license',
   'license-color-fullrating-bw',
   'license-color-rating-bw',
-  'rating-only-color-rating-bw',
   'license-color-rating-bw-no-license',
   'license-bw-rating-bw',
   'rating-only-bw-rating-bw',
   'license-bw-rating-bw-no-license',
   'rating-bw-no-license',
   'fullrating-bw-no-license',
-] as const;
+] as const satisfies readonly RelativeBadgeFormat[];
 
 const sortableSettings: SortableSetting[] = [
   { id: 'position', label: 'Position', configKey: 'position' },
@@ -191,7 +192,7 @@ const DisplaySettingsList = ({
                     label="LMU"
                     value={
                       (configValue as { lmuFormat?: LmuBadgeFormat })
-                        .lmuFormat ?? 'plates'
+                        .lmuFormat ?? 'chip-both'
                     }
                     options={LMU_BADGE_FORMATS}
                     renderOption={(format) => (

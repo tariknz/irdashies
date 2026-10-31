@@ -22,6 +22,7 @@ export const AllBadges: Story = {
           'sr-saint',
           'sr-clean',
           'sr-warning',
+          'sr-danger',
           'sr-probation',
         ] as const
       ).map((badge) => (
@@ -34,5 +35,5 @@ export const AllBadges: Story = {
   ),
 };
 
-/** A marker added after the art was last fetched: nothing is drawn. */
+/** A marker this build does not know: its name, trimmed, as a label. */
 export const Unknown: Story = { args: { badge: 'sr-unheard-of' } };

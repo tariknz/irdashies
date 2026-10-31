@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { LmuRatingBadge, lmuRankLabel } from './LmuRatingBadge';
+import type { LmuBadgeFormat } from '@irdashies/types';
 
 /**
  * What an LMU driver's ranks actually look like in a standings row.
@@ -100,7 +101,7 @@ describe('LmuRatingBadge', () => {
     expect(container.textContent).toBe('G3');
   });
 
-  it('draws the sim plates when asked, one per rank', () => {
+  it('draws chips with chrome on both by default', () => {
     const { container } = render(
       <LmuRatingBadge
         rating={{
@@ -109,42 +110,33 @@ describe('LmuRatingBadge', () => {
           safetyRank: 'Silver',
           safetyTier: 2,
         }}
-        format="plates"
       />
     );
 
-    const art = [...container.querySelectorAll('[role="img"]')];
-    expect(art).toHaveLength(2);
-    // No text alongside: the plate carries the rank and the tier itself.
-    expect(container.textContent).toBe('');
-    // Still named, so the pair is identifiable without reading the artwork.
-    expect(art.map((node) => node.getAttribute('aria-label'))).toEqual([
+    const chips = [...container.querySelectorAll('[title]')];
+    expect(chips.map((chip) => chip.getAttribute('title'))).toEqual([
       'Driver rating: Bronze 3',
       'Safety rating: Silver 2',
     ]);
-    // One sheet behind both, which is the point of the sprite.
-    const sheets = new Set(
-      art.map(
-        (node) => /url\(([^)]*)\)/.exec(node.getAttribute('style') ?? '')?.[1]
-      )
-    );
-    expect(sheets.size).toBe(1);
-    // Named, so the assertion above cannot pass on two undefineds.
-    expect([...sheets][0]).toContain('plates-sprite');
+    for (const chip of chips) expect(chip.className).toContain('border-2');
+    // HTML/CSS only: no artwork of any kind.
+    expect(container.querySelector('img, [role="img"]')).toBeNull();
+    expect(container.textContent).toBe('B3S2');
   });
 
-  it('falls back to a chip for a rank with no plate', () => {
-    // Pro has no artwork in the bucket, so it reads as PRO even in art mode,
-    // rather than leaving a gap where a rating should be.
+  it('draws the retired plates format as chips with chrome on both', () => {
+    // What a config saved by an earlier build of this feature may still hold.
     const { container } = render(
       <LmuRatingBadge
         rating={{ driverRank: 'Pro', safetyRank: 'Gold', safetyTier: 1 }}
-        format="plates"
+        format={'plates' as LmuBadgeFormat}
       />
     );
 
-    expect(container.querySelectorAll('[role="img"]')).toHaveLength(1);
-    expect(container.textContent).toBe('PRO');
+    for (const chip of container.querySelectorAll('[title]')) {
+      expect(chip.className).toContain('border-2');
+    }
+    expect(container.textContent).toBe('PROG1');
   });
 
   it('drops the chrome from the safety chip only', () => {
