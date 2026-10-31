@@ -356,6 +356,39 @@ describe('mapLmuTelemetry lap validity', () => {
   });
 });
 
+describe('mapLmuTelemetry delta to best lap', () => {
+  it("maps LMU's delta to the player's best lap once there is one", () => {
+    const t = mapLmuTelemetry({ ...fixture(), deltaBest: -0.35 });
+    expect(t.LapDeltaToSessionBestLap?.value[0]).toBe(-0.35);
+    expect(t.LapDeltaToSessionBestLap_OK?.value[0]).toBe(true);
+  });
+
+  it('marks the delta invalid before the player has a best lap', () => {
+    // LMU reports 0 then, which would otherwise read as dead level.
+    const raw = fixture();
+    const noBest = {
+      ...raw,
+      vehBestLapTime: raw.vehBestLapTime.map(() => -1),
+      deltaBest: 0,
+    } as LmuRawTelemetry;
+    const t = mapLmuTelemetry(noBest);
+    expect(t.LapDeltaToSessionBestLap_OK?.value[0]).toBe(false);
+    expect(t.LapDeltaToSessionBestLap?.value[0]).toBe(0);
+  });
+
+  it('marks an absent or non-finite delta invalid', () => {
+    const absent = { ...fixture() } as LmuRawTelemetry;
+    delete absent.deltaBest;
+    expect(mapLmuTelemetry(absent).LapDeltaToSessionBestLap_OK?.value[0]).toBe(
+      false
+    );
+    expect(
+      mapLmuTelemetry({ ...fixture(), deltaBest: Number.NaN })
+        .LapDeltaToSessionBestLap_OK?.value[0]
+    ).toBe(false);
+  });
+});
+
 describe('mapLmuTelemetry lap-distance reconstruction', () => {
   it('advances the fraction between scoring updates', () => {
     // LMU only publishes lap distance at 5 Hz, so two polls 15 ms apart carry

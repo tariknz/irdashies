@@ -584,6 +584,15 @@ export function mapLmuTelemetry(
   t.LapDistPct = num(lapDistPct);
   t.LapBestLapTime = lapTime(raw.vehBestLapTime[playerIdx]);
   t.LapLastLapTime = lapTime(raw.vehLastLapTime[playerIdx]);
+  // LMU's own delta to the player's best lap, negative when ahead -- what
+  // iRacing calls the delta to the session best. Only meaningful once there is
+  // a best lap: until then LMU reports 0, which would read as dead level.
+  const hasBestLap = (raw.vehBestLapTime[playerIdx] ?? 0) > 0;
+  const deltaBest = raw.deltaBest;
+  const deltaBestOk =
+    hasBestLap && typeof deltaBest === 'number' && Number.isFinite(deltaBest);
+  t.LapDeltaToSessionBestLap = num(deltaBestOk ? deltaBest : 0);
+  t.LapDeltaToSessionBestLap_OK = bool(deltaBestOk);
   t.LapCurrentLapTime = num(
     Math.max(0, (raw.elapsedTime ?? 0) - (raw.lapStartET ?? 0))
   );
