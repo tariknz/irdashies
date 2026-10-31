@@ -72,7 +72,11 @@ export const useLapTimeLog = () => {
   const playerCarName = useMemo(() => {
     if (playerCarIdx === null || playerCarIdx === undefined) return 'unknown';
     const driver = drivers[playerCarIdx];
-    return driver?.CarPath ?? 'unknown';
+    // Personal bests are kept per car. Under LMU CarPath is the livery's .VEH
+    // file, so a second livery of the same car would start a new record;
+    // CarModel names the car itself there. iRacing sets no CarModel, so its
+    // records stay keyed by CarPath as before.
+    return driver?.CarModel ?? driver?.CarPath ?? 'unknown';
   }, [playerCarIdx, drivers]);
 
   // States
