@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { KeybindingActionId, KeybindingsMap } from '@irdashies/types';
+import { KEYBINDING_MESSAGES } from '@irdashies/types';
 
 const mockLoggerError = vi.hoisted(() => vi.fn());
 
@@ -32,7 +33,13 @@ const mockGetKeybindings = vi.hoisted(() => vi.fn());
 const mockResetKeybinding = vi.hoisted(() => vi.fn());
 const mockResetAllKeybindings = vi.hoisted(() => vi.fn());
 
-vi.mock('../storage/keybindings', () => ({
+vi.mock('../storage/storage', () => ({
+  readData: vi.fn(),
+  writeData: vi.fn(),
+  writeDataAsync: vi.fn(),
+}));
+vi.mock('../storage/keybindings', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../storage/keybindings')>()),
   getKeybindings: mockGetKeybindings,
   updateKeybinding: mockUpdateKeybinding,
   resetKeybinding: mockResetKeybinding,
@@ -40,13 +47,14 @@ vi.mock('../storage/keybindings', () => ({
   persistKeybindingMigrations: vi.fn(async () => undefined),
 }));
 
-const mockIsValidAccelerator = vi.hoisted(() => vi.fn());
+const mockCheckAccelerator = vi.hoisted(() => vi.fn());
 const mockReloadBindings = vi.hoisted(() => vi.fn());
 
 vi.mock('../keybindingManager', () => ({
   KeybindingManager: class {
-    static isValidAccelerator = mockIsValidAccelerator;
+    static checkAccelerator = mockCheckAccelerator;
     reloadBindings = mockReloadBindings;
+    getRegistrationErrors = () => ({});
   },
 }));
 
@@ -112,29 +120,28 @@ describe('keybindingsBridge keybindings:update', () => {
     mockLoggerError.mockReset();
     mockUpdateKeybinding.mockReset();
     mockReloadBindings.mockReset();
-    mockIsValidAccelerator.mockReset();
+    mockCheckAccelerator.mockReset();
+    mockGetKeybindings.mockReturnValue(sampleBindings());
 
     const manager = new KeybindingManager({} as never);
     setupKeybindingsBridge(manager);
   });
 
-  it('rejects an invalid accelerator without persisting', () => {
-    mockIsValidAccelerator.mockReturnValue(false);
-
-    expect(() => invokeUpdate('toggle-hide-ui', 'Pause')).toThrow(
-      '"Pause" is not a valid keyboard shortcut'
-    );
-
-    expect(mockUpdateKeybinding).not.toHaveBeenCalled();
-    expect(mockReloadBindings).not.toHaveBeenCalled();
-    expect(mockLoggerError).toHaveBeenCalledWith(
-      'Failed to update keybinding:',
-      expect.any(Error)
-    );
-  });
+  it.each(['invalid', 'unavailable'] as const)(
+    'reports %s without persisting or logging an application fault',
+    (status) => {
+      mockCheckAccelerator.mockReturnValue(status);
+      expect(invokeUpdate('toggle-hide-ui', 'Pause')).toEqual({
+        error: KEYBINDING_MESSAGES[status],
+      });
+      expect(mockUpdateKeybinding).not.toHaveBeenCalled();
+      expect(mockReloadBindings).not.toHaveBeenCalled();
+      expect(mockLoggerError).not.toHaveBeenCalled();
+    }
+  );
 
   it('persists and reloads when the accelerator is valid', () => {
-    mockIsValidAccelerator.mockReturnValue(true);
+    mockCheckAccelerator.mockReturnValue('available');
     const next = sampleBindings();
     mockUpdateKeybinding.mockReturnValue(next);
 
@@ -150,7 +157,7 @@ describe('keybindingsBridge keybindings:update', () => {
   });
 
   it('forwards the meta (label/description) for a dynamic widget binding', () => {
-    mockIsValidAccelerator.mockReturnValue(true);
+    mockCheckAccelerator.mockReturnValue('available');
     const next = sampleBindings();
     mockUpdateKeybinding.mockReturnValue(next);
     const meta = { label: 'Standings', description: 'Show / hide Standings' };
@@ -166,7 +173,7 @@ describe('keybindingsBridge keybindings:update', () => {
   });
 
   it('rejects an unsupported action id without persisting', () => {
-    mockIsValidAccelerator.mockReturnValue(true);
+    mockCheckAccelerator.mockReturnValue('available');
 
     expect(() =>
       invokeUpdate('bogus-action' as KeybindingActionId, 'Alt+J')
@@ -187,7 +194,7 @@ describe('keybindingsBridge keybindings:update', () => {
 
     expect(result).toBe(next);
     // Gamepad tokens skip the Electron accelerator check entirely.
-    expect(mockIsValidAccelerator).not.toHaveBeenCalled();
+    expect(mockCheckAccelerator).not.toHaveBeenCalled();
     expect(mockUpdateKeybinding).toHaveBeenCalledWith(
       'toggle-edit-mode',
       'gamepad:btn0',
@@ -197,28 +204,29 @@ describe('keybindingsBridge keybindings:update', () => {
   });
 
   it('rejects an unknown gamepad token without persisting', () => {
-    expect(() => invokeUpdate('toggle-edit-mode', 'gamepad:nope')).toThrow(
-      'not a valid controller button'
-    );
+    expect(invokeUpdate('toggle-edit-mode', 'gamepad:nope')).toMatchObject({
+      error: expect.stringContaining('Invalid controller'),
+    });
     expect(mockUpdateKeybinding).not.toHaveBeenCalled();
-    expect(mockReloadBindings).not.toHaveBeenCalled();
-    expect(mockLoggerError).toHaveBeenCalledWith(
-      'Failed to update keybinding:',
-      expect.any(Error)
-    );
+    expect(mockLoggerError).not.toHaveBeenCalled();
   });
 
   it('surfaces storage conflict errors to the caller', () => {
-    mockIsValidAccelerator.mockReturnValue(true);
-    mockUpdateKeybinding.mockImplementation(() => {
-      throw new Error(
-        'Accelerator "Alt+H" is already bound to "Hide / Show UI"'
-      );
+    mockCheckAccelerator.mockReturnValue('available');
+    expect(invokeUpdate('toggle-edit-mode', 'Alt+H')).toMatchObject({
+      error: expect.stringContaining('already bound'),
     });
-
-    expect(() => invokeUpdate('toggle-edit-mode', 'Alt+H')).toThrow(
-      'already bound'
-    );
+    expect(mockUpdateKeybinding).not.toHaveBeenCalled();
+    expect(mockCheckAccelerator).not.toHaveBeenCalled();
     expect(mockReloadBindings).not.toHaveBeenCalled();
+  });
+  it('logs and propagates unexpected errors', () => {
+    mockCheckAccelerator.mockImplementation(() => {
+      throw new Error('Unexpected failure');
+    });
+    expect(() => invokeUpdate('toggle-edit-mode', 'F8')).toThrow(
+      'Unexpected failure'
+    );
+    expect(mockLoggerError).toHaveBeenCalled();
   });
 });

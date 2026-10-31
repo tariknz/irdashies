@@ -47,7 +47,11 @@ vi.mock('node:fs', () => ({
 const mockWriteFile = vi.hoisted(() => vi.fn());
 
 vi.mock('node:fs/promises', () => ({
-  default: { writeFile: mockWriteFile },
+  default: {
+    writeFile: mockWriteFile,
+    rename: vi.fn(async () => undefined),
+    unlink: vi.fn(async () => undefined),
+  },
   writeFile: mockWriteFile,
 }));
 

@@ -1,6 +1,9 @@
 import type { KeybindingActionId, KeybindingsMap } from '@irdashies/types';
 import { DEFAULT_KEYBINDINGS } from '@irdashies/types';
-import { isValidWidgetToggleActionId } from '@irdashies/shared';
+import {
+  isGamepadBinding,
+  isValidWidgetToggleActionId,
+} from '@irdashies/shared';
 import { readData, writeData, writeDataAsync } from './storage';
 import { migrateLegacyStreamChatKeybindings } from './streamChatMigration';
 
@@ -45,6 +48,52 @@ export function saveKeybindings(bindings: KeybindingsMap): void {
   writeData(STORAGE_KEY, bindings);
 }
 
+/** Compare Electron aliases without treating normalization as syntax validation. */
+function normalizeKeyboardAccelerator(
+  accelerator: string,
+  isMac: boolean
+): string {
+  const aliases: Record<string, string> = {
+    commandorcontrol: isMac ? 'command' : 'control',
+    cmdorctrl: isMac ? 'command' : 'control',
+    cmd: 'command',
+    ctrl: 'control',
+    option: 'alt',
+    // Electron parses these as VKEY_COMMAND on every platform.
+    super: 'command',
+    meta: 'command',
+    esc: 'escape',
+    return: 'enter',
+  };
+  return accelerator
+    .toLowerCase()
+    .split('+')
+    .map((part) => aliases[part] ?? part)
+    .sort()
+    .join('+');
+}
+
+export class KeybindingConflictError extends Error {}
+
+/** Find app-owned duplicates before attempting an OS registration. */
+export function findKeybindingConflict(
+  bindings: Partial<KeybindingsMap>,
+  actionId: KeybindingActionId,
+  accelerator: string
+): string | undefined {
+  if (!accelerator) return;
+  const normalize = (value: string) =>
+    isGamepadBinding(value)
+      ? value
+      : normalizeKeyboardAccelerator(value, process.platform === 'darwin');
+  return Object.entries(bindings).find(
+    ([id, entry]) =>
+      entry &&
+      id !== actionId &&
+      normalize(entry.accelerator) === normalize(accelerator)
+  )?.[1]?.label;
+}
+
 export function updateKeybinding(
   actionId: KeybindingActionId,
   accelerator: string,
@@ -52,15 +101,11 @@ export function updateKeybinding(
 ): KeybindingsMap {
   const bindings = getKeybindings();
 
-  // Check for conflicts (an empty accelerator means "unbound" — never conflicts)
-  if (accelerator) {
-    for (const [id, entry] of Object.entries(bindings)) {
-      if (id !== actionId && entry.accelerator === accelerator) {
-        throw new Error(
-          `Accelerator "${accelerator}" is already bound to "${entry.label}"`
-        );
-      }
-    }
+  const conflict = findKeybindingConflict(bindings, actionId, accelerator);
+  if (conflict !== undefined) {
+    throw new KeybindingConflictError(
+      `Shortcut already bound to "${conflict}" in irDashies. Choose another combination.`
+    );
   }
 
   const factory =

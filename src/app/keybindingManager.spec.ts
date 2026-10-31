@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { KeybindingsMap } from '@irdashies/types';
+import { KEYBINDING_MESSAGES } from '@irdashies/types';
 
 const mockLoggerError = vi.hoisted(() => vi.fn());
 const mockLoggerInfo = vi.hoisted(() => vi.fn());
@@ -30,7 +31,13 @@ vi.mock('electron', () => ({
 
 const mockGetKeybindings = vi.hoisted(() => vi.fn());
 
-vi.mock('./storage/keybindings', () => ({
+vi.mock('./storage/storage', () => ({
+  readData: vi.fn(),
+  writeData: vi.fn(),
+  writeDataAsync: vi.fn(),
+}));
+vi.mock('./storage/keybindings', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./storage/keybindings')>()),
   getKeybindings: mockGetKeybindings,
 }));
 
@@ -116,14 +123,13 @@ describe('KeybindingManager', () => {
         'Pause',
         expect.any(Function)
       );
-      // And the failure was logged
-      expect(mockLoggerError).toHaveBeenCalledWith(
-        expect.stringContaining('Invalid accelerator "Pause"'),
-        expect.any(Error)
+      expect(manager.getRegistrationErrors()['toggle-hide-ui']).toBe(
+        KEYBINDING_MESSAGES.invalid
       );
+      expect(mockLoggerError).not.toHaveBeenCalled();
     });
 
-    it('logs and continues when register returns false', () => {
+    it('reports recoverable unavailability when register returns false', () => {
       mockGetKeybindings.mockReturnValue({
         'toggle-edit-mode': {
           accelerator: 'F6',
@@ -138,9 +144,15 @@ describe('KeybindingManager', () => {
       const manager = new KeybindingManager(fakeOverlayManager);
       manager.registerAll();
 
-      expect(mockLoggerError).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to register shortcut "F6"')
+      expect(manager.getRegistrationErrors()['toggle-edit-mode']).toBe(
+        KEYBINDING_MESSAGES.unavailable
       );
+      expect(mockLoggerError).not.toHaveBeenCalled();
+      mockRegister.mockReturnValue(true);
+      manager.registerAll();
+      expect(
+        manager.getRegistrationErrors()['toggle-edit-mode']
+      ).toBeUndefined();
     });
 
     it('skips bindings that are already registered (idempotent)', () => {
@@ -179,12 +191,7 @@ describe('KeybindingManager', () => {
       expect(mockUnregister).toHaveBeenCalledWith('F6');
       expect(mockUnregister).toHaveBeenCalledWith('F7');
       expect(mockUnregister).not.toHaveBeenCalledWith('Pause');
-      expect(mockLoggerError).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Invalid accelerator "Pause" while unregistering'
-        ),
-        expect.any(Error)
-      );
+      expect(mockLoggerError).not.toHaveBeenCalled();
     });
   });
 
@@ -214,38 +221,68 @@ describe('KeybindingManager', () => {
     });
   });
 
-  describe('isValidAccelerator', () => {
-    it('returns true when registration succeeds and unregisters the trial', () => {
+  describe('checkAccelerator', () => {
+    it('returns available when registration succeeds and unregisters the trial', () => {
       mockRegister.mockReturnValue(true);
 
-      const result = KeybindingManager.isValidAccelerator('F8');
+      const result = KeybindingManager.checkAccelerator('F8');
 
-      expect(result).toBe(true);
+      expect(result).toBe('available');
       expect(mockRegister).toHaveBeenCalledWith('F8', expect.any(Function));
       expect(mockUnregister).toHaveBeenCalledWith('F8');
     });
 
-    it('returns false when Electron throws on the accelerator string', () => {
+    it('returns invalid when Electron throws on the accelerator string', () => {
       mockRegister.mockImplementation(() => {
         throw new TypeError(
           'Error processing argument at index 0, conversion failure from Pause'
         );
       });
 
-      const result = KeybindingManager.isValidAccelerator('Pause');
+      const result = KeybindingManager.checkAccelerator('Pause');
 
-      expect(result).toBe(false);
+      expect(result).toBe('invalid');
       expect(mockUnregister).not.toHaveBeenCalled();
     });
 
-    it('returns false when register returns false without throwing', () => {
+    it('returns unavailable when register returns false without throwing', () => {
       mockRegister.mockReturnValue(false);
 
-      const result = KeybindingManager.isValidAccelerator('Alt+H');
+      const result = KeybindingManager.checkAccelerator('Alt+H');
 
-      expect(result).toBe(false);
+      expect(result).toBe('unavailable');
       // Nothing was actually registered, so no unregister
       expect(mockUnregister).not.toHaveBeenCalled();
     });
+  });
+  it.each(['Super', 'Meta'])(
+    'reports persisted %s aliases as duplicates and keeps the first callback',
+    (alias) => {
+      const bindings = bindingsWithBadAccelerator();
+      bindings['toggle-hide-ui'].accelerator = 'Command+H';
+      bindings['toggle-edit-mode'].accelerator = `${alias}+H`;
+      mockGetKeybindings.mockReturnValue(bindings);
+      mockRegister.mockReturnValue(true);
+      const manager = new KeybindingManager(fakeOverlayManager);
+      manager.registerAll();
+      expect(manager.getRegistrationErrors()['toggle-edit-mode']).toContain(
+        'already bound'
+      );
+      expect(mockRegister).not.toHaveBeenCalledWith(
+        `${alias}+H`,
+        expect.any(Function)
+      );
+    }
+  );
+
+  it('preserves app-owned callbacks and propagates unexpected probe errors', () => {
+    mockIsRegistered.mockReturnValue(true);
+    expect(KeybindingManager.checkAccelerator('F6')).toBe('available');
+    expect(mockUnregister).not.toHaveBeenCalled();
+    mockIsRegistered.mockReturnValue(false);
+    mockRegister.mockImplementation(() => {
+      throw new Error('OS failed');
+    });
+    expect(() => KeybindingManager.checkAccelerator('F6')).toThrow('OS failed');
   });
 });

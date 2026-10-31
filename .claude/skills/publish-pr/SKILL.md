@@ -1,6 +1,6 @@
 ---
 name: publish-pr
-description: Publish GitHub pull requests for this repository. Use this skill whenever the user asks to create, open, raise, or publish a PR. Follow the repository's pull request template exactly, default to a published/ready-for-review PR unless the user explicitly requests a draft, and write a conventional-commit-style title that describes the user-visible problem solved or outcome achieved.
+description: Publish GitHub pull requests for this repository. Use this skill whenever the user asks to create, open, raise, or publish a PR. Follow the repository's pull request template exactly, default to a published/ready-for-review PR unless the user explicitly requests a draft, and write a conventional-commit-style title that describes the user-visible problem solved or outcome achieved. Continue with babysit-pr when monitoring or review-comment handling is requested.
 ---
 
 # Publish a Pull Request
@@ -17,7 +17,8 @@ Publish the current work as a GitHub pull request, ready for review by default.
 6. Derive the PR title from recent PR history and the rules below.
 7. Copy `.github/pull_request_template.md` verbatim for the PR body. Preserve every heading, HTML comment, checklist entry, and their order. Fill in applicable placeholders and check only items actually completed. For screenshots, upload direct PR attachments as described below or clearly state when screenshots are not applicable.
 8. Update the existing PR or create a new one as published and ready for review unless the user explicitly asks for a draft. Treat silence about publication state as a request for a published PR. If an existing PR is a draft and the user requests publication, mark it ready for review.
-9. Verify the PR has the requested publication state and return its title and URL. If the user did not request a draft and tooling unexpectedly leaves one, immediately mark it ready for review and verify again.
+9. Verify the PR has the requested publication state. If the user did not request a draft and tooling unexpectedly leaves one, immediately mark it ready for review and verify again.
+10. When the user also requests monitoring, babysitting, or handling review comments, continue with [babysit-pr](../babysit-pr/SKILL.md). Otherwise return the PR's title and URL after publication verification. Publishing alone does not start an ongoing watch or authorize merging.
 
 ## Title Rules
 
@@ -74,6 +75,7 @@ Keep the title concise, concrete, and understandable without reading the diff. P
   ```
 
   Use `![Screenshot](/tmp/screenshot.png)` for an image and `![](/tmp/replay.mp4)` in its own paragraph for a video player. `gh` replaces the local references with uploaded attachment URLs. Repeat `--attach` for additional files.
+
 - Read back the PR body and verify that the uploaded attachments render and no local paths or repository-hosted review media links remain. If an upload partially fails, inspect the saved body before retrying to avoid duplicates.
 
 ## Publication Guardrail

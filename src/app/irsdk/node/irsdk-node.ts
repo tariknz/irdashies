@@ -128,6 +128,10 @@ export class IRacingSDK {
 
   private _sessionData: SessionData | null = null;
 
+  // One-entry cache of the last attempted input (including rejected YAML).
+  // Keep reading native data: its version only refreshes as a side effect.
+  private _sessionInput: string | null = null;
+
   private _sdk?: INativeSDK;
 
   private _sdkReq: Promise<void>;
@@ -187,63 +191,156 @@ export class IRacingSDK {
   }
 
   public get sessionStatusOK(): boolean {
-    return this._sdk?.isRunning() ?? false;
+    const running = this._sdk?.isRunning() ?? false;
+    if (!running) this.resetSessionData();
+    return running;
+  }
+
+  private static quoteTextValue(value: string): string {
+    // JSON escapes backslashes, quotes, CR and C0 controls. YAML also treats
+    // NEL/Unicode separators as line breaks, so escape those without losing them.
+    return JSON.stringify(value).replace(
+      /[\u007f-\u009f\u2028\u2029]/g,
+      (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`
+    );
+  }
+
+  /** Preserve complete flow values, including their nested/multiline contents. */
+  private static flowCollectionEnd(
+    lines: string[],
+    start: number,
+    value: string,
+    keyIndent: number
+  ): number | null {
+    let end = start + 1;
+    while (end < lines.length) {
+      const line = lines[end];
+      if (
+        /^---|^\.\.\./.test(line) ||
+        (line.search(/\S/) <= keyIndent && /^[ \t]*(?:-[ \t]+)?\w+:/.test(line))
+      )
+        break;
+      end++;
+    }
+    try {
+      const parsed: unknown = yaml.load(
+        [value, ...lines.slice(start + 1, end)].join('\n'),
+        { json: true }
+      );
+      if (parsed !== null && typeof parsed === 'object') return end - 1;
+    } catch {
+      // A bracketed/braced name followed by text is not a YAML collection.
+    }
+    return null;
   }
 
   /**
-   * Merges continuation lines back into the preceding key's value. iRacing
-   * occasionally emits values that contain a literal newline (e.g. a
-   * DriverSetupName built from a path with `\n` in a folder name), which
-   * produces YAML that fails to parse. We detect lines that don't look like
-   * a valid key, list item, or document marker and fold them into the prior
-   * key's value as a single-quoted scalar.
+   * Extend the existing indicator/comma repairs only for known text fields.
+   * Track block/quoted scalars so their contents cannot become mapping entries
+   * or stray setup-path lines during normalization.
    */
-  private static fixMultilineValues(yamlText: string): string {
+  private static normalizeSessionYaml(yamlText: string): string {
     const lines = yamlText.split('\n');
-    const keyLine = /^\s*(?:-\s+)?\w+:(?:\s|$)/;
-    const otherValid = /^\s*$|^\s*#|^\.\.\.\s*$|^---\s*$|^\s*-\s+\S/;
-
-    let lastKeyIdx = -1;
-    let changed = false;
+    let blockIndent = -1;
+    let quote: string | null = null;
+    const closesQuote = (value: string, delimiter: string) =>
+      delimiter === "'"
+        ? /^(?:[^']|'')*'/.test(value)
+        : /^(?:[^"\\]|\\.)*"/.test(value);
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (keyLine.test(line)) {
-        lastKeyIdx = i;
-      } else if (otherValid.test(line)) {
-        // structurally valid, nothing to merge
-      } else if (lastKeyIdx >= 0) {
-        const match = lines[lastKeyIdx].match(/^(\s*(?:-\s+)?\w+:\s*)(.*)$/);
-        if (match) {
-          const [, keyPart, existing] = match;
-          const unquoted = existing
-            .replace(/^'(.*)'$/, '$1')
-            .replace(/''/g, "'");
-          const merged = `${unquoted.trimEnd()} ${line.trim()}`.replace(
-            /'/g,
-            "''"
-          );
-          lines[lastKeyIdx] = `${keyPart}'${merged}'`;
-          lines[i] = '';
-          changed = true;
+      const indent = line.search(/\S/);
+      if (blockIndent >= 0 && (indent === -1 || indent > blockIndent)) continue;
+      blockIndent = -1;
+      if (quote) {
+        if (closesQuote(line, quote)) quote = null;
+        continue;
+      }
+      if (/^[ \t]*-[ \t]+[|>][\d+-]*(?:[ \t]+#.*)?[ \t]*\r?$/.test(line)) {
+        blockIndent = indent;
+        continue;
+      }
+      const match = line.match(/^([ \t]*(?:-[ \t]+)?(\w+):[ \t]*)([^\n]*)$/);
+      if (!match) continue;
+      const [, keyPart, key, rawValue] = match;
+      const crlf = rawValue.endsWith('\r') ? '\r' : '';
+      let value = crlf ? rawValue.slice(0, -1) : rawValue;
+      if (/^[|>][\d+-]*(?:[ \t]+#.*)?[ \t]*$/.test(value)) {
+        blockIndent = keyPart.search(/\w/);
+        continue;
+      }
+      if (/^["']/.test(value)) {
+        if (!closesQuote(value.slice(1), value[0])) quote = value[0];
+        continue;
+      }
+      const knownTextField =
+        /^(?:TeamName|UserName|AbbrevName|Initials|DriverSetupName)$/.test(key);
+      const legacyIndicator = /^[?-](?:[ \t]|$)/.test(value);
+      if (!knownTextField && !legacyIndicator && !/^,/.test(value)) continue;
+      if (/^#/.test(value)) continue;
+      if (/^[[{]/.test(value)) {
+        const flowEnd = IRacingSDK.flowCollectionEnd(
+          lines,
+          i,
+          value,
+          keyPart.search(/\w/)
+        );
+        if (flowEnd !== null) {
+          i = flowEnd;
+          continue;
         }
       }
-    }
+      const leadingIndicator = /^[[{&*!]/.test(value);
+      const commentStart = value.search(/[ \t]+#/);
+      const comment = commentStart < 0 ? '' : value.slice(commentStart);
+      value = (commentStart < 0 ? value : value.slice(0, commentStart)).replace(
+        /[ \t]+$/,
+        ''
+      );
 
-    return changed ? lines.join('\n') : yamlText;
+      let merged = false;
+      if (key === 'DriverSetupName' && value && !/^#/.test(value)) {
+        // Repair the existing corruption case: a setup path split by a literal
+        // LF into stray unindented text. Valid indented continuations stay YAML.
+        for (let j = i + 1; j < lines.length; j++) {
+          const continuation = lines[j];
+          if (
+            /^\s*$|^\s*#|^\s*(?:-\s+)?\w+:|^\s*-|^\.\.\.|^---/.test(
+              continuation
+            )
+          )
+            break;
+          if (continuation.search(/\S/) > indent) break;
+          value += ` ${continuation.trim()}`;
+          lines[j] = '';
+          merged = true;
+        }
+      }
+      // Ignore colons inside valid YAML comments. Empty values, numbers,
+      // booleans, flow collections, and ordinary scalars retain their types.
+      if (value.trim() === ',') {
+        lines[i] = `${keyPart}${comment}${crlf}`;
+      } else if (
+        merged ||
+        /^[@,]/.test(value) ||
+        legacyIndicator ||
+        leadingIndicator ||
+        /:(?:[ \t]|$)/.test(value) ||
+        // eslint-disable-next-line no-control-regex -- native text can contain literal controls
+        /[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/.test(value)
+      ) {
+        lines[i] =
+          `${keyPart}${IRacingSDK.quoteTextValue(value)}${comment}${crlf}`;
+      }
+    }
+    return lines.join('\n');
   }
 
-  /**
-   * Quotes scalar values that iRacing emits with a leading YAML mapping or
-   * sequence indicator. For example, `UserName: ? ?` and
-   * `TeamName: - BLACKSUIT` are not valid as unquoted scalars.
-   */
-  private static fixIndicatorValues(yamlText: string): string {
-    return yamlText.replace(
-      /^([^\S\r\n]*(?:-[^\S\r\n]+)?\w+:[^\S\r\n]*)([?-](?:[^\S\r\n]+[^\r\n]*)?)\r?$/gm,
-      (_line, keyPart: string, value: string) =>
-        `${keyPart}'${value.replace(/'/g, "''")}'`
-    );
+  private resetSessionData(): void {
+    this._dataVer = -1;
+    this._sessionData = null;
+    this._sessionInput = null;
   }
 
   /**
@@ -252,6 +349,7 @@ export class IRacingSDK {
    */
   public startSDK(): boolean {
     if (!this._sdk?.isRunning()) {
+      this.resetSessionData();
       const successful = this._sdk?.startSDK() ?? false;
       if (this.autoEnableTelemetry) {
         this.enableTelemetry(true);
@@ -266,7 +364,7 @@ export class IRacingSDK {
    */
   public stopSDK(): void {
     this._sdk?.stopSDK();
-    this._dataVer = -1;
+    this.resetSessionData();
   }
 
   /**
@@ -275,9 +373,8 @@ export class IRacingSDK {
    */
   public waitForData(timeout?: number): boolean {
     const result = this._sdk?.waitForData(timeout) ?? false;
-    if (!result && this._sdk?.currDataVersion === -1) {
-      this._dataVer = -1;
-      this._sessionData = null;
+    if (this._sdk?.currDataVersion === -1) {
+      this.resetSessionData();
     }
     return result;
   }
@@ -291,6 +388,7 @@ export class IRacingSDK {
     switch (command.type) {
       case 'seek':
         accepted = this._sdk?.seekTapeReplay?.(command.seconds) ?? false;
+        if (accepted) this.resetSessionData();
         break;
       case 'speed':
         accepted = this._sdk?.setTapeReplaySpeed?.(command.speed) ?? false;
@@ -312,28 +410,57 @@ export class IRacingSDK {
     if (!this._sdk) return null;
 
     try {
-      const seshString = this._sdk?.getSessionData();
+      if (this.currDataVersion === -1) this.resetSessionData();
+      const seshString = this._sdk.getSessionData();
       // currDataVersion is only updated after getSessionData is called
-      if (this._sessionData && this._dataVer === this.currDataVersion)
+      const version = this.currDataVersion;
+      if (!seshString || version === -1) {
+        this.resetSessionData();
+        return null;
+      }
+      if (version < this._dataVer) this.resetSessionData();
+      if (
+        this._sessionInput === seshString &&
+        (!this._sessionData || this._dataVer === version)
+      ) {
+        this._dataVer = version;
         return this._sessionData;
+      }
+      this._sessionInput = seshString;
+      this._dataVer = version;
+      this._sessionData = null;
 
-      // Handle leading commas in YAML values.
-      // First regex will drop the comma if no values follow (e.g. 'field: ,' => 'field: ')
-      // Second regex will put value in quotes, if leading comma is followed by values (e.g. 'field: ,data' => 'field: ",data"')
-      // The multiline-value pass handles iRacing setup names that contain a literal
-      // newline (e.g. corrupted DriverSetupName paths), which YAML would otherwise reject.
-      const fixedYaml = seshString
-        ? IRacingSDK.fixIndicatorValues(
-            IRacingSDK.fixMultilineValues(seshString)
-          )
-            .replace(/(\w+: ) *, *\n/g, '$1 \n')
-            .replace(/(\w+: )(,.*)/g, '$1"$2" \n')
-        : seshString;
+      const fixedYaml = IRacingSDK.normalizeSessionYaml(seshString);
       this._sessionData = yaml.load(fixedYaml, { json: true }) as SessionData;
-      this._dataVer = this.currDataVersion;
       return this._sessionData;
     } catch (err) {
-      logger.error('There was an error getting session data:', err);
+      // YAMLException includes the entire session in mark.buffer and may put
+      // user text in reason/message (e.g. unknown tags). Never forward it.
+      if (err instanceof yaml.YAMLException) {
+        const safeReasons = [
+          'bad indentation of a mapping entry',
+          'bad indentation of a sequence entry',
+          'the stream contains non-printable characters',
+          'unexpected end of the stream within a flow collection',
+        ];
+        const errorLine = err.mark?.buffer?.split('\n').at(err.mark.line);
+        const key = errorLine?.match(
+          /^[ \t]*(?:-[ \t]+)?(TeamName|UserName|AbbrevName|Initials|DriverSetupName|Drivers|DriverInfo|WeekendInfo):/
+        )?.[1];
+        logger.error('There was an error getting session data:', {
+          reason: safeReasons.includes(err.reason)
+            ? err.reason
+            : 'invalid YAML',
+          field: key,
+          line: err.mark ? err.mark.line + 1 : undefined,
+          column: err.mark ? err.mark.column + 1 : undefined,
+        });
+      } else {
+        this.resetSessionData();
+        logger.error('There was an error getting session data:', {
+          reason: 'session data read failed',
+        });
+      }
     }
 
     return null;

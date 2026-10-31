@@ -1,3 +1,4 @@
+import { setupStorageStatusBridge } from './app/bridge/storageStatusBridge';
 import { app, autoUpdater, BrowserWindow, ipcMain } from 'electron';
 import { setupReleaseNotesBridge } from './app/bridge/releaseNotesBridge';
 import log from './app/logger';
@@ -143,7 +144,7 @@ if (app.getName() === 'irdashies') {
 const overlayManager = new OverlayManager();
 const analytics = new Analytics();
 const perfRun = getPerfRunConfig();
-analytics.setupLogTransport();
+analytics.setupLogTransport(overlayManager.getVersion());
 
 overlayManager.setupChromiumFlags();
 overlayManager.setupHardwareAcceleration();
@@ -458,7 +459,8 @@ void app.whenReady().then(async () => {
 
   // Setup IPC bridges
   setupLogBridge();
-  setupFuelCalculatorBridge();
+  setupStorageStatusBridge();
+  fuelDatabase = setupFuelCalculatorBridge();
   const pitLaneBridge = setupPitLaneBridge(overlayManager, channelBus);
   setupPersonalBestLapTimesBridge();
   setupLapTraceBridge(overlayManager);
@@ -654,6 +656,8 @@ app.on('quit', () => {
   analytics.shutdown();
 });
 
+let fuelDatabase: ReturnType<typeof setupFuelCalculatorBridge> | undefined;
+
 const SHUTDOWN_FLUSH_TIMEOUT_MS = 5_000;
 
 const handleBeforeQuit = createBeforeQuitHandler({
@@ -675,6 +679,7 @@ const handleBeforeQuit = createBeforeQuitHandler({
       flushLapTracesOnShutdown(),
       flushPitLaneDataOnShutdown(),
       flushReferenceLapsOnShutdown(),
+      fuelDatabase?.flush(),
       flushIncidentsOnShutdown(),
       flushLapHistoryOnShutdown(),
       knownLocalUserIds.flush(),
