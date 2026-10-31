@@ -34,7 +34,6 @@ vi.mock('node:fs/promises', async (importOriginal) => {
     ...original,
     writeFile: vi.fn(original.writeFile),
     rename: vi.fn(original.rename),
-    readdir: vi.fn(original.readdir),
     readFile: vi.fn(original.readFile),
     unlink: vi.fn(original.unlink),
   };
@@ -78,7 +77,6 @@ beforeEach(async () => {
   // Reset failure injection as well as calls between cases.
   vi.mocked(io.writeFile).mockImplementation(disk.writeFile);
   vi.mocked(io.rename).mockImplementation(disk.rename);
-  vi.mocked(io.readdir).mockImplementation(disk.readdir);
   vi.mocked(io.readFile).mockImplementation(disk.readFile);
   vi.mocked(io.unlink).mockImplementation(disk.unlink);
   mocks.userData = await disk.mkdtemp(join(tmpdir(), 'irdashies-icons-'));
@@ -154,7 +152,7 @@ describe('player icon upload retention', () => {
         basename(next),
       ])
     );
-    expect(await files()).not.toContain(basename(raceIcon));
+    expect(await files()).toContain(basename(raceIcon));
     expect(await storage.getPlayerIconImageAsDataUrl(defaultIcon)).toBeTruthy();
     expect(await storage.getPlayerIconImageAsDataUrl(replacement)).toBeTruthy();
   });
@@ -201,7 +199,7 @@ describe('player icon upload retention', () => {
       ).rejects.toMatchObject({ code: 'ENOSPC' });
       expect(await disk.readFile(old)).toEqual(Buffer.from(png(1)));
       expect(await files()).toEqual([basename(old), basename(orphan)].sort());
-      // A failed operation must not poison the upload queue.
+      // A failed operation must not prevent a later upload.
       expect(await storage.savePlayerIconImage(png(3))).toContain(
         iconName(png(3))
       );
@@ -220,9 +218,9 @@ describe('player icon upload retention', () => {
     expect(await files()).toEqual([basename(old)]);
   });
 
-  it('protects concurrent and still-pending uploads across later unrelated saves', async () => {
+  it('preserves concurrent uploads, including identical contents, across later saves', async () => {
     const paths = await Promise.all(
-      [1, 2, 3].map((n) => storage.savePlayerIconImage(png(n)))
+      [1, 2, 1, 3].map((n) => storage.savePlayerIconImage(png(n)))
     );
     storage.saveDashboard('default', dashboard());
     await persist();
@@ -230,12 +228,15 @@ describe('player icon upload retention', () => {
     expect(await files()).toEqual(
       expect.arrayContaining(paths.map((path) => basename(path)))
     );
+    expect(paths[0]).toBe(paths[2]);
     for (const [index, path] of paths.entries()) {
-      expect(await disk.readFile(path)).toEqual(Buffer.from(png(index + 1)));
+      expect(await disk.readFile(path)).toEqual(
+        Buffer.from(png([1, 2, 1, 3][index]))
+      );
     }
   });
 
-  it('cleans abandoned uploads after restart while retaining committed icons', async () => {
+  it('retains saved and unused uploads across restart', async () => {
     const committed = await storage.savePlayerIconImage(png(1));
     const abandoned = await storage.savePlayerIconImage(png(2));
     cachedDashboards.race = dashboard(basename(committed));
@@ -244,101 +245,26 @@ describe('player icon upload retention', () => {
     storage = await import('./dashboards');
     await storage.savePlayerIconImage(png(3));
     expect(await files()).toContain(basename(committed));
-    expect(await files()).not.toContain(basename(abandoned));
+    expect(await files()).toContain(basename(abandoned));
   });
 
-  it('prunes committed icons removed before the next upload, without accumulating files', async () => {
-    const otherProfileIcon = await put(iconName(png(99)));
-    cachedDashboards.default = dashboard(basename(otherProfileIcon));
-    await persist();
-    let previous: string | undefined;
-    for (let n = 1; n <= 5; n++) {
-      const uploaded = await storage.savePlayerIconImage(png(n));
-      if (previous) expect(await files()).not.toContain(basename(previous));
-      expect(await files()).toEqual(
-        [basename(otherProfileIcon), basename(uploaded)].sort()
-      );
-      storage.saveDashboard('race', dashboard(basename(uploaded)));
-      await persist();
-      storage.saveDashboard('race', dashboard());
-      await persist();
-      previous = uploaded;
-    }
-  });
-
-  it('keeps an upload pending if its settings save failed and the cached reference was removed', async () => {
-    const uploaded = await storage.savePlayerIconImage(png(1));
-    mocks.writeData.mockImplementationOnce(() => {
-      throw Object.assign(new Error('config write failed'), { code: 'ENOSPC' });
-    });
-    expect(() =>
-      storage.saveDashboard('race', dashboard(basename(uploaded)))
-    ).toThrow('config write failed');
-    storage.saveDashboard('race', dashboard());
-    await persist();
-    await storage.savePlayerIconImage(png(2));
-    // No successful save has ever committed this upload. Another renderer
-    // can still finish its original settings update after this cleanup.
-    expect(await files()).toContain(basename(uploaded));
-  });
-
-  it('releases pending references committed by a later unrelated dashboard save', async () => {
-    const uploaded = await storage.savePlayerIconImage(png(1));
-    mocks.writeData.mockImplementationOnce(() => {
-      throw Object.assign(new Error('config write failed'), { code: 'ENOSPC' });
-    });
-    expect(() =>
-      storage.saveDashboard('race', dashboard(basename(uploaded)))
-    ).toThrow('config write failed');
-    // writeData persists the entire dashboards collection. This successful
-    // write also commits race's cached icon, despite targeting default.
-    storage.saveDashboard('default', dashboard('player-icon.png'));
-    await persist();
-    storage.saveDashboard('race', dashboard());
-    await persist();
-    await storage.savePlayerIconImage(png(2));
-    expect(await files()).not.toContain(basename(uploaded));
-  });
-
-  it('keeps a shared icon until every profile drops its reference', async () => {
+  it('retains a shared image after all profiles remove their icons', async () => {
     const shared = await put(iconName(png(1)));
     cachedDashboards = { default: dashboard(shared), race: dashboard(shared) };
     await persist();
     const replacement = await storage.savePlayerIconImage(png(2));
-    cachedDashboards.race = dashboard(replacement);
+    storage.saveDashboard('race', dashboard(replacement));
     await persist();
     await storage.savePlayerIconImage(png(3));
     expect(await files()).toContain(basename(shared));
-    cachedDashboards.default = dashboard();
+    storage.saveDashboard('default', dashboard());
+    storage.saveDashboard('race', dashboard());
     await persist();
     await storage.savePlayerIconImage(png(4));
-    expect(await files()).not.toContain(basename(shared));
+    expect(await files()).toContain(basename(shared));
   });
 
-  it('preserves a cached reference that has not reached disk', async () => {
-    const cachedOnly = await put(iconName(png(1)));
-    cachedDashboards.race = dashboard(cachedOnly);
-    // config.json still contains the previous dashboard without this icon.
-    await storage.savePlayerIconImage(png(2));
-    expect(await files()).toContain(basename(cachedOnly));
-  });
-
-  it('does not fail a completed upload when directory cleanup is unavailable', async () => {
-    const old = await put(iconName(png(1)));
-    vi.mocked(io.readdir).mockRejectedValueOnce(
-      Object.assign(new Error('denied'), { code: 'EACCES' })
-    );
-    const replacement = await storage.savePlayerIconImage(png(2));
-    expect(await files()).toEqual(
-      expect.arrayContaining([basename(old), basename(replacement)])
-    );
-    expect(mocks.warn).toHaveBeenCalledWith(
-      '[PlayerIcon] Skipped icon cleanup:',
-      expect.objectContaining({ code: 'EACCES' })
-    );
-  });
-
-  it('keeps legacy paths and fixed filenames until their last profile reference is removed', async () => {
+  it('retains legacy images when their last profile reference is removed', async () => {
     const legacy = await put('player-icon.png');
     const other = await put(iconName(png(2)));
     const unrelated = await put('player-icon-personal.png');
@@ -356,16 +282,16 @@ describe('player icon upload retention', () => {
       ])
     );
 
-    cachedDashboards.race = dashboard();
+    storage.saveDashboard('race', dashboard());
     await persist();
     await storage.savePlayerIconImage(png(4));
-    expect(await files()).not.toContain(basename(legacy));
+    expect(await files()).toContain(basename(legacy));
     expect(await files()).toContain(basename(other));
     expect(await files()).toContain(basename(unrelated));
   });
 
   it.each(['missing', 'invalid JSON', 'invalid dashboards'])(
-    'skips cleanup with %s saved config',
+    'uploads without depending on %s saved config',
     async (kind) => {
       const old = await put(iconName(png(1)));
       if (kind === 'missing')
@@ -379,30 +305,9 @@ describe('player icon upload retention', () => {
       expect(await files()).toEqual(
         expect.arrayContaining([basename(old), basename(replacement)])
       );
-      expect(mocks.warn).toHaveBeenCalledWith(
-        '[PlayerIcon] Skipped icon cleanup:',
-        expect.any(Object)
-      );
+      expect(mocks.warn).not.toHaveBeenCalled();
     }
   );
-
-  it('does not fail a completed upload when cleanup cannot unlink an old icon', async () => {
-    const old = await put(iconName(png(1)));
-    vi.mocked(io.unlink).mockImplementation(async (path) => {
-      if (String(path) === old)
-        throw Object.assign(new Error('denied'), { code: 'EACCES' });
-      return disk.unlink(path);
-    });
-    const replacement = await storage.savePlayerIconImage(png(2));
-    expect(await files()).toEqual(
-      expect.arrayContaining([basename(old), basename(replacement)])
-    );
-    expect(mocks.warn).toHaveBeenCalledWith(
-      '[PlayerIcon] Failed to remove old icon:',
-      basename(old),
-      expect.objectContaining({ code: 'EACCES' })
-    );
-  });
 });
 
 describe('player icon reads', () => {

@@ -11,14 +11,7 @@ import {
   WIDGET_SCALE,
 } from '@irdashies/types';
 import { readData, writeData } from './storage';
-import {
-  writeFile,
-  mkdir,
-  readFile,
-  readdir,
-  unlink,
-  rename,
-} from 'node:fs/promises';
+import { writeFile, mkdir, readFile, unlink, rename } from 'node:fs/promises';
 import { resolve, basename, sep } from 'node:path';
 import { homedir } from 'node:os';
 import { app } from 'electron';
@@ -370,7 +363,6 @@ export const saveDashboard = (
     dashboards[id] = mergedDashboard;
     logger.info('[saveDashboard] Writing to storage for profile:', id);
     writeData(DASHBOARDS_KEY, dashboards);
-    releaseCommittedPlayerIcons(dashboards);
     logger.info('[saveDashboard] Saved successfully to storage');
     emitDashboardsSaved();
 
@@ -530,13 +522,6 @@ export const getGarageCoverImageAsDataUrl = async (
   }
 };
 
-// Uploads return before settings persist. Keep uncommitted assets until a
-// dashboard write succeeds, a later upload observes their reference on disk,
-// or the process exits. Committed assets are protected by dashboard references.
-// Abandoned uploads from previous runs are pruned on the next successful upload.
-const pendingPlayerIcons = new Set<string>();
-let playerIconSaveQueue: Promise<unknown> = Promise.resolve();
-
 const playerIconErrorDetails = (error: unknown) => ({
   code: (error as NodeJS.ErrnoException | null)?.code,
   message: (error instanceof Error ? error.message : String(error))
@@ -544,112 +529,9 @@ const playerIconErrorDetails = (error: unknown) => ({
     .replaceAll(homedir(), '<home>'),
 });
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const playerIconFilename = (widget: unknown): string | undefined => {
-  const config = isRecord(widget) ? widget.config : undefined;
-  const icon = isRecord(config) ? config.playerIcon : undefined;
-  if (isRecord(icon) && typeof icon.fileName === 'string') {
-    // Legacy configs can contain an absolute path, including Windows paths.
-    return icon.fileName.split(/[\\/]/).pop();
-  }
-  return undefined;
-};
-
-const releaseCommittedPlayerIcons = (
-  dashboards: Record<string, DashboardLayout>
-): void => {
-  if (pendingPlayerIcons.size === 0) return;
-  // writeData saves the entire collection, even when only one profile changed.
-  // Call only after it succeeds; a failed write must keep uploads pending.
-  for (const dashboard of Object.values(dashboards)) {
-    if (!Array.isArray(dashboard?.widgets)) continue;
-    for (const widget of dashboard.widgets) {
-      const name = playerIconFilename(widget);
-      if (name) pendingPlayerIcons.delete(name);
-    }
-  }
-};
-
-const playerIconReferences = (dashboards: unknown): Set<string> => {
-  if (!isRecord(dashboards)) throw new Error('Invalid saved dashboards');
-  const references = new Set<string>();
-  for (const dashboard of Object.values(dashboards)) {
-    // Fail closed: an unreadable dashboard cannot establish unreferenced assets.
-    if (!isRecord(dashboard) || !Array.isArray(dashboard.widgets)) {
-      throw new Error('Invalid saved dashboard widgets');
-    }
-    for (const widget of dashboard.widgets) {
-      if (!isRecord(widget)) throw new Error('Invalid saved widget');
-      const name = playerIconFilename(widget);
-      if (name) references.add(name);
-    }
-  }
-  return references;
-};
-
-const cleanupPlayerIcons = async (assetsPath: string): Promise<void> => {
-  try {
-    const files = await readdir(assetsPath);
-    // readData's cache is updated before writeData reaches disk. Protect both
-    // views so a failed settings save cannot orphan the previous saved icon.
-    const raw: unknown = JSON.parse(
-      await readFile(resolve(app.getPath('userData'), 'config.json'), 'utf8')
-    );
-    if (!isRecord(raw)) throw new Error('Invalid saved config');
-    const savedReferences = playerIconReferences(raw.dashboards);
-    const currentProfileId = getCurrentProfileId();
-    const currentDashboard = getDashboard(currentProfileId);
-    const references = playerIconReferences({
-      ...listDashboards(),
-      ...(currentDashboard ? { [currentProfileId]: currentDashboard } : {}),
-    });
-    for (const name of savedReferences) {
-      references.add(name);
-      pendingPlayerIcons.delete(name);
-    }
-    await Promise.all(
-      files
-        // Only filenames produced by uploads, including the legacy fixed name.
-        .filter(
-          (name) =>
-            /^player-icon(?:-[a-f0-9]{10})?\.(?:png|jpe?g|gif|webp|svg)$/i.test(
-              name
-            ) &&
-            !references.has(name) &&
-            !pendingPlayerIcons.has(name)
-        )
-        .map((name) =>
-          unlink(resolve(assetsPath, name)).catch((error) => {
-            logger.warn(
-              '[PlayerIcon] Failed to remove old icon:',
-              name,
-              playerIconErrorDetails(error)
-            );
-          })
-        )
-    );
-  } catch (error) {
-    // Missing/corrupt config or a directory failure must never fail an upload.
-    logger.warn(
-      '[PlayerIcon] Skipped icon cleanup:',
-      playerIconErrorDetails(error)
-    );
-  }
-};
-
-export const savePlayerIconImage = (buffer: Uint8Array): Promise<string> => {
-  // Serialize uploads and cleanup so another upload cannot remove an asset
-  // between its write and registration as pending.
-  const saved = playerIconSaveQueue.then(() =>
-    savePlayerIconImageInternal(buffer)
-  );
-  playerIconSaveQueue = saved.catch(() => undefined);
-  return saved;
-};
-
-const savePlayerIconImageInternal = async (
+// Profiles and in-flight settings updates can share an uploaded image. Keep
+// image files when replacing/removing icons; unused uploads remain on disk.
+export const savePlayerIconImage = async (
   buffer: Uint8Array
 ): Promise<string> => {
   try {
@@ -699,10 +581,8 @@ const savePlayerIconImageInternal = async (
       }
     }
 
-    // Hash the contents so each unique upload gets a unique filename. This
-    // makes replacements visible to the live map (the hook keys off the
-    // filename) and avoids orphaning a different-extension file with the same
-    // base name.
+    // Content-based names make replacements visible to the live map and reuse
+    // the same path for identical uploads.
     const hash = createHash('sha1').update(buffer).digest('hex').slice(0, 10);
     const imagePath = resolve(assetsPath, `player-icon-${hash}.${extension}`);
 
@@ -718,9 +598,7 @@ const savePlayerIconImageInternal = async (
     } finally {
       await unlink(temporaryPath).catch(() => undefined);
     }
-    pendingPlayerIcons.add(basename(imagePath));
     logger.info('[PlayerIcon] File written successfully');
-    await cleanupPlayerIcons(assetsPath);
 
     return imagePath;
   } catch (err) {
