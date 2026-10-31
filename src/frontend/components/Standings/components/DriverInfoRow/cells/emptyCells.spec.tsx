@@ -38,7 +38,7 @@ describe('CountryFlagsCell with no country', () => {
     expect(cell.textContent).toBe('');
   });
 
-  it('renders nothing for a country the sheet does not carry', () => {
+  it('renders no text for a country flag-icons does not carry', () => {
     const cell = cellContent(
       <CountryFlagsCell flairId={0} countryCode="ZZ" />,
       'countryFlags'
@@ -51,7 +51,7 @@ describe('CountryFlagsCell with no country', () => {
       <CountryFlagsCell flairId={0} countryCode="FR" />,
       'countryFlags'
     );
-    expect(cell.querySelector('[role="img"]')).not.toBeNull();
+    expect(cell.querySelector('.fi.fi-fr')).not.toBeNull();
   });
 });
 

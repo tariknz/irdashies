@@ -27,9 +27,8 @@ export const CountryFlagsCell = memo(
           every AI under LMU, since it has no nationality and no flair id. A
           falsy non-boolean left of `&&` reaches the DOM as text.
 
-          CountryFlag returns null when it cannot draw a flag, so the decision
-          belongs there: it is the only place that knows whether the sheet has
-          a cell for the code.
+          CountryFlag returns null when there is no country to draw, so the
+          decision belongs there.
         */}
         <CountryFlag flairId={flairId ?? 0} countryCode={countryCode} />
       </td>

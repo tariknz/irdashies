@@ -50,8 +50,7 @@
     "prepare": "husky",
     "fetch-lmu-rank-art": "npx tsx ./tools/fetch-lmu-rank-art.ts",
     "build-lmu-sprite": "npm run fetch-lmu-rank-art && electron ./tools/build-lmu-sprite.cjs",
-    "build-lmu-manufacturer-sprite": "electron ./tools/build-lmu-manufacturer-sprite.cjs",
-    "build-flag-sprite": "electron tools/build-flag-sprite.cjs"
+    "build-lmu-manufacturer-sprite": "electron ./tools/build-lmu-manufacturer-sprite.cjs"
   },
   "devDependencies": {
     "@electron-forge/cli": "^8.0.1",
