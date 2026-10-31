@@ -215,12 +215,23 @@ export const withDashboardDefaults = (
       !storedWidgets.find((widget) => widget.id === defaultWidget.id)
   );
 
+  const savedColorPalette: unknown =
+    dashboard.generalSettings?.colorPalette;
+  const generalSettings = {
+    ...defaultDashboard.generalSettings,
+    ...dashboard.generalSettings,
+  };
+  if (
+    savedColorPalette !== undefined &&
+    savedColorPalette !== 'default' &&
+    savedColorPalette !== 'black'
+  ) {
+    generalSettings.colorPalette = 'default';
+  }
+
   return {
     ...dashboard,
-    generalSettings: {
-      ...defaultDashboard.generalSettings,
-      ...dashboard.generalSettings,
-    },
+    generalSettings,
     widgets: [...storedWidgets, ...missingWidgets].map((widget) => {
       const defaultWidget = defaultDashboard.widgets.find(
         (w) => w.id === widget.id

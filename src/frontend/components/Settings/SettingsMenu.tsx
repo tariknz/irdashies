@@ -58,7 +58,14 @@ const MenuLink = ({
             className="shrink-0"
           />
         )}
-        <span className="flex-1 truncate">{item.label}</span>
+        <span className="flex-1 min-w-0">
+          <span className="block truncate">{item.label}</span>
+          {disabledReason && (
+            <span className="block text-xs whitespace-normal">
+              {disabledReason}
+            </span>
+          )}
+        </span>
         {isNew && (
           <span className="rounded bg-accent-400/15 px-1.5 py-0.5 text-[10px] font-semibold text-accent-300">
             New
