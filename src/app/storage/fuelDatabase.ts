@@ -6,14 +6,19 @@ import logger from '../logger';
 import { createDebouncedAtomicWriter } from './debouncedAtomicWriter';
 import { reportStorageResult, storageErrorCode } from './storageStatus';
 
+const MAX_FUEL_CONTEXTS = 500;
+
 interface FuelStorageFormat {
   laps: Record<string, FuelLapData[]>;
+  /** Oldest to newest saved context, shared by laps and qualifying settings. */
+  contextOrder?: string[];
   settings: Record<string, { qualifyMax: number | null }>;
 }
 
 export class FuelDatabase {
   private filePath: string;
   private data: FuelStorageFormat;
+  private contextOrder: Set<string>;
 
   // Ten laps per context, at most 500 track/car contexts.
   private writer: ReturnType<typeof createDebouncedAtomicWriter>;
@@ -22,6 +27,19 @@ export class FuelDatabase {
     const dataPath = app.getPath('userData');
     this.filePath = path.join(dataPath, 'fuel_data.json');
     this.data = this.load();
+    // Legacy files have no shared ordering; start with their insertion order.
+    this.contextOrder = new Set([
+      ...Object.keys(this.data.laps),
+      ...Object.keys(this.data.settings),
+    ]);
+    if (Array.isArray(this.data.contextOrder)) {
+      for (const key of this.data.contextOrder) {
+        // Ignore malformed/stale metadata and keep contexts absent from it.
+        if (typeof key === 'string' && this.contextOrder.delete(key)) {
+          this.contextOrder.add(key);
+        }
+      }
+    }
     this.writer = createDebouncedAtomicWriter({
       filePath: this.filePath,
       serialize: () => JSON.stringify(this.data, null, 2),
@@ -51,22 +69,27 @@ export class FuelDatabase {
     return { laps: {}, settings: {} };
   }
 
-  private save() {
-    const keys = [
-      ...new Set([
-        ...Object.keys(this.data.laps),
-        ...Object.keys(this.data.settings),
-      ]),
-    ];
-    if (keys.length > 500) {
-      const retained = new Set(keys.slice(-500));
+  private save(contextKey?: string) {
+    if (contextKey !== undefined) {
+      this.contextOrder.delete(contextKey);
+      this.contextOrder.add(contextKey);
+    }
+    if (this.contextOrder.size > MAX_FUEL_CONTEXTS) {
+      this.contextOrder = new Set(
+        [...this.contextOrder].slice(-MAX_FUEL_CONTEXTS)
+      );
       this.data.laps = Object.fromEntries(
-        Object.entries(this.data.laps).filter(([key]) => retained.has(key))
+        Object.entries(this.data.laps).filter(([key]) =>
+          this.contextOrder.has(key)
+        )
       );
       this.data.settings = Object.fromEntries(
-        Object.entries(this.data.settings).filter(([key]) => retained.has(key))
+        Object.entries(this.data.settings).filter(([key]) =>
+          this.contextOrder.has(key)
+        )
       );
     }
+    this.data.contextOrder = [...this.contextOrder];
     this.writer.schedule();
   }
 
@@ -93,7 +116,7 @@ export class FuelDatabase {
       this.data.laps[key] = this.data.laps[key].slice(0, 10);
     }
 
-    this.save();
+    this.save(key);
   }
 
   public getLaps(trackId: string | number, carName: string): FuelLapData[] {
@@ -108,7 +131,7 @@ export class FuelDatabase {
   ) {
     const key = this.getContextKey(trackId, carName);
     this.data.settings[key] = { qualifyMax: val };
-    this.save();
+    this.save(key);
   }
 
   public getQualifyMax(
@@ -122,11 +145,12 @@ export class FuelDatabase {
   public clearLaps(trackId: string | number, carName: string) {
     const key = this.getContextKey(trackId, carName);
     this.data.laps[key] = [];
-    this.save();
+    this.save(key);
   }
 
   public clearAllLaps() {
     this.data = { laps: {}, settings: {} };
+    this.contextOrder.clear();
     this.save();
   }
 }

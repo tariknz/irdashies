@@ -178,4 +178,69 @@ describe('FuelDatabase', () => {
     expect(db.getQualifyMax(0, 'car')).toBeNull();
     expect(db.getQualifyMax(500, 'car')).toBe(500);
   });
+  const lap: FuelLapData = {
+    lapNumber: 1,
+    fuelUsed: 2,
+    lapTime: 90,
+    isGreenFlag: true,
+    isValidForCalc: true,
+    isOutLap: false,
+    timestamp: 1,
+  };
+
+  it('keeps a new lap when the cap is filled with settings-only contexts', async () => {
+    for (let i = 0; i < 500; i++) db.saveQualifyMax(i, 'car', i);
+    db.saveLap(500, 'car', lap);
+    expect(db.getLaps(500, 'car')).toHaveLength(1);
+    expect(db.getQualifyMax(0, 'car')).toBeNull();
+    await db.flush();
+    const reloaded = new FuelDatabase();
+    expect(reloaded.getLaps(500, 'car')).toHaveLength(1);
+    expect(reloaded.getQualifyMax(0, 'car')).toBeNull();
+  });
+
+  it('prunes mixed contexts by their latest save across both maps and restarts', async () => {
+    for (let i = 0; i < 500; i++) {
+      if (i % 2 === 0) db.saveLap(i, 'car', lap);
+      else db.saveQualifyMax(i, 'car', i);
+    }
+    // Refresh old entries using both APIs; neither should be evicted next.
+    db.saveQualifyMax(0, 'car', 2);
+    db.saveLap(1, 'car', lap);
+    await db.flush();
+    db = new FuelDatabase();
+    db.saveQualifyMax(500, 'car', 3);
+    db.saveLap(501, 'car', lap);
+    expect(db.getLaps(0, 'car')).toHaveLength(1);
+    expect(db.getQualifyMax(0, 'car')).toBe(2);
+    expect(db.getLaps(1, 'car')).toHaveLength(1);
+    expect(db.getQualifyMax(1, 'car')).toBe(1);
+    expect(db.getLaps(2, 'car')).toEqual([]);
+    expect(db.getQualifyMax(3, 'car')).toBeNull();
+    expect(db.getQualifyMax(500, 'car')).toBe(3);
+    expect(db.getLaps(501, 'car')).toHaveLength(1);
+    await db.flush();
+    const stored = JSON.parse(
+      await fsp.readFile(path.join(testDir, 'fuel_data.json'), 'utf8')
+    );
+    expect(
+      new Set([...Object.keys(stored.laps), ...Object.keys(stored.settings)])
+        .size
+    ).toBe(500);
+  });
+
+  it('loads legacy files without recency metadata and retains newly saved contexts', async () => {
+    const settings = Object.fromEntries(
+      Array.from({ length: 500 }, (_, i) => [`${i}:car`, { qualifyMax: i }])
+    );
+    await fsp.writeFile(
+      path.join(testDir, 'fuel_data.json'),
+      JSON.stringify({ laps: {}, settings })
+    );
+    db = new FuelDatabase();
+    db.saveLap(500, 'car', lap);
+    await db.flush();
+    expect(db.getLaps(500, 'car')).toHaveLength(1);
+    expect(db.getQualifyMax(0, 'car')).toBeNull();
+  });
 });
