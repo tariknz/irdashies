@@ -103,29 +103,10 @@ export type FontSize =
   | '8xl'
   | '9xl';
 
-export const SETTINGS_THEMES = ['classic', 'carbon', 'red'] as const;
-export type SettingsTheme = (typeof SETTINGS_THEMES)[number];
-/** Classic is the original look of the settings window. */
-export const DEFAULT_SETTINGS_THEME: SettingsTheme = 'classic';
+/** Legacy settings style retained when loading older dashboards. */
+export type SettingsTheme = 'classic' | 'carbon' | 'red';
 
-/** Persisted config is untrusted: unknown values get the default theme. */
-export const resolveSettingsTheme = (value: unknown): SettingsTheme =>
-  SETTINGS_THEMES.includes(value as SettingsTheme)
-    ? (value as SettingsTheme)
-    : DEFAULT_SETTINGS_THEME;
-
-/** Native window-control colours per settings theme: slate-700 / slate-300
- *  of each .settings-theme-* in theme.css (kept in sync by a spec). */
-export const SETTINGS_TITLE_BAR: Record<
-  SettingsTheme,
-  { color: string; symbolColor: string }
-> = {
-  classic: { color: '#314158', symbolColor: '#cad5e2' },
-  carbon: { color: '#17181b', symbolColor: '#a7aab0' },
-  red: { color: '#1b1e23', symbolColor: '#9aa1ab' },
-};
-
-/** How the settings menu groups widgets: user groups, moves and collapsed sections. */
+/** Legacy menu layout retained when loading older dashboards. */
 export interface MenuLayout {
   groups?: { id: string; label: string }[];
   /** Widget type -> group id (built-in category or custom group) overriding its default. */
@@ -161,7 +142,7 @@ export interface GeneralSettingsType {
     | 'rose'
     | 'zinc'
     | 'stone';
-  /** Look of the settings window only; overlays use colorPalette. */
+  /** Legacy settings window style; ignored by the current UI. */
   settingsTheme?: SettingsTheme;
   menuLayout?: MenuLayout;
   showOnlyWhenOnTrack?: boolean;

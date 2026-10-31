@@ -279,57 +279,15 @@ describe('OverlayManager display windows', () => {
     expect(manager.getOverlays().map((o) => o.window)).toEqual([newWindow]);
   });
 });
-
-describe('settings window title bar theme', () => {
-  const setup = () => {
+describe('settings window title bar', () => {
+  it.skipIf(process.platform === 'darwin')('uses the slate style', () => {
     const manager = new OverlayManager();
-    const win = new FakeBrowserWindow({});
-    (
-      manager as unknown as { currentSettingsWindow: FakeBrowserWindow }
-    ).currentSettingsWindow = win;
-    return { manager, win };
-  };
-
-  it.skipIf(process.platform === 'darwin')(
-    'retries the repaint after a failed one',
-    () => {
-      const { manager, win } = setup();
-      win.setTitleBarOverlay.mockImplementationOnce(() => {
-        throw new Error('gone');
-      });
-
-      expect(() => manager.setSettingsTitleBarTheme('carbon')).toThrow();
-      manager.setSettingsTitleBarTheme('carbon');
-      expect(win.setTitleBarOverlay).toHaveBeenCalledTimes(2);
-    }
-  );
-
-  it.skipIf(process.platform === 'darwin')(
-    'repaints only when the resolved theme changes',
-    () => {
-      const { manager, win } = setup();
-
-      manager.setSettingsTitleBarTheme('carbon');
-      manager.setSettingsTitleBarTheme('carbon');
-      expect(win.setTitleBarOverlay).toHaveBeenCalledTimes(1);
-      expect(win.setTitleBarOverlay).toHaveBeenLastCalledWith(
-        expect.objectContaining({ color: '#17181b' })
-      );
-
-      // An unknown stored value resolves to Classic, once.
-      manager.setSettingsTitleBarTheme('nonsense' as never);
-      manager.setSettingsTitleBarTheme(undefined);
-      expect(win.setTitleBarOverlay).toHaveBeenCalledTimes(2);
-      expect(win.setTitleBarOverlay).toHaveBeenLastCalledWith(
-        expect.objectContaining({ color: '#314158' })
-      );
-    }
-  );
-
-  it('does nothing without a settings window', () => {
-    expect(() =>
-      new OverlayManager().setSettingsTitleBarTheme('red')
-    ).not.toThrow();
+    manager.createSettingsWindow();
+    expect(createdWindows.at(-1)?.options.titleBarOverlay).toEqual({
+      color: '#314158',
+      symbolColor: '#cad5e2',
+      height: 40,
+    });
   });
 });
 

@@ -48,25 +48,18 @@ vi.mock('./menuItems', () => ({
   bottomItems: [{ to: '/settings/about', path: '/about', label: 'About' }],
   menuHasToggle: (widgetType: string, ids: string[]) =>
     ids.includes(widgetType),
-  WIDGET_CATEGORIES: [
-    { id: 'race', label: 'Timing & Race' },
-    { id: 'track', label: 'Track & Conditions' },
-    { id: 'extras', label: 'Extras' },
-  ],
   widgetItems: [
     {
       to: '/settings/standings',
       path: '/standings',
       label: 'Standings',
       widgetType: 'standings',
-      category: 'race',
     },
     {
       to: '/settings/wind',
       path: '/wind',
       label: 'Wind',
       widgetType: 'wind',
-      category: 'track',
     },
     {
       to: '/settings/twitchchat',
@@ -128,19 +121,26 @@ describe('SettingsMenu', () => {
     window.dashboardBridge = originalBridge;
   });
 
-  it('groups supported widgets, hides empty categories and reports counts', () => {
+  it('lists supported widgets without groups or redundant live labels', () => {
+    assert(state.dashboard);
+    state.dashboard.generalSettings = {
+      menuLayout: {
+        collapsed: ['race'],
+        groups: [{ id: 'mine', label: 'Mine' }],
+        assign: { standings: 'mine' },
+      },
+    };
     renderMenu();
+    expect(screen.getByRole('link', { name: 'Standings' })).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: /Timing & Race/ })
-    ).toHaveTextContent('1/1');
-    expect(screen.getByRole('heading', { name: /Extras/ })).toHaveTextContent(
-      '0/1'
-    );
+      screen.getByRole('link', { name: 'Twitch Chat' })
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Mine')).not.toBeInTheDocument();
+    expect(screen.queryByText('LIVE')).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('heading', { name: /Track & Conditions/ })
+      screen.queryByRole('button', { name: '+ New group' })
     ).not.toBeInTheDocument();
     expect(screen.getByText('(1 hidden)')).toBeInTheDocument();
-    // The header counts what the categories count: visible, supported and on.
     expect(screen.getByText('1 on')).toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: /Wind/ })
@@ -253,57 +253,5 @@ describe('SettingsMenu', () => {
     expect(
       screen.queryByRole('switch', { name: 'Enable Wind' })
     ).not.toBeInTheDocument();
-  });
-
-  it('collapses a group and saves it', () => {
-    renderMenu();
-    fireEvent.click(screen.getByRole('button', { name: /Timing & Race/ }));
-    expect(state.onDashboardUpdated).toHaveBeenCalledWith(
-      expect.objectContaining({
-        generalSettings: expect.objectContaining({
-          menuLayout: { collapsed: ['race'] },
-        }),
-      })
-    );
-  });
-
-  it('creates a group and moves a dragged widget into it', () => {
-    assert(state.dashboard);
-    state.dashboard.generalSettings = {
-      menuLayout: { groups: [{ id: 'mine', label: 'Mine' }] },
-    };
-    renderMenu();
-    fireEvent.dragStart(
-      screen.getByRole('link', { name: /Standings/ }).closest('li') as Element,
-      { dataTransfer: { setData: vi.fn() } }
-    );
-    const group = screen
-      .getByRole('button', { name: 'Mine' })
-      .closest('section');
-    fireEvent.drop(group as Element);
-    expect(state.onDashboardUpdated).toHaveBeenCalledWith(
-      expect.objectContaining({
-        generalSettings: expect.objectContaining({
-          menuLayout: expect.objectContaining({
-            assign: { standings: 'mine' },
-          }),
-        }),
-      })
-    );
-  });
-
-  it('adds a group on Enter and nothing on Escape', () => {
-    renderMenu();
-    fireEvent.click(screen.getByRole('button', { name: '+ New group' }));
-    const input = screen.getByRole('textbox', { name: 'New group name' });
-    fireEvent.change(input, { target: { value: 'Cancelled' } });
-    fireEvent.keyDown(input, { key: 'Escape' });
-    expect(state.onDashboardUpdated).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole('button', { name: '+ New group' }));
-    const next = screen.getByRole('textbox', { name: 'New group name' });
-    fireEvent.change(next, { target: { value: 'Mine' } });
-    fireEvent.keyDown(next, { key: 'Enter' });
-    expect(state.onDashboardUpdated).toHaveBeenCalledTimes(1);
   });
 });

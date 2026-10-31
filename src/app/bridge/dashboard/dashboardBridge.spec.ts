@@ -69,7 +69,6 @@ beforeAll(async () => {
       closeOrCreateWindows: vi.fn(),
       publishMessage: vi.fn(),
       forceRefreshOverlays: mocks.refresh,
-      setSettingsTitleBarTheme: vi.fn(),
     } as unknown as OverlayManager,
     {} as Analytics
   );
