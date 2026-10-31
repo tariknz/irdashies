@@ -43,6 +43,7 @@ const emptySnapshot: LapLogSnapshot = {
   deltaToSessionLastLapOk: false,
   deltaToSessionBestLap: 0,
   deltaToSessionBestLapOk: false,
+  lapInvalidated: false,
   version: 0,
 };
 
@@ -65,5 +66,76 @@ describe('Lap Timer personal-best key', () => {
     drivers = [{ CarIdx: 0, CarPath: 'ferrari296gt3' }];
     renderHook(() => useLapTimeLog());
     expect(getPersonalBest).toHaveBeenCalledWith('1', 'ferrari296gt3');
+  });
+});
+
+describe('Lap Timer under an LMU lap void', () => {
+  /** Runs one lap: `during` mid-lap, then the crossing and scoring. */
+  const driveLap = (
+    rerender: () => void,
+    lap: number,
+    during: Partial<LapLogSnapshot>,
+    atLine: Partial<LapLogSnapshot> = {}
+  ) => {
+    snapshot = { ...snapshot, lapDistPct: 0.5, ...during };
+    rerender();
+    snapshot = { ...snapshot, lapDistPct: 0.97, ...during };
+    rerender();
+    snapshot = {
+      ...snapshot,
+      lapDistPct: 0.01,
+      lapCompleted: lap,
+      lastLapTime: 90 + lap,
+      ...atLine,
+    };
+    rerender();
+    snapshot = { ...snapshot, lapDistPct: 0.1, lapInvalidated: false };
+    rerender();
+  };
+
+  beforeEach(() => {
+    drivers = [{ CarIdx: 0, CarPath: 'testcar' }];
+  });
+
+  it('marks a lap LMU voided as not clean', () => {
+    // A track cut: no incident and no off-track surface to show for it.
+    const { result, rerender } = renderHook(() => useLapTimeLog());
+    driveLap(rerender, 1, { lapInvalidated: true });
+
+    expect(result.current.history[0]).toMatchObject({ lap: 1, dirty: true });
+  });
+
+  it('does not carry a void still set after the line into the next lap', () => {
+    const { result, rerender } = renderHook(() => useLapTimeLog());
+    snapshot = { ...snapshot, lapDistPct: 0.5, lapInvalidated: true };
+    rerender();
+    snapshot = { ...snapshot, lapDistPct: 0.97 };
+    rerender();
+    // Lap 1 is scored at the line, and the sim's flag is still the old lap's
+    // for a few frames into lap 2.
+    snapshot = {
+      ...snapshot,
+      lapDistPct: 0.01,
+      lapCompleted: 1,
+      lastLapTime: 91,
+    };
+    rerender();
+    snapshot = { ...snapshot, lapDistPct: 0.02, currentLapTime: 1 };
+    rerender();
+    snapshot = { ...snapshot, lapDistPct: 0.1, lapInvalidated: false };
+    rerender();
+    driveLap(rerender, 2, {});
+
+    expect(result.current.history.map((entry) => entry.dirty)).toEqual([
+      false,
+      true,
+    ]);
+  });
+
+  it('leaves a clean lap clean', () => {
+    const { result, rerender } = renderHook(() => useLapTimeLog());
+    driveLap(rerender, 1, {});
+
+    expect(result.current.history[0]).toMatchObject({ lap: 1, dirty: false });
   });
 });

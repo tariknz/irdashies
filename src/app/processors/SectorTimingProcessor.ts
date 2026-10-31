@@ -9,6 +9,8 @@ import type {
 import type { TelemetryProcessor } from './TelemetryProcessor';
 
 const MIN_PROGRESS = 0.00005;
+/** Where a lap is far enough from the line that LMU's void flag is its own. */
+const INVALIDATION_START_PCT = 0.05;
 const MAX_FORWARD_JUMP = 0.5;
 const MAX_LAP_PCT_PER_SECOND = 0.08;
 const MAX_SPEED_CHECK_WINDOW = 5;
@@ -115,6 +117,17 @@ export class SectorTimingProcessor implements TelemetryProcessor<SectorTimingSna
       return;
     }
     this.wasOnTrack = true;
+    // LMU voids a lap for a track cut without the car leaving the track, and
+    // keeps the flag set for the rest of the lap: the sector in progress is
+    // not clean. Ignored just after the line, where the flag may still be the
+    // previous lap's. iRacing publishes no such var.
+    if (
+      frame.LmuLapInvalidated?.value?.[0] === true &&
+      lapDistPct >= INVALIDATION_START_PCT &&
+      this.latest.sectorEntryValid
+    ) {
+      this.sectorEntryUnclean = true;
+    }
     if (this.lastLapDistPct < 0) {
       this.lastLapDistPct = lapDistPct;
       this.lastSessionTime = sessionTime;

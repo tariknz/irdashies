@@ -25,6 +25,9 @@ const PIT_SURFACES: readonly number[] = [
  * this file previously compared the surface against a hardcoded 4, which is not
  * a value the enum can take, so the off-track check never fired.
  */
+/** Where a lap is far enough from the line that LMU's void flag is its own. */
+const LMU_INVALIDATION_START_PCT = 0.05;
+
 export const isPitSurface = (surface: number): boolean =>
   PIT_SURFACES.includes(surface);
 
@@ -98,6 +101,7 @@ export const useLapTimeLog = () => {
   const playerTrackSurface = snapshot?.playerTrackSurface ?? 0;
   const incidentCount = snapshot?.incidentCount ?? 0;
   const lapDistPct = snapshot?.lapDistPct ?? 0;
+  const lapInvalidated = snapshot?.lapInvalidated ?? false;
 
   // Refs
   const lastLoggedLap = useRef<number>(lapCompleted);
@@ -202,7 +206,13 @@ export const useLapTimeLog = () => {
         // check worked.
         const offTrack = isOffTrackSurface(playerTrackSurface);
         const incidentOccurred = incidentCount > incidentsAtLapStart.current;
-        return offTrack || incidentOccurred;
+        // LMU's void flag (a track cut with no incident or off-track surface
+        // to show for it). Latched like the rest; ignored in the first stretch
+        // of the lap, where it may still be the previous lap's -- LMU keeps it
+        // set for the rest of a voided lap, so an early cut is still caught.
+        const voided =
+          lapInvalidated && lapDistPct >= LMU_INVALIDATION_START_PCT;
+        return offTrack || incidentOccurred || voided;
       }
       return prev;
     });
@@ -217,6 +227,8 @@ export const useLapTimeLog = () => {
     referenceTime,
     incidentCount,
     playerTrackSurface,
+    lapInvalidated,
+    lapDistPct,
   ]);
 
   // 4. log lap history and reset
