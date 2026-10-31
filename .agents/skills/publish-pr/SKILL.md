@@ -1,6 +1,6 @@
 ---
 name: publish-pr
-description: Publish GitHub pull requests for this repository. Use this skill whenever the user asks to create, open, raise, or publish a PR. Follow the repository's pull request template exactly, default to a published/ready-for-review PR unless the user explicitly requests a draft, and write a conventional-commit-style title that describes the user-visible problem solved or outcome achieved.
+description: Publish GitHub pull requests for this repository. Use this skill whenever the user asks to create, open, raise, or publish a PR. Follow the repository's pull request template exactly, default to a published/ready-for-review PR unless the user explicitly requests a draft, and write a conventional-commit-style title that describes the user-visible problem solved or outcome achieved. Continue with babysit-pr when monitoring or review-comment handling is requested.
 ---
 
 # publish-pr
