@@ -1,21 +1,18 @@
 import { ReferenceLap } from '@irdashies/types';
 import { app } from 'electron';
 import fs from 'node:fs';
-import fsp from 'node:fs/promises';
 import path from 'node:path';
 import logger from '../logger';
-import { readData, writeData } from './storage';
+import { readData } from './storage';
+import { createDebouncedAtomicWriter } from './debouncedAtomicWriter';
+import { reportStorageResult, storageErrorCode } from './storageStatus';
 
 const dataPath = app.getPath('userData');
 const filePath = path.join(dataPath, 'referenceLaps.json');
 
-/**
- * Debounce window for async writes. Multiple saveReferenceLap() calls inside
- * this window collapse into a single write — addresses the 3×-per-fast-lap
- * write storm identified in the PCC race performance log (51 save log lines
- * for 17 distinct save events, one save per renderer).
- */
-const WRITE_DEBOUNCE_MS = 250;
+// At most 500 series/track/class combinations, evicting oldest saved entries.
+const MAX_REFERENCE_LAPS = 500;
+const VERSION = '1.0.0';
 
 /**
  * In-memory cache of all reference laps, lazy-loaded from disk on first
@@ -24,40 +21,13 @@ const WRITE_DEBOUNCE_MS = 250;
  */
 let cache: Map<string, ReferenceLap> | null = null;
 
-/**
- * Pending async write state. When a save is in flight or scheduled, additional
- * saves update the cache (and reset the debounce timer) without scheduling a
- * second write. On app shutdown, the pending queue is drained before exit.
- */
-let writeTimer: NodeJS.Timeout | null = null;
-let writeInFlight: Promise<void> | null = null;
-
-/**
- * One-time migration to clear old reference lap data.
- * This should be removed in a future version.
- */
+/** Startup migration: only replace old data after a complete successful write. */
 export const validateReferenceLapFile = () => {
-  const VERSION = '1.0.0';
-  const VERSION_KEY = 'version';
-  const isCurrent = readData<string>(VERSION_KEY, filePath) === VERSION;
-
-  if (!isCurrent) {
-    if (fs.existsSync(filePath)) {
-      try {
-        fs.unlinkSync(filePath);
-        logger.info('One-time cleanup of referenceLaps.json performed');
-      } catch (error) {
-        logger.error(
-          'Failed to delete referenceLaps.json during initialization:',
-          error
-        );
-      }
-    }
-    try {
-      writeData(VERSION_KEY, VERSION, filePath);
-    } catch (error) {
-      logger.error('Failed to persist version flag:', error);
-    }
+  if (readData<string>('version', filePath) !== VERSION) {
+    cache = new Map();
+    writer.schedule();
+  } else {
+    loadCache();
   }
 };
 
@@ -111,66 +81,42 @@ const loadCache = (): Map<string, ReferenceLap> => {
   try {
     const data = fs.readFileSync(filePath, 'utf8');
     const parsed = JSON.parse(data, reviver) as Record<string, ReferenceLap>;
-    cache = new Map(Object.entries(parsed));
-  } catch {
+    cache = new Map(
+      Object.entries(parsed)
+        .filter(([key]) => key !== 'version')
+        .slice(-MAX_REFERENCE_LAPS)
+    );
+  } catch (error) {
+    logger.warn('Failed to read referenceLaps.json:', storageErrorCode(error));
     cache = new Map();
   }
   return cache;
 };
 
-const flushAsync = async (): Promise<void> => {
-  if (!cache) return;
-  try {
-    const obj = Object.fromEntries(cache);
-    const jsonString = JSON.stringify(obj, replacer, 2);
-    const entryCount = cache.size;
-    await fsp.writeFile(filePath, jsonString);
-    logger.info(
-      `[Main] Reference laps written to disk (${entryCount} entries)`
-    );
-  } catch (error) {
-    logger.error('Failed to write reference lap data:', error);
-  }
-};
-
-/** Drain the debounced/in-flight write queue without blocking the event loop. */
-const flushPendingWrites = async (): Promise<void> => {
-  if (writeTimer) {
-    clearTimeout(writeTimer);
-    writeTimer = null;
-    enqueueFlush();
-  }
-  while (writeInFlight) {
-    await writeInFlight;
-  }
-};
-
-/**
- * Schedule a debounced async write. Multiple calls within WRITE_DEBOUNCE_MS
- * collapse into a single write.
- */
-const enqueueFlush = (): void => {
-  const previous = writeInFlight ?? Promise.resolve();
-  const tracked = previous
-    .catch(() => undefined)
-    .then(() => flushAsync())
-    .finally(() => {
-      if (writeInFlight === tracked) {
-        writeInFlight = null;
-      }
-    });
-  writeInFlight = tracked;
-};
-
-const scheduleWrite = (): void => {
-  if (writeTimer) {
-    clearTimeout(writeTimer);
-  }
-  writeTimer = setTimeout(() => {
-    writeTimer = null;
-    enqueueFlush();
-  }, WRITE_DEBOUNCE_MS);
-};
+const createWriter = () =>
+  createDebouncedAtomicWriter({
+    filePath,
+    serialize: () =>
+      JSON.stringify(
+        { ...Object.fromEntries(loadCache()), version: VERSION },
+        replacer,
+        2
+      ),
+    onSuccess: () => {
+      reportStorageResult('referenceLaps');
+      logger.info(
+        `[Main] Reference laps written to disk (${cache?.size ?? 0} entries)`
+      );
+    },
+    onError: (error) => {
+      logger.error(
+        'Failed to write reference lap data:',
+        storageErrorCode(error)
+      );
+      reportStorageResult('referenceLaps', error);
+    },
+  });
+let writer = createWriter();
 
 /**
  * Read all reference lap data from cache (lazy-loaded on first call).
@@ -186,8 +132,12 @@ export const readReferenceLaps = (): Record<string, ReferenceLap> => {
  * schedules a debounced async write.
  */
 export const writeReferenceLaps = (data: Record<string, ReferenceLap>) => {
-  cache = new Map(Object.entries(data));
-  scheduleWrite();
+  cache = new Map(
+    Object.entries(data)
+      .filter(([key]) => key !== 'version')
+      .slice(-MAX_REFERENCE_LAPS)
+  );
+  writer.schedule();
 };
 
 /**
@@ -214,15 +164,20 @@ export const saveReferenceLap = (
   lapData: ReferenceLap
 ) => {
   const key = generateKey(seriesId, trackId, classId);
-  loadCache().set(key, lapData);
-  scheduleWrite();
+  const laps = loadCache();
+  laps.delete(key);
+  laps.set(key, lapData);
+  const oldest = laps.keys().next().value;
+  if (laps.size > MAX_REFERENCE_LAPS && oldest !== undefined)
+    laps.delete(oldest);
+  writer.schedule();
 };
 
 /**
  * Flush any pending write asynchronously. The before-quit coordinator awaits
  * this promise, so the last save is retained without blocking its deadline.
  */
-export const flushReferenceLapsOnShutdown = flushPendingWrites;
+export const flushReferenceLapsOnShutdown = () => writer.flush();
 
 /**
  * Testing helper: await any in-flight write. Not exported in production
@@ -230,17 +185,14 @@ export const flushReferenceLapsOnShutdown = flushPendingWrites;
  * debounced write completing.
  */
 export const __awaitPendingWrite = async (): Promise<void> => {
-  await flushPendingWrites();
+  await writer.flush();
 };
 
 /**
  * Testing helper: reset module-level state so each spec starts clean.
  */
 export const __resetForTests = (): void => {
+  writer.cancel();
   cache = null;
-  if (writeTimer) {
-    clearTimeout(writeTimer);
-    writeTimer = null;
-  }
-  writeInFlight = null;
+  writer = createWriter();
 };

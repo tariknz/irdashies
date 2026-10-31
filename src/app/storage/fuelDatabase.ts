@@ -3,6 +3,8 @@ import path from 'node:path';
 import fs from 'node:fs';
 import type { FuelLapData } from '../../types';
 import logger from '../logger';
+import { createDebouncedAtomicWriter } from './debouncedAtomicWriter';
+import { reportStorageResult, storageErrorCode } from './storageStatus';
 
 interface FuelStorageFormat {
   laps: Record<string, FuelLapData[]>;
@@ -13,10 +15,25 @@ export class FuelDatabase {
   private filePath: string;
   private data: FuelStorageFormat;
 
+  // Ten laps per context, at most 500 track/car contexts.
+  private writer: ReturnType<typeof createDebouncedAtomicWriter>;
+
   constructor() {
     const dataPath = app.getPath('userData');
     this.filePath = path.join(dataPath, 'fuel_data.json');
     this.data = this.load();
+    this.writer = createDebouncedAtomicWriter({
+      filePath: this.filePath,
+      serialize: () => JSON.stringify(this.data, null, 2),
+      onSuccess: () => reportStorageResult('fuel'),
+      onError: (error) => {
+        logger.error(
+          '[FuelDatabase] Failed to save data:',
+          storageErrorCode(error)
+        );
+        reportStorageResult('fuel', error);
+      },
+    });
   }
 
   private load(): FuelStorageFormat {
@@ -26,21 +43,36 @@ export class FuelDatabase {
         return JSON.parse(content);
       }
     } catch (e) {
-      logger.error('[FuelDatabase] Failed to load data:', e);
+      logger.warn(
+        '[FuelDatabase] Failed to load fuel_data.json:',
+        storageErrorCode(e)
+      );
     }
     return { laps: {}, settings: {} };
   }
 
   private save() {
-    try {
-      fs.writeFileSync(
-        this.filePath,
-        JSON.stringify(this.data, null, 2),
-        'utf-8'
+    const keys = [
+      ...new Set([
+        ...Object.keys(this.data.laps),
+        ...Object.keys(this.data.settings),
+      ]),
+    ];
+    if (keys.length > 500) {
+      const retained = new Set(keys.slice(-500));
+      this.data.laps = Object.fromEntries(
+        Object.entries(this.data.laps).filter(([key]) => retained.has(key))
       );
-    } catch (e) {
-      logger.error('[FuelDatabase] Failed to save data:', e);
+      this.data.settings = Object.fromEntries(
+        Object.entries(this.data.settings).filter(([key]) => retained.has(key))
+      );
     }
+    this.writer.schedule();
+  }
+
+  /** Awaited by the before-quit coordinator; callers keep immediate cache reads. */
+  public flush(): Promise<void> {
+    return this.writer.flush();
   }
 
   private getContextKey(trackId: string | number, carName: string): string {

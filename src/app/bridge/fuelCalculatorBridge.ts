@@ -130,4 +130,5 @@ export const setupFuelCalculatorBridge = () => {
       logger.error('Failed to write to fuel log:', err);
     }
   });
+  return fuelDb;
 };
