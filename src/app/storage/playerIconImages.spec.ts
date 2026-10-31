@@ -236,6 +236,34 @@ describe('player icon upload retention', () => {
     }
   });
 
+  it('publishes identical concurrent uploads once rather than racing two renames', async () => {
+    // Two renames replacing one file at once fail on Windows with EPERM.
+    const [first, second] = await Promise.all([
+      storage.savePlayerIconImage(png(1)),
+      storage.savePlayerIconImage(png(1)),
+    ]);
+    expect(second).toBe(first);
+    expect(vi.mocked(io.rename)).toHaveBeenCalledTimes(1);
+    expect(await disk.readFile(first)).toEqual(Buffer.from(png(1)));
+  });
+
+  it('lets a later upload retry after a shared publication fails', async () => {
+    vi.mocked(io.rename).mockRejectedValueOnce(
+      Object.assign(new Error('rename denied'), { code: 'EPERM' })
+    );
+    const results = await Promise.allSettled([
+      storage.savePlayerIconImage(png(1)),
+      storage.savePlayerIconImage(png(1)),
+    ]);
+    expect(results.map((result) => result.status)).toEqual([
+      'rejected',
+      'rejected',
+    ]);
+    expect(await storage.savePlayerIconImage(png(1))).toContain(
+      iconName(png(1))
+    );
+  });
+
   it('retains saved and unused uploads across restart', async () => {
     const committed = await storage.savePlayerIconImage(png(1));
     const abandoned = await storage.savePlayerIconImage(png(2));
