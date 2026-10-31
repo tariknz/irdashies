@@ -143,7 +143,7 @@ if (app.getName() === 'irdashies') {
 const overlayManager = new OverlayManager();
 const analytics = new Analytics();
 const perfRun = getPerfRunConfig();
-analytics.setupLogTransport();
+analytics.setupLogTransport(overlayManager.getVersion());
 
 overlayManager.setupChromiumFlags();
 overlayManager.setupHardwareAcceleration();

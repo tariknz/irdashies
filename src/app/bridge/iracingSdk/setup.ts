@@ -254,7 +254,7 @@ async function setupBridge(
       onBridgeChangedCallbacks.forEach((cb) => cb(bridge));
     }
   } catch (err) {
-    logger.error('Failed to load bridge');
+    logger.error('Failed to load bridge', err);
     throw err;
   }
 }
