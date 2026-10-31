@@ -112,6 +112,9 @@ When new scenarios are added (e.g. to test specific findings), document them her
 
 **Build:** `feat/per-widget-overlay-windows`, base `a5200766` plus uncommitted
 feature changes. This is a development capture, not a release-build baseline.
+Publication later rebased the feature onto `ddf3f69e`, including upstream Input
+optimization #857; these measurements predate that fix and are not a profile
+of the rebased feature.
 
 **Scenario:** Actual 59-car, two-class simulator replay; fixed cockpit camera
 and start frame 129269. Six instances (Input, Fuel twice, Radar, Flags, Blind

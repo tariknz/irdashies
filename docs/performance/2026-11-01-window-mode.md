@@ -5,6 +5,12 @@
 with uncommitted feature changes. This is a development workload reference,
 not a replacement for the packaged release reference.
 
+**Publication note:** The feature was subsequently rebased onto `ddf3f69e`,
+which includes the upstream Input optimization in PR #857. The measurements
+below predate that fix and have not been repeated on the rebased feature.
+Input's measured growth is a finding for the captured build, not proof that it
+persists after #857.
+
 The attached [machine-readable evidence](./2026-11-01-window-mode.json) preserves
 the per-run figures, qualifications, source-manifest fingerprint and raw-log
 hashes even when the local `perf-results/` directory is unavailable. See the
