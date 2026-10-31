@@ -356,7 +356,7 @@ export async function publishDashboardUpdates(
       }
     }
   );
-  ipcMain.on('reloadDashboard', () => {
+  ipcMain.on('reloadDashboard', (event) => {
     const currentProfileId = getCurrentProfileId();
     const dashboard = getDashboard(currentProfileId);
     if (!dashboard) return;
@@ -364,6 +364,7 @@ export async function publishDashboardUpdates(
       mergeDriverTagsIntoLayout(dashboard, getDriverTagSettings())
     );
     overlayManager.closeOrCreateWindows(merged);
+    overlayManager.sendOverlayState(event.sender);
     overlayManager.publishMessage('dashboardUpdated', merged);
   });
 

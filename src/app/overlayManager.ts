@@ -92,9 +92,12 @@ function getIconPath(): string {
 }
 
 export class OverlayManager {
-  private displayWindows = new Map<number, BrowserWindow>();
-  private displayBoundsInfo = new Map<number, ContainerBoundsInfo>();
-  private displayFullBounds = new Map<number, Electron.Rectangle>();
+  // Numeric display IDs retain the default topology; strings identify widget instances.
+  private displayWindows = new Map<number | string, BrowserWindow>();
+  private displayBoundsInfo = new Map<number | string, ContainerBoundsInfo>();
+  private displayFullBounds = new Map<number | string, Electron.Rectangle>();
+  private individualWindows = false;
+  private overlayGeneration = 0;
   private currentSettingsWindow: BrowserWindow | undefined;
   /** Theme the settings window's native controls were last painted with. */
   private settingsTitleBarTheme: SettingsTheme | undefined;
@@ -104,6 +107,8 @@ export class OverlayManager {
   /** Last-applied always-on-top state of the current Gantry window. */
   private gantryPinned: boolean | undefined;
   private currentDashboard: DashboardLayout | undefined;
+  /** Benchmark empty renderers against the same window layout as the full run. */
+  private windowLayoutOverride: DashboardLayout | undefined;
   /**
    * The running simulator, or null while none is detected. Widgets the sim
    * cannot support are treated as switched off, so no window is created for
@@ -178,6 +183,10 @@ export class OverlayManager {
     return `${version}+${gitHash}`;
   }
 
+  public setWindowLayoutOverride(layout: DashboardLayout): void {
+    this.windowLayoutOverride = layout;
+  }
+
   /**
    * Get all display overlay windows
    */
@@ -213,7 +222,8 @@ export class OverlayManager {
     screen.on('display-added', rebuild);
     screen.on('display-removed', rebuild);
     screen.on('display-metrics-changed', (_event, _display, changed) => {
-      if (changed.includes('bounds')) rebuild();
+      if (changed.includes('bounds') || changed.includes('scaleFactor'))
+        rebuild();
     });
   }
 
@@ -224,10 +234,13 @@ export class OverlayManager {
     dashboardLayout: DashboardLayout,
     options: { createSettingsWindow?: boolean } = {}
   ): void {
+    dashboardLayout = this.windowLayoutOverride ?? dashboardLayout;
     this.currentDashboard = dashboardLayout;
     const { generalSettings } = dashboardLayout;
     this.skipTaskbar = generalSettings?.skipTaskbar ?? true;
     this.overlayAlwaysOnTop = generalSettings?.overlayAlwaysOnTop ?? true;
+    this.individualWindows =
+      this.isLocked && generalSettings?.overlayWindowMode === 'widget';
 
     this.watchDisplayChanges();
 
@@ -242,38 +255,42 @@ export class OverlayManager {
       );
     }
 
-    // Determine which displays have widgets assigned (by center-point)
-    const displaysWithWidgets = new Set<number>();
-    for (const widget of dashboardLayout.widgets) {
-      if (!this.isOnOverlay(widget)) continue;
-      const centerX = widget.layout.x + widget.layout.width / 2;
-      const centerY = widget.layout.y + widget.layout.height / 2;
-      for (const display of allDisplays) {
-        const { x, y, width, height } = display.bounds;
-        if (
-          centerX >= x &&
-          centerX < x + width &&
-          centerY >= y &&
-          centerY < y + height
-        ) {
-          displaysWithWidgets.add(display.id);
-          break;
+    if (this.individualWindows) {
+      this.syncWidgetWindows(dashboardLayout);
+    } else {
+      // Determine which displays have widgets assigned (by center-point)
+      const displaysWithWidgets = new Set<number>();
+      for (const widget of dashboardLayout.widgets) {
+        if (!this.isOnOverlay(widget)) continue;
+        const centerX = widget.layout.x + widget.layout.width / 2;
+        const centerY = widget.layout.y + widget.layout.height / 2;
+        for (const display of allDisplays) {
+          const { x, y, width, height } = display.bounds;
+          if (
+            centerX >= x &&
+            centerX < x + width &&
+            centerY >= y &&
+            centerY < y + height
+          ) {
+            displaysWithWidgets.add(display.id);
+            break;
+          }
         }
       }
-    }
 
-    // Always create a window for the primary display (fallback for unmatched widgets)
-    displaysWithWidgets.add(primaryDisplay.id);
+      // Always create a window for the primary display (fallback for unmatched widgets)
+      displaysWithWidgets.add(primaryDisplay.id);
 
-    for (const display of allDisplays) {
-      if (!displaysWithWidgets.has(display.id)) {
-        logger.info(
-          `[OverlayManager] Skipping display ${display.id} — no widgets assigned`
-        );
-        continue;
+      for (const display of allDisplays) {
+        if (!displaysWithWidgets.has(display.id)) {
+          logger.info(
+            `[OverlayManager] Skipping display ${display.id} — no widgets assigned`
+          );
+          continue;
+        }
+        const isPrimary = display.id === primaryDisplay.id;
+        this.createWindowForDisplay(display, isPrimary);
       }
-      const isPrimary = display.id === primaryDisplay.id;
-      this.createWindowForDisplay(display, isPrimary);
     }
 
     if (options.createSettingsWindow !== false) {
@@ -290,25 +307,31 @@ export class OverlayManager {
    */
   private createWindowForDisplay(
     display: Electron.Display,
-    isPrimary: boolean
+    isPrimary: boolean,
+    widget?: DashboardWidget
   ): BrowserWindow {
-    const existing = this.displayWindows.get(display.id);
+    const windowId = widget ? `widget:${widget.id}` : display.id;
+    const generation = this.overlayGeneration;
+    const existing = this.displayWindows.get(windowId);
     if (existing && !existing.isDestroyed()) {
       return existing;
     }
 
-    const expectedBounds = {
-      x: display.bounds.x,
-      y: display.bounds.y,
-      width: display.bounds.width,
-      height: display.bounds.height,
-    };
+    const widgetLayout = widget && this.getIndividualWidgetLayout(widget);
+    const expectedBounds = widgetLayout
+      ? this.individualWidgetBounds(widgetLayout)
+      : {
+          x: display.bounds.x,
+          y: display.bounds.y,
+          width: display.bounds.width,
+          height: display.bounds.height,
+        };
 
     // Store full display bounds for shrink-wrap / expand toggling
-    this.displayFullBounds.set(display.id, { ...expectedBounds });
+    this.displayFullBounds.set(windowId, { ...expectedBounds });
 
     logger.info(
-      `[OverlayManager] Creating window for display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}: x=${expectedBounds.x}, y=${expectedBounds.y}, ${expectedBounds.width}x${expectedBounds.height}`
+      `[OverlayManager] Creating window for ${widget ? windowId : `display ${display.id}`}${isPrimary ? ' (PRIMARY)' : ''}: x=${expectedBounds.x}, y=${expectedBounds.y}, ${expectedBounds.width}x${expectedBounds.height}`
     );
 
     const browserWindow = new BrowserWindow({
@@ -316,7 +339,9 @@ export class OverlayManager {
       y: expectedBounds.y,
       width: expectedBounds.width,
       height: expectedBounds.height,
-      title: `irDashies - ${display.id}${isPrimary ? ' (Primary)' : ''})`,
+      title: widget
+        ? `irDashies - ${widget.id}`
+        : `irDashies - ${display.id}${isPrimary ? ' (Primary)' : ''})`,
       transparent: true,
       frame: false,
       skipTaskbar: this.skipTaskbar,
@@ -407,14 +432,24 @@ export class OverlayManager {
     }
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-      browserWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+      if (widget) {
+        const url = new URL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+        url.hash = '/overlay-widget';
+        browserWindow.loadURL(url.href);
+      } else {
+        browserWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+      }
     } else {
-      browserWindow.loadFile(
-        path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
+      const rendererFile = path.join(
+        __dirname,
+        `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`
       );
+      if (widget)
+        browserWindow.loadFile(rendererFile, { hash: '/overlay-widget' });
+      else browserWindow.loadFile(rendererFile);
     }
 
-    this.displayWindows.set(display.id, browserWindow);
+    this.displayWindows.set(windowId, browserWindow);
     browserWindow.on('show', () => {
       refreshSessionDataForVisibleWindow(
         browserWindow,
@@ -425,9 +460,10 @@ export class OverlayManager {
     browserWindow.on('closed', () => {
       logger.info(`Display ${display.id} overlay window closed`);
       // A rebuild may already have put a new window under this id
-      if (this.displayWindows.get(display.id) === browserWindow) {
-        this.displayWindows.delete(display.id);
-        this.displayBoundsInfo.delete(display.id);
+      if (this.displayWindows.get(windowId) === browserWindow) {
+        this.displayWindows.delete(windowId);
+        this.displayBoundsInfo.delete(windowId);
+        this.displayFullBounds.delete(windowId);
       }
     });
 
@@ -436,19 +472,26 @@ export class OverlayManager {
         `[OverlayManager] Renderer process gone for display ${display.id}${isPrimary ? ' (PRIMARY)' : ''}: reason=${details.reason}, exitCode=${details.exitCode}`
       );
 
-      if (this.isQuitting) return;
+      if (
+        this.isQuitting ||
+        this.displayWindows.get(windowId) !== browserWindow
+      )
+        return;
 
       // Clean up stale entry so recreate doesn't early-return
-      this.displayWindows.delete(display.id);
-      this.displayBoundsInfo.delete(display.id);
+      this.displayWindows.delete(windowId);
+      this.displayBoundsInfo.delete(windowId);
+      this.displayFullBounds.delete(windowId);
+      browserWindow.close();
 
       // Small delay so Electron can fully clean up before a new window is created
       setTimeout(() => {
-        if (this.isQuitting) return;
+        if (this.isQuitting || this.overlayGeneration !== generation) return;
         logger.info(
           `[OverlayManager] Recreating renderer for display ${display.id}`
         );
-        this.createWindowForDisplay(display, isPrimary);
+        if (this.currentDashboard)
+          this.ensureDisplayWindows(this.currentDashboard);
       }, 1000);
     });
 
@@ -467,14 +510,20 @@ export class OverlayManager {
     // Track readiness of both events to avoid race condition
     let boundsReady = false;
     let pageLoaded = false;
+    const isCurrentWindow = () =>
+      !browserWindow.isDestroyed() &&
+      this.overlayGeneration === generation &&
+      this.displayWindows.get(windowId) === browserWindow;
 
     const sendBoundsIfReady = () => {
       if (!boundsReady || !pageLoaded) return;
-      if (browserWindow.isDestroyed()) return;
+      if (!isCurrentWindow()) return;
 
-      const boundsInfo = this.displayBoundsInfo.get(display.id);
+      const boundsInfo = this.displayBoundsInfo.get(windowId);
       browserWindow.webContents.send('containerBoundsInfo', boundsInfo);
-      this.onWindowReadyCallbacks.forEach((cb) => cb(`display-${display.id}`));
+      this.onWindowReadyCallbacks.forEach((cb) =>
+        cb(widget ? String(windowId) : `display-${display.id}`)
+      );
 
       // Apply shrink-wrap after initial setup when not in edit mode
       if (this.isLocked) {
@@ -483,7 +532,7 @@ export class OverlayManager {
     };
 
     browserWindow.once('ready-to-show', () => {
-      if (browserWindow.isDestroyed()) return;
+      if (!isCurrentWindow()) return;
 
       browserWindow.setPosition(expectedBounds.x, expectedBounds.y);
       browserWindow.setSize(expectedBounds.width, expectedBounds.height);
@@ -507,9 +556,10 @@ export class OverlayManager {
         isPrimary,
         displayBounds: { ...expectedBounds },
         allDisplayBounds,
+        ...(widget && { widgetId: widget.id, widgetLayout }),
       };
 
-      this.displayBoundsInfo.set(display.id, boundsInfo);
+      this.displayBoundsInfo.set(windowId, boundsInfo);
 
       logger.info(
         `[OverlayManager] Display ${display.id} final bounds: x=${actualBounds.x}, y=${actualBounds.y}, ${actualBounds.width}x${actualBounds.height}`
@@ -526,7 +576,7 @@ export class OverlayManager {
     });
 
     browserWindow.webContents.on('did-finish-load', () => {
-      if (browserWindow.isDestroyed()) return;
+      if (!isCurrentWindow()) return;
 
       if (!pageLoaded) {
         // First load: coordinate with ready-to-show before sending bounds
@@ -536,12 +586,12 @@ export class OverlayManager {
         // Subsequent reload (e.g., Vite HMR after a branch switch in dev mode).
         // Re-send containerBoundsInfo and re-trigger ready callbacks so the SDK
         // bridge re-sends runningState/telemetry/sessionData to the reloaded renderer.
-        const boundsInfo = this.displayBoundsInfo.get(display.id);
+        const boundsInfo = this.displayBoundsInfo.get(windowId);
         if (boundsInfo) {
           browserWindow.webContents.send('containerBoundsInfo', boundsInfo);
         }
         this.onWindowReadyCallbacks.forEach((cb) =>
-          cb(`display-${display.id}`)
+          cb(widget ? String(windowId) : `display-${display.id}`)
         );
       }
     });
@@ -555,6 +605,75 @@ export class OverlayManager {
   public getContainerBoundsInfo(): ContainerBoundsInfo | null {
     const primaryDisplay = screen.getPrimaryDisplay();
     return this.displayBoundsInfo.get(primaryDisplay.id) ?? null;
+  }
+
+  /** Seed state after a renderer mounts, including windows rebuilt in edit mode. */
+  public sendOverlayState(sender: Electron.WebContents): void {
+    if (sender.isDestroyed()) return;
+    sender.send('editModeToggled', !this.isLocked);
+    for (const [id, win] of this.displayWindows) {
+      if (win.isDestroyed() || win.webContents.id !== sender.id) continue;
+      const bounds = this.displayBoundsInfo.get(id);
+      if (bounds) sender.send('containerBoundsInfo', bounds);
+      break;
+    }
+  }
+
+  /** Keep cross-screen layouts intact; recover only completely off-screen widgets. */
+  private getIndividualWidgetLayout(
+    widget: DashboardWidget
+  ): DashboardWidget['layout'] {
+    const layout = widget.layout;
+    const intersectsDisplay = screen
+      .getAllDisplays()
+      .some(
+        ({ bounds }) =>
+          layout.x < bounds.x + bounds.width &&
+          layout.x + layout.width > bounds.x &&
+          layout.y < bounds.y + bounds.height &&
+          layout.y + layout.height > bounds.y
+      );
+    return intersectsDisplay
+      ? layout
+      : fitLayoutToDisplay(layout, screen.getPrimaryDisplay().bounds);
+  }
+
+  private individualWidgetBounds(
+    layout: DashboardWidget['layout']
+  ): Electron.Rectangle {
+    const pad = OverlayManager.SHRINK_WRAP_PADDING;
+    const x = Math.floor(layout.x - pad);
+    const y = Math.floor(layout.y - pad);
+    return {
+      x,
+      y,
+      width: Math.ceil(layout.x + layout.width + pad) - x,
+      height: Math.ceil(layout.y + layout.height + pad) - y,
+    };
+  }
+
+  private syncWidgetWindows(dashboard: DashboardLayout): void {
+    const widgets = dashboard.widgets.filter(
+      (widget) =>
+        this.isOnOverlay(widget) && (widget.type ?? widget.id) !== 'gantry'
+    );
+    const ids = new Set(widgets.map((widget) => `widget:${widget.id}`));
+    for (const [id, win] of this.displayWindows) {
+      if (typeof id === 'string' && ids.has(id)) continue;
+      this.displayWindows.delete(id);
+      this.displayBoundsInfo.delete(id);
+      this.displayFullBounds.delete(id);
+      if (!win.isDestroyed()) win.close();
+    }
+    const displays = screen.getAllDisplays();
+    const primary = screen.getPrimaryDisplay();
+    for (const widget of widgets) {
+      const display =
+        displays.find((d) => isLayoutOnDisplay(widget.layout, d.bounds)) ??
+        primary;
+      this.createWindowForDisplay(display, display.id === primary.id, widget);
+    }
+    this.updateOverlayBounds();
   }
 
   /**
@@ -632,7 +751,16 @@ export class OverlayManager {
 
       let targetBounds: Electron.Rectangle;
 
-      if (!this.isLocked) {
+      if (typeof displayId === 'string') {
+        const info = this.displayBoundsInfo.get(displayId);
+        const widget = this.currentDashboard.widgets.find(
+          (w) => w.id === info?.widgetId
+        );
+        if (!widget) continue;
+        const layout = this.getIndividualWidgetLayout(widget);
+        if (info) info.widgetLayout = layout;
+        targetBounds = this.individualWidgetBounds(layout);
+      } else if (!this.isLocked) {
         // Edit mode: expand to full display
         targetBounds = fullBounds;
       } else {
@@ -676,6 +804,16 @@ export class OverlayManager {
    */
   public toggleLockOverlays(): boolean {
     this.isLocked = !this.isLocked;
+
+    // Shared screen windows preserve the existing drag/resize coordinate space.
+    // Tight individual windows are restored after editing, including spans.
+    if (
+      this.currentDashboard?.generalSettings?.overlayWindowMode === 'widget'
+    ) {
+      this.forceRefreshOverlays(this.currentDashboard, {
+        createSettingsWindow: false,
+      });
+    }
 
     if (!this.isLocked) {
       this.updateOverlayBounds();
@@ -876,6 +1014,7 @@ export class OverlayManager {
    * Close all display overlay windows
    */
   public closeAllOverlays(): void {
+    this.overlayGeneration++;
     for (const win of this.displayWindows.values()) {
       if (!win.isDestroyed()) {
         win.close();
@@ -919,7 +1058,21 @@ export class OverlayManager {
    * since it never destroys existing windows.
    */
   public ensureDisplayWindows(dashboardLayout: DashboardLayout): void {
+    dashboardLayout = this.windowLayoutOverride ?? dashboardLayout;
+    const individual =
+      this.isLocked &&
+      dashboardLayout.generalSettings?.overlayWindowMode === 'widget';
+    if (individual !== this.individualWindows) {
+      this.forceRefreshOverlays(dashboardLayout, {
+        createSettingsWindow: false,
+      });
+      return;
+    }
     this.currentDashboard = dashboardLayout;
+    if (individual) {
+      this.syncWidgetWindows(dashboardLayout);
+      return;
+    }
     const allDisplays = screen.getAllDisplays();
     const primaryDisplay = screen.getPrimaryDisplay();
 
@@ -969,6 +1122,10 @@ export class OverlayManager {
       this.syncGantryWindow(dashboardLayout);
       return;
     }
+    if (this.individualWindows && this.currentDashboard) {
+      this.ensureDisplayWindows(this.currentDashboard);
+      return;
+    }
     if (this.displayWindows.size === 0) {
       const allDisplays = screen.getAllDisplays();
       const primaryDisplay = screen.getPrimaryDisplay();
@@ -986,6 +1143,7 @@ export class OverlayManager {
     dashboardLayout?: DashboardLayout,
     options: { createSettingsWindow?: boolean } = {}
   ): void {
+    dashboardLayout ??= this.currentDashboard;
     this.closeAllOverlays();
     if (dashboardLayout) {
       this.createOverlays(dashboardLayout, options);

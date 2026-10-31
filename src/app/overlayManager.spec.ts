@@ -27,7 +27,8 @@ const screenState = vi.hoisted(() => ({
 }));
 
 class FakeWebContents {
-  id = 42;
+  id = 42 + createdWindows.length;
+  isDestroyed = vi.fn(() => false);
   on = vi.fn();
   send = vi.fn();
   setWindowOpenHandler = vi.fn();
@@ -277,6 +278,227 @@ describe('OverlayManager display windows', () => {
     closedHandler();
 
     expect(manager.getOverlays().map((o) => o.window)).toEqual([newWindow]);
+  });
+});
+
+describe('individual overlay windows', () => {
+  const widget = (id: string, x: number) => ({
+    id,
+    type: 'flag',
+    enabled: true,
+    layout: { x, y: 100, width: 300, height: 200 },
+  });
+  const dashboard = (): DashboardLayout => ({
+    widgets: [widget('flag-left', 100), widget('flag-right', 1800)],
+    generalSettings: { overlayWindowMode: 'widget' },
+  });
+  const ready = (win: FakeBrowserWindow) => {
+    const handler = win.once.mock.calls.find(
+      ([event]) => event === 'ready-to-show'
+    )?.[1] as () => void;
+    handler();
+    const loaded = win.webContents.on.mock.calls.find(
+      ([event]) => event === 'did-finish-load'
+    )?.[1] as () => void;
+    loaded();
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    createdWindows.length = 0;
+    screenState.displays = [PRIMARY_DISPLAY, SECOND_DISPLAY];
+  });
+
+  it('creates one window per enabled instance and preserves a cross-display span', () => {
+    const manager = new OverlayManager();
+    const layout = dashboard();
+    layout.widgets.push(
+      { ...widget('disabled', 100), enabled: false },
+      { ...widget('docked', 100), placement: 'gantry' },
+      { ...widget('gantry', 100), type: 'gantry', enabled: false }
+    );
+    manager.createOverlays(layout, { createSettingsWindow: false });
+    expect(manager.getOverlays()).toHaveLength(2);
+    expect(createdWindows[1].options).toMatchObject({
+      x: 1780,
+      y: 80,
+      width: 340,
+      height: 240,
+    });
+    expect(createdWindows[1].loadFile).toHaveBeenCalledWith(
+      expect.any(String),
+      { hash: '/overlay-widget' }
+    );
+    ready(createdWindows[1]);
+    expect(createdWindows[1].webContents.send).toHaveBeenCalledWith(
+      'containerBoundsInfo',
+      expect.objectContaining({
+        widgetId: 'flag-right',
+        widgetLayout: layout.widgets[1].layout,
+        expected: { x: 1780, y: 80, width: 340, height: 240 },
+      })
+    );
+  });
+
+  it('switches immediately in both directions and defaults unknown saved modes to display', () => {
+    const manager = new OverlayManager();
+    const layout = dashboard();
+    manager.createOverlays(
+      { ...layout, generalSettings: { overlayWindowMode: 'unknown' as never } },
+      { createSettingsWindow: false }
+    );
+    expect(manager.getOverlays()).toHaveLength(2);
+    const original = [...createdWindows];
+    manager.ensureDisplayWindows(layout);
+    expect(original.every((win) => win.close.mock.calls.length === 1)).toBe(
+      true
+    );
+    expect(manager.getOverlays()).toHaveLength(2);
+    expect(
+      createdWindows.slice(2).every((win) => win.options.width === 340)
+    ).toBe(true);
+    manager.ensureDisplayWindows({
+      ...layout,
+      generalSettings: { overlayWindowMode: 'display' },
+    });
+    expect(manager.getOverlays()).toHaveLength(2);
+    expect(createdWindows.at(-1)?.options.width).toBe(1920);
+  });
+
+  it('removes disabled windows and updates retained windows without recreating them', () => {
+    const manager = new OverlayManager();
+    const layout = dashboard();
+    manager.createOverlays(layout, { createSettingsWindow: false });
+    ready(createdWindows[0]);
+    const next = {
+      ...layout,
+      widgets: [
+        {
+          ...layout.widgets[0],
+          layout: { x: 300, y: 200, width: 400, height: 250 },
+        },
+      ],
+    };
+    manager.ensureDisplayWindows(next);
+    expect(createdWindows).toHaveLength(2);
+    expect(createdWindows[1].close).toHaveBeenCalledOnce();
+    expect(manager.getOverlays()).toHaveLength(1);
+    expect(createdWindows[0].setBounds).toHaveBeenLastCalledWith({
+      x: 280,
+      y: 180,
+      width: 440,
+      height: 290,
+    });
+    manager.ensureDisplayWindows({ ...layout, widgets: [] });
+    expect(manager.getOverlays()).toHaveLength(0);
+  });
+
+  it('seeds each renderer with only its own widget assignment', () => {
+    const manager = new OverlayManager();
+    manager.createOverlays(dashboard(), { createSettingsWindow: false });
+    createdWindows.forEach(ready);
+    const second = createdWindows[1];
+    second.webContents.send.mockClear();
+    manager.sendOverlayState(
+      second.webContents as unknown as Electron.WebContents
+    );
+    expect(second.webContents.send).toHaveBeenCalledWith(
+      'containerBoundsInfo',
+      expect.objectContaining({ widgetId: 'flag-right' })
+    );
+    expect(second.webContents.send).not.toHaveBeenCalledWith(
+      'containerBoundsInfo',
+      expect.objectContaining({ widgetId: 'flag-left' })
+    );
+  });
+
+  it('keeps individual window geometry for an empty-renderer benchmark', () => {
+    const manager = new OverlayManager();
+    const layout = dashboard();
+    manager.setWindowLayoutOverride(layout);
+    manager.createOverlays(layout, { createSettingsWindow: false });
+    manager.ensureDisplayWindows({
+      ...layout,
+      widgets: layout.widgets.map((w) => ({ ...w, enabled: false })),
+    });
+    expect(manager.getOverlays()).toHaveLength(2);
+    expect(createdWindows).toHaveLength(2);
+    expect(
+      createdWindows.every((win) => win.close.mock.calls.length === 0)
+    ).toBe(true);
+  });
+
+  it('ignores late readiness from a replaced window', () => {
+    const manager = new OverlayManager();
+    const layout = dashboard();
+    manager.createOverlays(layout, { createSettingsWindow: false });
+    const old = createdWindows[0];
+    manager.forceRefreshOverlays(layout, { createSettingsWindow: false });
+    ready(old);
+    expect(old.showInactive).not.toHaveBeenCalled();
+    expect(old.webContents.send).not.toHaveBeenCalledWith(
+      'containerBoundsInfo',
+      expect.anything()
+    );
+  });
+
+  it('uses shared display windows for editing and seeds rebuilt renderers with edit state', () => {
+    const manager = new OverlayManager();
+    manager.createOverlays(dashboard(), { createSettingsWindow: false });
+    expect(manager.toggleLockOverlays()).toBe(false);
+    const editWindows = createdWindows.slice(2);
+    expect(editWindows).toHaveLength(2);
+    expect(editWindows.every((win) => win.options.width === 1920)).toBe(true);
+    manager.sendOverlayState(
+      editWindows[0].webContents as unknown as Electron.WebContents
+    );
+    expect(editWindows[0].webContents.send).toHaveBeenCalledWith(
+      'editModeToggled',
+      true
+    );
+    expect(manager.toggleLockOverlays()).toBe(true);
+    expect(
+      createdWindows.slice(4).every((win) => win.options.width === 340)
+    ).toBe(true);
+  });
+
+  it('temporarily recovers an unplugged monitor without overwriting the saved layout', () => {
+    screenState.displays = [PRIMARY_DISPLAY];
+    const manager = new OverlayManager();
+    const layout = { ...dashboard(), widgets: [widget('flag-right', 2200)] };
+    manager.createOverlays(layout, { createSettingsWindow: false });
+    ready(createdWindows[0]);
+    expect(createdWindows[0].options.x).toBe(260);
+    expect(layout.widgets[0].layout.x).toBe(2200);
+    expect(createdWindows[0].webContents.send).toHaveBeenCalledWith(
+      'containerBoundsInfo',
+      expect.objectContaining({
+        widgetLayout: { x: 280, y: 100, width: 300, height: 200 },
+      })
+    );
+  });
+
+  it('does not resurrect a crashed widget after a topology change', () => {
+    vi.useFakeTimers();
+    try {
+      const manager = new OverlayManager();
+      const layout = dashboard();
+      manager.createOverlays(layout, { createSettingsWindow: false });
+      const crash = createdWindows[0].webContents.on.mock.calls.find(
+        ([event]) => event === 'render-process-gone'
+      )?.[1] as (event: unknown, details: unknown) => void;
+      crash(null, { reason: 'crashed', exitCode: 1 });
+      manager.ensureDisplayWindows({
+        ...layout,
+        generalSettings: { overlayWindowMode: 'display' },
+      });
+      const count = createdWindows.length;
+      vi.advanceTimersByTime(1000);
+      expect(createdWindows).toHaveLength(count);
+      expect(manager.getOverlays()).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

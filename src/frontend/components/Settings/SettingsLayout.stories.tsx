@@ -71,6 +71,10 @@ export const Default: Story = {
   },
 };
 
+export const GeneralSettings: Story = {
+  args: { initialPath: '/settings/general' },
+};
+
 export const ClassicTheme: Story = {
   args: {
     initialPath: '/settings/fuel',

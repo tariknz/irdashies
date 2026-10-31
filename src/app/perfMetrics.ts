@@ -320,6 +320,7 @@ export class TelemetryPerfMetrics {
       ) as unknown;
       return {
         ...metadata,
+        overlayWindowMode: process.env.PERF_ACTIVE_WINDOW_MODE ?? 'display',
         activeWidgetTypes: Array.isArray(activeWidgetTypes)
           ? activeWidgetTypes.filter(
               (value): value is string => typeof value === 'string'
@@ -402,7 +403,8 @@ export class TelemetryPerfMetrics {
             let name = win.getTitle() || 'Untitled';
             if (url) {
               const match = url.match(/#\/([^/?]+)/);
-              if (match) {
+              // Individual windows share a route but retain unique instance titles.
+              if (match && match[1] !== 'overlay-widget') {
                 name = match[1];
               }
             }

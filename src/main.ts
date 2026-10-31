@@ -425,6 +425,10 @@ void app.whenReady().then(async () => {
     process.env.PERF_ACTIVE_WIDGET_TYPES = JSON.stringify(
       activePerfWidgetTypes(runDashboard)
     );
+    process.env.PERF_ACTIVE_WINDOW_MODE =
+      runDashboard.generalSettings?.overlayWindowMode === 'widget'
+        ? 'widget'
+        : 'display';
   }
 
   // Read off the window-build path before anything can ask for it: the
@@ -522,8 +526,11 @@ void app.whenReady().then(async () => {
     // transparent-window/global-provider cost from widget rendering.
     const windowDashboard =
       perfRun.enabled && perfRun.overlayMode === 'empty'
-        ? dashboard
+        ? { ...dashboard, generalSettings: runDashboard.generalSettings }
         : runDashboard;
+    if (perfRun.enabled && perfRun.overlayMode === 'empty') {
+      overlayManager.setWindowLayoutOverride(windowDashboard);
+    }
     overlayManager.createOverlays(windowDashboard, {
       createSettingsWindow: !perfRun.enabled,
     });

@@ -25,6 +25,66 @@ const dashboard: DashboardLayout = {
 };
 
 describe('performance run configuration', () => {
+  it('makes replay widgets visible only in benchmark memory', () => {
+    const source: DashboardLayout = {
+      widgets: ['fuel', 'radar', 'flag'].map((id) => ({
+        id,
+        enabled: true,
+        layout: { x: 0, y: 0, width: 300, height: 300 },
+        config: {
+          showOnlyWhenOnTrack: true,
+          autoHide: true,
+          hideInPit: true,
+          hideInPitBox: true,
+          showNoFlagState: false,
+        },
+      })),
+    };
+    const result = createPerfDashboard(
+      source,
+      getPerfRunConfig({ PERF_METRICS: '1', PERF_REPLAY_VISIBLE_WIDGETS: '1' })
+    );
+    expect(result.widgets[0].config?.showOnlyWhenOnTrack).toBe(false);
+    expect(result.widgets[1].config).toMatchObject({
+      showOnlyWhenOnTrack: false,
+      autoHide: false,
+      hideInPit: false,
+      hideInPitBox: false,
+    });
+    expect(result.widgets[2].config?.showNoFlagState).toBe(true);
+    expect(source.widgets.every((w) => w.config?.showOnlyWhenOnTrack)).toBe(
+      true
+    );
+    expect(
+      createPerfDashboard(
+        source,
+        getPerfRunConfig({ PERF_REPLAY_VISIBLE_WIDGETS: '1' })
+      )
+    ).toBe(source);
+    expect(createPerfDashboard(source, getPerfRunConfig({}))).toBe(source);
+  });
+  it('overrides window topology in memory only and ignores invalid modes', () => {
+    for (const mode of ['display', 'widget'] as const) {
+      const config = getPerfRunConfig({
+        PERF_METRICS: '1',
+        PERF_WINDOW_MODE: mode,
+      });
+      const result = createPerfDashboard(dashboard, config);
+      expect(result.generalSettings?.overlayWindowMode).toBe(mode);
+      expect(result.widgets).toBe(dashboard.widgets);
+      expect(dashboard.generalSettings).toBeUndefined();
+    }
+    expect(
+      getPerfRunConfig({ PERF_WINDOW_MODE: 'invalid' }).windowMode
+    ).toBeUndefined();
+    expect(
+      createPerfDashboard(
+        dashboard,
+        getPerfRunConfig({ PERF_WINDOW_MODE: 'widget' })
+      )
+    ).toBe(dashboard);
+  });
+
   it('allowlists overlay modes and widget names', () => {
     expect(
       getPerfRunConfig({
