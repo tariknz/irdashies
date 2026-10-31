@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react';
 import type {
   KeybindingActionId,
   KeybindingEntry,
   KeybindingsMap,
-  KeybindingRegistrationStatus,
-  KeybindingRegistrationStatuses,
 } from '@irdashies/types';
 import {
   isGamepadBinding,
@@ -164,21 +162,21 @@ interface KeyRecorderProps {
   actionId: KeybindingActionId;
   entry: KeybindingEntry;
   onUpdated: (bindings: KeybindingsMap) => void;
-  registrationStatus?: KeybindingRegistrationStatus;
-  onRecordingStopped?: () => void;
 }
 
-const KeyRecorder = ({
-  actionId,
-  entry,
-  onUpdated,
-  registrationStatus,
-  onRecordingStopped,
-}: KeyRecorderProps) => {
-  const feedbackId = useId();
-  const recordingRef = useRef(false);
+const KeyRecorder = ({ actionId, entry, onUpdated }: KeyRecorderProps) => {
   const [recording, setRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registrationError, setRegistrationError] = useState<string>();
+  const refreshRegistrationError = useCallback(() => {
+    window.keybindingsBridge
+      ?.getRegistrationErrors?.()
+      .then((errors) => setRegistrationError(errors[actionId]))
+      .catch((err: unknown) =>
+        logger.error('Failed to load shortcut registration status:', err)
+      );
+  }, [actionId]);
+  useEffect(refreshRegistrationError, [refreshRegistrationError, entry]);
   const recorderRef = useRef<HTMLButtonElement>(null);
   // First input (key or pad) during recording wins; later ones are ignored until
   // recording restarts. Guards the async gap before listeners are torn down.
@@ -193,30 +191,9 @@ const KeyRecorder = ({
   const stopRecording = useCallback(async () => {
     setRecording(false);
     bindingInProgressRef.current = false;
-    recordingRef.current = false;
-    try {
-      await window.keybindingsBridge?.stopRecording();
-      onRecordingStopped?.();
-    } catch (err) {
-      logger.error('Failed to stop shortcut recording:', err);
-      setError(
-        'Could not resume shortcuts. Try again or check the application logs.'
-      );
-    }
-  }, [onRecordingStopped]);
-
-  useEffect(
-    () => () => {
-      if (recordingRef.current) {
-        void window.keybindingsBridge
-          ?.stopRecording()
-          .catch((err: unknown) =>
-            logger.error('Failed to stop shortcut recording:', err)
-          );
-      }
-    },
-    []
-  );
+    await window.keybindingsBridge?.stopRecording();
+    refreshRegistrationError();
+  }, [refreshRegistrationError]);
 
   useEffect(() => {
     if (!recording) return;
@@ -235,14 +212,13 @@ const KeyRecorder = ({
             description: entryRef.current.description,
           }
         );
-        if (result.ok) {
-          setError(null);
-          onUpdated(result.bindings);
+        if ('error' in result) {
+          setError(`${formatAccelerator(accelerator)}: ${result.error}`);
         } else {
-          setError(`${formatAccelerator(accelerator)}: ${result.message}`);
+          setError(null);
+          onUpdated(result);
         }
       } catch (err) {
-        logger.error('Failed to update keybinding:', err);
         setError(
           err instanceof Error ? err.message : 'Failed to set keybinding'
         );
@@ -307,21 +283,8 @@ const KeyRecorder = ({
 
   const startRecording = async () => {
     setError(null);
-    try {
-      await window.keybindingsBridge?.startRecording();
-      // The settings section may have closed while the IPC request was pending.
-      if (!recorderRef.current) {
-        await window.keybindingsBridge?.stopRecording();
-        return;
-      }
-      recordingRef.current = true;
-      setRecording(true);
-    } catch (err) {
-      logger.error('Failed to start shortcut recording:', err);
-      setError(
-        'Could not record shortcut. Try again or check the application logs.'
-      );
-    }
+    await window.keybindingsBridge?.startRecording();
+    setRecording(true);
   };
 
   const handleReset = async () => {
@@ -329,60 +292,48 @@ const KeyRecorder = ({
       const result = await window.keybindingsBridge.resetKeybinding(actionId);
       setError(null);
       onUpdated(result);
+      refreshRegistrationError();
     } catch (err) {
       logger.error('Failed to reset keybinding:', err);
-      setError(
-        'Could not reset shortcut. Try again or check the application logs.'
-      );
     }
   };
 
-  const feedback =
-    error ??
-    (registrationStatus?.status !== 'registered'
-      ? registrationStatus?.message
-      : null);
-
   return (
-    <div className="flex max-w-[280px] shrink-0 flex-col items-end gap-1.5">
-      <div className="flex items-center gap-2">
+    <div className="flex max-w-[280px] shrink-0 flex-wrap items-center justify-end gap-2">
+      <button
+        ref={recorderRef}
+        aria-label={`Change shortcut for ${entry.label}`}
+        type="button"
+        onClick={recording ? undefined : startRecording}
+        className={[
+          'px-3 py-1.5 rounded text-sm font-mono min-w-[120px] text-center transition-all cursor-pointer',
+          recording
+            ? 'bg-accent-600/30 border border-accent-400 text-accent-300 animate-pulse'
+            : 'bg-slate-700 border border-slate-600 text-white hover:bg-slate-600',
+        ].join(' ')}
+      >
+        {recording
+          ? 'Press keys...'
+          : entry.accelerator
+            ? formatAccelerator(entry.accelerator)
+            : 'Not set'}
+      </button>
+      {!entry.isDefault && (
         <button
-          ref={recorderRef}
-          aria-label={`Change shortcut for ${entry.label}`}
-          aria-describedby={!recording && feedback ? feedbackId : undefined}
           type="button"
-          onClick={recording ? undefined : startRecording}
-          className={[
-            'px-3 py-1.5 rounded text-sm font-mono min-w-[120px] text-center transition-all cursor-pointer',
-            recording
-              ? 'bg-accent-600/30 border border-accent-400 text-accent-300 animate-pulse'
-              : 'bg-slate-700 border border-slate-600 text-white hover:bg-slate-600',
-          ].join(' ')}
+          onClick={handleReset}
+          className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
+          title="Reset to default"
         >
-          {recording
-            ? 'Press keys...'
-            : entry.accelerator
-              ? formatAccelerator(entry.accelerator)
-              : 'Not set'}
+          <ArrowCounterClockwiseIcon size={14} />
         </button>
-        {!entry.isDefault && (
-          <button
-            type="button"
-            onClick={handleReset}
-            className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
-            title="Reset to default"
-          >
-            <ArrowCounterClockwiseIcon size={14} />
-          </button>
-        )}
-      </div>
-      {!recording && feedback && (
+      )}
+      {!recording && (error || registrationError) && (
         <span
-          id={feedbackId}
           role="status"
-          className="text-xs text-amber-300 max-w-[260px] text-right"
+          className="basis-full text-right text-xs text-amber-300"
         >
-          {feedback}
+          {error || registrationError}
         </span>
       )}
     </div>
@@ -393,72 +344,30 @@ interface BindingRowProps {
   actionId: KeybindingActionId;
   entry: KeybindingEntry;
   onUpdated: (bindings: KeybindingsMap) => void;
-  registrationStatus?: KeybindingRegistrationStatus;
-  onRecordingStopped?: () => void;
 }
 
-export const BindingRow = ({
-  actionId,
-  entry,
-  onUpdated,
-  registrationStatus,
-  onRecordingStopped,
-}: BindingRowProps) => (
+export const BindingRow = ({ actionId, entry, onUpdated }: BindingRowProps) => (
   <div className="flex items-center justify-between gap-4 px-4 py-3 rounded bg-slate-700/50 hover:bg-slate-700/70 transition-colors">
     <div className="flex min-w-0 flex-col gap-0.5">
       <span className="text-sm font-medium text-white">{entry.label}</span>
       <span className="text-xs text-slate-400">{entry.description}</span>
     </div>
-    <KeyRecorder
-      actionId={actionId}
-      entry={entry}
-      onUpdated={onUpdated}
-      registrationStatus={registrationStatus}
-      onRecordingStopped={onRecordingStopped}
-    />
+    <KeyRecorder actionId={actionId} entry={entry} onUpdated={onUpdated} />
   </div>
 );
-
-/** Share the runtime status query with settings that embed a binding row. */
-export const useKeybindingRegistrationStatuses = () => {
-  const [statuses, setStatuses] = useState<KeybindingRegistrationStatuses>({});
-  const refreshStatuses = useCallback(() => {
-    window.keybindingsBridge
-      ?.getRegistrationStatuses()
-      .then(setStatuses)
-      .catch((err: unknown) =>
-        logger.error('Failed to load shortcut registration status:', err)
-      );
-  }, []);
-  useEffect(refreshStatuses, [refreshStatuses]);
-  return { statuses, refreshStatuses };
-};
 
 export const KeybindingsSettings = () => {
   const [bindings, setBindings] = useState<KeybindingsMap | null>(null);
   const { currentDashboard } = useDashboard();
-  const { statuses, refreshStatuses } = useKeybindingRegistrationStatuses();
-  const handleUpdated = useCallback(
-    (next: KeybindingsMap) => {
-      setBindings(next);
-      refreshStatuses();
-    },
-    [refreshStatuses]
-  );
 
   useEffect(() => {
-    window.keybindingsBridge
-      ?.getKeybindings()
-      .then(setBindings)
-      .catch((err: unknown) =>
-        logger.error('Failed to load keybindings:', err)
-      );
+    window.keybindingsBridge?.getKeybindings().then(setBindings);
   }, []);
 
   const handleResetAll = async () => {
     try {
       const result = await window.keybindingsBridge.resetAllKeybindings();
-      handleUpdated(result);
+      setBindings(result);
     } catch (err) {
       logger.error('Failed to reset all keybindings:', err);
     }
@@ -516,9 +425,7 @@ export const KeybindingsSettings = () => {
               key={actionId}
               actionId={actionId}
               entry={bindings[actionId]}
-              onUpdated={handleUpdated}
-              registrationStatus={statuses[actionId]}
-              onRecordingStopped={refreshStatuses}
+              onUpdated={setBindings}
             />
           ))}
         </div>
@@ -547,9 +454,7 @@ export const KeybindingsSettings = () => {
                     key={actionId}
                     actionId={actionId}
                     entry={entry}
-                    onUpdated={handleUpdated}
-                    registrationStatus={statuses[actionId]}
-                    onRecordingStopped={refreshStatuses}
+                    onUpdated={setBindings}
                   />
                 );
               })}

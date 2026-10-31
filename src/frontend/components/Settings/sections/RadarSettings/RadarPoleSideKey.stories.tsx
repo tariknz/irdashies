@@ -13,11 +13,7 @@ const meta: Meta<typeof RadarPoleSideKey> = {
         writable: true,
         value: {
           getKeybindings: async () => ({ ...DEFAULT_KEYBINDINGS }),
-          getRegistrationStatuses: async () => ({}),
-          updateKeybinding: async () => ({
-            ok: true,
-            bindings: { ...DEFAULT_KEYBINDINGS },
-          }),
+          updateKeybinding: async () => ({ ...DEFAULT_KEYBINDINGS }),
           resetKeybinding: async () => ({ ...DEFAULT_KEYBINDINGS }),
           resetAllKeybindings: async () => ({ ...DEFAULT_KEYBINDINGS }),
           startRecording: async () => undefined,

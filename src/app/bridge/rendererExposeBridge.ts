@@ -373,8 +373,8 @@ export function exposeBridge() {
 
   defineBridge<KeybindingsBridge>('keybindingsBridge', {
     getKeybindings: () => ipcRenderer.invoke('keybindings:get'),
-    getRegistrationStatuses: () =>
-      ipcRenderer.invoke('keybindings:registrationStatuses'),
+    getRegistrationErrors: () =>
+      ipcRenderer.invoke('keybindings:registrationErrors'),
     updateKeybinding: (
       actionId: KeybindingActionId,
       accelerator: string,

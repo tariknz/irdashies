@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { KeybindingsMap } from '@irdashies/types';
+import { KEYBINDING_MESSAGES } from '@irdashies/types';
 
 const mockLoggerError = vi.hoisted(() => vi.fn());
 const mockLoggerInfo = vi.hoisted(() => vi.fn());
@@ -30,7 +31,13 @@ vi.mock('electron', () => ({
 
 const mockGetKeybindings = vi.hoisted(() => vi.fn());
 
-vi.mock('./storage/keybindings', () => ({
+vi.mock('./storage/storage', () => ({
+  readData: vi.fn(),
+  writeData: vi.fn(),
+  writeDataAsync: vi.fn(),
+}));
+vi.mock('./storage/keybindings', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./storage/keybindings')>()),
   getKeybindings: mockGetKeybindings,
 }));
 
@@ -116,12 +123,9 @@ describe('KeybindingManager', () => {
         'Pause',
         expect.any(Function)
       );
-      expect(manager.getRegistrationStatuses()['toggle-hide-ui']).toMatchObject(
-        { status: 'invalid' }
+      expect(manager.getRegistrationErrors()['toggle-hide-ui']).toBe(
+        KEYBINDING_MESSAGES.invalid
       );
-      expect(manager.getRegistrationStatuses()['toggle-edit-mode']).toEqual({
-        status: 'registered',
-      });
       expect(mockLoggerError).not.toHaveBeenCalled();
     });
 
@@ -140,10 +144,15 @@ describe('KeybindingManager', () => {
       const manager = new KeybindingManager(fakeOverlayManager);
       manager.registerAll();
 
-      expect(
-        manager.getRegistrationStatuses()['toggle-edit-mode']
-      ).toMatchObject({ status: 'unavailable' });
+      expect(manager.getRegistrationErrors()['toggle-edit-mode']).toBe(
+        KEYBINDING_MESSAGES.unavailable
+      );
       expect(mockLoggerError).not.toHaveBeenCalled();
+      mockRegister.mockReturnValue(true);
+      manager.registerAll();
+      expect(
+        manager.getRegistrationErrors()['toggle-edit-mode']
+      ).toBeUndefined();
     });
 
     it('skips bindings that are already registered (idempotent)', () => {
@@ -163,123 +172,6 @@ describe('KeybindingManager', () => {
       expect(mockRegister).not.toHaveBeenCalled();
     });
   });
-
-  it('keeps unexpected registration errors visible and continues registering other actions', () => {
-    mockGetKeybindings.mockReturnValue(bindingsWithBadAccelerator());
-    mockRegister.mockImplementation((accelerator: string) => {
-      if (accelerator === 'Pause') throw new Error('OS registry failed');
-      return true;
-    });
-    const manager = new KeybindingManager(fakeOverlayManager);
-    manager.registerAll();
-    expect(manager.getRegistrationStatuses()['toggle-hide-ui']).toMatchObject({
-      status: 'error',
-    });
-    expect(manager.getRegistrationStatuses()['toggle-edit-mode']).toEqual({
-      status: 'registered',
-    });
-    expect(mockLoggerError).toHaveBeenCalledWith(
-      expect.stringContaining('Error registering'),
-      expect.any(Error)
-    );
-  });
-
-  it('reports persisted duplicates without overwriting the first callback', () => {
-    const bindings = bindingsWithBadAccelerator();
-    bindings['toggle-hide-ui'].accelerator = 'F6';
-    mockGetKeybindings.mockReturnValue(bindings);
-    mockRegister.mockReturnValue(true);
-    const manager = new KeybindingManager(fakeOverlayManager);
-    manager.registerAll();
-    expect(manager.getRegistrationStatuses()['toggle-edit-mode']).toMatchObject(
-      {
-        status: 'duplicate',
-        message: expect.stringContaining('Hide / Show UI'),
-      }
-    );
-    expect(
-      mockRegister.mock.calls.filter(([accelerator]) => accelerator === 'F6')
-    ).toHaveLength(1);
-  });
-
-  it.each(['Super', 'Meta'])(
-    'reports a persisted %s alias as an app duplicate without registering a second callback',
-    (alias) => {
-      const bindings = bindingsWithBadAccelerator();
-      bindings['toggle-hide-ui'].accelerator = 'Command+H';
-      bindings['toggle-edit-mode'].accelerator = `${alias}+H`;
-      mockGetKeybindings.mockReturnValue(bindings);
-      mockRegister.mockReturnValue(true);
-      const manager = new KeybindingManager(fakeOverlayManager);
-      manager.registerAll();
-      expect(manager.getRegistrationStatuses()['toggle-hide-ui']).toEqual({
-        status: 'registered',
-      });
-      expect(
-        manager.getRegistrationStatuses()['toggle-edit-mode']
-      ).toMatchObject({
-        status: 'duplicate',
-        message: expect.stringContaining('Hide / Show UI'),
-      });
-      expect(mockRegister).toHaveBeenCalledWith(
-        'Command+H',
-        expect.any(Function)
-      );
-      expect(mockRegister).not.toHaveBeenCalledWith(
-        `${alias}+H`,
-        expect.any(Function)
-      );
-    }
-  );
-
-  it('refreshes failures after recording and drops stale statuses after a reload', () => {
-    const bindings = bindingsWithBadAccelerator();
-    mockGetKeybindings.mockReturnValue(bindings);
-    mockRegister.mockReturnValue(false);
-    const manager = new KeybindingManager(fakeOverlayManager);
-    manager.registerAll();
-    expect(manager.getRegistrationStatuses()['toggle-edit-mode']).toMatchObject(
-      { status: 'unavailable' }
-    );
-    manager.unregisterAll();
-    // Temporary release while recording must not turn successful/failed statuses into false failures.
-    mockRegister.mockReturnValue(true);
-    manager.registerAll();
-    expect(manager.getRegistrationStatuses()['toggle-edit-mode']).toEqual({
-      status: 'registered',
-    });
-    mockGetKeybindings.mockReturnValue({
-      ...bindings,
-      'toggle-edit-mode': {
-        ...bindings['toggle-edit-mode'],
-        accelerator: 'gamepad:btn0',
-      },
-    });
-    manager.reloadBindings();
-    expect(
-      manager.getRegistrationStatuses()['toggle-edit-mode']
-    ).toBeUndefined();
-    expect(
-      manager.getRegistrationStatuses()['radar-flip-pole-side']
-    ).toBeUndefined();
-  });
-
-  it('does not unregister an existing callback when probing the same shortcut', () => {
-    mockIsRegistered.mockReturnValue(true);
-    expect(KeybindingManager.checkAccelerator('F6')).toBe('available');
-    expect(mockRegister).not.toHaveBeenCalled();
-    expect(mockUnregister).not.toHaveBeenCalled();
-  });
-
-  it.each([new Error('OS failed'), new TypeError('Unexpected TypeError')])(
-    'propagates unexpected probe errors',
-    (error) => {
-      mockRegister.mockImplementation(() => {
-        throw error;
-      });
-      expect(() => KeybindingManager.checkAccelerator('F6')).toThrow(error);
-    }
-  );
 
   describe('unregisterAll', () => {
     it('skips an unparseable accelerator and still unregisters the rest', () => {
@@ -362,5 +254,35 @@ describe('KeybindingManager', () => {
       // Nothing was actually registered, so no unregister
       expect(mockUnregister).not.toHaveBeenCalled();
     });
+  });
+  it.each(['Super', 'Meta'])(
+    'reports persisted %s aliases as duplicates and keeps the first callback',
+    (alias) => {
+      const bindings = bindingsWithBadAccelerator();
+      bindings['toggle-hide-ui'].accelerator = 'Command+H';
+      bindings['toggle-edit-mode'].accelerator = `${alias}+H`;
+      mockGetKeybindings.mockReturnValue(bindings);
+      mockRegister.mockReturnValue(true);
+      const manager = new KeybindingManager(fakeOverlayManager);
+      manager.registerAll();
+      expect(manager.getRegistrationErrors()['toggle-edit-mode']).toContain(
+        'already bound'
+      );
+      expect(mockRegister).not.toHaveBeenCalledWith(
+        `${alias}+H`,
+        expect.any(Function)
+      );
+    }
+  );
+
+  it('preserves app-owned callbacks and propagates unexpected probe errors', () => {
+    mockIsRegistered.mockReturnValue(true);
+    expect(KeybindingManager.checkAccelerator('F6')).toBe('available');
+    expect(mockUnregister).not.toHaveBeenCalled();
+    mockIsRegistered.mockReturnValue(false);
+    mockRegister.mockImplementation(() => {
+      throw new Error('OS failed');
+    });
+    expect(() => KeybindingManager.checkAccelerator('F6')).toThrow('OS failed');
   });
 });

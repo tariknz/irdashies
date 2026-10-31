@@ -44,8 +44,8 @@ export function setupKeybindingsBridge(
     logger.warn('[Keybindings] Could not persist migrated bindings:', error)
   );
 
-  ipcMain.handle('keybindings:registrationStatuses', () =>
-    keybindingManager.getRegistrationStatuses()
+  ipcMain.handle('keybindings:registrationErrors', () =>
+    keybindingManager.getRegistrationErrors()
   );
 
   ipcMain.handle('keybindings:get', () => {
@@ -78,22 +78,20 @@ export function setupKeybindingsBridge(
         );
         if (conflict !== undefined) {
           return {
-            ok: false,
-            message: `Shortcut already bound to "${conflict}" in irDashies. Choose another combination.`,
+            error: `Shortcut already bound to "${conflict}" in irDashies. Choose another combination.`,
           };
         }
         if (accelerator) {
           if (isGamepadBinding(accelerator)) {
             if (!parseGamepadTokens(accelerator)) {
               return {
-                ok: false,
-                message: 'Invalid controller button. Choose another button.',
+                error: 'Invalid controller button. Choose another button.',
               };
             }
           } else {
             const result = KeybindingManager.checkAccelerator(accelerator);
             if (result !== 'available')
-              return { ok: false, message: KEYBINDING_MESSAGES[result] };
+              return { error: KEYBINDING_MESSAGES[result] };
           }
         }
 
@@ -101,10 +99,10 @@ export function setupKeybindingsBridge(
         keybindingManager.reloadBindings();
         rebuildTaskbarMenu();
 
-        return { ok: true, bindings: result };
+        return result;
       } catch (err) {
         if (err instanceof KeybindingConflictError)
-          return { ok: false, message: err.message };
+          return { error: err.message };
         logger.error('Failed to update keybinding:', err);
         throw err;
       }

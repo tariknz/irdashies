@@ -38,16 +38,9 @@ export interface KeybindingEntry {
 
 export type KeybindingsMap = Record<KeybindingActionId, KeybindingEntry>;
 
-/** Runtime-only keyboard registration results; never persisted with bindings. */
-export type KeybindingRegistrationStatus =
-  | { status: 'registered' }
-  | {
-      status: 'invalid' | 'unavailable' | 'duplicate' | 'error';
-      message: string;
-    };
-
-export type KeybindingRegistrationStatuses = Partial<
-  Record<KeybindingActionId, KeybindingRegistrationStatus>
+/** Runtime registration failures; omitted bindings have no error. Never persisted. */
+export type KeybindingRegistrationErrors = Partial<
+  Record<KeybindingActionId, string>
 >;
 
 export const KEYBINDING_MESSAGES = {
@@ -58,13 +51,12 @@ export const KEYBINDING_MESSAGES = {
     'Could not register shortcut. Try again or check the application logs.',
 } as const;
 
-export type KeybindingUpdateResult =
-  { ok: true; bindings: KeybindingsMap } | { ok: false; message: string };
+export type KeybindingUpdateResult = KeybindingsMap | { error: string };
 
 /** Bridge methods exposed to the renderer for keybinding management */
 export interface KeybindingsBridge {
   getKeybindings: () => Promise<KeybindingsMap>;
-  getRegistrationStatuses: () => Promise<KeybindingRegistrationStatuses>;
+  getRegistrationErrors: () => Promise<KeybindingRegistrationErrors>;
   updateKeybinding: (
     actionId: KeybindingActionId,
     accelerator: string,

@@ -10,7 +10,6 @@ const withBridge = (getKeybindings: () => Promise<KeybindingsMap>) => {
     writable: true,
     value: {
       getKeybindings,
-      getRegistrationStatuses: async () => ({}),
       updateKeybinding: vi.fn(),
       resetKeybinding: vi.fn(),
       startRecording: vi.fn(),

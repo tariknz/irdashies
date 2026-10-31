@@ -4,17 +4,16 @@ import path from 'node:path';
 import type {
   KeybindingActionId,
   KeybindingsMap,
-  KeybindingRegistrationStatuses,
+  KeybindingRegistrationErrors,
 } from '@irdashies/types';
 import { KEYBINDING_MESSAGES } from '@irdashies/types';
 import {
-  normalizeKeyboardAccelerator,
   isGamepadBinding,
   isWidgetToggleActionId,
   nextProfileIndex,
   widgetIdFromToggleActionId,
 } from '@irdashies/shared';
-import { getKeybindings } from './storage/keybindings';
+import { getKeybindings, findKeybindingConflict } from './storage/keybindings';
 import { OverlayManager } from './overlayManager';
 import logger from './logger';
 import { toggleWidgetHidden } from './widgetVisibility';
@@ -24,7 +23,7 @@ export class KeybindingManager {
   private bindings: KeybindingsMap;
   private actionHandlers: Map<KeybindingActionId, () => void>;
   private hideState = false;
-  private registrationStatuses: KeybindingRegistrationStatuses = {};
+  private registrationErrors: KeybindingRegistrationErrors = {};
 
   /** Owns the gamepad token -> action map, capture mode, and WebHID host. */
   private gamepad: GamepadManager;
@@ -182,8 +181,8 @@ export class KeybindingManager {
     return this.bindings;
   }
 
-  public getRegistrationStatuses(): KeybindingRegistrationStatuses {
-    return this.registrationStatuses;
+  public getRegistrationErrors(): KeybindingRegistrationErrors {
+    return this.registrationErrors;
   }
 
   /**
@@ -191,8 +190,8 @@ export class KeybindingManager {
    * first action owning a keyboard shortcut or aborting on a failed binding.
    */
   public registerAll(): void {
-    const statuses: KeybindingRegistrationStatuses = {};
-    const owners = new Map<string, string>();
+    const errors: KeybindingRegistrationErrors = {};
+    const owners: Partial<KeybindingsMap> = {};
     this.gamepad.syncBindings(this.bindings);
     for (const [actionId, entry] of Object.entries(this.bindings)) {
       // Unbound entries (empty accelerator) have nothing to register.
@@ -206,44 +205,30 @@ export class KeybindingManager {
       if (isGamepadBinding(entry.accelerator)) continue;
 
       const id = actionId as KeybindingActionId;
-      const normalized = normalizeKeyboardAccelerator(
-        entry.accelerator,
-        process.platform === 'darwin'
-      );
-      const owner = owners.get(normalized);
+      const owner = findKeybindingConflict(owners, id, entry.accelerator);
       if (owner !== undefined) {
-        statuses[id] = {
-          status: 'duplicate',
-          message: `Shortcut already bound to "${owner}" in irDashies. Choose another combination.`,
-        };
+        errors[id] =
+          `Shortcut already bound to "${owner}" in irDashies. Choose another combination.`;
         continue;
       }
-      owners.set(normalized, entry.label);
+      owners[id] = entry;
 
       try {
         // isRegistered only reports registrations owned by this app.
         const registered =
           globalShortcut.isRegistered(entry.accelerator) ||
           globalShortcut.register(entry.accelerator, handler);
-        statuses[id] = registered
-          ? { status: 'registered' }
-          : { status: 'unavailable', message: KEYBINDING_MESSAGES.unavailable };
         if (!registered) {
+          errors[id] = KEYBINDING_MESSAGES.unavailable;
           // Normal OS refusal is recoverable; warn/error also reach analytics.
           logger.info(`Shortcut unavailable for action "${actionId}"`);
         }
       } catch (error) {
         if (KeybindingManager.isAcceleratorSyntaxError(error)) {
-          statuses[id] = {
-            status: 'invalid',
-            message: KEYBINDING_MESSAGES.invalid,
-          };
+          errors[id] = KEYBINDING_MESSAGES.invalid;
           logger.info(`Invalid keyboard shortcut for action "${actionId}"`);
         } else {
-          statuses[id] = {
-            status: 'error',
-            message: KEYBINDING_MESSAGES.error,
-          };
+          errors[id] = KEYBINDING_MESSAGES.error;
           logger.error(
             `Error registering shortcut for action "${actionId}":`,
             error
@@ -251,7 +236,7 @@ export class KeybindingManager {
         }
       }
     }
-    this.registrationStatuses = statuses;
+    this.registrationErrors = errors;
   }
 
   public unregisterAll(): void {

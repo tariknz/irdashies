@@ -3,7 +3,6 @@ import { DEFAULT_KEYBINDINGS } from '@irdashies/types';
 import {
   isGamepadBinding,
   isValidWidgetToggleActionId,
-  normalizeKeyboardAccelerator,
 } from '@irdashies/shared';
 import { readData, writeData, writeDataAsync } from './storage';
 import { migrateLegacyStreamChatKeybindings } from './streamChatMigration';
@@ -49,11 +48,36 @@ export function saveKeybindings(bindings: KeybindingsMap): void {
   writeData(STORAGE_KEY, bindings);
 }
 
+/** Compare Electron aliases without treating normalization as syntax validation. */
+function normalizeKeyboardAccelerator(
+  accelerator: string,
+  isMac: boolean
+): string {
+  const aliases: Record<string, string> = {
+    commandorcontrol: isMac ? 'command' : 'control',
+    cmdorctrl: isMac ? 'command' : 'control',
+    cmd: 'command',
+    ctrl: 'control',
+    option: 'alt',
+    // Electron parses these as VKEY_COMMAND on every platform.
+    super: 'command',
+    meta: 'command',
+    esc: 'escape',
+    return: 'enter',
+  };
+  return accelerator
+    .toLowerCase()
+    .split('+')
+    .map((part) => aliases[part] ?? part)
+    .sort()
+    .join('+');
+}
+
 export class KeybindingConflictError extends Error {}
 
 /** Find app-owned duplicates before attempting an OS registration. */
 export function findKeybindingConflict(
-  bindings: KeybindingsMap,
+  bindings: Partial<KeybindingsMap>,
   actionId: KeybindingActionId,
   accelerator: string
 ): string | undefined {
@@ -64,8 +88,10 @@ export function findKeybindingConflict(
       : normalizeKeyboardAccelerator(value, process.platform === 'darwin');
   return Object.entries(bindings).find(
     ([id, entry]) =>
-      id !== actionId && normalize(entry.accelerator) === normalize(accelerator)
-  )?.[1].label;
+      entry &&
+      id !== actionId &&
+      normalize(entry.accelerator) === normalize(accelerator)
+  )?.[1]?.label;
 }
 
 export function updateKeybinding(
