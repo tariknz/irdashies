@@ -247,6 +247,59 @@ describe('player icon upload retention', () => {
     expect(await files()).not.toContain(basename(abandoned));
   });
 
+  it('prunes committed icons removed before the next upload, without accumulating files', async () => {
+    const otherProfileIcon = await put(iconName(png(99)));
+    cachedDashboards.default = dashboard(basename(otherProfileIcon));
+    await persist();
+    let previous: string | undefined;
+    for (let n = 1; n <= 5; n++) {
+      const uploaded = await storage.savePlayerIconImage(png(n));
+      if (previous) expect(await files()).not.toContain(basename(previous));
+      expect(await files()).toEqual(
+        [basename(otherProfileIcon), basename(uploaded)].sort()
+      );
+      storage.saveDashboard('race', dashboard(basename(uploaded)));
+      await persist();
+      storage.saveDashboard('race', dashboard());
+      await persist();
+      previous = uploaded;
+    }
+  });
+
+  it('keeps an upload pending if its settings save failed and the cached reference was removed', async () => {
+    const uploaded = await storage.savePlayerIconImage(png(1));
+    mocks.writeData.mockImplementationOnce(() => {
+      throw Object.assign(new Error('config write failed'), { code: 'ENOSPC' });
+    });
+    expect(() =>
+      storage.saveDashboard('race', dashboard(basename(uploaded)))
+    ).toThrow('config write failed');
+    storage.saveDashboard('race', dashboard());
+    await persist();
+    await storage.savePlayerIconImage(png(2));
+    // No successful save has ever committed this upload. Another renderer
+    // can still finish its original settings update after this cleanup.
+    expect(await files()).toContain(basename(uploaded));
+  });
+
+  it('releases pending references committed by a later unrelated dashboard save', async () => {
+    const uploaded = await storage.savePlayerIconImage(png(1));
+    mocks.writeData.mockImplementationOnce(() => {
+      throw Object.assign(new Error('config write failed'), { code: 'ENOSPC' });
+    });
+    expect(() =>
+      storage.saveDashboard('race', dashboard(basename(uploaded)))
+    ).toThrow('config write failed');
+    // writeData persists the entire dashboards collection. This successful
+    // write also commits race's cached icon, despite targeting default.
+    storage.saveDashboard('default', dashboard('player-icon.png'));
+    await persist();
+    storage.saveDashboard('race', dashboard());
+    await persist();
+    await storage.savePlayerIconImage(png(2));
+    expect(await files()).not.toContain(basename(uploaded));
+  });
+
   it('keeps a shared icon until every profile drops its reference', async () => {
     const shared = await put(iconName(png(1)));
     cachedDashboards = { default: dashboard(shared), race: dashboard(shared) };

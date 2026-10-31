@@ -370,6 +370,7 @@ export const saveDashboard = (
     dashboards[id] = mergedDashboard;
     logger.info('[saveDashboard] Writing to storage for profile:', id);
     writeData(DASHBOARDS_KEY, dashboards);
+    releaseCommittedPlayerIcons(dashboards);
     logger.info('[saveDashboard] Saved successfully to storage');
     emitDashboardsSaved();
 
@@ -530,7 +531,8 @@ export const getGarageCoverImageAsDataUrl = async (
 };
 
 // Uploads return before settings persist. Keep uncommitted assets until a
-// later upload observes their reference on disk, or until the process exits.
+// dashboard write succeeds, a later upload observes their reference on disk,
+// or the process exits. Committed assets are protected by dashboard references.
 // Abandoned uploads from previous runs are pruned on the next successful upload.
 const pendingPlayerIcons = new Set<string>();
 let playerIconSaveQueue: Promise<unknown> = Promise.resolve();
@@ -545,6 +547,31 @@ const playerIconErrorDetails = (error: unknown) => ({
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
+const playerIconFilename = (widget: unknown): string | undefined => {
+  const config = isRecord(widget) ? widget.config : undefined;
+  const icon = isRecord(config) ? config.playerIcon : undefined;
+  if (isRecord(icon) && typeof icon.fileName === 'string') {
+    // Legacy configs can contain an absolute path, including Windows paths.
+    return icon.fileName.split(/[\\/]/).pop();
+  }
+  return undefined;
+};
+
+const releaseCommittedPlayerIcons = (
+  dashboards: Record<string, DashboardLayout>
+): void => {
+  if (pendingPlayerIcons.size === 0) return;
+  // writeData saves the entire collection, even when only one profile changed.
+  // Call only after it succeeds; a failed write must keep uploads pending.
+  for (const dashboard of Object.values(dashboards)) {
+    if (!Array.isArray(dashboard?.widgets)) continue;
+    for (const widget of dashboard.widgets) {
+      const name = playerIconFilename(widget);
+      if (name) pendingPlayerIcons.delete(name);
+    }
+  }
+};
+
 const playerIconReferences = (dashboards: unknown): Set<string> => {
   if (!isRecord(dashboards)) throw new Error('Invalid saved dashboards');
   const references = new Set<string>();
@@ -555,12 +582,8 @@ const playerIconReferences = (dashboards: unknown): Set<string> => {
     }
     for (const widget of dashboard.widgets) {
       if (!isRecord(widget)) throw new Error('Invalid saved widget');
-      const config = widget.config;
-      const icon = isRecord(config) ? config.playerIcon : undefined;
-      if (isRecord(icon) && typeof icon.fileName === 'string') {
-        // Legacy configs can contain an absolute path, including Windows paths.
-        references.add(icon.fileName.split(/[\\/]/).pop() || '');
-      }
+      const name = playerIconFilename(widget);
+      if (name) references.add(name);
     }
   }
   return references;
