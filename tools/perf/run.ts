@@ -108,7 +108,10 @@ function parseArgs(args: string[]): RunOptions {
     replayInput,
     metadata: {
       target,
-      simulatorMode: replayInput ? 'replay' : 'live',
+      simulatorMode:
+        replayInput || argumentValue(args, '--simulator-mode') === 'replay'
+          ? 'replay'
+          : 'live',
       fieldCount: optionalFiniteNumber(args, '--field-count'),
       classCount: optionalFiniteNumber(args, '--class-count'),
       displayGeometry: argumentValue(args, '--display-geometry'),
@@ -119,6 +122,20 @@ function parseArgs(args: string[]): RunOptions {
 }
 
 const options = parseArgs(process.argv.slice(2));
+// Keep benchmark configuration and generated history away from the user's
+// saved profile. Forward this Electron argument through Forge in development.
+const userDataDirectory = argumentValue(
+  process.argv.slice(2),
+  '--user-data-dir'
+);
+if (
+  userDataDirectory &&
+  /[\s"&|<>^%!\r\n]/.test(path.resolve(userDataDirectory))
+) {
+  throw new Error(
+    '--user-data-dir requires a path without shell metacharacters or spaces.'
+  );
+}
 const widgetInputRequirements = await readWidgetInputRequirements();
 const outputDirectory = path.resolve('perf-results');
 await fs.mkdir(outputDirectory, { recursive: true });
@@ -156,8 +173,23 @@ if (options.target === 'packaged') {
       : 'npm';
   childArguments =
     process.platform === 'win32'
-      ? ['/d', '/s', '/c', 'npm.cmd start']
-      : ['start'];
+      ? [
+          '/d',
+          '/s',
+          '/c',
+          userDataDirectory
+            ? `npm.cmd start -- -- --user-data-dir=${path.resolve(userDataDirectory)}`
+            : 'npm.cmd start',
+        ]
+      : [
+          'start',
+          ...(userDataDirectory
+            ? ['--', '--', `--user-data-dir=${path.resolve(userDataDirectory)}`]
+            : []),
+        ];
+}
+if (options.target === 'packaged' && userDataDirectory) {
+  childArguments.push(`--user-data-dir=${path.resolve(userDataDirectory)}`);
 }
 let build = 'unknown';
 try {

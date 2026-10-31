@@ -1,0 +1,540 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-08-09",
+  "attachedToReport": "2026-11-01",
+  "referenceStatus": "latest located packaged reference; qualified, memory target unmet",
+  "target": "packaged",
+  "source": "isolated native .irdt tape; simulator FPS is historical",
+  "fixture": {
+    "path": "test-data/telemetry/ai-race-10min.irdt",
+    "bytes": 348187160,
+    "sha256": "6E23E8ABAB49C1A0AE7C8F6D1F298D31145A6189D3029B8CA540AAD56A22B168"
+  },
+  "durationSeconds": 420,
+  "warmupSeconds": 60,
+  "baseline": {
+    "runId": "phase4-1-28cbf61e-full-r2-long",
+    "revision": "28cbf61e9b645837eabd6915734f4882d9fae9fc",
+    "sampleCount": 72,
+    "analysisWindow": {
+      "startSeconds": 60
+    },
+    "scenarioMetadata": {
+      "target": "packaged",
+      "simulatorMode": "replay",
+      "fieldCount": 40,
+      "displayGeometry": "7680x1440",
+      "requestedWidgetTypes": [],
+      "channelDelivery": "on",
+      "telemetryDelivery": "on",
+      "telemetryPayload": "allowlisted",
+      "widgetInputRequirements": {
+        "battle": [
+          "car-speeds.snapshot",
+          "relative-gaps.snapshot",
+          "standings.snapshot",
+          "track-state.snapshot"
+        ],
+        "blindspotmonitor": ["track-state.snapshot"],
+        "cornername": ["track-state.snapshot"],
+        "fastercarsfrombehind": [
+          "relative-gaps.snapshot",
+          "standings.snapshot",
+          "track-state.snapshot"
+        ],
+        "flag": ["track-state.snapshot"],
+        "flatmap": [
+          "reference-laps.snapshot",
+          "sector-timing.snapshot",
+          "standings.snapshot",
+          "track-state.snapshot"
+        ],
+        "fuel": ["fuel.projection"],
+        "garagecover": ["track-state.snapshot"],
+        "heartrate": [],
+        "infobar": ["session-timing.snapshot", "session-bar.snapshot"],
+        "input": ["driver-controls.snapshot", "track-state.snapshot"],
+        "laptimelog": ["lap-log.snapshot"],
+        "pitlanehelper": ["driver-controls.snapshot", "track-state.snapshot"],
+        "rejoin": [
+          "relative-gaps.snapshot",
+          "standings.snapshot",
+          "track-state.snapshot"
+        ],
+        "relative": [
+          "lap-times.snapshot",
+          "radio.snapshot",
+          "session-timing.snapshot",
+          "session-bar.snapshot",
+          "relative-gaps.snapshot",
+          "standings.snapshot",
+          "track-state.snapshot"
+        ],
+        "sectordelta": [
+          "reference-laps.snapshot",
+          "sector-timing.snapshot",
+          "track-state.snapshot"
+        ],
+        "slowcarahead": ["car-speeds.snapshot", "track-state.snapshot"],
+        "standings": [
+          "lap-times.snapshot",
+          "reference-laps.snapshot",
+          "radio.snapshot",
+          "session-timing.snapshot",
+          "session-bar.snapshot",
+          "standings.snapshot",
+          "track-state.snapshot"
+        ],
+        "tachometer": ["driver-controls.snapshot", "track-state.snapshot"],
+        "telemetryinspector": [],
+        "map": [
+          "reference-laps.snapshot",
+          "sector-timing.snapshot",
+          "standings.snapshot",
+          "track-state.snapshot"
+        ],
+        "twitchchat": [],
+        "weather": ["session-bar.snapshot", "track-state.snapshot"],
+        "wind": ["session-bar.snapshot", "track-state.snapshot"]
+      },
+      "activeWidgetTypes": [
+        "battle",
+        "blindspotmonitor",
+        "cornername",
+        "fastercarsfrombehind",
+        "flag",
+        "fuel",
+        "input",
+        "laptimelog",
+        "map",
+        "pitlanehelper",
+        "rejoin",
+        "relative",
+        "sectordelta",
+        "slowcarahead",
+        "standings",
+        "tachometer",
+        "weather"
+      ]
+    },
+    "app": {
+      "averageCpuPercent": 3.708853015319884,
+      "averageRendererCpuPercent": 1.9655932836087233,
+      "averageMainCpuPercent": 0.16540178529811989,
+      "averageGpuCpuPercent": 1.5776976666538838,
+      "peakMemoryMB": 1154.859375,
+      "averageRendererMemoryMB": 795.1170789930555,
+      "averageMainMemoryMB": 124.77452256944444,
+      "averageGpuMemoryMB": 153.89778645833334,
+      "peakPrivateMemoryMB": 1058.51953125,
+      "averageRendererPrivateMemoryMB": 626.7768012152778,
+      "averageMainPrivateMemoryMB": 94.51323784722223,
+      "averageGpuPrivateMemoryMB": 277.89366319444446,
+      "peakRendererMemoryMB": 817.8046875,
+      "peakMainMemoryMB": 143.95703125,
+      "peakGpuMemoryMB": 157.74609375,
+      "rendererProcessCount": 3,
+      "memorySlopeMBPerMinute": 13.71239046823815,
+      "privateMemorySlopeMBPerMinute": 16.574305036495804
+    },
+    "telemetry": {
+      "averageTickRateHz": 21.55274607751178,
+      "minimumTickRateHz": 21.339382922083875,
+      "processTelemetryP99MeanMs": 1.9426180555547035,
+      "processTelemetryP99WorstMs": 7.662000000011176,
+      "broadcastP99MeanMs": 0
+    },
+    "renderer": {
+      "sampleCount": 216,
+      "frameTimeP99MeanMs": 16.859256742156344,
+      "worstFrameMs": 33.30000000000291,
+      "telemetryCallbackRateHz": 0,
+      "channelCallbackRateHz": 43.497520260788406,
+      "totalWakeupRateHz": 43.497520260788406,
+      "telemetryCallbackP99MeanMs": 0,
+      "telemetryCallbackP99WorstMs": 0,
+      "trackMapAnimationFrameRateHz": 0,
+      "trackMapAnimationFrameP99MeanMs": 0,
+      "trackMapAnimationFrameP99WorstMs": 0,
+      "framesOver25MsPercent": 0.0030891847641407438,
+      "framesOver50MsPercent": 0
+    },
+    "mainProcess": [
+      {
+        "type": "Browser",
+        "name": "Browser",
+        "averageCpuPercent": 0.16540178529811989,
+        "averageMemoryMB": 124.77452256944444,
+        "peakMemoryMB": 143.95703125,
+        "memorySlopeMBPerMinute": 5.835258076298586,
+        "averagePrivateMemoryMB": 94.51323784722223,
+        "peakPrivateMemoryMB": 113.2421875,
+        "privateMemorySlopeMBPerMinute": 5.59507685954092
+      }
+    ],
+    "evidence": {
+      "runOriginAvailable": true,
+      "privateMemoryAvailable": true,
+      "privateMemorySampleCount": 72,
+      "privateMemorySpanSeconds": 355.595,
+      "privateMemoryMaxGapSeconds": 5.014,
+      "privateMemorySamplingAdequate": true,
+      "scenarioMetadataConsistent": true,
+      "inputCoverageAvailable": true,
+      "inputCoverageComplete": false,
+      "durationSufficient": true,
+      "conclusive": false,
+      "inconclusiveReasons": [
+        "one or more visibility phases violated workload expectations"
+      ]
+    },
+    "uncoveredWidgetInputs": [
+      {
+        "widget": "relative",
+        "inputs": {
+          "lap-times.snapshot": {
+            "observed": false,
+            "changeRateHz": 0,
+            "deliveryRateHz": 0
+          },
+          "radio.snapshot": {
+            "observed": false,
+            "changeRateHz": 0,
+            "deliveryRateHz": 0
+          },
+          "session-timing.snapshot": {
+            "observed": true,
+            "changeRateHz": 4.527380811779064,
+            "deliveryRateHz": 13.582142435337193
+          },
+          "session-bar.snapshot": {
+            "observed": true,
+            "changeRateHz": 4.220868694708307,
+            "deliveryRateHz": 8.441737389416614
+          },
+          "relative-gaps.snapshot": {
+            "observed": true,
+            "changeRateHz": 4.527380811779064,
+            "deliveryRateHz": 4.527380811779064
+          },
+          "standings.snapshot": {
+            "observed": true,
+            "changeRateHz": 4.527380811779064,
+            "deliveryRateHz": 13.582142435337193
+          },
+          "track-state.snapshot": {
+            "observed": true,
+            "changeRateHz": 16.71756455032704,
+            "deliveryRateHz": 38.39837576698331
+          }
+        }
+      },
+      {
+        "widget": "standings",
+        "inputs": {
+          "lap-times.snapshot": {
+            "observed": false,
+            "changeRateHz": 0,
+            "deliveryRateHz": 0
+          },
+          "reference-laps.snapshot": {
+            "observed": true,
+            "changeRateHz": 0.2165269083894335,
+            "deliveryRateHz": 0.6327084985405524
+          },
+          "radio.snapshot": {
+            "observed": false,
+            "changeRateHz": 0,
+            "deliveryRateHz": 0
+          },
+          "session-timing.snapshot": {
+            "observed": true,
+            "changeRateHz": 4.527380811779064,
+            "deliveryRateHz": 13.582142435337193
+          },
+          "session-bar.snapshot": {
+            "observed": true,
+            "changeRateHz": 4.220868694708307,
+            "deliveryRateHz": 8.441737389416614
+          },
+          "standings.snapshot": {
+            "observed": true,
+            "changeRateHz": 4.527380811779064,
+            "deliveryRateHz": 13.582142435337193
+          },
+          "track-state.snapshot": {
+            "observed": true,
+            "changeRateHz": 16.71756455032704,
+            "deliveryRateHz": 38.39837576698331
+          }
+        }
+      }
+    ],
+    "rawLogSha256": "c537f0180047c03ad64f5aa736b5f269f86a6177fdc93d2a3a8d93d90a212166"
+  },
+  "candidate": {
+    "runId": "post-phase4-1-f189c2ee-full-r2-long",
+    "revision": "f189c2eee52d0c59cd5c427716775c84eb6bb7f3",
+    "sampleCount": 72,
+    "analysisWindow": {
+      "startSeconds": 60
+    },
+    "scenarioMetadata": {
+      "target": "packaged",
+      "simulatorMode": "replay",
+      "fieldCount": 40,
+      "displayGeometry": "7680x1440",
+      "requestedWidgetTypes": [],
+      "channelDelivery": "on",
+      "telemetryDelivery": "on",
+      "telemetryPayload": "allowlisted",
+      "widgetInputRequirements": {
+        "battle": [
+          "car-speeds.snapshot",
+          "relative-gaps.snapshot",
+          "standings.snapshot",
+          "track-state.snapshot"
+        ],
+        "blindspotmonitor": ["blind-spot.snapshot"],
+        "cornername": ["track-state.snapshot"],
+        "fastercarsfrombehind": [
+          "relative-gaps.snapshot",
+          "standings.snapshot",
+          "track-state.snapshot"
+        ],
+        "flag": ["track-state.snapshot"],
+        "flatmap": [
+          "reference-laps.snapshot",
+          "sector-timing.snapshot",
+          "standings.snapshot",
+          "track-state.snapshot"
+        ],
+        "fuel": ["fuel.projection"],
+        "garagecover": ["track-state.snapshot"],
+        "heartrate": [],
+        "infobar": ["session-timing.snapshot", "session-bar.snapshot"],
+        "input": ["driver-controls.snapshot", "track-state.snapshot"],
+        "laptimelog": ["lap-log.snapshot"],
+        "pitlanehelper": ["driver-controls.snapshot", "track-state.snapshot"],
+        "rejoin": [
+          "relative-gaps.snapshot",
+          "standings.snapshot",
+          "track-state.snapshot"
+        ],
+        "relative": [
+          "lap-times.snapshot",
+          "radio.snapshot",
+          "session-timing.snapshot",
+          "session-bar.snapshot",
+          "relative-gaps.snapshot",
+          "standings.snapshot",
+          "track-state.snapshot"
+        ],
+        "sectordelta": [
+          "reference-laps.snapshot",
+          "sector-timing.snapshot",
+          "track-state.snapshot"
+        ],
+        "slowcarahead": ["car-speeds.snapshot", "track-state.snapshot"],
+        "standings": [
+          "lap-times.snapshot",
+          "reference-laps.snapshot",
+          "radio.snapshot",
+          "session-timing.snapshot",
+          "session-bar.snapshot",
+          "standings.snapshot",
+          "track-state.snapshot"
+        ],
+        "tachometer": ["driver-controls.snapshot", "track-state.snapshot"],
+        "telemetryinspector": [],
+        "map": [
+          "reference-laps.snapshot",
+          "sector-timing.snapshot",
+          "standings.snapshot",
+          "track-state.snapshot"
+        ],
+        "twitchchat": [],
+        "weather": ["session-bar.snapshot", "track-state.snapshot"],
+        "wind": ["session-bar.snapshot", "track-state.snapshot"]
+      },
+      "activeWidgetTypes": [
+        "battle",
+        "blindspotmonitor",
+        "cornername",
+        "fastercarsfrombehind",
+        "flag",
+        "fuel",
+        "input",
+        "laptimelog",
+        "map",
+        "pitlanehelper",
+        "rejoin",
+        "relative",
+        "sectordelta",
+        "slowcarahead",
+        "standings",
+        "tachometer",
+        "weather"
+      ]
+    },
+    "app": {
+      "averageCpuPercent": 3.679120662475391,
+      "averageRendererCpuPercent": 1.8910022798192918,
+      "averageMainCpuPercent": 0.16479216157302667,
+      "averageGpuCpuPercent": 1.623144763446509,
+      "peakMemoryMB": 1161.1484375,
+      "averageRendererMemoryMB": 809.767578125,
+      "averageMainMemoryMB": 121.79725477430556,
+      "averageGpuMemoryMB": 157.39339192708334,
+      "peakPrivateMemoryMB": 1061.81640625,
+      "averageRendererPrivateMemoryMB": 640.6896701388889,
+      "averageMainPrivateMemoryMB": 92.74083116319444,
+      "averageGpuPrivateMemoryMB": 280.65858289930554,
+      "peakRendererMemoryMB": 822.36328125,
+      "peakMainMemoryMB": 129.26953125,
+      "peakGpuMemoryMB": 162.04296875,
+      "rendererProcessCount": 3,
+      "memorySlopeMBPerMinute": 6.375572385529383,
+      "privateMemorySlopeMBPerMinute": 9.27298017901839
+    },
+    "telemetry": {
+      "averageTickRateHz": 21.558051027178724,
+      "minimumTickRateHz": 21.36117179802268,
+      "processTelemetryP99MeanMs": 1.951563888891845,
+      "processTelemetryP99WorstMs": 8.050300000002608,
+      "broadcastP99MeanMs": 0
+    },
+    "renderer": {
+      "sampleCount": 216,
+      "frameTimeP99MeanMs": 16.83147270061141,
+      "worstFrameMs": 33.30000000000291,
+      "telemetryCallbackRateHz": 0,
+      "channelCallbackRateHz": 45.22322770753172,
+      "totalWakeupRateHz": 45.22322770753172,
+      "telemetryCallbackP99MeanMs": 0,
+      "telemetryCallbackP99WorstMs": 0,
+      "trackMapAnimationFrameRateHz": 22.9731885639436,
+      "trackMapAnimationFrameP99MeanMs": 0.19864979601459873,
+      "trackMapAnimationFrameP99WorstMs": 0.20000004768371582,
+      "framesOver25MsPercent": 0.0015445208124179473,
+      "framesOver50MsPercent": 0
+    },
+    "mainProcess": [
+      {
+        "type": "Browser",
+        "name": "Browser",
+        "averageCpuPercent": 0.16479216157302667,
+        "averageMemoryMB": 121.79725477430556,
+        "peakMemoryMB": 129.26953125,
+        "memorySlopeMBPerMinute": 1.1201713453453739,
+        "averagePrivateMemoryMB": 92.74083116319444,
+        "peakPrivateMemoryMB": 100.07421875,
+        "privateMemorySlopeMBPerMinute": 0.815161995994123
+      }
+    ],
+    "evidence": {
+      "runOriginAvailable": true,
+      "privateMemoryAvailable": true,
+      "privateMemorySampleCount": 72,
+      "privateMemorySpanSeconds": 355.562,
+      "privateMemoryMaxGapSeconds": 5.013,
+      "privateMemorySamplingAdequate": true,
+      "scenarioMetadataConsistent": true,
+      "inputCoverageAvailable": true,
+      "inputCoverageComplete": false,
+      "durationSufficient": true,
+      "conclusive": false,
+      "inconclusiveReasons": [
+        "one or more visibility phases violated workload expectations"
+      ]
+    },
+    "uncoveredWidgetInputs": [
+      {
+        "widget": "relative",
+        "inputs": {
+          "lap-times.snapshot": {
+            "observed": false,
+            "changeRateHz": 0,
+            "deliveryRateHz": 0
+          },
+          "radio.snapshot": {
+            "observed": false,
+            "changeRateHz": 0,
+            "deliveryRateHz": 0
+          },
+          "session-timing.snapshot": {
+            "observed": true,
+            "changeRateHz": 4.527699113302155,
+            "deliveryRateHz": 13.583097339906464
+          },
+          "session-bar.snapshot": {
+            "observed": true,
+            "changeRateHz": 4.226789917573378,
+            "deliveryRateHz": 8.453579835146757
+          },
+          "relative-gaps.snapshot": {
+            "observed": true,
+            "changeRateHz": 4.527699113302155,
+            "deliveryRateHz": 4.527699113302155
+          },
+          "standings.snapshot": {
+            "observed": true,
+            "changeRateHz": 4.527699113302155,
+            "deliveryRateHz": 13.583097339906464
+          },
+          "track-state.snapshot": {
+            "observed": true,
+            "changeRateHz": 16.760923425640275,
+            "deliveryRateHz": 38.48825469854242
+          }
+        }
+      },
+      {
+        "widget": "standings",
+        "inputs": {
+          "lap-times.snapshot": {
+            "observed": false,
+            "changeRateHz": 0,
+            "deliveryRateHz": 0
+          },
+          "reference-laps.snapshot": {
+            "observed": true,
+            "changeRateHz": 0.21654213150575524,
+            "deliveryRateHz": 0.6411896880949636
+          },
+          "radio.snapshot": {
+            "observed": false,
+            "changeRateHz": 0,
+            "deliveryRateHz": 0
+          },
+          "session-timing.snapshot": {
+            "observed": true,
+            "changeRateHz": 4.527699113302155,
+            "deliveryRateHz": 13.583097339906464
+          },
+          "session-bar.snapshot": {
+            "observed": true,
+            "changeRateHz": 4.226789917573378,
+            "deliveryRateHz": 8.453579835146757
+          },
+          "standings.snapshot": {
+            "observed": true,
+            "changeRateHz": 4.527699113302155,
+            "deliveryRateHz": 13.583097339906464
+          },
+          "track-state.snapshot": {
+            "observed": true,
+            "changeRateHz": 16.760923425640275,
+            "deliveryRateHz": 38.48825469854242
+          }
+        }
+      }
+    ],
+    "rawLogSha256": "1c25ab0655a14d8144d9d0469726507c8a4ea3993f56916d561dbfc1b7bcdd67"
+  },
+  "limitations": [
+    "One archived pair, not a new capture.",
+    "Missing event-driven lap-times/radio input coverage makes formal gates inconclusive.",
+    "Current-main drift is unmeasured; November actual-replay development captures differ in target, widget workload and source."
+  ]
+}
