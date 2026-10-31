@@ -48,8 +48,7 @@
     "generate-garage61-ids": "npx tsx ./tools/generate-garage61-ids.ts",
     "generate-radar-pole-sides": "npx tsx ./tools/generate-radar-pole-sides.ts",
     "prepare": "husky",
-    "build-lmu-manufacturer-sprite": "electron ./tools/build-lmu-manufacturer-sprite.cjs",
-    "build-flag-sprite": "electron tools/build-flag-sprite.cjs"
+    "build-lmu-manufacturer-sprite": "electron ./tools/build-lmu-manufacturer-sprite.cjs"
   },
   "devDependencies": {
     "@electron-forge/cli": "^8.0.1",
