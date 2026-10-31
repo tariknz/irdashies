@@ -26,39 +26,32 @@ const path = require('node:path');
 process.env.IRDASHIES_LMU_REPLAY = process.argv[2];
 process.env.IRDASHIES_LMU_REPLAY_SPEED = process.argv[4] || '50';
 process.env.IRDASHIES_LMU_REPLAY_LOOP = '0';
-const addon = require(path.resolve('build/Release/lmu_tape_node.node'));
 const want = process.argv[3];
-const paths = [
-  '/rest/garage/UIScreen/RepairAndRefuel',
-  '/rest/garage/UIScreen/CarSetupOverview',
-  '/rest/sessions',
-  '/rest/sessions/weather',
-  '/rest/strategy/pitstop-estimate',
-];
+if (!process.argv[2] || !want) {
+  console.error(
+    'Usage: node tools/dump-lmu-rest.cjs <tape.lmudt> <path> [speed]'
+  );
+  process.exit(2);
+}
+const addon = require(path.resolve('build/Release/lmu_tape_node.node'));
 const sdk = new addon.LmuSdkNode();
 sdk.start();
-const seen = new Map();
+// Only the requested path is polled, and the first body ends the wait: the
+// tape may hold it from its first frames or not at all.
 const deadline = Date.now() + 60000;
 let reads = 0;
 let running = 0;
-while (Date.now() < deadline) {
+let body = null;
+while (!body && Date.now() < deadline) {
   const r = sdk.read();
   reads += 1;
   if (r && r.running) running += 1;
-  for (const p of paths) {
-    if (!seen.has(p)) {
-      const b = sdk.readRest(p);
-      if (b) seen.set(p, b);
-    }
-  }
-  if (seen.size === paths.length) break;
+  body = sdk.readRest(want);
 }
 sdk.stop();
 console.error(
-  `reads=${reads} running=${running} found=${seen.size}/${paths.length}`
+  `reads=${reads} running=${running} ${want}: ${body ? `${body.length} bytes` : 'not found'}`
 );
-for (const [p, b] of seen) console.error(`  ${p}: ${b.length} bytes`);
-const body = seen.get(want);
 if (!body) process.exit(1);
 try {
   console.log(JSON.stringify(JSON.parse(body), null, 1));
