@@ -18,6 +18,7 @@ import {
   isWidgetDisabledForSim,
   SETTINGS_TITLE_BAR,
   resolveSettingsTheme,
+  PROFILE_SWITCH_BANNER_MS,
 } from '@irdashies/types';
 import { getSimWidgetSupport } from './storage/simWidgetSupport';
 import path from 'node:path';
@@ -47,6 +48,11 @@ import {
   type RendererDataSubscriptions,
 } from './rendererDataVisibility';
 import { hardenWindow } from './hardenWindow';
+import {
+  buildOverlayWindowShape,
+  OverlayWindowShape,
+} from './overlayWindowShape';
+import { getHiddenWidgets } from './widgetVisibility';
 
 // used for Hot Module Replacement
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
@@ -92,6 +98,16 @@ function getIconPath(): string {
 }
 
 export class OverlayManager {
+  private readonly windowShapes = new OverlayWindowShape(
+    process.platform,
+    (error) =>
+      logger.warn(
+        '[OverlayManager] Could not apply overlay window shape',
+        error
+      )
+  );
+  private shapeSuspended = false;
+  private shapeRestoreTimer?: ReturnType<typeof setTimeout>;
   private displayWindows = new Map<number, BrowserWindow>();
   private displayBoundsInfo = new Map<number, ContainerBoundsInfo>();
   private displayFullBounds = new Map<number, Electron.Rectangle>();
@@ -131,7 +147,11 @@ export class OverlayManager {
 
   /** Gantry-only widgets live in the Gantry window, so no overlay needs them. */
   private isOnOverlay(widget: DashboardWidget): boolean {
-    return widget.placement !== 'gantry' && this.isWidgetVisible(widget);
+    return (
+      widget.placement !== 'gantry' &&
+      (widget.type ?? widget.id) !== 'gantry' &&
+      this.isWidgetVisible(widget)
+    );
   }
 
   /**
@@ -213,7 +233,8 @@ export class OverlayManager {
     screen.on('display-added', rebuild);
     screen.on('display-removed', rebuild);
     screen.on('display-metrics-changed', (_event, _display, changed) => {
-      if (changed.includes('bounds')) rebuild();
+      if (changed.includes('bounds') || changed.includes('scaleFactor'))
+        rebuild();
     });
   }
 
@@ -557,22 +578,19 @@ export class OverlayManager {
     return this.displayBoundsInfo.get(primaryDisplay.id) ?? null;
   }
 
-  /**
-   * Compute the bounding box of all enabled widgets assigned to a given display.
-   * Returns null if there are no widgets for the display.
-   */
-  private computeWidgetBounds(
+  /** Match the renderer's display assignment and disconnected-display fallback. */
+  private widgetsForDisplay(
     displayId: number,
     dashboard: DashboardLayout,
     displayBounds: Electron.Rectangle
-  ): Electron.Rectangle | null {
+  ): DashboardWidget[] {
     const primaryDisplay = screen.getPrimaryDisplay();
     const isPrimary = displayId === primaryDisplay.id;
 
     const allDisplayBounds = screen.getAllDisplays().map((d) => d.bounds);
     // Same assignment as useWidgetsForThisDisplay: widgets on no connected
     // display render on the primary, moved inside it.
-    const widgetsForDisplay = dashboard.widgets.flatMap((widget) => {
+    return dashboard.widgets.flatMap((widget) => {
       if (!this.isOnOverlay(widget)) return [];
       if (isLayoutOnDisplay(widget.layout, displayBounds)) return [widget];
       if (!isPrimary) return [];
@@ -582,7 +600,12 @@ export class OverlayManager {
         { ...widget, layout: fitLayoutToDisplay(widget.layout, displayBounds) },
       ];
     });
+  }
 
+  private computeWidgetBounds(
+    widgetsForDisplay: readonly DashboardWidget[],
+    displayBounds: Electron.Rectangle
+  ): Electron.Rectangle | null {
     if (widgetsForDisplay.length === 0) return null;
 
     const pad = OverlayManager.SHRINK_WRAP_PADDING;
@@ -623,12 +646,18 @@ export class OverlayManager {
       this.currentDashboard = dashboard;
     }
     if (!this.currentDashboard) return;
+    const hiddenWidgets = new Set(getHiddenWidgets());
 
     for (const [displayId, win] of this.displayWindows.entries()) {
       if (win.isDestroyed()) continue;
 
       const fullBounds = this.displayFullBounds.get(displayId);
       if (!fullBounds) continue;
+      const widgets = this.widgetsForDisplay(
+        displayId,
+        this.currentDashboard,
+        fullBounds
+      );
 
       let targetBounds: Electron.Rectangle;
 
@@ -637,29 +666,27 @@ export class OverlayManager {
         targetBounds = fullBounds;
       } else {
         // Locked: shrink-wrap to widget bounding box
-        const widgetBounds = this.computeWidgetBounds(
-          displayId,
-          this.currentDashboard,
-          fullBounds
-        );
+        const widgetBounds = this.computeWidgetBounds(widgets, fullBounds);
         targetBounds = widgetBounds ?? fullBounds;
       }
 
       const currentBounds = win.getBounds();
-      if (
-        currentBounds.x === targetBounds.x &&
-        currentBounds.y === targetBounds.y &&
-        currentBounds.width === targetBounds.width &&
-        currentBounds.height === targetBounds.height
-      ) {
-        continue;
-      }
-
-      win.setBounds(targetBounds);
-
-      const actualBounds = win.getBounds();
+      const boundsChanged =
+        currentBounds.x !== targetBounds.x ||
+        currentBounds.y !== targetBounds.y ||
+        currentBounds.width !== targetBounds.width ||
+        currentBounds.height !== targetBounds.height;
+      if (boundsChanged) win.setBounds(targetBounds);
+      const actualBounds = boundsChanged ? win.getBounds() : currentBounds;
       const boundsInfo = this.displayBoundsInfo.get(displayId);
-      if (boundsInfo) {
+      if (
+        boundsInfo &&
+        (['x', 'y', 'width', 'height'] as const).some(
+          (key) =>
+            boundsInfo.expected[key] !== targetBounds[key] ||
+            boundsInfo.actual[key] !== actualBounds[key]
+        )
+      ) {
         boundsInfo.expected = targetBounds;
         boundsInfo.actual = actualBounds;
         boundsInfo.offset = {
@@ -668,6 +695,22 @@ export class OverlayManager {
         };
         win.webContents.send('containerBoundsInfo', boundsInfo);
       }
+      // Bounds may stay identical while the gaps between widgets change.
+      // Wait for renderer coordinates to be seeded before clipping its output.
+      if (!boundsInfo) continue;
+      const rectangles =
+        this.isLocked && !this.shapeSuspended
+          ? buildOverlayWindowShape(
+              widgets
+                .filter((widget) => !hiddenWidgets.has(widget.id))
+                .map((widget) => widget.layout),
+              { ...actualBounds, x: targetBounds.x, y: targetBounds.y },
+              OverlayManager.SHRINK_WRAP_PADDING
+            )
+          : [];
+      // Empty hosts stay visible: their recorder may still need channels and
+      // session data even when every widget is hidden. [] removes the mask.
+      this.windowShapes.apply(win, rectangles);
     }
   }
 
@@ -723,6 +766,27 @@ export class OverlayManager {
   ]);
 
   public publishMessage(key: string, value: unknown): void {
+    if (
+      key === 'profileTransition' &&
+      typeof value === 'object' &&
+      value !== null &&
+      'hidden' in value &&
+      typeof value.hidden === 'boolean'
+    ) {
+      clearTimeout(this.shapeRestoreTimer);
+      const showBanner = !('showBanner' in value) || value.showBanner !== false;
+      this.shapeSuspended = value.hidden || showBanner;
+      this.updateOverlayBounds();
+      if (!value.hidden && showBanner) {
+        // The banner is outside widget bounds. Leave time for IPC delivery and
+        // the renderer's final paint before restoring the native mask.
+        this.shapeRestoreTimer = setTimeout(() => {
+          this.shapeSuspended = false;
+          this.updateOverlayBounds();
+        }, PROFILE_SWITCH_BANNER_MS + 250);
+        this.shapeRestoreTimer.unref();
+      }
+    }
     if (key === 'sessionData') this.latestSessionData = value;
     if (key === 'runningState') this.latestRunningState = Boolean(value);
 
@@ -888,12 +952,13 @@ export class OverlayManager {
 
   public markQuitting(): void {
     this.isQuitting = true;
+    clearTimeout(this.shapeRestoreTimer);
   }
 
   public quitApp(): void {
     if (this.isQuitting) return;
 
-    this.isQuitting = true;
+    this.markQuitting();
     this.closeAllOverlays();
 
     if (

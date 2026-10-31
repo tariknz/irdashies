@@ -169,6 +169,7 @@ export class KeybindingManager {
     this.overlayManager.getOverlays().forEach(({ window }) => {
       window.webContents.send('widget-toggle-hide', widgetId, hide);
     });
+    this.overlayManager.updateOverlayBounds();
   }
 
   public getBindings(): KeybindingsMap {

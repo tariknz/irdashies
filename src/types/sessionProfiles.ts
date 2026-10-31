@@ -1,3 +1,6 @@
+/** Shared with the native window mask, which must allow the banner to paint. */
+export const PROFILE_SWITCH_BANNER_MS = 1500;
+
 /**
  * Session types a profile can be bound to, so the app can switch layouts as an
  * event moves from practice through qualifying to the race.

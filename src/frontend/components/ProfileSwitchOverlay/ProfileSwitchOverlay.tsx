@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useDashboard } from '@irdashies/context';
+import { PROFILE_SWITCH_BANNER_MS } from '@irdashies/types';
 
 declare global {
   interface Window {
@@ -18,9 +19,6 @@ declare global {
 interface ProfileSwitchOverlayProps {
   children: ReactNode;
 }
-
-// How long the profile name stays on screen after a switch.
-const BANNER_MS = 1500;
 
 /**
  * On a profile switch the main process hides the widgets, resizes the overlay
@@ -59,7 +57,7 @@ export const ProfileSwitchOverlay = ({
         clearTimeout(bannerTimer.current);
         bannerTimer.current = setTimeout(
           () => setBannerVisible(false),
-          BANNER_MS
+          PROFILE_SWITCH_BANNER_MS
         );
       }
     });

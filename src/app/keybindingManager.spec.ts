@@ -91,6 +91,24 @@ describe('KeybindingManager', () => {
     mockGetKeybindings.mockReset();
   });
 
+  it('refreshes native regions after hiding and revealing a widget', () => {
+    mockGetKeybindings.mockReturnValue(bindingsWithBadAccelerator());
+    const send = vi.fn();
+    const updateOverlayBounds = vi.fn();
+    const overlays = {
+      getOverlays: () => [{ window: { webContents: { send } } }],
+      updateOverlayBounds,
+    } as unknown as OverlayManager;
+    const manager = new KeybindingManager(overlays);
+    manager.triggerAction('toggle-widget:shape-test');
+    manager.triggerAction('toggle-widget:shape-test');
+    expect(send.mock.calls).toEqual([
+      ['widget-toggle-hide', 'shape-test', true],
+      ['widget-toggle-hide', 'shape-test', false],
+    ]);
+    expect(updateOverlayBounds).toHaveBeenCalledTimes(2);
+  });
+
   describe('registerAll', () => {
     it('skips an unparseable accelerator and still registers the rest', () => {
       mockGetKeybindings.mockReturnValue(bindingsWithBadAccelerator());
