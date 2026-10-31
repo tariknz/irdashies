@@ -20,6 +20,14 @@ import { SettingsMenu } from '../SettingsMenu';
 import { ReleaseNotesSettings } from './ReleaseNotesSettings';
 import { ReleaseNotesStatusProvider } from './ReleaseNotesStatusContext';
 
+// Heavier than most tests: each renders Markdown (micromark, parse5 for raw
+// HTML, the sanitizer) and some the whole Settings menu, about 0.5-1 s on a
+// developer machine. These files run early, while the Windows CI runner is
+// still starting every worker, and there two of them took 10.9 s and 16.9 s
+// and failed the default 10 s timeout with nothing wrong. A longer budget for
+// this file only; vi.setConfig applies to the current test file.
+vi.setConfig({ testTimeout: 30_000 });
+
 vi.mock('@irdashies/context', () => ({
   useDashboard: () => ({ currentDashboard: { widgets: [] } }),
   useActiveSimulator: () => 'iracing',
