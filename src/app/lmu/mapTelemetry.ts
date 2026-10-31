@@ -584,6 +584,15 @@ export function mapLmuTelemetry(
   t.LapDistPct = num(lapDistPct);
   t.LapBestLapTime = lapTime(raw.vehBestLapTime[playerIdx]);
   t.LapLastLapTime = lapTime(raw.vehLastLapTime[playerIdx]);
+  // LMU's own delta to the player's best lap, negative when ahead -- what
+  // iRacing calls the delta to the session best. Only meaningful once there is
+  // a best lap: until then LMU reports 0, which would read as dead level.
+  const hasBestLap = (raw.vehBestLapTime[playerIdx] ?? 0) > 0;
+  const deltaBest = raw.deltaBest;
+  const deltaBestOk =
+    hasBestLap && typeof deltaBest === 'number' && Number.isFinite(deltaBest);
+  t.LapDeltaToSessionBestLap = num(deltaBestOk ? deltaBest : 0);
+  t.LapDeltaToSessionBestLap_OK = bool(deltaBestOk);
   t.LapCurrentLapTime = num(
     Math.max(0, (raw.elapsedTime ?? 0) - (raw.lapStartET ?? 0))
   );
@@ -649,10 +658,9 @@ export function mapLmuTelemetry(
   t.AirTemp = num(raw.ambientTemp);
   t.TrackWetness = num(lmuTrackWetness(raw.avgPathWetness));
   t.Skies = num(raw.cloudCoverage);
-  t.WindVel = num(
-    Math.hypot(raw.wind[0] ?? 0, raw.wind[1] ?? 0, raw.wind[2] ?? 0)
-  );
-  t.WindDir = num(0);
+  // No WindVel or WindDir: LMU simulates no wind, and its wind vector is
+  // always zero. Published, that read as a dead calm with the arrow fixed on a
+  // headwind in every widget showing wind; absent, they show no reading.
   // LMU does not expose humidity; leave it absent rather than report dry air.
   t.FogLevel = num(0);
   t.Precipitation = num(raw.raining);

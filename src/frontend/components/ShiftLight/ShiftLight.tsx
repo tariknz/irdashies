@@ -21,11 +21,15 @@ export const ShiftLight = () => {
     <ShiftLightComponent
       rpm={tachometerData.rpm}
       gear={tachometerData.gear}
+      gearCount={tachometerData.gearCount}
+      throttle={tachometerData.throttle}
+      brake={tachometerData.brake}
       maxRpm={tachometerData.maxRpm}
       shiftRpm={tachometerData.shiftRpm}
       showRpmText={settings?.showRpmText ?? true}
       carData={tachometerData.carData}
       carPath={tachometerData.carPath}
+      carModel={tachometerData.carModel}
       shiftPointSettings={settings?.shiftPointSettings}
       opacity={settings?.background.opacity}
     />

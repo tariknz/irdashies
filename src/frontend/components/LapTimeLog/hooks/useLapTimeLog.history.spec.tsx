@@ -72,6 +72,7 @@ const emptySnapshot: LapLogSnapshot = {
   deltaToSessionLastLapOk: false,
   deltaToSessionBestLap: 0,
   deltaToSessionBestLapOk: false,
+  lapInvalidated: false,
   version: 0,
 };
 

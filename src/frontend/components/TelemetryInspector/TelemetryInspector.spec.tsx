@@ -58,6 +58,18 @@ describe('TelemetryInspector', () => {
     expect(screen.getByText('100')).toBeInTheDocument();
   });
 
+  it.each(['DriverInfo.Drivers[1].CarModel', 'DriverInfo.Drivers.1.CarModel'])(
+    'indexes into an array, written as %s',
+    (path) => {
+      stores.session = {
+        DriverInfo: { Drivers: [{ CarModel: 'A' }, { CarModel: 'B' }] },
+      };
+      mount([{ source: 'session', path, label: 'Model' }]);
+
+      expect(screen.getByText('B')).toBeInTheDocument();
+    }
+  );
+
   it('does not unit-label a session path that shares a telemetry name', () => {
     // The table is for telemetry channels; a session field called Speed is a
     // different thing and must not inherit m/s.

@@ -29,6 +29,7 @@ import { lapTimeOrAbsent } from './sentinels';
 import { lmuCarNumber, lmuCarNumberRaw, lmuTeamName } from './entryName';
 import { lmuDriverTires } from './tireCompound';
 import { lmuSessionUniqueId, type LmuSessionIdentity } from './sessionIdentity';
+import { lmuShiftPointRpm } from './shiftPoints';
 
 type Raw = import('./native').LmuRawSession;
 
@@ -45,18 +46,46 @@ const DEFAULT_CAR_NUMBER = (carIdx: number) => String(carIdx + 1);
 const LMU_TRACK_ID_OFFSET = 1_000_000;
 const DEFAULT_MAX_RPM = 8500;
 
-export function deriveLmuShiftLightRpm(engineMaxRpm?: number) {
-  const maxRpm =
+/**
+ * Shift-light thresholds for the player's car.
+ *
+ * `shiftRpm` is the car's known shift point (see shiftPoints.ts). Without one
+ * the shift point is guessed at 95% of the rev limit. The first light keeps
+ * the guess's 4%-of-limit lead on the shift point, and the last light never
+ * falls below it, so the band stays in order around a known shift point.
+ *
+ * `redline` is DriverCarRedLine. A known shift point is capped at the rev
+ * limit LMU reports, since the engine cannot reach past it. Until LMU reports
+ * one, the placeholder is raised to the shift point instead: the widget clamps
+ * RPM to the redline, so a shift point above it could never be reached, and a
+ * custom shift point copied from it in that window would keep the fault.
+ */
+export function deriveLmuShiftLightRpm(
+  engineMaxRpm?: number,
+  shiftRpm?: number
+) {
+  const reportedMaxRpm =
     engineMaxRpm !== undefined &&
     Number.isFinite(engineMaxRpm) &&
     engineMaxRpm > 0
       ? engineMaxRpm
-      : DEFAULT_MAX_RPM;
+      : undefined;
+  const maxRpm =
+    reportedMaxRpm ?? Math.max(DEFAULT_MAX_RPM, shiftRpm ?? DEFAULT_MAX_RPM);
+  const shift =
+    shiftRpm !== undefined
+      ? Math.min(shiftRpm, maxRpm)
+      : Math.round(maxRpm * 0.95);
+  const last = Math.max(Math.round(maxRpm * 0.97), shift);
   return {
-    first: Math.round(maxRpm * 0.91),
-    shift: Math.round(maxRpm * 0.95),
-    last: Math.round(maxRpm * 0.97),
-    blink: Math.round(maxRpm * 0.97),
+    redline: maxRpm,
+    first: Math.min(
+      Math.round(maxRpm * 0.91),
+      shift - Math.round(maxRpm * 0.04)
+    ),
+    shift,
+    last,
+    blink: last,
   };
 }
 
@@ -337,7 +366,14 @@ export function mapLmuSession(
   sessionIdentity?: LmuSessionIdentity
 ): Session {
   const trackLengthM = raw.lapDist;
-  const shiftLights = deriveLmuShiftLightRpm(raw.engineMaxRPM);
+  const playerDriver = raw.drivers.find((d) => d.isPlayer);
+  const shiftLights = deriveLmuShiftLightRpm(
+    raw.engineMaxRPM,
+    lmuShiftPointRpm(
+      lmuCanonicalClass(playerDriver?.className),
+      playerDriver?.vehicleModel ?? playerDriver?.vehicleName
+    )
+  );
 
   // Keyed by the name the sim reports, which is the only handle
   // /rest/multiplayer/teams gives us. Absent outside multiplayer.
@@ -383,6 +419,7 @@ export function mapLmuSession(
     CarNumber: lmuCarNumber(d.vehicleName) ?? DEFAULT_CAR_NUMBER(d.id),
     CarNumberRaw: lmuCarNumberRaw(d.vehicleName) ?? d.id + 1,
     CarPath: d.vehFilename,
+    CarModel: d.vehicleModel,
     CarClassID: d.classId,
     CarID: resolveLmuCarId(d.vehicleModel ?? d.vehicleName),
     CarIsPaceCar: 0,
@@ -468,7 +505,6 @@ export function mapLmuSession(
     ),
   }));
 
-  const playerDriver = raw.drivers.find((d) => d.isPlayer);
   const playerIdx = playerDriver?.id ?? -1;
   const currentSessionType = sessionType(raw.session);
 
@@ -537,7 +573,8 @@ export function mapLmuSession(
       TrackAirTemp: '',
       TrackAirPressure: '',
       TrackAirDensity: '',
-      TrackWindVel: String(Math.hypot(raw.wind[0] ?? 0, raw.wind[2] ?? 0)),
+      // Unknown, like its neighbours: LMU's wind vector is always zero.
+      TrackWindVel: '',
       TrackWindDir: '',
       TrackRelativeHumidity: '',
       TrackFogLevel: '',
@@ -662,12 +699,7 @@ export function mapLmuSession(
       DriverHeadPosZ: 0,
       DriverCarIsElectric: 0,
       DriverCarIdleRPM: 800,
-      DriverCarRedLine:
-        raw.engineMaxRPM !== undefined &&
-        Number.isFinite(raw.engineMaxRPM) &&
-        raw.engineMaxRPM > 0
-          ? raw.engineMaxRPM
-          : DEFAULT_MAX_RPM,
+      DriverCarRedLine: shiftLights.redline,
       DriverCarEngCylinderCount: 0,
       // Placeholder, not a measurement. LMU's shared memory reports no fuel
       // density, and nothing in the app reads this today -- but 0 kg/L is

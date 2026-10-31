@@ -88,23 +88,72 @@ describe('mapLmuSession', () => {
 
   it('derives LMU shift lights from the engine limit', () => {
     expect(deriveLmuShiftLightRpm(9000)).toEqual({
+      redline: 9000,
       first: 8190,
       shift: 8550,
       last: 8730,
       blink: 8730,
     });
     expect(deriveLmuShiftLightRpm(0)).toEqual({
+      redline: 8500,
       first: 7735,
       shift: 8075,
       last: 8245,
       blink: 8245,
     });
 
-    const driverInfo = mapLmuSession(fixture()).DriverInfo;
+    // A car with no known shift point: the guess.
+    const hypercar = fixture();
+    const player = hypercar.drivers.find((d) => d.isPlayer);
+    if (!player) throw new Error('fixture has no player');
+    player.className = 'Hypercar';
+    player.vehicleModel = 'Ferrari 499P';
+    const driverInfo = mapLmuSession(hypercar).DriverInfo;
     expect(driverInfo.DriverCarSLFirstRPM).toBe(8190);
     expect(driverInfo.DriverCarSLShiftRPM).toBe(8550);
     expect(driverInfo.DriverCarSLLastRPM).toBe(8730);
     expect(driverInfo.DriverCarSLBlinkRPM).toBe(8730);
+  });
+
+  it("uses the player's car's known shift point", () => {
+    expect(deriveLmuShiftLightRpm(9000, 7300)).toEqual({
+      redline: 9000,
+      // Keeps the 4%-of-limit lead on the shift point.
+      first: 6940,
+      shift: 7300,
+      last: 8730,
+      blink: 8730,
+    });
+    // Above the 97% mark, the later thresholds move up with it.
+    expect(deriveLmuShiftLightRpm(9000, 8800)).toEqual({
+      redline: 9000,
+      first: 8190,
+      shift: 8800,
+      last: 8800,
+      blink: 8800,
+    });
+
+    // Capped at the rev limit LMU reports.
+    expect(deriveLmuShiftLightRpm(8600, 8800)).toMatchObject({
+      redline: 8600,
+      shift: 8600,
+    });
+    // Before LMU reports one, the placeholder rises to the shift point, so
+    // the widget's RPM clamp cannot hold the cue below it.
+    expect(deriveLmuShiftLightRpm(undefined, 8800)).toMatchObject({
+      redline: 8800,
+      shift: 8800,
+    });
+
+    // The fixture's player drives the Ferrari 296 GT3.
+    const driverInfo = mapLmuSession(fixture()).DriverInfo;
+    expect(driverInfo.DriverCarSLShiftRPM).toBe(7300);
+  });
+
+  it('names each car by its model, apart from the livery', () => {
+    const drivers = mapLmuSession(fixture()).DriverInfo.Drivers;
+    const player = drivers.find((d) => d.CarIdx === 1);
+    expect(player?.CarModel).toBe('Ferrari 296 GT3');
   });
 
   it.each([

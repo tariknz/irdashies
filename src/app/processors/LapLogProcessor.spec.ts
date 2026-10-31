@@ -44,6 +44,15 @@ describe('LapLogProcessor', () => {
     expect(bestLaps).toEqual([59.8]);
   });
 
+  it("carries LMU's lap void flag, and reads iRacing's absence as false", () => {
+    const processor = new LapLogProcessor();
+    processor.onFrame(frame({ LmuLapInvalidated: [true] }));
+    expect(processor.snapshot().lapInvalidated).toBe(true);
+
+    processor.onFrame(frame({ LapCompleted: [3] }));
+    expect(processor.snapshot().lapInvalidated).toBe(false);
+  });
+
   it('resets session-derived state on lifecycle changes', () => {
     const processor = new LapLogProcessor();
     processor.onFrame(frame({ LapCompleted: [4], SessionNum: [2] }));

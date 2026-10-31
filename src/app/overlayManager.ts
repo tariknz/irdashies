@@ -827,7 +827,10 @@ export class OverlayManager {
 
   /**
    * Sends the cached session to a subscribed sender window. Visible windows
-   * only, except the Gantry, which is fed while hidden.
+   * only, except the Gantry and the settings window, which are fed while
+   * hidden. The settings window subscribes before ready-to-show reveals it and
+   * has no resend on show, and LMU republishes the session only when its
+   * signature changes, so a skipped seed could leave it without a session.
    */
   public seedSessionData(sender: Electron.WebContents): boolean {
     const win = BrowserWindow.fromWebContents(sender);
@@ -836,8 +839,13 @@ export class OverlayManager {
       win,
       this.rendererDataSubscriptions,
       this.latestSessionData,
-      this.isGantryWebContents(sender)
+      this.isGantryWebContents(sender) || this.isSettingsWebContents(sender)
     );
+  }
+
+  private isSettingsWebContents(webContents: Electron.WebContents): boolean {
+    const win = this.currentSettingsWindow;
+    return !!win && !win.isDestroyed() && win.webContents.id === webContents.id;
   }
 
   /**

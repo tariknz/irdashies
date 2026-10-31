@@ -380,6 +380,8 @@ export interface LapLogSnapshot {
   deltaToSessionLastLapOk: boolean;
   deltaToSessionBestLap: number;
   deltaToSessionBestLapOk: boolean;
+  /** LMU's void flag for the player's lap in progress; always false in iRacing. */
+  lapInvalidated: boolean;
   version: number;
 }
 
