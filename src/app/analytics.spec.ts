@@ -55,7 +55,7 @@ vi.mock('./storage/analytics', () => ({
 import { Analytics, type AnalyticsProvider } from './analytics';
 import logger from './logger';
 import { getAnalyticsOptOut } from './storage/analytics';
-import { readData } from './storage/storage';
+import { readData, writeData } from './storage/storage';
 import { app } from 'electron';
 import type { PitLaneAnalyticsCheckpoint } from './storage/pitLaneAnalyticsCheckpoint';
 
@@ -82,21 +82,34 @@ describe('Analytics.setupLogTransport', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(false);
+    vi.mocked(readData).mockReturnValue('test-installation');
+    userDataPath.value = path.join(os.homedir(), 'Library', 'irDashies');
     provider = makeProvider();
     analytics = new Analytics(provider);
-    analytics.setupLogTransport();
+    analytics.setupLogTransport('2.0.0+test');
   });
 
   afterEach(() => {
     vi.useRealTimers();
     delete logger.transports.posthog;
+    vi.restoreAllMocks();
+    vi.mocked(readData).mockReset();
+    vi.mocked(writeData).mockReset();
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
   });
 
   it('forwards a log message to the provider', () => {
     emit('warn', 'something went wrong');
     expect(provider.capture).toHaveBeenCalledWith({
+      distinctId: 'test-installation',
       event: 'log_message',
-      properties: { level: 'warn', message: 'something went wrong' },
+      properties: {
+        version: '2.0.0+test',
+        level: 'warn',
+        message: 'something went wrong',
+        data: ['something went wrong'],
+      },
     });
   });
 
@@ -130,8 +143,14 @@ describe('Analytics.setupLogTransport', () => {
   it('stringifies non-string log data', () => {
     emit('warn', 'context:', { code: 42 });
     expect(provider.capture).toHaveBeenCalledWith({
+      distinctId: 'test-installation',
       event: 'log_message',
-      properties: { level: 'warn', message: 'context: {"code":42}' },
+      properties: {
+        version: '2.0.0+test',
+        level: 'warn',
+        message: 'context: {"code":42}',
+        data: ['context:', { code: 42 }],
+      },
     });
   });
 
@@ -142,8 +161,132 @@ describe('Analytics.setupLogTransport', () => {
       noopAnalytics as unknown as { provider: AnalyticsProvider | null }
     ).provider = null;
     delete logger.transports.posthog;
-    noopAnalytics.setupLogTransport();
+    noopAnalytics.setupLogTransport('2.0.0+test');
     expect(logger.transports.posthog).toBeUndefined();
+  });
+
+  it('uses the same identity for startup logs and identify, without waiting for init', async () => {
+    emit('error', 'startup failure');
+    await analytics.init('2.0.0+test', { widgets: [] });
+    expect(provider.capture.mock.calls[0][0].distinctId).toBe(
+      'test-installation'
+    );
+    expect(provider.identify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        distinctId: 'test-installation',
+        properties: expect.objectContaining({ version: '2.0.0+test' }),
+      })
+    );
+    await analytics.waitForCalibrationUpload();
+    await analytics.waitForRadarPoleSideUpload();
+    analytics.shutdown();
+  });
+
+  it('creates the existing persistent userId once, before the transport is attached', async () => {
+    delete logger.transports.posthog;
+    vi.mocked(readData).mockReturnValue(undefined);
+    vi.mocked(writeData).mockImplementation(() => {
+      expect(logger.transports.posthog).toBeUndefined();
+    });
+    const firstRun = new Analytics(provider);
+    firstRun.setupLogTransport('2.0.0');
+    emit('error', 'first launch error');
+    const userId = provider.capture.mock.calls[0][0].distinctId;
+    expect(writeData).toHaveBeenCalledWith('userId', userId);
+    await firstRun.init('2.0.0', { widgets: [] });
+    expect(writeData).toHaveBeenCalledTimes(1);
+    expect(provider.identify.mock.calls[0][0].distinctId).toBe(userId);
+    await firstRun.waitForCalibrationUpload();
+    await firstRun.waitForRadarPoleSideUpload();
+    firstRun.shutdown();
+  });
+
+  it('does not install a transport or read identity/paths when opted out', () => {
+    delete logger.transports.posthog;
+    vi.mocked(readData).mockClear();
+    vi.mocked(app.getPath).mockClear();
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
+    new Analytics(provider).setupLogTransport('2.0.0');
+    expect(logger.transports.posthog).toBeUndefined();
+    expect(readData).not.toHaveBeenCalled();
+    expect(app.getPath).not.toHaveBeenCalled();
+  });
+
+  it('honours opt-out after setup without consuming the dedup key', () => {
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(true);
+    emit('warn', 'private diagnostic');
+    expect(provider.capture).not.toHaveBeenCalled();
+    vi.mocked(getAnalyticsOptOut).mockReturnValue(false);
+    emit('warn', 'private diagnostic');
+    expect(provider.capture).toHaveBeenCalledOnce();
+  });
+
+  it('keeps local logging safe if identity storage fails at startup', () => {
+    delete logger.transports.posthog;
+    vi.mocked(readData).mockImplementation(() => {
+      throw new Error('disk unavailable');
+    });
+    expect(() =>
+      new Analytics(provider).setupLogTransport('2.0.0')
+    ).not.toThrow();
+    expect(logger.transports.posthog).toBeUndefined();
+  });
+
+  it('does not recurse when opt-out storage or the provider logs, and swallows capture failures', () => {
+    vi.mocked(getAnalyticsOptOut).mockImplementation(() => {
+      emit('warn', 'storage diagnostic');
+      return false;
+    });
+    provider.capture.mockImplementation(() => {
+      emit('error', 'provider diagnostic');
+      throw new Error('offline');
+    });
+    expect(() => emit('error', 'original error')).not.toThrow();
+    expect(provider.capture).toHaveBeenCalledOnce();
+    provider.capture.mockImplementation(() => undefined);
+    emit('error', 'another error');
+    expect(provider.capture).toHaveBeenCalledTimes(2);
+  });
+
+  it('preserves module-loader errors and scrubs identifying paths in all event fields', () => {
+    const nativePath = path.join(userDataPath.value, 'native', 'sdk.node');
+    const error = Object.assign(new Error(`Cannot load ${nativePath}`), {
+      code: 'ERR_DLOPEN_FAILED',
+      context: { file: path.join(os.homedir(), 'private', 'config.json') },
+    });
+    emit('error', `Failed to load ${nativePath}`, error, {
+      [nativePath]: nativePath,
+    });
+    const event = provider.capture.mock.calls[0][0];
+    expect(event.properties?.data).toEqual([
+      expect.stringContaining('<userData>'),
+      expect.objectContaining({
+        name: 'Error',
+        message: expect.stringContaining('<userData>'),
+        stack: expect.stringContaining('Cannot load <userData>'),
+        code: 'ERR_DLOPEN_FAILED',
+        context: { file: expect.stringContaining('<home>') },
+      }),
+      expect.any(Object),
+    ]);
+    const json = JSON.stringify(event);
+    expect(json).not.toContain(os.homedir());
+    expect(json).not.toContain(userDataPath.value);
+    expect(error.message).toContain(nativePath);
+  });
+
+  it('bounds large/circular diagnostics without sending raw session buffers', () => {
+    const context: Record<string, unknown> = {
+      buffer: Buffer.alloc(100000, 'x'),
+      session: 'sensitive session YAML'.repeat(10000),
+    };
+    context.self = context;
+    expect(() => emit('error', 'bad diagnostics', context, 42n)).not.toThrow();
+    const json = JSON.stringify(provider.capture.mock.calls[0][0]);
+    expect(json.length).toBeLessThan(64 * 1024);
+    expect(json).toContain('[Circular]');
+    expect(json).toContain('Binary data omitted');
+    expect(json).not.toContain('sensitive session YAML');
   });
 });
 
