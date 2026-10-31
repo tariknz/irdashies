@@ -38,9 +38,25 @@ export interface KeybindingEntry {
 
 export type KeybindingsMap = Record<KeybindingActionId, KeybindingEntry>;
 
+/** Runtime registration failures; omitted bindings have no error. Never persisted. */
+export type KeybindingRegistrationErrors = Partial<
+  Record<KeybindingActionId, string>
+>;
+
+export const KEYBINDING_MESSAGES = {
+  invalid: 'Invalid keyboard shortcut. Choose another combination.',
+  unavailable:
+    'Shortcut unavailable—may be used by another application. Choose another combination.',
+  error:
+    'Could not register shortcut. Try again or check the application logs.',
+} as const;
+
+export type KeybindingUpdateResult = KeybindingsMap | { error: string };
+
 /** Bridge methods exposed to the renderer for keybinding management */
 export interface KeybindingsBridge {
   getKeybindings: () => Promise<KeybindingsMap>;
+  getRegistrationErrors: () => Promise<KeybindingRegistrationErrors>;
   updateKeybinding: (
     actionId: KeybindingActionId,
     accelerator: string,
@@ -49,7 +65,7 @@ export interface KeybindingsBridge {
      * action (e.g. a widget toggle) that has no factory default entry.
      */
     meta?: { label: string; description: string }
-  ) => Promise<KeybindingsMap>;
+  ) => Promise<KeybindingUpdateResult>;
   resetKeybinding: (actionId: KeybindingActionId) => Promise<KeybindingsMap>;
   resetAllKeybindings: () => Promise<KeybindingsMap>;
   /**
