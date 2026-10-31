@@ -14,7 +14,7 @@ import {
   type WeatherSample,
 } from './weatherChange';
 import { BroadcastEnter } from '../shared/Broadcast/BroadcastEnter';
-import { useTrackRubberedState } from '../../domain/weather/useTrackRubberedState';
+import { useTrackRubberedState } from '@irdashies/domain/weather/useTrackRubberedState';
 
 const WETNESS_LABELS = [
   '-',

@@ -14,7 +14,7 @@ import { WeatherTemp } from './WeatherTemp/WeatherTemp';
 import { WeatherTrackWetness } from './WeatherTrackWetness/WeatherTrackWetness';
 import { WeatherTrackRubbered } from './WeatherTrackRubbered/WeatherTrackRubbered';
 import { WindDirection } from './WindDirection/WindDirection';
-import { useTrackRubberedState } from '../../domain/weather/useTrackRubberedState';
+import { useTrackRubberedState } from '@irdashies/domain/weather/useTrackRubberedState';
 import { useWeatherSettings } from './hooks/useWeatherSettings';
 import { WeatherHumidity } from './WeatherHumidity/WeatherHumidity';
 import { WeatherPrecipitation } from './WeatherPrecipitation/WeatherPrecipitation';
