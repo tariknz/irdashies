@@ -2,6 +2,10 @@ import type { FuelLapData } from '../fuelCalculatorBridge';
 import type { Incident } from '../raceControl';
 import type { ReferenceLap } from '../referenceLaps';
 import type { Sector } from '../session';
+import type {
+  StreamChatEmotesSnapshot,
+  StreamChatMessagesSnapshot,
+} from '../streamChat';
 import type { ReplayContextSnapshot } from './replayContext';
 import type { PitLaneCalibration } from '../pitLane';
 
@@ -38,6 +42,8 @@ export interface ChannelPayloads {
    */
   'raceControl.sessionId': string;
   'replay.context': ReplayContextSnapshot;
+  'streamchat.messages': StreamChatMessagesSnapshot;
+  'streamchat.emotes': StreamChatEmotesSnapshot;
 }
 
 export interface TrackStateSnapshot {
@@ -745,6 +751,20 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 1,
     maxRateHz: 1,
+  },
+  // Publishes when a chat message arrives or a source changes state; the cap
+  // only bounds bursts, and the snapshot carries the whole buffer so a dropped
+  // intermediate publish loses nothing.
+  'streamchat.messages': {
+    kind: 'snapshot',
+    defaultRateHz: 5,
+    maxRateHz: 10,
+  },
+  // Publishes when the Twitch channel's BTTV/7TV emote sets finish loading.
+  'streamchat.emotes': {
+    kind: 'snapshot',
+    defaultRateHz: 1,
+    maxRateHz: 2,
   },
 } as const satisfies ChannelRegistry;
 

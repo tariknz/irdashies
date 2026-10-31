@@ -114,7 +114,7 @@ const WIDGET_MENU_META: Partial<
   standings: { category: 'race' },
   tachometer: { category: 'car' },
   map: { category: 'track' },
-  twitchchat: { category: 'extras' },
+  streamchat: { category: 'extras' },
   weather: { category: 'track' },
   wind: { category: 'track' },
 };

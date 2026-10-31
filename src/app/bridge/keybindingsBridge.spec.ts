@@ -37,6 +37,7 @@ vi.mock('../storage/keybindings', () => ({
   updateKeybinding: mockUpdateKeybinding,
   resetKeybinding: mockResetKeybinding,
   resetAllKeybindings: mockResetAllKeybindings,
+  persistKeybindingMigrations: vi.fn(async () => undefined),
 }));
 
 const mockIsValidAccelerator = vi.hoisted(() => vi.fn());

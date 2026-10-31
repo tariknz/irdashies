@@ -28,8 +28,13 @@ type EventChannelName =
  * LapHistoryRuntime, which deliberately runs outside demand gating so an
  * enabled Gantry keeps recording with its window closed. `replay.context` is
  * owned by ReplayContextRuntime, which the other runtimes read to pause.
+ * `streamchat.*` are published by StreamChatService, which reads no telemetry.
  */
-type RuntimeOwnedChannelName = 'lap-history.snapshot' | 'replay.context';
+type RuntimeOwnedChannelName =
+  | 'lap-history.snapshot'
+  | 'replay.context'
+  | 'streamchat.messages'
+  | 'streamchat.emotes';
 type SnapshotChannelName = Exclude<
   ChannelName,
   EventChannelName | RuntimeOwnedChannelName

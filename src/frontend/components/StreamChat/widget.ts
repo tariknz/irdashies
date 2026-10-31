@@ -1,7 +1,7 @@
-import { TwitchChat } from './TwitchChat';
+import { StreamChat } from './StreamChat';
 import type { WidgetModule } from '@irdashies/domain';
 
 export default {
-  id: 'twitchchat',
-  component: TwitchChat,
+  id: 'streamchat',
+  component: StreamChat,
 } satisfies WidgetModule;
