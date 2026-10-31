@@ -93,6 +93,31 @@ describe('DriverInfoRow badge contents', () => {
     renderRow({ license: '', rating: 0 });
     expect(screen.getByText('AI')).toBeTruthy();
   });
+
+  it('names an AI entry on a sim without ratings', () => {
+    // The row's half of the contract for the other half of the decision.
+    renderRow({ license: '', rating: 0, hasDriverRatings: false, isAI: true });
+    expect(screen.getByText('AI')).toBeTruthy();
+  });
+
+  it('draws no badge at all for a sim without ratings', () => {
+    // The row's half of the contract, which nothing else covers: BadgeCell
+    // has its own specs for the decision, but only this proves the answer
+    // reaches it. Dropping the prop here is invisible to every other spec --
+    // and an unpassed parameter is exactly how the LMU grid came to be
+    // labelled "AI" in the first place.
+    const { container } = renderRow({
+      license: '',
+      rating: 0,
+      hasDriverRatings: false,
+      isAI: false,
+    });
+
+    expect(screen.queryByText('AI')).toBeNull();
+    const badge = container.querySelector('td[data-column="badge"]');
+    expect(badge).toBeTruthy();
+    expect(badge?.childElementCount).toBe(0);
+  });
 });
 
 describe('DriverInfoRow', () => {

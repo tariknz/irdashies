@@ -3,7 +3,15 @@ import 'flag-icons/css/flag-icons.min.css';
 import { IRacingFlag } from './IRacingFlag';
 
 interface CountryFlagProps {
+  /** iRacing's flair id. Ignored when `countryCode` is given. */
   flairId: number;
+  /**
+   * An ISO 3166-1 alpha-2 code (or a `GB-XXX` subdivision), for sims that
+   * report a country directly instead of an iRacing flair id -- LMU does.
+   * Takes precedence, because a sim that names the country outright is a
+   * better source than a lookup table.
+   */
+  countryCode?: string;
 }
 
 // Hardcoded FlairID to country code mapping
@@ -254,12 +262,29 @@ const getCountryCodeFromFlairId = (flairId: number): string => {
   return FLAIR_ID_TO_COUNTRY_CODE[flairId];
 };
 
-export const CountryFlag: React.FC<CountryFlagProps> = ({ flairId }) => {
-  const countryCode = getCountryCodeFromFlairId(flairId);
+/**
+ * One driver's flag, or nothing.
+ *
+ * A sim that names the country outright (LMU) is drawn from that code. An
+ * iRacing flair id is looked up, with the iRacing logo for an id the table
+ * does not know, as before. With neither -- every LMU AI, which has no
+ * nationality and no flair id -- nothing is drawn: a caller guarding on its
+ * own inputs rendered the digit 0 into the row instead, since a falsy number
+ * left of `&&` reaches the DOM as text.
+ */
+export const CountryFlag: React.FC<CountryFlagProps> = ({
+  flairId,
+  countryCode,
+}) => {
+  if (countryCode) {
+    return <span className={`fi fi-${countryCode.toLowerCase()}`} />;
+  }
+  if (!flairId) return null;
 
-  if (!countryCode) {
+  const code = getCountryCodeFromFlairId(flairId);
+  if (!code) {
     return <IRacingFlag />;
   }
 
-  return <span className={`fi fi-${countryCode.toLowerCase()}`} />;
+  return <span className={`fi fi-${code.toLowerCase()}`} />;
 };
