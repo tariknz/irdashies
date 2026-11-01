@@ -15,20 +15,12 @@ import {
   type LapTraceFrameRefs,
 } from './hooks/useLapTraceFrame';
 
-/**
+/*
  * All trace/marker/grid colours are user-configurable and arrive via the
  * `colors` prop (defaults in DEFAULT_LAP_TRACE_COLORS). Reference traces read
  * pastel/washed as a background target; the ghost (live) lap reads bright; the
  * fills take a saturated weight so a filled area still says which pedal it is.
- *
- * 'screen' blend mode so the ABS fill lightens/mixes with whatever's beneath
- * it — a filled reference throttle or brake bar it overlaps — instead of just
- * occluding it, so both "ABS was on" and "the reference had the pedal down
- * here" stay readable at once. Against the plot's dark background alone
- * (nothing to mix with) it reads as the plain ABS colour, same as normal alpha
- * blending would.
  */
-const ABS_BLEND_MODE = 'screen' as const;
 
 const GRID_TICKS = [0, 0.25, 0.5, 0.75, 1];
 
@@ -293,14 +285,14 @@ export const LapTracePlot = memo(
                     ABS engaged — same shape the Input Trace widget's ABS bar
                     uses. Blended rather than plain alpha so it visibly mixes
                     with a filled reference trace underneath it instead of
-                    just covering it up. */}
+                    just covering it up; the frame loop sets the blend only
+                    while there is ABS to draw. */}
                 {showBrake && showAbs && absStyle === 'bar' && (
                   <path
                     ref={ghostAbsArea}
                     fill={colors.absFill}
                     fillOpacity={0.55 * driverOpacity}
                     stroke="none"
-                    style={{ mixBlendMode: ABS_BLEND_MODE }}
                   />
                 )}
                 {/* Drawn after the brake trace so the ABS runs sit on top of

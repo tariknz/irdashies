@@ -1,7 +1,11 @@
 import { render, waitFor, cleanup } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { useLapTraceStore } from '@irdashies/context';
-import { DEFAULT_LAP_TRACE_COLORS } from '@irdashies/types';
+import {
+  DEFAULT_LAP_TRACE_COLORS,
+  type ChannelBridge,
+  type LapTraceSampleSnapshot,
+} from '@irdashies/types';
 import { hydrateLapTrace } from '../../domain/lapTrace/hydrateLapTrace';
 import { LapTracePlot } from './LapTracePlot';
 import { makeSyntheticLapTrace } from './fixtures/syntheticLap';
@@ -375,6 +379,33 @@ describe('LapTracePlot', () => {
       });
       expect((filled as SVGElement)?.style.mixBlendMode).toBe('screen');
     });
+
+    it('blends the ABS fill only while there is ABS in the window', async () => {
+      await seedAbsLap();
+      // 2 km on, well clear of the stretch where ABS engaged.
+      const { container } = render(
+        <LapTracePlot
+          {...defaultProps}
+          showAbs
+          absStyle="bar"
+          carDistanceMOverride={2000}
+        />
+      );
+      const absArea = () =>
+        [...container.querySelectorAll('path')].find(
+          (p) => p.getAttribute('fill') === DEFAULT_LAP_TRACE_COLORS.absFill
+        ) as SVGPathElement | undefined;
+
+      await waitFor(() => {
+        const brake = ghostPathByStroke(
+          container,
+          DEFAULT_LAP_TRACE_COLORS.ghostBrake
+        );
+        expect(brake?.getAttribute('d')).toBeTruthy();
+      });
+      expect(absArea()?.getAttribute('d')).toBe('');
+      expect(absArea()?.style.mixBlendMode).toBe('');
+    });
   });
 
   it('draws the reference traces across the window', async () => {
@@ -729,6 +760,146 @@ describe('LapTracePlot', () => {
     await waitFor(() => {
       const labels = [...getByTestId('gear-labels').querySelectorAll('span')];
       expect(labels.every((el) => el.style.visibility === 'hidden')).toBe(true);
+    });
+  });
+
+  describe('frame scheduling', () => {
+    /** A bridge that delivers lap-trace.sample frames when told to. */
+    const sampleBridge = () => {
+      let deliver: ((payload: LapTraceSampleSnapshot) => void) | undefined;
+      let version = 0;
+      window.channelBridge = {
+        subscribe: (
+          channel: string,
+          callback: (payload: LapTraceSampleSnapshot) => void
+        ) => {
+          if (channel === 'lap-trace.sample') deliver = callback;
+          return () => undefined;
+        },
+      } as unknown as ChannelBridge;
+      return (lapDistPct: number) =>
+        deliver?.({
+          sessionTime: lapDistPct * 100,
+          lapDistPct,
+          throttle: 0,
+          brake: 0,
+          speed: 50,
+          gear: 3,
+          brakeAbsActive: false,
+          onPitRoad: false,
+          isOnTrack: true,
+          sessionNum: 0,
+          lastLapTime: 0,
+          lapCompleted: 0,
+          incidentCount: 0,
+          simLapInvalidated: false,
+          version: ++version,
+        });
+    };
+
+    const nextFrames = (count: number) =>
+      new Promise<void>((resolve) => {
+        const step = (left: number) =>
+          left === 0 ? resolve() : setTimeout(() => step(left - 1), 20);
+        step(count);
+      });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (window as any).channelBridge;
+    });
+
+    const referenceThrottle = (container: HTMLElement) =>
+      [...container.querySelectorAll('svg > g')[0].querySelectorAll('path')]
+        .map((p) => p.getAttribute('d') ?? '')
+        .find((d) => d.length > 0) ?? '';
+
+    it('asks for no frames while nothing changes', async () => {
+      seedReference();
+      const moveTo = sampleBridge();
+      const { container } = render(<LapTracePlot {...defaultProps} />);
+      moveTo(0.2);
+      await waitFor(() => expect(referenceThrottle(container)).not.toBe(''));
+
+      const raf = vi.spyOn(window, 'requestAnimationFrame');
+      await nextFrames(10);
+
+      expect(raf).not.toHaveBeenCalled();
+    });
+
+    it('draws again when the car moves', async () => {
+      seedReference();
+      const moveTo = sampleBridge();
+      const { container } = render(<LapTracePlot {...defaultProps} />);
+      moveTo(0.2);
+      await waitFor(() => expect(referenceThrottle(container)).not.toBe(''));
+      const before = referenceThrottle(container);
+
+      moveTo(0.21);
+
+      await waitFor(() =>
+        expect(referenceThrottle(container)).not.toBe(before)
+      );
+    });
+
+    it('draws a reference that arrives with no telemetry', async () => {
+      useLapTraceStore.setState({ trackLengthM: TRACK_LENGTH_M });
+      const { container } = render(
+        <LapTracePlot {...defaultProps} carDistanceMOverride={800} />
+      );
+      await nextFrames(3);
+      expect(referenceThrottle(container)).toBe('');
+
+      seedReference();
+
+      await waitFor(() => expect(referenceThrottle(container)).not.toBe(''));
+    });
+
+    it('writes a gear label only when its gear changes', async () => {
+      seedReference();
+      const moveTo = sampleBridge();
+      // The test DOM has no layout and no ResizeObserver, and labels need a
+      // measured width to be placed across.
+      vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
+        800
+      );
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          observe = vi.fn();
+          disconnect = vi.fn();
+        }
+      );
+      const { getByTestId } = render(<LapTracePlot {...defaultProps} />);
+      // 340 m into the synthetic lap, where the window holds gear changes.
+      moveTo(340 / TRACK_LENGTH_M);
+      const container = getByTestId('gear-labels');
+      const visible = () =>
+        [...container.querySelectorAll('span')].filter(
+          (el) => el.style.visibility === 'visible'
+        );
+      await waitFor(() => expect(visible().length).toBeGreaterThan(0));
+      const before = visible().map((el) => el.style.transform);
+
+      const mutations: MutationRecord[] = [];
+      const observer = new MutationObserver((records) =>
+        mutations.push(...records)
+      );
+      observer.observe(container, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+      });
+      // A metre on: the labels move, but no gear enters or leaves the window.
+      moveTo(341 / TRACK_LENGTH_M);
+      await waitFor(() =>
+        expect(visible().map((el) => el.style.transform)).not.toEqual(before)
+      );
+      observer.disconnect();
+
+      expect(mutations).toEqual([]);
     });
   });
 

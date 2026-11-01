@@ -14,6 +14,16 @@ import {
 } from '../../../domain/lapTrace/lapTraceWindow';
 import { ABS_BAR_Y, GEAR_LABELS, MAX_GEAR_LABELS, yForNorm } from '../layout';
 
+/**
+ * 'screen' blend mode so the ABS fill lightens/mixes with whatever's beneath
+ * it — a filled reference throttle or brake bar it overlaps — instead of just
+ * occluding it, so both "ABS was on" and "the reference had the pedal down
+ * here" stay readable at once. Against the plot's dark background alone
+ * (nothing to mix with) it reads as the plain ABS colour, same as normal alpha
+ * blending would.
+ */
+const ABS_BLEND_MODE = 'screen';
+
 /** The ghost traces, named so a piece can pull the field off its own buffer. */
 type GhostChannel = 'throttle' | 'brake' | 'speed';
 
@@ -378,10 +388,14 @@ function placeMarkers(
  * Drives the lap trace plot.
  *
  * Telemetry is read through a direct store subscription rather than a hook
- * (R2.3) and drawing happens in a self-scheduling rAF loop, so the React
- * component renders only when its settings change — never per frame. The paths
- * are updated by setAttribute on persistent DOM nodes, the same technique the
- * existing Input Trace widget uses.
+ * (R2.3), so the React component renders only when its settings change —
+ * never per frame. A frame is requested only when something the plot shows
+ * can have changed: the car's position, the lap store's reference, track
+ * length or active lap, the plot's width, or the settings. Nothing else is
+ * drawn from, so an idle widget schedules no frames at all, and a driving one
+ * at most one per telemetry sample. The paths are updated by setAttribute on
+ * persistent DOM nodes, the same technique the existing Input Trace widget
+ * uses.
  *
  * Both laps are drawn straight from their samples, across window pieces so
  * they run continuously through start/finish. The reference spans the whole
@@ -412,6 +426,9 @@ export const useLapTraceFrame = (
 
   const lapDistPctRef = useRef(0);
   const plotWidthRef = useRef(0);
+  // Asks the drawing effect for a frame. The inputs below are subscribed in
+  // effects of their own, so a settings change does not resubscribe them.
+  const requestDrawRef = useRef<() => void>(() => undefined);
 
   // Track the rendered pixel width so gear labels can be positioned with a
   // composited transform rather than a layout-triggering `left`.
@@ -421,6 +438,7 @@ export const useLapTraceFrame = (
     plotWidthRef.current = el.clientWidth;
     const observer = new ResizeObserver(() => {
       plotWidthRef.current = el.clientWidth;
+      requestDrawRef.current();
     });
     observer.observe(el);
     return () => observer.disconnect();
@@ -439,6 +457,7 @@ export const useLapTraceFrame = (
       const value = selection.getSnapshot();
       if (typeof value === 'number' && value >= 0) {
         lapDistPctRef.current = value;
+        requestDrawRef.current();
       }
     });
   }, [carDistanceMOverride]);
@@ -464,6 +483,42 @@ export const useLapTraceFrame = (
     let lastReference: unknown = undefined;
     let lastSampleCount = -1;
     let lastLapSerial = -1;
+    let lastWidthPx = -1;
+
+    // What each gear label slot was last given, so only a change is written:
+    // assigning text replaces the span's text node and costs a layout even
+    // when it is the same gear. Unset until first written, because the spans
+    // are new whenever the settings that rebuild this effect remount them.
+    const labelText: string[] = [];
+    const labelTransform: string[] = [];
+    const labelVisible: boolean[] = [];
+
+    const showLabel = (
+      i: number,
+      el: HTMLSpanElement,
+      text: string,
+      transform: string
+    ) => {
+      if (labelText[i] !== text) {
+        el.textContent = text;
+        labelText[i] = text;
+      }
+      if (labelTransform[i] !== transform) {
+        el.style.transform = transform;
+        labelTransform[i] = transform;
+      }
+      if (labelVisible[i] !== true) {
+        el.style.visibility = 'visible';
+        labelVisible[i] = true;
+      }
+    };
+
+    const hideLabel = (i: number, el: HTMLSpanElement) => {
+      if (labelVisible[i] !== false) {
+        el.style.visibility = 'hidden';
+        labelVisible[i] = false;
+      }
+    };
 
     const buildReference = (
       ref: RefObject<SVGPathElement | null>,
@@ -525,10 +580,10 @@ export const useLapTraceFrame = (
       range: number,
       filled: boolean,
       gated: boolean
-    ) => {
+    ): string => {
       if (!show) {
         setPath(ref, '');
-        return;
+        return '';
       }
       path.begin(filled);
       for (let p = 0; p < pieceCount; p++) {
@@ -547,7 +602,20 @@ export const useLapTraceFrame = (
           geometry
         );
       }
-      setPath(ref, path.end());
+      const d = path.end();
+      setPath(ref, d);
+      return d;
+    };
+
+    // Whether the ABS area is blended. Set only while it has something to
+    // draw: a blended element makes Chromium composite the whole plot as an
+    // isolated group, which is pure cost while the path is empty.
+    let absBlendOn: boolean | undefined;
+    const setAbsBlend = (on: boolean) => {
+      const el = refs.ghostAbsArea.current;
+      if (!el || absBlendOn === on) return;
+      el.style.mixBlendMode = on ? ABS_BLEND_MODE : '';
+      absBlendOn = on;
     };
 
     const draw = () => {
@@ -559,6 +627,7 @@ export const useLapTraceFrame = (
 
       const labels = refs.gearLabels.current;
       let labelsShown = 0;
+      const widthPx = plotWidthRef.current;
 
       if (!(trackLengthM > 0)) {
         setPath(refs.refThrottle, '');
@@ -569,6 +638,7 @@ export const useLapTraceFrame = (
         setPath(refs.ghostSpeed, '');
         setPath(refs.ghostBrakeAbs, '');
         setPath(refs.ghostAbsArea, '');
+        setAbsBlend(false);
         setPath(refs.absBar, '');
         placeMarkers(refs.markerRefBrakeOn.current, undefined, 0, 0, 0, 0, 0);
         placeMarkers(
@@ -592,7 +662,8 @@ export const useLapTraceFrame = (
           Math.abs(carDistanceM - lastCarDistanceM) < REBUILD_MIN_MOVE_M &&
           referenceLap === lastReference &&
           sampleCount === lastSampleCount &&
-          lapSerial === lastLapSerial
+          lapSerial === lastLapSerial &&
+          widthPx === lastWidthPx
         ) {
           return;
         }
@@ -600,6 +671,7 @@ export const useLapTraceFrame = (
         lastReference = referenceLap;
         lastSampleCount = sampleCount;
         lastLapSerial = lapSerial;
+        lastWidthPx = widthPx;
         geometry.carDistanceM = carDistanceM;
 
         // Both laps share one speed scale so they are directly comparable.
@@ -726,7 +798,7 @@ export const useLapTraceFrame = (
           // The 'bar' style: the same run, but filled down to the axis
           // instead of just outlined, so it reads as a bar the way the Input
           // Trace widget's ABS indicator does.
-          buildGhost(
+          const absArea = buildGhost(
             refs.ghostAbsArea,
             showAbs && showBrake && absStyle === 'bar',
             pieceCount,
@@ -736,6 +808,7 @@ export const useLapTraceFrame = (
             true,
             true
           );
+          setAbsBlend(absArea !== '');
 
           if (showAbsBar) {
             path.begin(false);
@@ -762,6 +835,7 @@ export const useLapTraceFrame = (
           setPath(refs.ghostSpeed, '');
           setPath(refs.ghostBrakeAbs, '');
           setPath(refs.ghostAbsArea, '');
+          setAbsBlend(false);
           setPath(refs.absBar, '');
         }
 
@@ -802,7 +876,6 @@ export const useLapTraceFrame = (
 
         // Gear labels. The change list is small (capped at 512) so a full scan
         // is cheaper than maintaining a cursor across the start/finish wrap.
-        const widthPx = plotWidthRef.current;
         if (showGearLabels && referenceLap && labels && widthPx > 0) {
           const changes = referenceLap.gearChangeM;
           const gears = referenceLap.gearChangeValues;
@@ -824,9 +897,12 @@ export const useLapTraceFrame = (
                 metersBehind,
                 metersAhead
               );
-              el.textContent = GEAR_LABELS[gears[c] + 1] ?? '';
-              el.style.transform = `translateX(${(x / 1000) * widthPx}px) translateX(-50%)`;
-              el.style.visibility = 'visible';
+              showLabel(
+                labelsShown,
+                el,
+                GEAR_LABELS[gears[c] + 1] ?? '',
+                `translateX(${(x / 1000) * widthPx}px) translateX(-50%)`
+              );
               labelsShown++;
             }
           }
@@ -836,18 +912,43 @@ export const useLapTraceFrame = (
       if (labels) {
         for (let i = labelsShown; i < labels.length; i++) {
           const el = labels[i];
-          if (el) el.style.visibility = 'hidden';
+          if (el) hideLabel(i, el);
         }
       }
     };
 
     const frame = () => {
-      raf = requestAnimationFrame(frame);
+      raf = 0;
       perfMetrics.measure('lapTraceFrame', draw);
     };
+    // At most one frame pending, however many inputs change before it runs.
+    const requestDraw = () => {
+      if (raf === 0) raf = requestAnimationFrame(frame);
+    };
+    requestDrawRef.current = requestDraw;
 
-    raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
+    // The lap store's sample buffers grow in place without notifying (the
+    // car's position covers those), so only a change of the objects drawn
+    // from asks for a frame here: a reference loaded or cleared, the track
+    // length, or a new active lap after a reset.
+    const unsubscribeStore = useLapTraceStore.subscribe((state, prev) => {
+      if (
+        state.referenceLap !== prev.referenceLap ||
+        state.trackLengthM !== prev.trackLengthM ||
+        state.activeLap !== prev.activeLap
+      ) {
+        requestDraw();
+      }
+    });
+
+    // The settings this effect was built from are new, so draw them now.
+    requestDraw();
+
+    return () => {
+      unsubscribeStore();
+      requestDrawRef.current = () => undefined;
+      if (raf !== 0) cancelAnimationFrame(raf);
+    };
   }, [
     refs,
     metersBehind,
