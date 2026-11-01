@@ -54,7 +54,8 @@ describe('loadTrackDrawing', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       'Unable to load track drawing',
       2,
-      expect.any(Error)
+      // vmThreads can wrap import failures in an Error from another realm.
+      expect.objectContaining({ message: expect.any(String) })
     );
   });
 });
