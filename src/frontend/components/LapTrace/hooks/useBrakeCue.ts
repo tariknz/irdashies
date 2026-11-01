@@ -80,13 +80,20 @@ export interface BrakeCueOptions {
 }
 
 /**
- * Drives the brake-point countdown: one telemetry subscription and one rAF
- * loop feeding both outputs.
+ * Drives the brake-point countdown: one telemetry subscription and one
+ * animation-frame step feeding both outputs.
  *
  * Telemetry is read through a direct store subscription rather than a hook
  * (R2.3) and the bars are updated by mutating their DOM, so the widget never
  * re-renders at telemetry rate — the only React renders in the whole feature
  * come from settings changes and the reference lap appearing.
+ *
+ * The latch is stepped on the first frame after its inputs change — a new
+ * track-state snapshot, the reference lap or track length, or the settings —
+ * and not otherwise. That is the frame an every-frame loop first sees new data
+ * on; the frames between snapshots would only repeat a step on the same
+ * inputs, which fires nothing and shows nothing new (brakeCueLatch.spec pins
+ * this).
  */
 export const useBrakeCue = (
   refs: BrakeCueRefs,
@@ -119,6 +126,9 @@ export const useBrakeCue = (
   // gives a deterministic, silent re-arm.
   const latch = useRef(createBrakeCueLatch());
   const output = useRef(createBrakeCueOutput());
+  // Asks the stepping effect for a frame. The subscription below lives in an
+  // effect of its own, so a settings change does not resubscribe it.
+  const requestStep = useRef<() => void>(() => undefined);
 
   useEffect(() => {
     if (carDistanceMOverride !== undefined) return;
@@ -142,6 +152,7 @@ export const useBrakeCue = (
       current.isOnTrack = snapshot.isOnTrack;
       current.onPitRoad = snapshot.onPitRoad;
       current.isReplayPlaying = snapshot.isReplayPlaying;
+      requestStep.current();
     });
   }, [carDistanceMOverride]);
 
@@ -264,14 +275,34 @@ export const useBrakeCue = (
     };
 
     const frame = () => {
-      raf = requestAnimationFrame(frame);
+      raf = 0;
       perfMetrics.measure('lapTraceBrakeCue', draw);
     };
+    // At most one step pending, however many inputs change before it runs.
+    const step = () => {
+      if (raf === 0) raf = requestAnimationFrame(frame);
+    };
+    requestStep.current = step;
 
-    raf = requestAnimationFrame(frame);
+    // The reference's cue points arrive as a prop; its speed (the pace gate)
+    // and the track length are read from the store, and either can change
+    // with no new telemetry.
+    const unsubscribeStore = useLapTraceStore.subscribe((state, prev) => {
+      if (
+        state.referenceLap !== prev.referenceLap ||
+        state.trackLengthM !== prev.trackLengthM
+      ) {
+        step();
+      }
+    });
+
+    // The settings this effect was built from are new, so step on them now.
+    step();
 
     return () => {
-      cancelAnimationFrame(raf);
+      unsubscribeStore();
+      requestStep.current = () => undefined;
+      if (raf !== 0) cancelAnimationFrame(raf);
       const strip = refs.strip.current;
       if (strip) strip.style.visibility = 'hidden';
     };

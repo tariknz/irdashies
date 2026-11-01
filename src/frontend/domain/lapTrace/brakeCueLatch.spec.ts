@@ -441,3 +441,80 @@ describe('stepBrakeCueLatch', () => {
     expect(out.bars).toBe(0);
   });
 });
+
+describe('a chicane', () => {
+  it('hands straight from one point to the next without blanking', () => {
+    const r = rig([1000, 1100]);
+    r.start(850);
+    const shown: number[] = [];
+    // 5 m per tick, through the first point's hold and on to the second.
+    for (let d = 855; d < 1100; d += 5) shown.push(r.tick(d).bars);
+    const first = shown.findIndex((bars) => bars > 0);
+    expect(first).toBeGreaterThanOrEqual(0);
+    expect(shown.slice(first).every((bars) => bars > 0)).toBe(true);
+  });
+});
+
+describe('stepping once per snapshot', () => {
+  /**
+   * The widget steps the latch once per track-state snapshot. It used to step
+   * on every animation frame, repeating each snapshot two to six times; the
+   * repeats must not have carried any behaviour the per-snapshot step loses.
+   */
+  const drive = (repeats: number) => {
+    const state = createBrakeCueLatch();
+    const out = createBrakeCueOutput();
+    // Close pairs (a chicane) and lone points, and a lap wrap.
+    const points = new Float32Array([600, 700, 1800, 3200, 4950]);
+    const perSnapshot: {
+      fire: BrakeCueSound | null;
+      bars: number;
+      tone: string;
+    }[] = [];
+    const dt = 1 / 25;
+    let distanceM = 100;
+    let sessionTime = 0;
+    // Two laps at 25 Hz, braking from 60 to 25 m/s into each point and
+    // accelerating out, so every target is held, released and replaced.
+    for (let i = 0; i < 2 * 25 * 140; i++) {
+      const next = points.find((p) => p > distanceM) ?? points[0] + 5000;
+      const toPoint = next - distanceM;
+      const speedMs = toPoint < 120 ? 25 + toPoint * 0.25 : 60;
+      distanceM = (distanceM + speedMs * dt) % TRACK_LENGTH_M;
+      sessionTime += dt;
+      let fire: BrakeCueSound | null = null;
+      for (let r = 0; r < repeats; r++) {
+        stepBrakeCueLatch(state, out, {
+          carDistanceM: distanceM,
+          speedMs,
+          sessionTime,
+          trackLengthM: TRACK_LENGTH_M,
+          cuePointsM: points,
+          cuePointCount: points.length,
+          referenceSpeedMs: 50,
+          audioCueLeadSec: 0.2,
+          driving: true,
+        });
+        fire ??= out.fire;
+      }
+      perSnapshot.push({ fire, bars: out.bars, tone: out.tone });
+    }
+    return perSnapshot;
+  };
+
+  it.each([2, 3, 6])(
+    'fires and shows what %i steps per snapshot did',
+    (repeats) => {
+      const once = drive(1);
+      const repeated = drive(repeats);
+      const firedAt = (run: typeof once) =>
+        run.flatMap((s, i) => (s.fire ? [`${i}:${s.fire}`] : []));
+
+      expect(firedAt(once).length).toBeGreaterThan(10);
+      expect(firedAt(once)).toEqual(firedAt(repeated));
+      expect(once.map((s) => `${s.bars}${s.tone}`)).toEqual(
+        repeated.map((s) => `${s.bars}${s.tone}`)
+      );
+    }
+  );
+});

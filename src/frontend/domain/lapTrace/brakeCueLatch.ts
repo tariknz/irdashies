@@ -414,6 +414,12 @@ export function stepBrakeCueLatch(
       state.brakeOnly = false;
       state.holdUntilTime = NaN;
       state.progressArmDistanceM = NaN;
+      // Look for the next point on this same tick. Waiting for the next one
+      // blanks the strip for a whole snapshot between the two points of a
+      // chicane. Runs once: a point just acquired lies ahead of the car, so
+      // the next step either counts down to it or holds it, and cannot get
+      // back here.
+      return stepBrakeCueLatch(state, out, tick);
     }
   }
 
