@@ -6,6 +6,10 @@ import {
 import type { TrackDriver } from './TrackCanvas';
 import { useEffect, useState } from 'react';
 import { useTrackDrawing } from '@irdashies/domain/track';
+import {
+  ChannelSnapshotDecorator,
+  trackStateStorySnapshot,
+} from '@irdashies/storybook';
 
 const FlatTrackMapCanvas = (
   props: Omit<FlatTrackMapCanvasProps, 'trackDrawing'>
@@ -59,6 +63,9 @@ export default {
     },
   },
   decorators: [
+    ChannelSnapshotDecorator({
+      'track-state.snapshot': trackStateStorySnapshot,
+    }),
     (Story) => (
       <div style={{ width: '100%', height: '200px' }}>
         <Story />
