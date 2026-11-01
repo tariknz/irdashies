@@ -183,7 +183,12 @@ actual replay metadata without starting an isolated publisher. The helper
 seeks and validates the actual simulator before launching, starts playback
 at capture origin, samples replay integrity and pauses at completion. Its
 native controller uses a private addon copy so Forge can rebuild its own
-output. No application runtime performance change was made.
+output. Each invocation refreshes that copy from the current build before
+loading it, and new run provenance records the controller's own binary hash.
+Capture callback or output failures retain an error in provenance, stop the
+runner's process tree, pause when the SDK is reachable, close artifact streams
+and release the SDK. These helper safeguards do not alter the archived
+measurements. No application runtime performance change was made.
 
 The local ignored `perf-results/full-profile-seed/` contains the frozen copy
 of the saved profile's JSON files plus `lap-history/` and `incidents/` where
@@ -195,6 +200,26 @@ are intentionally not shipped with the report. Reproducing these exact
 measurements requires runtime source `a5200766`; a run on a newer source is
 a separate measurement. The helper derives each new scenario label from the
 actual checked-out revision rather than reusing this baseline's source label.
+
+On a fresh setup, first save the user's scene **before seeking or changing
+playback**. Then pause and position the actual replay at the benchmark frame
+and camera, and save that separate start snapshot:
+
+```powershell
+node tools/perf/live-full-profile.cjs save-original
+# Position the loaded replay at frame 129269, session 2, focus car 37,
+# cockpit camera group 9 / camera 1; leave it paused.
+node tools/perf/live-full-profile.cjs save-start
+node tools/perf/live-full-profile.cjs status
+```
+
+`save-original` creates `perf-results/full-original.json`, retaining the
+original pause/play speed for the final `restore`. `save-start` creates
+`perf-results/full-start.json` and requires paused playback. Both refuse to
+overwrite an existing snapshot: use a fresh task directory or retain/archive
+prior artifacts explicitly before starting another capture series. Do not
+redirect `status` output to JSON: the native addon may also write diagnostics.
+Confirm the frame/session/camera in the saved start snapshot before running.
 
 ```powershell
 node tools/perf/live-full-profile.cjs run a520-full-r1 420
@@ -222,6 +247,14 @@ passes with 5,557 tests passed and four skipped. `npm run lint` (TypeScript
 and ESLint) passes with ignored private `perf-results/` capture artifacts
 excluded from ESLint. These checks do not constitute a new performance
 measurement on the publication source.
+
+Review hardening adds seven mocked-SDK regression tests for native-copy
+freshness, snapshot setup, successful capture completion and failure cleanup.
+These tests never control the simulator or contribute samples to the baseline.
+The archived packaged reference also includes 72 sanitized CPU/private-memory
+samples per run, verified against its raw-log hashes and published aggregates.
+Its equivalent capture commands are labeled as reconstructions because the
+original shell invocations were not retained.
 
 The benchmark application processes have exited. The saved user config hash
 still matches its initial snapshot. iRacing was restored to frame **3331**,

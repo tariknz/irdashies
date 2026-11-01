@@ -1165,10 +1165,10 @@
     "tools/perf/live-full-profile.cjs": "c39902c6d1c4e628c0f6f71e42a5ac188be3ccbb1e3dc2ecbf2a1ebfbb35e327"
   },
   "finalHarnessSha256": {
-    "tools/perf/run.ts": "5d4ec111899ddbec89c6cc4e1bdd7e4a73a2035fbda63dc55f7c9bb722b8c50e",
-    "tools/perf/live-full-profile.cjs": "7aadc355cc87d070820d3591e1b3b7800d7ea9c0c4b2d9aca7c7441b060269f2"
+    "tools/perf/run.ts": "a69097630c766a7ee08241e021cfdee1da628934f4536a07fd0a891fb90ec97d",
+    "tools/perf/live-full-profile.cjs": "e1a16f22d3cdb458fd989e73dc79d511fd18f8e4b6fabe7513557aa0958f8d4d"
   },
-  "harnessFinalization": "After capture: documented standalone CommonJS imports for lint and replaced environment-key deletion loop with equivalent literal deletes. For publication, future scenario labels derive from the checked-out source revision. Captured helper copies retained locally.",
+  "harnessFinalization": "Captured helper copies retained locally. Post-capture tooling now derives scenario labels from source, refreshes and fingerprints the private controller addon on every invocation, adds save-start, and cleans up callbacks, process trees and streams on failure. Captured results are unchanged.",
   "validation": {
     "typeScript": true,
     "targetedTests": {
@@ -1193,5 +1193,17 @@
       "ignoredPrivateCaptureArtifacts": true
     },
     "performanceRecaptured": false
+  },
+  "reviewValidation": {
+    "fullTests": {
+      "passed": 5564,
+      "skipped": 4,
+      "exitCode": 0
+    },
+    "controllerRegressionTests": 7,
+    "typeScript": true,
+    "eslint": true,
+    "performanceRecaptured": false,
+    "archivedPackagedSamplesRecomputed": true
   }
 }

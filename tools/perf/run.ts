@@ -55,6 +55,7 @@ function optionalFiniteNumber(
   return Number.isFinite(value) && value >= 0 ? value : undefined;
 }
 
+/** Parse capture options, keeping replay metadata independent of tape input. */
 function parseArgs(args: string[]): RunOptions {
   const requestedMode = argumentValue(args, '--mode');
   const mode: OverlayMode =

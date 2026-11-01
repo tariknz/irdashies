@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn, execFileSync } = require('node:child_process');
+const { finished } = require('node:stream/promises');
 const cwd = path.resolve(__dirname, '../..');
 const out = path.join(cwd, 'perf-results');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -30,6 +31,7 @@ const save = (file, value) =>
   fs.writeFileSync(path.join(out, file), JSON.stringify(value, null, 2));
 const sha256 = (file) =>
   crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+/** Fingerprint every built file using stable repository-relative names. */
 function manifest(directory) {
   return fs
     .readdirSync(directory, { withFileTypes: true })
@@ -45,12 +47,9 @@ fs.mkdirSync(out, { recursive: true });
 // Use a private copy: holding build/Release's addon open prevents Forge from
 // rebuilding that file on Windows before the application starts.
 const controlAddon = path.join(out, 'control-addon.node');
-if (!fs.existsSync(controlAddon))
-  fs.copyFileSync(
-    path.join(cwd, 'build/Release/irsdk_node.node'),
-    controlAddon
-  );
+fs.copyFileSync(path.join(cwd, 'build/Release/irsdk_node.node'), controlAddon);
 const sdk = new (require(controlAddon).iRacingSdkNode)();
+/** Read one real SDK snapshot; failures belong to the capture error path. */
 function snapshot() {
   sdk.waitForData(1000);
   const vars = sdk.getTelemetryData();
@@ -68,6 +67,7 @@ function snapshot() {
     })
   );
 }
+/** Pause, seek and verify the requested frame/session and original camera. */
 async function seek(start) {
   sdk.broadcast(3, 0, 0);
   await sleep(300);
@@ -93,6 +93,7 @@ async function seek(start) {
   }
   throw new Error('Replay seek was not verified');
 }
+/** Execute one explicit replay command and always release SDK ownership. */
 async function main() {
   if (!sdk.startSDK()) throw new Error('SDK not connected');
   const command = process.argv[2] || 'status';
@@ -104,6 +105,14 @@ async function main() {
     if (fs.existsSync(path.join(out, 'full-original.json')))
       throw new Error('Original already saved');
     save('full-original.json', before);
+    return print(before);
+  }
+  if (command === 'save-start') {
+    if (before.ReplayPlaySpeed !== 0)
+      throw new Error('Pause and position the replay before saving its start');
+    if (fs.existsSync(path.join(out, 'full-start.json')))
+      throw new Error('Benchmark start already saved');
+    save('full-start.json', before);
     return print(before);
   }
   if (command === 'restore') {
@@ -118,7 +127,7 @@ async function main() {
     return print(actual);
   }
   if (command !== 'run')
-    throw new Error('Expected status|save-original|restore|run');
+    throw new Error('Expected status|save-original|save-start|restore|run');
   const runId = process.argv[3];
   const duration = Number(process.argv[4] || 420);
   if (!/^[a-z0-9-]+$/.test(runId || '') || ![90, 420].includes(duration))
@@ -146,6 +155,7 @@ async function main() {
     duration,
     reset,
     profile: path.basename(profile),
+    controllerAddonSha256: sha256(controlAddon),
     gitHead: execFileSync('git', ['rev-parse', 'HEAD'], {
       cwd,
       encoding: 'utf8',
@@ -187,16 +197,53 @@ async function main() {
   );
   let played = false;
   let chunks = '';
-  const sample = () =>
-    replay.write(
-      JSON.stringify({ timestamp: new Date().toISOString(), ...snapshot() }) +
-        '\n'
-    );
   let timer;
+  let captureError;
+  /** Retain the first failure and terminate the whole runner-owned app tree. */
+  function fail(error) {
+    if (captureError) return;
+    captureError = error;
+    provenance.captureError = String(error?.message ?? error);
+    clearInterval(timer);
+    try {
+      save(`${runId}.provenance.json`, provenance);
+    } catch (saveError) {
+      process.stderr.write(
+        `Cannot save capture failure: ${saveError.message}\n`
+      );
+    }
+    if (child.exitCode === null && child.pid) {
+      try {
+        if (process.platform === 'win32') {
+          execFileSync('taskkill', ['/pid', String(child.pid), '/t', '/f'], {
+            stdio: 'ignore',
+          });
+        } else {
+          child.kill('SIGTERM');
+        }
+      } catch (stopError) {
+        provenance.stopError = String(stopError.message);
+      }
+    }
+  }
+  const sample = () => {
+    if (captureError) return;
+    try {
+      replay.write(
+        JSON.stringify({ timestamp: new Date().toISOString(), ...snapshot() }) +
+          '\n'
+      );
+    } catch (error) {
+      fail(error);
+    }
+  };
+  /** Route stream callbacks through the same failure state as timed samples. */
   function output(chunk) {
-    log.write(chunk);
-    chunks = (chunks + chunk.toString()).slice(-20000);
-    if (!played && chunks.includes('[PerfRunOrigin:JSON]')) {
+    if (captureError) return;
+    try {
+      log.write(chunk);
+      chunks = (chunks + chunk.toString()).slice(-20000);
+      if (played || !chunks.includes('[PerfRunOrigin:JSON]')) return;
       played = true;
       sdk.broadcast(3, 1, 0);
       provenance.playCommand = new Date().toISOString();
@@ -218,31 +265,50 @@ async function main() {
       };
       save(`${runId}.provenance.json`, provenance);
       sample();
+      if (captureError) return;
       timer = setInterval(sample, 5000);
       print({
         captureReady: runId,
         focus: 'iRacing',
         timestamp: provenance.playCommand,
       });
+    } catch (error) {
+      fail(error);
     }
   }
-  child.stdout.on('data', output);
-  child.stderr.on('data', output);
   const code = await new Promise((resolve, reject) => {
-    child.on('exit', resolve);
-    child.on('error', reject);
+    child.once('close', resolve);
+    child.once('error', (error) => {
+      fail(error);
+      reject(error);
+    });
+    child.stdout.on('data', output);
+    child.stderr.on('data', output);
+    log.on('error', fail);
+    replay.on('error', fail);
+  }).catch((error) => {
+    fail(error);
+    return 1;
   });
   clearInterval(timer);
-  sdk.broadcast(3, 0, 0);
-  await sleep(300);
-  provenance.end = snapshot();
+  try {
+    sdk.broadcast(3, 0, 0);
+    await sleep(300);
+    provenance.end = snapshot();
+  } catch (error) {
+    fail(error);
+  }
   provenance.exitCode = code;
   provenance.ended = new Date().toISOString();
-  save(`${runId}.provenance.json`, provenance);
+  const completion = Promise.allSettled([finished(replay), finished(log)]);
   replay.end();
   log.end();
+  for (const result of await completion) {
+    if (result.status === 'rejected') fail(result.reason);
+  }
+  save(`${runId}.provenance.json`, provenance);
   print(provenance);
-  if (code || !played) process.exitCode = 1;
+  if (code || !played || captureError) process.exitCode = 1;
 }
 main()
   .catch((error) => {

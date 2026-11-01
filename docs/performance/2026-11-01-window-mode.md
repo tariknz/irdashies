@@ -58,11 +58,28 @@ The benchmark processes have exited. The simulator was returned to the original 
 
 ## Reproduction and artifacts
 
+These experimental options are **not implemented by this baseline checkout**;
+its runner ignores unknown flags, so running these commands here cannot
+reproduce the window-mode experiment. The published successor implementation
+is [commit 3172180e](https://github.com/tariknz/irdashies/commit/3172180e1bd55d066798daf0788d07c41c4aac69)
+on the separate widget-window feature branch. It contains `--window-mode` and
+`--replay-visible-widgets`, but it is rebased and is not byte-identical to the
+uncommitted source fingerprint of the archived captures.
+
+For a new capture on that experimental checkout, also apply this baseline's
+`--simulator-mode replay` metadata support in `tools/perf/run.ts`, preserving
+the experimental options. The following commands describe that combined
+setup, not the options supported by this checkout. Record the new source
+fingerprint rather than assigning the archived source identity to a recapture.
+The original experiment's runner labeled the SDK connection `live`; that
+metadata did not distinguish actual replay playback. The added flag below
+corrects future labels and does not rewrite the historical captures.
+
 Load the same actual iRacing replay, set the same start frame/camera, and use the native controls to reset before each capture. The harness does not reset an actual simulator replay automatically. The task-local controller and per-run provenance record the resets used here.
 
 ```powershell
-npm run perf:run -- --target dev --mode full --window-mode display --replay-visible-widgets --widgets input,fuel,radar,flag,blindspotmonitor --duration-seconds 420 --scenario live-visible-display
-npm run perf:run -- --target dev --mode full --window-mode widget --replay-visible-widgets --widgets input,fuel,radar,flag,blindspotmonitor --duration-seconds 420 --scenario live-visible-widget
+npm run perf:run -- --target dev --mode full --window-mode display --replay-visible-widgets --widgets input,fuel,radar,flag,blindspotmonitor --duration-seconds 420 --scenario live-visible-display --simulator-mode replay
+npm run perf:run -- --target dev --mode full --window-mode widget --replay-visible-widgets --widgets input,fuel,radar,flag,blindspotmonitor --duration-seconds 420 --scenario live-visible-widget --simulator-mode replay
 ```
 
 Corrected log IDs are `live-visible-display-a1`, `live-visible-widget-b1`, `live-visible-widget-b2`, and `live-visible-display-a2`. Each has `.log`, `.provenance.json`, `.replay.jsonl`, and generated `.summary.json`/`.summary.md` files. `live-visible-results.json` contains the combined measurements; `live-visible-source.json` records source hashes. The benchmark-only visibility override has a passing immutability/activation test, TypeScript check, and targeted ESLint check.
