@@ -221,6 +221,7 @@ export const withDashboardDefaults = (
     ...defaultDashboard.generalSettings,
     ...dashboard.generalSettings,
   };
+  delete generalSettings.settingsTheme;
   if (
     savedColorPalette !== undefined &&
     savedColorPalette !== 'default' &&
@@ -363,6 +364,7 @@ export const saveDashboard = (
       ...value.generalSettings,
     },
   };
+  delete mergedDashboard.generalSettings?.settingsTheme;
   // Only save and emit if there are actual changes
   if (isDashboardChanged(existingDashboard, mergedDashboard)) {
     dashboards[id] = mergedDashboard;
