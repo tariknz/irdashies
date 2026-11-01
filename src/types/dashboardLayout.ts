@@ -180,6 +180,8 @@ export interface GeneralSettingsType {
   simulator?: SimulatorPreference;
   compactMode?: 'off' | 'compact' | 'ultra';
   overlayAlwaysOnTop?: boolean;
+  /** Experimental individual windows while locked; unset retains display windows. */
+  overlayWindowMode?: 'display' | 'widget';
   enableNetworkAccess?: boolean;
   /**
    * Controls the built-in component/OBS web server (see app/webserver).

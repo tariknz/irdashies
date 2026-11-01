@@ -1,7 +1,9 @@
-import { Tachometer } from './Tachometer';
+import { lazyWidget } from '@irdashies/domain/lazyWidget';
 import type { WidgetModule } from '@irdashies/domain';
 
 export default {
   id: 'tachometer',
-  component: Tachometer,
+  component: lazyWidget(() =>
+    import('./Tachometer').then((module) => ({ default: module.Tachometer }))
+  ),
 } satisfies WidgetModule;

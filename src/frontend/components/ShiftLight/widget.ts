@@ -1,7 +1,9 @@
-import { ShiftLight } from './ShiftLight';
+import { lazyWidget } from '@irdashies/domain/lazyWidget';
 import type { WidgetModule } from '@irdashies/domain';
 
 export default {
   id: 'shiftlight',
-  component: ShiftLight,
+  component: lazyWidget(() =>
+    import('./ShiftLight').then((module) => ({ default: module.ShiftLight }))
+  ),
 } satisfies WidgetModule;

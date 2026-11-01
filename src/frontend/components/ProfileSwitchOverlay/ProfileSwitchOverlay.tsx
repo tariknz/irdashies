@@ -17,6 +17,8 @@ declare global {
 
 interface ProfileSwitchOverlayProps {
   children: ReactNode;
+  /** Tight widget windows still hide/reveal, but cannot contain the banner. */
+  showBanner?: boolean;
 }
 
 // How long the profile name stays on screen after a switch.
@@ -33,6 +35,7 @@ const BANNER_MS = 1500;
  */
 export const ProfileSwitchOverlay = ({
   children,
+  showBanner = true,
 }: ProfileSwitchOverlayProps) => {
   const { containerBoundsInfo } = useDashboard();
   const [name, setName] = useState('');
@@ -72,7 +75,7 @@ export const ProfileSwitchOverlay = ({
   return (
     <>
       <div className={hidden ? 'invisible' : ''}>{children}</div>
-      {bannerVisible && (
+      {showBanner && bannerVisible && (
         <div
           className="pointer-events-none fixed top-6 -translate-x-1/2 z-[9999]"
           style={{ left: bannerLeft ?? '50%' }}

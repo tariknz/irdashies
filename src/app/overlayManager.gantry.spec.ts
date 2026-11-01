@@ -439,6 +439,27 @@ describe('OverlayManager Gantry window', () => {
     expect(manager.seedSessionData(orphan)).toBe(false);
   });
 
+  it('targets hidden Gantry session initialization without bypassing subscriptions', () => {
+    const manager = new OverlayManager();
+    const subscriptions = {
+      has: vi.fn(() => true),
+      hasAny: vi.fn(() => false),
+    };
+    manager.setRendererDataSubscriptions(subscriptions);
+    manager.createGantryWindow(dashboard(true));
+    const [window] = gantryWindows();
+
+    manager.publishMessageToOverlay('gantry', 'sessionData', { revision: 1 });
+    expect(window.webContents.send).toHaveBeenCalledWith('sessionData', {
+      revision: 1,
+    });
+
+    window.webContents.send.mockClear();
+    subscriptions.has.mockReturnValue(false);
+    manager.publishMessageToOverlay('gantry', 'sessionData', { revision: 2 });
+    expect(window.webContents.send).not.toHaveBeenCalled();
+  });
+
   it('drops its reference when the renderer crashes so it can be recreated', () => {
     const manager = new OverlayManager();
     manager.createGantryWindow(dashboard(true));

@@ -94,9 +94,9 @@ import { loadSimWidgetSupport } from './app/storage/simWidgetSupport';
 import type { DashboardLayout, Session } from '@irdashies/types';
 import { getActivePerfMetrics } from './app/perfMetrics';
 import {
-  activePerfWidgetTypes,
   createPerfDashboard,
   getPerfRunConfig,
+  updatePerfDashboardMetadata,
   PERF_CAPTURE_ORIGIN_LOG_PREFIX,
   PERF_VISIBILITY_LOG_PREFIX,
 } from './app/perfRunConfig';
@@ -422,9 +422,7 @@ void app.whenReady().then(async () => {
   const dashboard = getOrCreateDefaultDashboard();
   const runDashboard = createPerfDashboard(dashboard, perfRun);
   if (perfRun.enabled) {
-    process.env.PERF_ACTIVE_WIDGET_TYPES = JSON.stringify(
-      activePerfWidgetTypes(runDashboard)
-    );
+    updatePerfDashboardMetadata(runDashboard);
   }
 
   // Read off the window-build path before anything can ask for it: the
@@ -522,8 +520,11 @@ void app.whenReady().then(async () => {
     // transparent-window/global-provider cost from widget rendering.
     const windowDashboard =
       perfRun.enabled && perfRun.overlayMode === 'empty'
-        ? dashboard
+        ? { ...dashboard, generalSettings: runDashboard.generalSettings }
         : runDashboard;
+    if (perfRun.enabled && perfRun.overlayMode === 'empty') {
+      overlayManager.setWindowLayoutOverride(windowDashboard);
+    }
     overlayManager.createOverlays(windowDashboard, {
       createSettingsWindow: !perfRun.enabled,
     });
@@ -617,7 +618,14 @@ void app.whenReady().then(async () => {
     overlayManager,
     analytics,
     perfRun.enabled
-      ? (updatedDashboard) => createPerfDashboard(updatedDashboard, perfRun)
+      ? (updatedDashboard) => {
+          const appliedDashboard = createPerfDashboard(
+            updatedDashboard,
+            perfRun
+          );
+          updatePerfDashboardMetadata(appliedDashboard);
+          return appliedDashboard;
+        }
       : undefined
   );
   // Deliberately after publishDashboardUpdates: switching a profile emits
