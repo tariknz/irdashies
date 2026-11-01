@@ -58,18 +58,56 @@ The blind-spot input never published a changing snapshot in this replay. The exi
 
 Observed app private-memory growth averages 9.85 MiB/min shared and 20.22 MiB/min individual; both exceed the project's 5 MiB/min target. The captures establish observed growth over six measured minutes, not the presence or absence of a long-running leak. Keep individual windows experimental; investigate the GPU-process CPU increase and the Input/GPU memory-growth pattern before considering a default change.
 
-These are development-build results. Earlier packaged launches were blocked by Windows Application Control. Do not compare these values numerically with the earlier isolated tape runs or infer release performance. Racelab was not runtime-benchmarked.
+These are development-build results. Earlier packaged launches were blocked by Windows Application Control. Do not compare these values numerically with the earlier isolated tape runs or infer release performance.
 
 The benchmark processes have exited. The simulator was returned to the original frame 3331 in session 0 and left paused, with the original camera. Saved mode remains `display`, original Fuel retains `showOnlyWhenOnTrack: true`, and the second Fuel instance remains disabled in the saved profile.
 
 ## Reproduction and artifacts
 
+The runner now combines the feature's `--window-mode` and
+`--replay-visible-widgets` options with the full-profile baseline's
+`--simulator-mode replay` metadata support and `--user-data-dir` forwarding.
+The baseline-only checkout did not implement the window-mode options. The
+published successor implementation in
+[commit 3172180e](https://github.com/tariknz/irdashies/commit/3172180e1bd55d066798daf0788d07c41c4aac69)
+and this updated branch are not byte-identical to the uncommitted source
+fingerprint of the archived captures.
+
+The following commands use the combined runner for a new capture. Record the
+new source fingerprint rather than assigning the archived source identity to
+a recapture.
+The original experiment's runner labeled the SDK connection `live`; that
+metadata did not distinguish actual replay playback. The added flag below
+corrects future labels and does not rewrite the historical captures.
+
 Load the same actual iRacing replay, set the same start frame/camera, and use the native controls to reset before each capture. The harness does not reset an actual simulator replay automatically. The task-local controller and per-run provenance record the resets used here.
 
+Prepare the profile with the application closed. Copy the saved profile's
+top-level JSON files, plus `lap-history/` and `incidents/` where present, from
+the app's user-data directory (normally `%APPDATA%/irdashies`) into the private
+ignored directory `perf-results/window-seed/`. Retain its configuration and
+history hashes. Check `config.json`'s `currentProfile` and corresponding
+`dashboards` entry: it must contain the experiment's six instance layouts and
+configurations, including both Fuel instances. An arbitrary current profile
+is not a replacement for that saved workload.
+
+For each repeat, make a fresh complete copy of the seed. The example below
+uses `perf-results/window-display-r1/` and `perf-results/window-widget-r1/`;
+both destination directories must be absent before copying. Use a checkout
+and resolved profile paths without spaces or shell metacharacters. The type
+filter and visibility flags apply the same temporary overrides in both modes;
+never save those overrides back to the user's normal profile.
+
 ```powershell
-npm run perf:run -- --target dev --mode full --window-mode display --replay-visible-widgets --widgets input,fuel,radar,flag,blindspotmonitor --duration-seconds 420 --scenario live-visible-display
-npm run perf:run -- --target dev --mode full --window-mode widget --replay-visible-widgets --widgets input,fuel,radar,flag,blindspotmonitor --duration-seconds 420 --scenario live-visible-widget
+Copy-Item -LiteralPath perf-results/window-seed -Destination perf-results/window-display-r1 -Recurse
+Copy-Item -LiteralPath perf-results/window-seed -Destination perf-results/window-widget-r1 -Recurse
+npm run perf:run -- --target dev --mode full --user-data-dir perf-results/window-display-r1 --window-mode display --replay-visible-widgets --widgets input,fuel,radar,flag,blindspotmonitor --duration-seconds 420 --scenario live-visible-display --simulator-mode replay
+npm run perf:run -- --target dev --mode full --user-data-dir perf-results/window-widget-r1 --window-mode widget --replay-visible-widgets --widgets input,fuel,radar,flag,blindspotmonitor --duration-seconds 420 --scenario live-visible-widget --simulator-mode replay
 ```
+
+The archived experiment used the normal saved profile. These isolated-profile
+commands are for new recaptures; record their profile/cache state and new source
+fingerprint rather than claiming byte-identical reproduction of the archive.
 
 Corrected log IDs are `live-visible-display-a1`, `live-visible-widget-b1`, `live-visible-widget-b2`, and `live-visible-display-a2`. Each has `.log`, `.provenance.json`, `.replay.jsonl`, and generated `.summary.json`/`.summary.md` files. `live-visible-results.json` contains the combined measurements; `live-visible-source.json` records source hashes. The benchmark-only visibility override has a passing immutability/activation test, TypeScript check, and targeted ESLint check.
 

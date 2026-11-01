@@ -732,11 +732,189 @@
           <h2>Current references and drift status</h2>
           <p>
             Updated 1 November 2026. References are specific to their build
-            target and workload. Current-main release drift is unmeasured:
-            November's development replay subset cannot replace August's
-            packaged full-dashboard reference.
+            target and workload. The new full saved-profile development
+            reference pins local main <code>a5200766</code>, before Input
+            optimization #857. Newer remote main <code>ddf3f69e</code> and
+            current-main release drift remain unmeasured. Development evidence
+            cannot replace the archived packaged reference.
           </p>
         </div>
+        <h3>Pinned local-main full saved profile — 1 November 2026</h3>
+        <p>
+          Two 420-second development captures, analysis seconds 60–420, with the
+          full saved Default profile: 20 enabled instances, one Fuel panel,
+          three shared display overlays and the existing Gantry renderer.
+          Unmodified runtime source <code>a5200766</code>; actual 59-car,
+          two-class Gesamtstrecke VLN replay, reset to frame 129269/session 2,
+          cockpit group 9/camera 1/focus car 37. Fuel and Radar content were
+          visibly verified with isolated profile visibility overrides. Saved
+          settings, enabled states, layout and session policies are retained.
+        </p>
+        <div class="table-wrap">
+          <table
+            aria-label="Pinned a5200766 full saved-profile development baseline"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Metric</th>
+                <th scope="col">Repeat 1</th>
+                <th scope="col">Repeat 2</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">App CPU</th>
+                <td>4.483%</td>
+                <td>4.604%</td>
+              </tr>
+              <tr>
+                <th scope="row">Actual simulator FPS</th>
+                <td>72.872</td>
+                <td>72.760</td>
+              </tr>
+              <tr>
+                <th scope="row">Peak app private memory</th>
+                <td>3974.08 MiB</td>
+                <td>3594.32 MiB</td>
+              </tr>
+              <tr>
+                <th scope="row">Private-memory slope</th>
+                <td>+43.683 MiB/min</td>
+                <td>+20.320 MiB/min</td>
+              </tr>
+              <tr>
+                <th scope="row">Telemetry processing p99 mean</th>
+                <td>1.305 ms</td>
+                <td>1.350 ms</td>
+              </tr>
+              <tr>
+                <th scope="row">Display-renderer frame-time p99 mean</th>
+                <td>16.804 ms</td>
+                <td>16.808 ms</td>
+              </tr>
+              <tr>
+                <th scope="row">App/private-byte samples after warmup</th>
+                <td>72</td>
+                <td>72</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <figure
+          aria-label="Observed app private-memory growth: repeat 1 43.683, repeat 2 20.320 MiB per minute; target below 5"
+        >
+          <figcaption>
+            <strong>Observed private-memory growth, MiB/min</strong>
+          </figcaption>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              margin-top: 18px;
+              margin-bottom: 6px;
+            "
+          >
+            <span>Repeat 1</span><strong>43.683</strong>
+          </div>
+          <div
+            style="
+              height: 18px;
+              position: relative;
+              background: var(--surface-strong);
+              border-radius: 3px;
+            "
+          >
+            <div
+              style="
+                height: 100%;
+                width: 87.365856%;
+                background: var(--coral);
+                border-radius: 3px;
+              "
+            ></div>
+            <div
+              style="
+                position: absolute;
+                left: 10%;
+                top: -4px;
+                bottom: -4px;
+                border-left: 2px dashed var(--mint);
+              "
+            ></div>
+          </div>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              margin-top: 18px;
+              margin-bottom: 6px;
+            "
+          >
+            <span>Repeat 2</span><strong>20.320</strong>
+          </div>
+          <div
+            style="
+              height: 18px;
+              position: relative;
+              background: var(--surface-strong);
+              border-radius: 3px;
+            "
+          >
+            <div
+              style="
+                height: 100%;
+                width: 40.639805%;
+                background: var(--cyan);
+                border-radius: 3px;
+              "
+            ></div>
+            <div
+              style="
+                position: absolute;
+                left: 10%;
+                top: -4px;
+                bottom: -4px;
+                border-left: 2px dashed var(--mint);
+              "
+            ></div>
+          </div>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              margin-top: 8px;
+              color: var(--muted);
+            "
+          >
+            <span>0</span><span>25</span><span>50</span>
+          </div>
+          <p style="color: var(--mint)">
+            Dashed marker: unchanged target &lt;5 MiB/min
+          </p>
+        </figure>
+        <p class="note">
+          Mean app CPU 4.544%, mean simulator FPS 72.816. Both memory slopes
+          exceed target, with substantial repeat variation; these six-minute
+          observations do not establish a stable long-running leak rate. Formal
+          full-workload acceptance remains inconclusive: changing blind-spot,
+          lap-history, lap-times, radio, reference-lap, sector-timing and
+          replay-context inputs are missing. Gantry has no recorded event log;
+          Fuel values are zero/unavailable without a live stint/history
+          workload; Lap Trace remains hidden by saved Race policy. Frame-time
+          summaries cover three display renderers, not Gantry or PresentMon. No
+          release pass or historical drift is inferred.
+        </p>
+        <p>
+          <a href="performance/2026-11-01-main-full-profile.md"
+            >Full saved-profile report</a
+          >
+          ·
+          <a href="performance/2026-11-01-main-full-profile.json"
+            >Sanitized evidence and memory series</a
+          >. Source, profile and replay checks passed; original config and
+          paused cockpit scene are restored. The separate root feature
+          <code>3172180e</code> was not measured here.
+        </p>
         <h3>Latest located packaged comparison — 9 August 2026</h3>
         <p>
           The archived comparison of <code>28cbf61e</code> and
@@ -792,7 +970,7 @@
             >Attached evidence</a
           >.
         </p>
-        <h3>Current development replay reference — 1 November 2026</h3>
+        <h3>Scoped six-instance window experiment — 1 November 2026</h3>
         <p>
           Four 420-second captures, with 60-second analysis warmup, in shared →
           individual → individual → shared order. Same source based on

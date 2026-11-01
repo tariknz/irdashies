@@ -31,12 +31,13 @@ Updated **1 November 2026**. A reference records an observed workload; it does
 not imply that performance gates passed. Keep the `<5 MiB/min` private-memory
 target unchanged when updating a reference.
 
-| Scope                                                        | Reference                                                                                                                                                                                                   | Status                                                                                                                                                                                                              |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Latest located packaged full-dashboard reference             | `f189c2ee`, `post-phase4-1-f189c2ee-full-r2-long`; 40-car `.irdt`, 17 widget types, three display renderers, 60-second analysis warmup                                                                      | Archived August capture, newly attached below. Qualified reference: missing event-driven inputs; private-memory target unmet. [Evidence](./performance/2026-08-09-packaged-reference.json).                         |
-| Current development replay / default shared-window reference | `live-visible-display-a1` and `live-visible-display-a2`; base `a5200766` plus uncommitted experiment, actual 59-car replay, six widget instances, two shared display renderers, replay visibility overrides | Scoped November reference; both repeat runs retained. Blind-spot input idle; private-memory target unmet. [Report](./performance/2026-11-01-window-mode.md), [evidence](./performance/2026-11-01-window-mode.json). |
-| Individual-window experiment                                 | `live-visible-widget-b1` and `live-visible-widget-b2`, same source and workload as the November shared reference, six renderers                                                                             | Comparison candidate only; not the default or a replacement release baseline.                                                                                                                                       |
-| Current-main release drift since August                      | No matched packaged capture of current `main`                                                                                                                                                               | **Unmeasured.** November development/subset/actual-replay numbers cannot establish release drift against August packaged/full-dashboard/tape numbers.                                                               |
+| Scope                                                            | Reference                                                                                                                                                                                                   | Status                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pinned local-main full saved-profile development baseline        | `a520-full-r1` and `a520-full-r2`; unmodified runtime at `a5200766`, actual 59-car/two-class replay, 20 saved enabled instances, three display overlays plus Gantry, 420 seconds / 60-second warmup         | Fuel/Radar visibly verified. CPU 4.483–4.604%; simulator FPS 72.760–72.872; private growth 20.320–43.683 MiB/min, above target. Missing event inputs; formal gates inconclusive. Predates Input #857; remote `ddf3f69e` unmeasured. [Report](./performance/2026-11-01-main-full-profile.md), [evidence](./performance/2026-11-01-main-full-profile.json). |
+| Latest located packaged full-dashboard reference                 | `f189c2ee`, `post-phase4-1-f189c2ee-full-r2-long`; 40-car `.irdt`, 17 widget types, three display renderers, 60-second analysis warmup                                                                      | Archived August capture, newly attached below. Qualified reference: missing event-driven inputs; private-memory target unmet. [Evidence](./performance/2026-08-09-packaged-reference.json).                                                                                                                                                               |
+| Scoped six-instance development replay / shared-window reference | `live-visible-display-a1` and `live-visible-display-a2`; base `a5200766` plus uncommitted experiment, actual 59-car replay, six widget instances, two shared display renderers, replay visibility overrides | Scoped November reference; both repeat runs retained. Blind-spot input idle; private-memory target unmet. [Report](./performance/2026-11-01-window-mode.md), [evidence](./performance/2026-11-01-window-mode.json).                                                                                                                                       |
+| Individual-window experiment                                     | `live-visible-widget-b1` and `live-visible-widget-b2`, same source and workload as the November shared reference, six renderers                                                                             | Comparison candidate only; not the default or a replacement release baseline.                                                                                                                                                                                                                                                                             |
+| Current-main release drift since August                          | No matched packaged capture of current `main`                                                                                                                                                               | **Unmeasured.** November development/subset/actual-replay numbers cannot establish release drift against August packaged/full-dashboard/tape numbers.                                                                                                                                                                                                     |
 
 **Tracking drift:** Compare the same target, simulator/tape and start segment,
 widget instances/configuration, visible content, display geometry, capture
@@ -103,6 +104,57 @@ When new scenarios are added (e.g. to test specific findings), document them her
 ---
 
 ## 3. Test Entries
+
+### 1 November 2026 — Pinned local-main full saved profile, actual replay
+
+**Scope:** Development target, runtime source unchanged from local main
+`a5200766d2d47b5088e6c73436baa4e62cc79faf`. The independent root feature and
+newer remote main `ddf3f69e` were not benchmarked. In particular, this source
+predates upstream Input optimization #857. No performance fix or Input/GPU
+investigation was made in this series.
+
+The saved Default profile has 20 enabled instances, with one Fuel panel; the
+saved second Fuel remains disabled. Three 2560×1440 display overlays plus the
+existing Gantry renderer run against the actual Gesamtstrecke VLN replay,
+59 non-pace cars/two classes, session 2, start frame 129269, cockpit group 9 /
+camera 1 / focus car 37. Benchmark-only overrides in isolated profile copies
+make Fuel/Radar visible without changing saved settings or manufacturing data.
+Lap Trace retains its saved Race-session hide policy, and conditional panels
+retain real event requirements. Gantry renders standings behind foreground
+iRacing but has no recorded event log for this replay.
+
+| Run            | App CPU | Simulator FPS | Peak private memory |   Private slope |
+| -------------- | ------: | ------------: | ------------------: | --------------: |
+| `a520-full-r1` |  4.483% |        72.872 |         3974.08 MiB | +43.683 MiB/min |
+| `a520-full-r2` |  4.604% |        72.760 |         3594.32 MiB | +20.320 MiB/min |
+
+Each capture lasts 420 seconds; analysis includes seconds 60–420, with 72
+app/private-memory samples over approximately 355 seconds. Both also have 72
+native replay observations verifying normal-speed playback, session/camera
+and frame progression. The 1,599-file source manifest is unchanged. Both
+fresh profile copies produce the same resulting config hash. Fuel and Radar
+were visually checked in corrected preflight and each repeat's warmup.
+
+The mean CPU/FPS is 4.544% / 72.816. Both private-memory slopes exceed the
+unchanged **<5 MiB/min** target; their wide range must be retained. These
+six-minute slopes do not establish a long-running leak rate. Renderer p99
+means are 16.804/16.808 ms for the three display renderers, with no sampled
+frames over 50 ms. These are neither Gantry nor PresentMon/game frame timings.
+
+**Formal acceptance remains inconclusive:** missing changing inputs include
+blind-spot, lap-history, lap-times, radio, reference-laps, sector-timing and
+replay-context channels. Fuel's replay values remain zero/unavailable, with
+no live stint or populated fuel-history graph. No coverage waiver or release
+gate pass is claimed. Historical release drift and performance of newer
+remote main remain **unmeasured**; this development/profile workload must not
+be compared numerically with the old packaged/tape or six-instance experiment.
+
+The excluded preflights are documented, not promoted to measurements. The
+original config is restored/unchanged; iRacing is foreground at original frame
+3331/session 0/cockpit camera, paused. Raw logs stay local under ignored
+`perf-results/`. The [full report](./performance/2026-11-01-main-full-profile.md)
+and [sanitized evidence](./performance/2026-11-01-main-full-profile.json)
+preserve fingerprints, per-run coverage, memory series and replay integrity.
 
 > Newest at the top. Each entry follows the template in §6.
 
